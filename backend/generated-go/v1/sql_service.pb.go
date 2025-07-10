@@ -2764,9 +2764,9 @@ var File_v1_sql_service_proto protoreflect.FileDescriptor
 
 const file_v1_sql_service_proto_rawDesc = "" +
 	"\n" +
-	"\x14v1/sql_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a!v1/database_catalog_service.proto\x1a\x19v1/database_service.proto\"\xdc\x01\n" +
-	"\x13AdminExecuteRequest\x122\n" +
-	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
+	"\x14v1/sql_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a!v1/database_catalog_service.proto\x1a\x19v1/database_service.proto\"\xdb\x01\n" +
+	"\x13AdminExecuteRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
 	"\tstatement\x18\x03 \x01(\tR\tstatement\x12\x14\n" +
 	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12\x1b\n" +
@@ -2776,13 +2776,13 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\n" +
 	"_containerJ\x04\b\x02\x10\x03\"J\n" +
 	"\x14AdminExecuteResponse\x122\n" +
-	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xd8\x02\n" +
-	"\fQueryRequest\x122\n" +
-	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
+	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xd6\x02\n" +
+	"\fQueryRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
 	"\tstatement\x18\x03 \x01(\tR\tstatement\x12\x14\n" +
-	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12*\n" +
-	"\x0edata_source_id\x18\x06 \x01(\tB\x04\xe2A\x01\x02R\fdataSourceId\x12\x18\n" +
+	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12)\n" +
+	"\x0edata_source_id\x18\x06 \x01(\tB\x03\xe0A\x02R\fdataSourceId\x12\x18\n" +
 	"\aexplain\x18\a \x01(\bR\aexplain\x12\x1b\n" +
 	"\x06schema\x18\b \x01(\tH\x00R\x06schema\x88\x01\x01\x12;\n" +
 	"\fquery_option\x18\t \x01(\v2\x18.bytebase.v1.QueryOptionR\vqueryOption\x12!\n" +
@@ -2900,9 +2900,9 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aSUCCESS\x10\x01\x12\v\n" +
 	"\aWARNING\x10\x02\x12\t\n" +
-	"\x05ERROR\x10\x03J\x04\b\a\x10\bJ\x04\b\x05\x10\x06J\x04\b\x06\x10\a\"\x88\x02\n" +
-	"\rExportRequest\x122\n" +
-	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
+	"\x05ERROR\x10\x03J\x04\b\a\x10\bJ\x04\b\x05\x10\x06J\x04\b\x06\x10\a\"\x87\x02\n" +
+	"\rExportRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
 	"\tstatement\x18\x03 \x01(\tR\tstatement\x12\x14\n" +
 	"\x05limit\x18\x04 \x01(\x05R\x05limit\x121\n" +
@@ -2918,9 +2918,9 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x0fexpected_schema\x18\x03 \x01(\tR\x0eexpectedSchema\"`\n" +
 	"\x0ePrettyResponse\x12%\n" +
 	"\x0ecurrent_schema\x18\x01 \x01(\tR\rcurrentSchema\x12'\n" +
-	"\x0fexpected_schema\x18\x02 \x01(\tR\x0eexpectedSchema\"\x83\x02\n" +
-	"\fCheckRequest\x122\n" +
-	"\x04name\x18\x02 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
+	"\x0fexpected_schema\x18\x02 \x01(\tR\x0eexpectedSchema\"\x82\x02\n" +
+	"\fCheckRequest\x121\n" +
+	"\x04name\x18\x02 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
 	"\tstatement\x18\x01 \x01(\tR\tstatement\x12E\n" +
 	"\vchange_type\x18\x04 \x01(\x0e2$.bytebase.v1.CheckRequest.ChangeTypeR\n" +
@@ -2941,10 +2941,10 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x1aParseMyBatisMapperResponse\x12\x1e\n" +
 	"\n" +
 	"statements\x18\x01 \x03(\tR\n" +
-	"statements\"\xa6\x03\n" +
-	"\x13DiffMetadataRequest\x12L\n" +
-	"\x0fsource_metadata\x18\x01 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x04\xe2A\x01\x02R\x0esourceMetadata\x12L\n" +
-	"\x0ftarget_metadata\x18\x02 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x04\xe2A\x01\x02R\x0etargetMetadata\x12C\n" +
+	"statements\"\xa4\x03\n" +
+	"\x13DiffMetadataRequest\x12K\n" +
+	"\x0fsource_metadata\x18\x01 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x03\xe0A\x02R\x0esourceMetadata\x12K\n" +
+	"\x0ftarget_metadata\x18\x02 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x03\xe0A\x02R\x0etargetMetadata\x12C\n" +
 	"\x0esource_catalog\x18\x05 \x01(\v2\x1c.bytebase.v1.DatabaseCatalogR\rsourceCatalog\x12C\n" +
 	"\x0etarget_catalog\x18\x06 \x01(\v2\x1c.bytebase.v1.DatabaseCatalogR\rtargetCatalog\x12+\n" +
 	"\x06engine\x18\x03 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\x12<\n" +
@@ -2955,19 +2955,19 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\x12\x16\n" +
-	"\x06filter\x18\x03 \x01(\tR\x06filter\"\x90\x01\n" +
-	"\x1cSearchQueryHistoriesResponse\x12H\n" +
-	"\x0fquery_histories\x18\x01 \x03(\v2\x19.bytebase.v1.QueryHistoryB\x04\xe2A\x01\x03R\x0equeryHistories\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xa2\x03\n" +
-	"\fQueryHistory\x12\x18\n" +
-	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\x04name\x12 \n" +
-	"\bdatabase\x18\x02 \x01(\tB\x04\xe2A\x01\x03R\bdatabase\x12\x1e\n" +
-	"\acreator\x18\x03 \x01(\tB\x04\xe2A\x01\x03R\acreator\x12A\n" +
-	"\vcreate_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
-	"createTime\x12\"\n" +
-	"\tstatement\x18\x05 \x01(\tB\x04\xe2A\x01\x03R\tstatement\x12\x1f\n" +
-	"\x05error\x18\x06 \x01(\tB\x04\xe2A\x01\x03H\x00R\x05error\x88\x01\x01\x12;\n" +
-	"\bduration\x18\a \x01(\v2\x19.google.protobuf.DurationB\x04\xe2A\x01\x03R\bduration\x122\n" +
+	"\x06filter\x18\x03 \x01(\tR\x06filter\"\x8f\x01\n" +
+	"\x1cSearchQueryHistoriesResponse\x12G\n" +
+	"\x0fquery_histories\x18\x01 \x03(\v2\x19.bytebase.v1.QueryHistoryB\x03\xe0A\x03R\x0equeryHistories\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x9b\x03\n" +
+	"\fQueryHistory\x12\x17\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x1f\n" +
+	"\bdatabase\x18\x02 \x01(\tB\x03\xe0A\x03R\bdatabase\x12\x1d\n" +
+	"\acreator\x18\x03 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
+	"\vcreate_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"createTime\x12!\n" +
+	"\tstatement\x18\x05 \x01(\tB\x03\xe0A\x03R\tstatement\x12\x1e\n" +
+	"\x05error\x18\x06 \x01(\tB\x03\xe0A\x03H\x00R\x05error\x88\x01\x01\x12:\n" +
+	"\bduration\x18\a \x01(\v2\x19.google.protobuf.DurationB\x03\xe0A\x03R\bduration\x122\n" +
 	"\x04type\x18\b \x01(\x0e2\x1e.bytebase.v1.QueryHistory.TypeR\x04type\"3\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\t\n" +

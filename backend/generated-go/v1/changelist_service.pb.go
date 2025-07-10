@@ -512,41 +512,41 @@ var File_v1_changelist_service_proto protoreflect.FileDescriptor
 
 const file_v1_changelist_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1bv1/changelist_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\xba\x01\n" +
-	"\x17CreateChangelistRequest\x125\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x12=\n" +
+	"\x1bv1/changelist_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\xb7\x01\n" +
+	"\x17CreateChangelistRequest\x124\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x12<\n" +
 	"\n" +
-	"changelist\x18\x02 \x01(\v2\x17.bytebase.v1.ChangelistB\x04\xe2A\x01\x02R\n" +
-	"changelist\x12)\n" +
-	"\rchangelist_id\x18\x03 \x01(\tB\x04\xe2A\x01\x02R\fchangelistId\"L\n" +
-	"\x14GetChangelistRequest\x124\n" +
-	"\x04name\x18\x01 \x01(\tB \xe2A\x01\x02\xfaA\x19\n" +
-	"\x17bytebase.com/ChangelistR\x04name\"\x8b\x01\n" +
-	"\x16ListChangelistsRequest\x125\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"changelist\x18\x02 \x01(\v2\x17.bytebase.v1.ChangelistB\x03\xe0A\x02R\n" +
+	"changelist\x12(\n" +
+	"\rchangelist_id\x18\x03 \x01(\tB\x03\xe0A\x02R\fchangelistId\"K\n" +
+	"\x14GetChangelistRequest\x123\n" +
+	"\x04name\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
+	"\x17bytebase.com/ChangelistR\x04name\"\x8a\x01\n" +
+	"\x16ListChangelistsRequest\x124\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\"|\n" +
 	"\x17ListChangelistsResponse\x129\n" +
 	"\vchangelists\x18\x01 \x03(\v2\x17.bytebase.v1.ChangelistR\vchangelists\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x95\x01\n" +
-	"\x17UpdateChangelistRequest\x12=\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x94\x01\n" +
+	"\x17UpdateChangelistRequest\x12<\n" +
 	"\n" +
-	"changelist\x18\x01 \x01(\v2\x17.bytebase.v1.ChangelistB\x04\xe2A\x01\x02R\n" +
+	"changelist\x18\x01 \x01(\v2\x17.bytebase.v1.ChangelistB\x03\xe0A\x02R\n" +
 	"changelist\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"O\n" +
-	"\x17DeleteChangelistRequest\x124\n" +
-	"\x04name\x18\x01 \x01(\tB \xe2A\x01\x02\xfaA\x19\n" +
-	"\x17bytebase.com/ChangelistR\x04name\"\xe9\x02\n" +
+	"updateMask\"N\n" +
+	"\x17DeleteChangelistRequest\x123\n" +
+	"\x04name\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
+	"\x17bytebase.com/ChangelistR\x04name\"\xe8\x02\n" +
 	"\n" +
-	"Changelist\x12\x19\n" +
-	"\x04name\x18\x01 \x01(\tB\x05\xe2A\x02\x02\x05R\x04name\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1e\n" +
-	"\acreator\x18\x03 \x01(\tB\x04\xe2A\x01\x03R\acreator\x12A\n" +
-	"\vupdate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
+	"Changelist\x12\x1a\n" +
+	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1d\n" +
+	"\acreator\x18\x03 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
+	"\vupdate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"updateTime\x128\n" +
 	"\achanges\x18\a \x03(\v2\x1e.bytebase.v1.Changelist.ChangeR\achanges\x1a6\n" +
 	"\x06Change\x12\x14\n" +

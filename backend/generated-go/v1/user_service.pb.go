@@ -796,12 +796,12 @@ var File_v1_user_service_proto protoreflect.FileDescriptor
 
 const file_v1_user_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15v1/user_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"@\n" +
-	"\x0eGetUserRequest\x12.\n" +
-	"\x04name\x18\x01 \x01(\tB\x1a\xe2A\x01\x02\xfaA\x13\n" +
-	"\x11bytebase.com/UserR\x04name\"H\n" +
-	"\x14BatchGetUsersRequest\x120\n" +
-	"\x05names\x18\x01 \x03(\tB\x1a\xe2A\x01\x02\xfaA\x13\n" +
+	"\x15v1/user_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"?\n" +
+	"\x0eGetUserRequest\x12-\n" +
+	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
+	"\x11bytebase.com/UserR\x04name\"G\n" +
+	"\x14BatchGetUsersRequest\x12/\n" +
+	"\x05names\x18\x01 \x03(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/UserR\x05names\"@\n" +
 	"\x15BatchGetUsersResponse\x12'\n" +
 	"\x05users\x18\x01 \x03(\v2\x11.bytebase.v1.UserR\x05users\"\x89\x01\n" +
@@ -813,31 +813,31 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x06filter\x18\x04 \x01(\tR\x06filter\"d\n" +
 	"\x11ListUsersResponse\x12'\n" +
 	"\x05users\x18\x01 \x03(\v2\x11.bytebase.v1.UserR\x05users\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"@\n" +
-	"\x11CreateUserRequest\x12+\n" +
-	"\x04user\x18\x01 \x01(\v2\x11.bytebase.v1.UserB\x04\xe2A\x01\x02R\x04user\"\xa3\x02\n" +
-	"\x11UpdateUserRequest\x12+\n" +
-	"\x04user\x18\x01 \x01(\v2\x11.bytebase.v1.UserB\x04\xe2A\x01\x02R\x04user\x12;\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"?\n" +
+	"\x11CreateUserRequest\x12*\n" +
+	"\x04user\x18\x01 \x01(\v2\x11.bytebase.v1.UserB\x03\xe0A\x02R\x04user\"\xa2\x02\n" +
+	"\x11UpdateUserRequest\x12*\n" +
+	"\x04user\x18\x01 \x01(\v2\x11.bytebase.v1.UserB\x03\xe0A\x02R\x04user\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12\x1e\n" +
 	"\botp_code\x18\x03 \x01(\tH\x00R\aotpCode\x88\x01\x01\x12;\n" +
 	"\x1aregenerate_temp_mfa_secret\x18\x04 \x01(\bR\x17regenerateTempMfaSecret\x12:\n" +
 	"\x19regenerate_recovery_codes\x18\x05 \x01(\bR\x17regenerateRecoveryCodesB\v\n" +
-	"\t_otp_code\"C\n" +
-	"\x11DeleteUserRequest\x12.\n" +
-	"\x04name\x18\x01 \x01(\tB\x1a\xe2A\x01\x02\xfaA\x13\n" +
-	"\x11bytebase.com/UserR\x04name\"E\n" +
-	"\x13UndeleteUserRequest\x12.\n" +
-	"\x04name\x18\x01 \x01(\tB\x1a\xe2A\x01\x02\xfaA\x13\n" +
-	"\x11bytebase.com/UserR\x04name\"\x8a\x05\n" +
-	"\x04User\x12\x18\n" +
-	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\x04name\x12(\n" +
+	"\t_otp_code\"B\n" +
+	"\x11DeleteUserRequest\x12-\n" +
+	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
+	"\x11bytebase.com/UserR\x04name\"D\n" +
+	"\x13UndeleteUserRequest\x12-\n" +
+	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
+	"\x11bytebase.com/UserR\x04name\"\x87\x05\n" +
+	"\x04User\x12\x17\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
 	"\x05email\x18\x03 \x01(\tR\x05email\x12\x14\n" +
 	"\x05title\x18\x04 \x01(\tR\x05title\x122\n" +
-	"\tuser_type\x18\x05 \x01(\x0e2\x15.bytebase.v1.UserTypeR\buserType\x12 \n" +
-	"\bpassword\x18\a \x01(\tB\x04\xe2A\x01\x04R\bpassword\x12%\n" +
-	"\vservice_key\x18\b \x01(\tB\x04\xe2A\x01\x04R\n" +
+	"\tuser_type\x18\x05 \x01(\x0e2\x15.bytebase.v1.UserTypeR\buserType\x12\x1f\n" +
+	"\bpassword\x18\a \x01(\tB\x03\xe0A\x04R\bpassword\x12$\n" +
+	"\vservice_key\x18\b \x01(\tB\x03\xe0A\x04R\n" +
 	"serviceKey\x12\x1f\n" +
 	"\vmfa_enabled\x18\t \x01(\bR\n" +
 	"mfaEnabled\x12\x1d\n" +

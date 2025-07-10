@@ -2577,9 +2577,9 @@ var File_v1_instance_service_proto protoreflect.FileDescriptor
 
 const file_v1_instance_service_proto_rawDesc = "" +
 	"\n" +
-	"\x19v1/instance_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x1ev1/instance_role_service.proto\"H\n" +
-	"\x12GetInstanceRequest\x122\n" +
-	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
+	"\x19v1/instance_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x1ev1/instance_role_service.proto\"G\n" +
+	"\x12GetInstanceRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/InstanceR\x04name\"\x8d\x01\n" +
 	"\x14ListInstancesRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
@@ -2589,96 +2589,96 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x06filter\x18\x04 \x01(\tR\x06filter\"t\n" +
 	"\x15ListInstancesResponse\x123\n" +
 	"\tinstances\x18\x01 \x03(\v2\x15.bytebase.v1.InstanceR\tinstances\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x96\x01\n" +
-	"\x15CreateInstanceRequest\x127\n" +
-	"\binstance\x18\x01 \x01(\v2\x15.bytebase.v1.InstanceB\x04\xe2A\x01\x02R\binstance\x12\x1f\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x95\x01\n" +
+	"\x15CreateInstanceRequest\x126\n" +
+	"\binstance\x18\x01 \x01(\v2\x15.bytebase.v1.InstanceB\x03\xe0A\x02R\binstance\x12\x1f\n" +
 	"\vinstance_id\x18\x02 \x01(\tR\n" +
 	"instanceId\x12#\n" +
-	"\rvalidate_only\x18\x03 \x01(\bR\fvalidateOnly\"\x8d\x01\n" +
-	"\x15UpdateInstanceRequest\x127\n" +
-	"\binstance\x18\x01 \x01(\v2\x15.bytebase.v1.InstanceB\x04\xe2A\x01\x02R\binstance\x12;\n" +
+	"\rvalidate_only\x18\x03 \x01(\bR\fvalidateOnly\"\x8c\x01\n" +
+	"\x15UpdateInstanceRequest\x126\n" +
+	"\binstance\x18\x01 \x01(\v2\x15.bytebase.v1.InstanceB\x03\xe0A\x02R\binstance\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"a\n" +
-	"\x15DeleteInstanceRequest\x122\n" +
-	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
+	"updateMask\"`\n" +
+	"\x15DeleteInstanceRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/InstanceR\x04name\x12\x14\n" +
-	"\x05force\x18\x02 \x01(\bR\x05force\"M\n" +
-	"\x17UndeleteInstanceRequest\x122\n" +
-	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
-	"\x15bytebase.com/InstanceR\x04name\"s\n" +
-	"\x13SyncInstanceRequest\x122\n" +
-	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
+	"\x05force\x18\x02 \x01(\bR\x05force\"L\n" +
+	"\x17UndeleteInstanceRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"\x15bytebase.com/InstanceR\x04name\"r\n" +
+	"\x13SyncInstanceRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/InstanceR\x04name\x12(\n" +
-	"\x10enable_full_sync\x18\x02 \x01(\bR\x0eenableFullSync\"\x9c\x01\n" +
-	"\x1bListInstanceDatabaseRequest\x122\n" +
-	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
-	"\x15bytebase.com/InstanceR\x04name\x12<\n" +
-	"\binstance\x18\x02 \x01(\v2\x15.bytebase.v1.InstanceB\x04\xe2A\x01\x02H\x00R\binstance\x88\x01\x01B\v\n" +
+	"\x10enable_full_sync\x18\x02 \x01(\bR\x0eenableFullSync\"\x9a\x01\n" +
+	"\x1bListInstanceDatabaseRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"\x15bytebase.com/InstanceR\x04name\x12;\n" +
+	"\binstance\x18\x02 \x01(\v2\x15.bytebase.v1.InstanceB\x03\xe0A\x02H\x00R\binstance\x88\x01\x01B\v\n" +
 	"\t_instance\"<\n" +
 	"\x1cListInstanceDatabaseResponse\x12\x1c\n" +
 	"\tdatabases\x18\x01 \x03(\tR\tdatabases\"4\n" +
 	"\x14SyncInstanceResponse\x12\x1c\n" +
-	"\tdatabases\x18\x01 \x03(\tR\tdatabases\"_\n" +
-	"\x19BatchSyncInstancesRequest\x12B\n" +
-	"\brequests\x18\x01 \x03(\v2 .bytebase.v1.SyncInstanceRequestB\x04\xe2A\x01\x02R\brequests\"\x1c\n" +
-	"\x1aBatchSyncInstancesResponse\"c\n" +
-	"\x1bBatchUpdateInstancesRequest\x12D\n" +
-	"\brequests\x18\x01 \x03(\v2\".bytebase.v1.UpdateInstanceRequestB\x04\xe2A\x01\x02R\brequests\"S\n" +
+	"\tdatabases\x18\x01 \x03(\tR\tdatabases\"^\n" +
+	"\x19BatchSyncInstancesRequest\x12A\n" +
+	"\brequests\x18\x01 \x03(\v2 .bytebase.v1.SyncInstanceRequestB\x03\xe0A\x02R\brequests\"\x1c\n" +
+	"\x1aBatchSyncInstancesResponse\"b\n" +
+	"\x1bBatchUpdateInstancesRequest\x12C\n" +
+	"\brequests\x18\x01 \x03(\v2\".bytebase.v1.UpdateInstanceRequestB\x03\xe0A\x02R\brequests\"S\n" +
 	"\x1cBatchUpdateInstancesResponse\x123\n" +
-	"\tinstances\x18\x01 \x03(\v2\x15.bytebase.v1.InstanceR\tinstances\"\xaf\x01\n" +
-	"\x14AddDataSourceRequest\x122\n" +
-	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
-	"\x15bytebase.com/InstanceR\x04name\x12>\n" +
-	"\vdata_source\x18\x02 \x01(\v2\x17.bytebase.v1.DataSourceB\x04\xe2A\x01\x02R\n" +
+	"\tinstances\x18\x01 \x03(\v2\x15.bytebase.v1.InstanceR\tinstances\"\xad\x01\n" +
+	"\x14AddDataSourceRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"\x15bytebase.com/InstanceR\x04name\x12=\n" +
+	"\vdata_source\x18\x02 \x01(\v2\x17.bytebase.v1.DataSourceB\x03\xe0A\x02R\n" +
 	"dataSource\x12#\n" +
-	"\rvalidate_only\x18\x03 \x01(\bR\fvalidateOnly\"\x8d\x01\n" +
-	"\x17RemoveDataSourceRequest\x122\n" +
-	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
-	"\x15bytebase.com/InstanceR\x04name\x12>\n" +
-	"\vdata_source\x18\x02 \x01(\v2\x17.bytebase.v1.DataSourceB\x04\xe2A\x01\x02R\n" +
-	"dataSource\"\xef\x01\n" +
-	"\x17UpdateDataSourceRequest\x122\n" +
-	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
-	"\x15bytebase.com/InstanceR\x04name\x12>\n" +
-	"\vdata_source\x18\x02 \x01(\v2\x17.bytebase.v1.DataSourceB\x04\xe2A\x01\x02R\n" +
+	"\rvalidate_only\x18\x03 \x01(\bR\fvalidateOnly\"\x8b\x01\n" +
+	"\x17RemoveDataSourceRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"\x15bytebase.com/InstanceR\x04name\x12=\n" +
+	"\vdata_source\x18\x02 \x01(\v2\x17.bytebase.v1.DataSourceB\x03\xe0A\x02R\n" +
+	"dataSource\"\xed\x01\n" +
+	"\x17UpdateDataSourceRequest\x121\n" +
+	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
+	"\x15bytebase.com/InstanceR\x04name\x12=\n" +
+	"\vdata_source\x18\x02 \x01(\v2\x17.bytebase.v1.DataSourceB\x03\xe0A\x02R\n" +
 	"dataSource\x12;\n" +
 	"\vupdate_mask\x18\x03 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
-	"\rvalidate_only\x18\x04 \x01(\bR\fvalidateOnly\"\xaa\x05\n" +
+	"\rvalidate_only\x18\x04 \x01(\bR\fvalidateOnly\"\xa6\x05\n" +
 	"\bInstance\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
 	"\x05title\x18\x04 \x01(\tR\x05title\x12+\n" +
-	"\x06engine\x18\x05 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\x12+\n" +
-	"\x0eengine_version\x18\x06 \x01(\tB\x04\xe2A\x01\x03R\rengineVersion\x12#\n" +
+	"\x06engine\x18\x05 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\x12*\n" +
+	"\x0eengine_version\x18\x06 \x01(\tB\x03\xe0A\x03R\rengineVersion\x12#\n" +
 	"\rexternal_link\x18\a \x01(\tR\fexternalLink\x12:\n" +
-	"\fdata_sources\x18\b \x03(\v2\x17.bytebase.v1.DataSourceR\vdataSources\x12&\n" +
-	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x12\x1e\n" +
+	"\fdata_sources\x18\b \x03(\v2\x17.bytebase.v1.DataSourceR\vdataSources\x12%\n" +
+	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x12\x1e\n" +
 	"\n" +
 	"activation\x18\n" +
 	" \x01(\bR\n" +
-	"activation\x125\n" +
-	"\x05roles\x18\f \x03(\v2\x19.bytebase.v1.InstanceRoleB\x04\xe2A\x01\x03R\x05roles\x12>\n" +
+	"activation\x124\n" +
+	"\x05roles\x18\f \x03(\v2\x19.bytebase.v1.InstanceRoleB\x03\xe0A\x03R\x05roles\x12>\n" +
 	"\rsync_interval\x18\r \x01(\v2\x19.google.protobuf.DurationR\fsyncInterval\x12/\n" +
 	"\x13maximum_connections\x18\x0e \x01(\x05R\x12maximumConnections\x12%\n" +
-	"\x0esync_databases\x18\x0f \x03(\tR\rsyncDatabases\x12F\n" +
-	"\x0elast_sync_time\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\flastSyncTime:0\xeaA-\n" +
-	"\x15bytebase.com/Instance\x12\x14instances/{instance}\"\x87\a\n" +
+	"\x0esync_databases\x18\x0f \x03(\tR\rsyncDatabases\x12E\n" +
+	"\x0elast_sync_time\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\flastSyncTime:0\xeaA-\n" +
+	"\x15bytebase.com/Instance\x12\x14instances/{instance}\"\x84\a\n" +
 	"\x18DataSourceExternalSecret\x12Q\n" +
 	"\vsecret_type\x18\x01 \x01(\x0e20.bytebase.v1.DataSourceExternalSecret.SecretTypeR\n" +
 	"secretType\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03url\x12K\n" +
 	"\tauth_type\x18\x03 \x01(\x0e2..bytebase.v1.DataSourceExternalSecret.AuthTypeR\bauthType\x12T\n" +
-	"\bapp_role\x18\x04 \x01(\v27.bytebase.v1.DataSourceExternalSecret.AppRoleAuthOptionH\x00R\aappRole\x12\x1c\n" +
-	"\x05token\x18\x05 \x01(\tB\x04\xe2A\x01\x04H\x00R\x05token\x12\x1f\n" +
+	"\bapp_role\x18\x04 \x01(\v27.bytebase.v1.DataSourceExternalSecret.AppRoleAuthOptionH\x00R\aappRole\x12\x1b\n" +
+	"\x05token\x18\x05 \x01(\tB\x03\xe0A\x04H\x00R\x05token\x12\x1f\n" +
 	"\vengine_name\x18\x06 \x01(\tR\n" +
 	"engineName\x12\x1f\n" +
 	"\vsecret_name\x18\a \x01(\tR\n" +
 	"secretName\x12*\n" +
-	"\x11password_key_name\x18\b \x01(\tR\x0fpasswordKeyName\x1a\x93\x02\n" +
-	"\x11AppRoleAuthOption\x12\x1d\n" +
-	"\arole_id\x18\x01 \x01(\tB\x04\xe2A\x01\x04R\x06roleId\x12!\n" +
-	"\tsecret_id\x18\x02 \x01(\tB\x04\xe2A\x01\x04R\bsecretId\x12V\n" +
+	"\x11password_key_name\x18\b \x01(\tR\x0fpasswordKeyName\x1a\x91\x02\n" +
+	"\x11AppRoleAuthOption\x12\x1c\n" +
+	"\arole_id\x18\x01 \x01(\tB\x03\xe0A\x04R\x06roleId\x12 \n" +
+	"\tsecret_id\x18\x02 \x01(\tB\x03\xe0A\x04R\bsecretId\x12V\n" +
 	"\x04type\x18\x03 \x01(\x0e2B.bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretTypeR\x04type\x12\x1d\n" +
 	"\n" +
 	"mount_path\x18\x04 \x01(\tR\tmountPath\"E\n" +
@@ -2697,17 +2697,17 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x15AUTH_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05TOKEN\x10\x01\x12\x12\n" +
 	"\x0eVAULT_APP_ROLE\x10\x02B\r\n" +
-	"\vauth_option\"\xde\x12\n" +
+	"\vauth_option\"\xd1\x12\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x1b.bytebase.v1.DataSourceTypeR\x04type\x12\x1a\n" +
-	"\busername\x18\x03 \x01(\tR\busername\x12 \n" +
-	"\bpassword\x18\x04 \x01(\tB\x04\xe2A\x01\x04R\bpassword\x12\x17\n" +
-	"\ause_ssl\x18\x1e \x01(\bR\x06useSsl\x12\x1b\n" +
-	"\x06ssl_ca\x18\x05 \x01(\tB\x04\xe2A\x01\x04R\x05sslCa\x12\x1f\n" +
-	"\bssl_cert\x18\x06 \x01(\tB\x04\xe2A\x01\x04R\asslCert\x12\x1d\n" +
-	"\assl_key\x18\a \x01(\tB\x04\xe2A\x01\x04R\x06sslKey\x12\x12\n" +
+	"\busername\x18\x03 \x01(\tR\busername\x12\x1f\n" +
+	"\bpassword\x18\x04 \x01(\tB\x03\xe0A\x04R\bpassword\x12\x17\n" +
+	"\ause_ssl\x18\x1e \x01(\bR\x06useSsl\x12\x1a\n" +
+	"\x06ssl_ca\x18\x05 \x01(\tB\x03\xe0A\x04R\x05sslCa\x12\x1e\n" +
+	"\bssl_cert\x18\x06 \x01(\tB\x03\xe0A\x04R\asslCert\x12\x1c\n" +
+	"\assl_key\x18\a \x01(\tB\x03\xe0A\x04R\x06sslKey\x12\x12\n" +
 	"\x04host\x18\b \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\t \x01(\tR\x04port\x12\x1a\n" +
 	"\bdatabase\x18\n" +
@@ -2720,18 +2720,18 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\fservice_name\x18\x0e \x01(\tR\vserviceName\x12\x19\n" +
 	"\bssh_host\x18\x0f \x01(\tR\asshHost\x12\x19\n" +
 	"\bssh_port\x18\x10 \x01(\tR\asshPort\x12\x19\n" +
-	"\bssh_user\x18\x11 \x01(\tR\asshUser\x12'\n" +
-	"\fssh_password\x18\x12 \x01(\tB\x04\xe2A\x01\x04R\vsshPassword\x12,\n" +
-	"\x0fssh_private_key\x18\x13 \x01(\tB\x04\xe2A\x01\x04R\rsshPrivateKey\x12B\n" +
-	"\x1aauthentication_private_key\x18\x14 \x01(\tB\x04\xe2A\x01\x04R\x18authenticationPrivateKey\x12N\n" +
+	"\bssh_user\x18\x11 \x01(\tR\asshUser\x12&\n" +
+	"\fssh_password\x18\x12 \x01(\tB\x03\xe0A\x04R\vsshPassword\x12+\n" +
+	"\x0fssh_private_key\x18\x13 \x01(\tB\x03\xe0A\x04R\rsshPrivateKey\x12A\n" +
+	"\x1aauthentication_private_key\x18\x14 \x01(\tB\x03\xe0A\x04R\x18authenticationPrivateKey\x12N\n" +
 	"\x0fexternal_secret\x18\x15 \x01(\v2%.bytebase.v1.DataSourceExternalSecretR\x0eexternalSecret\x12[\n" +
 	"\x13authentication_type\x18\x16 \x01(\x0e2*.bytebase.v1.DataSource.AuthenticationTypeR\x12authenticationType\x12T\n" +
 	"\x10azure_credential\x18\x17 \x01(\v2'.bytebase.v1.DataSource.AzureCredentialH\x00R\x0fazureCredential\x12N\n" +
 	"\x0eaws_credential\x18% \x01(\v2%.bytebase.v1.DataSource.AWSCredentialH\x00R\rawsCredential\x12N\n" +
 	"\x0egcp_credential\x18& \x01(\v2%.bytebase.v1.DataSource.GCPCredentialH\x00R\rgcpCredential\x128\n" +
 	"\vsasl_config\x18\x18 \x01(\v2\x17.bytebase.v1.SASLConfigR\n" +
-	"saslConfig\x12X\n" +
-	"\x14additional_addresses\x18\x1a \x03(\v2\x1f.bytebase.v1.DataSource.AddressB\x04\xe2A\x01\x01R\x13additionalAddresses\x12+\n" +
+	"saslConfig\x12W\n" +
+	"\x14additional_addresses\x18\x1a \x03(\v2\x1f.bytebase.v1.DataSource.AddressB\x03\xe0A\x01R\x13additionalAddresses\x12+\n" +
 	"\x11direct_connection\x18\x1b \x01(\bR\x10directConnection\x12\x16\n" +
 	"\x06region\x18\x1c \x01(\tR\x06region\x12!\n" +
 	"\fwarehouse_id\x18\x1d \x01(\tR\vwarehouseId\x12\x1f\n" +
@@ -2742,17 +2742,17 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\n" +
 	"redis_type\x18\" \x01(\x0e2!.bytebase.v1.DataSource.RedisTypeR\tredisType\x12\x18\n" +
 	"\acluster\x18# \x01(\tR\acluster\x12v\n" +
-	"\x1bextra_connection_parameters\x18$ \x03(\v26.bytebase.v1.DataSource.ExtraConnectionParametersEntryR\x19extraConnectionParameters\x1av\n" +
+	"\x1bextra_connection_parameters\x18$ \x03(\v26.bytebase.v1.DataSource.ExtraConnectionParametersEntryR\x19extraConnectionParameters\x1au\n" +
 	"\x0fAzureCredential\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1b\n" +
-	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12)\n" +
-	"\rclient_secret\x18\x03 \x01(\tB\x04\xe2A\x01\x04R\fclientSecret\x1a\x96\x01\n" +
-	"\rAWSCredential\x12(\n" +
-	"\raccess_key_id\x18\x01 \x01(\tB\x04\xe2A\x01\x04R\vaccessKeyId\x120\n" +
-	"\x11secret_access_key\x18\x02 \x01(\tB\x04\xe2A\x01\x04R\x0fsecretAccessKey\x12)\n" +
-	"\rsession_token\x18\x03 \x01(\tB\x04\xe2A\x01\x04R\fsessionToken\x1a/\n" +
-	"\rGCPCredential\x12\x1e\n" +
-	"\acontent\x18\x01 \x01(\tB\x04\xe2A\x01\x04R\acontent\x1a1\n" +
+	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12(\n" +
+	"\rclient_secret\x18\x03 \x01(\tB\x03\xe0A\x04R\fclientSecret\x1a\x93\x01\n" +
+	"\rAWSCredential\x12'\n" +
+	"\raccess_key_id\x18\x01 \x01(\tB\x03\xe0A\x04R\vaccessKeyId\x12/\n" +
+	"\x11secret_access_key\x18\x02 \x01(\tB\x03\xe0A\x04R\x0fsecretAccessKey\x12(\n" +
+	"\rsession_token\x18\x03 \x01(\tB\x03\xe0A\x04R\fsessionToken\x1a.\n" +
+	"\rGCPCredential\x12\x1d\n" +
+	"\acontent\x18\x01 \x01(\tB\x03\xe0A\x04R\acontent\x1a1\n" +
 	"\aAddress\x12\x12\n" +
 	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\tR\x04port\x1aL\n" +
@@ -2771,11 +2771,11 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"STANDALONE\x10\x01\x12\f\n" +
 	"\bSENTINEL\x10\x02\x12\v\n" +
 	"\aCLUSTER\x10\x03B\x0f\n" +
-	"\riam_extension\"\x94\x02\n" +
+	"\riam_extension\"\x93\x02\n" +
 	"\x10InstanceResource\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12+\n" +
-	"\x06engine\x18\x02 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\x12+\n" +
-	"\x0eengine_version\x18\x03 \x01(\tB\x04\xe2A\x01\x03R\rengineVersion\x12:\n" +
+	"\x06engine\x18\x02 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\x12*\n" +
+	"\x0eengine_version\x18\x03 \x01(\tB\x03\xe0A\x03R\rengineVersion\x12:\n" +
 	"\fdata_sources\x18\x04 \x03(\v2\x17.bytebase.v1.DataSourceR\vdataSources\x12\x1e\n" +
 	"\n" +
 	"activation\x18\x05 \x01(\bR\n" +

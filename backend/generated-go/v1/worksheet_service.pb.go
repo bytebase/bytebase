@@ -683,24 +683,24 @@ var File_v1_worksheet_service_proto protoreflect.FileDescriptor
 
 const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1av1/worksheet_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"T\n" +
-	"\x16CreateWorksheetRequest\x12:\n" +
-	"\tworksheet\x18\x01 \x01(\v2\x16.bytebase.v1.WorksheetB\x04\xe2A\x01\x02R\tworksheet\"/\n" +
-	"\x13GetWorksheetRequest\x12\x18\n" +
-	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x02R\x04name\"\x91\x01\n" +
-	"\x16UpdateWorksheetRequest\x12:\n" +
-	"\tworksheet\x18\x01 \x01(\v2\x16.bytebase.v1.WorksheetB\x04\xe2A\x01\x02R\tworksheet\x12;\n" +
+	"\x1av1/worksheet_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"S\n" +
+	"\x16CreateWorksheetRequest\x129\n" +
+	"\tworksheet\x18\x01 \x01(\v2\x16.bytebase.v1.WorksheetB\x03\xe0A\x02R\tworksheet\".\n" +
+	"\x13GetWorksheetRequest\x12\x17\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"\x90\x01\n" +
+	"\x16UpdateWorksheetRequest\x129\n" +
+	"\tworksheet\x18\x01 \x01(\v2\x16.bytebase.v1.WorksheetB\x03\xe0A\x02R\tworksheet\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"\xa3\x01\n" +
-	"\x1fUpdateWorksheetOrganizerRequest\x12C\n" +
-	"\torganizer\x18\x01 \x01(\v2\x1f.bytebase.v1.WorksheetOrganizerB\x04\xe2A\x01\x02R\torganizer\x12;\n" +
+	"updateMask\"\xa2\x01\n" +
+	"\x1fUpdateWorksheetOrganizerRequest\x12B\n" +
+	"\torganizer\x18\x01 \x01(\v2\x1f.bytebase.v1.WorksheetOrganizerB\x03\xe0A\x02R\torganizer\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"R\n" +
-	"\x12WorksheetOrganizer\x12\"\n" +
-	"\tworksheet\x18\x01 \x01(\tB\x04\xe2A\x01\x02R\tworksheet\x12\x18\n" +
-	"\astarred\x18\x02 \x01(\bR\astarred\"2\n" +
-	"\x16DeleteWorksheetRequest\x12\x18\n" +
-	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x02R\x04name\"m\n" +
+	"updateMask\"Q\n" +
+	"\x12WorksheetOrganizer\x12!\n" +
+	"\tworksheet\x18\x01 \x01(\tB\x03\xe0A\x02R\tworksheet\x12\x18\n" +
+	"\astarred\x18\x02 \x01(\bR\astarred\"1\n" +
+	"\x16DeleteWorksheetRequest\x12\x17\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"m\n" +
 	"\x17SearchWorksheetsRequest\x12\x16\n" +
 	"\x06filter\x18\x01 \x01(\tR\x06filter\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
@@ -710,24 +710,24 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\n" +
 	"worksheets\x18\x01 \x03(\v2\x16.bytebase.v1.WorksheetR\n" +
 	"worksheets\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xb2\x04\n" +
-	"\tWorksheet\x12\x19\n" +
-	"\x04name\x18\x01 \x01(\tB\x05\xe2A\x02\x02\x05R\x04name\x12\x1e\n" +
-	"\aproject\x18\x02 \x01(\tB\x04\xe2A\x01\x02R\aproject\x12\x1a\n" +
-	"\bdatabase\x18\x03 \x01(\tR\bdatabase\x12\x1a\n" +
-	"\x05title\x18\x04 \x01(\tB\x04\xe2A\x01\x02R\x05title\x12\x1e\n" +
-	"\acreator\x18\x05 \x01(\tB\x04\xe2A\x01\x03R\acreator\x12A\n" +
-	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
-	"createTime\x12A\n" +
-	"\vupdate_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
-	"updateTime\x12\x1e\n" +
-	"\acontent\x18\b \x01(\fB\x04\xe2A\x01\x02R\acontent\x12'\n" +
-	"\fcontent_size\x18\t \x01(\x03B\x04\xe2A\x01\x03R\vcontentSize\x12G\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xaa\x04\n" +
+	"\tWorksheet\x12\x1a\n" +
+	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12\x1d\n" +
+	"\aproject\x18\x02 \x01(\tB\x03\xe0A\x02R\aproject\x12\x1a\n" +
+	"\bdatabase\x18\x03 \x01(\tR\bdatabase\x12\x19\n" +
+	"\x05title\x18\x04 \x01(\tB\x03\xe0A\x02R\x05title\x12\x1d\n" +
+	"\acreator\x18\x05 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
+	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"createTime\x12@\n" +
+	"\vupdate_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"updateTime\x12\x1d\n" +
+	"\acontent\x18\b \x01(\fB\x03\xe0A\x02R\acontent\x12&\n" +
+	"\fcontent_size\x18\t \x01(\x03B\x03\xe0A\x03R\vcontentSize\x12F\n" +
 	"\n" +
 	"visibility\x18\n" +
-	" \x01(\x0e2!.bytebase.v1.Worksheet.VisibilityB\x04\xe2A\x01\x02R\n" +
-	"visibility\x12\x1e\n" +
-	"\astarred\x18\v \x01(\bB\x04\xe2A\x01\x03R\astarred\"Z\n" +
+	" \x01(\x0e2!.bytebase.v1.Worksheet.VisibilityB\x03\xe0A\x02R\n" +
+	"visibility\x12\x1d\n" +
+	"\astarred\x18\v \x01(\bB\x03\xe0A\x03R\astarred\"Z\n" +
 	"\n" +
 	"Visibility\x12\x1a\n" +
 	"\x16VISIBILITY_UNSPECIFIED\x10\x00\x12\x10\n" +

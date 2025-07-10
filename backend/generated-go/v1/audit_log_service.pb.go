@@ -651,9 +651,9 @@ var File_v1_audit_log_service_proto protoreflect.FileDescriptor
 
 const file_v1_audit_log_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1av1/audit_log_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x19google/protobuf/any.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17google/rpc/status.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x13v1/iam_policy.proto\"\xbf\x01\n" +
-	"\x16SearchAuditLogsRequest\x126\n" +
-	"\x06parent\x18\x05 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\x12\x15bytebase.com/AuditLogR\x06parent\x12\x16\n" +
+	"\x1av1/audit_log_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x19google/protobuf/any.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17google/rpc/status.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x13v1/iam_policy.proto\"\xbe\x01\n" +
+	"\x16SearchAuditLogsRequest\x125\n" +
+	"\x06parent\x18\x05 \x01(\tB\x1d\xe0A\x02\xfaA\x17\x12\x15bytebase.com/AuditLogR\x06parent\x12\x16\n" +
 	"\x06filter\x18\x01 \x01(\tR\x06filter\x12\x19\n" +
 	"\border_by\x18\x02 \x01(\tR\aorderBy\x12\x1b\n" +
 	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
@@ -662,9 +662,9 @@ const file_v1_audit_log_service_proto_rawDesc = "" +
 	"\x17SearchAuditLogsResponse\x124\n" +
 	"\n" +
 	"audit_logs\x18\x01 \x03(\v2\x15.bytebase.v1.AuditLogR\tauditLogs\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xf2\x01\n" +
-	"\x16ExportAuditLogsRequest\x126\n" +
-	"\x06parent\x18\x04 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\x12\x15bytebase.com/AuditLogR\x06parent\x12\x16\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xf1\x01\n" +
+	"\x16ExportAuditLogsRequest\x125\n" +
+	"\x06parent\x18\x04 \x01(\tB\x1d\xe0A\x02\xfaA\x17\x12\x15bytebase.com/AuditLogR\x06parent\x12\x16\n" +
 	"\x06filter\x18\x01 \x01(\tR\x06filter\x12\x19\n" +
 	"\border_by\x18\x02 \x01(\tR\aorderBy\x121\n" +
 	"\x06format\x18\x03 \x01(\x0e2\x19.bytebase.v1.ExportFormatR\x06format\x12\x1b\n" +
@@ -673,10 +673,10 @@ const file_v1_audit_log_service_proto_rawDesc = "" +
 	"page_token\x18\x06 \x01(\tR\tpageToken\"[\n" +
 	"\x17ExportAuditLogsResponse\x12\x18\n" +
 	"\acontent\x18\x01 \x01(\fR\acontent\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xfe\x04\n" +
-	"\bAuditLog\x12\x18\n" +
-	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\x04name\x12A\n" +
-	"\vcreate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xfc\x04\n" +
+	"\bAuditLog\x12\x17\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12@\n" +
+	"\vcreate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12\x12\n" +
 	"\x04user\x18\x03 \x01(\tR\x04user\x12\x16\n" +
 	"\x06method\x18\x04 \x01(\tR\x06method\x12:\n" +

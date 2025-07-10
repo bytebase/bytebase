@@ -457,21 +457,21 @@ var File_v1_iam_policy_proto protoreflect.FileDescriptor
 
 const file_v1_iam_policy_proto_rawDesc = "" +
 	"\n" +
-	"\x13v1/iam_policy.proto\x12\vbytebase.v1\x1a%google/api/expr/v1alpha1/syntax.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x16google/type/expr.proto\"R\n" +
-	"\x13GetIamPolicyRequest\x12;\n" +
-	"\bresource\x18\x01 \x01(\tB\x1f\xe2A\x01\x02\xfaA\x18\x12\x16bytebase.com/IAMPolicyR\bresource\"\x9c\x01\n" +
-	"\x13SetIamPolicyRequest\x12;\n" +
-	"\bresource\x18\x01 \x01(\tB\x1f\xe2A\x01\x02\xfaA\x18\x12\x16bytebase.com/IAMPolicyR\bresource\x124\n" +
-	"\x06policy\x18\x02 \x01(\v2\x16.bytebase.v1.IamPolicyB\x04\xe2A\x01\x02R\x06policy\x12\x12\n" +
+	"\x13v1/iam_policy.proto\x12\vbytebase.v1\x1a%google/api/expr/v1alpha1/syntax.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x16google/type/expr.proto\"Q\n" +
+	"\x13GetIamPolicyRequest\x12:\n" +
+	"\bresource\x18\x01 \x01(\tB\x1e\xe0A\x02\xfaA\x18\x12\x16bytebase.com/IAMPolicyR\bresource\"\x9a\x01\n" +
+	"\x13SetIamPolicyRequest\x12:\n" +
+	"\bresource\x18\x01 \x01(\tB\x1e\xe0A\x02\xfaA\x18\x12\x16bytebase.com/IAMPolicyR\bresource\x123\n" +
+	"\x06policy\x18\x02 \x01(\v2\x16.bytebase.v1.IamPolicyB\x03\xe0A\x02R\x06policy\x12\x12\n" +
 	"\x04etag\x18\x03 \x01(\tR\x04etag\"Q\n" +
 	"\tIamPolicy\x120\n" +
 	"\bbindings\x18\x01 \x03(\v2\x14.bytebase.v1.BindingR\bbindings\x12\x12\n" +
-	"\x04etag\x18\x02 \x01(\tR\x04etag\"\xaf\x01\n" +
+	"\x04etag\x18\x02 \x01(\tR\x04etag\"\xae\x01\n" +
 	"\aBinding\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12\x18\n" +
 	"\amembers\x18\x02 \x03(\tR\amembers\x12/\n" +
-	"\tcondition\x18\x03 \x01(\v2\x11.google.type.ExprR\tcondition\x12E\n" +
-	"\vparsed_expr\x18\x04 \x01(\v2\x1e.google.api.expr.v1alpha1.ExprB\x04\xe2A\x01\x03R\n" +
+	"\tcondition\x18\x03 \x01(\v2\x11.google.type.ExprR\tcondition\x12D\n" +
+	"\vparsed_expr\x18\x04 \x01(\v2\x1e.google.api.expr.v1alpha1.ExprB\x03\xe0A\x03R\n" +
 	"parsedExpr\"O\n" +
 	"\vPolicyDelta\x12@\n" +
 	"\x0ebinding_deltas\x18\x01 \x03(\v2\x19.bytebase.v1.BindingDeltaR\rbindingDeltas\"\xdc\x01\n" +

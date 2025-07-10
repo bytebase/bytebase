@@ -562,18 +562,18 @@ const file_v1_risk_service_proto_rawDesc = "" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\"d\n" +
 	"\x11ListRisksResponse\x12'\n" +
 	"\x05risks\x18\x01 \x03(\v2\x11.bytebase.v1.RiskR\x05risks\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"@\n" +
-	"\x11CreateRiskRequest\x12+\n" +
-	"\x04risk\x18\x01 \x01(\v2\x11.bytebase.v1.RiskB\x04\xe2A\x01\x02R\x04risk\"@\n" +
-	"\x0eGetRiskRequest\x12.\n" +
-	"\x04name\x18\x01 \x01(\tB\x1a\xe2A\x01\x02\xfaA\x13\n" +
-	"\x11bytebase.com/RiskR\x04name\"\x83\x01\n" +
-	"\x11UpdateRiskRequest\x12+\n" +
-	"\x04risk\x18\x01 \x01(\v2\x11.bytebase.v1.RiskB\x04\xe2A\x01\x02R\x04risk\x12A\n" +
-	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x04\xe2A\x01\x02R\n" +
-	"updateMask\"C\n" +
-	"\x11DeleteRiskRequest\x12.\n" +
-	"\x04name\x18\x01 \x01(\tB\x1a\xe2A\x01\x02\xfaA\x13\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"?\n" +
+	"\x11CreateRiskRequest\x12*\n" +
+	"\x04risk\x18\x01 \x01(\v2\x11.bytebase.v1.RiskB\x03\xe0A\x02R\x04risk\"?\n" +
+	"\x0eGetRiskRequest\x12-\n" +
+	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
+	"\x11bytebase.com/RiskR\x04name\"\x81\x01\n" +
+	"\x11UpdateRiskRequest\x12*\n" +
+	"\x04risk\x18\x01 \x01(\v2\x11.bytebase.v1.RiskB\x03\xe0A\x02R\x04risk\x12@\n" +
+	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
+	"updateMask\"B\n" +
+	"\x11DeleteRiskRequest\x12-\n" +
+	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/RiskR\x04name\"\xd9\x02\n" +
 	"\x04Risk\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x120\n" +

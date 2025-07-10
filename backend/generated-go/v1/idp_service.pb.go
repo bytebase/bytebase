@@ -1278,9 +1278,9 @@ var File_v1_idp_service_proto protoreflect.FileDescriptor
 
 const file_v1_idp_service_proto_rawDesc = "" +
 	"\n" +
-	"\x14v1/idp_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\"K\n" +
-	"\x1aGetIdentityProviderRequest\x12-\n" +
-	"\x04name\x18\x01 \x01(\tB\x19\xe2A\x01\x02\xfaA\x12\n" +
+	"\x14v1/idp_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\"J\n" +
+	"\x1aGetIdentityProviderRequest\x12,\n" +
+	"\x04name\x18\x01 \x01(\tB\x18\xe0A\x02\xfaA\x12\n" +
 	"\x10bytebase.com/IdPR\x04name\"Z\n" +
 	"\x1cListIdentityProvidersRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
@@ -1288,17 +1288,17 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\"\x95\x01\n" +
 	"\x1dListIdentityProvidersResponse\x12L\n" +
 	"\x12identity_providers\x18\x01 \x03(\v2\x1d.bytebase.v1.IdentityProviderR\x11identityProviders\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xc8\x01\n" +
-	"\x1dCreateIdentityProviderRequest\x12P\n" +
-	"\x11identity_provider\x18\x01 \x01(\v2\x1d.bytebase.v1.IdentityProviderB\x04\xe2A\x01\x02R\x10identityProvider\x120\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xc7\x01\n" +
+	"\x1dCreateIdentityProviderRequest\x12O\n" +
+	"\x11identity_provider\x18\x01 \x01(\v2\x1d.bytebase.v1.IdentityProviderB\x03\xe0A\x02R\x10identityProvider\x120\n" +
 	"\x14identity_provider_id\x18\x02 \x01(\tR\x12identityProviderId\x12#\n" +
-	"\rvalidate_only\x18\x03 \x01(\bR\fvalidateOnly\"\xae\x01\n" +
-	"\x1dUpdateIdentityProviderRequest\x12P\n" +
-	"\x11identity_provider\x18\x01 \x01(\v2\x1d.bytebase.v1.IdentityProviderB\x04\xe2A\x01\x02R\x10identityProvider\x12;\n" +
+	"\rvalidate_only\x18\x03 \x01(\bR\fvalidateOnly\"\xad\x01\n" +
+	"\x1dUpdateIdentityProviderRequest\x12O\n" +
+	"\x11identity_provider\x18\x01 \x01(\v2\x1d.bytebase.v1.IdentityProviderB\x03\xe0A\x02R\x10identityProvider\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"N\n" +
-	"\x1dDeleteIdentityProviderRequest\x12-\n" +
-	"\x04name\x18\x01 \x01(\tB\x19\xe2A\x01\x02\xfaA\x12\n" +
+	"updateMask\"M\n" +
+	"\x1dDeleteIdentityProviderRequest\x12,\n" +
+	"\x04name\x18\x01 \x01(\tB\x18\xe0A\x02\xfaA\x12\n" +
 	"\x10bytebase.com/IdPR\x04name\"\xd4\x01\n" +
 	"\x1bTestIdentityProviderRequest\x12J\n" +
 	"\x11identity_provider\x18\x01 \x01(\v2\x1d.bytebase.v1.IdentityProviderR\x10identityProvider\x12^\n" +
@@ -1340,7 +1340,7 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\rfield_mapping\x18\a \x01(\v2\x19.bytebase.v1.FieldMappingR\ffieldMapping\x12&\n" +
 	"\x0fskip_tls_verify\x18\b \x01(\bR\rskipTlsVerify\x12;\n" +
 	"\n" +
-	"auth_style\x18\t \x01(\x0e2\x1c.bytebase.v1.OAuth2AuthStyleR\tauthStyle\"\xde\x02\n" +
+	"auth_style\x18\t \x01(\x0e2\x1c.bytebase.v1.OAuth2AuthStyleR\tauthStyle\"\xdd\x02\n" +
 	"\x1aOIDCIdentityProviderConfig\x12\x16\n" +
 	"\x06issuer\x18\x01 \x01(\tR\x06issuer\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12#\n" +
@@ -1349,8 +1349,8 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\rfield_mapping\x18\x05 \x01(\v2\x19.bytebase.v1.FieldMappingR\ffieldMapping\x12&\n" +
 	"\x0fskip_tls_verify\x18\x06 \x01(\bR\rskipTlsVerify\x12;\n" +
 	"\n" +
-	"auth_style\x18\a \x01(\x0e2\x1c.bytebase.v1.OAuth2AuthStyleR\tauthStyle\x12)\n" +
-	"\rauth_endpoint\x18\b \x01(\tB\x04\xe2A\x01\x03R\fauthEndpoint\"\xdc\x03\n" +
+	"auth_style\x18\a \x01(\x0e2\x1c.bytebase.v1.OAuth2AuthStyleR\tauthStyle\x12(\n" +
+	"\rauth_endpoint\x18\b \x01(\tB\x03\xe0A\x03R\fauthEndpoint\"\xdc\x03\n" +
 	"\x1aLDAPIdentityProviderConfig\x12\x12\n" +
 	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\x05R\x04port\x12&\n" +

@@ -689,12 +689,12 @@ var File_v1_database_catalog_service_proto protoreflect.FileDescriptor
 
 const file_v1_database_catalog_service_proto_rawDesc = "" +
 	"\n" +
-	"!v1/database_catalog_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x13v1/annotation.proto\"V\n" +
-	"\x19GetDatabaseCatalogRequest\x129\n" +
-	"\x04name\x18\x01 \x01(\tB%\xe2A\x01\x02\xfaA\x1e\n" +
-	"\x1cbytebase.com/DatabaseCatalogR\x04name\"\\\n" +
-	"\x1cUpdateDatabaseCatalogRequest\x12<\n" +
-	"\acatalog\x18\x01 \x01(\v2\x1c.bytebase.v1.DatabaseCatalogB\x04\xe2A\x01\x02R\acatalog\"\xb1\x01\n" +
+	"!v1/database_catalog_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x13v1/annotation.proto\"U\n" +
+	"\x19GetDatabaseCatalogRequest\x128\n" +
+	"\x04name\x18\x01 \x01(\tB$\xe0A\x02\xfaA\x1e\n" +
+	"\x1cbytebase.com/DatabaseCatalogR\x04name\"[\n" +
+	"\x1cUpdateDatabaseCatalogRequest\x12;\n" +
+	"\acatalog\x18\x01 \x01(\v2\x1c.bytebase.v1.DatabaseCatalogB\x03\xe0A\x02R\acatalog\"\xb1\x01\n" +
 	"\x0fDatabaseCatalog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x124\n" +
 	"\aschemas\x18\x02 \x03(\v2\x1a.bytebase.v1.SchemaCatalogR\aschemas:T\xeaAQ\n" +

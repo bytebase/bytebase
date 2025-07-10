@@ -569,39 +569,39 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\x0fResourcePackage\x12\x12\n" +
 	"\x04logo\x18\x01 \x01(\fR\x04logo\"\x14\n" +
 	"\x12SetupSampleRequest\"\x18\n" +
-	"\x16GetActuatorInfoRequest\"\x9b\x01\n" +
-	"\x19UpdateActuatorInfoRequest\x12;\n" +
-	"\bactuator\x18\x01 \x01(\v2\x19.bytebase.v1.ActuatorInfoB\x04\xe2A\x01\x02R\bactuator\x12A\n" +
-	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x04\xe2A\x01\x02R\n" +
+	"\x16GetActuatorInfoRequest\"\x99\x01\n" +
+	"\x19UpdateActuatorInfoRequest\x12:\n" +
+	"\bactuator\x18\x01 \x01(\v2\x19.bytebase.v1.ActuatorInfoB\x03\xe0A\x02R\bactuator\x12@\n" +
+	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\"\x14\n" +
-	"\x12DeleteCacheRequest\"\xfa\b\n" +
-	"\fActuatorInfo\x12\x1e\n" +
-	"\aversion\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\aversion\x12#\n" +
+	"\x12DeleteCacheRequest\"\xe5\b\n" +
+	"\fActuatorInfo\x12\x1d\n" +
+	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +
 	"\n" +
-	"git_commit\x18\x02 \x01(\tB\x04\xe2A\x01\x03R\tgitCommit\x12 \n" +
-	"\breadonly\x18\x03 \x01(\bB\x04\xe2A\x01\x03R\breadonly\x12\x18\n" +
-	"\x04saas\x18\x04 \x01(\bB\x04\xe2A\x01\x03R\x04saas\x12\x18\n" +
-	"\x04demo\x18\x05 \x01(\bB\x04\xe2A\x01\x03R\x04demo\x12\x18\n" +
-	"\x04host\x18\x06 \x01(\tB\x04\xe2A\x01\x03R\x04host\x12\x18\n" +
-	"\x04port\x18\a \x01(\tB\x04\xe2A\x01\x03R\x04port\x12'\n" +
-	"\fexternal_url\x18\b \x01(\tB\x04\xe2A\x01\x03R\vexternalUrl\x12.\n" +
-	"\x10need_admin_setup\x18\t \x01(\bB\x04\xe2A\x01\x03R\x0eneedAdminSetup\x12-\n" +
+	"git_commit\x18\x02 \x01(\tB\x03\xe0A\x03R\tgitCommit\x12\x1f\n" +
+	"\breadonly\x18\x03 \x01(\bB\x03\xe0A\x03R\breadonly\x12\x17\n" +
+	"\x04saas\x18\x04 \x01(\bB\x03\xe0A\x03R\x04saas\x12\x17\n" +
+	"\x04demo\x18\x05 \x01(\bB\x03\xe0A\x03R\x04demo\x12\x17\n" +
+	"\x04host\x18\x06 \x01(\tB\x03\xe0A\x03R\x04host\x12\x17\n" +
+	"\x04port\x18\a \x01(\tB\x03\xe0A\x03R\x04port\x12&\n" +
+	"\fexternal_url\x18\b \x01(\tB\x03\xe0A\x03R\vexternalUrl\x12-\n" +
+	"\x10need_admin_setup\x18\t \x01(\bB\x03\xe0A\x03R\x0eneedAdminSetup\x12,\n" +
 	"\x0fdisallow_signup\x18\n" +
-	" \x01(\bB\x04\xe2A\x01\x03R\x0edisallowSignup\x12J\n" +
-	"\x10last_active_time\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\x0elastActiveTime\x12%\n" +
-	"\vrequire_2fa\x18\f \x01(\bB\x04\xe2A\x01\x03R\n" +
-	"require2fa\x12'\n" +
-	"\fworkspace_id\x18\r \x01(\tB\x04\xe2A\x01\x03R\vworkspaceId\x12\x14\n" +
-	"\x05debug\x18\x0f \x01(\bR\x05debug\x125\n" +
-	"\x13unlicensed_features\x18\x13 \x03(\tB\x04\xe2A\x01\x03R\x12unlicensedFeatures\x12>\n" +
-	"\x18disallow_password_signin\x18\x14 \x01(\bB\x04\xe2A\x01\x03R\x16disallowPasswordSignin\x12`\n" +
-	"\x14password_restriction\x18\x15 \x01(\v2'.bytebase.v1.PasswordRestrictionSettingB\x04\xe2A\x01\x03R\x13passwordRestriction\x12\x1c\n" +
-	"\x06docker\x18\x16 \x01(\bB\x04\xe2A\x01\x03R\x06docker\x12G\n" +
+	" \x01(\bB\x03\xe0A\x03R\x0edisallowSignup\x12I\n" +
+	"\x10last_active_time\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\x0elastActiveTime\x12$\n" +
+	"\vrequire_2fa\x18\f \x01(\bB\x03\xe0A\x03R\n" +
+	"require2fa\x12&\n" +
+	"\fworkspace_id\x18\r \x01(\tB\x03\xe0A\x03R\vworkspaceId\x12\x14\n" +
+	"\x05debug\x18\x0f \x01(\bR\x05debug\x124\n" +
+	"\x13unlicensed_features\x18\x13 \x03(\tB\x03\xe0A\x03R\x12unlicensedFeatures\x12=\n" +
+	"\x18disallow_password_signin\x18\x14 \x01(\bB\x03\xe0A\x03R\x16disallowPasswordSignin\x12_\n" +
+	"\x14password_restriction\x18\x15 \x01(\v2'.bytebase.v1.PasswordRestrictionSettingB\x03\xe0A\x03R\x13passwordRestriction\x12\x1b\n" +
+	"\x06docker\x18\x16 \x01(\bB\x03\xe0A\x03R\x06docker\x12F\n" +
 	"\n" +
-	"user_stats\x18\x17 \x03(\v2\".bytebase.v1.ActuatorInfo.StatUserB\x04\xe2A\x01\x03R\tuserStats\x12>\n" +
-	"\x18activated_instance_count\x18\x18 \x01(\x05B\x04\xe2A\x01\x03R\x16activatedInstanceCount\x126\n" +
-	"\x14total_instance_count\x18\x19 \x01(\x05B\x04\xe2A\x01\x03R\x12totalInstanceCount\x12)\n" +
-	"\renable_sample\x18\x1a \x01(\bB\x04\xe2A\x01\x03R\fenableSample\x1a~\n" +
+	"user_stats\x18\x17 \x03(\v2\".bytebase.v1.ActuatorInfo.StatUserB\x03\xe0A\x03R\tuserStats\x12=\n" +
+	"\x18activated_instance_count\x18\x18 \x01(\x05B\x03\xe0A\x03R\x16activatedInstanceCount\x125\n" +
+	"\x14total_instance_count\x18\x19 \x01(\x05B\x03\xe0A\x03R\x12totalInstanceCount\x12(\n" +
+	"\renable_sample\x18\x1a \x01(\bB\x03\xe0A\x03R\fenableSample\x1a~\n" +
 	"\bStatUser\x122\n" +
 	"\tuser_type\x18\x01 \x01(\x0e2\x15.bytebase.v1.UserTypeR\buserType\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +

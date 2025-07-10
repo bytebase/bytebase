@@ -3048,14 +3048,14 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\"p\n" +
 	"\x14ListSettingsResponse\x120\n" +
 	"\bsettings\x18\x01 \x03(\v2\x14.bytebase.v1.SettingR\bsettings\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"F\n" +
-	"\x11GetSettingRequest\x121\n" +
-	"\x04name\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"E\n" +
+	"\x11GetSettingRequest\x120\n" +
+	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/SettingR\x04name\"D\n" +
 	"\x12GetSettingResponse\x12.\n" +
-	"\asetting\x18\x01 \x01(\v2\x14.bytebase.v1.SettingR\asetting\"\xd3\x01\n" +
-	"\x14UpdateSettingRequest\x124\n" +
-	"\asetting\x18\x01 \x01(\v2\x14.bytebase.v1.SettingB\x04\xe2A\x01\x02R\asetting\x12#\n" +
+	"\asetting\x18\x01 \x01(\v2\x14.bytebase.v1.SettingR\asetting\"\xd2\x01\n" +
+	"\x14UpdateSettingRequest\x123\n" +
+	"\asetting\x18\x01 \x01(\v2\x14.bytebase.v1.SettingB\x03\xe0A\x02R\asetting\x12#\n" +
 	"\rvalidate_only\x18\x02 \x01(\bR\fvalidateOnly\x12#\n" +
 	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\x12;\n" +
 	"\vupdate_mask\x18\x04 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
@@ -3100,37 +3100,37 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"ai_setting\x18\x10 \x01(\v2\x16.bytebase.v1.AISettingH\x00R\taiSetting\x12R\n" +
 	"\x13environment_setting\x18\x11 \x01(\v2\x1f.bytebase.v1.EnvironmentSettingH\x00R\x12environmentSetting\x12l\n" +
 	"\x1dsql_query_restriction_setting\x18\x12 \x01(\v2'.bytebase.v1.SQLQueryRestrictionSettingH\x00R\x1asqlQueryRestrictionSettingB\a\n" +
-	"\x05value\"\xce\x06\n" +
+	"\x05value\"\xc3\x06\n" +
 	"\fAppIMSetting\x125\n" +
 	"\x05slack\x18\x01 \x01(\v2\x1f.bytebase.v1.AppIMSetting.SlackR\x05slack\x128\n" +
 	"\x06feishu\x18\x02 \x01(\v2 .bytebase.v1.AppIMSetting.FeishuR\x06feishu\x125\n" +
 	"\x05wecom\x18\x03 \x01(\v2\x1f.bytebase.v1.AppIMSetting.WecomR\x05wecom\x122\n" +
 	"\x04lark\x18\x04 \x01(\v2\x1e.bytebase.v1.AppIMSetting.LarkR\x04lark\x12>\n" +
-	"\bdingtalk\x18\x05 \x01(\v2\".bytebase.v1.AppIMSetting.DingTalkR\bdingtalk\x1a=\n" +
+	"\bdingtalk\x18\x05 \x01(\v2\".bytebase.v1.AppIMSetting.DingTalkR\bdingtalk\x1a<\n" +
 	"\x05Slack\x12\x18\n" +
-	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x1a\n" +
-	"\x05token\x18\x02 \x01(\tB\x04\xe2A\x01\x04R\x05token\x1ad\n" +
+	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x19\n" +
+	"\x05token\x18\x02 \x01(\tB\x03\xe0A\x04R\x05token\x1ab\n" +
 	"\x06Feishu\x12\x18\n" +
-	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x1b\n" +
-	"\x06app_id\x18\x02 \x01(\tB\x04\xe2A\x01\x04R\x05appId\x12#\n" +
+	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x1a\n" +
+	"\x06app_id\x18\x02 \x01(\tB\x03\xe0A\x04R\x05appId\x12\"\n" +
 	"\n" +
-	"app_secret\x18\x03 \x01(\tB\x04\xe2A\x01\x04R\tappSecret\x1a\x7f\n" +
+	"app_secret\x18\x03 \x01(\tB\x03\xe0A\x04R\tappSecret\x1a|\n" +
 	"\x05Wecom\x12\x18\n" +
-	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x1d\n" +
-	"\acorp_id\x18\x02 \x01(\tB\x04\xe2A\x01\x04R\x06corpId\x12\x1f\n" +
-	"\bagent_id\x18\x03 \x01(\tB\x04\xe2A\x01\x04R\aagentId\x12\x1c\n" +
-	"\x06secret\x18\x04 \x01(\tB\x04\xe2A\x01\x04R\x06secret\x1ab\n" +
+	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x1c\n" +
+	"\acorp_id\x18\x02 \x01(\tB\x03\xe0A\x04R\x06corpId\x12\x1e\n" +
+	"\bagent_id\x18\x03 \x01(\tB\x03\xe0A\x04R\aagentId\x12\x1b\n" +
+	"\x06secret\x18\x04 \x01(\tB\x03\xe0A\x04R\x06secret\x1a`\n" +
 	"\x04Lark\x12\x18\n" +
-	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x1b\n" +
-	"\x06app_id\x18\x02 \x01(\tB\x04\xe2A\x01\x04R\x05appId\x12#\n" +
+	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x1a\n" +
+	"\x06app_id\x18\x02 \x01(\tB\x03\xe0A\x04R\x05appId\x12\"\n" +
 	"\n" +
-	"app_secret\x18\x03 \x01(\tB\x04\xe2A\x01\x04R\tappSecret\x1a\x97\x01\n" +
+	"app_secret\x18\x03 \x01(\tB\x03\xe0A\x04R\tappSecret\x1a\x94\x01\n" +
 	"\bDingTalk\x12\x18\n" +
-	"\aenabled\x18\x01 \x01(\bR\aenabled\x12!\n" +
-	"\tclient_id\x18\x02 \x01(\tB\x04\xe2A\x01\x04R\bclientId\x12)\n" +
-	"\rclient_secret\x18\x03 \x01(\tB\x04\xe2A\x01\x04R\fclientSecret\x12#\n" +
+	"\aenabled\x18\x01 \x01(\bR\aenabled\x12 \n" +
+	"\tclient_id\x18\x02 \x01(\tB\x03\xe0A\x04R\bclientId\x12(\n" +
+	"\rclient_secret\x18\x03 \x01(\tB\x03\xe0A\x04R\fclientSecret\x12\"\n" +
 	"\n" +
-	"robot_code\x18\x04 \x01(\tB\x04\xe2A\x01\x04R\trobotCode\"\xb9\x04\n" +
+	"robot_code\x18\x04 \x01(\tB\x03\xe0A\x04R\trobotCode\"\xb9\x04\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -3265,11 +3265,11 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x06CLAUDE\x10\x02\x12\n" +
 	"\n" +
 	"\x06GEMINI\x10\x03\x12\x10\n" +
-	"\fAZURE_OPENAI\x10\x04\"\xcf\x02\n" +
+	"\fAZURE_OPENAI\x10\x04\"\xce\x02\n" +
 	"\x12EnvironmentSetting\x12O\n" +
-	"\fenvironments\x18\x01 \x03(\v2+.bytebase.v1.EnvironmentSetting.EnvironmentR\fenvironments\x1a\xe7\x01\n" +
-	"\vEnvironment\x12\x18\n" +
-	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\x04name\x12\x0e\n" +
+	"\fenvironments\x18\x01 \x03(\v2+.bytebase.v1.EnvironmentSetting.EnvironmentR\fenvironments\x1a\xe6\x01\n" +
+	"\vEnvironment\x12\x17\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12I\n" +
 	"\x04tags\x18\x04 \x03(\v25.bytebase.v1.EnvironmentSetting.Environment.TagsEntryR\x04tags\x12\x14\n" +

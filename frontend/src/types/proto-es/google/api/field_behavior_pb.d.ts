@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -107,6 +107,24 @@ export enum FieldBehavior {
    * @generated from enum value: NON_EMPTY_DEFAULT = 7;
    */
   NON_EMPTY_DEFAULT = 7,
+
+  /**
+   * Denotes that the field in a resource (a message annotated with
+   * google.api.resource) is used in the resource name to uniquely identify the
+   * resource. For AIP-compliant APIs, this should only be applied to the
+   * `name` field on the resource.
+   *
+   * This behavior should not be applied to references to other resources within
+   * the message.
+   *
+   * The identifier field of resources often have different field behavior
+   * depending on the request it is embedded in (e.g. for Create methods name
+   * is optional and unused, while for Update methods it is required). Instead
+   * of method-specific annotations, only `IDENTIFIER` is required.
+   *
+   * @generated from enum value: IDENTIFIER = 8;
+   */
+  IDENTIFIER = 8,
 }
 
 /**
@@ -128,7 +146,7 @@ export declare const FieldBehaviorSchema: GenEnum<FieldBehavior>;
  *     [(google.api.field_behavior) = OUTPUT_ONLY,
  *      (google.api.field_behavior) = IMMUTABLE];
  *
- * @generated from extension: repeated google.api.FieldBehavior field_behavior = 1052;
+ * @generated from extension: repeated google.api.FieldBehavior field_behavior = 1052 [packed = false];
  */
 export declare const field_behavior: GenExtension<FieldOptions, FieldBehavior[]>;
 

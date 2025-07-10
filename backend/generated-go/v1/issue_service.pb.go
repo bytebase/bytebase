@@ -2560,17 +2560,17 @@ var File_v1_issue_service_proto protoreflect.FileDescriptor
 
 const file_v1_issue_service_proto_rawDesc = "" +
 	"\n" +
-	"\x16v1/issue_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\"X\n" +
-	"\x0fGetIssueRequest\x12/\n" +
-	"\x04name\x18\x01 \x01(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
+	"\x16v1/issue_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\"W\n" +
+	"\x0fGetIssueRequest\x12.\n" +
+	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
 	"\x12bytebase.com/IssueR\x04name\x12\x14\n" +
-	"\x05force\x18\x02 \x01(\bR\x05force\"{\n" +
-	"\x12CreateIssueRequest\x125\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x12.\n" +
-	"\x05issue\x18\x02 \x01(\v2\x12.bytebase.v1.IssueB\x04\xe2A\x01\x02R\x05issue\"\xb4\x01\n" +
-	"\x11ListIssuesRequest\x125\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x05force\x18\x02 \x01(\bR\x05force\"y\n" +
+	"\x12CreateIssueRequest\x124\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x12-\n" +
+	"\x05issue\x18\x02 \x01(\v2\x12.bytebase.v1.IssueB\x03\xe0A\x02R\x05issue\"\xb3\x01\n" +
+	"\x11ListIssuesRequest\x124\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
@@ -2579,9 +2579,9 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x05query\x18\x05 \x01(\tR\x05query\"h\n" +
 	"\x12ListIssuesResponse\x12*\n" +
 	"\x06issues\x18\x01 \x03(\v2\x12.bytebase.v1.IssueR\x06issues\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x9d\x01\n" +
-	"\x13SearchIssuesRequest\x12\x1c\n" +
-	"\x06parent\x18\x01 \x01(\tB\x04\xe2A\x01\x02R\x06parent\x12\x1b\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x9c\x01\n" +
+	"\x13SearchIssuesRequest\x12\x1b\n" +
+	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\x12\x16\n" +
@@ -2589,31 +2589,31 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x05query\x18\x05 \x01(\tR\x05query\"j\n" +
 	"\x14SearchIssuesResponse\x12*\n" +
 	"\x06issues\x18\x01 \x03(\v2\x12.bytebase.v1.IssueR\x06issues\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x9e\x01\n" +
-	"\x12UpdateIssueRequest\x12E\n" +
-	"\x05issue\x18\x01 \x01(\v2\x12.bytebase.v1.IssueB\x1b\xe2A\x01\x02\xfaA\x14\n" +
-	"\x12bytebase.com/IssueR\x05issue\x12A\n" +
-	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x04\xe2A\x01\x02R\n" +
-	"updateMask\"\xb9\x01\n" +
-	"\x1eBatchUpdateIssuesStatusRequest\x125\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x9c\x01\n" +
+	"\x12UpdateIssueRequest\x12D\n" +
+	"\x05issue\x18\x01 \x01(\v2\x12.bytebase.v1.IssueB\x1a\xe0A\x02\xfaA\x14\n" +
+	"\x12bytebase.com/IssueR\x05issue\x12@\n" +
+	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
+	"updateMask\"\xb8\x01\n" +
+	"\x1eBatchUpdateIssuesStatusRequest\x124\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x16\n" +
 	"\x06issues\x18\x02 \x03(\tR\x06issues\x120\n" +
 	"\x06status\x18\x03 \x01(\x0e2\x18.bytebase.v1.IssueStatusR\x06status\x12\x16\n" +
 	"\x06reason\x18\x04 \x01(\tR\x06reason\"!\n" +
-	"\x1fBatchUpdateIssuesStatusResponse\"`\n" +
-	"\x13ApproveIssueRequest\x12/\n" +
-	"\x04name\x18\x01 \x01(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
+	"\x1fBatchUpdateIssuesStatusResponse\"_\n" +
+	"\x13ApproveIssueRequest\x12.\n" +
+	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
+	"\x12bytebase.com/IssueR\x04name\x12\x18\n" +
+	"\acomment\x18\x02 \x01(\tR\acomment\"^\n" +
+	"\x12RejectIssueRequest\x12.\n" +
+	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
 	"\x12bytebase.com/IssueR\x04name\x12\x18\n" +
 	"\acomment\x18\x02 \x01(\tR\acomment\"_\n" +
-	"\x12RejectIssueRequest\x12/\n" +
-	"\x04name\x18\x01 \x01(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
+	"\x13RequestIssueRequest\x12.\n" +
+	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
 	"\x12bytebase.com/IssueR\x04name\x12\x18\n" +
-	"\acomment\x18\x02 \x01(\tR\acomment\"`\n" +
-	"\x13RequestIssueRequest\x12/\n" +
-	"\x04name\x18\x01 \x01(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
-	"\x12bytebase.com/IssueR\x04name\x12\x18\n" +
-	"\acomment\x18\x02 \x01(\tR\acomment\"\xea\n" +
+	"\acomment\x18\x02 \x01(\tR\acomment\"\xe7\n" +
 	"\n" +
 	"\x05Issue\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
@@ -2625,11 +2625,11 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x12approval_templates\x18\n" +
 	" \x03(\v2\x1d.bytebase.v1.ApprovalTemplateR\x11approvalTemplates\x122\n" +
 	"\x15approval_finding_done\x18\v \x01(\bR\x13approvalFindingDone\x124\n" +
-	"\x16approval_finding_error\x18\f \x01(\tR\x14approvalFindingError\x12\x1e\n" +
-	"\acreator\x18\x0e \x01(\tB\x04\xe2A\x01\x03R\acreator\x12A\n" +
-	"\vcreate_time\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
-	"createTime\x12A\n" +
-	"\vupdate_time\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
+	"\x16approval_finding_error\x18\f \x01(\tR\x14approvalFindingError\x12\x1d\n" +
+	"\acreator\x18\x0e \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
+	"\vcreate_time\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"createTime\x12@\n" +
+	"\vupdate_time\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"updateTime\x12\x12\n" +
 	"\x04plan\x18\x11 \x01(\tR\x04plan\x12\x18\n" +
 	"\arollout\x18\x12 \x01(\tR\arollout\x12>\n" +
@@ -2686,35 +2686,35 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x04role\x18\x02 \x01(\tR\x04role\".\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x10\n" +
-	"\fANY_IN_GROUP\x10\x01\"\x8b\x01\n" +
-	"\x18ListIssueCommentsRequest\x123\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
+	"\fANY_IN_GROUP\x10\x01\"\x8a\x01\n" +
+	"\x18ListIssueCommentsRequest\x122\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
 	"\x12bytebase.com/IssueR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\"\x85\x01\n" +
 	"\x19ListIssueCommentsResponse\x12@\n" +
 	"\x0eissue_comments\x18\x01 \x03(\v2\x19.bytebase.v1.IssueCommentR\rissueComments\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x90\x01\n" +
-	"\x19CreateIssueCommentRequest\x123\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8f\x01\n" +
+	"\x19CreateIssueCommentRequest\x122\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
 	"\x12bytebase.com/IssueR\x06parent\x12>\n" +
-	"\rissue_comment\x18\x02 \x01(\v2\x19.bytebase.v1.IssueCommentR\fissueComment\"\xd3\x01\n" +
-	"\x19UpdateIssueCommentRequest\x123\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
+	"\rissue_comment\x18\x02 \x01(\v2\x19.bytebase.v1.IssueCommentR\fissueComment\"\xd1\x01\n" +
+	"\x19UpdateIssueCommentRequest\x122\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
 	"\x12bytebase.com/IssueR\x06parent\x12>\n" +
-	"\rissue_comment\x18\x02 \x01(\v2\x19.bytebase.v1.IssueCommentR\fissueComment\x12A\n" +
-	"\vupdate_mask\x18\x03 \x01(\v2\x1a.google.protobuf.FieldMaskB\x04\xe2A\x01\x02R\n" +
-	"updateMask\"\xf8\x0e\n" +
+	"\rissue_comment\x18\x02 \x01(\v2\x19.bytebase.v1.IssueCommentR\fissueComment\x12@\n" +
+	"\vupdate_mask\x18\x03 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
+	"updateMask\"\xf5\x0e\n" +
 	"\fIssueComment\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\acomment\x18\x02 \x01(\tR\acomment\x12\x18\n" +
-	"\apayload\x18\x03 \x01(\tR\apayload\x12A\n" +
-	"\vcreate_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
-	"createTime\x12A\n" +
-	"\vupdate_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
-	"updateTime\x12\x1e\n" +
-	"\acreator\x18\a \x01(\tB\x04\xe2A\x01\x03R\acreator\x12@\n" +
+	"\apayload\x18\x03 \x01(\tR\apayload\x12@\n" +
+	"\vcreate_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"createTime\x12@\n" +
+	"\vupdate_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"updateTime\x12\x1d\n" +
+	"\acreator\x18\a \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
 	"\bapproval\x18\b \x01(\v2\".bytebase.v1.IssueComment.ApprovalH\x00R\bapproval\x12J\n" +
 	"\fissue_update\x18\t \x01(\v2%.bytebase.v1.IssueComment.IssueUpdateH\x00R\vissueUpdate\x12A\n" +
 	"\tstage_end\x18\n" +

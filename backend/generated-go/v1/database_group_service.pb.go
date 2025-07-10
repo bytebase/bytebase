@@ -592,9 +592,9 @@ var File_v1_database_group_service_proto protoreflect.FileDescriptor
 
 const file_v1_database_group_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1fv1/database_group_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\"\xc2\x01\n" +
-	"\x19ListDatabaseGroupsRequest\x125\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x1fv1/database_group_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\"\xc1\x01\n" +
+	"\x19ListDatabaseGroupsRequest\x124\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
@@ -602,30 +602,30 @@ const file_v1_database_group_service_proto_rawDesc = "" +
 	"\x04view\x18\x04 \x01(\x0e2\x1e.bytebase.v1.DatabaseGroupViewR\x04view\"\x89\x01\n" +
 	"\x1aListDatabaseGroupsResponse\x12C\n" +
 	"\x0fdatabase_groups\x18\x01 \x03(\v2\x1a.bytebase.v1.DatabaseGroupR\x0edatabaseGroups\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x86\x01\n" +
-	"\x17GetDatabaseGroupRequest\x127\n" +
-	"\x04name\x18\x01 \x01(\tB#\xe2A\x01\x02\xfaA\x1c\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x85\x01\n" +
+	"\x17GetDatabaseGroupRequest\x126\n" +
+	"\x04name\x18\x01 \x01(\tB\"\xe0A\x02\xfaA\x1c\n" +
 	"\x1abytebase.com/DatabaseGroupR\x04name\x122\n" +
-	"\x04view\x18\x02 \x01(\x0e2\x1e.bytebase.v1.DatabaseGroupViewR\x04view\"\xed\x01\n" +
-	"\x1aCreateDatabaseGroupRequest\x125\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x12G\n" +
-	"\x0edatabase_group\x18\x02 \x01(\v2\x1a.bytebase.v1.DatabaseGroupB\x04\xe2A\x01\x02R\rdatabaseGroup\x12*\n" +
+	"\x04view\x18\x02 \x01(\x0e2\x1e.bytebase.v1.DatabaseGroupViewR\x04view\"\xeb\x01\n" +
+	"\x1aCreateDatabaseGroupRequest\x124\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x12F\n" +
+	"\x0edatabase_group\x18\x02 \x01(\v2\x1a.bytebase.v1.DatabaseGroupB\x03\xe0A\x02R\rdatabaseGroup\x12*\n" +
 	"\x11database_group_id\x18\x03 \x01(\tR\x0fdatabaseGroupId\x12#\n" +
-	"\rvalidate_only\x18\x04 \x01(\bR\fvalidateOnly\"\xa2\x01\n" +
-	"\x1aUpdateDatabaseGroupRequest\x12G\n" +
-	"\x0edatabase_group\x18\x01 \x01(\v2\x1a.bytebase.v1.DatabaseGroupB\x04\xe2A\x01\x02R\rdatabaseGroup\x12;\n" +
+	"\rvalidate_only\x18\x04 \x01(\bR\fvalidateOnly\"\xa1\x01\n" +
+	"\x1aUpdateDatabaseGroupRequest\x12F\n" +
+	"\x0edatabase_group\x18\x01 \x01(\v2\x1a.bytebase.v1.DatabaseGroupB\x03\xe0A\x02R\rdatabaseGroup\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"U\n" +
-	"\x1aDeleteDatabaseGroupRequest\x127\n" +
-	"\x04name\x18\x01 \x01(\tB#\xe2A\x01\x02\xfaA\x1c\n" +
-	"\x1abytebase.com/DatabaseGroupR\x04name\"\x99\x03\n" +
+	"updateMask\"T\n" +
+	"\x1aDeleteDatabaseGroupRequest\x126\n" +
+	"\x04name\x18\x01 \x01(\tB\"\xe0A\x02\xfaA\x1c\n" +
+	"\x1abytebase.com/DatabaseGroupR\x04name\"\x97\x03\n" +
 	"\rDatabaseGroup\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x126\n" +
-	"\rdatabase_expr\x18\x03 \x01(\v2\x11.google.type.ExprR\fdatabaseExpr\x12V\n" +
-	"\x11matched_databases\x18\x04 \x03(\v2#.bytebase.v1.DatabaseGroup.DatabaseB\x04\xe2A\x01\x03R\x10matchedDatabases\x12Z\n" +
-	"\x13unmatched_databases\x18\x05 \x03(\v2#.bytebase.v1.DatabaseGroup.DatabaseB\x04\xe2A\x01\x03R\x12unmatchedDatabases\x1a\x1e\n" +
+	"\rdatabase_expr\x18\x03 \x01(\v2\x11.google.type.ExprR\fdatabaseExpr\x12U\n" +
+	"\x11matched_databases\x18\x04 \x03(\v2#.bytebase.v1.DatabaseGroup.DatabaseB\x03\xe0A\x03R\x10matchedDatabases\x12Y\n" +
+	"\x13unmatched_databases\x18\x05 \x03(\v2#.bytebase.v1.DatabaseGroup.DatabaseB\x03\xe0A\x03R\x12unmatchedDatabases\x1a\x1e\n" +
 	"\bDatabase\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name:R\xeaAO\n" +
 	"\x1abytebase.com/DatabaseGroup\x121projects/{project}/databaseGroups/{databaseGroup}*u\n" +

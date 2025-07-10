@@ -643,15 +643,15 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x1dv1/subscription_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x18\n" +
 	"\x16GetSubscriptionRequest\"5\n" +
 	"\x19UpdateSubscriptionRequest\x12\x18\n" +
-	"\alicense\x18\x01 \x01(\tR\alicense\"\xb8\x02\n" +
-	"\fSubscription\x12/\n" +
-	"\x04plan\x18\x01 \x01(\x0e2\x15.bytebase.v1.PlanTypeB\x04\xe2A\x01\x03R\x04plan\x12\x1a\n" +
-	"\x05seats\x18\x02 \x01(\x05B\x04\xe2A\x01\x03R\x05seats\x12\"\n" +
-	"\tinstances\x18\x03 \x01(\x05B\x04\xe2A\x01\x03R\tinstances\x12/\n" +
-	"\x10active_instances\x18\x04 \x01(\x05B\x04\xe2A\x01\x03R\x0factiveInstances\x12C\n" +
-	"\fexpires_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\vexpiresTime\x12 \n" +
-	"\btrialing\x18\x06 \x01(\bB\x04\xe2A\x01\x03R\btrialing\x12\x1f\n" +
-	"\borg_name\x18\a \x01(\tB\x04\xe2A\x01\x03R\aorgName\"\x87\x01\n" +
+	"\alicense\x18\x01 \x01(\tR\alicense\"\xb1\x02\n" +
+	"\fSubscription\x12.\n" +
+	"\x04plan\x18\x01 \x01(\x0e2\x15.bytebase.v1.PlanTypeB\x03\xe0A\x03R\x04plan\x12\x19\n" +
+	"\x05seats\x18\x02 \x01(\x05B\x03\xe0A\x03R\x05seats\x12!\n" +
+	"\tinstances\x18\x03 \x01(\x05B\x03\xe0A\x03R\tinstances\x12.\n" +
+	"\x10active_instances\x18\x04 \x01(\x05B\x03\xe0A\x03R\x0factiveInstances\x12B\n" +
+	"\fexpires_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\vexpiresTime\x12\x1f\n" +
+	"\btrialing\x18\x06 \x01(\bB\x03\xe0A\x03R\btrialing\x12\x1e\n" +
+	"\borg_name\x18\a \x01(\tB\x03\xe0A\x03R\aorgName\"\x87\x01\n" +
 	"\n" +
 	"PlanConfig\x122\n" +
 	"\x05plans\x18\x01 \x03(\v2\x1c.bytebase.v1.PlanLimitConfigR\x05plans\x12E\n" +

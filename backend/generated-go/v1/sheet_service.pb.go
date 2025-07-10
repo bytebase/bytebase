@@ -562,35 +562,35 @@ var File_v1_sheet_service_proto protoreflect.FileDescriptor
 
 const file_v1_sheet_service_proto_rawDesc = "" +
 	"\n" +
-	"\x16v1/sheet_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"{\n" +
-	"\x12CreateSheetRequest\x125\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x12.\n" +
-	"\x05sheet\x18\x02 \x01(\v2\x12.bytebase.v1.SheetB\x04\xe2A\x01\x02R\x05sheet\"\x94\x01\n" +
-	"\x18BatchCreateSheetsRequest\x125\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x12A\n" +
-	"\brequests\x18\x02 \x03(\v2\x1f.bytebase.v1.CreateSheetRequestB\x04\xe2A\x01\x02R\brequests\"G\n" +
+	"\x16v1/sheet_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"y\n" +
+	"\x12CreateSheetRequest\x124\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x12-\n" +
+	"\x05sheet\x18\x02 \x01(\v2\x12.bytebase.v1.SheetB\x03\xe0A\x02R\x05sheet\"\x92\x01\n" +
+	"\x18BatchCreateSheetsRequest\x124\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x12@\n" +
+	"\brequests\x18\x02 \x03(\v2\x1f.bytebase.v1.CreateSheetRequestB\x03\xe0A\x02R\brequests\"G\n" +
 	"\x19BatchCreateSheetsResponse\x12*\n" +
-	"\x06sheets\x18\x01 \x03(\v2\x12.bytebase.v1.SheetR\x06sheets\"T\n" +
-	"\x0fGetSheetRequest\x12/\n" +
-	"\x04name\x18\x01 \x01(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
+	"\x06sheets\x18\x01 \x03(\v2\x12.bytebase.v1.SheetR\x06sheets\"S\n" +
+	"\x0fGetSheetRequest\x12.\n" +
+	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
 	"\x12bytebase.com/SheetR\x04name\x12\x10\n" +
-	"\x03raw\x18\x02 \x01(\bR\x03raw\"\x81\x01\n" +
-	"\x12UpdateSheetRequest\x12.\n" +
-	"\x05sheet\x18\x01 \x01(\v2\x12.bytebase.v1.SheetB\x04\xe2A\x01\x02R\x05sheet\x12;\n" +
+	"\x03raw\x18\x02 \x01(\bR\x03raw\"\x80\x01\n" +
+	"\x12UpdateSheetRequest\x12-\n" +
+	"\x05sheet\x18\x01 \x01(\v2\x12.bytebase.v1.SheetB\x03\xe0A\x02R\x05sheet\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"\x8e\x03\n" +
-	"\x05Sheet\x12\x19\n" +
-	"\x04name\x18\x01 \x01(\tB\x05\xe2A\x02\x02\x05R\x04name\x12\x1a\n" +
-	"\x05title\x18\x03 \x01(\tB\x04\xe2A\x01\x02R\x05title\x12\x1e\n" +
-	"\acreator\x18\x04 \x01(\tB\x04\xe2A\x01\x03R\acreator\x12A\n" +
-	"\vcreate_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
-	"createTime\x12\x1e\n" +
-	"\acontent\x18\a \x01(\fB\x04\xe2A\x01\x02R\acontent\x12'\n" +
-	"\fcontent_size\x18\b \x01(\x03B\x04\xe2A\x01\x03R\vcontentSize\x123\n" +
-	"\apayload\x18\r \x01(\v2\x19.bytebase.v1.SheetPayloadR\apayload\x121\n" +
-	"\x06engine\x18\x0e \x01(\x0e2\x13.bytebase.v1.EngineB\x04\xe2A\x01\x02R\x06engine::\xeaA7\n" +
+	"updateMask\"\x89\x03\n" +
+	"\x05Sheet\x12\x1a\n" +
+	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12\x19\n" +
+	"\x05title\x18\x03 \x01(\tB\x03\xe0A\x02R\x05title\x12\x1d\n" +
+	"\acreator\x18\x04 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
+	"\vcreate_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"createTime\x12\x1d\n" +
+	"\acontent\x18\a \x01(\fB\x03\xe0A\x02R\acontent\x12&\n" +
+	"\fcontent_size\x18\b \x01(\x03B\x03\xe0A\x03R\vcontentSize\x123\n" +
+	"\apayload\x18\r \x01(\v2\x19.bytebase.v1.SheetPayloadR\apayload\x120\n" +
+	"\x06engine\x18\x0e \x01(\x0e2\x13.bytebase.v1.EngineB\x03\xe0A\x02R\x06engine::\xeaA7\n" +
 	"\x12bytebase.com/Sheet\x12!projects/{project}/sheets/{sheet}\"\xaa\x01\n" +
 	"\fSheetPayload\x122\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x1e.bytebase.v1.SheetPayload.TypeR\x04type\x125\n" +

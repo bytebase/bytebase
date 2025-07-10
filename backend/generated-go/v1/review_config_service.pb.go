@@ -435,22 +435,22 @@ const file_v1_review_config_service_proto_rawDesc = "" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\"\x85\x01\n" +
 	"\x19ListReviewConfigsResponse\x12@\n" +
 	"\x0ereview_configs\x18\x01 \x03(\v2\x19.bytebase.v1.ReviewConfigR\rreviewConfigs\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"a\n" +
-	"\x19CreateReviewConfigRequest\x12D\n" +
-	"\rreview_config\x18\x01 \x01(\v2\x19.bytebase.v1.ReviewConfigB\x04\xe2A\x01\x02R\freviewConfig\"\xc3\x01\n" +
-	"\x19UpdateReviewConfigRequest\x12D\n" +
-	"\rreview_config\x18\x01 \x01(\v2\x19.bytebase.v1.ReviewConfigB\x04\xe2A\x01\x02R\freviewConfig\x12;\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"`\n" +
+	"\x19CreateReviewConfigRequest\x12C\n" +
+	"\rreview_config\x18\x01 \x01(\v2\x19.bytebase.v1.ReviewConfigB\x03\xe0A\x02R\freviewConfig\"\xc2\x01\n" +
+	"\x19UpdateReviewConfigRequest\x12C\n" +
+	"\rreview_config\x18\x01 \x01(\v2\x19.bytebase.v1.ReviewConfigB\x03\xe0A\x02R\freviewConfig\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"P\n" +
-	"\x16GetReviewConfigRequest\x126\n" +
-	"\x04name\x18\x01 \x01(\tB\"\xe2A\x01\x02\xfaA\x1b\n" +
-	"\x19bytebase.com/ReviewConfigR\x04name\"S\n" +
-	"\x19DeleteReviewConfigRequest\x126\n" +
-	"\x04name\x18\x01 \x01(\tB\"\xe2A\x01\x02\xfaA\x1b\n" +
-	"\x19bytebase.com/ReviewConfigR\x04name\"\xe6\x01\n" +
-	"\fReviewConfig\x12\x18\n" +
-	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\x04name\x12\x14\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"O\n" +
+	"\x16GetReviewConfigRequest\x125\n" +
+	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x1b\n" +
+	"\x19bytebase.com/ReviewConfigR\x04name\"R\n" +
+	"\x19DeleteReviewConfigRequest\x125\n" +
+	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x1b\n" +
+	"\x19bytebase.com/ReviewConfigR\x04name\"\xe5\x01\n" +
+	"\fReviewConfig\x12\x17\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
 	"\aenabled\x18\x03 \x01(\bR\aenabled\x120\n" +
 	"\x05rules\x18\a \x03(\v2\x1a.bytebase.v1.SQLReviewRuleR\x05rules\x12\x1c\n" +

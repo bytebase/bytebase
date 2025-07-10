@@ -1604,24 +1604,24 @@ var File_v1_org_policy_service_proto protoreflect.FileDescriptor
 
 const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1bv1/org_policy_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\xab\x01\n" +
-	"\x13CreatePolicyRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe2A\x01\x02\xfaA\x15\x12\x13bytebase.com/PolicyR\x06parent\x121\n" +
-	"\x06policy\x18\x02 \x01(\v2\x13.bytebase.v1.PolicyB\x04\xe2A\x01\x02R\x06policy\x12+\n" +
-	"\x04type\x18\x03 \x01(\x0e2\x17.bytebase.v1.PolicyTypeR\x04type\"\xaa\x01\n" +
-	"\x13UpdatePolicyRequest\x121\n" +
-	"\x06policy\x18\x01 \x01(\v2\x13.bytebase.v1.PolicyB\x04\xe2A\x01\x02R\x06policy\x12;\n" +
+	"\x1bv1/org_policy_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\xa9\x01\n" +
+	"\x13CreatePolicyRequest\x123\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1b\xe0A\x02\xfaA\x15\x12\x13bytebase.com/PolicyR\x06parent\x120\n" +
+	"\x06policy\x18\x02 \x01(\v2\x13.bytebase.v1.PolicyB\x03\xe0A\x02R\x06policy\x12+\n" +
+	"\x04type\x18\x03 \x01(\x0e2\x17.bytebase.v1.PolicyTypeR\x04type\"\xa9\x01\n" +
+	"\x13UpdatePolicyRequest\x120\n" +
+	"\x06policy\x18\x01 \x01(\v2\x13.bytebase.v1.PolicyB\x03\xe0A\x02R\x06policy\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"G\n" +
-	"\x13DeletePolicyRequest\x120\n" +
-	"\x04name\x18\x01 \x01(\tB\x1c\xe2A\x01\x02\xfaA\x15\n" +
-	"\x13bytebase.com/PolicyR\x04name\"D\n" +
-	"\x10GetPolicyRequest\x120\n" +
-	"\x04name\x18\x01 \x01(\tB\x1c\xe2A\x01\x02\xfaA\x15\n" +
-	"\x13bytebase.com/PolicyR\x04name\"\xf9\x01\n" +
-	"\x13ListPoliciesRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe2A\x01\x02\xfaA\x15\x12\x13bytebase.com/PolicyR\x06parent\x12=\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"F\n" +
+	"\x13DeletePolicyRequest\x12/\n" +
+	"\x04name\x18\x01 \x01(\tB\x1b\xe0A\x02\xfaA\x15\n" +
+	"\x13bytebase.com/PolicyR\x04name\"C\n" +
+	"\x10GetPolicyRequest\x12/\n" +
+	"\x04name\x18\x01 \x01(\tB\x1b\xe0A\x02\xfaA\x15\n" +
+	"\x13bytebase.com/PolicyR\x04name\"\xf8\x01\n" +
+	"\x13ListPoliciesRequest\x123\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1b\xe0A\x02\xfaA\x15\x12\x13bytebase.com/PolicyR\x06parent\x12=\n" +
 	"\vpolicy_type\x18\x02 \x01(\x0e2\x17.bytebase.v1.PolicyTypeH\x00R\n" +
 	"policyType\x88\x01\x01\x12\x1b\n" +
 	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
@@ -1631,7 +1631,7 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\f_policy_type\"o\n" +
 	"\x14ListPoliciesResponse\x12/\n" +
 	"\bpolicies\x18\x01 \x03(\v2\x13.bytebase.v1.PolicyR\bpolicies\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xfa\t\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xf9\t\n" +
 	"\x06Policy\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12.\n" +
 	"\x13inherit_from_parent\x18\x04 \x01(\bR\x11inheritFromParent\x12+\n" +
@@ -1646,8 +1646,8 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\x18data_source_query_policy\x18\x16 \x01(\v2\".bytebase.v1.DataSourceQueryPolicyH\x00R\x15dataSourceQueryPolicy\x12M\n" +
 	"\x12export_data_policy\x18\x17 \x01(\v2\x1d.bytebase.v1.ExportDataPolicyH\x00R\x10exportDataPolicy\x12J\n" +
 	"\x11query_data_policy\x18\x18 \x01(\v2\x1c.bytebase.v1.QueryDataPolicyH\x00R\x0fqueryDataPolicy\x12\x18\n" +
-	"\aenforce\x18\r \x01(\bR\aenforce\x12J\n" +
-	"\rresource_type\x18\x0e \x01(\x0e2\x1f.bytebase.v1.PolicyResourceTypeB\x04\xe2A\x01\x03R\fresourceType:\xe5\x01\xeaA\xe1\x01\n" +
+	"\aenforce\x18\r \x01(\bR\aenforce\x12I\n" +
+	"\rresource_type\x18\x0e \x01(\x0e2\x1f.bytebase.v1.PolicyResourceTypeB\x03\xe0A\x03R\fresourceType:\xe5\x01\xeaA\xe1\x01\n" +
 	"\x13bytebase.com/Policy\x12\x11policies/{policy}\x12$projects/{project}/policies/{policy}\x12,environments/{environment}/policies/{policy}\x12&instances/{instance}/policies/{policy}\x12;instances/{instance}/databases/{database}/policies/{policy}B\b\n" +
 	"\x06policyJ\x04\b\x02\x10\x03\"d\n" +
 	"\rRolloutPolicy\x12\x1c\n" +

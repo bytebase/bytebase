@@ -632,7 +632,7 @@ var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\"\x88\r\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\"\x80\r\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
 	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x12E\n" +
@@ -644,16 +644,16 @@ const file_store_plan_proto_rawDesc = "" +
 	"\x16create_database_config\x18\x01 \x01(\v2/.bytebase.store.PlanConfig.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12g\n" +
 	"\x16change_database_config\x18\x02 \x01(\v2/.bytebase.store.PlanConfig.ChangeDatabaseConfigH\x00R\x14changeDatabaseConfig\x12[\n" +
 	"\x12export_data_config\x18\a \x01(\v2+.bytebase.store.PlanConfig.ExportDataConfigH\x00R\x10exportDataConfigB\b\n" +
-	"\x06config\x1a\xa5\x02\n" +
-	"\x14CreateDatabaseConfig\x12\x1c\n" +
-	"\x06target\x18\x01 \x01(\tB\x04\xe2A\x01\x02R\x06target\x12 \n" +
-	"\bdatabase\x18\x02 \x01(\tB\x04\xe2A\x01\x02R\bdatabase\x12\x1a\n" +
-	"\x05table\x18\x03 \x01(\tB\x04\xe2A\x01\x01R\x05table\x12)\n" +
-	"\rcharacter_set\x18\x04 \x01(\tB\x04\xe2A\x01\x01R\fcharacterSet\x12\"\n" +
-	"\tcollation\x18\x05 \x01(\tB\x04\xe2A\x01\x01R\tcollation\x12\x1e\n" +
-	"\acluster\x18\x06 \x01(\tB\x04\xe2A\x01\x01R\acluster\x12\x1a\n" +
-	"\x05owner\x18\a \x01(\tB\x04\xe2A\x01\x01R\x05owner\x12&\n" +
-	"\venvironment\x18\t \x01(\tB\x04\xe2A\x01\x01R\venvironment\x1a\xd4\x03\n" +
+	"\x06config\x1a\x9d\x02\n" +
+	"\x14CreateDatabaseConfig\x12\x1b\n" +
+	"\x06target\x18\x01 \x01(\tB\x03\xe0A\x02R\x06target\x12\x1f\n" +
+	"\bdatabase\x18\x02 \x01(\tB\x03\xe0A\x02R\bdatabase\x12\x19\n" +
+	"\x05table\x18\x03 \x01(\tB\x03\xe0A\x01R\x05table\x12(\n" +
+	"\rcharacter_set\x18\x04 \x01(\tB\x03\xe0A\x01R\fcharacterSet\x12!\n" +
+	"\tcollation\x18\x05 \x01(\tB\x03\xe0A\x01R\tcollation\x12\x1d\n" +
+	"\acluster\x18\x06 \x01(\tB\x03\xe0A\x01R\acluster\x12\x19\n" +
+	"\x05owner\x18\a \x01(\tB\x03\xe0A\x01R\x05owner\x12%\n" +
+	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x1a\xd4\x03\n" +
 	"\x14ChangeDatabaseConfig\x12\x18\n" +
 	"\atargets\x18\n" +
 	" \x03(\tR\atargets\x12\x14\n" +

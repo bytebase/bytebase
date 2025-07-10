@@ -305,12 +305,12 @@ var File_v1_instance_role_service_proto protoreflect.FileDescriptor
 
 const file_v1_instance_role_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1ev1/instance_role_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x13v1/annotation.proto\"P\n" +
-	"\x16GetInstanceRoleRequest\x126\n" +
-	"\x04name\x18\x01 \x01(\tB\"\xe2A\x01\x02\xfaA\x1b\n" +
-	"\x19bytebase.com/InstanceRoleR\x04name\"\xa8\x01\n" +
-	"\x18ListInstanceRolesRequest\x126\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
+	"\x1ev1/instance_role_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x13v1/annotation.proto\"O\n" +
+	"\x16GetInstanceRoleRequest\x125\n" +
+	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x1b\n" +
+	"\x19bytebase.com/InstanceRoleR\x04name\"\xa7\x01\n" +
+	"\x18ListInstanceRolesRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/InstanceR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
@@ -318,11 +318,11 @@ const file_v1_instance_role_service_proto_rawDesc = "" +
 	"\arefresh\x18\x04 \x01(\bR\arefresh\"t\n" +
 	"\x19ListInstanceRolesResponse\x12/\n" +
 	"\x05roles\x18\x01 \x03(\v2\x19.bytebase.v1.InstanceRoleR\x05roles\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xe2\x02\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xe1\x02\n" +
 	"\fInstanceRole\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1b\n" +
-	"\trole_name\x18\x02 \x01(\tR\broleName\x12%\n" +
-	"\bpassword\x18\x03 \x01(\tB\x04\xe2A\x01\x04H\x00R\bpassword\x88\x01\x01\x12.\n" +
+	"\trole_name\x18\x02 \x01(\tR\broleName\x12$\n" +
+	"\bpassword\x18\x03 \x01(\tB\x03\xe0A\x04H\x00R\bpassword\x88\x01\x01\x12.\n" +
 	"\x10connection_limit\x18\x04 \x01(\x05H\x01R\x0fconnectionLimit\x88\x01\x01\x12$\n" +
 	"\vvalid_until\x18\x05 \x01(\tH\x02R\n" +
 	"validUntil\x88\x01\x01\x12!\n" +

@@ -487,20 +487,20 @@ const file_v1_role_service_proto_rawDesc = "" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\"d\n" +
 	"\x11ListRolesResponse\x12'\n" +
 	"\x05roles\x18\x01 \x03(\v2\x11.bytebase.v1.RoleR\x05roles\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"_\n" +
-	"\x11CreateRoleRequest\x12+\n" +
-	"\x04role\x18\x01 \x01(\v2\x11.bytebase.v1.RoleB\x04\xe2A\x01\x02R\x04role\x12\x1d\n" +
-	"\arole_id\x18\x02 \x01(\tB\x04\xe2A\x01\x02R\x06roleId\"@\n" +
-	"\x0eGetRoleRequest\x12.\n" +
-	"\x04name\x18\x01 \x01(\tB\x1a\xe2A\x01\x02\xfaA\x13\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"]\n" +
+	"\x11CreateRoleRequest\x12*\n" +
+	"\x04role\x18\x01 \x01(\v2\x11.bytebase.v1.RoleB\x03\xe0A\x02R\x04role\x12\x1c\n" +
+	"\arole_id\x18\x02 \x01(\tB\x03\xe0A\x02R\x06roleId\"?\n" +
+	"\x0eGetRoleRequest\x12-\n" +
+	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/RoleR\x04name\"\x9c\x01\n" +
 	"\x11UpdateRoleRequest\x12%\n" +
 	"\x04role\x18\x01 \x01(\v2\x11.bytebase.v1.RoleR\x04role\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"C\n" +
-	"\x11DeleteRoleRequest\x12.\n" +
-	"\x04name\x18\x01 \x01(\tB\x1a\xe2A\x01\x02\xfaA\x13\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"B\n" +
+	"\x11DeleteRoleRequest\x12-\n" +
+	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/RoleR\x04name\"\xfe\x01\n" +
 	"\x04Role\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
