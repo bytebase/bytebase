@@ -11,7 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/action/common"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
