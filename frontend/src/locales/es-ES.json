@@ -1064,13 +1064,11 @@
     "overview": {
       "total-specs": "Especificaciones totales",
       "total-targets": "Objetivos totales",
-      "no-checks": "Sin controles",
-      "affected-resources": "Recursos afectados"
+      "no-checks": "Sin controles"
     },
     "navigator": {
-      "specifications": "Presupuesto",
+      "changes": "Cambios",
       "checks": "Cheques",
-      "review": "Revisar",
       "rollout": "Despliegue",
       "statement-empty": "La declaración está vacía"
     },
@@ -1088,9 +1086,6 @@
     "targets": {
       "title": "Objetivos",
       "no-targets-found": "No se encontraron objetivos",
-      "one-database": "1 base de datos",
-      "multiple-databases": "{count} bases de datos",
-      "database-group": "Grupo de bases de datos",
       "database-not-found": "Base de datos no encontrada",
       "type": {
         "instance": "Instancia",

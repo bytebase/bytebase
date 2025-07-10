@@ -14,7 +14,6 @@ import { useProgressivePoll } from "@/composables/useProgressivePoll";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
-  PROJECT_V1_ROUTE_PLAN_DETAIL_CHECK_RUNS,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
@@ -101,16 +100,12 @@ export const provideResourcePoller = () => {
         routeName
       )
     ) {
-      return ["plan"];
-    }
-
-    if (includes([PROJECT_V1_ROUTE_PLAN_DETAIL_CHECK_RUNS], routeName)) {
-      return ["planCheckRuns"];
+      return ["plan", "planCheckRuns"];
     }
 
     // Issue-specific pages
     if (includes([PROJECT_V1_ROUTE_ISSUE_DETAIL_V1], routeName)) {
-      return ["issue", "issueComments"];
+      return ["issue", "issueComments", "plan"];
     }
 
     // Rollout-specific pages
@@ -217,7 +212,6 @@ export const provideResourcePoller = () => {
 
   // Track if we've done initial refresh to avoid duplicate calls
   let hasInitialRefresh = false;
-  const hasCompletedInitialFetch = ref(false);
   // Track which pollers are currently running to avoid unnecessary restarts
   const pollerStates = {
     plan: false,
@@ -248,7 +242,6 @@ export const provideResourcePoller = () => {
     pollerStates.issueComments = false;
     pollerStates.rollout = false;
     hasInitialRefresh = false;
-    hasCompletedInitialFetch.value = false;
 
     // Restart active ones (this will reset the progressive intervals)
     if (activeResources.includes("plan")) {
@@ -409,7 +402,6 @@ export const provideResourcePoller = () => {
         // Small delay to avoid race conditions with component initialization
         setTimeout(async () => {
           await refreshAll();
-          hasCompletedInitialFetch.value = true;
         }, 100);
       }
     } else {
@@ -425,7 +417,6 @@ export const provideResourcePoller = () => {
       pollerStates.issue = false;
       pollerStates.issueComments = false;
       pollerStates.rollout = false;
-      hasCompletedInitialFetch.value = false;
     }
   });
 
@@ -435,7 +426,6 @@ export const provideResourcePoller = () => {
     restartActivePollers,
     isRefreshing: computed(() => isRefreshing.value),
     activeResources: resourcesToPolled,
-    hasCompletedInitialFetch: computed(() => hasCompletedInitialFetch.value),
   };
 
   provide(KEY, poller);

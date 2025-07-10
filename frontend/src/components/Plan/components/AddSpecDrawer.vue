@@ -95,8 +95,8 @@
       <template #footer>
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-x-3">
-            <NButton v-if="currentStep === 1" @click="handleCancel">
-              {{ $t("common.cancel") }}
+            <NButton quaternary v-if="currentStep === 1" @click="handleCancel">
+              {{ $t("common.close") }}
             </NButton>
             <NButton
               v-if="currentStep === 2"

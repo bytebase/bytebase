@@ -1064,13 +1064,11 @@
     "overview": {
       "total-specs": "合計スペック",
       "total-targets": "合計ターゲット",
-      "no-checks": "チェックなし",
-      "affected-resources": "影響を受けるリソース"
+      "no-checks": "チェックなし"
     },
     "navigator": {
-      "specifications": "仕様",
+      "changes": "変更点",
       "checks": "小切手",
-      "review": "レビュー",
       "rollout": "ロールアウトする",
       "statement-empty": "ステートメントが空です"
     },
@@ -1088,9 +1086,6 @@
     "targets": {
       "title": "ターゲット",
       "no-targets-found": "ターゲットが見つかりません",
-      "one-database": "1 つのデータベース",
-      "multiple-databases": "{count} データベース",
-      "database-group": "データベースグループ",
       "database-not-found": "データベースが見つかりません",
       "type": {
         "instance": "実例",

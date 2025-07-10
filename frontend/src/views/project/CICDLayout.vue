@@ -38,7 +38,7 @@
             <!-- Suffix slot -->
             <template #suffix>
               <div class="pr-4 flex flex-row justify-end items-center gap-4">
-                <CurrentSpecSelector v-if="tabKey === TabKey.Specifications" />
+                <CurrentSpecSelector v-if="tabKey === TabKey.Plan" />
                 <RefreshIndicator v-if="!isCreating" />
               </div>
             </template>
@@ -58,6 +58,7 @@
 
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
+import { CirclePlayIcon, FileDiffIcon, Layers2Icon } from "lucide-vue-next";
 import { NSpin, NTab, NTabs } from "naive-ui";
 import { computed, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -73,12 +74,12 @@ import CurrentSpecSelector from "@/components/Plan/components/CurrentSpecSelecto
 import RefreshIndicator from "@/components/Plan/components/RefreshIndicator.vue";
 import { useSpecsValidation } from "@/components/Plan/components/common";
 import { provideIssueReviewContext } from "@/components/Plan/logic/issue-review";
+import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { useBodyLayoutContext } from "@/layouts/common";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
-  PROJECT_V1_ROUTE_PLAN_DETAIL_CHECK_RUNS,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
@@ -91,15 +92,12 @@ import {
   extractPlanUID,
   extractProjectResourceName,
   extractRolloutUID,
-  isNullOrUndefined,
   issueV1Slug,
 } from "@/utils";
 
 enum TabKey {
-  Overview = "overview",
-  Specifications = "specifications",
-  Checks = "checks",
-  Review = "review",
+  Plan = "plan",
+  Issue = "issue",
   Rollout = "rollout",
 }
 
@@ -123,6 +121,7 @@ const planBaseContext = useBasePlanContext({
   plan,
   issue,
 });
+const { enabledNewLayout } = useIssueLayoutVersion();
 const isLoading = ref(true);
 
 const ready = computed(() => {
@@ -175,26 +174,18 @@ watch(
 
 const { isSpecEmpty } = useSpecsValidation(plan.value.specs);
 
-const planCheckRunCount = computed(() =>
-  Object.values(plan.value.planCheckRunStatusCount).reduce(
-    (sum, count) => sum + count,
-    0
-  )
-);
-
 const tabKey = computed(() => {
   const routeName = route.name?.toString() as string;
   if (
     [
+      PROJECT_V1_ROUTE_PLAN_DETAIL,
       PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
       PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
     ].includes(routeName)
   ) {
-    return TabKey.Specifications;
-  } else if ([PROJECT_V1_ROUTE_PLAN_DETAIL_CHECK_RUNS].includes(routeName)) {
-    return TabKey.Checks;
+    return TabKey.Plan;
   } else if (routeName === PROJECT_V1_ROUTE_ISSUE_DETAIL_V1) {
-    return TabKey.Review;
+    return TabKey.Issue;
   } else if (
     [
       PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
@@ -205,23 +196,14 @@ const tabKey = computed(() => {
     return TabKey.Rollout;
   }
   // Fallback to Overview if no specific tab is matched.
-  return TabKey.Overview;
+  return TabKey.Plan;
 });
 
 const availableTabs = computed<TabKey[]>(() => {
-  const tabs: TabKey[] = [TabKey.Overview, TabKey.Specifications];
+  const tabs: TabKey[] = [TabKey.Plan];
   if (!isCreating.value) {
-    if (
-      plan.value.specs.some(
-        (spec) =>
-          !isNullOrUndefined(spec.config) &&
-          spec.config.case === "changeDatabaseConfig"
-      )
-    ) {
-      tabs.push(TabKey.Checks);
-    }
-    if (plan.value.issue) {
-      tabs.push(TabKey.Review);
+    if (plan.value.issue && enabledNewLayout.value) {
+      tabs.unshift(TabKey.Issue);
     }
     if (plan.value.rollout) {
       tabs.push(TabKey.Rollout);
@@ -232,35 +214,37 @@ const availableTabs = computed<TabKey[]>(() => {
 
 const tabRender = (tab: TabKey) => {
   switch (tab) {
-    case TabKey.Overview:
-      return t("common.overview");
-    case TabKey.Specifications:
+    case TabKey.Issue:
       return (
-        <div>
-          {t("plan.navigator.specifications")}
-          {plan.value.specs.some(isSpecEmpty) && (
-            <span
-              class="text-error ml-0.5"
-              title={t("plan.navigator.statement-empty")}
-            >
-              *
-            </span>
-          )}
+        <div class="flex items-center gap-2">
+          <Layers2Icon size={18} />
+          <span>{t("common.overview")}</span>
         </div>
       );
-    case TabKey.Checks:
+    case TabKey.Plan:
       return (
-        <div>
-          {t("plan.navigator.checks")}
-          {planCheckRunCount.value > 0 && (
-            <span class="text-gray-500">({planCheckRunCount.value})</span>
-          )}
+        <div class="flex items-center gap-2">
+          <FileDiffIcon size={18} />
+          <span>
+            {t("plan.navigator.changes")}
+            {plan.value.specs.some(isSpecEmpty) && (
+              <span
+                class="text-error ml-0.5"
+                title={t("plan.navigator.statement-empty")}
+              >
+                *
+              </span>
+            )}
+          </span>
         </div>
       );
-    case TabKey.Review:
-      return t("plan.navigator.review");
     case TabKey.Rollout:
-      return t("plan.navigator.rollout");
+      return (
+        <div class="flex items-center gap-2">
+          <CirclePlayIcon size={18} />
+          <span>{t("plan.navigator.rollout")}</span>
+        </div>
+      );
     default:
       // Fallback to raw tab name.
       return tab;
@@ -288,27 +272,15 @@ const handleTabChange = (tab: TabKey) => {
 
   const query = route.query || {};
 
-  if (tab === TabKey.Overview) {
-    router.push({
-      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
-      params: params,
-      query: query,
-    });
-  } else if (tab === TabKey.Specifications) {
-    router.push({
-      name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
-      params: params,
-      query: query,
-    });
-  } else if (tab === TabKey.Checks) {
-    router.push({
-      name: PROJECT_V1_ROUTE_PLAN_DETAIL_CHECK_RUNS,
-      params: params,
-      query: query,
-    });
-  } else if (tab === TabKey.Review) {
+  if (tab === TabKey.Issue) {
     router.push({
       name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+      params: params,
+      query: query,
+    });
+  } else if (tab === TabKey.Plan) {
+    router.push({
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
       params: params,
       query: query,
     });

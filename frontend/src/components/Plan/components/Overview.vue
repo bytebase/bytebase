@@ -197,74 +197,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Affected Resources -->
-      <div v-if="affectedResources.length > 0">
-        <h2 class="text-lg font-semibold mb-3">
-          {{ $t("plan.overview.affected-resources") }}
-        </h2>
-        <div class="flex flex-row justify-start items-center gap-3">
-          <div
-            v-for="resource in affectedResources"
-            :key="resource.name"
-            class="flex items-center gap-1 px-3 py-2 max-w-[50%] rounded-md border"
-          >
-            <InstanceV1EngineIcon
-              v-if="resource.type === 'instance' && resource.instance"
-              :instance="resource.instance"
-              :tooltip="false"
-              size="medium"
-            />
-            <FolderIcon
-              v-else-if="resource.type === 'databaseGroup'"
-              class="w-5 h-5 text-control mt-0.5"
-            />
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2">
-                <!-- Instance info -->
-                <template v-if="resource.type === 'instance'">
-                  <span
-                    v-if="resource.instance?.environmentEntity"
-                    class="text-sm text-gray-500"
-                  >
-                    ({{ resource.instance.environmentEntity.title }})
-                  </span>
-                  <span class="truncate">
-                    {{
-                      resource.instance
-                        ? instanceV1Name(resource.instance)
-                        : resource.name
-                    }}
-                  </span>
-                  <span class="text-sm text-control-light shrink-0">
-                    {{
-                      resource.databases.length === 1
-                        ? t("plan.targets.one-database")
-                        : t("plan.targets.multiple-databases", {
-                            count: resource.databases.length,
-                          })
-                    }}
-                  </span>
-                </template>
-
-                <!-- Database Group info -->
-                <template v-else-if="resource.type === 'databaseGroup'">
-                  <span class="font-medium truncate">
-                    {{ resource.databaseGroup?.title || resource.name }}
-                  </span>
-                  <span
-                    class="text-xs px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-600"
-                  >
-                    {{ t("plan.targets.database-group") }}
-                  </span>
-                </template>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <DescriptionSection />
     </div>
   </div>
 </template>
@@ -277,15 +209,12 @@ import {
   CheckCircleIcon,
   AlertCircleIcon,
   XCircleIcon,
-  FolderIcon,
   GitBranchIcon,
   ListChecksIcon,
 } from "lucide-vue-next";
 import { NTag } from "naive-ui";
 import { computed, watch } from "vue";
-import { useI18n } from "vue-i18n";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
-import { InstanceV1EngineIcon } from "@/components/v2/Model/Instance";
 import {
   useInstanceV1Store,
   useDBGroupStore,
@@ -296,17 +225,14 @@ import { PlanCheckRun_Result_Status } from "@/types/proto-es/v1/plan_service_pb"
 import { Task_Status as TaskStatusEnum } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
-  instanceV1Name,
   extractDatabaseResourceName,
   getStageStatus,
   stringifyTaskStatus,
 } from "@/utils";
 import { usePlanContext } from "../logic/context";
 import { targetsForSpec } from "../logic/plan";
-import DescriptionSection from "./DescriptionSection.vue";
 import ApprovalFlowSection from "./IssueReviewView/Sidebar/ApprovalFlowSection/ApprovalFlowSection.vue";
 
-const { t } = useI18n();
 const { plan, issue, rollout } = usePlanContext();
 const instanceStore = useInstanceV1Store();
 const dbGroupStore = useDBGroupStore();
