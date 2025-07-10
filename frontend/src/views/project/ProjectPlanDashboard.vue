@@ -57,7 +57,7 @@ import PlanDataTable from "@/components/Plan/components/PlanDataTable";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
-import { useCurrentProjectV1, useCurrentUserV1 } from "@/store";
+import { useCurrentProjectV1 } from "@/store";
 import { usePlanStore } from "@/store/modules/v1/plan";
 import { buildPlanFindBySearchParams } from "@/store/modules/v1/plan";
 import { isValidDatabaseGroupName } from "@/types";
@@ -98,7 +98,6 @@ const defaultSearchParams = () => {
 };
 
 const router = useRouter();
-const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
   params: defaultSearchParams(),
 });
@@ -120,12 +119,7 @@ const supportedScopes = computed(() => {
 const scopeOptions = useCommonSearchScopeOptions(supportedScopes.value);
 
 const planSearchParams = computed(() => {
-  // Default scopes with type and creator.
   const defaultScopes = [
-    {
-      id: "creator",
-      value: currentUser.value.email,
-    },
     {
       id: "project",
       value: extractProjectResourceName(project.value.name),
