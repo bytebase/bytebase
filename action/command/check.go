@@ -58,6 +58,7 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 			return err
 		}
 		checkReleaseResponse, err := client.checkRelease(w.Project, &v1pb.CheckReleaseRequest{
+			Parent:  w.Project,
 			Release: &v1pb.Release{Files: releaseFiles},
 			Targets: w.Targets,
 		})

@@ -1,36 +1,83 @@
 package command
 
 import (
-	"bytes"
+	"context"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 	"time"
 
-	"google.golang.org/protobuf/encoding/protojson"
-
+	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
-//nolint:forbidigo
-var protojsonUnmarshaler = protojson.UnmarshalOptions{DiscardUnknown: true}
+// authInterceptor implements connect.Interceptor to add authentication headers
+type authInterceptor struct {
+	token string
+}
+
+func (a *authInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
+	return connect.UnaryFunc(func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+		if req.Spec().IsClient && a.token != "" {
+			req.Header().Set("Authorization", fmt.Sprintf("Bearer %s", a.token))
+		}
+		return next(ctx, req)
+	})
+}
+
+func (a *authInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
+	return connect.StreamingClientFunc(func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
+		conn := next(ctx, spec)
+		if a.token != "" {
+			conn.RequestHeader().Set("Authorization", fmt.Sprintf("Bearer %s", a.token))
+		}
+		return conn
+	})
+}
+
+func (*authInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+	return connect.StreamingHandlerFunc(func(ctx context.Context, conn connect.StreamingHandlerConn) error {
+		return next(ctx, conn)
+	})
+}
 
 // Client is the API message for Bytebase API Client.
 type Client struct {
-	client *http.Client
+	// HTTP client for Connect RPC
+	httpClient *http.Client
 
-	url   string
-	token string
+	// Base URL
+	url string
+
+	// Authentication
+	token       string
+	interceptor *authInterceptor
+
+	// Connect RPC service clients
+	authClient     v1connect.AuthServiceClient
+	releaseClient  v1connect.ReleaseServiceClient
+	planClient     v1connect.PlanServiceClient
+	rolloutClient  v1connect.RolloutServiceClient
+	actuatorClient v1connect.ActuatorServiceClient
 }
 
 // NewClient returns the new Bytebase API client.
 func NewClient(url, serviceAccount, serviceAccountSecret string) (*Client, error) {
+	httpClient := &http.Client{Timeout: 120 * time.Second}
+	authInterceptor := &authInterceptor{}
+	interceptors := connect.WithInterceptors(authInterceptor)
+
 	c := Client{
-		client: &http.Client{Timeout: 120 * time.Second},
-		url:    url,
+		httpClient:     httpClient,
+		url:            url,
+		interceptor:    authInterceptor,
+		authClient:     v1connect.NewAuthServiceClient(httpClient, url, interceptors),
+		releaseClient:  v1connect.NewReleaseServiceClient(httpClient, url, interceptors),
+		planClient:     v1connect.NewPlanServiceClient(httpClient, url, interceptors),
+		rolloutClient:  v1connect.NewRolloutServiceClient(httpClient, url, interceptors),
+		actuatorClient: v1connect.NewActuatorServiceClient(httpClient, url, interceptors),
 	}
 
 	if err := c.login(serviceAccount, serviceAccountSecret); err != nil {
@@ -40,176 +87,81 @@ func NewClient(url, serviceAccount, serviceAccountSecret string) (*Client, error
 	return &c, nil
 }
 
-func (c *Client) doRequest(req *http.Request) ([]byte, error) {
-	if c.token != "" {
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.token))
-	}
-
-	res, err := c.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if res.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("status: %d, body: %s", res.StatusCode, body)
-	}
-
-	return body, err
-}
-
 func (c *Client) login(email, password string) error {
-	r := &v1pb.LoginRequest{
+	req := connect.NewRequest(&v1pb.LoginRequest{
 		Email:    email,
 		Password: password,
-	}
-	rb, err := protojson.Marshal(r)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal")
-	}
+	})
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/auth/login", c.url), bytes.NewReader(rb))
-	if err != nil {
-		return errors.Wrapf(err, "failed to create request")
-	}
-
-	body, err := c.doRequest(req)
+	resp, err := c.authClient.Login(context.Background(), req)
 	if err != nil {
 		return errors.Wrapf(err, "failed to login")
 	}
 
-	resp := &v1pb.LoginResponse{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return errors.Wrapf(err, "failed to unmarshal")
-	}
-	c.token = resp.Token
+	c.token = resp.Msg.Token
+	c.interceptor.token = resp.Msg.Token
 
 	return nil
 }
 
-func (c *Client) checkRelease(project string, r *v1pb.CheckReleaseRequest) (*v1pb.CheckReleaseResponse, error) {
-	rb, err := protojson.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s/releases:check", c.url, project), bytes.NewReader(rb))
-	if err != nil {
-		return nil, err
-	}
-
-	body, err := c.doRequest(req)
+func (c *Client) checkRelease(_ string, r *v1pb.CheckReleaseRequest) (*v1pb.CheckReleaseResponse, error) {
+	// Note: project is already included in r.Parent
+	resp, err := c.releaseClient.CheckRelease(context.Background(), connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to check release")
 	}
-
-	resp := &v1pb.CheckReleaseResponse{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return resp.Msg, nil
 }
 
 func (c *Client) createRelease(project string, r *v1pb.Release) (*v1pb.Release, error) {
-	rb, err := protojson.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s/releases", c.url, project), bytes.NewReader(rb))
-	if err != nil {
-		return nil, err
-	}
-
-	body, err := c.doRequest(req)
+	req := connect.NewRequest(&v1pb.CreateReleaseRequest{
+		Parent:  project,
+		Release: r,
+	})
+	resp, err := c.releaseClient.CreateRelease(context.Background(), req)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create release")
 	}
-
-	resp := &v1pb.Release{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return resp.Msg, nil
 }
 
 func (c *Client) getPlan(planName string) (*v1pb.Plan, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/%s", c.url, planName), nil)
-	if err != nil {
-		return nil, err
-	}
-	body, err := c.doRequest(req)
+	resp, err := c.planClient.GetPlan(context.Background(),
+		connect.NewRequest(&v1pb.GetPlanRequest{
+			Name: planName,
+		}))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get plan")
 	}
-	resp := &v1pb.Plan{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return resp.Msg, nil
 }
 
 func (c *Client) createPlan(project string, r *v1pb.Plan) (*v1pb.Plan, error) {
-	rb, err := protojson.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s/plans", c.url, project), bytes.NewReader(rb))
-	if err != nil {
-		return nil, err
-	}
-
-	body, err := c.doRequest(req)
+	req := connect.NewRequest(&v1pb.CreatePlanRequest{
+		Parent: project,
+		Plan:   r,
+	})
+	resp, err := c.planClient.CreatePlan(context.Background(), req)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create plan")
 	}
-
-	resp := &v1pb.Plan{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return resp.Msg, nil
 }
 
 func (c *Client) runPlanChecks(r *v1pb.RunPlanChecksRequest) (*v1pb.RunPlanChecksResponse, error) {
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s:runPlanChecks", c.url, r.Name), nil)
-	if err != nil {
-		return nil, err
-	}
-	body, err := c.doRequest(req)
+	resp, err := c.planClient.RunPlanChecks(context.Background(), connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to run plan checks")
 	}
-	resp := &v1pb.RunPlanChecksResponse{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return resp.Msg, nil
 }
 
 func (c *Client) listPlanCheckRuns(r *v1pb.ListPlanCheckRunsRequest) (*v1pb.ListPlanCheckRunsResponse, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/%s/planCheckRuns", c.url, r.Parent), nil)
-	if err != nil {
-		return nil, err
-	}
-	body, err := c.doRequest(req)
+	resp, err := c.planClient.ListPlanCheckRuns(context.Background(), connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list plan check runs")
 	}
-	resp := &v1pb.ListPlanCheckRunsResponse{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return resp.Msg, nil
 }
 
 func (c *Client) listAllPlanCheckRuns(planName string) (*v1pb.ListPlanCheckRunsResponse, error) {
@@ -234,93 +186,38 @@ func (c *Client) listAllPlanCheckRuns(planName string) (*v1pb.ListPlanCheckRunsR
 }
 
 func (c *Client) getRollout(rolloutName string) (*v1pb.Rollout, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/%s", c.url, rolloutName), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	body, err := c.doRequest(req)
+	resp, err := c.rolloutClient.GetRollout(context.Background(),
+		connect.NewRequest(&v1pb.GetRolloutRequest{
+			Name: rolloutName,
+		}))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get rollout")
 	}
-
-	resp := &v1pb.Rollout{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return resp.Msg, nil
 }
 
 func (c *Client) createRollout(r *v1pb.CreateRolloutRequest) (*v1pb.Rollout, error) {
-	rb, err := protojson.Marshal(r.Rollout)
-	if err != nil {
-		return nil, err
-	}
-	a := fmt.Sprintf("%s/v1/%s/rollouts", c.url, r.Parent)
-	query := url.Values{}
-	if r.ValidateOnly {
-		query.Set("validateOnly", "true")
-	}
-	if r.Target != nil {
-		query.Set("target", *r.Target)
-	}
-	if len(query) > 0 {
-		a += "?" + query.Encode()
-	}
-
-	req, err := http.NewRequest("POST", a, bytes.NewReader(rb))
-	if err != nil {
-		return nil, err
-	}
-
-	body, err := c.doRequest(req)
+	resp, err := c.rolloutClient.CreateRollout(context.Background(), connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create rollout")
 	}
-
-	resp := &v1pb.Rollout{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return resp.Msg, nil
 }
 
 func (c *Client) batchRunTasks(r *v1pb.BatchRunTasksRequest) (*v1pb.BatchRunTasksResponse, error) {
-	rb, err := protojson.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s/tasks:batchRun", c.url, r.Parent), bytes.NewReader(rb))
-	if err != nil {
-		return nil, err
-	}
-	body, err := c.doRequest(req)
+	resp, err := c.rolloutClient.BatchRunTasks(context.Background(), connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to batch run tasks")
 	}
-	resp := &v1pb.BatchRunTasksResponse{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return resp.Msg, nil
 }
 
 func (c *Client) listTaskRuns(r *v1pb.ListTaskRunsRequest) (*v1pb.ListTaskRunsResponse, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/%s/taskRuns", c.url, r.Parent), nil)
-	if err != nil {
-		return nil, err
-	}
-	body, err := c.doRequest(req)
+	resp, err := c.rolloutClient.ListTaskRuns(context.Background(), connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list task runs")
 	}
-	resp := &v1pb.ListTaskRunsResponse{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return resp.Msg, nil
 }
 
 func (c *Client) listAllTaskRuns(rolloutName string) (*v1pb.ListTaskRunsResponse, error) {
@@ -345,37 +242,18 @@ func (c *Client) listAllTaskRuns(rolloutName string) (*v1pb.ListTaskRunsResponse
 }
 
 func (c *Client) batchCancelTaskRuns(r *v1pb.BatchCancelTaskRunsRequest) (*v1pb.BatchCancelTaskRunsResponse, error) {
-	rb, err := protojson.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s/taskRuns:batchCancel", c.url, r.Parent), bytes.NewReader(rb))
-	if err != nil {
-		return nil, err
-	}
-	body, err := c.doRequest(req)
+	resp, err := c.rolloutClient.BatchCancelTaskRuns(context.Background(), connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to batch cancel task runs")
 	}
-	resp := &v1pb.BatchCancelTaskRunsResponse{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return resp.Msg, nil
 }
 
 func (c *Client) getActuatorInfo() (*v1pb.ActuatorInfo, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/actuator/info", c.url), nil)
-	if err != nil {
-		return nil, err
-	}
-	body, err := c.doRequest(req)
+	resp, err := c.actuatorClient.GetActuatorInfo(context.Background(),
+		connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get actuator info")
 	}
-	resp := &v1pb.ActuatorInfo{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return resp.Msg, nil
 }
