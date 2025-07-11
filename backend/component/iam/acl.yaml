@@ -382,6 +382,7 @@ roles:
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
+      - bb.databases.sync
       - bb.projects.get
       - bb.projects.getIamPolicy
       - bb.sql.ddl
