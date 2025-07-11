@@ -1979,6 +1979,7 @@
     "sync-in-progress": "Sincronización en progreso",
     "create-a-worksheet": "Crear una hoja de trabajo",
     "select-a-database-to-start": "Seleccione una base de datos para comenzar",
+    "show-empty-environments": "Mostrar entornos vacíos",
     "select-encoding": "Seleccionar codificación",
     "redis-command": {
       "self": "Ejecute el comando redis en",
