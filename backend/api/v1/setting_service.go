@@ -514,7 +514,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_ENVIRONMENT:
-		if serr := validateEnvironments(request.Msg.Setting.Value.GetEnvironmentSetting().GetEnvironments()); serr != nil {
+		if serr := s.validateEnvironments(request.Msg.Setting.Value.GetEnvironmentSetting().GetEnvironments()); serr != nil {
 			return nil, serr
 		}
 
@@ -1140,7 +1140,7 @@ func validateDomains(domains []string) error {
 	return nil
 }
 
-func validateEnvironments(envs []*v1pb.EnvironmentSetting_Environment) error {
+func (s *SettingService) validateEnvironments(envs []*v1pb.EnvironmentSetting_Environment) error {
 	used := map[string]bool{}
 	for _, env := range envs {
 		if env.Title == "" {
@@ -1151,6 +1151,11 @@ func validateEnvironments(envs []*v1pb.EnvironmentSetting_Environment) error {
 		}
 		if used[env.Id] {
 			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("duplicate environment ID %v", env.Id))
+		}
+		if v, ok := env.Tags["protected"]; ok && v == "protected" {
+			if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_ENVIRONMENT_TIERS); err != nil {
+				return connect.NewError(connect.CodePermissionDenied, err)
+			}
 		}
 		used[env.Id] = true
 	}
