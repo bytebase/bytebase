@@ -8,8 +8,10 @@ import {
   useSQLEditorStore,
   useCurrentUserV1,
   useDatabaseV1Store,
+  useEnvironmentV1Store,
   type DatabaseFilter,
   buildTreeImpl,
+  mapTreeNodeByType,
 } from "@/store";
 import type {
   ComposedDatabase,
@@ -41,6 +43,7 @@ export type TreeByEnvironment = {
     loading: boolean;
     nextPageToken?: string;
   }>;
+  showMissingQueryDatabases: ComputedRef<boolean>;
 };
 
 export const useSQLEditorTreeByEnvironment = (
@@ -49,6 +52,7 @@ export const useSQLEditorTreeByEnvironment = (
   const databaseStore = useDatabaseV1Store();
   const { project } = storeToRefs(useSQLEditorStore());
   const currentUser = useCurrentUserV1();
+  const environmentStore = useEnvironmentV1Store();
 
   const databaseList = ref<ComposedDatabase[]>([]);
   const fetchDataState = ref<{
@@ -130,6 +134,13 @@ export const useSQLEditorTreeByEnvironment = (
       defaultEnvironmentFactor.factor,
     ]);
 
+    if (tree.value.length === 0) {
+      const env = environmentStore.getEnvironmentByName(environment);
+      const rootNode = mapTreeNodeByType("environment", env, undefined);
+      rootNode.children = [];
+      tree.value = [rootNode];
+    }
+
     if (hasMissingQueryDatabases.value) {
       for (const node of tree.value) {
         node.suffix = () => {
@@ -168,6 +179,7 @@ export const useSQLEditorTreeByEnvironment = (
     buildTree,
     prepareDatabases,
     fetchDatabases,
+    showMissingQueryDatabases: computed(() => showMissingQueryDatabases.value),
     fetchDataState: computed(() => fetchDataState.value),
   };
 };

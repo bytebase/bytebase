@@ -87,42 +87,54 @@
       :data-height="treeContainerHeight"
     >
       <template v-if="treeStore.state === 'READY'">
+        <NCheckbox
+          v-if="existEmptyEnvironment"
+          v-model:checked="state.showEmptyEnvironment"
+        >
+          {{ $t("sql-editor.show-empty-environments") }}
+        </NCheckbox>
         <div
           v-for="[environment, treeState] of treeByEnvironment.entries()"
           :key="environment"
           class="flex flex-col space-y-2 pt-2 pb-2"
         >
-          <NTree
-            :block-line="true"
-            :data="treeState.tree.value"
-            :show-irrelevant-nodes="false"
-            :selected-keys="selectedKeys"
-            :expand-on-click="true"
-            v-model:expanded-keys="treeState.expandedState.value.expandedKeys"
-            :node-props="nodeProps"
-            :theme-overrides="{ nodeHeight: '21px' }"
-            :render-label="renderLabel"
-          />
-          <div
-            v-if="
-              !!treeState.fetchDataState.value.nextPageToken &&
-              treeState.expandedState.value.expandedKeys.includes(environment)
-            "
-            class="w-full flex items-center justify-start pl-4"
-          >
-            <NButton
-              quaternary
-              :size="'small'"
-              :loading="treeState.fetchDataState.value.loading"
-              @click="
-                () =>
-                  treeState
-                    .fetchDatabases(filter)
-                    .then(() => treeState.buildTree())
+          <div v-if="!treeIsEmpty(treeState) || state.showEmptyEnvironment">
+            <NTree
+              :block-line="true"
+              :data="treeState.tree.value"
+              :show-irrelevant-nodes="false"
+              :selected-keys="selectedKeys"
+              :expand-on-click="true"
+              v-model:expanded-keys="treeState.expandedState.value.expandedKeys"
+              :node-props="nodeProps"
+              :theme-overrides="{ nodeHeight: '21px' }"
+              :render-label="renderLabel"
+            />
+            <div
+              v-if="
+                !!treeState.fetchDataState.value.nextPageToken &&
+                treeState.expandedState.value.expandedKeys.includes(
+                  environment
+                ) &&
+                (!treeIsEmpty(treeState) ||
+                  treeState.showMissingQueryDatabases.value)
               "
+              class="w-full flex items-center justify-start pl-4"
             >
-              {{ $t("common.load-more") }}
-            </NButton>
+              <NButton
+                quaternary
+                :size="'small'"
+                :loading="treeState.fetchDataState.value.loading"
+                @click="
+                  () =>
+                    treeState
+                      .fetchDatabases(filter)
+                      .then(() => treeState.buildTree())
+                "
+              >
+                {{ $t("common.load-more") }}
+              </NButton>
+            </div>
           </div>
         </div>
       </template>
@@ -169,6 +181,7 @@ import {
   NRadioGroup,
   NRadio,
   NTooltip,
+  NCheckbox,
   type TreeOption,
 } from "naive-ui";
 import { ref, shallowRef, nextTick, watch, h, computed, reactive } from "vue";
@@ -235,6 +248,7 @@ interface LocalState {
   selectedDatabases: Set<string>;
   params: SearchParams;
   showFeatureModal: boolean;
+  showEmptyEnvironment: boolean;
   batchQueryDataSourceType?: QueryDataSourceType;
 }
 
@@ -280,12 +294,33 @@ const state = reactive<LocalState>({
     scopes: [],
   },
   showFeatureModal: false,
+  showEmptyEnvironment: false,
   batchQueryDataSourceType: DataSourceType.READ_ONLY,
 });
 
 const treeByEnvironment = shallowRef<
   Map<string /* environment full name */, TreeByEnvironment>
 >(new Map());
+
+const existEmptyEnvironment = computed(() => {
+  for (const [_, value] of treeByEnvironment.value.entries()) {
+    if (treeIsEmpty(value)) {
+      return true;
+    }
+  }
+  return false;
+});
+
+const treeIsEmpty = (value: TreeByEnvironment) => {
+  if (value.tree.value.length === 0) {
+    return true;
+  }
+  const children = value.tree.value[0].children;
+  if (!children || children.length === 0) {
+    return true;
+  }
+  return false;
+};
 
 watch(
   () => state.batchQueryDataSourceType,
@@ -585,18 +620,20 @@ watch(
 );
 
 const prepareDatabases = async () => {
-  for (const environment of environmentList.value) {
-    if (!treeByEnvironment.value.has(environment.name)) {
-      treeByEnvironment.value.set(
-        environment.name,
-        useSQLEditorTreeByEnvironment(environment.name)
-      );
-    }
-    await treeByEnvironment.value
-      .get(environment.name)
-      ?.prepareDatabases(filter.value);
-    treeByEnvironment.value.get(environment.name)?.buildTree();
-  }
+  await Promise.all(
+    environmentList.value.map(async (environment) => {
+      if (!treeByEnvironment.value.has(environment.name)) {
+        treeByEnvironment.value.set(
+          environment.name,
+          useSQLEditorTreeByEnvironment(environment.name)
+        );
+      }
+      await treeByEnvironment.value
+        .get(environment.name)
+        ?.prepareDatabases(filter.value);
+      treeByEnvironment.value.get(environment.name)?.buildTree();
+    })
+  );
 };
 
 watch(
