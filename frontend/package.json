@@ -68,7 +68,7 @@
     "scrollparent": "^2.1.0",
     "semver": "7.7.2",
     "slug": "9.1.0",
-    "splitpanes": "4.0.4",
+    "splitpanes": "3.2.0",
     "sql-formatter": "15.6.2",
     "string-width": "^7.2.0",
     "tailwind-merge": "^3.3.0",
