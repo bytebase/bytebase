@@ -10,7 +10,7 @@ env:
 
 jobs:
   build-and-push:
-    runs-on: depot-ubuntu-24.04-arm-8
+    runs-on: depot-ubuntu-24.04-arm-4
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,7 +45,7 @@ jobs:
           tags: |
             ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
           build-args: |
-            VERSION=cloud
+            VERSION="Cloud Version"
             GIT_COMMIT=${{ env.GIT_COMMIT }}
             RELEASE=dev
       
