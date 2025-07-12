@@ -174,12 +174,12 @@ const columnList = computed(
         },
       },
       {
-        key: "createTime",
-        title: t("common.created-at"),
+        key: "updateTime",
+        title: t("common.updated-at"),
         width: 128,
         render: (rollout) =>
           humanizeTs(
-            getTimeForPbTimestampProtoEs(rollout.createTime, 0) / 1000
+            getTimeForPbTimestampProtoEs(rollout.updateTime, 0) / 1000
           ),
       },
       {

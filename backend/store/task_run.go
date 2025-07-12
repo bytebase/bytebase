@@ -212,22 +212,39 @@ func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPat
 		return nil, errors.Wrapf(err, "failed to update task run")
 	}
 
+	// Get the pipeline ID for cache invalidation
+	var pipelineID int
+	if err := tx.QueryRowContext(ctx, `
+		SELECT pipeline_id FROM task WHERE id = $1
+	`, taskRun.TaskUID).Scan(&pipelineID); err != nil {
+		return nil, errors.Wrapf(err, "failed to get pipeline ID for task %d", taskRun.TaskUID)
+	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
+
+	// Invalidate pipeline cache since UpdatedAt depends on task run updates
+	s.pipelineCache.Remove(pipelineID)
 
 	return taskRun, nil
 }
 
 func (s *Store) UpdateTaskRunStartAt(ctx context.Context, taskRunID int) error {
-	_, err := s.db.ExecContext(ctx, `
+	// Get the pipeline ID for cache invalidation
+	var pipelineID int
+	if err := s.db.QueryRowContext(ctx, `
 		UPDATE task_run
-		SET started_at = now()
+		SET started_at = now(), updated_at = now()
 		WHERE id = $1
-	`, taskRunID)
-	if err != nil {
+		RETURNING (SELECT pipeline_id FROM task WHERE task.id = task_run.task_id)
+	`, taskRunID).Scan(&pipelineID); err != nil {
 		return errors.Wrapf(err, "failed to update task run start at")
 	}
+
+	// Invalidate pipeline cache since UpdatedAt depends on task run updates
+	s.pipelineCache.Remove(pipelineID)
+
 	return nil
 }
 
@@ -509,12 +526,46 @@ func (*Store) findTaskRunImpl(ctx context.Context, txn *sql.Tx, find *TaskRunFin
 
 // BatchCancelTaskRuns updates the status of taskRuns to CANCELED.
 func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int) error {
+	if len(taskRunIDs) == 0 {
+		return nil
+	}
+
+	// Get affected pipeline IDs for cache invalidation
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT DISTINCT task.pipeline_id
+		FROM task_run
+		JOIN task ON task.id = task_run.task_id
+		WHERE task_run.id = ANY($1)
+	`, taskRunIDs)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get pipeline IDs")
+	}
+	defer rows.Close()
+
+	var pipelineIDs []int
+	for rows.Next() {
+		var pipelineID int
+		if err := rows.Scan(&pipelineID); err != nil {
+			return errors.Wrapf(err, "failed to scan pipeline ID")
+		}
+		pipelineIDs = append(pipelineIDs, pipelineID)
+	}
+	if err := rows.Err(); err != nil {
+		return errors.Wrapf(err, "failed to iterate pipeline IDs")
+	}
+
 	query := `
 		UPDATE task_run
-		SET status = $1
+		SET status = $1, updated_at = now()
 		WHERE id = ANY($2)`
 	if _, err := s.db.ExecContext(ctx, query, storepb.TaskRun_CANCELED.String(), taskRunIDs); err != nil {
 		return err
 	}
+
+	// Invalidate pipeline caches since UpdatedAt depends on task run updates
+	for _, pipelineID := range pipelineIDs {
+		s.pipelineCache.Remove(pipelineID)
+	}
+
 	return nil
 }
