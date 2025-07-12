@@ -2,9 +2,22 @@ name: Demo Daily Deploy
 on:
   schedule:
     - cron: '0 0 * * *'
+  workflow_dispatch:
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Deploy
-        run: /usr/bin/curl https://api.render.com/deploy/srv-cqq0vm8gph6c7382o34g?key=mqDZc1p_NX4
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
+          location: ${{ secrets.GKE_CLUSTER_LOCATION }}
+
+      - name: Restart deployment
+        run: kubectl rollout restart deployment/bytebase-demo --namespace website
