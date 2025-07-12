@@ -12688,6 +12688,10 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
+                updateTime:
+                    readOnly: true
+                    type: string
+                    format: date-time
                 issue:
                     readOnly: true
                     type: string

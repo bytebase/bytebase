@@ -567,6 +567,7 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		Title:      rollout.Name,
 		Stages:     nil,
 		CreateTime: timestamppb.New(rollout.CreatedAt),
+		UpdateTime: timestamppb.New(rollout.UpdatedAt),
 	}
 
 	creator, err := s.GetUserByID(ctx, rollout.CreatorUID)
