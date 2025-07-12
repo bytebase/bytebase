@@ -241,10 +241,10 @@ func (s *Store) UpdateTaskRunStartAt(ctx context.Context, taskRunID int) error {
 	`, taskRunID).Scan(&pipelineID); err != nil {
 		return errors.Wrapf(err, "failed to update task run start at")
 	}
-	
+
 	// Invalidate pipeline cache since UpdatedAt depends on task run updates
 	s.pipelineCache.Remove(pipelineID)
-	
+
 	return nil
 }
 
@@ -529,7 +529,7 @@ func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int) error
 	if len(taskRunIDs) == 0 {
 		return nil
 	}
-	
+
 	// Get affected pipeline IDs for cache invalidation
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT DISTINCT task.pipeline_id
@@ -541,7 +541,7 @@ func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int) error
 		return errors.Wrapf(err, "failed to get pipeline IDs")
 	}
 	defer rows.Close()
-	
+
 	var pipelineIDs []int
 	for rows.Next() {
 		var pipelineID int
@@ -553,7 +553,7 @@ func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int) error
 	if err := rows.Err(); err != nil {
 		return errors.Wrapf(err, "failed to iterate pipeline IDs")
 	}
-	
+
 	query := `
 		UPDATE task_run
 		SET status = $1, updated_at = now()
@@ -561,11 +561,11 @@ func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int) error
 	if _, err := s.db.ExecContext(ctx, query, storepb.TaskRun_CANCELED.String(), taskRunIDs); err != nil {
 		return err
 	}
-	
+
 	// Invalidate pipeline caches since UpdatedAt depends on task run updates
 	for _, pipelineID := range pipelineIDs {
 		s.pipelineCache.Remove(pipelineID)
 	}
-	
+
 	return nil
 }
