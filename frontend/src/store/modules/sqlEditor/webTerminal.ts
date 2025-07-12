@@ -1,5 +1,4 @@
-import { create, fromJson } from "@bufbuild/protobuf";
-import { type Duration, DurationSchema } from "@bufbuild/protobuf/wkt";
+import { create, fromJson, toJson } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import Emittery from "emittery";
 import { uniqueId } from "lodash-es";
@@ -121,9 +120,7 @@ const createStreamingQueryController = () => {
     status.value = "CONNECTED";
 
     const send = (request: AdminExecuteRequest) => {
-      const payload: any = {
-        ...request,
-      };
+      const payload = toJson(AdminExecuteRequestSchema, request);
       console.debug("will send", JSON.stringify(payload));
       ws.send(JSON.stringify(payload));
     };
@@ -146,12 +143,6 @@ const createStreamingQueryController = () => {
         try {
           const data = JSON.parse(event.data);
           if (data.result) {
-            const { results } = data.result;
-            if (Array.isArray(results)) {
-              results.forEach((result) => {
-                result.latency = parseDuration(result.latency);
-              });
-            }
             const response = fromJson(AdminExecuteResponseSchema, data.result);
             subscriber.next(response);
           } else if (data.error) {
@@ -309,19 +300,4 @@ const mapRequest = (params: SQLEditorQueryParams): AdminExecuteRequest => {
     schema: connection.schema,
   });
   return request;
-};
-
-export const parseDuration = (str: string): Duration | undefined => {
-  if (typeof str !== "string") return undefined;
-
-  const matches = str.match(/^([0-9.]+)s$/);
-  if (!matches) return undefined;
-  const totalSeconds = parseFloat(matches[0]);
-  if (Number.isNaN(totalSeconds) || totalSeconds < 0) return undefined;
-  const seconds = Math.floor(totalSeconds);
-  const nanos = (totalSeconds - seconds) * 1e9;
-  return create(DurationSchema, {
-    seconds: BigInt(seconds),
-    nanos,
-  });
 };
