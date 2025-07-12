@@ -460,6 +460,11 @@ export declare type Rollout = Message<"bytebase.v1.Rollout"> & {
   createTime?: Timestamp;
 
   /**
+   * @generated from field: google.protobuf.Timestamp update_time = 8;
+   */
+  updateTime?: Timestamp;
+
+  /**
    * The issue associated with the rollout. Could be empty.
    * Format: projects/{project}/issues/{issue}
    *

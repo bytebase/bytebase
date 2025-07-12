@@ -21,7 +21,10 @@ type PipelineMessage struct {
 	ID         int
 	CreatorUID int
 	CreatedAt  time.Time
-	IssueID    *int
+	// The UpdatedAt is a latest time of task/taskRun updates.
+	// If there are no tasks, it will be the same as CreatedAt.
+	UpdatedAt time.Time
+	IssueID   *int
 }
 
 // PipelineFind is the API message for finding pipelines.
@@ -198,6 +201,8 @@ func (*Store) createPipeline(ctx context.Context, txn *sql.Tx, create *PipelineM
 		}
 		return nil, errors.Wrapf(err, "failed to insert")
 	}
+	// Initialize UpdatedAt with CreatedAt for new pipelines
+	pipeline.UpdatedAt = pipeline.CreatedAt
 
 	return pipeline, nil
 }
@@ -237,7 +242,16 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 			pipeline.created_at,
 			pipeline.project,
 			pipeline.name,
-			issue.id
+			issue.id,
+			COALESCE(
+				(
+					SELECT MAX(task_run.updated_at)
+					FROM task
+					JOIN task_run ON task_run.task_id = task.id
+					WHERE task.pipeline_id = pipeline.id
+				),
+				pipeline.created_at
+			) AS updated_at
 		FROM pipeline
 		LEFT JOIN issue ON pipeline.id = issue.pipeline_id
 		WHERE %s
@@ -271,6 +285,7 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 			&pipeline.ProjectID,
 			&pipeline.Name,
 			&pipeline.IssueID,
+			&pipeline.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
