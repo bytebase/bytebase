@@ -46,15 +46,6 @@ func MigrateSchema(ctx context.Context, pgURL string) error {
 		return err
 	}
 
-	// Set role to database owner so that the schema owner and database owner are consistent.
-	owner, err := getCurrentDatabaseOwner(ctx, conn)
-	if err != nil {
-		return err
-	}
-	if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET ROLE '%s'", owner)); err != nil {
-		return err
-	}
-
 	latestVersion := files[len(files)-1].version.String()
 	// Initialize the latest schema.
 	if !ok {
@@ -202,23 +193,6 @@ func getLatestDatabaseVersion(ctx context.Context, conn *sql.Conn) (*semver.Vers
 		return nil, errors.Wrapf(err, "invalid version %q", v)
 	}
 	return &version, nil
-}
-
-// getCurrentDatabaseOwner gets the role of the current database.
-func getCurrentDatabaseOwner(ctx context.Context, conn *sql.Conn) (string, error) {
-	const query = `
-		SELECT
-			u.rolname
-		FROM
-			pg_roles AS u JOIN pg_database AS d ON (d.datdba = u.oid)
-		WHERE
-			d.datname = current_database();
-		`
-	var owner string
-	if err := conn.QueryRowContext(ctx, query).Scan(&owner); err != nil {
-		return "", err
-	}
-	return owner, nil
 }
 
 func backfill(ctx context.Context, conn *sql.Conn) error {
