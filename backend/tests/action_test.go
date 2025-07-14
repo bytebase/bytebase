@@ -713,7 +713,7 @@ func TestActionErrorScenarios(t *testing.T) {
 			"--target-stage", "environments/prod",
 		)
 		a.NoError(err)
-		a.Contains(result.Stderr, "no tasks created from the plan", "Expected no tasks created error in stderr")
+		a.Contains(result.Stderr, "no stages in the rollout. exiting...", "Expected no stages in the rollout error in stderr")
 
 		// Should create a release with no files
 		releases, err := ctl.releaseServiceClient.ListReleases(ctx, connect.NewRequest(&v1pb.ListReleasesRequest{
