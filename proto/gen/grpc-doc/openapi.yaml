@@ -9185,15 +9185,9 @@ components:
                     format: int32
                 hasDefault:
                     type: boolean
-                defaultNull:
-                    type: boolean
-                    description: The default value of column.
-                defaultString:
-                    type: string
                 default:
                     type: string
-                defaultExpression:
-                    type: string
+                    description: The default value of column.
                 defaultOnNull:
                     type: boolean
                     description: |-
