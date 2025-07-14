@@ -106,16 +106,11 @@ type Client struct {
 	// Base URL
 	url string
 
-	// Authentication
-	token       string
-	interceptor *authInterceptor
-
 	// Credentials for re-authentication
 	serviceAccount       string
 	serviceAccountSecret string
 
 	// Connect RPC service clients
-	authClient     v1connect.AuthServiceClient
 	releaseClient  v1connect.ReleaseServiceClient
 	planClient     v1connect.PlanServiceClient
 	rolloutClient  v1connect.RolloutServiceClient
@@ -174,11 +169,9 @@ func NewClientWithOptions(url, serviceAccount, serviceAccountSecret string, opts
 	c := Client{
 		httpClient:           httpClient,
 		url:                  url,
-		interceptor:          authInterceptor,
 		serviceAccount:       serviceAccount,
 		serviceAccountSecret: serviceAccountSecret,
 		options:              opts,
-		authClient:           v1connect.NewAuthServiceClient(httpClient, url, interceptors),
 		releaseClient:        v1connect.NewReleaseServiceClient(httpClient, url, interceptors),
 		planClient:           v1connect.NewPlanServiceClient(httpClient, url, interceptors),
 		rolloutClient:        v1connect.NewRolloutServiceClient(httpClient, url, interceptors),
