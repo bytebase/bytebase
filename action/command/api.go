@@ -10,6 +10,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/singleflight"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -109,6 +110,10 @@ type Client struct {
 	token       string
 	interceptor *authInterceptor
 
+	// Credentials for re-authentication
+	serviceAccount       string
+	serviceAccountSecret string
+
 	// Connect RPC service clients
 	authClient     v1connect.AuthServiceClient
 	releaseClient  v1connect.ReleaseServiceClient
@@ -127,12 +132,11 @@ func NewClient(url, serviceAccount, serviceAccountSecret string) (*Client, error
 
 // NewClientWithOptions returns a new Bytebase API client with custom options.
 func NewClientWithOptions(url, serviceAccount, serviceAccountSecret string, opts ClientOptions) (*Client, error) {
-	// Apply defaults for zero values
-	if opts.PageSize == 0 {
+	if opts.PageSize <= 0 {
 		opts.PageSize = 100
 	}
 	if opts.PageSize > 1000 {
-		opts.PageSize = 1000 // Server-side limit
+		opts.PageSize = 1000
 	}
 
 	// Use provided HTTP client or create a new one
@@ -147,38 +151,64 @@ func NewClientWithOptions(url, serviceAccount, serviceAccountSecret string, opts
 
 	authInterceptor := &authInterceptor{}
 
-	// Build interceptor chain
-	interceptorList := []connect.Interceptor{authInterceptor}
+	// Create token refresher function
+	tokenRefresher := getTokenRefresher(httpClient, serviceAccount, serviceAccountSecret, url)
 
-	// Add retry interceptor if configured
+	// Create unified retry interceptor
+	var retryInterceptor *retryInterceptor
 	if opts.RetryConfig != nil && opts.RetryConfig.MaxAttempts > 1 {
-		retryInterceptor := &retryInterceptor{
-			maxAttempts:     opts.RetryConfig.MaxAttempts,
-			initialInterval: opts.RetryConfig.InitialInterval,
-			maxInterval:     opts.RetryConfig.MaxInterval,
-		}
-		interceptorList = append(interceptorList, retryInterceptor)
+		retryInterceptor = newRetryInterceptor(
+			tokenRefresher,
+			authInterceptor,
+			opts.RetryConfig.MaxAttempts,
+			opts.RetryConfig.InitialInterval,
+			opts.RetryConfig.MaxInterval,
+		)
+	} else {
+		// Even without retry config, we want auth retry capability
+		retryInterceptor = newRetryInterceptor(tokenRefresher, authInterceptor, 2, 1*time.Second, 1*time.Second)
 	}
 
-	interceptors := connect.WithInterceptors(interceptorList...)
+	interceptors := connect.WithInterceptors(authInterceptor, retryInterceptor)
 
 	c := Client{
-		httpClient:     httpClient,
-		url:            url,
-		interceptor:    authInterceptor,
-		options:        opts,
-		authClient:     v1connect.NewAuthServiceClient(httpClient, url, interceptors),
-		releaseClient:  v1connect.NewReleaseServiceClient(httpClient, url, interceptors),
-		planClient:     v1connect.NewPlanServiceClient(httpClient, url, interceptors),
-		rolloutClient:  v1connect.NewRolloutServiceClient(httpClient, url, interceptors),
-		actuatorClient: v1connect.NewActuatorServiceClient(httpClient, url, interceptors),
+		httpClient:           httpClient,
+		url:                  url,
+		interceptor:          authInterceptor,
+		serviceAccount:       serviceAccount,
+		serviceAccountSecret: serviceAccountSecret,
+		options:              opts,
+		authClient:           v1connect.NewAuthServiceClient(httpClient, url, interceptors),
+		releaseClient:        v1connect.NewReleaseServiceClient(httpClient, url, interceptors),
+		planClient:           v1connect.NewPlanServiceClient(httpClient, url, interceptors),
+		rolloutClient:        v1connect.NewRolloutServiceClient(httpClient, url, interceptors),
+		actuatorClient:       v1connect.NewActuatorServiceClient(httpClient, url, interceptors),
 	}
 
+	// Login first
 	if err := c.login(context.Background(), serviceAccount, serviceAccountSecret); err != nil {
 		return nil, errors.Wrapf(err, "failed to login")
 	}
 
 	return &c, nil
+}
+
+func getTokenRefresher(httpClient connect.HTTPClient, email, password, url string) func(ctx context.Context) (string, error) {
+	// Create a separate auth client without interceptors to avoid circular dependencies
+	authClient := v1connect.NewAuthServiceClient(httpClient, url)
+	return func(ctx context.Context) (string, error) {
+		req := connect.NewRequest(&v1pb.LoginRequest{
+			Email:    email,
+			Password: password,
+		})
+
+		resp, err := authClient.Login(ctx, req)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to login")
+		}
+
+		return resp.Msg.Token, nil
+	}
 }
 
 func (c *Client) login(ctx context.Context, email, password string) error {
@@ -373,19 +403,40 @@ func hasErrorMessage(err error, msg string) bool {
 	return strings.Contains(err.Error(), msg)
 }
 
-// retryInterceptor implements retry logic for transient errors
+// retryInterceptor implements retry logic for both transient and authentication errors
 type retryInterceptor struct {
+	// Retry configuration
 	maxAttempts     int
 	initialInterval time.Duration
 	maxInterval     time.Duration
+
+	// Token refresher function
+	tokenRefresher func(ctx context.Context) (string, error)
+
+	// Auth interceptor reference for token updates
+	authInt *authInterceptor
+
+	// Auth retry synchronization using singleflight pattern
+	refreshGroup singleflight.Group
 }
 
-func (r *retryInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
+func newRetryInterceptor(tokenRefresher func(ctx context.Context) (string, error), authInt *authInterceptor, maxAttempts int, initialInterval, maxInterval time.Duration) *retryInterceptor {
+	return &retryInterceptor{
+		tokenRefresher:  tokenRefresher,
+		authInt:         authInt,
+		maxAttempts:     maxAttempts,
+		initialInterval: initialInterval,
+		maxInterval:     maxInterval,
+	}
+}
+
+func (u *retryInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 		var lastErr error
-		interval := r.initialInterval
+		interval := u.initialInterval
+		authRetried := false
 
-		for attempt := 0; attempt < r.maxAttempts; attempt++ {
+		for attempt := 0; attempt < u.maxAttempts; attempt++ {
 			if attempt > 0 {
 				// Check if context is cancelled before retrying
 				if ctx.Err() != nil {
@@ -403,8 +454,8 @@ func (r *retryInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 
 				// Exponential backoff
 				interval *= 2
-				if interval > r.maxInterval {
-					interval = r.maxInterval
+				if interval > u.maxInterval {
+					interval = u.maxInterval
 				}
 			}
 
@@ -414,8 +465,19 @@ func (r *retryInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 			}
 
 			lastErr = err
+			code := connect.CodeOf(err)
 
-			// Check if error is retryable
+			// Handle authentication errors
+			if code == connect.CodeUnauthenticated && !authRetried && u.tokenRefresher != nil {
+				if refreshErr := u.reauthenticateOnce(ctx); refreshErr == nil {
+					authRetried = true
+					// Don't count auth retry against attempt limit
+					attempt--
+					continue
+				}
+			}
+
+			// Check if error is retryable (network errors)
 			if !isRetryableError(err) {
 				return nil, err
 			}
@@ -432,6 +494,30 @@ func (*retryInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) c
 
 func (*retryInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
 	return next
+}
+
+func (u *retryInterceptor) reauthenticateOnce(ctx context.Context) error {
+	// Use singleflight to ensure only one refresh happens at a time
+	// Multiple concurrent requests will wait for the same refresh operation
+	_, err, _ := u.refreshGroup.Do("refresh", func() (any, error) {
+		return nil, u.doReauthenticate(ctx)
+	})
+	return err
+}
+
+func (u *retryInterceptor) doReauthenticate(ctx context.Context) error {
+	if u.tokenRefresher == nil {
+		return errors.New("no token refresher available")
+	}
+
+	token, err := u.tokenRefresher(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to refresh token")
+	}
+
+	// Update the auth interceptor with the new token
+	u.authInt.setToken(token)
+	return nil
 }
 
 // isRetryableError determines if an error should trigger a retry
