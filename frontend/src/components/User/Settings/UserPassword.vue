@@ -23,7 +23,12 @@
             v-if="showLearnMore"
             :external="false"
             class="!text-sm"
-            url="/setting/general#account"
+            :url="
+              router.resolve({
+                name: SETTING_ROUTE_WORKSPACE_GENERAL,
+                hash: '#account',
+              }).fullPath
+            "
           />
         </span>
       </div>
@@ -100,8 +105,10 @@ import {
 import { NInput, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
+import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { type PasswordRestrictionSetting } from "@/types/proto-es/v1/setting_service_pb";
 
 const props = withDefaults(
@@ -123,6 +130,7 @@ defineEmits<{
 
 const showPassword = ref<boolean>(false);
 const { t } = useI18n();
+const router = useRouter();
 
 const passwordCheck = computed(() => {
   const check: { text: string; matched: boolean }[] = [
