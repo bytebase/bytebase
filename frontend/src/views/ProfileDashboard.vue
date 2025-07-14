@@ -87,7 +87,9 @@
               </div>
               <router-link
                 v-if="!hasFeature(PlanFeature.FEATURE_IAM)"
-                :to="'/setting/subscription'"
+                :to="{
+                  name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
+                }"
                 class="normal-link"
               >
                 {{ $t("settings.profile.subscription") }}
@@ -238,7 +240,10 @@ import UserAvatar from "@/components/User/UserAvatar.vue";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
-import { SETTING_ROUTE_PROFILE_TWO_FACTOR } from "@/router/dashboard/workspaceSetting";
+import {
+  SETTING_ROUTE_PROFILE_TWO_FACTOR,
+  SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
+} from "@/router/dashboard/workspaceSetting";
 import {
   featureToRef,
   hasFeature,
