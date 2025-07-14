@@ -6,7 +6,7 @@ import type { ColumnDefaultValue } from "@/types/v1/schemaEditor";
 
 type DefaultValue = Pick<
   ColumnMetadata,
-  "hasDefault" | "defaultNull" | "defaultString" | "defaultExpression"
+  "hasDefault" | "defaultNull" | "default" | "defaultExpression"
 >;
 
 export interface DefaultValueOption {
@@ -19,7 +19,7 @@ export const NO_DEFAULT_OPTION: DefaultValueOption = {
   value: {
     hasDefault: false,
     defaultNull: false,
-    defaultString: "",
+    default: "",
     defaultExpression: "",
   },
 };
@@ -29,7 +29,7 @@ export const DEFAULT_NULL_OPTION: DefaultValueOption = {
   value: {
     hasDefault: true,
     defaultNull: true,
-    defaultString: "",
+    default: "",
     defaultExpression: "",
   },
 };
@@ -39,7 +39,7 @@ export const EMPTY_STRING_OPTION: DefaultValueOption = {
   value: {
     hasDefault: true,
     defaultNull: false,
-    defaultString: "",
+    default: "",
     defaultExpression: "",
   },
 };
@@ -49,7 +49,7 @@ export const DEFAULT_STRING_OPTION: DefaultValueOption = {
   value: {
     hasDefault: true,
     defaultNull: false,
-    defaultString: "",
+    default: "",
     defaultExpression: "",
   },
 };
@@ -59,7 +59,7 @@ export const DEFAULT_EXPRESSION_OPTION: DefaultValueOption = {
   value: {
     hasDefault: true,
     defaultNull: false,
-    defaultString: "",
+    default: "",
     defaultExpression: "",
   },
 };
@@ -69,7 +69,7 @@ const INT_ZERO_OPTION: DefaultValueOption = {
   value: {
     hasDefault: true,
     defaultNull: false,
-    defaultString: "",
+    default: "",
     defaultExpression: "0",
   },
 };
@@ -79,7 +79,7 @@ const BOOLEAN_TRUE_OPTION: DefaultValueOption = {
   value: {
     hasDefault: true,
     defaultNull: false,
-    defaultString: "",
+    default: "",
     defaultExpression: "true",
   },
 };
@@ -89,7 +89,7 @@ const BOOLEAN_FALSE_OPTION: DefaultValueOption = {
   value: {
     hasDefault: true,
     defaultNull: false,
-    defaultString: "",
+    default: "",
     defaultExpression: "false",
   },
 };
@@ -184,7 +184,7 @@ export const getColumnDefaultDisplayString = (column: ColumnDefaultValue) => {
   if (!column.hasDefault || column.defaultNull) {
     return undefined;
   }
-  return column.defaultString || column.defaultExpression || "";
+  return column.default || column.defaultExpression || "";
 };
 
 export const getColumnDefaultValuePlaceholder = (
@@ -196,8 +196,8 @@ export const getColumnDefaultValuePlaceholder = (
   if (column.defaultNull) {
     return "Null";
   }
-  if (column.defaultString !== undefined) {
-    return column.defaultString || "Empty string";
+  if (column.default !== undefined) {
+    return column.default || "Empty string";
   }
   if (column.defaultExpression !== undefined) {
     return column.defaultExpression || "Empty expression";
