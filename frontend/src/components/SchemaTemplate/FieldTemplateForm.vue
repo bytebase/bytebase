@@ -500,9 +500,9 @@ const handleColumnDefaultInput = (value: string) => {
   // If column is text type or has default string, we will treat user's input as string.
   if (
     isTextOfColumnType(state.engine, column.type) ||
-    column.defaultString !== undefined
+    column.default !== undefined
   ) {
-    column.defaultString = value;
+    column.default = value;
     column.defaultExpression = "";
     return;
   }
@@ -525,7 +525,7 @@ const handleColumnDefaultSelect = (key: string) => {
 
   state.column.hasDefault = defaultValue.hasDefault;
   state.column.defaultNull = defaultValue.defaultNull;
-  state.column.defaultString = defaultValue.defaultString;
+  state.column.default = defaultValue.default;
   state.column.defaultExpression = defaultValue.defaultExpression;
   if (state.column.hasDefault && state.column.defaultNull) {
     state.column.nullable = true;
@@ -540,7 +540,7 @@ const handleSelectedColumnDefaultValueExpressionChange = (
   }
   state.column.hasDefault = true;
   state.column.defaultNull = false;
-  state.column.defaultString = "";
+  state.column.default = "";
   state.column.defaultExpression = expression;
   state.showColumnDefaultValueExpressionModal = false;
 };

@@ -1406,9 +1406,15 @@ export declare type ColumnMetadata = Message<"bytebase.v1.ColumnMetadata"> & {
   defaultNull: boolean;
 
   /**
-   * @generated from field: string default_string = 5;
+   * @generated from field: string default_string = 5 [deprecated = true];
+   * @deprecated
    */
   defaultString: string;
+
+  /**
+   * @generated from field: string default = 23;
+   */
+  default: string;
 
   /**
    * @generated from field: string default_expression = 6;
