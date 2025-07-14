@@ -782,11 +782,10 @@ message ColumnMetadata {
 
   bool has_default = 3;
 
+  reserved 4, 5, 6; // Removed deprecated default_null, default_string, default_expression
+
   // The default value of column.
-  bool default_null = 4;
-  string default_string = 5 [deprecated = true];
   string default = 23;
-  string default_expression = 6;
 
   // Oracle specific metadata.
   // The default_on_null is the default on null of a column.

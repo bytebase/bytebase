@@ -224,7 +224,7 @@
 
   <ColumnDefaultValueExpressionModal
     v-if="state.showColumnDefaultValueExpressionModal"
-    :expression="state.column!.defaultExpression"
+    :expression="state.column!.default"
     @close="state.showColumnDefaultValueExpressionModal = false"
     @update:expression="handleSelectedColumnDefaultValueExpressionChange"
   />
@@ -251,7 +251,6 @@ import {
   getColumnDefaultValuePlaceholder,
   getDefaultValueByKey,
   getColumnDefaultValueOptions,
-  isTextOfColumnType,
 } from "@/components/SchemaEditorLite";
 import { ColumnDefaultValueExpressionModal } from "@/components/SchemaEditorLite";
 import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
@@ -496,18 +495,7 @@ const handleColumnDefaultInput = (value: string) => {
   if (!column) return;
 
   column.hasDefault = true;
-  column.defaultNull = false;
-  // If column is text type or has default string, we will treat user's input as string.
-  if (
-    isTextOfColumnType(state.engine, column.type) ||
-    column.default !== undefined
-  ) {
-    column.default = value;
-    column.defaultExpression = "";
-    return;
-  }
-  // Otherwise we will treat user's input as expression.
-  column.defaultExpression = value;
+  column.default = value;
 };
 const handleColumnDefaultSelect = (key: string) => {
   const { column } = state;
@@ -524,10 +512,8 @@ const handleColumnDefaultSelect = (key: string) => {
   }
 
   state.column.hasDefault = defaultValue.hasDefault;
-  state.column.defaultNull = defaultValue.defaultNull;
   state.column.default = defaultValue.default;
-  state.column.defaultExpression = defaultValue.defaultExpression;
-  if (state.column.hasDefault && state.column.defaultNull) {
+  if (state.column.hasDefault && state.column.default === "NULL") {
     state.column.nullable = true;
   }
 };
@@ -539,9 +525,7 @@ const handleSelectedColumnDefaultValueExpressionChange = (
     return;
   }
   state.column.hasDefault = true;
-  state.column.defaultNull = false;
-  state.column.default = "";
-  state.column.defaultExpression = expression;
+  state.column.default = expression;
   state.showColumnDefaultValueExpressionModal = false;
 };
 
