@@ -2,9 +2,7 @@ type Status = "normal" | "created" | "dropped";
 
 export interface ColumnDefaultValue {
   hasDefault: boolean;
-  defaultNull?: boolean;
   default?: string;
-  defaultExpression?: string;
 }
 export interface Column extends ColumnDefaultValue {
   id: string;

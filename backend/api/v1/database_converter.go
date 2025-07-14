@@ -462,12 +462,13 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 		DefaultConstraintName: column.DefaultConstraintName,
 	}
 	if metadata.HasDefault {
-		metadata.DefaultNull = column.DefaultNull
-		if column.Default != "" {
+		// Consolidate default values into single field
+		if column.DefaultNull {
+			metadata.Default = "NULL"
+		} else if column.DefaultExpression != "" {
+			metadata.Default = column.DefaultExpression
+		} else if column.Default != "" {
 			metadata.Default = column.Default
-		}
-		if column.DefaultExpression != "" {
-			metadata.DefaultExpression = column.DefaultExpression
 		}
 	}
 	switch column.IdentityGeneration {
@@ -1060,16 +1061,7 @@ func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadat
 		IdentitySeed:          column.IdentitySeed,
 		IdentityIncrement:     column.IdentityIncrement,
 		DefaultConstraintName: column.DefaultConstraintName,
-	}
-
-	if column.HasDefault {
-		metadata.DefaultNull = column.DefaultNull
-		if column.Default != "" {
-			metadata.Default = column.Default
-		}
-		if column.DefaultExpression != "" {
-			metadata.DefaultExpression = column.DefaultExpression
-		}
+		Default:               column.Default,
 	}
 
 	switch column.IdentityGeneration {
