@@ -2174,10 +2174,7 @@ ColumnMetadata is the metadata for columns.
 | name | [string](#string) |  | The name is the name of a column. |
 | position | [int32](#int32) |  | The position is the position in columns. |
 | has_default | [bool](#bool) |  |  |
-| default_null | [bool](#bool) |  | The default value of column. |
-| default_string | [string](#string) |  | **Deprecated.**  |
-| default | [string](#string) |  |  |
-| default_expression | [string](#string) |  |  |
+| default | [string](#string) |  | The default value of column. |
 | default_on_null | [bool](#bool) |  | Oracle specific metadata. The default_on_null is the default on null of a column. |
 | on_update | [string](#string) |  | The on_update is the on update action of a column. For MySQL like databases, it&#39;s only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value. |
 | nullable | [bool](#bool) |  | The nullable is the nullable of a column. |

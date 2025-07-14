@@ -106,16 +106,10 @@ const focused = ref(false);
 const inputRef = ref<InputInst>();
 
 const dropdownValue = computed(() => {
-  const {
-    hasDefault,
-    defaultNull,
-    default: defaultString,
-    defaultExpression,
-  } = props.column;
+  const { hasDefault, default: defaultString } = props.column;
   if (!hasDefault) return "no-default";
-  if (defaultNull) return "null";
+  if (defaultString === "NULL") return "null";
   if (typeof defaultString === "string") return "string";
-  if (typeof defaultExpression === "string") return "expression";
   return null;
 });
 
@@ -245,10 +239,7 @@ const handleSelect = (value: string) => {
   const { defaults } = option;
   emit("select", defaults);
 
-  if (
-    typeof defaults.value.defaultExpression === "string" ||
-    typeof defaults.value.default === "string"
-  ) {
+  if (typeof defaults.value.default === "string") {
     requestAnimationFrame(() => {
       inputRef.value?.focus();
     });
@@ -271,9 +262,7 @@ const handleSimpleInput = (value: string) => {
     key: value.trim() ? "string" : "no-default",
     value: {
       hasDefault: !!value.trim(),
-      defaultNull: false,
       default: value.trim(), // Both PostgreSQL and MySQL use default for now
-      defaultExpression: "",
     },
   };
   emit("select", defaultOption);
@@ -300,7 +289,7 @@ const inputStyle = computed(() => {
 watch(
   () => props.column.nullable,
   (nullable) => {
-    if (!nullable && props.column.defaultNull) {
+    if (!nullable && props.column.default === "NULL") {
       handleSelect(NO_DEFAULT_OPTION.key);
     }
   }

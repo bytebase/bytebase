@@ -4,10 +4,7 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { ColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
 import type { ColumnDefaultValue } from "@/types/v1/schemaEditor";
 
-type DefaultValue = Pick<
-  ColumnMetadata,
-  "hasDefault" | "defaultNull" | "default" | "defaultExpression"
->;
+type DefaultValue = Pick<ColumnMetadata, "hasDefault" | "default">;
 
 export interface DefaultValueOption {
   key: string;
@@ -18,9 +15,7 @@ export const NO_DEFAULT_OPTION: DefaultValueOption = {
   key: "no-default",
   value: {
     hasDefault: false,
-    defaultNull: false,
     default: "",
-    defaultExpression: "",
   },
 };
 
@@ -28,9 +23,7 @@ export const DEFAULT_NULL_OPTION: DefaultValueOption = {
   key: "null",
   value: {
     hasDefault: true,
-    defaultNull: true,
-    default: "",
-    defaultExpression: "",
+    default: "NULL",
   },
 };
 
@@ -38,9 +31,7 @@ export const EMPTY_STRING_OPTION: DefaultValueOption = {
   key: "empty-string",
   value: {
     hasDefault: true,
-    defaultNull: false,
     default: "",
-    defaultExpression: "",
   },
 };
 
@@ -48,9 +39,7 @@ export const DEFAULT_STRING_OPTION: DefaultValueOption = {
   key: "string",
   value: {
     hasDefault: true,
-    defaultNull: false,
     default: "",
-    defaultExpression: "",
   },
 };
 
@@ -58,9 +47,7 @@ export const DEFAULT_EXPRESSION_OPTION: DefaultValueOption = {
   key: "expression",
   value: {
     hasDefault: true,
-    defaultNull: false,
     default: "",
-    defaultExpression: "",
   },
 };
 
@@ -68,9 +55,7 @@ const INT_ZERO_OPTION: DefaultValueOption = {
   key: "zero",
   value: {
     hasDefault: true,
-    defaultNull: false,
-    default: "",
-    defaultExpression: "0",
+    default: "0",
   },
 };
 
@@ -78,9 +63,7 @@ const BOOLEAN_TRUE_OPTION: DefaultValueOption = {
   key: "true",
   value: {
     hasDefault: true,
-    defaultNull: false,
-    default: "",
-    defaultExpression: "true",
+    default: "true",
   },
 };
 
@@ -88,9 +71,7 @@ const BOOLEAN_FALSE_OPTION: DefaultValueOption = {
   key: "false",
   value: {
     hasDefault: true,
-    defaultNull: false,
-    default: "",
-    defaultExpression: "false",
+    default: "false",
   },
 };
 
@@ -181,10 +162,13 @@ export const getDefaultValueByKey = (key: string) => {
 };
 
 export const getColumnDefaultDisplayString = (column: ColumnDefaultValue) => {
-  if (!column.hasDefault || column.defaultNull) {
+  if (!column.hasDefault) {
     return undefined;
   }
-  return column.default || column.defaultExpression || "";
+  if (column.default === "NULL") {
+    return undefined;
+  }
+  return column.default || "";
 };
 
 export const getColumnDefaultValuePlaceholder = (
@@ -193,14 +177,11 @@ export const getColumnDefaultValuePlaceholder = (
   if (!column.hasDefault) {
     return "No default";
   }
-  if (column.defaultNull) {
+  if (column.default === "NULL") {
     return "Null";
   }
   if (column.default !== undefined) {
     return column.default || "Empty string";
-  }
-  if (column.defaultExpression !== undefined) {
-    return column.defaultExpression || "Empty expression";
   }
   return "";
 };

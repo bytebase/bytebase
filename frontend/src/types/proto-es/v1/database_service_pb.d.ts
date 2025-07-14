@@ -1401,25 +1401,9 @@ export declare type ColumnMetadata = Message<"bytebase.v1.ColumnMetadata"> & {
   /**
    * The default value of column.
    *
-   * @generated from field: bool default_null = 4;
-   */
-  defaultNull: boolean;
-
-  /**
-   * @generated from field: string default_string = 5 [deprecated = true];
-   * @deprecated
-   */
-  defaultString: string;
-
-  /**
    * @generated from field: string default = 23;
    */
   default: string;
-
-  /**
-   * @generated from field: string default_expression = 6;
-   */
-  defaultExpression: string;
 
   /**
    * Oracle specific metadata.
