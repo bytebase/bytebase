@@ -16,53 +16,6 @@ import (
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
-// authInterceptor implements connect.Interceptor to add authentication headers
-type authInterceptor struct {
-	mu    sync.RWMutex
-	token string
-}
-
-func (a *authInterceptor) setToken(token string) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	a.token = token
-}
-
-func (a *authInterceptor) getToken() string {
-	a.mu.RLock()
-	defer a.mu.RUnlock()
-	return a.token
-}
-
-func (a *authInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
-	return connect.UnaryFunc(func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		if req.Spec().IsClient {
-			token := a.getToken()
-			if token != "" {
-				req.Header().Set("Authorization", fmt.Sprintf("Bearer %s", token))
-			}
-		}
-		return next(ctx, req)
-	})
-}
-
-func (a *authInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
-	return connect.StreamingClientFunc(func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
-		conn := next(ctx, spec)
-		token := a.getToken()
-		if token != "" {
-			conn.RequestHeader().Set("Authorization", fmt.Sprintf("Bearer %s", token))
-		}
-		return conn
-	})
-}
-
-func (*authInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
-	return connect.StreamingHandlerFunc(func(ctx context.Context, conn connect.StreamingHandlerConn) error {
-		return next(ctx, conn)
-	})
-}
-
 // RetryConfig configures retry behavior
 type RetryConfig struct {
 	// MaxAttempts is the maximum number of retry attempts
@@ -144,27 +97,12 @@ func NewClientWithOptions(url, serviceAccount, serviceAccountSecret string, opts
 		httpClient = &http.Client{Timeout: timeout}
 	}
 
-	authInterceptor := &authInterceptor{}
-
 	// Create token refresher function
 	tokenRefresher := getTokenRefresher(httpClient, serviceAccount, serviceAccountSecret, url)
 
-	// Create unified retry interceptor
-	var retryInterceptor *retryInterceptor
-	if opts.RetryConfig != nil && opts.RetryConfig.MaxAttempts > 1 {
-		retryInterceptor = newRetryInterceptor(
-			tokenRefresher,
-			authInterceptor,
-			opts.RetryConfig.MaxAttempts,
-			opts.RetryConfig.InitialInterval,
-			opts.RetryConfig.MaxInterval,
-		)
-	} else {
-		// Even without retry config, we want auth retry capability
-		retryInterceptor = newRetryInterceptor(tokenRefresher, authInterceptor, 2, 1*time.Second, 1*time.Second)
-	}
-
-	interceptors := connect.WithInterceptors(authInterceptor, retryInterceptor)
+	// Create unified interceptor
+	unifiedInt := newUnifiedInterceptor(opts.RetryConfig, tokenRefresher)
+	interceptors := connect.WithInterceptors(unifiedInt)
 
 	c := Client{
 		httpClient:           httpClient,
@@ -366,131 +304,6 @@ func (c *Client) Close() error {
 	return nil
 }
 
-// hasErrorMessage checks if the error message contains specific text
-func hasErrorMessage(err error, msg string) bool {
-	if err == nil {
-		return false
-	}
-	return strings.Contains(err.Error(), msg)
-}
-
-// retryInterceptor implements retry logic for both transient and authentication errors
-type retryInterceptor struct {
-	// Retry configuration
-	maxAttempts     int
-	initialInterval time.Duration
-	maxInterval     time.Duration
-
-	// Token refresher function
-	tokenRefresher func(ctx context.Context) (string, error)
-
-	// Auth interceptor reference for token updates
-	authInt *authInterceptor
-
-	// Auth retry synchronization using singleflight pattern
-	refreshGroup singleflight.Group
-}
-
-func newRetryInterceptor(tokenRefresher func(ctx context.Context) (string, error), authInt *authInterceptor, maxAttempts int, initialInterval, maxInterval time.Duration) *retryInterceptor {
-	return &retryInterceptor{
-		tokenRefresher:  tokenRefresher,
-		authInt:         authInt,
-		maxAttempts:     maxAttempts,
-		initialInterval: initialInterval,
-		maxInterval:     maxInterval,
-	}
-}
-
-func (u *retryInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
-	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		var lastErr error
-		interval := u.initialInterval
-		authRetried := false
-
-		for attempt := 0; attempt < u.maxAttempts; attempt++ {
-			if attempt > 0 {
-				// Check if context is cancelled before retrying
-				if ctx.Err() != nil {
-					return nil, ctx.Err()
-				}
-
-				// Wait before retry
-				timer := time.NewTimer(interval)
-				select {
-				case <-ctx.Done():
-					timer.Stop()
-					return nil, ctx.Err()
-				case <-timer.C:
-				}
-
-				// Exponential backoff
-				interval *= 2
-				if interval > u.maxInterval {
-					interval = u.maxInterval
-				}
-			}
-
-			resp, err := next(ctx, req)
-			if err == nil {
-				return resp, nil
-			}
-
-			lastErr = err
-			code := connect.CodeOf(err)
-
-			// Handle authentication errors
-			if code == connect.CodeUnauthenticated && !authRetried && u.tokenRefresher != nil {
-				if refreshErr := u.reauthenticateOnce(ctx); refreshErr == nil {
-					authRetried = true
-					// Don't count auth retry against attempt limit
-					attempt--
-					continue
-				}
-			}
-
-			// Check if error is retryable (network errors)
-			if !isRetryableError(err) {
-				return nil, err
-			}
-		}
-
-		return nil, lastErr
-	}
-}
-
-func (*retryInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
-	// No retry for streaming operations
-	return next
-}
-
-func (*retryInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
-	return next
-}
-
-func (u *retryInterceptor) reauthenticateOnce(ctx context.Context) error {
-	// Use singleflight to ensure only one refresh happens at a time
-	// Multiple concurrent requests will wait for the same refresh operation
-	_, err, _ := u.refreshGroup.Do("refresh", func() (any, error) {
-		return nil, u.doReauthenticate(ctx)
-	})
-	return err
-}
-
-func (u *retryInterceptor) doReauthenticate(ctx context.Context) error {
-	if u.tokenRefresher == nil {
-		return errors.New("no token refresher available")
-	}
-
-	token, err := u.tokenRefresher(ctx)
-	if err != nil {
-		return errors.Wrap(err, "failed to refresh token")
-	}
-
-	// Update the auth interceptor with the new token
-	u.authInt.setToken(token)
-	return nil
-}
-
 // isRetryableError determines if an error should trigger a retry
 func isRetryableError(err error) bool {
 	code := connect.CodeOf(err)
@@ -508,4 +321,160 @@ func isRetryableError(err error) bool {
 	default:
 		return false
 	}
+}
+
+// tokenManager handles thread-safe token storage
+type tokenManager struct {
+	mu    sync.RWMutex
+	token string
+}
+
+func newTokenManager() *tokenManager {
+	return &tokenManager{}
+}
+
+func (tm *tokenManager) setToken(token string) {
+	tm.mu.Lock()
+	defer tm.mu.Unlock()
+	tm.token = token
+}
+
+func (tm *tokenManager) getToken() string {
+	tm.mu.RLock()
+	defer tm.mu.RUnlock()
+	return tm.token
+}
+
+// unifiedInterceptor combines authentication and retry logic
+type unifiedInterceptor struct {
+	tokenMgr        *tokenManager
+	maxAttempts     int
+	initialInterval time.Duration
+	maxInterval     time.Duration
+	tokenRefresher  func(ctx context.Context) (string, error)
+	refreshGroup    singleflight.Group
+}
+
+func newUnifiedInterceptor(config *RetryConfig, tokenRefresher func(ctx context.Context) (string, error)) *unifiedInterceptor {
+	ui := &unifiedInterceptor{
+		tokenMgr:       newTokenManager(),
+		tokenRefresher: tokenRefresher,
+	}
+
+	if config != nil && config.MaxAttempts > 1 {
+		ui.maxAttempts = config.MaxAttempts
+		ui.initialInterval = config.InitialInterval
+		ui.maxInterval = config.MaxInterval
+	} else {
+		// Default retry config for auth errors
+		ui.maxAttempts = 2
+		ui.initialInterval = 1 * time.Second
+		ui.maxInterval = 1 * time.Second
+	}
+
+	return ui
+}
+
+func (ui *unifiedInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
+	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+		var lastErr error
+		interval := ui.initialInterval
+		authRetried := false
+
+		for attempt := 0; attempt < ui.maxAttempts; attempt++ {
+			if attempt > 0 {
+				// Check if context is cancelled before retrying
+				if ctx.Err() != nil {
+					return nil, ctx.Err()
+				}
+
+				// Wait before retry
+				timer := time.NewTimer(interval)
+				select {
+				case <-ctx.Done():
+					timer.Stop()
+					return nil, ctx.Err()
+				case <-timer.C:
+				}
+
+				// Exponential backoff
+				interval *= 2
+				if interval > ui.maxInterval {
+					interval = ui.maxInterval
+				}
+			}
+
+			// Add auth header
+			if req.Spec().IsClient {
+				if token := ui.tokenMgr.getToken(); token != "" {
+					req.Header().Set("Authorization", fmt.Sprintf("Bearer %s", token))
+				}
+			}
+
+			resp, err := next(ctx, req)
+			if err == nil {
+				return resp, nil
+			}
+
+			lastErr = err
+			code := connect.CodeOf(err)
+
+			// Handle authentication errors
+			if code == connect.CodeUnauthenticated && !authRetried && ui.tokenRefresher != nil {
+				if refreshErr := ui.reauthenticateOnce(ctx); refreshErr == nil {
+					authRetried = true
+					// Don't count auth retry against attempt limit
+					attempt--
+					continue
+				}
+			}
+
+			// Check if error is retryable
+			if !isRetryableError(err) {
+				return nil, err
+			}
+		}
+
+		return nil, lastErr
+	}
+}
+
+func (ui *unifiedInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
+	return connect.StreamingClientFunc(func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
+		conn := next(ctx, spec)
+		if token := ui.tokenMgr.getToken(); token != "" {
+			conn.RequestHeader().Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		}
+		return conn
+	})
+}
+
+func (*unifiedInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+	return connect.StreamingHandlerFunc(func(ctx context.Context, conn connect.StreamingHandlerConn) error {
+		return next(ctx, conn)
+	})
+}
+
+func (ui *unifiedInterceptor) reauthenticateOnce(ctx context.Context) error {
+	// Use singleflight to ensure only one refresh happens at a time
+	// Multiple concurrent requests will wait for the same refresh operation
+	_, err, _ := ui.refreshGroup.Do("refresh", func() (any, error) {
+		return nil, ui.doReauthenticate(ctx)
+	})
+	return err
+}
+
+func (ui *unifiedInterceptor) doReauthenticate(ctx context.Context) error {
+	if ui.tokenRefresher == nil {
+		return errors.New("no token refresher available")
+	}
+
+	token, err := ui.tokenRefresher(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to refresh token")
+	}
+
+	// Update the token manager with the new token
+	ui.tokenMgr.setToken(token)
+	return nil
 }

@@ -104,7 +104,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 			})
 			if err != nil {
 				// Check for specific error indicating no tasks were created
-				if hasErrorMessage(err, "there is no tasks created from the plan") {
+				if strings.Contains(err.Error(), "there is no tasks created from the plan") {
 					w.Logger.Warn("no tasks created from the plan, skip rollout")
 					return nil
 				}
@@ -410,7 +410,7 @@ func waitForRollout(ctx context.Context, w *world.World, client *Client, pending
 				Tasks:  notStartedTasks,
 			}); err != nil {
 				// Check for specific error indicating task runs already exist (retryable)
-				if !hasErrorMessage(err, "cannot create pending task runs because there are pending/running/done task runs") {
+				if !strings.Contains(err.Error(), "cannot create pending task runs because there are pending/running/done task runs") {
 					return errors.Wrapf(err, "failed to batch create tasks")
 				}
 			}
