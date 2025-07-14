@@ -643,23 +643,15 @@ func compareDefaultValues(t *testing.T, dbDefault, parsedDefault any, tableName,
 
 	// Handle database default
 	if dbCol, ok := dbDefault.(*storepb.ColumnMetadata); ok {
-		if dbCol.DefaultExpression != "" {
-			dbExpr = dbCol.DefaultExpression
-		} else if dbCol.Default != "" {
+		if dbCol.Default != "" {
 			dbExpr = dbCol.Default
-		} else if dbCol.DefaultNull {
-			dbExpr = "NULL"
 		}
 	}
 
 	// Handle parsed default
 	if parsedCol, ok := parsedDefault.(*storepb.ColumnMetadata); ok {
-		if parsedCol.DefaultExpression != "" {
-			parsedExpr = parsedCol.DefaultExpression
-		} else if parsedCol.Default != "" {
+		if parsedCol.Default != "" {
 			parsedExpr = parsedCol.Default
-		} else if parsedCol.DefaultNull {
-			parsedExpr = "NULL"
 		}
 	}
 

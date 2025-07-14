@@ -223,15 +223,32 @@ func convertToColumnState(id int, column *storepb.ColumnMetadata) *columnState {
 		nullable: column.Nullable,
 		comment:  column.Comment,
 	}
-	// Handle default values based on the new field structure
-	if column.DefaultNull {
+	// Handle default values using the unified Default field
+	if column.Default == "NULL" {
 		result.defaultValue = &defaultValueNull{}
 	} else if column.Default != "" {
-		result.defaultValue = &defaultValueString{value: column.Default}
-	} else if column.DefaultExpression != "" {
-		result.defaultValue = &defaultValueExpression{value: column.DefaultExpression}
+		// Check if it's an expression or a literal value
+		// Simple heuristic: if it contains parentheses, operators, or functions, treat as expression
+		if isExpression(column.Default) {
+			result.defaultValue = &defaultValueExpression{value: column.Default}
+		} else {
+			result.defaultValue = &defaultValueString{value: column.Default}
+		}
 	}
 	return result
+}
+
+// isExpression checks if a default value should be treated as an expression
+func isExpression(value string) bool {
+	// Simple heuristic: if it contains parentheses, operators, or common functions, treat as expression
+	if strings.Contains(value, "(") || strings.Contains(value, ")") ||
+		strings.Contains(value, "NOW") || strings.Contains(value, "today") ||
+		strings.Contains(value, "CURRENT_") || strings.Contains(value, "UUID") ||
+		strings.Contains(value, "TIMESTAMP") || strings.Contains(value, "SEQUENCE") ||
+		strings.Contains(value, "generateUUIDv4") || strings.Contains(value, "rand") {
+		return true
+	}
+	return false
 }
 
 type viewState struct {

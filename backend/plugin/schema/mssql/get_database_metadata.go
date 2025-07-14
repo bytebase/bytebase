@@ -779,7 +779,7 @@ func (e *metadataExtractor) extractColumn(ctx parser.IColumn_definitionContext, 
 				// Get the default expression (everything after DEFAULT keyword)
 				// This is a simplified implementation
 				if expr := elem.Expression(); expr != nil {
-					column.DefaultExpression = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(expr)
+					column.Default = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(expr)
 				}
 			}
 
