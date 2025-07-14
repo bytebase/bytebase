@@ -26,14 +26,14 @@
                   "position": 3,
                   "type": "NVARCHAR(255)",
                   "nullable": true,
-                  "defaultExpression": "''"
+                  "default": "''"
                 },
                 {
                   "name": "created_at",
                   "position": 4,
                   "type": "DATETIME2",
                   "nullable": false,
-                  "defaultExpression": "GETDATE()"
+                  "default": "GETDATE()"
                 }
               ],
               "indexes": [
@@ -105,7 +105,7 @@
                   "position": 4,
                   "type": "NVARCHAR(20)",
                   "nullable": false,
-                  "defaultExpression": "'pending'"
+                  "default": "'pending'"
                 }
               ],
               "indexes": [

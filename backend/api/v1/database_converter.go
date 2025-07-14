@@ -445,7 +445,7 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 	metadata := &v1pb.ColumnMetadata{
 		Name:                  column.Name,
 		Position:              column.Position,
-		HasDefault:            column.DefaultNull || column.DefaultExpression != "" || (column.Default != ""),
+		HasDefault:            column.Default != "",
 		DefaultOnNull:         column.DefaultOnNull,
 		OnUpdate:              column.OnUpdate,
 		Nullable:              column.Nullable,

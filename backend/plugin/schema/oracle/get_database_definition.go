@@ -551,16 +551,9 @@ func writeColumn(buf *strings.Builder, column *storepb.ColumnMetadata) error {
 	//	}
 	// }
 	// Handle default values
-	hasDefault := column.DefaultNull || column.DefaultExpression != "" || column.Default != ""
+	hasDefault := column.Default != ""
 	if hasDefault {
-		defaultExpr := ""
-		if column.DefaultExpression != "" {
-			defaultExpr = column.DefaultExpression
-		} else if column.Default != "" {
-			defaultExpr = column.Default
-		} else if column.DefaultNull {
-			defaultExpr = "NULL"
-		}
+		defaultExpr := column.Default
 
 		// Skip system-generated sequence references as they can't be manually created
 		if defaultExpr != "" && !strings.Contains(defaultExpr, "ISEQ$$_") {

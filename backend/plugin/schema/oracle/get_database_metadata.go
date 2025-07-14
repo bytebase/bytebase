@@ -592,7 +592,7 @@ func (e *metadataExtractor) extractColumnDefinition(ctx parser.IColumn_definitio
 	// Extract default value using ANTLR parser
 	if ctx.DEFAULT() != nil {
 		if expr := ctx.Expression(); expr != nil {
-			column.DefaultExpression = getTextFromContext(expr)
+			column.Default = getTextFromContext(expr)
 		}
 	}
 
@@ -664,7 +664,7 @@ func (e *metadataExtractor) extractVirtualColumnDefinition(ctx parser.IVirtual_c
 				i++
 			}
 			if parenCount == 0 {
-				column.DefaultExpression = remaining[openIdx+1 : i-1]
+				column.Default = remaining[openIdx+1 : i-1]
 			}
 		}
 	}

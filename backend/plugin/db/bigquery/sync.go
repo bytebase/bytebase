@@ -88,7 +88,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		if row.ColumnDefault.Valid {
 			column.Default = row.ColumnDefault.String()
 		} else {
-			column.DefaultNull = true
+			column.Default = "NULL"
 		}
 
 		key := db.TableKey{Schema: "", Table: row.TableName}

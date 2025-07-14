@@ -1463,14 +1463,8 @@ func compareColumnDefaults(t *testing.T, dbCol, parsedCol *storepb.ColumnMetadat
 }
 
 func getColumnDefaultString(col *storepb.ColumnMetadata) string {
-	if col.DefaultExpression != "" {
-		return col.DefaultExpression
-	}
 	if col.Default != "" {
 		return col.Default
-	}
-	if col.DefaultNull {
-		return "NULL"
 	}
 	return ""
 }
