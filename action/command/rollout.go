@@ -67,7 +67,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 
 		var plan *v1pb.Plan
 		if w.Plan != "" {
-			planP, err := client.getPlan(w.Plan)
+			planP, err := client.GetPlan(ctx, w.Plan)
 			if err != nil {
 				return errors.Wrapf(err, "failed to get plan")
 			}
@@ -78,7 +78,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 			if err != nil {
 				return errors.Wrapf(err, "failed to get release files")
 			}
-			createReleaseResponse, err := client.createRelease(w.Project, &v1pb.Release{
+			createReleaseResponse, err := client.CreateRelease(ctx, w.Project, &v1pb.Release{
 				Title:     w.ReleaseTitle,
 				Files:     releaseFiles,
 				VcsSource: getVCSSource(w),
@@ -88,7 +88,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 			}
 			w.OutputMap["release"] = createReleaseResponse.Name
 
-			planCreated, err := client.createPlan(w.Project, &v1pb.Plan{
+			planCreated, err := client.CreatePlan(ctx, w.Project, &v1pb.Plan{
 				Title: w.ReleaseTitle,
 				Specs: []*v1pb.Plan_Spec{
 					{
@@ -103,6 +103,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 				},
 			})
 			if err != nil {
+				// Check for specific error indicating no tasks were created
 				if strings.Contains(err.Error(), "there is no tasks created from the plan") {
 					w.Logger.Warn("no tasks created from the plan, skip rollout")
 					return nil
@@ -134,13 +135,13 @@ func runAndWaitForPlanChecks(ctx context.Context, w *world.World, client *Client
 			return errors.Wrapf(ctx.Err(), "context cancelled")
 		}
 
-		runs, err := client.listAllPlanCheckRuns(planName)
+		runs, err := client.ListAllPlanCheckRuns(ctx, planName)
 		if err != nil {
 			return errors.Wrapf(err, "failed to list plan checks")
 		}
 		if len(runs.PlanCheckRuns) == 0 {
 			w.Logger.Info("running plan checks")
-			_, err := client.runPlanChecks(&v1pb.RunPlanChecksRequest{
+			_, err := client.RunPlanChecks(ctx, &v1pb.RunPlanChecksRequest{
 				Name: planName,
 			})
 			if err != nil {
@@ -193,7 +194,7 @@ func runAndWaitForPlanChecks(ctx context.Context, w *world.World, client *Client
 
 func runAndWaitForRollout(ctx context.Context, w *world.World, client *Client, planName string) error {
 	// preview rollout with all pending stages
-	rolloutPreview, err := client.createRollout(&v1pb.CreateRolloutRequest{
+	rolloutPreview, err := client.CreateRollout(ctx, &v1pb.CreateRolloutRequest{
 		Parent: w.Project,
 		Rollout: &v1pb.Rollout{
 			Plan: planName,
@@ -212,7 +213,7 @@ func runAndWaitForRollout(ctx context.Context, w *world.World, client *Client, p
 
 	// create rollout with no stages to obtain the rollout name
 	emptyTarget := ""
-	rolloutEmpty, err := client.createRollout(&v1pb.CreateRolloutRequest{
+	rolloutEmpty, err := client.CreateRollout(ctx, &v1pb.CreateRolloutRequest{
 		Parent: w.Project,
 		Rollout: &v1pb.Rollout{
 			Plan:  planName,
@@ -244,7 +245,7 @@ func waitForRollout(ctx context.Context, w *world.World, client *Client, pending
 		w.Logger.Info("context cancelled, canceling the rollout")
 		// cancel rollout
 		if err := func() error {
-			taskRuns, err := client.listAllTaskRuns(rolloutName)
+			taskRuns, err := client.ListAllTaskRuns(context.Background(), rolloutName)
 			if err != nil {
 				return errors.Wrapf(err, "failed to list task runs")
 			}
@@ -257,7 +258,7 @@ func waitForRollout(ctx context.Context, w *world.World, client *Client, pending
 			}
 			var errs error
 			for stage, taskRuns := range taskRunsToCancelByStage {
-				_, err := client.batchCancelTaskRuns(&v1pb.BatchCancelTaskRunsRequest{
+				_, err := client.BatchCancelTaskRuns(context.Background(), &v1pb.BatchCancelTaskRunsRequest{
 					Parent:   stage + "/tasks/-",
 					TaskRuns: taskRuns,
 				})
@@ -272,7 +273,7 @@ func waitForRollout(ctx context.Context, w *world.World, client *Client, pending
 		}
 	}()
 
-	rollout, err := client.getRollout(rolloutName)
+	rollout, err := client.GetRollout(ctx, rolloutName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get rollout")
 	}
@@ -314,7 +315,7 @@ func waitForRollout(ctx context.Context, w *world.World, client *Client, pending
 		if index != -1 {
 			w.Logger.Info("removing pending stage that already in the rollout stage", "latestStage", latestStage)
 			pendingStages = pendingStages[index+1:]
-			_, err := client.createRollout(&v1pb.CreateRolloutRequest{
+			_, err := client.CreateRollout(ctx, &v1pb.CreateRolloutRequest{
 				Parent: w.Project,
 				Rollout: &v1pb.Rollout{
 					Plan: rollout.GetPlan(),
@@ -333,7 +334,7 @@ func waitForRollout(ctx context.Context, w *world.World, client *Client, pending
 			return errors.Wrapf(ctx.Err(), "context cancelled")
 		}
 		// get rollout
-		rollout, err := client.getRollout(rolloutName)
+		rollout, err := client.GetRollout(ctx, rolloutName)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get rollout")
 		}
@@ -345,7 +346,7 @@ func waitForRollout(ctx context.Context, w *world.World, client *Client, pending
 			target := pendingStages[0]
 			pendingStages = pendingStages[1:]
 
-			rolloutAdvanced, err := client.createRollout(&v1pb.CreateRolloutRequest{
+			rolloutAdvanced, err := client.CreateRollout(ctx, &v1pb.CreateRolloutRequest{
 				Parent: w.Project,
 				Rollout: &v1pb.Rollout{
 					Plan: rollout.GetPlan(),
@@ -404,11 +405,11 @@ func waitForRollout(ctx context.Context, w *world.World, client *Client, pending
 		// run stage tasks
 		if len(notStartedTasks) > 0 {
 			w.Logger.Info("running stage tasks", "stage", stage.Environment, "taskCount", len(notStartedTasks))
-			if _, err := client.batchRunTasks(&v1pb.BatchRunTasksRequest{
+			if _, err := client.BatchRunTasks(ctx, &v1pb.BatchRunTasksRequest{
 				Parent: stage.Name,
 				Tasks:  notStartedTasks,
 			}); err != nil {
-				// ignore retryable error.
+				// Check for specific error indicating task runs already exist (retryable)
 				if !strings.Contains(err.Error(), "cannot create pending task runs because there are pending/running/done task runs") {
 					return errors.Wrapf(err, "failed to batch create tasks")
 				}

@@ -1,226 +1,213 @@
 package command
 
 import (
-	"bytes"
+	"context"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
+	"strings"
+	"sync"
 	"time"
 
-	"google.golang.org/protobuf/encoding/protojson"
-
+	"connectrpc.com/connect"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/singleflight"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
-//nolint:forbidigo
-var protojsonUnmarshaler = protojson.UnmarshalOptions{DiscardUnknown: true}
+// RetryConfig configures retry behavior
+type RetryConfig struct {
+	// MaxAttempts is the maximum number of retry attempts
+	MaxAttempts int
+	// InitialInterval is the initial retry interval
+	InitialInterval time.Duration
+	// MaxInterval is the maximum retry interval
+	MaxInterval time.Duration
+}
+
+// ClientOptions configures the Client behavior
+type ClientOptions struct {
+	// PageSize controls the number of items per page in list operations
+	PageSize int32
+	// HTTPClient allows providing a custom HTTP client
+	HTTPClient *http.Client
+	// Timeout for RPC calls (applies only if HTTPClient is not provided)
+	Timeout time.Duration
+	// RetryConfig configures retry behavior for transient errors
+	RetryConfig *RetryConfig
+}
+
+// DefaultClientOptions returns the default client options
+func DefaultClientOptions() ClientOptions {
+	return ClientOptions{
+		PageSize: 100,
+		Timeout:  120 * time.Second,
+		RetryConfig: &RetryConfig{
+			MaxAttempts:     3,
+			InitialInterval: 1 * time.Second,
+			MaxInterval:     30 * time.Second,
+		},
+	}
+}
 
 // Client is the API message for Bytebase API Client.
 type Client struct {
-	client *http.Client
+	// HTTP client for Connect RPC
+	httpClient *http.Client
 
-	url   string
-	token string
+	// Base URL
+	url string
+
+	// Credentials for re-authentication
+	serviceAccount       string
+	serviceAccountSecret string
+
+	// Connect RPC service clients
+	releaseClient  v1connect.ReleaseServiceClient
+	planClient     v1connect.PlanServiceClient
+	rolloutClient  v1connect.RolloutServiceClient
+	actuatorClient v1connect.ActuatorServiceClient
+
+	// Client options
+	options ClientOptions
 }
 
-// NewClient returns the new Bytebase API client.
+// NewClient returns the new Bytebase API client with default options.
 func NewClient(url, serviceAccount, serviceAccountSecret string) (*Client, error) {
-	c := Client{
-		client: &http.Client{Timeout: 120 * time.Second},
-		url:    url,
+	return NewClientWithOptions(url, serviceAccount, serviceAccountSecret, DefaultClientOptions())
+}
+
+// NewClientWithOptions returns a new Bytebase API client with custom options.
+func NewClientWithOptions(url, serviceAccount, serviceAccountSecret string, opts ClientOptions) (*Client, error) {
+	if opts.PageSize <= 0 {
+		opts.PageSize = 100
+	}
+	if opts.PageSize > 1000 {
+		opts.PageSize = 1000
 	}
 
-	if err := c.login(serviceAccount, serviceAccountSecret); err != nil {
-		return nil, errors.Wrapf(err, "failed to login")
+	// Use provided HTTP client or create a new one
+	httpClient := opts.HTTPClient
+	if httpClient == nil {
+		timeout := opts.Timeout
+		if timeout == 0 {
+			timeout = 120 * time.Second
+		}
+		httpClient = &http.Client{Timeout: timeout}
+	}
+
+	// Create token refresher function
+	tokenRefresher := getTokenRefresher(httpClient, serviceAccount, serviceAccountSecret, url)
+
+	// Create unified interceptor
+	unifiedInt := newUnifiedInterceptor(opts.RetryConfig, tokenRefresher)
+	interceptors := connect.WithInterceptors(unifiedInt)
+
+	c := Client{
+		httpClient:           httpClient,
+		url:                  url,
+		serviceAccount:       serviceAccount,
+		serviceAccountSecret: serviceAccountSecret,
+		options:              opts,
+		releaseClient:        v1connect.NewReleaseServiceClient(httpClient, url, interceptors),
+		planClient:           v1connect.NewPlanServiceClient(httpClient, url, interceptors),
+		rolloutClient:        v1connect.NewRolloutServiceClient(httpClient, url, interceptors),
+		actuatorClient:       v1connect.NewActuatorServiceClient(httpClient, url, interceptors),
 	}
 
 	return &c, nil
 }
 
-func (c *Client) doRequest(req *http.Request) ([]byte, error) {
-	if c.token != "" {
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.token))
-	}
+func getTokenRefresher(httpClient connect.HTTPClient, email, password, url string) func(ctx context.Context) (string, error) {
+	// Create a separate auth client without interceptors to avoid circular dependencies
+	authClient := v1connect.NewAuthServiceClient(httpClient, url)
+	return func(ctx context.Context) (string, error) {
+		req := connect.NewRequest(&v1pb.LoginRequest{
+			Email:    email,
+			Password: password,
+		})
 
-	res, err := c.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
+		resp, err := authClient.Login(ctx, req)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to login")
+		}
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
+		return resp.Msg.Token, nil
 	}
-
-	if res.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("status: %d, body: %s", res.StatusCode, body)
-	}
-
-	return body, err
 }
 
-func (c *Client) login(email, password string) error {
-	r := &v1pb.LoginRequest{
-		Email:    email,
-		Password: password,
-	}
-	rb, err := protojson.Marshal(r)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal")
-	}
-
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/auth/login", c.url), bytes.NewReader(rb))
-	if err != nil {
-		return errors.Wrapf(err, "failed to create request")
-	}
-
-	body, err := c.doRequest(req)
-	if err != nil {
-		return errors.Wrapf(err, "failed to login")
-	}
-
-	resp := &v1pb.LoginResponse{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return errors.Wrapf(err, "failed to unmarshal")
-	}
-	c.token = resp.Token
-
-	return nil
-}
-
-func (c *Client) checkRelease(project string, r *v1pb.CheckReleaseRequest) (*v1pb.CheckReleaseResponse, error) {
-	rb, err := protojson.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s/releases:check", c.url, project), bytes.NewReader(rb))
-	if err != nil {
-		return nil, err
-	}
-
-	body, err := c.doRequest(req)
+func (c *Client) CheckRelease(ctx context.Context, r *v1pb.CheckReleaseRequest) (*v1pb.CheckReleaseResponse, error) {
+	resp, err := c.releaseClient.CheckRelease(ctx, connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to check release")
 	}
-
-	resp := &v1pb.CheckReleaseResponse{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return resp.Msg, nil
 }
 
-func (c *Client) createRelease(project string, r *v1pb.Release) (*v1pb.Release, error) {
-	rb, err := protojson.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s/releases", c.url, project), bytes.NewReader(rb))
-	if err != nil {
-		return nil, err
-	}
-
-	body, err := c.doRequest(req)
+func (c *Client) CreateRelease(ctx context.Context, project string, r *v1pb.Release) (*v1pb.Release, error) {
+	req := connect.NewRequest(&v1pb.CreateReleaseRequest{
+		Parent:  project,
+		Release: r,
+	})
+	resp, err := c.releaseClient.CreateRelease(ctx, req)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create release")
 	}
-
-	resp := &v1pb.Release{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return resp.Msg, nil
 }
 
-func (c *Client) getPlan(planName string) (*v1pb.Plan, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/%s", c.url, planName), nil)
-	if err != nil {
-		return nil, err
-	}
-	body, err := c.doRequest(req)
+func (c *Client) GetPlan(ctx context.Context, planName string) (*v1pb.Plan, error) {
+	resp, err := c.planClient.GetPlan(ctx,
+		connect.NewRequest(&v1pb.GetPlanRequest{
+			Name: planName,
+		}))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get plan")
 	}
-	resp := &v1pb.Plan{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return resp.Msg, nil
 }
 
-func (c *Client) createPlan(project string, r *v1pb.Plan) (*v1pb.Plan, error) {
-	rb, err := protojson.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s/plans", c.url, project), bytes.NewReader(rb))
-	if err != nil {
-		return nil, err
-	}
-
-	body, err := c.doRequest(req)
+func (c *Client) CreatePlan(ctx context.Context, project string, r *v1pb.Plan) (*v1pb.Plan, error) {
+	req := connect.NewRequest(&v1pb.CreatePlanRequest{
+		Parent: project,
+		Plan:   r,
+	})
+	resp, err := c.planClient.CreatePlan(ctx, req)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create plan")
 	}
-
-	resp := &v1pb.Plan{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return resp.Msg, nil
 }
 
-func (c *Client) runPlanChecks(r *v1pb.RunPlanChecksRequest) (*v1pb.RunPlanChecksResponse, error) {
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s:runPlanChecks", c.url, r.Name), nil)
-	if err != nil {
-		return nil, err
-	}
-	body, err := c.doRequest(req)
+func (c *Client) RunPlanChecks(ctx context.Context, r *v1pb.RunPlanChecksRequest) (*v1pb.RunPlanChecksResponse, error) {
+	resp, err := c.planClient.RunPlanChecks(ctx, connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to run plan checks")
 	}
-	resp := &v1pb.RunPlanChecksResponse{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return resp.Msg, nil
 }
 
-func (c *Client) listPlanCheckRuns(r *v1pb.ListPlanCheckRunsRequest) (*v1pb.ListPlanCheckRunsResponse, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/%s/planCheckRuns", c.url, r.Parent), nil)
-	if err != nil {
-		return nil, err
-	}
-	body, err := c.doRequest(req)
+func (c *Client) ListPlanCheckRuns(ctx context.Context, r *v1pb.ListPlanCheckRunsRequest) (*v1pb.ListPlanCheckRunsResponse, error) {
+	resp, err := c.planClient.ListPlanCheckRuns(ctx, connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list plan check runs")
 	}
-	resp := &v1pb.ListPlanCheckRunsResponse{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return resp.Msg, nil
 }
 
-func (c *Client) listAllPlanCheckRuns(planName string) (*v1pb.ListPlanCheckRunsResponse, error) {
+func (c *Client) ListAllPlanCheckRuns(ctx context.Context, planName string) (*v1pb.ListPlanCheckRunsResponse, error) {
 	resp := &v1pb.ListPlanCheckRunsResponse{}
 	request := &v1pb.ListPlanCheckRunsRequest{
 		Parent:    planName,
-		PageSize:  1000,
+		PageSize:  c.options.PageSize,
 		PageToken: "",
 	}
 	for {
-		listResp, err := c.listPlanCheckRuns(request)
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		listResp, err := c.ListPlanCheckRuns(ctx, request)
 		if err != nil {
 			return nil, err
 		}
@@ -233,105 +220,53 @@ func (c *Client) listAllPlanCheckRuns(planName string) (*v1pb.ListPlanCheckRunsR
 	return resp, nil
 }
 
-func (c *Client) getRollout(rolloutName string) (*v1pb.Rollout, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/%s", c.url, rolloutName), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	body, err := c.doRequest(req)
+func (c *Client) GetRollout(ctx context.Context, rolloutName string) (*v1pb.Rollout, error) {
+	resp, err := c.rolloutClient.GetRollout(ctx,
+		connect.NewRequest(&v1pb.GetRolloutRequest{
+			Name: rolloutName,
+		}))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get rollout")
 	}
-
-	resp := &v1pb.Rollout{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return resp.Msg, nil
 }
 
-func (c *Client) createRollout(r *v1pb.CreateRolloutRequest) (*v1pb.Rollout, error) {
-	rb, err := protojson.Marshal(r.Rollout)
-	if err != nil {
-		return nil, err
-	}
-	a := fmt.Sprintf("%s/v1/%s/rollouts", c.url, r.Parent)
-	query := url.Values{}
-	if r.ValidateOnly {
-		query.Set("validateOnly", "true")
-	}
-	if r.Target != nil {
-		query.Set("target", *r.Target)
-	}
-	if len(query) > 0 {
-		a += "?" + query.Encode()
-	}
-
-	req, err := http.NewRequest("POST", a, bytes.NewReader(rb))
-	if err != nil {
-		return nil, err
-	}
-
-	body, err := c.doRequest(req)
+func (c *Client) CreateRollout(ctx context.Context, r *v1pb.CreateRolloutRequest) (*v1pb.Rollout, error) {
+	resp, err := c.rolloutClient.CreateRollout(ctx, connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create rollout")
 	}
-
-	resp := &v1pb.Rollout{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return resp.Msg, nil
 }
 
-func (c *Client) batchRunTasks(r *v1pb.BatchRunTasksRequest) (*v1pb.BatchRunTasksResponse, error) {
-	rb, err := protojson.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s/tasks:batchRun", c.url, r.Parent), bytes.NewReader(rb))
-	if err != nil {
-		return nil, err
-	}
-	body, err := c.doRequest(req)
+func (c *Client) BatchRunTasks(ctx context.Context, r *v1pb.BatchRunTasksRequest) (*v1pb.BatchRunTasksResponse, error) {
+	resp, err := c.rolloutClient.BatchRunTasks(ctx, connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to batch run tasks")
 	}
-	resp := &v1pb.BatchRunTasksResponse{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return resp.Msg, nil
 }
 
-func (c *Client) listTaskRuns(r *v1pb.ListTaskRunsRequest) (*v1pb.ListTaskRunsResponse, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/%s/taskRuns", c.url, r.Parent), nil)
-	if err != nil {
-		return nil, err
-	}
-	body, err := c.doRequest(req)
+func (c *Client) ListTaskRuns(ctx context.Context, r *v1pb.ListTaskRunsRequest) (*v1pb.ListTaskRunsResponse, error) {
+	resp, err := c.rolloutClient.ListTaskRuns(ctx, connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list task runs")
 	}
-	resp := &v1pb.ListTaskRunsResponse{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return resp.Msg, nil
 }
 
-func (c *Client) listAllTaskRuns(rolloutName string) (*v1pb.ListTaskRunsResponse, error) {
+func (c *Client) ListAllTaskRuns(ctx context.Context, rolloutName string) (*v1pb.ListTaskRunsResponse, error) {
 	resp := &v1pb.ListTaskRunsResponse{}
 	request := &v1pb.ListTaskRunsRequest{
 		Parent:    rolloutName + "/stages/-/tasks/-",
-		PageSize:  1000,
+		PageSize:  c.options.PageSize,
 		PageToken: "",
 	}
 	for {
-		listResp, err := c.listTaskRuns(request)
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		listResp, err := c.ListTaskRuns(ctx, request)
 		if err != nil {
 			return nil, err
 		}
@@ -344,38 +279,238 @@ func (c *Client) listAllTaskRuns(rolloutName string) (*v1pb.ListTaskRunsResponse
 	return resp, nil
 }
 
-func (c *Client) batchCancelTaskRuns(r *v1pb.BatchCancelTaskRunsRequest) (*v1pb.BatchCancelTaskRunsResponse, error) {
-	rb, err := protojson.Marshal(r)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/%s/taskRuns:batchCancel", c.url, r.Parent), bytes.NewReader(rb))
-	if err != nil {
-		return nil, err
-	}
-	body, err := c.doRequest(req)
+func (c *Client) BatchCancelTaskRuns(ctx context.Context, r *v1pb.BatchCancelTaskRunsRequest) (*v1pb.BatchCancelTaskRunsResponse, error) {
+	resp, err := c.rolloutClient.BatchCancelTaskRuns(ctx, connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to batch cancel task runs")
 	}
-	resp := &v1pb.BatchCancelTaskRunsResponse{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return resp.Msg, nil
 }
 
-func (c *Client) getActuatorInfo() (*v1pb.ActuatorInfo, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/actuator/info", c.url), nil)
-	if err != nil {
-		return nil, err
-	}
-	body, err := c.doRequest(req)
+func (c *Client) GetActuatorInfo(ctx context.Context) (*v1pb.ActuatorInfo, error) {
+	resp, err := c.actuatorClient.GetActuatorInfo(ctx,
+		connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get actuator info")
 	}
-	resp := &v1pb.ActuatorInfo{}
-	if err := protojsonUnmarshaler.Unmarshal(body, resp); err != nil {
-		return nil, err
+	return resp.Msg, nil
+}
+
+// Close cleans up resources used by the Client
+func (c *Client) Close() error {
+	if c.httpClient != nil {
+		c.httpClient.CloseIdleConnections()
 	}
-	return resp, nil
+	return nil
+}
+
+// isRetryableError determines if an error should trigger a retry
+func isRetryableError(err error) bool {
+	code := connect.CodeOf(err)
+	switch code {
+	case connect.CodeUnavailable,
+		connect.CodeDeadlineExceeded,
+		connect.CodeResourceExhausted:
+		return true
+	case connect.CodeUnknown:
+		// Some network errors may be wrapped as Unknown
+		msg := err.Error()
+		return strings.Contains(msg, "connection refused") ||
+			strings.Contains(msg, "connection reset") ||
+			strings.Contains(msg, "timeout")
+	default:
+		return false
+	}
+}
+
+// tokenManager handles thread-safe token storage
+type tokenManager struct {
+	mu    sync.RWMutex
+	token string
+}
+
+func newTokenManager() *tokenManager {
+	return &tokenManager{}
+}
+
+func (tm *tokenManager) setToken(token string) {
+	tm.mu.Lock()
+	defer tm.mu.Unlock()
+	tm.token = token
+}
+
+func (tm *tokenManager) getToken() string {
+	tm.mu.RLock()
+	defer tm.mu.RUnlock()
+	return tm.token
+}
+
+// unifiedInterceptor combines authentication and retry logic
+type unifiedInterceptor struct {
+	tokenMgr        *tokenManager
+	maxAttempts     int
+	initialInterval time.Duration
+	maxInterval     time.Duration
+	tokenRefresher  func(ctx context.Context) (string, error)
+	refreshGroup    singleflight.Group
+}
+
+func newUnifiedInterceptor(config *RetryConfig, tokenRefresher func(ctx context.Context) (string, error)) *unifiedInterceptor {
+	ui := &unifiedInterceptor{
+		tokenMgr:       newTokenManager(),
+		tokenRefresher: tokenRefresher,
+	}
+
+	if config != nil && config.MaxAttempts > 1 {
+		ui.maxAttempts = config.MaxAttempts
+		ui.initialInterval = config.InitialInterval
+		ui.maxInterval = config.MaxInterval
+	} else {
+		// Default retry config for auth errors
+		ui.maxAttempts = 2
+		ui.initialInterval = 1 * time.Second
+		ui.maxInterval = 1 * time.Second
+	}
+
+	return ui
+}
+
+func (ui *unifiedInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
+	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+		var lastErr error
+		interval := ui.initialInterval
+
+		for attempt := 0; attempt < ui.maxAttempts; attempt++ {
+			if attempt > 0 {
+				// Check if context is cancelled before retrying
+				if ctx.Err() != nil {
+					return nil, ctx.Err()
+				}
+
+				// Wait before retry
+				timer := time.NewTimer(interval)
+				select {
+				case <-ctx.Done():
+					timer.Stop()
+					return nil, ctx.Err()
+				case <-timer.C:
+				}
+
+				// Exponential backoff
+				interval *= 2
+				if interval > ui.maxInterval {
+					interval = ui.maxInterval
+				}
+			}
+
+			// Add auth header
+			if req.Spec().IsClient {
+				if token := ui.tokenMgr.getToken(); token != "" {
+					req.Header().Set("Authorization", fmt.Sprintf("Bearer %s", token))
+				}
+			}
+
+			resp, err := next(ctx, req)
+			if err == nil {
+				return resp, nil
+			}
+
+			lastErr = err
+			code := connect.CodeOf(err)
+
+			// Handle authentication errors
+			if code == connect.CodeUnauthenticated && ui.tokenRefresher != nil {
+				refreshErr := ui.reauthenticateOnce(ctx)
+				if refreshErr != nil {
+					return nil, errors.Wrap(refreshErr, "failed to login")
+				}
+				// Don't count auth retry against attempt limit
+				attempt--
+				continue
+			}
+
+			// Check if error is retryable
+			if !isRetryableError(err) {
+				return nil, err
+			}
+		}
+
+		return nil, lastErr
+	}
+}
+
+func (ui *unifiedInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
+	return connect.StreamingClientFunc(func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
+		conn := next(ctx, spec)
+		if token := ui.tokenMgr.getToken(); token != "" {
+			conn.RequestHeader().Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		}
+		return conn
+	})
+}
+
+func (*unifiedInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+	return connect.StreamingHandlerFunc(func(ctx context.Context, conn connect.StreamingHandlerConn) error {
+		return next(ctx, conn)
+	})
+}
+
+func (ui *unifiedInterceptor) reauthenticateOnce(ctx context.Context) error {
+	// Use singleflight to ensure only one refresh happens at a time
+	// Multiple concurrent requests will wait for the same refresh operation
+	_, err, _ := ui.refreshGroup.Do("refresh", func() (any, error) {
+		return nil, ui.doReauthenticate(ctx)
+	})
+	return err
+}
+
+func (ui *unifiedInterceptor) doReauthenticate(ctx context.Context) error {
+	if ui.tokenRefresher == nil {
+		return errors.New("no token refresher available")
+	}
+
+	// Retry token refresh with exponential backoff for transient errors
+	var lastErr error
+	interval := ui.initialInterval
+	maxAttempts := 3 // Fixed retry attempts for auth refresh
+
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		if attempt > 0 {
+			// Check context before retry
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+
+			// Wait before retry
+			timer := time.NewTimer(interval)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return ctx.Err()
+			case <-timer.C:
+			}
+
+			// Exponential backoff
+			interval *= 2
+			if interval > ui.maxInterval {
+				interval = ui.maxInterval
+			}
+		}
+
+		token, err := ui.tokenRefresher(ctx)
+		if err == nil {
+			// Update the token manager with the new token
+			ui.tokenMgr.setToken(token)
+			return nil
+		}
+
+		lastErr = err
+
+		// Check if error is retryable
+		if !isRetryableError(err) {
+			return err
+		}
+	}
+
+	return lastErr
 }

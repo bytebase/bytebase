@@ -1,6 +1,7 @@
 package command
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/url"
@@ -112,7 +113,7 @@ func checkVersionCompatibility(w *world.World, client *Client, cliVersion string
 		return
 	}
 
-	actuatorInfo, err := client.getActuatorInfo()
+	actuatorInfo, err := client.GetActuatorInfo(context.Background())
 	if err != nil {
 		w.Logger.Warn("Unable to get server version for compatibility check", "error", err)
 		return

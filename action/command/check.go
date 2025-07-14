@@ -42,7 +42,7 @@ func validateCheckFlags(w *world.World) func(*cobra.Command, []string) error {
 }
 
 func runCheck(w *world.World) func(*cobra.Command, []string) error {
-	return func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, _ []string) error {
 		platform := w.Platform
 		w.Logger.Info("running on platform", "platform", platform.String())
 		client, err := NewClient(w.URL, w.ServiceAccount, w.ServiceAccountSecret)
@@ -57,7 +57,8 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 		if err != nil {
 			return err
 		}
-		checkReleaseResponse, err := client.checkRelease(w.Project, &v1pb.CheckReleaseRequest{
+		checkReleaseResponse, err := client.CheckRelease(cmd.Context(), &v1pb.CheckReleaseRequest{
+			Parent:  w.Project,
 			Release: &v1pb.Release{Files: releaseFiles},
 			Targets: w.Targets,
 		})
