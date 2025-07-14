@@ -114,13 +114,8 @@ func newTableState(t *storepb.TableMetadata, context *FinderContext) *TableState
 
 func newColumnState(c *storepb.ColumnMetadata, position int) *ColumnState {
 	defaultValue := (*string)(nil)
-	if c.DefaultNull {
-		nullValue := "NULL"
-		defaultValue = &nullValue
-	} else if c.Default != "" {
+	if c.Default != "" {
 		defaultValue = copyStringPointer(&c.Default)
-	} else if c.DefaultExpression != "" {
-		defaultValue = copyStringPointer(&c.DefaultExpression)
 	}
 	return &ColumnState{
 		name:           c.Name,

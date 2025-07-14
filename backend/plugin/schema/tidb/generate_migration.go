@@ -974,16 +974,6 @@ func getDefaultExpression(column *storepb.ColumnMetadata) string {
 		return ""
 	}
 
-	// Check for expression-based default first
-	if column.DefaultExpression != "" {
-		return column.DefaultExpression
-	}
-
-	// Check for NULL default
-	if column.DefaultNull {
-		return "NULL"
-	}
-
 	if column.GetDefault() != "" {
 		return column.GetDefault()
 	}
@@ -1001,7 +991,7 @@ func hasDefaultValue(column *storepb.ColumnMetadata) bool {
 		return false
 	}
 
-	return column.DefaultNull || column.DefaultExpression != "" || (column.Default != "")
+	return column.Default != ""
 }
 
 func hasAutoIncrement(column *storepb.ColumnMetadata) bool {
@@ -1009,15 +999,15 @@ func hasAutoIncrement(column *storepb.ColumnMetadata) bool {
 		return false
 	}
 
-	// Check if column has AUTO_INCREMENT in default field (new logic) or default expression (old logic)
-	return strings.EqualFold(column.GetDefault(), "AUTO_INCREMENT") || strings.EqualFold(column.GetDefaultExpression(), "AUTO_INCREMENT")
+	// Check if column has AUTO_INCREMENT in default field
+	return strings.EqualFold(column.GetDefault(), "AUTO_INCREMENT")
 }
 
 func hasAutoRandom(column *storepb.ColumnMetadata) bool {
 	if column == nil {
 		return false
 	}
-	return strings.HasPrefix(column.GetDefault(), "AUTO_RANDOM") || strings.HasPrefix(column.GetDefaultExpression(), "AUTO_RANDOM")
+	return strings.HasPrefix(column.GetDefault(), "AUTO_RANDOM")
 }
 
 func escapeString(s string) string {

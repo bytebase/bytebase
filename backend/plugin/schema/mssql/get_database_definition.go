@@ -467,8 +467,8 @@ func writeColumn(out *strings.Builder, column *storepb.ColumnMetadata) {
 	if column.Collation != "" {
 		_, _ = fmt.Fprintf(out, " COLLATE %s", column.Collation)
 	}
-	if column.GetDefaultExpression() != "" {
-		_, _ = fmt.Fprintf(out, " DEFAULT %s", column.GetDefaultExpression())
+	if column.GetDefault() != "" {
+		_, _ = fmt.Fprintf(out, " DEFAULT %s", column.GetDefault())
 	}
 	if !column.Nullable {
 		_, _ = out.WriteString(" NOT NULL")
