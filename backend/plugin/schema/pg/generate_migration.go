@@ -979,9 +979,7 @@ func hasDefaultValue(column *storepb.ColumnMetadata) bool {
 	if column == nil {
 		return false
 	}
-	return column.GetDefaultExpression() != "" ||
-		column.GetDefault() != "" ||
-		column.GetDefaultNull()
+	return column.GetDefault() != ""
 }
 
 // defaultValuesEqual checks if two columns have the same default value
@@ -990,27 +988,10 @@ func defaultValuesEqual(col1, col2 *storepb.ColumnMetadata) bool {
 		return col1 == col2
 	}
 
-	// Check default expression
-	if col1.GetDefaultExpression() != col2.GetDefaultExpression() {
-		return false
-	}
-
 	// Check default value
 	def1 := col1.GetDefault()
 	def2 := col2.GetDefault()
-	if (def1 == "") != (def2 == "") {
-		return false
-	}
-	if def1 != "" && def1 != def2 {
-		return false
-	}
-
-	// Check default null
-	if col1.GetDefaultNull() != col2.GetDefaultNull() {
-		return false
-	}
-
-	return true
+	return def1 == def2
 }
 
 // getDefaultExpression returns the SQL expression for a column's default value
@@ -1019,16 +1000,8 @@ func getDefaultExpression(column *storepb.ColumnMetadata) string {
 		return ""
 	}
 
-	if column.DefaultExpression != "" {
-		return column.DefaultExpression
-	}
-
 	if column.Default != "" {
 		return column.Default
-	}
-
-	if column.DefaultNull {
-		return "NULL"
 	}
 
 	return ""

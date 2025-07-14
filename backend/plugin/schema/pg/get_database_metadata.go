@@ -567,7 +567,7 @@ func (e *metadataExtractor) extractColumnConstraint(ctx parser.IColconstraintele
 		column.Nullable = true
 	case ctx.DEFAULT() != nil:
 		if expr := ctx.B_expr(); expr != nil {
-			column.DefaultExpression = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(expr)
+			column.Default = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(expr)
 		}
 	case ctx.PRIMARY() != nil && ctx.KEY() != nil:
 		column.Nullable = false

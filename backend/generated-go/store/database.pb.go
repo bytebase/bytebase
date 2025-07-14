@@ -2018,8 +2018,10 @@ type ColumnMetadata struct {
 	// The position is the position in columns.
 	Position int32 `protobuf:"varint,2,opt,name=position,proto3" json:"position,omitempty"`
 	// The default value of column.
-	Default           string `protobuf:"bytes,3,opt,name=default,proto3" json:"default,omitempty"`
-	DefaultNull       bool   `protobuf:"varint,4,opt,name=default_null,json=defaultNull,proto3" json:"default_null,omitempty"`
+	Default string `protobuf:"bytes,3,opt,name=default,proto3" json:"default,omitempty"`
+	// Deprecated.
+	DefaultNull bool `protobuf:"varint,4,opt,name=default_null,json=defaultNull,proto3" json:"default_null,omitempty"`
+	// Deprecated.
 	DefaultExpression string `protobuf:"bytes,5,opt,name=default_expression,json=defaultExpression,proto3" json:"default_expression,omitempty"`
 	// Oracle specific metadata.
 	// The default_on_null is the default on null of a column.

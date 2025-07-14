@@ -709,10 +709,7 @@ func generateColumnDefinition(column *storepb.ColumnMetadata) string {
 		}
 
 		// Add default value if present
-		if column.GetDefaultExpression() != "" {
-			_, _ = buf.WriteString(" DEFAULT ")
-			_, _ = buf.WriteString(column.GetDefaultExpression())
-		} else if column.GetDefault() != "" {
+		if column.GetDefault() != "" {
 			_, _ = buf.WriteString(" DEFAULT ")
 			_, _ = buf.WriteString(column.GetDefault())
 		}
@@ -803,9 +800,6 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 func getColumnDefaultValue(column *storepb.ColumnMetadata) string {
 	if column == nil {
 		return ""
-	}
-	if column.GetDefaultExpression() != "" {
-		return column.GetDefaultExpression()
 	}
 	if column.GetDefault() != "" {
 		return column.GetDefault()

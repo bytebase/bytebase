@@ -532,19 +532,19 @@
                 },
                 {
                   "name": "created_at",
-                  "default_expression": "GETDATE()",
+                  "default": "GETDATE()",
                   "nullable": true,
                   "type": "DATETIME"
                 },
                 {
                   "name": "is_active",
-                  "default_expression": "1",
+                  "default": "1",
                   "nullable": true,
                   "type": "BIT"
                 },
                 {
                   "name": "status",
-                  "default_expression": "N'pending'",
+                  "default": "N'pending'",
                   "nullable": true,
                   "type": "NVARCHAR(20)"
                 }
@@ -827,13 +827,13 @@
                 },
                 {
                   "name": "country",
-                  "default_expression": "'USA'",
+                  "default": "'USA'",
                   "nullable": true,
                   "type": "VARCHAR(50)"
                 },
                 {
                   "name": "created_date",
-                  "default_expression": "GETDATE()",
+                  "default": "GETDATE()",
                   "nullable": true,
                   "type": "DATETIME"
                 },
@@ -844,13 +844,13 @@
                 },
                 {
                   "name": "is_active",
-                  "default_expression": "1",
+                  "default": "1",
                   "nullable": true,
                   "type": "BIT"
                 },
                 {
                   "name": "credit_limit",
-                  "default_expression": "0.00",
+                  "default": "0.00",
                   "nullable": true,
                   "type": "DECIMAL(10,2)"
                 }
@@ -942,12 +942,12 @@
                 },
                 {
                   "name": "quantity",
-                  "default_expression": "0",
+                  "default": "0",
                   "type": "INT"
                 },
                 {
                   "name": "last_updated",
-                  "default_expression": "SYSDATETIME()",
+                  "default": "SYSDATETIME()",
                   "nullable": true,
                   "type": "DATETIME2"
                 }
@@ -1016,13 +1016,13 @@
                 },
                 {
                   "name": "user_name",
-                  "default_expression": "SUSER_SNAME()",
+                  "default": "SUSER_SNAME()",
                   "nullable": true,
                   "type": "NVARCHAR(128)"
                 },
                 {
                   "name": "timestamp",
-                  "default_expression": "SYSDATETIME()",
+                  "default": "SYSDATETIME()",
                   "nullable": true,
                   "type": "DATETIME2"
                 },
@@ -1087,7 +1087,7 @@
               "columns": [
                 {
                   "name": "doc_id",
-                  "default_expression": "NEWID()",
+                  "default": "NEWID()",
                   "type": "UNIQUEIDENTIFIER"
                 },
                 {
@@ -1125,19 +1125,19 @@
                 },
                 {
                   "name": "created_date",
-                  "default_expression": "SYSDATETIMEOFFSET()",
+                  "default": "SYSDATETIMEOFFSET()",
                   "nullable": true,
                   "type": "DATETIMEOFFSET"
                 },
                 {
                   "name": "version",
-                  "default_expression": "1",
+                  "default": "1",
                   "nullable": true,
                   "type": "INT"
                 },
                 {
                   "name": "is_published",
-                  "default_expression": "0",
+                  "default": "0",
                   "nullable": true,
                   "type": "BIT"
                 }

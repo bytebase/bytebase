@@ -168,8 +168,6 @@ func normalizeOracleMetadata(metadata *storepb.DatabaseSchemaMetadata) {
 					// If it's a system-generated sequence, remove the default expression
 					// since these sequences can't be manually recreated with the same name
 					if strings.Contains(column.Default, "ISEQ$$_") {
-						column.DefaultExpression = ""
-						column.DefaultNull = false
 						column.Default = ""
 					}
 				}

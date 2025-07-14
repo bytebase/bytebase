@@ -639,8 +639,8 @@ func compareColumnsDef(t *testing.T, tableName string, colsA, colsB []*storepb.C
 		require.Equal(t, colA.Comment, colB.Comment, "table %s, column %s: comment should match", tableName, colB.Name)
 
 		// Compare default values if both exist
-		hasDefaultA := colA.DefaultNull || colA.DefaultExpression != "" || colA.Default != ""
-		hasDefaultB := colB.DefaultNull || colB.DefaultExpression != "" || colB.Default != ""
+		hasDefaultA := colA.Default != ""
+		hasDefaultB := colB.Default != ""
 		if hasDefaultA && hasDefaultB {
 			// Default values might be represented differently, so we just check they exist
 			t.Logf("table %s, column %s: default values exist in both", tableName, colB.Name)

@@ -572,33 +572,8 @@ func columnsEqual(col1, col2 *storepb.ColumnMetadata) bool {
 
 // defaultValuesEqual compares default values.
 func defaultValuesEqual(col1, col2 *storepb.ColumnMetadata) bool {
-	// Check if both have no default
-	hasDefault1 := col1.DefaultNull || col1.Default != "" || col1.DefaultExpression != ""
-	hasDefault2 := col2.DefaultNull || col2.Default != "" || col2.DefaultExpression != ""
-
-	if !hasDefault1 && !hasDefault2 {
-		return true
-	}
-	if hasDefault1 != hasDefault2 {
-		return false
-	}
-
-	// Check default null
-	if col1.DefaultNull != col2.DefaultNull {
-		return false
-	}
-
-	// Check default string value
-	if col1.Default != col2.Default {
-		return false
-	}
-
-	// Check default expression
-	if col1.DefaultExpression != col2.DefaultExpression {
-		return false
-	}
-
-	return true
+	// Now we only need to compare the consolidated default field
+	return col1.Default == col2.Default
 }
 
 // generationMetadataEqual compares two generation metadata structs.

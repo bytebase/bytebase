@@ -444,7 +444,9 @@ message ColumnMetadata {
 
   // The default value of column.
   string default = 3;
+  // Deprecated.
   bool default_null = 4;
+  // Deprecated.
   string default_expression = 5;
 
   // Oracle specific metadata.
