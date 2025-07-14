@@ -99,7 +99,10 @@
             <p>
               {{ $t("settings.members.groups.workspace-domain-required") }}
               <router-link
-                to="/setting/general#domain-restriction"
+                :to="{
+                  name: SETTING_ROUTE_WORKSPACE_GENERAL,
+                  hash: '#domain-restriction',
+                }"
                 class="normal-link"
               >
                 {{ $t("common.configure") }}
@@ -197,6 +200,7 @@ import UserDataTableByGroup from "@/components/User/Settings/UserDataTableByGrou
 import { SearchBox } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
+import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
   featureToRef,
   useActuatorV1Store,
