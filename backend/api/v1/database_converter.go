@@ -460,16 +460,7 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 		IdentitySeed:          column.IdentitySeed,
 		IdentityIncrement:     column.IdentityIncrement,
 		DefaultConstraintName: column.DefaultConstraintName,
-	}
-	if metadata.HasDefault {
-		// Consolidate default values into single field
-		if column.DefaultNull {
-			metadata.Default = "NULL"
-		} else if column.DefaultExpression != "" {
-			metadata.Default = column.DefaultExpression
-		} else if column.Default != "" {
-			metadata.Default = column.Default
-		}
+		Default:               column.Default,
 	}
 	switch column.IdentityGeneration {
 	case storepb.ColumnMetadata_ALWAYS:
