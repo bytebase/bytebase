@@ -379,7 +379,6 @@ func (ui *unifiedInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFun
 	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 		var lastErr error
 		interval := ui.initialInterval
-		authRetried := false
 
 		for attempt := 0; attempt < ui.maxAttempts; attempt++ {
 			if attempt > 0 {
@@ -420,13 +419,14 @@ func (ui *unifiedInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFun
 			code := connect.CodeOf(err)
 
 			// Handle authentication errors
-			if code == connect.CodeUnauthenticated && !authRetried && ui.tokenRefresher != nil {
-				if refreshErr := ui.reauthenticateOnce(ctx); refreshErr == nil {
-					authRetried = true
-					// Don't count auth retry against attempt limit
-					attempt--
-					continue
+			if code == connect.CodeUnauthenticated && ui.tokenRefresher != nil {
+				refreshErr := ui.reauthenticateOnce(ctx)
+				if refreshErr != nil {
+					return nil, errors.Wrap(refreshErr, "failed to login")
 				}
+				// Don't count auth retry against attempt limit
+				attempt--
+				continue
 			}
 
 			// Check if error is retryable
@@ -469,12 +469,48 @@ func (ui *unifiedInterceptor) doReauthenticate(ctx context.Context) error {
 		return errors.New("no token refresher available")
 	}
 
-	token, err := ui.tokenRefresher(ctx)
-	if err != nil {
-		return errors.Wrap(err, "failed to refresh token")
+	// Retry token refresh with exponential backoff for transient errors
+	var lastErr error
+	interval := ui.initialInterval
+	maxAttempts := 3 // Fixed retry attempts for auth refresh
+
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		if attempt > 0 {
+			// Check context before retry
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+
+			// Wait before retry
+			timer := time.NewTimer(interval)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return ctx.Err()
+			case <-timer.C:
+			}
+
+			// Exponential backoff
+			interval *= 2
+			if interval > ui.maxInterval {
+				interval = ui.maxInterval
+			}
+		}
+
+		token, err := ui.tokenRefresher(ctx)
+		if err == nil {
+			// Update the token manager with the new token
+			ui.tokenMgr.setToken(token)
+			return nil
+		}
+
+		lastErr = err
+
+		// Check if error is retryable
+		if !isRetryableError(err) {
+			return err
+		}
 	}
 
-	// Update the token manager with the new token
-	ui.tokenMgr.setToken(token)
-	return nil
+	return lastErr
 }
