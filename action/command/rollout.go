@@ -103,11 +103,6 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 				},
 			})
 			if err != nil {
-				// Check for specific error indicating no tasks were created
-				if strings.Contains(err.Error(), "there is no tasks created from the plan") {
-					w.Logger.Warn("no tasks created from the plan, skip rollout")
-					return nil
-				}
 				return errors.Wrapf(err, "failed to create plan")
 			}
 			plan = planCreated
@@ -288,6 +283,10 @@ func waitForRollout(ctx context.Context, w *world.World, client *Client, pending
 			}
 		}),
 		"pendingStages", pendingStages)
+	if len(pendingStages) == 0 && len(rollout.Stages) == 0 {
+		w.Logger.Info("no stages in the rollout. exiting...")
+		return nil
+	}
 
 	targetStageFound := false
 	for _, stage := range rollout.GetStages() {

@@ -86,9 +86,6 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, req *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline create, error: %v", err))
 	}
-	if len(rollout.Tasks) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("plan has no stage created, hint: check deployment config setting that the target database is in a stage"))
-	}
 
 	rolloutV1, err := convertToRollout(ctx, s.store, project, rollout)
 	if err != nil {
@@ -236,9 +233,6 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.dbFactory, rolloutTitle, plan.Config.GetSpecs(), plan.Config.GetDeployment(), project)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline create, error: %v", err))
-	}
-	if len(pipelineCreate.Tasks) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("no database matched for deployment, hint: check deployment config setting that the target database is in a stage"))
 	}
 	if isChangeDatabasePlan(plan.Config.GetSpecs()) {
 		pipelineCreate, err = getPipelineCreateToTargetStage(ctx, s.store, plan.Config.GetDeployment(), pipelineCreate, request.Target)
@@ -972,9 +966,6 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 			return nil, errors.Wrap(err, "failed to get task creates from spec")
 		}
 		taskCreates = append(taskCreates, tcs...)
-	}
-	if len(taskCreates) == 0 {
-		return nil, errors.Errorf("there is no tasks created from the plan")
 	}
 
 	// Filter out tasks not in deployment environments
