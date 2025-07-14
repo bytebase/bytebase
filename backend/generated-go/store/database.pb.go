@@ -2019,9 +2019,9 @@ type ColumnMetadata struct {
 	Position int32 `protobuf:"varint,2,opt,name=position,proto3" json:"position,omitempty"`
 	// The default value of column.
 	Default string `protobuf:"bytes,3,opt,name=default,proto3" json:"default,omitempty"`
-	// Deprecated: Marked as deprecated in store/database.proto.
+	// Deprecated.
 	DefaultNull bool `protobuf:"varint,4,opt,name=default_null,json=defaultNull,proto3" json:"default_null,omitempty"`
-	// Deprecated: Marked as deprecated in store/database.proto.
+	// Deprecated.
 	DefaultExpression string `protobuf:"bytes,5,opt,name=default_expression,json=defaultExpression,proto3" json:"default_expression,omitempty"`
 	// Oracle specific metadata.
 	// The default_on_null is the default on null of a column.
@@ -2131,7 +2131,6 @@ func (x *ColumnMetadata) GetDefault() string {
 	return ""
 }
 
-// Deprecated: Marked as deprecated in store/database.proto.
 func (x *ColumnMetadata) GetDefaultNull() bool {
 	if x != nil {
 		return x.DefaultNull
@@ -2139,7 +2138,6 @@ func (x *ColumnMetadata) GetDefaultNull() bool {
 	return false
 }
 
-// Deprecated: Marked as deprecated in store/database.proto.
 func (x *ColumnMetadata) GetDefaultExpression() string {
 	if x != nil {
 		return x.DefaultExpression
@@ -4569,13 +4567,13 @@ const file_store_database_proto_rawDesc = "" +
 	"\vLINEAR_HASH\x10\x06\x12\a\n" +
 	"\x03KEY\x10\a\x12\x0e\n" +
 	"\n" +
-	"LINEAR_KEY\x10\b\"\xd5\x06\n" +
+	"LINEAR_KEY\x10\b\"\xcd\x06\n" +
 	"\x0eColumnMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bposition\x18\x02 \x01(\x05R\bposition\x12\x18\n" +
-	"\adefault\x18\x03 \x01(\tR\adefault\x12%\n" +
-	"\fdefault_null\x18\x04 \x01(\bB\x02\x18\x01R\vdefaultNull\x121\n" +
-	"\x12default_expression\x18\x05 \x01(\tB\x02\x18\x01R\x11defaultExpression\x12&\n" +
+	"\adefault\x18\x03 \x01(\tR\adefault\x12!\n" +
+	"\fdefault_null\x18\x04 \x01(\bR\vdefaultNull\x12-\n" +
+	"\x12default_expression\x18\x05 \x01(\tR\x11defaultExpression\x12&\n" +
 	"\x0fdefault_on_null\x18\x10 \x01(\bR\rdefaultOnNull\x12\x1b\n" +
 	"\ton_update\x18\r \x01(\tR\bonUpdate\x12\x1a\n" +
 	"\bnullable\x18\x06 \x01(\bR\bnullable\x12\x12\n" +
