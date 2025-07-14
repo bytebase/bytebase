@@ -185,11 +185,6 @@ func NewClientWithOptions(url, serviceAccount, serviceAccountSecret string, opts
 		actuatorClient:       v1connect.NewActuatorServiceClient(httpClient, url, interceptors),
 	}
 
-	// Login first
-	if err := c.login(context.Background(), serviceAccount, serviceAccountSecret); err != nil {
-		return nil, errors.Wrapf(err, "failed to login")
-	}
-
 	return &c, nil
 }
 
@@ -209,23 +204,6 @@ func getTokenRefresher(httpClient connect.HTTPClient, email, password, url strin
 
 		return resp.Msg.Token, nil
 	}
-}
-
-func (c *Client) login(ctx context.Context, email, password string) error {
-	req := connect.NewRequest(&v1pb.LoginRequest{
-		Email:    email,
-		Password: password,
-	})
-
-	resp, err := c.authClient.Login(ctx, req)
-	if err != nil {
-		return errors.Wrapf(err, "failed to login")
-	}
-
-	c.token = resp.Msg.Token
-	c.interceptor.setToken(resp.Msg.Token)
-
-	return nil
 }
 
 func (c *Client) CheckRelease(ctx context.Context, r *v1pb.CheckReleaseRequest) (*v1pb.CheckReleaseResponse, error) {
