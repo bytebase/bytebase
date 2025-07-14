@@ -289,7 +289,7 @@ const convertNewColumnToOld = (
     position: newColumn.position,
     hasDefault: newColumn.hasDefault,
     defaultNull: newColumn.defaultNull,
-    defaultString: newColumn.defaultString,
+    default: newColumn.default,
     defaultExpression: newColumn.defaultExpression,
     onUpdate: newColumn.onUpdate,
     nullable: newColumn.nullable,
