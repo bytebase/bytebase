@@ -120,14 +120,16 @@
         class="!flex !items-center"
         @update:checked="
           (checked) => {
-            onUpdate({
-              passwordRotation: checked
-                ? create(DurationSchema, {
-                    seconds: BigInt(7 * 24 * 60 * 60) /* default 7 days */,
-                    nanos: 0,
-                  })
-                : undefined,
-            });
+            if (checked) {
+              onUpdate({
+                passwordRotation: create(DurationSchema, {
+                  seconds: BigInt(7 * 24 * 60 * 60) /* default 7 days */,
+                  nanos: 0,
+                }),
+              });
+            } else {
+              delete state.passwordRotation;
+            }
           }
         "
       >
