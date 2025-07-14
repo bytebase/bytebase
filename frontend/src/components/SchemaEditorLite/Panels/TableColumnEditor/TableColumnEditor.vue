@@ -650,8 +650,8 @@ const handleColumnDefaultInput = (column: ColumnMetadata, value: string) => {
   if (!column.hasDefault) return;
   if (column.defaultNull) return;
 
-  if (typeof column.defaultString === "string") {
-    column.defaultString = value;
+  if (typeof column.default === "string") {
+    column.default = value;
   } else if (typeof column.defaultExpression === "string") {
     column.defaultExpression = value;
   }
@@ -679,22 +679,19 @@ const handleColumnDefaultSelect = (
       // copy current editing expr / string to column.defaultExpression
       defaultExpression:
         column.defaultExpression ??
-        column.defaultString ??
+        column.default ??
         defaults.defaultExpression ??
         "",
     });
     markColumnStatus(column, "updated");
     return;
   }
-  if (typeof defaults.defaultString === "string") {
+  if (typeof defaults.default === "string") {
     Object.assign(column, {
       ...defaults,
-      // copy current editing string to column.defaultString
-      defaultString:
-        column.defaultString ??
-        column.defaultExpression ??
-        defaults.defaultString ??
-        "",
+      // copy current editing string to column.default
+      default:
+        column.default ?? column.defaultExpression ?? defaults.default ?? "",
     });
     markColumnStatus(column, "updated");
     return;
@@ -708,7 +705,7 @@ const handleSelectColumnDefaultValueExpression = (expression: string) => {
   }
   column.hasDefault = true;
   column.defaultNull = false;
-  column.defaultString = "";
+  column.default = "";
   column.defaultExpression = expression;
 
   markColumnStatus(column, "updated");

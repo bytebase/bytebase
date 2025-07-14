@@ -464,7 +464,7 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 	if metadata.HasDefault {
 		metadata.DefaultNull = column.DefaultNull
 		if column.Default != "" {
-			metadata.DefaultString = column.Default
+			metadata.Default = column.Default
 		}
 		if column.DefaultExpression != "" {
 			metadata.DefaultExpression = column.DefaultExpression
@@ -1064,8 +1064,8 @@ func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadat
 
 	if column.HasDefault {
 		metadata.DefaultNull = column.DefaultNull
-		if column.DefaultString != "" {
-			metadata.Default = column.DefaultString
+		if column.Default != "" {
+			metadata.Default = column.Default
 		}
 		if column.DefaultExpression != "" {
 			metadata.DefaultExpression = column.DefaultExpression

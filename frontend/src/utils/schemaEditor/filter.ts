@@ -38,7 +38,7 @@ export const ComparableColumnFields: (keyof ColumnMetadata)[] = [
   "hasDefault",
   "defaultExpression",
   "defaultNull",
-  "defaultString",
+  "default",
   "onUpdate",
   "nullable",
 ];

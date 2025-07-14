@@ -2855,8 +2855,10 @@ type ColumnMetadata struct {
 	Position   int32 `protobuf:"varint,2,opt,name=position,proto3" json:"position,omitempty"`
 	HasDefault bool  `protobuf:"varint,3,opt,name=has_default,json=hasDefault,proto3" json:"has_default,omitempty"`
 	// The default value of column.
-	DefaultNull       bool   `protobuf:"varint,4,opt,name=default_null,json=defaultNull,proto3" json:"default_null,omitempty"`
+	DefaultNull bool `protobuf:"varint,4,opt,name=default_null,json=defaultNull,proto3" json:"default_null,omitempty"`
+	// Deprecated: Marked as deprecated in v1/database_service.proto.
 	DefaultString     string `protobuf:"bytes,5,opt,name=default_string,json=defaultString,proto3" json:"default_string,omitempty"`
+	Default           string `protobuf:"bytes,23,opt,name=default,proto3" json:"default,omitempty"`
 	DefaultExpression string `protobuf:"bytes,6,opt,name=default_expression,json=defaultExpression,proto3" json:"default_expression,omitempty"`
 	// Oracle specific metadata.
 	// The default_on_null is the default on null of a column.
@@ -2973,9 +2975,17 @@ func (x *ColumnMetadata) GetDefaultNull() bool {
 	return false
 }
 
+// Deprecated: Marked as deprecated in v1/database_service.proto.
 func (x *ColumnMetadata) GetDefaultString() string {
 	if x != nil {
 		return x.DefaultString
+	}
+	return ""
+}
+
+func (x *ColumnMetadata) GetDefault() string {
+	if x != nil {
+		return x.Default
 	}
 	return ""
 }
@@ -6422,14 +6432,15 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\vLINEAR_HASH\x10\x06\x12\a\n" +
 	"\x03KEY\x10\a\x12\x0e\n" +
 	"\n" +
-	"LINEAR_KEY\x10\b\"\xf5\x06\n" +
+	"LINEAR_KEY\x10\b\"\x93\a\n" +
 	"\x0eColumnMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bposition\x18\x02 \x01(\x05R\bposition\x12\x1f\n" +
 	"\vhas_default\x18\x03 \x01(\bR\n" +
 	"hasDefault\x12!\n" +
-	"\fdefault_null\x18\x04 \x01(\bR\vdefaultNull\x12%\n" +
-	"\x0edefault_string\x18\x05 \x01(\tR\rdefaultString\x12-\n" +
+	"\fdefault_null\x18\x04 \x01(\bR\vdefaultNull\x12)\n" +
+	"\x0edefault_string\x18\x05 \x01(\tB\x02\x18\x01R\rdefaultString\x12\x18\n" +
+	"\adefault\x18\x17 \x01(\tR\adefault\x12-\n" +
 	"\x12default_expression\x18\x06 \x01(\tR\x11defaultExpression\x12&\n" +
 	"\x0fdefault_on_null\x18\x12 \x01(\bR\rdefaultOnNull\x12\x1b\n" +
 	"\ton_update\x18\x0f \x01(\tR\bonUpdate\x12\x1a\n" +

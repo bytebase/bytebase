@@ -9190,6 +9190,8 @@ components:
                     description: The default value of column.
                 defaultString:
                     type: string
+                default:
+                    type: string
                 defaultExpression:
                     type: string
                 defaultOnNull:
