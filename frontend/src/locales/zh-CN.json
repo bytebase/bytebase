@@ -1622,7 +1622,6 @@
       "reference": "引用"
     },
     "checks": "Check 约束",
-    "backup-unavailable-for-databases": "数据库无法开启备份：{databases}",
     "engine-not-supported-for-backup": "引擎不支持预备份：{databases}",
     "revision": {
       "self": "版本",

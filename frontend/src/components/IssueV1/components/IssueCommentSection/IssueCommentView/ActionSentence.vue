@@ -94,7 +94,7 @@ const renderActionSentence = () => {
     const params: VerbTypeTarget = {
       issueComment,
       type: t("common.stage"),
-      target: <StageName stage={stageEntity} issue={issue} />,
+      target: <StageName stage={stageEntity} />,
       verb: t("activity.sentence.completed"),
     };
     return renderVerbTypeTarget(params);

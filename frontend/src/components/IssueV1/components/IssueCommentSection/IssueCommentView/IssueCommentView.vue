@@ -31,6 +31,7 @@
 <script lang="ts" setup>
 import type { ComposedIssueComment } from "@/store";
 import type { ComposedIssue } from "@/types";
+import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import ActionIcon from "./ActionIcon.vue";
 import IssueCommentAction from "./IssueCommentAction.vue";
 
@@ -40,5 +41,6 @@ defineProps<{
   index: number;
   issueComment: ComposedIssueComment;
   similar: ComposedIssueComment[];
+  rollout?: Rollout;
 }>();
 </script>
