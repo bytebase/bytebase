@@ -15,15 +15,20 @@
       <div class="flex items-center justify-between gap-4">
         <!-- Left side: Stage title and status counts -->
         <div class="flex items-center gap-2">
-          <div class="flex items-center gap-2">
+          <div class="flex items-start gap-2">
             <TaskStatus :status="stageStatus" size="medium" />
-            <h3
-              class="text-base font-medium text-gray-900 whitespace-nowrap w-24 truncate"
-            >
-              {{
-                environmentStore.getEnvironmentByName(stage.environment).title
-              }}
-            </h3>
+            <div class="flex flex-col">
+              <h3
+                class="text-base font-medium text-gray-900 whitespace-nowrap w-24 truncate"
+              >
+                {{
+                  environmentStore.getEnvironmentByName(stage.environment).title
+                }}
+              </h3>
+              <span v-if="latestUpdateTime" class="text-xs text-gray-500">
+                {{ humanizeTs(latestUpdateTime / 1000) }}
+              </span>
+            </div>
           </div>
 
           <!-- Task status counts -->
@@ -46,7 +51,7 @@
                 @click.stop="handleTaskStatusClick(status)"
               >
                 <template #avatar>
-                  <TaskStatus :status="status" size="small" />
+                  <TaskStatus :status="status" size="small" disabled />
                 </template>
                 <div class="flex flex-row items-center gap-2">
                   <span class="select-none text-base">{{
@@ -105,6 +110,7 @@ import { useRouter } from "vue-router";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import type {
   Stage,
   Task,
@@ -115,6 +121,7 @@ import {
   extractProjectResourceName,
   stringifyTaskStatus,
   getStageStatus,
+  humanizeTs,
 } from "@/utils";
 import RunTasksButton from "./RunTasksButton.vue";
 import { useTaskActionPermissions } from "./taskPermissions";
@@ -190,6 +197,21 @@ const stageStatus = computed(() => {
     tasks: filteredTasks.value,
   };
   return getStageStatus(stageWithFilteredTasks);
+});
+
+const latestUpdateTime = computed(() => {
+  let latestTime: number | undefined;
+
+  for (const task of props.stage.tasks) {
+    if (task.updateTime) {
+      const taskTime = getTimeForPbTimestampProtoEs(task.updateTime, 0);
+      if (!latestTime || taskTime > latestTime) {
+        latestTime = taskTime;
+      }
+    }
+  }
+
+  return latestTime;
 });
 
 const getTaskCount = (status: Task_Status) => {

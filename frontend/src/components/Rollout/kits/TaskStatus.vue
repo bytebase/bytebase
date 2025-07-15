@@ -56,7 +56,7 @@
         </template>
       </div>
     </template>
-    {{ Task_Status[status] }}
+    {{ stringifyTaskStatus(status) }}
   </NTooltip>
 </template>
 
@@ -66,6 +66,7 @@ import { NTooltip } from "naive-ui";
 import { twMerge } from "tailwind-merge";
 import { computed } from "vue";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { stringifyTaskStatus } from "@/utils";
 
 const props = defineProps<{
   status: Task_Status;

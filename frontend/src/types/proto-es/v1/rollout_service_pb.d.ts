@@ -590,6 +590,14 @@ export declare type Task = Message<"bytebase.v1.Task"> & {
     value: Task_DatabaseDataExport;
     case: "databaseDataExport";
   } | { case: undefined; value?: undefined };
+
+  /**
+   * The update_time is the update time of related latest task runs.
+   * If there are no task runs, it will be empty.
+   *
+   * @generated from field: optional google.protobuf.Timestamp update_time = 13;
+   */
+  updateTime?: Timestamp;
 };
 
 /**
