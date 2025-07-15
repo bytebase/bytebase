@@ -977,7 +977,8 @@
     "error": {
       "you-don-have-privilege-to-edit-this-issue": "このイシューを編集する権限がありません",
       "you-are-not-allowed-to-perform-this-action": "このアクションを実行する権限がありません",
-      "cannot-close-issue-with-running-tasks": "実行中のタスクに関する問題を解決できません"
+      "cannot-close-issue-with-running-tasks": "実行中のタスクに関する問題を解決できません",
+      "statement-cannot-be-modified": "問題の作成後にステートメントを変更することはできません"
     },
     "unfinished-resolved-issue-tips": "イシューは「完了」とマークされましたが、一部のタスクは正常に実行されませんでした。",
     "some-tasks-are-not-executed-successfully": "(一部のタスクは正常に実行されませんでした)",

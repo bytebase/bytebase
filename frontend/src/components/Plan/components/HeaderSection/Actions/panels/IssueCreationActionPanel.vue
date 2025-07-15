@@ -82,6 +82,14 @@
             @update:selected="state.labels = $event"
           />
         </div>
+
+        <div v-if="tips.length > 0" class="flex flex-col gap-y-2 pl-2">
+          <ul class="list-disc list-inside space-y-1 text-sm text-gray-500">
+            <li v-for="(tip, index) in tips" :key="index">
+              {{ tip }}
+            </li>
+          </ul>
+        </div>
       </div>
     </template>
     <template #footer>
@@ -217,6 +225,17 @@ const planCheckSummaryStatus = computed((): PlanCheckRun_Result_Status => {
     return PlanCheckRun_Result_Status.SUCCESS;
   }
   return PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;
+});
+
+const tips = computed(() => {
+  const tipsList: string[] = [];
+
+  // Add tip about modifying statements
+  if (!project.value.allowModifyStatement) {
+    tipsList.push(t("issue.error.statement-cannot-be-modified"));
+  }
+
+  return tipsList;
 });
 
 const confirmErrors = computed(() => {

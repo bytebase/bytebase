@@ -977,7 +977,8 @@
     "error": {
       "you-don-have-privilege-to-edit-this-issue": "You don't have privilege to edit this issue",
       "you-are-not-allowed-to-perform-this-action": "You are not allowed to perform this action",
-      "cannot-close-issue-with-running-tasks": "Cannot close issue with running tasks"
+      "cannot-close-issue-with-running-tasks": "Cannot close issue with running tasks",
+      "statement-cannot-be-modified": "Statement cannot be modified after the issue is created"
     },
     "unfinished-resolved-issue-tips": "This issue is marked as \"Done\" but some of its tasks are not executed successfully.",
     "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)",
