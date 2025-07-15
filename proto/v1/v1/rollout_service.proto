@@ -409,6 +409,10 @@ message Task {
     DatabaseDataExport database_data_export = 16;
   }
 
+  // The update_time is the update time of related latest task runs.
+  // If there are no task runs, it will be empty.
+  optional google.protobuf.Timestamp update_time = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   message DatabaseCreate {
     // The project owning the database.
     // Format: projects/{project}
