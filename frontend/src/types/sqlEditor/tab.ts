@@ -41,6 +41,12 @@ export type BatchQueryContext = {
   dataSourceType?: QueryDataSourceType;
 };
 
+// PENDING: ready, pending to request.
+// EXECUTING: requesting.
+// DONE: request finished.
+// CANCELLED: request cancelled.
+export type QueryContextStatus = "PENDING" | "EXECUTING" | "DONE" | "CANCELLED";
+
 export type SQLEditorDatabaseQueryContext = {
   id: string;
   // we will generate a new abortController when status changed to EXECUTING.
@@ -51,7 +57,7 @@ export type SQLEditorDatabaseQueryContext = {
   // EXECUTING: requesting.
   // DONE: request finished.
   // CANCELLED: request cancelled.
-  status: "PENDING" | "EXECUTING" | "DONE" | "CANCELLED";
+  status: QueryContextStatus;
   // beginTimestampMS will store the start request time when status changed to EXECUTING.
   beginTimestampMS?: number;
   // query result.

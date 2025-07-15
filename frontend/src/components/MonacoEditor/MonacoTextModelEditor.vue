@@ -62,7 +62,6 @@ import {
   shallowRef,
   onBeforeUnmount,
   watch,
-  watchEffect,
   computed,
 } from "vue";
 import { BBSpin } from "@/bbkit";
@@ -249,12 +248,18 @@ onMounted(async () => {
         : "";
       emit("update:active-content", activeContent.value);
     });
-    watchEffect(() => {
-      emit("select-content", selectedContent.value);
-    });
-    watchEffect(() => {
-      emit("update:selection", selection.value);
-    });
+    watch(
+      () => selectedContent.value,
+      () => {
+        emit("select-content", selectedContent.value);
+      }
+    );
+    watch(
+      () => selection.value,
+      () => {
+        emit("update:selection", selection.value);
+      }
+    );
   } catch (ex) {
     console.error("[MonacoEditor] initialize failed", ex);
   }

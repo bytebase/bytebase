@@ -21,7 +21,12 @@
         <template #tab>
           <NTooltip>
             <template #trigger>
-              <div class="flex items-center space-x-2">
+              <div
+                class="flex items-center space-x-2"
+                @contextmenu.stop.prevent="
+                  handleContextMenuShow(context.id, $event)
+                "
+              >
                 <span>{{ tabName(context) }}</span>
                 <CircleAlertIcon
                   v-if="context.resultSet?.error"
@@ -59,6 +64,24 @@
         />
       </NTabPane>
     </NTabs>
+    <NDropdown
+      v-if="contextMenuState"
+      trigger="manual"
+      placement="bottom-start"
+      :show="true"
+      :x="contextMenuState?.x"
+      :y="contextMenuState?.y"
+      :options="contextMenuOptions"
+      @clickoutside="handleContextMenuClose"
+      @update:show="
+        (show: boolean) => {
+          if (!show) {
+            handleContextMenuClose();
+          }
+        }
+      "
+      @select="handleContextMenuSelect"
+    />
   </div>
 </template>
 
@@ -66,8 +89,9 @@
 import dayjs from "dayjs";
 import { head } from "lodash-es";
 import { CircleAlertIcon, XIcon } from "lucide-vue-next";
-import { NTabs, NTabPane, NTooltip } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import type { DropdownOption } from "naive-ui";
+import { NTabs, NTabPane, NTooltip, NDropdown } from "naive-ui";
+import { computed, ref, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import { BBAttention } from "@/bbkit";
@@ -81,6 +105,95 @@ const selectedDatabase = ref<ComposedDatabase>();
 const tabStore = useSQLEditorTabStore();
 const selectedTab = ref<string>();
 const { t } = useI18n();
+const contextMenuState = ref<
+  | {
+      x: number;
+      y: number;
+      tabId: string;
+    }
+  | undefined
+>();
+
+const contextMenuOptions = computed((): DropdownOption[] => {
+  return [
+    {
+      key: "CLOSE",
+      label: t("sql-editor.tab.context-menu.actions.close"),
+    },
+    {
+      key: "CLOSE_OTHERS",
+      label: t("sql-editor.tab.context-menu.actions.close-others"),
+    },
+    {
+      key: "CLOSE_TO_THE_RIGHT",
+      label: t("sql-editor.tab.context-menu.actions.close-to-the-right"),
+    },
+    {
+      key: "CLOSE_ALL",
+      label: t("sql-editor.tab.context-menu.actions.close-all"),
+    },
+  ];
+});
+
+const handleContextMenuSelect = (action: string) => {
+  if (!contextMenuState.value) {
+    return;
+  }
+  switch (action) {
+    case "CLOSE":
+      handleCloseTab(contextMenuState.value.tabId);
+      break;
+    case "CLOSE_OTHERS":
+      tabStore.batchRemoveDatabaseQueryContext({
+        database: selectedDatabase.value?.name ?? "",
+        contextIds:
+          queryContexts.value
+            ?.filter((ctx) => ctx.id !== contextMenuState.value?.tabId)
+            .map((ctx) => ctx.id) ?? [],
+      });
+      selectedTab.value = contextMenuState.value?.tabId;
+      break;
+    case "CLOSE_TO_THE_RIGHT":
+      const index =
+        queryContexts.value?.findIndex(
+          (ctx) => ctx.id === contextMenuState.value?.tabId
+        ) ?? -1;
+      if (index < 0) {
+        return;
+      }
+      tabStore.batchRemoveDatabaseQueryContext({
+        database: selectedDatabase.value?.name ?? "",
+        contextIds:
+          queryContexts.value?.slice(index + 1).map((ctx) => ctx.id) ?? [],
+      });
+      selectedTab.value = contextMenuState.value?.tabId;
+      break;
+    case "CLOSE_ALL":
+      tabStore.deleteDatabaseQueryContext(selectedDatabase.value?.name ?? "");
+      selectedTab.value = undefined;
+      break;
+  }
+
+  handleContextMenuClose();
+};
+
+const handleContextMenuShow = (tabId: string, e: MouseEvent) => {
+  e.preventDefault();
+  e.stopPropagation();
+  handleContextMenuClose();
+  nextTick(() => {
+    const { pageX, pageY } = e;
+    contextMenuState.value = {
+      x: pageX,
+      y: pageY,
+      tabId,
+    };
+  });
+};
+
+const handleContextMenuClose = () => {
+  contextMenuState.value = undefined;
+};
 
 const isBatchQuery = computed(
   () =>

@@ -68,9 +68,9 @@
 import { useDebounceFn } from "@vueuse/core";
 import dayjs from "dayjs";
 import { escape } from "lodash-es";
-import { NButton, useDialog } from "naive-ui";
-import { computed, h, reactive, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import * as monaco from "monaco-editor";
+import { NButton } from "naive-ui";
+import { computed, reactive, watch, nextTick } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { SearchBox } from "@/components/v2";
 import { CopyButton } from "@/components/v2";
@@ -86,18 +86,16 @@ import {
   type SQLEditorTab,
 } from "@/types";
 import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
-import { getHighlightHTMLByKeyWords, defer } from "@/utils";
+import { getHighlightHTMLByKeyWords } from "@/utils";
 
 interface State {
   search: string;
   loading: boolean;
 }
 
-const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 const queryHistoryStore = useSQLEditorQueryHistoryStore();
-const $d = useDialog();
 
 const state = reactive<State>({
   search: "",
@@ -157,44 +155,6 @@ const titleOfQueryHistory = (history: QueryHistory) => {
   );
 };
 
-const confirmOverrideCurrentStatement = (): Promise<"CANCEL" | "OVERRIDE"> => {
-  const d = defer<"CANCEL" | "OVERRIDE">();
-  const dialog = $d.warning({
-    title: t("common.warning"),
-    content: t("sql-editor.current-editing-statement-is-not-empty"),
-    contentClass: "whitespace-pre-wrap",
-    style: "z-index: 100000",
-    closable: false,
-    closeOnEsc: false,
-    maskClosable: false,
-    action: () => {
-      const buttons = [
-        h(
-          NButton,
-          { size: "small", onClick: () => d.resolve("CANCEL") },
-          { default: () => t("common.cancel") }
-        ),
-        h(
-          NButton,
-          {
-            size: "small",
-            type: "warning",
-            onClick: () => d.resolve("OVERRIDE"),
-          },
-          { default: () => t("common.override") }
-        ),
-      ];
-      return h(
-        "div",
-        { class: "flex items-center justify-end gap-2" },
-        buttons
-      );
-    },
-  });
-  d.promise.then(() => dialog.destroy());
-  return d.promise;
-};
-
 const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
   const { statement } = queryHistory;
 
@@ -211,20 +171,27 @@ const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
     );
   };
   const openInCurrentTab = async (tab: SQLEditorTab) => {
-    if (!tab.statement) {
-      tab.statement = statement;
-      return;
-    }
-    const choice = await confirmOverrideCurrentStatement();
-    if (choice === "CANCEL") {
-      return;
-    }
-    if (choice === "OVERRIDE") {
+    const newStatement = [tab.statement, statement]
+      .filter((s) => s)
+      .join("\n\n");
+    const selection = new monaco.Selection(
+      tab.statement.split("\n").length + 1,
+      0,
+      newStatement.split("\n").length + 1,
+      0
+    );
+    tabStore.updateCurrentTab({
+      statement: newStatement,
+    });
+
+    nextTick(() => {
       tabStore.updateCurrentTab({
-        statement,
+        editorState: {
+          ...tab.editorState,
+          selection: selection,
+        },
       });
-      return;
-    }
+    });
   };
 
   if (tab) {
