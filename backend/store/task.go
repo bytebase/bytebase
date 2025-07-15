@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -32,6 +33,9 @@ type TaskMessage struct {
 	Payload *storepb.Task
 
 	LatestTaskRunStatus storepb.TaskRun_Status
+	// UpdatedAt is the updated_at of latest task run related to the task.
+	// If there are no task runs, it will be empty.
+	UpdatedAt *time.Time
 }
 
 func (t *TaskMessage) GetDatabaseName() string {
@@ -287,20 +291,19 @@ func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*
 			task.instance,
 			task.db_name,
 			task.environment,
-			latest_task_run.status AS latest_task_run_status,
+			COALESCE(latest_task_run.status, $%d) AS latest_task_run_status,
 			task.type,
-			task.payload
+			task.payload,
+			latest_task_run.updated_at
 		FROM task
 		LEFT JOIN LATERAL (
-			SELECT COALESCE(
-				(SELECT
-					task_run.status
-				FROM task_run
-				WHERE task_run.task_id = task.id
-				ORDER BY task_run.id DESC
-				LIMIT 1
-				), $%d
-			) AS status
+			SELECT
+				task_run.status,
+				task_run.updated_at
+			FROM task_run
+			WHERE task_run.task_id = task.id
+			ORDER BY task_run.id DESC
+			LIMIT 1
 		) AS latest_task_run ON TRUE
 		WHERE %s
 		ORDER BY task.id ASC`, len(args), strings.Join(where, " AND ")),
@@ -326,6 +329,7 @@ func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*
 			&latestTaskRunStatusString,
 			&typeString,
 			&payload,
+			&task.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}

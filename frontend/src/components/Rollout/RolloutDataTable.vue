@@ -161,7 +161,11 @@ const columnList = computed(
                                   key={status}
                                   class="flex items-center gap-2"
                                 >
-                                  <TaskStatus status={status} size="small" />
+                                  <TaskStatus
+                                    status={status}
+                                    size="small"
+                                    disabled
+                                  />
                                   <span class="text-sm">
                                     {stringifyTaskStatus(status)}: {count}
                                   </span>
