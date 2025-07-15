@@ -1125,7 +1125,11 @@
     "force-rollout": "强制执行",
     "stage": {
       "self": "阶段 | 阶段",
-      "start-stage": "开始该阶段"
+      "start-stage": "开始该阶段",
+      "no-stages": {
+        "self": "没有阶段",
+        "description": "本次发布任务未定义任何阶段。"
+      }
     }
   },
   "quick-action": {

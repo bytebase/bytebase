@@ -13,7 +13,7 @@
     "type-check": "export NODE_OPTIONS=--max_old_space_size=8000 && vue-tsc --build --force",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest --coverage",
-    "i18n": "TS_NODE_PROJECT='./tsconfig.i18n.json' ts-node i18n.ts && eslint --cache src"
+    "i18n": "TS_NODE_PROJECT='./tsconfig.i18n.json' ts-node i18n.ts && eslint --cache src --fix"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.5.1",

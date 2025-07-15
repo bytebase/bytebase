@@ -101,6 +101,7 @@ const generateRolloutFromPlan = async (
       project: params.project.name,
       plan: plan,
     });
+    // TODO(steven): Remove me after preview rollout is deprecated.
     rollout = await rolloutServiceClientConnect.previewRollout(request);
   }
   // Touch UIDs for each object for local referencing

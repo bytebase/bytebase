@@ -1125,7 +1125,11 @@
     "force-rollout": "Chạy bắt buộc",
     "stage": {
       "self": "Giai đoạn | Các giai đoạn",
-      "start-stage": "Giai đoạn bắt đầu"
+      "start-stage": "Giai đoạn bắt đầu",
+      "no-stages": {
+        "self": "Không có giai đoạn",
+        "description": "Không có giai đoạn nào được xác định cho lần triển khai này."
+      }
     }
   },
   "quick-action": {

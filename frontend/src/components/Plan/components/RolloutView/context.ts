@@ -1,22 +1,16 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
-import type { ComputedRef, InjectionKey, Ref } from "vue";
+import type { InjectionKey } from "vue";
 import { computed, inject, provide, ref, onUnmounted } from "vue";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import { useCurrentProjectV1 } from "@/store";
 import {
-  PreviewRolloutRequestSchema,
+  CreateRolloutRequestSchema,
   RolloutSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContextWithRollout } from "../../logic";
-
-export type RolloutViewContext = {
-  rollout: Ref<Rollout>;
-  rolloutPreview: Ref<Rollout | undefined>;
-  mergedStages: ComputedRef<Stage[]>;
-};
 
 export const KEY = Symbol(
   "bb.plan.rollout-view"
@@ -27,9 +21,10 @@ export const useRolloutViewContext = () => {
 };
 
 export const provideRolloutViewContext = () => {
-  const { events, plan, rollout } = usePlanContextWithRollout();
+  const { events, rollout } = usePlanContextWithRollout();
   const { project } = useCurrentProjectV1();
 
+  const ready = ref(false);
   const rolloutPreview = ref<Rollout>(create(RolloutSchema, {}));
 
   const mergedStages = computed(() => {
@@ -54,22 +49,24 @@ export const provideRolloutViewContext = () => {
   });
 
   const fetchRolloutPreview = async () => {
-    const request = create(PreviewRolloutRequestSchema, {
-      project: project.value.name,
-      plan: plan.value,
-    });
-
     try {
-      const rolloutPreviewNew =
-        await rolloutServiceClientConnect.previewRollout(request, {
+      const rolloutPreviewNew = await rolloutServiceClientConnect.createRollout(
+        create(CreateRolloutRequestSchema, {
+          parent: project.value.name,
+          rollout: rollout.value,
+          validateOnly: true,
+        }),
+        {
           contextValues: createContextValues().set(silentContextKey, true),
-        });
+        }
+      );
       rolloutPreview.value = rolloutPreviewNew;
     } catch (error) {
       // Handle preview errors gracefully
       console.error("Failed to fetch rollout preview:", error);
       rolloutPreview.value = create(RolloutSchema, {});
     } finally {
+      ready.value = true;
     }
   };
 
@@ -92,12 +89,14 @@ export const provideRolloutViewContext = () => {
     unsubscribe();
   });
 
-  const context: RolloutViewContext = {
+  const context = {
+    ready,
     rollout,
-    rolloutPreview,
     mergedStages,
   };
 
   provide(KEY, context);
   return context;
 };
+
+type RolloutViewContext = ReturnType<typeof provideRolloutViewContext>;

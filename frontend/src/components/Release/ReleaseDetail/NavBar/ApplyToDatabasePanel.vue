@@ -51,7 +51,6 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
@@ -59,20 +58,15 @@ import DatabaseAndGroupSelector, {
   type DatabaseSelectState,
 } from "@/components/DatabaseAndGroupSelector/";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
-import {
-  planServiceClientConnect,
-  rolloutServiceClientConnect,
-} from "@/grpcweb";
-import { silentContextKey } from "@/grpcweb/context-key";
+import { planServiceClientConnect } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useDatabaseV1Store, useDBGroupStore } from "@/store";
+import { useDatabaseV1Store, useDBGroupStore } from "@/store";
 import { DatabaseGroupSchema } from "@/types/proto-es/v1/database_group_service_pb";
 import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import {
   PlanSchema,
   Plan_ChangeDatabaseConfigSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import { PreviewRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractProjectResourceName,
   generateIssueTitle,
@@ -143,24 +137,6 @@ const handleCreate = async () => {
       },
     ],
   });
-  try {
-    const previewRolloutRequest = create(PreviewRolloutRequestSchema, {
-      project: project.value.name,
-      plan: newPlan,
-    });
-    await rolloutServiceClientConnect.previewRollout(previewRolloutRequest, {
-      contextValues: createContextValues().set(silentContextKey, true),
-    });
-  } catch (error) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: "Preview Rollout Failed",
-      description: `${error instanceof Error ? error.message : "Unknown error"}\nPlease check if you had applied the release to the selected databases.`,
-    });
-    return;
-  }
-
   const request = create(CreatePlanRequestSchema, {
     parent: project.value.name,
     plan: newPlan,
