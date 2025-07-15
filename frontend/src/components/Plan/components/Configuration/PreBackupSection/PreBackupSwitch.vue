@@ -4,7 +4,11 @@
       <NSwitch
         size="small"
         :value="enabled"
-        :disabled="!allowChange || errors.length > 0"
+        :disabled="
+          !allowChange ||
+          (!enabled &&
+            (databasesNotMeetingRequirements.length > 0 || errors.length > 0))
+        "
         @update:value="(on) => handleToggle(on)"
       />
     </template>
@@ -12,8 +16,8 @@
       <p class="opacity-80">{{ tooltipMessage }}</p>
       <ErrorList v-if="errors.length > 0" :errors="errors" class="mt-2" />
       <LearnMoreLink
-        v-if="disallowPreBackupLink && errors.length === 0"
-        :url="disallowPreBackupLink"
+        v-if="databasesNotMeetingRequirements.length > 0"
+        :url="'https://docs.bytebase.com/change-database/rollback-data-changes?source=console'"
         color="light"
         class="mt-1 text-sm"
       />
@@ -39,34 +43,9 @@ const { t } = useI18n();
 const { enabled, allowChange, databases, toggle, selectedSpec } =
   usePreBackupSettingContext();
 
-const hasBackupUnavailable = computed(() => {
-  return !databases.value.some((db) => !db.backupAvailable);
-});
-
-const disallowPreBackupLink = computed(() => {
-  if (allowChange.value || !hasBackupUnavailable.value) {
-    return undefined;
-  }
-  return "https://docs.bytebase.com/change-database/rollback-data-changes?source=console";
-});
-
 // Compute detailed errors for ErrorList
 const errors = computed(() => {
   const errors: ErrorItem[] = [];
-
-  // Check for databases without backup available
-  const backupUnavailableDatabases = databases.value.filter(
-    (db) => !db.backupAvailable
-  );
-  if (backupUnavailableDatabases.length > 0) {
-    errors.push(
-      t("database.backup-unavailable-for-databases", {
-        databases: backupUnavailableDatabases
-          .map((db) => db.databaseName)
-          .join(", "),
-      })
-    );
-  }
 
   // Check for unsupported database engines
   const unsupportedEngineDatabases = databases.value.filter(
