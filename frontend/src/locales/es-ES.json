@@ -1062,7 +1062,7 @@
     "select-targets": "Seleccionar objetivos",
     "ready-for-review": "Listo para revisión",
     "overview": {
-      "total-specs": "Especificaciones totales",
+      "total-changes": "Cambios totales",
       "total-targets": "Objetivos totales",
       "no-checks": "Sin controles"
     },
@@ -1121,7 +1121,7 @@
   },
   "rollout": {
     "rollouts": "Despliegues",
-    "force-rollout": "Despliegue de fuerza",
+    "force-rollout": "Ejecución forzada",
     "stage": {
       "self": "Escenario | Escenarios",
       "start-stage": "Etapa de inicio"
