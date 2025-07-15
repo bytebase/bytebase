@@ -2,21 +2,43 @@
   <div class="w-full h-full flex flex-col">
     <!-- Content area -->
     <div class="w-full flex-1 p-4">
-      <div class="flex items-center gap-1 mb-4 pl-4">
-        <h3 class="text-base font-medium">
-          {{ $t("rollout.stage.self", mergedStages.length) }}
-        </h3>
-        <span class="text-control-light" v-if="mergedStages.length > 1"
-          >({{ mergedStages.length }})</span
-        >
+      <div
+        v-if="mergedStages.length === 0"
+        class="flex items-center justify-center py-12"
+      >
+        <div class="flex flex-col items-center gap-4 max-w-md text-center">
+          <div
+            class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center"
+          >
+            <LayersIcon class="w-8 h-8 text-gray-400" />
+          </div>
+          <div class="space-y-2">
+            <h3 class="font-medium text-xl text-gray-900">
+              {{ $t("rollout.stage.no-stages.self") }}
+            </h3>
+            <p class="text-base text-gray-500">
+              {{ $t("rollout.stage.no-stages.description") }}
+            </p>
+          </div>
+        </div>
       </div>
-      <StagesView
-        :rollout="rollout"
-        :merged-stages="mergedStages"
-        :readonly="readonly"
-        @run-tasks="handleRunTasks"
-        @create-rollout-to-stage="handleCreateRolloutToStage"
-      />
+      <template v-else>
+        <div class="flex items-center gap-1 mb-4 pl-4">
+          <h3 class="text-base font-medium">
+            {{ $t("rollout.stage.self", mergedStages.length) }}
+          </h3>
+          <span class="text-control-light" v-if="mergedStages.length > 1"
+            >({{ mergedStages.length }})</span
+          >
+        </div>
+        <StagesView
+          :rollout="rollout"
+          :merged-stages="mergedStages"
+          :readonly="readonly"
+          @run-tasks="handleRunTasks"
+          @create-rollout-to-stage="handleCreateRolloutToStage"
+        />
+      </template>
     </div>
 
     <!-- Task Rollout Action Panel -->
@@ -33,6 +55,7 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
+import { LayersIcon } from "lucide-vue-next";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { rolloutServiceClientConnect } from "@/grpcweb";

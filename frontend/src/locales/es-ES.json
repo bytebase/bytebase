@@ -1125,7 +1125,11 @@
     "force-rollout": "Ejecución forzada",
     "stage": {
       "self": "Escenario | Escenarios",
-      "start-stage": "Etapa de inicio"
+      "start-stage": "Etapa de inicio",
+      "no-stages": {
+        "self": "Sin etapas",
+        "description": "No se definen etapas para este lanzamiento."
+      }
     }
   },
   "quick-action": {

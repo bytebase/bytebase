@@ -1125,7 +1125,11 @@
     "force-rollout": "Force run",
     "stage": {
       "self": "Stage | Stages",
-      "start-stage": "Start stage"
+      "start-stage": "Start stage",
+      "no-stages": {
+        "self": "No stages",
+        "description": "No stages are defined for this rollout."
+      }
     }
   },
   "quick-action": {
