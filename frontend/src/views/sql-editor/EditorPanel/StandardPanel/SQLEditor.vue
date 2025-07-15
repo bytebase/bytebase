@@ -168,6 +168,16 @@ const getActiveStatement = () => {
   return monacoEditorRef.value?.getActiveStatement() || tab.statement || "";
 };
 
+watch(
+  () => tabStore.currentTab?.editorState.selection,
+  (selection) => {
+    if (!selection || !activeSQLEditorRef.value) {
+      return;
+    }
+    activeSQLEditorRef.value.setSelection(selection);
+  }
+);
+
 const runQueryAction = ({
   explain = false,
   newTab = false,

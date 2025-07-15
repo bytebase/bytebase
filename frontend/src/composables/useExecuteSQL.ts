@@ -27,6 +27,7 @@ import type {
   SQLEditorQueryParams,
   SQLEditorConnection,
   SQLEditorTab,
+  QueryContextStatus,
   SQLEditorDatabaseQueryContext,
   QueryDataSourceType,
 } from "@/types";
@@ -192,6 +193,24 @@ const useExecuteSQL = () => {
     return getValidDataSourceByPolicy(database, mode) ?? "";
   };
 
+  const changeContextStatus = (
+    ctx: SQLEditorDatabaseQueryContext,
+    status: QueryContextStatus
+  ) => {
+    switch (status) {
+      case "EXECUTING":
+        ctx.abortController = new AbortController();
+        ctx.beginTimestampMS = Date.now();
+        break;
+      case "CANCELLED":
+        ctx.abortController?.abort();
+        break;
+      case "DONE":
+        break;
+    }
+    ctx.status = status;
+  };
+
   const preExecute = async (params: SQLEditorQueryParams) => {
     const now = Date.now();
     if (
@@ -266,9 +285,7 @@ const useExecuteSQL = () => {
     for (const [database, contexts] of databaseQueryContexts.entries()) {
       if (!batchQueryDatabaseSet.has(database)) {
         for (const context of contexts) {
-          if (context.status === "EXECUTING") {
-            context.abortController?.abort();
-          }
+          changeContextStatus(context, "CANCELLED");
         }
         databaseQueryContexts.delete(database);
       }
@@ -282,13 +299,15 @@ const useExecuteSQL = () => {
         databaseQueryContexts.set(databaseName, []);
       }
 
-      if ((databaseQueryContexts.get(databaseName)?.length ?? 0) >= 10) {
-        databaseQueryContexts.get(databaseName)?.pop();
+      if ((databaseQueryContexts.get(databaseName)?.length ?? 0) >= 50) {
+        const ctx = databaseQueryContexts.get(databaseName)?.pop();
+        if (ctx) {
+          changeContextStatus(ctx, "CANCELLED");
+        }
       }
 
       const database = dbStore.getDatabaseByName(databaseName);
-
-      databaseQueryContexts.get(databaseName)?.unshift({
+      const context: SQLEditorDatabaseQueryContext = {
         id: uuidv4(),
         params: Object.assign(cloneDeep(params), {
           connection: {
@@ -301,7 +320,8 @@ const useExecuteSQL = () => {
           },
         }),
         status: "PENDING",
-      });
+      };
+      databaseQueryContexts.get(databaseName)?.unshift(context);
     }
   };
 
@@ -323,13 +343,11 @@ const useExecuteSQL = () => {
       return;
     }
 
-    context.abortController = new AbortController();
-    context.status = "EXECUTING";
-    context.beginTimestampMS = Date.now();
+    changeContextStatus(context, "EXECUTING");
 
     const finish = (resultSet: SQLResultSetV1) => {
       context.resultSet = resultSet;
-      context.status = "DONE";
+      changeContextStatus(context, "DONE");
     };
 
     const abort = (error: string, advices: Advice[] = []) => {
@@ -343,6 +361,9 @@ const useExecuteSQL = () => {
     };
 
     const { abortController } = context;
+    if (!abortController) {
+      return;
+    }
     const sqlStore = useSQLStore();
 
     const checkBehavior = context.params.skipCheck
@@ -351,7 +372,7 @@ const useExecuteSQL = () => {
     let checkResult: SQLCheckResult = { passed: true };
     if (checkBehavior !== "SKIP") {
       try {
-        checkResult = await check(context.abortController, context.params);
+        checkResult = await check(abortController, context.params);
       } catch (error) {
         return abort(extractGrpcErrorMessage(error));
       }

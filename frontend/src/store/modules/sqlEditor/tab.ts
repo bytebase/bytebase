@@ -308,6 +308,34 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     return contexts[index] || contexts[index - 1];
   };
 
+  const batchRemoveDatabaseQueryContext = ({
+    database,
+    contextIds,
+  }: {
+    database: string;
+    contextIds: string[];
+  }) => {
+    const tab = tabById(currentTabId.value);
+    if (!tab || !tab.databaseQueryContexts) {
+      return;
+    }
+    if (!tab.databaseQueryContexts.has(database)) {
+      return;
+    }
+    const target = new Set(contextIds);
+    const contexts = tab.databaseQueryContexts.get(database)!;
+    const newContexts = contexts.filter((ctx) => !target.has(ctx.id));
+    tab.databaseQueryContexts.set(database, newContexts);
+  };
+
+  const deleteDatabaseQueryContext = (database: string) => {
+    const tab = tabById(currentTabId.value);
+    if (!tab || !tab.databaseQueryContexts) {
+      return;
+    }
+    tab.databaseQueryContexts.delete(database);
+  };
+
   const updateDatabaseQueryContext = ({
     database,
     contextId,
@@ -445,6 +473,8 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     updateBatchQueryContext,
     updateDatabaseQueryContext,
     removeDatabaseQueryContext,
+    batchRemoveDatabaseQueryContext,
+    deleteDatabaseQueryContext,
     setCurrentTabId,
     selectOrAddSimilarNewTab,
     maybeInitProject,
