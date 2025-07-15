@@ -977,7 +977,8 @@
     "error": {
       "you-don-have-privilege-to-edit-this-issue": "您没有权限编辑此工单",
       "you-are-not-allowed-to-perform-this-action": "您无权执行此操作",
-      "cannot-close-issue-with-running-tasks": "无法关闭还存在运行中任务的工单"
+      "cannot-close-issue-with-running-tasks": "无法关闭还存在运行中任务的工单",
+      "statement-cannot-be-modified": "工单创建后，语句将无法修改"
     },
     "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中部分任务并未成功执行。",
     "some-tasks-are-not-executed-successfully": "（部分任务并未成功执行）",
