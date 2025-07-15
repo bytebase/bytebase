@@ -215,7 +215,7 @@ func TestSQLExport(t *testing.T) {
 		var chunks [][]byte
 		for stream.Receive() {
 			resp := stream.Msg()
-			if resp.Content != nil && len(resp.Content) > 0 {
+			if len(resp.Content) > 0 {
 				chunks = append(chunks, resp.Content)
 			}
 		}
