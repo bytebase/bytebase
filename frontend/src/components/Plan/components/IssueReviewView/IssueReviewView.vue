@@ -25,7 +25,7 @@ import OverviewSection from "./OverviewSection.vue";
 import { Sidebar } from "./Sidebar";
 
 const { project, ready } = useCurrentProjectV1();
-const { issue } = usePlanContextWithIssue();
+const { plan, issue, rollout } = usePlanContextWithIssue();
 const currentUser = useCurrentUserV1();
 
 const issueBaseContext = useBaseIssueContext({
@@ -48,12 +48,25 @@ const allowChange = computed(() => {
   );
 });
 
+// TODO(steven): remove ComposedIssue.
+const composedIssue = computed(() => {
+  const composedIssue = issue.value as ComposedIssue;
+  composedIssue.project = unref(project).name;
+  composedIssue.plan = unref(plan).name;
+  composedIssue.planEntity = unref(plan);
+  if (rollout?.value) {
+    composedIssue.rollout = rollout.value.name;
+    composedIssue.rolloutEntity = rollout.value;
+  }
+  return composedIssue;
+});
+
 provideIssueContext(
   {
     isCreating: computed(() => false),
     ready,
     allowChange,
-    issue: computed(() => issue.value as ComposedIssue),
+    issue: composedIssue,
     ...issueBaseContext,
   },
   true /* root */

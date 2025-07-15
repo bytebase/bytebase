@@ -1622,7 +1622,6 @@
       "reference": "Referencia"
     },
     "checks": "Cheques",
-    "backup-unavailable-for-databases": "La copia de seguridad no está disponible para las bases de datos: {databases}",
     "engine-not-supported-for-backup": "No se admite la copia de seguridad previa para: {databases}",
     "revision": {
       "self": "Revisión",

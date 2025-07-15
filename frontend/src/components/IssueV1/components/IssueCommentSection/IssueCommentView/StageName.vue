@@ -7,11 +7,9 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useEnvironmentV1Store } from "@/store";
-import type { ComposedIssue } from "@/types";
 import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
 
 const props = defineProps<{
-  issue: ComposedIssue;
   stage: Stage;
 }>();
 

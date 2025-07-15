@@ -1622,7 +1622,6 @@
       "reference": "Reference"
     },
     "checks": "Checks",
-    "backup-unavailable-for-databases": "Backup is not available for databases: {databases}",
     "engine-not-supported-for-backup": "Prior backup is not supported for: {databases}",
     "revision": {
       "self": "Revision",

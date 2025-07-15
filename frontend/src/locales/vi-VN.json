@@ -1622,7 +1622,6 @@
       "reference": "Tham chiếu"
     },
     "checks": "Kiểm tra",
-    "backup-unavailable-for-databases": "Sao lưu không khả dụng cho cơ sở dữ liệu: {databases}",
     "engine-not-supported-for-backup": "Sao lưu trước đó không được hỗ trợ cho: {databases}",
     "revision": {
       "self": "Bản sửa đổi",
