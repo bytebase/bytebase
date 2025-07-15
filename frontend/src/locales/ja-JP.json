@@ -1125,7 +1125,11 @@
     "force-rollout": "強制実行",
     "stage": {
       "self": "ステージ | ステージ",
-      "start-stage": "スタートステージ"
+      "start-stage": "スタートステージ",
+      "no-stages": {
+        "self": "ステージなし",
+        "description": "このロールアウトにはステージが定義されていません。"
+      }
     }
   },
   "quick-action": {
