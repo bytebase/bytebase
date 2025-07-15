@@ -21,11 +21,15 @@
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed } from "vue";
 import type { LocationQueryRaw } from "vue-router";
-import { stageForTask, projectOfIssue } from "@/components/IssueV1/logic";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import type { ComposedIssue } from "@/types";
+import { projectOfIssue } from "@/components/IssueV1/logic";
+import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
+} from "@/router/dashboard/projectV1";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
-import { databaseForTask } from "@/utils";
+import { databaseForTask, extractRolloutUID } from "@/utils";
 import {
   extractProjectResourceName,
   extractSchemaVersionFromTask,
@@ -35,9 +39,11 @@ import {
 } from "@/utils";
 
 const props = defineProps<{
-  issue: ComposedIssue;
+  issue: Issue;
   task: Task;
 }>();
+
+const { enabledNewLayout } = useIssueLayoutVersion();
 
 const schemaVersion = computed(() => {
   return extractSchemaVersionFromTask(props.task);
@@ -46,23 +52,31 @@ const schemaVersion = computed(() => {
 const link = computed(() => {
   const { issue, task } = props;
 
-  const query: LocationQueryRaw = {
-    task: extractTaskUID(task.name),
-  };
+  if (enabledNewLayout) {
+    return {
+      name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(task.name),
+        rolloutId: extractRolloutUID(task.name),
+        stageId: extractStageUID(task.name),
+        taskId: extractTaskUID(task.name),
+      },
+    };
+  } else {
+    const query: LocationQueryRaw = {
+      task: extractTaskUID(task.name),
+      stage: extractStageUID(task.name),
+    };
 
-  const stage = stageForTask(issue, task);
-  if (stage) {
-    query.stage = extractStageUID(stage.name);
+    return {
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(issue.name),
+        issueSlug: issueV1Slug(issue.name, issue.title),
+      },
+      query,
+    };
   }
-
-  return {
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-    params: {
-      projectId: extractProjectResourceName(issue.name),
-      issueSlug: issueV1Slug(issue.name, issue.title),
-    },
-    query,
-  };
 });
 
 const toTop = () => {

@@ -3,6 +3,7 @@ import { NButton } from "naive-ui";
 import { h } from "vue";
 import { t } from "@/plugins/i18n";
 import {
+  projectNamePrefix,
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useInstanceResourceByName,
@@ -18,20 +19,24 @@ import {
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueStatus, type Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   defer,
   extractDatabaseResourceName,
+  extractProjectResourceName,
   flattenTaskV1List,
   isValidIssueName,
 } from "@/utils";
 import type { IssueContext } from "./context";
 
-export const projectOfIssue = (issue: ComposedIssue): ComposedProject =>
-  useProjectV1Store().getProjectByName(issue.project);
+export const projectOfIssue = (issue: Issue): ComposedProject => {
+  return useProjectV1Store().getProjectByName(
+    `${projectNamePrefix}${extractProjectResourceName(issue.name)}`
+  );
+};
 
 export const useInstanceForTask = (task: Task) => {
   let instanceName: string = "";
