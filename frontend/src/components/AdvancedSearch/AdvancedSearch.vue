@@ -87,7 +87,6 @@ import { useElementSize } from "@vueuse/core";
 import { cloneDeep, last } from "lodash-es";
 import { FilterIcon } from "lucide-vue-next";
 import { XIcon } from "lucide-vue-next";
-import { matchSorter } from "match-sorter";
 import { NButton, NInput, type InputInst } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { zindexable as vZindexable } from "vdirs";
@@ -186,7 +185,7 @@ const containerRef = ref<HTMLElement>();
 const tagsContainerRef = ref<HTMLElement>();
 const inputText = ref(props.params.query);
 const inputRef = ref<InputInst>();
-const menuIndex = ref(0);
+const menuIndex = ref(-1);
 const { width: containerWidth } = useElementSize(containerRef);
 const focusedTagId = ref<SearchScopeId>();
 
@@ -299,26 +298,29 @@ const visibleScopeOptions = computed(() => {
   const keyword = inputText.value.trim().replace(/:.*$/, "").toLowerCase();
   if (!keyword) return availableScopeOptions.value;
 
-  const filtered = matchSorter(availableScopeOptions.value, keyword, {
-    keys: ["id", "title", "description"],
-  });
-
-  return filtered;
+  return availableScopeOptions.value.filter(
+    (option) =>
+      option.id.toLowerCase().includes(keyword) ||
+      option.title.toLowerCase().includes(keyword)
+  );
 });
 
 const visibleValueOptions = computed(() => {
   if (!state.currentScope) return [];
 
-  const keyword = currentValueForScope.value;
+  const keyword = currentValueForScope.value
+    .trim()
+    .replace(/:.*$/, "")
+    .toLowerCase();
   if (!keyword || currentScopeOption.value?.search) {
     return valueOptions.value;
   }
 
-  // Apply multiple segments of keyword splitted by whitespace
-  const terms = keyword.split(/\s+/g);
-  const filtered = terms.reduceRight((options, term) => {
-    return matchSorter(options, term, { keys: ["value", "keywords"] });
-  }, valueOptions.value);
+  const filtered = valueOptions.value.filter(
+    (option) =>
+      option.value.toLowerCase().includes(keyword) ||
+      option.keywords.some((key) => key.includes(keyword))
+  );
 
   const currentValue = getValueFromSearchParams(
     props.params,
@@ -568,6 +570,10 @@ const handleKeyUp = (e: KeyboardEvent) => {
     // Press enter to select scope (dive into the next step)
     // or select value
     const index = menuIndex.value;
+    if (index < 0) {
+      hideMenu();
+      return;
+    }
     if (state.menuView === "scope") {
       const option = visibleScopeOptions.value[index];
       if (option) {
@@ -637,14 +643,16 @@ watch(
   () => state.menuView,
   () => {
     focusedTagId.value = undefined;
-    menuIndex.value = 0;
+    menuIndex.value = -1;
     if (state.menuView === "value" && state.currentScope) {
       const value = getValueFromSearchParams(props.params, state.currentScope);
       if (value) {
         const index = valueOptions.value.findIndex(
           (option) => option.value === value
         );
-        if (index >= 0) menuIndex.value = index;
+        if (index >= 0) {
+          menuIndex.value = index;
+        }
       }
     }
   }
@@ -660,7 +668,6 @@ watch(visibleScopeOptions, (newOptions, oldOptions) => {
       return;
     }
   }
-  menuIndex.value = minmax(menuIndex.value, 0, newOptions.length - 1);
 });
 
 watch(visibleValueOptions, (newOptions, oldOptions) => {
