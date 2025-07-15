@@ -17,6 +17,7 @@ import {
   AdviceSchema,
   Advice_Status,
 } from "@/types/proto-es/v1/sql_service_pb";
+import { concatUint8Arrays } from "@/utils/binary";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 
 export const getSqlReviewReports = (err: unknown): Advice[] => {
@@ -89,27 +90,8 @@ export const useSQLStore = defineStore("sql", () => {
       }
     }
 
-    // Combine all chunks into a single Uint8Array
-    if (chunks.length === 0) {
-      return new Uint8Array();
-    }
-
-    if (chunks.length === 1) {
-      return chunks[0];
-    }
-
-    // Calculate total size
-    const totalSize = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-
-    // Create a new Uint8Array and copy all chunks into it
-    const combined = new Uint8Array(totalSize);
-    let offset = 0;
-    for (const chunk of chunks) {
-      combined.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    return combined;
+    // Concatenate chunks into a single Uint8Array
+    return concatUint8Arrays(chunks);
   };
 
   return {
