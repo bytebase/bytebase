@@ -1062,7 +1062,7 @@
     "select-targets": "Chọn mục tiêu",
     "ready-for-review": "Sẵn sàng để xem xét",
     "overview": {
-      "total-specs": "Tổng số thông số kỹ thuật",
+      "total-changes": "Tổng số thay đổi",
       "total-targets": "Tổng số mục tiêu",
       "no-checks": "Không kiểm tra"
     },
@@ -1121,7 +1121,7 @@
   },
   "rollout": {
     "rollouts": "Triển khai",
-    "force-rollout": "Buộc triển khai",
+    "force-rollout": "Chạy bắt buộc",
     "stage": {
       "self": "Giai đoạn | Các giai đoạn",
       "start-stage": "Giai đoạn bắt đầu"
