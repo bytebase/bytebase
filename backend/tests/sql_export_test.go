@@ -207,9 +207,25 @@ func TestSQLExport(t *testing.T) {
 			Password:     tt.password,
 			DataSourceId: dataSource.Id,
 		}
-		exportResp, err := ctl.sqlServiceClient.Export(ctx, connect.NewRequest(request))
+		// Export now returns a stream, so we need to collect all chunks
+		stream, err := ctl.sqlServiceClient.Export(ctx, connect.NewRequest(request))
 		a.NoError(err)
-		export := exportResp.Msg
+
+		// Collect all chunks from the stream
+		var chunks [][]byte
+		for stream.Receive() {
+			resp := stream.Msg()
+			if resp.Content != nil && len(resp.Content) > 0 {
+				chunks = append(chunks, resp.Content)
+			}
+		}
+		a.NoError(stream.Err())
+
+		// Concatenate all chunks into a single byte slice
+		var exportContent []byte
+		for _, chunk := range chunks {
+			exportContent = append(exportContent, chunk...)
+		}
 
 		statement = tt.reset
 		results, err = ctl.adminQuery(ctx, database, statement)
@@ -217,8 +233,8 @@ func TestSQLExport(t *testing.T) {
 		checkResults(a, tt.databaseName, statement, tt.resetResult, results)
 
 		if tt.password != "" {
-			reader := bytes.NewReader(export.Content)
-			zipReader, err := zip.NewReader(reader, int64(len(export.Content)))
+			reader := bytes.NewReader(exportContent)
+			zipReader, err := zip.NewReader(reader, int64(len(exportContent)))
 			a.NoError(err)
 			a.Equal(1, len(zipReader.File))
 
@@ -231,7 +247,7 @@ func TestSQLExport(t *testing.T) {
 			a.NoError(err)
 			statement = string(content)
 		} else {
-			statement = string(export.Content)
+			statement = string(exportContent)
 		}
 
 		results, err = ctl.adminQuery(ctx, database, statement)
