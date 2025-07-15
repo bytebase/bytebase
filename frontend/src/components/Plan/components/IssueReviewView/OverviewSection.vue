@@ -8,7 +8,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="textlabel">
-              {{ $t("plan.overview.total-specs") }}
+              {{ $t("plan.overview.total-changes") }}
             </p>
             <p class="text-xl font-medium mt-1">
               {{ statistics.totalSpecs }}

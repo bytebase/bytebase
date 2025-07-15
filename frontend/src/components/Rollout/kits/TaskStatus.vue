@@ -1,5 +1,5 @@
 <template>
-  <NTooltip>
+  <NTooltip :disabled="disabled">
     <template #trigger>
       <div
         :class="
@@ -70,6 +70,7 @@ import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 const props = defineProps<{
   status: Task_Status;
   size?: "small" | "medium" | "large";
+  disabled?: boolean;
 }>();
 
 const classes = computed((): string => {

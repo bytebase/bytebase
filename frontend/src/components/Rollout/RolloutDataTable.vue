@@ -13,7 +13,7 @@
 
 <script lang="tsx" setup>
 import type { DataTableColumn } from "naive-ui";
-import { NDataTable, NTag } from "naive-ui";
+import { NDataTable, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { RouterLink, useRouter } from "vue-router";
@@ -65,9 +65,8 @@ const TASK_STATUS_FILTERS: Task_Status[] = [
   TaskStatusEnum.NOT_STARTED,
 ];
 
-const getTaskCount = (rollout: ComposedRollout, status: Task_Status) => {
-  const allTasks = rollout.stages.flatMap((stage) => stage.tasks);
-  return allTasks.filter((task) => task.status === status).length;
+const getStageTaskCount = (stage: any, status: Task_Status) => {
+  return stage.tasks.filter((task: any) => task.status === status).length;
 };
 
 const columnList = computed(
@@ -125,48 +124,58 @@ const columnList = computed(
                 const stageStatus = getStageStatus(stage);
                 return (
                   <>
-                    <div key={stage.name} class="flex items-center gap-1">
-                      <TaskStatus status={stageStatus} size="small" />
-                      <span class="text-sm font-medium text-gray-700 whitespace-nowrap">
-                        {environment.title}
-                      </span>
-                    </div>
+                    <NTooltip key={stage.name} placement="top">
+                      {{
+                        trigger: () => (
+                          <div class="flex items-center gap-1 cursor-pointer">
+                            <TaskStatus
+                              status={stageStatus}
+                              size="small"
+                              disabled
+                            />
+                            <span class="text-sm font-medium text-gray-700 whitespace-nowrap">
+                              {environment.title}
+                            </span>
+                          </div>
+                        ),
+                        default: () => {
+                          const taskCounts = TASK_STATUS_FILTERS.map(
+                            (status) => {
+                              const count = getStageTaskCount(stage, status);
+                              return { status, count };
+                            }
+                          ).filter(({ count }) => count > 0);
+
+                          if (taskCounts.length === 0) {
+                            return (
+                              <span class="text-sm text-gray-400">
+                                {t("common.no-data")}
+                              </span>
+                            );
+                          }
+
+                          return (
+                            <div class="flex flex-col gap-1">
+                              {taskCounts.map(({ status, count }) => (
+                                <div
+                                  key={status}
+                                  class="flex items-center gap-2"
+                                >
+                                  <TaskStatus status={status} size="small" />
+                                  <span class="text-sm">
+                                    {stringifyTaskStatus(status)}: {count}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        },
+                      }}
+                    </NTooltip>
                     {index < rollout.stages.length - 1 && (
                       <span class="text-gray-400">→</span>
                     )}
                   </>
-                );
-              })}
-            </div>
-          );
-        },
-      },
-      {
-        key: "tasks",
-        title: t("common.tasks"),
-        render: (rollout) => {
-          return (
-            <div class="flex flex-row gap-1 items-center">
-              {TASK_STATUS_FILTERS.map((status) => {
-                const count = getTaskCount(rollout, status);
-                if (count === 0) return null;
-
-                return (
-                  <NTag key={status} round>
-                    {{
-                      avatar: () => <TaskStatus status={status} size="small" />,
-                      default: () => (
-                        <div class="flex flex-row items-center gap-1">
-                          <span class="select-none text-sm">
-                            {stringifyTaskStatus(status)}
-                          </span>
-                          <span class="select-none text-sm font-medium">
-                            {count}
-                          </span>
-                        </div>
-                      ),
-                    }}
-                  </NTag>
                 );
               })}
             </div>

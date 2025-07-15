@@ -1062,7 +1062,7 @@
     "select-targets": "ターゲットを選択",
     "ready-for-review": "レビュー準備完了",
     "overview": {
-      "total-specs": "合計スペック",
+      "total-changes": "合計変更数",
       "total-targets": "合計ターゲット",
       "no-checks": "チェックなし"
     },
@@ -1121,7 +1121,7 @@
   },
   "rollout": {
     "rollouts": "ロールアウト",
-    "force-rollout": "強制展開",
+    "force-rollout": "強制実行",
     "stage": {
       "self": "ステージ | ステージ",
       "start-stage": "スタートステージ"
