@@ -977,7 +977,8 @@
     "error": {
       "you-don-have-privilege-to-edit-this-issue": "No tienes privilegios para editar este número.",
       "you-are-not-allowed-to-perform-this-action": "No tienes permiso para realizar esta acción.",
-      "cannot-close-issue-with-running-tasks": "No se puede cerrar el problema con las tareas en ejecución"
+      "cannot-close-issue-with-running-tasks": "No se puede cerrar el problema con las tareas en ejecución",
+      "statement-cannot-be-modified": "La declaración no se puede modificar una vez creado el problema"
     },
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
     "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
@@ -1062,7 +1063,7 @@
     "select-targets": "Seleccionar objetivos",
     "ready-for-review": "Listo para revisión",
     "overview": {
-      "total-specs": "Especificaciones totales",
+      "total-changes": "Cambios totales",
       "total-targets": "Objetivos totales",
       "no-checks": "Sin controles"
     },
@@ -1121,7 +1122,7 @@
   },
   "rollout": {
     "rollouts": "Despliegues",
-    "force-rollout": "Despliegue de fuerza",
+    "force-rollout": "Ejecución forzada",
     "stage": {
       "self": "Escenario | Escenarios",
       "start-stage": "Etapa de inicio"
