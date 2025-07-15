@@ -977,7 +977,8 @@
     "error": {
       "you-don-have-privilege-to-edit-this-issue": "Bạn không có quyền chỉnh sửa vấn đề này",
       "you-are-not-allowed-to-perform-this-action": "Bạn không được phép thực hiện hành động này",
-      "cannot-close-issue-with-running-tasks": "Không thể đóng vấn đề với các tác vụ đang chạy"
+      "cannot-close-issue-with-running-tasks": "Không thể đóng vấn đề với các tác vụ đang chạy",
+      "statement-cannot-be-modified": "Không thể sửa đổi câu lệnh sau khi vấn đề được tạo"
     },
     "unfinished-resolved-issue-tips": "Vấn đề này được đánh dấu là \"Hoàn tất\" nhưng một số tác vụ của nó không được thực hiện thành công.",
     "some-tasks-are-not-executed-successfully": "(Một số tác vụ không được thực hiện thành công)",
