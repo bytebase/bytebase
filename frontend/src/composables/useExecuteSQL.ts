@@ -4,7 +4,7 @@ import { createContextValues } from "@connectrpc/connect";
 import Emittery from "emittery";
 import { head, isEmpty, cloneDeep } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
-import { markRaw, reactive, watch } from "vue";
+import { markRaw, reactive } from "vue";
 import { sqlServiceClientConnect } from "@/grpcweb";
 import { ignoredCodesContextKey } from "@/grpcweb/context-key";
 import { t } from "@/plugins/i18n";
