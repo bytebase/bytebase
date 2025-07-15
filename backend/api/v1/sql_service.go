@@ -694,30 +694,53 @@ func executeWithTimeout(ctx context.Context, stores *store.Store, licenseService
 }
 
 // Export exports the SQL query result.
-func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.ExportRequest]) (*connect.Response[v1pb.ExportResponse], error) {
+func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.ExportRequest], stream *connect.ServerStream[v1pb.ExportResponse]) error {
 	request := req.Msg
+
+	// Track whether we successfully sent data and export archives to delete.
+	var dataSent bool
+	var exportArchiveUIDs []int
+	defer func() {
+		if dataSent {
+			// Delete all export archives after stream is done
+			for _, exportArchiveUID := range exportArchiveUIDs {
+				if err := s.store.DeleteExportArchive(ctx, exportArchiveUID); err != nil {
+					slog.Error("failed to delete export archive",
+						log.BBError(err),
+						slog.String("name", request.Name),
+						slog.Int("archive", exportArchiveUID))
+				}
+			}
+		}
+	}()
+
 	// Prehandle export from issue.
 	if strings.HasPrefix(request.Name, common.ProjectNamePrefix) {
-		response, err := s.doExportFromIssue(ctx, request.Name)
+		response, archiveUIDs, err := s.doExportFromIssueWithArchives(ctx, request.Name)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		return connect.NewResponse(response), nil
+		exportArchiveUIDs = archiveUIDs
+		if err := stream.Send(response); err != nil {
+			return err
+		}
+		dataSent = true
+		return nil
 	}
 
 	// Check if data export is allowed.
 	exportDataPolicy, err := s.store.GetExportDataPolicy(ctx)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get data export policy: %v", err))
+		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get data export policy: %v", err))
 	}
 	if exportDataPolicy.Disable {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("data export is not allowed"))
+		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("data export is not allowed"))
 	}
 
 	// Prepare related message.
 	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	statement := request.Statement
@@ -730,48 +753,54 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	// New query ACL experience.
 	if instance.Metadata.GetEngine() != storepb.Engine_MYSQL {
 		if err := validateQueryRequest(instance, statement); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, s.licenseService, database, request.DataSourceId)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	bytes, duration, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, s.accessCheck, s.schemaSyncer, dataSource)
 
 	if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeExport, statement, user.ID, duration, exportErr); err != nil {
-		return nil, err
+		return err
 	}
 
 	if exportErr != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.New(exportErr.Error()))
+		return connect.NewError(connect.CodeInternal, errors.New(exportErr.Error()))
 	}
 
-	return connect.NewResponse(&v1pb.ExportResponse{
+	// Send the export data as a stream
+	if err := stream.Send(&v1pb.ExportResponse{
 		Content: bytes,
-	}), nil
+	}); err != nil {
+		return err
+	}
+	dataSent = true
+
+	return nil
 }
 
-func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) (*v1pb.ExportResponse, error) {
+func (s *SQLService) doExportFromIssueWithArchives(ctx context.Context, requestName string) (*v1pb.ExportResponse, []int, error) {
 	_, rolloutID, _, err := common.GetProjectIDRolloutIDMaybeStageID(requestName)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse rollout ID: %v", err))
+		return nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse rollout ID: %v", err))
 	}
 	rollout, err := s.store.GetRollout(ctx, rolloutID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout: %v", err))
+		return nil, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout: %v", err))
 	}
 	if rollout == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found", rolloutID))
+		return nil, nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found", rolloutID))
 	}
 
 	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &rollout.ID})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get tasks: %v", err))
+		return nil, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get tasks: %v", err))
 	}
 	if len(tasks) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %d has no task", rollout.ID))
+		return nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %d has no task", rollout.ID))
 	}
 
 	exportArchiveUIDs := []int{}
@@ -784,22 +813,22 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 			Status:  &targetTaskRunStatus,
 		})
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get task run: %v", err))
+			return nil, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get task run: %v", err))
 		}
 		if len(taskRuns) == 0 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %v has no task run", requestName))
+			return nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %v has no task run", requestName))
 		}
 		taskRun := taskRuns[0]
 		exportArchiveUID := int(taskRun.ResultProto.ExportArchiveUid)
 		if exportArchiveUID == 0 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue %v has no export archive", requestName))
+			return nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue %v has no export archive", requestName))
 		}
 		exportArchive, err := s.store.GetExportArchive(ctx, &store.FindExportArchiveMessage{UID: &exportArchiveUID})
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get export archive: %v", err))
+			return nil, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get export archive: %v", err))
 		}
 		if exportArchive == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("export archive %d not found", exportArchiveUID))
+			return nil, nil, connect.NewError(connect.CodeNotFound, errors.Errorf("export archive %d not found", exportArchiveUID))
 		}
 		exportArchiveUIDs = append(exportArchiveUIDs, exportArchiveUID)
 		contents = append(contents, &exportData{
@@ -813,19 +842,12 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 		Format:   v1pb.ExportFormat(tasks[0].Payload.GetFormat()),
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to encrypt data: %v", err))
-	}
-
-	for _, exportArchiveUID := range exportArchiveUIDs {
-		// Delete the export archive after it's fetched.
-		if err := s.store.DeleteExportArchive(ctx, exportArchiveUID); err != nil {
-			slog.Error("failed to delete export archive", log.BBError(err), slog.String("rollout", requestName), slog.Int("archive", exportArchiveUID))
-		}
+		return nil, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to encrypt data: %v", err))
 	}
 
 	return &v1pb.ExportResponse{
 		Content: encryptedBytes,
-	}, nil
+	}, exportArchiveUIDs, nil
 }
 
 // DoExport does the export.

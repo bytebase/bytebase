@@ -62,7 +62,7 @@ type SQLServiceClient interface {
 	// Permissions required: None
 	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
 	// Permissions required: bb.databases.get
-	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
+	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.ServerStreamForClient[v1.ExportResponse], error)
 	// Permissions required: bb.databases.check
 	Check(context.Context, *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error)
 	// Permissions required: None
@@ -163,8 +163,8 @@ func (c *sQLServiceClient) SearchQueryHistories(ctx context.Context, req *connec
 }
 
 // Export calls bytebase.v1.SQLService.Export.
-func (c *sQLServiceClient) Export(ctx context.Context, req *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error) {
-	return c.export.CallUnary(ctx, req)
+func (c *sQLServiceClient) Export(ctx context.Context, req *connect.Request[v1.ExportRequest]) (*connect.ServerStreamForClient[v1.ExportResponse], error) {
+	return c.export.CallServerStream(ctx, req)
 }
 
 // Check calls bytebase.v1.SQLService.Check.
@@ -197,7 +197,7 @@ type SQLServiceHandler interface {
 	// Permissions required: None
 	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
 	// Permissions required: bb.databases.get
-	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
+	Export(context.Context, *connect.Request[v1.ExportRequest], *connect.ServerStream[v1.ExportResponse]) error
 	// Permissions required: bb.databases.check
 	Check(context.Context, *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error)
 	// Permissions required: None
@@ -233,7 +233,7 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(sQLServiceMethods.ByName("SearchQueryHistories")),
 		connect.WithHandlerOptions(opts...),
 	)
-	sQLServiceExportHandler := connect.NewUnaryHandler(
+	sQLServiceExportHandler := connect.NewServerStreamHandler(
 		SQLServiceExportProcedure,
 		svc.Export,
 		connect.WithSchema(sQLServiceMethods.ByName("Export")),
@@ -302,8 +302,8 @@ func (UnimplementedSQLServiceHandler) SearchQueryHistories(context.Context, *con
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.SearchQueryHistories is not implemented"))
 }
 
-func (UnimplementedSQLServiceHandler) Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.Export is not implemented"))
+func (UnimplementedSQLServiceHandler) Export(context.Context, *connect.Request[v1.ExportRequest], *connect.ServerStream[v1.ExportResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.Export is not implemented"))
 }
 
 func (UnimplementedSQLServiceHandler) Check(context.Context, *connect.Request[v1.CheckRequest]) (*connect.Response[v1.CheckResponse], error) {

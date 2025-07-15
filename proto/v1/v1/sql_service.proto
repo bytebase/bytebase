@@ -52,7 +52,7 @@ service SQLService {
   }
 
   // Permissions required: bb.databases.get
-  rpc Export(ExportRequest) returns (ExportResponse) {
+  rpc Export(ExportRequest) returns (stream ExportResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:export"
       body: "*"

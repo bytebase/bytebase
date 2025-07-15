@@ -1439,7 +1439,7 @@ export declare const SQLService: GenService<{
    * @generated from rpc bytebase.v1.SQLService.Export
    */
   export: {
-    methodKind: "unary";
+    methodKind: "server_streaming";
     input: typeof ExportRequestSchema;
     output: typeof ExportResponseSchema;
   },

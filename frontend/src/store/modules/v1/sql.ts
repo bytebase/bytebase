@@ -74,13 +74,42 @@ export const useSQLStore = defineStore("sql", () => {
   };
 
   const exportData = async (params: ExportRequest) => {
-    const newResponse = await sqlServiceClientConnect.export(params, {
+    const stream = sqlServiceClientConnect.export(params, {
       // Won't jump to 403 page when permission denied.
       contextValues: createContextValues().set(ignoredCodesContextKey, [
         Code.PermissionDenied,
       ]),
     });
-    return newResponse.content;
+
+    // Collect all chunks from the stream
+    const chunks: Uint8Array[] = [];
+    for await (const response of stream) {
+      if (response.content && response.content.length > 0) {
+        chunks.push(response.content);
+      }
+    }
+
+    // Combine all chunks into a single Uint8Array
+    if (chunks.length === 0) {
+      return new Uint8Array();
+    }
+
+    if (chunks.length === 1) {
+      return chunks[0];
+    }
+
+    // Calculate total size
+    const totalSize = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+
+    // Create a new Uint8Array and copy all chunks into it
+    const combined = new Uint8Array(totalSize);
+    let offset = 0;
+    for (const chunk of chunks) {
+      combined.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    return combined;
   };
 
   return {

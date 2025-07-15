@@ -41,7 +41,7 @@ type SQLServiceClient interface {
 	// Permissions required: None
 	SearchQueryHistories(ctx context.Context, in *SearchQueryHistoriesRequest, opts ...grpc.CallOption) (*SearchQueryHistoriesResponse, error)
 	// Permissions required: bb.databases.get
-	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
+	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ExportResponse], error)
 	// Permissions required: bb.databases.check
 	Check(ctx context.Context, in *CheckRequest, opts ...grpc.CallOption) (*CheckResponse, error)
 	// Permissions required: None
@@ -93,15 +93,24 @@ func (c *sQLServiceClient) SearchQueryHistories(ctx context.Context, in *SearchQ
 	return out, nil
 }
 
-func (c *sQLServiceClient) Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error) {
+func (c *sQLServiceClient) Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ExportResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ExportResponse)
-	err := c.cc.Invoke(ctx, SQLService_Export_FullMethodName, in, out, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &SQLService_ServiceDesc.Streams[1], SQLService_Export_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &grpc.GenericClientStream[ExportRequest, ExportResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
 }
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SQLService_ExportClient = grpc.ServerStreamingClient[ExportResponse]
 
 func (c *sQLServiceClient) Check(ctx context.Context, in *CheckRequest, opts ...grpc.CallOption) (*CheckResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -155,7 +164,7 @@ type SQLServiceServer interface {
 	// Permissions required: None
 	SearchQueryHistories(context.Context, *SearchQueryHistoriesRequest) (*SearchQueryHistoriesResponse, error)
 	// Permissions required: bb.databases.get
-	Export(context.Context, *ExportRequest) (*ExportResponse, error)
+	Export(*ExportRequest, grpc.ServerStreamingServer[ExportResponse]) error
 	// Permissions required: bb.databases.check
 	Check(context.Context, *CheckRequest) (*CheckResponse, error)
 	// Permissions required: None
@@ -183,8 +192,8 @@ func (UnimplementedSQLServiceServer) AdminExecute(grpc.BidiStreamingServer[Admin
 func (UnimplementedSQLServiceServer) SearchQueryHistories(context.Context, *SearchQueryHistoriesRequest) (*SearchQueryHistoriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchQueryHistories not implemented")
 }
-func (UnimplementedSQLServiceServer) Export(context.Context, *ExportRequest) (*ExportResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Export not implemented")
+func (UnimplementedSQLServiceServer) Export(*ExportRequest, grpc.ServerStreamingServer[ExportResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method Export not implemented")
 }
 func (UnimplementedSQLServiceServer) Check(context.Context, *CheckRequest) (*CheckResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Check not implemented")
@@ -262,23 +271,16 @@ func _SQLService_SearchQueryHistories_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SQLService_Export_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ExportRequest)
-	if err := dec(in); err != nil {
-		return nil, err
+func _SQLService_Export_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ExportRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(SQLServiceServer).Export(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SQLService_Export_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SQLServiceServer).Export(ctx, req.(*ExportRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(SQLServiceServer).Export(m, &grpc.GenericServerStream[ExportRequest, ExportResponse]{ServerStream: stream})
 }
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SQLService_ExportServer = grpc.ServerStreamingServer[ExportResponse]
 
 func _SQLService_Check_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CheckRequest)
@@ -368,10 +370,6 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SQLService_SearchQueryHistories_Handler,
 		},
 		{
-			MethodName: "Export",
-			Handler:    _SQLService_Export_Handler,
-		},
-		{
 			MethodName: "Check",
 			Handler:    _SQLService_Check_Handler,
 		},
@@ -394,6 +392,11 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 			Handler:       _SQLService_AdminExecute_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
+		},
+		{
+			StreamName:    "Export",
+			Handler:       _SQLService_Export_Handler,
+			ServerStreams: true,
 		},
 	},
 	Metadata: "v1/sql_service.proto",
