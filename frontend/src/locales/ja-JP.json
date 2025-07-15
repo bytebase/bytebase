@@ -1618,7 +1618,6 @@
       "reference": "参照"
     },
     "checks": "チェック",
-    "backup-unavailable-for-databases": "データベースのバックアップは利用できません: {databases}",
     "engine-not-supported-for-backup": "以前のバックアップはサポートされていません: {databases}",
     "revision": {
       "self": "リビジョン",
