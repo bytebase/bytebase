@@ -94,9 +94,12 @@
           <NButton
             v-if="allowTransferDatabase"
             @click.prevent="tryTransferProject"
+            icon-placement="right"
           >
             <span>{{ $t("database.transfer-project") }}</span>
-            <ArrowRightLeftIcon class="ml-1" :size="16" />
+            <template #icon>
+              <ArrowRightLeftIcon :size="16" />
+            </template>
           </NButton>
           <NButton
             v-if="allowChangeData"

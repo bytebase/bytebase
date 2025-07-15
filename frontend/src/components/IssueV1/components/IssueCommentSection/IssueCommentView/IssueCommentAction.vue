@@ -59,6 +59,7 @@ import HumanizeTs from "@/components/misc/HumanizeTs.vue";
 import { IssueCommentType, type ComposedIssueComment } from "@/store";
 import { useUserStore, extractUserId } from "@/store";
 import { getTimeForPbTimestampProtoEs, type ComposedIssue } from "@/types";
+import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import ActionCreator from "./ActionCreator.vue";
 import ActionSentence from "./ActionSentence.vue";
 
@@ -67,6 +68,7 @@ defineProps<{
   index: number;
   issueComment: ComposedIssueComment;
   similar: ComposedIssueComment[];
+  rollout?: Rollout;
 }>();
 
 const userStore = useUserStore();

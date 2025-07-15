@@ -4,13 +4,23 @@
       <NSwitch
         size="small"
         :value="enabled"
-        :disabled="!allowChange || errors.length > 0"
+        :disabled="
+          !allowChange ||
+          (!enabled &&
+            (databasesNotMeetingRequirements.length > 0 || errors.length > 0))
+        "
         @update:value="toggleChecked"
       />
     </template>
     <div class="max-w-sm">
       <p class="opacity-80">{{ tooltipMessage }}</p>
       <ErrorList v-if="errors.length > 0" :errors="errors" class="mt-2" />
+      <LearnMoreLink
+        v-if="databasesNotMeetingRequirements.length > 0"
+        :url="'https://docs.bytebase.com/change-database/rollback-data-changes?source=console'"
+        color="light"
+        class="mt-1 text-sm"
+      />
     </div>
   </NTooltip>
 </template>
@@ -21,6 +31,7 @@ import { cloneDeep } from "lodash-es";
 import { NSwitch, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { targetsForSpec } from "@/components/Plan/logic";
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { default as ErrorList } from "@/components/misc/ErrorList.vue";
@@ -44,15 +55,15 @@ const {
 
 const errors = computed(() => {
   const errors: ErrorItem[] = [];
-  const backupUnavailableDatabases = databases.value.filter(
-    (db) => !db.backupAvailable || !allowGhostForDatabase(db)
+  const unsupportedDatabases = databases.value.filter(
+    (db) => !allowGhostForDatabase(db)
   );
-  if (backupUnavailableDatabases.length > 0) {
+  if (unsupportedDatabases.length > 0) {
     errors.push(
       t(
         "task.online-migration.error.not-applicable.database-doesnt-meet-ghost-requirement",
         {
-          database: backupUnavailableDatabases
+          database: unsupportedDatabases
             .map((db) => db.databaseName)
             .join(", "),
         }

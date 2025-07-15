@@ -125,6 +125,20 @@ export function useInitializePlan(
 
       // Fetch the plan using the issue's plan reference
       planResult = await planStore.fetchPlanByName(issueResult.plan);
+
+      // Fetch the associated rollout if it exists
+      if (issueResult.rollout) {
+        try {
+          const rolloutRequest = create(GetRolloutRequestSchema, {
+            name: issueResult.rollout,
+          });
+          const newRollout =
+            await rolloutServiceClientConnect.getRollout(rolloutRequest);
+          rolloutResult = newRollout;
+        } catch {
+          // Rollout might not exist or we don't have permission, that's ok
+        }
+      }
     } else {
       // Direct plan ID
       planResult = await planStore.fetchPlanByName(
