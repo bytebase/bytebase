@@ -94,6 +94,7 @@
               #default="{ resultRowsLimit }: { resultRowsLimit: number }"
             >
               <NButton
+                icon-placement="right"
                 quaternary
                 style="justify-content: start; --n-padding: 0 8px; width: 100%"
               >
@@ -101,6 +102,9 @@
                 {{
                   $t("sql-editor.result-limit.n-rows", { n: resultRowsLimit })
                 }}
+                <template #icon>
+                  <ChevronRight />
+                </template>
               </NButton>
             </template>
           </ResultLimitSelect>
@@ -112,7 +116,7 @@
 
 <script lang="ts" setup>
 import { orderBy } from "lodash-es";
-import { ChevronDown } from "lucide-vue-next";
+import { ChevronDown, ChevronRight } from "lucide-vue-next";
 import { NButton, NPopover, NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, watch, watchEffect } from "vue";
