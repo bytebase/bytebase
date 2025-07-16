@@ -26,7 +26,7 @@ import { RefreshCcwIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, ref, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
-import { getLastRefreshTime, useResourcePoller } from "../logic/poller";
+import { useResourcePoller } from "../logic/poller";
 
 const { t } = useI18n();
 const currentTime = ref(Date.now());
@@ -49,23 +49,7 @@ onUnmounted(() => {
   clearInterval(timer.value);
 });
 
-const lastRefreshTime = computed(() => {
-  // Force reactivity by using currentTime (triggers every second)
-  void currentTime.value;
-
-  // Get the most recent refresh time from the active resources
-  let mostRecent: number | undefined;
-  const activeResources = resourcePoller.activeResources.value;
-
-  for (const resource of activeResources) {
-    const time = getLastRefreshTime(resource);
-    if (time && (!mostRecent || time > mostRecent)) {
-      mostRecent = time;
-    }
-  }
-
-  return mostRecent;
-});
+const lastRefreshTime = computed(() => resourcePoller.lastRefreshTime.value);
 
 const lastRefreshDisplay = computed(() => {
   if (!lastRefreshTime.value) return null;
