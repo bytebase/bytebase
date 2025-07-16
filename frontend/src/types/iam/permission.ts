@@ -53,7 +53,6 @@ export type Permission =
   | "bb.plans.create"
   | "bb.plans.get"
   | "bb.plans.list"
-  | "bb.plans.preview"
   | "bb.plans.update"
   | "bb.policies.create"
   | "bb.policies.delete"
