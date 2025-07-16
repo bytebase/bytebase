@@ -100,7 +100,7 @@ const classes = computed((): string => {
       statusClass = "bg-white border-2 border-control";
       break;
     case Task_Status.PENDING:
-      statusClass = "bg-white border-2 border-yellow-600 text-yellow-600";
+      statusClass = "bg-white border-2 border-info text-info";
       break;
     case Task_Status.RUNNING:
       statusClass = "bg-white border-2 border-info text-info";
