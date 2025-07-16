@@ -1471,7 +1471,8 @@ type Task struct {
 	// The update_time is the update time of related latest task runs.
 	// If there are no task runs, it will be empty.
 	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=update_time,json=updateTime,proto3,oneof" json:"update_time,omitempty"`
-	// The run_time of latest task run.
+	// The run_time is the scheduled run time of related latest task runs.
+	// If there are no task runs or the task run is not scheduled, it will be empty.
 	RunTime       *timestamppb.Timestamp `protobuf:"bytes,21,opt,name=run_time,json=runTime,proto3,oneof" json:"run_time,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

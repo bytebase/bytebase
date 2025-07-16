@@ -600,7 +600,8 @@ export declare type Task = Message<"bytebase.v1.Task"> & {
   updateTime?: Timestamp;
 
   /**
-   * The run_time of latest task run.
+   * The run_time is the scheduled run time of related latest task runs.
+   * If there are no task runs or the task run is not scheduled, it will be empty.
    *
    * @generated from field: optional google.protobuf.Timestamp run_time = 21;
    */

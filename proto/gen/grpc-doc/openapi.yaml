@@ -13921,7 +13921,9 @@ components:
                 runTime:
                     readOnly: true
                     type: string
-                    description: The run_time of latest task run.
+                    description: |-
+                        The run_time is the scheduled run time of related latest task runs.
+                         If there are no task runs or the task run is not scheduled, it will be empty.
                     format: date-time
         TaskPriorBackup_Table:
             type: object
