@@ -36,6 +36,8 @@ type TaskMessage struct {
 	// UpdatedAt is the updated_at of latest task run related to the task.
 	// If there are no task runs, it will be empty.
 	UpdatedAt *time.Time
+	// RunAt is the run_at of latest task run related to the task.
+	RunAt *time.Time
 }
 
 func (t *TaskMessage) GetDatabaseName() string {
@@ -294,12 +296,14 @@ func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*
 			COALESCE(latest_task_run.status, $%d) AS latest_task_run_status,
 			task.type,
 			task.payload,
-			latest_task_run.updated_at
+			latest_task_run.updated_at,
+			latest_task_run.run_at
 		FROM task
 		LEFT JOIN LATERAL (
 			SELECT
 				task_run.status,
-				task_run.updated_at
+				task_run.updated_at,
+				task_run.run_at
 			FROM task_run
 			WHERE task_run.task_id = task.id
 			ORDER BY task_run.id DESC
@@ -330,6 +334,7 @@ func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*
 			&typeString,
 			&payload,
 			&task.UpdatedAt,
+			&task.RunAt,
 		); err != nil {
 			return nil, err
 		}

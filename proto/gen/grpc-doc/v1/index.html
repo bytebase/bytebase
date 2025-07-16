@@ -28237,8 +28237,16 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>update_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td>optional</td>
-                  <td><p>The update_time is the update time of related latest task runs.
+                  <td><p>The update_time is the update time of latest task run.
 If there are no task runs, it will be empty. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>run_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td>optional</td>
+                  <td><p>The run_time is the scheduled run time of latest task run.
+If there are no task runs or the task run is not scheduled, it will be empty. </p></td>
                 </tr>
               
             </tbody>
