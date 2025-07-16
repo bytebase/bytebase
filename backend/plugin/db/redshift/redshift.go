@@ -166,6 +166,17 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		return 0, nil
 	}
 
+	// Parse transaction mode from the script
+	transactionMode, cleanedStatement := base.ParseTransactionMode(statement)
+	statement = cleanedStatement
+
+	// For Redshift MVP, only enable transaction mode parsing for Redshift instances
+	// Default to "off" for DDL if not specified
+	if transactionMode == base.TransactionModeUnspecified {
+		// We'll handle defaults in the next step
+		transactionMode = base.TransactionModeOn // For now, maintain backward compatibility
+	}
+
 	var commands []base.SingleSQL
 	oneshot := true
 	if len(statement) <= common.MaxSheetCheckSize {
@@ -185,37 +196,12 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			},
 		}
 	}
-	totalRowsAffected := int64(0)
-	if len(commands) != 0 {
-		tx, err := d.db.BeginTx(ctx, nil)
-		if err != nil {
-			return 0, err
-		}
-		defer tx.Rollback()
 
-		for _, command := range commands {
-			sqlResult, err := tx.ExecContext(ctx, command.Text)
-			if err != nil {
-				return 0, &db.ErrorWithPosition{
-					Err:   errors.Wrapf(err, "failed to execute context in a transaction"),
-					Start: command.Start,
-					End:   command.End,
-				}
-			}
-			rowsAffected, err := sqlResult.RowsAffected()
-			if err != nil {
-				// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-				slog.Debug("rowsAffected returns error", log.BBError(err))
-			}
-			totalRowsAffected += rowsAffected
-		}
-
-		if err := tx.Commit(); err != nil {
-			return 0, err
-		}
+	// Execute based on transaction mode
+	if transactionMode == base.TransactionModeOff {
+		return d.executeInAutoCommitMode(ctx, commands, opts)
 	}
-
-	return totalRowsAffected, nil
+	return d.executeInTransactionMode(ctx, commands, opts)
 }
 
 func (d *Driver) createDatabaseExecute(ctx context.Context, statement string) error {
@@ -240,6 +226,93 @@ func (d *Driver) createDatabaseExecute(ctx context.Context, statement string) er
 		}
 	}
 	return nil
+}
+
+// executeInTransactionMode executes statements within a single transaction
+func (d *Driver) executeInTransactionMode(ctx context.Context, commands []base.SingleSQL, opts db.ExecuteOptions) (int64, error) {
+	totalRowsAffected := int64(0)
+	if len(commands) == 0 {
+		return 0, nil
+	}
+
+	tx, err := d.db.BeginTx(ctx, nil)
+	if err != nil {
+		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
+		return 0, err
+	}
+	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
+
+	committed := false
+	defer func() {
+		err := tx.Rollback()
+		if committed {
+			return
+		}
+		var rerr string
+		if err != nil && !errors.Is(err, sql.ErrTxDone) {
+			rerr = err.Error()
+			slog.Debug("failed to rollback transaction", log.BBError(err))
+		}
+		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rerr)
+	}()
+
+	for i, command := range commands {
+		opts.LogCommandExecute([]int32{int32(i)})
+		sqlResult, err := tx.ExecContext(ctx, command.Text)
+		if err != nil {
+			opts.LogCommandResponse([]int32{int32(i)}, 0, nil, err.Error())
+			return 0, &db.ErrorWithPosition{
+				Err:   errors.Wrapf(err, "failed to execute context in a transaction"),
+				Start: command.Start,
+				End:   command.End,
+			}
+		}
+		rowsAffected, err := sqlResult.RowsAffected()
+		if err != nil {
+			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+			slog.Debug("rowsAffected returns error", log.BBError(err))
+		}
+		opts.LogCommandResponse([]int32{int32(i)}, int32(rowsAffected), nil, "")
+		totalRowsAffected += rowsAffected
+	}
+
+	if err := tx.Commit(); err != nil {
+		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
+		return 0, err
+	}
+	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
+	committed = true
+
+	return totalRowsAffected, nil
+}
+
+// executeInAutoCommitMode executes statements sequentially in auto-commit mode
+func (d *Driver) executeInAutoCommitMode(ctx context.Context, commands []base.SingleSQL, opts db.ExecuteOptions) (int64, error) {
+	totalRowsAffected := int64(0)
+
+	for i, command := range commands {
+		opts.LogCommandExecute([]int32{int32(i)})
+		sqlResult, err := d.db.ExecContext(ctx, command.Text)
+		if err != nil {
+			opts.LogCommandResponse([]int32{int32(i)}, 0, nil, err.Error())
+			// In auto-commit mode, we stop at the first error
+			// The database is left in a partially migrated state
+			return totalRowsAffected, &db.ErrorWithPosition{
+				Err:   errors.Wrapf(err, "failed to execute statement %d in auto-commit mode", i+1),
+				Start: command.Start,
+				End:   command.End,
+			}
+		}
+		rowsAffected, err := sqlResult.RowsAffected()
+		if err != nil {
+			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+			slog.Debug("rowsAffected returns error", log.BBError(err))
+		}
+		opts.LogCommandResponse([]int32{int32(i)}, int32(rowsAffected), nil, "")
+		totalRowsAffected += rowsAffected
+	}
+
+	return totalRowsAffected, nil
 }
 
 func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {
