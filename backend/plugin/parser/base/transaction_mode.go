@@ -1,7 +1,6 @@
 package base
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 )
@@ -41,27 +40,4 @@ func ParseTransactionMode(script string) (TransactionMode, string) {
 	}
 
 	return TransactionModeUnspecified, script
-}
-
-// IsValid returns true if the transaction mode is valid.
-func (m TransactionMode) IsValid() bool {
-	return m == TransactionModeOn || m == TransactionModeOff || m == TransactionModeUnspecified
-}
-
-// String returns the string representation of the transaction mode.
-func (m TransactionMode) String() string {
-	return string(m)
-}
-
-// PrependTransactionMode prepends the transaction mode directive to a SQL script.
-// If the mode is unspecified, the script is returned unchanged.
-func PrependTransactionMode(script string, mode TransactionMode) string {
-	if mode == TransactionModeUnspecified || !mode.IsValid() {
-		return script
-	}
-	directive := fmt.Sprintf("-- txn_mode = %s", mode)
-	if script == "" {
-		return directive
-	}
-	return fmt.Sprintf("%s\n%s", directive, script)
 }
