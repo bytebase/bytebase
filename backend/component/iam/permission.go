@@ -50,7 +50,6 @@ const (
 	PermissionPlansCreate               Permission = "bb.plans.create"
 	PermissionPlansGet                  Permission = "bb.plans.get"
 	PermissionPlansList                 Permission = "bb.plans.list"
-	PermissionPlansPreview              Permission = "bb.plans.preview"
 	PermissionPlansUpdate               Permission = "bb.plans.update"
 	PermissionPoliciesCreate            Permission = "bb.policies.create"
 	PermissionPoliciesDelete            Permission = "bb.policies.delete"
@@ -174,7 +173,6 @@ var allPermissions = []Permission{
 	PermissionPlansGet,
 	PermissionPlansList,
 	PermissionPlansUpdate,
-	PermissionPlansPreview,
 	PermissionPoliciesCreate,
 	PermissionPoliciesDelete,
 	PermissionPoliciesGet,
