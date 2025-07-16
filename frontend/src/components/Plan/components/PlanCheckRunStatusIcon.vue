@@ -69,7 +69,7 @@ const iconClass = () => {
     case PlanCheckRun_Result_Status.SUCCESS:
       return iconClass + " bg-success text-white";
     default:
-      return iconClass + " bg-accent text-white";
+      return iconClass + " bg-control text-white";
   }
 };
 </script>
