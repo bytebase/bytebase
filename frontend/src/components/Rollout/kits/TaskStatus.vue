@@ -70,13 +70,16 @@ import { stringifyTaskStatus } from "@/utils";
 
 const props = defineProps<{
   status: Task_Status;
-  size?: "small" | "medium" | "large";
+  size?: "tiny" | "small" | "medium" | "large";
   disabled?: boolean;
 }>();
 
 const classes = computed((): string => {
   let sizeClass = "";
   switch (props.size) {
+    case "tiny":
+      sizeClass = "w-4 h-4";
+      break;
     case "small":
       sizeClass = "w-5 h-5";
       break;
