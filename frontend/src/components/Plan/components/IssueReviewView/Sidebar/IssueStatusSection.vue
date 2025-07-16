@@ -48,10 +48,8 @@ const issueStatusText = computed(() => {
       return t("issue.review.approved");
     case Issue_Approver_Status.REJECTED:
       return t("issue.review.rejected");
-    case Issue_Approver_Status.PENDING:
-      return t("issue.review.under-review");
     default:
-      return t("issue.table.open");
+      return t("issue.review.under-review");
   }
 });
 
