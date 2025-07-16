@@ -236,8 +236,12 @@ message Release {
     string id = 1;
     // The path of the file. e.g. `2.2/V0001_create_table.sql`.
     string path = 2;
-    ReleaseFileType type = 5;
+    // The type of the file.
+    Type type = 5;
     string version = 6;
+    // The change type of the file.
+    // For versioned files, it is the change type of the file.
+    // For declarative files, this field is always DDL, thus meaningless.
     ChangeType change_type = 9;
 
     // For inputs, we must either use `sheet` or `statement`.
@@ -253,6 +257,11 @@ message Release {
     // The size of the statement in bytes.
     int64 statement_size = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+    enum Type {
+      TYPE_UNSPECIFIED = 0;
+      VERSIONED = 1;
+    }
+
     enum ChangeType {
       CHANGE_TYPE_UNSPECIFIED = 0;
       DDL = 1;
@@ -266,9 +275,4 @@ message Release {
     // The url link to the e.g. GitHub commit or pull request.
     string url = 2;
   }
-}
-
-enum ReleaseFileType {
-  TYPE_UNSPECIFIED = 0;
-  VERSIONED = 1;
 }
