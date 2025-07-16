@@ -17,7 +17,7 @@
       </div>
       <div class="text-xs flex gap-1 flex-row items-center">
         <div class="whitespace-no-wrap with-underline">
-          {{ $t("common.tasks") }}
+          {{ $t("common.task", 2) }}
         </div>
         <StageSummary :stage="stage as Stage" />
       </div>

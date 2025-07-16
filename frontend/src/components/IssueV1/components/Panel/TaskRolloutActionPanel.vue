@@ -38,10 +38,7 @@
           class="flex flex-col gap-y-1 shrink overflow-y-hidden justify-start"
         >
           <label class="font-medium text-control">
-            <template v-if="filteredTasks.length === 1">
-              {{ $t("common.task") }}
-            </template>
-            <template v-else>{{ $t("common.tasks") }}</template>
+            {{ $t("common.task", filteredTasks.length) }}
             <span class="font-mono opacity-80" v-if="filteredTasks.length > 1"
               >({{ filteredTasks.length }})</span
             >

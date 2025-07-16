@@ -83,7 +83,6 @@
     "status": "州",
     "stage": "ステージ",
     "task": "タスク",
-    "tasks": "タスク",
     "blocking-task": "タスクをブロック中",
     "sql": "SQL",
     "unassigned": "割り当てられていない",
@@ -1051,7 +1050,6 @@
     "new-layout": "新しいCI/CDレイアウト"
   },
   "plan": {
-    "self": "プラン",
     "plans": "予定",
     "new-plan": "新しい計画",
     "add-spec": "仕様を追加",
@@ -1129,6 +1127,12 @@
       "no-stages": {
         "self": "ステージなし",
         "description": "このロールアウトにはステージが定義されていません。"
+      }
+    },
+    "message": {
+      "pervious-stages-incomplete": {
+        "title": "前の段階は未完了です",
+        "description": "前のステージの一部が完了していません。続行するには強制実行を有効にしてください。"
       }
     }
   },

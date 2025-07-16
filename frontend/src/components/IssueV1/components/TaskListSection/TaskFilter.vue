@@ -2,7 +2,7 @@
   <div class="w-full flex flex-row gap-4">
     <div class="flex items-center justify-between">
       <h3 class="textlabel">
-        {{ $t("common.tasks") }}
+        {{ $t("common.task", 2) }}
         <span>({{ taskList.length }})</span>
       </h3>
     </div>
@@ -83,6 +83,7 @@ import { NTag } from "naive-ui";
 import { computed } from "vue";
 import AdviceStatusIcon from "@/components/Plan/components/SQLCheckSection/AdviceStatusIcon.vue";
 import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
+import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import { useIssueContext } from "../../logic";
@@ -100,15 +101,7 @@ const emit = defineEmits<{
   (event: "update:adviceStatusList", adviceStatusList: Advice_Status[]): void;
 }>();
 
-const TASK_STATUS_FILTERS: Task_Status[] = [
-  Task_Status.NOT_STARTED,
-  Task_Status.PENDING,
-  Task_Status.RUNNING,
-  Task_Status.DONE,
-  Task_Status.FAILED,
-  Task_Status.CANCELED,
-  Task_Status.SKIPPED,
-];
+// Using unified task status filters from constants
 const ADVICE_STATUS_FILTERS: Advice_Status[] = [
   Advice_Status.STATUS_UNSPECIFIED,
   Advice_Status.SUCCESS,

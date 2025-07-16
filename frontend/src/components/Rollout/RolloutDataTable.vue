@@ -16,24 +16,22 @@ import type { DataTableColumn } from "naive-ui";
 import { NDataTable, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { RouterLink, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
+import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useEnvironmentV1Store, useUserStore } from "@/store";
 import {
   getTimeForPbTimestampProtoEs,
   unknownUser,
   type ComposedRollout,
 } from "@/types";
-import { Task_Status as TaskStatusEnum } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
-  extractPlanUID,
-  extractProjectResourceName,
   humanizeTs,
   stringifyTaskStatus,
   getStageStatus,
+  extractRolloutUID,
 } from "@/utils";
 
 withDefaults(
@@ -55,15 +53,7 @@ const router = useRouter();
 const userStore = useUserStore();
 const environmentStore = useEnvironmentV1Store();
 
-const TASK_STATUS_FILTERS: Task_Status[] = [
-  TaskStatusEnum.DONE,
-  TaskStatusEnum.RUNNING,
-  TaskStatusEnum.FAILED,
-  TaskStatusEnum.CANCELED,
-  TaskStatusEnum.SKIPPED,
-  TaskStatusEnum.PENDING,
-  TaskStatusEnum.NOT_STARTED,
-];
+// Using unified task status filters from constants
 
 const getStageTaskCount = (stage: any, status: Task_Status) => {
   return stage.tasks.filter((task: any) => task.status === status).length;
@@ -73,34 +63,14 @@ const columnList = computed(
   (): (DataTableColumn<ComposedRollout> & { hide?: boolean })[] => {
     const columns: (DataTableColumn<ComposedRollout> & { hide?: boolean })[] = [
       {
-        key: "plan",
-        title: t("plan.self"),
-        width: 96,
+        key: "uid",
+        title: "",
+        width: 32,
         render: (rollout) => {
-          const uid = extractPlanUID(rollout.plan);
           return (
-            <RouterLink
-              to={{
-                name: PROJECT_V1_ROUTE_PLAN_DETAIL,
-                params: {
-                  projectId: extractProjectResourceName(rollout.plan),
-                  planId: uid,
-                },
-              }}
-              custom={true}
-            >
-              {{
-                default: ({ href }: { href: string }) => (
-                  <a
-                    href={href}
-                    class="normal-link"
-                    onClick={(e: MouseEvent) => e.stopPropagation()}
-                  >
-                    #{uid}
-                  </a>
-                ),
-              }}
-            </RouterLink>
+            <div class="whitespace-nowrap text-control opacity-60">
+              {extractRolloutUID(rollout.name)}
+            </div>
           );
         },
       },
