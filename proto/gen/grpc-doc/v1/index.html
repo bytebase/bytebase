@@ -21330,12 +21330,14 @@ Supported filters:
 - has_pipeline: the plan has pipeline or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;.
 - has_issue: the plan has issue or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;.
 - title: the plan title, support &#34;==&#34; operator for exact match and &#34;.matches()&#34; operator for case-insensitive substring match.
+- spec_type: the plan spec config type, support &#34;==&#34; operator, the value should be &#34;create_database_config&#34;, &#34;change_database_config&#34;, or &#34;export_data_config&#34;.
 
 For example:
 creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34;
 has_pipeline == false &amp;&amp; has_issue == true
 title == &#34;My Plan&#34;
-title.matches(&#34;database migration&#34;) </p></td>
+title.matches(&#34;database migration&#34;)
+spec_type == &#34;change_database_config&#34; </p></td>
                 </tr>
               
             </tbody>

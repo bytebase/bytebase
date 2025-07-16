@@ -133,13 +133,17 @@ const planSearchParams = computed(() => {
 
 const mergedPlanFind = computed(() => {
   const defaultFind = enabledNewLayout.value
-    ? undefined
+    ? {}
     : // Default find for legacy layout.
       {
         hasIssue: false,
         hasPipeline: false,
       };
-  return buildPlanFindBySearchParams(planSearchParams.value, defaultFind);
+  return buildPlanFindBySearchParams(planSearchParams.value, {
+    // Only show change database plans.
+    specType: "change_database_config",
+    ...defaultFind,
+  });
 });
 
 const fetchPlanList = async ({

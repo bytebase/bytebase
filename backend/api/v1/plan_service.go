@@ -1046,16 +1046,6 @@ func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *sto
 	var getFilter func(expr celast.Expr) (string, error)
 	var positionalArgs []any
 
-	parseToSQL := func(variable string, value any) (string, error) {
-		switch variable {
-		case "title":
-			positionalArgs = append(positionalArgs, value)
-			return fmt.Sprintf("plan.name = $%d", len(positionalArgs)), nil
-		default:
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported variable %q", variable))
-		}
-	}
-
 	getFilter = func(expr celast.Expr) (string, error) {
 		switch expr.Kind() {
 		case celast.CallKind:
@@ -1091,8 +1081,26 @@ func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *sto
 						return "issue.id IS NULL", nil
 					}
 					return "issue.id IS NOT NULL", nil
+				case "title":
+					positionalArgs = append(positionalArgs, value)
+					return fmt.Sprintf("plan.name = $%d", len(positionalArgs)), nil
+				case "spec_type":
+					specType, ok := value.(string)
+					if !ok {
+						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("spec_type value must be a string"))
+					}
+					switch specType {
+					case "create_database_config":
+						return "EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->>'createDatabaseConfig' IS NOT NULL)", nil
+					case "change_database_config":
+						return "EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->>'changeDatabaseConfig' IS NOT NULL)", nil
+					case "export_data_config":
+						return "EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->>'exportDataConfig' IS NOT NULL)", nil
+					default:
+						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid spec_type value: %s, must be one of: create_database_config, change_database_config, export_data_config", specType))
+					}
 				default:
-					return parseToSQL(variable, value)
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported variable %q", variable))
 				}
 			case celoperators.GreaterEquals, celoperators.LessEquals:
 				variable, rawValue := getVariableAndValueFromExpr(expr)
