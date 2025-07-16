@@ -94,7 +94,7 @@ export const refreshIssueComments = async (issue: Issue): Promise<void> => {
   await issueCommentStore.listIssueComments(
     create(ListIssueCommentsRequestSchema, {
       parent: issue.name,
-      pageSize: 100,
+      pageSize: 1000,
     })
   );
   lastRefreshTime.issueComments = Date.now();
