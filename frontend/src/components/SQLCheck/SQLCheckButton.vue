@@ -81,7 +81,7 @@ import type { CheckReleaseResponse } from "@/types/proto-es/v1/release_service_p
 import {
   CheckReleaseRequestSchema,
   CheckReleaseResponseSchema,
-  ReleaseFileType,
+  Release_File_Type,
   Release_File_ChangeType,
 } from "@/types/proto-es/v1/release_service_pb";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
@@ -168,7 +168,7 @@ const runCheckInternal = async (statement: string) => {
         {
           // Use "0" for dummy version.
           version: "0",
-          type: ReleaseFileType.VERSIONED,
+          type: Release_File_Type.VERSIONED,
           statement: new TextEncoder().encode(statement),
           // Default to DDL change type.
           changeType: changeType || Release_File_ChangeType.DDL,

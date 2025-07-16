@@ -62,7 +62,7 @@ import type { CheckReleaseResponse } from "@/types/proto-es/v1/release_service_p
 import {
   CheckReleaseRequestSchema,
   CheckReleaseResponseSchema,
-  ReleaseFileType,
+  Release_File_Type,
 } from "@/types/proto-es/v1/release_service_pb";
 import {
   AdviceSchema,
@@ -121,7 +121,7 @@ const runCheckInternal = async (statement: string) => {
         {
           // Use "0" for dummy version.
           version: "0",
-          type: ReleaseFileType.VERSIONED,
+          type: Release_File_Type.VERSIONED,
           statement: new TextEncoder().encode(statement),
           changeType: changeType.value,
         },

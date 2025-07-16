@@ -83,7 +83,7 @@
                 v-if="file.type"
                 :class="[
                   'inline-flex items-center px-1.5 py-0.5 rounded text-xs flex-shrink-0',
-                  file.type === ReleaseFileType.VERSIONED
+                  file.type === Release_File_Type.VERSIONED
                     ? 'bg-blue-100 text-blue-800 '
                     : 'bg-gray-100 text-gray-800 ',
                 ]"
@@ -160,7 +160,7 @@ import { BBSpin } from "@/bbkit";
 import { useReleaseByName } from "@/store";
 import { isValidReleaseName, getDateForPbTimestampProtoEs } from "@/types";
 import { VCSType } from "@/types/proto-es/v1/common_pb";
-import { ReleaseFileType } from "@/types/proto-es/v1/release_service_pb";
+import { Release_File_Type } from "@/types/proto-es/v1/release_service_pb";
 import { Release_File_ChangeType } from "@/types/proto-es/v1/release_service_pb";
 import { useSelectedSpec } from "../../SpecDetailView/context";
 
@@ -208,9 +208,9 @@ const getChangeTypeText = (changeType: Release_File_ChangeType) => {
   }
 };
 
-const getReleaseFileTypeText = (type: ReleaseFileType) => {
+const getReleaseFileTypeText = (type: Release_File_Type) => {
   switch (type) {
-    case ReleaseFileType.VERSIONED:
+    case Release_File_Type.VERSIONED:
       return t("release.file-type.versioned");
     default:
       return t("release.file-type.unspecified");
