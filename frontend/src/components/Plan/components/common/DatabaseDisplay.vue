@@ -21,8 +21,8 @@
 import { ChevronRightIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
-import { useInstanceV1Store } from "@/store";
-import { unknownInstance } from "@/types";
+import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
+import { isValidDatabaseName, unknownInstance } from "@/types";
 import {
   extractDatabaseResourceName,
   extractInstanceResourceName,
@@ -34,7 +34,14 @@ const props = defineProps<{
 
 const instanceStore = useInstanceV1Store();
 
+const databaseEntity = computed(() =>
+  useDatabaseV1Store().getDatabaseByName(props.database)
+);
+
 const instanceResource = computed(() => {
+  if (isValidDatabaseName(databaseEntity.value.name)) {
+    return databaseEntity.value.instanceResource;
+  }
   // Extract instance name from the database name (which is actually a target string)
   const instanceName = extractInstanceResourceName(props.database);
   if (instanceName) {
