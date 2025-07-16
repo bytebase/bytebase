@@ -39,7 +39,7 @@ func getReleaseFiles(w *world.World, pattern string) ([]*v1pb.Release_File, erro
 
 		files = append(files, &v1pb.Release_File{
 			Path:       m,
-			Type:       v1pb.ReleaseFileType_VERSIONED,
+			Type:       v1pb.Release_File_VERSIONED,
 			Version:    version,
 			ChangeType: t,
 			Statement:  content,
