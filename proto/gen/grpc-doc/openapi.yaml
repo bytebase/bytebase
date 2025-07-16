@@ -13915,8 +13915,15 @@ components:
                     readOnly: true
                     type: string
                     description: |-
-                        The update_time is the update time of related latest task runs.
+                        The update_time is the update time of latest task run.
                          If there are no task runs, it will be empty.
+                    format: date-time
+                runTime:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The run_time is the scheduled run time of latest task run.
+                         If there are no task runs or the task run is not scheduled, it will be empty.
                     format: date-time
         TaskPriorBackup_Table:
             type: object

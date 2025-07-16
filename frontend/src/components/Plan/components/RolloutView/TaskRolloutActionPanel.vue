@@ -135,6 +135,7 @@
                 (date: number) => date < dayjs().startOf('day').valueOf()
               "
               format="yyyy-MM-dd HH:mm:ss"
+              :actions="['clear', 'confirm']"
               clearable
             />
           </div>
