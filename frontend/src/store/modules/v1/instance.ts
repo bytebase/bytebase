@@ -77,7 +77,7 @@ const getListInstanceFilter = (params: InstanceFilter) => {
     );
   }
   if (params.state === State.DELETED) {
-    list.push(`state == "${params.state}"`);
+    list.push(`state == "${State[params.state]}"`);
   }
   return list.join(" && ");
 };
