@@ -2302,7 +2302,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ReleaseFileType"><span class="badge">E</span>ReleaseFileType</a>
+                  <a href="#bytebase.v1.Release.File.Type"><span class="badge">E</span>Release.File.Type</a>
                 </li>
               
               
@@ -25363,9 +25363,9 @@ If this field is omitted, there are no subsequent pages. </p></td>
               
                 <tr>
                   <td>type</td>
-                  <td><a href="#bytebase.v1.ReleaseFileType">ReleaseFileType</a></td>
+                  <td><a href="#bytebase.v1.Release.File.Type">Release.File.Type</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The type of the file. </p></td>
                 </tr>
               
                 <tr>
@@ -25379,7 +25379,9 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td>change_type</td>
                   <td><a href="#bytebase.v1.Release.File.ChangeType">Release.File.ChangeType</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The change type of the file.
+For versioned files, it is the change type of the file.
+For declarative files, this field is always DDL, thus meaningless. </p></td>
                 </tr>
               
                 <tr>
@@ -25580,7 +25582,7 @@ Format: projects/{project}/releases/{release} </p></td>
           </tbody>
         </table>
       
-        <h3 id="bytebase.v1.ReleaseFileType">ReleaseFileType</h3>
+        <h3 id="bytebase.v1.Release.File.Type">Release.File.Type</h3>
         <p></p>
         <table class="enum-table">
           <thead>
