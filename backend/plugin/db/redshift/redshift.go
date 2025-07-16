@@ -242,11 +242,6 @@ func (d *Driver) createDatabaseExecute(ctx context.Context, statement string) er
 	return nil
 }
 
-func isSuperuserStatement(stmt string) bool {
-	upperCaseStmt := strings.ToUpper(strings.TrimLeft(stmt, " \n\t"))
-	return strings.HasPrefix(upperCaseStmt, "GRANT")
-}
-
 func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {
 	raw := strings.TrimRight(createDatabaseStatement, ";")
 	raw = strings.TrimPrefix(raw, "CREATE DATABASE")
