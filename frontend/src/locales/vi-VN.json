@@ -83,7 +83,6 @@
     "status": "Trạng thái",
     "stage": "Giai đoạn",
     "task": "Tác vụ",
-    "tasks": "Tác vụ",
     "blocking-task": "Tác vụ chặn",
     "sql": "SQL",
     "unassigned": "Chưa gán",
@@ -1051,7 +1050,6 @@
     "new-layout": "Bố cục CI/CD mới"
   },
   "plan": {
-    "self": "Kế hoạch",
     "plans": "Kế hoạch",
     "new-plan": "Kế hoạch mới",
     "add-spec": "Thêm thông số kỹ thuật",
@@ -1129,6 +1127,12 @@
       "no-stages": {
         "self": "Không có giai đoạn",
         "description": "Không có giai đoạn nào được xác định cho lần triển khai này."
+      }
+    },
+    "message": {
+      "pervious-stages-incomplete": {
+        "title": "Các giai đoạn trước chưa hoàn thành",
+        "description": "Một số giai đoạn trước chưa hoàn tất. Vui lòng bật chế độ chạy bắt buộc để tiếp tục."
       }
     }
   },

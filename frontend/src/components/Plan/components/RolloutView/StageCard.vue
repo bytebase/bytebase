@@ -176,6 +176,7 @@ import { twMerge } from "tailwind-merge";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
+import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import {
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
@@ -214,16 +215,6 @@ const emit = defineEmits<{
 }>();
 
 const { canPerformTaskAction } = useTaskActionPermissions();
-
-const TASK_STATUS_FILTERS: Task_Status[] = [
-  Task_Status.RUNNING,
-  Task_Status.FAILED,
-  Task_Status.CANCELED,
-  Task_Status.PENDING,
-  Task_Status.DONE,
-  Task_Status.SKIPPED,
-  Task_Status.NOT_STARTED,
-];
 
 const isCreated = computed(() => {
   return props.rollout.stages.some(
@@ -281,8 +272,8 @@ const filteredTasks = computed(() => {
   });
 });
 
-// Limit displayed tasks to approximately 2 rows worth
-const MAX_DISPLAYED_TASKS = 6; // Adjust based on typical tag width
+// The maximum number of tasks to display before showing "more".
+const MAX_DISPLAYED_TASKS = 10;
 
 const displayedTasks = computed(() => {
   return filteredTasks.value.slice(0, MAX_DISPLAYED_TASKS);

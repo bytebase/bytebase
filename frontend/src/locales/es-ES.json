@@ -83,7 +83,6 @@
     "status": "Estado",
     "stage": "Etapa",
     "task": "Tarea",
-    "tasks": "Tareas",
     "blocking-task": "Tarea de bloqueo",
     "sql": "SQL",
     "unassigned": "No asignado",
@@ -1051,7 +1050,6 @@
     "new-layout": "Nuevo diseño de CI/CD"
   },
   "plan": {
-    "self": "Plan",
     "plans": "Planes",
     "new-plan": "Nuevo plan",
     "add-spec": "Agregar especificación",
@@ -1129,6 +1127,12 @@
       "no-stages": {
         "self": "Sin etapas",
         "description": "No se definen etapas para este lanzamiento."
+      }
+    },
+    "message": {
+      "pervious-stages-incomplete": {
+        "title": "Las etapas anteriores están incompletas",
+        "description": "Algunas etapas anteriores no se han completado. Activa la ejecución forzada para continuar."
       }
     }
   },

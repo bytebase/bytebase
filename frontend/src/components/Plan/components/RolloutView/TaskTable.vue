@@ -17,31 +17,32 @@
 
 <script lang="tsx" setup>
 import { flatten } from "lodash-es";
-import { ChevronRightIcon } from "lucide-vue-next";
+import { CalendarClockIcon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
-import { NDataTable } from "naive-ui";
+import { NDataTable, NTag, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { semanticTaskType } from "@/components/IssueV1";
+import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
-import { InstanceV1EngineIcon } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
-import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
+import { useCurrentProjectV1 } from "@/store";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Task, Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { databaseForTask } from "@/utils";
 import {
   extractProjectResourceName,
   extractSchemaVersionFromTask,
+  humanizeTs,
 } from "@/utils";
 import { useRolloutViewContext } from "./context";
 
 const props = withDefaults(
   defineProps<{
     taskStatusFilter: Task_Status[];
+    stage: Stage;
     selectedTasks?: Task[];
-    stage?: Stage;
   }>(),
   {
     selectedTasks: () => [],
@@ -56,7 +57,6 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const router = useRouter();
 const { project } = useCurrentProjectV1();
-const environmentStore = useEnvironmentV1Store();
 const { rollout, mergedStages } = useRolloutViewContext();
 
 const taskList = computed(() => {
@@ -159,62 +159,58 @@ const columnList = computed((): DataTableColumn<Task>[] => {
     },
     {
       key: "status",
-      width: 80,
-      title: t("common.status"),
-      render: (task) => {
-        return <TaskStatus status={task.status} size="small" />;
-      },
-    },
-    // Only show stage column if not already filtering by stage
-    ...(!props.stage
-      ? [
-          {
-            key: "stage",
-            title: t("common.stage"),
-            width: 120,
-            render: (task: Task) => {
-              const stage = stageMap.value.get(task.name);
-              if (stage) {
-                const environment = environmentStore.getEnvironmentByName(
-                  stage.environment
-                );
-                return environment.title;
-              }
-              return "-";
-            },
-          },
-        ]
-      : []),
-    {
-      key: "type",
-      width: 120,
-      title: t("common.type"),
-      render: (task) => {
-        return semanticTaskType(task.type);
-      },
+      title: "",
+      width: "36px",
+      render: (task) => <TaskStatus status={task.status} size="small" />,
     },
     {
       key: "database",
       title: t("common.database"),
       render: (task) => {
-        const database = databaseForTask(project.value, task);
         return (
-          <div class="w-auto flex flex-row items-center truncate">
-            <InstanceV1EngineIcon
-              class="inline-block mr-1"
-              instance={database.instanceResource}
-            />
-            <span class="truncate">{database.instanceResource.title}</span>
-            <ChevronRightIcon class="inline opacity-60 w-4 shrink-0 mx-1" />
-            <span class="truncate">{database.databaseName}</span>
+          <div class="flex items-center gap-2">
+            <DatabaseDisplay database={task.target} />
+            <NTag round size="small">
+              {semanticTaskType(task.type)}
+            </NTag>
+            {task.runTime && (
+              <NTooltip>
+                {{
+                  trigger: () => (
+                    <NTag round size="small">
+                      <div class="flex items-center gap-1">
+                        <CalendarClockIcon class="w-3.5 h-3.5" />
+                        {humanizeTs(
+                          getTimeForPbTimestampProtoEs(task.runTime, 0) / 1000
+                        )}
+                      </div>
+                    </NTag>
+                  ),
+                  default: () => t("task.scheduled-time"),
+                }}
+              </NTooltip>
+            )}
           </div>
+        );
+      },
+    },
+    {
+      key: "updateTime",
+      title: t("common.updated-at"),
+      width: 128,
+      render: (task) => {
+        if (!task.updateTime) {
+          return "-";
+        }
+        return humanizeTs(
+          getTimeForPbTimestampProtoEs(task.updateTime, 0) / 1000
         );
       },
     },
     {
       key: "version",
       title: t("common.version"),
-      width: 100,
+      width: 128,
       render: (task) => {
         return extractSchemaVersionFromTask(task) || "-";
       },
