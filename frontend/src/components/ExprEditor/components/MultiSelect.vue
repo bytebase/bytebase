@@ -104,11 +104,20 @@ watch(
   async () => {
     await handleSearch("");
     // valid initial value.
-    const values = new Set(state.rawOptionList.map((opt) => opt.value));
-    const filtered = (props.value as any[]).filter((v) => values.has(v));
-    if (filtered.length !== props.value.length) {
-      // Some values are not suitable for the select options.
-      emit("update:value", filtered);
+    const search = optionConfig.value.search;
+    if (!search) {
+      return;
+    }
+    const existed = new Set(state.rawOptionList.map((opt) => opt.value));
+    const pendingInit = props.value.filter((val) => !existed.has(val));
+    for (const pending of pendingInit) {
+      const options = await search(pending as string);
+      for (const option of options) {
+        if (!existed.has(option.value)) {
+          state.rawOptionList.push(option);
+          existed.add(option.value);
+        }
+      }
     }
   },
   { immediate: true }
