@@ -30,37 +30,26 @@ const reviewContext = useIssueReviewContext();
 const issueStatusText = computed(() => {
   const issueValue = props.issue;
 
-  switch (issueValue.status) {
-    case IssueStatus.OPEN:
-      // Show review status instead of just "Open"
-      if (!issueValue.approvalFindingDone) {
-        return t("issue.table.open");
-      }
+  // Show review status instead of just "Open"
+  if (!issueValue.approvalFindingDone) {
+    return t("issue.table.open");
+  }
 
-      const reviewStatus = reviewContext.done.value
-        ? Issue_Approver_Status.APPROVED
-        : issueValue.approvers.some(
-              (app) => app.status === Issue_Approver_Status.REJECTED
-            )
-          ? Issue_Approver_Status.REJECTED
-          : Issue_Approver_Status.PENDING;
+  const reviewStatus = reviewContext.done.value
+    ? Issue_Approver_Status.APPROVED
+    : issueValue.approvers.some(
+          (app) => app.status === Issue_Approver_Status.REJECTED
+        )
+      ? Issue_Approver_Status.REJECTED
+      : Issue_Approver_Status.PENDING;
 
-      switch (reviewStatus) {
-        case Issue_Approver_Status.APPROVED:
-          return t("issue.review.approved");
-        case Issue_Approver_Status.REJECTED:
-          return t("issue.review.rejected");
-        case Issue_Approver_Status.PENDING:
-          return t("issue.review.under-review");
-        default:
-          return t("issue.table.open");
-      }
-    case IssueStatus.DONE:
-      return t("common.done");
-    case IssueStatus.CANCELED:
-      return t("common.canceled");
+  switch (reviewStatus) {
+    case Issue_Approver_Status.APPROVED:
+      return t("issue.review.approved");
+    case Issue_Approver_Status.REJECTED:
+      return t("issue.review.rejected");
     default:
-      return "";
+      return t("issue.review.under-review");
   }
 });
 

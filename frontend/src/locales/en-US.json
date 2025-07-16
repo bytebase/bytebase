@@ -1054,7 +1054,7 @@
     "self": "Plan",
     "plans": "Plans",
     "new-plan": "New Plan",
-    "add-spec": "Add Specification",
+    "add-spec": "Add Change",
     "change-type": "Change Type",
     "schema-migration": "Schema Migration",
     "schema-migration-description": "Database structural changes (DDL) including tables, columns, indexes, constraints and schema alterations",

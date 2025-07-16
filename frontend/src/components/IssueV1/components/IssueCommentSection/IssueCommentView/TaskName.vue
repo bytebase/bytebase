@@ -52,7 +52,7 @@ const schemaVersion = computed(() => {
 const link = computed(() => {
   const { issue, task } = props;
 
-  if (enabledNewLayout) {
+  if (enabledNewLayout.value) {
     return {
       name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
       params: {

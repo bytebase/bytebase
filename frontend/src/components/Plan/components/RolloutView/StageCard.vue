@@ -45,9 +45,7 @@
                       ? 'info'
                       : status === Task_Status.FAILED
                         ? 'error'
-                        : status === Task_Status.PENDING
-                          ? 'warning'
-                          : 'default'
+                        : 'default'
                   "
                   class="cursor-pointer hover:opacity-80 transition-opacity"
                   @click.stop="handleTaskStatusClick(status)"
@@ -97,7 +95,22 @@
                 <template #avatar>
                   <TaskStatus :status="task.status" size="tiny" disabled />
                 </template>
-                <DatabaseDisplay :database="task.target" />
+                <div class="flex items-center flex-nowrap">
+                  <DatabaseDisplay :database="task.target" />
+                  <NTooltip v-if="task.runTime">
+                    <template #trigger>
+                      <CalendarClockIcon
+                        class="w-3.5 h-3.5 ml-1 text-gray-500"
+                      />
+                    </template>
+                    ({{ $t("task.scheduled-time") }})
+                    {{
+                      humanizeTs(
+                        getTimeForPbTimestampProtoEs(task.runTime, 0) / 1000
+                      )
+                    }}
+                  </NTooltip>
+                </div>
               </NTag>
               <NTag
                 v-if="remainingTaskCount > 0"
@@ -156,6 +169,7 @@ import {
   CircleFadingPlusIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  CalendarClockIcon,
 } from "lucide-vue-next";
 import { NTooltip, NButton, NPopconfirm, NTag } from "naive-ui";
 import { twMerge } from "tailwind-merge";
@@ -205,8 +219,8 @@ const TASK_STATUS_FILTERS: Task_Status[] = [
   Task_Status.RUNNING,
   Task_Status.FAILED,
   Task_Status.CANCELED,
-  Task_Status.DONE,
   Task_Status.PENDING,
+  Task_Status.DONE,
   Task_Status.SKIPPED,
   Task_Status.NOT_STARTED,
 ];

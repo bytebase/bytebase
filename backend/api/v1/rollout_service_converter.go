@@ -686,7 +686,9 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 	if task.UpdatedAt != nil {
 		v1pbTask.UpdateTime = timestamppb.New(*task.UpdatedAt)
 	}
-
+	if task.RunAt != nil {
+		v1pbTask.RunTime = timestamppb.New(*task.RunAt)
+	}
 	return v1pbTask, nil
 }
 
@@ -718,6 +720,9 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	}
 	if task.UpdatedAt != nil {
 		v1pbTask.UpdateTime = timestamppb.New(*task.UpdatedAt)
+	}
+	if task.RunAt != nil {
+		v1pbTask.RunTime = timestamppb.New(*task.RunAt)
 	}
 	return v1pbTask, nil
 }
@@ -754,6 +759,9 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	if task.UpdatedAt != nil {
 		v1pbTask.UpdateTime = timestamppb.New(*task.UpdatedAt)
 	}
+	if task.RunAt != nil {
+		v1pbTask.RunTime = timestamppb.New(*task.RunAt)
+	}
 	return v1pbTask, nil
 }
 
@@ -788,6 +796,9 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 	}
 	if task.UpdatedAt != nil {
 		v1pbTask.UpdateTime = timestamppb.New(*task.UpdatedAt)
+	}
+	if task.RunAt != nil {
+		v1pbTask.RunTime = timestamppb.New(*task.RunAt)
 	}
 	return v1pbTask, nil
 }

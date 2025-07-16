@@ -139,10 +139,6 @@ import {
 } from "./IssueCommentView";
 import IssueCreatedComment from "./IssueCommentView/IssueCreatedComment.vue";
 
-const props = defineProps<{
-  commentFilter?: (comment: ComposedIssueComment) => boolean;
-}>();
-
 interface LocalState {
   editCommentMode: boolean;
   activeComment?: ComposedIssueComment;
@@ -209,9 +205,7 @@ const issueComments = computed((): DistinctIssueComment[] => {
       distinctIssueComments.push({ comment, similar: [] });
     }
   }
-  return props.commentFilter
-    ? distinctIssueComments.filter((item) => props.commentFilter!(item.comment))
-    : distinctIssueComments;
+  return distinctIssueComments;
 });
 
 const allowCreateComment = computed(() => {
