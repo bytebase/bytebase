@@ -9,9 +9,9 @@
       {{ instanceDisplayName }}
     </span>
     <ChevronRightIcon
-      class="inline opacity-60 text-gray-600 w-4 h-4 shrink-0"
+      class="inline opacity-60 text-gray-500 w-4 h-4 shrink-0"
     />
-    <span class="truncate text-gray-800">
+    <span class="truncate text-gray-700">
       {{ databaseDisplayName }}
     </span>
   </div>
