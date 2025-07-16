@@ -169,12 +169,14 @@ message SearchPlansRequest {
   // - has_pipeline: the plan has pipeline or not, support "==" operator, the value should be "true" or "false".
   // - has_issue: the plan has issue or not, support "==" operator, the value should be "true" or "false".
   // - title: the plan title, support "==" operator for exact match and ".matches()" operator for case-insensitive substring match.
+  // - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config", "change_database_config", or "export_data_config".
   //
   // For example:
   // creator == "users/ed@bytebase.com" && create_time >= "2025-01-02T15:04:05Z07:00"
   // has_pipeline == false && has_issue == true
   // title == "My Plan"
   // title.matches("database migration")
+  // spec_type == "change_database_config"
   string filter = 4;
 }
 

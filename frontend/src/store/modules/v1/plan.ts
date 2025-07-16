@@ -23,6 +23,7 @@ export interface PlanFind {
   createdTsBefore?: number;
   hasIssue?: boolean;
   hasPipeline?: boolean;
+  specType?: string;
 }
 
 export const buildPlanFilter = (find: PlanFind): string => {
@@ -48,6 +49,9 @@ export const buildPlanFilter = (find: PlanFind): string => {
   }
   if (find.hasPipeline !== undefined) {
     filter.push(`has_pipeline == ${find.hasPipeline}`);
+  }
+  if (find.specType) {
+    filter.push(`spec_type == "${find.specType}"`);
   }
   return filter.join(" && ");
 };
