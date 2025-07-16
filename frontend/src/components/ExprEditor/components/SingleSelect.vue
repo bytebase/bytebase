@@ -35,7 +35,7 @@ const props = defineProps<{
   expr: ConditionExpr;
 }>();
 
-const emit = defineEmits<{
+defineEmits<{
   (event: "update:value", value: string | number): void;
 }>();
 
@@ -67,14 +67,23 @@ watch(
   () => factor.value,
   async () => {
     await handleSearch("");
-    if (state.rawOptionList.length === 0) {
+    const search = optionConfig.value.search;
+    if (!search) {
       return;
     }
+
     if (
-      !props.value ||
+      props.value &&
       !state.rawOptionList.find((opt) => opt.value === props.value)
     ) {
-      emit("update:value", state.rawOptionList[0].value!);
+      const existed = new Set(state.rawOptionList.map((opt) => opt.value));
+      const options = await search(props.value as string);
+      for (const option of options) {
+        if (!existed.has(option.value)) {
+          state.rawOptionList.push(option);
+          existed.add(option.value);
+        }
+      }
     }
   },
   { immediate: true }
