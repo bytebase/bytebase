@@ -598,6 +598,13 @@ export declare type Task = Message<"bytebase.v1.Task"> & {
    * @generated from field: optional google.protobuf.Timestamp update_time = 13;
    */
   updateTime?: Timestamp;
+
+  /**
+   * The run_time of latest task run.
+   *
+   * @generated from field: optional google.protobuf.Timestamp run_time = 21;
+   */
+  runTime?: Timestamp;
 };
 
 /**

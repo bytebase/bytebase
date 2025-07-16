@@ -413,6 +413,9 @@ message Task {
   // If there are no task runs, it will be empty.
   optional google.protobuf.Timestamp update_time = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The run_time of latest task run.
+  optional google.protobuf.Timestamp run_time = 21 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   message DatabaseCreate {
     // The project owning the database.
     // Format: projects/{project}

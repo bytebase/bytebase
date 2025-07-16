@@ -97,7 +97,22 @@
                 <template #avatar>
                   <TaskStatus :status="task.status" size="tiny" disabled />
                 </template>
-                <DatabaseDisplay :database="task.target" />
+                <div class="flex items-center flex-nowrap">
+                  <DatabaseDisplay :database="task.target" />
+                  <NTooltip v-if="task.runTime">
+                    <template #trigger>
+                      <CalendarClockIcon
+                        class="w-3.5 h-3.5 ml-1 text-gray-500"
+                      />
+                    </template>
+                    {{ $t("task.started") }}
+                    {{
+                      humanizeTs(
+                        getTimeForPbTimestampProtoEs(task.runTime, 0) / 1000
+                      )
+                    }}
+                  </NTooltip>
+                </div>
               </NTag>
               <NTag
                 v-if="remainingTaskCount > 0"
@@ -156,6 +171,7 @@ import {
   CircleFadingPlusIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  CalendarClockIcon,
 } from "lucide-vue-next";
 import { NTooltip, NButton, NPopconfirm, NTag } from "naive-ui";
 import { twMerge } from "tailwind-merge";
