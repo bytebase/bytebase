@@ -166,11 +166,6 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		return 0, nil
 	}
 
-	owner, err := d.GetCurrentDatabaseOwner()
-	if err != nil {
-		return 0, err
-	}
-
 	var commands []base.SingleSQL
 	oneshot := true
 	if len(statement) <= common.MaxSheetCheckSize {
@@ -181,12 +176,6 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		commands = base.FilterEmptySQL(singleSQLs)
 		if len(commands) <= common.MaximumCommands {
 			oneshot = false
-			for _, singleSQL := range commands {
-				if isSuperuserStatement(singleSQL.Text) {
-					// Use superuser privilege to run privileged statements.
-					singleSQL.Text = fmt.Sprintf("SET SESSION AUTHORIZATION NONE;%sSET SESSION AUTHORIZATION '%s';", singleSQL.Text, owner)
-				}
-			}
 		}
 	}
 	if oneshot {
@@ -203,10 +192,6 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			return 0, err
 		}
 		defer tx.Rollback()
-		// Set the current transaction role to the database owner so that the owner of created objects will be the same as the database owner.
-		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET SESSION AUTHORIZATION '%s'", owner)); err != nil {
-			return 0, err
-		}
 
 		for _, command := range commands {
 			sqlResult, err := tx.ExecContext(ctx, command.Text)
@@ -255,11 +240,6 @@ func (d *Driver) createDatabaseExecute(ctx context.Context, statement string) er
 		}
 	}
 	return nil
-}
-
-func isSuperuserStatement(stmt string) bool {
-	upperCaseStmt := strings.ToUpper(strings.TrimLeft(stmt, " \n\t"))
-	return strings.HasPrefix(upperCaseStmt, "GRANT")
 }
 
 func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {
