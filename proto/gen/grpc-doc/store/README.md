@@ -242,8 +242,8 @@
     - [ReleasePayload.File](#bytebase-store-ReleasePayload-File)
     - [ReleasePayload.VCSSource](#bytebase-store-ReleasePayload-VCSSource)
   
-    - [ReleaseFileType](#bytebase-store-ReleaseFileType)
     - [ReleasePayload.File.ChangeType](#bytebase-store-ReleasePayload-File-ChangeType)
+    - [ReleasePayload.File.Type](#bytebase-store-ReleasePayload-File-Type)
   
 - [store/review_config.proto](#store_review_config-proto)
     - [ReviewConfigPayload](#bytebase-store-ReviewConfigPayload)
@@ -3901,7 +3901,7 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | path | [string](#string) |  | The path of the file. e.g. `2.2/V0001_create_table.sql`. |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
-| type | [ReleaseFileType](#bytebase-store-ReleaseFileType) |  |  |
+| type | [ReleasePayload.File.Type](#bytebase-store-ReleasePayload-File-Type) |  |  |
 | version | [string](#string) |  |  |
 | change_type | [ReleasePayload.File.ChangeType](#bytebase-store-ReleasePayload-File-ChangeType) |  |  |
 
@@ -3928,18 +3928,6 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
  
 
 
-<a name="bytebase-store-ReleaseFileType"></a>
-
-### ReleaseFileType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| VERSIONED | 1 |  |
-
-
-
 <a name="bytebase-store-ReleasePayload-File-ChangeType"></a>
 
 ### ReleasePayload.File.ChangeType
@@ -3951,6 +3939,18 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | DDL | 1 |  |
 | DDL_GHOST | 2 |  |
 | DML | 3 |  |
+
+
+
+<a name="bytebase-store-ReleasePayload-File-Type"></a>
+
+### ReleasePayload.File.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| VERSIONED | 1 |  |
 
 
  

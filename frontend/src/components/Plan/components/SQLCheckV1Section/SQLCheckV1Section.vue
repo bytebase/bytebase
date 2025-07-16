@@ -121,7 +121,7 @@ import { getRuleLocalization, ruleTemplateMapV2 } from "@/types";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
 import {
   CheckReleaseRequestSchema,
-  ReleaseFileType,
+  Release_File_Type,
 } from "@/types/proto-es/v1/release_service_pb";
 import {
   Release_File_ChangeType,
@@ -242,7 +242,7 @@ const runChecks = async () => {
           {
             // Use "0" for dummy version.
             version: "0",
-            type: ReleaseFileType.VERSIONED,
+            type: Release_File_Type.VERSIONED,
             statement: new TextEncoder().encode(statement),
             changeType:
               config.type === Plan_ChangeDatabaseConfig_Type.DATA

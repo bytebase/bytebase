@@ -82,7 +82,7 @@ func TestGitOpsCheck(t *testing.T) {
 		Files: []*v1pb.Release_File{
 			{
 				Path:       "migrations/001__create_users_table.sql",
-				Type:       v1pb.ReleaseFileType_VERSIONED,
+				Type:       v1pb.Release_File_VERSIONED,
 				Version:    "001",
 				ChangeType: v1pb.Release_File_DDL,
 				Statement: []byte(`CREATE TABLE users (
@@ -94,7 +94,7 @@ func TestGitOpsCheck(t *testing.T) {
 			},
 			{
 				Path:       "migrations/002__add_email_index.sql",
-				Type:       v1pb.ReleaseFileType_VERSIONED,
+				Type:       v1pb.Release_File_VERSIONED,
 				Version:    "002",
 				ChangeType: v1pb.Release_File_DDL,
 				Statement:  []byte(`CREATE INDEX idx_users_email ON users(email);`),
@@ -203,7 +203,7 @@ func TestGitOpsRollout(t *testing.T) {
 			Files: []*v1pb.Release_File{
 				{
 					Path:       "migrations/001__create_products_table.sql",
-					Type:       v1pb.ReleaseFileType_VERSIONED,
+					Type:       v1pb.Release_File_VERSIONED,
 					Version:    "001",
 					ChangeType: v1pb.Release_File_DDL,
 					Statement: []byte(`CREATE TABLE products (
@@ -409,7 +409,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 			Files: []*v1pb.Release_File{
 				{
 					Path:       "migrations/1.0.0__create_table_one.sql",
-					Type:       v1pb.ReleaseFileType_VERSIONED,
+					Type:       v1pb.Release_File_VERSIONED,
 					Version:    "1.0.0",
 					ChangeType: v1pb.Release_File_DDL,
 					Statement: []byte(`CREATE TABLE table_one (
@@ -419,7 +419,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 				},
 				{
 					Path:       "migrations/1.0.1__create_table_two.sql",
-					Type:       v1pb.ReleaseFileType_VERSIONED,
+					Type:       v1pb.Release_File_VERSIONED,
 					Version:    "1.0.1",
 					ChangeType: v1pb.Release_File_DDL,
 					Statement: []byte(`CREATE TABLE table_two (
@@ -429,7 +429,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 				},
 				{
 					Path:       "migrations/1.0.2__create_table_three.sql",
-					Type:       v1pb.ReleaseFileType_VERSIONED,
+					Type:       v1pb.Release_File_VERSIONED,
 					Version:    "1.0.2",
 					ChangeType: v1pb.Release_File_DDL,
 					Statement: []byte(`CREATE TABLE table_three (
@@ -662,7 +662,7 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 		Files: []*v1pb.Release_File{
 			{
 				Path:       "migrations/1.0.0__create_users_table.sql",
-				Type:       v1pb.ReleaseFileType_VERSIONED,
+				Type:       v1pb.Release_File_VERSIONED,
 				Version:    "1.0.0",
 				ChangeType: v1pb.Release_File_DDL,
 				Statement: []byte(`CREATE TABLE users (
@@ -737,7 +737,7 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 		Files: []*v1pb.Release_File{
 			{
 				Path:       "migrations/1.0.0__create_users_table.sql",
-				Type:       v1pb.ReleaseFileType_VERSIONED,
+				Type:       v1pb.Release_File_VERSIONED,
 				Version:    "1.0.0",
 				ChangeType: v1pb.Release_File_DDL,
 				Statement: []byte(`CREATE TABLE users (

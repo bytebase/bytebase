@@ -25,52 +25,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type ReleaseFileType int32
-
-const (
-	ReleaseFileType_TYPE_UNSPECIFIED ReleaseFileType = 0
-	ReleaseFileType_VERSIONED        ReleaseFileType = 1
-)
-
-// Enum value maps for ReleaseFileType.
-var (
-	ReleaseFileType_name = map[int32]string{
-		0: "TYPE_UNSPECIFIED",
-		1: "VERSIONED",
-	}
-	ReleaseFileType_value = map[string]int32{
-		"TYPE_UNSPECIFIED": 0,
-		"VERSIONED":        1,
-	}
-)
-
-func (x ReleaseFileType) Enum() *ReleaseFileType {
-	p := new(ReleaseFileType)
-	*p = x
-	return p
-}
-
-func (x ReleaseFileType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ReleaseFileType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_release_service_proto_enumTypes[0].Descriptor()
-}
-
-func (ReleaseFileType) Type() protoreflect.EnumType {
-	return &file_v1_release_service_proto_enumTypes[0]
-}
-
-func (x ReleaseFileType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ReleaseFileType.Descriptor instead.
-func (ReleaseFileType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_release_service_proto_rawDescGZIP(), []int{0}
-}
-
 type CheckReleaseResponse_RiskLevel int32
 
 const (
@@ -107,11 +61,11 @@ func (x CheckReleaseResponse_RiskLevel) String() string {
 }
 
 func (CheckReleaseResponse_RiskLevel) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_release_service_proto_enumTypes[1].Descriptor()
+	return file_v1_release_service_proto_enumTypes[0].Descriptor()
 }
 
 func (CheckReleaseResponse_RiskLevel) Type() protoreflect.EnumType {
-	return &file_v1_release_service_proto_enumTypes[1]
+	return &file_v1_release_service_proto_enumTypes[0]
 }
 
 func (x CheckReleaseResponse_RiskLevel) Number() protoreflect.EnumNumber {
@@ -121,6 +75,52 @@ func (x CheckReleaseResponse_RiskLevel) Number() protoreflect.EnumNumber {
 // Deprecated: Use CheckReleaseResponse_RiskLevel.Descriptor instead.
 func (CheckReleaseResponse_RiskLevel) EnumDescriptor() ([]byte, []int) {
 	return file_v1_release_service_proto_rawDescGZIP(), []int{8, 0}
+}
+
+type Release_File_Type int32
+
+const (
+	Release_File_TYPE_UNSPECIFIED Release_File_Type = 0
+	Release_File_VERSIONED        Release_File_Type = 1
+)
+
+// Enum value maps for Release_File_Type.
+var (
+	Release_File_Type_name = map[int32]string{
+		0: "TYPE_UNSPECIFIED",
+		1: "VERSIONED",
+	}
+	Release_File_Type_value = map[string]int32{
+		"TYPE_UNSPECIFIED": 0,
+		"VERSIONED":        1,
+	}
+)
+
+func (x Release_File_Type) Enum() *Release_File_Type {
+	p := new(Release_File_Type)
+	*p = x
+	return p
+}
+
+func (x Release_File_Type) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Release_File_Type) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_release_service_proto_enumTypes[1].Descriptor()
+}
+
+func (Release_File_Type) Type() protoreflect.EnumType {
+	return &file_v1_release_service_proto_enumTypes[1]
+}
+
+func (x Release_File_Type) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Release_File_Type.Descriptor instead.
+func (Release_File_Type) EnumDescriptor() ([]byte, []int) {
+	return file_v1_release_service_proto_rawDescGZIP(), []int{9, 0, 0}
 }
 
 type Release_File_ChangeType int32
@@ -172,7 +172,7 @@ func (x Release_File_ChangeType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Release_File_ChangeType.Descriptor instead.
 func (Release_File_ChangeType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_release_service_proto_rawDescGZIP(), []int{9, 0, 0}
+	return file_v1_release_service_proto_rawDescGZIP(), []int{9, 0, 1}
 }
 
 type GetReleaseRequest struct {
@@ -863,9 +863,13 @@ type Release_File struct {
 	// The unique identifier for the file.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// The path of the file. e.g. `2.2/V0001_create_table.sql`.
-	Path       string                  `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
-	Type       ReleaseFileType         `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.v1.ReleaseFileType" json:"type,omitempty"`
-	Version    string                  `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
+	Path string `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
+	// The type of the file.
+	Type    Release_File_Type `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.v1.Release_File_Type" json:"type,omitempty"`
+	Version string            `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
+	// The change type of the file.
+	// For versioned files, it is the change type of the file.
+	// For declarative files, this field is always DDL, thus meaningless.
 	ChangeType Release_File_ChangeType `protobuf:"varint,9,opt,name=change_type,json=changeType,proto3,enum=bytebase.v1.Release_File_ChangeType" json:"change_type,omitempty"`
 	// For inputs, we must either use `sheet` or `statement`.
 	// For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
@@ -927,11 +931,11 @@ func (x *Release_File) GetPath() string {
 	return ""
 }
 
-func (x *Release_File) GetType() ReleaseFileType {
+func (x *Release_File) GetType() Release_File_Type {
 	if x != nil {
 		return x.Type
 	}
-	return ReleaseFileType_TYPE_UNSPECIFIED
+	return Release_File_TYPE_UNSPECIFIED
 }
 
 func (x *Release_File) GetVersion() string {
@@ -1082,7 +1086,7 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03LOW\x10\x01\x12\f\n" +
 	"\bMODERATE\x10\x02\x12\b\n" +
-	"\x04HIGH\x10\x03\"\xf7\x06\n" +
+	"\x04HIGH\x10\x03\"\xa6\a\n" +
 	"\aRelease\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12/\n" +
@@ -1092,11 +1096,11 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\acreator\x18\x05 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
 	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12-\n" +
-	"\x05state\x18\a \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x1a\xaa\x03\n" +
+	"\x05state\x18\a \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x1a\xd9\x03\n" +
 	"\x04File\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04path\x18\x02 \x01(\tR\x04path\x120\n" +
-	"\x04type\x18\x05 \x01(\x0e2\x1c.bytebase.v1.ReleaseFileTypeR\x04type\x12\x18\n" +
+	"\x04path\x18\x02 \x01(\tR\x04path\x122\n" +
+	"\x04type\x18\x05 \x01(\x0e2\x1e.bytebase.v1.Release.File.TypeR\x04type\x12\x18\n" +
 	"\aversion\x18\x06 \x01(\tR\aversion\x12E\n" +
 	"\vchange_type\x18\t \x01(\x0e2$.bytebase.v1.Release.File.ChangeTypeR\n" +
 	"changeType\x12-\n" +
@@ -1104,7 +1108,10 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x12bytebase.com/SheetR\x05sheet\x12\x1c\n" +
 	"\tstatement\x18\a \x01(\fR\tstatement\x12&\n" +
 	"\fsheet_sha256\x18\x04 \x01(\tB\x03\xe0A\x03R\vsheetSha256\x12*\n" +
-	"\x0estatement_size\x18\b \x01(\x03B\x03\xe0A\x03R\rstatementSize\"J\n" +
+	"\x0estatement_size\x18\b \x01(\x03B\x03\xe0A\x03R\rstatementSize\"+\n" +
+	"\x04Type\x12\x14\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
+	"\tVERSIONED\x10\x01\"J\n" +
 	"\n" +
 	"ChangeType\x12\x1b\n" +
 	"\x17CHANGE_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
@@ -1114,10 +1121,7 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\tVCSSource\x12/\n" +
 	"\bvcs_type\x18\x01 \x01(\x0e2\x14.bytebase.v1.VCSTypeR\avcsType\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03url:@\xeaA=\n" +
-	"\x14bytebase.com/Release\x12%projects/{project}/releases/{release}*6\n" +
-	"\x0fReleaseFileType\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
-	"\tVERSIONED\x10\x012\xf5\b\n" +
+	"\x14bytebase.com/Release\x12%projects/{project}/releases/{release}2\xf5\b\n" +
 	"\x0eReleaseService\x12\x8a\x01\n" +
 	"\n" +
 	"GetRelease\x12\x1e.bytebase.v1.GetReleaseRequest\x1a\x14.bytebase.v1.Release\"F\xdaA\x04name\x8a\xea0\x0fbb.releases.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\"\x12 /v1/{name=projects/*/releases/*}\x12\x9e\x01\n" +
@@ -1143,8 +1147,8 @@ func file_v1_release_service_proto_rawDescGZIP() []byte {
 var file_v1_release_service_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_v1_release_service_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_v1_release_service_proto_goTypes = []any{
-	(ReleaseFileType)(0),                     // 0: bytebase.v1.ReleaseFileType
-	(CheckReleaseResponse_RiskLevel)(0),      // 1: bytebase.v1.CheckReleaseResponse.RiskLevel
+	(CheckReleaseResponse_RiskLevel)(0),      // 0: bytebase.v1.CheckReleaseResponse.RiskLevel
+	(Release_File_Type)(0),                   // 1: bytebase.v1.Release.File.Type
 	(Release_File_ChangeType)(0),             // 2: bytebase.v1.Release.File.ChangeType
 	(*GetReleaseRequest)(nil),                // 3: bytebase.v1.GetReleaseRequest
 	(*ListReleasesRequest)(nil),              // 4: bytebase.v1.ListReleasesRequest
@@ -1173,14 +1177,14 @@ var file_v1_release_service_proto_depIdxs = []int32{
 	16, // 3: bytebase.v1.UpdateReleaseRequest.update_mask:type_name -> google.protobuf.FieldMask
 	12, // 4: bytebase.v1.CheckReleaseRequest.release:type_name -> bytebase.v1.Release
 	13, // 5: bytebase.v1.CheckReleaseResponse.results:type_name -> bytebase.v1.CheckReleaseResponse.CheckResult
-	1,  // 6: bytebase.v1.CheckReleaseResponse.risk_level:type_name -> bytebase.v1.CheckReleaseResponse.RiskLevel
+	0,  // 6: bytebase.v1.CheckReleaseResponse.risk_level:type_name -> bytebase.v1.CheckReleaseResponse.RiskLevel
 	14, // 7: bytebase.v1.Release.files:type_name -> bytebase.v1.Release.File
 	15, // 8: bytebase.v1.Release.vcs_source:type_name -> bytebase.v1.Release.VCSSource
 	17, // 9: bytebase.v1.Release.create_time:type_name -> google.protobuf.Timestamp
 	18, // 10: bytebase.v1.Release.state:type_name -> bytebase.v1.State
 	19, // 11: bytebase.v1.CheckReleaseResponse.CheckResult.advices:type_name -> bytebase.v1.Advice
-	1,  // 12: bytebase.v1.CheckReleaseResponse.CheckResult.risk_level:type_name -> bytebase.v1.CheckReleaseResponse.RiskLevel
-	0,  // 13: bytebase.v1.Release.File.type:type_name -> bytebase.v1.ReleaseFileType
+	0,  // 12: bytebase.v1.CheckReleaseResponse.CheckResult.risk_level:type_name -> bytebase.v1.CheckReleaseResponse.RiskLevel
+	1,  // 13: bytebase.v1.Release.File.type:type_name -> bytebase.v1.Release.File.Type
 	2,  // 14: bytebase.v1.Release.File.change_type:type_name -> bytebase.v1.Release.File.ChangeType
 	20, // 15: bytebase.v1.Release.VCSSource.vcs_type:type_name -> bytebase.v1.VCSType
 	3,  // 16: bytebase.v1.ReleaseService.GetRelease:input_type -> bytebase.v1.GetReleaseRequest

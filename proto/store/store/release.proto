@@ -24,9 +24,14 @@ message ReleasePayload {
     string sheet = 3 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
     // The SHA256 hash value of the sheet.
     string sheet_sha256 = 4;
-    ReleaseFileType type = 5;
+    Type type = 5;
     string version = 6;
     ChangeType change_type = 7;
+
+    enum Type {
+      TYPE_UNSPECIFIED = 0;
+      VERSIONED = 1;
+    }
 
     enum ChangeType {
       CHANGE_TYPE_UNSPECIFIED = 0;
@@ -40,9 +45,4 @@ message ReleasePayload {
     VCSType vcs_type = 1;
     string url = 2;
   }
-}
-
-enum ReleaseFileType {
-  TYPE_UNSPECIFIED = 0;
-  VERSIONED = 1;
 }

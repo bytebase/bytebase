@@ -401,9 +401,11 @@ export declare type Release_File = Message<"bytebase.v1.Release.File"> & {
   path: string;
 
   /**
-   * @generated from field: bytebase.v1.ReleaseFileType type = 5;
+   * The type of the file.
+   *
+   * @generated from field: bytebase.v1.Release.File.Type type = 5;
    */
-  type: ReleaseFileType;
+  type: Release_File_Type;
 
   /**
    * @generated from field: string version = 6;
@@ -411,6 +413,10 @@ export declare type Release_File = Message<"bytebase.v1.Release.File"> & {
   version: string;
 
   /**
+   * The change type of the file.
+   * For versioned files, it is the change type of the file.
+   * For declarative files, this field is always DDL, thus meaningless.
+   *
    * @generated from field: bytebase.v1.Release.File.ChangeType change_type = 9;
    */
   changeType: Release_File_ChangeType;
@@ -453,6 +459,26 @@ export declare type Release_File = Message<"bytebase.v1.Release.File"> & {
  * Use `create(Release_FileSchema)` to create a new message.
  */
 export declare const Release_FileSchema: GenMessage<Release_File>;
+
+/**
+ * @generated from enum bytebase.v1.Release.File.Type
+ */
+export enum Release_File_Type {
+  /**
+   * @generated from enum value: TYPE_UNSPECIFIED = 0;
+   */
+  TYPE_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: VERSIONED = 1;
+   */
+  VERSIONED = 1,
+}
+
+/**
+ * Describes the enum bytebase.v1.Release.File.Type.
+ */
+export declare const Release_File_TypeSchema: GenEnum<Release_File_Type>;
 
 /**
  * @generated from enum bytebase.v1.Release.File.ChangeType
@@ -506,26 +532,6 @@ export declare type Release_VCSSource = Message<"bytebase.v1.Release.VCSSource">
  * Use `create(Release_VCSSourceSchema)` to create a new message.
  */
 export declare const Release_VCSSourceSchema: GenMessage<Release_VCSSource>;
-
-/**
- * @generated from enum bytebase.v1.ReleaseFileType
- */
-export enum ReleaseFileType {
-  /**
-   * @generated from enum value: TYPE_UNSPECIFIED = 0;
-   */
-  TYPE_UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: VERSIONED = 1;
-   */
-  VERSIONED = 1,
-}
-
-/**
- * Describes the enum bytebase.v1.ReleaseFileType.
- */
-export declare const ReleaseFileTypeSchema: GenEnum<ReleaseFileType>;
 
 /**
  * @generated from service bytebase.v1.ReleaseService

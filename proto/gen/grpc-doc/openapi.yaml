@@ -12317,6 +12317,7 @@ components:
                         - TYPE_UNSPECIFIED
                         - VERSIONED
                     type: string
+                    description: The type of the file.
                     format: enum
                 version:
                     type: string
@@ -12327,6 +12328,10 @@ components:
                         - DDL_GHOST
                         - DML
                     type: string
+                    description: |-
+                        The change type of the file.
+                         For versioned files, it is the change type of the file.
+                         For declarative files, this field is always DDL, thus meaningless.
                     format: enum
                 sheet:
                     type: string

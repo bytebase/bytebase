@@ -555,7 +555,7 @@
   
     - [CheckReleaseResponse.RiskLevel](#bytebase-v1-CheckReleaseResponse-RiskLevel)
     - [Release.File.ChangeType](#bytebase-v1-Release-File-ChangeType)
-    - [ReleaseFileType](#bytebase-v1-ReleaseFileType)
+    - [Release.File.Type](#bytebase-v1-Release-File-Type)
   
     - [ReleaseService](#bytebase-v1-ReleaseService)
   
@@ -9104,9 +9104,9 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | The unique identifier for the file. |
 | path | [string](#string) |  | The path of the file. e.g. `2.2/V0001_create_table.sql`. |
-| type | [ReleaseFileType](#bytebase-v1-ReleaseFileType) |  |  |
+| type | [Release.File.Type](#bytebase-v1-Release-File-Type) |  | The type of the file. |
 | version | [string](#string) |  |  |
-| change_type | [Release.File.ChangeType](#bytebase-v1-Release-File-ChangeType) |  |  |
+| change_type | [Release.File.ChangeType](#bytebase-v1-Release-File-ChangeType) |  | The change type of the file. For versioned files, it is the change type of the file. For declarative files, this field is always DDL, thus meaningless. |
 | sheet | [string](#string) |  | For inputs, we must either use `sheet` or `statement`. For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
 
 The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
@@ -9196,9 +9196,9 @@ The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 
 
 
-<a name="bytebase-v1-ReleaseFileType"></a>
+<a name="bytebase-v1-Release-File-Type"></a>
 
-### ReleaseFileType
+### Release.File.Type
 
 
 | Name | Number | Description |
