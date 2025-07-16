@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { reactive, type Ref } from "vue";
+import type { Ref } from "vue";
 import {
   issueServiceClientConnect,
   planServiceClientConnect,
@@ -19,29 +19,12 @@ import { GetRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb"
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 
-interface RefreshTimestamps {
-  plan?: number;
-  planCheckRuns?: number;
-  rollout?: number;
-  issue?: number;
-  issueComments?: number;
-}
-
-const lastRefreshTime = reactive<RefreshTimestamps>({});
-
-export const getLastRefreshTime = (
-  resource: keyof RefreshTimestamps
-): number | undefined => {
-  return lastRefreshTime[resource];
-};
-
 export const refreshPlan = async (plan: Ref<Plan>): Promise<void> => {
   const request = create(GetPlanRequestSchema, {
     name: plan.value.name,
   });
   const response = await planServiceClientConnect.getPlan(request);
   plan.value = response;
-  lastRefreshTime.plan = Date.now();
 };
 
 export const refreshPlanCheckRuns = async (
@@ -59,7 +42,6 @@ export const refreshPlanCheckRuns = async (
   });
   const response = await planServiceClientConnect.listPlanCheckRuns(request);
   planCheckRuns.value = response.planCheckRuns;
-  lastRefreshTime.planCheckRuns = Date.now();
 };
 
 export const refreshRollout = async (
@@ -77,7 +59,6 @@ export const refreshRollout = async (
   const newRollout =
     await rolloutServiceClientConnect.getRollout(rolloutRequest);
   rollout.value = newRollout;
-  lastRefreshTime.rollout = Date.now();
 };
 
 export const refreshIssue = async (issue: Ref<Issue>): Promise<void> => {
@@ -86,7 +67,6 @@ export const refreshIssue = async (issue: Ref<Issue>): Promise<void> => {
   });
   const newIssue = await issueServiceClientConnect.getIssue(request);
   issue.value = newIssue;
-  lastRefreshTime.issue = Date.now();
 };
 
 export const refreshIssueComments = async (issue: Issue): Promise<void> => {
@@ -97,5 +77,4 @@ export const refreshIssueComments = async (issue: Issue): Promise<void> => {
       pageSize: 1000,
     })
   );
-  lastRefreshTime.issueComments = Date.now();
 };

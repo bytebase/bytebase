@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from "uuid";
 import {
   computed,
   inject,
-  nextTick,
   provide,
   ref,
   watch,
@@ -31,19 +30,33 @@ import {
   refreshIssueComments,
 } from "./utils";
 
-export type ResourceType =
+type ResourceType =
   | "plan"
   | "planCheckRuns"
   | "issue"
   | "issueComments"
   | "rollout";
 
-// Progressive polling configuration:
-// - min: 2s - Initial polling interval
-// - max: 60s - Maximum polling interval after progressive growth
-// - growth: 1.5x - Each interval is 1.5x the previous (2s → 3s → 4.5s → 6.75s → ...)
-// - jitter: ±3s - Random variation to prevent thundering herd
-const POLLER_INTERVAL = { min: 2000, max: 60000, growth: 1.5, jitter: 3000 };
+// Progressive polling configuration for the resource poller
+// This configuration implements an exponential backoff strategy to reduce server load
+// while maintaining responsiveness for active users
+//
+// - min: 2000ms (2s) - Initial polling interval when starting or after user interaction
+// - max: 30000ms (30s) - Maximum polling interval to prevent excessive delays
+// - growth: 2 - Growth factor for exponential backoff (2x means: 2s → 4s → 8s → 16s → 30s)
+// - jitter: ±3000ms (±3s) - Random variation added to prevent thundering herd problem
+//                          where multiple clients poll simultaneously
+//
+// Example progression with growth=2:
+// Poll 1: 2s (initial)
+// Poll 2: 4s (2s × 2)
+// Poll 3: 8s (4s × 2)
+// Poll 4: 16s (8s × 2)
+// Poll 5+: 30s (capped at max, would be 32s but limited by max)
+//
+// The actual interval will vary by ±3s due to jitter, so Poll 3 might be anywhere
+// from 5s to 11s (8s ± 3s), helping distribute server load
+const POLLER_INTERVAL = { min: 2000, max: 30000, growth: 2, jitter: 3000 };
 
 const KEY = Symbol(
   `bb.plan.poller.${uuidv4()}`
@@ -55,11 +68,11 @@ export const provideResourcePoller = () => {
   const { isCreating, plan, planCheckRuns, issue, rollout, events } =
     usePlanContext();
 
-  // Track refreshing state per resource
-  const refreshingResources = ref(new Set<ResourceType>());
+  // Track refreshing state
+  const isRefreshing = ref(false);
 
-  // Computed overall refreshing state
-  const isRefreshing = computed(() => refreshingResources.value.size > 0);
+  // Track last refresh time
+  const lastRefreshTime = ref(0);
 
   const enhancedPollingResources = ref<ResourceType[]>([]);
 
@@ -68,20 +81,9 @@ export const provideResourcePoller = () => {
     once?: boolean
   ) => {
     if (once) {
-      for (const resource of resources) {
-        if (resource === "plan") {
-          refreshPlanOnly();
-        } else if (resource === "planCheckRuns") {
-          refreshPlanCheckRunsOnly();
-        } else if (resource === "issue") {
-          refreshIssueOnly();
-        } else if (resource === "issueComments") {
-          refreshIssueCommentsOnly();
-        } else if (resource === "rollout") {
-          refreshRolloutOnly();
-        }
-      }
-      restartActivePollers();
+      // For one-time refresh, directly call refreshAll
+      refreshAll(true);
+      restartPoller();
     } else {
       enhancedPollingResources.value = resources;
     }
@@ -163,114 +165,84 @@ export const provideResourcePoller = () => {
     await refreshRollout(plan.value.rollout, project.value, rollout);
   };
 
-  // Track which resource is being refreshed for the event
-  const resourceBeingRefreshed = ref<ResourceType | null>(null);
+  // Single refresh function for all resources
+  const refreshActiveResources = async () => {
+    const activeResources = resourcesToPolled.value;
+    if (activeResources.length === 0 || isRefreshing.value) return;
 
-  // Wrap refresh functions to manage isRefreshing state for auto polling
-  const wrapWithRefreshingState = (
-    refreshFn: () => Promise<void>,
-    resource: ResourceType
-  ) => {
-    return async () => {
-      refreshingResources.value.add(resource);
-      resourceBeingRefreshed.value = resource;
-      try {
-        await refreshFn();
-        // Emit event after successful refresh
-        events.emit("resource-refresh-completed", {
-          resources: [resource],
-          isManual: false,
-        });
-      } finally {
-        nextTick(() => refreshingResources.value.delete(resource));
-        resourceBeingRefreshed.value = null;
+    isRefreshing.value = true;
+    const refreshPromises = [];
+
+    try {
+      if (activeResources.includes("plan") && plan.value) {
+        refreshPromises.push(refreshPlan(plan));
       }
-    };
+      if (
+        activeResources.includes("planCheckRuns") &&
+        plan.value &&
+        planCheckRuns
+      ) {
+        refreshPromises.push(
+          refreshPlanCheckRuns(plan.value, project.value, planCheckRuns)
+        );
+      }
+      if (activeResources.includes("issue") && issue?.value) {
+        refreshPromises.push(refreshIssue(issue as any));
+      }
+      if (activeResources.includes("issueComments") && issue?.value) {
+        refreshPromises.push(refreshIssueComments(issue.value));
+      }
+      if (
+        activeResources.includes("rollout") &&
+        plan.value?.rollout &&
+        rollout
+      ) {
+        refreshPromises.push(
+          refreshRollout(plan.value.rollout, project.value, rollout)
+        );
+      }
+
+      await Promise.all(refreshPromises);
+
+      // Update timestamp after successful refresh
+      lastRefreshTime.value = Date.now();
+
+      // Emit event after successful refresh
+      events.emit("resource-refresh-completed", {
+        resources: activeResources,
+        isManual: false,
+      });
+    } finally {
+      isRefreshing.value = false;
+    }
   };
 
-  // Create pollers for each resource
-  const planPoller = useProgressivePoll(
-    wrapWithRefreshingState(refreshPlanOnly, "plan"),
-    { interval: POLLER_INTERVAL }
-  );
-
-  const planCheckRunsPoller = useProgressivePoll(
-    wrapWithRefreshingState(refreshPlanCheckRunsOnly, "planCheckRuns"),
-    { interval: POLLER_INTERVAL }
-  );
-
-  const issuePoller = useProgressivePoll(
-    wrapWithRefreshingState(refreshIssueOnly, "issue"),
-    { interval: POLLER_INTERVAL }
-  );
-
-  const issueCommentsPoller = useProgressivePoll(
-    wrapWithRefreshingState(refreshIssueCommentsOnly, "issueComments"),
-    { interval: POLLER_INTERVAL }
-  );
-
-  const rolloutPoller = useProgressivePoll(
-    wrapWithRefreshingState(refreshRolloutOnly, "rollout"),
-    { interval: POLLER_INTERVAL }
-  );
+  // Create a single poller for all resources
+  const resourcePoller = useProgressivePoll(refreshActiveResources, {
+    interval: POLLER_INTERVAL,
+  });
 
   // Track if we've done initial refresh to avoid duplicate calls
   let hasInitialRefresh = false;
-  // Track which pollers are currently running to avoid unnecessary restarts
-  const pollerStates = {
-    plan: false,
-    planCheckRuns: false,
-    issue: false,
-    issueComments: false,
-    rollout: false,
-  };
+  let isPollerRunning = false;
 
-  // Function to restart all active pollers (resets progressive intervals)
-  const restartActivePollers = () => {
-    const activeResources = resourcesToPolled.value;
-    const shouldPoll = !isCreating.value;
+  // Function to restart the poller (resets progressive intervals)
+  const restartPoller = () => {
+    const shouldPoll = !isCreating.value && resourcesToPolled.value.length > 0;
 
     if (!shouldPoll) return;
 
-    // Stop all pollers first
-    planPoller.stop();
-    planCheckRunsPoller.stop();
-    issuePoller.stop();
-    issueCommentsPoller.stop();
-    rolloutPoller.stop();
-
-    // Reset poller states and initial refresh flag
-    pollerStates.plan = false;
-    pollerStates.planCheckRuns = false;
-    pollerStates.issue = false;
-    pollerStates.issueComments = false;
-    pollerStates.rollout = false;
+    // Stop the poller first
+    resourcePoller.stop();
+    isPollerRunning = false;
     hasInitialRefresh = false;
 
-    // Restart active ones (this will reset the progressive intervals)
-    if (activeResources.includes("plan")) {
-      planPoller.start();
-      pollerStates.plan = true;
-    }
-    if (activeResources.includes("planCheckRuns")) {
-      planCheckRunsPoller.start();
-      pollerStates.planCheckRuns = true;
-    }
-    if (activeResources.includes("issue")) {
-      issuePoller.start();
-      pollerStates.issue = true;
-    }
-    if (activeResources.includes("issueComments")) {
-      issueCommentsPoller.start();
-      pollerStates.issueComments = true;
-    }
-    if (activeResources.includes("rollout")) {
-      rolloutPoller.start();
-      pollerStates.rollout = true;
-    }
+    // Restart the poller
+    resourcePoller.start();
+    isPollerRunning = true;
   };
 
-  // Watch for route changes and restart pollers only when resources actually change
+  // Watch for route changes and restart poller only when resources actually change
   watch(
     () => resourcesToPolled.value,
     (newResources, oldResources) => {
@@ -285,7 +257,7 @@ export const provideResourcePoller = () => {
           newSorted.some((resource, index) => resource !== oldSorted[index]);
 
         if (resourcesChanged) {
-          restartActivePollers();
+          restartPoller();
         }
       }
     },
@@ -294,37 +266,35 @@ export const provideResourcePoller = () => {
 
   const refreshAll = async (isManual = false) => {
     const activeResources = resourcesToPolled.value;
+    if (activeResources.length === 0 || isRefreshing.value) return;
+
+    isRefreshing.value = true;
     const refreshPromises = [];
 
-    // Mark all resources as refreshing at once
-    activeResources.forEach((resource) =>
-      refreshingResources.value.add(resource)
-    );
-
-    if (activeResources.includes("plan"))
-      refreshPromises.push(refreshPlanOnly());
-    if (activeResources.includes("planCheckRuns"))
-      refreshPromises.push(refreshPlanCheckRunsOnly());
-    if (activeResources.includes("issue"))
-      refreshPromises.push(refreshIssueOnly());
-    if (activeResources.includes("issueComments"))
-      refreshPromises.push(refreshIssueCommentsOnly());
-    if (activeResources.includes("rollout"))
-      refreshPromises.push(refreshRolloutOnly());
-
     try {
+      if (activeResources.includes("plan"))
+        refreshPromises.push(refreshPlanOnly());
+      if (activeResources.includes("planCheckRuns"))
+        refreshPromises.push(refreshPlanCheckRunsOnly());
+      if (activeResources.includes("issue"))
+        refreshPromises.push(refreshIssueOnly());
+      if (activeResources.includes("issueComments"))
+        refreshPromises.push(refreshIssueCommentsOnly());
+      if (activeResources.includes("rollout"))
+        refreshPromises.push(refreshRolloutOnly());
+
       await Promise.all(refreshPromises);
+
+      // Update timestamp after successful refresh
+      lastRefreshTime.value = Date.now();
+
       // Emit event after successful refresh
       events.emit("resource-refresh-completed", {
         resources: activeResources,
         isManual,
       });
     } finally {
-      nextTick(() =>
-        activeResources.forEach((resource) =>
-          refreshingResources.value.delete(resource)
-        )
-      );
+      isRefreshing.value = false;
     }
   };
 
@@ -350,66 +320,19 @@ export const provideResourcePoller = () => {
     events.emit("status-changed", { eager: true });
   });
 
-  // Watch for resource changes and start/stop pollers accordingly
+  // Watch for resource changes and start/stop poller accordingly
   watchEffect(() => {
     const activeResources = resourcesToPolled.value;
-    const shouldPoll = !isCreating.value;
+    const shouldPoll = !isCreating.value && activeResources.length > 0;
 
     if (shouldPoll) {
-      if (activeResources.includes("plan") && !pollerStates.plan) {
-        planPoller.start();
-        pollerStates.plan = true;
-      } else if (!activeResources.includes("plan") && pollerStates.plan) {
-        planPoller.stop();
-        pollerStates.plan = false;
-      }
-
-      if (
-        activeResources.includes("planCheckRuns") &&
-        !pollerStates.planCheckRuns
-      ) {
-        planCheckRunsPoller.start();
-        pollerStates.planCheckRuns = true;
-      } else if (
-        !activeResources.includes("planCheckRuns") &&
-        pollerStates.planCheckRuns
-      ) {
-        planCheckRunsPoller.stop();
-        pollerStates.planCheckRuns = false;
-      }
-
-      if (activeResources.includes("issue") && !pollerStates.issue) {
-        issuePoller.start();
-        pollerStates.issue = true;
-      } else if (!activeResources.includes("issue") && pollerStates.issue) {
-        issuePoller.stop();
-        pollerStates.issue = false;
-      }
-
-      if (
-        activeResources.includes("issueComments") &&
-        !pollerStates.issueComments
-      ) {
-        issueCommentsPoller.start();
-        pollerStates.issueComments = true;
-      } else if (
-        !activeResources.includes("issueComments") &&
-        pollerStates.issueComments
-      ) {
-        issueCommentsPoller.stop();
-        pollerStates.issueComments = false;
-      }
-
-      if (activeResources.includes("rollout") && !pollerStates.rollout) {
-        rolloutPoller.start();
-        pollerStates.rollout = true;
-      } else if (!activeResources.includes("rollout") && pollerStates.rollout) {
-        rolloutPoller.stop();
-        pollerStates.rollout = false;
+      if (!isPollerRunning) {
+        resourcePoller.start();
+        isPollerRunning = true;
       }
 
       // Do initial refresh only once when polling starts
-      if (!hasInitialRefresh && activeResources.length > 0) {
+      if (!hasInitialRefresh) {
         hasInitialRefresh = true;
         // Small delay to avoid race conditions with component initialization
         setTimeout(async () => {
@@ -417,27 +340,21 @@ export const provideResourcePoller = () => {
         }, 100);
       }
     } else {
-      // Stop all pollers when creating
-      planPoller.stop();
-      planCheckRunsPoller.stop();
-      issuePoller.stop();
-      issueCommentsPoller.stop();
-      rolloutPoller.stop();
-      // Reset poller states
-      pollerStates.plan = false;
-      pollerStates.planCheckRuns = false;
-      pollerStates.issue = false;
-      pollerStates.issueComments = false;
-      pollerStates.rollout = false;
+      // Stop the poller when creating or no resources to poll
+      if (isPollerRunning) {
+        resourcePoller.stop();
+        isPollerRunning = false;
+      }
     }
   });
 
   const poller = {
     refreshAllManual,
     requestEnhancedPolling,
-    restartActivePollers,
+    restartPoller,
     isRefreshing,
     activeResources: resourcesToPolled,
+    lastRefreshTime,
   };
 
   provide(KEY, poller);
