@@ -82,8 +82,7 @@
     "snapshot": "Snapshot",
     "status": "Status",
     "stage": "Stage",
-    "task": "Task",
-    "tasks": "Tasks",
+    "task": "Task | Tasks",
     "blocking-task": "Blocking task",
     "sql": "SQL",
     "unassigned": "Unassigned",
@@ -1051,7 +1050,6 @@
     "new-layout": "New CI/CD Layout"
   },
   "plan": {
-    "self": "Plan",
     "plans": "Plans",
     "new-plan": "New Plan",
     "add-spec": "Add Change",
@@ -1129,6 +1127,12 @@
       "no-stages": {
         "self": "No stages",
         "description": "No stages are defined for this rollout."
+      }
+    },
+    "message": {
+      "pervious-stages-incomplete": {
+        "title": "Previous stages are incomplete",
+        "description": "Some previous stages are not completed. Please enable force run to proceed."
       }
     }
   },

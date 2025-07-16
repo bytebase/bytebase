@@ -83,7 +83,6 @@
     "status": "状态",
     "stage": "阶段",
     "task": "任务",
-    "tasks": "任务",
     "blocking-task": "阻塞任务",
     "sql": "SQL",
     "unassigned": "未指派",
@@ -1051,7 +1050,6 @@
     "new-layout": "使用新版 CI/CD 页面"
   },
   "plan": {
-    "self": "变更计划",
     "plans": "变更计划",
     "new-plan": "创建变更计划",
     "add-spec": "添加变更项",
@@ -1129,6 +1127,12 @@
       "no-stages": {
         "self": "没有阶段",
         "description": "本次发布任务未定义任何阶段。"
+      }
+    },
+    "message": {
+      "pervious-stages-incomplete": {
+        "title": "前置阶段尚未完成",
+        "description": "存在未完成的前置阶段。请确认并勾选强制执行才能继续。"
       }
     }
   },

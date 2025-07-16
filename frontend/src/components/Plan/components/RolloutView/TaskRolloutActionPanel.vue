@@ -10,7 +10,11 @@
       <div class="flex flex-col gap-y-4 h-full overflow-y-hidden px-1">
         <!-- Issue Approval Alert -->
         <NAlert
-          v-if="shouldShowForceRollout"
+          v-if="
+            props.action === 'RUN' &&
+            issueApprovalStatus.hasIssue &&
+            !issueApprovalStatus.isApproved
+          "
           type="warning"
           :title="
             issueApprovalStatus.status === 'rejected'
@@ -23,6 +27,15 @@
               ? $t("issue.approval.rejected-description")
               : $t("issue.approval.pending-description")
           }}
+        </NAlert>
+
+        <!-- Previous Stages Incomplete Alert -->
+        <NAlert
+          v-if="props.action === 'RUN' && previousStagesStatus.hasIncomplete"
+          type="warning"
+          :title="$t('rollout.message.pervious-stages-incomplete.title')"
+        >
+          {{ $t("rollout.message.pervious-stages-incomplete.description") }}
         </NAlert>
 
         <div
@@ -44,12 +57,13 @@
         >
           <div class="flex items-center justify-between">
             <label class="font-medium text-control">
-              <template v-if="eligibleTasks.length === 1">
-                {{ $t("common.task") }}
-              </template>
-              <template v-else>{{ $t("common.tasks") }}</template>
+              {{ $t("common.task", eligibleTasks.length) }}
               <span class="opacity-80" v-if="eligibleTasks.length > 1">
-                ({{ eligibleTasks.length }})
+                ({{
+                  eligibleTasks.length === target.stage.tasks.length
+                    ? eligibleTasks.length
+                    : `${eligibleTasks.length} / ${target.stage.tasks.length}`
+                }})
               </span>
             </label>
           </div>
@@ -310,13 +324,47 @@ const issueApprovalStatus = computed(() => {
   };
 });
 
+// Check if all previous stages are complete (done or skipped)
+const previousStagesStatus = computed(() => {
+  if (!rollout.value || !targetStage.value) {
+    return { allComplete: true, hasIncomplete: false };
+  }
+
+  const stages = rollout.value.stages;
+  const currentStageIndex = stages.findIndex(
+    (stage) => stage.environment === targetStage.value.environment
+  );
+
+  if (currentStageIndex <= 0) {
+    // This is the first stage or stage not found
+    return { allComplete: true, hasIncomplete: false };
+  }
+
+  // Check all previous stages
+  for (let i = 0; i < currentStageIndex; i++) {
+    const stage = stages[i];
+    const hasIncompleteTasks = stage.tasks.some(
+      (task) =>
+        task.status !== Task_Status.DONE && task.status !== Task_Status.SKIPPED
+    );
+    if (hasIncompleteTasks) {
+      return { allComplete: false, hasIncomplete: true };
+    }
+  }
+
+  return { allComplete: true, hasIncomplete: false };
+});
+
 const shouldShowForceRollout = computed(() => {
-  // Show force rollout checkbox only for RUN action with issue approval
+  // Show force rollout checkbox for RUN action when:
+  // 1. Issue approval is not complete, OR
+  // 2. Previous stages are not complete
   return (
     props.action === "RUN" &&
-    issueApprovalStatus.value.hasIssue &&
-    !issueApprovalStatus.value.isApproved &&
-    hasWorkspacePermissionV2("bb.taskRuns.create")
+    hasWorkspacePermissionV2("bb.taskRuns.create") &&
+    ((issueApprovalStatus.value.hasIssue &&
+      !issueApprovalStatus.value.isApproved) ||
+      previousStagesStatus.value.hasIncomplete)
   );
 });
 
@@ -436,6 +484,15 @@ const confirmErrors = computed(() => {
     } else {
       errors.push(t("issue.approval.pending-error"));
     }
+  }
+
+  // Check previous stages completion for RUN action
+  if (
+    props.action === "RUN" &&
+    previousStagesStatus.value.hasIncomplete &&
+    !forceRollout.value
+  ) {
+    errors.push(t("rollout.message.pervious-stages-incomplete.description"));
   }
 
   if (

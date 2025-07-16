@@ -2,7 +2,7 @@
   <div class="flex flex-row justify-start items-center gap-4">
     <div class="flex items-center justify-between">
       <h3 class="text-base">
-        {{ $t("common.tasks") }}
+        {{ $t("common.task", 2) }}
       </h3>
     </div>
     <div class="flex flex-row gap-2 items-center">
@@ -44,13 +44,13 @@
 import { flatten } from "lodash-es";
 import { NTag } from "naive-ui";
 import { computed } from "vue";
+import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import type {
   Rollout,
   Task_Status,
   Stage,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Status as TaskStatusEnum } from "@/types/proto-es/v1/rollout_service_pb";
 import { stringifyTaskStatus } from "@/utils";
 import { useRolloutViewContext } from "./context";
 
@@ -66,15 +66,7 @@ const emit = defineEmits<{
 
 const { mergedStages } = useRolloutViewContext();
 
-const TASK_STATUS_FILTERS: Task_Status[] = [
-  TaskStatusEnum.DONE,
-  TaskStatusEnum.RUNNING,
-  TaskStatusEnum.PENDING,
-  TaskStatusEnum.FAILED,
-  TaskStatusEnum.CANCELED,
-  TaskStatusEnum.NOT_STARTED,
-  TaskStatusEnum.SKIPPED,
-];
+// Using unified task status filters from constants
 
 const allTasks = computed(() => {
   if (props.stage) {
