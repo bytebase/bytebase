@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import {
   computed,
   inject,
+  nextTick,
   provide,
   ref,
   watch,
@@ -54,8 +55,11 @@ export const provideResourcePoller = () => {
   const { isCreating, plan, planCheckRuns, issue, rollout, events } =
     usePlanContext();
 
-  // Track refreshing state
-  const isRefreshing = ref(false);
+  // Track refreshing state per resource
+  const refreshingResources = ref(new Set<ResourceType>());
+
+  // Computed overall refreshing state
+  const isRefreshing = computed(() => refreshingResources.value.size > 0);
 
   const enhancedPollingResources = ref<ResourceType[]>([]);
 
@@ -105,7 +109,7 @@ export const provideResourcePoller = () => {
 
     // Issue-specific pages
     if (includes([PROJECT_V1_ROUTE_ISSUE_DETAIL_V1], routeName)) {
-      return ["issue", "issueComments", "plan"];
+      return ["issue", "issueComments"];
     }
 
     // Rollout-specific pages
@@ -123,7 +127,7 @@ export const provideResourcePoller = () => {
     }
 
     // Default to polling all resources
-    return ["plan", "issue", "issueComments", "rollout"];
+    return ["plan", "planCheckRuns", "issue", "issueComments", "rollout"];
   });
 
   const resourcesToPolled = computed<ResourceType[]>(() => {
@@ -168,7 +172,7 @@ export const provideResourcePoller = () => {
     resource: ResourceType
   ) => {
     return async () => {
-      isRefreshing.value = true;
+      refreshingResources.value.add(resource);
       resourceBeingRefreshed.value = resource;
       try {
         await refreshFn();
@@ -178,7 +182,7 @@ export const provideResourcePoller = () => {
           isManual: false,
         });
       } finally {
-        isRefreshing.value = false;
+        nextTick(() => refreshingResources.value.delete(resource));
         resourceBeingRefreshed.value = null;
       }
     };
@@ -292,6 +296,11 @@ export const provideResourcePoller = () => {
     const activeResources = resourcesToPolled.value;
     const refreshPromises = [];
 
+    // Mark all resources as refreshing at once
+    activeResources.forEach((resource) =>
+      refreshingResources.value.add(resource)
+    );
+
     if (activeResources.includes("plan"))
       refreshPromises.push(refreshPlanOnly());
     if (activeResources.includes("planCheckRuns"))
@@ -303,7 +312,6 @@ export const provideResourcePoller = () => {
     if (activeResources.includes("rollout"))
       refreshPromises.push(refreshRolloutOnly());
 
-    isRefreshing.value = true;
     try {
       await Promise.all(refreshPromises);
       // Emit event after successful refresh
@@ -312,7 +320,11 @@ export const provideResourcePoller = () => {
         isManual,
       });
     } finally {
-      isRefreshing.value = false;
+      nextTick(() =>
+        activeResources.forEach((resource) =>
+          refreshingResources.value.delete(resource)
+        )
+      );
     }
   };
 
@@ -424,7 +436,7 @@ export const provideResourcePoller = () => {
     refreshAllManual,
     requestEnhancedPolling,
     restartActivePollers,
-    isRefreshing: computed(() => isRefreshing.value),
+    isRefreshing,
     activeResources: resourcesToPolled,
   };
 
