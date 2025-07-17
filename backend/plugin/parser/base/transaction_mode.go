@@ -18,11 +18,11 @@ const (
 )
 
 // txnModeDirectiveRegex matches the transaction mode directive at the beginning of a SQL script.
-// Format: -- bytebase:txn-mode = on|off
-var txnModeDirectiveRegex = regexp.MustCompile(`(?i)^\s*--\s*bytebase:txn-mode\s*=\s*(on|off)\s*$`)
+// Format: -- txn-mode = on|off
+var txnModeDirectiveRegex = regexp.MustCompile(`(?i)^\s*--\s*txn-mode\s*=\s*(on|off)\s*$`)
 
 // ParseTransactionMode extracts the transaction mode directive from the SQL script.
-// It checks the first line of the script for the -- bytebase:txn-mode = on|off directive.
+// It checks the first line of the script for the -- txn-mode = on|off directive.
 // Returns the transaction mode and the SQL script without the directive.
 func ParseTransactionMode(script string) (TransactionMode, string) {
 	lines := strings.Split(script, "\n")
