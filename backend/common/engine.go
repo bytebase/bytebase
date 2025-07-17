@@ -506,3 +506,23 @@ func EngineDBSchemaReadyToMigrate(e storepb.Engine) bool {
 		return true
 	}
 }
+
+// TransactionMode represents the transaction execution mode for a migration script.
+type TransactionMode string
+
+const (
+	// TransactionModeOn wraps the script in a single transaction.
+	TransactionModeOn TransactionMode = "on"
+	// TransactionModeOff executes the script's statements sequentially in auto-commit mode.
+	TransactionModeOff TransactionMode = "off"
+	// TransactionModeUnspecified means no explicit mode was specified.
+	TransactionModeUnspecified TransactionMode = ""
+)
+
+// GetDefaultTransactionMode returns the default transaction mode.
+// All engines default to "on" (transactional) for safety and backward compatibility.
+// Users can explicitly set "-- txn-mode = off" when needed for engines with limited transactional DDL support.
+func GetDefaultTransactionMode() TransactionMode {
+	// All engines default to "on" for safety and backward compatibility
+	return TransactionModeOn
+}
