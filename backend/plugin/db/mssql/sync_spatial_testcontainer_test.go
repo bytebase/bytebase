@@ -9,12 +9,38 @@ import (
 	"time"
 
 	_ "github.com/microsoft/go-mssqldb"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
+
+// syncDBSchemaWithRetry attempts to sync the database schema with retry logic for transient errors
+func syncDBSchemaWithRetry(ctx context.Context, driver *Driver, maxRetries int) (*storepb.DatabaseSchemaMetadata, error) {
+	var lastErr error
+	for i := 0; i < maxRetries; i++ {
+		metadata, err := driver.SyncDBSchema(ctx)
+		if err == nil {
+			return metadata, nil
+		}
+
+		// Check if it's a connection error (EOF or timeout)
+		if strings.Contains(err.Error(), "EOF") || strings.Contains(err.Error(), "i/o timeout") {
+			lastErr = err
+			if i < maxRetries-1 {
+				// Wait before retry with exponential backoff
+				waitTime := time.Duration(i+1) * 500 * time.Millisecond
+				time.Sleep(waitTime)
+				continue
+			}
+		}
+		// For non-transient errors, return immediately
+		return nil, err
+	}
+	return nil, errors.Wrapf(lastErr, "failed after %d retries", maxRetries)
+}
 
 func TestSyncSpatialIndexWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
@@ -600,8 +626,8 @@ WITH (
 GO
 `,
 			validate: func(t *testing.T, driver *Driver, _ string) {
-				// Sync database schema
-				metadata, err := driver.SyncDBSchema(ctx)
+				// Sync database schema with retry logic for transient errors
+				metadata, err := syncDBSchemaWithRetry(ctx, driver, 3)
 				require.NoError(t, err)
 				require.NotNil(t, metadata)
 
@@ -764,6 +790,11 @@ GO
 			// Cast to *Driver to access SyncDBSchema
 			mssqlDriver, ok := driver.(*Driver)
 			require.True(t, ok)
+
+			// For the problematic test case, add a delay to allow metadata propagation
+			if tc.name == "sync_spatial_indexes_with_regular_indexes" {
+				time.Sleep(1 * time.Second)
+			}
 
 			// Run validation
 			tc.validate(t, mssqlDriver, databaseName)
