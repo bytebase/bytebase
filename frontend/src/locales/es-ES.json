@@ -927,6 +927,13 @@
     "statement-from-sheet-warning": "Debido a que el SQL es demasiado grande, se ha truncado para mostrarlo y la edición está deshabilitada. Puede cargar un nuevo archivo SQL para sobrescribirlo.",
     "overwrite-current-statement": "Sobrescribir la declaración SQL actual",
     "upload-sql-file-max-size-exceeded": "Se ha excedido el tamaño máximo del archivo ({size}).",
+    "transaction-mode": {
+      "label": "Modo de transacción",
+      "on": "Activado",
+      "off": "Desactivado",
+      "on-tooltip": "Envuelve todas las declaraciones en una sola transacción (BEGIN/COMMIT).",
+      "off-tooltip": "Ejecuta declaraciones individualmente en modo de confirmación automática. Las declaraciones se confirman inmediatamente y no se pueden revertir si una declaración posterior falla."
+    },
     "waiting-earliest-allowed-time": "Se ejecutará después de {time}",
     "batch-transition": {
       "not-allowed-tips": "Algunos de las incidencias seleccionadas no se pueden {operation}",
