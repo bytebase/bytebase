@@ -175,10 +175,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		if request.Msg.UpdateMask == nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
 		}
-		payload := new(storepb.WorkspaceProfileSetting)
-		if err := convertProtoToProto(request.Msg.Setting.Value.GetWorkspaceProfileSettingValue(), payload); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", apiSettingName, err))
-		}
+		payload := convertV1WorkspaceProfileSettingToStore(request.Msg.Setting.Value.GetWorkspaceProfileSettingValue())
 		oldSetting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", apiSettingName, err))
@@ -634,10 +631,11 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 			},
 		}, nil
 	case storepb.SettingName_WORKSPACE_PROFILE:
-		v1Value := new(v1pb.WorkspaceProfileSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+		storeValue := new(storepb.WorkspaceProfileSetting)
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
+		v1Value := convertStoreWorkspaceProfileSettingToV1(storeValue)
 		v1Value.DisallowSignup = v1Value.DisallowSignup || profile.SaaS
 		return &v1pb.Setting{
 			Name: settingName,
@@ -1200,4 +1198,84 @@ func convertEnvironmentSetting(e *v1pb.EnvironmentSetting) *storepb.EnvironmentS
 	return &storepb.EnvironmentSetting{
 		Environments: environments,
 	}
+}
+
+// convertV1WorkspaceProfileSettingToStore converts v1pb.WorkspaceProfileSetting to storepb.WorkspaceProfileSetting.
+func convertV1WorkspaceProfileSettingToStore(v1Setting *v1pb.WorkspaceProfileSetting) *storepb.WorkspaceProfileSetting {
+	if v1Setting == nil {
+		return nil
+	}
+
+	storeSetting := &storepb.WorkspaceProfileSetting{
+		ExternalUrl:            v1Setting.ExternalUrl,
+		DisallowSignup:         v1Setting.DisallowSignup,
+		Require_2Fa:            v1Setting.Require_2Fa,
+		TokenDuration:          v1Setting.TokenDuration,
+		MaximumRoleExpiration:  v1Setting.MaximumRoleExpiration,
+		Domains:                v1Setting.Domains,
+		EnforceIdentityDomain:  v1Setting.EnforceIdentityDomain,
+		DatabaseChangeMode:     storepb.DatabaseChangeMode(v1Setting.DatabaseChangeMode),
+		DisallowPasswordSignin: v1Setting.DisallowPasswordSignin,
+	}
+
+	// Convert announcement if present
+	if v1Setting.Announcement != nil {
+		storeSetting.Announcement = &storepb.Announcement{
+			Text: v1Setting.Announcement.Text,
+			Link: v1Setting.Announcement.Link,
+		}
+		// Convert alert level
+		switch v1Setting.Announcement.Level {
+		case v1pb.Announcement_ALERT_LEVEL_UNSPECIFIED:
+			storeSetting.Announcement.Level = storepb.Announcement_ALERT_LEVEL_UNSPECIFIED
+		case v1pb.Announcement_INFO:
+			storeSetting.Announcement.Level = storepb.Announcement_ALERT_LEVEL_INFO
+		case v1pb.Announcement_WARNING:
+			storeSetting.Announcement.Level = storepb.Announcement_ALERT_LEVEL_WARNING
+		case v1pb.Announcement_CRITICAL:
+			storeSetting.Announcement.Level = storepb.Announcement_ALERT_LEVEL_CRITICAL
+		}
+	}
+
+	return storeSetting
+}
+
+// convertStoreWorkspaceProfileSettingToV1 converts storepb.WorkspaceProfileSetting to v1pb.WorkspaceProfileSetting.
+func convertStoreWorkspaceProfileSettingToV1(storeSetting *storepb.WorkspaceProfileSetting) *v1pb.WorkspaceProfileSetting {
+	if storeSetting == nil {
+		return nil
+	}
+
+	v1Setting := &v1pb.WorkspaceProfileSetting{
+		ExternalUrl:            storeSetting.ExternalUrl,
+		DisallowSignup:         storeSetting.DisallowSignup,
+		Require_2Fa:            storeSetting.Require_2Fa,
+		TokenDuration:          storeSetting.TokenDuration,
+		MaximumRoleExpiration:  storeSetting.MaximumRoleExpiration,
+		Domains:                storeSetting.Domains,
+		EnforceIdentityDomain:  storeSetting.EnforceIdentityDomain,
+		DatabaseChangeMode:     v1pb.DatabaseChangeMode(storeSetting.DatabaseChangeMode),
+		DisallowPasswordSignin: storeSetting.DisallowPasswordSignin,
+	}
+
+	// Convert announcement if present
+	if storeSetting.Announcement != nil {
+		v1Setting.Announcement = &v1pb.Announcement{
+			Text: storeSetting.Announcement.Text,
+			Link: storeSetting.Announcement.Link,
+		}
+		// Convert alert level
+		switch storeSetting.Announcement.Level {
+		case storepb.Announcement_ALERT_LEVEL_UNSPECIFIED:
+			v1Setting.Announcement.Level = v1pb.Announcement_ALERT_LEVEL_UNSPECIFIED
+		case storepb.Announcement_ALERT_LEVEL_INFO:
+			v1Setting.Announcement.Level = v1pb.Announcement_INFO
+		case storepb.Announcement_ALERT_LEVEL_WARNING:
+			v1Setting.Announcement.Level = v1pb.Announcement_WARNING
+		case storepb.Announcement_ALERT_LEVEL_CRITICAL:
+			v1Setting.Announcement.Level = v1pb.Announcement_CRITICAL
+		}
+	}
+
+	return v1Setting
 }
