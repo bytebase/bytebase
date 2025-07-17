@@ -28,6 +28,7 @@ import {
   refreshRollout,
   refreshIssue,
   refreshIssueComments,
+  refreshTaskRuns,
 } from "./utils";
 
 type ResourceType =
@@ -35,7 +36,8 @@ type ResourceType =
   | "planCheckRuns"
   | "issue"
   | "issueComments"
-  | "rollout";
+  | "rollout"
+  | "taskRuns";
 
 // Progressive polling configuration for the resource poller
 // This configuration implements an exponential backoff strategy to reduce server load
@@ -65,7 +67,7 @@ const KEY = Symbol(
 export const provideResourcePoller = () => {
   const route = useRoute();
   const { project } = useCurrentProjectV1();
-  const { isCreating, plan, planCheckRuns, issue, rollout, events } =
+  const { isCreating, plan, planCheckRuns, taskRuns, issue, rollout, events } =
     usePlanContext();
 
   // Track refreshing state
@@ -125,11 +127,18 @@ export const provideResourcePoller = () => {
         routeName
       )
     ) {
-      return ["rollout"];
+      return ["rollout", "taskRuns"];
     }
 
     // Default to polling all resources
-    return ["plan", "planCheckRuns", "issue", "issueComments", "rollout"];
+    return [
+      "plan",
+      "planCheckRuns",
+      "issue",
+      "issueComments",
+      "rollout",
+      "taskRuns",
+    ];
   });
 
   const resourcesToPolled = computed<ResourceType[]>(() => {
@@ -163,6 +172,11 @@ export const provideResourcePoller = () => {
   const refreshRolloutOnly = async () => {
     if (!plan.value?.rollout || !rollout) return;
     await refreshRollout(plan.value.rollout, project.value, rollout);
+  };
+
+  const refreshTaskRunsOnly = async () => {
+    if (!rollout?.value || !taskRuns) return;
+    await refreshTaskRuns(rollout.value, project.value, taskRuns);
   };
 
   // Single refresh function for all resources
@@ -199,6 +213,11 @@ export const provideResourcePoller = () => {
       ) {
         refreshPromises.push(
           refreshRollout(plan.value.rollout, project.value, rollout)
+        );
+      }
+      if (activeResources.includes("taskRuns") && rollout?.value && taskRuns) {
+        refreshPromises.push(
+          refreshTaskRuns(rollout.value, project.value, taskRuns)
         );
       }
 
@@ -282,6 +301,8 @@ export const provideResourcePoller = () => {
         refreshPromises.push(refreshIssueCommentsOnly());
       if (activeResources.includes("rollout"))
         refreshPromises.push(refreshRolloutOnly());
+      if (activeResources.includes("taskRuns"))
+        refreshPromises.push(refreshTaskRunsOnly());
 
       await Promise.all(refreshPromises);
 
