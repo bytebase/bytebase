@@ -27,17 +27,7 @@ import type { InstanceRole } from "@/types/proto-es/v1/instance_role_service_pb"
 import { ListInstanceRolesRequestSchema } from "@/types/proto-es/v1/instance_role_service_pb";
 import { databaseForTask } from "@/utils";
 import { useEditorContext } from "./context";
-
-/**
- * Regular expression to match and capture the role name in a specific comment format.
- * The expected format is:
- * /* === Bytebase Role Setter. DO NOT EDIT. === *\/
- * SET ROLE <role_name>;
- *
- * The regex captures the role name (\w+) following the "SET ROLE" statement.
- */
-const ROLE_SETTER_REGEX =
-  /\/\*\s*=== Bytebase Role Setter\. DO NOT EDIT\. === \*\/\s*SET ROLE (\w+);/;
+import { parseStatement, updateRoleSetter } from "./directiveUtils";
 
 interface LocalState {
   selectedRole?: string;
@@ -83,10 +73,16 @@ const options = computed(() => {
 watch(
   () => selectedTask.value.name,
   async () => {
-    // Initialize selected role from statement using regex.
-    const match = editorContext.statement.value.match(ROLE_SETTER_REGEX);
-    if (match) {
-      state.selectedRole = match[1];
+    // Initialize selected role from statement
+    const parsed = parseStatement(editorContext.statement.value);
+    if (parsed.roleSetterBlock) {
+      // Extract role name from the role setter block
+      const match = parsed.roleSetterBlock.match(/SET ROLE (\w+);/);
+      if (match) {
+        state.selectedRole = match[1];
+      } else {
+        state.selectedRole = undefined;
+      }
     } else {
       state.selectedRole = undefined;
     }
@@ -106,16 +102,10 @@ watch(
 );
 
 const setRoleInTaskStatement = (roleName: string) => {
-  const roleSetterTemplate = `/* === Bytebase Role Setter. DO NOT EDIT. === */\nSET ROLE ${roleName};`;
-  let statement = "";
-  if (ROLE_SETTER_REGEX.test(editorContext.statement.value)) {
-    statement = editorContext.statement.value.replace(
-      ROLE_SETTER_REGEX,
-      roleSetterTemplate
-    );
-  } else {
-    statement = roleSetterTemplate + "\n" + editorContext.statement.value;
-  }
-  editorContext.setStatement(statement);
+  const updatedStatement = updateRoleSetter(
+    editorContext.statement.value,
+    roleName
+  );
+  editorContext.setStatement(updatedStatement);
 };
 </script>

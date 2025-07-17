@@ -927,6 +927,13 @@
     "statement-from-sheet-warning": "Do kích thước SQL vượt quá, nó đã bị cắt bớt để hiển thị và chỉnh sửa bị vô hiệu hóa. Bạn có thể tải lên một tệp SQL mới để ghi đè nó.",
     "overwrite-current-statement": "Ghi đè câu lệnh SQL hiện tại",
     "upload-sql-file-max-size-exceeded": "Vượt quá kích thước tệp tối đa ({size}).",
+    "transaction-mode": {
+      "label": "Chế độ giao dịch",
+      "on": "Bật",
+      "off": "Tắt",
+      "on-tooltip": "Gói tất cả các câu lệnh trong một giao dịch duy nhất (BEGIN/COMMIT).",
+      "off-tooltip": "Thực thi các câu lệnh riêng lẻ trong chế độ tự động commit. Các câu lệnh được commit ngay lập tức và không thể khôi phục nếu câu lệnh sau đó thất bại."
+    },
     "waiting-earliest-allowed-time": "Sẽ chạy sau {time}",
     "batch-transition": {
       "not-allowed-tips": "Một số vấn đề đã chọn không thể {operation}",

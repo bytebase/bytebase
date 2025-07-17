@@ -927,6 +927,13 @@
     "statement-from-sheet-warning": "Due to the SQL being oversized, it has been truncated to display, and editing is disabled. You can upload a new SQL file to overwrite it.",
     "overwrite-current-statement": "Overwrite current SQL statement",
     "upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded.",
+    "transaction-mode": {
+      "label": "Transaction Mode",
+      "on": "ON",
+      "off": "OFF",
+      "on-tooltip": "Wraps all statements in a single transaction (BEGIN/COMMIT).",
+      "off-tooltip": "Executes statements individually in auto-commit mode. Statements are committed immediately and cannot be rolled back if a later statement fails."
+    },
     "waiting-earliest-allowed-time": "Will run after {time}",
     "batch-transition": {
       "not-allowed-tips": "Some of selected issues cannot be {operation}",
