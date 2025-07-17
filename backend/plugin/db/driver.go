@@ -240,6 +240,9 @@ type ExecuteOptions struct {
 
 	// The maximum number of retries for lock timeout statements.
 	MaximumRetries int
+	
+	// Task type for determining default transaction mode
+	TaskType storepb.Task_Type
 }
 
 func (o *ExecuteOptions) LogDatabaseSyncStart() {

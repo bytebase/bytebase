@@ -506,3 +506,52 @@ func EngineDBSchemaReadyToMigrate(e storepb.Engine) bool {
 		return true
 	}
 }
+
+// TransactionMode represents the transaction execution mode for a migration script.
+type TransactionMode string
+
+const (
+	// TransactionModeOn wraps the script in a single transaction.
+	TransactionModeOn TransactionMode = "on"
+	// TransactionModeOff executes the script's statements sequentially in auto-commit mode.
+	TransactionModeOff TransactionMode = "off"
+	// TransactionModeUnspecified means no explicit mode was specified.
+	TransactionModeUnspecified TransactionMode = ""
+)
+
+// GetDefaultTransactionMode returns the default transaction mode for a given database engine and task type.
+// Based on the design doc, different engines have different default behaviors:
+// - Some engines default to "on" (transactional) for safety
+// - Others default to "off" (auto-commit) for compatibility
+func GetDefaultTransactionMode(engine storepb.Engine, taskType storepb.Task_Type) TransactionMode {
+	// For DML migrations, always default to "on" for all engines
+	if taskType == storepb.Task_DATABASE_DATA_UPDATE {
+		return TransactionModeOn
+	}
+
+	// For DDL migrations, engine-specific defaults
+	switch engine {
+	// Default to "on" (Safety First) - engines with strong transactional DDL support
+	case storepb.Engine_POSTGRES,
+		storepb.Engine_RISINGWAVE,
+		storepb.Engine_COCKROACHDB,
+		storepb.Engine_MSSQL,
+		storepb.Engine_ORACLE:
+		return TransactionModeOn
+
+	// Default to "off" (Compatibility First) - engines with limited/no transactional DDL
+	case storepb.Engine_REDSHIFT,
+		storepb.Engine_MYSQL,
+		storepb.Engine_SNOWFLAKE,
+		storepb.Engine_OCEANBASE,
+		storepb.Engine_SPANNER,
+		storepb.Engine_TIDB,
+		storepb.Engine_MARIADB,
+		storepb.Engine_CLICKHOUSE:
+		return TransactionModeOff
+
+	// For other engines not explicitly listed, default to "on" for safety
+	default:
+		return TransactionModeOn
+	}
+}

@@ -170,11 +170,9 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	transactionMode, cleanedStatement := base.ParseTransactionMode(statement)
 	statement = cleanedStatement
 
-	// For Redshift MVP, only enable transaction mode parsing for Redshift instances
-	// Default to "off" for DDL if not specified
+	// Apply engine-specific defaults when transaction mode is not specified
 	if transactionMode == base.TransactionModeUnspecified {
-		// We'll handle defaults in the next step
-		transactionMode = base.TransactionModeOn // For now, maintain backward compatibility
+		transactionMode = common.GetDefaultTransactionMode(storepb.Engine_REDSHIFT, opts.TaskType)
 	}
 
 	var commands []base.SingleSQL

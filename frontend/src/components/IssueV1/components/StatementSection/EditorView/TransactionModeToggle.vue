@@ -39,7 +39,7 @@ import { useIssueContext } from "@/components/IssueV1/logic";
 import { useCurrentProjectV1 } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
-import { databaseForTask } from "@/utils";
+import { databaseForTask, getDefaultTransactionMode } from "@/utils";
 import { useEditorContext } from "./context";
 import { parseStatement, updateTransactionMode } from "./directiveUtils";
 
@@ -63,19 +63,11 @@ const shouldDisableTransactionMode = computed(() => {
 });
 
 // Default transaction mode based on engine and task type
-const getDefaultTransactionMode = () => {
-  // For Redshift DDL, default to off
-  if (
-    engine.value === Engine.REDSHIFT &&
-    selectedTask.value.type === Task_Type.DATABASE_SCHEMA_UPDATE
-  ) {
-    return false;
-  }
-  // For all other cases, default to on
-  return true;
+const getDefaultForCurrentTask = () => {
+  return getDefaultTransactionMode(engine.value, selectedTask.value.type);
 };
 
-const isTransactionOn = ref(getDefaultTransactionMode());
+const isTransactionOn = ref(getDefaultForCurrentTask());
 
 // Watch for task changes to reset defaults
 watch(
@@ -87,7 +79,7 @@ watch(
       isTransactionOn.value = parsed.transactionMode === "on";
     } else {
       // Use default if no directive found
-      isTransactionOn.value = getDefaultTransactionMode();
+      isTransactionOn.value = getDefaultForCurrentTask();
     }
   },
   { immediate: true }

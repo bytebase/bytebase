@@ -3,18 +3,20 @@ package base
 import (
 	"regexp"
 	"strings"
+
+	"github.com/bytebase/bytebase/backend/common"
 )
 
-// TransactionMode represents the transaction execution mode for a migration script.
-type TransactionMode string
+// TransactionMode is an alias for common.TransactionMode for backward compatibility.
+type TransactionMode = common.TransactionMode
 
 const (
 	// TransactionModeOn wraps the script in a single transaction.
-	TransactionModeOn TransactionMode = "on"
+	TransactionModeOn = common.TransactionModeOn
 	// TransactionModeOff executes the script's statements sequentially in auto-commit mode.
-	TransactionModeOff TransactionMode = "off"
+	TransactionModeOff = common.TransactionModeOff
 	// TransactionModeUnspecified means no explicit mode was specified.
-	TransactionModeUnspecified TransactionMode = ""
+	TransactionModeUnspecified = common.TransactionModeUnspecified
 )
 
 // txnModeDirectiveRegex matches the transaction mode directive at the beginning of a SQL script.

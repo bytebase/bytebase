@@ -278,7 +278,9 @@ func doMigrationWithFunc(
 		slog.String("statement", statementRecord),
 	)
 
-	opts := db.ExecuteOptions{}
+	opts := db.ExecuteOptions{
+		TaskType: mc.task.Type,
+	}
 
 	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
 	if err != nil {
