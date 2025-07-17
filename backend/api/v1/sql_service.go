@@ -814,9 +814,6 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to encrypt data: %v", err))
 	}
 
-	// Export archives are now retained for 72 hours and cleaned up by a background job.
-	// This allows users to retry downloads if there are network issues.
-
 	return &v1pb.ExportResponse{
 		Content: encryptedBytes,
 	}, nil
