@@ -5495,6 +5495,20 @@ paths:
                      the call that provided the page token.
                   schema:
                     type: string
+                - name: filter
+                  in: query
+                  description: |-
+                    Filter is used to filter rollouts returned in the list.
+                     The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+                     Supported filters:
+                     - task_type: the task type, support "==" and "in" operators, check the Task.Type enum for the values.
+
+                     For example:
+                     task_type == "DATABASE_SCHEMA_UPDATE"
+                     task_type in ["DATABASE_SCHEMA_UPDATE", "DATABASE_DATA_UPDATE"]
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
