@@ -27,17 +27,10 @@ import {
   refreshPlanCheckRuns,
   refreshRollout,
   refreshIssue,
-  refreshIssueComments,
   refreshTaskRuns,
 } from "./utils";
 
-type ResourceType =
-  | "plan"
-  | "planCheckRuns"
-  | "issue"
-  | "issueComments"
-  | "rollout"
-  | "taskRuns";
+type ResourceType = "plan" | "planCheckRuns" | "issue" | "rollout" | "taskRuns";
 
 // Progressive polling configuration for the resource poller
 // This configuration implements an exponential backoff strategy to reduce server load
@@ -113,7 +106,7 @@ export const provideResourcePoller = () => {
 
     // Issue-specific pages
     if (includes([PROJECT_V1_ROUTE_ISSUE_DETAIL_V1], routeName)) {
-      return ["issue", "issueComments"];
+      return ["issue"];
     }
 
     // Rollout-specific pages
@@ -131,14 +124,7 @@ export const provideResourcePoller = () => {
     }
 
     // Default to polling all resources
-    return [
-      "plan",
-      "planCheckRuns",
-      "issue",
-      "issueComments",
-      "rollout",
-      "taskRuns",
-    ];
+    return ["plan", "planCheckRuns", "issue", "rollout", "taskRuns"];
   });
 
   const resourcesToPolled = computed<ResourceType[]>(() => {
@@ -162,11 +148,6 @@ export const provideResourcePoller = () => {
   const refreshIssueOnly = async () => {
     if (!issue?.value) return;
     await refreshIssue(issue as any);
-  };
-
-  const refreshIssueCommentsOnly = async () => {
-    if (!issue?.value) return;
-    await refreshIssueComments(issue.value);
   };
 
   const refreshRolloutOnly = async () => {
@@ -202,9 +183,6 @@ export const provideResourcePoller = () => {
       }
       if (activeResources.includes("issue") && issue?.value) {
         refreshPromises.push(refreshIssue(issue as any));
-      }
-      if (activeResources.includes("issueComments") && issue?.value) {
-        refreshPromises.push(refreshIssueComments(issue.value));
       }
       if (
         activeResources.includes("rollout") &&
@@ -297,8 +275,6 @@ export const provideResourcePoller = () => {
         refreshPromises.push(refreshPlanCheckRunsOnly());
       if (activeResources.includes("issue"))
         refreshPromises.push(refreshIssueOnly());
-      if (activeResources.includes("issueComments"))
-        refreshPromises.push(refreshIssueCommentsOnly());
       if (activeResources.includes("rollout"))
         refreshPromises.push(refreshRolloutOnly());
       if (activeResources.includes("taskRuns"))
@@ -332,7 +308,7 @@ export const provideResourcePoller = () => {
   });
 
   events.on("perform-issue-review-action", async () => {
-    await Promise.all([refreshIssueOnly(), refreshIssueCommentsOnly()]);
+    await Promise.all([refreshIssueOnly()]);
     events.emit("status-changed", { eager: true });
   });
 

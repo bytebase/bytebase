@@ -327,7 +327,8 @@
       "preview-statement": {
         "self": "Declaración de vista previa",
         "description": "Bytebase genera una sentencia de reversión según la ejecución de la tarea. Puede revisar la sentencia antes de ejecutar la reversión."
-      }
+      },
+      "no-statement-generated": "No se generó ninguna declaración de reversión"
     }
   },
   "banner": {

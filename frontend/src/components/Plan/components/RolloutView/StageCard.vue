@@ -204,6 +204,7 @@ const props = defineProps<{
   stage: Stage;
   taskStatusFilter?: Task_Status[];
   readonly?: boolean;
+  defaultShowTasks?: boolean;
 }>();
 
 const router = useRouter();
@@ -222,32 +223,8 @@ const isCreated = computed(() => {
   );
 });
 
-// Determine if this is an active stage (has running tasks) or first unfinished stage
-const isActiveOrFirstUnfinished = computed(() => {
-  // Check if stage has running tasks
-  const hasRunningTasks = props.stage.tasks.some(
-    (task) => task.status === Task_Status.RUNNING
-  );
-  if (hasRunningTasks) return true;
-
-  // Find first stage with unfinished tasks
-  for (const stage of props.rollout.stages) {
-    const hasUnfinishedTasks = stage.tasks.some(
-      (task) =>
-        task.status !== Task_Status.DONE &&
-        task.status !== Task_Status.SKIPPED &&
-        task.status !== Task_Status.CANCELED
-    );
-    if (hasUnfinishedTasks) {
-      return stage.environment === props.stage.environment;
-    }
-  }
-
-  return false;
-});
-
-// Toggle state for showing/hiding tasks - default based on stage state
-const showTasks = ref(isActiveOrFirstUnfinished.value);
+// Toggle state for showing/hiding tasks - default based on parent coordination
+const showTasks = ref(props.defaultShowTasks || false);
 
 const filteredTasks = computed(() => {
   let tasks = props.stage.tasks;
