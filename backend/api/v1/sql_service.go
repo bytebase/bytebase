@@ -774,7 +774,6 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %d has no task", rollout.ID))
 	}
 
-	exportArchiveUIDs := []int{}
 	contents := []*exportData{}
 	targetTaskRunStatus := []storepb.TaskRun_Status{storepb.TaskRun_DONE}
 
@@ -799,9 +798,8 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get export archive: %v", err))
 		}
 		if exportArchive == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("export archive %d not found", exportArchiveUID))
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("export not found or expired, please request a new export"))
 		}
-		exportArchiveUIDs = append(exportArchiveUIDs, exportArchiveUID)
 		contents = append(contents, &exportData{
 			Content:  exportArchive.Bytes,
 			Database: task.GetDatabaseName(),
@@ -816,12 +814,8 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to encrypt data: %v", err))
 	}
 
-	for _, exportArchiveUID := range exportArchiveUIDs {
-		// Delete the export archive after it's fetched.
-		if err := s.store.DeleteExportArchive(ctx, exportArchiveUID); err != nil {
-			slog.Error("failed to delete export archive", log.BBError(err), slog.String("rollout", requestName), slog.Int("archive", exportArchiveUID))
-		}
-	}
+	// Export archives are now retained for 72 hours and cleaned up by a background job.
+	// This allows users to retry downloads if there are network issues.
 
 	return &v1pb.ExportResponse{
 		Content: encryptedBytes,

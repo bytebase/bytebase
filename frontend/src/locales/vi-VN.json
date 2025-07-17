@@ -987,7 +987,8 @@
       "options": "Tùy chọn",
       "format": "Định dạng",
       "encrypt": "Mã hóa",
-      "file-downloaded": "Tệp đã tải xuống"
+      "file-downloaded": "Tệp đã tải xuống",
+      "download-tooltip": "Có sẵn trong 24 giờ"
     },
     "task-run": {
       "logs": "Nhật ký",
