@@ -15,9 +15,9 @@
       <TaskTable
         :task-status-filter="props.taskStatusFilter"
         :selected-tasks="selectedTasks"
-        :stage="props.stage"
+        :tasks="props.stage.tasks"
+        :task-selectable="(task) => task.status !== Task_Status.DONE"
         @update:selected-tasks="handleSelectedTasksUpdate"
-        @refresh="handleRefresh"
       />
     </div>
   </div>
@@ -25,10 +25,10 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import type {
-  Task,
+import {
+  type Task,
   Task_Status,
-  Stage,
+  type Stage,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContextWithRollout } from "../../logic";
 import TaskOperations from "./TaskOperations.vue";

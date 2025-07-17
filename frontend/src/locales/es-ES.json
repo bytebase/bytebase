@@ -281,6 +281,7 @@
     "cancel-task": "Cancelar tarea | Cancelar tareas",
     "created": "Creado",
     "run-immediately": "Ejecutar tarea inmediatamente",
+    "select-task": "Seleccionar tarea | Seleccionar tareas",
     "selected-n-tasks": "{n} tarea seleccionada | {n} tareas seleccionadas",
     "no-tasks-selected": "No hay tareas seleccionadas",
     "no-runnable-tasks": "No hay tareas ejecutables",
@@ -320,6 +321,13 @@
       "waiting-connection": "Esperando conexiones de instancias disponibles. El recuento de conexión de instancia ha alcanzado el límite establecido en Bytebase. Último informe a las {time}.",
       "waiting-task": "Esperando a que termine otra tarea. Último informe a las {time}.",
       "waiting-max-tasks-per-rollout": "Esperando a que terminen otras tareas. Se ha alcanzado el límite máximo de tareas en ejecución por despliegue. Último informe a las {time}."
+    },
+    "rollback": {
+      "available": "Reversión disponible para {n} tarea | Reversión disponible para {n} tareas",
+      "preview-statement": {
+        "self": "Declaración de vista previa",
+        "description": "Bytebase genera una sentencia de reversión según la ejecución de la tarea. Puede revisar la sentencia antes de ejecutar la reversión."
+      }
     }
   },
   "banner": {

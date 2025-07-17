@@ -39,6 +39,9 @@
           @create-rollout-to-stage="handleCreateRolloutToStage"
         />
       </template>
+
+      <!-- Rollback Section -->
+      <TaskRunRollbackSection :rollout="rollout" />
     </div>
 
     <!-- Task Rollout Action Panel -->
@@ -65,6 +68,7 @@ import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContextWithRollout } from "../../logic";
 import StagesView from "./StagesView.vue";
 import TaskRolloutActionPanel from "./TaskRolloutActionPanel.vue";
+import TaskRunRollbackSection from "./TaskRunRollbackSection.vue";
 import { useRolloutViewContext } from "./context";
 
 const { t } = useI18n();

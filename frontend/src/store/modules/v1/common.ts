@@ -25,6 +25,7 @@ export const planCheckRunPrefix = "planCheckRuns/";
 export const rolloutNamePrefix = "rollouts/";
 export const stageNamePrefix = "stages/";
 export const taskNamePrefix = "tasks/";
+export const taskRunNamePrefix = "taskRuns/";
 export const releaseNamePrefix = "releases/";
 export const revisionNamePrefix = "revisions/";
 

@@ -4,7 +4,7 @@ import type { ComputedRef, InjectionKey, Ref } from "vue";
 import { inject, provide } from "vue";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
-import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import type {
   IssueReviewAction,
   IssueStatusAction,
@@ -29,6 +29,7 @@ export type PlanContext = {
   planCheckRuns: Ref<PlanCheckRun[]>;
   issue?: Ref<Issue | undefined>;
   rollout?: Ref<Rollout | undefined>;
+  taskRuns?: Ref<TaskRun[]>;
 
   readonly: ComputedRef<boolean>;
 
@@ -67,6 +68,7 @@ export const usePlanContextWithRollout = () => {
   return {
     ...context,
     rollout: context.rollout as Ref<Rollout>,
+    taskRuns: context.taskRuns as Ref<TaskRun[]>,
   };
 };
 
