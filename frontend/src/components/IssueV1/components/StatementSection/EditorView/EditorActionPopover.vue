@@ -13,6 +13,10 @@
         <InstanceRoleSelect />
         <NDivider class="!my-2" />
       </template>
+      <template v-if="shouldShowTransactionModeToggle">
+        <TransactionModeToggle />
+        <NDivider class="!my-2" />
+      </template>
       <FormatOnSaveCheckbox v-model:value="formatOnSave" :language="language" />
     </div>
   </NPopover>
@@ -30,6 +34,7 @@ import { databaseForTask } from "@/utils";
 import { useInstanceV1EditorLanguage } from "@/utils";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
 import InstanceRoleSelect from "./InstanceRoleSelect.vue";
+import TransactionModeToggle from "./TransactionModeToggle.vue";
 
 const { formatOnSave, selectedTask } = useIssueContext();
 const { project } = useCurrentProjectV1();
@@ -49,6 +54,24 @@ const shouldShowInstanceRoleSelect = computed(() => {
     return false;
   }
   // Only works for DDL/DML, exclude creating database and schema baseline.
+  if (
+    ![
+      Task_Type.DATABASE_SCHEMA_UPDATE,
+      Task_Type.DATABASE_DATA_UPDATE,
+    ].includes(selectedTask.value.type)
+  ) {
+    return false;
+  }
+  return true;
+});
+
+const shouldShowTransactionModeToggle = computed(() => {
+  const engine = database.value.instanceResource.engine;
+  // Show for Redshift.j
+  if (engine !== Engine.REDSHIFT) {
+    return false;
+  }
+  // Only show for DDL/DML tasks
   if (
     ![
       Task_Type.DATABASE_SCHEMA_UPDATE,
