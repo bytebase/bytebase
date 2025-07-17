@@ -10066,6 +10066,11 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | page_token | [string](#string) |  | A page token, received from a previous `ListRollouts` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListRollouts` must match the call that provided the page token. |
+| filter | [string](#string) |  | Filter is used to filter rollouts returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filters: - task_type: the task type, support &#34;==&#34; and &#34;in&#34; operators, check the Task.Type enum for the values.
+
+For example: task_type == &#34;DATABASE_SCHEMA_UPDATE&#34; task_type in [&#34;DATABASE_SCHEMA_UPDATE&#34;, &#34;DATABASE_DATA_UPDATE&#34;] |
 
 
 

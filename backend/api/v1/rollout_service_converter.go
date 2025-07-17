@@ -842,6 +842,23 @@ func convertToTaskType(taskType storepb.Task_Type) v1pb.Task_Type {
 	}
 }
 
+func convertToStoreTaskType(taskType v1pb.Task_Type) storepb.Task_Type {
+	switch taskType {
+	case v1pb.Task_DATABASE_CREATE:
+		return storepb.Task_DATABASE_CREATE
+	case v1pb.Task_DATABASE_SCHEMA_UPDATE:
+		return storepb.Task_DATABASE_SCHEMA_UPDATE
+	case v1pb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
+		return storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST
+	case v1pb.Task_DATABASE_DATA_UPDATE:
+		return storepb.Task_DATABASE_DATA_UPDATE
+	case v1pb.Task_DATABASE_EXPORT:
+		return storepb.Task_DATABASE_EXPORT
+	default:
+		return storepb.Task_TASK_TYPE_UNSPECIFIED
+	}
+}
+
 func convertToTaskRunLog(parent string, logs []*store.TaskRunLog) *v1pb.TaskRunLog {
 	return &v1pb.TaskRunLog{
 		Name:    fmt.Sprintf("%s/log", parent),
