@@ -58,6 +58,7 @@ type Server struct {
 	schemaSyncer          *schemasync.Syncer
 	approvalRunner        *approval.Runner
 	columnDefaultMigrator *runnermigrator.ColumnDefaultMigrator
+	exportArchiveCleaner  *runnermigrator.ExportArchiveCleaner
 	runnerWG              sync.WaitGroup
 
 	webhookManager *webhook.Manager
@@ -207,6 +208,9 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Column default value migrator
 	s.columnDefaultMigrator = runnermigrator.NewColumnDefaultMigrator(stores, runnermigrator.EnginesNeedingMigration())
 
+	// Export archive cleaner
+	s.exportArchiveCleaner = runnermigrator.NewExportArchiveCleaner(stores)
+
 	// Metric reporter
 	s.initMetricReporter()
 
@@ -244,6 +248,9 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 	s.runnerWG.Add(1)
 	go s.columnDefaultMigrator.Run(ctx, &s.runnerWG)
+
+	s.runnerWG.Add(1)
+	go s.exportArchiveCleaner.Run(ctx, &s.runnerWG)
 
 	s.runnerWG.Add(1)
 	mmm := monitor.NewMemoryMonitor(s.profile)
