@@ -26,14 +26,23 @@
           </div>
         </div>
 
-        <!-- Task Status Actions -->
-        <TaskStatusActions
-          :task="task"
-          :task-runs="taskRuns"
-          :rollout="rollout"
-          :readonly="readonly"
-          @action-confirmed="handleTaskActionConfirmed"
-        />
+        <div class="flex justify-end">
+          <!-- Task Status Actions -->
+          <TaskStatusActions
+            :task="task"
+            :task-runs="taskRuns"
+            :rollout="rollout"
+            :readonly="readonly"
+            @action-confirmed="handleTaskActionConfirmed"
+          />
+          <!-- Rollback entry -->
+          <TaskRollbackButton
+            v-if="rollbackableTaskRun"
+            :task="task"
+            :task-run="rollbackableTaskRun"
+            :rollout="rollout"
+          />
+        </div>
       </div>
     </div>
 
@@ -93,7 +102,10 @@ import { rolloutServiceClientConnect } from "@/grpcweb";
 import { useCurrentProjectV1, useSheetV1Store } from "@/store";
 import { getDateForPbTimestampProtoEs, unknownTask } from "@/types";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
-import { ListTaskRunsRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  ListTaskRunsRequestSchema,
+  TaskRun_Status,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import {
   extractSchemaVersionFromTask,
@@ -102,6 +114,7 @@ import {
   isValidTaskName,
 } from "@/utils";
 import { usePlanContextWithRollout } from "../../logic";
+import TaskRollbackButton from "./TaskRollbackButton.vue";
 import TaskRunTable from "./TaskRunTable.vue";
 import TaskStatusActions from "./TaskStatusActions.vue";
 
@@ -172,6 +185,14 @@ watchEffect(async () => {
 // Task run info
 const taskRuns = computed(() => taskRunsRef.value);
 const latestTaskRun = computed(() => taskRuns.value[0]);
+
+// Find rollbackable task run - the latest successful task run with prior backup
+const rollbackableTaskRun = computed(() => {
+  return taskRuns.value.find(
+    (run) =>
+      run.status === TaskRun_Status.DONE && run.priorBackupDetail !== undefined
+  );
+});
 
 // Handle task action completion to refresh data
 const handleTaskActionConfirmed = async () => {

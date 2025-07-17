@@ -327,7 +327,8 @@
       "preview-statement": {
         "self": "Xem trước tuyên bố",
         "description": "Bytebase tạo ra một câu lệnh khôi phục dựa trên tác vụ đang chạy. Bạn có thể xem lại câu lệnh này trước khi thực hiện khôi phục."
-      }
+      },
+      "no-statement-generated": "Không có câu lệnh khôi phục nào được tạo ra"
     }
   },
   "banner": {

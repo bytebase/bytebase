@@ -327,7 +327,8 @@
       "preview-statement": {
         "self": "预览语句",
         "description": "Bytebase 根据任务运行情况生成回滚语句，您可以在执行回滚前查看该语句。"
-      }
+      },
+      "no-statement-generated": "生成的回滚语句为空"
     }
   },
   "banner": {

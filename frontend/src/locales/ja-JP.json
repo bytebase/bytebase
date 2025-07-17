@@ -327,7 +327,8 @@
       "preview-statement": {
         "self": "プレビューステートメント",
         "description": "Bytebaseはタスク実行に基づいてロールバックステートメントを生成します。ロールバックを実行する前にステートメントを確認できます。"
-      }
+      },
+      "no-statement-generated": "ロールバックステートメントは生成されません"
     }
   },
   "banner": {

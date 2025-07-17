@@ -36,13 +36,29 @@
                   class="space-y-2"
                 >
                   <DatabaseDisplay :database="preview.task.target" />
-                  <MonacoEditor
-                    v-if="preview.statement"
-                    class="border rounded-[3px] text-sm overflow-clip"
-                    :content="preview.statement"
-                    :readonly="true"
-                    :auto-height="{ min: 100, max: 200 }"
-                  />
+                  <template v-if="!isUndefined(preview.statement)">
+                    <MonacoEditor
+                      v-if="preview.statement"
+                      class="border rounded-[3px] text-sm overflow-clip"
+                      :content="preview.statement"
+                      :readonly="true"
+                      :auto-height="{ min: 100, max: 200 }"
+                    />
+                    <!-- Empty generated statement placeholder -->
+                    <div
+                      v-else
+                      class="flex items-center justify-center p-8 border rounded-[3px] bg-gray-50"
+                    >
+                      <div class="text-center space-y-2">
+                        <DatabaseBackupIcon
+                          class="w-6 h-6 mx-auto text-gray-400"
+                        />
+                        <p class="text-sm text-gray-500">
+                          {{ $t("task-run.rollback.no-statement-generated") }}
+                        </p>
+                      </div>
+                    </div>
+                  </template>
                   <div
                     v-else-if="preview.error"
                     class="p-3 border border-red-200 bg-red-50 rounded text-sm text-red-600"
@@ -103,9 +119,11 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
+import { isUndefined } from "lodash-es";
+import { DatabaseBackupIcon } from "lucide-vue-next";
 import { NSteps, NStep, NButton, NAlert, NSkeleton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
@@ -205,7 +223,8 @@ const isTaskSelectable = (task: Task): boolean => {
 const canCreateRollback = computed(() => {
   return (
     rollbackPreviews.value.length > 0 &&
-    rollbackPreviews.value.every((p) => p.statement && !p.error) &&
+    rollbackPreviews.value.every((p) => !p.error) &&
+    rollbackPreviews.value.some((p) => p.statement) && // At least one non-empty statement
     hasProjectPermissionV2(project.value, "bb.plans.create")
   );
 });
@@ -346,6 +365,14 @@ const resetState = () => {
 watch(show, (newValue) => {
   if (newValue) {
     resetState();
+    // Auto-select and advance to step 2 if there's only one task
+    if (rollbackableTasks.value.length === 1) {
+      selectedTasks.value = [rollbackableTasks.value[0]];
+      // Use nextTick to ensure state is properly initialized before advancing
+      nextTick(() => {
+        handleNextStep();
+      });
+    }
   }
 });
 </script>

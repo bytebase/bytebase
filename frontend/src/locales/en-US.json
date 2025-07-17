@@ -327,7 +327,8 @@
       "preview-statement": {
         "self": "Preview Statement",
         "description": "Bytebase generates a rollback statement based on the task run. You can review the statement before executing the rollback."
-      }
+      },
+      "no-statement-generated": "No rollback statement generated"
     }
   },
   "banner": {
