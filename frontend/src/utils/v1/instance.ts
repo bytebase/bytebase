@@ -475,10 +475,7 @@ export const supportGetStringSchema = (engine: Engine) => {
 };
 
 // instanceV1SupportsTransactionMode returns true if the engine supports configurable transaction mode.
-export const instanceV1SupportsTransactionMode = (
-  instanceOrEngine: Instance | InstanceResource | Engine
-): boolean => {
-  const engine = engineOfInstanceV1(instanceOrEngine);
+export const instanceV1SupportsTransactionMode = (engine: Engine): boolean => {
   // For MVP, only enable for Redshift
   // TODO: Enable for other engines after testing
   return [Engine.REDSHIFT].includes(engine);
