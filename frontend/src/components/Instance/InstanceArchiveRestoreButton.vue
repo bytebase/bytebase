@@ -51,7 +51,6 @@ import { NCheckbox } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { restartAppRoot } from "@/AppRootContext";
 import { BBButtonConfirm } from "@/bbkit";
 import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification, useInstanceV1Store } from "@/store";
@@ -97,10 +96,8 @@ const archiveOrRestoreInstance = async (archive: boolean) => {
     });
   }
 
-  restartAppRoot();
-
   if (archive) {
-    router.push({
+    router.replace({
       name: INSTANCE_ROUTE_DASHBOARD,
     });
   }
