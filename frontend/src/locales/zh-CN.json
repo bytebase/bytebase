@@ -281,6 +281,7 @@
     "cancel-task": "取消任务",
     "created": "创建于",
     "run-immediately": "立即运行任务",
+    "select-task": "选择任务 | 选择任务",
     "selected-n-tasks": "已选择 {n} 个任务",
     "no-tasks-selected": "未选择任何任务",
     "no-runnable-tasks": "没有可运行的任务",
@@ -320,6 +321,13 @@
       "waiting-connection": "等待可用的实例连接。实例连接数已达到 Bytebase 上设置的限制。上次报告时间：{time}。",
       "waiting-task": "等待另一个任务完成。上次报告时间：{time}。",
       "waiting-max-tasks-per-rollout": "正在等待其他任务完成。已达到每次发布的最大运行任务数限制。上次报告时间：{time}。"
+    },
+    "rollback": {
+      "available": "可回滚 {n} 个任务",
+      "preview-statement": {
+        "self": "预览语句",
+        "description": "Bytebase 根据任务运行情况生成回滚语句，您可以在执行回滚前查看该语句。"
+      }
     }
   },
   "banner": {
