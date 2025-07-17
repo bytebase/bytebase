@@ -5,10 +5,8 @@ import {
   planServiceClientConnect,
   rolloutServiceClientConnect,
 } from "@/grpcweb";
-import { useIssueCommentStore } from "@/store";
 import type { ComposedProject } from "@/types";
 import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
-import { ListIssueCommentsRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   GetPlanRequestSchema,
@@ -70,16 +68,6 @@ export const refreshIssue = async (issue: Ref<Issue>): Promise<void> => {
   });
   const newIssue = await issueServiceClientConnect.getIssue(request);
   issue.value = newIssue;
-};
-
-export const refreshIssueComments = async (issue: Issue): Promise<void> => {
-  const issueCommentStore = useIssueCommentStore();
-  await issueCommentStore.listIssueComments(
-    create(ListIssueCommentsRequestSchema, {
-      parent: issue.name,
-      pageSize: 1000,
-    })
-  );
 };
 
 export const refreshTaskRuns = async (
