@@ -41,7 +41,6 @@
 import { NCheckbox } from "naive-ui";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
-import { restartAppRoot } from "@/AppRootContext";
 import { BBButtonConfirm } from "@/bbkit";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { useProjectV1Store } from "@/store";
@@ -72,10 +71,8 @@ const archiveOrRestoreProject = async (archive: boolean) => {
     await projectV1Store.restoreProject(props.project);
   }
 
-  restartAppRoot();
-
   if (archive) {
-    router.push({
+    router.replace({
       name: PROJECT_V1_ROUTE_DASHBOARD,
     });
   }

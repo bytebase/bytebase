@@ -66,7 +66,3 @@ export const useListCache = (namespace: string) => {
     deleteCache,
   };
 };
-
-export const clearListCache = () => {
-  LIST_CACHE.clear();
-};
