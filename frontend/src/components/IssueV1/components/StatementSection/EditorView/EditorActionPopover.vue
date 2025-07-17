@@ -31,7 +31,7 @@ import { useCurrentProjectV1 } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
-import { useInstanceV1EditorLanguage } from "@/utils";
+import { useInstanceV1EditorLanguage, instanceV1SupportsTransactionMode } from "@/utils";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
 import InstanceRoleSelect from "./InstanceRoleSelect.vue";
 import TransactionModeToggle from "./TransactionModeToggle.vue";
@@ -66,9 +66,8 @@ const shouldShowInstanceRoleSelect = computed(() => {
 });
 
 const shouldShowTransactionModeToggle = computed(() => {
-  const engine = database.value.instanceResource.engine;
-  // Show for Redshift.j
-  if (engine !== Engine.REDSHIFT) {
+  // Check if the engine supports transaction mode
+  if (!instanceV1SupportsTransactionMode(database.value.instanceResource)) {
     return false;
   }
   // Only show for DDL/DML tasks
