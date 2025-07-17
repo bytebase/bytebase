@@ -36,35 +36,21 @@
 import { NSwitch, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useIssueContext } from "@/components/IssueV1/logic";
-import { useCurrentProjectV1 } from "@/store";
-import { Engine } from "@/types/proto-es/v1/common_pb";
-import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
-import { databaseForTask, getDefaultTransactionMode } from "@/utils";
+import { getDefaultTransactionMode } from "@/utils";
 import { useEditorContext } from "./context";
 import { parseStatement, updateTransactionMode } from "./directiveUtils";
 
 const editorContext = useEditorContext();
 const { selectedTask } = useIssueContext();
-const { project } = useCurrentProjectV1();
 
-const database = computed(() => {
-  return databaseForTask(project.value, selectedTask.value);
-});
-
-const engine = computed(() => database.value.instanceResource.engine);
-
-// Some engines or task types might not support disabling transactions
+// Transaction mode can be configured for all supported engines
 const shouldDisableTransactionMode = computed(() => {
-  // For DML, always use transactions
-  if (selectedTask.value.type === Task_Type.DATABASE_DATA_UPDATE) {
-    return true;
-  }
   return false;
 });
 
-// Default transaction mode based on engine and task type
+// Default transaction mode
 const getDefaultForCurrentTask = () => {
-  return getDefaultTransactionMode(engine.value, selectedTask.value.type);
+  return getDefaultTransactionMode();
 };
 
 const isTransactionOn = ref(getDefaultForCurrentTask());

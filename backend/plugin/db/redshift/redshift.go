@@ -170,9 +170,9 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	transactionMode, cleanedStatement := base.ParseTransactionMode(statement)
 	statement = cleanedStatement
 
-	// Apply engine-specific defaults when transaction mode is not specified
+	// Apply default when transaction mode is not specified
 	if transactionMode == base.TransactionModeUnspecified {
-		transactionMode = common.GetDefaultTransactionMode(storepb.Engine_REDSHIFT, opts.TaskType)
+		transactionMode = common.GetDefaultTransactionMode()
 	}
 
 	var commands []base.SingleSQL

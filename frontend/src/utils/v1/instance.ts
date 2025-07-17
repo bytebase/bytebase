@@ -9,7 +9,6 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 // Using proto-es types directly, no conversions needed
 import type {
   Instance,
@@ -477,52 +476,24 @@ export const supportGetStringSchema = (engine: Engine) => {
 
 // instanceV1SupportsTransactionMode returns true if the engine supports configurable transaction mode.
 export const instanceV1SupportsTransactionMode = (engine: Engine): boolean => {
-  // Enable for all engines that have explicit defaults defined
-  return [
-    // Engines that default to "on" (transactional)
-    Engine.POSTGRES,
-    Engine.RISINGWAVE,
-    Engine.COCKROACHDB,
-    Engine.MSSQL,
-    Engine.ORACLE,
-    
-    // Engines that default to "off" (auto-commit)
-    Engine.REDSHIFT,
-    Engine.MYSQL,
-    Engine.SNOWFLAKE,
-    Engine.OCEANBASE,
-    Engine.SPANNER,
-    Engine.TIDB,
-    Engine.MARIADB,
-    Engine.CLICKHOUSE,
-  ].includes(engine);
+  // Exclude NoSQL databases that don't have traditional SQL transactions
+  const noSQLEngines = [
+    Engine.MONGODB,
+    Engine.REDIS,
+    Engine.DYNAMODB,
+    Engine.COSMOSDB,
+    Engine.CASSANDRA,
+    Engine.ELASTICSEARCH,
+  ];
+
+  return !noSQLEngines.includes(engine);
 };
 
-// getDefaultTransactionMode returns the default transaction mode for a given database engine and task type.
+// getDefaultTransactionMode returns the default transaction mode.
 // This mirrors the backend logic in backend/common/engine.go
-export const getDefaultTransactionMode = (engine: Engine, taskType: Task_Type): boolean => {
-  // For DML migrations, always default to "on" for all engines
-  if (taskType === Task_Type.DATABASE_DATA_UPDATE) {
-    return true;
-  }
-
-  // For DDL migrations, engine-specific defaults
-  // Engines that default to "off" (auto-commit) for compatibility
-  if ([
-    Engine.REDSHIFT,
-    Engine.MYSQL,
-    Engine.SNOWFLAKE,
-    Engine.OCEANBASE,
-    Engine.SPANNER,
-    Engine.TIDB,
-    Engine.MARIADB,
-    Engine.CLICKHOUSE,
-  ].includes(engine)) {
-    return false;
-  }
-
-  // Engines that default to "on" (transactional) for safety
-  // This includes: POSTGRES, RISINGWAVE, COCKROACHDB, MSSQL, ORACLE
-  // and any other engines not explicitly listed
+// All engines default to "on" (transactional) for safety and backward compatibility.
+// Users can explicitly set "-- txn-mode = off" when needed for engines with limited transactional DDL support.
+export const getDefaultTransactionMode = (): boolean => {
+  // All engines default to "on" for safety and backward compatibility
   return true;
 };
