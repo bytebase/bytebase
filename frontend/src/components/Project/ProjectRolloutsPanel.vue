@@ -20,6 +20,7 @@
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { useRolloutStore } from "@/store";
 import type { ComposedProject } from "@/types";
+import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import RolloutDataTable from "../Rollout/RolloutDataTable.vue";
 
 const props = defineProps<{
@@ -35,10 +36,19 @@ const fetchRolloutList = async ({
   pageToken: string;
   pageSize: number;
 }) => {
-  const { nextPageToken, rollouts } = await rolloutStore.fetchRolloutsByProject(
-    props.project.name,
-    { pageSize, pageToken }
-  );
+  const { nextPageToken, rollouts } = await rolloutStore.listRollouts({
+    find: {
+      project: props.project.name,
+      taskType: [
+        Task_Type.DATABASE_DATA_UPDATE,
+        Task_Type.DATABASE_SCHEMA_UPDATE,
+        Task_Type.DATABASE_SCHEMA_UPDATE_GHOST,
+        Task_Type.DATABASE_SCHEMA_UPDATE_SDL,
+      ],
+    },
+    pageSize,
+    pageToken,
+  });
   return {
     nextPageToken,
     list: rollouts,
