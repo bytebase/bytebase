@@ -803,7 +803,17 @@ type ListRolloutsRequest struct {
 	//
 	// When paginating, all other parameters provided to `ListRollouts` must match
 	// the call that provided the page token.
-	PageToken     string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// Filter is used to filter rollouts returned in the list.
+	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	//
+	// Supported filters:
+	// - task_type: the task type, support "==" and "in" operators, check the Task.Type enum for the values.
+	//
+	// For example:
+	// task_type == "DATABASE_SCHEMA_UPDATE"
+	// task_type in ["DATABASE_SCHEMA_UPDATE", "DATABASE_DATA_UPDATE"]
+	Filter        string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -855,6 +865,13 @@ func (x *ListRolloutsRequest) GetPageSize() int32 {
 func (x *ListRolloutsRequest) GetPageToken() string {
 	if x != nil {
 		return x.PageToken
+	}
+	return ""
+}
+
+func (x *ListRolloutsRequest) GetFilter() string {
+	if x != nil {
+		return x.Filter
 	}
 	return ""
 }
@@ -3541,13 +3558,14 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x1bBatchCancelTaskRunsResponse\"E\n" +
 	"\x11GetRolloutRequest\x120\n" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/RolloutR\x04name\"\x87\x01\n" +
+	"\x14bytebase.com/RolloutR\x04name\"\x9f\x01\n" +
 	"\x13ListRolloutsRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x03 \x01(\tR\tpageToken\"p\n" +
+	"page_token\x18\x03 \x01(\tR\tpageToken\x12\x16\n" +
+	"\x06filter\x18\x04 \x01(\tR\x06filter\"p\n" +
 	"\x14ListRolloutsResponse\x120\n" +
 	"\brollouts\x18\x01 \x03(\v2\x14.bytebase.v1.RolloutR\brollouts\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xce\x01\n" +

@@ -205,6 +205,21 @@ export declare type ListRolloutsRequest = Message<"bytebase.v1.ListRolloutsReque
    * @generated from field: string page_token = 3;
    */
   pageToken: string;
+
+  /**
+   * Filter is used to filter rollouts returned in the list.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
+   * Supported filters:
+   * - task_type: the task type, support "==" and "in" operators, check the Task.Type enum for the values.
+   *
+   * For example:
+   * task_type == "DATABASE_SCHEMA_UPDATE"
+   * task_type in ["DATABASE_SCHEMA_UPDATE", "DATABASE_DATA_UPDATE"]
+   *
+   * @generated from field: string filter = 4;
+   */
+  filter: string;
 };
 
 /**

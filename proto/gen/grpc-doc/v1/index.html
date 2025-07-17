@@ -27830,6 +27830,21 @@ When paginating, all other parameters provided to `ListRollouts` must match
 the call that provided the page token. </p></td>
                 </tr>
               
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter is used to filter rollouts returned in the list.
+The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filters:
+- task_type: the task type, support &#34;==&#34; and &#34;in&#34; operators, check the Task.Type enum for the values.
+
+For example:
+task_type == &#34;DATABASE_SCHEMA_UPDATE&#34;
+task_type in [&#34;DATABASE_SCHEMA_UPDATE&#34;, &#34;DATABASE_DATA_UPDATE&#34;] </p></td>
+                </tr>
+              
             </tbody>
           </table>
 

@@ -34,6 +34,8 @@ type PipelineFind struct {
 
 	Limit  *int
 	Offset *int
+
+	Filter *ListResourceFilter
 }
 
 // CreatePipelineAIO creates a pipeline with tasks all in one.
@@ -229,6 +231,10 @@ func (s *Store) GetPipelineV2ByID(ctx context.Context, id int) (*PipelineMessage
 // ListPipelineV2 lists pipelines.
 func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*PipelineMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
+	if filter := find.Filter; filter != nil {
+		where = append(where, filter.Where)
+		args = append(args, filter.Args...)
+	}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("pipeline.id = $%d", len(args)+1)), append(args, *v)
 	}
