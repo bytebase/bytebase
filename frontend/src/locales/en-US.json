@@ -281,6 +281,7 @@
     "cancel-task": "Cancel task | Cancel tasks",
     "created": "Created",
     "run-immediately": "Run task immediately | Run tasks immediately",
+    "select-task": "Select task | Select tasks",
     "selected-n-tasks": "{n} task selected | {n} tasks selected",
     "no-tasks-selected": "No tasks selected",
     "no-runnable-tasks": "No runnable tasks",
@@ -320,6 +321,13 @@
       "waiting-connection": "Waiting for available instance connections. The instance connection count has reached the limit set on Bytebase. Last report at {time}.",
       "waiting-task": "Waiting for another task to finish. Last report at {time}.",
       "waiting-max-tasks-per-rollout": "Waiting for other tasks to finish. Maximum running tasks limit per rollout has been reached. Last report at {time}."
+    },
+    "rollback": {
+      "available": "Rollback available for {n} task | Rollback available for {n} tasks",
+      "preview-statement": {
+        "self": "Preview Statement",
+        "description": "Bytebase generates a rollback statement based on the task run. You can review the statement before executing the rollback."
+      }
     }
   },
   "banner": {

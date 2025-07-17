@@ -11,7 +11,7 @@ import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import { GetRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { emptyPlan } from "@/types/v1/issue/plan";
 import { createPlanSkeleton } from "./create";
 
@@ -65,6 +65,7 @@ export function useInitializePlan(
   const planCheckRuns = ref<PlanCheckRun[]>([]);
   const issue = ref<Issue | undefined>(undefined);
   const rollout = ref<Rollout | undefined>(undefined);
+  const taskRuns = ref<TaskRun[]>([]);
 
   const runner = async (uid: string, projectId: string, url: string) => {
     let planResult: Plan;
@@ -208,6 +209,7 @@ export function useInitializePlan(
     isCreating,
     plan,
     planCheckRuns,
+    taskRuns,
     issue,
     rollout,
     isInitializing,

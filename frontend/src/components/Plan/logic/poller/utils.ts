@@ -15,8 +15,11 @@ import {
   ListPlanCheckRunsRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
-import { GetRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  GetRolloutRequestSchema,
+  ListTaskRunsRequestSchema,
+} from "@/types/proto-es/v1/rollout_service_pb";
+import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 
 export const refreshPlan = async (plan: Ref<Plan>): Promise<void> => {
@@ -77,4 +80,20 @@ export const refreshIssueComments = async (issue: Issue): Promise<void> => {
       pageSize: 1000,
     })
   );
+};
+
+export const refreshTaskRuns = async (
+  rollout: Rollout,
+  project: ComposedProject,
+  taskRuns: Ref<TaskRun[]>
+): Promise<void> => {
+  if (!hasProjectPermissionV2(project, "bb.taskRuns.list")) {
+    return;
+  }
+
+  const request = create(ListTaskRunsRequestSchema, {
+    parent: `${rollout.name}/stages/-/tasks/-`,
+  });
+  const response = await rolloutServiceClientConnect.listTaskRuns(request);
+  taskRuns.value = response.taskRuns;
 };

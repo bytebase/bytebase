@@ -281,6 +281,7 @@
     "cancel-task": "Hủy tác vụ | Hủy các tác vụ",
     "created": "Đã tạo",
     "run-immediately": "Chạy nhiệm vụ ngay lập tức",
+    "select-task": "Chọn nhiệm vụ | Chọn nhiệm vụ",
     "selected-n-tasks": "{n} nhiệm vụ đã chọn | {n} nhiệm vụ đã chọn",
     "no-tasks-selected": "Không có nhiệm vụ nào được chọn",
     "no-runnable-tasks": "Không có tác vụ nào có thể chạy được",
@@ -320,6 +321,13 @@
       "waiting-connection": "Đang chờ kết nối thể hiện có sẵn. Số lượng kết nối thể hiện đã đạt đến giới hạn được đặt trên Bytebase. Báo cáo gần nhất lúc {time}.",
       "waiting-task": "Đang chờ một tác vụ khác kết thúc. Báo cáo gần nhất lúc {time}.",
       "waiting-max-tasks-per-rollout": "Đang chờ các tác vụ khác hoàn thành. Đã đạt đến giới hạn số lượng tác vụ đang chạy tối đa cho mỗi lần triển khai. Báo cáo gần nhất lúc {time}."
+    },
+    "rollback": {
+      "available": "Có thể khôi phục lại cho tác vụ {n} | Có thể khôi phục lại cho tác vụ {n}",
+      "preview-statement": {
+        "self": "Xem trước tuyên bố",
+        "description": "Bytebase tạo ra một câu lệnh khôi phục dựa trên tác vụ đang chạy. Bạn có thể xem lại câu lệnh này trước khi thực hiện khôi phục."
+      }
     }
   },
   "banner": {

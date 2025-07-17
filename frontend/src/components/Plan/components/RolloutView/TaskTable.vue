@@ -16,7 +16,6 @@
 </template>
 
 <script lang="tsx" setup>
-import { flatten } from "lodash-es";
 import { CalendarClockIcon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable, NTag, NTooltip } from "naive-ui";
@@ -29,7 +28,7 @@ import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1 } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
-import type { Task, Stage } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractProjectResourceName,
@@ -41,17 +40,18 @@ import { useRolloutViewContext } from "./context";
 const props = withDefaults(
   defineProps<{
     taskStatusFilter: Task_Status[];
-    stage: Stage;
+    tasks: Task[];
     selectedTasks?: Task[];
+    taskSelectable?: (task: Task) => boolean;
   }>(),
   {
     selectedTasks: () => [],
+    taskSelectable: () => () => true,
   }
 );
 
 const emit = defineEmits<{
   (event: "update:selected-tasks", tasks: Task[]): void;
-  (event: "refresh"): void;
 }>();
 
 const { t } = useI18n();
@@ -60,19 +60,10 @@ const { project } = useCurrentProjectV1();
 const { rollout, mergedStages } = useRolloutViewContext();
 
 const taskList = computed(() => {
-  let allTasks: Task[];
-  if (props.stage) {
-    // If a specific stage is provided, use only its tasks
-    allTasks = props.stage.tasks;
-  } else {
-    // Otherwise, use all tasks from all stages
-    allTasks = flatten(rollout.value.stages.map((stage) => stage.tasks));
-  }
-
   if (props.taskStatusFilter.length === 0) {
-    return allTasks;
+    return props.tasks;
   }
-  return allTasks.filter((task) =>
+  return props.tasks.filter((task) =>
     props.taskStatusFilter.includes(task.status)
   );
 });
@@ -147,7 +138,7 @@ const columnList = computed((): DataTableColumn<Task>[] => {
       type: "selection",
       width: 50,
       disabled: (task: Task) => {
-        return task.status === Task_Status.DONE;
+        return !props.taskSelectable(task);
       },
       cellProps: () => {
         return {

@@ -281,6 +281,7 @@
     "cancel-task": "タスクをキャンセルする",
     "created": "内蔵",
     "run-immediately": "すぐに実行",
+    "select-task": "タスクを選択 | タスクを選択",
     "selected-n-tasks": "{n} 個のタスクが選択されました | {n} 個のタスクが選択されました",
     "no-tasks-selected": "タスクが選択されていません",
     "no-runnable-tasks": "実行可能なタスクはありません",
@@ -320,6 +321,13 @@
       "waiting-connection": "利用可能なインスタンス接続を待っています。インスタンス接続カウントは、Bytebaseの制限設定に達しました。最後の報告は {time} です。",
       "waiting-task": "別のタスクが完了するのを待っています。最後の報告は {time} です。",
       "waiting-max-tasks-per-rollout": "他のタスクが完了するのを待っています。ロールアウトごとの最大実行タスク数制限に達しました。最後の報告は {time} です。"
+    },
+    "rollback": {
+      "available": "{n} タスクのロールバックが利用可能 | {n} タスクのロールバックが利用可能",
+      "preview-statement": {
+        "self": "プレビューステートメント",
+        "description": "Bytebaseはタスク実行に基づいてロールバックステートメントを生成します。ロールバックを実行する前にステートメントを確認できます。"
+      }
     }
   },
   "banner": {
