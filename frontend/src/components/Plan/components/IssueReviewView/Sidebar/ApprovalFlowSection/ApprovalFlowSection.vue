@@ -3,6 +3,7 @@
     <div class="w-full flex flex-row items-center gap-2">
       <h3 class="textlabel">{{ $t("issue.approval-flow.self") }}</h3>
       <FeatureBadge :feature="PlanFeature.FEATURE_APPROVAL_WORKFLOW" />
+      <RiskLevelIcon :risk-level="issue.riskLevel" />
     </div>
 
     <div class="mt-2">
@@ -61,6 +62,7 @@ import { useIssueV1Store } from "@/store";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import ApprovalStepItem from "./ApprovalStepItem.vue";
+import RiskLevelIcon from "./RiskLevelIcon.vue";
 
 const props = defineProps<{
   issue: Issue;
