@@ -927,6 +927,13 @@
     "statement-from-sheet-warning": "SQL が大きすぎるため、表示時に切り捨てられ、編集が無効になっています。新しい SQL ファイルをアップロードして上書きすることができます。",
     "overwrite-current-statement": "現在の SQL ステートメントを上書きする",
     "upload-sql-file-max-size-exceeded": "アップロード ファイルのサイズは {size} を超えることはできません。",
+    "transaction-mode": {
+      "label": "トランザクションモード",
+      "on": "オン",
+      "off": "オフ",
+      "on-tooltip": "すべてのステートメントを単一のトランザクション（BEGIN/COMMIT）でラップします。",
+      "off-tooltip": "自動コミットモードで個別にステートメントを実行します。ステートメントは即座にコミットされ、後続のステートメントが失敗してもロールバックできません。"
+    },
     "waiting-earliest-allowed-time": "{time}の後に実行されます",
     "batch-transition": {
       "not-allowed-tips": "選択したイシューの一部を {operation} にすることはできません",
