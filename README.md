@@ -144,7 +144,7 @@ alias y="pnpm --dir frontend i && pnpm --dir frontend dev"
 - [Bytebase vs CloudBeaver](https://www.bytebase.com/blog/bytebase-vs-cloudbeaver/)
 
 <a href="https://star-history.com/#bytebase/bytebase&liquibase/liquibase&flyway/flyway&dbeaver/cloudbeaver&Date">
-  <img src="https://api.star-history.com/svg?repos=bytebase/bytebase,liquibase/liquibase,flyway/flyway,dbeaver/cloudbeaver&type=Date" width="600" alt="Star History Chart">
+  <img src="https://api.star-history.com/svg?repos=bytebase/bytebase,liquibase/liquibase,flyway/flyway,dbeaver/cloudbeaver&type=Date" alt="Star History Chart">
 </a>
 
 ---
