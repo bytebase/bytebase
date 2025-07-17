@@ -26,14 +26,23 @@
           </div>
         </div>
 
-        <!-- Task Status Actions -->
-        <TaskStatusActions
-          :task="task"
-          :task-runs="taskRuns"
-          :rollout="rollout"
-          :readonly="readonly"
-          @action-confirmed="handleTaskActionConfirmed"
-        />
+        <div class="flex justify-end">
+          <!-- Task Status Actions -->
+          <TaskStatusActions
+            :task="task"
+            :task-runs="taskRuns"
+            :rollout="rollout"
+            :readonly="readonly"
+            @action-confirmed="handleTaskActionConfirmed"
+          />
+          <!-- Rollback entry -->
+          <TaskRollbackButton
+            v-if="rollbackableTaskRun"
+            :task="task"
+            :task-run="rollbackableTaskRun"
+            :rollout="rollout"
+          />
+        </div>
       </div>
     </div>
 
@@ -79,29 +88,30 @@
 </template>
 
 <script setup lang="ts">
-import { create } from "@bufbuild/protobuf";
-import { isEqual, sortBy } from "lodash-es";
+import { head } from "lodash-es";
 import { ChevronRightIcon } from "lucide-vue-next";
 import { NTag, NTooltip } from "naive-ui";
-import { computed, ref, watchEffect } from "vue";
+import { computed, watchEffect } from "vue";
 import { semanticTaskType } from "@/components/IssueV1";
 import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRunDetail.vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { InstanceV1EngineIcon, CopyButton } from "@/components/v2";
-import { rolloutServiceClientConnect } from "@/grpcweb";
-import { useCurrentProjectV1, useSheetV1Store } from "@/store";
-import { getDateForPbTimestampProtoEs, unknownTask } from "@/types";
-import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
-import { ListTaskRunsRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  taskRunNamePrefix,
+  useCurrentProjectV1,
+  useSheetV1Store,
+} from "@/store";
+import { unknownTask } from "@/types";
+import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import {
   extractSchemaVersionFromTask,
   getSheetStatement,
   sheetNameOfTaskV1,
-  isValidTaskName,
 } from "@/utils";
 import { usePlanContextWithRollout } from "../../logic";
+import TaskRollbackButton from "./TaskRollbackButton.vue";
 import TaskRunTable from "./TaskRunTable.vue";
 import TaskStatusActions from "./TaskStatusActions.vue";
 
@@ -112,17 +122,39 @@ const props = defineProps<{
 }>();
 
 const { project } = useCurrentProjectV1();
-const { rollout, readonly, events } = usePlanContextWithRollout();
+const {
+  rollout,
+  taskRuns: allTaskRuns,
+  readonly,
+  events,
+} = usePlanContextWithRollout();
 const sheetStore = useSheetV1Store();
-const taskRunsRef = ref<TaskRun[]>([]);
 
-// Get the task - either from props or from fetched rollout
 const task = computed(() => {
   return (
     rollout.value.stages
       .find((s) => s.id === props.stageId)
       ?.tasks.find((t) => t.name.endsWith(`/${props.taskId}`)) || unknownTask()
   );
+});
+
+const taskRuns = computed(() => {
+  return allTaskRuns.value.filter((run) =>
+    run.name.startsWith(`${task.value.name}/${taskRunNamePrefix}`)
+  );
+});
+
+const latestTaskRun = computed(() => head(taskRuns.value));
+
+const rollbackableTaskRun = computed(() => {
+  if (
+    latestTaskRun.value &&
+    latestTaskRun.value.status === TaskRun_Status.DONE &&
+    latestTaskRun.value.priorBackupDetail !== undefined
+  ) {
+    return latestTaskRun.value;
+  }
+  return undefined;
 });
 
 // Task basic info
@@ -138,30 +170,7 @@ const statement = computed(() => {
   return "";
 });
 
-// Fetch task runs
-watchEffect(async () => {
-  if (!isValidTaskName(task.value.name)) {
-    return;
-  }
-
-  try {
-    const request = create(ListTaskRunsRequestSchema, {
-      parent: task.value.name,
-    });
-    const response = await rolloutServiceClientConnect.listTaskRuns(request);
-    const taskRuns = response.taskRuns;
-    const sorted = sortBy(taskRuns, (t) =>
-      getDateForPbTimestampProtoEs(t.createTime)
-    ).reverse();
-    if (!isEqual(sorted, taskRunsRef.value)) {
-      taskRunsRef.value = sorted;
-    }
-  } catch (error) {
-    console.error("Failed to fetch task runs:", error);
-  }
-});
-
-// Fetch sheet when task changes
+// Prepare sheet of the task.
 watchEffect(async () => {
   const sheetName = sheetNameOfTaskV1(task.value);
   if (sheetName) {
@@ -169,28 +178,8 @@ watchEffect(async () => {
   }
 });
 
-// Task run info
-const taskRuns = computed(() => taskRunsRef.value);
-const latestTaskRun = computed(() => taskRuns.value[0]);
-
 // Handle task action completion to refresh data
 const handleTaskActionConfirmed = async () => {
-  // Refresh task runs after action
-  if (isValidTaskName(task.value.name)) {
-    try {
-      const request = create(ListTaskRunsRequestSchema, {
-        parent: task.value.name,
-      });
-      const response = await rolloutServiceClientConnect.listTaskRuns(request);
-      const taskRuns = response.taskRuns;
-      const sorted = sortBy(taskRuns, (t) =>
-        getDateForPbTimestampProtoEs(t.createTime)
-      ).reverse();
-      taskRunsRef.value = sorted;
-    } catch (error) {
-      console.error("Failed to refresh task runs:", error);
-    }
-  }
   events.emit("status-changed", { eager: true });
 };
 </script>

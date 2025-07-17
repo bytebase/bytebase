@@ -327,7 +327,8 @@
       "preview-statement": {
         "self": "预览语句",
         "description": "Bytebase 根据任务运行情况生成回滚语句，您可以在执行回滚前查看该语句。"
-      }
+      },
+      "no-statement-generated": "生成的回滚语句为空"
     }
   },
   "banner": {
@@ -1058,10 +1059,10 @@
     "approval": {
       "rejected-title": "工单被退回",
       "pending-title": "工单待审批",
-      "rejected-description": "此工单已被审批者退回。确认并勾选强制执行才能继续。",
-      "pending-description": "此工单正在等待审批。确认并勾选强制执行才能继续。",
-      "rejected-error": "此工单已被退回。请确认并勾选强制执行才能继续。",
-      "pending-error": "此工单正在等待审批。请确认并勾选强制执行才能继续。"
+      "rejected-description": "此工单已被审批者退回。确认并勾选强制运行才能继续。",
+      "pending-description": "此工单正在等待审批。确认并勾选强制运行才能继续。",
+      "rejected-error": "此工单已被退回。请确认并勾选强制运行才能继续。",
+      "pending-error": "此工单正在等待审批。请确认并勾选强制运行才能继续。"
     },
     "new-layout": "使用新版 CI/CD 页面"
   },
@@ -1136,7 +1137,7 @@
   },
   "rollout": {
     "rollouts": "发布任务",
-    "force-rollout": "强制执行",
+    "force-rollout": "强制运行",
     "stage": {
       "self": "阶段 | 阶段",
       "start-stage": "开始该阶段",
@@ -1148,7 +1149,7 @@
     "message": {
       "pervious-stages-incomplete": {
         "title": "前置阶段尚未完成",
-        "description": "存在未完成的前置阶段。请确认并勾选强制执行才能继续。"
+        "description": "存在未完成的前置阶段。请确认并勾选强制运行才能继续。"
       }
     }
   },
