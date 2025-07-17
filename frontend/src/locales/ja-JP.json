@@ -987,7 +987,8 @@
       "options": "設定項目",
       "format": "エクスポート形式",
       "encrypt": "暗号化",
-      "file-downloaded": "ダウンロードされたファイル"
+      "file-downloaded": "ダウンロードされたファイル",
+      "download-tooltip": "24 時間利用可能"
     },
     "task-run": {
       "logs": "ログ",

@@ -1,15 +1,23 @@
 <template>
-  <NButton
+  <NTooltip
     v-if="taskRun?.exportArchiveStatus === TaskRun_ExportArchiveStatus.READY"
-    type="primary"
-    :loading="state.isExporting"
-    @click="downloadExportArchive"
   >
-    <template #icon>
-      <DownloadIcon class="w-5 h-5" />
+    <template #trigger>
+      <NButton
+        type="primary"
+        :loading="state.isExporting"
+        @click="downloadExportArchive"
+      >
+        <template #icon>
+          <DownloadIcon class="w-5 h-5" />
+        </template>
+        {{ $t("common.download") }}
+      </NButton>
     </template>
-    {{ $t("common.download") }}
-  </NButton>
+    <span class="text-sm">
+      {{ $t("issue.data-export.download-tooltip") }}
+    </span>
+  </NTooltip>
   <div
     v-else-if="
       taskRun?.exportArchiveStatus === TaskRun_ExportArchiveStatus.EXPORTED
@@ -26,7 +34,7 @@ import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
 import { head, last } from "lodash-es";
 import { DownloadIcon, CircleCheckBigIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
+import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import { watchEffect } from "vue";
 import { useIssueContext } from "@/components/IssueV1";
