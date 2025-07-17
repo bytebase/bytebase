@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -14,9 +15,10 @@ import (
 )
 
 type ExportArchiveMessage struct {
-	UID     int
-	Bytes   []byte
-	Payload *storepb.ExportArchivePayload
+	UID       int
+	CreatedAt time.Time
+	Bytes     []byte
+	Payload   *storepb.ExportArchivePayload
 }
 
 // FindExportArchiveMessage is the API message for finding export archives.
@@ -56,6 +58,7 @@ func (s *Store) ListExportArchives(ctx context.Context, find *FindExportArchiveM
 	query := fmt.Sprintf(`
 		SELECT
 			id,
+			created_at,
 			bytes,
 			payload
 		FROM export_archive
@@ -74,6 +77,7 @@ func (s *Store) ListExportArchives(ctx context.Context, find *FindExportArchiveM
 		var bytes, payload []byte
 		if err := rows.Scan(
 			&exportArchive.UID,
+			&exportArchive.CreatedAt,
 			&bytes,
 			&payload,
 		); err != nil {
@@ -146,4 +150,27 @@ func (s *Store) DeleteExportArchive(ctx context.Context, uid int) error {
 	}
 
 	return tx.Commit()
+}
+
+// DeleteExpiredExportArchives deletes export archives older than the specified retention period.
+// Returns the number of archives deleted.
+func (s *Store) DeleteExpiredExportArchives(ctx context.Context, retentionPeriod time.Duration) (int64, error) {
+	cutoffTime := time.Now().Add(-retentionPeriod)
+
+	query := `
+		DELETE FROM export_archive 
+		WHERE created_at < $1
+	`
+
+	result, err := s.db.ExecContext(ctx, query, cutoffTime)
+	if err != nil {
+		return 0, err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return rowsAffected, nil
 }

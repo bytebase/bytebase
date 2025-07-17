@@ -987,7 +987,8 @@
       "options": "Opciones de exportación",
       "format": "Formato",
       "encrypt": "Cifrar",
-      "file-downloaded": "Archivo Descargado"
+      "file-downloaded": "Archivo Descargado",
+      "download-tooltip": "Disponible por 24 horas"
     },
     "task-run": {
       "logs": "Registros",

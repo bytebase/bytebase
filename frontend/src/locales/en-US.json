@@ -987,7 +987,8 @@
       "options": "Options",
       "format": "Format",
       "encrypt": "Encrypt",
-      "file-downloaded": "File Downloaded"
+      "file-downloaded": "File Downloaded",
+      "download-tooltip": "Aavailable for 24 hours"
     },
     "task-run": {
       "logs": "Logs",
