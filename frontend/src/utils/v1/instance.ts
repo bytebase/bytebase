@@ -476,7 +476,24 @@ export const supportGetStringSchema = (engine: Engine) => {
 
 // instanceV1SupportsTransactionMode returns true if the engine supports configurable transaction mode.
 export const instanceV1SupportsTransactionMode = (engine: Engine): boolean => {
-  // For MVP, only enable for Redshift
-  // TODO: Enable for other engines after testing
-  return [Engine.REDSHIFT].includes(engine);
+  // Exclude NoSQL databases that don't have traditional SQL transactions
+  const noSQLEngines = [
+    Engine.MONGODB,
+    Engine.REDIS,
+    Engine.DYNAMODB,
+    Engine.COSMOSDB,
+    Engine.CASSANDRA,
+    Engine.ELASTICSEARCH,
+  ];
+
+  return !noSQLEngines.includes(engine);
+};
+
+// getDefaultTransactionMode returns the default transaction mode.
+// This mirrors the backend logic in backend/common/engine.go
+// All engines default to "on" (transactional) for safety and backward compatibility.
+// Users can explicitly set "-- txn-mode = off" when needed for engines with limited transactional DDL support.
+export const getDefaultTransactionMode = (): boolean => {
+  // All engines default to "on" for safety and backward compatibility
+  return true;
 };
