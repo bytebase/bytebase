@@ -64,7 +64,7 @@
           </span>
           <div class="flex items-center gap-x-1 min-w-0 text-sm">
             <NEllipsis :line-clamp="1">
-              <span class="font-medium">{{ item.name }}</span>
+              {{ item.name }}
             </NEllipsis>
           </div>
           <div
