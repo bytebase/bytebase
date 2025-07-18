@@ -296,7 +296,7 @@ CREATE TABLE translations (
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			// Start MySQL container
-			container, err := testcontainer.GetMySQLContainer(ctx)
+			container, err := testcontainer.GetTestMySQLContainer(ctx)
 			require.NoError(t, err)
 			defer container.Close(ctx)
 
@@ -440,7 +440,7 @@ CREATE TABLE project_member (
 	ctx := context.Background()
 
 	// Start MySQL container
-	container, err := testcontainer.GetMySQLContainer(ctx)
+	container, err := testcontainer.GetTestMySQLContainer(ctx)
 	require.NoError(t, err)
 	defer container.Close(ctx)
 

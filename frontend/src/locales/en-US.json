@@ -233,7 +233,8 @@
     "errors": "Errors",
     "removed": "Removed",
     "submit": "Submit",
-    "start": "Start"
+    "start": "Start",
+    "draft": "Draft"
   },
   "error-page": {
     "go-back-home": "Go back home"

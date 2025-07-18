@@ -233,7 +233,8 @@
     "errors": "Lỗi",
     "removed": "LOẠI BỎ",
     "submit": "Nộp",
-    "start": "Bắt đầu"
+    "start": "Bắt đầu",
+    "draft": "Bản nháp"
   },
   "error-page": {
     "go-back-home": "Về trang chủ"

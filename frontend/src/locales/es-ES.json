@@ -233,7 +233,8 @@
     "errors": "Errores",
     "removed": "Remoto",
     "submit": "Entregar",
-    "start": "Comenzar"
+    "start": "Comenzar",
+    "draft": "Borrador"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
