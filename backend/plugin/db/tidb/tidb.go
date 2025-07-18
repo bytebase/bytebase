@@ -298,6 +298,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, c
 		}
 
 		if err := tx.Commit(); err != nil {
+			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
 			return errors.Wrapf(err, "failed to commit execute transaction")
 		} else {
 			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
