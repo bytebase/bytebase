@@ -46,6 +46,9 @@ func (s *SubscriptionService) GetSubscription(ctx context.Context, _ *connect.Re
 
 // UpdateSubscription updates the subscription license.
 func (s *SubscriptionService) UpdateSubscription(ctx context.Context, req *connect.Request[v1pb.UpdateSubscriptionRequest]) (*connect.Response[v1pb.Subscription], error) {
+	if s.profile.SaaS {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot update license in the SaaS mode"))
+	}
 	if err := s.licenseService.StoreLicense(ctx, req.Msg.License); err != nil {
 		if common.ErrorCode(err) == common.Invalid {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
