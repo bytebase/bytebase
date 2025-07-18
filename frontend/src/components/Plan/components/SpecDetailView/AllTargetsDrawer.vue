@@ -29,33 +29,33 @@
             >
               <div class="flex flex-wrap gap-2">
                 <div
-                  v-for="item in filteredTargets"
-                  :key="item.target"
-                  class="inline-flex items-center gap-x-1.5 px-3 py-1.5 border rounded-lg transition-all cursor-default max-w-[20rem]"
+                  v-for="target in filteredTargets"
+                  :key="target"
+                  class="inline-flex items-center gap-x-1 px-2 py-1 border rounded-lg transition-all cursor-default"
                 >
-                  <EngineIcon
-                    v-if="item.type === 'database' && item.engine"
-                    :engine="item.engine"
-                    custom-class="w-4 h-4 text-control-light flex-shrink-0"
-                  />
-                  <component
-                    v-else
-                    :is="item.icon"
-                    class="w-4 h-4 text-control-light flex-shrink-0"
-                  />
-                  <span class="text-sm text-gray-500" v-if="item.environment">
-                    ({{ item.environment }})
-                  </span>
-                  <div class="flex items-center gap-x-1 min-w-0 text-sm">
-                    <NEllipsis :line-clamp="1">
-                      <span class="font-medium">{{ item.name }}</span>
-                    </NEllipsis>
-                  </div>
-                  <div
-                    class="text-xs px-2 py-0.5 rounded-md bg-control-bg text-control-light flex-shrink-0"
-                  >
-                    {{ getTypeLabel(item.type) }}
-                  </div>
+                  <template v-if="isValidDatabaseName(target)">
+                    <DatabaseDisplay :database="target" show-environment />
+                  </template>
+                  <template v-else-if="isValidDatabaseGroupName(target)">
+                    <DatabaseGroupIcon
+                      class="w-4 h-4 text-control-light flex-shrink-0"
+                    />
+                    <DatabaseGroupName
+                      :database-group="
+                        dbGroupStore.getDBGroupByName(target) as DatabaseGroup
+                      "
+                      :link="false"
+                      :plain="true"
+                      class="text-sm"
+                    />
+                    <NTag size="tiny" round :bordered="false">
+                      {{ $t("plan.targets.type.database-group") }}
+                    </NTag>
+                  </template>
+                  <template v-else>
+                    <!-- Unknown resource -->
+                    <span class="text-sm">{{ target }}</span>
+                  </template>
                 </div>
               </div>
             </div>
@@ -73,52 +73,29 @@
 </template>
 
 <script setup lang="ts">
-import { ServerIcon, DatabaseIcon, FolderIcon } from "lucide-vue-next";
-import { NEllipsis } from "naive-ui";
+import { NTag } from "naive-ui";
 import { reactive, computed, watch } from "vue";
-import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
-import EngineIcon from "@/components/Icon/EngineIcon.vue";
+import DatabaseGroupIcon from "@/components/DatabaseGroupIcon.vue";
 import { Drawer, DrawerContent, SearchBox } from "@/components/v2";
+import DatabaseGroupName from "@/components/v2/Model/DatabaseGroupName.vue";
 import {
-  useInstanceV1Store,
-  useDatabaseV1Store,
   useDBGroupStore,
   batchGetOrFetchDatabases,
+  useDatabaseV1Store,
 } from "@/store";
-import {
-  isValidDatabaseGroupName,
-  isValidDatabaseName,
-  isValidInstanceName,
-} from "@/types";
-import type { Engine } from "@/types/proto-es/v1/common_pb";
-import {
-  extractInstanceResourceName,
-  instanceV1Name,
-  extractDatabaseResourceName,
-  extractDatabaseGroupName,
-} from "@/utils";
+import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
+import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
+import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
 interface Props {
   show: boolean;
   targets: string[];
 }
 
-interface TargetRow {
-  target: string;
-  type: "instance" | "database" | "databaseGroup";
-  icon: any;
-  name: string;
-  instance?: string;
-  environment?: string;
-  description?: string;
-  engine?: Engine;
-}
-
 interface LocalState {
   searchText: string;
   isLoading: boolean;
-  targetRows: TargetRow[];
 }
 
 const props = defineProps<Props>();
@@ -126,43 +103,31 @@ defineEmits<{
   "update:show": [show: boolean];
 }>();
 
-const { t } = useI18n();
-const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
 
 const state = reactive<LocalState>({
   searchText: "",
   isLoading: false,
-  targetRows: [],
 });
 
 const filteredTargets = computed(() => {
   if (!state.searchText) {
-    return state.targetRows;
+    return props.targets;
   }
+
   const searchText = state.searchText.toLowerCase();
-  return state.targetRows.filter((row) => {
-    return (
-      row.name.toLowerCase().includes(searchText) ||
-      row.instance?.toLowerCase().includes(searchText) ||
-      row.environment?.toLowerCase().includes(searchText)
-    );
+  return props.targets.filter((target: string) => {
+    if (isValidDatabaseName(target)) {
+      const db = databaseStore.getDatabaseByName(target);
+      return db.databaseName.toLowerCase().includes(searchText);
+    }
+    return (target as string).toLocaleLowerCase().includes(searchText);
   });
 });
 
-const getTypeLabel = (type: TargetRow["type"]) => {
-  const typeLabels = {
-    instance: t("plan.targets.type.instance"),
-    database: t("plan.targets.type.database"),
-    databaseGroup: t("plan.targets.type.database-group"),
-  };
-  return typeLabels[type];
-};
-
 const loadAllTargets = async () => {
   if (props.targets.length === 0) {
-    state.targetRows = [];
     return;
   }
 
@@ -171,7 +136,6 @@ const loadAllTargets = async () => {
   try {
     // Separate different types of targets for optimized fetching
     const databaseTargets: string[] = [];
-    const instanceTargets: string[] = [];
     const dbGroupTargets: string[] = [];
 
     for (const target of props.targets) {
@@ -180,8 +144,6 @@ const loadAllTargets = async () => {
         dbGroupTargets.push(target);
       } else if (isValidDatabaseName(target)) {
         databaseTargets.push(target);
-      } else if (isValidInstanceName(target)) {
-        instanceTargets.push(target);
       }
     }
 
@@ -192,80 +154,12 @@ const loadAllTargets = async () => {
       fetchPromises.push(batchGetOrFetchDatabases(databaseTargets));
     }
 
-    const instancePromises = instanceTargets.map((target) => {
-      const instanceResourceName = extractInstanceResourceName(target);
-      return instanceStore.getOrFetchInstanceByName(instanceResourceName);
-    });
-    fetchPromises.push(...instancePromises);
-
     const dbGroupPromises = dbGroupTargets.map((target) =>
       dbGroupStore.getOrFetchDBGroupByName(target)
     );
     fetchPromises.push(...dbGroupPromises);
 
     await Promise.allSettled(fetchPromises);
-
-    // Build target rows
-    const rows: TargetRow[] = props.targets.map((target): TargetRow => {
-      if (!isValidDatabaseName(target) && isValidInstanceName(target)) {
-        const instanceResourceName = extractInstanceResourceName(target);
-        const instance = instanceStore.getInstanceByName(instanceResourceName);
-        return {
-          target,
-          type: "instance",
-          icon: ServerIcon,
-          name: instance ? instanceV1Name(instance) : instanceResourceName,
-          environment: instance?.environmentEntity?.title || "Unknown",
-          description: instance?.title || "",
-        };
-      }
-
-      // For database group targets
-      if (isValidDatabaseGroupName(target)) {
-        const groupName = extractDatabaseGroupName(target);
-        const dbGroup = dbGroupStore.getDBGroupByName(target);
-
-        return {
-          target,
-          type: "databaseGroup",
-          icon: FolderIcon,
-          name: dbGroup?.title || groupName,
-        };
-      }
-
-      // For regular database targets
-      const database = databaseStore.getDatabaseByName(target);
-
-      if (!database) {
-        // Fallback when database is not found
-        const { instance: instanceId, databaseName } =
-          extractDatabaseResourceName(target);
-        if (instanceId && databaseName) {
-          return {
-            target,
-            type: "database",
-            icon: DatabaseIcon,
-            name: databaseName,
-            instance: instanceId,
-            description: t("plan.targets.database-not-found"),
-          };
-        }
-      }
-
-      const instance = database?.instanceResource;
-
-      return {
-        target,
-        type: "database",
-        icon: DatabaseIcon,
-        name: database?.databaseName || target,
-        instance: instance ? instanceV1Name(instance) : "",
-        environment: database?.effectiveEnvironmentEntity?.title || "",
-        engine: instance?.engine,
-      };
-    });
-
-    state.targetRows = rows;
   } catch (error) {
     console.error("Failed to load targets:", error);
   } finally {

@@ -1103,10 +1103,7 @@
     "targets": {
       "title": "Targets",
       "no-targets-found": "No targets found",
-      "database-not-found": "Database not found",
       "type": {
-        "instance": "Instance",
-        "database": "Database",
         "database-group": "Database Group"
       },
       "view-all": "View all ({count})"

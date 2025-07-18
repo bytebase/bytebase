@@ -13,11 +13,11 @@
 import { computed } from "vue";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { getProjectNameAndDatabaseGroupName } from "@/store/modules/v1/common";
-import type { ComposedDatabaseGroup } from "@/types";
+import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 
 const props = withDefaults(
   defineProps<{
-    databaseGroup: ComposedDatabaseGroup;
+    databaseGroup: DatabaseGroup;
     tag?: string;
     link?: boolean;
     plain?: boolean;

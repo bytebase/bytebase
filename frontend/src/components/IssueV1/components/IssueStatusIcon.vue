@@ -47,7 +47,7 @@
         {{
           isUnfinishedResolvedIssue
             ? $t("issue.unfinished-resolved-issue-tips")
-            : $t(`issue.status.${IssueStatus[props.issueStatus].toLowerCase()}`)
+            : stringifyIssueStatus(props.issueStatus)
         }}
       </div>
     </template>
@@ -58,6 +58,7 @@
 import { NTooltip } from "naive-ui";
 import type { PropType } from "vue";
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import type { ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
@@ -84,6 +85,9 @@ const props = defineProps({
     default: undefined,
   },
 });
+
+const { t } = useI18n();
+
 const issueIconClass = () => {
   const iconClass = props.size === "normal" ? "w-5 h-5" : "w-4 h-4";
   switch (props.issueStatus) {
@@ -102,7 +106,19 @@ const issueIconClass = () => {
       );
   }
 };
+
 const isUnfinishedResolvedIssue = computed(() => {
   return checkUnfinishedResolvedTask(props.issue);
 });
+
+const stringifyIssueStatus = (issueStatus: IssueStatus): string => {
+  if (issueStatus === IssueStatus.OPEN) {
+    return t("issue.table.open");
+  } else if (issueStatus === IssueStatus.DONE) {
+    return t("common.done");
+  } else if (issueStatus === IssueStatus.CANCELED) {
+    return t("common.canceled");
+  }
+  return "";
+};
 </script>
