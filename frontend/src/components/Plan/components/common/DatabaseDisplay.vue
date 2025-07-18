@@ -5,13 +5,16 @@
       class="inline-block mr-1"
       :instance="instanceResource"
     />
+    <span v-if="showEnvironment && environment" class="text-gray-500 mr-1">
+      ({{ environment.title }})
+    </span>
     <span class="truncate text-gray-600">
       {{ instanceDisplayName }}
     </span>
     <ChevronRightIcon
       class="inline opacity-60 text-gray-500 w-4 h-4 shrink-0"
     />
-    <span class="truncate text-gray-700">
+    <span class="truncate text-gray-800">
       {{ databaseDisplayName }}
     </span>
   </div>
@@ -21,7 +24,11 @@
 import { ChevronRightIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
-import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
+import {
+  useDatabaseV1Store,
+  useEnvironmentV1Store,
+  useInstanceV1Store,
+} from "@/store";
 import { isValidDatabaseName, unknownInstance } from "@/types";
 import {
   extractDatabaseResourceName,
@@ -30,8 +37,10 @@ import {
 
 const props = defineProps<{
   database: string;
+  showEnvironment?: boolean;
 }>();
 
+const environmentStore = useEnvironmentV1Store();
 const instanceStore = useInstanceV1Store();
 
 const databaseEntity = computed(() =>
@@ -66,5 +75,15 @@ const instanceDisplayName = computed(() => {
 const databaseDisplayName = computed(() => {
   const { databaseName } = extractDatabaseResourceName(props.database);
   return databaseName || "Unknown Database";
+});
+
+const environment = computed(() => {
+  const environmentName =
+    databaseEntity.value.environment || instanceResource.value?.environment;
+  if (!environmentName) {
+    return undefined;
+  }
+
+  return environmentStore.getEnvironmentByName(environmentName);
 });
 </script>

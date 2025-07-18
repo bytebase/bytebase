@@ -1103,10 +1103,7 @@
     "targets": {
       "title": "变更对象",
       "no-targets-found": "未找到变更对象",
-      "database-not-found": "未找到数据库",
       "type": {
-        "instance": "实例",
-        "database": "数据库",
         "database-group": "数据库组"
       },
       "view-all": "查看全部 ({count})"
