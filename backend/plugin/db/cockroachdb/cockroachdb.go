@@ -250,6 +250,15 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		return 0, nil
 	}
 
+	// Parse transaction mode from the script
+	transactionMode, cleanedStatement := base.ParseTransactionMode(statement)
+	statement = cleanedStatement
+
+	// Apply default when transaction mode is not specified
+	if transactionMode == common.TransactionModeUnspecified {
+		transactionMode = common.GetDefaultTransactionMode()
+	}
+
 	owner, err := d.GetCurrentDatabaseOwner(ctx)
 	if err != nil {
 		return 0, err
@@ -302,6 +311,17 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		tmpOriginalIndex = append(tmpOriginalIndex, originalIndex[i])
 	}
 	commands, originalIndex = tmpCommands, tmpOriginalIndex
+
+	// For auto-commit mode, treat all statements as non-transactional
+	if transactionMode == common.TransactionModeOff {
+		// Move all commands to non-transaction list for auto-commit execution
+		for i, command := range commands {
+			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
+			nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
+		}
+		commands = nil
+		originalIndex = nil
+	}
 
 	conn, err := d.db.Conn(ctx)
 	if err != nil {

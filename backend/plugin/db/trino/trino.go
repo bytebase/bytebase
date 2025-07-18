@@ -14,6 +14,7 @@ import (
 	// Import Trino driver for side effects
 	_ "github.com/trinodb/trino-go-client/trino"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -126,6 +127,20 @@ func (d *Driver) GetDB() *sql.DB {
 
 // Execute executes the SQL statement with the given options.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	// Parse transaction mode from the script
+	transactionMode, cleanedStatement := base.ParseTransactionMode(statement)
+	statement = cleanedStatement
+
+	// Apply default when transaction mode is not specified
+	if transactionMode == common.TransactionModeUnspecified {
+		transactionMode = common.GetDefaultTransactionMode()
+	}
+
+	// Note: We parse transactionMode but don't use it for execution since Trino
+	// has limited transaction support. The variable assignment is kept for consistency
+	// with other database drivers and potential future use.
+	_ = transactionMode
+
 	conn, err := d.db.Conn(ctx)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to get connection")
@@ -147,6 +162,13 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		return 0, nil
 	}
 
+	// Trino has limited transaction support:
+	// - Only supports transactions for data modification operations (INSERT, UPDATE, DELETE)
+	// - DDL operations are always auto-committed
+	// - Not all connectors support transactions
+	// Due to these limitations, we execute statements individually regardless of transaction mode
+	// but we still parse and respect the transaction mode directive for consistency
+
 	var totalRowsAffected int64
 	for i, command := range commands {
 		indexes := []int32{originalIndex[i]}
@@ -160,6 +182,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 		rowsAffected, err := result.RowsAffected()
 		if err != nil {
+			// Trino doesn't always return rows affected, especially for DDL
 			rowsAffected = 0
 		}
 

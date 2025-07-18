@@ -202,6 +202,15 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		return 0, nil
 	}
 
+	// Parse transaction mode from the script
+	transactionMode, cleanedStatement := base.ParseTransactionMode(statement)
+	statement = cleanedStatement
+
+	// Apply default when transaction mode is not specified
+	if transactionMode == common.TransactionModeUnspecified {
+		transactionMode = common.GetDefaultTransactionMode()
+	}
+
 	var commands []base.SingleSQL
 	oneshot := true
 	if len(statement) <= common.MaxSheetCheckSize {
@@ -223,31 +232,52 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 	totalRowsAffected := int64(0)
 	if len(commands) != 0 {
-		tx, err := d.db.BeginTx(ctx, nil)
-		if err != nil {
-			return 0, err
-		}
-		defer tx.Rollback()
-
-		for _, command := range commands {
-			sqlResult, err := tx.ExecContext(ctx, command.Text)
-			if err != nil {
-				return 0, &db.ErrorWithPosition{
-					Err:   errors.Wrapf(err, "failed to execute context in a transaction"),
-					Start: command.Start,
-					End:   command.End,
+		// For auto-commit mode (TransactionModeOff), execute each statement individually without transactions
+		if transactionMode == common.TransactionModeOff {
+			for _, command := range commands {
+				sqlResult, err := d.db.ExecContext(ctx, command.Text)
+				if err != nil {
+					return totalRowsAffected, &db.ErrorWithPosition{
+						Err:   errors.Wrapf(err, "failed to execute context in auto-commit mode"),
+						Start: command.Start,
+						End:   command.End,
+					}
 				}
+				rowsAffected, err := sqlResult.RowsAffected()
+				if err != nil {
+					// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+					slog.Debug("rowsAffected returns error", log.BBError(err))
+				}
+				totalRowsAffected += rowsAffected
 			}
-			rowsAffected, err := sqlResult.RowsAffected()
+		} else {
+			// For transactional mode (TransactionModeOn), wrap all statements in a single transaction
+			tx, err := d.db.BeginTx(ctx, nil)
 			if err != nil {
-				// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-				slog.Debug("rowsAffected returns error", log.BBError(err))
+				return 0, err
 			}
-			totalRowsAffected += rowsAffected
-		}
+			defer tx.Rollback()
 
-		if err := tx.Commit(); err != nil {
-			return 0, err
+			for _, command := range commands {
+				sqlResult, err := tx.ExecContext(ctx, command.Text)
+				if err != nil {
+					return 0, &db.ErrorWithPosition{
+						Err:   errors.Wrapf(err, "failed to execute context in a transaction"),
+						Start: command.Start,
+						End:   command.End,
+					}
+				}
+				rowsAffected, err := sqlResult.RowsAffected()
+				if err != nil {
+					// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+					slog.Debug("rowsAffected returns error", log.BBError(err))
+				}
+				totalRowsAffected += rowsAffected
+			}
+
+			if err := tx.Commit(); err != nil {
+				return 0, err
+			}
 		}
 	}
 

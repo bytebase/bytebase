@@ -21,7 +21,7 @@ func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
 
 	// Start MySQL container
-	container, err := testcontainer.GetMySQLContainer(ctx)
+	container, err := testcontainer.GetTestMySQLContainer(ctx)
 	require.NoError(t, err)
 	defer container.Close(ctx)
 

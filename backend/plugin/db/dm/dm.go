@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -81,6 +82,15 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		return 0, errors.New("create database is not supported for DM")
 	}
 
+	// Parse transaction mode from the script
+	transactionMode, cleanedStatement := base.ParseTransactionMode(statement)
+	statement = cleanedStatement
+
+	// Apply default when transaction mode is not specified
+	if transactionMode == common.TransactionModeUnspecified {
+		transactionMode = common.GetDefaultTransactionMode()
+	}
+
 	// Use Oracle sql parser.
 	singleSQLs, err := plsqlparser.SplitSQL(statement)
 	if err != nil {
@@ -96,16 +106,42 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		return 0, errors.Wrapf(err, "failed to get connection")
 	}
 	defer conn.Close()
+
+	// Execute based on transaction mode
+	if transactionMode == common.TransactionModeOff {
+		return d.executeInAutoCommitMode(ctx, conn, singleSQLs, opts)
+	}
+	return d.executeInTransactionMode(ctx, conn, singleSQLs, opts)
+}
+
+// executeInTransactionMode executes statements within a single transaction
+func (*Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, singleSQLs []base.SingleSQL, opts db.ExecuteOptions) (int64, error) {
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
+		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
 		return 0, errors.Wrapf(err, "failed to begin transaction")
 	}
-	defer tx.Rollback()
+	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
+
+	committed := false
+	defer func() {
+		if !committed {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rollbackErr.Error())
+			} else {
+				opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, "")
+			}
+		}
+	}()
 
 	totalRowsAffected := int64(0)
-	for _, singleSQL := range singleSQLs {
+	for i, singleSQL := range singleSQLs {
+		indexes := []int32{int32(i)}
+		opts.LogCommandExecute(indexes)
+
 		sqlResult, err := tx.ExecContext(ctx, singleSQL.Text)
 		if err != nil {
+			opts.LogCommandResponse(indexes, 0, nil, err.Error())
 			return 0, &db.ErrorWithPosition{
 				Err:   errors.Wrapf(err, "failed to execute context in a transaction"),
 				Start: singleSQL.Start,
@@ -118,10 +154,41 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			slog.Debug("rowsAffected returns error", log.BBError(err))
 		}
 		totalRowsAffected += rowsAffected
+		opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
 	}
 
 	if err := tx.Commit(); err != nil {
+		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
 		return 0, errors.Wrapf(err, "failed to commit transaction")
+	}
+	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
+	committed = true
+	return totalRowsAffected, nil
+}
+
+// executeInAutoCommitMode executes statements sequentially in auto-commit mode
+func (*Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, singleSQLs []base.SingleSQL, opts db.ExecuteOptions) (int64, error) {
+	totalRowsAffected := int64(0)
+	for i, singleSQL := range singleSQLs {
+		indexes := []int32{int32(i)}
+		opts.LogCommandExecute(indexes)
+
+		sqlResult, err := conn.ExecContext(ctx, singleSQL.Text)
+		if err != nil {
+			opts.LogCommandResponse(indexes, 0, nil, err.Error())
+			return 0, &db.ErrorWithPosition{
+				Err:   errors.Wrapf(err, "failed to execute context"),
+				Start: singleSQL.Start,
+				End:   singleSQL.End,
+			}
+		}
+		rowsAffected, err := sqlResult.RowsAffected()
+		if err != nil {
+			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+			slog.Debug("rowsAffected returns error", log.BBError(err))
+		}
+		totalRowsAffected += rowsAffected
+		opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
 	}
 	return totalRowsAffected, nil
 }
