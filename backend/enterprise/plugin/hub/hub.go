@@ -41,6 +41,7 @@ type claims struct {
 }
 
 var validPlans = map[v1pb.PlanType]bool{
+	v1pb.PlanType_FREE:       true,
 	v1pb.PlanType_TEAM:       true,
 	v1pb.PlanType_ENTERPRISE: true,
 }

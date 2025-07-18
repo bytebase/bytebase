@@ -2173,7 +2173,6 @@
     "request-with-qr": "Scan QR code",
     "require-subscription": "This feature requires {requiredPlan} subscription, please purchase Bytebase license to unlock it.",
     "required-plan-with-trial": "This feature requires {requiredPlan}. {startTrial}",
-    "trial-for-plan": "You can start a free trial for {plan} with {days} days - no credit card required.",
     "trial-for-days": "You can start a free trial for {days} days - no credit card required.",
     "contact-to-upgrade": "Contact your Workspace admin to upgrade the plan.",
     "upgrade-now": "Upgrade Now",

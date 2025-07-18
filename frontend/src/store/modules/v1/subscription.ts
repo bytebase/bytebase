@@ -40,7 +40,12 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
   }),
   getters: {
     instanceCountLimit(state): number {
-      const limit =
+      let limit = state.subscription?.instances ?? 0;
+      if (limit > 0) {
+        return limit;
+      }
+
+      limit =
         PLANS.find((plan) => plan.type === this.currentPlan)
           ?.maximumInstanceCount ?? 0;
       if (limit < 0) {
@@ -60,20 +65,14 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
         limit = Number.MAX_VALUE;
       }
 
-      switch (this.currentPlan) {
-        case PlanType.FREE:
-          return limit;
-        default: {
-          const seatCount = state.subscription?.seats ?? 0;
-          if (seatCount < 0) {
-            return Number.MAX_VALUE;
-          }
-          if (seatCount === 0) {
-            return limit;
-          }
-          return seatCount;
-        }
+      const seatCount = state.subscription?.seats ?? 0;
+      if (seatCount < 0) {
+        return Number.MAX_VALUE;
       }
+      if (seatCount === 0) {
+        return limit;
+      }
+      return seatCount;
     },
     instanceLicenseCount(state): number {
       const count = state.subscription?.activeInstances ?? 0;

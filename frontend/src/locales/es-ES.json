@@ -2173,7 +2173,6 @@
     "request-with-qr": "Escanear código QR",
     "require-subscription": "Esta función requiere una suscripción a {requiredPlan}. Compre una licencia de Bytebase para desbloquearla.",
     "required-plan-with-trial": "Esta función requiere {requiredPlan}. {startTrial}",
-    "trial-for-plan": "Puedes iniciar una prueba gratuita de {plan} por {days} días - no se requiere tarjeta de crédito.",
     "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito.",
     "contact-to-upgrade": "Contacta al administrador de tu espacio de trabajo para actualizar el plan.",
     "upgrade-now": "Actualizar ahora",

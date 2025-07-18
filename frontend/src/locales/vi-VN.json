@@ -2173,7 +2173,6 @@
     "request-with-qr": "Quét mã QR",
     "require-subscription": "Tính năng này yêu cầu đăng ký {requiredPlan}, vui lòng mua giấy phép Bytebase để mở khóa.",
     "required-plan-with-trial": "Tính năng này yêu cầu {requiredPlan}. {startTrial}",
-    "trial-for-plan": "Bạn có thể bắt đầu dùng thử miễn phí cho {plan} với {days} ngày - không cần thẻ tín dụng.",
     "trial-for-days": "Bạn có thể bắt đầu dùng thử miễn phí trong {days} ngày - không cần thẻ tín dụng.",
     "contact-to-upgrade": "Liên hệ với quản trị viên Không gian làm việc của bạn để nâng cấp gói.",
     "upgrade-now": "Nâng cấp ngay",
