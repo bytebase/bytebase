@@ -14,7 +14,6 @@ import (
 	// Import Trino driver for side effects
 	_ "github.com/trinodb/trino-go-client/trino"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -127,20 +126,6 @@ func (d *Driver) GetDB() *sql.DB {
 
 // Execute executes the SQL statement with the given options.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	// Parse transaction mode from the script
-	transactionMode, cleanedStatement := base.ParseTransactionMode(statement)
-	statement = cleanedStatement
-
-	// Apply default when transaction mode is not specified
-	if transactionMode == common.TransactionModeUnspecified {
-		transactionMode = common.GetDefaultTransactionMode()
-	}
-
-	// Note: We parse transactionMode but don't use it for execution since Trino
-	// has limited transaction support. The variable assignment is kept for consistency
-	// with other database drivers and potential future use.
-	_ = transactionMode
-
 	conn, err := d.db.Conn(ctx)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to get connection")
