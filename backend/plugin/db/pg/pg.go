@@ -423,18 +423,13 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		commands, originalIndex = tmpCommands, tmpOriginalIndex
 	}
 
-	// For auto-commit mode, treat all statements as non-transactional
+	// Execute based on transaction mode
+	var affectedRows int64
 	if transactionMode == common.TransactionModeOff {
-		// Move all commands to non-transaction list for auto-commit execution
-		for i, command := range commands {
-			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
-			nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
-		}
-		commands = nil
-		originalIndex = nil
+		affectedRows, err = d.executeInAutoCommitMode(ctx, owner, statement, commands, originalIndex, nonTransactionAndSetRoleStmts, nonTransactionAndSetRoleStmtsIndex, opts, isPlsql)
+	} else {
+		affectedRows, err = d.executeInTransactionMode(ctx, owner, statement, commands, originalIndex, nonTransactionAndSetRoleStmts, nonTransactionAndSetRoleStmtsIndex, opts, isPlsql)
 	}
-
-	affectedRows, err := d.tryExecute(ctx, owner, statement, commands, originalIndex, nonTransactionAndSetRoleStmts, nonTransactionAndSetRoleStmtsIndex, opts, isPlsql)
 	if err == nil {
 		return affectedRows, nil
 	}
@@ -453,7 +448,11 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		opts.LogRetryInfo(err, i+1)
 
 		// Do retry.
-		affectedRows, err = d.tryExecute(ctx, owner, statement, commands, originalIndex, nonTransactionAndSetRoleStmts, nonTransactionAndSetRoleStmtsIndex, opts, isPlsql)
+		if transactionMode == common.TransactionModeOff {
+			affectedRows, err = d.executeInAutoCommitMode(ctx, owner, statement, commands, originalIndex, nonTransactionAndSetRoleStmts, nonTransactionAndSetRoleStmtsIndex, opts, isPlsql)
+		} else {
+			affectedRows, err = d.executeInTransactionMode(ctx, owner, statement, commands, originalIndex, nonTransactionAndSetRoleStmts, nonTransactionAndSetRoleStmtsIndex, opts, isPlsql)
+		}
 		if err == nil {
 			break
 		}
@@ -477,7 +476,7 @@ func isLockTimeoutError(message string) bool {
 	return strings.Contains(message, "canceling statement due to lock timeout")
 }
 
-func (d *Driver) tryExecute(
+func (d *Driver) executeInTransactionMode(
 	ctx context.Context,
 	owner string,
 	statement string,
@@ -539,13 +538,13 @@ func (d *Driver) tryExecute(
 
 			committed := false
 			defer func() {
-				err := tx.Rollback(ctx)
+				rollbackErr := tx.Rollback(ctx)
 				if committed {
 					return
 				}
 				var rerr string
-				if err != nil {
-					rerr = err.Error()
+				if rollbackErr != nil {
+					rerr = rollbackErr.Error()
 				}
 				opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rerr)
 			}()
@@ -620,6 +619,94 @@ func (d *Driver) tryExecute(
 		}
 		opts.LogCommandResponse(indexes, 0, []int32{0}, "")
 	}
+	return totalRowsAffected, nil
+}
+
+func (d *Driver) executeInAutoCommitMode(
+	ctx context.Context,
+	owner string,
+	statement string,
+	commands []base.SingleSQL,
+	originalIndex []int32,
+	nonTransactionAndSetRoleStmts []string,
+	nonTransactionAndSetRoleStmtsIndex []int32,
+	opts db.ExecuteOptions,
+	isPlsql bool,
+) (int64, error) {
+	// For auto-commit mode, treat all statements as non-transactional
+	for i, command := range commands {
+		nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
+		nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
+	}
+
+	conn, err := d.db.Conn(ctx)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to get connection")
+	}
+	defer conn.Close()
+
+	if opts.SetConnectionID != nil {
+		var pid string
+		if err := conn.QueryRowContext(ctx, "SELECT pg_backend_pid()").Scan(&pid); err != nil {
+			return 0, errors.Wrapf(err, "failed to get connection id")
+		}
+		opts.SetConnectionID(pid)
+
+		if opts.DeleteConnectionID != nil {
+			defer opts.DeleteConnectionID()
+		}
+	}
+
+	if isPlsql {
+		if d.connectionCtx.UseDatabaseOwner {
+			// USE SET SESSION ROLE to set the role for the current session.
+			if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
+				return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
+			}
+		}
+		opts.LogCommandExecute([]int32{0})
+		if _, err := conn.ExecContext(ctx, statement); err != nil {
+			opts.LogCommandResponse([]int32{0}, 0, []int32{0}, err.Error())
+			return 0, err
+		}
+		opts.LogCommandResponse([]int32{0}, 0, []int32{0}, "")
+		return 0, nil
+	}
+
+	if d.connectionCtx.UseDatabaseOwner {
+		// USE SET SESSION ROLE to set the role for the current session.
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
+			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
+		}
+	}
+
+	totalRowsAffected := int64(0)
+	// Execute all statements individually in auto-commit mode
+	for i, stmt := range nonTransactionAndSetRoleStmts {
+		indexes := []int32{nonTransactionAndSetRoleStmtsIndex[i]}
+		opts.LogCommandExecute(indexes)
+
+		sqlResult, err := conn.ExecContext(ctx, stmt)
+		if err != nil {
+			opts.LogCommandResponse(indexes, 0, []int32{0}, err.Error())
+			if isLockTimeoutError(err.Error()) {
+				return totalRowsAffected, &LockTimeoutError{
+					Message: err.Error(),
+				}
+			}
+			return totalRowsAffected, err
+		}
+
+		rowsAffected, err := sqlResult.RowsAffected()
+		if err != nil {
+			// PostgreSQL returns error for statements that don't support RowsAffected
+			rowsAffected = 0
+		}
+
+		opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+		totalRowsAffected += rowsAffected
+	}
+
 	return totalRowsAffected, nil
 }
 

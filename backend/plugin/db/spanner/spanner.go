@@ -145,7 +145,6 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		transactionMode = common.GetDefaultTransactionMode()
 	}
 
-	var rowCount int64
 	stmts, err := util.SanitizeSQL(statement)
 	if err != nil {
 		return 0, err
@@ -163,31 +162,34 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 	// Spanner DDL is always non-transactional
 	if ddl {
-		op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
-			Database:   getDSN(d.config.DataSource.Host, d.databaseName),
-			Statements: stmts,
-		})
-		if err != nil {
-			return 0, err
-		}
-		return 0, op.Wait(ctx)
+		return d.executeDDL(ctx, stmts, opts)
 	}
 
-	// For DML statements, respect transaction mode
+	// Execute based on transaction mode
 	if transactionMode == common.TransactionModeOff {
-		// Execute statements individually in auto-commit mode
-		for _, stmt := range stmts {
-			spannerStmt := spanner.NewStatement(stmt)
-			count, err := d.client.PartitionedUpdate(ctx, spannerStmt)
-			if err != nil {
-				return rowCount, err
-			}
-			rowCount += count
-		}
-		return rowCount, nil
+		return d.executeInAutoCommitMode(ctx, stmts, opts)
 	}
+	return d.executeInTransactionMode(ctx, stmts, opts)
+}
 
-	// Default behavior: execute DML in a transaction
+func (d *Driver) executeDDL(ctx context.Context, stmts []string, _ db.ExecuteOptions) (int64, error) {
+	op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
+		Database:   getDSN(d.config.DataSource.Host, d.databaseName),
+		Statements: stmts,
+	})
+	if err != nil {
+		return 0, err
+	}
+	return 0, op.Wait(ctx)
+}
+
+func (d *Driver) executeInTransactionMode(ctx context.Context, stmts []string, opts db.ExecuteOptions) (int64, error) {
+	var rowCount int64
+
+	// Log transaction start
+	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
+
+	committed := false
 	if _, err := d.client.ReadWriteTransaction(ctx, func(ctx context.Context, rwt *spanner.ReadWriteTransaction) error {
 		spannerStmts := []spanner.Statement{}
 		for _, stmt := range stmts {
@@ -200,9 +202,29 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		for _, count := range counts {
 			rowCount += count
 		}
+		committed = true
 		return nil
 	}); err != nil {
+		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, "")
 		return 0, err
+	}
+
+	if committed {
+		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
+	}
+	return rowCount, nil
+}
+
+func (d *Driver) executeInAutoCommitMode(ctx context.Context, stmts []string, _ db.ExecuteOptions) (int64, error) {
+	var rowCount int64
+	// Execute statements individually in auto-commit mode
+	for _, stmt := range stmts {
+		spannerStmt := spanner.NewStatement(stmt)
+		count, err := d.client.PartitionedUpdate(ctx, spannerStmt)
+		if err != nil {
+			return rowCount, err
+		}
+		rowCount += count
 	}
 	return rowCount, nil
 }

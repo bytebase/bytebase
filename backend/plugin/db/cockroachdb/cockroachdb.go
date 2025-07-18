@@ -312,17 +312,24 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 	commands, originalIndex = tmpCommands, tmpOriginalIndex
 
-	// For auto-commit mode, treat all statements as non-transactional
+	// Execute based on transaction mode
 	if transactionMode == common.TransactionModeOff {
-		// Move all commands to non-transaction list for auto-commit execution
-		for i, command := range commands {
-			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
-			nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
-		}
-		commands = nil
-		originalIndex = nil
+		return d.executeInAutoCommitMode(ctx, owner, statement, commands, originalIndex, nonTransactionAndSetRoleStmts, nonTransactionAndSetRoleStmtsIndex, opts, isPlsql)
 	}
+	return d.executeInTransactionMode(ctx, owner, statement, commands, originalIndex, nonTransactionAndSetRoleStmts, nonTransactionAndSetRoleStmtsIndex, opts, isPlsql)
+}
 
+func (d *Driver) executeInTransactionMode(
+	ctx context.Context,
+	owner string,
+	statement string,
+	commands []base.SingleSQL,
+	originalIndex []int32,
+	nonTransactionAndSetRoleStmts []string,
+	nonTransactionAndSetRoleStmtsIndex []int32,
+	opts db.ExecuteOptions,
+	isPlsql bool,
+) (int64, error) {
 	conn, err := d.db.Conn(ctx)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get connection")
@@ -455,6 +462,98 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		}
 		opts.LogCommandResponse(indexes, 0, []int32{0}, "")
 	}
+	return totalRowsAffected, nil
+}
+
+func (d *Driver) executeInAutoCommitMode(
+	ctx context.Context,
+	owner string,
+	statement string,
+	commands []base.SingleSQL,
+	originalIndex []int32,
+	nonTransactionAndSetRoleStmts []string,
+	nonTransactionAndSetRoleStmtsIndex []int32,
+	opts db.ExecuteOptions,
+	isPlsql bool,
+) (int64, error) {
+	// For auto-commit mode, treat all statements as non-transactional
+	for i, command := range commands {
+		nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
+		nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
+	}
+
+	conn, err := d.db.Conn(ctx)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to get connection")
+	}
+	defer conn.Close()
+
+	if opts.SetConnectionID != nil {
+		var pid string
+		if err := conn.QueryRowContext(ctx, "SELECT pg_backend_pid()").Scan(&pid); err != nil {
+			return 0, errors.Wrapf(err, "failed to get connection id")
+		}
+		opts.SetConnectionID(pid)
+
+		if opts.DeleteConnectionID != nil {
+			defer opts.DeleteConnectionID()
+		}
+	}
+
+	if isPlsql {
+		// USE SET SESSION ROLE to set the role for the current session.
+		if err := crdb.Execute(func() error {
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner))
+			return err
+		}); err != nil {
+			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
+		}
+		opts.LogCommandExecute([]int32{0})
+		if err := crdb.Execute(func() error {
+			_, err := conn.ExecContext(ctx, statement)
+			return err
+		}); err != nil {
+			return 0, err
+		}
+		opts.LogCommandResponse([]int32{0}, 0, []int32{0}, "")
+		return 0, nil
+	}
+
+	// USE SET SESSION ROLE to set the role for the current session.
+	if err := crdb.Execute(func() error {
+		_, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner))
+		return err
+	}); err != nil {
+		return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
+	}
+
+	totalRowsAffected := int64(0)
+	// Execute all statements individually in auto-commit mode
+	for i, stmt := range nonTransactionAndSetRoleStmts {
+		indexes := []int32{nonTransactionAndSetRoleStmtsIndex[i]}
+		opts.LogCommandExecute(indexes)
+
+		if err := crdb.Execute(func() error {
+			sqlResult, err := conn.ExecContext(ctx, stmt)
+			if err != nil {
+				opts.LogCommandResponse(indexes, 0, []int32{0}, err.Error())
+				return err
+			}
+
+			rowsAffected, err := sqlResult.RowsAffected()
+			if err != nil {
+				// CockroachDB returns error for statements that don't support RowsAffected
+				rowsAffected = 0
+			}
+
+			opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+			totalRowsAffected += rowsAffected
+			return nil
+		}); err != nil {
+			return totalRowsAffected, err
+		}
+	}
+
 	return totalRowsAffected, nil
 }
 

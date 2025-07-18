@@ -122,7 +122,7 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 }
 
 // Execute executes a SQL statement.
-func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	// Parse transaction mode from the script
 	transactionMode, cleanedStatement := base.ParseTransactionMode(statement)
 	statement = cleanedStatement
@@ -141,40 +141,74 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 		return 0, nil
 	}
 
-	// ClickHouse has limited transaction support, so we handle both modes similarly
-	// For auto-commit mode (TransactionModeOff), we execute each statement independently
-	// For transaction mode, we use the existing transaction approach
+	// Execute based on transaction mode
 	if transactionMode == common.TransactionModeOff {
-		// Execute statements independently without transaction
-		totalRowsAffected := int64(0)
-		for _, singleSQL := range singleSQLs {
-			sqlResult, err := d.db.ExecContext(ctx, singleSQL.Text)
-			if err != nil {
-				return totalRowsAffected, err
-			}
-			rowsAffected, err := sqlResult.RowsAffected()
-			if err != nil {
-				// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-				slog.Debug("rowsAffected returns error", log.BBError(err))
-			} else {
-				totalRowsAffected += rowsAffected
-			}
-		}
-		return totalRowsAffected, nil
+		return d.executeInAutoCommitMode(ctx, singleSQLs, opts)
 	}
+	return d.executeInTransactionMode(ctx, singleSQLs, opts)
+}
 
-	// Transaction mode execution (default behavior)
+func (d *Driver) executeInTransactionMode(ctx context.Context, singleSQLs []base.SingleSQL, opts db.ExecuteOptions) (int64, error) {
 	tx, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
-	defer tx.Rollback()
+
+	committed := false
+	defer func() {
+		if !committed {
+			err := tx.Rollback()
+			var rerr string
+			if err != nil && !errors.Is(err, sql.ErrTxDone) {
+				rerr = err.Error()
+				slog.Debug("failed to rollback transaction", log.BBError(err))
+			}
+			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rerr)
+		}
+	}()
+
+	// Log transaction start
+	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
 
 	totalRowsAffected := int64(0)
-	for _, singleSQL := range singleSQLs {
+	for i, singleSQL := range singleSQLs {
+		opts.LogCommandExecute([]int32{int32(i)})
 		sqlResult, err := tx.ExecContext(ctx, singleSQL.Text)
 		if err != nil {
-			return 0, err
+			opts.LogCommandResponse([]int32{int32(i)}, 0, nil, err.Error())
+			return 0, &db.ErrorWithPosition{
+				Err:   errors.Wrapf(err, "failed to execute context in a transaction"),
+				Start: singleSQL.Start,
+				End:   singleSQL.End,
+			}
+		}
+		rowsAffected, err := sqlResult.RowsAffected()
+		if err != nil {
+			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+			slog.Debug("rowsAffected returns error", log.BBError(err))
+		}
+		opts.LogCommandResponse([]int32{int32(i)}, int32(rowsAffected), nil, "")
+		totalRowsAffected += rowsAffected
+	}
+
+	if err := tx.Commit(); err != nil {
+		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
+		return 0, err
+	}
+
+	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
+	committed = true
+	return totalRowsAffected, nil
+}
+
+func (d *Driver) executeInAutoCommitMode(ctx context.Context, singleSQLs []base.SingleSQL, opts db.ExecuteOptions) (int64, error) {
+	totalRowsAffected := int64(0)
+	for i, singleSQL := range singleSQLs {
+		opts.LogCommandExecute([]int32{int32(i)})
+		sqlResult, err := d.db.ExecContext(ctx, singleSQL.Text)
+		if err != nil {
+			opts.LogCommandResponse([]int32{int32(i)}, 0, nil, err.Error())
+			return totalRowsAffected, err
 		}
 		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {
@@ -183,11 +217,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 		} else {
 			totalRowsAffected += rowsAffected
 		}
+		opts.LogCommandResponse([]int32{int32(i)}, int32(rowsAffected), nil, "")
 	}
-
-	if err := tx.Commit(); err != nil {
-		return 0, err
-	}
-
-	return totalRowsAffected, err
+	return totalRowsAffected, nil
 }
