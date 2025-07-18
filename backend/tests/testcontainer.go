@@ -31,7 +31,7 @@ func getPgContainer(ctx context.Context) (*Container, error) {
 
 // getMySQLContainer creates a MySQL container for testing
 func getMySQLContainer(ctx context.Context) (*Container, error) {
-	tc, err := testcontainer.GetMySQLContainer(ctx)
+	tc, err := testcontainer.GetTestMySQLContainer(ctx)
 	if err != nil {
 		return nil, err
 	}

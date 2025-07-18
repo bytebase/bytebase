@@ -32,7 +32,11 @@ func TestTransactionMode(t *testing.T) {
 			name:   "MySQL",
 			dbType: storepb.Engine_MYSQL,
 			containerFunc: func(ctx context.Context, t *testing.T) *testcontainer.Container {
-				return testcontainer.GetTestMySQLContainer(ctx, t)
+				container, err := testcontainer.GetTestMySQLContainer(ctx)
+				if err != nil {
+					t.Fatalf("Failed to get MySQL container: %v", err)
+				}
+				return container
 			},
 			setupScript: `
 				CREATE TABLE test_table (
