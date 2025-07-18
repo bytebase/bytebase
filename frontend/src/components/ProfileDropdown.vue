@@ -137,6 +137,10 @@ const languageOptions = computed((): DropdownOption[] => {
       label: "Tiếng việt",
       value: "vi-VN",
     },
+    {
+      label: "한국어",
+      value: "ko-KR",
+    },
   ];
 
   return languages.map((item) => {
