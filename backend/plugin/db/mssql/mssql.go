@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -163,6 +164,25 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		}
 		return 0, nil
 	}
+
+	// Parse transaction mode from the script
+	transactionMode, cleanedStatement := base.ParseTransactionMode(statement)
+	statement = cleanedStatement
+
+	// Apply default when transaction mode is not specified
+	if transactionMode == common.TransactionModeUnspecified {
+		transactionMode = common.GetDefaultTransactionMode()
+	}
+
+	// Execute based on transaction mode
+	if transactionMode == common.TransactionModeOff {
+		return d.executeInAutoCommitMode(ctx, statement, opts)
+	}
+	return d.executeInTransactionMode(ctx, statement, opts)
+}
+
+// executeInTransactionMode executes statements within a single transaction
+func (d *Driver) executeInTransactionMode(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	tx, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
 		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
@@ -240,6 +260,77 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
 	committed = true
 	return totalAffectRows, nil
+}
+
+// executeInAutoCommitMode executes statements sequentially in auto-commit mode
+func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	totalAffectRows := int64(0)
+
+	batch := tsqlbatch.NewBatcher(statement)
+
+	for idx := 0; ; {
+		command, err := batch.Next()
+		if err != nil {
+			if err == io.EOF {
+				// Try send the last batch to server.
+				v := batch.Batch()
+				if v != nil && len(v.Text) > 0 {
+					indexes := []int32{int32(idx)}
+					opts.LogCommandExecute(indexes)
+					rowsAffected, err := d.executeAutoCommit(ctx, v.Text)
+					if err != nil {
+						opts.LogCommandResponse(indexes, 0, nil, err.Error())
+						return totalAffectRows, err
+					}
+					opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+					totalAffectRows += rowsAffected
+				}
+				break
+			}
+			return 0, errors.Wrapf(err, "failed to get next batch for statement: %s", batch.Batch().Text)
+		}
+		if command == nil {
+			continue
+		}
+		switch v := command.(type) {
+		case *tsqlbatch.GoCommand:
+			b := batch.Batch()
+			// Execute the batch in auto-commit mode
+			indexes := []int32{int32(idx)}
+			idx++
+			for i := uint(0); i < v.Count; i++ {
+				opts.LogCommandExecute(indexes)
+				rowsAffected, err := d.executeAutoCommit(ctx, b.Text)
+				if err != nil {
+					opts.LogCommandResponse(indexes, 0, nil, err.Error())
+					// In auto-commit mode, we stop at the first error
+					return totalAffectRows, err
+				}
+				opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+				totalAffectRows += rowsAffected
+			}
+		default:
+			return 0, errors.Errorf("unsupported command type: %T", v)
+		}
+		batch.Reset(nil)
+	}
+
+	return totalAffectRows, nil
+}
+
+// executeAutoCommit executes a single statement in auto-commit mode
+func (d *Driver) executeAutoCommit(ctx context.Context, statement string) (int64, error) {
+	sqlResult, err := d.db.ExecContext(ctx, statement)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to execute statement in auto-commit mode")
+	}
+	rowsAffected, err := sqlResult.RowsAffected()
+	if err != nil {
+		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+		slog.Debug("rowsAffected returns error in auto-commit mode", log.BBError(err))
+		return 0, nil
+	}
+	return rowsAffected, nil
 }
 
 func execute(ctx context.Context, txn *sql.Tx, statement string) (int64, error) {

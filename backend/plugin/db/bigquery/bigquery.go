@@ -21,6 +21,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -88,6 +89,25 @@ func (*Driver) GetDB() *sql.DB {
 
 // Execute executes a SQL statement.
 func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
+	// Parse transaction mode from the script
+	transactionMode, cleanedStatement := base.ParseTransactionMode(statement)
+	statement = cleanedStatement
+
+	// Apply default when transaction mode is not specified
+	if transactionMode == common.TransactionModeUnspecified {
+		transactionMode = common.GetDefaultTransactionMode()
+	}
+
+	// BigQuery doesn't support traditional transactions for DDL operations.
+	// DML operations in BigQuery are automatically atomic at the statement level.
+	// Multi-statement transactions are supported via scripting with BEGIN/COMMIT,
+	// but here we execute statements individually regardless of transaction mode.
+	//
+	// Note: When transactionMode is "on", BigQuery will still execute each statement
+	// atomically, but won't wrap multiple statements in a single transaction.
+	// This is a limitation of BigQuery's architecture.
+	_ = transactionMode // Transaction mode is parsed but not used due to BigQuery limitations
+
 	q := d.client.Query(statement)
 	q.DefaultDatasetID = d.databaseName
 	job, err := q.Run(ctx)
