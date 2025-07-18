@@ -233,7 +233,8 @@
     "errors": "エラー",
     "removed": "削除されました",
     "submit": "提出する",
-    "start": "始める"
+    "start": "始める",
+    "draft": "下書き"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"

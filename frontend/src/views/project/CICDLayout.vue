@@ -20,6 +20,7 @@
           </div>
 
           <HeaderSection />
+
           <NTabs
             type="line"
             :value="tabKey"
@@ -37,8 +38,7 @@
 
             <!-- Suffix slot -->
             <template #suffix>
-              <div class="pr-4 flex flex-row justify-end items-center gap-4">
-                <CurrentSpecSelector v-if="tabKey === TabKey.Plan" />
+              <div class="pr-3 flex flex-row justify-end items-center gap-4">
                 <RefreshIndicator v-if="!isCreating" />
               </div>
             </template>
@@ -59,7 +59,7 @@
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
 import { CirclePlayIcon, FileDiffIcon, Layers2Icon } from "lucide-vue-next";
-import { NSpin, NTab, NTabs } from "naive-ui";
+import { NSpin, NTab, NTabs, NTag } from "naive-ui";
 import { computed, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
@@ -70,9 +70,7 @@ import {
 } from "@/components/Plan";
 import PollerProvider from "@/components/Plan/PollerProvider.vue";
 import { HeaderSection } from "@/components/Plan/components";
-import CurrentSpecSelector from "@/components/Plan/components/CurrentSpecSelector.vue";
 import RefreshIndicator from "@/components/Plan/components/RefreshIndicator.vue";
-import { useSpecsValidation } from "@/components/Plan/components/common";
 import { provideIssueReviewContext } from "@/components/Plan/logic/issue-review";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { useBodyLayoutContext } from "@/layouts/common";
@@ -180,8 +178,6 @@ watch(
   { once: true }
 );
 
-const { isSpecEmpty } = useSpecsValidation(plan.value.specs);
-
 const tabKey = computed(() => {
   const routeName = route.name?.toString() as string;
   if (
@@ -233,17 +229,12 @@ const tabRender = (tab: TabKey) => {
       return (
         <div class="flex items-center gap-2">
           <FileDiffIcon size={18} />
-          <span>
-            {t("plan.navigator.changes")}
-            {plan.value.specs.some(isSpecEmpty) && (
-              <span
-                class="text-error ml-0.5"
-                title={t("plan.navigator.statement-empty")}
-              >
-                *
-              </span>
-            )}
-          </span>
+          <span>{t("plan.navigator.changes")}</span>
+          {(isCreating.value || plan.value.specs.length > 1) && (
+            <NTag size="tiny" round>
+              {plan.value.specs.length}
+            </NTag>
+          )}
         </div>
       );
     case TabKey.Rollout:
