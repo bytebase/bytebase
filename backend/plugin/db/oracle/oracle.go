@@ -113,6 +113,15 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		return 0, errors.New("create database is not supported for Oracle")
 	}
 
+	// Parse transaction mode from the script
+	transactionMode, cleanedStatement := base.ParseTransactionMode(statement)
+	statement = cleanedStatement
+
+	// Apply default when transaction mode is not specified
+	if transactionMode == common.TransactionModeUnspecified {
+		transactionMode = common.GetDefaultTransactionMode()
+	}
+
 	var commands []base.SingleSQL
 	var originalIndex []int32
 	if len(statement) <= common.MaxSheetCheckSize {
@@ -141,6 +150,15 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 	defer conn.Close()
 
+	// Execute based on transaction mode
+	if transactionMode == common.TransactionModeOff {
+		return d.executeInAutoCommitMode(ctx, conn, commands, originalIndex, opts)
+	}
+	return d.executeInTransactionMode(ctx, conn, commands, originalIndex, opts)
+}
+
+// executeInTransactionMode executes statements within a single transaction
+func (*Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, commands []base.SingleSQL, originalIndex []int32, opts db.ExecuteOptions) (int64, error) {
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
@@ -191,6 +209,36 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
 	committed = true
+	return totalRowsAffected, nil
+}
+
+// executeInAutoCommitMode executes statements sequentially in auto-commit mode
+func (*Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, commands []base.SingleSQL, originalIndex []int32, opts db.ExecuteOptions) (int64, error) {
+	totalRowsAffected := int64(0)
+	for i, command := range commands {
+		indexes := []int32{originalIndex[i]}
+		opts.LogCommandExecute(indexes)
+
+		sqlResult, err := conn.ExecContext(ctx, command.Text)
+		if err != nil {
+			opts.LogCommandResponse(indexes, 0, nil, err.Error())
+			// In auto-commit mode, we stop at the first error
+			// The database is left in a partially migrated state
+			return totalRowsAffected, &db.ErrorWithPosition{
+				Err:   errors.Wrapf(err, "failed to execute statement %d in auto-commit mode", i+1),
+				Start: command.Start,
+				End:   command.End,
+			}
+		}
+		rowsAffected, err := sqlResult.RowsAffected()
+		if err != nil {
+			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+			slog.Debug("rowsAffected returns error", log.BBError(err))
+			rowsAffected = 0
+		}
+		opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+		totalRowsAffected += rowsAffected
+	}
 	return totalRowsAffected, nil
 }
 

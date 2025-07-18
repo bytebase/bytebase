@@ -110,6 +110,27 @@ func (*Driver) GetDB() *sql.DB {
 // Even in Hive's bucketed transaction table, all the statements are committed automatically by
 // the Hive server.
 func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.ExecuteOptions) (int64, error) {
+	// Parse transaction mode from the script
+	transactionMode, cleanedStatement := base.ParseTransactionMode(statementsStr)
+	statementsStr = cleanedStatement
+
+	// Apply default when transaction mode is not specified
+	if transactionMode == common.TransactionModeUnspecified {
+		transactionMode = common.GetDefaultTransactionMode()
+	}
+
+	// Note: We parse transactionMode but don't use it for execution since Hive
+	// has very limited transaction support. The variable assignment is kept for consistency
+	// with other database drivers and potential future use.
+	_ = transactionMode
+
+	// Hive has limited transaction support:
+	// - Only ACID tables support transactions, and even then it's limited
+	// - Transaction statements (BEGIN, COMMIT, ROLLBACK) are not supported in Hive 4.0
+	// - All statements are auto-committed by the Hive server
+	// Due to these limitations, we execute statements individually regardless of transaction mode
+	// but we still parse and respect the transaction mode directive for consistency
+
 	var affectedRows int64
 
 	cursor := d.conn.Cursor()

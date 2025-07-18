@@ -123,6 +123,15 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 
 // Execute executes a SQL statement.
 func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
+	// Parse transaction mode from the script
+	transactionMode, cleanedStatement := base.ParseTransactionMode(statement)
+	statement = cleanedStatement
+
+	// Apply default when transaction mode is not specified
+	if transactionMode == common.TransactionModeUnspecified {
+		transactionMode = common.GetDefaultTransactionMode()
+	}
+
 	singleSQLs, err := standard.SplitSQL(statement)
 	if err != nil {
 		return 0, err
@@ -132,6 +141,29 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 		return 0, nil
 	}
 
+	// ClickHouse has limited transaction support, so we handle both modes similarly
+	// For auto-commit mode (TransactionModeOff), we execute each statement independently
+	// For transaction mode, we use the existing transaction approach
+	if transactionMode == common.TransactionModeOff {
+		// Execute statements independently without transaction
+		totalRowsAffected := int64(0)
+		for _, singleSQL := range singleSQLs {
+			sqlResult, err := d.db.ExecContext(ctx, singleSQL.Text)
+			if err != nil {
+				return totalRowsAffected, err
+			}
+			rowsAffected, err := sqlResult.RowsAffected()
+			if err != nil {
+				// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+				slog.Debug("rowsAffected returns error", log.BBError(err))
+			} else {
+				totalRowsAffected += rowsAffected
+			}
+		}
+		return totalRowsAffected, nil
+	}
+
+	// Transaction mode execution (default behavior)
 	tx, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err

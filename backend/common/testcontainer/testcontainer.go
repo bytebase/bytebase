@@ -99,6 +99,17 @@ func GetMySQLContainer(ctx context.Context) (retc *Container, retErr error) {
 	}, nil
 }
 
+// GetTestMySQLContainer is a helper function for tests that creates a MySQL container
+// and handles the error by failing the test if container creation fails
+func GetTestMySQLContainer(ctx context.Context, t testing.TB) *Container {
+	t.Helper()
+	container, err := GetMySQLContainer(ctx)
+	if err != nil {
+		t.Fatalf("failed to create MySQL container: %v", err)
+	}
+	return container
+}
+
 // GetPgContainer creates a PostgreSQL container for testing
 func GetPgContainer(ctx context.Context) (retC *Container, retErr error) {
 	req := testcontainers.ContainerRequest{

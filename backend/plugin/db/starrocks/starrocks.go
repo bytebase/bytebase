@@ -154,6 +154,15 @@ func parseVersion(version string) (string, string, error) {
 
 // Execute executes a SQL statement.
 func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
+	// Parse transaction mode from the script
+	transactionMode, cleanedStatement := base.ParseTransactionMode(statement)
+	statement = cleanedStatement
+
+	// Apply default when transaction mode is not specified
+	if transactionMode == common.TransactionModeUnspecified {
+		transactionMode = common.GetDefaultTransactionMode()
+	}
+
 	statement, err := mysqlparser.DealWithDelimiter(statement)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to deal with delimiter")
@@ -170,6 +179,31 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 	}
 	slog.Debug("connectionID", slog.String("connectionID", connectionID))
 
+	// Execute based on transaction mode
+	// Note: StarRocks is an OLAP database with limited transaction support.
+	// For DDL operations, transactions are not supported. For DML operations,
+	// StarRocks supports transactions within certain limitations.
+	if transactionMode == common.TransactionModeOff {
+		// Execute in auto-commit mode
+		sqlResult, err := conn.ExecContext(ctx, statement)
+		if err != nil {
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				slog.Info("cancel connection", slog.String("connectionID", connectionID))
+				if err := d.StopConnectionByID(connectionID); err != nil {
+					slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
+				}
+			}
+			return 0, err
+		}
+		rowsAffected, err := sqlResult.RowsAffected()
+		if err != nil {
+			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+			slog.Debug("rowsAffected returns error", log.BBError(err))
+		}
+		return rowsAffected, nil
+	}
+
+	// Execute in transaction mode
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to begin execute transaction")
