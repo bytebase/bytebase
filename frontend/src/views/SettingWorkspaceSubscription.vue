@@ -105,7 +105,11 @@
       </div>
     </div>
     <div
-      v-if="allowEdit && subscriptionStore.isSelfHostLicense"
+      v-if="
+        allowEdit &&
+        subscriptionStore.isSelfHostLicense &&
+        !actuatorStore.isSaaSMode
+      "
       class="w-full mt-4 flex flex-col"
     >
       <label class="flex items-center gap-x-2">
