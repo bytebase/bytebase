@@ -987,8 +987,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleColumnSetDefaultForNotNull:
 		switch engine {
-		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_ORACLE:
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnSetDefaultForNotNull, nil
+		case storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_ORACLE, storepb.Engine_DM:
+			return OracleAddNotNullColumnRequireDefault, nil
 		}
 	case SchemaRuleColumnDisallowChange:
 		switch engine {
