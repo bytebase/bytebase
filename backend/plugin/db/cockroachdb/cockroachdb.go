@@ -532,20 +532,20 @@ func (d *Driver) executeInAutoCommitMode(
 	for i, stmt := range nonTransactionAndSetRoleStmts {
 		indexes := []int32{nonTransactionAndSetRoleStmtsIndex[i]}
 		opts.LogCommandExecute(indexes)
-		
+
 		if err := crdb.Execute(func() error {
 			sqlResult, err := conn.ExecContext(ctx, stmt)
 			if err != nil {
 				opts.LogCommandResponse(indexes, 0, []int32{0}, err.Error())
 				return err
 			}
-			
+
 			rowsAffected, err := sqlResult.RowsAffected()
 			if err != nil {
 				// CockroachDB returns error for statements that don't support RowsAffected
 				rowsAffected = 0
 			}
-			
+
 			opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
 			totalRowsAffected += rowsAffected
 			return nil
@@ -553,7 +553,7 @@ func (d *Driver) executeInAutoCommitMode(
 			return totalRowsAffected, err
 		}
 	}
-	
+
 	return totalRowsAffected, nil
 }
 

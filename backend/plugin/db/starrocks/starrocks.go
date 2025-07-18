@@ -172,7 +172,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	// For DDL operations, transactions are not supported. For DML operations,
 	// StarRocks supports transactions within certain limitations.
 	if transactionMode == common.TransactionModeOff {
-		return d.executeInAutoCommitMode(ctx, statement, opts)
+		return d.executeInAutoCommitMode(ctx, statement)
 	}
 	return d.executeInTransactionMode(ctx, statement, opts)
 }
@@ -220,13 +220,13 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, statement string,
 		}
 		return 0, err
 	}
-	
+
 	rowsAffected, err := sqlResult.RowsAffected()
 	if err != nil {
 		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
 		slog.Debug("rowsAffected returns error", log.BBError(err))
 	}
-	
+
 	if err := tx.Commit(); err != nil {
 		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
 		return 0, errors.Wrapf(err, "failed to commit execute transaction")
@@ -236,7 +236,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, statement string,
 	return rowsAffected, nil
 }
 
-func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string) (int64, error) {
 	conn, err := d.db.Conn(ctx)
 	if err != nil {
 		return 0, err
@@ -260,7 +260,7 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, 
 		}
 		return 0, err
 	}
-	
+
 	rowsAffected, err := sqlResult.RowsAffected()
 	if err != nil {
 		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
