@@ -1103,10 +1103,7 @@
     "targets": {
       "title": "ターゲット",
       "no-targets-found": "ターゲットが見つかりません",
-      "database-not-found": "データベースが見つかりません",
       "type": {
-        "instance": "実例",
-        "database": "データベース",
         "database-group": "データベースグループ"
       },
       "view-all": "すべて表示 ({count})"
