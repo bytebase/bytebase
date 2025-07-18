@@ -1,23 +1,17 @@
 <template>
   <div v-if="stage" class="w-full h-full flex flex-col">
     <div class="px-4">
-      <!-- Stage Header -->
       <div class="w-full flex flex-row pt-2 gap-2">
         <NTag round>{{ $t("common.stage") }}</NTag>
         <span class="font-medium text-lg">{{ environmentTitle }}</span>
+
+        <TaskFilter
+          :rollout="rollout"
+          :task-status-list="taskStatusFilter"
+          :stage="stage"
+          @update:task-status-list="taskStatusFilter = $event"
+        />
       </div>
-    </div>
-
-    <NDivider class="!my-4" />
-
-    <div class="px-4">
-      <!-- Task Filter -->
-      <TaskFilter
-        :rollout="rollout"
-        :task-status-list="taskStatusFilter"
-        :stage="stage"
-        @update:task-status-list="taskStatusFilter = $event"
-      />
     </div>
 
     <!-- Tasks Table View -->
@@ -32,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { NDivider, NTag } from "naive-ui";
+import { NTag } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useEnvironmentV1Store } from "@/store";

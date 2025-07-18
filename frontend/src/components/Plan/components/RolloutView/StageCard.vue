@@ -173,7 +173,7 @@ import {
 } from "lucide-vue-next";
 import { NTooltip, NButton, NPopconfirm, NTag } from "naive-ui";
 import { twMerge } from "tailwind-merge";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
@@ -182,7 +182,11 @@ import {
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
 } from "@/router/dashboard/projectV1";
-import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
+import {
+  useCurrentProjectV1,
+  useEnvironmentV1Store,
+  batchGetOrFetchDatabases,
+} from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type {
   Stage,
@@ -382,4 +386,27 @@ const handleTaskClick = (task: Task) => {
     },
   });
 };
+
+const prepareDatabases = async () => {
+  // Only load data when tasks are shown
+  if (!showTasks.value) return;
+
+  if (displayedTasks.value.length > 0) {
+    try {
+      await batchGetOrFetchDatabases(
+        displayedTasks.value.map((task) => task.target)
+      );
+    } catch {
+      // Ignore errors - this is just for pre-loading data
+    }
+  }
+};
+
+watch(
+  showTasks,
+  () => {
+    prepareDatabases();
+  },
+  { immediate: true }
+);
 </script>
