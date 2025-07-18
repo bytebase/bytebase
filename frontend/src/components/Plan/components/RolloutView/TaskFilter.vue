@@ -1,42 +1,35 @@
 <template>
-  <div class="flex flex-row justify-start items-center gap-4">
-    <div class="flex items-center justify-between">
-      <h3 class="text-base">
-        {{ $t("common.task", 2) }}
-      </h3>
-    </div>
-    <div class="flex flex-row gap-2 items-center">
-      <template v-for="status in TASK_STATUS_FILTERS" :key="status">
-        <NTag
-          v-if="getTaskCount(status) > 0"
-          round
-          checkable
-          :checked="taskStatusList.includes(status)"
-          @update:checked="
-            (checked) => {
-              emit(
-                'update:taskStatusList',
-                checked
-                  ? [...taskStatusList, status]
-                  : taskStatusList.filter((s) => s !== status)
-              );
-            }
-          "
-        >
-          <template #avatar>
-            <TaskStatus :status="status" size="small" />
-          </template>
-          <div class="flex flex-row items-center gap-2">
-            <span class="select-none text-base">{{
-              stringifyTaskStatus(status)
-            }}</span>
-            <span class="select-none text-base font-medium">{{
-              getTaskCount(status)
-            }}</span>
-          </div>
-        </NTag>
-      </template>
-    </div>
+  <div class="flex flex-row gap-2 items-center">
+    <template v-for="status in TASK_STATUS_FILTERS" :key="status">
+      <NTag
+        v-if="getTaskCount(status) > 0"
+        round
+        checkable
+        :checked="taskStatusList.includes(status)"
+        @update:checked="
+          (checked) => {
+            emit(
+              'update:taskStatusList',
+              checked
+                ? [...taskStatusList, status]
+                : taskStatusList.filter((s) => s !== status)
+            );
+          }
+        "
+      >
+        <template #avatar>
+          <TaskStatus :status="status" size="small" />
+        </template>
+        <div class="flex flex-row items-center gap-2">
+          <span class="select-none text-base">{{
+            stringifyTaskStatus(status)
+          }}</span>
+          <span class="select-none text-base font-medium">{{
+            getTaskCount(status)
+          }}</span>
+        </div>
+      </NTag>
+    </template>
   </div>
 </template>
 
