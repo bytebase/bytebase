@@ -5,14 +5,16 @@
       {{ $t("common.demo-mode") }}
     </div>
     <div v-else class="py-2">
-      <div
+      <RequireEnterpriseButton
         v-if="subscriptionViewMode === 'TRIAL'"
-        class="flex items-center gap-1 text-accent cursor-pointer"
-        @click="state.showTrialModal = true"
+        text
+        size="small"
       >
-        <heroicons-solid:sparkles class="w-5 h-5" />
-        <span>{{ $t("subscription.plan.try") }}</span>
-      </div>
+        <template #icon>
+          <heroicons-solid:sparkles class="w-5 h-5" />
+        </template>
+        {{ $t("subscription.plan.try") }}
+      </RequireEnterpriseButton>
       <router-link
         v-if="subscriptionViewMode === 'LINK'"
         :to="autoSubscriptionRoute($router)"
@@ -49,10 +51,6 @@
     </NTooltip>
   </div>
 
-  <TrialModal
-    v-if="state.showTrialModal"
-    @cancel="state.showTrialModal = false"
-  />
   <ReleaseRemindModal
     v-if="state.showReleaseModal"
     @cancel="state.showReleaseModal = false"
@@ -64,6 +62,7 @@ import { Volume2Icon } from "lucide-vue-next";
 import { NTooltip, type TooltipProps } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
+import RequireEnterpriseButton from "@/components/RequireEnterpriseButton.vue";
 import {
   useActuatorV1Store,
   useAppFeature,
@@ -72,10 +71,8 @@ import {
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import ReleaseRemindModal from "../ReleaseRemindModal.vue";
-import TrialModal from "../TrialModal.vue";
 
 interface LocalState {
-  showTrialModal: boolean;
   showReleaseModal: boolean;
 }
 
@@ -88,7 +85,6 @@ const subscriptionStore = useSubscriptionV1Store();
 const hideTrial = useAppFeature("bb.feature.hide-trial");
 
 const state = reactive<LocalState>({
-  showTrialModal: false,
   showReleaseModal: false,
 });
 
