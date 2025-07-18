@@ -14,6 +14,7 @@ import (
 	// Databricks SQL.
 	dbsql "github.com/databricks/databricks-sdk-go/service/sql"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
@@ -121,7 +122,36 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 }
 
 func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
-	// No ways of fetching affected rows.
+	// Parse transaction mode from the script
+	transactionMode, cleanedStatement := base.ParseTransactionMode(statement)
+	statement = cleanedStatement
+
+	// Apply default when transaction mode is not specified
+	if transactionMode == common.TransactionModeUnspecified {
+		transactionMode = common.GetDefaultTransactionMode()
+	}
+
+	// Databricks has different transaction support based on the target:
+	// - SQL Warehouses: Limited transaction support, primarily for Delta tables
+	// - Unity Catalog: Better transaction support with ACID properties for Delta tables
+	// Since Databricks SQL API doesn't expose direct transaction control (BEGIN/COMMIT/ROLLBACK),
+	// and most DDL operations are auto-committed, we handle this at the statement execution level.
+
+	// For transaction mode "off" or when dealing with non-transactional operations,
+	// we execute statements in auto-commit mode (default behavior).
+	// For transaction mode "on", we note that Databricks will handle transactionality
+	// at the operation level for supported operations (e.g., Delta table operations).
+
+	if transactionMode == common.TransactionModeOff {
+		// Execute in auto-commit mode (default Databricks behavior)
+		_, err := d.QueryConn(ctx, nil, statement, db.QueryContext{})
+		return 0, err
+	}
+
+	// Transaction mode "on": Execute with implicit transaction support
+	// Note: Databricks SQL Warehouses don't support explicit transaction control via the REST API.
+	// Transactions are handled implicitly for supported operations (e.g., Delta table DML).
+	// DDL operations are always auto-committed.
 	_, err := d.QueryConn(ctx, nil, statement, db.QueryContext{})
 	return 0, err
 }

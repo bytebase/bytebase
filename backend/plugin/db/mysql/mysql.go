@@ -259,6 +259,15 @@ func parseVersion(version string) (string, string, error) {
 
 // Execute executes a SQL statement.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	// Parse transaction mode from the script
+	transactionMode, cleanedStatement := base.ParseTransactionMode(statement)
+	statement = cleanedStatement
+
+	// Apply default when transaction mode is not specified
+	if transactionMode == common.TransactionModeUnspecified {
+		transactionMode = common.GetDefaultTransactionMode()
+	}
+
 	statement, err := mysqlparser.DealWithDelimiter(statement)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to deal with delimiter")
@@ -304,6 +313,15 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		originalIndex = []int32{0}
 	}
 
+	// Execute based on transaction mode
+	if transactionMode == common.TransactionModeOff {
+		return d.executeInAutoCommitMode(ctx, conn, commands, originalIndex, opts, connectionID)
+	}
+	return d.executeInTransactionMode(ctx, conn, commands, originalIndex, opts, connectionID)
+}
+
+// executeInTransactionMode executes statements within a single transaction
+func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, commands []base.SingleSQL, originalIndex []int32, opts db.ExecuteOptions, connectionID string) (int64, error) {
 	var totalRowsAffected int64
 
 	if err := conn.Raw(func(driverConn any) error {
@@ -374,6 +392,58 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
 			committed = true
 		}
+		return nil
+	}); err != nil {
+		return 0, err
+	}
+
+	return totalRowsAffected, nil
+}
+
+// executeInAutoCommitMode executes statements sequentially in auto-commit mode
+func (d *Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, commands []base.SingleSQL, originalIndex []int32, opts db.ExecuteOptions, connectionID string) (int64, error) {
+	var totalRowsAffected int64
+
+	if err := conn.Raw(func(driverConn any) error {
+		//nolint
+		exer := driverConn.(driver.ExecerContext)
+
+		for i, command := range commands {
+			indexes := []int32{originalIndex[i]}
+			opts.LogCommandExecute(indexes)
+
+			sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(command.Text)
+			sqlResult, err := exer.ExecContext(ctx, sqlWithBytebaseAppComment, nil)
+			if err != nil {
+				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+					slog.Info("cancel connection", slog.String("connectionID", connectionID))
+					if err := d.StopConnectionByID(connectionID); err != nil {
+						slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
+					}
+				}
+
+				opts.LogCommandResponse(indexes, 0, nil, err.Error())
+				// In auto-commit mode, we stop at the first error
+				// The database is left in a partially migrated state
+				return &db.ErrorWithPosition{
+					Err:   errors.Wrapf(err, "failed to execute statement %d in auto-commit mode", i+1),
+					Start: command.Start,
+					End:   command.End,
+				}
+			}
+
+			allRowsAffected := sqlResult.(mysql.Result).AllRowsAffected()
+			var rowsAffected int64
+			var allRowsAffectedInt32 []int32
+			for _, a := range allRowsAffected {
+				rowsAffected += a
+				allRowsAffectedInt32 = append(allRowsAffectedInt32, int32(a))
+			}
+			totalRowsAffected += rowsAffected
+
+			opts.LogCommandResponse(indexes, int32(rowsAffected), allRowsAffectedInt32, "")
+		}
+
 		return nil
 	}); err != nil {
 		return 0, err

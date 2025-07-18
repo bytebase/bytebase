@@ -49,8 +49,8 @@ func (c *Container) Close(ctx context.Context) {
 	}
 }
 
-// GetMySQLContainer creates a MySQL container for testing
-func GetMySQLContainer(ctx context.Context) (retc *Container, retErr error) {
+// GetTestMySQLContainer creates a MySQL container for testing
+func GetTestMySQLContainer(ctx context.Context) (retc *Container, retErr error) {
 	req := testcontainers.ContainerRequest{
 		Image: "mysql:8.0.33",
 		Env: map[string]string{
