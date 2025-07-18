@@ -132,6 +132,11 @@ func (s *LicenseService) GetActivatedInstanceLimit(ctx context.Context) int {
 // GetUserLimit gets the user limit value for the plan.
 func (s *LicenseService) GetUserLimit(ctx context.Context) int {
 	subscription := s.LoadSubscription(ctx)
+	// Prefer to take values from the license first.
+	if subscription.Seats > 0 {
+		return int(subscription.Seats)
+	}
+
 	limit := userLimitValues[subscription.Plan]
 	if subscription.Plan == v1pb.PlanType_FREE {
 		return limit
@@ -149,6 +154,11 @@ func (s *LicenseService) GetUserLimit(ctx context.Context) int {
 // GetInstanceLimit gets the instance limit value for the plan.
 func (s *LicenseService) GetInstanceLimit(ctx context.Context) int {
 	subscription := s.LoadSubscription(ctx)
+	// Prefer to take values from the license first.
+	if subscription.Instances > 0 {
+		return int(subscription.Instances)
+	}
+
 	limit := instanceLimitValues[subscription.Plan]
 	if limit == -1 {
 		// Enterprise license.
