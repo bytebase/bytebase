@@ -80,7 +80,7 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
             )}
             {showDraftTag && (
               <NTag round size="small">
-                Draft
+                {t("common.draft")}
               </NTag>
             )}
           </div>
