@@ -271,8 +271,13 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, statement string,
 	if err != nil {
 		return 0, err
 	}
+
+	// Log the entire multi-statement execution
+	opts.LogCommandExecute([]int32{0})
+
 	result, err := tx.ExecContext(mctx, statement)
 	if err != nil {
+		opts.LogCommandResponse([]int32{0}, 0, nil, err.Error())
 		return 0, err
 	}
 
@@ -287,13 +292,15 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, statement string,
 	// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
 	if err != nil {
 		slog.Debug("rowsAffected returns error", log.BBError(err))
+		opts.LogCommandResponse([]int32{0}, 0, nil, "")
 		return 0, nil
 	}
+	opts.LogCommandResponse([]int32{0}, int32(rowsAffected), nil, "")
 	return rowsAffected, nil
 }
 
 // executeInAutoCommitMode executes statements with autocommit enabled (no explicit transaction)
-func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
+func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	// To submit a variable number of SQL statements in the statement field, set MULTI_STATEMENT_COUNT to 0."
 	// https://docs.snowflake.com/en/developer-guide/sql-api/submitting-multiple-statements
 	mctx, err := snow.WithMultiStatement(ctx, 0 /* MULTI_STATEMENT_COUNT */)
@@ -301,8 +308,12 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, 
 		return 0, err
 	}
 
+	// Log the entire multi-statement execution
+	opts.LogCommandExecute([]int32{0})
+
 	result, err := d.db.ExecContext(mctx, statement)
 	if err != nil {
+		opts.LogCommandResponse([]int32{0}, 0, nil, err.Error())
 		return 0, err
 	}
 
@@ -310,8 +321,10 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, 
 	// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
 	if err != nil {
 		slog.Debug("rowsAffected returns error", log.BBError(err))
+		opts.LogCommandResponse([]int32{0}, 0, nil, "")
 		return 0, nil
 	}
+	opts.LogCommandResponse([]int32{0}, int32(rowsAffected), nil, "")
 	return rowsAffected, nil
 }
 
