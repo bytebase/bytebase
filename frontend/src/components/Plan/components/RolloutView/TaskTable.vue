@@ -19,14 +19,14 @@
 import { CalendarClockIcon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable, NTag, NTooltip } from "naive-ui";
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { semanticTaskType } from "@/components/IssueV1";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
-import { useCurrentProjectV1 } from "@/store";
+import { useCurrentProjectV1, batchGetOrFetchDatabases } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
@@ -95,6 +95,25 @@ const stageMap = computed(() => {
   });
   return map;
 });
+
+const prepareDatabases = async () => {
+  if (taskList.value.length > 0) {
+    try {
+      await batchGetOrFetchDatabases(taskList.value.map((task) => task.target));
+    } catch {
+      // Ignore errors - this is just for pre-loading data
+    }
+  }
+};
+
+// Watch for task list changes and load database data
+watch(
+  taskList,
+  () => {
+    prepareDatabases();
+  },
+  { immediate: true }
+);
 
 // Helper function to extract IDs from task and stage names
 const getTaskRouteParams = (task: Task) => {
