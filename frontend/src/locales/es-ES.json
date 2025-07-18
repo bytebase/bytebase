@@ -1103,10 +1103,7 @@
     "targets": {
       "title": "Objetivos",
       "no-targets-found": "No se encontraron objetivos",
-      "database-not-found": "Base de datos no encontrada",
       "type": {
-        "instance": "Instancia",
-        "database": "Base de datos",
         "database-group": "Grupo de bases de datos"
       },
       "view-all": "Ver todo ({count})"

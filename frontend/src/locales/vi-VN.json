@@ -1103,10 +1103,7 @@
     "targets": {
       "title": "Mục tiêu",
       "no-targets-found": "Không tìm thấy mục tiêu",
-      "database-not-found": "Không tìm thấy cơ sở dữ liệu",
       "type": {
-        "instance": "Ví dụ",
-        "database": "Cơ sở dữ liệu",
         "database-group": "Nhóm cơ sở dữ liệu"
       },
       "view-all": "Xem tất cả ({count})"
