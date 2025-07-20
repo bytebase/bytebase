@@ -8199,6 +8199,7 @@ ISSUE_CREATE represents creating an issue. |
 | FEISHU | 5 |  |
 | WECOM | 6 |  |
 | LARK | 8 |  |
+| CUSTOM | 9 |  |
 
 
  

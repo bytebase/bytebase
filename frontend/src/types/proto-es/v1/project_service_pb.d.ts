@@ -778,6 +778,11 @@ export enum Webhook_Type {
    * @generated from enum value: LARK = 8;
    */
   LARK = 8,
+
+  /**
+   * @generated from enum value: CUSTOM = 9;
+   */
+  CUSTOM = 9,
 }
 
 /**
