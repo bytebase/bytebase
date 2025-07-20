@@ -455,6 +455,7 @@ message Webhook {
     FEISHU = 5;
     WECOM = 6;
     LARK = 8;
+    CUSTOM = 9;
   }
   // type is the type of the webhook.
   Type type = 2 [(google.api.field_behavior) = REQUIRED];
