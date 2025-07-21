@@ -1,11 +1,7 @@
 <template>
   <main class="w-full h-full flex flex-col overflow-y-hidden">
     <template v-if="currentTab">
-      <TabsContainer
-        class="px-2 pt-2"
-        @update:table-search-pattern="handleTableSearchPattern"
-        @update:column-search-pattern="handleColumnSearchPattern"
-      />
+      <TabsContainer class="px-2 pt-2" />
       <div
         class="w-full flex-1 relative overflow-y-hidden"
         :data-key="currentTab.id"
@@ -16,7 +12,6 @@
           v-model:selected-schema-name="currentTab.selectedSchema"
           :db="currentTab.database"
           :database="currentTab.metadata.database"
-          :search-pattern="state.tableSearchPattern"
           class="px-2 pb-2"
         />
         <TableEditor
@@ -26,7 +21,6 @@
           :database="currentTab.metadata.database"
           :schema="currentTab.metadata.schema"
           :table="currentTab.metadata.table"
-          :search-pattern="state.columnSearchPattern"
         />
         <ProcedureEditor
           v-if="currentTab.type === 'procedure'"
@@ -61,7 +55,6 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, watch } from "vue";
 import EmptyTips from "./EmptyTips.vue";
 import DatabaseEditor from "./Panels/DatabaseEditor.vue";
 import FunctionEditor from "./Panels/FunctionEditor.vue";
@@ -71,28 +64,5 @@ import ViewEditor from "./Panels/ViewEditor.vue";
 import TabsContainer from "./TabsContainer.vue";
 import { useSchemaEditorContext } from "./context";
 
-interface LocalState {
-  tableSearchPattern: string;
-  columnSearchPattern: string;
-}
-
 const { currentTab } = useSchemaEditorContext();
-
-const state = reactive<LocalState>({
-  tableSearchPattern: "",
-  columnSearchPattern: "",
-});
-
-const handleTableSearchPattern = (tableSearchPattern: string) => {
-  state.tableSearchPattern = tableSearchPattern;
-};
-
-const handleColumnSearchPattern = (columnSearchPattern: string) => {
-  state.columnSearchPattern = columnSearchPattern;
-};
-
-watch([() => currentTab.value?.id], () => {
-  state.tableSearchPattern = "";
-  state.columnSearchPattern = "";
-});
 </script>
