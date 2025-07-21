@@ -1594,9 +1594,6 @@
     },
     "all": "Todas las bases de datos",
     "show-schemaless-databases": "Mostrar bases de datos sin esquema. (Editar Schema no se aplica a las bases de datos sin esquema.)",
-    "secret": {
-      "validation": {}
-    },
     "transfer": {
       "errors": {
         "select-target-project": "Seleccionar proyecto de destino",

@@ -1594,9 +1594,6 @@
     },
     "all": "すべてのデータベース",
     "show-schemaless-databases": "スキーマレス データベースを示します。 (スキーマの変更は、スキーマのないデータベースでは機能しません。)",
-    "secret": {
-      "validation": {}
-    },
     "transfer": {
       "errors": {
         "select-target-project": "対象プロジェクトを選択",

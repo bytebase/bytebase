@@ -1594,9 +1594,6 @@
     },
     "all": "所有数据库",
     "show-schemaless-databases": "显示无模式的数据库。（变更 Schema 不适用于无 schema 的数据库. ）",
-    "secret": {
-      "validation": {}
-    },
     "transfer": {
       "errors": {
         "select-target-project": "选择目标项目",

@@ -1594,9 +1594,6 @@
     },
     "all": "Tất cả cơ sở dữ liệu",
     "show-schemaless-databases": "Hiển thị cơ sở dữ liệu không có lược đồ. (Chỉnh sửa lược đồ không áp dụng cho cơ sở dữ liệu không có lược đồ.)",
-    "secret": {
-      "validation": {}
-    },
     "transfer": {
       "errors": {
         "select-target-project": "Chọn dự án đích",
