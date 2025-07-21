@@ -12,7 +12,7 @@
       <div class="flex flex-col gap-y-4">
         <!-- Steps indicator -->
         <NSteps :current="currentStep">
-          <NStep :title="stepTitle" />
+          <NStep :title="changeTypeTitle" />
           <NStep :title="$t('plan.select-targets')" />
           <NStep
             v-if="shouldShowSchemaEditor"
@@ -331,16 +331,17 @@ const isLastStep = computed(() => {
   return currentStep.value === totalSteps.value;
 });
 
-const stepTitle = computed(() => {
-  if (currentStep.value === Step.SELECT_CHANGE_TYPE) {
-    return t("plan.change-type");
+const changeTypeTitle = computed(() => {
+  if (currentStep.value !== Step.SELECT_CHANGE_TYPE) {
+    if (selectedChangeType.value === Plan_ChangeDatabaseConfig_Type.MIGRATE) {
+      return t("plan.schema-migration");
+    } else if (
+      selectedChangeType.value === Plan_ChangeDatabaseConfig_Type.DATA
+    ) {
+      return t("plan.data-change");
+    }
   }
-  if (currentStep.value === Step.SCHEMA_EDITOR) {
-    return t("schema-editor.self");
-  }
-  return selectedChangeType.value === Plan_ChangeDatabaseConfig_Type.DATA
-    ? t("plan.data-change")
-    : t("plan.schema-migration");
+  return t("plan.change-type");
 });
 
 const isMigrateSelected = computed(() => {
