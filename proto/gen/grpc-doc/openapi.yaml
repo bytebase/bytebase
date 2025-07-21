@@ -2139,149 +2139,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/instances/{instance}/databases/{database}/secrets:
-        get:
-            tags:
-                - DatabaseService
-            description: 'Permissions required: bb.databaseSecrets.list'
-            operationId: DatabaseService_ListSecrets
-            parameters:
-                - name: instance
-                  in: path
-                  description: The instance id.
-                  required: true
-                  schema:
-                    type: string
-                - name: database
-                  in: path
-                  description: The database id.
-                  required: true
-                  schema:
-                    type: string
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Not used.
-                     The maximum number of secrets to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 10 secrets will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Not used.
-                     A page token, received from a previous `ListSecrets` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListSecrets` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListSecretsResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/instances/{instance}/databases/{database}/secrets/{secret}:
-        delete:
-            tags:
-                - DatabaseService
-            description: 'Permissions required: bb.databaseSecrets.delete'
-            operationId: DatabaseService_DeleteSecret
-            parameters:
-                - name: instance
-                  in: path
-                  description: The instance id.
-                  required: true
-                  schema:
-                    type: string
-                - name: database
-                  in: path
-                  description: The database id.
-                  required: true
-                  schema:
-                    type: string
-                - name: secret
-                  in: path
-                  description: The secret id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content: {}
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        patch:
-            tags:
-                - DatabaseService
-            description: 'Permissions required: bb.databaseSecrets.update'
-            operationId: DatabaseService_UpdateSecret
-            parameters:
-                - name: instance
-                  in: path
-                  description: The instance id.
-                  required: true
-                  schema:
-                    type: string
-                - name: database
-                  in: path
-                  description: The database id.
-                  required: true
-                  schema:
-                    type: string
-                - name: secret
-                  in: path
-                  description: The secret id.
-                  required: true
-                  schema:
-                    type: string
-                - name: updateMask
-                  in: query
-                  description: The mask of the fields to be updated.
-                  schema:
-                    type: string
-                    format: field-mask
-                - name: allowMissing
-                  in: query
-                  description: If true, the secret will be created if it does not exist.
-                  schema:
-                    type: boolean
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Secret'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Secret'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases/{database}:diffSchema:
         post:
             tags:
@@ -9821,10 +9678,6 @@ components:
                     type: boolean
                 datashare:
                     type: boolean
-                secrets:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Secret'
                 drifted:
                     type: boolean
                     description: The schema is drifted from the source of truth.
@@ -11321,19 +11174,6 @@ components:
                     description: |-
                         A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
-        ListSecretsResponse:
-            type: object
-            properties:
-                secrets:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Secret'
-                    description: The list of secrets.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        Not used. A token, which can be sent as `page_token` to retrieve the next
-                         page. If this field is omitted, there are no subsequent pages.
         ListSettingsResponse:
             type: object
             properties:
@@ -13378,18 +13218,6 @@ components:
                     description: |-
                         Not used. A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
-        Secret:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: The name is the name of the secret.
-                value:
-                    type: string
-                    description: The value is the value of the secret.
-                description:
-                    type: string
-                    description: The description is the description of the secret.
         SemanticTypeSetting:
             type: object
             properties:

@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
@@ -169,46 +168,6 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 	}
 
 	return nil
-}
-
-// RenderStatement renders the given template statement with the given key-value map.
-func RenderStatement(templateStatement string, secrets map[string]string) string {
-	// Happy path for empty template statement.
-	if templateStatement == "" {
-		return ""
-	}
-	// Optimizations for databases without secrets.
-	if len(secrets) == 0 {
-		return templateStatement
-	}
-	// Don't render statement larger than 1MB.
-	if len(templateStatement) > 1024*1024 {
-		return templateStatement
-	}
-
-	// The regular expression consists of:
-	// \${{: matches the string ${{, where $ is escaped with a backslash.
-	// \s*: matches zero or more whitespace characters.
-	// secrets\.: matches the string secrets., where . is escaped with a backslash.
-	// (?P<name>[A-Z0-9_]+): uses a named capture group name to match the secret name. The capture group is defined using the syntax (?P<name>) and matches one or more uppercase letters, digits, or underscores.
-	re := regexp.MustCompile(`\${{\s*secrets\.(?P<name>[A-Z0-9_]+)\s*}}`)
-	matches := re.FindAllStringSubmatch(templateStatement, -1)
-	for _, match := range matches {
-		name := match[1]
-		if value, ok := secrets[name]; ok {
-			templateStatement = strings.ReplaceAll(templateStatement, match[0], value)
-		}
-	}
-	return templateStatement
-}
-
-// GetSecretMapFromDatabaseMessage extracts the secret map from the given database message.
-func GetSecretMapFromDatabaseMessage(databaseMessage *store.DatabaseMessage) map[string]string {
-	secrets := make(map[string]string)
-	for _, v := range databaseMessage.Metadata.GetSecrets() {
-		secrets[v.Name] = v.Value
-	}
-	return secrets
 }
 
 // GetMatchedAndUnmatchedDatabasesInDatabaseGroup returns the matched and unmatched databases in the given database group.

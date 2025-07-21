@@ -237,10 +237,6 @@
         "title": "Tắt đăng ký tự phục vụ",
         "desc": "Yêu cầu mời của quản trị viên cho đăng ký người dùng mới."
       },
-      "FEATURE_DATABASE_SECRET_VARIABLES": {
-        "title": "Biến bí mật cơ sở dữ liệu",
-        "desc": "Lưu trữ và sử dụng các bí mật được mã hóa trong tập lệnh SQL."
-      },
       "FEATURE_RISK_ASSESSMENT": {
         "title": "Đánh giá rủi ro",
         "desc": "Đánh giá và phân loại mức độ rủi ro của các thay đổi cơ sở dữ liệu."

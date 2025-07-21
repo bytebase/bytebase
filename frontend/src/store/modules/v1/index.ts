@@ -6,7 +6,6 @@ export * from "./changelog";
 export * from "./common";
 export * from "./database";
 export * from "./databaseCatalog";
-export * from "./databaseSecret";
 export * from "./dbSchema";
 export * from "./environment";
 export * from "./experimental-issue";

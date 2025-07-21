@@ -237,10 +237,6 @@
         "title": "禁用自助注册",
         "desc": "新用户注册需要管理员邀请。"
       },
-      "FEATURE_DATABASE_SECRET_VARIABLES": {
-        "title": "数据库密钥变量",
-        "desc": "在 SQL 脚本中存储和使用加密的密钥。"
-      },
       "FEATURE_RISK_ASSESSMENT": {
         "title": "风险评估",
         "desc": "评估和分类数据库更改的风险级别。"

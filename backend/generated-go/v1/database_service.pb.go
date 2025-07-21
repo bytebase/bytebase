@@ -10,7 +10,6 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
@@ -444,7 +443,7 @@ func (x Changelog_Status) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Changelog_Status.Descriptor instead.
 func (Changelog_Status) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{64, 0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{59, 0}
 }
 
 type Changelog_Type int32
@@ -502,7 +501,7 @@ func (x Changelog_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Changelog_Type.Descriptor instead.
 func (Changelog_Type) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{64, 1}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{59, 1}
 }
 
 type GetSchemaStringRequest_ObjectType int32
@@ -569,7 +568,7 @@ func (x GetSchemaStringRequest_ObjectType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use GetSchemaStringRequest_ObjectType.Descriptor instead.
 func (GetSchemaStringRequest_ObjectType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{65, 0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{60, 0}
 }
 
 type GetDatabaseRequest struct {
@@ -4947,328 +4946,6 @@ func (x *DatabaseSchema) GetSchema() string {
 	return ""
 }
 
-type ListSecretsRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The parent of the secret.
-	// Format: instances/{instance}/databases/{database}
-	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// Not used.
-	// The maximum number of secrets to return. The service may return fewer than
-	// this value.
-	// If unspecified, at most 10 secrets will be returned.
-	// The maximum value is 1000; values above 1000 will be coerced to 1000.
-	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used.
-	// A page token, received from a previous `ListSecrets` call.
-	// Provide this to retrieve the subsequent page.
-	//
-	// When paginating, all other parameters provided to `ListSecrets` must match
-	// the call that provided the page token.
-	PageToken     string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListSecretsRequest) Reset() {
-	*x = ListSecretsRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[49]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListSecretsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListSecretsRequest) ProtoMessage() {}
-
-func (x *ListSecretsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[49]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListSecretsRequest.ProtoReflect.Descriptor instead.
-func (*ListSecretsRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{49}
-}
-
-func (x *ListSecretsRequest) GetParent() string {
-	if x != nil {
-		return x.Parent
-	}
-	return ""
-}
-
-func (x *ListSecretsRequest) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-func (x *ListSecretsRequest) GetPageToken() string {
-	if x != nil {
-		return x.PageToken
-	}
-	return ""
-}
-
-type ListSecretsResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The list of secrets.
-	Secrets []*Secret `protobuf:"bytes,1,rep,name=secrets,proto3" json:"secrets,omitempty"`
-	// Not used. A token, which can be sent as `page_token` to retrieve the next
-	// page. If this field is omitted, there are no subsequent pages.
-	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListSecretsResponse) Reset() {
-	*x = ListSecretsResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[50]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListSecretsResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListSecretsResponse) ProtoMessage() {}
-
-func (x *ListSecretsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[50]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListSecretsResponse.ProtoReflect.Descriptor instead.
-func (*ListSecretsResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{50}
-}
-
-func (x *ListSecretsResponse) GetSecrets() []*Secret {
-	if x != nil {
-		return x.Secrets
-	}
-	return nil
-}
-
-func (x *ListSecretsResponse) GetNextPageToken() string {
-	if x != nil {
-		return x.NextPageToken
-	}
-	return ""
-}
-
-type UpdateSecretRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The secret to be created or updated.
-	Secret *Secret `protobuf:"bytes,1,opt,name=secret,proto3" json:"secret,omitempty"`
-	// The mask of the fields to be updated.
-	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
-	// If true, the secret will be created if it does not exist.
-	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UpdateSecretRequest) Reset() {
-	*x = UpdateSecretRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[51]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UpdateSecretRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UpdateSecretRequest) ProtoMessage() {}
-
-func (x *UpdateSecretRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[51]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UpdateSecretRequest.ProtoReflect.Descriptor instead.
-func (*UpdateSecretRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{51}
-}
-
-func (x *UpdateSecretRequest) GetSecret() *Secret {
-	if x != nil {
-		return x.Secret
-	}
-	return nil
-}
-
-func (x *UpdateSecretRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
-	if x != nil {
-		return x.UpdateMask
-	}
-	return nil
-}
-
-func (x *UpdateSecretRequest) GetAllowMissing() bool {
-	if x != nil {
-		return x.AllowMissing
-	}
-	return false
-}
-
-type DeleteSecretRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name of the secret to be deleted.
-	// Format:
-	// instances/{instance}/databases/{database}/secrets/{secret}
-	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DeleteSecretRequest) Reset() {
-	*x = DeleteSecretRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[52]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DeleteSecretRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeleteSecretRequest) ProtoMessage() {}
-
-func (x *DeleteSecretRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[52]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DeleteSecretRequest.ProtoReflect.Descriptor instead.
-func (*DeleteSecretRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{52}
-}
-
-func (x *DeleteSecretRequest) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-// Secret is the secret of the database now.
-type Secret struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// name is the unique name of the secret, which is specified by the client.
-	// Format:
-	// instances/{instance}/databases/{database}/secrets/{secret}
-	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// Not used. The timestamp when the secret resource was created initially.
-	CreatedTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=created_time,json=createdTime,proto3" json:"created_time,omitempty"`
-	// Not used. The timestamp when the secret resource was updated.
-	UpdatedTime *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=updated_time,json=updatedTime,proto3" json:"updated_time,omitempty"`
-	// The value of the secret.
-	Value string `protobuf:"bytes,4,opt,name=value,proto3" json:"value,omitempty"`
-	// The description of the secret.
-	Description   string `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Secret) Reset() {
-	*x = Secret{}
-	mi := &file_v1_database_service_proto_msgTypes[53]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Secret) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Secret) ProtoMessage() {}
-
-func (x *Secret) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[53]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Secret.ProtoReflect.Descriptor instead.
-func (*Secret) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{53}
-}
-
-func (x *Secret) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *Secret) GetCreatedTime() *timestamppb.Timestamp {
-	if x != nil {
-		return x.CreatedTime
-	}
-	return nil
-}
-
-func (x *Secret) GetUpdatedTime() *timestamppb.Timestamp {
-	if x != nil {
-		return x.UpdatedTime
-	}
-	return nil
-}
-
-func (x *Secret) GetValue() string {
-	if x != nil {
-		return x.Value
-	}
-	return ""
-}
-
-func (x *Secret) GetDescription() string {
-	if x != nil {
-		return x.Description
-	}
-	return ""
-}
-
 type ChangedResources struct {
 	state         protoimpl.MessageState     `protogen:"open.v1"`
 	Databases     []*ChangedResourceDatabase `protobuf:"bytes,1,rep,name=databases,proto3" json:"databases,omitempty"`
@@ -5278,7 +4955,7 @@ type ChangedResources struct {
 
 func (x *ChangedResources) Reset() {
 	*x = ChangedResources{}
-	mi := &file_v1_database_service_proto_msgTypes[54]
+	mi := &file_v1_database_service_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5290,7 +4967,7 @@ func (x *ChangedResources) String() string {
 func (*ChangedResources) ProtoMessage() {}
 
 func (x *ChangedResources) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[54]
+	mi := &file_v1_database_service_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5303,7 +4980,7 @@ func (x *ChangedResources) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangedResources.ProtoReflect.Descriptor instead.
 func (*ChangedResources) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{54}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *ChangedResources) GetDatabases() []*ChangedResourceDatabase {
@@ -5323,7 +5000,7 @@ type ChangedResourceDatabase struct {
 
 func (x *ChangedResourceDatabase) Reset() {
 	*x = ChangedResourceDatabase{}
-	mi := &file_v1_database_service_proto_msgTypes[55]
+	mi := &file_v1_database_service_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5335,7 +5012,7 @@ func (x *ChangedResourceDatabase) String() string {
 func (*ChangedResourceDatabase) ProtoMessage() {}
 
 func (x *ChangedResourceDatabase) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[55]
+	mi := &file_v1_database_service_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5348,7 +5025,7 @@ func (x *ChangedResourceDatabase) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangedResourceDatabase.ProtoReflect.Descriptor instead.
 func (*ChangedResourceDatabase) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{55}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *ChangedResourceDatabase) GetName() string {
@@ -5378,7 +5055,7 @@ type ChangedResourceSchema struct {
 
 func (x *ChangedResourceSchema) Reset() {
 	*x = ChangedResourceSchema{}
-	mi := &file_v1_database_service_proto_msgTypes[56]
+	mi := &file_v1_database_service_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5390,7 +5067,7 @@ func (x *ChangedResourceSchema) String() string {
 func (*ChangedResourceSchema) ProtoMessage() {}
 
 func (x *ChangedResourceSchema) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[56]
+	mi := &file_v1_database_service_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5403,7 +5080,7 @@ func (x *ChangedResourceSchema) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangedResourceSchema.ProtoReflect.Descriptor instead.
 func (*ChangedResourceSchema) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{56}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *ChangedResourceSchema) GetName() string {
@@ -5452,7 +5129,7 @@ type ChangedResourceTable struct {
 
 func (x *ChangedResourceTable) Reset() {
 	*x = ChangedResourceTable{}
-	mi := &file_v1_database_service_proto_msgTypes[57]
+	mi := &file_v1_database_service_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5464,7 +5141,7 @@ func (x *ChangedResourceTable) String() string {
 func (*ChangedResourceTable) ProtoMessage() {}
 
 func (x *ChangedResourceTable) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[57]
+	mi := &file_v1_database_service_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5477,7 +5154,7 @@ func (x *ChangedResourceTable) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangedResourceTable.ProtoReflect.Descriptor instead.
 func (*ChangedResourceTable) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{57}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *ChangedResourceTable) GetName() string {
@@ -5505,7 +5182,7 @@ type ChangedResourceView struct {
 
 func (x *ChangedResourceView) Reset() {
 	*x = ChangedResourceView{}
-	mi := &file_v1_database_service_proto_msgTypes[58]
+	mi := &file_v1_database_service_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5517,7 +5194,7 @@ func (x *ChangedResourceView) String() string {
 func (*ChangedResourceView) ProtoMessage() {}
 
 func (x *ChangedResourceView) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[58]
+	mi := &file_v1_database_service_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5530,7 +5207,7 @@ func (x *ChangedResourceView) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangedResourceView.ProtoReflect.Descriptor instead.
 func (*ChangedResourceView) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{58}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *ChangedResourceView) GetName() string {
@@ -5558,7 +5235,7 @@ type ChangedResourceFunction struct {
 
 func (x *ChangedResourceFunction) Reset() {
 	*x = ChangedResourceFunction{}
-	mi := &file_v1_database_service_proto_msgTypes[59]
+	mi := &file_v1_database_service_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5570,7 +5247,7 @@ func (x *ChangedResourceFunction) String() string {
 func (*ChangedResourceFunction) ProtoMessage() {}
 
 func (x *ChangedResourceFunction) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[59]
+	mi := &file_v1_database_service_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5583,7 +5260,7 @@ func (x *ChangedResourceFunction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangedResourceFunction.ProtoReflect.Descriptor instead.
 func (*ChangedResourceFunction) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{59}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *ChangedResourceFunction) GetName() string {
@@ -5611,7 +5288,7 @@ type ChangedResourceProcedure struct {
 
 func (x *ChangedResourceProcedure) Reset() {
 	*x = ChangedResourceProcedure{}
-	mi := &file_v1_database_service_proto_msgTypes[60]
+	mi := &file_v1_database_service_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5623,7 +5300,7 @@ func (x *ChangedResourceProcedure) String() string {
 func (*ChangedResourceProcedure) ProtoMessage() {}
 
 func (x *ChangedResourceProcedure) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[60]
+	mi := &file_v1_database_service_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5636,7 +5313,7 @@ func (x *ChangedResourceProcedure) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangedResourceProcedure.ProtoReflect.Descriptor instead.
 func (*ChangedResourceProcedure) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{60}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *ChangedResourceProcedure) GetName() string {
@@ -5712,7 +5389,7 @@ type ListChangelogsRequest struct {
 
 func (x *ListChangelogsRequest) Reset() {
 	*x = ListChangelogsRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[61]
+	mi := &file_v1_database_service_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5724,7 +5401,7 @@ func (x *ListChangelogsRequest) String() string {
 func (*ListChangelogsRequest) ProtoMessage() {}
 
 func (x *ListChangelogsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[61]
+	mi := &file_v1_database_service_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5737,7 +5414,7 @@ func (x *ListChangelogsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListChangelogsRequest.ProtoReflect.Descriptor instead.
 func (*ListChangelogsRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{61}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *ListChangelogsRequest) GetParent() string {
@@ -5788,7 +5465,7 @@ type ListChangelogsResponse struct {
 
 func (x *ListChangelogsResponse) Reset() {
 	*x = ListChangelogsResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[62]
+	mi := &file_v1_database_service_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5800,7 +5477,7 @@ func (x *ListChangelogsResponse) String() string {
 func (*ListChangelogsResponse) ProtoMessage() {}
 
 func (x *ListChangelogsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[62]
+	mi := &file_v1_database_service_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5813,7 +5490,7 @@ func (x *ListChangelogsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListChangelogsResponse.ProtoReflect.Descriptor instead.
 func (*ListChangelogsResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{62}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *ListChangelogsResponse) GetChangelogs() []*Changelog {
@@ -5844,7 +5521,7 @@ type GetChangelogRequest struct {
 
 func (x *GetChangelogRequest) Reset() {
 	*x = GetChangelogRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[63]
+	mi := &file_v1_database_service_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5856,7 +5533,7 @@ func (x *GetChangelogRequest) String() string {
 func (*GetChangelogRequest) ProtoMessage() {}
 
 func (x *GetChangelogRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[63]
+	mi := &file_v1_database_service_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5869,7 +5546,7 @@ func (x *GetChangelogRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetChangelogRequest.ProtoReflect.Descriptor instead.
 func (*GetChangelogRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{63}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *GetChangelogRequest) GetName() string {
@@ -5926,7 +5603,7 @@ type Changelog struct {
 
 func (x *Changelog) Reset() {
 	*x = Changelog{}
-	mi := &file_v1_database_service_proto_msgTypes[64]
+	mi := &file_v1_database_service_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5938,7 +5615,7 @@ func (x *Changelog) String() string {
 func (*Changelog) ProtoMessage() {}
 
 func (x *Changelog) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[64]
+	mi := &file_v1_database_service_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5951,7 +5628,7 @@ func (x *Changelog) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Changelog.ProtoReflect.Descriptor instead.
 func (*Changelog) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{64}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *Changelog) GetName() string {
@@ -6085,7 +5762,7 @@ type GetSchemaStringRequest struct {
 
 func (x *GetSchemaStringRequest) Reset() {
 	*x = GetSchemaStringRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[65]
+	mi := &file_v1_database_service_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6097,7 +5774,7 @@ func (x *GetSchemaStringRequest) String() string {
 func (*GetSchemaStringRequest) ProtoMessage() {}
 
 func (x *GetSchemaStringRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[65]
+	mi := &file_v1_database_service_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6110,7 +5787,7 @@ func (x *GetSchemaStringRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSchemaStringRequest.ProtoReflect.Descriptor instead.
 func (*GetSchemaStringRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{65}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *GetSchemaStringRequest) GetName() string {
@@ -6157,7 +5834,7 @@ type GetSchemaStringResponse struct {
 
 func (x *GetSchemaStringResponse) Reset() {
 	*x = GetSchemaStringResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[66]
+	mi := &file_v1_database_service_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6169,7 +5846,7 @@ func (x *GetSchemaStringResponse) String() string {
 func (*GetSchemaStringResponse) ProtoMessage() {}
 
 func (x *GetSchemaStringResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[66]
+	mi := &file_v1_database_service_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6182,7 +5859,7 @@ func (x *GetSchemaStringResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSchemaStringResponse.ProtoReflect.Descriptor instead.
 func (*GetSchemaStringResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{66}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *GetSchemaStringResponse) GetSchemaString() string {
@@ -6196,7 +5873,7 @@ var File_v1_database_service_proto protoreflect.FileDescriptor
 
 const file_v1_database_service_proto_rawDesc = "" +
 	"\n" +
-	"\x19v1/database_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x19v1/instance_service.proto\"G\n" +
+	"\x19v1/database_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x19v1/instance_service.proto\"G\n" +
 	"\x12GetDatabaseRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\"\x86\x01\n" +
@@ -6632,31 +6309,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\n" +
 	"match_type\x18\b \x01(\tR\tmatchType\"(\n" +
 	"\x0eDatabaseSchema\x12\x16\n" +
-	"\x06schema\x18\x01 \x01(\tR\x06schema\"\x87\x01\n" +
-	"\x12ListSecretsRequest\x125\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
-	"\x15bytebase.com/DatabaseR\x06parent\x12\x1b\n" +
-	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
-	"\n" +
-	"page_token\x18\x03 \x01(\tR\tpageToken\"l\n" +
-	"\x13ListSecretsResponse\x12-\n" +
-	"\asecrets\x18\x01 \x03(\v2\x13.bytebase.v1.SecretR\asecrets\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xa9\x01\n" +
-	"\x13UpdateSecretRequest\x120\n" +
-	"\x06secret\x18\x01 \x01(\v2\x13.bytebase.v1.SecretB\x03\xe0A\x02R\x06secret\x12;\n" +
-	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"H\n" +
-	"\x13DeleteSecretRequest\x121\n" +
-	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
-	"\x15bytebase.com/DatabaseR\x04name\"\xc4\x02\n" +
-	"\x06Secret\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\x12B\n" +
-	"\fcreated_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\vcreatedTime\x12B\n" +
-	"\fupdated_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\vupdatedTime\x12\x19\n" +
-	"\x05value\x18\x04 \x01(\tB\x03\xe0A\x04R\x05value\x12 \n" +
-	"\vdescription\x18\x05 \x01(\tR\vdescription:\\\xeaAY\n" +
-	"\x1bbytebase.com/DatabaseSecret\x12:instances/{instance}/databases/{database}/secrets/{secret}\"V\n" +
+	"\x06schema\x18\x01 \x01(\tR\x06schema\"V\n" +
 	"\x10ChangedResources\x12B\n" +
 	"\tdatabases\x18\x01 \x03(\v2$.bytebase.v1.ChangedResourceDatabaseR\tdatabases\"k\n" +
 	"\x17ChangedResourceDatabase\x12\x12\n" +
@@ -6760,7 +6413,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\rChangelogView\x12\x1e\n" +
 	"\x1aCHANGELOG_VIEW_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14CHANGELOG_VIEW_BASIC\x10\x01\x12\x17\n" +
-	"\x13CHANGELOG_VIEW_FULL\x10\x022\xbe\x17\n" +
+	"\x13CHANGELOG_VIEW_FULL\x10\x022\xb5\x13\n" +
 	"\x0fDatabaseService\x12\x90\x01\n" +
 	"\vGetDatabase\x12\x1f.bytebase.v1.GetDatabaseRequest\x1a\x15.bytebase.v1.Database\"I\xdaA\x04name\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x82\xd3\xe4\x93\x02$\x12\"/v1/{name=instances/*/databases/*}\x12\xdd\x01\n" +
 	"\x11BatchGetDatabases\x12%.bytebase.v1.BatchGetDatabasesRequest\x1a&.bytebase.v1.BatchGetDatabasesResponse\"y\x8a\xea0\x10bb.databases.get\x90\xea0\x02\x82\xd3\xe4\x93\x02[Z-\x12+/v1/{parent=instances/*}/databases:batchGet\x12*/v1/{parent=projects/*}/databases:batchGet\x12\xeb\x01\n" +
@@ -6772,10 +6425,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x13GetDatabaseMetadata\x12'.bytebase.v1.GetDatabaseMetadataRequest\x1a\x1d.bytebase.v1.DatabaseMetadata\"Q\x8a\xea0\x16bb.databases.getSchema\x90\xea0\x01\x82\xd3\xe4\x93\x02-\x12+/v1/{name=instances/*/databases/*/metadata}\x12\xa8\x01\n" +
 	"\x11GetDatabaseSchema\x12%.bytebase.v1.GetDatabaseSchemaRequest\x1a\x1b.bytebase.v1.DatabaseSchema\"O\x8a\xea0\x16bb.databases.getSchema\x90\xea0\x01\x82\xd3\xe4\x93\x02+\x12)/v1/{name=instances/*/databases/*/schema}\x12\xe1\x01\n" +
 	"\n" +
-	"DiffSchema\x12\x1e.bytebase.v1.DiffSchemaRequest\x1a\x1f.bytebase.v1.DiffSchemaResponse\"\x91\x01\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x82\xd3\xe4\x93\x02s:\x01*Z?:\x01*\":/v1/{name=instances/*/databases/*/changelogs/*}:diffSchema\"-/v1/{name=instances/*/databases/*}:diffSchema\x12\xae\x01\n" +
-	"\vListSecrets\x12\x1f.bytebase.v1.ListSecretsRequest\x1a .bytebase.v1.ListSecretsResponse\"\\\xdaA\x06parent\x8a\xea0\x17bb.databaseSecrets.list\x90\xea0\x01\x82\xd3\xe4\x93\x02.\x12,/v1/{parent=instances/*/databases/*}/secrets\x12\xaf\x01\n" +
-	"\fUpdateSecret\x12 .bytebase.v1.UpdateSecretRequest\x1a\x13.bytebase.v1.Secret\"h\x8a\xea0\x19bb.databaseSecrets.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02=:\x06secret23/v1/{secret.name=instances/*/databases/*/secrets/*}\x12\xa3\x01\n" +
-	"\fDeleteSecret\x12 .bytebase.v1.DeleteSecretRequest\x1a\x16.google.protobuf.Empty\"Y\x8a\xea0\x19bb.databaseSecrets.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02.*,/v1/{name=instances/*/databases/*/secrets/*}\x12\xb5\x01\n" +
+	"DiffSchema\x12\x1e.bytebase.v1.DiffSchemaRequest\x1a\x1f.bytebase.v1.DiffSchemaResponse\"\x91\x01\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x82\xd3\xe4\x93\x02s:\x01*Z?:\x01*\":/v1/{name=instances/*/databases/*/changelogs/*}:diffSchema\"-/v1/{name=instances/*/databases/*}:diffSchema\x12\xb5\x01\n" +
 	"\x0eListChangelogs\x12\".bytebase.v1.ListChangelogsRequest\x1a#.bytebase.v1.ListChangelogsResponse\"Z\xdaA\x06parent\x8a\xea0\x12bb.changelogs.list\x90\xea0\x01\x82\xd3\xe4\x93\x021\x12//v1/{parent=instances/*/databases/*}/changelogs\x12\xa1\x01\n" +
 	"\fGetChangelog\x12 .bytebase.v1.GetChangelogRequest\x1a\x16.bytebase.v1.Changelog\"W\xdaA\x04name\x8a\xea0\x11bb.changelogs.get\x90\xea0\x01\x82\xd3\xe4\x93\x021\x12//v1/{name=instances/*/databases/*/changelogs/*}\x12\xba\x01\n" +
 	"\x0fGetSchemaString\x12#.bytebase.v1.GetSchemaStringRequest\x1a$.bytebase.v1.GetSchemaStringResponse\"\\\xdaA\x04name\x8a\xea0\x16bb.databases.getSchema\x90\xea0\x01\x82\xd3\xe4\x93\x021\x12//v1/{name=instances/*/databases/*/schemaString}B6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
@@ -6793,7 +6443,7 @@ func file_v1_database_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_database_service_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
-var file_v1_database_service_proto_msgTypes = make([]protoimpl.MessageInfo, 68)
+var file_v1_database_service_proto_msgTypes = make([]protoimpl.MessageInfo, 63)
 var file_v1_database_service_proto_goTypes = []any{
 	(ChangelogView)(0),                     // 0: bytebase.v1.ChangelogView
 	(TablePartitionMetadata_Type)(0),       // 1: bytebase.v1.TablePartitionMetadata.Type
@@ -6854,43 +6504,37 @@ var file_v1_database_service_proto_goTypes = []any{
 	(*ExtensionMetadata)(nil),              // 56: bytebase.v1.ExtensionMetadata
 	(*ForeignKeyMetadata)(nil),             // 57: bytebase.v1.ForeignKeyMetadata
 	(*DatabaseSchema)(nil),                 // 58: bytebase.v1.DatabaseSchema
-	(*ListSecretsRequest)(nil),             // 59: bytebase.v1.ListSecretsRequest
-	(*ListSecretsResponse)(nil),            // 60: bytebase.v1.ListSecretsResponse
-	(*UpdateSecretRequest)(nil),            // 61: bytebase.v1.UpdateSecretRequest
-	(*DeleteSecretRequest)(nil),            // 62: bytebase.v1.DeleteSecretRequest
-	(*Secret)(nil),                         // 63: bytebase.v1.Secret
-	(*ChangedResources)(nil),               // 64: bytebase.v1.ChangedResources
-	(*ChangedResourceDatabase)(nil),        // 65: bytebase.v1.ChangedResourceDatabase
-	(*ChangedResourceSchema)(nil),          // 66: bytebase.v1.ChangedResourceSchema
-	(*ChangedResourceTable)(nil),           // 67: bytebase.v1.ChangedResourceTable
-	(*ChangedResourceView)(nil),            // 68: bytebase.v1.ChangedResourceView
-	(*ChangedResourceFunction)(nil),        // 69: bytebase.v1.ChangedResourceFunction
-	(*ChangedResourceProcedure)(nil),       // 70: bytebase.v1.ChangedResourceProcedure
-	(*ListChangelogsRequest)(nil),          // 71: bytebase.v1.ListChangelogsRequest
-	(*ListChangelogsResponse)(nil),         // 72: bytebase.v1.ListChangelogsResponse
-	(*GetChangelogRequest)(nil),            // 73: bytebase.v1.GetChangelogRequest
-	(*Changelog)(nil),                      // 74: bytebase.v1.Changelog
-	(*GetSchemaStringRequest)(nil),         // 75: bytebase.v1.GetSchemaStringRequest
-	(*GetSchemaStringResponse)(nil),        // 76: bytebase.v1.GetSchemaStringResponse
-	nil,                                    // 77: bytebase.v1.Database.LabelsEntry
-	(*fieldmaskpb.FieldMask)(nil),          // 78: google.protobuf.FieldMask
-	(State)(0),                             // 79: bytebase.v1.State
-	(*timestamppb.Timestamp)(nil),          // 80: google.protobuf.Timestamp
-	(*InstanceResource)(nil),               // 81: bytebase.v1.InstanceResource
-	(*Range)(nil),                          // 82: bytebase.v1.Range
-	(*emptypb.Empty)(nil),                  // 83: google.protobuf.Empty
+	(*ChangedResources)(nil),               // 59: bytebase.v1.ChangedResources
+	(*ChangedResourceDatabase)(nil),        // 60: bytebase.v1.ChangedResourceDatabase
+	(*ChangedResourceSchema)(nil),          // 61: bytebase.v1.ChangedResourceSchema
+	(*ChangedResourceTable)(nil),           // 62: bytebase.v1.ChangedResourceTable
+	(*ChangedResourceView)(nil),            // 63: bytebase.v1.ChangedResourceView
+	(*ChangedResourceFunction)(nil),        // 64: bytebase.v1.ChangedResourceFunction
+	(*ChangedResourceProcedure)(nil),       // 65: bytebase.v1.ChangedResourceProcedure
+	(*ListChangelogsRequest)(nil),          // 66: bytebase.v1.ListChangelogsRequest
+	(*ListChangelogsResponse)(nil),         // 67: bytebase.v1.ListChangelogsResponse
+	(*GetChangelogRequest)(nil),            // 68: bytebase.v1.GetChangelogRequest
+	(*Changelog)(nil),                      // 69: bytebase.v1.Changelog
+	(*GetSchemaStringRequest)(nil),         // 70: bytebase.v1.GetSchemaStringRequest
+	(*GetSchemaStringResponse)(nil),        // 71: bytebase.v1.GetSchemaStringResponse
+	nil,                                    // 72: bytebase.v1.Database.LabelsEntry
+	(*fieldmaskpb.FieldMask)(nil),          // 73: google.protobuf.FieldMask
+	(State)(0),                             // 74: bytebase.v1.State
+	(*timestamppb.Timestamp)(nil),          // 75: google.protobuf.Timestamp
+	(*InstanceResource)(nil),               // 76: bytebase.v1.InstanceResource
+	(*Range)(nil),                          // 77: bytebase.v1.Range
 }
 var file_v1_database_service_proto_depIdxs = []int32{
 	26, // 0: bytebase.v1.BatchGetDatabasesResponse.databases:type_name -> bytebase.v1.Database
 	26, // 1: bytebase.v1.ListDatabasesResponse.databases:type_name -> bytebase.v1.Database
 	26, // 2: bytebase.v1.UpdateDatabaseRequest.database:type_name -> bytebase.v1.Database
-	78, // 3: bytebase.v1.UpdateDatabaseRequest.update_mask:type_name -> google.protobuf.FieldMask
+	73, // 3: bytebase.v1.UpdateDatabaseRequest.update_mask:type_name -> google.protobuf.FieldMask
 	15, // 4: bytebase.v1.BatchUpdateDatabasesRequest.requests:type_name -> bytebase.v1.UpdateDatabaseRequest
 	26, // 5: bytebase.v1.BatchUpdateDatabasesResponse.databases:type_name -> bytebase.v1.Database
-	79, // 6: bytebase.v1.Database.state:type_name -> bytebase.v1.State
-	80, // 7: bytebase.v1.Database.successful_sync_time:type_name -> google.protobuf.Timestamp
-	77, // 8: bytebase.v1.Database.labels:type_name -> bytebase.v1.Database.LabelsEntry
-	81, // 9: bytebase.v1.Database.instance_resource:type_name -> bytebase.v1.InstanceResource
+	74, // 6: bytebase.v1.Database.state:type_name -> bytebase.v1.State
+	75, // 7: bytebase.v1.Database.successful_sync_time:type_name -> google.protobuf.Timestamp
+	72, // 8: bytebase.v1.Database.labels:type_name -> bytebase.v1.Database.LabelsEntry
+	76, // 9: bytebase.v1.Database.instance_resource:type_name -> bytebase.v1.InstanceResource
 	28, // 10: bytebase.v1.DatabaseMetadata.schemas:type_name -> bytebase.v1.SchemaMetadata
 	56, // 11: bytebase.v1.DatabaseMetadata.extensions:type_name -> bytebase.v1.ExtensionMetadata
 	34, // 12: bytebase.v1.SchemaMetadata.tables:type_name -> bytebase.v1.TableMetadata
@@ -6936,67 +6580,56 @@ var file_v1_database_service_proto_depIdxs = []int32{
 	51, // 52: bytebase.v1.TessellationConfig.bounding_box:type_name -> bytebase.v1.BoundingBox
 	54, // 53: bytebase.v1.DimensionalConfig.constraints:type_name -> bytebase.v1.DimensionConstraint
 	48, // 54: bytebase.v1.IndexMetadata.spatial_config:type_name -> bytebase.v1.SpatialIndexConfig
-	63, // 55: bytebase.v1.ListSecretsResponse.secrets:type_name -> bytebase.v1.Secret
-	63, // 56: bytebase.v1.UpdateSecretRequest.secret:type_name -> bytebase.v1.Secret
-	78, // 57: bytebase.v1.UpdateSecretRequest.update_mask:type_name -> google.protobuf.FieldMask
-	80, // 58: bytebase.v1.Secret.created_time:type_name -> google.protobuf.Timestamp
-	80, // 59: bytebase.v1.Secret.updated_time:type_name -> google.protobuf.Timestamp
-	65, // 60: bytebase.v1.ChangedResources.databases:type_name -> bytebase.v1.ChangedResourceDatabase
-	66, // 61: bytebase.v1.ChangedResourceDatabase.schemas:type_name -> bytebase.v1.ChangedResourceSchema
-	67, // 62: bytebase.v1.ChangedResourceSchema.tables:type_name -> bytebase.v1.ChangedResourceTable
-	68, // 63: bytebase.v1.ChangedResourceSchema.views:type_name -> bytebase.v1.ChangedResourceView
-	69, // 64: bytebase.v1.ChangedResourceSchema.functions:type_name -> bytebase.v1.ChangedResourceFunction
-	70, // 65: bytebase.v1.ChangedResourceSchema.procedures:type_name -> bytebase.v1.ChangedResourceProcedure
-	82, // 66: bytebase.v1.ChangedResourceTable.ranges:type_name -> bytebase.v1.Range
-	82, // 67: bytebase.v1.ChangedResourceView.ranges:type_name -> bytebase.v1.Range
-	82, // 68: bytebase.v1.ChangedResourceFunction.ranges:type_name -> bytebase.v1.Range
-	82, // 69: bytebase.v1.ChangedResourceProcedure.ranges:type_name -> bytebase.v1.Range
-	0,  // 70: bytebase.v1.ListChangelogsRequest.view:type_name -> bytebase.v1.ChangelogView
-	74, // 71: bytebase.v1.ListChangelogsResponse.changelogs:type_name -> bytebase.v1.Changelog
-	0,  // 72: bytebase.v1.GetChangelogRequest.view:type_name -> bytebase.v1.ChangelogView
-	80, // 73: bytebase.v1.Changelog.create_time:type_name -> google.protobuf.Timestamp
-	7,  // 74: bytebase.v1.Changelog.status:type_name -> bytebase.v1.Changelog.Status
-	64, // 75: bytebase.v1.Changelog.changed_resources:type_name -> bytebase.v1.ChangedResources
-	8,  // 76: bytebase.v1.Changelog.type:type_name -> bytebase.v1.Changelog.Type
-	9,  // 77: bytebase.v1.GetSchemaStringRequest.type:type_name -> bytebase.v1.GetSchemaStringRequest.ObjectType
-	27, // 78: bytebase.v1.GetSchemaStringRequest.metadata:type_name -> bytebase.v1.DatabaseMetadata
-	10, // 79: bytebase.v1.DatabaseService.GetDatabase:input_type -> bytebase.v1.GetDatabaseRequest
-	11, // 80: bytebase.v1.DatabaseService.BatchGetDatabases:input_type -> bytebase.v1.BatchGetDatabasesRequest
-	13, // 81: bytebase.v1.DatabaseService.ListDatabases:input_type -> bytebase.v1.ListDatabasesRequest
-	15, // 82: bytebase.v1.DatabaseService.UpdateDatabase:input_type -> bytebase.v1.UpdateDatabaseRequest
-	16, // 83: bytebase.v1.DatabaseService.BatchUpdateDatabases:input_type -> bytebase.v1.BatchUpdateDatabasesRequest
-	20, // 84: bytebase.v1.DatabaseService.SyncDatabase:input_type -> bytebase.v1.SyncDatabaseRequest
-	18, // 85: bytebase.v1.DatabaseService.BatchSyncDatabases:input_type -> bytebase.v1.BatchSyncDatabasesRequest
-	22, // 86: bytebase.v1.DatabaseService.GetDatabaseMetadata:input_type -> bytebase.v1.GetDatabaseMetadataRequest
-	23, // 87: bytebase.v1.DatabaseService.GetDatabaseSchema:input_type -> bytebase.v1.GetDatabaseSchemaRequest
-	24, // 88: bytebase.v1.DatabaseService.DiffSchema:input_type -> bytebase.v1.DiffSchemaRequest
-	59, // 89: bytebase.v1.DatabaseService.ListSecrets:input_type -> bytebase.v1.ListSecretsRequest
-	61, // 90: bytebase.v1.DatabaseService.UpdateSecret:input_type -> bytebase.v1.UpdateSecretRequest
-	62, // 91: bytebase.v1.DatabaseService.DeleteSecret:input_type -> bytebase.v1.DeleteSecretRequest
-	71, // 92: bytebase.v1.DatabaseService.ListChangelogs:input_type -> bytebase.v1.ListChangelogsRequest
-	73, // 93: bytebase.v1.DatabaseService.GetChangelog:input_type -> bytebase.v1.GetChangelogRequest
-	75, // 94: bytebase.v1.DatabaseService.GetSchemaString:input_type -> bytebase.v1.GetSchemaStringRequest
-	26, // 95: bytebase.v1.DatabaseService.GetDatabase:output_type -> bytebase.v1.Database
-	12, // 96: bytebase.v1.DatabaseService.BatchGetDatabases:output_type -> bytebase.v1.BatchGetDatabasesResponse
-	14, // 97: bytebase.v1.DatabaseService.ListDatabases:output_type -> bytebase.v1.ListDatabasesResponse
-	26, // 98: bytebase.v1.DatabaseService.UpdateDatabase:output_type -> bytebase.v1.Database
-	17, // 99: bytebase.v1.DatabaseService.BatchUpdateDatabases:output_type -> bytebase.v1.BatchUpdateDatabasesResponse
-	21, // 100: bytebase.v1.DatabaseService.SyncDatabase:output_type -> bytebase.v1.SyncDatabaseResponse
-	19, // 101: bytebase.v1.DatabaseService.BatchSyncDatabases:output_type -> bytebase.v1.BatchSyncDatabasesResponse
-	27, // 102: bytebase.v1.DatabaseService.GetDatabaseMetadata:output_type -> bytebase.v1.DatabaseMetadata
-	58, // 103: bytebase.v1.DatabaseService.GetDatabaseSchema:output_type -> bytebase.v1.DatabaseSchema
-	25, // 104: bytebase.v1.DatabaseService.DiffSchema:output_type -> bytebase.v1.DiffSchemaResponse
-	60, // 105: bytebase.v1.DatabaseService.ListSecrets:output_type -> bytebase.v1.ListSecretsResponse
-	63, // 106: bytebase.v1.DatabaseService.UpdateSecret:output_type -> bytebase.v1.Secret
-	83, // 107: bytebase.v1.DatabaseService.DeleteSecret:output_type -> google.protobuf.Empty
-	72, // 108: bytebase.v1.DatabaseService.ListChangelogs:output_type -> bytebase.v1.ListChangelogsResponse
-	74, // 109: bytebase.v1.DatabaseService.GetChangelog:output_type -> bytebase.v1.Changelog
-	76, // 110: bytebase.v1.DatabaseService.GetSchemaString:output_type -> bytebase.v1.GetSchemaStringResponse
-	95, // [95:111] is the sub-list for method output_type
-	79, // [79:95] is the sub-list for method input_type
-	79, // [79:79] is the sub-list for extension type_name
-	79, // [79:79] is the sub-list for extension extendee
-	0,  // [0:79] is the sub-list for field type_name
+	60, // 55: bytebase.v1.ChangedResources.databases:type_name -> bytebase.v1.ChangedResourceDatabase
+	61, // 56: bytebase.v1.ChangedResourceDatabase.schemas:type_name -> bytebase.v1.ChangedResourceSchema
+	62, // 57: bytebase.v1.ChangedResourceSchema.tables:type_name -> bytebase.v1.ChangedResourceTable
+	63, // 58: bytebase.v1.ChangedResourceSchema.views:type_name -> bytebase.v1.ChangedResourceView
+	64, // 59: bytebase.v1.ChangedResourceSchema.functions:type_name -> bytebase.v1.ChangedResourceFunction
+	65, // 60: bytebase.v1.ChangedResourceSchema.procedures:type_name -> bytebase.v1.ChangedResourceProcedure
+	77, // 61: bytebase.v1.ChangedResourceTable.ranges:type_name -> bytebase.v1.Range
+	77, // 62: bytebase.v1.ChangedResourceView.ranges:type_name -> bytebase.v1.Range
+	77, // 63: bytebase.v1.ChangedResourceFunction.ranges:type_name -> bytebase.v1.Range
+	77, // 64: bytebase.v1.ChangedResourceProcedure.ranges:type_name -> bytebase.v1.Range
+	0,  // 65: bytebase.v1.ListChangelogsRequest.view:type_name -> bytebase.v1.ChangelogView
+	69, // 66: bytebase.v1.ListChangelogsResponse.changelogs:type_name -> bytebase.v1.Changelog
+	0,  // 67: bytebase.v1.GetChangelogRequest.view:type_name -> bytebase.v1.ChangelogView
+	75, // 68: bytebase.v1.Changelog.create_time:type_name -> google.protobuf.Timestamp
+	7,  // 69: bytebase.v1.Changelog.status:type_name -> bytebase.v1.Changelog.Status
+	59, // 70: bytebase.v1.Changelog.changed_resources:type_name -> bytebase.v1.ChangedResources
+	8,  // 71: bytebase.v1.Changelog.type:type_name -> bytebase.v1.Changelog.Type
+	9,  // 72: bytebase.v1.GetSchemaStringRequest.type:type_name -> bytebase.v1.GetSchemaStringRequest.ObjectType
+	27, // 73: bytebase.v1.GetSchemaStringRequest.metadata:type_name -> bytebase.v1.DatabaseMetadata
+	10, // 74: bytebase.v1.DatabaseService.GetDatabase:input_type -> bytebase.v1.GetDatabaseRequest
+	11, // 75: bytebase.v1.DatabaseService.BatchGetDatabases:input_type -> bytebase.v1.BatchGetDatabasesRequest
+	13, // 76: bytebase.v1.DatabaseService.ListDatabases:input_type -> bytebase.v1.ListDatabasesRequest
+	15, // 77: bytebase.v1.DatabaseService.UpdateDatabase:input_type -> bytebase.v1.UpdateDatabaseRequest
+	16, // 78: bytebase.v1.DatabaseService.BatchUpdateDatabases:input_type -> bytebase.v1.BatchUpdateDatabasesRequest
+	20, // 79: bytebase.v1.DatabaseService.SyncDatabase:input_type -> bytebase.v1.SyncDatabaseRequest
+	18, // 80: bytebase.v1.DatabaseService.BatchSyncDatabases:input_type -> bytebase.v1.BatchSyncDatabasesRequest
+	22, // 81: bytebase.v1.DatabaseService.GetDatabaseMetadata:input_type -> bytebase.v1.GetDatabaseMetadataRequest
+	23, // 82: bytebase.v1.DatabaseService.GetDatabaseSchema:input_type -> bytebase.v1.GetDatabaseSchemaRequest
+	24, // 83: bytebase.v1.DatabaseService.DiffSchema:input_type -> bytebase.v1.DiffSchemaRequest
+	66, // 84: bytebase.v1.DatabaseService.ListChangelogs:input_type -> bytebase.v1.ListChangelogsRequest
+	68, // 85: bytebase.v1.DatabaseService.GetChangelog:input_type -> bytebase.v1.GetChangelogRequest
+	70, // 86: bytebase.v1.DatabaseService.GetSchemaString:input_type -> bytebase.v1.GetSchemaStringRequest
+	26, // 87: bytebase.v1.DatabaseService.GetDatabase:output_type -> bytebase.v1.Database
+	12, // 88: bytebase.v1.DatabaseService.BatchGetDatabases:output_type -> bytebase.v1.BatchGetDatabasesResponse
+	14, // 89: bytebase.v1.DatabaseService.ListDatabases:output_type -> bytebase.v1.ListDatabasesResponse
+	26, // 90: bytebase.v1.DatabaseService.UpdateDatabase:output_type -> bytebase.v1.Database
+	17, // 91: bytebase.v1.DatabaseService.BatchUpdateDatabases:output_type -> bytebase.v1.BatchUpdateDatabasesResponse
+	21, // 92: bytebase.v1.DatabaseService.SyncDatabase:output_type -> bytebase.v1.SyncDatabaseResponse
+	19, // 93: bytebase.v1.DatabaseService.BatchSyncDatabases:output_type -> bytebase.v1.BatchSyncDatabasesResponse
+	27, // 94: bytebase.v1.DatabaseService.GetDatabaseMetadata:output_type -> bytebase.v1.DatabaseMetadata
+	58, // 95: bytebase.v1.DatabaseService.GetDatabaseSchema:output_type -> bytebase.v1.DatabaseSchema
+	25, // 96: bytebase.v1.DatabaseService.DiffSchema:output_type -> bytebase.v1.DiffSchemaResponse
+	67, // 97: bytebase.v1.DatabaseService.ListChangelogs:output_type -> bytebase.v1.ListChangelogsResponse
+	69, // 98: bytebase.v1.DatabaseService.GetChangelog:output_type -> bytebase.v1.Changelog
+	71, // 99: bytebase.v1.DatabaseService.GetSchemaString:output_type -> bytebase.v1.GetSchemaStringResponse
+	87, // [87:100] is the sub-list for method output_type
+	74, // [74:87] is the sub-list for method input_type
+	74, // [74:74] is the sub-list for extension type_name
+	74, // [74:74] is the sub-list for extension extendee
+	0,  // [0:74] is the sub-list for field type_name
 }
 
 func init() { file_v1_database_service_proto_init() }
@@ -7017,7 +6650,7 @@ func file_v1_database_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_database_service_proto_rawDesc), len(file_v1_database_service_proto_rawDesc)),
 			NumEnums:      10,
-			NumMessages:   68,
+			NumMessages:   63,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

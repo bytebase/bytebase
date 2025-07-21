@@ -10,9 +10,6 @@ permissions:
   - bb.changelogs.list
   - bb.databaseCatalogs.get
   - bb.databaseCatalogs.update
-  - bb.databaseSecrets.delete
-  - bb.databaseSecrets.list
-  - bb.databaseSecrets.update
   - bb.databases.adviseIndex
   - bb.databases.check
   - bb.databases.get

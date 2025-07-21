@@ -19,7 +19,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // NewStatementAdviseExecutor creates a plan check statement advise executor.
@@ -169,12 +168,12 @@ func (e *StatementAdviseExecutor) runReview(
 	defer driver.Close(ctx)
 	connection := driver.GetDB()
 
-	materials := utils.GetSecretMapFromDatabaseMessage(database)
+	// Database secrets feature has been removed
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
-	renderedStatement := utils.RenderStatement(statement, materials)
+	// Database secrets feature removed - using original statement directly
 	classificationConfig := getClassificationByProject(ctx, e.store, database.ProjectID)
 
-	adviceList, err := advisor.SQLReviewCheck(ctx, e.sheetManager, renderedStatement, reviewConfig.SqlReviewRules, advisor.SQLReviewCheckContext{
+	adviceList, err := advisor.SQLReviewCheck(ctx, e.sheetManager, statement, reviewConfig.SqlReviewRules, advisor.SQLReviewCheckContext{
 		Charset:                  dbSchema.GetMetadata().CharacterSet,
 		Collation:                dbSchema.GetMetadata().Collation,
 		DBSchema:                 dbSchema.GetMetadata(),

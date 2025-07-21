@@ -27,7 +27,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // NewStatementReportExecutor creates a statement report executor.
@@ -260,10 +259,10 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		return nil, nil
 	}
 
-	materials := utils.GetSecretMapFromDatabaseMessage(database)
+	// Database secrets feature has been removed
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
-	renderedStatement := utils.RenderStatement(statement, materials)
-	changeSummary, err := parserbase.ExtractChangedResources(instance.Metadata.GetEngine(), database.DatabaseName, defaultSchema, databaseSchema, asts, renderedStatement)
+	// Database secrets feature removed - using original statement directly
+	changeSummary, err := parserbase.ExtractChangedResources(instance.Metadata.GetEngine(), database.DatabaseName, defaultSchema, databaseSchema, asts, statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract changed resources")
 	}

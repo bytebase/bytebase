@@ -1594,25 +1594,6 @@
     },
     "all": "Tất cả cơ sở dữ liệu",
     "show-schemaless-databases": "Hiển thị cơ sở dữ liệu không có lược đồ. (Chỉnh sửa lược đồ không áp dụng cho cơ sở dữ liệu không có lược đồ.)",
-    "secret": {
-      "self": "Bí mật",
-      "new": "Bí mật mới",
-      "edit": "Chỉnh sửa bí mật",
-      "name-placeholder": "Nhập tên bí mật",
-      "validation": {
-        "cannot-be-changed-later": "Không thể thay đổi sau này",
-        "duplicated-name": "Tên bí mật trùng lặp",
-        "name-is-required": "Tên bí mật là bắt buộc",
-        "name-pattern-mismatch": "Tên bí mật chỉ nên chứa chữ cái viết hoa, chữ số hoặc _ (dấu gạch dưới)",
-        "name-cannot-prefix-with-bytebase": "Tên bí mật không được bắt đầu bằng 'BYTEBASE_'",
-        "name-cannot-start-with-number": "Tên bí mật không được bắt đầu bằng số"
-      },
-      "description-placeholder": "Nhập mô tả",
-      "value": "Giá trị",
-      "value-placeholder": "Nhập giá trị (chỉ ghi)",
-      "delete-tips": "Xóa bí mật",
-      "description": "Bạn có thể sử dụng bí mật trong tập lệnh thay đổi để ẩn thông tin nhạy cảm, vui lòng tham khảo {guide}"
-    },
     "transfer": {
       "errors": {
         "select-target-project": "Chọn dự án đích",
