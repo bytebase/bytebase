@@ -165,6 +165,12 @@ func padZeroes(rawStr string, acc int) string {
 	} else if minusIndex := strings.Index(rawStr, "-"); minusIndex >= 0 {
 		endIndex = minusIndex
 	}
+
+	// Validate slice bounds to prevent runtime panic
+	if endIndex <= dotIndex {
+		return rawStr
+	}
+
 	decimalPart := rawStr[dotIndex+1 : endIndex]
 	if len(decimalPart) < acc {
 		rawStr = rawStr[:endIndex] + strings.Repeat("0", acc-len(decimalPart)) + rawStr[endIndex:]

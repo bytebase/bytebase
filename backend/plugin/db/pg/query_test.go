@@ -49,6 +49,12 @@ func TestPadZeroes(t *testing.T) {
 			acc:      6,
 			expected: "12:34:56.123000-02:00",
 		},
+		{
+			name:     "Invalid format: timezone before decimal (edge case fix)",
+			rawStr:   "12:34-05:56.123",
+			acc:      6,
+			expected: "12:34-05:56.123",
+		},
 	}
 
 	for _, test := range tests {
