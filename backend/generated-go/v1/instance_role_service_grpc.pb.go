@@ -29,7 +29,7 @@ const (
 type InstanceRoleServiceClient interface {
 	// Permissions required: bb.instanceRoles.get
 	GetInstanceRole(ctx context.Context, in *GetInstanceRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error)
-	// Permissions required: bb.instanceRoles.get
+	// Permissions required: bb.instanceRoles.list
 	ListInstanceRoles(ctx context.Context, in *ListInstanceRolesRequest, opts ...grpc.CallOption) (*ListInstanceRolesResponse, error)
 }
 
@@ -67,7 +67,7 @@ func (c *instanceRoleServiceClient) ListInstanceRoles(ctx context.Context, in *L
 type InstanceRoleServiceServer interface {
 	// Permissions required: bb.instanceRoles.get
 	GetInstanceRole(context.Context, *GetInstanceRoleRequest) (*InstanceRole, error)
-	// Permissions required: bb.instanceRoles.get
+	// Permissions required: bb.instanceRoles.list
 	ListInstanceRoles(context.Context, *ListInstanceRolesRequest) (*ListInstanceRolesResponse, error)
 	mustEmbedUnimplementedInstanceRoleServiceServer()
 }

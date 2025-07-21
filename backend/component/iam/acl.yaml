@@ -13,7 +13,6 @@ roles:
       - bb.changelogs.list
       - bb.databaseCatalogs.get
       - bb.databaseCatalogs.update
-      - bb.databases.adviseIndex
       - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
@@ -23,7 +22,6 @@ roles:
       - bb.identityProviders.create
       - bb.identityProviders.delete
       - bb.identityProviders.get
-      - bb.identityProviders.undelete
       - bb.identityProviders.update
       - bb.instances.create
       - bb.instances.delete
@@ -95,7 +93,6 @@ roles:
       - bb.sheets.create
       - bb.sheets.get
       - bb.sheets.update
-      - bb.slowQueries.list
       - bb.taskRuns.create
       - bb.taskRuns.list
       - bb.groups.create
@@ -132,7 +129,6 @@ roles:
       - bb.changelogs.list
       - bb.databaseCatalogs.get
       - bb.databaseCatalogs.update
-      - bb.databases.adviseIndex
       - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
@@ -142,7 +138,6 @@ roles:
       - bb.identityProviders.create
       - bb.identityProviders.delete
       - bb.identityProviders.get
-      - bb.identityProviders.undelete
       - bb.identityProviders.update
       - bb.instances.create
       - bb.instances.delete
@@ -214,7 +209,6 @@ roles:
       - bb.sheets.create
       - bb.sheets.get
       - bb.sheets.update
-      - bb.slowQueries.list
       - bb.sql.admin
       - bb.sql.ddl
       - bb.sql.dml
@@ -261,7 +255,6 @@ roles:
       - bb.changelogs.list
       - bb.databaseCatalogs.get
       - bb.databaseCatalogs.update
-      - bb.databases.adviseIndex
       - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
@@ -308,7 +301,6 @@ roles:
       - bb.sheets.create
       - bb.sheets.get
       - bb.sheets.update
-      - bb.slowQueries.list
       - bb.sql.ddl
       - bb.sql.dml
       - bb.sql.explain
@@ -359,7 +351,6 @@ roles:
       - bb.sheets.create
       - bb.sheets.get
       - bb.sheets.update
-      - bb.slowQueries.list
       - bb.taskRuns.list
   - name: roles/sqlEditorUser
     title: SQL Editor User
