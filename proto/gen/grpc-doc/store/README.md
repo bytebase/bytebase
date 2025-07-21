@@ -87,7 +87,6 @@
     - [ProcedureMetadata](#bytebase-store-ProcedureMetadata)
     - [SchemaCatalog](#bytebase-store-SchemaCatalog)
     - [SchemaMetadata](#bytebase-store-SchemaMetadata)
-    - [Secret](#bytebase-store-Secret)
     - [SequenceMetadata](#bytebase-store-SequenceMetadata)
     - [SpatialIndexConfig](#bytebase-store-SpatialIndexConfig)
     - [SpatialIndexConfig.EngineSpecificEntry](#bytebase-store-SpatialIndexConfig-EngineSpecificEntry)
@@ -1175,7 +1174,6 @@ DatabaseMetadata is the metadata for databases.
 | last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | backup_available | [bool](#bool) |  |  |
 | datashare | [bool](#bool) |  |  |
-| secrets | [Secret](#bytebase-store-Secret) | repeated |  |
 | drifted | [bool](#bool) |  | The schema is drifted from the source of truth. |
 | version | [string](#string) |  | The version of database schema. |
 
@@ -1656,23 +1654,6 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | events | [EventMetadata](#bytebase-store-EventMetadata) | repeated |  |
 | enum_types | [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata) | repeated |  |
 | skip_dump | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-Secret"></a>
-
-### Secret
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of the secret. |
-| value | [string](#string) |  | The value is the value of the secret. |
-| description | [string](#string) |  | The description is the description of the secret. |
 
 
 

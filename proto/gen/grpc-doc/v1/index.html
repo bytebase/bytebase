@@ -586,10 +586,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.DeleteSecretRequest"><span class="badge">M</span>DeleteSecretRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.DependencyColumn"><span class="badge">M</span>DependencyColumn</a>
                 </li>
               
@@ -690,14 +686,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ListSecretsRequest"><span class="badge">M</span>ListSecretsRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListSecretsResponse"><span class="badge">M</span>ListSecretsResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.MaterializedViewMetadata"><span class="badge">M</span>MaterializedViewMetadata</a>
                 </li>
               
@@ -711,10 +699,6 @@
               
                 <li>
                   <a href="#bytebase.v1.SchemaMetadata"><span class="badge">M</span>SchemaMetadata</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Secret"><span class="badge">M</span>Secret</a>
                 </li>
               
                 <li>
@@ -763,10 +747,6 @@
               
                 <li>
                   <a href="#bytebase.v1.UpdateDatabaseRequest"><span class="badge">M</span>UpdateDatabaseRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.UpdateSecretRequest"><span class="badge">M</span>UpdateSecretRequest</a>
                 </li>
               
                 <li>
@@ -7002,32 +6982,6 @@ Format: instances/{instance}/databases/{database}/metadata </p></td>
 
         
       
-        <h3 id="bytebase.v1.DeleteSecretRequest">DeleteSecretRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the secret to be deleted.
-Format:
-instances/{instance}/databases/{database}/secrets/{secret} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.DependencyColumn">DependencyColumn</h3>
         <p>DependencyColumn is the metadata for dependency columns.</p>
 
@@ -8278,86 +8232,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
-        <h3 id="bytebase.v1.ListSecretsRequest">ListSecretsRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent of the secret.
-Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>Not used.
-The maximum number of secrets to return. The service may return fewer than
-this value.
-If unspecified, at most 10 secrets will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Not used.
-A page token, received from a previous `ListSecrets` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListSecrets` must match
-the call that provided the page token. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListSecretsResponse">ListSecretsResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>secrets</td>
-                  <td><a href="#bytebase.v1.Secret">Secret</a></td>
-                  <td>repeated</td>
-                  <td><p>The list of secrets. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Not used. A token, which can be sent as `page_token` to retrieve the next
-page. If this field is omitted, there are no subsequent pages. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.MaterializedViewMetadata">MaterializedViewMetadata</h3>
         <p>MaterializedViewMetadata is the metadata for materialized views.</p>
 
@@ -8660,60 +8534,6 @@ Snowflake. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The comment is the comment of a schema. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Secret">Secret</h3>
-        <p>Secret is the secret of the database now.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>name is the unique name of the secret, which is specified by the client.
-Format:
-instances/{instance}/databases/{database}/secrets/{secret} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>created_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>Not used. The timestamp when the secret resource was created initially. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>updated_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>Not used. The timestamp when the secret resource was updated. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The value of the secret. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>description</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The description of the secret. </p></td>
                 </tr>
               
             </tbody>
@@ -9610,44 +9430,6 @@ Format: instances/{instance}/databases/{database} </p></td>
 
         
       
-        <h3 id="bytebase.v1.UpdateSecretRequest">UpdateSecretRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>secret</td>
-                  <td><a href="#bytebase.v1.Secret">Secret</a></td>
-                  <td></td>
-                  <td><p>The secret to be created or updated. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_mask</td>
-                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
-                  <td></td>
-                  <td><p>The mask of the fields to be updated. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>allow_missing</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If true, the secret will be created if it does not exist. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.ViewMetadata">ViewMetadata</h3>
         <p>ViewMetadata is the metadata for views.</p>
 
@@ -10186,27 +9968,6 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
-                <td>ListSecrets</td>
-                <td><a href="#bytebase.v1.ListSecretsRequest">ListSecretsRequest</a></td>
-                <td><a href="#bytebase.v1.ListSecretsResponse">ListSecretsResponse</a></td>
-                <td><p>Permissions required: bb.databaseSecrets.list</p></td>
-              </tr>
-            
-              <tr>
-                <td>UpdateSecret</td>
-                <td><a href="#bytebase.v1.UpdateSecretRequest">UpdateSecretRequest</a></td>
-                <td><a href="#bytebase.v1.Secret">Secret</a></td>
-                <td><p>Permissions required: bb.databaseSecrets.update</p></td>
-              </tr>
-            
-              <tr>
-                <td>DeleteSecret</td>
-                <td><a href="#bytebase.v1.DeleteSecretRequest">DeleteSecretRequest</a></td>
-                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p>Permissions required: bb.databaseSecrets.delete</p></td>
-              </tr>
-            
-              <tr>
                 <td>ListChangelogs</td>
                 <td><a href="#bytebase.v1.ListChangelogsRequest">ListChangelogsRequest</a></td>
                 <td><a href="#bytebase.v1.ListChangelogsResponse">ListChangelogsResponse</a></td>
@@ -10370,36 +10131,6 @@ The API will default to the BASIC view.</p></td>
                 <td>POST</td>
                 <td>/v1/{name=instances/*/databases/*/changelogs/*}:diffSchema</td>
                 <td>*</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ListSecrets</td>
-                <td>GET</td>
-                <td>/v1/{parent=instances/*/databases/*}/secrets</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>UpdateSecret</td>
-                <td>PATCH</td>
-                <td>/v1/{secret.name=instances/*/databases/*/secrets/*}</td>
-                <td>secret</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>DeleteSecret</td>
-                <td>DELETE</td>
-                <td>/v1/{name=instances/*/databases/*/secrets/*}</td>
-                <td></td>
               </tr>
               
             
@@ -30803,12 +30534,6 @@ Only support update the following fields for now:
               <tr>
                 <td>FEATURE_DISALLOW_SELF_SERVICE_SIGNUP</td>
                 <td>39</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>FEATURE_DATABASE_SECRET_VARIABLES</td>
-                <td>40</td>
                 <td><p></p></td>
               </tr>
             

@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -30,9 +29,6 @@ const (
 	DatabaseService_GetDatabaseMetadata_FullMethodName  = "/bytebase.v1.DatabaseService/GetDatabaseMetadata"
 	DatabaseService_GetDatabaseSchema_FullMethodName    = "/bytebase.v1.DatabaseService/GetDatabaseSchema"
 	DatabaseService_DiffSchema_FullMethodName           = "/bytebase.v1.DatabaseService/DiffSchema"
-	DatabaseService_ListSecrets_FullMethodName          = "/bytebase.v1.DatabaseService/ListSecrets"
-	DatabaseService_UpdateSecret_FullMethodName         = "/bytebase.v1.DatabaseService/UpdateSecret"
-	DatabaseService_DeleteSecret_FullMethodName         = "/bytebase.v1.DatabaseService/DeleteSecret"
 	DatabaseService_ListChangelogs_FullMethodName       = "/bytebase.v1.DatabaseService/ListChangelogs"
 	DatabaseService_GetChangelog_FullMethodName         = "/bytebase.v1.DatabaseService/GetChangelog"
 	DatabaseService_GetSchemaString_FullMethodName      = "/bytebase.v1.DatabaseService/GetSchemaString"
@@ -62,12 +58,6 @@ type DatabaseServiceClient interface {
 	GetDatabaseSchema(ctx context.Context, in *GetDatabaseSchemaRequest, opts ...grpc.CallOption) (*DatabaseSchema, error)
 	// Permissions required: bb.databases.get
 	DiffSchema(ctx context.Context, in *DiffSchemaRequest, opts ...grpc.CallOption) (*DiffSchemaResponse, error)
-	// Permissions required: bb.databaseSecrets.list
-	ListSecrets(ctx context.Context, in *ListSecretsRequest, opts ...grpc.CallOption) (*ListSecretsResponse, error)
-	// Permissions required: bb.databaseSecrets.update
-	UpdateSecret(ctx context.Context, in *UpdateSecretRequest, opts ...grpc.CallOption) (*Secret, error)
-	// Permissions required: bb.databaseSecrets.delete
-	DeleteSecret(ctx context.Context, in *DeleteSecretRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Permissions required: bb.changelogs.list
 	ListChangelogs(ctx context.Context, in *ListChangelogsRequest, opts ...grpc.CallOption) (*ListChangelogsResponse, error)
 	// Permissions required: changelogs.get
@@ -184,36 +174,6 @@ func (c *databaseServiceClient) DiffSchema(ctx context.Context, in *DiffSchemaRe
 	return out, nil
 }
 
-func (c *databaseServiceClient) ListSecrets(ctx context.Context, in *ListSecretsRequest, opts ...grpc.CallOption) (*ListSecretsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListSecretsResponse)
-	err := c.cc.Invoke(ctx, DatabaseService_ListSecrets_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *databaseServiceClient) UpdateSecret(ctx context.Context, in *UpdateSecretRequest, opts ...grpc.CallOption) (*Secret, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Secret)
-	err := c.cc.Invoke(ctx, DatabaseService_UpdateSecret_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *databaseServiceClient) DeleteSecret(ctx context.Context, in *DeleteSecretRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, DatabaseService_DeleteSecret_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *databaseServiceClient) ListChangelogs(ctx context.Context, in *ListChangelogsRequest, opts ...grpc.CallOption) (*ListChangelogsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListChangelogsResponse)
@@ -268,12 +228,6 @@ type DatabaseServiceServer interface {
 	GetDatabaseSchema(context.Context, *GetDatabaseSchemaRequest) (*DatabaseSchema, error)
 	// Permissions required: bb.databases.get
 	DiffSchema(context.Context, *DiffSchemaRequest) (*DiffSchemaResponse, error)
-	// Permissions required: bb.databaseSecrets.list
-	ListSecrets(context.Context, *ListSecretsRequest) (*ListSecretsResponse, error)
-	// Permissions required: bb.databaseSecrets.update
-	UpdateSecret(context.Context, *UpdateSecretRequest) (*Secret, error)
-	// Permissions required: bb.databaseSecrets.delete
-	DeleteSecret(context.Context, *DeleteSecretRequest) (*emptypb.Empty, error)
 	// Permissions required: bb.changelogs.list
 	ListChangelogs(context.Context, *ListChangelogsRequest) (*ListChangelogsResponse, error)
 	// Permissions required: changelogs.get
@@ -319,15 +273,6 @@ func (UnimplementedDatabaseServiceServer) GetDatabaseSchema(context.Context, *Ge
 }
 func (UnimplementedDatabaseServiceServer) DiffSchema(context.Context, *DiffSchemaRequest) (*DiffSchemaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiffSchema not implemented")
-}
-func (UnimplementedDatabaseServiceServer) ListSecrets(context.Context, *ListSecretsRequest) (*ListSecretsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListSecrets not implemented")
-}
-func (UnimplementedDatabaseServiceServer) UpdateSecret(context.Context, *UpdateSecretRequest) (*Secret, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateSecret not implemented")
-}
-func (UnimplementedDatabaseServiceServer) DeleteSecret(context.Context, *DeleteSecretRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteSecret not implemented")
 }
 func (UnimplementedDatabaseServiceServer) ListChangelogs(context.Context, *ListChangelogsRequest) (*ListChangelogsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListChangelogs not implemented")
@@ -539,60 +484,6 @@ func _DatabaseService_DiffSchema_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DatabaseService_ListSecrets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListSecretsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DatabaseServiceServer).ListSecrets(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DatabaseService_ListSecrets_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).ListSecrets(ctx, req.(*ListSecretsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DatabaseService_UpdateSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateSecretRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DatabaseServiceServer).UpdateSecret(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DatabaseService_UpdateSecret_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).UpdateSecret(ctx, req.(*UpdateSecretRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DatabaseService_DeleteSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteSecretRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DatabaseServiceServer).DeleteSecret(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DatabaseService_DeleteSecret_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).DeleteSecret(ctx, req.(*DeleteSecretRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _DatabaseService_ListChangelogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListChangelogsRequest)
 	if err := dec(in); err != nil {
@@ -693,18 +584,6 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DiffSchema",
 			Handler:    _DatabaseService_DiffSchema_Handler,
-		},
-		{
-			MethodName: "ListSecrets",
-			Handler:    _DatabaseService_ListSecrets_Handler,
-		},
-		{
-			MethodName: "UpdateSecret",
-			Handler:    _DatabaseService_UpdateSecret_Handler,
-		},
-		{
-			MethodName: "DeleteSecret",
-			Handler:    _DatabaseService_DeleteSecret_Handler,
 		},
 		{
 			MethodName: "ListChangelogs",

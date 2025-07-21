@@ -1594,25 +1594,6 @@
     },
     "all": "All databases",
     "show-schemaless-databases": "Show schemaless databases. (Edit Schema is not applicable for schemaless databases.)",
-    "secret": {
-      "self": "Secret",
-      "new": "New secret",
-      "edit": "Edit secret",
-      "name-placeholder": "Input secret name",
-      "validation": {
-        "cannot-be-changed-later": "Cannot be changed later",
-        "duplicated-name": "Duplicated secret name",
-        "name-is-required": "Secret name is required",
-        "name-pattern-mismatch": "Secret name should contain only uppercase letters, digit, or _ (underscore)",
-        "name-cannot-prefix-with-bytebase": "Secret name cannot prefix with 'BYTEBASE_'",
-        "name-cannot-start-with-number": "Secret name cannot start with number"
-      },
-      "description-placeholder": "Input description",
-      "value": "Value",
-      "value-placeholder": "Input value (write only)",
-      "delete-tips": "Delete secret",
-      "description": "You can use secret in the change script to hide sensitive information, please refer to {guide}"
-    },
     "transfer": {
       "errors": {
         "select-target-project": "Select target project",

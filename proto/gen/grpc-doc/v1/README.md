@@ -109,7 +109,6 @@
     - [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry)
     - [DatabaseMetadata](#bytebase-v1-DatabaseMetadata)
     - [DatabaseSchema](#bytebase-v1-DatabaseSchema)
-    - [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest)
     - [DependencyColumn](#bytebase-v1-DependencyColumn)
     - [DependencyTable](#bytebase-v1-DependencyTable)
     - [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest)
@@ -135,13 +134,10 @@
     - [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse)
     - [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest)
     - [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse)
-    - [ListSecretsRequest](#bytebase-v1-ListSecretsRequest)
-    - [ListSecretsResponse](#bytebase-v1-ListSecretsResponse)
     - [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata)
     - [PackageMetadata](#bytebase-v1-PackageMetadata)
     - [ProcedureMetadata](#bytebase-v1-ProcedureMetadata)
     - [SchemaMetadata](#bytebase-v1-SchemaMetadata)
-    - [Secret](#bytebase-v1-Secret)
     - [SequenceMetadata](#bytebase-v1-SequenceMetadata)
     - [SpatialIndexConfig](#bytebase-v1-SpatialIndexConfig)
     - [StorageConfig](#bytebase-v1-StorageConfig)
@@ -154,7 +150,6 @@
     - [TessellationConfig](#bytebase-v1-TessellationConfig)
     - [TriggerMetadata](#bytebase-v1-TriggerMetadata)
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
-    - [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest)
     - [ViewMetadata](#bytebase-v1-ViewMetadata)
   
     - [Changelog.Status](#bytebase-v1-Changelog-Status)
@@ -2282,21 +2277,6 @@ DatabaseSchema is the metadata for databases.
 
 
 
-<a name="bytebase-v1-DeleteSecretRequest"></a>
-
-### DeleteSecretRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the secret to be deleted. Format: instances/{instance}/databases/{database}/secrets/{secret} |
-
-
-
-
-
-
 <a name="bytebase-v1-DependencyColumn"></a>
 
 ### DependencyColumn
@@ -2769,41 +2749,6 @@ You can combine filter conditions like: environment == &#34;environments/prod&#3
 
 
 
-<a name="bytebase-v1-ListSecretsRequest"></a>
-
-### ListSecretsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent of the secret. Format: instances/{instance}/databases/{database} |
-| page_size | [int32](#int32) |  | Not used. The maximum number of secrets to return. The service may return fewer than this value. If unspecified, at most 10 secrets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListSecrets` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListSecrets` must match the call that provided the page token. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListSecretsResponse"></a>
-
-### ListSecretsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| secrets | [Secret](#bytebase-v1-Secret) | repeated | The list of secrets. |
-| next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
 <a name="bytebase-v1-MaterializedViewMetadata"></a>
 
 ### MaterializedViewMetadata
@@ -2889,25 +2834,6 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | enum_types | [EnumTypeMetadata](#bytebase-v1-EnumTypeMetadata) | repeated |  |
 | skip_dump | [bool](#bool) |  |  |
 | comment | [string](#string) |  | The comment is the comment of a schema. |
-
-
-
-
-
-
-<a name="bytebase-v1-Secret"></a>
-
-### Secret
-Secret is the secret of the database now.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | name is the unique name of the secret, which is specified by the client. Format: instances/{instance}/databases/{database}/secrets/{secret} |
-| created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Not used. The timestamp when the secret resource was created initially. |
-| updated_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Not used. The timestamp when the secret resource was updated. |
-| value | [string](#string) |  | The value of the secret. |
-| description | [string](#string) |  | The description of the secret. |
 
 
 
@@ -3175,23 +3101,6 @@ The database&#39;s `name` field is used to identify the database to update. Form
 
 
 
-<a name="bytebase-v1-UpdateSecretRequest"></a>
-
-### UpdateSecretRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| secret | [Secret](#bytebase-v1-Secret) |  | The secret to be created or updated. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The mask of the fields to be updated. |
-| allow_missing | [bool](#bool) |  | If true, the secret will be created if it does not exist. |
-
-
-
-
-
-
 <a name="bytebase-v1-ViewMetadata"></a>
 
 ### ViewMetadata
@@ -3388,9 +3297,6 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) | Permissions required: bb.databases.getSchema |
 | GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) | Permissions required: bb.databases.getSchema |
 | DiffSchema | [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest) | [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse) | Permissions required: bb.databases.get |
-| ListSecrets | [ListSecretsRequest](#bytebase-v1-ListSecretsRequest) | [ListSecretsResponse](#bytebase-v1-ListSecretsResponse) | Permissions required: bb.databaseSecrets.list |
-| UpdateSecret | [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest) | [Secret](#bytebase-v1-Secret) | Permissions required: bb.databaseSecrets.update |
-| DeleteSecret | [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: bb.databaseSecrets.delete |
 | ListChangelogs | [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest) | [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse) | Permissions required: bb.changelogs.list |
 | GetChangelog | [GetChangelogRequest](#bytebase-v1-GetChangelogRequest) | [Changelog](#bytebase-v1-Changelog) | Permissions required: changelogs.get |
 | GetSchemaString | [GetSchemaStringRequest](#bytebase-v1-GetSchemaStringRequest) | [GetSchemaStringResponse](#bytebase-v1-GetSchemaStringResponse) | Permissions required: databases.getSchema |
@@ -11127,7 +11033,6 @@ PlanFeature represents the available features in Bytebase
 | FEATURE_GOOGLE_AND_GITHUB_SSO | 37 |  |
 | FEATURE_USER_GROUPS | 38 |  |
 | FEATURE_DISALLOW_SELF_SERVICE_SIGNUP | 39 |  |
-| FEATURE_DATABASE_SECRET_VARIABLES | 40 |  |
 | FEATURE_CUSTOM_INSTANCE_SYNC_TIME | 41 |  |
 | FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT | 42 |  |
 | FEATURE_RISK_ASSESSMENT | 43 |  |

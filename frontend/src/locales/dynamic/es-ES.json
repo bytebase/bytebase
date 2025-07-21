@@ -237,10 +237,6 @@
         "title": "Deshabilitar registro de autoservicio",
         "desc": "Requiera invitación del administrador para el registro de nuevos usuarios."
       },
-      "FEATURE_DATABASE_SECRET_VARIABLES": {
-        "title": "Variables secretas de base de datos",
-        "desc": "Almacene y use secretos cifrados en scripts SQL."
-      },
       "FEATURE_RISK_ASSESSMENT": {
         "title": "Evaluación de riesgos",
         "desc": "Evalúe y categorice el nivel de riesgo de los cambios de base de datos."

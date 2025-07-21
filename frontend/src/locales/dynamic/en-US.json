@@ -237,10 +237,6 @@
         "title": "Disable self-service signup",
         "desc": "Require admin invitation for new user registration."
       },
-      "FEATURE_DATABASE_SECRET_VARIABLES": {
-        "title": "Database secret variables",
-        "desc": "Store and use encrypted secrets in SQL scripts."
-      },
       "FEATURE_RISK_ASSESSMENT": {
         "title": "Risk assessment",
         "desc": "Evaluate and categorize the risk level of database changes."
