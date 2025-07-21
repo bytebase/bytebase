@@ -239,6 +239,7 @@ ALTER SEQUENCE task_run_log_id_seq RESTART WITH 101;
 -- Plan related BEGIN
 CREATE TABLE plan (
     id bigserial PRIMARY KEY,
+    deleted boolean NOT NULL DEFAULT FALSE,
     creator_id integer NOT NULL REFERENCES principal(id),
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),

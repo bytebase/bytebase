@@ -1,0 +1,1 @@
+ALTER TABLE plan ADD COLUMN deleted boolean NOT NULL DEFAULT FALSE;
