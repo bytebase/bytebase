@@ -1135,7 +1135,9 @@
       "last-refresh": "最終更新: {time}"
     },
     "state": {
-      "description": "州別にプランをフィルタリング"
+      "description": "州別にプランをフィルタリング",
+      "close-confirm": "このプランを閉じてもよろしいですか?",
+      "reopen-confirm": "このプランを再開してもよろしいですか?"
     }
   },
   "rollout": {

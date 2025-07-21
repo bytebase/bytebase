@@ -1135,7 +1135,9 @@
       "last-refresh": "Làm mới lần cuối: {time}"
     },
     "state": {
-      "description": "Lọc các kế hoạch theo trạng thái của chúng"
+      "description": "Lọc các kế hoạch theo trạng thái của chúng",
+      "close-confirm": "Bạn có chắc chắn muốn đóng kế hoạch này không?",
+      "reopen-confirm": "Bạn có chắc chắn muốn mở lại kế hoạch này không?"
     }
   },
   "rollout": {

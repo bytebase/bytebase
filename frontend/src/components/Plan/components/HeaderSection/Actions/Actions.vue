@@ -281,8 +281,8 @@ const handlePlanStateChange = async (action: PlanAction) => {
   const isClosing = action === "PLAN_CLOSE";
   const title = isClosing ? t("common.close") : t("common.reopen");
   const content = isClosing
-    ? "Are you sure you want to close this plan?"
-    : "Are you sure you want to reopen this plan?";
+    ? t("plan.state.close-confirm")
+    : t("plan.state.reopen-confirm");
   const positiveText = title;
   const newState = isClosing ? State.DELETED : State.ACTIVE;
   const errorMessage = isClosing
