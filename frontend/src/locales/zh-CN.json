@@ -2040,8 +2040,6 @@
     "sync-sql-from-schema-editor": "从 Schema 编辑器中同步 SQL",
     "raw-sql": "SQL 语句",
     "search-database-and-table": "搜索数据库和表",
-    "search-table": "搜索表",
-    "search-column": "搜索列",
     "nothing-changed-for-database": "数据库 {database} 未发生任何变化",
     "actions": {
       "create-schema": "新建 Schema",

@@ -38,7 +38,7 @@
         :on-click="onRowClick"
         :selected-instance-names="Array.from(state.selectedInstance)"
         @update:selected-instance-names="
-          (list) => (state.selectedInstance = new Set(list))
+          (list: string[]) => (state.selectedInstance = new Set(list))
         "
       />
     </div>

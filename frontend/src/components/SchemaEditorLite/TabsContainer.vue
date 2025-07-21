@@ -56,27 +56,14 @@
         </div>
       </div>
     </div>
-    <div v-if="currentTab" class="pl-2">
-      <NInput
-        v-model:value="searchPattern"
-        class="!w-40"
-        :placeholder="searchBoxPlaceholder"
-        @input="handleSearchBoxInput"
-      >
-        <template #prefix>
-          <heroicons-outline:search class="w-4 h-auto text-gray-300" />
-        </template>
-      </NInput>
-    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { XIcon } from "lucide-vue-next";
-import { NEllipsis, NInput } from "naive-ui";
+import { NEllipsis } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { computed, nextTick, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import { nextTick, ref, watch } from "vue";
 import {
   DatabaseIcon,
   FunctionIcon,
@@ -87,33 +74,11 @@ import {
 import { useSchemaEditorContext } from "./context";
 import type { TabContext } from "./types";
 
-const emit = defineEmits<{
-  (event: "update:table-search-pattern", pattern: string): void;
-  (event: "update:column-search-pattern", pattern: string): void;
-}>();
-
-const { t } = useI18n();
 const { tabList, currentTab, setCurrentTab, closeTab, getTableStatus } =
   useSchemaEditorContext();
 const tabsContainerRef = ref();
 const searchPattern = ref("");
 const originalTabContext = ref<TabContext | undefined>(undefined);
-
-const searchBoxPlaceholder = computed(() => {
-  return currentTab.value?.type === "database"
-    ? t("schema-editor.search-table")
-    : currentTab.value?.type === "table"
-      ? t("schema-editor.search-column")
-      : "";
-});
-
-const handleSearchBoxInput = (value: string) => {
-  if (currentTab.value?.type === "database") {
-    emit("update:table-search-pattern", value);
-  } else if (currentTab.value?.type === "table") {
-    emit("update:column-search-pattern", value);
-  }
-};
 
 watch(
   () => currentTab.value,
