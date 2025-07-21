@@ -16,7 +16,6 @@ export const worksheetNamePrefix = "worksheets/";
 export const databaseGroupNamePrefix = "databaseGroups/";
 export const logNamePrefix = "logs/";
 export const issueNamePrefix = "issues/";
-export const secretNamePrefix = "secrets/";
 export const issueCommentNamePrefix = "issueComments/";
 export const groupNamePrefix = "groups/";
 export const reviewConfigNamePrefix = "reviewConfigs/";

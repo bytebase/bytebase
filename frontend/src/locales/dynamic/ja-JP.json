@@ -237,10 +237,6 @@
         "title": "セルフサービスサインアップを無効化",
         "desc": "新しいユーザー登録に管理者の招待を必要とします。"
       },
-      "FEATURE_DATABASE_SECRET_VARIABLES": {
-        "title": "データベースシークレット変数",
-        "desc": "暗号化されたシークレットをSQLスクリプトで保存して使用します。"
-      },
       "FEATURE_RISK_ASSESSMENT": {
         "title": "リスク評価",
         "desc": "データベース変更のリスクレベルを評価し分類します。"

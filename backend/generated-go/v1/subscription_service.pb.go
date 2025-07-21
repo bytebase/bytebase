@@ -122,7 +122,6 @@ const (
 	PlanFeature_FEATURE_GOOGLE_AND_GITHUB_SSO                  PlanFeature = 37
 	PlanFeature_FEATURE_USER_GROUPS                            PlanFeature = 38
 	PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP           PlanFeature = 39
-	PlanFeature_FEATURE_DATABASE_SECRET_VARIABLES              PlanFeature = 40
 	PlanFeature_FEATURE_CUSTOM_INSTANCE_SYNC_TIME              PlanFeature = 41
 	PlanFeature_FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT       PlanFeature = 42
 	PlanFeature_FEATURE_RISK_ASSESSMENT                        PlanFeature = 43
@@ -202,7 +201,6 @@ var (
 		37: "FEATURE_GOOGLE_AND_GITHUB_SSO",
 		38: "FEATURE_USER_GROUPS",
 		39: "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP",
-		40: "FEATURE_DATABASE_SECRET_VARIABLES",
 		41: "FEATURE_CUSTOM_INSTANCE_SYNC_TIME",
 		42: "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT",
 		43: "FEATURE_RISK_ASSESSMENT",
@@ -278,7 +276,6 @@ var (
 		"FEATURE_GOOGLE_AND_GITHUB_SSO":                  37,
 		"FEATURE_USER_GROUPS":                            38,
 		"FEATURE_DISALLOW_SELF_SERVICE_SIGNUP":           39,
-		"FEATURE_DATABASE_SECRET_VARIABLES":              40,
 		"FEATURE_CUSTOM_INSTANCE_SYNC_TIME":              41,
 		"FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT":       42,
 		"FEATURE_RISK_ASSESSMENT":                        43,
@@ -666,7 +663,7 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x04FREE\x10\x01\x12\b\n" +
 	"\x04TEAM\x10\x02\x12\x0e\n" +
 	"\n" +
-	"ENTERPRISE\x10\x03*\xaf\x13\n" +
+	"ENTERPRISE\x10\x03*\x88\x13\n" +
 	"\vPlanFeature\x12\x17\n" +
 	"\x13FEATURE_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17FEATURE_DATABASE_CHANGE\x10\x01\x12,\n" +
@@ -709,7 +706,6 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x1dFEATURE_GOOGLE_AND_GITHUB_SSO\x10%\x12\x17\n" +
 	"\x13FEATURE_USER_GROUPS\x10&\x12(\n" +
 	"$FEATURE_DISALLOW_SELF_SERVICE_SIGNUP\x10'\x12%\n" +
-	"!FEATURE_DATABASE_SECRET_VARIABLES\x10(\x12%\n" +
 	"!FEATURE_CUSTOM_INSTANCE_SYNC_TIME\x10)\x12,\n" +
 	"(FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT\x10*\x12\x1b\n" +
 	"\x17FEATURE_RISK_ASSESSMENT\x10+\x12\x1d\n" +

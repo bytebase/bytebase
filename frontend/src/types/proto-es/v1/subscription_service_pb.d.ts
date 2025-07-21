@@ -384,11 +384,6 @@ export enum PlanFeature {
   FEATURE_DISALLOW_SELF_SERVICE_SIGNUP = 39,
 
   /**
-   * @generated from enum value: FEATURE_DATABASE_SECRET_VARIABLES = 40;
-   */
-  FEATURE_DATABASE_SECRET_VARIABLES = 40,
-
-  /**
    * @generated from enum value: FEATURE_CUSTOM_INSTANCE_SYNC_TIME = 41;
    */
   FEATURE_CUSTOM_INSTANCE_SYNC_TIME = 41,

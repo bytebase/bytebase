@@ -23,9 +23,6 @@ export type DatabaseDetailContext = {
   allowGetSchema: Ref<boolean>;
   allowChangeData: Ref<boolean>;
   allowAlterSchema: Ref<boolean>;
-  allowListSecrets: Ref<boolean>;
-  allowUpdateSecrets: Ref<boolean>;
-  allowDeleteSecrets: Ref<boolean>;
   allowListChangelogs: Ref<boolean>;
 };
 
@@ -97,16 +94,6 @@ export const provideDatabaseDetailContext = (
     );
   });
 
-  const allowListSecrets = computed(() =>
-    checkPermission("bb.databaseSecrets.list")
-  );
-  const allowUpdateSecrets = computed(() =>
-    checkPermission("bb.databaseSecrets.update")
-  );
-  const allowDeleteSecrets = computed(() =>
-    checkPermission("bb.databaseSecrets.delete")
-  );
-
   const allowListChangelogs = computed(() =>
     checkPermission("bb.changelogs.list")
   );
@@ -121,9 +108,6 @@ export const provideDatabaseDetailContext = (
     allowGetSchema,
     allowChangeData,
     allowAlterSchema,
-    allowListSecrets,
-    allowUpdateSecrets,
-    allowDeleteSecrets,
     allowListChangelogs,
   };
 

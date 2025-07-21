@@ -9,7 +9,6 @@ import (
 	context "context"
 	errors "errors"
 	v1 "github.com/bytebase/bytebase/backend/generated-go/v1"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
 	strings "strings"
 )
@@ -64,15 +63,6 @@ const (
 	// DatabaseServiceDiffSchemaProcedure is the fully-qualified name of the DatabaseService's
 	// DiffSchema RPC.
 	DatabaseServiceDiffSchemaProcedure = "/bytebase.v1.DatabaseService/DiffSchema"
-	// DatabaseServiceListSecretsProcedure is the fully-qualified name of the DatabaseService's
-	// ListSecrets RPC.
-	DatabaseServiceListSecretsProcedure = "/bytebase.v1.DatabaseService/ListSecrets"
-	// DatabaseServiceUpdateSecretProcedure is the fully-qualified name of the DatabaseService's
-	// UpdateSecret RPC.
-	DatabaseServiceUpdateSecretProcedure = "/bytebase.v1.DatabaseService/UpdateSecret"
-	// DatabaseServiceDeleteSecretProcedure is the fully-qualified name of the DatabaseService's
-	// DeleteSecret RPC.
-	DatabaseServiceDeleteSecretProcedure = "/bytebase.v1.DatabaseService/DeleteSecret"
 	// DatabaseServiceListChangelogsProcedure is the fully-qualified name of the DatabaseService's
 	// ListChangelogs RPC.
 	DatabaseServiceListChangelogsProcedure = "/bytebase.v1.DatabaseService/ListChangelogs"
@@ -106,12 +96,6 @@ type DatabaseServiceClient interface {
 	GetDatabaseSchema(context.Context, *connect.Request[v1.GetDatabaseSchemaRequest]) (*connect.Response[v1.DatabaseSchema], error)
 	// Permissions required: bb.databases.get
 	DiffSchema(context.Context, *connect.Request[v1.DiffSchemaRequest]) (*connect.Response[v1.DiffSchemaResponse], error)
-	// Permissions required: bb.databaseSecrets.list
-	ListSecrets(context.Context, *connect.Request[v1.ListSecretsRequest]) (*connect.Response[v1.ListSecretsResponse], error)
-	// Permissions required: bb.databaseSecrets.update
-	UpdateSecret(context.Context, *connect.Request[v1.UpdateSecretRequest]) (*connect.Response[v1.Secret], error)
-	// Permissions required: bb.databaseSecrets.delete
-	DeleteSecret(context.Context, *connect.Request[v1.DeleteSecretRequest]) (*connect.Response[emptypb.Empty], error)
 	// Permissions required: bb.changelogs.list
 	ListChangelogs(context.Context, *connect.Request[v1.ListChangelogsRequest]) (*connect.Response[v1.ListChangelogsResponse], error)
 	// Permissions required: changelogs.get
@@ -191,24 +175,6 @@ func NewDatabaseServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(databaseServiceMethods.ByName("DiffSchema")),
 			connect.WithClientOptions(opts...),
 		),
-		listSecrets: connect.NewClient[v1.ListSecretsRequest, v1.ListSecretsResponse](
-			httpClient,
-			baseURL+DatabaseServiceListSecretsProcedure,
-			connect.WithSchema(databaseServiceMethods.ByName("ListSecrets")),
-			connect.WithClientOptions(opts...),
-		),
-		updateSecret: connect.NewClient[v1.UpdateSecretRequest, v1.Secret](
-			httpClient,
-			baseURL+DatabaseServiceUpdateSecretProcedure,
-			connect.WithSchema(databaseServiceMethods.ByName("UpdateSecret")),
-			connect.WithClientOptions(opts...),
-		),
-		deleteSecret: connect.NewClient[v1.DeleteSecretRequest, emptypb.Empty](
-			httpClient,
-			baseURL+DatabaseServiceDeleteSecretProcedure,
-			connect.WithSchema(databaseServiceMethods.ByName("DeleteSecret")),
-			connect.WithClientOptions(opts...),
-		),
 		listChangelogs: connect.NewClient[v1.ListChangelogsRequest, v1.ListChangelogsResponse](
 			httpClient,
 			baseURL+DatabaseServiceListChangelogsProcedure,
@@ -242,9 +208,6 @@ type databaseServiceClient struct {
 	getDatabaseMetadata  *connect.Client[v1.GetDatabaseMetadataRequest, v1.DatabaseMetadata]
 	getDatabaseSchema    *connect.Client[v1.GetDatabaseSchemaRequest, v1.DatabaseSchema]
 	diffSchema           *connect.Client[v1.DiffSchemaRequest, v1.DiffSchemaResponse]
-	listSecrets          *connect.Client[v1.ListSecretsRequest, v1.ListSecretsResponse]
-	updateSecret         *connect.Client[v1.UpdateSecretRequest, v1.Secret]
-	deleteSecret         *connect.Client[v1.DeleteSecretRequest, emptypb.Empty]
 	listChangelogs       *connect.Client[v1.ListChangelogsRequest, v1.ListChangelogsResponse]
 	getChangelog         *connect.Client[v1.GetChangelogRequest, v1.Changelog]
 	getSchemaString      *connect.Client[v1.GetSchemaStringRequest, v1.GetSchemaStringResponse]
@@ -300,21 +263,6 @@ func (c *databaseServiceClient) DiffSchema(ctx context.Context, req *connect.Req
 	return c.diffSchema.CallUnary(ctx, req)
 }
 
-// ListSecrets calls bytebase.v1.DatabaseService.ListSecrets.
-func (c *databaseServiceClient) ListSecrets(ctx context.Context, req *connect.Request[v1.ListSecretsRequest]) (*connect.Response[v1.ListSecretsResponse], error) {
-	return c.listSecrets.CallUnary(ctx, req)
-}
-
-// UpdateSecret calls bytebase.v1.DatabaseService.UpdateSecret.
-func (c *databaseServiceClient) UpdateSecret(ctx context.Context, req *connect.Request[v1.UpdateSecretRequest]) (*connect.Response[v1.Secret], error) {
-	return c.updateSecret.CallUnary(ctx, req)
-}
-
-// DeleteSecret calls bytebase.v1.DatabaseService.DeleteSecret.
-func (c *databaseServiceClient) DeleteSecret(ctx context.Context, req *connect.Request[v1.DeleteSecretRequest]) (*connect.Response[emptypb.Empty], error) {
-	return c.deleteSecret.CallUnary(ctx, req)
-}
-
 // ListChangelogs calls bytebase.v1.DatabaseService.ListChangelogs.
 func (c *databaseServiceClient) ListChangelogs(ctx context.Context, req *connect.Request[v1.ListChangelogsRequest]) (*connect.Response[v1.ListChangelogsResponse], error) {
 	return c.listChangelogs.CallUnary(ctx, req)
@@ -352,12 +300,6 @@ type DatabaseServiceHandler interface {
 	GetDatabaseSchema(context.Context, *connect.Request[v1.GetDatabaseSchemaRequest]) (*connect.Response[v1.DatabaseSchema], error)
 	// Permissions required: bb.databases.get
 	DiffSchema(context.Context, *connect.Request[v1.DiffSchemaRequest]) (*connect.Response[v1.DiffSchemaResponse], error)
-	// Permissions required: bb.databaseSecrets.list
-	ListSecrets(context.Context, *connect.Request[v1.ListSecretsRequest]) (*connect.Response[v1.ListSecretsResponse], error)
-	// Permissions required: bb.databaseSecrets.update
-	UpdateSecret(context.Context, *connect.Request[v1.UpdateSecretRequest]) (*connect.Response[v1.Secret], error)
-	// Permissions required: bb.databaseSecrets.delete
-	DeleteSecret(context.Context, *connect.Request[v1.DeleteSecretRequest]) (*connect.Response[emptypb.Empty], error)
 	// Permissions required: bb.changelogs.list
 	ListChangelogs(context.Context, *connect.Request[v1.ListChangelogsRequest]) (*connect.Response[v1.ListChangelogsResponse], error)
 	// Permissions required: changelogs.get
@@ -433,24 +375,6 @@ func NewDatabaseServiceHandler(svc DatabaseServiceHandler, opts ...connect.Handl
 		connect.WithSchema(databaseServiceMethods.ByName("DiffSchema")),
 		connect.WithHandlerOptions(opts...),
 	)
-	databaseServiceListSecretsHandler := connect.NewUnaryHandler(
-		DatabaseServiceListSecretsProcedure,
-		svc.ListSecrets,
-		connect.WithSchema(databaseServiceMethods.ByName("ListSecrets")),
-		connect.WithHandlerOptions(opts...),
-	)
-	databaseServiceUpdateSecretHandler := connect.NewUnaryHandler(
-		DatabaseServiceUpdateSecretProcedure,
-		svc.UpdateSecret,
-		connect.WithSchema(databaseServiceMethods.ByName("UpdateSecret")),
-		connect.WithHandlerOptions(opts...),
-	)
-	databaseServiceDeleteSecretHandler := connect.NewUnaryHandler(
-		DatabaseServiceDeleteSecretProcedure,
-		svc.DeleteSecret,
-		connect.WithSchema(databaseServiceMethods.ByName("DeleteSecret")),
-		connect.WithHandlerOptions(opts...),
-	)
 	databaseServiceListChangelogsHandler := connect.NewUnaryHandler(
 		DatabaseServiceListChangelogsProcedure,
 		svc.ListChangelogs,
@@ -491,12 +415,6 @@ func NewDatabaseServiceHandler(svc DatabaseServiceHandler, opts ...connect.Handl
 			databaseServiceGetDatabaseSchemaHandler.ServeHTTP(w, r)
 		case DatabaseServiceDiffSchemaProcedure:
 			databaseServiceDiffSchemaHandler.ServeHTTP(w, r)
-		case DatabaseServiceListSecretsProcedure:
-			databaseServiceListSecretsHandler.ServeHTTP(w, r)
-		case DatabaseServiceUpdateSecretProcedure:
-			databaseServiceUpdateSecretHandler.ServeHTTP(w, r)
-		case DatabaseServiceDeleteSecretProcedure:
-			databaseServiceDeleteSecretHandler.ServeHTTP(w, r)
 		case DatabaseServiceListChangelogsProcedure:
 			databaseServiceListChangelogsHandler.ServeHTTP(w, r)
 		case DatabaseServiceGetChangelogProcedure:
@@ -550,18 +468,6 @@ func (UnimplementedDatabaseServiceHandler) GetDatabaseSchema(context.Context, *c
 
 func (UnimplementedDatabaseServiceHandler) DiffSchema(context.Context, *connect.Request[v1.DiffSchemaRequest]) (*connect.Response[v1.DiffSchemaResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseService.DiffSchema is not implemented"))
-}
-
-func (UnimplementedDatabaseServiceHandler) ListSecrets(context.Context, *connect.Request[v1.ListSecretsRequest]) (*connect.Response[v1.ListSecretsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseService.ListSecrets is not implemented"))
-}
-
-func (UnimplementedDatabaseServiceHandler) UpdateSecret(context.Context, *connect.Request[v1.UpdateSecretRequest]) (*connect.Response[v1.Secret], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseService.UpdateSecret is not implemented"))
-}
-
-func (UnimplementedDatabaseServiceHandler) DeleteSecret(context.Context, *connect.Request[v1.DeleteSecretRequest]) (*connect.Response[emptypb.Empty], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseService.DeleteSecret is not implemented"))
 }
 
 func (UnimplementedDatabaseServiceHandler) ListChangelogs(context.Context, *connect.Request[v1.ListChangelogsRequest]) (*connect.Response[v1.ListChangelogsResponse], error) {
