@@ -449,6 +449,7 @@ type SearchPlansRequest struct {
 	// - has_issue: the plan has issue or not, support "==" operator, the value should be "true" or "false".
 	// - title: the plan title, support "==" operator for exact match and ".matches()" operator for case-insensitive substring match.
 	// - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config", "change_database_config", or "export_data_config".
+	// - state: the plan state, support "==" operator, the value should be "ACTIVE" or "DELETED".
 	//
 	// For example:
 	// creator == "users/ed@bytebase.com" && create_time >= "2025-01-02T15:04:05Z07:00"
@@ -456,6 +457,7 @@ type SearchPlansRequest struct {
 	// title == "My Plan"
 	// title.matches("database migration")
 	// spec_type == "change_database_config"
+	// state == "ACTIVE"
 	Filter        string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
