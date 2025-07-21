@@ -170,6 +170,8 @@
     "download": "ダウンロード",
     "will-lose-unsaved-data": "これにより、現在保存されていないデータはすべて失われます。",
     "deleted": "削除されました",
+    "active": "アクティブ",
+    "reopen": "再開",
     "will-override-current-data": "現在のデータは上書きされます。",
     "rollout": "リリース",
     "upload": "アップロード",
@@ -1131,6 +1133,11 @@
     },
     "refresh-indicator": {
       "last-refresh": "最終更新: {time}"
+    },
+    "state": {
+      "description": "州別にプランをフィルタリング",
+      "close-confirm": "このプランを閉じてもよろしいですか?",
+      "reopen-confirm": "このプランを再開してもよろしいですか?"
     }
   },
   "rollout": {

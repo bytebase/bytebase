@@ -170,6 +170,8 @@
     "download": "下载",
     "will-lose-unsaved-data": "这会丢失当前所有未保存的数据。",
     "deleted": "已删除",
+    "active": "开启",
+    "reopen": "重开",
     "will-override-current-data": "将会覆盖当前数据。",
     "rollout": "发布",
     "upload": "上传",
@@ -1131,6 +1133,11 @@
     },
     "refresh-indicator": {
       "last-refresh": "上次刷新：{time}"
+    },
+    "state": {
+      "description": "按状态过滤",
+      "close-confirm": "确定关闭该变更计划？",
+      "reopen-confirm": "确定重新开启该变更计划？"
     }
   },
   "rollout": {

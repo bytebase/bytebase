@@ -84,6 +84,7 @@ import {
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
 } from "@/router/dashboard/projectV1";
+import { State } from "@/types/proto-es/v1/common_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   extractIssueUID,
@@ -314,7 +315,10 @@ const documentTitle = computed(() => {
 
 // Banner conditions
 const showClosedBanner = computed(() => {
-  return issue.value && issue.value.status === IssueStatus.CANCELED;
+  return (
+    plan.value.state === State.DELETED ||
+    (issue.value && issue.value.status === IssueStatus.CANCELED)
+  );
 });
 
 const showSuccessBanner = computed(() => {

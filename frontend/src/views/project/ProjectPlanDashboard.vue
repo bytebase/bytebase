@@ -92,7 +92,13 @@ const readonlyScopes = computed((): SearchScope[] => {
 const defaultSearchParams = () => {
   const params: SearchParams = {
     query: "",
-    scopes: [...readonlyScopes.value],
+    scopes: [
+      ...readonlyScopes.value,
+      {
+        id: "state",
+        value: "ACTIVE",
+      },
+    ],
   };
   return params;
 };
@@ -112,7 +118,7 @@ const planPagedTable = ref<ComponentExposed<typeof PagedTable<Plan>>>();
 
 const supportedScopes = computed(() => {
   // TODO(steven): support more scopes in backend and frontend: instance, database, planCheckRunStatus
-  const supportedScopes: SearchScopeId[] = [];
+  const supportedScopes: SearchScopeId[] = ["state"];
   return supportedScopes;
 });
 

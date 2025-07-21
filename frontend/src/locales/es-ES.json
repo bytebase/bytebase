@@ -170,6 +170,8 @@
     "download": "Descargar",
     "will-lose-unsaved-data": "Se perderán los datos no guardados.",
     "deleted": "Eliminado",
+    "active": "Activo",
+    "reopen": "Reabrir",
     "will-override-current-data": "Se sobrescribirán los datos actuales.",
     "rollout": "Implementar",
     "upload": "Subir",
@@ -1131,6 +1133,11 @@
     },
     "refresh-indicator": {
       "last-refresh": "Última actualización: {time}"
+    },
+    "state": {
+      "description": "Filtrar planes por estado",
+      "close-confirm": "¿Estás seguro de que deseas cerrar este plan?",
+      "reopen-confirm": "¿Estás seguro de que deseas reabrir este plan?"
     }
   },
   "rollout": {
