@@ -163,7 +163,11 @@ func padZeroes(rawStr string, acc int) string {
 	if plusIndex := strings.Index(rawStr, "+"); plusIndex >= 0 {
 		endIndex = plusIndex
 	} else if minusIndex := strings.Index(rawStr, "-"); minusIndex >= 0 {
-		endIndex = minusIndex
+		// For negative intervals like "-00:04:37.530865", ignore the leading minus
+		// Only consider minus signs that appear after the decimal point (timezone indicators)
+		if minusIndex > dotIndex {
+			endIndex = minusIndex
+		}
 	}
 
 	// Validate slice bounds to prevent runtime panic
