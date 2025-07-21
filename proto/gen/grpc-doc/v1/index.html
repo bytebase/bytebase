@@ -20579,6 +20579,13 @@ Format: projects/{project}/plans/{plan} </p></td>
                 </tr>
               
                 <tr>
+                  <td>state</td>
+                  <td><a href="#bytebase.v1.State">State</a></td>
+                  <td></td>
+                  <td><p>The state of the plan. </p></td>
+                </tr>
+              
+                <tr>
                   <td>issue</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -21331,13 +21338,15 @@ Supported filters:
 - has_issue: the plan has issue or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;.
 - title: the plan title, support &#34;==&#34; operator for exact match and &#34;.matches()&#34; operator for case-insensitive substring match.
 - spec_type: the plan spec config type, support &#34;==&#34; operator, the value should be &#34;create_database_config&#34;, &#34;change_database_config&#34;, or &#34;export_data_config&#34;.
+- state: the plan state, support &#34;==&#34; operator, the value should be &#34;ACTIVE&#34; or &#34;DELETED&#34;.
 
 For example:
 creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34;
 has_pipeline == false &amp;&amp; has_issue == true
 title == &#34;My Plan&#34;
 title.matches(&#34;database migration&#34;)
-spec_type == &#34;change_database_config&#34; </p></td>
+spec_type == &#34;change_database_config&#34;
+state == &#34;ACTIVE&#34; </p></td>
                 </tr>
               
             </tbody>
