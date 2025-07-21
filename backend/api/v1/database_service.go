@@ -1230,7 +1230,6 @@ type metadataFilter struct {
 	table  *string
 }
 
-
 func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Request[v1pb.GetSchemaStringRequest]) (*connect.Response[v1pb.GetSchemaStringResponse], error) {
 	database, err := getDatabaseMessage(ctx, s.store, req.Msg.Name)
 	if err != nil {

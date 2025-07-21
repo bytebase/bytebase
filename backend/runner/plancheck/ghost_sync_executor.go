@@ -1,13 +1,14 @@
 package plancheck
 
 import (
-	"github.com/bytebase/bytebase/backend/utils"
 	"context"
 	"fmt"
 	"log/slog"
 	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/bytebase/bytebase/backend/utils"
 
 	"github.com/github/gh-ost/go/logic"
 	gomysql "github.com/go-sql-driver/mysql"

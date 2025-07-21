@@ -525,7 +525,6 @@ func redactLoginResponse(r *v1pb.LoginResponse) *v1pb.LoginResponse {
 	return n
 }
 
-
 func needAudit(ctx context.Context) bool {
 	authCtx, ok := common.GetAuthContextFromContext(ctx)
 	if !ok {
