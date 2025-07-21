@@ -6,6 +6,7 @@ import { planServiceClientConnect } from "@/grpcweb";
 import {
   SearchPlansRequestSchema,
   GetPlanRequestSchema,
+  UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import {
@@ -24,6 +25,7 @@ export interface PlanFind {
   hasIssue?: boolean;
   hasPipeline?: boolean;
   specType?: string;
+  state?: "ACTIVE" | "DELETED";
 }
 
 export const buildPlanFilter = (find: PlanFind): string => {
@@ -53,6 +55,9 @@ export const buildPlanFilter = (find: PlanFind): string => {
   if (find.specType) {
     filter.push(`spec_type == "${find.specType}"`);
   }
+  if (find.state) {
+    filter.push(`state == "${find.state}"`);
+  }
   return filter.join(" && ");
 };
 
@@ -64,6 +69,10 @@ export const buildPlanFindBySearchParams = (
   const projectScope = scopes.find((s) => s.id === "project");
 
   const createdTsRange = getTsRangeFromSearchParams(params, "created");
+  const state = getValueFromSearchParams(params, "state", "" /* prefix='' */, [
+    "ACTIVE",
+    "DELETED",
+  ]) as "ACTIVE" | "DELETED" | "";
 
   const filter: PlanFind = {
     ...defaultFind,
@@ -72,6 +81,7 @@ export const buildPlanFindBySearchParams = (
     createdTsAfter: createdTsRange?.[0],
     createdTsBefore: createdTsRange?.[1],
     creator: getValueFromSearchParams(params, "creator", "users/"),
+    state: state || defaultFind?.state,
   };
   return filter;
 };
@@ -109,8 +119,21 @@ export const usePlanStore = defineStore("plan", () => {
     return response;
   };
 
+  const updatePlan = async (
+    plan: Plan,
+    updateMask: string[]
+  ): Promise<Plan> => {
+    const request = create(UpdatePlanRequestSchema, {
+      plan,
+      updateMask: { paths: updateMask },
+    });
+    const response = await planServiceClientConnect.updatePlan(request);
+    return response;
+  };
+
   return {
     searchPlans,
     fetchPlanByName,
+    updatePlan,
   };
 });
