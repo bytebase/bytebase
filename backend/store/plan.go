@@ -42,8 +42,7 @@ type FindPlanMessage struct {
 	Limit  *int
 	Offset *int
 
-	Filter      *ListResourceFilter
-	ShowDeleted bool
+	Filter *ListResourceFilter
 }
 
 // UpdatePlanMessage is the message to update a plan.
@@ -145,9 +144,6 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 	}
 	if v := find.PipelineID; v != nil {
 		where, args = append(where, fmt.Sprintf("plan.pipeline_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if !find.ShowDeleted {
-		where = append(where, "plan.deleted = FALSE")
 	}
 
 	query := fmt.Sprintf(`

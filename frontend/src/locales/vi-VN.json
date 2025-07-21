@@ -170,6 +170,8 @@
     "download": "Tải xuống",
     "will-lose-unsaved-data": "Sẽ mất dữ liệu chưa lưu.",
     "deleted": "Đã xóa",
+    "active": "Tích cực",
+    "reopen": "Mở lại",
     "will-override-current-data": "Sẽ ghi đè dữ liệu hiện tại.",
     "rollout": "Triển khai",
     "upload": "Tải lên",
@@ -1131,6 +1133,11 @@
     },
     "refresh-indicator": {
       "last-refresh": "Làm mới lần cuối: {time}"
+    },
+    "state": {
+      "description": "Lọc các kế hoạch theo trạng thái của chúng",
+      "close-confirm": "Bạn có chắc chắn muốn đóng kế hoạch này không?",
+      "reopen-confirm": "Bạn có chắc chắn muốn mở lại kế hoạch này không?"
     }
   },
   "rollout": {
