@@ -1164,6 +1164,8 @@ func convertToAPIWebhookTypeString(tp v1pb.Webhook_Type) (string, error) {
 		return "bb.plugin.webhook.wecom", nil
 	case v1pb.Webhook_LARK:
 		return "bb.plugin.webhook.lark", nil
+	case v1pb.Webhook_CUSTOM:
+		return "bb.plugin.webhook.custom", nil
 	default:
 		return "", common.Errorf(common.Invalid, "webhook type %q is not supported", tp)
 	}
@@ -1185,6 +1187,8 @@ func convertWebhookTypeString(tp string) v1pb.Webhook_Type {
 		return v1pb.Webhook_WECOM
 	case "bb.plugin.webhook.lark":
 		return v1pb.Webhook_LARK
+	case "bb.plugin.webhook.custom":
+		return v1pb.Webhook_CUSTOM
 	default:
 		return v1pb.Webhook_TYPE_UNSPECIFIED
 	}

@@ -35,6 +35,7 @@ const (
 	Webhook_FEISHU           Webhook_Type = 5
 	Webhook_WECOM            Webhook_Type = 6
 	Webhook_LARK             Webhook_Type = 8
+	Webhook_CUSTOM           Webhook_Type = 9
 )
 
 // Enum value maps for Webhook_Type.
@@ -48,6 +49,7 @@ var (
 		5: "FEISHU",
 		6: "WECOM",
 		8: "LARK",
+		9: "CUSTOM",
 	}
 	Webhook_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED": 0,
@@ -58,6 +60,7 @@ var (
 		"FEISHU":           5,
 		"WECOM":            6,
 		"LARK":             8,
+		"CUSTOM":           9,
 	}
 )
 
@@ -1708,14 +1711,14 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x14bytebase.com/ProjectR\aproject\x123\n" +
 	"\awebhook\x18\x02 \x01(\v2\x14.bytebase.v1.WebhookB\x03\xe0A\x02R\awebhook\"+\n" +
 	"\x13TestWebhookResponse\x12\x14\n" +
-	"\x05error\x18\x01 \x01(\tR\x05error\"\xac\x03\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\"\xb8\x03\n" +
 	"\aWebhook\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x122\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x19.bytebase.v1.Webhook.TypeB\x03\xe0A\x02R\x04type\x12\x19\n" +
 	"\x05title\x18\x03 \x01(\tB\x03\xe0A\x02R\x05title\x12\x15\n" +
 	"\x03url\x18\x04 \x01(\tB\x03\xe0A\x02R\x03url\x12%\n" +
 	"\x0edirect_message\x18\x06 \x01(\bR\rdirectMessage\x12N\n" +
-	"\x12notification_types\x18\x05 \x03(\x0e2\x1a.bytebase.v1.Activity.TypeB\x03\xe0A\x06R\x11notificationTypes\"n\n" +
+	"\x12notification_types\x18\x05 \x03(\x0e2\x1a.bytebase.v1.Activity.TypeB\x03\xe0A\x06R\x11notificationTypes\"z\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05SLACK\x10\x01\x12\v\n" +
@@ -1725,7 +1728,9 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\n" +
 	"\x06FEISHU\x10\x05\x12\t\n" +
 	"\x05WECOM\x10\x06\x12\b\n" +
-	"\x04LARK\x10\b:@\xeaA=\n" +
+	"\x04LARK\x10\b\x12\n" +
+	"\n" +
+	"\x06CUSTOM\x10\t:@\xeaA=\n" +
 	"\x14bytebase.com/Webhook\x12%projects/{project}/webhooks/{webhook}\"\xac\x02\n" +
 	"\bActivity\"\x9f\x02\n" +
 	"\x04Type\x12\x14\n" +
