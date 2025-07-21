@@ -49,12 +49,12 @@ import { NTabs, NTab, NButton } from "naive-ui";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
 import { usePlanContext } from "../../logic/context";
 import AddSpecDrawer from "../AddSpecDrawer.vue";
 import { useSpecsValidation } from "../common";
-import { gotoSpec } from "../common/utils";
 import { useSelectedSpec } from "./context";
 
 const { t } = useI18n();
@@ -93,14 +93,26 @@ const getSpecTitle = (spec: Plan_Spec) => {
 };
 
 const handleTabChange = (specId: string) => {
-  if (selectedSpec.value?.id !== specId) {
-    gotoSpec(router, specId);
+  if (selectedSpec.value.id !== specId) {
+    gotoSpec(specId);
   }
 };
 
 const handleSpecCreated = async (spec: Plan_Spec) => {
-  // Add the new spec to the plan
+  // Add the new spec to the plan.
   plan.value.specs.push(spec);
-  gotoSpec(router, spec.id);
+  gotoSpec(spec.id);
+};
+
+const gotoSpec = (specId: string) => {
+  const currentRoute = router.currentRoute.value;
+  router.push({
+    name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+    params: {
+      ...(currentRoute.params || {}),
+      specId,
+    },
+    query: currentRoute.query || {},
+  });
 };
 </script>
