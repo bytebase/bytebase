@@ -29,15 +29,21 @@
 
 <script setup lang="ts">
 import { head } from "lodash-es";
+import { useDialog } from "naive-ui";
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { usePlanContext } from "@/components/Plan/logic";
 import { provideIssueReviewContext } from "@/components/Plan/logic/issue-review";
+import { useResourcePoller } from "@/components/Plan/logic/poller";
 import {
   useCurrentUserV1,
   candidatesOfApprovalStepV1,
   extractUserId,
   useCurrentProjectV1,
+  pushNotification,
 } from "@/store";
+import { usePlanStore } from "@/store/modules/v1/plan";
+import { State } from "@/types/proto-es/v1/common_pb";
 import {
   IssueStatus,
   Issue_Approver_Status,
@@ -54,12 +60,17 @@ import {
   type ActionConfig,
   type IssueReviewAction,
   type IssueStatusAction,
+  type PlanAction,
   type UnifiedAction,
 } from "./unified";
 
-const { isCreating, issue, rollout } = usePlanContext();
+const { t } = useI18n();
+const dialog = useDialog();
+const resourcePoller = useResourcePoller();
+const { isCreating, plan, issue, rollout } = usePlanContext();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
+const planStore = usePlanStore();
 
 // Provide issue review context when an issue exists
 const reviewContext = provideIssueReviewContext(issue);
@@ -75,18 +86,44 @@ const availableActions = computed(() => {
 
   if (isCreating.value) return actions;
 
-  // If no issue exists, show create issue action
+  // If no issue exists, show create issue action or close plan action.
   if (!issue?.value) {
     // If rollout exists, no actions are available.
     if (rollout?.value) {
       return actions;
     }
+
+    // Check if user can close the plan
+    const canClosePlan =
+      plan.value.state === State.ACTIVE &&
+      plan.value.issue === "" &&
+      plan.value.rollout === "" &&
+      (currentUser.value.email === extractUserId(plan.value.creator || "") ||
+        hasProjectPermissionV2(project.value, "bb.plans.update"));
+
+    if (canClosePlan) {
+      actions.push("PLAN_CLOSE");
+    }
+
+    // Check if user can reopen the plan
+    const canReopenPlan =
+      plan.value.state === State.DELETED &&
+      plan.value.issue === "" &&
+      plan.value.rollout === "" &&
+      (currentUser.value.email === extractUserId(plan.value.creator || "") ||
+        hasProjectPermissionV2(project.value, "bb.plans.update"));
+
+    if (canReopenPlan) {
+      actions.push("PLAN_REOPEN");
+      return actions; // For deleted plans, only show reopen action
+    }
+
     const canCreateIssue = hasProjectPermissionV2(
       project.value,
       "bb.plans.create"
     );
-    if (canCreateIssue) {
-      actions.push("CREATE_ISSUE");
+    if (canCreateIssue && plan.value.state === State.ACTIVE) {
+      actions.push("ISSUE_CREATE");
     }
     return actions;
   }
@@ -104,7 +141,7 @@ const availableActions = computed(() => {
       hasProjectPermissionV2(project.value, "bb.issues.update");
 
     if (canReopen) {
-      actions.push("REOPEN");
+      actions.push("ISSUE_STATUS_REOPEN");
     }
     return actions;
   }
@@ -125,7 +162,7 @@ const availableActions = computed(() => {
 
     // RE_REQUEST is only available to the issue creator when rejected
     if (hasRejection && currentUserEmail === issueCreator) {
-      actions.push("RE_REQUEST");
+      actions.push("ISSUE_REVIEW_RE_REQUEST");
     } else {
       // Check if user can approve/reject
       const steps = head(approvalTemplates)?.flow?.steps ?? [];
@@ -144,9 +181,9 @@ const availableActions = computed(() => {
           );
           if (isUserIncludedInList(currentUserEmail, candidates)) {
             if (hasRejection) {
-              actions.push("APPROVE");
+              actions.push("ISSUE_REVIEW_APPROVE");
             } else {
-              actions.push("APPROVE", "REJECT");
+              actions.push("ISSUE_REVIEW_APPROVE", "ISSUE_REVIEW_REJECT");
             }
           }
         }
@@ -162,7 +199,7 @@ const availableActions = computed(() => {
     hasProjectPermissionV2(project.value, "bb.issues.update");
 
   if (canClose) {
-    actions.push("CLOSE");
+    actions.push("ISSUE_STATUS_CLOSE");
   }
 
   return actions;
@@ -171,22 +208,27 @@ const availableActions = computed(() => {
 const primaryAction = computed((): ActionConfig | undefined => {
   const actions = availableActions.value;
 
-  // CREATE_ISSUE is the highest priority when no issue exists
-  if (actions.includes("CREATE_ISSUE")) {
-    return { action: "CREATE_ISSUE" };
+  // ISSUE_CREATE is the highest priority when no issue exists
+  if (actions.includes("ISSUE_CREATE")) {
+    return { action: "ISSUE_CREATE" };
   }
 
-  // REOPEN is primary when issue is closed
-  if (actions.includes("REOPEN")) {
-    return { action: "REOPEN" };
+  // PLAN_REOPEN is primary when plan is deleted
+  if (actions.includes("PLAN_REOPEN")) {
+    return { action: "PLAN_REOPEN" };
   }
 
-  // APPROVE and RE_REQUEST are primary actions
-  if (actions.includes("APPROVE")) {
-    return { action: "APPROVE" };
+  // ISSUE_STATUS_REOPEN is primary when issue is closed
+  if (actions.includes("ISSUE_STATUS_REOPEN")) {
+    return { action: "ISSUE_STATUS_REOPEN" };
   }
-  if (actions.includes("RE_REQUEST")) {
-    return { action: "RE_REQUEST" };
+
+  // ISSUE_REVIEW_APPROVE and ISSUE_REVIEW_RE_REQUEST are primary actions
+  if (actions.includes("ISSUE_REVIEW_APPROVE")) {
+    return { action: "ISSUE_REVIEW_APPROVE" };
+  }
+  if (actions.includes("ISSUE_REVIEW_RE_REQUEST")) {
+    return { action: "ISSUE_REVIEW_RE_REQUEST" };
   }
 
   return undefined;
@@ -196,31 +238,80 @@ const secondaryActions = computed((): ActionConfig[] => {
   const actions = availableActions.value;
   const secondary: ActionConfig[] = [];
 
-  // REJECT and CLOSE go in the dropdown
-  if (actions.includes("REJECT")) {
-    secondary.push({ action: "REJECT" });
+  // ISSUE_REVIEW_REJECT, ISSUE_STATUS_CLOSE, and PLAN_CLOSE go in the dropdown
+  if (actions.includes("ISSUE_REVIEW_REJECT")) {
+    secondary.push({ action: "ISSUE_REVIEW_REJECT" });
   }
-  if (actions.includes("CLOSE")) {
-    secondary.push({ action: "CLOSE" });
+  if (actions.includes("ISSUE_STATUS_CLOSE")) {
+    secondary.push({ action: "ISSUE_STATUS_CLOSE" });
+  }
+  if (actions.includes("PLAN_CLOSE")) {
+    secondary.push({ action: "PLAN_CLOSE" });
   }
 
   return secondary;
 });
 
-const handlePerformAction = (action: UnifiedAction) => {
+const handlePerformAction = async (action: UnifiedAction) => {
   switch (action) {
-    case "APPROVE":
-    case "REJECT":
-    case "RE_REQUEST":
+    case "ISSUE_REVIEW_APPROVE":
+    case "ISSUE_REVIEW_REJECT":
+    case "ISSUE_REVIEW_RE_REQUEST":
       pendingReviewAction.value = action as IssueReviewAction;
       break;
-    case "CLOSE":
-    case "REOPEN":
+    case "ISSUE_STATUS_CLOSE":
+    case "ISSUE_STATUS_REOPEN":
       pendingStatusAction.value = action as IssueStatusAction;
       break;
-    case "CREATE_ISSUE":
+    case "ISSUE_CREATE":
       pendingIssueCreationAction.value = "CREATE";
       break;
+    case "PLAN_CLOSE":
+      await handlePlanStateChange("PLAN_CLOSE");
+      break;
+    case "PLAN_REOPEN":
+      await handlePlanStateChange("PLAN_REOPEN");
+      break;
   }
+};
+
+const handlePlanStateChange = async (action: PlanAction) => {
+  if (!plan?.value) return;
+
+  const isClosing = action === "PLAN_CLOSE";
+  const title = isClosing ? t("common.close") : t("common.reopen");
+  const content = isClosing
+    ? t("plan.state.close-confirm")
+    : t("plan.state.reopen-confirm");
+  const positiveText = title;
+  const newState = isClosing ? State.DELETED : State.ACTIVE;
+  const errorMessage = isClosing
+    ? "Failed to close plan:"
+    : "Failed to reopen plan:";
+
+  const d = dialog.warning({
+    title,
+    content,
+    positiveText,
+    negativeText: t("common.cancel"),
+    onPositiveClick: async () => {
+      d.loading = true;
+      try {
+        await planStore.updatePlan({ ...plan.value, state: newState }, [
+          "state",
+        ]);
+        // The plan context should automatically refresh and redirect or update the UI.
+        await resourcePoller.refreshAllManual();
+      } catch (error) {
+        console.error(errorMessage, error);
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: "Failed to update plan",
+          description: String(error),
+        });
+      }
+    },
+  });
 };
 </script>

@@ -20,7 +20,7 @@
         <div class="flex flex-col gap-y-1">
           <p class="font-medium text-control">
             {{ $t("common.comment") }}
-            <RequiredStar v-show="props.action === 'REJECT'" />
+            <RequiredStar v-show="props.action === 'ISSUE_REVIEW_REJECT'" />
           </p>
           <NInput
             v-model:value="comment"
@@ -116,11 +116,11 @@ const performActionAnyway = ref(false);
 
 const title = computed(() => {
   switch (props.action) {
-    case "APPROVE":
+    case "ISSUE_REVIEW_APPROVE":
       return t("custom-approval.issue-review.approve-issue");
-    case "REJECT":
+    case "ISSUE_REVIEW_REJECT":
       return t("custom-approval.issue-review.send-back-issue");
-    case "RE_REQUEST":
+    case "ISSUE_REVIEW_RE_REQUEST":
       return t("custom-approval.issue-review.re-request-review-issue");
   }
   return ""; // Make linter happy
@@ -128,11 +128,11 @@ const title = computed(() => {
 
 const actionDisplayName = (action: IssueReviewAction): string => {
   switch (action) {
-    case "APPROVE":
+    case "ISSUE_REVIEW_APPROVE":
       return t("common.approve");
-    case "REJECT":
+    case "ISSUE_REVIEW_REJECT":
       return t("custom-approval.issue-review.send-back");
-    case "RE_REQUEST":
+    case "ISSUE_REVIEW_RE_REQUEST":
       return t("custom-approval.issue-review.re-request-review");
   }
 };
@@ -143,7 +143,7 @@ const showPerformActionAnyway = computed(() => {
 
 const planCheckErrors = computed(() => {
   const errors: string[] = [];
-  if (props.action === "APPROVE") {
+  if (props.action === "ISSUE_REVIEW_APPROVE") {
     // Check plan check runs for errors
     const failedRuns = planCheckRuns.value.filter(
       (run) => run.status === PlanCheckRun_Status.FAILED
@@ -173,7 +173,7 @@ const planCheckErrors = computed(() => {
 
 const confirmErrors = computed(() => {
   const errors: string[] = [];
-  if (props.action === "REJECT" && comment.value === "") {
+  if (props.action === "ISSUE_REVIEW_REJECT" && comment.value === "") {
     errors.push(
       t(
         "custom-approval.issue-review.disallow-approve-reason.x-field-is-required",
@@ -193,9 +193,9 @@ const confirmButtonProps = computed(() => {
   if (!props.action) return {};
 
   switch (props.action) {
-    case "APPROVE":
+    case "ISSUE_REVIEW_APPROVE":
       return { type: "primary" as const };
-    case "REJECT":
+    case "ISSUE_REVIEW_REJECT":
       return { type: "primary" as const };
     default:
       return {};
@@ -207,19 +207,19 @@ const handleConfirm = async () => {
   if (!action) return;
   state.loading = true;
   try {
-    if (action === "APPROVE") {
+    if (action === "ISSUE_REVIEW_APPROVE") {
       const request = create(ApproveIssueRequestSchema, {
         name: issue.value.name,
         comment: comment.value,
       });
       await issueServiceClientConnect.approveIssue(request);
-    } else if (action === "REJECT") {
+    } else if (action === "ISSUE_REVIEW_REJECT") {
       const request = create(RejectIssueRequestSchema, {
         name: issue.value.name,
         comment: comment.value,
       });
       await issueServiceClientConnect.rejectIssue(request);
-    } else if (action === "RE_REQUEST") {
+    } else if (action === "ISSUE_REVIEW_RE_REQUEST") {
       const request = create(RequestIssueRequestSchema, {
         name: issue.value.name,
         comment: comment.value,

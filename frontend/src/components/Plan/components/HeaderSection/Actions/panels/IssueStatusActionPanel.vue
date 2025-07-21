@@ -90,9 +90,9 @@ const comment = ref("");
 
 const title = computed(() => {
   switch (props.action) {
-    case "CLOSE":
+    case "ISSUE_STATUS_CLOSE":
       return t("issue.batch-transition.close");
-    case "REOPEN":
+    case "ISSUE_STATUS_REOPEN":
       return t("issue.batch-transition.reopen");
   }
   return "";
@@ -105,10 +105,10 @@ const handleConfirm = async () => {
   try {
     let issueStatus: IssueStatus;
     switch (action) {
-      case "CLOSE":
+      case "ISSUE_STATUS_CLOSE":
         issueStatus = IssueStatus.CANCELED;
         break;
-      case "REOPEN":
+      case "ISSUE_STATUS_REOPEN":
         issueStatus = IssueStatus.OPEN;
         break;
       default:

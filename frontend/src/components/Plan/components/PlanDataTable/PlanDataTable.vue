@@ -23,6 +23,7 @@ import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import { State } from "@/types/proto-es/v1/common_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import {
   extractPlanUID,
@@ -59,8 +60,11 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
       render: (plan) => {
         const showDraftTag =
           enabledNewLayout.value && plan.issue === "" && plan.rollout === "";
+        const isDeleted = plan.state === State.DELETED;
         return (
-          <div class="flex items-center overflow-hidden space-x-2">
+          <div
+            class={`flex items-center overflow-hidden space-x-2 ${isDeleted ? "opacity-60" : ""}`}
+          >
             <div class="whitespace-nowrap text-control opacity-60">
               {extractPlanUID(plan.name)}
             </div>
@@ -78,7 +82,12 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
             ) : (
               <span class="opacity-60 italic">{t("common.untitled")}</span>
             )}
-            {showDraftTag && (
+            {isDeleted && (
+              <NTag type="warning" round size="small">
+                {t("common.closed")}
+              </NTag>
+            )}
+            {showDraftTag && !isDeleted && (
               <NTag round size="small">
                 {t("common.draft")}
               </NTag>
@@ -114,8 +123,9 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
 });
 
 const rowProps = (plan: Plan) => {
+  const isDeleted = plan.state === State.DELETED;
   return {
-    style: "cursor: pointer;",
+    style: isDeleted ? "cursor: pointer; opacity: 0.7;" : "cursor: pointer;",
     onClick: (e: MouseEvent) => {
       const route = router.resolve({
         name: PROJECT_V1_ROUTE_PLAN_DETAIL,
