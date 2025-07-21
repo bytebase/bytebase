@@ -11584,6 +11584,14 @@ components:
                         The name of the plan.
                          `plan` is a system generated ID.
                          Format: projects/{project}/plans/{plan}
+                state:
+                    enum:
+                        - STATE_UNSPECIFIED
+                        - ACTIVE
+                        - DELETED
+                    type: string
+                    description: The state of the plan.
+                    format: enum
                 issue:
                     readOnly: true
                     type: string

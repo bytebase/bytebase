@@ -38,6 +38,7 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		CreateTime:              timestamppb.New(plan.CreatedAt),
 		UpdateTime:              timestamppb.New(plan.UpdatedAt),
 		PlanCheckRunStatusCount: plan.PlanCheckRunStatusCount,
+		State:                   convertDeletedToState(plan.Deleted),
 	}
 
 	creator, err := s.GetUserByID(ctx, plan.CreatorUID)

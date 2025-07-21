@@ -218,12 +218,13 @@ message Plan {
     pattern: "projects/{project}/plans/{plan}"
   };
 
-  reserved 2;
-
   // The name of the plan.
   // `plan` is a system generated ID.
   // Format: projects/{project}/plans/{plan}
   string name = 1;
+
+  // The state of the plan.
+  State state = 2;
 
   // The issue associated with the plan.
   // Can be empty.

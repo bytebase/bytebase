@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
-import type { ExportFormat, Position } from "./common_pb";
+import type { ExportFormat, Position, State } from "./common_pb";
 import type { ChangedResources } from "./database_service_pb";
 
 /**
@@ -255,6 +255,13 @@ export declare type Plan = Message<"bytebase.v1.Plan"> & {
    * @generated from field: string name = 1;
    */
   name: string;
+
+  /**
+   * The state of the plan.
+   *
+   * @generated from field: bytebase.v1.State state = 2;
+   */
+  state: State;
 
   /**
    * The issue associated with the plan.

@@ -27,6 +27,7 @@ type PlanMessage struct {
 	CreatorUID int
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
+	Deleted    bool
 
 	PlanCheckRunStatusCount map[string]int32
 }
@@ -41,7 +42,8 @@ type FindPlanMessage struct {
 	Limit  *int
 	Offset *int
 
-	Filter *ListResourceFilter
+	Filter      *ListResourceFilter
+	ShowDeleted bool
 }
 
 // UpdatePlanMessage is the message to update a plan.
@@ -52,6 +54,7 @@ type UpdatePlanMessage struct {
 	Description *string
 	Specs       *[]*storepb.PlanConfig_Spec
 	Deployment  **storepb.PlanConfig_Deployment
+	Deleted     *bool
 }
 
 // CreatePlan creates a new plan.
@@ -143,6 +146,9 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 	if v := find.PipelineID; v != nil {
 		where, args = append(where, fmt.Sprintf("plan.pipeline_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if !find.ShowDeleted {
+		where = append(where, "plan.deleted = FALSE")
+	}
 
 	query := fmt.Sprintf(`
 		SELECT
@@ -155,6 +161,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			plan.name,
 			plan.description,
 			plan.config,
+			plan.deleted,
 			COALESCE(plan_check_run_status_count.status_count, '{}'::jsonb)
 		FROM plan
 		LEFT JOIN issue on plan.id = issue.plan_id
@@ -213,6 +220,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			&plan.Name,
 			&plan.Description,
 			&config,
+			&plan.Deleted,
 			&statusCount,
 		); err != nil {
 			return nil, errors.Wrap(err, "failed to scan plan")
@@ -244,6 +252,9 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error 
 	}
 	if v := patch.Description; v != nil {
 		set, args = append(set, fmt.Sprintf("description = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Deleted; v != nil {
+		set, args = append(set, fmt.Sprintf("deleted = $%d", len(args)+1)), append(args, *v)
 	}
 	{
 		var payloadSets []string
