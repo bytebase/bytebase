@@ -246,6 +246,7 @@ import {
   type Plan_Spec,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { setSheetStatement } from "@/utils";
+import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
 
 defineProps<{
   title?: string;
@@ -308,11 +309,18 @@ const canProceedToNextStep = computed(() => {
 });
 
 const shouldShowSchemaEditor = computed(() => {
-  return (
-    isMigrateSelected.value &&
-    databaseSelectState.changeSource === "DATABASE" &&
-    databaseSelectState.selectedDatabaseNameList.length === 1
-  );
+  if (!isMigrateSelected.value) return false;
+  if (databaseSelectState.changeSource !== "DATABASE") return false;
+  if (databaseSelectState.selectedDatabaseNameList.length !== 1) return false;
+
+  // Check if the selected database engine supports schema editor
+  const databaseName = databaseSelectState.selectedDatabaseNameList[0];
+  if (!databaseName) return false;
+
+  const database = databaseV1Store.getDatabaseByName(databaseName);
+  if (!database || !database.instanceResource) return false;
+
+  return engineSupportsSchemaEditor(database.instanceResource.engine);
 });
 
 const totalSteps = computed(() => {
@@ -360,8 +368,16 @@ watch(show, (newVal) => {
   }
 });
 
-const handleUpdateSelection = (newState: DatabaseSelectState) => {
+const handleUpdateSelection = async (newState: DatabaseSelectState) => {
   Object.assign(databaseSelectState, newState);
+
+  // Preload database information if databases are selected
+  if (
+    newState.changeSource === "DATABASE" &&
+    newState.selectedDatabaseNameList?.length > 0
+  ) {
+    await batchGetOrFetchDatabases(newState.selectedDatabaseNameList);
+  }
 };
 
 const handleCancel = () => {
