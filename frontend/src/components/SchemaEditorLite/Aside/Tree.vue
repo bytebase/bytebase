@@ -2,9 +2,10 @@
   <div
     class="w-full h-full pl-1 pr-2 flex flex-col gap-y-2 relative overflow-y-hidden"
   >
-    <div class="w-full sticky top-0 pt-2 h-12 bg-white z-10">
+    <div class="w-full sticky top-0 pt-2">
       <NInput
         v-model:value="searchPattern"
+        :size="'small'"
         :placeholder="$t('schema-editor.search-database-and-table')"
       >
         <template #prefix>

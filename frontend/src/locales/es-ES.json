@@ -2040,8 +2040,6 @@
     "sync-sql-from-schema-editor": "Sincronizar SQL desde el Editor de esquema",
     "raw-sql": "SQL sin procesar",
     "search-database-and-table": "Buscar base de datos y tabla",
-    "search-table": "Buscar tabla",
-    "search-column": "Buscar columna",
     "nothing-changed-for-database": "Nada cambió para la base de datos {database}",
     "actions": {
       "create-schema": "Crear esquema",
