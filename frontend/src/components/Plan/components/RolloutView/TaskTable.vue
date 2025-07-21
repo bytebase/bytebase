@@ -16,6 +16,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { head } from "lodash-es";
 import { CalendarClockIcon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable, NTag, NTooltip } from "naive-ui";
@@ -35,6 +36,7 @@ import {
   extractSchemaVersionFromTask,
   humanizeTs,
 } from "@/utils";
+import { usePlanContextWithRollout } from "../../logic";
 import { useRolloutViewContext } from "./context";
 
 const props = withDefaults(
@@ -58,6 +60,7 @@ const { t } = useI18n();
 const router = useRouter();
 const { project } = useCurrentProjectV1();
 const { rollout, mergedStages } = useRolloutViewContext();
+const { taskRuns } = usePlanContextWithRollout();
 
 const taskList = computed(() => {
   if (props.taskStatusFilter.length === 0) {
@@ -151,6 +154,14 @@ const rowProps = (task: Task) => {
   };
 };
 
+// Get the latest TaskRun for a given task
+const getLatestTaskRun = (task: Task) => {
+  const relatedTaskRuns = taskRuns.value.filter((taskRun) =>
+    taskRun.name.startsWith(task.name + "/taskRuns/")
+  );
+  return head(relatedTaskRuns);
+};
+
 const columnList = computed((): DataTableColumn<Task>[] => {
   return [
     {
@@ -176,13 +187,21 @@ const columnList = computed((): DataTableColumn<Task>[] => {
     {
       key: "database",
       title: t("common.database"),
+      resizable: true,
       render: (task) => {
+        const schemaVersion = extractSchemaVersionFromTask(task);
+
         return (
           <div class="flex items-center gap-2">
             <DatabaseDisplay database={task.target} />
             <NTag round size="small">
               {semanticTaskType(task.type)}
             </NTag>
+            {schemaVersion && (
+              <NTag round size="small">
+                {schemaVersion}
+              </NTag>
+            )}
             {task.runTime && (
               <NTooltip>
                 {{
@@ -205,6 +224,19 @@ const columnList = computed((): DataTableColumn<Task>[] => {
       },
     },
     {
+      key: "detail",
+      title: t("common.detail"),
+      ellipsis: true,
+      resizable: true,
+      render: (task) => {
+        const latestTaskRun = getLatestTaskRun(task);
+        if (!latestTaskRun || !latestTaskRun.detail) {
+          return "-";
+        }
+        return latestTaskRun.detail;
+      },
+    },
+    {
       key: "updateTime",
       title: t("common.updated-at"),
       width: 128,
@@ -215,14 +247,6 @@ const columnList = computed((): DataTableColumn<Task>[] => {
         return humanizeTs(
           getTimeForPbTimestampProtoEs(task.updateTime, 0) / 1000
         );
-      },
-    },
-    {
-      key: "version",
-      title: t("common.version"),
-      width: 128,
-      render: (task) => {
-        return extractSchemaVersionFromTask(task) || "-";
       },
     },
   ];
