@@ -369,6 +369,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		case "description":
 			description := req.Plan.Description
 			planUpdate.Description = &description
+		case "state":
+			deleted := req.Plan.State == v1pb.State_DELETED
+			planUpdate.Deleted = &deleted
 		case "deployment":
 			specs := oldPlan.Config.GetSpecs()
 			if planUpdate.Specs != nil {
@@ -1099,6 +1102,13 @@ func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *sto
 					default:
 						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid spec_type value: %s, must be one of: create_database_config, change_database_config, export_data_config", specType))
 					}
+				case "state":
+					v1State, ok := v1pb.State_value[value.(string)]
+					if !ok {
+						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid state filter %q", value))
+					}
+					positionalArgs = append(positionalArgs, v1pb.State(v1State) == v1pb.State_DELETED)
+					return fmt.Sprintf("plan.deleted = $%d", len(positionalArgs)), nil
 				default:
 					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported variable %q", variable))
 				}
