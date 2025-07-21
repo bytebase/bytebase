@@ -1594,25 +1594,6 @@
     },
     "all": "Todas las bases de datos",
     "show-schemaless-databases": "Mostrar bases de datos sin esquema. (Editar Schema no se aplica a las bases de datos sin esquema.)",
-    "secret": {
-      "self": "Secreto",
-      "new": "Nuevo secreto",
-      "edit": "Editar secreto",
-      "name-placeholder": "Ingrese nombre del secreto",
-      "validation": {
-        "cannot-be-changed-later": "No se puede cambiar más tarde",
-        "duplicated-name": "Nombre secreto duplicado",
-        "name-is-required": "Se requiere nombre secreto",
-        "name-pattern-mismatch": "El nombre secreto debe contener solo letras mayúsculas, dígitos o _ (guion bajo)",
-        "name-cannot-prefix-with-bytebase": "El nombre secreto no puede tener el prefijo 'BYTEBASE_'",
-        "name-cannot-start-with-number": "El nombre secreto no puede comenzar con un número"
-      },
-      "description-placeholder": "Ingrese descripción",
-      "value": "Valor",
-      "value-placeholder": "Valor de entrada (solo escritura)",
-      "delete-tips": "Eliminar secreto",
-      "description": "Puede usar secreto en su secuencia de comandos de cambio para ocultar información confidencial, consulte nuestra {guide}"
-    },
     "transfer": {
       "errors": {
         "select-target-project": "Seleccionar proyecto de destino",

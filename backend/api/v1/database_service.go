@@ -3,10 +3,8 @@ package v1
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"slices"
 	"strings"
-	"unicode"
 
 	"connectrpc.com/connect"
 	"github.com/google/cel-go/cel"
@@ -15,7 +13,6 @@ import (
 	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -1194,176 +1191,6 @@ func convertToChangedResources(r *storepb.ChangedResources) *v1pb.ChangedResourc
 	return result
 }
 
-// ListSecrets lists the secrets of a database.
-func (s *DatabaseService) ListSecrets(ctx context.Context, req *connect.Request[v1pb.ListSecretsRequest]) (*connect.Response[v1pb.ListSecretsResponse], error) {
-	database, err := getDatabaseMessage(ctx, s.store, req.Msg.Parent)
-	if err != nil {
-		return nil, err
-	}
-	if database.Deleted {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q was deleted", req.Msg.Parent))
-	}
-
-	return connect.NewResponse(&v1pb.ListSecretsResponse{
-		Secrets: convertToV1Secrets(database.Metadata.GetSecrets(), database.InstanceID, database.DatabaseName),
-	}), nil
-}
-
-// UpdateSecret updates a secret of a database.
-func (s *DatabaseService) UpdateSecret(ctx context.Context, req *connect.Request[v1pb.UpdateSecretRequest]) (*connect.Response[v1pb.Secret], error) {
-	if req.Msg.Secret == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("secret is required"))
-	}
-	if req.Msg.UpdateMask == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask must be set"))
-	}
-
-	instanceID, databaseName, updateSecretName, err := common.GetInstanceDatabaseIDSecretName(req.Msg.Secret.Name)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
-	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
-	}
-	if instance == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
-	}
-
-	if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATABASE_SECRET_VARIABLES, instance); err != nil {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("%v", err.Error()))
-	}
-
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:      &instanceID,
-		DatabaseName:    &databaseName,
-		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
-	}
-	if database == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseName))
-	}
-
-	secretsMap := make(map[string]*storepb.Secret)
-	for _, secret := range database.Metadata.GetSecrets() {
-		secretsMap[secret.Name] = secret
-	}
-
-	newSecret := &storepb.Secret{}
-	if _, ok := secretsMap[updateSecretName]; !ok {
-		// If the secret is not existed and allow_missing is false, we will not create it.
-		if !req.Msg.AllowMissing {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("secret %q not found", updateSecretName))
-		}
-		newSecret.Name = updateSecretName
-		newSecret.Value = req.Msg.Secret.Value
-		newSecret.Description = req.Msg.Secret.Description
-	} else {
-		oldSecret := secretsMap[updateSecretName]
-		newSecret.Name = oldSecret.Name
-		newSecret.Value = oldSecret.Value
-		newSecret.Description = oldSecret.Description
-		for _, path := range req.Msg.UpdateMask.Paths {
-			switch path {
-			case "value":
-				newSecret.Value = req.Msg.Secret.Value
-			case "name":
-				// We don't allow users to update the name of a secret.
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("name of a secret is not allowed to be updated"))
-			case "description":
-				newSecret.Description = req.Msg.Secret.Description
-			}
-		}
-	}
-	if err := isSecretValid(newSecret); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
-	}
-	secretsMap[updateSecretName] = newSecret
-
-	var secrets []*storepb.Secret
-	for _, secret := range secretsMap {
-		secrets = append(secrets, secret)
-	}
-
-	metadata, ok := proto.Clone(database.Metadata).(*storepb.DatabaseMetadata)
-	if !ok {
-		return nil, errors.Errorf("failed to convert database metadata type")
-	}
-	metadata.Secrets = secrets
-	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-		Metadata:     metadata,
-	}); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
-	}
-
-	return connect.NewResponse(convertToV1Secret(newSecret, database.InstanceID, database.DatabaseName)), nil
-}
-
-// DeleteSecret deletes a secret of a database.
-func (s *DatabaseService) DeleteSecret(ctx context.Context, req *connect.Request[v1pb.DeleteSecretRequest]) (*connect.Response[emptypb.Empty], error) {
-	instanceID, databaseName, secretName, err := common.GetInstanceDatabaseIDSecretName(req.Msg.Name)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
-	}
-
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
-	}
-	if instance == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
-	}
-
-	if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATABASE_SECRET_VARIABLES, instance); err != nil {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("%v", err.Error()))
-	}
-
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:      &instanceID,
-		DatabaseName:    &databaseName,
-		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
-	}
-	if database == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseName))
-	}
-
-	secretsMap := make(map[string]*storepb.Secret)
-	for _, secret := range database.Metadata.GetSecrets() {
-		secretsMap[secret.Name] = secret
-	}
-	delete(secretsMap, secretName)
-	var secrets []*storepb.Secret
-	for _, secret := range secretsMap {
-		secrets = append(secrets, secret)
-	}
-
-	metadata, ok := proto.Clone(database.Metadata).(*storepb.DatabaseMetadata)
-	if !ok {
-		return nil, errors.Errorf("failed to convert database metadata type")
-	}
-	metadata.Secrets = secrets
-	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-		Metadata:     metadata,
-	}); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
-	}
-
-	return connect.NewResponse(&emptypb.Empty{}), nil
-}
-
 func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store.DatabaseMessage) (*v1pb.Database, error) {
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &database.InstanceID,
@@ -1401,54 +1228,6 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 type metadataFilter struct {
 	schema *string
 	table  *string
-}
-
-func convertToV1Secrets(secrets []*storepb.Secret, instanceID, databaseName string) []*v1pb.Secret {
-	var v1Secrets []*v1pb.Secret
-	for _, secret := range secrets {
-		v1Secrets = append(v1Secrets, convertToV1Secret(secret, instanceID, databaseName))
-	}
-	return v1Secrets
-}
-
-func convertToV1Secret(secret *storepb.Secret, instanceID, databaseName string) *v1pb.Secret {
-	return &v1pb.Secret{
-		Name:        fmt.Sprintf("%s%s/%s%s/%s%s", common.InstanceNamePrefix, instanceID, common.DatabaseIDPrefix, databaseName, common.SecretNamePrefix, secret.Name),
-		Value:       "", /* stripped */
-		Description: secret.Description,
-	}
-}
-func isSecretValid(secret *storepb.Secret) error {
-	// Names can not be empty.
-	if secret.Name == "" {
-		return errors.Errorf("invalid secret name: %s, name can not be empty", secret.Name)
-	}
-	// Values can not be empty.
-	if secret.Value == "" {
-		return errors.Errorf("the value of secret: %s can not be empty", secret.Name)
-	}
-
-	// Names must not start with the 'BYTEBASE_' prefix.
-	bytebaseCaseInsensitivePrefixRegexp := regexp.MustCompile(`(?i)^BYTEBASE_`)
-	if bytebaseCaseInsensitivePrefixRegexp.MatchString(secret.Name) {
-		return errors.Errorf("invalid secret name: %s, name must not start with the 'BYTEBASE_' prefix", secret.Name)
-	}
-	// Names must not start with a number.
-	if unicode.IsDigit(rune(secret.Name[0])) {
-		return errors.Errorf("invalid secret name: %s, name must not start with a number", secret.Name)
-	}
-
-	// Names can only contain alphanumeric characters ([A-Z], [0-9]) or underscores (_). Spaces are not allowed.
-	for _, c := range secret.Name {
-		if !isUpperCaseLetter(c) && !unicode.IsDigit(c) && c != '_' {
-			return errors.Errorf("invalid secret name: %s, expect [A-Z], [0-9], '_', but meet: %v", secret.Name, c)
-		}
-	}
-	return nil
-}
-
-func isUpperCaseLetter(c rune) bool {
-	return 'A' <= c && c <= 'Z'
 }
 
 func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Request[v1pb.GetSchemaStringRequest]) (*connect.Response[v1pb.GetSchemaStringResponse], error) {

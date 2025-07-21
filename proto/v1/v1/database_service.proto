@@ -6,7 +6,6 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
-import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
@@ -119,33 +118,6 @@ service DatabaseService {
     // TODO(d): secure it.
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
-  }
-
-  // Permissions required: bb.databaseSecrets.list
-  rpc ListSecrets(ListSecretsRequest) returns (ListSecretsResponse) {
-    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/secrets"};
-    option (google.api.method_signature) = "parent";
-    option (bytebase.v1.permission) = "bb.databaseSecrets.list";
-    option (bytebase.v1.auth_method) = IAM;
-  }
-
-  // Permissions required: bb.databaseSecrets.update
-  rpc UpdateSecret(UpdateSecretRequest) returns (Secret) {
-    option (google.api.http) = {
-      patch: "/v1/{secret.name=instances/*/databases/*/secrets/*}"
-      body: "secret"
-    };
-    option (bytebase.v1.permission) = "bb.databaseSecrets.update";
-    option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
-  }
-
-  // Permissions required: bb.databaseSecrets.delete
-  rpc DeleteSecret(DeleteSecretRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/secrets/*}"};
-    option (bytebase.v1.permission) = "bb.databaseSecrets.delete";
-    option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
   }
 
   // Permissions required: bb.changelogs.list
@@ -1286,85 +1258,6 @@ message ForeignKeyMetadata {
 message DatabaseSchema {
   // The schema dump from database.
   string schema = 1;
-}
-
-message ListSecretsRequest {
-  // The parent of the secret.
-  // Format: instances/{instance}/databases/{database}
-  string parent = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Database"}
-  ];
-
-  // Not used.
-  // The maximum number of secrets to return. The service may return fewer than
-  // this value.
-  // If unspecified, at most 10 secrets will be returned.
-  // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 2;
-
-  // Not used.
-  // A page token, received from a previous `ListSecrets` call.
-  // Provide this to retrieve the subsequent page.
-  //
-  // When paginating, all other parameters provided to `ListSecrets` must match
-  // the call that provided the page token.
-  string page_token = 3;
-}
-
-message ListSecretsResponse {
-  // The list of secrets.
-  repeated Secret secrets = 1;
-
-  // Not used. A token, which can be sent as `page_token` to retrieve the next
-  // page. If this field is omitted, there are no subsequent pages.
-  string next_page_token = 2;
-}
-
-message UpdateSecretRequest {
-  // The secret to be created or updated.
-  Secret secret = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The mask of the fields to be updated.
-  google.protobuf.FieldMask update_mask = 2;
-
-  // If true, the secret will be created if it does not exist.
-  bool allow_missing = 3;
-}
-
-message DeleteSecretRequest {
-  // The name of the secret to be deleted.
-  // Format:
-  // instances/{instance}/databases/{database}/secrets/{secret}
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Database"}
-  ];
-}
-
-// Secret is the secret of the database now.
-message Secret {
-  option (google.api.resource) = {
-    type: "bytebase.com/DatabaseSecret"
-    pattern: "instances/{instance}/databases/{database}/secrets/{secret}"
-  };
-
-  // name is the unique name of the secret, which is specified by the client.
-  // Format:
-  // instances/{instance}/databases/{database}/secrets/{secret}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // Not used. The timestamp when the secret resource was created initially.
-  google.protobuf.Timestamp created_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Not used. The timestamp when the secret resource was updated.
-  google.protobuf.Timestamp updated_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The value of the secret.
-  string value = 4 [(google.api.field_behavior) = INPUT_ONLY];
-
-  // The description of the secret.
-  string description = 5;
 }
 
 message ChangedResources {

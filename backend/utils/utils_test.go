@@ -10,59 +10,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func TestGetRenderedStatement(t *testing.T) {
-	testCases := []struct {
-		material map[string]string
-		template string
-		expected string
-	}{
-		{
-			material: map[string]string{
-				"PASSWORD": "123",
-			},
-			template: "select * from table where password = ${{ secrets.PASSWORD }}",
-			expected: "select * from table where password = 123",
-		},
-		{
-			material: map[string]string{
-				"PASSWORD": "123",
-				"USER":     `"abc"`,
-			},
-			template: "INSERT INTO table (user, password) VALUES (${{ secrets.USER }}, ${{ secrets.PASSWORD }})",
-			expected: `INSERT INTO table (user, password) VALUES ("abc", 123)`,
-		},
-		// Replace recursively case.
-		{
-			material: map[string]string{
-				"PASSWORD": "${{ secrets.USER }}",
-				"USER":     `"abc"`,
-			},
-			template: "INSERT INTO table (user, password) VALUES (${{ secrets.USER }}, ${{ secrets.PASSWORD }})",
-			expected: `INSERT INTO table (user, password) VALUES ("abc", ${{ secrets.USER }})`,
-		},
-		{
-			material: map[string]string{
-				"PASSWORD": "123",
-				"USER":     `"${{ secrets.PASSWORD }}"`,
-			},
-			template: "INSERT INTO table (user, password) VALUES (${{ secrets.USER }}, ${{ secrets.PASSWORD }})",
-			expected: `INSERT INTO table (user, password) VALUES ("123", 123)`,
-		},
-		{
-			material: map[string]string{
-				"USER": `"abc"`,
-			},
-			template: "select * from table where password = ${{ secrets.PASSWORD }}",
-			expected: "select * from table where password = ${{ secrets.PASSWORD }}",
-		},
-	}
-
-	for _, tc := range testCases {
-		actual := RenderStatement(tc.template, tc.material)
-		assert.Equal(t, tc.expected, actual)
-	}
-}
-
 func TestCheckDatabaseGroupMatch(t *testing.T) {
 	tests := []struct {
 		expression string

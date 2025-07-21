@@ -1594,25 +1594,6 @@
     },
     "all": "所有数据库",
     "show-schemaless-databases": "显示无模式的数据库。（变更 Schema 不适用于无 schema 的数据库. ）",
-    "secret": {
-      "self": "保密变量",
-      "new": "添加保密变量",
-      "edit": "编辑保密变量",
-      "name-placeholder": "输入保密变量名称",
-      "validation": {
-        "cannot-be-changed-later": "创建之后无法修改",
-        "duplicated-name": "保密变量名称重复",
-        "name-is-required": "变量名必需",
-        "name-pattern-mismatch": "秘密名称应该只由大写字母，数字和 _（下划线）组成",
-        "name-cannot-prefix-with-bytebase": "秘密名称不能以 'BYTEBASE_' 为前缀",
-        "name-cannot-start-with-number": "秘密名称不能以数字开头"
-      },
-      "description-placeholder": "输入描述",
-      "value": "值",
-      "value-placeholder": "输入值（仅写入）",
-      "delete-tips": "删除保密变量",
-      "description": "您可以在变更脚本中使用保密变量，来隐藏敏感信息, 请参考{guide}"
-    },
     "transfer": {
       "errors": {
         "select-target-project": "选择目标项目",

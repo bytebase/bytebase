@@ -1594,25 +1594,6 @@
     },
     "all": "すべてのデータベース",
     "show-schemaless-databases": "スキーマレス データベースを示します。 (スキーマの変更は、スキーマのないデータベースでは機能しません。)",
-    "secret": {
-      "self": "秘密変数",
-      "new": "シークレット変数を追加する",
-      "edit": "シークレット変数を編集する",
-      "name-placeholder": "シークレット変数名を入力してください",
-      "validation": {
-        "cannot-be-changed-later": "作成後に変更することはできません",
-        "duplicated-name": "シークレット変数名が重複しています",
-        "name-is-required": "変数名が必要です",
-        "name-pattern-mismatch": "シークレット名は大文字、数字、_ (アンダースコア) のみで設定する必要があります。",
-        "name-cannot-prefix-with-bytebase": "シークレット名に「BYTEBASE_」という接頭辞を付けることはできません",
-        "name-cannot-start-with-number": "シークレット名を数字で始めることはできません"
-      },
-      "description-placeholder": "説明を入力してください",
-      "value": "価値",
-      "value-placeholder": "値を入力してください (書き込みのみ)",
-      "delete-tips": "シークレット変数の削除",
-      "description": "変更スクリプトでシークレット変数を使用すると、機密情報を非表示にすることができます。{guide} を参照してください。"
-    },
     "transfer": {
       "errors": {
         "select-target-project": "対象プロジェクトを選択",

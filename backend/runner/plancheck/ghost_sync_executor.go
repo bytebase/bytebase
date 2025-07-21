@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/utils"
+
 	"github.com/github/gh-ost/go/logic"
 	gomysql "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
@@ -19,7 +21,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // NewGhostSyncExecutor creates a gh-ost sync check executor.
@@ -95,18 +96,18 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetUID)
 	}
 
-	materials := utils.GetSecretMapFromDatabaseMessage(database)
+	// Database secrets feature has been removed
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
-	renderedStatement := utils.RenderStatement(statement, materials)
+	// Database secrets feature removed - using original statement directly
 	// Trim trailing semicolons.
-	renderedStatement = strings.TrimRight(renderedStatement, ";")
+	statement = strings.TrimRight(statement, ";")
 
-	tableName, err := ghost.GetTableNameFromStatement(renderedStatement)
+	tableName, err := ghost.GetTableNameFromStatement(statement)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", statement)
 	}
 
-	migrationContext, err := ghost.NewMigrationContext(ctx, rand.Intn(10000000), database, adminDataSource, tableName, fmt.Sprintf("_dryrun_%d", time.Now().Unix()), renderedStatement, true, config.GhostFlags, 20000000)
+	migrationContext, err := ghost.NewMigrationContext(ctx, rand.Intn(10000000), database, adminDataSource, tableName, fmt.Sprintf("_dryrun_%d", time.Now().Unix()), statement, true, config.GhostFlags, 20000000)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create migration context")
 	}

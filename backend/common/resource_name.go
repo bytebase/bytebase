@@ -28,7 +28,6 @@ const (
 	PlanPrefix                 = "plans/"
 	PlanCheckRunPrefix         = "planCheckRuns/"
 	RolePrefix                 = "roles/"
-	SecretNamePrefix           = "secrets/"
 	WebhookIDPrefix            = "webhooks/"
 	SheetIDPrefix              = "sheets/"
 	WorksheetIDPrefix          = "worksheets/"
@@ -154,16 +153,6 @@ func GetInstanceDatabaseID(name string) (string, string, error) {
 		return "", "", err
 	}
 	return tokens[0], tokens[1], nil
-}
-
-// GetInstanceDatabaseIDSecretName returns the instance ID, database ID, and secret name from a resource name.
-func GetInstanceDatabaseIDSecretName(name string) (string, string, string, error) {
-	// the instance request should be instances/{instance-id}/databases/{database-id}/secrets/{secret-name}
-	tokens, err := GetNameParentTokens(name, InstanceNamePrefix, DatabaseIDPrefix, SecretNamePrefix)
-	if err != nil {
-		return "", "", "", err
-	}
-	return tokens[0], tokens[1], tokens[2], nil
 }
 
 // GetInstanceDatabaseRevisionID returns the instance ID, database ID, and revision UID from a resource name.
