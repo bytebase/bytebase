@@ -14,7 +14,6 @@ const (
 	PermissionChangelogsList            Permission = "bb.changelogs.list"
 	PermissionDatabaseCatalogsGet       Permission = "bb.databaseCatalogs.get"
 	PermissionDatabaseCatalogsUpdate    Permission = "bb.databaseCatalogs.update"
-	PermissionDatabasesAdviseIndex      Permission = "bb.databases.adviseIndex"
 	PermissionDatabasesCheck            Permission = "bb.databases.check"
 	PermissionDatabasesGet              Permission = "bb.databases.get"
 	PermissionDatabasesGetSchema        Permission = "bb.databases.getSchema"
@@ -24,7 +23,6 @@ const (
 	PermissionIdentityProvidersCreate   Permission = "bb.identityProviders.create"
 	PermissionIdentityProvidersDelete   Permission = "bb.identityProviders.delete"
 	PermissionIdentityProvidersGet      Permission = "bb.identityProviders.get"
-	PermissionIdentityProvidersUndelete Permission = "bb.identityProviders.undelete"
 	PermissionIdentityProvidersUpdate   Permission = "bb.identityProviders.update"
 	PermissionInstancesCreate           Permission = "bb.instances.create"
 	PermissionInstancesDelete           Permission = "bb.instances.delete"
@@ -96,7 +94,6 @@ const (
 	PermissionSheetsCreate              Permission = "bb.sheets.create"
 	PermissionSheetsGet                 Permission = "bb.sheets.get"
 	PermissionSheetsUpdate              Permission = "bb.sheets.update"
-	PermissionSlowQueriesList           Permission = "bb.slowQueries.list"
 	PermissionSQLSelect                 Permission = "bb.sql.select"
 	PermissionSQLDdl                    Permission = "bb.sql.ddl"
 	PermissionSQLDml                    Permission = "bb.sql.dml"
@@ -133,7 +130,6 @@ var allPermissions = []Permission{
 	PermissionChangelogsList,
 	PermissionDatabaseCatalogsGet,
 	PermissionDatabaseCatalogsUpdate,
-	PermissionDatabasesAdviseIndex,
 	PermissionDatabasesCheck,
 	PermissionDatabasesGet,
 	PermissionDatabasesGetSchema,
@@ -143,7 +139,6 @@ var allPermissions = []Permission{
 	PermissionIdentityProvidersCreate,
 	PermissionIdentityProvidersDelete,
 	PermissionIdentityProvidersGet,
-	PermissionIdentityProvidersUndelete,
 	PermissionIdentityProvidersUpdate,
 	PermissionInstancesCreate,
 	PermissionInstancesDelete,
@@ -215,7 +210,6 @@ var allPermissions = []Permission{
 	PermissionSheetsCreate,
 	PermissionSheetsGet,
 	PermissionSheetsUpdate,
-	PermissionSlowQueriesList,
 	PermissionSQLSelect,
 	PermissionSQLDdl,
 	PermissionSQLDml,

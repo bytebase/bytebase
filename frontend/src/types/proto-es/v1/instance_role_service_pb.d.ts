@@ -179,7 +179,7 @@ export declare const InstanceRoleService: GenService<{
     output: typeof InstanceRoleSchema;
   },
   /**
-   * Permissions required: bb.instanceRoles.get
+   * Permissions required: bb.instanceRoles.list
    *
    * @generated from rpc bytebase.v1.InstanceRoleService.ListInstanceRoles
    */

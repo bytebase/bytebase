@@ -19,11 +19,11 @@ service InstanceRoleService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Permissions required: bb.instanceRoles.get
+  // Permissions required: bb.instanceRoles.list
   rpc ListInstanceRoles(ListInstanceRolesRequest) returns (ListInstanceRolesResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*}/roles"};
     option (google.api.method_signature) = "parent";
-    option (bytebase.v1.permission) = "bb.instanceRoles.get";
+    option (bytebase.v1.permission) = "bb.instanceRoles.list";
     option (bytebase.v1.auth_method) = IAM;
   }
 }

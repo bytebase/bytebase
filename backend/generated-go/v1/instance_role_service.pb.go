@@ -332,10 +332,10 @@ const file_v1_instance_role_service_proto_rawDesc = "" +
 	"\x11_connection_limitB\x0e\n" +
 	"\f_valid_untilB\f\n" +
 	"\n" +
-	"_attribute2\xe6\x02\n" +
+	"_attribute2\xe7\x02\n" +
 	"\x13InstanceRoleService\x12\x9c\x01\n" +
-	"\x0fGetInstanceRole\x12#.bytebase.v1.GetInstanceRoleRequest\x1a\x19.bytebase.v1.InstanceRole\"I\xdaA\x04name\x8a\xea0\x14bb.instanceRoles.get\x90\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{name=instances/*/roles/*}\x12\xaf\x01\n" +
-	"\x11ListInstanceRoles\x12%.bytebase.v1.ListInstanceRolesRequest\x1a&.bytebase.v1.ListInstanceRolesResponse\"K\xdaA\x06parent\x8a\xea0\x14bb.instanceRoles.get\x90\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{parent=instances/*}/rolesB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\x0fGetInstanceRole\x12#.bytebase.v1.GetInstanceRoleRequest\x1a\x19.bytebase.v1.InstanceRole\"I\xdaA\x04name\x8a\xea0\x14bb.instanceRoles.get\x90\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{name=instances/*/roles/*}\x12\xb0\x01\n" +
+	"\x11ListInstanceRoles\x12%.bytebase.v1.ListInstanceRolesRequest\x1a&.bytebase.v1.ListInstanceRolesResponse\"L\xdaA\x06parent\x8a\xea0\x15bb.instanceRoles.list\x90\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{parent=instances/*}/rolesB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_instance_role_service_proto_rawDescOnce sync.Once

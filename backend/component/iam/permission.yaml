@@ -10,7 +10,6 @@ permissions:
   - bb.changelogs.list
   - bb.databaseCatalogs.get
   - bb.databaseCatalogs.update
-  - bb.databases.adviseIndex
   - bb.databases.check
   - bb.databases.get
   - bb.databases.getSchema
@@ -25,7 +24,6 @@ permissions:
   - bb.identityProviders.create
   - bb.identityProviders.delete
   - bb.identityProviders.get
-  - bb.identityProviders.undelete
   - bb.identityProviders.update
   - bb.instances.create
   - bb.instances.delete
@@ -97,7 +95,6 @@ permissions:
   - bb.sheets.create
   - bb.sheets.get
   - bb.sheets.update
-  - bb.slowQueries.list
   - bb.sql.select
   - bb.sql.ddl
   - bb.sql.dml
