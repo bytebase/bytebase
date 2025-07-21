@@ -81,8 +81,8 @@ const columnList = computed((): DataTableColumn<TaskRun>[] => {
       },
     },
     {
-      key: "comment",
-      title: t("common.comment"),
+      key: "detail",
+      title: t("common.detail"),
       render: (taskRun: TaskRun) => {
         return <TaskRunComment taskRun={taskRun} />;
       },

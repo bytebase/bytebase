@@ -196,6 +196,24 @@ export const useCommonSearchScopeOptions = (
         ],
         allowMultiple: false,
       }),
+      state: () => ({
+        id: "state",
+        title: t("common.state"),
+        description: t("plan.state.description"),
+        options: [
+          {
+            value: "ACTIVE",
+            keywords: ["active", "ACTIVE"],
+            render: () => t("common.active"),
+          },
+          {
+            value: "DELETED",
+            keywords: ["deleted", "DELETED"],
+            render: () => t("common.deleted"),
+          },
+        ],
+        allowMultiple: false,
+      }),
     } as Partial<Record<SearchScopeId, () => ScopeOption>>;
 
     const scopes: ScopeOption[] = [];
