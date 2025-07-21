@@ -1834,16 +1834,15 @@ func (*SQLService) Pretty(_ context.Context, req *connect.Request[v1pb.PrettyReq
 
 // GetQueriableDataSource try to returns the RO data source, and will returns the admin data source if not exist the RO data source.
 func GetQueriableDataSource(instance *store.InstanceMessage) *storepb.DataSource {
-	var adminDataSource *storepb.DataSource
+	if len(instance.Metadata.GetDataSources()) == 0 {
+		return nil
+	}
 	for _, ds := range instance.Metadata.GetDataSources() {
 		if ds.GetType() == storepb.DataSourceType_READ_ONLY {
 			return ds
 		}
-		if ds.GetType() == storepb.DataSourceType_ADMIN && adminDataSource == nil {
-			adminDataSource = ds
-		}
 	}
-	return adminDataSource
+	return instance.Metadata.DataSources[0]
 }
 
 func checkAndGetDataSourceQueriable(
