@@ -20,15 +20,11 @@ import { useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
 import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
+import Timestamp from "@/components/misc/Timestamp.vue";
 import { useEnvironmentV1Store, useUserStore } from "@/store";
-import {
-  getTimeForPbTimestampProtoEs,
-  unknownUser,
-  type ComposedRollout,
-} from "@/types";
+import { unknownUser, type ComposedRollout } from "@/types";
 import type { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
-  humanizeTs,
   stringifyTaskStatus,
   getStageStatus,
   extractRolloutUID,
@@ -160,10 +156,7 @@ const columnList = computed(
         key: "updateTime",
         title: t("common.updated-at"),
         width: 128,
-        render: (rollout) =>
-          humanizeTs(
-            getTimeForPbTimestampProtoEs(rollout.updateTime, 0) / 1000
-          ),
+        render: (rollout) => <Timestamp timestamp={rollout.updateTime} />,
       },
       {
         key: "creator",

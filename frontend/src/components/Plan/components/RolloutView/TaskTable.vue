@@ -26,6 +26,7 @@ import { useRouter } from "vue-router";
 import { semanticTaskType } from "@/components/IssueV1";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
+import Timestamp from "@/components/misc/Timestamp.vue";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, batchGetOrFetchDatabases } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
@@ -240,14 +241,7 @@ const columnList = computed((): DataTableColumn<Task>[] => {
       key: "updateTime",
       title: t("common.updated-at"),
       width: 128,
-      render: (task) => {
-        if (!task.updateTime) {
-          return "-";
-        }
-        return humanizeTs(
-          getTimeForPbTimestampProtoEs(task.updateTime, 0) / 1000
-        );
-      },
+      render: (task) => <Timestamp timestamp={task.updateTime} />,
     },
   ];
 });
