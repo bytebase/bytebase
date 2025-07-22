@@ -68,7 +68,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 // TableRequirePKRule checks table requires PK.
 type TableRequirePKRule struct {
 	BaseRule
-	tables  tablePK
+	tables  map[string]columnSet
 	line    map[string]int
 	catalog *catalog.Finder
 }
@@ -80,7 +80,7 @@ func NewTableRequirePKRule(level storepb.Advice_Status, title string, catalog *c
 			level: level,
 			title: title,
 		},
-		tables:  make(tablePK),
+		tables:  make(map[string]columnSet),
 		line:    make(map[string]int),
 		catalog: catalog,
 	}
@@ -94,11 +94,11 @@ func (*TableRequirePKRule) Name() string {
 // OnEnter is called when entering a parse tree node.
 func (r *TableRequirePKRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
-	case "CreateTable":
+	case NodeTypeCreateTable:
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case "DropTable":
+	case NodeTypeDropTable:
 		r.checkDropTable(ctx.(*mysql.DropTableContext))
-	case "AlterTable":
+	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
 	}
 	return nil
@@ -222,7 +222,7 @@ func (r *TableRequirePKRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 }
 
 func (r *TableRequirePKRule) generateAdviceList() {
-	tableList := r.tables.tableList()
+	tableList := r.getTableList()
 	for _, tableName := range tableList {
 		if len(r.tables[tableName]) == 0 {
 			r.AddAdvice(&storepb.Advice{
@@ -265,4 +265,12 @@ func (r *TableRequirePKRule) dropColumn(tableName string, columnName string) boo
 
 func (r *TableRequirePKRule) initEmptyTable(name string) {
 	r.tables[name] = make(columnSet)
+}
+
+func (r *TableRequirePKRule) getTableList() []string {
+	var tableList []string
+	for tableName := range r.tables {
+		tableList = append(tableList, tableName)
+	}
+	return tableList
 }

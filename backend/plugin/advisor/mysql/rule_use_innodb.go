@@ -82,11 +82,11 @@ func (*UseInnoDBRule) Name() string {
 // OnEnter is called when entering a parse tree node.
 func (r *UseInnoDBRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
-	case "CreateTable":
+	case NodeTypeCreateTable:
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case "AlterTable":
+	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
-	case "SetStatement":
+	case NodeTypeSetStatement:
 		r.checkSetStatement(ctx.(*mysql.SetStatementContext))
 	}
 	return nil

@@ -11,6 +11,31 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
+// Node type constants for consistent node type checking
+const (
+	NodeTypeCreateTable          = "CreateTable"
+	NodeTypeAlterTable           = "AlterTable"
+	NodeTypeDropTable            = "DropTable"
+	NodeTypeRenameTableStatement = "RenameTableStatement"
+	NodeTypeSetStatement         = "SetStatement"
+	NodeTypeCreateIndex          = "CreateIndex"
+	NodeTypeDropIndex            = "DropIndex"
+	NodeTypeInsertStatement      = "InsertStatement"
+	NodeTypeUpdateStatement      = "UpdateStatement"
+	NodeTypeDeleteStatement      = "DeleteStatement"
+	NodeTypeSelectStatement      = "SelectStatement"
+	NodeTypeCreateView           = "CreateView"
+	NodeTypeDropView             = "DropView"
+	NodeTypeCreateProcedure      = "CreateProcedure"
+	NodeTypeDropProcedure        = "DropProcedure"
+	NodeTypeCreateFunction       = "CreateFunction"
+	NodeTypeDropFunction         = "DropFunction"
+	NodeTypeCreateEvent          = "CreateEvent"
+	NodeTypeDropEvent            = "DropEvent"
+	NodeTypeCreateTrigger        = "CreateTrigger"
+	NodeTypeDropTrigger          = "DropTrigger"
+)
+
 // Rule defines the interface for individual SQL validation rules.
 // Each rule implements specific checking logic without embedding the base listener.
 type Rule interface {

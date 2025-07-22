@@ -97,9 +97,9 @@ func (*ColumnNoNullRule) Name() string {
 // OnEnter is called when entering a parse tree node.
 func (r *ColumnNoNullRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
-	case "CreateTable":
+	case NodeTypeCreateTable:
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case "AlterTable":
+	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
 	}
 	return nil

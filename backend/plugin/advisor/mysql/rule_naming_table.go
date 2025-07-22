@@ -87,11 +87,11 @@ func (*NamingTableRule) Name() string {
 // OnEnter is called when entering a parse tree node.
 func (r *NamingTableRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
-	case "CreateTable":
+	case NodeTypeCreateTable:
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case "AlterTable":
+	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
-	case "RenameTableStatement":
+	case NodeTypeRenameTableStatement:
 		r.checkRenameTableStatement(ctx.(*mysql.RenameTableStatementContext))
 	}
 	return nil
