@@ -32,10 +32,15 @@ import { type DataTableColumn, NDataTable, NButton, useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { RouterLink, useRouter } from "vue-router";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useRevisionStore } from "@/store";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
-import { extractIssueUID } from "@/utils";
+import {
+  extractIssueUID,
+  extractProjectResourceName,
+  issueV1Slug,
+} from "@/utils";
 import { useDatabaseDetailContext } from "../Database/context";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 
@@ -87,7 +92,11 @@ const columnList = computed(() => {
         return (
           <RouterLink
             to={{
-              path: `/${revision.issue}`,
+              name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+              params: {
+                projectId: extractProjectResourceName(revision.issue),
+                issueSlug: issueV1Slug(revision.issue),
+              },
             }}
             custom={true}
           >
