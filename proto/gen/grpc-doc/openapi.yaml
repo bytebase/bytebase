@@ -2936,11 +2936,22 @@ paths:
                   required: true
                   schema:
                     type: string
+                - name: updateMask
+                  in: query
+                  description: The list of fields to update.
+                  schema:
+                    type: string
+                    format: field-mask
+                - name: validateOnly
+                  in: query
+                  description: Validate only also tests the data source connection.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/UpdateDataSourceRequest'
+                            $ref: '#/components/schemas/DataSource'
                 required: true
             responses:
                 "200":
@@ -6139,7 +6150,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/projects/{project}/webhooks/{webhook}:updateWebhook:
-        post:
+        patch:
             tags:
                 - ProjectService
             description: 'Permissions required: bb.projects.update'
@@ -6157,11 +6168,17 @@ paths:
                   required: true
                   schema:
                     type: string
+                - name: updateMask
+                  in: query
+                  description: The list of fields to update.
+                  schema:
+                    type: string
+                    format: field-mask
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/UpdateWebhookRequest'
+                            $ref: '#/components/schemas/Webhook'
                 required: true
             responses:
                 "200":
@@ -14137,28 +14154,6 @@ components:
                     description: |-
                         The name of the deleted user.
                          Format: users/{user}
-        UpdateDataSourceRequest:
-            required:
-                - name
-                - dataSource
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: |-
-                        The name of the instance to update a data source.
-                         Format: instances/{instance}
-                dataSource:
-                    allOf:
-                        - $ref: '#/components/schemas/DataSource'
-                    description: Identified by data source ID.
-                updateMask:
-                    type: string
-                    description: The list of fields to update.
-                    format: field-mask
-                validateOnly:
-                    type: boolean
-                    description: Validate only also tests the data source connection.
         UpdateDatabaseRequest:
             required:
                 - database
@@ -14189,19 +14184,6 @@ components:
 
                          The instance's `name` field is used to identify the instance to update.
                          Format: instances/{instance}
-                updateMask:
-                    type: string
-                    description: The list of fields to update.
-                    format: field-mask
-        UpdateWebhookRequest:
-            required:
-                - webhook
-            type: object
-            properties:
-                webhook:
-                    allOf:
-                        - $ref: '#/components/schemas/Webhook'
-                    description: The webhook to modify.
                 updateMask:
                     type: string
                     description: The list of fields to update.
