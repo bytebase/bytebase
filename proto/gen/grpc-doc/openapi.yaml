@@ -6150,7 +6150,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/projects/{project}/webhooks/{webhook}:updateWebhook:
-        post:
+        patch:
             tags:
                 - ProjectService
             description: 'Permissions required: bb.projects.update'
