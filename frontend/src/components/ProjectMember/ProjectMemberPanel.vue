@@ -36,6 +36,16 @@
             </template>
             {{ $t("settings.members.grant-access") }}
           </NButton>
+          <NButton
+            v-else-if="shouldShowRequestRoleButton"
+            type="primary"
+            @click="state.showRequestRolePanel = true"
+          >
+            <template #icon>
+              <heroicons-outline:user-add class="w-4 h-4" />
+            </template>
+            {{ $t("issue.title.request-role") }}
+          </NButton>
         </div>
       </template>
       <NTabPane name="users">
@@ -87,6 +97,12 @@
     @revoke-binding="revokeMember"
     @close="state.editingMember = undefined"
   />
+
+  <GrantRequestPanel
+    v-if="state.showRequestRolePanel"
+    :project-name="project.name"
+    @close="state.showRequestRolePanel = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -106,13 +122,19 @@ import {
   extractUserId,
   pushNotification,
   useCurrentUserV1,
+  usePermissionStore,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   useWorkspaceV1Store,
 } from "@/store";
 import type { ComposedProject } from "@/types";
-import { PRESET_WORKSPACE_ROLES, groupBindingPrefix } from "@/types";
+import {
+  PRESET_WORKSPACE_ROLES,
+  PresetRoleType,
+  groupBindingPrefix,
+} from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
+import GrantRequestPanel from "../GrantRequestPanel";
 import { SearchBox } from "../v2";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
 import ProjectMemberRolePanel from "./ProjectMemberRolePanel/index.vue";
@@ -124,6 +146,7 @@ interface LocalState {
   selectedMembers: string[];
   showInactiveMemberList: boolean;
   showAddMemberPanel: boolean;
+  showRequestRolePanel: boolean;
   editingMember?: string;
 }
 
@@ -146,12 +169,26 @@ const state = reactive<LocalState>({
   selectedMembers: [],
   showInactiveMemberList: false,
   showAddMemberPanel: false,
+  showRequestRolePanel: false,
 });
 
+const permissionStore = usePermissionStore();
 const workspaceStore = useWorkspaceV1Store();
+
+const isProjectOwner = computed(() => {
+  const roles = permissionStore.currentRoleListInProjectV1(props.project);
+  return roles.includes(PresetRoleType.PROJECT_OWNER);
+});
 
 const allowEdit = computed(() => {
   return hasProjectPermissionV2(props.project, "bb.projects.setIamPolicy");
+});
+
+const shouldShowRequestRoleButton = computed(() => {
+  return (
+    !isProjectOwner.value &&
+    hasProjectPermissionV2(props.project, "bb.issues.create")
+  );
 });
 
 const workspaceRoles = computed(() => new Set(PRESET_WORKSPACE_ROLES));
