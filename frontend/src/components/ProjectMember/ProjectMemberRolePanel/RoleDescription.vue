@@ -16,10 +16,15 @@ import { create } from "@bufbuild/protobuf";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { issueServiceClientConnect } from "@/grpcweb";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
-import { isValidIssueName } from "@/utils";
+import {
+  extractProjectResourceName,
+  issueV1Slug,
+  isValidIssueName,
+} from "@/utils";
 
 type DescriptionType = "TEXT" | "ISSUE";
 
@@ -54,7 +59,11 @@ const gotoIssuePage = async () => {
   }
 
   const route = router.resolve({
-    path: `/${issue.name}`,
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    params: {
+      projectId: extractProjectResourceName(issue.name),
+      issueSlug: issueV1Slug(issue.name, issue.title),
+    },
   });
   window.open(route.href, "_blank");
 };
