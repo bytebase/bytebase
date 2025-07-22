@@ -84,7 +84,13 @@ func TestNewIdentityProvider(t *testing.T) {
 	}
 }
 
-func newMockServer(t *testing.T, tls bool, clientID, code, accessToken, nonce string, userinfo []byte) *httptest.Server {
+func newMockServer(t *testing.T, tls bool, userinfo []byte) *httptest.Server {
+	const (
+		testClientID    = "test-client-id"
+		testNonce       = "test-nonce"
+		testCode        = "test-code"
+		testAccessToken = "test-access-token"
+	)
 	mux := http.NewServeMux()
 
 	var openidConfig map[string]any
@@ -103,13 +109,13 @@ func newMockServer(t *testing.T, tls bool, clientID, code, accessToken, nonce st
 		vals, err := url.ParseQuery(string(body))
 		require.NoError(t, err)
 
-		require.Equal(t, code, vals.Get("code"))
+		require.Equal(t, testCode, vals.Get("code"))
 		require.Equal(t, "authorization_code", vals.Get("grant_type"))
 		require.Equal(t, "https://example.com/oidc/callback", vals.Get("redirect_uri"))
 
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(map[string]any{
-			"access_token":  accessToken,
+			"access_token":  testAccessToken,
 			"token_type":    "Bearer",
 			"refresh_token": "test-refresh-token",
 			"expires_in":    3600,
@@ -164,10 +170,10 @@ func newMockServer(t *testing.T, tls bool, clientID, code, accessToken, nonce st
 		jwt.MapClaims{
 			"iss":   s.URL,
 			"sub":   "123456789",
-			"aud":   clientID,
+			"aud":   testClientID,
 			"exp":   time.Now().Add(time.Hour).Unix(),
 			"iat":   time.Now().Unix(),
-			"nonce": nonce,
+			"nonce": testNonce,
 		},
 	)
 	rawIDToken, err = token.SignedString(rs256)
@@ -197,7 +203,7 @@ func TestIdentityProvider(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	s := newMockServer(t, false, testClientID, testCode, testAccessToken, testNonce, userinfo)
+	s := newMockServer(t, false, userinfo)
 	oidc, err := NewIdentityProvider(
 		ctx,
 		&storepb.OIDCIdentityProviderConfig{
@@ -252,7 +258,7 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("verify TLS", func(t *testing.T) {
-		s := newMockServer(t, true, testClientID, testCode, testAccessToken, testNonce, userinfo)
+		s := newMockServer(t, true, userinfo)
 		_, err := NewIdentityProvider(
 			ctx,
 			&storepb.OIDCIdentityProviderConfig{
@@ -270,7 +276,7 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 	})
 
 	t.Run("skip TLS verify", func(t *testing.T) {
-		s := newMockServer(t, true, testClientID, testCode, testAccessToken, testNonce, userinfo)
+		s := newMockServer(t, true, userinfo)
 		oidc, err := NewIdentityProvider(
 			ctx,
 			&storepb.OIDCIdentityProviderConfig{
@@ -302,6 +308,97 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 		}
 		assert.Equal(t, wantUserInfo, userInfo)
 	})
+}
+
+func TestIdentityProvider_GroupsParsing(t *testing.T) {
+	ctx := context.Background()
+
+	const (
+		testClientID    = "test-client-id"
+		testNonce       = "test-nonce"
+		testCode        = "test-code"
+		testAccessToken = "test-access-token"
+		testSubject     = "123456789"
+		testName        = "John Doe"
+		testEmail       = "john.doe@example.com"
+	)
+
+	tests := []struct {
+		name           string
+		groupsClaim    any
+		expectedGroups []string
+	}{
+		{
+			name:           "normal array groups",
+			groupsClaim:    []any{"Dev", "Admin"},
+			expectedGroups: []string{"Dev", "Admin"},
+		},
+		{
+			name:           "2D array groups (JSON-encoded string in array)",
+			groupsClaim:    []any{`["a1b2c3d4-e5f6-7890-abcd-ef1234567890","f9e8d7c6-b5a4-3210-9876-543210fedcba"]`},
+			expectedGroups: []string{"a1b2c3d4-e5f6-7890-abcd-ef1234567890", "f9e8d7c6-b5a4-3210-9876-543210fedcba"},
+		},
+		{
+			name:           "mixed groups (normal strings and JSON)",
+			groupsClaim:    []any{"Admin", `["group1","group2"]`, "Dev"},
+			expectedGroups: []string{"Admin", "group1", "group2", "Dev"},
+		},
+		{
+			name:           "malformed JSON (should be treated as string)",
+			groupsClaim:    []any{`["invalid json"`},
+			expectedGroups: []string{`["invalid json"`},
+		},
+		{
+			name:           "empty JSON array",
+			groupsClaim:    []any{`[]`},
+			expectedGroups: nil,
+		},
+		{
+			name:           "non-JSON string starting with bracket",
+			groupsClaim:    []any{"[not-json]"},
+			expectedGroups: []string{"[not-json]"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			userinfo, err := json.Marshal(
+				map[string]any{
+					"sub":    testSubject,
+					"name":   testName,
+					"email":  testEmail,
+					"groups": test.groupsClaim,
+				},
+			)
+			require.NoError(t, err)
+
+			s := newMockServer(t, false, userinfo)
+			oidc, err := NewIdentityProvider(
+				ctx,
+				&storepb.OIDCIdentityProviderConfig{
+					Issuer:       s.URL,
+					ClientId:     testClientID,
+					ClientSecret: "test-client-secret",
+					FieldMapping: &storepb.FieldMapping{
+						Identifier:  "sub",
+						DisplayName: "name",
+						Groups:      "groups",
+					},
+				},
+			)
+			require.NoError(t, err)
+
+			oauthToken, err := oidc.ExchangeToken(ctx, "https://example.com/oidc/callback", testCode)
+			require.NoError(t, err)
+
+			userInfo, _, err := oidc.UserInfo(ctx, oauthToken, testNonce)
+			require.NoError(t, err)
+
+			assert.Equal(t, test.expectedGroups, userInfo.Groups)
+			// HasGroups is true whenever groups field exists in claims, regardless of content
+			assert.True(t, userInfo.HasGroups)
+		})
+	}
 }
 
 func TestGetOpenIDConfigration(t *testing.T) {

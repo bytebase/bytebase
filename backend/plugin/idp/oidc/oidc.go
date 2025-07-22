@@ -151,7 +151,18 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 			for _, group := range v {
 				// Only handle string type here.
 				if groupStr, ok := group.(string); ok {
-					userInfo.Groups = append(userInfo.Groups, groupStr)
+					// Try to parse as JSON array if it looks like one (starts with '[')
+					if strings.HasPrefix(groupStr, "[") && strings.HasSuffix(groupStr, "]") {
+						var nestedGroups []string
+						if err := json.Unmarshal([]byte(groupStr), &nestedGroups); err == nil {
+							userInfo.Groups = append(userInfo.Groups, nestedGroups...)
+						} else {
+							// If JSON parsing fails, treat as regular string
+							userInfo.Groups = append(userInfo.Groups, groupStr)
+						}
+					} else {
+						userInfo.Groups = append(userInfo.Groups, groupStr)
+					}
 				}
 			}
 		}
