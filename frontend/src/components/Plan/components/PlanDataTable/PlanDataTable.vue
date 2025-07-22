@@ -19,17 +19,14 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
+import Timestamp from "@/components/misc/Timestamp.vue";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
-import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import { unknownUser } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
-import {
-  extractPlanUID,
-  extractProjectResourceName,
-  humanizeTs,
-} from "@/utils";
+import { extractPlanUID, extractProjectResourceName } from "@/utils";
 import PlanCheckRunStatusIcon from "../PlanCheckRunStatusIcon.vue";
 
 withDefaults(
@@ -99,8 +96,7 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
       key: "updateTime",
       title: t("issue.table.updated"),
       width: 128,
-      render: (plan) =>
-        humanizeTs(getTimeForPbTimestampProtoEs(plan.updateTime, 0) / 1000),
+      render: (plan) => <Timestamp timestamp={plan.updateTime} />,
     },
     {
       key: "creator",
