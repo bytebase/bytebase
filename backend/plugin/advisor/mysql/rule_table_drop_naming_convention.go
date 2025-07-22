@@ -44,32 +44,58 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	checker := &namingDropTableConventionChecker{
-		level:  level,
-		title:  string(checkCtx.Rule.Type),
-		format: format,
-	}
+	// Create the rule
+	rule := NewTableDropNamingConventionRule(level, string(checkCtx.Rule.Type), format)
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmt := range list {
-		checker.baseLine = stmt.BaseLine
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type namingDropTableConventionChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine   int
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	format     *regexp.Regexp
+// TableDropNamingConventionRule checks for drop table naming convention.
+type TableDropNamingConventionRule struct {
+	BaseRule
+	format *regexp.Regexp
 }
 
-// EnterDropTable is called when production dropTable is entered.
-func (checker *namingDropTableConventionChecker) EnterDropTable(ctx *mysql.DropTableContext) {
+// NewTableDropNamingConventionRule creates a new TableDropNamingConventionRule.
+func NewTableDropNamingConventionRule(level storepb.Advice_Status, title string, format *regexp.Regexp) *TableDropNamingConventionRule {
+	return &TableDropNamingConventionRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		format: format,
+	}
+}
+
+// Name returns the rule name.
+func (*TableDropNamingConventionRule) Name() string {
+	return "TableDropNamingConventionRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *TableDropNamingConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeDropTable:
+		r.checkDropTable(ctx.(*mysql.DropTableContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*TableDropNamingConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *TableDropNamingConventionRule) checkDropTable(ctx *mysql.DropTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -79,13 +105,13 @@ func (checker *namingDropTableConventionChecker) EnterDropTable(ctx *mysql.DropT
 
 	for _, tableRef := range ctx.TableRefList().AllTableRef() {
 		_, tableName := mysqlparser.NormalizeMySQLTableRef(tableRef)
-		if !checker.format.MatchString(tableName) {
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:        checker.level,
+		if !r.format.MatchString(tableName) {
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.level,
 				Code:          advisor.TableDropNamingConventionMismatch.Int32(),
-				Title:         checker.title,
-				Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", tableName, checker.format),
-				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+				Title:         r.title,
+				Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", tableName, r.format),
+				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

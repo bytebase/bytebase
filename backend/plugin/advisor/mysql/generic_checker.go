@@ -34,6 +34,8 @@ const (
 	NodeTypeDropEvent            = "DropEvent"
 	NodeTypeCreateTrigger        = "CreateTrigger"
 	NodeTypeDropTrigger          = "DropTrigger"
+	NodeTypeQuery                = "Query"
+	NodeTypeQueryExpression      = "QueryExpression"
 )
 
 // Rule defines the interface for individual SQL validation rules.
