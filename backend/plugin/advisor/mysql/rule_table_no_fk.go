@@ -41,32 +41,58 @@ func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 		return nil, err
 	}
 
-	checker := &tableNoFKChecker{
-		level: level,
-		title: string(checkCtx.Rule.Type),
-	}
+	// Create the rule
+	rule := NewTableNoFKRule(level, string(checkCtx.Rule.Type))
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
+
 	for _, stmtNode := range root {
-		checker.baseLine = stmtNode.BaseLine
+		rule.SetBaseLine(stmtNode.BaseLine)
+		checker.SetBaseLine(stmtNode.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
 	}
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type tableNoFKChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine   int
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
+// TableNoFKRule checks table disallow foreign key.
+type TableNoFKRule struct {
+	BaseRule
 }
 
-// EnterCreateTable is called when production createTable is entered.
-func (checker *tableNoFKChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
+// NewTableNoFKRule creates a new TableNoFKRule.
+func NewTableNoFKRule(level storepb.Advice_Status, title string) *TableNoFKRule {
+	return &TableNoFKRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
 	}
+}
+
+// Name returns the rule name.
+func (*TableNoFKRule) Name() string {
+	return "TableNoFKRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *TableNoFKRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeCreateTable:
+		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
+	case NodeTypeAlterTable:
+		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*TableNoFKRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *TableNoFKRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if ctx.TableName() == nil || ctx.TableElementList() == nil {
 		return
 	}
@@ -76,15 +102,11 @@ func (checker *tableNoFKChecker) EnterCreateTable(ctx *mysql.CreateTableContext)
 		if tableElement.TableConstraintDef() == nil {
 			continue
 		}
-		checker.handleTableConstraintDef(tableName, tableElement.TableConstraintDef())
+		r.handleTableConstraintDef(tableName, tableElement.TableConstraintDef())
 	}
 }
 
-// EnterAlterTable is called when production alterTable is entered.
-func (checker *tableNoFKChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
+func (r *TableNoFKRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	if ctx.TableRef() == nil {
 		return
 	}
@@ -100,23 +122,23 @@ func (checker *tableNoFKChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 		switch {
 		// ADD CONSTRANIT
 		case option.ADD_SYMBOL() != nil && option.TableConstraintDef() != nil:
-			checker.handleTableConstraintDef(tableName, option.TableConstraintDef())
+			r.handleTableConstraintDef(tableName, option.TableConstraintDef())
 		default:
 			continue
 		}
 	}
 }
 
-func (checker *tableNoFKChecker) handleTableConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) {
+func (r *TableNoFKRule) handleTableConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) {
 	if ctx.GetType_() != nil {
 		switch strings.ToUpper(ctx.GetType_().GetText()) {
 		case "FOREIGN":
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:        checker.level,
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.level,
 				Code:          advisor.TableHasFK.Int32(),
-				Title:         checker.title,
+				Title:         r.title,
 				Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", tableName),
-				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 			})
 		default:
 		}
