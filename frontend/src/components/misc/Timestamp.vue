@@ -63,18 +63,10 @@ const humanizedTime = computed(() => {
   return humanizeTs(timestampInSeconds.value);
 });
 
-// Full datetime with timezone like "July 22, 2025 at 5:12:20 PM GMT+8"
 const fullDateTime = computed(() => {
   if (!timestampInMilliseconds.value) return "";
 
   const date = dayjs(timestampInMilliseconds.value);
-  const localDate = date.local();
-
-  // Format: "July 22, 2025 at 5:12:20 PM GMT+8"
-  const dateStr = localDate.format("MMMM D, YYYY");
-  const timeStr = localDate.format("h:mm:ss A");
-  const timezoneStr = localDate.format("[GMT]Z");
-
-  return `${dateStr} at ${timeStr} ${timezoneStr}`;
+  return date.local().format();
 });
 </script>
