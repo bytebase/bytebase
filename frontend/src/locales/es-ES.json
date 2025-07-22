@@ -873,7 +873,7 @@
         },
         "creator": {
           "title": "Creador",
-          "description": "Búsqueda por tema creador"
+          "description": "Búsqueda por creador"
         },
         "subscriber": {},
         "approver": {
