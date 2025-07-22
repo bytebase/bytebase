@@ -44,33 +44,61 @@ func (*UseInnoDBAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 		return nil, err
 	}
 
-	checker := &useInnoDBChecker{
-		level: level,
-		title: string(checkCtx.Rule.Type),
-	}
+	// Create the rule
+	rule := NewUseInnoDBRule(level, string(checkCtx.Rule.Type))
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmt := range list {
-		checker.baseLine = stmt.BaseLine
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type useInnoDBChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine   int
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
+// UseInnoDBRule checks for using InnoDB engine.
+type UseInnoDBRule struct {
+	BaseRule
 }
 
-// EnterCreateTable is called when production createTable is entered.
-func (c *useInnoDBChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
+// NewUseInnoDBRule creates a new UseInnoDBRule.
+func NewUseInnoDBRule(level storepb.Advice_Status, title string) *UseInnoDBRule {
+	return &UseInnoDBRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
 	}
+}
+
+// Name returns the rule name.
+func (*UseInnoDBRule) Name() string {
+	return "UseInnoDBRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *UseInnoDBRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "CreateTable":
+		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
+	case "AlterTable":
+		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	case "SetStatement":
+		r.checkSetStatement(ctx.(*mysql.SetStatementContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*UseInnoDBRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	// This rule doesn't need exit processing
+	return nil
+}
+
+func (r *UseInnoDBRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if ctx.CreateTableOptions() == nil {
 		return
 	}
@@ -83,17 +111,14 @@ func (c *useInnoDBChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
 			if strings.ToLower(engine) != innoDB {
 				content := "CREATE " + ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 				line := tableOption.GetStart().GetLine()
-				c.addAdvice(content, line)
+				r.addAdvice(content, line)
 				break
 			}
 		}
 	}
 }
 
-func (c *useInnoDBChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
+func (r *UseInnoDBRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	if ctx.AlterTableActions() == nil || ctx.AlterTableActions().AlterCommandList() == nil {
 		return
 	}
@@ -119,14 +144,11 @@ func (c *useInnoDBChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 	if code != advisor.Ok {
 		content := "ALTER " + ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 		line := ctx.GetStart().GetLine()
-		c.addAdvice(content, line)
+		r.addAdvice(content, line)
 	}
 }
 
-func (c *useInnoDBChecker) EnterSetStatement(ctx *mysql.SetStatementContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
+func (r *UseInnoDBRule) checkSetStatement(ctx *mysql.SetStatementContext) {
 	code := advisor.Ok
 	if ctx.StartOptionValueList() == nil {
 		return
@@ -154,16 +176,16 @@ func (c *useInnoDBChecker) EnterSetStatement(ctx *mysql.SetStatementContext) {
 	if code != advisor.Ok {
 		content := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 		line := ctx.GetStart().GetLine()
-		c.addAdvice(content, line)
+		r.addAdvice(content, line)
 	}
 }
 
-func (c *useInnoDBChecker) addAdvice(content string, lineNumber int) {
-	lineNumber += c.baseLine
-	c.adviceList = append(c.adviceList, &storepb.Advice{
-		Status:        c.level,
+func (r *UseInnoDBRule) addAdvice(content string, lineNumber int) {
+	lineNumber += r.baseLine
+	r.AddAdvice(&storepb.Advice{
+		Status:        r.level,
 		Code:          advisor.NotInnoDBEngine.Int32(),
-		Title:         c.title,
+		Title:         r.title,
 		Content:       fmt.Sprintf("\"%s;\" doesn't use InnoDB engine", content),
 		StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
 	})

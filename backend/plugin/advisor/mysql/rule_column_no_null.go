@@ -41,19 +41,23 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 	if err != nil {
 		return nil, err
 	}
-	checker := &columnNoNullChecker{
-		level:     level,
-		title:     string(checkCtx.Rule.Type),
-		columnSet: make(map[string]columnName),
-		catalog:   checkCtx.Catalog,
-	}
+
+	// Create the rule
+	rule := NewColumnNoNullRule(level, string(checkCtx.Rule.Type), checkCtx.Catalog)
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range root {
-		checker.baseLine = stmtNode.BaseLine
+		rule.SetBaseLine(stmtNode.BaseLine)
+		checker.SetBaseLine(stmtNode.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
 	}
 
-	return checker.generateAdvice(), nil
+	// Generate advice after walking
+	rule.generateAdvice()
+
+	return checker.GetAdviceList(), nil
 }
 
 type columnName struct {
@@ -66,20 +70,50 @@ func (c columnName) name() string {
 	return fmt.Sprintf("%s.%s", c.tableName, c.columnName)
 }
 
-type columnNoNullChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine   int
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	columnSet  map[string]columnName
-	catalog    *catalog.Finder
+// ColumnNoNullRule checks for column no NULL value.
+type ColumnNoNullRule struct {
+	BaseRule
+	columnSet map[string]columnName
+	catalog   *catalog.Finder
 }
 
-func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
+// NewColumnNoNullRule creates a new ColumnNoNullRule.
+func NewColumnNoNullRule(level storepb.Advice_Status, title string, catalog *catalog.Finder) *ColumnNoNullRule {
+	return &ColumnNoNullRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		columnSet: make(map[string]columnName),
+		catalog:   catalog,
+	}
+}
+
+// Name returns the rule name.
+func (*ColumnNoNullRule) Name() string {
+	return "ColumnNoNullRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *ColumnNoNullRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "CreateTable":
+		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
+	case "AlterTable":
+		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*ColumnNoNullRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	// This rule doesn't need exit processing
+	return nil
+}
+
+func (r *ColumnNoNullRule) generateAdvice() {
 	var columnList []columnName
-	for _, column := range checker.columnSet {
+	for _, column := range r.columnSet {
 		columnList = append(columnList, column)
 	}
 	slices.SortFunc(columnList, func(a, b columnName) int {
@@ -99,28 +133,23 @@ func (checker *columnNoNullChecker) generateAdvice() []*storepb.Advice {
 	})
 
 	for _, column := range columnList {
-		col := checker.catalog.Final.FindColumn(&catalog.ColumnFind{
+		col := r.catalog.Final.FindColumn(&catalog.ColumnFind{
 			TableName:  column.tableName,
 			ColumnName: column.columnName,
 		})
 		if col != nil && col.Nullable() {
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:        checker.level,
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.level,
 				Code:          advisor.ColumnCannotNull.Int32(),
-				Title:         checker.title,
+				Title:         r.title,
 				Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", column.tableName, column.columnName),
 				StartPosition: common.ConvertANTLRLineToPosition(column.line),
 			})
 		}
 	}
-
-	return checker.adviceList
 }
 
-func (checker *columnNoNullChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
+func (r *ColumnNoNullRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if ctx.TableName() == nil {
 		return
 	}
@@ -144,18 +173,15 @@ func (checker *columnNoNullChecker) EnterCreateTable(ctx *mysql.CreateTableConte
 		col := columnName{
 			tableName:  tableName,
 			columnName: column,
-			line:       checker.baseLine + tableElement.GetStart().GetLine(),
+			line:       r.baseLine + tableElement.GetStart().GetLine(),
 		}
-		if _, exists := checker.columnSet[col.name()]; !exists {
-			checker.columnSet[col.name()] = col
+		if _, exists := r.columnSet[col.name()]; !exists {
+			r.columnSet[col.name()] = col
 		}
 	}
 }
 
-func (checker *columnNoNullChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
+func (r *ColumnNoNullRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	if ctx.AlterTableActions() == nil {
 		return
 	}
@@ -201,10 +227,10 @@ func (checker *columnNoNullChecker) EnterAlterTable(ctx *mysql.AlterTableContext
 			col := columnName{
 				tableName:  tableName,
 				columnName: column,
-				line:       checker.baseLine + item.GetStart().GetLine(),
+				line:       r.baseLine + item.GetStart().GetLine(),
 			}
-			if _, exists := checker.columnSet[col.name()]; !exists {
-				checker.columnSet[col.name()] = col
+			if _, exists := r.columnSet[col.name()]; !exists {
+				r.columnSet[col.name()] = col
 			}
 		}
 	}

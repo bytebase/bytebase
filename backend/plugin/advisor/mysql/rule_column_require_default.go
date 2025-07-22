@@ -24,7 +24,7 @@ func init() {
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLRequireColumnDefault, &ColumnRequireDefaultAdvisor{})
 }
 
-// ColumRequireDefaultAdvisor is the advisor checking for column default requirement.
+// ColumnRequireDefaultAdvisor is the advisor checking for column default requirement.
 type ColumnRequireDefaultAdvisor struct {
 }
 
@@ -39,32 +39,60 @@ func (*ColumnRequireDefaultAdvisor) Check(_ context.Context, checkCtx advisor.Co
 	if err != nil {
 		return nil, err
 	}
-	checker := &columnRequireDefaultChecker{
-		level: level,
-		title: string(checkCtx.Rule.Type),
-	}
+
+	// Create the rule
+	rule := NewColumnRequireDefaultRule(level, string(checkCtx.Rule.Type))
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmt := range stmtList {
-		checker.baseLine = stmt.BaseLine
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type columnRequireDefaultChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine   int
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
+// ColumnRequireDefaultRule checks for column default requirement.
+type ColumnRequireDefaultRule struct {
+	BaseRule
 }
 
-func (checker *columnRequireDefaultChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
+// NewColumnRequireDefaultRule creates a new ColumnRequireDefaultRule.
+func NewColumnRequireDefaultRule(level storepb.Advice_Status, title string) *ColumnRequireDefaultRule {
+	return &ColumnRequireDefaultRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
 	}
+}
+
+// Name returns the rule name.
+func (*ColumnRequireDefaultRule) Name() string {
+	return "ColumnRequireDefaultRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *ColumnRequireDefaultRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "CreateTable":
+		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
+	case "AlterTable":
+		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*ColumnRequireDefaultRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	// This rule doesn't need exit processing
+	return nil
+}
+
+func (r *ColumnRequireDefaultRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if ctx.TableName() == nil {
 		return
 	}
@@ -72,7 +100,7 @@ func (checker *columnRequireDefaultChecker) EnterCreateTable(ctx *mysql.CreateTa
 		return
 	}
 
-	pkColumns := getPKColumns(ctx)
+	pkColumns := r.getPKColumns(ctx)
 	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
 	for _, tableElement := range ctx.TableElementList().AllTableElement() {
 		if tableElement == nil {
@@ -89,14 +117,11 @@ func (checker *columnRequireDefaultChecker) EnterCreateTable(ctx *mysql.CreateTa
 		if tableElement.ColumnDefinition().FieldDefinition() == nil {
 			continue
 		}
-		checker.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
+		r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
 	}
 }
 
-func (checker *columnRequireDefaultChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
+func (r *ColumnRequireDefaultRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	if ctx.AlterTableActions() == nil {
 		return
 	}
@@ -121,45 +146,87 @@ func (checker *columnRequireDefaultChecker) EnterAlterTable(ctx *mysql.AlterTabl
 			switch {
 			case item.Identifier() != nil && item.FieldDefinition() != nil:
 				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-				checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+				r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
 			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
 				for _, tableElement := range item.TableElementList().AllTableElement() {
 					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
 						continue
 					}
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-					checker.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
+					r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
 				}
 			}
 		// modify column
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
 			columnName = mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-			checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+			r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
 		// change column
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
 			columnName = mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+			r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
 		}
 	}
 }
 
-func (checker *columnRequireDefaultChecker) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
-	if !checker.hasDefault(ctx) && columnNeedDefault(ctx) {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+func (r *ColumnRequireDefaultRule) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
+	if !r.hasDefault(ctx) && columnNeedDefault(ctx) {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.NoDefault.Int32(),
-			Title:         checker.title,
+			Title:         r.title,
 			Content:       fmt.Sprintf("Column `%s`.`%s` doesn't have DEFAULT.", tableName, columnName),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }
 
-func (*columnRequireDefaultChecker) hasDefault(ctx mysql.IFieldDefinitionContext) bool {
+func (*ColumnRequireDefaultRule) hasDefault(ctx mysql.IFieldDefinitionContext) bool {
 	for _, attr := range ctx.AllColumnAttribute() {
 		if attr.DEFAULT_SYMBOL() != nil {
 			return true
 		}
 	}
 	return false
+}
+
+func (*ColumnRequireDefaultRule) getPKColumns(ctx *mysql.CreateTableContext) map[string]bool {
+	pkColumn := make(map[string]bool)
+	for _, tableElement := range ctx.TableElementList().AllTableElement() {
+		if tableElement == nil {
+			continue
+		}
+		if tableElement.TableConstraintDef() == nil {
+			continue
+		}
+
+		if tableElement.TableConstraintDef().GetType_().GetTokenType() != mysql.MySQLParserPRIMARY_SYMBOL {
+			continue
+		}
+		if tableElement.TableConstraintDef().KeyListVariants() == nil {
+			continue
+		}
+		columnList := mysqlparser.NormalizeKeyListVariants(tableElement.TableConstraintDef().KeyListVariants())
+		for _, column := range columnList {
+			pkColumn[column] = true
+		}
+	}
+	
+	// Also check for inline primary key definitions
+	for _, tableElement := range ctx.TableElementList().AllTableElement() {
+		if tableElement == nil {
+			continue
+		}
+		if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
+			continue
+		}
+		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+		for _, attr := range tableElement.ColumnDefinition().FieldDefinition().AllColumnAttribute() {
+			if attr.PRIMARY_SYMBOL() != nil {
+				pkColumn[columnName] = true
+				break
+			}
+		}
+	}
+	
+	return pkColumn
 }
