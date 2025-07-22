@@ -46,53 +46,73 @@ func (*NamingTableConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 
-	checker := &namingTableConventionChecker{
-		level:     level,
-		title:     string(checkCtx.Rule.Type),
+	// Create the rule
+	rule := NewNamingTableRule(level, string(checkCtx.Rule.Type), format, maxLength)
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
+
+	for _, stmt := range list {
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
+	}
+	return checker.GetAdviceList(), nil
+}
+
+// NamingTableRule checks for table naming conventions.
+type NamingTableRule struct {
+	BaseRule
+	format    *regexp.Regexp
+	maxLength int
+}
+
+// NewNamingTableRule creates a new NamingTableRule.
+func NewNamingTableRule(level storepb.Advice_Status, title string, format *regexp.Regexp, maxLength int) *NamingTableRule {
+	return &NamingTableRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
 		format:    format,
 		maxLength: maxLength,
 	}
+}
 
-	for _, stmt := range list {
-		checker.baseLine = stmt.BaseLine
-		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
+// Name returns the rule name.
+func (*NamingTableRule) Name() string {
+	return "NamingTableRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *NamingTableRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "CreateTable":
+		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
+	case "AlterTable":
+		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	case "RenameTableStatement":
+		r.checkRenameTableStatement(ctx.(*mysql.RenameTableStatementContext))
 	}
-	return checker.generateAdvice()
+	return nil
 }
 
-type namingTableConventionChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine   int
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	format     *regexp.Regexp
-	maxLength  int
+// OnExit is called when exiting a parse tree node.
+func (*NamingTableRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	// This rule doesn't need exit processing
+	return nil
 }
 
-func (checker *namingTableConventionChecker) generateAdvice() ([]*storepb.Advice, error) {
-	return checker.adviceList, nil
-}
-
-// EnterCreateTable is called when production createTable is entered.
-func (checker *namingTableConventionChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
+func (r *NamingTableRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if ctx.TableName() == nil {
 		return
 	}
 
 	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	checker.handleTableName(tableName, ctx.GetStart().GetLine())
+	r.handleTableName(tableName, ctx.GetStart().GetLine())
 }
 
-// EnterAlterTable is called when production alterTable is entered.
-func (checker *namingTableConventionChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
+func (r *NamingTableRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	if ctx.AlterTableActions() == nil {
 		return
 	}
@@ -110,41 +130,37 @@ func (checker *namingTableConventionChecker) EnterAlterTable(ctx *mysql.AlterTab
 			continue
 		}
 		_, tableName := mysqlparser.NormalizeMySQLTableName(item.TableName())
-		checker.handleTableName(tableName, ctx.GetStart().GetLine())
+		r.handleTableName(tableName, ctx.GetStart().GetLine())
 	}
 }
 
-// EnterRenameTableStatement is called when production renameTableStatement is entered.
-func (checker *namingTableConventionChecker) EnterRenameTableStatement(ctx *mysql.RenameTableStatementContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
+func (r *NamingTableRule) checkRenameTableStatement(ctx *mysql.RenameTableStatementContext) {
 	for _, pair := range ctx.AllRenamePair() {
 		if pair.TableName() == nil {
 			continue
 		}
 		_, tableName := mysqlparser.NormalizeMySQLTableName(pair.TableName())
-		checker.handleTableName(tableName, ctx.GetStart().GetLine())
+		r.handleTableName(tableName, ctx.GetStart().GetLine())
 	}
 }
 
-func (checker *namingTableConventionChecker) handleTableName(tableName string, lineNumber int) {
-	lineNumber += checker.baseLine
-	if !checker.format.MatchString(tableName) {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+func (r *NamingTableRule) handleTableName(tableName string, lineNumber int) {
+	lineNumber += r.baseLine
+	if !r.format.MatchString(tableName) {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.NamingTableConventionMismatch.Int32(),
-			Title:         checker.title,
-			Content:       fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, checker.format),
+			Title:         r.title,
+			Content:       fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, r.format),
 			StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
 		})
 	}
-	if checker.maxLength > 0 && len(tableName) > checker.maxLength {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+	if r.maxLength > 0 && len(tableName) > r.maxLength {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.NamingTableConventionMismatch.Int32(),
-			Title:         checker.title,
-			Content:       fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", tableName, checker.maxLength),
+			Title:         r.title,
+			Content:       fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", tableName, r.maxLength),
 			StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
 		})
 	}

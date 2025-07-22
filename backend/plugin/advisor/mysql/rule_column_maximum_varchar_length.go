@@ -6,9 +6,8 @@ import (
 	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
-	"github.com/pkg/errors"
-
 	mysql "github.com/bytebase/mysql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -45,34 +44,62 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advi
 	if err != nil {
 		return nil, err
 	}
-	checker := &columnMaximumVarcharLengthChecker{
-		level:   level,
-		title:   string(checkCtx.Rule.Type),
-		maximum: payload.Number,
-	}
+
+	// Create the rule
+	rule := NewVarcharLengthRule(level, string(checkCtx.Rule.Type), payload.Number)
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmt := range stmtList {
-		checker.baseLine = stmt.BaseLine
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type columnMaximumVarcharLengthChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	baseLine   int
-	maximum    int
+// VarcharLengthRule checks for maximum varchar length.
+type VarcharLengthRule struct {
+	BaseRule
+	maximum int
 }
 
-func (checker *columnMaximumVarcharLengthChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
+// NewVarcharLengthRule creates a new VarcharLengthRule.
+func NewVarcharLengthRule(level storepb.Advice_Status, title string, maximum int) *VarcharLengthRule {
+	return &VarcharLengthRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		maximum: maximum,
 	}
+}
+
+// Name returns the rule name.
+func (*VarcharLengthRule) Name() string {
+	return "VarcharLengthRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *VarcharLengthRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case "CreateTable":
+		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
+	case "AlterTable":
+		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*VarcharLengthRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	// This rule doesn't need exit processing
+	return nil
+}
+
+func (r *VarcharLengthRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if ctx.TableElementList() == nil || ctx.TableName() == nil {
 		return
 	}
@@ -81,6 +108,7 @@ func (checker *columnMaximumVarcharLengthChecker) EnterCreateTable(ctx *mysql.Cr
 	if tableName == "" {
 		return
 	}
+
 	for _, tableElement := range ctx.TableElementList().AllTableElement() {
 		if tableElement.ColumnDefinition() == nil {
 			continue
@@ -92,23 +120,20 @@ func (checker *columnMaximumVarcharLengthChecker) EnterCreateTable(ctx *mysql.Cr
 			continue
 		}
 		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-		length := getVarcharLength(tableElement.ColumnDefinition().FieldDefinition().DataType())
-		if checker.maximum > 0 && length > checker.maximum {
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:        checker.level,
+		length := r.getVarcharLength(tableElement.ColumnDefinition().FieldDefinition().DataType())
+		if r.maximum > 0 && length > r.maximum {
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.level,
 				Code:          advisor.VarcharLengthExceedsLimit.Int32(),
-				Title:         checker.title,
-				Content:       fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", tableName, columnName, checker.maximum),
-				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + tableElement.GetStart().GetLine()),
+				Title:         r.title,
+				Content:       fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", tableName, columnName, r.maximum),
+				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + tableElement.GetStart().GetLine()),
 			})
 		}
 	}
 }
 
-func (checker *columnMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
+func (r *VarcharLengthRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	if ctx.AlterTableActions() == nil {
 		return
 	}
@@ -123,6 +148,7 @@ func (checker *columnMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysql.Alt
 	if tableName == "" {
 		return
 	}
+
 	// alter table add column, change column, modify column.
 	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
 		if item == nil {
@@ -141,7 +167,7 @@ func (checker *columnMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysql.Alt
 				}
 
 				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-				length := getVarcharLength(item.FieldDefinition().DataType())
+				length := r.getVarcharLength(item.FieldDefinition().DataType())
 				varcharLengthMap[columnName] = length
 				columnList = append(columnList, columnName)
 			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
@@ -157,7 +183,7 @@ func (checker *columnMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysql.Alt
 					}
 
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-					length := getVarcharLength(tableElement.ColumnDefinition().FieldDefinition().DataType())
+					length := r.getVarcharLength(tableElement.ColumnDefinition().FieldDefinition().DataType())
 					varcharLengthMap[columnName] = length
 					columnList = append(columnList, columnName)
 				}
@@ -165,12 +191,12 @@ func (checker *columnMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysql.Alt
 		// change column.
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
 			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			length := getVarcharLength(item.FieldDefinition().DataType())
+			length := r.getVarcharLength(item.FieldDefinition().DataType())
 			varcharLengthMap[columnName] = length
 			columnList = append(columnList, columnName)
 		// modify column.
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
-			length := getVarcharLength(item.FieldDefinition().DataType())
+			length := r.getVarcharLength(item.FieldDefinition().DataType())
 			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 			varcharLengthMap[columnName] = length
 			columnList = append(columnList, columnName)
@@ -178,20 +204,20 @@ func (checker *columnMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysql.Alt
 			continue
 		}
 		for _, columnName := range columnList {
-			if length, ok := varcharLengthMap[columnName]; ok && checker.maximum > 0 && length > checker.maximum {
-				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:        checker.level,
+			if length, ok := varcharLengthMap[columnName]; ok && r.maximum > 0 && length > r.maximum {
+				r.AddAdvice(&storepb.Advice{
+					Status:        r.level,
 					Code:          advisor.VarcharLengthExceedsLimit.Int32(),
-					Title:         checker.title,
-					Content:       fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", tableName, columnName, checker.maximum),
-					StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+					Title:         r.title,
+					Content:       fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", tableName, columnName, r.maximum),
+					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 				})
 			}
 		}
 	}
 }
 
-func getVarcharLength(ctx mysql.IDataTypeContext) int {
+func (*VarcharLengthRule) getVarcharLength(ctx mysql.IDataTypeContext) int {
 	if ctx.GetType_() == nil {
 		return 0
 	}
