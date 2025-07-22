@@ -873,7 +873,7 @@
         },
         "creator": {
           "title": "作成者",
-          "description": "イシュー作成者で検索"
+          "description": "作成者で検索"
         },
         "subscriber": {},
         "approver": {

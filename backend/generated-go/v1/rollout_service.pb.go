@@ -808,9 +808,12 @@ type ListRolloutsRequest struct {
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 	//
 	// Supported filters:
+	// - creator: the rollout creator full name in "users/{email or id}" format, support "==" operator.
+	// - update_time: rollout update time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
 	// - task_type: the task type, support "==" and "in" operators, check the Task.Type enum for the values.
 	//
 	// For example:
+	// creator == "users/ed@bytebase.com" && update_time >= "2025-01-02T15:04:05Z07:00"
 	// task_type == "DATABASE_SCHEMA_UPDATE"
 	// task_type in ["DATABASE_SCHEMA_UPDATE", "DATABASE_DATA_UPDATE"]
 	Filter        string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`

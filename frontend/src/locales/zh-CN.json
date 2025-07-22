@@ -873,7 +873,7 @@
         },
         "creator": {
           "title": "创建人",
-          "description": "根据工单创建人搜索"
+          "description": "根据创建人搜索"
         },
         "subscriber": {},
         "approver": {

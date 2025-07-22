@@ -56,7 +56,6 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
     {
       key: "title",
       title: t("issue.table.name"),
-      resizable: true,
       render: (plan) => {
         const showDraftTag =
           enabledNewLayout.value && plan.issue === "" && plan.rollout === "";

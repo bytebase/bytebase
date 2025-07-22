@@ -103,6 +103,15 @@ const columnList = computed(
         },
       },
       {
+        key: "createTime",
+        title: t("common.created-at"),
+        width: 128,
+        render: (release) =>
+          humanizeTs(
+            getTimeForPbTimestampProtoEs(release.createTime, 0) / 1000
+          ),
+      },
+      {
         key: "creator",
         title: t("common.creator"),
         width: 128,
@@ -112,15 +121,6 @@ const columnList = computed(
             <span class="truncate">{release.creatorEntity.title}</span>
           </div>
         ),
-      },
-      {
-        key: "createTime",
-        title: t("common.created-at"),
-        width: 128,
-        render: (release) =>
-          humanizeTs(
-            getTimeForPbTimestampProtoEs(release.createTime, 0) / 1000
-          ),
       },
     ];
     return columns.filter((column) => !column.hide);

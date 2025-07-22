@@ -201,7 +201,7 @@ func (s *RolloutService) ListRollouts(ctx context.Context, req *connect.Request[
 }
 
 // buildRolloutFindWithFilter builds the filter for rollout find.
-func (*RolloutService) buildRolloutFindWithFilter(_ context.Context, pipelineFind *store.PipelineFind, filter string) error {
+func (s *RolloutService) buildRolloutFindWithFilter(ctx context.Context, pipelineFind *store.PipelineFind, filter string) error {
 	if filter == "" {
 		return nil
 	}
@@ -228,6 +228,13 @@ func (*RolloutService) buildRolloutFindWithFilter(_ context.Context, pipelineFin
 			case celoperators.Equals:
 				variable, value := getVariableAndValueFromExpr(expr)
 				switch variable {
+				case "creator":
+					user, err := s.getUserByIdentifier(ctx, value.(string))
+					if err != nil {
+						return "", connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user %v with error %v", value, err.Error()))
+					}
+					positionalArgs = append(positionalArgs, user.ID)
+					return fmt.Sprintf("pipeline.creator_id = $%d", len(positionalArgs)), nil
 				case "task_type":
 					taskType, ok := value.(string)
 					if !ok {
@@ -278,6 +285,24 @@ func (*RolloutService) buildRolloutFindWithFilter(_ context.Context, pipelineFin
 				default:
 					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported variable %q", variable))
 				}
+			case celoperators.GreaterEquals, celoperators.LessEquals:
+				variable, rawValue := getVariableAndValueFromExpr(expr)
+				value, ok := rawValue.(string)
+				if !ok {
+					return "", errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
+				}
+				if variable != "update_time" {
+					return "", errors.Errorf(`">=" and "<=" are only supported for "update_time"`)
+				}
+				t, err := time.Parse(time.RFC3339, value)
+				if err != nil {
+					return "", errors.Errorf("failed to parse time %v, error: %v", value, err)
+				}
+				positionalArgs = append(positionalArgs, t)
+				if functionName == celoperators.GreaterEquals {
+					return fmt.Sprintf("updated_at >= $%d", len(positionalArgs)), nil
+				}
+				return fmt.Sprintf("updated_at <= $%d", len(positionalArgs)), nil
 			default:
 				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported function %v", functionName))
 			}
@@ -1222,4 +1247,19 @@ func getLastApproverUID(approval *storepb.IssuePayloadApproval) *int {
 		return &id
 	}
 	return nil
+}
+
+func (s *RolloutService) getUserByIdentifier(ctx context.Context, identifier string) (*store.UserMessage, error) {
+	email := strings.TrimPrefix(identifier, "users/")
+	if email == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("invalid empty creator identifier"))
+	}
+	user, err := s.store.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf(`failed to find user "%s" with error: %v`, email, err))
+	}
+	if user == nil {
+		return nil, errors.Errorf("cannot found user %s", email)
+	}
+	return user, nil
 }

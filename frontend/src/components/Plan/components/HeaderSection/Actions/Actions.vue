@@ -86,6 +86,7 @@ const availableActions = computed(() => {
 
   if (isCreating.value) return actions;
 
+  const currentUserEmail = currentUser.value.email;
   // If no issue exists, show create issue action or close plan action.
   if (!issue?.value) {
     // If rollout exists, no actions are available.
@@ -98,7 +99,7 @@ const availableActions = computed(() => {
       plan.value.state === State.ACTIVE &&
       plan.value.issue === "" &&
       plan.value.rollout === "" &&
-      (currentUser.value.email === extractUserId(plan.value.creator || "") ||
+      (currentUserEmail === extractUserId(plan.value.creator || "") ||
         hasProjectPermissionV2(project.value, "bb.plans.update"));
 
     if (canClosePlan) {
@@ -110,19 +111,19 @@ const availableActions = computed(() => {
       plan.value.state === State.DELETED &&
       plan.value.issue === "" &&
       plan.value.rollout === "" &&
-      (currentUser.value.email === extractUserId(plan.value.creator || "") ||
-        hasProjectPermissionV2(project.value, "bb.plans.update"));
+      currentUserEmail === extractUserId(plan.value.creator || "") &&
+      hasProjectPermissionV2(project.value, "bb.plans.update");
 
     if (canReopenPlan) {
       actions.push("PLAN_REOPEN");
       return actions; // For deleted plans, only show reopen action
     }
 
-    const canCreateIssue = hasProjectPermissionV2(
-      project.value,
-      "bb.plans.create"
-    );
-    if (canCreateIssue && plan.value.state === State.ACTIVE) {
+    const canCreateIssue =
+      plan.value.state === State.ACTIVE &&
+      currentUserEmail === extractUserId(plan.value.creator || "") &&
+      hasProjectPermissionV2(project.value, "bb.issues.create");
+    if (canCreateIssue) {
       actions.push("ISSUE_CREATE");
     }
     return actions;
@@ -134,10 +135,9 @@ const availableActions = computed(() => {
 
   // If issue is canceled, check for re-open action
   if (isCanceled) {
-    const currentUserEmail = currentUser.value.email;
     const issueCreator = extractUserId(issueValue.creator);
     const canReopen =
-      currentUserEmail === issueCreator ||
+      currentUserEmail === issueCreator &&
       hasProjectPermissionV2(project.value, "bb.issues.update");
 
     if (canReopen) {
@@ -151,7 +151,6 @@ const availableActions = computed(() => {
 
   // Check for review actions
   if (issueValue.approvalFindingDone && !reviewContext.done.value) {
-    const currentUserEmail = currentUser.value.email;
     const issueCreator = extractUserId(issueValue.creator);
     const { approvers, approvalTemplates } = issueValue;
 
@@ -192,10 +191,9 @@ const availableActions = computed(() => {
   }
 
   // Check for close action
-  const currentUserEmail = currentUser.value.email;
   const issueCreator = extractUserId(issueValue.creator);
   const canClose =
-    currentUserEmail === issueCreator ||
+    currentUserEmail === issueCreator &&
     hasProjectPermissionV2(project.value, "bb.issues.update");
 
   if (canClose) {
