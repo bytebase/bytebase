@@ -84,7 +84,13 @@ func TestNewIdentityProvider(t *testing.T) {
 	}
 }
 
-func newMockServer(t *testing.T, tls bool, clientID, code, accessToken, nonce string, userinfo []byte) *httptest.Server {
+func newMockServer(t *testing.T, tls bool, userinfo []byte) *httptest.Server {
+	const (
+		testClientID    = "test-client-id"
+		testNonce       = "test-nonce"
+		testCode        = "test-code"
+		testAccessToken = "test-access-token"
+	)
 	mux := http.NewServeMux()
 
 	var openidConfig map[string]any
@@ -103,13 +109,13 @@ func newMockServer(t *testing.T, tls bool, clientID, code, accessToken, nonce st
 		vals, err := url.ParseQuery(string(body))
 		require.NoError(t, err)
 
-		require.Equal(t, code, vals.Get("code"))
+		require.Equal(t, testCode, vals.Get("code"))
 		require.Equal(t, "authorization_code", vals.Get("grant_type"))
 		require.Equal(t, "https://example.com/oidc/callback", vals.Get("redirect_uri"))
 
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(map[string]any{
-			"access_token":  accessToken,
+			"access_token":  testAccessToken,
 			"token_type":    "Bearer",
 			"refresh_token": "test-refresh-token",
 			"expires_in":    3600,
@@ -164,10 +170,10 @@ func newMockServer(t *testing.T, tls bool, clientID, code, accessToken, nonce st
 		jwt.MapClaims{
 			"iss":   s.URL,
 			"sub":   "123456789",
-			"aud":   clientID,
+			"aud":   testClientID,
 			"exp":   time.Now().Add(time.Hour).Unix(),
 			"iat":   time.Now().Unix(),
-			"nonce": nonce,
+			"nonce": testNonce,
 		},
 	)
 	rawIDToken, err = token.SignedString(rs256)
@@ -197,7 +203,7 @@ func TestIdentityProvider(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	s := newMockServer(t, false, testClientID, testCode, testAccessToken, testNonce, userinfo)
+	s := newMockServer(t, false, userinfo)
 	oidc, err := NewIdentityProvider(
 		ctx,
 		&storepb.OIDCIdentityProviderConfig{
@@ -252,7 +258,7 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("verify TLS", func(t *testing.T) {
-		s := newMockServer(t, true, testClientID, testCode, testAccessToken, testNonce, userinfo)
+		s := newMockServer(t, true, userinfo)
 		_, err := NewIdentityProvider(
 			ctx,
 			&storepb.OIDCIdentityProviderConfig{
@@ -270,7 +276,7 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 	})
 
 	t.Run("skip TLS verify", func(t *testing.T) {
-		s := newMockServer(t, true, testClientID, testCode, testAccessToken, testNonce, userinfo)
+		s := newMockServer(t, true, userinfo)
 		oidc, err := NewIdentityProvider(
 			ctx,
 			&storepb.OIDCIdentityProviderConfig{
@@ -366,7 +372,7 @@ func TestIdentityProvider_GroupsParsing(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			s := newMockServer(t, false, testClientID, testCode, testAccessToken, testNonce, userinfo)
+			s := newMockServer(t, false, userinfo)
 			oidc, err := NewIdentityProvider(
 				ctx,
 				&storepb.OIDCIdentityProviderConfig{
