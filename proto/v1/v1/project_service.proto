@@ -134,7 +134,7 @@ service ProjectService {
   rpc UpdateWebhook(UpdateWebhookRequest) returns (Project) {
     option (google.api.http) = {
       post: "/v1/{webhook.name=projects/*/webhooks/*}:updateWebhook"
-      body: "*"
+      body: "webhook"
     };
     option (google.api.method_signature) = "webhook,update_mask";
     option (bytebase.v1.permission) = "bb.projects.update";

@@ -565,13 +565,15 @@ func local_request_ProjectService_AddWebhook_0(ctx context.Context, marshaler ru
 	return msg, metadata, err
 }
 
+var filter_ProjectService_UpdateWebhook_0 = &utilities.DoubleArray{Encoding: map[string]int{"webhook": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
+
 func request_ProjectService_UpdateWebhook_0(ctx context.Context, marshaler runtime.Marshaler, client ProjectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq UpdateWebhookRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Webhook); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
@@ -585,6 +587,12 @@ func request_ProjectService_UpdateWebhook_0(ctx context.Context, marshaler runti
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "webhook.name", err)
 	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ProjectService_UpdateWebhook_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 	msg, err := client.UpdateWebhook(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
@@ -595,7 +603,7 @@ func local_request_ProjectService_UpdateWebhook_0(ctx context.Context, marshaler
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Webhook); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	val, ok := pathParams["webhook.name"]
@@ -605,6 +613,12 @@ func local_request_ProjectService_UpdateWebhook_0(ctx context.Context, marshaler
 	err = runtime.PopulateFieldFromPath(&protoReq, "webhook.name", val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "webhook.name", err)
+	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ProjectService_UpdateWebhook_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.UpdateWebhook(ctx, &protoReq)
 	return msg, metadata, err
