@@ -2798,7 +2798,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x0eDataSourceType\x12\x1b\n" +
 	"\x17DATA_SOURCE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ADMIN\x10\x01\x12\r\n" +
-	"\tREAD_ONLY\x10\x022\xb0\x10\n" +
+	"\tREAD_ONLY\x10\x022\xd4\x10\n" +
 	"\x0fInstanceService\x12\x84\x01\n" +
 	"\vGetInstance\x12\x1f.bytebase.v1.GetInstanceRequest\x1a\x15.bytebase.v1.Instance\"=\xdaA\x04name\x8a\xea0\x10bb.instances.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x18\x12\x16/v1/{name=instances/*}\x12\x89\x01\n" +
 	"\rListInstances\x12!.bytebase.v1.ListInstancesRequest\x1a\".bytebase.v1.ListInstancesResponse\"1\xdaA\x00\x8a\xea0\x11bb.instances.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\x0f\x12\r/v1/instances\x12\x96\x01\n" +
@@ -2811,8 +2811,8 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x12BatchSyncInstances\x12&.bytebase.v1.BatchSyncInstancesRequest\x1a'.bytebase.v1.BatchSyncInstancesResponse\";\x8a\xea0\x11bb.instances.sync\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/v1/instances:batchSync\x12\xb0\x01\n" +
 	"\x14BatchUpdateInstances\x12(.bytebase.v1.BatchUpdateInstancesRequest\x1a).bytebase.v1.BatchUpdateInstancesResponse\"C\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/v1/instances:batchUpdate\x12\x99\x01\n" +
 	"\rAddDataSource\x12!.bytebase.v1.AddDataSourceRequest\x1a\x15.bytebase.v1.Instance\"N\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02):\x01*\"$/v1/{name=instances/*}:addDataSource\x12\xa2\x01\n" +
-	"\x10RemoveDataSource\x12$.bytebase.v1.RemoveDataSourceRequest\x1a\x15.bytebase.v1.Instance\"Q\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02,:\x01*\"'/v1/{name=instances/*}:removeDataSource\x12\xa2\x01\n" +
-	"\x10UpdateDataSource\x12$.bytebase.v1.UpdateDataSourceRequest\x1a\x15.bytebase.v1.Instance\"Q\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02,:\x01*2'/v1/{name=instances/*}:updateDataSourceB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\x10RemoveDataSource\x12$.bytebase.v1.RemoveDataSourceRequest\x1a\x15.bytebase.v1.Instance\"Q\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02,:\x01*\"'/v1/{name=instances/*}:removeDataSource\x12\xc6\x01\n" +
+	"\x10UpdateDataSource\x12$.bytebase.v1.UpdateDataSourceRequest\x1a\x15.bytebase.v1.Instance\"u\xdaA\x17data_source,update_mask\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x026:\vdata_source2'/v1/{name=instances/*}:updateDataSourceB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_instance_service_proto_rawDescOnce sync.Once

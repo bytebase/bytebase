@@ -144,8 +144,9 @@ service InstanceService {
   rpc UpdateDataSource(UpdateDataSourceRequest) returns (Instance) {
     option (google.api.http) = {
       patch: "/v1/{name=instances/*}:updateDataSource"
-      body: "*"
+      body: "data_source"
     };
+    option (google.api.method_signature) = "data_source,update_mask";
     option (bytebase.v1.permission) = "bb.instances.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;

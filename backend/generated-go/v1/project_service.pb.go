@@ -1738,7 +1738,7 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x13ISSUE_STATUS_UPDATE\x10\x04\x12\x19\n" +
 	"\x15ISSUE_APPROVAL_NOTIFY\x10\x15\x12&\n" +
 	"\"ISSUE_PIPELINE_STAGE_STATUS_UPDATE\x10\x05\x12)\n" +
-	"%ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\x162\x8b\x12\n" +
+	"%ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\x162\x91\x12\n" +
 	"\x0eProjectService\x12\x7f\n" +
 	"\n" +
 	"GetProject\x12\x1e.bytebase.v1.GetProjectRequest\x1a\x14.bytebase.v1.Project\";\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=projects/*}\x12\x84\x01\n" +
@@ -1753,8 +1753,8 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x11BatchGetIamPolicy\x12%.bytebase.v1.BatchGetIamPolicyRequest\x1a&.bytebase.v1.BatchGetIamPolicyResponse\"L\x8a\xea0\x18bb.projects.getIamPolicy\x90\xea0\x02\x82\xd3\xe4\x93\x02&\x12$/v1/{scope=*/*}/iamPolicies:batchGet\x12\x9f\x01\n" +
 	"\fSetIamPolicy\x12 .bytebase.v1.SetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"U\x8a\xea0\x18bb.projects.setIamPolicy\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{resource=projects/*}:setIamPolicy\x12\x8c\x01\n" +
 	"\n" +
-	"AddWebhook\x12\x1e.bytebase.v1.AddWebhookRequest\x1a\x14.bytebase.v1.Project\"H\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x82\xd3\xe4\x93\x02(:\x01*\"#/v1/{project=projects/*}:addWebhook\x12\xbb\x01\n" +
-	"\rUpdateWebhook\x12!.bytebase.v1.UpdateWebhookRequest\x1a\x14.bytebase.v1.Project\"q\xdaA\x13webhook,update_mask\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x82\xd3\xe4\x93\x02;:\x01*\"6/v1/{webhook.name=projects/*/webhooks/*}:updateWebhook\x12\xa5\x01\n" +
+	"AddWebhook\x12\x1e.bytebase.v1.AddWebhookRequest\x1a\x14.bytebase.v1.Project\"H\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x82\xd3\xe4\x93\x02(:\x01*\"#/v1/{project=projects/*}:addWebhook\x12\xc1\x01\n" +
+	"\rUpdateWebhook\x12!.bytebase.v1.UpdateWebhookRequest\x1a\x14.bytebase.v1.Project\"w\xdaA\x13webhook,update_mask\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x82\xd3\xe4\x93\x02A:\awebhook26/v1/{webhook.name=projects/*/webhooks/*}:updateWebhook\x12\xa5\x01\n" +
 	"\rRemoveWebhook\x12!.bytebase.v1.RemoveWebhookRequest\x1a\x14.bytebase.v1.Project\"[\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x82\xd3\xe4\x93\x02;:\x01*\"6/v1/{webhook.name=projects/*/webhooks/*}:removeWebhook\x12\x9b\x01\n" +
 	"\vTestWebhook\x12\x1f.bytebase.v1.TestWebhookRequest\x1a .bytebase.v1.TestWebhookResponse\"I\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x82\xd3\xe4\x93\x02):\x01*\"$/v1/{project=projects/*}:testWebhookB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
 
