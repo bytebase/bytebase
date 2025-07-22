@@ -873,7 +873,7 @@
         },
         "creator": {
           "title": "Người tạo",
-          "description": "Tìm kiếm theo người tạo vấn đề"
+          "description": "Tìm kiếm theo người sáng tạo"
         },
         "subscriber": {},
         "approver": {

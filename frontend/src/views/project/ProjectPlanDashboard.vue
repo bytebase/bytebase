@@ -47,31 +47,46 @@ import { head } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, reactive, watch, ref } from "vue";
+import { computed, reactive, watch, ref, h } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
+import { useI18n } from "vue-i18n";
 import { useRouter, type LocationQuery } from "vue-router";
+import BBAvatar from "@/bbkit/BBAvatar.vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
+import type {
+  ScopeOption,
+  ValueOption,
+} from "@/components/AdvancedSearch/types";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import { targetsForSpec, getLocalSheetByName } from "@/components/Plan";
 import AddSpecDrawer from "@/components/Plan/components/AddSpecDrawer.vue";
 import PlanDataTable from "@/components/Plan/components/PlanDataTable";
+import SystemBotTag from "@/components/misc/SystemBotTag.vue";
+import YouTag from "@/components/misc/YouTag.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
-import { useCurrentProjectV1, useStorageStore } from "@/store";
+import {
+  useCurrentProjectV1,
+  useCurrentUserV1,
+  useStorageStore,
+  useUserStore,
+} from "@/store";
 import { usePlanStore } from "@/store/modules/v1/plan";
 import { buildPlanFindBySearchParams } from "@/store/modules/v1/plan";
-import { isValidDatabaseGroupName } from "@/types";
+import { isValidDatabaseGroupName, SYSTEM_BOT_USER_NAME } from "@/types";
 import {
   Plan_ChangeDatabaseConfig_Type,
   type Plan,
   type Plan_Spec,
 } from "@/types/proto-es/v1/plan_service_pb";
+import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import {
   extractDatabaseGroupName,
   extractDatabaseResourceName,
   extractProjectResourceName,
   generateIssueTitle,
+  getDefaultPagination,
   hasPermissionToCreatePlanInProject,
   type SearchParams,
   type SearchScope,
@@ -82,8 +97,11 @@ interface LocalState {
   params: SearchParams;
 }
 
+const { t } = useI18n();
+const me = useCurrentUserV1();
 const { enabledNewLayout } = useIssueLayoutVersion();
 const { project, ready } = useCurrentProjectV1();
+const userStore = useUserStore();
 const showAddSpecDrawer = ref(false);
 
 const readonlyScopes = computed((): SearchScope[] => {
@@ -98,6 +116,10 @@ const defaultSearchParams = () => {
       {
         id: "state",
         value: "ACTIVE",
+      },
+      {
+        id: "creator",
+        value: me.value.email,
       },
     ],
   };
@@ -119,11 +141,97 @@ const planPagedTable = ref<ComponentExposed<typeof PagedTable<Plan>>>();
 
 const supportedScopes = computed(() => {
   // TODO(steven): support more scopes in backend and frontend: instance, database, planCheckRunStatus
-  const supportedScopes: SearchScopeId[] = ["state"];
+  const supportedScopes: SearchScopeId[] = ["state", "creator"];
   return supportedScopes;
 });
 
-const scopeOptions = useCommonSearchScopeOptions(supportedScopes.value);
+// Custom scope options for plans that includes creator functionality
+const scopeOptions = computed((): ScopeOption[] => {
+  // Get common options but exclude both creator and state (we'll add them manually)
+  const commonOptions = useCommonSearchScopeOptions(
+    supportedScopes.value.filter((id) => id !== "creator" && id !== "state")
+  );
+
+  const renderSpan = (text: string) => h("span", text);
+
+  const searchPrincipalSearchValueOptions = (userTypes: UserType[]) => {
+    return ({
+      keyword,
+      nextPageToken,
+    }: {
+      keyword: string;
+      nextPageToken?: string;
+    }) =>
+      userStore
+        .fetchUserList({
+          pageToken: nextPageToken,
+          pageSize: getDefaultPagination(),
+          filter: {
+            types: userTypes,
+            query: keyword,
+          },
+        })
+        .then((resp) => ({
+          nextPageToken: resp.nextPageToken,
+          options: resp.users.map<ValueOption>((user) => {
+            return {
+              value: user.email,
+              keywords: [user.email, user.title],
+              bot: user.name === SYSTEM_BOT_USER_NAME,
+              render: () => {
+                const children = [
+                  h(BBAvatar, { size: "TINY", username: user.title }),
+                  renderSpan(user.title),
+                ];
+                if (user.name === me.value.name) {
+                  children.push(h(YouTag));
+                }
+                if (user.name === SYSTEM_BOT_USER_NAME) {
+                  children.push(h(SystemBotTag));
+                }
+                return h(
+                  "div",
+                  { class: "flex items-center gap-x-1" },
+                  children
+                );
+              },
+            };
+          }),
+        }));
+  };
+
+  const creatorOption: ScopeOption = {
+    id: "creator",
+    title: t("issue.advanced-search.scope.creator.title"),
+    description: t("issue.advanced-search.scope.creator.description"),
+    search: searchPrincipalSearchValueOptions([
+      UserType.USER,
+      UserType.SERVICE_ACCOUNT,
+      UserType.SYSTEM_BOT,
+    ]),
+  };
+
+  const stateOption: ScopeOption = {
+    id: "state",
+    title: t("common.state"),
+    description: t("plan.state.description"),
+    options: [
+      {
+        value: "ACTIVE",
+        keywords: ["active", "ACTIVE"],
+        render: () => renderSpan(t("common.active")),
+      },
+      {
+        value: "DELETED",
+        keywords: ["deleted", "DELETED", "closed", "CLOSED"],
+        render: () => renderSpan(t("common.closed")),
+      },
+    ],
+    allowMultiple: false,
+  };
+
+  return [...commonOptions.value, creatorOption, stateOption];
+});
 
 const planSearchParams = computed(() => {
   const defaultScopes = [
