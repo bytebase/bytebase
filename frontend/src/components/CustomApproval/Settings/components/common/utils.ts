@@ -17,6 +17,7 @@ import {
   useSupportedSourceList,
   type ComposedProject,
 } from "@/types";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Risk } from "@/types/proto-es/v1/risk_service_pb";
 import { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import {
@@ -178,7 +179,7 @@ export const getProjectIdOptions = (projects: ComposedProject[]) => {
 const getDBEndingOptions = () => {
   return supportedEngineV1List().map<SelectOption>((type) => ({
     label: engineNameV1(type),
-    value: type,
+    value: Engine[type],
   }));
 };
 
@@ -192,7 +193,7 @@ const getLevelOptions = () => {
 const getSourceOptions = () => {
   return useSupportedSourceList().value.map<SelectOption>((source) => ({
     label: Risk_Source[source],
-    value: source,
+    value: Risk_Source[source],
   }));
 };
 
