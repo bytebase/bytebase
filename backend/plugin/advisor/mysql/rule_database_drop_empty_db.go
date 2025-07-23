@@ -1,0 +1,120 @@
+package mysql
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/antlr4-go/antlr/v4"
+	mysql "github.com/bytebase/mysql-parser"
+	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+)
+
+var (
+	_ advisor.Advisor = (*DatabaseAllowDropIfEmptyAdvisor)(nil)
+)
+
+func init() {
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLDatabaseAllowDropIfEmpty, &DatabaseAllowDropIfEmptyAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLDatabaseAllowDropIfEmpty, &DatabaseAllowDropIfEmptyAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLDatabaseAllowDropIfEmpty, &DatabaseAllowDropIfEmptyAdvisor{})
+}
+
+// DatabaseAllowDropIfEmptyAdvisor is the advisor checking the MySQLDatabaseAllowDropIfEmpty rule.
+type DatabaseAllowDropIfEmptyAdvisor struct {
+}
+
+// Check checks for drop table naming convention.
+func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	list, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
+	if !ok {
+		return nil, errors.Errorf("failed to convert to mysql ParseResult")
+	}
+
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create the rule
+	rule := NewDatabaseDropEmptyDBRule(level, string(checkCtx.Rule.Type), checkCtx.Catalog)
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
+
+	for _, stmt := range list {
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
+	}
+
+	return checker.GetAdviceList(), nil
+}
+
+// DatabaseDropEmptyDBRule checks for drop database only if empty.
+type DatabaseDropEmptyDBRule struct {
+	BaseRule
+	catalog *catalog.Finder
+}
+
+// NewDatabaseDropEmptyDBRule creates a new DatabaseDropEmptyDBRule.
+func NewDatabaseDropEmptyDBRule(level storepb.Advice_Status, title string, catalog *catalog.Finder) *DatabaseDropEmptyDBRule {
+	return &DatabaseDropEmptyDBRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		catalog: catalog,
+	}
+}
+
+// Name returns the rule name.
+func (*DatabaseDropEmptyDBRule) Name() string {
+	return "DatabaseDropEmptyDBRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *DatabaseDropEmptyDBRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	if nodeType == NodeTypeDropDatabase {
+		r.checkDropDatabase(ctx.(*mysql.DropDatabaseContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*DatabaseDropEmptyDBRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *DatabaseDropEmptyDBRule) checkDropDatabase(ctx *mysql.DropDatabaseContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
+	if ctx.SchemaRef() == nil {
+		return
+	}
+
+	dbName := mysqlparser.NormalizeMySQLSchemaRef(ctx.SchemaRef())
+	if r.catalog.Origin.DatabaseName() != dbName {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
+			Code:          advisor.NotCurrentDatabase.Int32(),
+			Title:         r.title,
+			Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, r.catalog.Origin.DatabaseName()),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+		})
+	} else if !r.catalog.Origin.HasNoTable() {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
+			Code:          advisor.DatabaseNotEmpty.Int32(),
+			Title:         r.title,
+			Content:       fmt.Sprintf("Database `%s` is not allowed to drop if not empty", dbName),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+		})
+	}
+}
