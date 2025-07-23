@@ -92,7 +92,7 @@ func (*ColumnSetDefaultForNotNullRule) OnExit(_ antlr.ParserRuleContext, _ strin
 	return nil
 }
 
-func (r *ColumnSetDefaultForNotNullRule) getPKColumns(ctx *mysql.CreateTableContext) map[string]bool {
+func (*ColumnSetDefaultForNotNullRule) getPKColumns(ctx *mysql.CreateTableContext) map[string]bool {
 	pkColumn := make(map[string]bool)
 	for _, tableElement := range ctx.TableElementList().AllTableElement() {
 		if tableElement == nil {
@@ -218,10 +218,10 @@ func (*ColumnSetDefaultForNotNullRule) columnNeedDefault(ctx mysql.IFieldDefinit
 		case mysql.MySQLParserTIMESTAMP_SYMBOL, mysql.MySQLParserDATETIME_SYMBOL:
 			return false
 		// BLOB and TEXT types don't need defaults
-		case mysql.MySQLParserTINYBLOB_SYMBOL, mysql.MySQLParserBLOB_SYMBOL, 
-			 mysql.MySQLParserMEDIUMBLOB_SYMBOL, mysql.MySQLParserLONGBLOB_SYMBOL,
-			 mysql.MySQLParserTINYTEXT_SYMBOL, mysql.MySQLParserTEXT_SYMBOL,
-			 mysql.MySQLParserMEDIUMTEXT_SYMBOL, mysql.MySQLParserLONGTEXT_SYMBOL:
+		case mysql.MySQLParserTINYBLOB_SYMBOL, mysql.MySQLParserBLOB_SYMBOL,
+			mysql.MySQLParserMEDIUMBLOB_SYMBOL, mysql.MySQLParserLONGBLOB_SYMBOL,
+			mysql.MySQLParserTINYTEXT_SYMBOL, mysql.MySQLParserTEXT_SYMBOL,
+			mysql.MySQLParserMEDIUMTEXT_SYMBOL, mysql.MySQLParserLONGTEXT_SYMBOL:
 			return false
 		// JSON type doesn't need defaults
 		case mysql.MySQLParserJSON_SYMBOL:

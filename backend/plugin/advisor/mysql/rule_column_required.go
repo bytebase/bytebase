@@ -51,44 +51,73 @@ func (*ColumnRequirementAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		requiredColumns[column] = true
 	}
 
-	checker := &columnRequirementChecker{
-		level:           level,
-		title:           string(checkCtx.Rule.Type),
-		requiredColumns: requiredColumns,
-		tables:          make(tableState),
-		line:            make(map[string]int),
-	}
+	// Create the rule
+	rule := NewColumnRequiredRule(level, string(checkCtx.Rule.Type), requiredColumns)
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmt := range list {
-		checker.baseLine = stmt.BaseLine
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
-	return checker.generateAdviceList(), nil
+	return rule.generateAdviceList(), nil
 }
 
-type columnRequirementChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine        int
-	adviceList      []*storepb.Advice
-	level           storepb.Advice_Status
-	title           string
+// ColumnRequiredRule checks for column requirement.
+type ColumnRequiredRule struct {
+	BaseRule
 	requiredColumns columnSet
 	tables          tableState
 	line            map[string]int
 }
 
-// EnterCreateTable is called when production createDatabase is entered.
-func (checker *columnRequirementChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+// NewColumnRequiredRule creates a new ColumnRequiredRule.
+func NewColumnRequiredRule(level storepb.Advice_Status, title string, requiredColumns columnSet) *ColumnRequiredRule {
+	return &ColumnRequiredRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		requiredColumns: requiredColumns,
+		tables:          make(tableState),
+		line:            make(map[string]int),
+	}
+}
+
+// Name returns the rule name.
+func (*ColumnRequiredRule) Name() string {
+	return "ColumnRequiredRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *ColumnRequiredRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeCreateTable:
+		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
+	case NodeTypeDropTable:
+		r.checkDropTable(ctx.(*mysql.DropTableContext))
+	case NodeTypeAlterTable:
+		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*ColumnRequiredRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *ColumnRequiredRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
-	checker.createTable(ctx)
+	r.createTable(ctx)
 }
 
-// EnterDropTable is called when production dropTable is entered.
-func (checker *columnRequirementChecker) EnterDropTable(ctx *mysql.DropTableContext) {
+func (r *ColumnRequiredRule) checkDropTable(ctx *mysql.DropTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -98,12 +127,11 @@ func (checker *columnRequirementChecker) EnterDropTable(ctx *mysql.DropTableCont
 
 	for _, tableRef := range ctx.TableRefList().AllTableRef() {
 		_, tableName := mysqlparser.NormalizeMySQLTableRef(tableRef)
-		delete(checker.tables, tableName)
+		delete(r.tables, tableName)
 	}
 }
 
-// EnterAlterTable is called when production alterTable is entered.
-func (checker *columnRequirementChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+func (r *ColumnRequiredRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -124,53 +152,53 @@ func (checker *columnRequirementChecker) EnterAlterTable(ctx *mysql.AlterTableCo
 			continue
 		}
 
-		lineNumber := checker.baseLine + item.GetStart().GetLine()
+		lineNumber := r.baseLine + item.GetStart().GetLine()
 		switch {
 		// add column
 		case item.ADD_SYMBOL() != nil:
 			switch {
 			case item.Identifier() != nil && item.FieldDefinition() != nil:
 				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-				checker.addColumn(tableName, columnName)
+				r.addColumn(tableName, columnName)
 			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
 				for _, tableElement := range item.TableElementList().AllTableElement() {
 					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
 						continue
 					}
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-					checker.addColumn(tableName, columnName)
+					r.addColumn(tableName, columnName)
 				}
 			}
 		// drop column
 		case item.DROP_SYMBOL() != nil && item.ColumnInternalRef() != nil:
 			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-			if checker.dropColumn(tableName, columnName) {
-				checker.line[tableName] = lineNumber
+			if r.dropColumn(tableName, columnName) {
+				r.line[tableName] = lineNumber
 			}
 		// rename column
 		case item.RENAME_SYMBOL() != nil && item.COLUMN_SYMBOL() != nil:
 			oldColumnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 			newColumnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			checker.renameColumn(tableName, oldColumnName, newColumnName)
-			checker.line[tableName] = lineNumber
+			r.renameColumn(tableName, oldColumnName, newColumnName)
+			r.line[tableName] = lineNumber
 		// change column
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
 			oldColumnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 			newColumnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			if checker.renameColumn(tableName, oldColumnName, newColumnName) {
-				checker.line[tableName] = lineNumber
+			if r.renameColumn(tableName, oldColumnName, newColumnName) {
+				r.line[tableName] = lineNumber
 			}
 		}
 	}
 }
 
-func (checker *columnRequirementChecker) generateAdviceList() []*storepb.Advice {
+func (r *ColumnRequiredRule) generateAdviceList() []*storepb.Advice {
 	// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
-	tableList := checker.tables.tableList()
+	tableList := r.tables.tableList()
 	for _, tableName := range tableList {
-		table := checker.tables[tableName]
+		table := r.tables[tableName]
 		var missingColumns []string
-		for columnName := range checker.requiredColumns {
+		for columnName := range r.requiredColumns {
 			if exists, ok := table[columnName]; !ok || !exists {
 				missingColumns = append(missingColumns, columnName)
 			}
@@ -179,23 +207,23 @@ func (checker *columnRequirementChecker) generateAdviceList() []*storepb.Advice 
 		if len(missingColumns) > 0 {
 			// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
 			slices.Sort(missingColumns)
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:        checker.level,
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.level,
 				Code:          advisor.NoRequiredColumn.Int32(),
-				Title:         checker.title,
+				Title:         r.title,
 				Content:       fmt.Sprintf("Table `%s` requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
-				StartPosition: common.ConvertANTLRLineToPosition(checker.line[tableName]),
+				StartPosition: common.ConvertANTLRLineToPosition(r.line[tableName]),
 			})
 		}
 	}
 
-	return checker.adviceList
+	return r.adviceList
 }
 
-func (checker *columnRequirementChecker) createTable(ctx *mysql.CreateTableContext) {
+func (r *ColumnRequiredRule) createTable(ctx *mysql.CreateTableContext) {
 	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	checker.line[tableName] = checker.baseLine + ctx.GetStart().GetLine()
-	checker.initEmptyTable(tableName)
+	r.line[tableName] = r.baseLine + ctx.GetStart().GetLine()
+	r.initEmptyTable(tableName)
 
 	if ctx.TableElementList() == nil {
 		return
@@ -206,41 +234,41 @@ func (checker *columnRequirementChecker) createTable(ctx *mysql.CreateTableConte
 			continue
 		}
 		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-		checker.addColumn(tableName, columnName)
+		r.addColumn(tableName, columnName)
 	}
 }
 
-func (checker *columnRequirementChecker) initEmptyTable(tableName string) columnSet {
-	checker.tables[tableName] = make(columnSet)
-	return checker.tables[tableName]
+func (r *ColumnRequiredRule) initEmptyTable(tableName string) columnSet {
+	r.tables[tableName] = make(columnSet)
+	return r.tables[tableName]
 }
 
 // add a column.
-func (checker *columnRequirementChecker) addColumn(tableName string, columnName string) {
-	if _, ok := checker.requiredColumns[columnName]; !ok {
+func (r *ColumnRequiredRule) addColumn(tableName string, columnName string) {
+	if _, ok := r.requiredColumns[columnName]; !ok {
 		return
 	}
 
-	if table, ok := checker.tables[tableName]; !ok {
+	if table, ok := r.tables[tableName]; !ok {
 		// We do not retrospectively check.
 		// So we assume it contains all required columns.
-		checker.initFullTable(tableName)
+		r.initFullTable(tableName)
 	} else {
 		table[columnName] = true
 	}
 }
 
 // drop a column
-// return true if the colum was successfully dropped from requirement list.
-func (checker *columnRequirementChecker) dropColumn(tableName string, columnName string) bool {
-	if _, ok := checker.requiredColumns[columnName]; !ok {
+// return true if the column was successfully dropped from requirement list.
+func (r *ColumnRequiredRule) dropColumn(tableName string, columnName string) bool {
+	if _, ok := r.requiredColumns[columnName]; !ok {
 		return false
 	}
-	table, ok := checker.tables[tableName]
+	table, ok := r.tables[tableName]
 	if !ok {
 		// We do not retrospectively check.
 		// So we assume it contains all required columns.
-		table = checker.initFullTable(tableName)
+		table = r.initFullTable(tableName)
 	}
 	table[columnName] = false
 	return true
@@ -248,17 +276,17 @@ func (checker *columnRequirementChecker) dropColumn(tableName string, columnName
 
 // rename a column
 // return if the old column was dropped from requirement list.
-func (checker *columnRequirementChecker) renameColumn(tableName string, oldColumn string, newColumn string) bool {
-	_, oldNeed := checker.requiredColumns[oldColumn]
-	_, newNeed := checker.requiredColumns[newColumn]
+func (r *ColumnRequiredRule) renameColumn(tableName string, oldColumn string, newColumn string) bool {
+	_, oldNeed := r.requiredColumns[oldColumn]
+	_, newNeed := r.requiredColumns[newColumn]
 	if !oldNeed && !newNeed {
 		return false
 	}
-	table, ok := checker.tables[tableName]
+	table, ok := r.tables[tableName]
 	if !ok {
 		// We do not retrospectively check.
 		// So we assume it contains all required columns.
-		table = checker.initFullTable(tableName)
+		table = r.initFullTable(tableName)
 	}
 	if oldNeed {
 		table[oldColumn] = false
@@ -269,9 +297,9 @@ func (checker *columnRequirementChecker) renameColumn(tableName string, oldColum
 	return oldNeed
 }
 
-func (checker *columnRequirementChecker) initFullTable(tableName string) columnSet {
-	table := checker.initEmptyTable(tableName)
-	for column := range checker.requiredColumns {
+func (r *ColumnRequiredRule) initFullTable(tableName string) columnSet {
+	table := r.initEmptyTable(tableName)
+	for column := range r.requiredColumns {
 		table[column] = true
 	}
 	return table

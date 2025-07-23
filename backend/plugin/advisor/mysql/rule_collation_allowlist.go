@@ -44,66 +44,94 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	if err != nil {
 		return nil, err
 	}
-	checker := &collationAllowlistChecker{
-		level:     level,
-		title:     string(checkCtx.Rule.Type),
-		allowList: make(map[string]bool),
-	}
-	for _, collation := range payload.List {
-		checker.allowList[strings.ToLower(collation)] = true
-	}
+
+	// Create the rule
+	rule := NewCollationAllowlistRule(level, string(checkCtx.Rule.Type), payload.List)
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmt := range stmtList {
-		checker.baseLine = stmt.BaseLine
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
+		// Set text will be handled in the Query node
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type collationAllowlistChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine   int
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	text       string
-	allowList  map[string]bool
+// CollationAllowlistRule checks for collation allowlist.
+type CollationAllowlistRule struct {
+	BaseRule
+	allowList map[string]bool
+	text      string
 }
 
-func (checker *collationAllowlistChecker) EnterQuery(ctx *mysql.QueryContext) {
-	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+// NewCollationAllowlistRule creates a new CollationAllowlistRule.
+func NewCollationAllowlistRule(level storepb.Advice_Status, title string, allowList []string) *CollationAllowlistRule {
+	rule := &CollationAllowlistRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		allowList: make(map[string]bool),
+	}
+	for _, collation := range allowList {
+		rule.allowList[strings.ToLower(collation)] = true
+	}
+	return rule
 }
 
-// EnterCreateDatabase is called when production createDatabase is entered.
-func (checker *collationAllowlistChecker) EnterCreateDatabase(ctx *mysql.CreateDatabaseContext) {
+// Name returns the rule name.
+func (*CollationAllowlistRule) Name() string {
+	return "CollationAllowlistRule"
+}
+
+// SetText sets the query text for error reporting.
+func (r *CollationAllowlistRule) SetText(text string) {
+	r.text = text
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *CollationAllowlistRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeQuery:
+		r.checkQuery(ctx.(*mysql.QueryContext))
+	case NodeTypeCreateDatabase:
+		r.checkCreateDatabase(ctx.(*mysql.CreateDatabaseContext))
+	case NodeTypeCreateTable:
+		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
+	case NodeTypeAlterDatabase:
+		r.checkAlterDatabase(ctx.(*mysql.AlterDatabaseContext))
+	case NodeTypeAlterTable:
+		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*CollationAllowlistRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *CollationAllowlistRule) checkQuery(ctx *mysql.QueryContext) {
+	r.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
+
+func (r *CollationAllowlistRule) checkCreateDatabase(ctx *mysql.CreateDatabaseContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	for _, option := range ctx.AllCreateDatabaseOption() {
 		if option != nil && option.DefaultCollation() != nil && option.DefaultCollation().CollationName() != nil {
 			collation := mysqlparser.NormalizeMySQLCollationName(option.DefaultCollation().CollationName())
-			checker.checkCollation(collation, ctx.GetStart().GetLine())
+			r.checkCollation(collation, ctx.GetStart().GetLine())
 		}
 	}
 }
 
-func (checker *collationAllowlistChecker) checkCollation(collation string, lineNumber int) {
-	collation = strings.ToLower(collation)
-	if _, exists := checker.allowList[collation]; collation != "" && !exists {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
-			Code:          advisor.DisabledCollation.Int32(),
-			Title:         checker.title,
-			Content:       fmt.Sprintf("\"%s\" used disabled collation '%s'", checker.text, collation),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + lineNumber),
-		})
-	}
-}
-
-// EnterCreateTable is called when production createTable is entered.
-func (checker *collationAllowlistChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+func (r *CollationAllowlistRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -111,7 +139,7 @@ func (checker *collationAllowlistChecker) EnterCreateTable(ctx *mysql.CreateTabl
 		for _, option := range ctx.CreateTableOptions().AllCreateTableOption() {
 			if option != nil && option.DefaultCollation() != nil && option.DefaultCollation().CollationName() != nil {
 				collation := mysqlparser.NormalizeMySQLCollationName(option.DefaultCollation().CollationName())
-				checker.checkCollation(collation, option.GetStart().GetLine())
+				r.checkCollation(collation, option.GetStart().GetLine())
 			}
 		}
 	}
@@ -131,15 +159,14 @@ func (checker *collationAllowlistChecker) EnterCreateTable(ctx *mysql.CreateTabl
 			for _, attr := range columnDef.FieldDefinition().AllColumnAttribute() {
 				if attr != nil && attr.Collate() != nil && attr.Collate().CollationName() != nil {
 					collation := mysqlparser.NormalizeMySQLCollationName(attr.Collate().CollationName())
-					checker.checkCollation(collation, tableElement.GetStart().GetLine())
+					r.checkCollation(collation, tableElement.GetStart().GetLine())
 				}
 			}
 		}
 	}
 }
 
-// EnterAlterDatabase is called when production alterDatabase is entered.
-func (checker *collationAllowlistChecker) EnterAlterDatabase(ctx *mysql.AlterDatabaseContext) {
+func (r *CollationAllowlistRule) checkAlterDatabase(ctx *mysql.AlterDatabaseContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -148,12 +175,11 @@ func (checker *collationAllowlistChecker) EnterAlterDatabase(ctx *mysql.AlterDat
 			continue
 		}
 		charset := mysqlparser.NormalizeMySQLCollationName(option.CreateDatabaseOption().DefaultCollation().CollationName())
-		checker.checkCollation(charset, ctx.GetStart().GetLine())
+		r.checkCollation(charset, ctx.GetStart().GetLine())
 	}
 }
 
-// EnterAlterTable is called when production alterTable is entered.
-func (checker *collationAllowlistChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+func (r *CollationAllowlistRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -176,7 +202,7 @@ func (checker *collationAllowlistChecker) EnterAlterTable(ctx *mysql.AlterTableC
 				continue
 			}
 			collation := mysqlparser.NormalizeMySQLCollationName(attr.Collate().CollationName())
-			checker.checkCollation(collation, item.GetStart().GetLine())
+			r.checkCollation(collation, item.GetStart().GetLine())
 		}
 	}
 	// alter table option
@@ -192,7 +218,20 @@ func (checker *collationAllowlistChecker) EnterAlterTable(ctx *mysql.AlterTableC
 				continue
 			}
 			collation := mysqlparser.NormalizeMySQLCollationName(tableOption.DefaultCollation().CollationName())
-			checker.checkCollation(collation, tableOption.GetStart().GetLine())
+			r.checkCollation(collation, tableOption.GetStart().GetLine())
 		}
+	}
+}
+
+func (r *CollationAllowlistRule) checkCollation(collation string, lineNumber int) {
+	collation = strings.ToLower(collation)
+	if _, exists := r.allowList[collation]; collation != "" && !exists {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
+			Code:          advisor.DisabledCollation.Int32(),
+			Title:         r.title,
+			Content:       fmt.Sprintf("\"%s\" used disabled collation '%s'", r.text, collation),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + lineNumber),
+		})
 	}
 }

@@ -83,8 +83,7 @@ func (*TableDropNamingConventionRule) Name() string {
 
 // OnEnter is called when entering a parse tree node.
 func (r *TableDropNamingConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeDropTable:
+	if nodeType == NodeTypeDropTable {
 		r.checkDropTable(ctx.(*mysql.DropTableContext))
 	}
 	return nil

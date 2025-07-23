@@ -31,18 +31,6 @@ func (t tableState) tableList() []string {
 	return tableList
 }
 
-type tablePK map[string]columnSet
-
-// tableList returns table list in lexicographical order.
-func (t tablePK) tableList() []string {
-	var tableList []string
-	for tableName := range t {
-		tableList = append(tableList, tableName)
-	}
-	slices.Sort(tableList)
-	return tableList
-}
-
 // getTemplateRegexp formats the template as regex.
 func getTemplateRegexp(template string, templateList []string, tokens map[string]string) (*regexp.Regexp, error) {
 	for _, key := range templateList {
@@ -79,13 +67,6 @@ func (t tableColumnTypes) delete(tableName string, columnName string) {
 	delete(t[tableName], columnName)
 }
 
-type tableData struct {
-	tableName                string
-	defaultCurrentTimeCount  int
-	onUpdateCurrentTimeCount int
-	line                     int
-}
-
 // isKeyword checks if the keyword is a MySQL keyword.
 // TODO: We should check with map instead of linear search.
 func isKeyword(suspect string) bool {
@@ -106,44 +87,4 @@ func isCharsetDataType(dataType mysql.IDataTypeContext) bool {
 		dataType.TEXT_SYMBOL() != nil ||
 		dataType.MEDIUMTEXT_SYMBOL() != nil ||
 		dataType.LONGTEXT_SYMBOL() != nil)
-}
-
-func columnNeedDefault(ctx mysql.IFieldDefinitionContext) bool {
-	if ctx.GENERATED_SYMBOL() != nil {
-		return false
-	}
-	for _, attr := range ctx.AllColumnAttribute() {
-		if attr.AUTO_INCREMENT_SYMBOL() != nil || attr.PRIMARY_SYMBOL() != nil {
-			return false
-		}
-	}
-
-	if ctx.DataType() == nil {
-		return false
-	}
-
-	switch ctx.DataType().GetType_().GetTokenType() {
-	case mysql.MySQLParserBLOB_SYMBOL,
-		mysql.MySQLParserTINYBLOB_SYMBOL,
-		mysql.MySQLParserMEDIUMBLOB_SYMBOL,
-		mysql.MySQLParserLONGBLOB_SYMBOL,
-		mysql.MySQLParserJSON_SYMBOL,
-		mysql.MySQLParserTINYTEXT_SYMBOL,
-		mysql.MySQLParserTEXT_SYMBOL,
-		mysql.MySQLParserMEDIUMTEXT_SYMBOL,
-		mysql.MySQLParserLONGTEXT_SYMBOL,
-		// LONG VARBINARY and LONG VARCHAR.
-		mysql.MySQLParserLONG_SYMBOL,
-		mysql.MySQLParserSERIAL_SYMBOL,
-		mysql.MySQLParserGEOMETRY_SYMBOL,
-		mysql.MySQLParserGEOMETRYCOLLECTION_SYMBOL,
-		mysql.MySQLParserPOINT_SYMBOL,
-		mysql.MySQLParserMULTIPOINT_SYMBOL,
-		mysql.MySQLParserLINESTRING_SYMBOL,
-		mysql.MySQLParserMULTILINESTRING_SYMBOL,
-		mysql.MySQLParserPOLYGON_SYMBOL,
-		mysql.MySQLParserMULTIPOLYGON_SYMBOL:
-		return false
-	}
-	return true
 }

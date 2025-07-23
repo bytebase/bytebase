@@ -84,8 +84,11 @@ func (*ColumnDisallowChangingTypeRule) Name() string {
 // OnEnter is called when entering a parse tree node.
 func (r *ColumnDisallowChangingTypeRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
-	case "Query":
-		queryCtx := ctx.(*mysql.QueryContext)
+	case NodeTypeQuery:
+		queryCtx, ok := ctx.(*mysql.QueryContext)
+		if !ok {
+			return nil
+		}
 		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))

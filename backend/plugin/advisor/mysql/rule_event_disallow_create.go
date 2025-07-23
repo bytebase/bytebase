@@ -16,19 +16,19 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*ViewDisallowCreateAdvisor)(nil)
+	_ advisor.Advisor = (*EventDisallowCreateAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLViewDisallowCreate, &ViewDisallowCreateAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLEventDisallowCreate, &EventDisallowCreateAdvisor{})
 }
 
-// ViewDisallowCreateAdvisor is the advisor checking for disallow creating view.
-type ViewDisallowCreateAdvisor struct {
+// EventDisallowCreateAdvisor is the advisor checking for disallow creating event.
+type EventDisallowCreateAdvisor struct {
 }
 
-// Check checks for disallow creating view.
-func (*ViewDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+// Check checks for disallow creating event.
+func (*EventDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
@@ -40,7 +40,7 @@ func (*ViewDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	}
 
 	// Create the rule
-	rule := NewViewDisallowCreateRule(level, string(checkCtx.Rule.Type))
+	rule := NewEventDisallowCreateRule(level, string(checkCtx.Rule.Type))
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -54,15 +54,15 @@ func (*ViewDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	return checker.GetAdviceList(), nil
 }
 
-// ViewDisallowCreateRule checks for disallow creating view.
-type ViewDisallowCreateRule struct {
+// EventDisallowCreateRule checks for disallow creating event.
+type EventDisallowCreateRule struct {
 	BaseRule
 	text string
 }
 
-// NewViewDisallowCreateRule creates a new ViewDisallowCreateRule.
-func NewViewDisallowCreateRule(level storepb.Advice_Status, title string) *ViewDisallowCreateRule {
-	return &ViewDisallowCreateRule{
+// NewEventDisallowCreateRule creates a new EventDisallowCreateRule.
+func NewEventDisallowCreateRule(level storepb.Advice_Status, title string) *EventDisallowCreateRule {
+	return &EventDisallowCreateRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
@@ -71,35 +71,35 @@ func NewViewDisallowCreateRule(level storepb.Advice_Status, title string) *ViewD
 }
 
 // Name returns the rule name.
-func (*ViewDisallowCreateRule) Name() string {
-	return "ViewDisallowCreateRule"
+func (*EventDisallowCreateRule) Name() string {
+	return "EventDisallowCreateRule"
 }
 
 // OnEnter is called when entering a parse tree node.
-func (r *ViewDisallowCreateRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *EventDisallowCreateRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
 	case NodeTypeQuery:
 		if queryCtx, ok := ctx.(*mysql.QueryContext); ok {
 			r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
 		}
-	case NodeTypeCreateView:
-		r.checkCreateView(ctx.(*mysql.CreateViewContext))
+	case NodeTypeCreateEvent:
+		r.checkCreateEvent(ctx.(*mysql.CreateEventContext))
 	}
 	return nil
 }
 
 // OnExit is called when exiting a parse tree node.
-func (*ViewDisallowCreateRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+func (*EventDisallowCreateRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 
-func (r *ViewDisallowCreateRule) checkCreateView(ctx *mysql.CreateViewContext) {
+func (r *EventDisallowCreateRule) checkCreateEvent(ctx *mysql.CreateEventContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	code := advisor.Ok
-	if ctx.ViewName() != nil {
-		code = advisor.DisallowCreateView
+	if ctx.EventName() != nil {
+		code = advisor.DisallowCreateEvent
 	}
 
 	if code != advisor.Ok {
@@ -107,7 +107,7 @@ func (r *ViewDisallowCreateRule) checkCreateView(ctx *mysql.CreateViewContext) {
 			Status:        r.level,
 			Code:          code.Int32(),
 			Title:         r.title,
-			Content:       fmt.Sprintf("View is forbidden, but \"%s\" creates", r.text),
+			Content:       fmt.Sprintf("Event is forbidden, but \"%s\" creates", r.text),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 		})
 	}

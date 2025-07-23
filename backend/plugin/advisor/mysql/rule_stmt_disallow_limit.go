@@ -99,8 +99,7 @@ func (r *StatementDisallowLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeTy
 
 // OnExit is called when exiting a parse tree node.
 func (r *StatementDisallowLimitRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeInsertStatement:
+	if nodeType == NodeTypeInsertStatement {
 		r.isInsertStmt = false
 	}
 	return nil

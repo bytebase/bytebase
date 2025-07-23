@@ -76,8 +76,7 @@ func (*ColumnDisallowDropRule) Name() string {
 
 // OnEnter is called when entering a parse tree node.
 func (r *ColumnDisallowDropRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeAlterTable:
+	if nodeType == NodeTypeAlterTable {
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
 	}
 	return nil

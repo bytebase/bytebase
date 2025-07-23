@@ -5,9 +5,8 @@ import (
 	"fmt"
 
 	"github.com/antlr4-go/antlr/v4"
-	"github.com/pkg/errors"
-
 	mysql "github.com/bytebase/mysql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -37,29 +36,59 @@ func (*ColumnRequireCollationAdvisor) Check(_ context.Context, checkCtx advisor.
 	if err != nil {
 		return nil, err
 	}
-	checker := &columnRequireCollationChecker{
-		level: level,
-		title: string(checkCtx.Rule.Type),
-	}
+
+	// Create the rule
+	rule := NewColumnRequireCollationRule(level, string(checkCtx.Rule.Type))
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmt := range stmtList {
-		checker.baseLine = stmt.BaseLine
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type columnRequireCollationChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	baseLine   int
+// ColumnRequireCollationRule checks for require collation.
+type ColumnRequireCollationRule struct {
+	BaseRule
 }
 
-func (checker *columnRequireCollationChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+// NewColumnRequireCollationRule creates a new ColumnRequireCollationRule.
+func NewColumnRequireCollationRule(level storepb.Advice_Status, title string) *ColumnRequireCollationRule {
+	return &ColumnRequireCollationRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+	}
+}
+
+// Name returns the rule name.
+func (*ColumnRequireCollationRule) Name() string {
+	return "ColumnRequireCollationRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *ColumnRequireCollationRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeCreateTable:
+		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
+	case NodeTypeAlterTable:
+		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*ColumnRequireCollationRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *ColumnRequireCollationRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if ctx.TableName() == nil || ctx.TableElementList() == nil {
 		return
 	}
@@ -81,19 +110,19 @@ func (checker *columnRequireCollationChecker) EnterCreateTable(ctx *mysql.Create
 		dataType := columnDefinition.FieldDefinition().DataType()
 		if isCharsetDataType(dataType) {
 			if columnDefinition.FieldDefinition().Collate() == nil {
-				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:        checker.level,
+				r.AddAdvice(&storepb.Advice{
+					Status:        r.level,
 					Code:          advisor.NoCollation.Int32(),
-					Title:         checker.title,
+					Title:         r.title,
 					Content:       fmt.Sprintf("Column %s does not have a collation specified", columnName),
-					StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + columnDefinition.GetStart().GetLine()),
+					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + columnDefinition.GetStart().GetLine()),
 				})
 			}
 		}
 	}
 }
 
-func (checker *columnRequireCollationChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+func (r *ColumnRequireCollationRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	if ctx.AlterTableActions() == nil || ctx.AlterTableActions().AlterCommandList() == nil || ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
 		return
 	}
@@ -107,12 +136,12 @@ func (checker *columnRequireCollationChecker) EnterAlterTable(ctx *mysql.AlterTa
 		dataType := alterListItem.FieldDefinition().DataType()
 		if isCharsetDataType(dataType) {
 			if alterListItem.FieldDefinition().Collate() == nil {
-				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:        checker.level,
+				r.AddAdvice(&storepb.Advice{
+					Status:        r.level,
 					Code:          advisor.NoCollation.Int32(),
-					Title:         checker.title,
+					Title:         r.title,
 					Content:       fmt.Sprintf("Column %s does not have a collation specified", columnName),
-					StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + alterListItem.GetStart().GetLine()),
+					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + alterListItem.GetStart().GetLine()),
 				})
 			}
 		}

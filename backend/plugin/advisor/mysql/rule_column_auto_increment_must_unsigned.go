@@ -193,11 +193,11 @@ func (*ColumnAutoIncrementMustUnsignedRule) isUnsigned(ctx mysql.IFieldDefinitio
 	if ctx.DataType() == nil {
 		return false
 	}
-	
+
 	// Check if UNSIGNED is specified in the data type
 	dataTypeText := ctx.DataType().GetParser().GetTokenStream().GetTextFromRuleContext(ctx.DataType())
 	upperText := strings.ToUpper(dataTypeText)
-	
+
 	// UNSIGNED is explicitly specified or ZEROFILL (which implies UNSIGNED)
 	return strings.Contains(upperText, "UNSIGNED") || strings.Contains(upperText, "ZEROFILL")
 }

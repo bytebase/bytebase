@@ -16,19 +16,19 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*ViewDisallowCreateAdvisor)(nil)
+	_ advisor.Advisor = (*ProcedureDisallowCreateAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLViewDisallowCreate, &ViewDisallowCreateAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLProcedureDisallowCreate, &ProcedureDisallowCreateAdvisor{})
 }
 
-// ViewDisallowCreateAdvisor is the advisor checking for disallow creating view.
-type ViewDisallowCreateAdvisor struct {
+// ProcedureDisallowCreateAdvisor is the advisor checking for disallow create procedure.
+type ProcedureDisallowCreateAdvisor struct {
 }
 
-// Check checks for disallow creating view.
-func (*ViewDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+// Check checks for disallow create procedure.
+func (*ProcedureDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
@@ -40,7 +40,7 @@ func (*ViewDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	}
 
 	// Create the rule
-	rule := NewViewDisallowCreateRule(level, string(checkCtx.Rule.Type))
+	rule := NewProcedureDisallowCreateRule(level, string(checkCtx.Rule.Type))
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -54,15 +54,15 @@ func (*ViewDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	return checker.GetAdviceList(), nil
 }
 
-// ViewDisallowCreateRule checks for disallow creating view.
-type ViewDisallowCreateRule struct {
+// ProcedureDisallowCreateRule checks for disallow create procedure.
+type ProcedureDisallowCreateRule struct {
 	BaseRule
 	text string
 }
 
-// NewViewDisallowCreateRule creates a new ViewDisallowCreateRule.
-func NewViewDisallowCreateRule(level storepb.Advice_Status, title string) *ViewDisallowCreateRule {
-	return &ViewDisallowCreateRule{
+// NewProcedureDisallowCreateRule creates a new ProcedureDisallowCreateRule.
+func NewProcedureDisallowCreateRule(level storepb.Advice_Status, title string) *ProcedureDisallowCreateRule {
+	return &ProcedureDisallowCreateRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
@@ -71,35 +71,35 @@ func NewViewDisallowCreateRule(level storepb.Advice_Status, title string) *ViewD
 }
 
 // Name returns the rule name.
-func (*ViewDisallowCreateRule) Name() string {
-	return "ViewDisallowCreateRule"
+func (*ProcedureDisallowCreateRule) Name() string {
+	return "ProcedureDisallowCreateRule"
 }
 
 // OnEnter is called when entering a parse tree node.
-func (r *ViewDisallowCreateRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *ProcedureDisallowCreateRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
 	case NodeTypeQuery:
 		if queryCtx, ok := ctx.(*mysql.QueryContext); ok {
 			r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
 		}
-	case NodeTypeCreateView:
-		r.checkCreateView(ctx.(*mysql.CreateViewContext))
+	case NodeTypeCreateProcedure:
+		r.checkCreateProcedure(ctx.(*mysql.CreateProcedureContext))
 	}
 	return nil
 }
 
 // OnExit is called when exiting a parse tree node.
-func (*ViewDisallowCreateRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+func (*ProcedureDisallowCreateRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 
-func (r *ViewDisallowCreateRule) checkCreateView(ctx *mysql.CreateViewContext) {
+func (r *ProcedureDisallowCreateRule) checkCreateProcedure(ctx *mysql.CreateProcedureContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	code := advisor.Ok
-	if ctx.ViewName() != nil {
-		code = advisor.DisallowCreateView
+	if ctx.ProcedureName() != nil {
+		code = advisor.DisallowCreateProcedure
 	}
 
 	if code != advisor.Ok {
@@ -107,7 +107,7 @@ func (r *ViewDisallowCreateRule) checkCreateView(ctx *mysql.CreateViewContext) {
 			Status:        r.level,
 			Code:          code.Int32(),
 			Title:         r.title,
-			Content:       fmt.Sprintf("View is forbidden, but \"%s\" creates", r.text),
+			Content:       fmt.Sprintf("Procedure is forbidden, but \"%s\" creates", r.text),
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 		})
 	}

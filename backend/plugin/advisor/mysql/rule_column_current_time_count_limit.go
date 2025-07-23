@@ -66,10 +66,10 @@ func (*ColumnCurrentTimeCountLimitAdvisor) Check(_ context.Context, checkCtx adv
 }
 
 type currentTimeTableData struct {
-	tableName                 string
-	defaultCurrentTimeCount   int
-	onUpdateCurrentTimeCount  int
-	line                      int
+	tableName                string
+	defaultCurrentTimeCount  int
+	onUpdateCurrentTimeCount int
+	line                     int
 }
 
 // ColumnCurrentTimeCountLimitRule checks for current time column count limit.
