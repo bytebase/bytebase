@@ -1,5 +1,8 @@
 <template>
-  <div v-if="show" class="px-4 pt-3 flex flex-col gap-y-1 overflow-hidden">
+  <div
+    v-if="shouldShow"
+    class="px-4 pt-3 flex flex-col gap-y-1 overflow-hidden"
+  >
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-1">
         <h3 class="text-base font-medium">{{ $t("plan.checks.self") }}</h3>
@@ -9,28 +12,34 @@
         <!-- Status Summary -->
         <div class="flex items-center gap-2 text-sm">
           <button
-            v-if="summary.error > 0"
+            v-if="getChecksCount(PlanCheckRun_Result_Status.ERROR) > 0"
             class="flex items-center gap-1 hover:opacity-80"
-            @click="openDrawer(PlanCheckRun_Result_Status.ERROR)"
+            @click="openChecksDrawer(PlanCheckRun_Result_Status.ERROR)"
           >
             <XCircleIcon class="w-5 h-5 text-error" />
-            <span class="text-error">{{ summary.error }}</span>
+            <span class="text-error">{{
+              getChecksCount(PlanCheckRun_Result_Status.ERROR)
+            }}</span>
           </button>
           <button
-            v-if="summary.warning > 0"
+            v-if="getChecksCount(PlanCheckRun_Result_Status.WARNING) > 0"
             class="flex items-center gap-1 hover:opacity-80"
-            @click="openDrawer(PlanCheckRun_Result_Status.WARNING)"
+            @click="openChecksDrawer(PlanCheckRun_Result_Status.WARNING)"
           >
             <AlertCircleIcon class="w-5 h-5 text-warning" />
-            <span class="text-warning">{{ summary.warning }}</span>
+            <span class="text-warning">{{
+              getChecksCount(PlanCheckRun_Result_Status.WARNING)
+            }}</span>
           </button>
           <button
-            v-if="summary.success > 0"
+            v-if="getChecksCount(PlanCheckRun_Result_Status.SUCCESS) > 0"
             class="flex items-center gap-1 hover:opacity-80"
-            @click="openDrawer(PlanCheckRun_Result_Status.SUCCESS)"
+            @click="openChecksDrawer(PlanCheckRun_Result_Status.SUCCESS)"
           >
             <CheckCircleIcon class="w-5 h-5 text-success" />
-            <span class="text-success">{{ summary.success }}</span>
+            <span class="text-success">{{
+              getChecksCount(PlanCheckRun_Result_Status.SUCCESS)
+            }}</span>
           </button>
         </div>
 
@@ -49,14 +58,16 @@
       </div>
     </div>
 
-    <ChecksDrawer v-model:show="drawerVisible" :status="selectedStatus" />
+    <ChecksDrawer
+      v-model:show="showChecksDrawer"
+      :status="selectedResultStatus"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import type { ConnectError } from "@connectrpc/connect";
-import { isNumber } from "lodash-es";
 import {
   CheckCircleIcon,
   AlertCircleIcon,
@@ -87,39 +98,16 @@ const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
 const { plan } = usePlanContext();
 const selectedSpec = useSelectedSpec();
-const { requestEnhancedPolling } = useResourcePoller();
+const { refreshResources } = useResourcePoller();
 
 const isRunningChecks = ref(false);
-const drawerVisible = ref(false);
-const selectedStatus = ref<PlanCheckRun_Result_Status>(
+const showChecksDrawer = ref(false);
+const selectedResultStatus = ref<PlanCheckRun_Result_Status>(
   PlanCheckRun_Result_Status.SUCCESS
 );
 
-const show = computed(() => {
+const shouldShow = computed(() => {
   return planSpecHasPlanChecks(selectedSpec.value);
-});
-
-const summary = computed(() => {
-  const result = { success: 0, warning: 0, error: 0 };
-  if (
-    plan.value.planCheckRunStatusCount["ERROR"] &&
-    isNumber(plan.value.planCheckRunStatusCount["ERROR"])
-  ) {
-    result.error = plan.value.planCheckRunStatusCount["ERROR"];
-  }
-  if (
-    plan.value.planCheckRunStatusCount["WARNING"] &&
-    isNumber(plan.value.planCheckRunStatusCount["WARNING"])
-  ) {
-    result.warning = plan.value.planCheckRunStatusCount["WARNING"];
-  }
-  if (
-    plan.value.planCheckRunStatusCount["SUCCESS"] &&
-    isNumber(plan.value.planCheckRunStatusCount["SUCCESS"])
-  ) {
-    result.success = plan.value.planCheckRunStatusCount["SUCCESS"];
-  }
-  return result;
 });
 
 const allowRunChecks = computed(() => {
@@ -127,9 +115,14 @@ const allowRunChecks = computed(() => {
   if (extractUserId(plan.value.creator) === me.email) {
     return true;
   }
-
   return hasProjectPermissionV2(project.value, "bb.planCheckRuns.run");
 });
+
+const getChecksCount = (status: PlanCheckRun_Result_Status) => {
+  return (
+    plan.value.planCheckRunStatusCount[PlanCheckRun_Result_Status[status]] || 0
+  );
+};
 
 const runChecks = async () => {
   if (!plan.value.name || !selectedSpec.value) return;
@@ -142,7 +135,7 @@ const runChecks = async () => {
     await planServiceClientConnect.runPlanChecks(request);
 
     // After running checks, we need to refresh the plan and plan check runs.
-    requestEnhancedPolling(["plan", "planCheckRuns"], true /** once */);
+    refreshResources(["plan", "planCheckRuns"], true /** force */);
 
     pushNotification({
       module: "bytebase",
@@ -161,8 +154,8 @@ const runChecks = async () => {
   }
 };
 
-const openDrawer = (status: PlanCheckRun_Result_Status) => {
-  selectedStatus.value = status;
-  drawerVisible.value = true;
+const openChecksDrawer = (status: PlanCheckRun_Result_Status) => {
+  selectedResultStatus.value = status;
+  showChecksDrawer.value = true;
 };
 </script>

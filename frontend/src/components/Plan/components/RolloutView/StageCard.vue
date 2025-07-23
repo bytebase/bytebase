@@ -17,7 +17,7 @@
         <div class="flex items-start gap-2">
           <div class="flex items-start gap-2">
             <TaskStatus :status="stageStatus" size="medium" />
-            <div class="flex flex-col">
+            <div class="flex flex-col gap-1">
               <h3
                 class="text-base font-medium text-gray-900 whitespace-nowrap w-24 truncate"
               >
@@ -25,9 +25,10 @@
                   environmentStore.getEnvironmentByName(stage.environment).title
                 }}
               </h3>
-              <span v-if="latestUpdateTime" class="text-xs text-gray-500">
-                {{ humanizeTs(latestUpdateTime / 1000) }}
-              </span>
+              <Timestamp
+                v-if="latestUpdateTimestamp"
+                :timestamp="latestUpdateTimestamp"
+              />
             </div>
           </div>
 
@@ -165,6 +166,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Timestamp as TimestampPb } from "@bufbuild/protobuf/wkt";
 import {
   CircleFadingPlusIcon,
   ChevronDownIcon,
@@ -178,6 +180,7 @@ import { useRouter } from "vue-router";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
+import Timestamp from "@/components/misc/Timestamp.vue";
 import {
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
@@ -295,19 +298,21 @@ const stageStatus = computed(() => {
   return getStageStatus(stageWithFilteredTasks);
 });
 
-const latestUpdateTime = computed(() => {
-  let latestTime: number | undefined;
+const latestUpdateTimestamp = computed(() => {
+  let latestTimestamp: TimestampPb | undefined;
 
   for (const task of props.stage.tasks) {
     if (task.updateTime) {
-      const taskTime = getTimeForPbTimestampProtoEs(task.updateTime, 0);
-      if (!latestTime || taskTime > latestTime) {
-        latestTime = taskTime;
+      if (
+        !latestTimestamp ||
+        task.updateTime.seconds > latestTimestamp.seconds
+      ) {
+        latestTimestamp = task.updateTime;
       }
     }
   }
 
-  return latestTime;
+  return latestTimestamp;
 });
 
 const getTaskCount = (status: Task_Status) => {
