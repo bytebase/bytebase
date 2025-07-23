@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	parser "github.com/bytebase/mysql-parser"
+	mysql "github.com/bytebase/mysql-parser"
 )
 
 type columnSet map[string]bool
@@ -23,18 +23,6 @@ type tableState map[string]columnSet
 
 // tableList returns table list in lexicographical order.
 func (t tableState) tableList() []string {
-	var tableList []string
-	for tableName := range t {
-		tableList = append(tableList, tableName)
-	}
-	slices.Sort(tableList)
-	return tableList
-}
-
-type tablePK map[string]columnSet
-
-// tableList returns table list in lexicographical order.
-func (t tablePK) tableList() []string {
 	var tableList []string
 	for tableName := range t {
 		tableList = append(tableList, tableName)
@@ -79,17 +67,10 @@ func (t tableColumnTypes) delete(tableName string, columnName string) {
 	delete(t[tableName], columnName)
 }
 
-type tableData struct {
-	tableName                string
-	defaultCurrentTimeCount  int
-	onUpdateCurrentTimeCount int
-	line                     int
-}
-
 // isKeyword checks if the keyword is a MySQL keyword.
 // TODO: We should check with map instead of linear search.
 func isKeyword(suspect string) bool {
-	for _, item := range parser.Keywords80 {
+	for _, item := range mysql.Keywords80 {
 		if strings.EqualFold(suspect, item.Keyword) {
 			return true
 		}
@@ -97,42 +78,13 @@ func isKeyword(suspect string) bool {
 	return false
 }
 
-func columnNeedDefault(ctx parser.IFieldDefinitionContext) bool {
-	if ctx.GENERATED_SYMBOL() != nil {
-		return false
-	}
-	for _, attr := range ctx.AllColumnAttribute() {
-		if attr.AUTO_INCREMENT_SYMBOL() != nil || attr.PRIMARY_SYMBOL() != nil {
-			return false
-		}
-	}
-
-	if ctx.DataType() == nil {
-		return false
-	}
-
-	switch ctx.DataType().GetType_().GetTokenType() {
-	case parser.MySQLParserBLOB_SYMBOL,
-		parser.MySQLParserTINYBLOB_SYMBOL,
-		parser.MySQLParserMEDIUMBLOB_SYMBOL,
-		parser.MySQLParserLONGBLOB_SYMBOL,
-		parser.MySQLParserJSON_SYMBOL,
-		parser.MySQLParserTINYTEXT_SYMBOL,
-		parser.MySQLParserTEXT_SYMBOL,
-		parser.MySQLParserMEDIUMTEXT_SYMBOL,
-		parser.MySQLParserLONGTEXT_SYMBOL,
-		// LONG VARBINARY and LONG VARCHAR.
-		parser.MySQLParserLONG_SYMBOL,
-		parser.MySQLParserSERIAL_SYMBOL,
-		parser.MySQLParserGEOMETRY_SYMBOL,
-		parser.MySQLParserGEOMETRYCOLLECTION_SYMBOL,
-		parser.MySQLParserPOINT_SYMBOL,
-		parser.MySQLParserMULTIPOINT_SYMBOL,
-		parser.MySQLParserLINESTRING_SYMBOL,
-		parser.MySQLParserMULTILINESTRING_SYMBOL,
-		parser.MySQLParserPOLYGON_SYMBOL,
-		parser.MySQLParserMULTIPOLYGON_SYMBOL:
-		return false
-	}
-	return true
+// isCharsetDataType checks if the data type supports charset.
+func isCharsetDataType(dataType mysql.IDataTypeContext) bool {
+	return dataType != nil && (dataType.CHAR_SYMBOL() != nil ||
+		dataType.VARCHAR_SYMBOL() != nil ||
+		dataType.VARYING_SYMBOL() != nil ||
+		dataType.TINYTEXT_SYMBOL() != nil ||
+		dataType.TEXT_SYMBOL() != nil ||
+		dataType.MEDIUMTEXT_SYMBOL() != nil ||
+		dataType.LONGTEXT_SYMBOL() != nil)
 }
