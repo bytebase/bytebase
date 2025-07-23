@@ -84,11 +84,17 @@ func (*InsertDisallowOrderByRandRule) Name() string {
 func (r *InsertDisallowOrderByRandRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
 	case NodeTypeQuery:
-		queryCtx := ctx.(*mysql.QueryContext)
+		queryCtx, ok := ctx.(*mysql.QueryContext)
+		if !ok {
+			return nil
+		}
 		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
 	case NodeTypeInsertStatement:
-		if mysqlparser.IsTopMySQLRule(&ctx.(*mysql.InsertStatementContext).BaseParserRuleContext) {
-			insertCtx := ctx.(*mysql.InsertStatementContext)
+		insertCtx, ok := ctx.(*mysql.InsertStatementContext)
+		if !ok {
+			return nil
+		}
+		if mysqlparser.IsTopMySQLRule(&insertCtx.BaseParserRuleContext) {
 			if insertCtx.InsertQueryExpression() != nil {
 				r.isInsertStmt = true
 			}
@@ -100,7 +106,7 @@ func (r *InsertDisallowOrderByRandRule) OnEnter(ctx antlr.ParserRuleContext, nod
 }
 
 // OnExit is called when exiting a parse tree node.
-func (r *InsertDisallowOrderByRandRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *InsertDisallowOrderByRandRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	if nodeType == NodeTypeInsertStatement {
 		r.isInsertStmt = false
 	}

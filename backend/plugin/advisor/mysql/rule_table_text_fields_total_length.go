@@ -44,33 +44,63 @@ func (*TableMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advis
 	if err != nil {
 		return nil, err
 	}
-	checker := &tableFieldsMaximumVarcharLengthChecker{
-		level:   level,
-		title:   string(checkCtx.Rule.Type),
-		catalog: checkCtx.Catalog,
-		maximum: payload.Number,
-	}
+
+	// Create the rule
+	rule := NewTableTextFieldsTotalLengthRule(level, string(checkCtx.Rule.Type), checkCtx.Catalog, payload.Number)
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmt := range stmtList {
-		checker.baseLine = stmt.BaseLine
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type tableFieldsMaximumVarcharLengthChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	catalog    *catalog.Finder
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	baseLine   int
-	maximum    int
+// TableTextFieldsTotalLengthRule checks for table text fields total length.
+type TableTextFieldsTotalLengthRule struct {
+	BaseRule
+	catalog *catalog.Finder
+	maximum int
 }
 
-func (checker *tableFieldsMaximumVarcharLengthChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+// NewTableTextFieldsTotalLengthRule creates a new TableTextFieldsTotalLengthRule.
+func NewTableTextFieldsTotalLengthRule(level storepb.Advice_Status, title string, catalog *catalog.Finder, maximum int) *TableTextFieldsTotalLengthRule {
+	return &TableTextFieldsTotalLengthRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		catalog: catalog,
+		maximum: maximum,
+	}
+}
+
+// Name returns the rule name.
+func (*TableTextFieldsTotalLengthRule) Name() string {
+	return "TableTextFieldsTotalLengthRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *TableTextFieldsTotalLengthRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeCreateTable:
+		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
+	case NodeTypeAlterTable:
+		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*TableTextFieldsTotalLengthRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *TableTextFieldsTotalLengthRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -82,23 +112,23 @@ func (checker *tableFieldsMaximumVarcharLengthChecker) EnterCreateTable(ctx *mys
 	if tableName == "" {
 		return
 	}
-	tableInfo := checker.catalog.Final.FindTable(&catalog.TableFind{TableName: tableName})
+	tableInfo := r.catalog.Final.FindTable(&catalog.TableFind{TableName: tableName})
 	if tableInfo == nil {
 		return
 	}
 	total := getTotalTextLength(tableInfo)
-	if total > int64(checker.maximum) {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+	if total > int64(r.maximum) {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.IndexCountExceedsLimit.Int32(),
-			Title:         checker.title,
-			Content:       fmt.Sprintf("Table %q total text column length (%d) exceeds the limit (%d).", tableName, total, checker.maximum),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			Title:         r.title,
+			Content:       fmt.Sprintf("Table %q total text column length (%d) exceeds the limit (%d).", tableName, total, r.maximum),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }
 
-func (checker *tableFieldsMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+func (r *TableTextFieldsTotalLengthRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -116,18 +146,18 @@ func (checker *tableFieldsMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysq
 	if tableName == "" {
 		return
 	}
-	tableInfo := checker.catalog.Final.FindTable(&catalog.TableFind{TableName: tableName})
+	tableInfo := r.catalog.Final.FindTable(&catalog.TableFind{TableName: tableName})
 	if tableInfo == nil {
 		return
 	}
 	total := getTotalTextLength(tableInfo)
-	if total > int64(checker.maximum) {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+	if total > int64(r.maximum) {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.TotalTextLengthExceedsLimit.Int32(),
-			Title:         checker.title,
-			Content:       fmt.Sprintf("Table %q total text column length (%d) exceeds the limit (%d).", tableName, total, checker.maximum),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			Title:         r.title,
+			Content:       fmt.Sprintf("Table %q total text column length (%d) exceeds the limit (%d).", tableName, total, r.maximum),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }

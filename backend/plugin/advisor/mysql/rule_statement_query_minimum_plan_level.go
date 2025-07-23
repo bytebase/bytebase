@@ -43,39 +43,24 @@ func (*StatementQueryMinumumPlanLevelAdvisor) Check(ctx context.Context, checkCt
 		return nil, err
 	}
 
-	checker := &statementQueryMinumumPlanLevelChecker{
-		level:       level,
-		title:       string(checkCtx.Rule.Type),
-		driver:      checkCtx.Driver,
-		ctx:         ctx,
-		explainType: convertExplainTypeFromString(strings.ToUpper(payload.String)),
-	}
+	// Create the rule
+	rule := NewStatementQueryMinumumPlanLevelRule(ctx, level, string(checkCtx.Rule.Type), checkCtx.Driver, convertExplainTypeFromString(strings.ToUpper(payload.String)))
 
-	if checker.driver != nil {
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
+
+	if rule.driver != nil {
 		for _, stmt := range stmtList {
-			checker.baseLine = stmt.BaseLine
+			rule.SetBaseLine(stmt.BaseLine)
+			checker.SetBaseLine(stmt.BaseLine)
 			antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
-			if checker.explainCount >= common.MaximumLintExplainSize {
+			if rule.GetExplainCount() >= common.MaximumLintExplainSize {
 				break
 			}
 		}
 	}
 
-	return checker.adviceList, nil
-}
-
-type statementQueryMinumumPlanLevelChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine     int
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	title        string
-	text         string
-	driver       *sql.DB
-	ctx          context.Context
-	explainType  ExplainType
-	explainCount int
+	return checker.GetAdviceList(), nil
 }
 
 type ExplainType int
@@ -128,11 +113,60 @@ func convertExplainTypeFromString(explainTypeStr string) ExplainType {
 	}
 }
 
-func (checker *statementQueryMinumumPlanLevelChecker) EnterQuery(ctx *mysql.QueryContext) {
-	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+// StatementQueryMinumumPlanLevelRule checks for query minimum plan level.
+type StatementQueryMinumumPlanLevelRule struct {
+	BaseRule
+	text         string
+	driver       *sql.DB
+	ctx          context.Context
+	explainType  ExplainType
+	explainCount int
 }
 
-func (checker *statementQueryMinumumPlanLevelChecker) EnterSelectStatement(ctx *mysql.SelectStatementContext) {
+// NewStatementQueryMinumumPlanLevelRule creates a new StatementQueryMinumumPlanLevelRule.
+func NewStatementQueryMinumumPlanLevelRule(ctx context.Context, level storepb.Advice_Status, title string, driver *sql.DB, explainType ExplainType) *StatementQueryMinumumPlanLevelRule {
+	return &StatementQueryMinumumPlanLevelRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		driver:      driver,
+		ctx:         ctx,
+		explainType: explainType,
+	}
+}
+
+// Name returns the rule name.
+func (*StatementQueryMinumumPlanLevelRule) Name() string {
+	return "StatementQueryMinumumPlanLevelRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *StatementQueryMinumumPlanLevelRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeQuery:
+		queryCtx, ok := ctx.(*mysql.QueryContext)
+		if !ok {
+			return nil
+		}
+		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
+	case NodeTypeSelectStatement:
+		r.checkSelectStatement(ctx.(*mysql.SelectStatementContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*StatementQueryMinumumPlanLevelRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// GetExplainCount returns the explain count.
+func (r *StatementQueryMinumumPlanLevelRule) GetExplainCount() int {
+	return r.explainCount
+}
+
+func (r *StatementQueryMinumumPlanLevelRule) checkSelectStatement(ctx *mysql.SelectStatementContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -141,42 +175,42 @@ func (checker *statementQueryMinumumPlanLevelChecker) EnterSelectStatement(ctx *
 	}
 
 	query := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-	checker.explainCount++
-	res, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", query))
+	r.explainCount++
+	res, err := advisor.Query(r.ctx, advisor.QueryContext{}, r.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", query))
 	if err != nil {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.StatementExplainQueryFailed.Int32(),
-			Title:         checker.title,
+			Title:         r.title,
 			Content:       fmt.Sprintf("Failed to explain query: %s, with error: %s", query, err),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 		})
 	} else {
 		explainTypes, err := getQueryExplainTypes(res)
 		if err != nil {
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:        checker.level,
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.level,
 				Code:          advisor.Internal.Int32(),
-				Title:         checker.title,
+				Title:         r.title,
 				Content:       fmt.Sprintf("Failed to check explain type column: %s, with error: %s", query, err),
-				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 			})
 		} else if len(explainTypes) > 0 {
 			overused, overusedType := false, ExplainTypeAll
 			for _, explainType := range explainTypes {
-				if explainType < checker.explainType {
+				if explainType < r.explainType {
 					overused = true
 					overusedType = explainType
 					break
 				}
 			}
 			if overused {
-				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:        checker.level,
+				r.AddAdvice(&storepb.Advice{
+					Status:        r.level,
 					Code:          advisor.StatementUnwantedQueryPlanLevel.Int32(),
-					Title:         checker.title,
-					Content:       fmt.Sprintf("Overused query plan level detected %s, minimum plan level: %s", overusedType.String(), checker.explainType.String()),
-					StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+					Title:         r.title,
+					Content:       fmt.Sprintf("Overused query plan level detected %s, minimum plan level: %s", overusedType.String(), r.explainType.String()),
+					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 				})
 			}
 		}

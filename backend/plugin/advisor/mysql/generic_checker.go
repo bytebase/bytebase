@@ -15,6 +15,7 @@ import (
 const (
 	NodeTypeCreateTable             = "CreateTable"
 	NodeTypeAlterTable              = "AlterTable"
+	NodeTypeAlterStatement          = "AlterStatement"
 	NodeTypeDropTable               = "DropTable"
 	NodeTypeRenameTableStatement    = "RenameTableStatement"
 	NodeTypeSetStatement            = "SetStatement"
@@ -52,6 +53,12 @@ const (
 	NodeTypeLimitClause             = "LimitClause"
 	NodeTypeFromClause              = "FromClause"
 	NodeTypePrimaryExprCompare      = "PrimaryExprCompare"
+	NodeTypeJoinedTable             = "JoinedTable"
+	NodeTypeWhereClause             = "WhereClause"
+	NodeTypePredicateExprIn         = "PredicateExprIn"
+	NodeTypeExprList                = "ExprList"
+	NodeTypeExprOr                  = "ExprOr"
+	NodeTypeAlterTableActions       = "AlterTableActions"
 )
 
 // Rule defines the interface for individual SQL validation rules.

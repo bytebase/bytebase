@@ -42,27 +42,19 @@ func (*TableNoDuplicateIndexAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 
-	checker := &tableNoDuplicateIndexChecker{
-		level:     level,
-		title:     string(checkCtx.Rule.Type),
-		indexList: []duplicateIndex{},
-	}
+	// Create the rule
+	rule := NewTableNoDuplicateIndexRule(level, string(checkCtx.Rule.Type))
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
+
 	for _, stmt := range stmtList {
-		checker.baseLine = stmt.BaseLine
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
-	return checker.adviceList, nil
-}
-
-type tableNoDuplicateIndexChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine   int
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	indexList  []duplicateIndex
+	return checker.GetAdviceList(), nil
 }
 
 type duplicateIndex struct {
@@ -78,7 +70,47 @@ type duplicateIndex struct {
 	line int
 }
 
-func (checker *tableNoDuplicateIndexChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+// TableNoDuplicateIndexRule checks for no duplicate index in table.
+type TableNoDuplicateIndexRule struct {
+	BaseRule
+	indexList []duplicateIndex
+}
+
+// NewTableNoDuplicateIndexRule creates a new TableNoDuplicateIndexRule.
+func NewTableNoDuplicateIndexRule(level storepb.Advice_Status, title string) *TableNoDuplicateIndexRule {
+	return &TableNoDuplicateIndexRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		indexList: []duplicateIndex{},
+	}
+}
+
+// Name returns the rule name.
+func (*TableNoDuplicateIndexRule) Name() string {
+	return "TableNoDuplicateIndexRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *TableNoDuplicateIndexRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeCreateTable:
+		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
+	case NodeTypeAlterTable:
+		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	case NodeTypeCreateIndex:
+		r.checkCreateIndex(ctx.(*mysql.CreateIndexContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*TableNoDuplicateIndexRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *TableNoDuplicateIndexRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -95,21 +127,21 @@ func (checker *tableNoDuplicateIndexChecker) EnterCreateTable(ctx *mysql.CreateT
 		if tableElement == nil || tableElement.TableConstraintDef() == nil {
 			continue
 		}
-		checker.handleConstraintDef(tableName, tableElement.TableConstraintDef())
+		r.handleConstraintDef(tableName, tableElement.TableConstraintDef())
 	}
 	// Check for duplicate index.
-	if index := hasDuplicateIndexes(checker.indexList); index != nil {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+	if index := hasDuplicateIndexes(r.indexList); index != nil {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.DuplicateIndexInTable.Int32(),
-			Title:         checker.title,
+			Title:         r.title,
 			Content:       fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
 			StartPosition: common.ConvertANTLRLineToPosition(index.line),
 		})
 	}
 }
 
-func (checker *tableNoDuplicateIndexChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+func (r *TableNoDuplicateIndexRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -126,21 +158,21 @@ func (checker *tableNoDuplicateIndexChecker) EnterAlterTable(ctx *mysql.AlterTab
 			continue
 		}
 		if alterListItem.ADD_SYMBOL() != nil && alterListItem.TableConstraintDef() != nil {
-			checker.handleConstraintDef(tableName, alterListItem.TableConstraintDef())
+			r.handleConstraintDef(tableName, alterListItem.TableConstraintDef())
 		}
 	}
-	if index := hasDuplicateIndexes(checker.indexList); index != nil {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+	if index := hasDuplicateIndexes(r.indexList); index != nil {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.DuplicateIndexInTable.Int32(),
-			Title:         checker.title,
+			Title:         r.title,
 			Content:       fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
 			StartPosition: common.ConvertANTLRLineToPosition(index.line),
 		})
 	}
 }
 
-func (checker *tableNoDuplicateIndexChecker) handleConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) {
+func (r *TableNoDuplicateIndexRule) handleConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) {
 	switch ctx.GetType_().GetTokenType() {
 	case mysql.MySQLParserINDEX_SYMBOL, mysql.MySQLParserKEY_SYMBOL, mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL, mysql.MySQLParserFULLTEXT_SYMBOL, mysql.MySQLParserSPATIAL_SYMBOL:
 	default:
@@ -149,7 +181,7 @@ func (checker *tableNoDuplicateIndexChecker) handleConstraintDef(tableName strin
 
 	index := duplicateIndex{
 		indexType: "BTREE",
-		line:      checker.baseLine + ctx.GetStart().GetLine(),
+		line:      r.baseLine + ctx.GetStart().GetLine(),
 		table:     tableName,
 	}
 	if ctx.KeyListVariants() != nil {
@@ -170,10 +202,10 @@ func (checker *tableNoDuplicateIndexChecker) handleConstraintDef(tableName strin
 			index.indexType = ctx.IndexNameAndType().IndexType().GetText()
 		}
 	}
-	checker.indexList = append(checker.indexList, index)
+	r.indexList = append(r.indexList, index)
 }
 
-func (checker *tableNoDuplicateIndexChecker) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
+func (r *TableNoDuplicateIndexRule) checkCreateIndex(ctx *mysql.CreateIndexContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -184,7 +216,7 @@ func (checker *tableNoDuplicateIndexChecker) EnterCreateIndex(ctx *mysql.CreateI
 	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
 	index := duplicateIndex{
 		indexType: "BTREE",
-		line:      checker.baseLine + ctx.GetStart().GetLine(),
+		line:      r.baseLine + ctx.GetStart().GetLine(),
 		table:     tableName,
 	}
 	if ctx.UNIQUE_SYMBOL() != nil {
@@ -210,12 +242,12 @@ func (checker *tableNoDuplicateIndexChecker) EnterCreateIndex(ctx *mysql.CreateI
 	}
 
 	index.columns = mysqlparser.NormalizeKeyListVariants(ctx.CreateIndexTarget().KeyListVariants())
-	checker.indexList = append(checker.indexList, index)
-	if index := hasDuplicateIndexes(checker.indexList); index != nil {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+	r.indexList = append(r.indexList, index)
+	if index := hasDuplicateIndexes(r.indexList); index != nil {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.DuplicateIndexInTable.Int32(),
-			Title:         checker.title,
+			Title:         r.title,
 			Content:       fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
 			StartPosition: common.ConvertANTLRLineToPosition(index.line),
 		})

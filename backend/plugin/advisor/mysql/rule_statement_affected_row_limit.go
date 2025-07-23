@@ -46,7 +46,7 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 
 	// Create the rule
-	rule := NewStatementAffectedRowLimitRule(level, string(checkCtx.Rule.Type), payload.Number, checkCtx.Driver, ctx)
+	rule := NewStatementAffectedRowLimitRule(ctx, level, string(checkCtx.Rule.Type), payload.Number, checkCtx.Driver)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -76,7 +76,7 @@ type StatementAffectedRowLimitRule struct {
 }
 
 // NewStatementAffectedRowLimitRule creates a new StatementAffectedRowLimitRule.
-func NewStatementAffectedRowLimitRule(level storepb.Advice_Status, title string, maxRow int, driver *sql.DB, ctx context.Context) *StatementAffectedRowLimitRule {
+func NewStatementAffectedRowLimitRule(ctx context.Context, level storepb.Advice_Status, title string, maxRow int, driver *sql.DB) *StatementAffectedRowLimitRule {
 	return &StatementAffectedRowLimitRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -97,7 +97,10 @@ func (*StatementAffectedRowLimitRule) Name() string {
 func (r *StatementAffectedRowLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
 	case NodeTypeQuery:
-		queryCtx := ctx.(*mysql.QueryContext)
+		queryCtx, ok := ctx.(*mysql.QueryContext)
+		if !ok {
+			return nil
+		}
 		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
 	case NodeTypeUpdateStatement:
 		if mysqlparser.IsTopMySQLRule(&ctx.(*mysql.UpdateStatementContext).BaseParserRuleContext) {

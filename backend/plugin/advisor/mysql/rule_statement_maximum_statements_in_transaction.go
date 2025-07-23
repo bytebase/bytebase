@@ -79,7 +79,10 @@ func (*StatementMaximumStatementsInTransactionRule) Name() string {
 // OnEnter is called when entering a parse tree node.
 func (r *StatementMaximumStatementsInTransactionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
 	if nodeType == NodeTypeQuery {
-		queryCtx := ctx.(*mysql.QueryContext)
+		queryCtx, ok := ctx.(*mysql.QueryContext)
+		if !ok {
+			return nil
+		}
 		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
 	}
 	return nil

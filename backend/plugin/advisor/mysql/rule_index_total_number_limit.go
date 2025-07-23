@@ -70,13 +70,13 @@ type IndexTotalNumberLimitRule struct {
 }
 
 // NewIndexTotalNumberLimitRule creates a new IndexTotalNumberLimitRule.
-func NewIndexTotalNumberLimitRule(level storepb.Advice_Status, title string, max int, catalog *catalog.Finder) *IndexTotalNumberLimitRule {
+func NewIndexTotalNumberLimitRule(level storepb.Advice_Status, title string, maxIndexes int, catalog *catalog.Finder) *IndexTotalNumberLimitRule {
 	return &IndexTotalNumberLimitRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		max:          max,
+		max:          maxIndexes,
 		lineForTable: make(map[string]int),
 		catalog:      catalog,
 	}

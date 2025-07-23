@@ -39,39 +39,70 @@ func (*StatementDisallowUsingTemporaryAdvisor) Check(ctx context.Context, checkC
 		return nil, err
 	}
 
-	checker := &disallowUsingTemporaryChecker{
-		level:  level,
-		title:  string(checkCtx.Rule.Type),
-		driver: checkCtx.Driver,
-		ctx:    ctx,
-	}
+	// Create the rule
+	rule := NewStatementDisallowUsingTemporaryRule(ctx, level, string(checkCtx.Rule.Type), checkCtx.Driver)
 
-	if checker.driver != nil {
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
+
+	if rule.driver != nil {
 		for _, stmt := range stmtList {
-			checker.baseLine = stmt.BaseLine
+			rule.SetBaseLine(stmt.BaseLine)
+			checker.SetBaseLine(stmt.BaseLine)
 			antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
-			if checker.explainCount >= common.MaximumLintExplainSize {
+			if rule.GetExplainCount() >= common.MaximumLintExplainSize {
 				break
 			}
 		}
 	}
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type disallowUsingTemporaryChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine     int
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	title        string
+// StatementDisallowUsingTemporaryRule checks for using temporary.
+type StatementDisallowUsingTemporaryRule struct {
+	BaseRule
 	driver       *sql.DB
 	ctx          context.Context
 	explainCount int
 }
 
-func (checker *disallowUsingTemporaryChecker) EnterSelectStatement(ctx *mysql.SelectStatementContext) {
+// NewStatementDisallowUsingTemporaryRule creates a new StatementDisallowUsingTemporaryRule.
+func NewStatementDisallowUsingTemporaryRule(ctx context.Context, level storepb.Advice_Status, title string, driver *sql.DB) *StatementDisallowUsingTemporaryRule {
+	return &StatementDisallowUsingTemporaryRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		driver: driver,
+		ctx:    ctx,
+	}
+}
+
+// Name returns the rule name.
+func (*StatementDisallowUsingTemporaryRule) Name() string {
+	return "StatementDisallowUsingTemporaryRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *StatementDisallowUsingTemporaryRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	if nodeType == NodeTypeSelectStatement {
+		r.checkSelectStatement(ctx.(*mysql.SelectStatementContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*StatementDisallowUsingTemporaryRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// GetExplainCount returns the explain count.
+func (r *StatementDisallowUsingTemporaryRule) GetExplainCount() int {
+	return r.explainCount
+}
+
+func (r *StatementDisallowUsingTemporaryRule) checkSelectStatement(ctx *mysql.SelectStatementContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -80,33 +111,33 @@ func (checker *disallowUsingTemporaryChecker) EnterSelectStatement(ctx *mysql.Se
 	}
 
 	query := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-	checker.explainCount++
-	res, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", query))
+	r.explainCount++
+	res, err := advisor.Query(r.ctx, advisor.QueryContext{}, r.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", query))
 	if err != nil {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.StatementExplainQueryFailed.Int32(),
-			Title:         checker.title,
+			Title:         r.title,
 			Content:       fmt.Sprintf("Failed to explain query: %s, with error: %s", query, err),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 		})
 	} else {
 		hasUsingTemporary, tables, err := hasUsingTemporaryInExtraColumn(res)
 		if err != nil {
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:        checker.level,
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.level,
 				Code:          advisor.Internal.Int32(),
-				Title:         checker.title,
+				Title:         r.title,
 				Content:       fmt.Sprintf("Failed to check extra column: %s, with error: %s", query, err),
-				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 			})
 		} else if hasUsingTemporary {
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:        checker.level,
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.level,
 				Code:          advisor.StatementHasUsingTemporary.Int32(),
-				Title:         checker.title,
+				Title:         r.title,
 				Content:       fmt.Sprintf("Using temporary detected on table(s): %s", tables),
-				StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 			})
 		}
 	}

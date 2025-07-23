@@ -42,7 +42,7 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	}
 
 	// Create the rule
-	rule := NewStatementDmlDryRunRule(level, string(checkCtx.Rule.Type), checkCtx.Driver, ctx)
+	rule := NewStatementDmlDryRunRule(ctx, level, string(checkCtx.Rule.Type), checkCtx.Driver)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -70,7 +70,7 @@ type StatementDmlDryRunRule struct {
 }
 
 // NewStatementDmlDryRunRule creates a new StatementDmlDryRunRule.
-func NewStatementDmlDryRunRule(level storepb.Advice_Status, title string, driver *sql.DB, ctx context.Context) *StatementDmlDryRunRule {
+func NewStatementDmlDryRunRule(ctx context.Context, level storepb.Advice_Status, title string, driver *sql.DB) *StatementDmlDryRunRule {
 	return &StatementDmlDryRunRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -90,18 +90,27 @@ func (*StatementDmlDryRunRule) Name() string {
 func (r *StatementDmlDryRunRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
 	case NodeTypeUpdateStatement:
-		if mysqlparser.IsTopMySQLRule(&ctx.(*mysql.UpdateStatementContext).BaseParserRuleContext) {
-			updateCtx := ctx.(*mysql.UpdateStatementContext)
+		updateCtx, ok := ctx.(*mysql.UpdateStatementContext)
+		if !ok {
+			return nil
+		}
+		if mysqlparser.IsTopMySQLRule(&updateCtx.BaseParserRuleContext) {
 			r.handleStmt(updateCtx.GetParser().GetTokenStream().GetTextFromRuleContext(updateCtx), updateCtx.GetStart().GetLine())
 		}
 	case NodeTypeDeleteStatement:
-		if mysqlparser.IsTopMySQLRule(&ctx.(*mysql.DeleteStatementContext).BaseParserRuleContext) {
-			deleteCtx := ctx.(*mysql.DeleteStatementContext)
+		deleteCtx, ok := ctx.(*mysql.DeleteStatementContext)
+		if !ok {
+			return nil
+		}
+		if mysqlparser.IsTopMySQLRule(&deleteCtx.BaseParserRuleContext) {
 			r.handleStmt(deleteCtx.GetParser().GetTokenStream().GetTextFromRuleContext(deleteCtx), deleteCtx.GetStart().GetLine())
 		}
 	case NodeTypeInsertStatement:
-		if mysqlparser.IsTopMySQLRule(&ctx.(*mysql.InsertStatementContext).BaseParserRuleContext) {
-			insertCtx := ctx.(*mysql.InsertStatementContext)
+		insertCtx, ok := ctx.(*mysql.InsertStatementContext)
+		if !ok {
+			return nil
+		}
+		if mysqlparser.IsTopMySQLRule(&insertCtx.BaseParserRuleContext) {
 			r.handleStmt(insertCtx.GetParser().GetTokenStream().GetTextFromRuleContext(insertCtx), insertCtx.GetStart().GetLine())
 		}
 	}

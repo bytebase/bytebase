@@ -68,39 +68,19 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 		}
 	}
 
-	var adviceList []*storepb.Advice
-	// Check statements.
+	// Create the rule
+	rule := NewOnlineMigrationRule(level, title, minRows, dbSchema, checkCtx)
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
+
 	for _, stmt := range stmtList {
-		checker := &useGhostChecker{
-			currentDatabase:  checkCtx.CurrentDatabase,
-			changedResources: make(map[string]parserbase.SchemaResource),
-			baseline:         int32(stmt.BaseLine),
-			checkCtx:         checkCtx,
-		}
-
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
-
-		if !checker.ghostCompatible {
-			continue
-		}
-
-		for _, resource := range checker.changedResources {
-			var tableRows int64
-			if table := dbSchema.GetDatabaseMetadata().GetSchema(resource.Schema).GetTable(resource.Table); table != nil {
-				tableRows = table.GetRowCount()
-			}
-			if tableRows >= minRows {
-				adviceList = append(adviceList, &storepb.Advice{
-					Status:        level,
-					Code:          advisor.AdviseOnlineMigrationForStatement.Int32(),
-					Title:         title,
-					Content:       fmt.Sprintf("Estimated table row count of %q is %d exceeding the set value %d. Consider using online migration for this statement", fmt.Sprintf("%s.%s", resource.Schema, resource.Table), tableRows, minRows),
-					StartPosition: checker.start,
-					EndPosition:   checker.end,
-				})
-			}
-		}
 	}
+
+	adviceList := rule.GetAdviceList()
 
 	// More than one statements need online migration.
 	// Advise running each statement in separate issues.
@@ -143,54 +123,119 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 	return nil, nil
 }
 
-type useGhostChecker struct {
-	*mysql.BaseMySQLParserListener
-	checkCtx advisor.Context
-
+// OnlineMigrationRule checks for using gh-ost to migrate large tables.
+type OnlineMigrationRule struct {
+	BaseRule
+	minRows          int64
+	dbSchema         *model.DatabaseSchema
+	checkCtx         advisor.Context
 	currentDatabase  string
 	changedResources map[string]parserbase.SchemaResource
 	ghostCompatible  bool
-
-	baseline int32
-	start    *storepb.Position
-	end      *storepb.Position
+	start            *storepb.Position
+	end              *storepb.Position
 }
 
-func (c *useGhostChecker) EnterAlterStatement(ctx *mysql.AlterStatementContext) {
-	c.start = common.ConvertANTLRPositionToPosition(
+// NewOnlineMigrationRule creates a new OnlineMigrationRule.
+func NewOnlineMigrationRule(level storepb.Advice_Status, title string, minRows int64, dbSchema *model.DatabaseSchema, checkCtx advisor.Context) *OnlineMigrationRule {
+	return &OnlineMigrationRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		minRows:          minRows,
+		dbSchema:         dbSchema,
+		checkCtx:         checkCtx,
+		currentDatabase:  checkCtx.CurrentDatabase,
+		changedResources: make(map[string]parserbase.SchemaResource),
+	}
+}
+
+// Name returns the rule name.
+func (*OnlineMigrationRule) Name() string {
+	return "OnlineMigrationRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *OnlineMigrationRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeAlterStatement:
+		r.checkAlterStatement(ctx.(*mysql.AlterStatementContext))
+	case NodeTypeAlterTable:
+		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	case NodeTypeAlterTableActions:
+		r.checkAlterTableActions(ctx.(*mysql.AlterTableActionsContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (r *OnlineMigrationRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+	if nodeType == NodeTypeAlterStatement {
+		r.exitAlterStatement(ctx.(*mysql.AlterStatementContext))
+	}
+	return nil
+}
+
+func (r *OnlineMigrationRule) checkAlterStatement(ctx *mysql.AlterStatementContext) {
+	r.start = common.ConvertANTLRPositionToPosition(
 		&common.ANTLRPosition{
 			Line:   int32(ctx.GetStart().GetLine()),
 			Column: int32(ctx.GetStart().GetColumn()),
 		},
-		c.checkCtx.Statements,
+		r.checkCtx.Statements,
 	)
 }
 
-func (c *useGhostChecker) ExitAlterStatement(ctx *mysql.AlterStatementContext) {
-	c.end = common.ConvertANTLRPositionToPosition(
+func (r *OnlineMigrationRule) exitAlterStatement(ctx *mysql.AlterStatementContext) {
+	r.end = common.ConvertANTLRPositionToPosition(
 		&common.ANTLRPosition{
-			Line:   c.baseline + int32(ctx.GetStop().GetLine()),
+			Line:   int32(r.baseLine) + int32(ctx.GetStop().GetLine()),
 			Column: int32(ctx.GetStop().GetColumn() + len([]rune(ctx.GetStop().GetText()))),
 		},
-		c.checkCtx.Statements,
+		r.checkCtx.Statements,
 	)
+
+	if !r.ghostCompatible {
+		return
+	}
+
+	for _, resource := range r.changedResources {
+		var tableRows int64
+		for _, table := range r.dbSchema.GetMetadata().GetSchemas()[0].GetTables() {
+			if table.GetName() == resource.Table {
+				tableRows = table.GetRowCount()
+				break
+			}
+		}
+		if tableRows >= r.minRows {
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.level,
+				Code:          advisor.AdviseOnlineMigrationForStatement.Int32(),
+				Title:         r.title,
+				Content:       fmt.Sprintf("Estimated table row count of %q is %d exceeding the set value %d. Consider using online migration for this statement", fmt.Sprintf("%s.%s", resource.Schema, resource.Table), tableRows, r.minRows),
+				StartPosition: r.start,
+				EndPosition:   r.end,
+			})
+		}
+	}
 }
 
-func (c *useGhostChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+func (r *OnlineMigrationRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	resource := parserbase.SchemaResource{
-		Database: c.currentDatabase,
+		Database: r.currentDatabase,
 	}
 	db, table := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
 	if db != "" {
 		resource.Database = db
 	}
 	resource.Table = table
-	c.changedResources[resource.String()] = resource
+	r.changedResources[resource.String()] = resource
 }
 
-func (c *useGhostChecker) EnterAlterTableActions(ctx *mysql.AlterTableActionsContext) {
-	c.ghostCompatible = ctx.AlterCommandList() != nil || ctx.PartitionClause() != nil || ctx.RemovePartitioning() != nil
+func (r *OnlineMigrationRule) checkAlterTableActions(ctx *mysql.AlterTableActionsContext) {
+	r.ghostCompatible = ctx.AlterCommandList() != nil || ctx.PartitionClause() != nil || ctx.RemovePartitioning() != nil
 }

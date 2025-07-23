@@ -44,58 +44,87 @@ func (*RequireAlgorithmOrLockOptionAdvisor) Check(_ context.Context, checkCtx ad
 	if checkCtx.Rule.Type == string(advisor.SchemaRuleStatementRequireLockOption) {
 		requiredOption, errorCode = "LOCK", advisor.StatementNoLockOption
 	}
-	checker := &RequireAlgorithmOptionChecker{
-		requiredOption: requiredOption,
-		level:          level,
-		title:          string(checkCtx.Rule.Type),
-		adviceList:     []*storepb.Advice{},
-		errorCode:      errorCode,
-	}
+
+	// Create the rule
+	rule := NewRequireAlgorithmOrLockOptionRule(level, string(checkCtx.Rule.Type), requiredOption, errorCode)
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
+
 	for _, stmt := range stmtList {
-		checker.baseLine = stmt.BaseLine
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
-	return checker.adviceList, nil
+
+	return checker.GetAdviceList(), nil
 }
 
-type RequireAlgorithmOptionChecker struct {
-	*mysql.BaseMySQLParserListener
-
+// RequireAlgorithmOrLockOptionRule checks for required algorithm or lock options.
+type RequireAlgorithmOrLockOptionRule struct {
+	BaseRule
 	requiredOption        string
 	hasOption             bool
 	inAlterTableStatement bool
-
-	errorCode  advisor.Code
-	baseLine   int
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	text       string
-	line       int
+	errorCode             advisor.Code
+	text                  string
+	line                  int
 }
 
-func (checker *RequireAlgorithmOptionChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
-	checker.inAlterTableStatement = true
-	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-	checker.line = ctx.GetStart().GetLine()
-}
-
-func (checker *RequireAlgorithmOptionChecker) ExitAlterTable(*mysql.AlterTableContext) {
-	if !checker.hasOption {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
-			Code:          int32(checker.errorCode),
-			Title:         checker.title,
-			Content:       "ALTER TABLE statement should include " + checker.requiredOption + " option",
-			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + checker.line),
-		})
+// NewRequireAlgorithmOrLockOptionRule creates a new RequireAlgorithmOrLockOptionRule.
+func NewRequireAlgorithmOrLockOptionRule(level storepb.Advice_Status, title string, requiredOption string, errorCode advisor.Code) *RequireAlgorithmOrLockOptionRule {
+	return &RequireAlgorithmOrLockOptionRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		requiredOption: requiredOption,
+		errorCode:      errorCode,
 	}
-	checker.inAlterTableStatement = false
-	checker.hasOption = false
 }
 
-func (checker *RequireAlgorithmOptionChecker) EnterAlterTableActions(ctx *mysql.AlterTableActionsContext) {
-	if !checker.inAlterTableStatement {
+// Name returns the rule name.
+func (*RequireAlgorithmOrLockOptionRule) Name() string {
+	return "RequireAlgorithmOrLockOptionRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *RequireAlgorithmOrLockOptionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeAlterTable:
+		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	case NodeTypeAlterTableActions:
+		r.checkAlterTableActions(ctx.(*mysql.AlterTableActionsContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (r *RequireAlgorithmOrLockOptionRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
+	if nodeType == NodeTypeAlterTable {
+		if !r.hasOption {
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.level,
+				Code:          int32(r.errorCode),
+				Title:         r.title,
+				Content:       "ALTER TABLE statement should include " + r.requiredOption + " option",
+				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + r.line),
+			})
+		}
+		r.inAlterTableStatement = false
+		r.hasOption = false
+	}
+	return nil
+}
+
+func (r *RequireAlgorithmOrLockOptionRule) checkAlterTable(ctx *mysql.AlterTableContext) {
+	r.inAlterTableStatement = true
+	r.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+	r.line = ctx.GetStart().GetLine()
+}
+
+func (r *RequireAlgorithmOrLockOptionRule) checkAlterTableActions(ctx *mysql.AlterTableActionsContext) {
+	if !r.inAlterTableStatement {
 		return
 	}
 
@@ -112,21 +141,21 @@ func (checker *RequireAlgorithmOptionChecker) EnterAlterTableActions(ctx *mysql.
 		}
 	}
 	for _, modifier := range modifierList {
-		if checker.requiredOption == "ALGORITHM" && modifier.AlterAlgorithmOption() != nil {
+		if r.requiredOption == "ALGORITHM" && modifier.AlterAlgorithmOption() != nil {
 			if modifier.AlterAlgorithmOption().Identifier() != nil {
 				algorithmOptionValue := mysqlparser.NormalizeMySQLIdentifier(modifier.AlterAlgorithmOption().Identifier())
 				// Don't need to check the value of the algorithm option right now.
 				if algorithmOptionValue != "" {
-					checker.hasOption = true
+					r.hasOption = true
 				}
 			}
 		}
-		if checker.requiredOption == "LOCK" && modifier.AlterLockOption() != nil {
+		if r.requiredOption == "LOCK" && modifier.AlterLockOption() != nil {
 			if modifier.AlterLockOption().Identifier() != nil {
 				lockOptionValue := mysqlparser.NormalizeMySQLIdentifier(modifier.AlterLockOption().Identifier())
 				// Don't need to check the value of the lock option right now.
 				if lockOptionValue != "" {
-					checker.hasOption = true
+					r.hasOption = true
 				}
 			}
 		}

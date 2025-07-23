@@ -66,13 +66,13 @@ type IndexKeyNumberLimitRule struct {
 }
 
 // NewIndexKeyNumberLimitRule creates a new IndexKeyNumberLimitRule.
-func NewIndexKeyNumberLimitRule(level storepb.Advice_Status, title string, max int) *IndexKeyNumberLimitRule {
+func NewIndexKeyNumberLimitRule(level storepb.Advice_Status, title string, maxKeys int) *IndexKeyNumberLimitRule {
 	return &IndexKeyNumberLimitRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
 		},
-		max: max,
+		max: maxKeys,
 	}
 }
 

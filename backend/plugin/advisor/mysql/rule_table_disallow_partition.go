@@ -80,7 +80,10 @@ func (*TableDisallowPartitionRule) Name() string {
 func (r *TableDisallowPartitionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
 	case NodeTypeQuery:
-		queryCtx := ctx.(*mysql.QueryContext)
+		queryCtx, ok := ctx.(*mysql.QueryContext)
+		if !ok {
+			return nil
+		}
 		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
 	case NodeTypeCreateTable:
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))

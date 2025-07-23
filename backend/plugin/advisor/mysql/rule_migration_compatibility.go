@@ -31,7 +31,7 @@ type CompatibilityAdvisor struct {
 
 // Check checks schema backward compatibility.
 func (*CompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	root, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
+	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
@@ -41,50 +41,85 @@ func (*CompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 		return nil, err
 	}
 
-	checker := &compatibilityChecker{
-		level: level,
-		title: string(checkCtx.Rule.Type),
-	}
-	for _, stmt := range root {
-		checker.baseLine = stmt.BaseLine
+	// Create the rule
+	rule := NewCompatibilityRule(level, string(checkCtx.Rule.Type))
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
+
+	for _, stmt := range stmtList {
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type compatibilityChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine        int
-	adviceList      []*storepb.Advice
-	level           storepb.Advice_Status
-	title           string
+// CompatibilityRule checks for schema backward compatibility.
+type CompatibilityRule struct {
+	BaseRule
+	text            string
 	lastCreateTable string
 	code            advisor.Code
 }
 
-// EnterQuery is called when production query is entered.
-func (checker *compatibilityChecker) EnterQuery(_ *mysql.QueryContext) {
-	checker.code = advisor.Ok
-}
-
-// ExitQuery is called when production query is exited.
-func (checker *compatibilityChecker) ExitQuery(ctx *mysql.QueryContext) {
-	if checker.code != advisor.Ok {
-		text := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
-			Code:          checker.code.Int32(),
-			Title:         checker.title,
-			Content:       fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", text),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
-		})
+// NewCompatibilityRule creates a new CompatibilityRule.
+func NewCompatibilityRule(level storepb.Advice_Status, title string) *CompatibilityRule {
+	return &CompatibilityRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
 	}
 }
 
-// EnterCreateTable is called when production createTable is entered.
-func (checker *compatibilityChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+// Name returns the rule name.
+func (*CompatibilityRule) Name() string {
+	return "CompatibilityRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *CompatibilityRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeQuery:
+		queryCtx, ok := ctx.(*mysql.QueryContext)
+		if !ok {
+			return nil
+		}
+		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
+		r.code = advisor.Ok
+	case NodeTypeCreateTable:
+		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
+	case NodeTypeDropDatabase:
+		r.checkDropDatabase(ctx.(*mysql.DropDatabaseContext))
+	case NodeTypeRenameTableStatement:
+		r.checkRenameTableStatement(ctx.(*mysql.RenameTableStatementContext))
+	case NodeTypeDropTable:
+		r.checkDropTable(ctx.(*mysql.DropTableContext))
+	case NodeTypeAlterTable:
+		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	case NodeTypeCreateIndex:
+		r.checkCreateIndex(ctx.(*mysql.CreateIndexContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (r *CompatibilityRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+	if nodeType == NodeTypeQuery && r.code != advisor.Ok {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
+			Code:          r.code.Int32(),
+			Title:         r.title,
+			Content:       fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", r.text),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+		})
+	}
+	return nil
+}
+
+func (r *CompatibilityRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -96,34 +131,31 @@ func (checker *compatibilityChecker) EnterCreateTable(ctx *mysql.CreateTableCont
 	}
 
 	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	checker.lastCreateTable = tableName
+	r.lastCreateTable = tableName
 }
 
-// EnterDropDatabase is called when production dropDatabase is entered.
-func (checker *compatibilityChecker) EnterDropDatabase(ctx *mysql.DropDatabaseContext) {
+func (r *CompatibilityRule) checkDropDatabase(ctx *mysql.DropDatabaseContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
-	checker.code = advisor.CompatibilityDropDatabase
+	r.code = advisor.CompatibilityDropDatabase
 }
 
-// EnterRenameTableStatement is called when production renameTableStatement is entered.
-func (checker *compatibilityChecker) EnterRenameTableStatement(ctx *mysql.RenameTableStatementContext) {
+func (r *CompatibilityRule) checkRenameTableStatement(ctx *mysql.RenameTableStatementContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
-	checker.code = advisor.CompatibilityRenameTable
+	r.code = advisor.CompatibilityRenameTable
 }
 
-// EnterDropTable is called when production dropTable is entered.
-func (checker *compatibilityChecker) EnterDropTable(ctx *mysql.DropTableContext) {
+func (r *CompatibilityRule) checkDropTable(ctx *mysql.DropTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
-	checker.code = advisor.CompatibilityDropTable
+	r.code = advisor.CompatibilityDropTable
 }
 
-func (checker *compatibilityChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+func (r *CompatibilityRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -139,7 +171,7 @@ func (checker *compatibilityChecker) EnterAlterTable(ctx *mysql.AlterTableContex
 	}
 
 	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	if tableName == checker.lastCreateTable {
+	if tableName == r.lastCreateTable {
 		return
 	}
 
@@ -150,16 +182,16 @@ func (checker *compatibilityChecker) EnterAlterTable(ctx *mysql.AlterTableContex
 		}
 
 		if item.RENAME_SYMBOL() != nil && item.COLUMN_SYMBOL() != nil {
-			checker.code = advisor.CompatibilityRenameColumn
+			r.code = advisor.CompatibilityRenameColumn
 			return
 		}
 
 		if item.DROP_SYMBOL() != nil && item.ColumnInternalRef() != nil {
-			checker.code = advisor.CompatibilityDropColumn
+			r.code = advisor.CompatibilityDropColumn
 			return
 		}
 		if item.DROP_SYMBOL() != nil && item.TableName() != nil {
-			checker.code = advisor.CompatibilityRenameTable
+			r.code = advisor.CompatibilityRenameTable
 			return
 		}
 
@@ -171,15 +203,15 @@ func (checker *compatibilityChecker) EnterAlterTable(ctx *mysql.AlterTableContex
 				switch item.TableConstraintDef().GetType_().GetTokenType() {
 				// add primary key.
 				case mysql.MySQLParserPRIMARY_SYMBOL:
-					checker.code = advisor.CompatibilityAddPrimaryKey
+					r.code = advisor.CompatibilityAddPrimaryKey
 					return
 				// add unique key.
 				case mysql.MySQLParserUNIQUE_SYMBOL:
-					checker.code = advisor.CompatibilityAddUniqueKey
+					r.code = advisor.CompatibilityAddUniqueKey
 					return
 				// add foreign key.
 				case mysql.MySQLParserFOREIGN_SYMBOL:
-					checker.code = advisor.CompatibilityAddForeignKey
+					r.code = advisor.CompatibilityAddForeignKey
 					return
 				}
 			}
@@ -187,7 +219,7 @@ func (checker *compatibilityChecker) EnterAlterTable(ctx *mysql.AlterTableContex
 			// add check enforced.
 			// Check is only supported after 8.0.16 https://dev.mysql.com/doc/refman/8.0/en/create-table-check-constraints.html
 			if item.TableConstraintDef() != nil && item.TableConstraintDef().CheckConstraint() != nil && item.TableConstraintDef().ConstraintEnforcement() != nil {
-				checker.code = advisor.CompatibilityAddCheck
+				r.code = advisor.CompatibilityAddCheck
 				return
 			}
 		}
@@ -196,7 +228,7 @@ func (checker *compatibilityChecker) EnterAlterTable(ctx *mysql.AlterTableContex
 		// Check is only supported after 8.0.16 https://dev.mysql.com/doc/refman/8.0/en/create-table-check-constraints.html
 		if item.ALTER_SYMBOL() != nil && item.CHECK_SYMBOL() != nil {
 			if item.ConstraintEnforcement() != nil {
-				checker.code = advisor.CompatibilityAlterCheck
+				r.code = advisor.CompatibilityAlterCheck
 				return
 			}
 		}
@@ -208,19 +240,18 @@ func (checker *compatibilityChecker) EnterAlterTable(ctx *mysql.AlterTableContex
 		// 2. Change properties such as comment, change it to NULL
 		// modify column
 		if item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil {
-			checker.code = advisor.CompatibilityAlterColumn
+			r.code = advisor.CompatibilityAlterColumn
 			return
 		}
 		// change column
 		if item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil {
-			checker.code = advisor.CompatibilityAlterColumn
+			r.code = advisor.CompatibilityAlterColumn
 			return
 		}
 	}
 }
 
-// EnterCreateIndex is called when production createIndex is entered.
-func (checker *compatibilityChecker) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
+func (r *CompatibilityRule) checkCreateIndex(ctx *mysql.CreateIndexContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -235,7 +266,7 @@ func (checker *compatibilityChecker) EnterCreateIndex(ctx *mysql.CreateIndexCont
 	}
 
 	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
-	if checker.lastCreateTable != tableName {
-		checker.code = advisor.CompatibilityAddUniqueKey
+	if r.lastCreateTable != tableName {
+		r.code = advisor.CompatibilityAddUniqueKey
 	}
 }

@@ -47,7 +47,7 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 	}
 
 	// Create the rule
-	rule := NewInsertRowLimitRule(level, string(checkCtx.Rule.Type), payload.Number, checkCtx.Driver, ctx)
+	rule := NewInsertRowLimitRule(ctx, level, string(checkCtx.Rule.Type), payload.Number, checkCtx.Driver)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -76,7 +76,7 @@ type InsertRowLimitRule struct {
 }
 
 // NewInsertRowLimitRule creates a new InsertRowLimitRule.
-func NewInsertRowLimitRule(level storepb.Advice_Status, title string, maxRow int, driver *sql.DB, ctx context.Context) *InsertRowLimitRule {
+func NewInsertRowLimitRule(ctx context.Context, level storepb.Advice_Status, title string, maxRow int, driver *sql.DB) *InsertRowLimitRule {
 	return &InsertRowLimitRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -97,7 +97,10 @@ func (*InsertRowLimitRule) Name() string {
 func (r *InsertRowLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
 	case NodeTypeQuery:
-		queryCtx := ctx.(*mysql.QueryContext)
+		queryCtx, ok := ctx.(*mysql.QueryContext)
+		if !ok {
+			return nil
+		}
 		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
 	case NodeTypeInsertStatement:
 		r.checkInsertStatement(ctx.(*mysql.InsertStatementContext))

@@ -80,7 +80,10 @@ func (*DisallowOrderByRule) Name() string {
 func (r *DisallowOrderByRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
 	case NodeTypeQuery:
-		queryCtx := ctx.(*mysql.QueryContext)
+		queryCtx, ok := ctx.(*mysql.QueryContext)
+		if !ok {
+			return nil
+		}
 		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
 	case NodeTypeDeleteStatement:
 		r.checkDeleteStatement(ctx.(*mysql.DeleteStatementContext))

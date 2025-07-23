@@ -15,22 +15,22 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*WhereRequirementAdvisor)(nil)
+	_ advisor.Advisor = (*WhereRequirementForUpdateDeleteAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLWhereRequirementForUpdateDelete, &WhereRequirementForUpdateDeleteAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLWhereRequirementForUpdateDelete, &WhereRequirementForUpdateDeleteAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLWhereRequirementForUpdateDelete, &WhereRequirementForUpdateDeleteAdvisor{})
 }
 
-// WhereRequirementAdvisor is the advisor checking for the WHERE clause requirement.
-type WhereRequirementAdvisor struct {
+// WhereRequirementForUpdateDeleteAdvisor is the advisor checking for the WHERE clause requirement for SELECT statements.
+type WhereRequirementForUpdateDeleteAdvisor struct {
 }
 
 // Check checks for the WHERE clause requirement.
-func (*WhereRequirementAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	root, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
+func (*WhereRequirementForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
@@ -41,29 +41,29 @@ func (*WhereRequirementAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	}
 
 	// Create the rule
-	rule := NewWhereRequirementRule(level, string(checkCtx.Rule.Type))
+	rule := NewWhereRequirementForUpdateDeleteRule(level, string(checkCtx.Rule.Type))
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmtNode := range root {
-		rule.SetBaseLine(stmtNode.BaseLine)
-		checker.SetBaseLine(stmtNode.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	for _, stmt := range stmtList {
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	return checker.GetAdviceList(), nil
 }
 
-// WhereRequirementRule checks for the WHERE clause requirement.
-type WhereRequirementRule struct {
+// WhereRequirementForUpdateDeleteRule checks for the WHERE clause requirement.
+type WhereRequirementForUpdateDeleteRule struct {
 	BaseRule
 	text string
 }
 
-// NewWhereRequirementRule creates a new WhereRequirementRule.
-func NewWhereRequirementRule(level storepb.Advice_Status, title string) *WhereRequirementRule {
-	return &WhereRequirementRule{
+// NewWhereRequirementForUpdateDeleteRule creates a new WhereRequirementForUpdateDeleteRule.
+func NewWhereRequirementForUpdateDeleteRule(level storepb.Advice_Status, title string) *WhereRequirementForUpdateDeleteRule {
+	return &WhereRequirementForUpdateDeleteRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: title,
@@ -72,12 +72,12 @@ func NewWhereRequirementRule(level storepb.Advice_Status, title string) *WhereRe
 }
 
 // Name returns the rule name.
-func (*WhereRequirementRule) Name() string {
-	return "WhereRequirementRule"
+func (*WhereRequirementForUpdateDeleteRule) Name() string {
+	return "WhereRequirementForUpdateDeleteRule"
 }
 
 // OnEnter is called when entering a parse tree node.
-func (r *WhereRequirementRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *WhereRequirementForUpdateDeleteRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
 	case NodeTypeQuery:
 		queryCtx, ok := ctx.(*mysql.QueryContext)
@@ -89,18 +89,16 @@ func (r *WhereRequirementRule) OnEnter(ctx antlr.ParserRuleContext, nodeType str
 		r.checkDeleteStatement(ctx.(*mysql.DeleteStatementContext))
 	case NodeTypeUpdateStatement:
 		r.checkUpdateStatement(ctx.(*mysql.UpdateStatementContext))
-	case NodeTypeQuerySpecification:
-		r.checkQuerySpecification(ctx.(*mysql.QuerySpecificationContext))
 	}
 	return nil
 }
 
 // OnExit is called when exiting a parse tree node.
-func (*WhereRequirementRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+func (*WhereRequirementForUpdateDeleteRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 
-func (r *WhereRequirementRule) checkDeleteStatement(ctx *mysql.DeleteStatementContext) {
+func (r *WhereRequirementForUpdateDeleteRule) checkDeleteStatement(ctx *mysql.DeleteStatementContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -109,7 +107,7 @@ func (r *WhereRequirementRule) checkDeleteStatement(ctx *mysql.DeleteStatementCo
 	}
 }
 
-func (r *WhereRequirementRule) checkUpdateStatement(ctx *mysql.UpdateStatementContext) {
+func (r *WhereRequirementForUpdateDeleteRule) checkUpdateStatement(ctx *mysql.UpdateStatementContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -118,17 +116,7 @@ func (r *WhereRequirementRule) checkUpdateStatement(ctx *mysql.UpdateStatementCo
 	}
 }
 
-func (r *WhereRequirementRule) checkQuerySpecification(ctx *mysql.QuerySpecificationContext) {
-	// Allow SELECT queries without a FROM clause to proceed, e.g. SELECT 1.
-	if ctx.FromClause() == nil {
-		return
-	}
-	if ctx.WhereClause() == nil || ctx.WhereClause().WHERE_SYMBOL() == nil {
-		r.handleWhereClause(ctx.GetStart().GetLine())
-	}
-}
-
-func (r *WhereRequirementRule) handleWhereClause(lineNumber int) {
+func (r *WhereRequirementForUpdateDeleteRule) handleWhereClause(lineNumber int) {
 	r.AddAdvice(&storepb.Advice{
 		Status:        r.level,
 		Code:          advisor.StatementNoWhere.Int32(),
