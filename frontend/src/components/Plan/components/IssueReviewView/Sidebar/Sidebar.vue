@@ -58,7 +58,7 @@ const { t } = useI18n();
 const { issue } = usePlanContextWithIssue();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
-const { requestEnhancedPolling } = useResourcePoller();
+const { refreshResources } = useResourcePoller();
 
 const allowChange = computed(() => {
   if (issue.value.status !== IssueStatus.OPEN) {
@@ -83,7 +83,7 @@ const onIssueLabelsUpdate = async (labels: string[]) => {
     updateMask: { paths: ["labels"] },
   });
   await issueServiceClientConnect.updateIssue(request);
-  requestEnhancedPolling(["issue"], true /** once */);
+  refreshResources(["issue"], true /** force */);
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
@@ -102,7 +102,7 @@ const onIssueDescriptionUpdate = async (description: string) => {
   });
   await issueServiceClientConnect.updateIssue(request);
   // After running checks, we need to refresh the plan and plan check runs.
-  requestEnhancedPolling(["issue"], true /** once */);
+  refreshResources(["issue"], true /** force */);
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",

@@ -299,7 +299,7 @@ const handlePlanStateChange = async (action: PlanAction) => {
           "state",
         ]);
         // The plan context should automatically refresh and redirect or update the UI.
-        await resourcePoller.refreshAllManual();
+        await resourcePoller.refreshResources();
       } catch (error) {
         console.error(errorMessage, error);
         pushNotification({
