@@ -41,35 +41,47 @@
               {{ $t("plan.navigator.checks") }}
             </p>
             <div class="flex items-center gap-3 mt-1">
-              <div
-                v-if="statistics.checkStatus.error > 0"
-                class="flex items-center gap-1"
+              <button
+                v-if="getChecksCount(PlanCheckRun_Result_Status.ERROR) > 0"
+                class="flex items-center gap-1 hover:opacity-80"
+                @click="selectedResultStatus = PlanCheckRun_Result_Status.ERROR"
               >
                 <XCircleIcon class="w-5 h-5 text-error" />
                 <span class="text-xl font-medium text-error">{{
-                  statistics.checkStatus.error
+                  getChecksCount(PlanCheckRun_Result_Status.ERROR)
                 }}</span>
-              </div>
-              <div
-                v-if="statistics.checkStatus.warning > 0"
-                class="flex items-center gap-1"
+              </button>
+              <button
+                v-if="getChecksCount(PlanCheckRun_Result_Status.WARNING) > 0"
+                class="flex items-center gap-1 hover:opacity-80"
+                @click="
+                  selectedResultStatus = PlanCheckRun_Result_Status.WARNING
+                "
               >
                 <AlertCircleIcon class="w-5 h-5 text-warning" />
                 <span class="text-xl font-medium text-warning">{{
-                  statistics.checkStatus.warning
+                  getChecksCount(PlanCheckRun_Result_Status.WARNING)
                 }}</span>
-              </div>
-              <div
-                v-if="statistics.checkStatus.success > 0"
-                class="flex items-center gap-1"
+              </button>
+              <button
+                v-if="getChecksCount(PlanCheckRun_Result_Status.SUCCESS) > 0"
+                class="flex items-center gap-1 hover:opacity-80"
+                @click="
+                  selectedResultStatus = PlanCheckRun_Result_Status.SUCCESS
+                "
               >
                 <CheckCircleIcon class="w-5 h-5 text-success" />
                 <span class="text-xl font-medium text-success">{{
-                  statistics.checkStatus.success
+                  getChecksCount(PlanCheckRun_Result_Status.SUCCESS)
                 }}</span>
-              </div>
+              </button>
               <span
-                v-if="statistics.checkStatus.total === 0"
+                v-if="
+                  getChecksCount(PlanCheckRun_Result_Status.ERROR) +
+                    getChecksCount(PlanCheckRun_Result_Status.WARNING) +
+                    getChecksCount(PlanCheckRun_Result_Status.SUCCESS) ===
+                  0
+                "
                 class="text-xl text-control"
               >
                 {{ $t("plan.overview.no-checks") }}
@@ -81,6 +93,12 @@
       </div>
     </div>
   </div>
+
+  <ChecksDrawer
+    v-if="selectedResultStatus"
+    :status="selectedResultStatus"
+    @close="selectedResultStatus = undefined"
+  />
 </template>
 
 <script setup lang="ts">
@@ -92,44 +110,31 @@ import {
   AlertCircleIcon,
   XCircleIcon,
 } from "lucide-vue-next";
-import { computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useInstanceV1Store, useDBGroupStore } from "@/store";
 import type { ComposedDatabaseGroup, ComposedInstance } from "@/types";
 import { PlanCheckRun_Result_Status } from "@/types/proto-es/v1/plan_service_pb";
 import { extractDatabaseResourceName } from "@/utils";
 import { targetsForSpec, usePlanContext } from "../../logic";
+import ChecksDrawer from "../ChecksView/ChecksDrawer.vue";
 
 const { plan } = usePlanContext();
 const instanceStore = useInstanceV1Store();
 const dbGroupStore = useDBGroupStore();
 
+const selectedResultStatus = ref<PlanCheckRun_Result_Status | undefined>(
+  undefined
+);
+
 // Calculate statistics
 const statistics = computed(() => {
   let totalTargets = 0;
-  const checkStatus = {
-    total: 0,
-    success:
-      plan.value.planCheckRunStatusCount[
-        PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.SUCCESS]
-      ] || 0,
-    warning:
-      plan.value.planCheckRunStatusCount[
-        PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.WARNING]
-      ] || 0,
-    error:
-      plan.value.planCheckRunStatusCount[
-        PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.ERROR]
-      ] || 0,
-  };
-  checkStatus.total =
-    checkStatus.success + checkStatus.warning + checkStatus.error;
   for (const spec of plan.value.specs) {
     totalTargets += targetsForSpec(spec).length;
   }
   return {
     totalSpecs: plan.value.specs.length,
     totalTargets,
-    checkStatus,
   };
 });
 
@@ -197,6 +202,12 @@ const affectedResources = computed(() => {
 
   return resourceList;
 });
+
+const getChecksCount = (status: PlanCheckRun_Result_Status) => {
+  return (
+    plan.value.planCheckRunStatusCount[PlanCheckRun_Result_Status[status]] || 0
+  );
+};
 
 watch(
   () => affectedResources.value,

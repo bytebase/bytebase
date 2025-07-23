@@ -70,6 +70,6 @@ const lastRefreshDisplay = computed(() => {
 });
 
 const handleRefresh = async () => {
-  await resourcePoller.refreshAllManual();
+  await resourcePoller.refreshResources();
 };
 </script>

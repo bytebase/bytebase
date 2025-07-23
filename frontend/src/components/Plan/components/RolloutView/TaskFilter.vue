@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-row gap-2 items-center">
+  <div class="flex flex-row gap-1 items-center">
     <template v-for="status in TASK_STATUS_FILTERS" :key="status">
       <NTag
         v-if="getTaskCount(status) > 0"
@@ -20,7 +20,7 @@
         <template #avatar>
           <TaskStatus :status="status" size="small" />
         </template>
-        <div class="flex flex-row items-center gap-2">
+        <div class="flex flex-row items-center gap-1">
           <span class="select-none text-base">{{
             stringifyTaskStatus(status)
           }}</span>
