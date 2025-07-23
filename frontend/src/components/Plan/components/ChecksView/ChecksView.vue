@@ -6,7 +6,7 @@
         <!-- Check result summary with icons -->
         <div class="flex items-center gap-3">
           <div
-            v-if="statusCounts.error > 0"
+            v-if="getChecksCount(PlanCheckRun_Result_Status.ERROR) > 0"
             class="flex items-center gap-1 px-2 py-1 cursor-pointer"
             :class="[
               selectedStatus &&
@@ -21,11 +21,11 @@
               {{ $t("common.error") }}
             </span>
             <span class="font-semibold">
-              {{ statusCounts.error }}
+              {{ getChecksCount(PlanCheckRun_Result_Status.ERROR) }}
             </span>
           </div>
           <div
-            v-if="statusCounts.warning > 0"
+            v-if="getChecksCount(PlanCheckRun_Result_Status.WARNING) > 0"
             class="flex items-center gap-1 px-2 py-1 cursor-pointer"
             :class="[
               selectedStatus &&
@@ -40,11 +40,11 @@
               {{ $t("common.warning") }}
             </span>
             <span class="font-semibold">
-              {{ statusCounts.warning }}
+              {{ getChecksCount(PlanCheckRun_Result_Status.WARNING) }}
             </span>
           </div>
           <div
-            v-if="statusCounts.success > 0"
+            v-if="getChecksCount(PlanCheckRun_Result_Status.SUCCESS) > 0"
             class="flex items-center gap-1 px-2 py-1 cursor-pointer"
             :class="[
               selectedStatus &&
@@ -59,7 +59,7 @@
               {{ $t("common.success") }}
             </span>
             <span class="font-semibold">
-              {{ statusCounts.success }}
+              {{ getChecksCount(PlanCheckRun_Result_Status.SUCCESS) }}
             </span>
           </div>
         </div>
@@ -68,9 +68,15 @@
 
     <!-- Results List -->
     <div class="flex-1 overflow-y-auto">
+      <div
+        v-if="isLoading"
+        class="flex flex-col items-center justify-center py-12"
+      >
+        <BBSpin />
+      </div>
       <!-- Empty state -->
       <div
-        v-if="filteredCheckRuns.length === 0"
+        v-else-if="filteredCheckRuns.length === 0"
         class="flex flex-col items-center justify-center py-12"
       >
         <CheckCircleIcon class="w-12 h-12 text-control-light opacity-50 mb-4" />
@@ -159,8 +165,9 @@ import {
   ShieldIcon,
   SearchCodeIcon,
 } from "lucide-vue-next";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBSpin } from "@/bbkit";
 import { getRuleLocalization } from "@/types";
 import {
   PlanCheckRun_Result_Status,
@@ -170,6 +177,7 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import { humanizeTs } from "@/utils";
 import { usePlanContext } from "../../logic/context";
+import { useResourcePoller } from "../../logic/poller";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
 const props = defineProps<{
@@ -177,7 +185,10 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const { planCheckRuns } = usePlanContext();
+const { plan, planCheckRuns } = usePlanContext();
+const { refreshResources } = useResourcePoller();
+
+const isLoading = ref(true);
 
 const selectedStatus = ref<PlanCheckRun_Result_Status | undefined>(
   props.defaultStatus
@@ -202,31 +213,21 @@ const filteredCheckRuns = computed(() => {
   });
 });
 
-const statusCounts = computed(() => {
-  const counts = {
-    success: 0,
-    warning: 0,
-    error: 0,
-  };
+watch(
+  () => props.defaultStatus,
+  async () => {
+    isLoading.value = true;
+    await refreshResources(["planCheckRuns"], true /** force */);
+    isLoading.value = false;
+  },
+  { immediate: true }
+);
 
-  for (const checkRun of planCheckRuns.value) {
-    for (const result of checkRun.results) {
-      switch (result.status) {
-        case PlanCheckRun_Result_Status.SUCCESS:
-          counts.success++;
-          break;
-        case PlanCheckRun_Result_Status.WARNING:
-          counts.warning++;
-          break;
-        case PlanCheckRun_Result_Status.ERROR:
-          counts.error++;
-          break;
-      }
-    }
-  }
-
-  return counts;
-});
+const getChecksCount = (status: PlanCheckRun_Result_Status) => {
+  return (
+    plan.value.planCheckRunStatusCount[PlanCheckRun_Result_Status[status]] || 0
+  );
+};
 
 const toggleSelectedStatus = (status: PlanCheckRun_Result_Status) => {
   if (selectedStatus.value === status) {
