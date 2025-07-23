@@ -66,7 +66,7 @@
         >
           <div
             v-if="
-              (row.checkResult as any).sqlReviewReport &&
+              row.checkResult.report.case === 'sqlReviewReport' &&
               getActiveRule(row.checkResult.title)
             "
             class="pl-2 first:pl-0"
@@ -78,11 +78,11 @@
             >
           </div>
           <div
-            v-if="(row.checkResult as any).sqlSummaryReport"
+            v-if="row.checkResult.report.case === 'sqlSummaryReport'"
             class="pl-2 first:pl-0"
           >
             <span>
-              {{ (row.checkResult as any).sqlSummaryReport?.affectedRows }}
+              {{ row.checkResult.report.value.affectedRows }}
             </span>
           </div>
 
@@ -100,7 +100,9 @@
           <!-- Only show the error line for latest plan check run -->
           <div
             v-if="
-              showCodeLocation && (row.checkResult as any).sqlReviewReport?.line
+              showCodeLocation &&
+              row.checkResult.report.case === 'sqlReviewReport' &&
+              row.checkResult.report.value.line
             "
             class="pl-2 first:pl-0"
           >
@@ -108,14 +110,14 @@
               class="normal-link"
               @click="
                 convertPositionLineToMonacoLine(
-                  (row.checkResult as any).sqlReviewReport!.line
+                  row.checkResult.report.value.line
                 )
               "
             >
               Line
               {{
                 convertPositionLineToMonacoLine(
-                  (row.checkResult as any).sqlReviewReport.line
+                  row.checkResult.report.value.line
                 )
               }}
             </span>
@@ -163,7 +165,7 @@
         <span>{{ row.checkResult.content }}</span>
         <template
           v-if="
-            (row.checkResult as any).sqlReviewReport &&
+            row.checkResult.report.case === 'sqlReviewReport' &&
             getActiveRule(row.checkResult.title)
           "
         >
@@ -174,8 +176,8 @@
           >
           <span class="border-r border-control-border ml-1"></span>
         </template>
-        <template v-if="(row.checkResult as any).sqlSummaryReport">
-          {{ (row.checkResult as any).sqlSummaryReport?.affectedRows }}
+        <template v-if="row.checkResult.report.case === 'sqlSummaryReport'">
+          {{ row.checkResult.report.value.affectedRows }}
         </template>
 
         <a
@@ -190,7 +192,9 @@
         <!-- Only show the error line for latest plan check run -->
         <template
           v-if="
-            showCodeLocation && (row.checkResult as any).sqlReviewReport?.line
+            showCodeLocation &&
+            row.checkResult.report.case === 'sqlReviewReport' &&
+            row.checkResult.report.value.line
           "
         >
           <span class="border-r border-control-border ml-1"></span>
@@ -199,16 +203,14 @@
             @click="
               handleClickPlanCheckDetailLine(
                 convertPositionLineToMonacoLine(
-                  (row.checkResult as any).sqlReviewReport!.line
+                  row.checkResult.report.value.line
                 )
               )
             "
           >
             Line
             {{
-              convertPositionLineToMonacoLine(
-                (row.checkResult as any).sqlReviewReport.line
-              )
+              convertPositionLineToMonacoLine(row.checkResult.report.value.line)
             }}
           </span>
         </template>
