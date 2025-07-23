@@ -44,6 +44,9 @@
         {{ $t("database-group.no-matched-databases") }}
       </NTooltip>
       <NButton v-if="allowEdit" type="primary" @click="state.editing = true">
+        <template #icon>
+          <EditIcon class="w-4 h-4" />
+        </template>
         {{ $t("common.configure") }}
       </NButton>
     </div>
@@ -58,6 +61,7 @@
 </template>
 
 <script lang="ts" setup>
+import { EditIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { useRouter } from "vue-router";

@@ -115,13 +115,16 @@ import {
   pushNotification,
   batchGetOrFetchDatabases,
   getProjectNameAndDatabaseGroupName,
+  projectNamePrefix,
 } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
-import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
+import {
+  DatabaseGroupView,
+  type DatabaseGroup,
+} from "@/types/proto-es/v1/database_group_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { extractProjectResourceName } from "@/utils";
 import { usePlanContext } from "../../logic/context";
-import { targetsForSpec } from "../../logic/plan";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 import AllTargetsDrawer from "./AllTargetsDrawer.vue";
 import TargetsSelectorDrawer from "./TargetsSelectorDrawer.vue";
@@ -142,12 +145,18 @@ const showAllTargetsDrawer = ref(false);
 
 const targets = computed(() => {
   if (!selectedSpec.value) return [];
-  return targetsForSpec(selectedSpec.value);
+  if (
+    selectedSpec.value.config.case === "changeDatabaseConfig" ||
+    selectedSpec.value.config.case === "exportDataConfig"
+  ) {
+    return selectedSpec.value.config.value.targets;
+  }
+  return [];
 });
 
 const project = computed(() => {
   if (!plan.value?.name) return undefined;
-  const projectName = `projects/${extractProjectResourceName(plan.value.name)}`;
+  const projectName = `${projectNamePrefix}${extractProjectResourceName(plan.value.name)}`;
   return projectStore.getProjectByName(projectName);
 });
 
@@ -207,7 +216,7 @@ const loadTargetData = async () => {
     const dbGroupTargets: string[] = [];
 
     for (const target of visibleTargets) {
-      if (target.includes("/databaseGroups/")) {
+      if (isValidDatabaseGroupName(target)) {
         dbGroupTargets.push(target);
       } else {
         databaseTargets.push(target);
@@ -219,7 +228,9 @@ const loadTargetData = async () => {
     }
 
     const dbGroupPromises = dbGroupTargets.map((target) =>
-      dbGroupStore.getOrFetchDBGroupByName(target)
+      dbGroupStore.getOrFetchDBGroupByName(target, {
+        view: DatabaseGroupView.FULL,
+      })
     );
 
     await Promise.allSettled([...dbGroupPromises]);
