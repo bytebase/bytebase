@@ -36,6 +36,8 @@ const (
 	NodeTypeDropTrigger          = "DropTrigger"
 	NodeTypeQuery                = "Query"
 	NodeTypeQueryExpression      = "QueryExpression"
+	NodeTypeCreateDatabase       = "CreateDatabase"
+	NodeTypeAlterDatabase        = "AlterDatabase"
 )
 
 // Rule defines the interface for individual SQL validation rules.

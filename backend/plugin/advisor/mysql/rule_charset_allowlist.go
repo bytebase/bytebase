@@ -43,40 +43,75 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	if err != nil {
 		return nil, err
 	}
-	checker := &charsetAllowlistChecker{
-		level:     level,
-		title:     string(checkCtx.Rule.Type),
-		allowList: make(map[string]bool),
-	}
+
+	allowList := make(map[string]bool)
 	for _, charset := range payload.List {
-		checker.allowList[strings.ToLower(charset)] = true
+		allowList[strings.ToLower(charset)] = true
 	}
 
+	// Create the rule
+	rule := NewCharsetAllowlistRule(level, string(checkCtx.Rule.Type), allowList)
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
+
 	for _, stmt := range stmtList {
-		checker.baseLine = stmt.BaseLine
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type charsetAllowlistChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine   int
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	text       string
-	allowList  map[string]bool
+// CharsetAllowlistRule checks for charset allowlist.
+type CharsetAllowlistRule struct {
+	BaseRule
+	text      string
+	allowList map[string]bool
 }
 
-func (checker *charsetAllowlistChecker) EnterQuery(ctx *mysql.QueryContext) {
-	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+// NewCharsetAllowlistRule creates a new CharsetAllowlistRule.
+func NewCharsetAllowlistRule(level storepb.Advice_Status, title string, allowList map[string]bool) *CharsetAllowlistRule {
+	return &CharsetAllowlistRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		allowList: allowList,
+	}
 }
 
-// EnterCreateDatabase is called when production createDatabase is entered.
-func (checker *charsetAllowlistChecker) EnterCreateDatabase(ctx *mysql.CreateDatabaseContext) {
+// Name returns the rule name.
+func (*CharsetAllowlistRule) Name() string {
+	return "CharsetAllowlistRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *CharsetAllowlistRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeQuery:
+		if queryCtx, ok := ctx.(*mysql.QueryContext); ok {
+			r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
+		}
+	case NodeTypeCreateDatabase:
+		r.checkCreateDatabase(ctx.(*mysql.CreateDatabaseContext))
+	case NodeTypeCreateTable:
+		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
+	case NodeTypeAlterDatabase:
+		r.checkAlterDatabase(ctx.(*mysql.AlterDatabaseContext))
+	case NodeTypeAlterTable:
+		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*CharsetAllowlistRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *CharsetAllowlistRule) checkCreateDatabase(ctx *mysql.CreateDatabaseContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -84,26 +119,25 @@ func (checker *charsetAllowlistChecker) EnterCreateDatabase(ctx *mysql.CreateDat
 		if option.DefaultCharset() != nil {
 			charset := mysqlparser.NormalizeMySQLCharsetName(option.DefaultCharset().CharsetName())
 			charset = strings.ToLower(charset)
-			checker.checkCharset(charset, ctx.GetStart().GetLine())
+			r.checkCharset(charset, ctx.GetStart().GetLine())
 			break
 		}
 	}
 }
 
-func (checker *charsetAllowlistChecker) checkCharset(charset string, lineNumber int) {
-	if _, exists := checker.allowList[charset]; charset != "" && !exists {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+func (r *CharsetAllowlistRule) checkCharset(charset string, lineNumber int) {
+	if _, exists := r.allowList[charset]; charset != "" && !exists {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.DisabledCharset.Int32(),
-			Title:         checker.title,
-			Content:       fmt.Sprintf("\"%s\" used disabled charset '%s'", checker.text, charset),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + lineNumber),
+			Title:         r.title,
+			Content:       fmt.Sprintf("\"%s\" used disabled charset '%s'", r.text, charset),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + lineNumber),
 		})
 	}
 }
 
-// EnterCreateTable is called when production createTable is entered.
-func (checker *charsetAllowlistChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+func (r *CharsetAllowlistRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -112,7 +146,7 @@ func (checker *charsetAllowlistChecker) EnterCreateTable(ctx *mysql.CreateTableC
 			if option.DefaultCharset() != nil {
 				charset := mysqlparser.NormalizeMySQLCharsetName(option.DefaultCharset().CharsetName())
 				charset = strings.ToLower(charset)
-				checker.checkCharset(charset, ctx.GetStart().GetLine())
+				r.checkCharset(charset, ctx.GetStart().GetLine())
 				break
 			}
 		}
@@ -134,14 +168,13 @@ func (checker *charsetAllowlistChecker) EnterCreateTable(ctx *mysql.CreateTableC
 				charsetName := columnDef.FieldDefinition().DataType().CharsetWithOptBinary().CharsetName()
 				charset := mysqlparser.NormalizeMySQLCharsetName(charsetName)
 				charset = strings.ToLower(charset)
-				checker.checkCharset(charset, ctx.GetStart().GetLine())
+				r.checkCharset(charset, ctx.GetStart().GetLine())
 			}
 		}
 	}
 }
 
-// EnterAlterDatabase is called when production alterDatabase is entered.
-func (checker *charsetAllowlistChecker) EnterAlterDatabase(ctx *mysql.AlterDatabaseContext) {
+func (r *CharsetAllowlistRule) checkAlterDatabase(ctx *mysql.AlterDatabaseContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -151,12 +184,11 @@ func (checker *charsetAllowlistChecker) EnterAlterDatabase(ctx *mysql.AlterDatab
 		}
 		charset := mysqlparser.NormalizeMySQLCharsetName(option.CreateDatabaseOption().DefaultCharset().CharsetName())
 		charset = strings.ToLower(charset)
-		checker.checkCharset(charset, ctx.GetStart().GetLine())
+		r.checkCharset(charset, ctx.GetStart().GetLine())
 	}
 }
 
-// EnterAlterTable is called when production alterTable is entered.
-func (checker *charsetAllowlistChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+func (r *CharsetAllowlistRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -180,7 +212,7 @@ func (checker *charsetAllowlistChecker) EnterAlterTable(ctx *mysql.AlterTableCon
 		}
 		charset := mysqlparser.NormalizeMySQLCharsetName(item.FieldDefinition().DataType().CharsetWithOptBinary().CharsetName())
 		charset = strings.ToLower(charset)
-		checker.checkCharset(charset, ctx.GetStart().GetLine())
+		r.checkCharset(charset, ctx.GetStart().GetLine())
 	}
 	// alter table option
 	for _, option := range ctx.AlterTableActions().AlterCommandList().AlterList().AllCreateTableOptionsSpaceSeparated() {
@@ -193,7 +225,7 @@ func (checker *charsetAllowlistChecker) EnterAlterTable(ctx *mysql.AlterTableCon
 			}
 			charset := mysqlparser.NormalizeMySQLCharsetName(tableOption.DefaultCharset().CharsetName())
 			charset = strings.ToLower(charset)
-			checker.checkCharset(charset, ctx.GetStart().GetLine())
+			r.checkCharset(charset, ctx.GetStart().GetLine())
 		}
 	}
 }

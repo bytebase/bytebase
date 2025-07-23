@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	parser "github.com/bytebase/mysql-parser"
+	mysql "github.com/bytebase/mysql-parser"
 )
 
 type columnSet map[string]bool
@@ -89,7 +89,7 @@ type tableData struct {
 // isKeyword checks if the keyword is a MySQL keyword.
 // TODO: We should check with map instead of linear search.
 func isKeyword(suspect string) bool {
-	for _, item := range parser.Keywords80 {
+	for _, item := range mysql.Keywords80 {
 		if strings.EqualFold(suspect, item.Keyword) {
 			return true
 		}
@@ -97,7 +97,18 @@ func isKeyword(suspect string) bool {
 	return false
 }
 
-func columnNeedDefault(ctx parser.IFieldDefinitionContext) bool {
+// isCharsetDataType checks if the data type supports charset.
+func isCharsetDataType(dataType mysql.IDataTypeContext) bool {
+	return dataType != nil && (dataType.CHAR_SYMBOL() != nil ||
+		dataType.VARCHAR_SYMBOL() != nil ||
+		dataType.VARYING_SYMBOL() != nil ||
+		dataType.TINYTEXT_SYMBOL() != nil ||
+		dataType.TEXT_SYMBOL() != nil ||
+		dataType.MEDIUMTEXT_SYMBOL() != nil ||
+		dataType.LONGTEXT_SYMBOL() != nil)
+}
+
+func columnNeedDefault(ctx mysql.IFieldDefinitionContext) bool {
 	if ctx.GENERATED_SYMBOL() != nil {
 		return false
 	}
@@ -112,26 +123,26 @@ func columnNeedDefault(ctx parser.IFieldDefinitionContext) bool {
 	}
 
 	switch ctx.DataType().GetType_().GetTokenType() {
-	case parser.MySQLParserBLOB_SYMBOL,
-		parser.MySQLParserTINYBLOB_SYMBOL,
-		parser.MySQLParserMEDIUMBLOB_SYMBOL,
-		parser.MySQLParserLONGBLOB_SYMBOL,
-		parser.MySQLParserJSON_SYMBOL,
-		parser.MySQLParserTINYTEXT_SYMBOL,
-		parser.MySQLParserTEXT_SYMBOL,
-		parser.MySQLParserMEDIUMTEXT_SYMBOL,
-		parser.MySQLParserLONGTEXT_SYMBOL,
+	case mysql.MySQLParserBLOB_SYMBOL,
+		mysql.MySQLParserTINYBLOB_SYMBOL,
+		mysql.MySQLParserMEDIUMBLOB_SYMBOL,
+		mysql.MySQLParserLONGBLOB_SYMBOL,
+		mysql.MySQLParserJSON_SYMBOL,
+		mysql.MySQLParserTINYTEXT_SYMBOL,
+		mysql.MySQLParserTEXT_SYMBOL,
+		mysql.MySQLParserMEDIUMTEXT_SYMBOL,
+		mysql.MySQLParserLONGTEXT_SYMBOL,
 		// LONG VARBINARY and LONG VARCHAR.
-		parser.MySQLParserLONG_SYMBOL,
-		parser.MySQLParserSERIAL_SYMBOL,
-		parser.MySQLParserGEOMETRY_SYMBOL,
-		parser.MySQLParserGEOMETRYCOLLECTION_SYMBOL,
-		parser.MySQLParserPOINT_SYMBOL,
-		parser.MySQLParserMULTIPOINT_SYMBOL,
-		parser.MySQLParserLINESTRING_SYMBOL,
-		parser.MySQLParserMULTILINESTRING_SYMBOL,
-		parser.MySQLParserPOLYGON_SYMBOL,
-		parser.MySQLParserMULTIPOLYGON_SYMBOL:
+		mysql.MySQLParserLONG_SYMBOL,
+		mysql.MySQLParserSERIAL_SYMBOL,
+		mysql.MySQLParserGEOMETRY_SYMBOL,
+		mysql.MySQLParserGEOMETRYCOLLECTION_SYMBOL,
+		mysql.MySQLParserPOINT_SYMBOL,
+		mysql.MySQLParserMULTIPOINT_SYMBOL,
+		mysql.MySQLParserLINESTRING_SYMBOL,
+		mysql.MySQLParserMULTILINESTRING_SYMBOL,
+		mysql.MySQLParserPOLYGON_SYMBOL,
+		mysql.MySQLParserMULTIPOLYGON_SYMBOL:
 		return false
 	}
 	return true
