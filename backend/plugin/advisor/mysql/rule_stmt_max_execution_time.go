@@ -44,50 +44,83 @@ func (*MaxExecutionTimeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	if checkCtx.Rule.Engine == storepb.Engine_MARIADB {
 		systemVariable = "max_statement_time"
 	}
-	checker := &maxExecutionTimeChecker{
-		level:          level,
-		title:          string(checkCtx.Rule.Type),
-		systemVariable: systemVariable,
-		adviceList:     []*storepb.Advice{},
-	}
+
+	// Create the rule
+	rule := NewMaxExecutionTimeRule(level, string(checkCtx.Rule.Type), systemVariable)
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
+
 	for _, stmt := range stmtList {
-		checker.baseLine = stmt.BaseLine
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
-	// If no system variable is set, we should set the advice.
-	if !checker.hasSet {
-		checker.setAdvice()
-	}
-	return checker.adviceList, nil
+
+	return checker.GetAdviceList(), nil
 }
 
-type maxExecutionTimeChecker struct {
-	*mysql.BaseMySQLParserListener
-
+// MaxExecutionTimeRule checks for the max execution time.
+type MaxExecutionTimeRule struct {
+	BaseRule
 	// The system variable name for max execution time.
 	// For MySQL, it is `max_execution_time`.
 	// For MariaDB, it is `max_statement_time`.
 	systemVariable string
 	hasSet         bool
-
-	baseLine   int
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
 }
 
-func (checker *maxExecutionTimeChecker) EnterSimpleStatement(ctx *mysql.SimpleStatementContext) {
+// NewMaxExecutionTimeRule creates a new MaxExecutionTimeRule.
+func NewMaxExecutionTimeRule(level storepb.Advice_Status, title string, systemVariable string) *MaxExecutionTimeRule {
+	return &MaxExecutionTimeRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		systemVariable: systemVariable,
+	}
+}
+
+// Name returns the rule name.
+func (*MaxExecutionTimeRule) Name() string {
+	return "MaxExecutionTimeRule"
+}
+
+// HasSet returns whether the system variable is set.
+func (r *MaxExecutionTimeRule) HasSet() bool {
+	return r.hasSet
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *MaxExecutionTimeRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeSimpleStatement:
+		r.checkSimpleStatement(ctx.(*mysql.SimpleStatementContext))
+	case NodeTypeSetStatement:
+		r.checkSetStatement(ctx.(*mysql.SetStatementContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*MaxExecutionTimeRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *MaxExecutionTimeRule) checkSimpleStatement(ctx *mysql.SimpleStatementContext) {
 	// Skip if we have already found the system variable is set or the statement is a SET statement.
-	if checker.hasSet || ctx.SetStatement() != nil {
+	if r.hasSet || ctx.SetStatement() != nil {
 		return
 	}
 
 	// The set max execution time statement should be the first statement in the SQL.
-	// Otherwise, we will always set the advice.
-	checker.setAdvice()
+	// Otherwise, we will always set the advice (but only once).
+	if len(r.adviceList) == 0 {
+		r.setAdvice()
+	}
 }
 
-func (checker *maxExecutionTimeChecker) EnterSetStatement(ctx *mysql.SetStatementContext) {
+func (r *MaxExecutionTimeRule) checkSetStatement(ctx *mysql.SetStatementContext) {
 	startOptionValueList := ctx.StartOptionValueList()
 	if ctx.StartOptionValueList() == nil {
 		return
@@ -110,18 +143,16 @@ func (checker *maxExecutionTimeChecker) EnterSetStatement(ctx *mysql.SetStatemen
 		}
 	}
 	_, err := strconv.Atoi(value)
-	if strings.ToLower(variable) == checker.systemVariable && err == nil {
-		checker.hasSet = true
+	if strings.ToLower(variable) == r.systemVariable && err == nil {
+		r.hasSet = true
 	}
 }
 
-func (checker *maxExecutionTimeChecker) setAdvice() {
-	checker.adviceList = []*storepb.Advice{
-		{
-			Status:  checker.level,
-			Code:    advisor.StatementNoMaxExecutionTime.Int32(),
-			Title:   checker.title,
-			Content: fmt.Sprintf("The %s is not set", checker.systemVariable),
-		},
-	}
+func (r *MaxExecutionTimeRule) setAdvice() {
+	r.adviceList = append(r.adviceList, &storepb.Advice{
+		Status:  r.level,
+		Code:    advisor.StatementNoMaxExecutionTime.Int32(),
+		Title:   r.title,
+		Content: fmt.Sprintf("The %s is not set", r.systemVariable),
+	})
 }

@@ -7,9 +7,8 @@ import (
 	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
-	"github.com/pkg/errors"
-
 	mysql "github.com/bytebase/mysql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -45,34 +44,30 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 	if err != nil {
 		return nil, err
 	}
-	checker := &statementAffectedRowLimitChecker{
-		level:  level,
-		title:  string(checkCtx.Rule.Type),
-		maxRow: payload.Number,
-		driver: checkCtx.Driver,
-		ctx:    ctx,
-	}
 
-	if checker.driver != nil {
+	// Create the rule
+	rule := NewStatementAffectedRowLimitRule(level, string(checkCtx.Rule.Type), payload.Number, checkCtx.Driver, ctx)
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
+
+	if checkCtx.Driver != nil {
 		for _, stmt := range stmtList {
-			checker.baseLine = stmt.BaseLine
+			rule.SetBaseLine(stmt.BaseLine)
+			checker.SetBaseLine(stmt.BaseLine)
 			antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
-			if checker.explainCount >= common.MaximumLintExplainSize {
+			if rule.explainCount >= common.MaximumLintExplainSize {
 				break
 			}
 		}
 	}
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type statementAffectedRowLimitChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine     int
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	title        string
+// StatementAffectedRowLimitRule checks for UPDATE/DELETE affected row limit.
+type StatementAffectedRowLimitRule struct {
+	BaseRule
 	text         string
 	maxRow       int
 	driver       *sql.DB
@@ -80,54 +75,75 @@ type statementAffectedRowLimitChecker struct {
 	explainCount int
 }
 
-func (checker *statementAffectedRowLimitChecker) EnterQuery(ctx *mysql.QueryContext) {
-	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-}
-
-// EnterUpdateStatement is called when production updateStatement is entered.
-func (checker *statementAffectedRowLimitChecker) EnterUpdateStatement(ctx *mysql.UpdateStatementContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
+// NewStatementAffectedRowLimitRule creates a new StatementAffectedRowLimitRule.
+func NewStatementAffectedRowLimitRule(level storepb.Advice_Status, title string, maxRow int, driver *sql.DB, ctx context.Context) *StatementAffectedRowLimitRule {
+	return &StatementAffectedRowLimitRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		maxRow: maxRow,
+		driver: driver,
+		ctx:    ctx,
 	}
-	checker.handleStmt(ctx.GetStart().GetLine())
 }
 
-// EnterDeleteStatement is called when production deleteStatement is entered.
-func (checker *statementAffectedRowLimitChecker) EnterDeleteStatement(ctx *mysql.DeleteStatementContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
+// Name returns the rule name.
+func (*StatementAffectedRowLimitRule) Name() string {
+	return "StatementAffectedRowLimitRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *StatementAffectedRowLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeQuery:
+		queryCtx := ctx.(*mysql.QueryContext)
+		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
+	case NodeTypeUpdateStatement:
+		if mysqlparser.IsTopMySQLRule(&ctx.(*mysql.UpdateStatementContext).BaseParserRuleContext) {
+			r.handleStmt(ctx.GetStart().GetLine())
+		}
+	case NodeTypeDeleteStatement:
+		if mysqlparser.IsTopMySQLRule(&ctx.(*mysql.DeleteStatementContext).BaseParserRuleContext) {
+			r.handleStmt(ctx.GetStart().GetLine())
+		}
 	}
-	checker.handleStmt(ctx.GetStart().GetLine())
+	return nil
 }
 
-func (checker *statementAffectedRowLimitChecker) handleStmt(lineNumber int) {
-	lineNumber += checker.baseLine
-	checker.explainCount++
-	res, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", checker.text))
+// OnExit is called when exiting a parse tree node.
+func (*StatementAffectedRowLimitRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *StatementAffectedRowLimitRule) handleStmt(lineNumber int) {
+	lineNumber += r.baseLine
+	r.explainCount++
+	res, err := advisor.Query(r.ctx, advisor.QueryContext{}, r.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", r.text))
 	if err != nil {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.StatementAffectedRowExceedsLimit.Int32(),
-			Title:         checker.title,
-			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error()),
+			Title:         r.title,
+			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", r.text, err.Error()),
 			StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
 		})
 	} else {
 		rowCount, err := getRows(res)
 		if err != nil {
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:        checker.level,
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.level,
 				Code:          advisor.Internal.Int32(),
-				Title:         checker.title,
-				Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", checker.text, err.Error()),
+				Title:         r.title,
+				Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", r.text, err.Error()),
 				StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
 			})
-		} else if rowCount > int64(checker.maxRow) {
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:        checker.level,
+		} else if rowCount > int64(r.maxRow) {
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.level,
 				Code:          advisor.StatementAffectedRowExceedsLimit.Int32(),
-				Title:         checker.title,
-				Content:       fmt.Sprintf("\"%s\" affected %d rows (estimated). The count exceeds %d.", checker.text, rowCount, checker.maxRow),
+				Title:         r.title,
+				Content:       fmt.Sprintf("\"%s\" affected %d rows (estimated). The count exceeds %d.", r.text, rowCount, r.maxRow),
 				StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
 			})
 		}

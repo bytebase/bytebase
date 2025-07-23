@@ -45,6 +45,13 @@ const (
 	NodeTypeSelectItemList          = "SelectItemList"
 	NodeTypePureIdentifier          = "PureIdentifier"
 	NodeTypeIdentifierKeyword       = "IdentifierKeyword"
+	NodeTypeTransactionStatement    = "TransactionStatement"
+	NodeTypePredicateExprLike       = "PredicateExprLike"
+	NodeTypeSimpleStatement         = "SimpleStatement"
+	NodeTypeQuerySpecification      = "QuerySpecification"
+	NodeTypeLimitClause             = "LimitClause"
+	NodeTypeFromClause              = "FromClause"
+	NodeTypePrimaryExprCompare      = "PrimaryExprCompare"
 )
 
 // Rule defines the interface for individual SQL validation rules.

@@ -6,9 +6,8 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	"github.com/pkg/errors"
-
 	mysql "github.com/bytebase/mysql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -38,41 +37,33 @@ func (*StatementJoinStrictColumnAttrsAdvisor) Check(_ context.Context, checkCtx 
 	if err != nil {
 		return nil, err
 	}
-	checker := &statementJoinStrictColumnAttrsChecker{
-		level: level,
-		title: string(checkCtx.Rule.Type),
-	}
+
+	// Create the rule
+	rule := NewStatementJoinStrictColumnAttrsRule(level, string(checkCtx.Rule.Type))
 	if checkCtx.DBSchema != nil {
 		dbSchema := model.NewDatabaseSchema(checkCtx.DBSchema, nil, nil, storepb.Engine_MYSQL, checkCtx.IsObjectCaseSensitive)
-		checker.dbSchema = dbSchema
+		rule.dbSchema = dbSchema
 	}
 
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
+
 	for _, stmt := range stmtList {
-		checker.baseLine = stmt.BaseLine
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type statementJoinStrictColumnAttrsChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine       int
-	adviceList     []*storepb.Advice
-	level          storepb.Advice_Status
-	title          string
-	text           string
-	dbSchema       *model.DatabaseSchema
-	isSelect       bool
-	isInFromClause bool
-}
-
+// SourceTable represents a table in the FROM clause.
 type SourceTable struct {
 	Name  string
 	Alias string
 }
 
+// ColumnAttr represents column attributes for join checking.
 type ColumnAttr struct {
 	Table     string
 	Column    string
@@ -81,34 +72,72 @@ type ColumnAttr struct {
 	Collation string
 }
 
-func (checker *statementJoinStrictColumnAttrsChecker) EnterQuery(ctx *mysql.QueryContext) {
-	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+// StatementJoinStrictColumnAttrsRule checks that joined columns have matching attributes.
+type StatementJoinStrictColumnAttrsRule struct {
+	BaseRule
+	text           string
+	dbSchema       *model.DatabaseSchema
+	isSelect       bool
+	isInFromClause bool
+	sourceTables   []SourceTable
 }
 
-func (checker *statementJoinStrictColumnAttrsChecker) EnterSelectStatement(ctx *mysql.SelectStatementContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
+// NewStatementJoinStrictColumnAttrsRule creates a new StatementJoinStrictColumnAttrsRule.
+func NewStatementJoinStrictColumnAttrsRule(level storepb.Advice_Status, title string) *StatementJoinStrictColumnAttrsRule {
+	return &StatementJoinStrictColumnAttrsRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
 	}
-	checker.isSelect = true
 }
 
-func (checker *statementJoinStrictColumnAttrsChecker) ExitSelectStatement(ctx *mysql.SelectStatementContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
+// Name returns the rule name.
+func (*StatementJoinStrictColumnAttrsRule) Name() string {
+	return "StatementJoinStrictColumnAttrsRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *StatementJoinStrictColumnAttrsRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeQuery:
+		queryCtx := ctx.(*mysql.QueryContext)
+		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
+	case NodeTypeSelectStatement:
+		if mysqlparser.IsTopMySQLRule(&ctx.(*mysql.SelectStatementContext).BaseParserRuleContext) {
+			r.isSelect = true
+		}
+	case NodeTypeFromClause:
+		r.handleFromClause(ctx.(*mysql.FromClauseContext))
+	case NodeTypePrimaryExprCompare:
+		r.handlePrimaryExprCompare(ctx.(*mysql.PrimaryExprCompareContext))
 	}
-	checker.isSelect = false
+	return nil
 }
 
-func (checker *statementJoinStrictColumnAttrsChecker) EnterFromClause(ctx *mysql.FromClauseContext) {
-	if !checker.isSelect {
+// OnExit is called when exiting a parse tree node.
+func (r *StatementJoinStrictColumnAttrsRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeSelectStatement:
+		if mysqlparser.IsTopMySQLRule(&ctx.(*mysql.SelectStatementContext).BaseParserRuleContext) {
+			r.isSelect = false
+		}
+	case NodeTypeFromClause:
+		r.isInFromClause = false
+	}
+	return nil
+}
+
+func (r *StatementJoinStrictColumnAttrsRule) handleFromClause(ctx *mysql.FromClauseContext) {
+	if !r.isSelect {
 		return
 	}
 	if ctx.TableReferenceList() == nil {
 		return
 	}
 
-	checker.isInFromClause = true
-	sourceTables := []SourceTable{}
+	r.isInFromClause = true
+	r.sourceTables = []SourceTable{}
 	tableRefs := ctx.TableReferenceList().AllTableReference()
 	for _, tableRef := range tableRefs {
 		if tableRef.TableFactor() == nil {
@@ -123,7 +152,7 @@ func (checker *statementJoinStrictColumnAttrsChecker) EnterFromClause(ctx *mysql
 			if tableFactor.SingleTable().TableAlias() != nil {
 				sourceTable.Alias = tableFactor.SingleTable().TableAlias().Identifier().GetText()
 			}
-			sourceTables = append(sourceTables, sourceTable)
+			r.sourceTables = append(r.sourceTables, sourceTable)
 		}
 
 		if tableRef.AllJoinedTable() == nil {
@@ -146,8 +175,8 @@ func (checker *statementJoinStrictColumnAttrsChecker) EnterFromClause(ctx *mysql
 						Table:  referencedTable,
 						Column: column,
 					}
-					for _, sourceTable := range sourceTables {
-						checker.checkColumnAttrs(&ColumnAttr{
+					for _, sourceTable := range r.sourceTables {
+						r.checkColumnAttrs(&ColumnAttr{
 							Table:  sourceTable.Name,
 							Column: column,
 						}, rightColumn)
@@ -158,12 +187,8 @@ func (checker *statementJoinStrictColumnAttrsChecker) EnterFromClause(ctx *mysql
 	}
 }
 
-func (checker *statementJoinStrictColumnAttrsChecker) ExitFromClause(_ *mysql.FromClauseContext) {
-	checker.isInFromClause = false
-}
-
-func (checker *statementJoinStrictColumnAttrsChecker) EnterPrimaryExprCompare(ctx *mysql.PrimaryExprCompareContext) {
-	if !checker.isSelect || !checker.isInFromClause {
+func (r *StatementJoinStrictColumnAttrsRule) handlePrimaryExprCompare(ctx *mysql.PrimaryExprCompareContext) {
+	if !r.isSelect || !r.isInFromClause {
 		return
 	}
 
@@ -177,11 +202,11 @@ func (checker *statementJoinStrictColumnAttrsChecker) EnterPrimaryExprCompare(ct
 	}
 	leftColumnAttr := extractJoinInfoFromText(ctx.BoolPri().GetText())
 	rightColumnAttr := extractJoinInfoFromText(ctx.Predicate().GetText())
-	checker.checkColumnAttrs(leftColumnAttr, rightColumnAttr)
+	r.checkColumnAttrs(leftColumnAttr, rightColumnAttr)
 }
 
-func (checker *statementJoinStrictColumnAttrsChecker) checkColumnAttrs(leftColumnAttr *ColumnAttr, rightColumnAttr *ColumnAttr) {
-	if !checker.isSelect || !checker.isInFromClause {
+func (r *StatementJoinStrictColumnAttrsRule) checkColumnAttrs(leftColumnAttr *ColumnAttr, rightColumnAttr *ColumnAttr) {
+	if !r.isSelect || !r.isInFromClause {
 		return
 	}
 	if leftColumnAttr == nil || rightColumnAttr == nil {
@@ -189,8 +214,8 @@ func (checker *statementJoinStrictColumnAttrsChecker) checkColumnAttrs(leftColum
 	}
 
 	// TODO(steven): dynamic match table alias later.
-	leftTable := checker.findTable(leftColumnAttr.Table)
-	rightTable := checker.findTable(rightColumnAttr.Table)
+	leftTable := r.findTable(leftColumnAttr.Table)
+	rightTable := r.findTable(rightColumnAttr.Table)
 	if leftTable == nil || rightTable == nil {
 		return
 	}
@@ -200,21 +225,21 @@ func (checker *statementJoinStrictColumnAttrsChecker) checkColumnAttrs(leftColum
 		return
 	}
 	if leftColumn.Type != rightColumn.Type || leftColumn.CharacterSet != rightColumn.CharacterSet || leftColumn.Collation != rightColumn.Collation {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.StatementJoinColumnAttrsNotMatch.Int32(),
-			Title:         checker.title,
+			Title:         r.title,
 			Content:       fmt.Sprintf("%s.%s and %s.%s column fields do not match", leftColumnAttr.Table, leftColumnAttr.Column, rightColumnAttr.Table, rightColumnAttr.Column),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine),
 		})
 	}
 }
 
-func (checker *statementJoinStrictColumnAttrsChecker) findTable(tableName string) *model.TableMetadata {
-	if checker.dbSchema == nil {
+func (r *StatementJoinStrictColumnAttrsRule) findTable(tableName string) *model.TableMetadata {
+	if r.dbSchema == nil {
 		return nil
 	}
-	return checker.dbSchema.GetDatabaseMetadata().GetSchema("").GetTable(tableName)
+	return r.dbSchema.GetDatabaseMetadata().GetSchema("").GetTable(tableName)
 }
 
 func extractJoinInfoFromText(text string) *ColumnAttr {

@@ -5,9 +5,8 @@ import (
 	"fmt"
 
 	"github.com/antlr4-go/antlr/v4"
-	"github.com/pkg/errors"
-
 	mysql "github.com/bytebase/mysql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -37,29 +36,56 @@ func (*TableRequireCharsetAdvisor) Check(_ context.Context, checkCtx advisor.Con
 	if err != nil {
 		return nil, err
 	}
-	checker := &tableRequireCharsetChecker{
-		level: level,
-		title: string(checkCtx.Rule.Type),
-	}
+
+	// Create the rule
+	rule := NewTableRequireCharsetRule(level, string(checkCtx.Rule.Type))
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmt := range stmtList {
-		checker.baseLine = stmt.BaseLine
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type tableRequireCharsetChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	baseLine   int
+// TableRequireCharsetRule checks that tables have charset specified.
+type TableRequireCharsetRule struct {
+	BaseRule
 }
 
-func (checker *tableRequireCharsetChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+// NewTableRequireCharsetRule creates a new TableRequireCharsetRule.
+func NewTableRequireCharsetRule(level storepb.Advice_Status, title string) *TableRequireCharsetRule {
+	return &TableRequireCharsetRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+	}
+}
+
+// Name returns the rule name.
+func (*TableRequireCharsetRule) Name() string {
+	return "TableRequireCharsetRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *TableRequireCharsetRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	if nodeType == NodeTypeCreateTable {
+		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*TableRequireCharsetRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *TableRequireCharsetRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if ctx.TableName() == nil {
 		return
 	}
@@ -78,12 +104,12 @@ func (checker *tableRequireCharsetChecker) EnterCreateTable(ctx *mysql.CreateTab
 		}
 	}
 	if !hasCharset {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.NoCharset.Int32(),
-			Title:         checker.title,
+			Title:         r.title,
 			Content:       fmt.Sprintf("Table %s does not have a character set specified", tableName),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
 }
