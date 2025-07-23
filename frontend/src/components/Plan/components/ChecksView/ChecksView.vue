@@ -109,7 +109,7 @@
             </div>
 
             <div class="flex items-center gap-2">
-              <span class="text-xs text-control">
+              <span class="text-sm text-control">
                 {{ formatTime(checkRun.createTime) }}
               </span>
             </div>
@@ -132,18 +132,32 @@
                 <div class="text-sm font-medium text-main">
                   {{ getResultTitle(result) }}
                 </div>
-                <div v-if="result.content" class="text-xs text-control">
+                <div v-if="result.content" class="text-sm text-control">
                   {{ result.content }}
                 </div>
                 <div
                   v-if="
-                    result.report?.case === 'sqlReviewReport' &&
+                    result.report.case === 'sqlReviewReport' &&
                     result.report.value.line > 0
                   "
-                  class="text-xs text-control-lighter mt-1"
+                  class="text-sm mt-1"
                 >
                   Line {{ result.report.value.line }}, Column
                   {{ result.report.value.column }}
+                </div>
+                <div
+                  v-else-if="result.report.case === 'sqlSummaryReport'"
+                  class="text-sm mt-1 flex items-center gap-1"
+                >
+                  <NTag size="small" round>
+                    {{ $t("task.check-type.affected-rows.self") }}
+                  </NTag>
+                  <span>{{ result.report.value.affectedRows }}</span>
+                  <span class="text-control opacity-80"
+                    >({{
+                      $t("task.check-type.affected-rows.description")
+                    }})</span
+                  >
                 </div>
               </div>
             </div>
@@ -165,6 +179,7 @@ import {
   ShieldIcon,
   SearchCodeIcon,
 } from "lucide-vue-next";
+import { NTag } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";

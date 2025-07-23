@@ -1,26 +1,24 @@
 <template>
   <div>
-    <div class="w-full grid grid-cols-3 gap-x-6">
-      <div>
-        <p class="font-medium text-main mb-2">{{ $t("common.name") }}</p>
-        <NInput v-model:value="state.placeholder" :disabled="readonly" />
-        <div class="mt-2">
-          <ResourceIdField
-            ref="resourceIdField"
-            editing-class="mt-4"
-            resource-type="database-group"
-            :readonly="!isCreating"
-            :value="state.resourceId"
-            :resource-title="state.placeholder"
-            :fetch-resource="
-              (id) =>
-                dbGroupStore.getOrFetchDBGroupByName(
-                  `${props.project.name}/${databaseGroupNamePrefix}${id}`,
-                  { silent: true }
-                )
-            "
-          />
-        </div>
+    <div class="w-full">
+      <p class="font-medium text-main mb-2">{{ $t("common.name") }}</p>
+      <NInput v-model:value="state.placeholder" :disabled="readonly" />
+      <div class="mt-2">
+        <ResourceIdField
+          ref="resourceIdField"
+          editing-class="mt-4"
+          resource-type="database-group"
+          :readonly="!isCreating"
+          :value="state.resourceId"
+          :resource-title="state.placeholder"
+          :fetch-resource="
+            (id) =>
+              dbGroupStore.getOrFetchDBGroupByName(
+                `${props.project.name}/${databaseGroupNamePrefix}${id}`,
+                { silent: true }
+              )
+          "
+        />
       </div>
     </div>
     <NDivider />

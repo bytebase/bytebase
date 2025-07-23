@@ -1,8 +1,22 @@
 <template>
   <div v-if="show" class="px-4 pt-3 flex flex-col gap-y-1 overflow-hidden">
     <div class="flex items-center justify-between gap-2">
-      <div class="flex items-center gap-1">
+      <div class="flex items-center gap-2">
         <h3 class="text-base font-medium">{{ $t("plan.checks.self") }}</h3>
+
+        <NTooltip v-if="checkResults && affectedRows > 0">
+          <template #trigger>
+            <NTag round :bordered="false">
+              <span class="text-sm text-control-light mr-1">{{
+                $t("task.check-type.affected-rows.self")
+              }}</span>
+              <span class="text-sm font-medium">
+                {{ affectedRows }}
+              </span>
+            </NTag>
+          </template>
+          {{ $t("task.check-type.affected-rows.description") }}
+        </NTooltip>
       </div>
 
       <div class="flex items-center gap-4">
@@ -111,12 +125,13 @@ import {
   XCircleIcon,
   PlayIcon,
 } from "lucide-vue-next";
-import { NButton } from "naive-ui";
+import { NButton, NTag, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { getLocalSheetByName } from "@/components/Plan";
 import Drawer from "@/components/v2/Container/Drawer.vue";
 import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
 import { releaseServiceClientConnect } from "@/grpcweb";
+import { projectNamePrefix } from "@/store";
 import { getRuleLocalization, ruleTemplateMapV2 } from "@/types";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
 import {
@@ -128,7 +143,11 @@ import {
   type CheckReleaseResponse_CheckResult,
 } from "@/types/proto-es/v1/release_service_pb";
 import { Advice_Status, type Advice } from "@/types/proto-es/v1/sql_service_pb";
-import { getSheetStatement, isNullOrUndefined } from "@/utils";
+import {
+  extractProjectResourceName,
+  getSheetStatement,
+  isNullOrUndefined,
+} from "@/utils";
 import { usePlanContext } from "../../logic/context";
 import { targetsForSpec } from "../../logic/plan";
 import { useSelectedSpec } from "../SpecDetailView/context";
@@ -231,12 +250,9 @@ const runChecks = async () => {
     // Get targets
     const targets = targetsForSpec(selectedSpec.value);
 
-    // Get project from plan name
-    const projectName = `projects/${plan.value.name.split("/")[1]}`;
-
     // Run check for all targets
     const request = create(CheckReleaseRequestSchema, {
-      parent: projectName,
+      parent: `${projectNamePrefix}${extractProjectResourceName(plan.value.name)}`,
       release: {
         files: [
           {
@@ -254,12 +270,18 @@ const runChecks = async () => {
       targets,
     });
     const response = await releaseServiceClientConnect.checkRelease(request);
-
     checkResults.value = response.results || [];
   } finally {
     isRunningChecks.value = false;
   }
 };
+
+const affectedRows = computed(() => {
+  if (!checkResults.value) return 0;
+  return checkResults.value.reduce((acc, result) => {
+    return acc + result.affectedRows;
+  }, 0);
+});
 
 const openDrawer = (status: "ERROR" | "WARNING" | "SUCCESS") => {
   selectedStatus.value = status;

@@ -13,7 +13,11 @@
     <template
       v-else-if="planCheckRunStatus === PlanCheckRun_Result_Status.WARNING"
     >
-      <span class="h-3 w-3 bg-white rounded-full" aria-hidden="true"></span>
+      <span
+        class="h-2 w-2 rounded-full text-center pb-6 font-normal text-base"
+        aria-hidden="true"
+        >!</span
+      >
     </template>
     <template
       v-else-if="planCheckRunStatus === PlanCheckRun_Result_Status.SUCCESS"

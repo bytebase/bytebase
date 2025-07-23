@@ -27,10 +27,10 @@ export const databaseForSpec = (project: ComposedProject, spec: Plan_Spec) => {
  * @returns empty string if no sheet found
  */
 export const sheetNameForSpec = (spec: Plan_Spec): string => {
-  if (spec.config?.case === "changeDatabaseConfig") {
+  if (spec.config.case === "changeDatabaseConfig") {
     return spec.config.value.sheet ?? "";
   }
-  if (spec.config?.case === "exportDataConfig") {
+  if (spec.config.case === "exportDataConfig") {
     return spec.config.value.sheet ?? "";
   }
   return "";
@@ -79,8 +79,8 @@ export const databaseEngineForSpec = async (
 export const isDatabaseChangeSpec = (spec?: Plan_Spec) => {
   if (!spec) return false;
   if (
-    spec.config?.case === "changeDatabaseConfig" ||
-    spec.config?.case === "exportDataConfig"
+    spec.config.case === "changeDatabaseConfig" ||
+    spec.config.case === "exportDataConfig"
   ) {
     return targetsForSpec(spec).every(isValidDatabaseName);
   }
@@ -90,8 +90,8 @@ export const isDatabaseChangeSpec = (spec?: Plan_Spec) => {
 export const isDBGroupChangeSpec = (spec?: Plan_Spec) => {
   if (!spec) return false;
   if (
-    spec.config?.case === "changeDatabaseConfig" ||
-    spec.config?.case === "exportDataConfig"
+    spec.config.case === "changeDatabaseConfig" ||
+    spec.config.case === "exportDataConfig"
   ) {
     return targetsForSpec(spec).every(isValidDatabaseGroupName);
   }
