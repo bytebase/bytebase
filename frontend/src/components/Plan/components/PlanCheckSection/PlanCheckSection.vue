@@ -4,8 +4,22 @@
     class="px-4 pt-3 flex flex-col gap-y-1 overflow-hidden"
   >
     <div class="flex items-center justify-between gap-2">
-      <div class="flex items-center gap-1">
+      <div class="flex items-center gap-2">
         <h3 class="text-base font-medium">{{ $t("plan.checks.self") }}</h3>
+
+        <NTooltip v-if="checksOfSelectedSpec.length > 0 && affectedRows > 0">
+          <template #trigger>
+            <NTag round :bordered="false">
+              <span class="text-sm text-control-light mr-1">{{
+                $t("task.check-type.affected-rows.self")
+              }}</span>
+              <span class="text-sm font-medium">
+                {{ affectedRows }}
+              </span>
+            </NTag>
+          </template>
+          {{ $t("task.check-type.affected-rows.description") }}
+        </NTooltip>
       </div>
 
       <div class="flex items-center gap-2">
@@ -74,8 +88,8 @@ import {
   XCircleIcon,
   PlayIcon,
 } from "lucide-vue-next";
-import { NButton } from "naive-ui";
-import { computed, ref } from "vue";
+import { NButton, NTooltip, NTag } from "naive-ui";
+import { computed, ref, watch } from "vue";
 import { planServiceClientConnect } from "@/grpcweb";
 import {
   useCurrentUserV1,
@@ -88,7 +102,7 @@ import {
   RunPlanChecksRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
-import { planSpecHasPlanChecks } from "../../logic";
+import { planCheckRunListForSpec, planSpecHasPlanChecks } from "../../logic";
 import { usePlanContext } from "../../logic/context";
 import { useResourcePoller } from "../../logic/poller";
 import ChecksDrawer from "../ChecksView/ChecksDrawer.vue";
@@ -96,7 +110,7 @@ import { useSelectedSpec } from "../SpecDetailView/context";
 
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
-const { plan } = usePlanContext();
+const { plan, planCheckRuns } = usePlanContext();
 const selectedSpec = useSelectedSpec();
 const { refreshResources } = useResourcePoller();
 
@@ -116,6 +130,29 @@ const allowRunChecks = computed(() => {
     return true;
   }
   return hasProjectPermissionV2(project.value, "bb.planCheckRuns.run");
+});
+
+const checksOfSelectedSpec = computed(() => {
+  return planCheckRunListForSpec(planCheckRuns.value, selectedSpec.value);
+});
+
+const affectedRows = computed(() => {
+  const summaryReportResults = checksOfSelectedSpec.value.filter((check) =>
+    check.results.some((result) => result.report.case === "sqlSummaryReport")
+  );
+  return summaryReportResults.reduce((acc, check) => {
+    if (check.results) {
+      check.results.forEach((result) => {
+        if (
+          result.report?.case === "sqlSummaryReport" &&
+          result.report.value.affectedRows !== undefined
+        ) {
+          acc += result.report.value.affectedRows;
+        }
+      });
+    }
+    return acc;
+  }, 0);
 });
 
 const getChecksCount = (status: PlanCheckRun_Result_Status) => {
@@ -158,4 +195,17 @@ const openChecksDrawer = (status: PlanCheckRun_Result_Status) => {
   selectedResultStatus.value = status;
   showChecksDrawer.value = true;
 };
+
+// Prepare plan check runs.
+watch(
+  [selectedSpec.value.id, JSON.stringify(plan.value.planCheckRunStatusCount)],
+  async () => {
+    if (planSpecHasPlanChecks(selectedSpec.value)) {
+      await refreshResources(["planCheckRuns"], true /** force */);
+    }
+  },
+  {
+    immediate: true,
+  }
+);
 </script>
