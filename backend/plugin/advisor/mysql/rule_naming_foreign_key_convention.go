@@ -6,9 +6,8 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	"github.com/pkg/errors"
-
 	mysql "github.com/bytebase/mysql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -46,39 +45,77 @@ func (*NamingFKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	if err != nil {
 		return nil, err
 	}
-	checker := &namingFKConventionChecker{
-		level:        level,
-		title:        string(checkCtx.Rule.Type),
-		format:       format,
-		maxLength:    maxLength,
-		templateList: templateList,
-	}
+
+	// Create the rule
+	rule := NewNamingFKConventionRule(level, string(checkCtx.Rule.Type), format, maxLength, templateList)
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
+
 	for _, stmtNode := range root {
-		checker.baseLine = stmtNode.BaseLine
+		rule.SetBaseLine(stmtNode.BaseLine)
+		checker.SetBaseLine(stmtNode.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
 	}
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type namingFKConventionChecker struct {
-	*mysql.BaseMySQLParserListener
+// indexMetaData is the metadata for foreign key.
+type fkIndexMetaData struct {
+	indexName string
+	tableName string
+	metaData  map[string]string
+	line      int
+}
 
-	baseLine     int
+// NamingFKConventionRule checks for foreign key naming convention.
+type NamingFKConventionRule struct {
+	BaseRule
 	text         string
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	title        string
 	format       string
 	maxLength    int
 	templateList []string
 }
 
-func (checker *namingFKConventionChecker) EnterQuery(ctx *mysql.QueryContext) {
-	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+// NewNamingFKConventionRule creates a new NamingFKConventionRule.
+func NewNamingFKConventionRule(level storepb.Advice_Status, title string, format string, maxLength int, templateList []string) *NamingFKConventionRule {
+	return &NamingFKConventionRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		format:       format,
+		maxLength:    maxLength,
+		templateList: templateList,
+	}
 }
 
-func (checker *namingFKConventionChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+// Name returns the rule name.
+func (*NamingFKConventionRule) Name() string {
+	return "NamingFKConventionRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *NamingFKConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeQuery:
+		queryCtx := ctx.(*mysql.QueryContext)
+		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
+	case NodeTypeCreateTable:
+		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
+	case NodeTypeAlterTable:
+		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*NamingFKConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *NamingFKConventionRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -91,7 +128,7 @@ func (checker *namingFKConventionChecker) EnterCreateTable(ctx *mysql.CreateTabl
 
 	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
 
-	var indexDataList []*indexMetaData
+	var indexDataList []*fkIndexMetaData
 	for _, tableElement := range ctx.TableElementList().AllTableElement() {
 		if tableElement == nil {
 			continue
@@ -99,14 +136,14 @@ func (checker *namingFKConventionChecker) EnterCreateTable(ctx *mysql.CreateTabl
 		if tableElement.TableConstraintDef() == nil {
 			continue
 		}
-		if metaData := checker.handleConstraintDef(tableName, tableElement.TableConstraintDef()); metaData != nil {
+		if metaData := r.handleConstraintDef(tableName, tableElement.TableConstraintDef()); metaData != nil {
 			indexDataList = append(indexDataList, metaData)
 		}
 	}
-	checker.handleIndexList(indexDataList)
+	r.handleIndexList(indexDataList)
 }
 
-func (checker *namingFKConventionChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+func (r *NamingFKConventionRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -124,7 +161,7 @@ func (checker *namingFKConventionChecker) EnterAlterTable(ctx *mysql.AlterTableC
 	}
 
 	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	var indexDataList []*indexMetaData
+	var indexDataList []*fkIndexMetaData
 	for _, alterListItem := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
 		if alterListItem == nil {
 			continue
@@ -132,48 +169,48 @@ func (checker *namingFKConventionChecker) EnterAlterTable(ctx *mysql.AlterTableC
 
 		// add constriant.
 		if alterListItem.ADD_SYMBOL() != nil && alterListItem.TableConstraintDef() != nil {
-			if metaData := checker.handleConstraintDef(tableName, alterListItem.TableConstraintDef()); metaData != nil {
+			if metaData := r.handleConstraintDef(tableName, alterListItem.TableConstraintDef()); metaData != nil {
 				indexDataList = append(indexDataList, metaData)
 			}
 		}
 	}
-	checker.handleIndexList(indexDataList)
+	r.handleIndexList(indexDataList)
 }
 
-func (checker *namingFKConventionChecker) handleIndexList(indexDataList []*indexMetaData) {
+func (r *NamingFKConventionRule) handleIndexList(indexDataList []*fkIndexMetaData) {
 	for _, indexData := range indexDataList {
-		regex, err := getTemplateRegexp(checker.format, checker.templateList, indexData.metaData)
+		regex, err := getTemplateRegexp(r.format, r.templateList, indexData.metaData)
 		if err != nil {
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
+			r.AddAdvice(&storepb.Advice{
+				Status:  r.level,
 				Code:    advisor.Internal.Int32(),
 				Title:   "Internal error for foreign key naming convention rule",
-				Content: fmt.Sprintf("%q meet internal error %q", checker.text, err.Error()),
+				Content: fmt.Sprintf("%q meet internal error %q", r.text, err.Error()),
 			})
 			continue
 		}
 		if !regex.MatchString(indexData.indexName) {
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:        checker.level,
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.level,
 				Code:          advisor.NamingFKConventionMismatch.Int32(),
-				Title:         checker.title,
+				Title:         r.title,
 				Content:       fmt.Sprintf("Foreign key in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
 				StartPosition: common.ConvertANTLRLineToPosition(indexData.line),
 			})
 		}
-		if checker.maxLength > 0 && len(indexData.indexName) > checker.maxLength {
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:        checker.level,
+		if r.maxLength > 0 && len(indexData.indexName) > r.maxLength {
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.level,
 				Code:          advisor.NamingFKConventionMismatch.Int32(),
-				Title:         checker.title,
-				Content:       fmt.Sprintf("Foreign key `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, checker.maxLength),
+				Title:         r.title,
+				Content:       fmt.Sprintf("Foreign key `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, r.maxLength),
 				StartPosition: common.ConvertANTLRLineToPosition(indexData.line),
 			})
 		}
 	}
 }
 
-func (checker *namingFKConventionChecker) handleConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) *indexMetaData {
+func (r *NamingFKConventionRule) handleConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) *fkIndexMetaData {
 	// focus on foreign index.
 	if ctx.FOREIGN_SYMBOL() == nil || ctx.KEY_SYMBOL() == nil || ctx.KeyList() == nil || ctx.References() == nil {
 		return nil
@@ -191,22 +228,22 @@ func (checker *namingFKConventionChecker) handleConstraintDef(tableName string, 
 	}
 
 	referencingColumnList := mysqlparser.NormalizeKeyList(ctx.KeyList())
-	referencedTable, referencedColumnList := checker.handleReferences(ctx.References())
+	referencedTable, referencedColumnList := r.handleReferences(ctx.References())
 	metaData := map[string]string{
 		advisor.ReferencingTableNameTemplateToken:  tableName,
 		advisor.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
 		advisor.ReferencedTableNameTemplateToken:   referencedTable,
 		advisor.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
 	}
-	return &indexMetaData{
+	return &fkIndexMetaData{
 		indexName: indexName,
 		tableName: tableName,
 		metaData:  metaData,
-		line:      checker.baseLine + ctx.GetStart().GetLine(),
+		line:      r.baseLine + ctx.GetStart().GetLine(),
 	}
 }
 
-func (*namingFKConventionChecker) handleReferences(ctx mysql.IReferencesContext) (string, []string) {
+func (*NamingFKConventionRule) handleReferences(ctx mysql.IReferencesContext) (string, []string) {
 	tableName := ""
 	if ctx.TableRef() != nil {
 		_, tableName = mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())

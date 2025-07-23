@@ -42,36 +42,63 @@ func (*NamingColumnConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 	if err != nil {
 		return nil, err
 	}
-	checker := &namingColumnConventionChecker{
-		level:     level,
-		title:     string(checkCtx.Rule.Type),
-		format:    format,
-		maxLength: maxLength,
-		tables:    make(tableState),
-	}
+
+	// Create the rule
+	rule := NewNamingColumnRule(level, string(checkCtx.Rule.Type), format, maxLength)
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmt := range list {
-		checker.baseLine = stmt.BaseLine
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
-	return checker.adviceList, nil
+	return checker.GetAdviceList(), nil
 }
 
-type namingColumnConventionChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine   int
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	format     *regexp.Regexp
-	maxLength  int
-	tables     tableState
+// NamingColumnRule checks for column naming convention.
+type NamingColumnRule struct {
+	BaseRule
+	format    *regexp.Regexp
+	maxLength int
 }
 
-// EnterCreateTable is called when production createTable is entered.
-func (checker *namingColumnConventionChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+// NewNamingColumnRule creates a new NamingColumnRule.
+func NewNamingColumnRule(level storepb.Advice_Status, title string, format *regexp.Regexp, maxLength int) *NamingColumnRule {
+	return &NamingColumnRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		format:    format,
+		maxLength: maxLength,
+	}
+}
+
+// Name returns the rule name.
+func (*NamingColumnRule) Name() string {
+	return "NamingColumnRule"
+}
+
+// OnEnter is called when entering a parse tree node.
+func (r *NamingColumnRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeCreateTable:
+		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
+	case NodeTypeAlterTable:
+		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*NamingColumnRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+func (r *NamingColumnRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -95,12 +122,11 @@ func (checker *namingColumnConventionChecker) EnterCreateTable(ctx *mysql.Create
 		}
 
 		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-		checker.handleColumn(tableName, columnName, tableElement.GetStart().GetLine())
+		r.handleColumn(tableName, columnName, tableElement.GetStart().GetLine())
 	}
 }
 
-// EnterAlterTable is called when production alterTable is entered.
-func (checker *namingColumnConventionChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+func (r *NamingColumnRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
@@ -127,50 +153,50 @@ func (checker *namingColumnConventionChecker) EnterAlterTable(ctx *mysql.AlterTa
 			switch {
 			case item.Identifier() != nil && item.FieldDefinition() != nil:
 				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-				checker.handleColumn(tableName, columnName, item.GetStart().GetLine())
+				r.handleColumn(tableName, columnName, item.GetStart().GetLine())
 			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
 				for _, tableElement := range item.TableElementList().AllTableElement() {
 					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
 						continue
 					}
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-					checker.handleColumn(tableName, columnName, tableElement.GetStart().GetLine())
+					r.handleColumn(tableName, columnName, tableElement.GetStart().GetLine())
 				}
 			}
 		// rename column
 		case item.RENAME_SYMBOL() != nil && item.COLUMN_SYMBOL() != nil:
 			// only focus on new column-name.
 			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			checker.handleColumn(tableName, columnName, item.GetStart().GetLine())
+			r.handleColumn(tableName, columnName, item.GetStart().GetLine())
 		// change column
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
 			// only focus on new column-name.
 			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			checker.handleColumn(tableName, columnName, item.GetStart().GetLine())
+			r.handleColumn(tableName, columnName, item.GetStart().GetLine())
 		default:
 			continue
 		}
 	}
 }
 
-func (checker *namingColumnConventionChecker) handleColumn(tableName string, columnName string, lineNumber int) {
+func (r *NamingColumnRule) handleColumn(tableName string, columnName string, lineNumber int) {
 	// we need to accumulate line number for each statement and elements of statements.
-	lineNumber += checker.baseLine
-	if !checker.format.MatchString(columnName) {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+	lineNumber += r.baseLine
+	if !r.format.MatchString(columnName) {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.NamingColumnConventionMismatch.Int32(),
-			Title:         checker.title,
-			Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, columnName, checker.format),
+			Title:         r.title,
+			Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, columnName, r.format),
 			StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
 		})
 	}
-	if checker.maxLength > 0 && len(columnName) > checker.maxLength {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+	if r.maxLength > 0 && len(columnName) > r.maxLength {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.NamingColumnConventionMismatch.Int32(),
-			Title:         checker.title,
-			Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, columnName, checker.maxLength),
+			Title:         r.title,
+			Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, columnName, r.maxLength),
 			StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
 		})
 	}

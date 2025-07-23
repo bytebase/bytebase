@@ -25,11 +25,11 @@ func init() {
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLInsertRowLimit, &InsertRowLimitAdvisor{})
 }
 
-// NamingTableConventionAdvisor is the advisor checking for table naming convention.
+// InsertRowLimitAdvisor is the advisor checking for insert row limit.
 type InsertRowLimitAdvisor struct {
 }
 
-// Check checks for table naming convention.
+// Check checks for insert row limit.
 func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	list, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
@@ -46,31 +46,27 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 		return nil, err
 	}
 
-	checker := &insertRowLimitChecker{
-		level:  level,
-		title:  string(checkCtx.Rule.Type),
-		maxRow: payload.Number,
-		driver: checkCtx.Driver,
-		ctx:    ctx,
-	}
+	// Create the rule
+	rule := NewInsertRowLimitRule(level, string(checkCtx.Rule.Type), payload.Number, checkCtx.Driver, ctx)
+
+	// Create the generic checker with the rule
+	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmt := range list {
-		checker.baseLine = stmt.BaseLine
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
-		if checker.explainCount >= common.MaximumLintExplainSize {
+		if rule.GetExplainCount() >= common.MaximumLintExplainSize {
 			break
 		}
 	}
-	return checker.generateAdvice()
+
+	return checker.GetAdviceList(), nil
 }
 
-type insertRowLimitChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine     int
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	title        string
+// InsertRowLimitRule checks for insert row limit.
+type InsertRowLimitRule struct {
+	BaseRule
 	text         string
 	line         int
 	maxRow       int
@@ -79,64 +75,95 @@ type insertRowLimitChecker struct {
 	explainCount int
 }
 
-func (checker *insertRowLimitChecker) generateAdvice() ([]*storepb.Advice, error) {
-	return checker.adviceList, nil
+// NewInsertRowLimitRule creates a new InsertRowLimitRule.
+func NewInsertRowLimitRule(level storepb.Advice_Status, title string, maxRow int, driver *sql.DB, ctx context.Context) *InsertRowLimitRule {
+	return &InsertRowLimitRule{
+		BaseRule: BaseRule{
+			level: level,
+			title: title,
+		},
+		maxRow: maxRow,
+		driver: driver,
+		ctx:    ctx,
+	}
 }
 
-func (checker *insertRowLimitChecker) EnterQuery(ctx *mysql.QueryContext) {
-	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+// Name returns the rule name.
+func (*InsertRowLimitRule) Name() string {
+	return "InsertRowLimitRule"
 }
 
-// EnterInsertStatement is called when production insertStatement is entered.
-func (checker *insertRowLimitChecker) EnterInsertStatement(ctx *mysql.InsertStatementContext) {
+// OnEnter is called when entering a parse tree node.
+func (r *InsertRowLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
+	switch nodeType {
+	case NodeTypeQuery:
+		queryCtx := ctx.(*mysql.QueryContext)
+		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
+	case NodeTypeInsertStatement:
+		r.checkInsertStatement(ctx.(*mysql.InsertStatementContext))
+	}
+	return nil
+}
+
+// OnExit is called when exiting a parse tree node.
+func (*InsertRowLimitRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+	return nil
+}
+
+// GetExplainCount returns the explain count.
+func (r *InsertRowLimitRule) GetExplainCount() int {
+	return r.explainCount
+}
+
+func (r *InsertRowLimitRule) checkInsertStatement(ctx *mysql.InsertStatementContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
-	checker.line = checker.baseLine + ctx.GetStart().GetLine()
+	r.line = r.baseLine + ctx.GetStart().GetLine()
 	if ctx.InsertQueryExpression() != nil {
-		checker.handleInsertQueryExpression(ctx.InsertQueryExpression())
+		r.handleInsertQueryExpression(ctx.InsertQueryExpression())
 	}
-	checker.handleNoInsertQueryExpression(ctx)
+	r.handleNoInsertQueryExpression(ctx)
 }
 
-func (checker *insertRowLimitChecker) handleInsertQueryExpression(ctx mysql.IInsertQueryExpressionContext) {
-	if checker.driver == nil || ctx == nil {
+func (r *InsertRowLimitRule) handleInsertQueryExpression(ctx mysql.IInsertQueryExpressionContext) {
+	if r.driver == nil || ctx == nil {
 		return
 	}
 
-	checker.explainCount++
-	res, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", checker.text))
+	r.explainCount++
+	res, err := advisor.Query(r.ctx, advisor.QueryContext{}, r.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", r.text))
 	if err != nil {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.InsertTooManyRows.Int32(),
-			Title:         checker.title,
-			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error()),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
+			Title:         r.title,
+			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", r.text, err.Error()),
+			StartPosition: common.ConvertANTLRLineToPosition(r.line),
 		})
 		return
 	}
 	rowCount, err := getInsertRows(res)
 	if err != nil {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.Internal.Int32(),
-			Title:         checker.title,
-			Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", checker.text, err.Error()),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
+			Title:         r.title,
+			Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", r.text, err.Error()),
+			StartPosition: common.ConvertANTLRLineToPosition(r.line),
 		})
-	} else if rowCount > int64(checker.maxRow) {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+	} else if rowCount > int64(r.maxRow) {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.InsertTooManyRows.Int32(),
-			Title:         checker.title,
-			Content:       fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", checker.text, rowCount, checker.maxRow),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
+			Title:         r.title,
+			Content:       fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", r.text, rowCount, r.maxRow),
+			StartPosition: common.ConvertANTLRLineToPosition(r.line),
 		})
 	}
 }
 
-func (checker *insertRowLimitChecker) handleNoInsertQueryExpression(ctx mysql.IInsertStatementContext) {
+func (r *InsertRowLimitRule) handleNoInsertQueryExpression(ctx mysql.IInsertStatementContext) {
 	if ctx.InsertFromConstructor() == nil {
 		return
 	}
@@ -148,13 +175,13 @@ func (checker *insertRowLimitChecker) handleNoInsertQueryExpression(ctx mysql.II
 	}
 
 	allValues := ctx.InsertFromConstructor().InsertValues().ValueList().AllValues()
-	if len(allValues) > checker.maxRow {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
+	if len(allValues) > r.maxRow {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
 			Code:          advisor.InsertTooManyRows.Int32(),
-			Title:         checker.title,
-			Content:       fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", checker.text, len(allValues), checker.maxRow),
-			StartPosition: common.ConvertANTLRLineToPosition(checker.line),
+			Title:         r.title,
+			Content:       fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", r.text, len(allValues), r.maxRow),
+			StartPosition: common.ConvertANTLRLineToPosition(r.line),
 		})
 	}
 }

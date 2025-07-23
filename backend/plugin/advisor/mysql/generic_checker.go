@@ -42,6 +42,9 @@ const (
 	NodeTypeDropDatabase            = "DropDatabase"
 	NodeTypeTruncateTableStatement  = "TruncateTableStatement"
 	NodeTypeSelectStatementWithInto = "SelectStatementWithInto"
+	NodeTypeSelectItemList          = "SelectItemList"
+	NodeTypePureIdentifier          = "PureIdentifier"
+	NodeTypeIdentifierKeyword       = "IdentifierKeyword"
 )
 
 // Rule defines the interface for individual SQL validation rules.
