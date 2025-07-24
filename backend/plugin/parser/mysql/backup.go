@@ -321,6 +321,9 @@ func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDataba
 	} else {
 		tableSchema = schema.GetTable(table.Table)
 	}
+	if tableSchema == nil {
+		return nil, nil, errors.Errorf("table %s not found in schema", table.Table)
+	}
 
 	var generatedColumns, normalColumns []string
 	for _, column := range tableSchema.GetColumns() {
