@@ -1066,8 +1066,6 @@ MIIEvQ...
   <template
     v-if="
       dataSource.type === DataSourceType.READ_ONLY &&
-      dataSource.authenticationType ===
-        DataSource_AuthenticationType.PASSWORD &&
       (hasReadonlyReplicaHost || hasReadonlyReplicaPort)
     "
   >

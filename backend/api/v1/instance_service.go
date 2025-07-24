@@ -1136,29 +1136,27 @@ func convertDataSourceExternalSecret(externalSecret *storepb.DataSourceExternalS
 	if externalSecret == nil {
 		return nil, nil
 	}
-	secret := new(v1pb.DataSourceExternalSecret)
-	if err := convertProtoToProto(externalSecret, secret); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert external secret"))
-	}
 
 	resp := &v1pb.DataSourceExternalSecret{
-		SecretType:      secret.SecretType,
-		Url:             secret.Url,
-		AuthType:        secret.AuthType,
-		EngineName:      secret.EngineName,
-		SecretName:      secret.SecretName,
-		PasswordKeyName: secret.PasswordKeyName,
+		SecretType:      v1pb.DataSourceExternalSecret_SecretType(externalSecret.SecretType),
+		Url:             externalSecret.Url,
+		AuthType:        v1pb.DataSourceExternalSecret_AuthType(externalSecret.AuthType),
+		EngineName:      externalSecret.EngineName,
+		SecretName:      externalSecret.SecretName,
+		PasswordKeyName: externalSecret.PasswordKeyName,
 	}
 
 	// clear sensitive data.
 	switch resp.AuthType {
 	case v1pb.DataSourceExternalSecret_VAULT_APP_ROLE:
-		appRole := secret.GetAppRole()
-		resp.AuthOption = &v1pb.DataSourceExternalSecret_AppRole{
-			AppRole: &v1pb.DataSourceExternalSecret_AppRoleAuthOption{
-				Type:      appRole.Type,
-				MountPath: appRole.MountPath,
-			},
+		appRole := externalSecret.GetAppRole()
+		if appRole != nil {
+			resp.AuthOption = &v1pb.DataSourceExternalSecret_AppRole{
+				AppRole: &v1pb.DataSourceExternalSecret_AppRoleAuthOption{
+					Type:      v1pb.DataSourceExternalSecret_AppRoleAuthOption_SecretType(appRole.Type),
+					MountPath: appRole.MountPath,
+				},
+			}
 		}
 	case v1pb.DataSourceExternalSecret_TOKEN:
 		resp.AuthOption = &v1pb.DataSourceExternalSecret_Token{
@@ -1261,10 +1259,34 @@ func convertV1DataSourceExternalSecret(externalSecret *v1pb.DataSourceExternalSe
 	if externalSecret == nil {
 		return nil, nil
 	}
-	secret := new(storepb.DataSourceExternalSecret)
-	if err := convertProtoToProto(externalSecret, secret); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert external secret"))
+
+	secret := &storepb.DataSourceExternalSecret{
+		SecretType:      storepb.DataSourceExternalSecret_SecretType(externalSecret.SecretType),
+		Url:             externalSecret.Url,
+		AuthType:        storepb.DataSourceExternalSecret_AuthType(externalSecret.AuthType),
+		EngineName:      externalSecret.EngineName,
+		SecretName:      externalSecret.SecretName,
+		PasswordKeyName: externalSecret.PasswordKeyName,
 	}
+
+	// Convert auth options
+	switch externalSecret.AuthOption.(type) {
+	case *v1pb.DataSourceExternalSecret_Token:
+		secret.AuthOption = &storepb.DataSourceExternalSecret_Token{
+			Token: externalSecret.GetToken(),
+		}
+	case *v1pb.DataSourceExternalSecret_AppRole:
+		appRole := externalSecret.GetAppRole()
+		if appRole != nil {
+			secret.AuthOption = &storepb.DataSourceExternalSecret_AppRole{
+				AppRole: &storepb.DataSourceExternalSecret_AppRoleAuthOption{
+					Type:      storepb.DataSourceExternalSecret_AppRoleAuthOption_SecretType(appRole.Type),
+					MountPath: appRole.MountPath,
+				},
+			}
+		}
+	}
+
 	switch secret.SecretType {
 	case storepb.DataSourceExternalSecret_VAULT_KV_V2:
 		if secret.Url == "" {
