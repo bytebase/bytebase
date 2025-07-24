@@ -1132,9 +1132,9 @@ func convertV1DataSources(dataSources []*v1pb.DataSource) ([]*storepb.DataSource
 	return values, nil
 }
 
-func convertDataSourceExternalSecret(externalSecret *storepb.DataSourceExternalSecret) (*v1pb.DataSourceExternalSecret, error) {
+func convertDataSourceExternalSecret(externalSecret *storepb.DataSourceExternalSecret) *v1pb.DataSourceExternalSecret {
 	if externalSecret == nil {
-		return nil, nil
+		return nil
 	}
 
 	resp := &v1pb.DataSourceExternalSecret{
@@ -1164,16 +1164,13 @@ func convertDataSourceExternalSecret(externalSecret *storepb.DataSourceExternalS
 		}
 	}
 
-	return resp, nil
+	return resp
 }
 
 func convertDataSources(dataSources []*storepb.DataSource) ([]*v1pb.DataSource, error) {
 	var v1DataSources []*v1pb.DataSource
 	for _, ds := range dataSources {
-		externalSecret, err := convertDataSourceExternalSecret(ds.GetExternalSecret())
-		if err != nil {
-			return nil, err
-		}
+		externalSecret := convertDataSourceExternalSecret(ds.GetExternalSecret())
 
 		dataSourceType := v1pb.DataSourceType_DATA_SOURCE_UNSPECIFIED
 		switch ds.GetType() {
