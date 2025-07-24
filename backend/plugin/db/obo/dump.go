@@ -59,6 +59,8 @@ func assembleTableStatement(tableMap map[string]*tableSchema, out io.Writer) err
 		case !table.meta.TableName.Valid,
 			!table.meta.Owner.Valid:
 			continue
+		default:
+			// Table has valid name and owner, include it in the list
 		}
 		tableList = append(tableList, table)
 	}
@@ -263,6 +265,8 @@ func (t *tableSchema) assembleStorage(out io.Writer) error {
 		if _, err := fmt.Fprintf(out, "\n  BUFFER_POOL %s", t.meta.BufferPool.String); err != nil {
 			return err
 		}
+	default:
+		// No valid storage parameters found, this shouldn't happen as we check for them before calling this switch
 	}
 
 	if _, err := out.Write([]byte("\n)")); err != nil {
@@ -304,6 +308,11 @@ func (t *tableSchema) assembleCompression(out io.Writer) error {
 			}
 		case t.meta.CompressFor.Valid && t.meta.CompressFor.String == "ARCHIVE HIGH":
 			if _, err := out.Write([]byte("\nCOLUMN STORE COMPRESS FOR ARCHIVE HIGH")); err != nil {
+				return err
+			}
+		default:
+			// Unknown compression format, use default COMPRESS
+			if _, err := out.Write([]byte("\nCOMPRESS")); err != nil {
 				return err
 			}
 		}
@@ -478,6 +487,8 @@ func (f *fieldMeta) assembleType(out io.Writer) error {
 			if _, err := fmt.Fprintf(out, "(%d,%d)", f.DataPrecision.Int64, f.DataScale.Int64); err != nil {
 				return err
 			}
+		default:
+			// Unexpected precision/scale combination, do nothing
 		}
 	case "FLOAT":
 		switch {
@@ -487,7 +498,11 @@ func (f *fieldMeta) assembleType(out io.Writer) error {
 			if _, err := fmt.Fprintf(out, "(%d)", f.DataPrecision.Int64); err != nil {
 				return err
 			}
+		default:
+			// Unexpected precision value, do nothing
 		}
+	default:
+		// Data type doesn't require length or precision specification
 	}
 	return nil
 }
@@ -735,6 +750,8 @@ func assembleIndexStatement(index *mergedIndexMeta, out io.Writer) error {
 		if _, err := out.Write([]byte(` BITMAP`)); err != nil {
 			return err
 		}
+	default:
+		// Other index types don't need special keywords
 	}
 
 	if index.Uniqueness.String == "UNIQUE" {
@@ -1023,7 +1040,14 @@ func (i *mergedIndexMeta) assembleStorage(out io.Writer) error {
 			if _, err := out.Write([]byte("\n  FLASH_CACHE NONE")); err != nil {
 				return err
 			}
+		default:
+			// Unknown FlashCache value, use default
+			if _, err := out.Write([]byte("\n  FLASH_CACHE DEFAULT")); err != nil {
+				return err
+			}
 		}
+	default:
+		// No valid storage parameters found, this shouldn't happen as we check for them before calling this switch
 	}
 
 	if _, err := out.Write([]byte("\n)")); err != nil {

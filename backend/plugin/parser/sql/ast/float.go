@@ -18,6 +18,7 @@ func (f *Float) EquivalentType(tp string) bool {
 		return tp == "float4" || tp == "real"
 	case 8:
 		return tp == "float" || tp == "float8" || tp == "double precision"
+	default:
+		return false
 	}
-	return false
 }

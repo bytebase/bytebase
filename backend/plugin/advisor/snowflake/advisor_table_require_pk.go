@@ -143,6 +143,8 @@ func (l *tableRequirePkChecker) EnterOut_of_line_constraint(ctx *parser.Out_of_l
 	case currentConstraintActionDrop:
 		l.tableHasPrimaryKey[l.currentNormalizedTableName] = false
 		l.tableLine[l.currentNormalizedTableName] = ctx.GetStart().GetLine()
+	default:
+		// No action needed for other constraint actions
 	}
 }
 

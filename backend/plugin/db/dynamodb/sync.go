@@ -95,6 +95,8 @@ func (d *Driver) syncTable(ctx context.Context, tableName string) (*storepb.Tabl
 				hashKeyAttributes = append(hashKeyAttributes, *keySchema.AttributeName)
 			case types.KeyTypeRange:
 				rangeKeyAttributes = append(rangeKeyAttributes, *keySchema.AttributeName)
+			default:
+				// Unknown key type, ignore
 			}
 		}
 		tableMetadata.Indexes = append(tableMetadata.Indexes, &storepb.IndexMetadata{

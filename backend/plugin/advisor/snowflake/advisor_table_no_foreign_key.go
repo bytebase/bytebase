@@ -135,6 +135,8 @@ func (l *tableNoForeignKeyChecker) EnterOut_of_line_constraint(ctx *parser.Out_o
 		if times, ok := l.tableForeignKeyTimes[l.currentNormalizedTableName]; ok && times > 0 {
 			l.tableForeignKeyTimes[l.currentNormalizedTableName]--
 		}
+	default:
+		// No action needed for other constraint actions
 	}
 }
 

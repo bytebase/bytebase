@@ -2,8 +2,6 @@ package tests
 
 import (
 	"context"
-	"log"
-	"os"
 	"testing"
 )
 
@@ -11,10 +9,12 @@ func TestMain(m *testing.M) {
 	ctx := context.Background()
 	code, err := startMain(ctx, m)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	os.Exit(code)
+	if code != 0 {
+		panic("tests failed")
+	}
 }
 
 func startMain(ctx context.Context, m *testing.M) (int, error) {

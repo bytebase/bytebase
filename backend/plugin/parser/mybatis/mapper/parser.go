@@ -162,6 +162,7 @@ func (p *Parser) newNodeByStartElement(startElement *xml.StartElement) ast.Node 
 		return ast.NewIncludeNode(startElement)
 	case "property":
 		return ast.NewPropertyNode(startElement)
+	default:
+		return ast.NewEmptyNode()
 	}
-	return ast.NewEmptyNode()
 }

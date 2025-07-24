@@ -83,7 +83,7 @@ func (t *tableState) toString(buf *strings.Builder) error {
 	})
 	for i, column := range columns {
 		if i > 0 {
-			if _, err := fmt.Fprintf(buf, ",\n  "); err != nil {
+			if _, err := fmt.Fprint(buf, ",\n  "); err != nil {
 				return err
 			}
 		}

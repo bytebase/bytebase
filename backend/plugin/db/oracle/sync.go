@@ -558,6 +558,8 @@ func getTypeString(dataType string, dataLength, dataPrecision, dataScale sql.Nul
 			return fmt.Sprintf("%s(%d)", dataType, dataPrecision.Int64)
 		case dataPrecision.Valid && dataPrecision.Int64 > 0 && dataScale.Valid && dataScale.Int64 > 0:
 			return fmt.Sprintf("%s(%d,%d)", dataType, dataPrecision.Int64, dataScale.Int64)
+		default:
+			// do nothing
 		}
 	case "FLOAT":
 		switch {
@@ -565,7 +567,11 @@ func getTypeString(dataType string, dataLength, dataPrecision, dataScale sql.Nul
 		// do nothing
 		case dataPrecision.Valid && dataPrecision.Int64 > 0:
 			return fmt.Sprintf("%s(%d)", dataType, dataPrecision.Int64)
+		default:
+			// do nothing
 		}
+	default:
+		// return dataType as-is for unhandled types
 	}
 	return dataType
 }

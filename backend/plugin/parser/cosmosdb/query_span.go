@@ -168,11 +168,15 @@ func extractPathFromScalarExpression(ctx parser.IScalar_expressionContext, origi
 			// Rebuild the ast because of the different level of array index and array name.
 			last := path[len(path)-1]
 			path[len(path)-1] = base.NewArraySelector(last.GetIdentifier(), index)
+		default:
+			// Unsupported bracket expression type
 		}
 
 		return path
 	case ctx.Unary_operator() != nil:
 		return extractPathFromScalarExpression(ctx.Scalar_expression(), originalContainerName, fromAlias)
+	default:
+		// Unsupported scalar expression type
 	}
 
 	return nil

@@ -272,6 +272,8 @@ func (d *Driver) getTableInfo(ctx context.Context, tableName string, databaseNam
 			section = storageSection
 		case strings.HasPrefix(colName, "# View Information"):
 			section = viewSection
+		default:
+			// No action needed for other cases
 		}
 		switch section {
 		case columnSection:
@@ -303,6 +305,8 @@ func (d *Driver) getTableInfo(ctx context.Context, tableName string, databaseNam
 				tableInfo.totalSize = n
 			case trimField(dataType) == "comment":
 				tableInfo.comment = trimField(comment)
+			default:
+				// No action needed for other table info fields
 			}
 		case viewSection:
 			switch {
@@ -310,7 +314,11 @@ func (d *Driver) getTableInfo(ctx context.Context, tableName string, databaseNam
 				tableInfo.viewDef = trimField(dataType)
 			case strings.HasPrefix(colName, "Original Query:"):
 				tableInfo.viewDef = trimField(dataType)
+			default:
+				// No action needed for other view fields
 			}
+		default:
+			// No action needed for other sections
 		}
 	}
 

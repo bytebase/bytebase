@@ -161,8 +161,12 @@ func runAndWaitForPlanChecks(ctx context.Context, w *world.World, client *Client
 						errorCount++
 					case v1pb.PlanCheckRun_Result_WARNING:
 						warningCount++
+					default:
+						// Other result statuses don't affect counts
 					}
 				}
+			default:
+				// Other run statuses don't affect counts
 			}
 		}
 		if failedCount > 0 {

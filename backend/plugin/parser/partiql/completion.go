@@ -387,6 +387,8 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int) {
 				}
 			case partiqlparser.PartiQLLexerFROM:
 				found = true
+			default:
+				// Continue scanning for FROM clause
 			}
 		}
 		if !found {
@@ -424,6 +426,8 @@ func (c *Completer) collectRemainingTableReferences() {
 				if level == 0 {
 					found = true
 				}
+			default:
+				// Continue scanning
 			}
 		}
 

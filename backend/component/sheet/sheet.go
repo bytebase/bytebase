@@ -239,6 +239,8 @@ func syntaxCheck(dbType storepb.Engine, statement string) (any, []*storepb.Advic
 		return partiqlSyntaxCheck(statement)
 	case storepb.Engine_COCKROACHDB:
 		return cockroachdbSyntaxCheck(statement)
+	default:
+		// Return default advice for unsupported database types
 	}
 	return nil, []*storepb.Advice{
 		{

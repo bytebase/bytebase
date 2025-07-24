@@ -346,6 +346,8 @@ func removeRedundantTableOption(table *ast.CreateTableStmt, standard *ast.Create
 			if collation == nil {
 				continue
 			}
+		default:
+			// Keep other table options as-is
 		}
 		newOptionList = append(newOptionList, option)
 	}
