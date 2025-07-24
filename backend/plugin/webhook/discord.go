@@ -67,6 +67,9 @@ func (*DiscordReceiver) Post(context Context) error {
 		status = ":warning: "
 	case WebhookError:
 		status = ":exclamation: "
+	default:
+		// No status icon for other levels
+		status = ""
 	}
 	embedList = append(embedList, DiscordWebhookEmbed{
 		Title:       fmt.Sprintf("%s%s", status, context.Title),

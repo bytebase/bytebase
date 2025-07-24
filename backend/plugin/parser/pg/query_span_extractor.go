@@ -462,6 +462,8 @@ func (q *querySpanExtractor) extractTableSourceFromSystemFunction(node *pgquery.
 			Type:  "function",
 			Name:  funcName,
 		}
+	default:
+		// For unknown functions, continue with the generic handling below
 	}
 
 	if node.RangeFunction.Alias == nil {
@@ -731,8 +733,9 @@ func (q *querySpanExtractor) getColumnsForFunction(name, definition string) ([]b
 		return q.extractTableSourceFromSQLFunction(createFunc, name, asBody)
 	case languageTypePLPGSQL:
 		return q.extractTableSourceFromPLPGSQLFunction(createFunc, name, definition)
+	default:
+		return nil, errors.Errorf("unsupported language type: %d", language)
 	}
-	return nil, errors.Errorf("unsupported language type: %d", language)
 }
 
 func (q *querySpanExtractor) extractTableSourceFromPLPGSQLFunction(createFunc *pgquery.Node_CreateFunctionStmt, name, definition string) ([]base.QuerySpanResult, error) {

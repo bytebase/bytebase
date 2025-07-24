@@ -216,6 +216,8 @@ parse:
 				b.raw = append(b.raw[:i], b.raw[cend:]...)
 				break parse
 			}
+		default:
+			// Continue processing normal characters
 		}
 	}
 
@@ -278,6 +280,8 @@ func (*Batcher) readString(r []rune, i, end int, quote rune) (int, bool) {
 			quote == '"' && c == '"',
 			quote == '[' && c == ']':
 			return i, true
+		default:
+			// Continue scanning for string terminator
 		}
 		prev = c
 	}
