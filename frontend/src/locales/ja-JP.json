@@ -1081,8 +1081,6 @@
     "select-targets": "ターゲットを選択",
     "ready-for-review": "レビュー準備完了",
     "overview": {
-      "total-changes": "合計変更数",
-      "total-targets": "合計ターゲット",
       "no-checks": "チェックなし"
     },
     "navigator": {

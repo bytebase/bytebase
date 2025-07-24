@@ -1081,8 +1081,6 @@
     "select-targets": "Chọn mục tiêu",
     "ready-for-review": "Sẵn sàng để xem xét",
     "overview": {
-      "total-changes": "Tổng số thay đổi",
-      "total-targets": "Tổng số mục tiêu",
       "no-checks": "Không kiểm tra"
     },
     "navigator": {
