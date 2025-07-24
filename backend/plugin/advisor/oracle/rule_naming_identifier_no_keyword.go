@@ -65,7 +65,7 @@ func NewNamingIdentifierNoKeywordRule(level storepb.Advice_Status, title string,
 }
 
 // Name returns the rule name.
-func (r *NamingIdentifierNoKeywordRule) Name() string {
+func (*NamingIdentifierNoKeywordRule) Name() string {
 	return "naming.identifier-no-keyword"
 }
 
@@ -73,17 +73,17 @@ func (r *NamingIdentifierNoKeywordRule) Name() string {
 func (r *NamingIdentifierNoKeywordRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
 	case "Id_expression":
-		r.handleIdExpression(ctx.(*parser.Id_expressionContext))
+		r.handleIDExpression(ctx.(*parser.Id_expressionContext))
 	}
 	return nil
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *NamingIdentifierNoKeywordRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *NamingIdentifierNoKeywordRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	return nil
 }
 
-func (r *NamingIdentifierNoKeywordRule) handleIdExpression(ctx *parser.Id_expressionContext) {
+func (r *NamingIdentifierNoKeywordRule) handleIDExpression(ctx *parser.Id_expressionContext) {
 	identifier := normalizeIDExpression(ctx)
 	if plsqlparser.IsOracleKeyword(identifier) {
 		r.AddAdvice(

@@ -79,7 +79,7 @@ func NewColumnCommentConventionRule(level storepb.Advice_Status, title string, c
 }
 
 // Name returns the rule name.
-func (r *ColumnCommentConventionRule) Name() string {
+func (*ColumnCommentConventionRule) Name() string {
 	return "column.comment-convention"
 }
 
@@ -99,7 +99,7 @@ func (r *ColumnCommentConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeT
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *ColumnCommentConventionRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *ColumnCommentConventionRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
 	case "Create_table":
 		r.handleCreateTableExit()

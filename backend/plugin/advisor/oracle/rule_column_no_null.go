@@ -71,7 +71,7 @@ func NewColumnNoNullRule(level storepb.Advice_Status, title string, currentDatab
 }
 
 // Name returns the rule name.
-func (r *ColumnNoNullRule) Name() string {
+func (*ColumnNoNullRule) Name() string {
 	return "column.no-null"
 }
 

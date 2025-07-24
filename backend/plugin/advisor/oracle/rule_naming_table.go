@@ -73,7 +73,7 @@ func NewNamingTableRule(level storepb.Advice_Status, title string, currentDataba
 }
 
 // Name returns the rule name.
-func (r *NamingTableRule) Name() string {
+func (*NamingTableRule) Name() string {
 	return "naming.table"
 }
 
@@ -89,7 +89,7 @@ func (r *NamingTableRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) 
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *NamingTableRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *NamingTableRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	return nil
 }
 

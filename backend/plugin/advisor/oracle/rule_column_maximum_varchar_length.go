@@ -73,7 +73,7 @@ func NewColumnMaximumVarcharLengthRule(level storepb.Advice_Status, title string
 }
 
 // Name returns the rule name.
-func (r *ColumnMaximumVarcharLengthRule) Name() string {
+func (*ColumnMaximumVarcharLengthRule) Name() string {
 	return "column.maximum-varchar-length"
 }
 
@@ -87,7 +87,7 @@ func (r *ColumnMaximumVarcharLengthRule) OnEnter(ctx antlr.ParserRuleContext, no
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *ColumnMaximumVarcharLengthRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *ColumnMaximumVarcharLengthRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	return nil
 }
 

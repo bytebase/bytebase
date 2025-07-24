@@ -69,7 +69,7 @@ func NewTableNoForeignKeyRule(level storepb.Advice_Status, title string, current
 }
 
 // Name returns the rule name.
-func (r *TableNoForeignKeyRule) Name() string {
+func (*TableNoForeignKeyRule) Name() string {
 	return "table.no-foreign-key"
 }
 
@@ -87,7 +87,7 @@ func (r *TableNoForeignKeyRule) OnEnter(ctx antlr.ParserRuleContext, nodeType st
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *TableNoForeignKeyRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *TableNoForeignKeyRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
 	case "Create_table":
 		r.tableName = ""

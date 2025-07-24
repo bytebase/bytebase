@@ -73,9 +73,7 @@ func NewGenericChecker(rules []Rule) *GenericChecker {
 func (g *GenericChecker) EnterEveryRule(ctx antlr.ParserRuleContext) {
 	nodeType := g.getNodeType(ctx)
 	for _, rule := range g.rules {
-		if err := rule.OnEnter(ctx, nodeType); err != nil {
-			// TODO: Handle error if needed
-		}
+		_ = rule.OnEnter(ctx, nodeType)
 	}
 }
 
@@ -83,9 +81,7 @@ func (g *GenericChecker) EnterEveryRule(ctx antlr.ParserRuleContext) {
 func (g *GenericChecker) ExitEveryRule(ctx antlr.ParserRuleContext) {
 	nodeType := g.getNodeType(ctx)
 	for _, rule := range g.rules {
-		if err := rule.OnExit(ctx, nodeType); err != nil {
-			// TODO: Handle error if needed
-		}
+		_ = rule.OnExit(ctx, nodeType)
 	}
 }
 

@@ -69,7 +69,7 @@ func NewTableRequirePKRule(level storepb.Advice_Status, title string, currentDat
 }
 
 // Name returns the rule name.
-func (r *TableRequirePKRule) Name() string {
+func (*TableRequirePKRule) Name() string {
 	return "table.require-pk"
 }
 
@@ -95,7 +95,7 @@ func (r *TableRequirePKRule) OnEnter(ctx antlr.ParserRuleContext, nodeType strin
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *TableRequirePKRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *TableRequirePKRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
 	case "Create_table":
 		r.tableName = ""

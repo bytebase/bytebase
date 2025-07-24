@@ -67,7 +67,7 @@ func NewStatementDmlDryRunRule(ctx context.Context, level storepb.Advice_Status,
 }
 
 // Name returns the rule name.
-func (r *StatementDmlDryRunRule) Name() string {
+func (*StatementDmlDryRunRule) Name() string {
 	return "statement.dml-dry-run"
 }
 
@@ -87,7 +87,7 @@ func (r *StatementDmlDryRunRule) OnEnter(ctx antlr.ParserRuleContext, nodeType s
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *StatementDmlDryRunRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *StatementDmlDryRunRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	return nil
 }
 

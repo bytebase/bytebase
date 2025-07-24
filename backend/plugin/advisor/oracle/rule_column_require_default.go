@@ -68,7 +68,7 @@ func NewColumnRequireDefaultRule(level storepb.Advice_Status, title string, curr
 }
 
 // Name returns the rule name.
-func (r *ColumnRequireDefaultRule) Name() string {
+func (*ColumnRequireDefaultRule) Name() string {
 	return "column.require-default"
 }
 
@@ -88,7 +88,7 @@ func (r *ColumnRequireDefaultRule) OnEnter(ctx antlr.ParserRuleContext, nodeType
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *ColumnRequireDefaultRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *ColumnRequireDefaultRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
 	case "Create_table":
 		r.tableName = ""

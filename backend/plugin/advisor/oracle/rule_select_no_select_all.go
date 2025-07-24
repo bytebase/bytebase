@@ -63,21 +63,20 @@ func NewSelectNoSelectAllRule(level storepb.Advice_Status, title string, current
 }
 
 // Name returns the rule name.
-func (r *SelectNoSelectAllRule) Name() string {
+func (*SelectNoSelectAllRule) Name() string {
 	return "select.no-select-all"
 }
 
 // OnEnter is called when the parser enters a rule context.
 func (r *SelectNoSelectAllRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Selected_list":
+	if nodeType == "Selected_list" {
 		r.handleSelectedList(ctx.(*parser.Selected_listContext))
 	}
 	return nil
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *SelectNoSelectAllRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *SelectNoSelectAllRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	return nil
 }
 

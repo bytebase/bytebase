@@ -63,21 +63,20 @@ func NewInsertMustSpecifyColumnRule(level storepb.Advice_Status, title string, c
 }
 
 // Name returns the rule name.
-func (r *InsertMustSpecifyColumnRule) Name() string {
+func (*InsertMustSpecifyColumnRule) Name() string {
 	return "insert.must-specify-column"
 }
 
 // OnEnter is called when the parser enters a rule context.
 func (r *InsertMustSpecifyColumnRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Insert_into_clause":
+	if nodeType == "Insert_into_clause" {
 		r.handleInsertIntoClause(ctx.(*parser.Insert_into_clauseContext))
 	}
 	return nil
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *InsertMustSpecifyColumnRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *InsertMustSpecifyColumnRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	return nil
 }
 

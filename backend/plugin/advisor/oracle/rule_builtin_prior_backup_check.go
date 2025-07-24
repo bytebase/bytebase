@@ -200,23 +200,21 @@ func NewStatementPriorBackupCheckRule(ctx context.Context, level storepb.Advice_
 }
 
 // Name returns the rule name.
-func (r *StatementPriorBackupCheckRule) Name() string {
+func (*StatementPriorBackupCheckRule) Name() string {
 	return "builtin.prior-backup-check"
 }
 
 // OnEnter is called when the parser enters a rule context.
 func (r *StatementPriorBackupCheckRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Unit_statement":
+	if nodeType == "Unit_statement" {
 		r.handleUnitStatement(ctx.(*plsql.Unit_statementContext))
 	}
 	return nil
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *StatementPriorBackupCheckRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Sql_script":
+func (r *StatementPriorBackupCheckRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
+	if nodeType == "Sql_script" {
 		r.handleSQLScriptExit()
 	}
 	return nil

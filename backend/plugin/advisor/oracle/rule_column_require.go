@@ -79,7 +79,7 @@ func NewColumnRequireRule(level storepb.Advice_Status, title string, currentData
 }
 
 // Name returns the rule name.
-func (r *ColumnRequireRule) Name() string {
+func (*ColumnRequireRule) Name() string {
 	return "column.require"
 }
 

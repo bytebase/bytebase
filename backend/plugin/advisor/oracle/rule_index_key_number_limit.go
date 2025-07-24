@@ -65,16 +65,16 @@ type IndexKeyNumberLimitRule struct {
 }
 
 // NewIndexKeyNumberLimitRule creates a new IndexKeyNumberLimitRule.
-func NewIndexKeyNumberLimitRule(level storepb.Advice_Status, title string, currentDatabase string, max int) *IndexKeyNumberLimitRule {
+func NewIndexKeyNumberLimitRule(level storepb.Advice_Status, title string, currentDatabase string, maxKeys int) *IndexKeyNumberLimitRule {
 	return &IndexKeyNumberLimitRule{
 		BaseRule:        NewBaseRule(level, title, 0),
 		currentDatabase: currentDatabase,
-		max:             max,
+		max:             maxKeys,
 	}
 }
 
 // Name returns the rule name.
-func (r *IndexKeyNumberLimitRule) Name() string {
+func (*IndexKeyNumberLimitRule) Name() string {
 	return "index.key-number-limit"
 }
 
@@ -90,7 +90,7 @@ func (r *IndexKeyNumberLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType 
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *IndexKeyNumberLimitRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *IndexKeyNumberLimitRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	return nil
 }
 

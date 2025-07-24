@@ -64,7 +64,7 @@ func NewStatementDisallowMixInDMLRule(level storepb.Advice_Status, title string)
 }
 
 // Name returns the rule name.
-func (r *StatementDisallowMixInDMLRule) Name() string {
+func (*StatementDisallowMixInDMLRule) Name() string {
 	return "statement.disallow-mix-in-dml"
 }
 

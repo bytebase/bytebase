@@ -64,7 +64,7 @@ func NewWhereNoLeadingWildcardLikeRule(level storepb.Advice_Status, title string
 }
 
 // Name returns the rule name.
-func (r *WhereNoLeadingWildcardLikeRule) Name() string {
+func (*WhereNoLeadingWildcardLikeRule) Name() string {
 	return "where.no-leading-wildcard-like"
 }
 
@@ -78,7 +78,7 @@ func (r *WhereNoLeadingWildcardLikeRule) OnEnter(ctx antlr.ParserRuleContext, no
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *WhereNoLeadingWildcardLikeRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *WhereNoLeadingWildcardLikeRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	return nil
 }
 

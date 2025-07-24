@@ -71,7 +71,7 @@ func NewNamingIdentifierCaseRule(level storepb.Advice_Status, title string, curr
 }
 
 // Name returns the rule name.
-func (r *NamingIdentifierCaseRule) Name() string {
+func (*NamingIdentifierCaseRule) Name() string {
 	return "naming.identifier-case"
 }
 
@@ -79,17 +79,17 @@ func (r *NamingIdentifierCaseRule) Name() string {
 func (r *NamingIdentifierCaseRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {
 	case "Id_expression":
-		r.handleIdExpression(ctx.(*parser.Id_expressionContext))
+		r.handleIDExpression(ctx.(*parser.Id_expressionContext))
 	}
 	return nil
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *NamingIdentifierCaseRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *NamingIdentifierCaseRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	return nil
 }
 
-func (r *NamingIdentifierCaseRule) handleIdExpression(ctx *parser.Id_expressionContext) {
+func (r *NamingIdentifierCaseRule) handleIDExpression(ctx *parser.Id_expressionContext) {
 	identifier := normalizeIDExpression(ctx)
 	if r.upper {
 		if identifier != strings.ToUpper(identifier) {

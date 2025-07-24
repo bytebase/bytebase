@@ -66,7 +66,7 @@ func NewColumnAddNotNullColumnRequireDefaultRule(level storepb.Advice_Status, ti
 }
 
 // Name returns the rule name.
-func (r *ColumnAddNotNullColumnRequireDefaultRule) Name() string {
+func (*ColumnAddNotNullColumnRequireDefaultRule) Name() string {
 	return "column.add-not-null-column-require-default"
 }
 

@@ -63,14 +63,13 @@ func NewStatementDisallowMixInDDLRule(level storepb.Advice_Status, title string)
 }
 
 // Name returns the rule name.
-func (r *StatementDisallowMixInDDLRule) Name() string {
+func (*StatementDisallowMixInDDLRule) Name() string {
 	return "statement.disallow-mix-in-ddl"
 }
 
 // OnEnter is called when the parser enters a rule context.
 func (r *StatementDisallowMixInDDLRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Unit_statement":
+	if nodeType == "Unit_statement" {
 		r.handleUnitStatement(ctx.(*parser.Unit_statementContext))
 	}
 	return nil

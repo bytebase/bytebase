@@ -78,7 +78,7 @@ func NewTableCommentConventionRule(level storepb.Advice_Status, title string, cu
 }
 
 // Name returns the rule name.
-func (r *TableCommentConventionRule) Name() string {
+func (*TableCommentConventionRule) Name() string {
 	return "table.comment-convention"
 }
 
@@ -94,7 +94,7 @@ func (r *TableCommentConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeTy
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *TableCommentConventionRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *TableCommentConventionRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	return nil
 }
 

@@ -63,7 +63,7 @@ func NewWhereRequireForUpdateDeleteRule(level storepb.Advice_Status, title strin
 }
 
 // Name returns the rule name.
-func (r *WhereRequireForUpdateDeleteRule) Name() string {
+func (*WhereRequireForUpdateDeleteRule) Name() string {
 	return "where.require-for-update-delete"
 }
 
@@ -79,7 +79,7 @@ func (r *WhereRequireForUpdateDeleteRule) OnEnter(ctx antlr.ParserRuleContext, n
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *WhereRequireForUpdateDeleteRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *WhereRequireForUpdateDeleteRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	return nil
 }
 

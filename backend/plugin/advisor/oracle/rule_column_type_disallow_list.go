@@ -72,7 +72,7 @@ func NewColumnTypeDisallowListRule(level storepb.Advice_Status, title string, cu
 }
 
 // Name returns the rule name.
-func (r *ColumnTypeDisallowListRule) Name() string {
+func (*ColumnTypeDisallowListRule) Name() string {
 	return "column.type-disallow-list"
 }
 
@@ -88,7 +88,7 @@ func (r *ColumnTypeDisallowListRule) OnEnter(ctx antlr.ParserRuleContext, nodeTy
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *ColumnTypeDisallowListRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *ColumnTypeDisallowListRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	return nil
 }
 

@@ -64,7 +64,7 @@ func NewWhereRequireForSelectRule(level storepb.Advice_Status, title string, cur
 }
 
 // Name returns the rule name.
-func (r *WhereRequireForSelectRule) Name() string {
+func (*WhereRequireForSelectRule) Name() string {
 	return "where.require-for-select"
 }
 
@@ -78,7 +78,7 @@ func (r *WhereRequireForSelectRule) OnEnter(ctx antlr.ParserRuleContext, nodeTyp
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *WhereRequireForSelectRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *WhereRequireForSelectRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	return nil
 }
 

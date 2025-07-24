@@ -65,7 +65,7 @@ func NewNamingTableNoKeywordRule(level storepb.Advice_Status, title string, curr
 }
 
 // Name returns the rule name.
-func (r *NamingTableNoKeywordRule) Name() string {
+func (*NamingTableNoKeywordRule) Name() string {
 	return "naming.table-no-keyword"
 }
 
@@ -81,7 +81,7 @@ func (r *NamingTableNoKeywordRule) OnEnter(ctx antlr.ParserRuleContext, nodeType
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *NamingTableNoKeywordRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *NamingTableNoKeywordRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	return nil
 }
 

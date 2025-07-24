@@ -73,7 +73,7 @@ func NewColumnMaximumCharacterLengthRule(level storepb.Advice_Status, title stri
 }
 
 // Name returns the rule name.
-func (r *ColumnMaximumCharacterLengthRule) Name() string {
+func (*ColumnMaximumCharacterLengthRule) Name() string {
 	return "column.maximum-character-length"
 }
 
@@ -87,7 +87,7 @@ func (r *ColumnMaximumCharacterLengthRule) OnEnter(ctx antlr.ParserRuleContext, 
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *ColumnMaximumCharacterLengthRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
+func (r *ColumnMaximumCharacterLengthRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
 	return nil
 }
 
