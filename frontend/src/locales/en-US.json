@@ -1081,8 +1081,6 @@
     "select-targets": "Select Targets",
     "ready-for-review": "Ready for Review",
     "overview": {
-      "total-changes": "Total Changes",
-      "total-targets": "Total Targets",
       "no-checks": "No checks"
     },
     "navigator": {
