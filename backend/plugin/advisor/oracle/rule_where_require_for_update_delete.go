@@ -79,7 +79,7 @@ func (r *WhereRequireForUpdateDeleteRule) OnEnter(ctx antlr.ParserRuleContext, n
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *WhereRequireForUpdateDeleteRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
+func (*WhereRequireForUpdateDeleteRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 

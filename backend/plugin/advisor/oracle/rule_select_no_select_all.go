@@ -76,7 +76,7 @@ func (r *SelectNoSelectAllRule) OnEnter(ctx antlr.ParserRuleContext, nodeType st
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *SelectNoSelectAllRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
+func (*SelectNoSelectAllRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 

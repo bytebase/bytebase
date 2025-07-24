@@ -70,15 +70,14 @@ func (*WhereRequireForSelectRule) Name() string {
 
 // OnEnter is called when the parser enters a rule context.
 func (r *WhereRequireForSelectRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Query_block":
+	if nodeType == "Query_block" {
 		r.handleQueryBlock(ctx.(*parser.Query_blockContext))
 	}
 	return nil
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *WhereRequireForSelectRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
+func (*WhereRequireForSelectRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 

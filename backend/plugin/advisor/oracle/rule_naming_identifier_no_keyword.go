@@ -71,15 +71,14 @@ func (*NamingIdentifierNoKeywordRule) Name() string {
 
 // OnEnter is called when the parser enters a rule context.
 func (r *NamingIdentifierNoKeywordRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Id_expression":
+	if nodeType == "Id_expression" {
 		r.handleIDExpression(ctx.(*parser.Id_expressionContext))
 	}
 	return nil
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *NamingIdentifierNoKeywordRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
+func (*NamingIdentifierNoKeywordRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 

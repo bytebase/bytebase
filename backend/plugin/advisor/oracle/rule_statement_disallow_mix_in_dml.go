@@ -70,15 +70,14 @@ func (*StatementDisallowMixInDMLRule) Name() string {
 
 // OnEnter is called when the parser enters a rule context.
 func (r *StatementDisallowMixInDMLRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Unit_statement":
+	if nodeType == "Unit_statement" {
 		r.handleUnitStatement(ctx.(*parser.Unit_statementContext))
 	}
 	return nil
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *StatementDisallowMixInDMLRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+func (*StatementDisallowMixInDMLRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 

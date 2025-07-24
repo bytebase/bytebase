@@ -70,15 +70,14 @@ func (*WhereNoLeadingWildcardLikeRule) Name() string {
 
 // OnEnter is called when the parser enters a rule context.
 func (r *WhereNoLeadingWildcardLikeRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Compound_expression":
+	if nodeType == "Compound_expression" {
 		r.handleCompoundExpression(ctx.(*parser.Compound_expressionContext))
 	}
 	return nil
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *WhereNoLeadingWildcardLikeRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
+func (*WhereNoLeadingWildcardLikeRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 

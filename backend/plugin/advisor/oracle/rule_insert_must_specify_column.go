@@ -76,7 +76,7 @@ func (r *InsertMustSpecifyColumnRule) OnEnter(ctx antlr.ParserRuleContext, nodeT
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *InsertMustSpecifyColumnRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
+func (*InsertMustSpecifyColumnRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 

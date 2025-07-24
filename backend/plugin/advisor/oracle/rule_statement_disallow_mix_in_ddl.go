@@ -76,7 +76,7 @@ func (r *StatementDisallowMixInDDLRule) OnEnter(ctx antlr.ParserRuleContext, nod
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *StatementDisallowMixInDDLRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
+func (*StatementDisallowMixInDDLRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 

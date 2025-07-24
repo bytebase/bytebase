@@ -89,7 +89,7 @@ func (r *NamingTableRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) 
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *NamingTableRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
+func (*NamingTableRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 

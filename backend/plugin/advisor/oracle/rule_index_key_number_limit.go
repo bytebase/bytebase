@@ -90,7 +90,7 @@ func (r *IndexKeyNumberLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType 
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *IndexKeyNumberLimitRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
+func (*IndexKeyNumberLimitRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 

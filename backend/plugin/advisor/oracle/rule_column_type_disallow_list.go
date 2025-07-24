@@ -88,7 +88,7 @@ func (r *ColumnTypeDisallowListRule) OnEnter(ctx antlr.ParserRuleContext, nodeTy
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *ColumnTypeDisallowListRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
+func (*ColumnTypeDisallowListRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 

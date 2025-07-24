@@ -79,15 +79,14 @@ func (*ColumnMaximumCharacterLengthRule) Name() string {
 
 // OnEnter is called when the parser enters a rule context.
 func (r *ColumnMaximumCharacterLengthRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Datatype":
+	if nodeType == "Datatype" {
 		r.handleDatatype(ctx.(*parser.DatatypeContext))
 	}
 	return nil
 }
 
 // OnExit is called when the parser exits a rule context.
-func (r *ColumnMaximumCharacterLengthRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
+func (*ColumnMaximumCharacterLengthRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 
