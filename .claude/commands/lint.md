@@ -7,6 +7,7 @@ Run linting and type checking on files that have been modified compared to the m
 1. **Identify changed files**
    - Get list of modified Go files: `git diff --name-only main...HEAD | grep '\.go$'`
    - Get list of modified frontend files: `git diff --name-only main...HEAD | grep '^frontend/' | grep -E '\.(ts|tsx|vue|js|jsx)$'`
+   - Get list of modified proto files: `git diff --name-only main...HEAD | grep '\.proto$'`
 
 2. **Run Go linting on changed files**
    ```bash
@@ -35,7 +36,18 @@ Run linting and type checking on files that have been modified compared to the m
    fi
    ```
 
-4. **Complete lint command**
+4. **Run protobuf formatting**
+   ```bash
+   # Check if any proto files changed
+   if git diff --name-only main...HEAD | grep -q '\.proto$'; then
+     echo "Running buf format on proto files..."
+     buf format -w proto
+   else
+     echo "No proto files changed"
+   fi
+   ```
+
+5. **Complete lint command**
    ```bash
    # Combined script to lint all changed files
    echo "Checking for changed files..."
@@ -54,6 +66,12 @@ Run linting and type checking on files that have been modified compared to the m
      pnpm --dir frontend type-check
    fi
    
+   # Format proto files
+   if git diff --name-only main...HEAD | grep -q '\.proto$' 2>/dev/null; then
+     echo "Formatting proto files..."
+     buf format -w proto
+   fi
+   
    echo "Lint check complete!"
    ```
 
@@ -62,3 +80,4 @@ Run linting and type checking on files that have been modified compared to the m
 - Frontend lint runs on the entire frontend directory when any frontend file changes
 - Use `--fix` flag with frontend lint to auto-fix issues
 - Run golangci-lint multiple times if needed until no issues remain (due to max-issues limit)
+- buf format will automatically format all proto files in the proto directory when any proto file changes
