@@ -1077,7 +1077,7 @@ func convertInstanceMessageToInstanceResource(instanceMessage *store.InstanceMes
 		DataSources:   instance.DataSources,
 		Activation:    instance.Activation,
 		Environment:   instance.Environment,
-	}, nil
+	}
 }
 
 func convertV1DataSources(dataSources []*v1pb.DataSource) ([]*storepb.DataSource, error) {
