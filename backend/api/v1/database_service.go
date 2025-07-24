@@ -1206,10 +1206,7 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 	if database.EffectiveEnvironmentID != "" {
 		effectiveEnvironment = common.FormatEnvironment(database.EffectiveEnvironmentID)
 	}
-	instanceResource, err := convertInstanceMessageToInstanceResource(instance)
-	if err != nil {
-		return nil, err
-	}
+	instanceResource := convertInstanceMessageToInstanceResource(instance)
 	return &v1pb.Database{
 		Name:                 common.FormatDatabase(database.InstanceID, database.DatabaseName),
 		State:                convertDeletedToState(database.Deleted),

@@ -64,10 +64,7 @@ func (s *InstanceService) GetInstance(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, err
 	}
-	result, err := convertInstanceMessage(instance)
-	if err != nil {
-		return nil, err
-	}
+	result := convertInstanceMessage(instance)
 	return connect.NewResponse(result), nil
 }
 
@@ -238,10 +235,7 @@ func (s *InstanceService) ListInstances(ctx context.Context, req *connect.Reques
 		NextPageToken: nextPageToken,
 	}
 	for _, instance := range instances {
-		ins, err := convertInstanceMessage(instance)
-		if err != nil {
-			return nil, err
-		}
+		ins := convertInstanceMessage(instance)
 		response.Instances = append(response.Instances, ins)
 	}
 	return connect.NewResponse(response), nil
@@ -322,10 +316,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 			}
 		}
 
-		result, err := convertInstanceMessage(instanceMessage)
-		if err != nil {
-			return nil, err
-		}
+		result := convertInstanceMessage(instanceMessage)
 		return connect.NewResponse(result), nil
 	}
 
@@ -372,10 +363,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		},
 	})
 
-	result, err := convertInstanceMessage(instance)
-	if err != nil {
-		return nil, err
-	}
+	result := convertInstanceMessage(instance)
 	return connect.NewResponse(result), nil
 }
 
@@ -506,10 +494,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	result, err := convertInstanceMessage(ins)
-	if err != nil {
-		return nil, err
-	}
+	result := convertInstanceMessage(ins)
 	return connect.NewResponse(result), nil
 }
 
@@ -583,10 +568,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	result, err := convertInstanceMessage(ins)
-	if err != nil {
-		return nil, err
-	}
+	result := convertInstanceMessage(ins)
 	return connect.NewResponse(result), nil
 }
 
@@ -709,10 +691,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 		if err != nil {
 			return nil, err
 		}
-		result, err := convertInstanceMessage(instance)
-		if err != nil {
-			return nil, err
-		}
+		result := convertInstanceMessage(instance)
 		return connect.NewResponse(result), nil
 	}
 
@@ -733,10 +712,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	result, err := convertInstanceMessage(instance)
-	if err != nil {
-		return nil, err
-	}
+	result := convertInstanceMessage(instance)
 	return connect.NewResponse(result), nil
 }
 
@@ -912,10 +888,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		if err != nil {
 			return nil, err
 		}
-		result, err := convertInstanceMessage(instance)
-		if err != nil {
-			return nil, err
-		}
+		result := convertInstanceMessage(instance)
 		return connect.NewResponse(result), nil
 	}
 
@@ -923,10 +896,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	result, err := convertInstanceMessage(instance)
-	if err != nil {
-		return nil, err
-	}
+	result := convertInstanceMessage(instance)
 	return connect.NewResponse(result), nil
 }
 
@@ -979,10 +949,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	result, err := convertInstanceMessage(instance)
-	if err != nil {
-		return nil, err
-	}
+	result := convertInstanceMessage(instance)
 	return connect.NewResponse(result), nil
 }
 
@@ -1024,12 +991,9 @@ func buildEnvironmentName(environmentID string) string {
 	return b.String()
 }
 
-func convertInstanceMessage(instance *store.InstanceMessage) (*v1pb.Instance, error) {
+func convertInstanceMessage(instance *store.InstanceMessage) *v1pb.Instance {
 	engine := convertToEngine(instance.Metadata.GetEngine())
-	dataSources, err := convertDataSources(instance.Metadata.GetDataSources())
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert data source"))
-	}
+	dataSources := convertDataSources(instance.Metadata.GetDataSources())
 
 	return &v1pb.Instance{
 		Name:               buildInstanceName(instance.ResourceID),
@@ -1046,7 +1010,7 @@ func convertInstanceMessage(instance *store.InstanceMessage) (*v1pb.Instance, er
 		SyncDatabases:      instance.Metadata.GetSyncDatabases(),
 		Roles:              convertInstanceRoles(instance, instance.Metadata.GetRoles()),
 		LastSyncTime:       instance.Metadata.GetLastSyncTime(),
-	}, nil
+	}
 }
 
 // buildRoleName builds the role name with the given instance ID and role name.
@@ -1103,11 +1067,8 @@ func convertInstanceToInstanceMessage(instanceID string, instance *v1pb.Instance
 	}, nil
 }
 
-func convertInstanceMessageToInstanceResource(instanceMessage *store.InstanceMessage) (*v1pb.InstanceResource, error) {
-	instance, err := convertInstanceMessage(instanceMessage)
-	if err != nil {
-		return nil, err
-	}
+func convertInstanceMessageToInstanceResource(instanceMessage *store.InstanceMessage) *v1pb.InstanceResource {
+	instance := convertInstanceMessage(instanceMessage)
 	return &v1pb.InstanceResource{
 		Name:          instance.Name,
 		Title:         instance.Title,
@@ -1167,7 +1128,7 @@ func convertDataSourceExternalSecret(externalSecret *storepb.DataSourceExternalS
 	return resp
 }
 
-func convertDataSources(dataSources []*storepb.DataSource) ([]*v1pb.DataSource, error) {
+func convertDataSources(dataSources []*storepb.DataSource) []*v1pb.DataSource {
 	var v1DataSources []*v1pb.DataSource
 	for _, ds := range dataSources {
 		externalSecret := convertDataSourceExternalSecret(ds.GetExternalSecret())
@@ -1249,7 +1210,7 @@ func convertDataSources(dataSources []*storepb.DataSource) ([]*v1pb.DataSource, 
 		v1DataSources = append(v1DataSources, dataSource)
 	}
 
-	return v1DataSources, nil
+	return v1DataSources
 }
 
 func convertV1DataSourceExternalSecret(externalSecret *v1pb.DataSourceExternalSecret) (*storepb.DataSourceExternalSecret, error) {
