@@ -73,6 +73,8 @@ func (r *NamingTableNoKeywordRule) OnEnter(ctx antlr.ParserRuleContext, nodeType
 		r.enterCreateTable(ctx.(*parser.Create_tableContext))
 	case NodeTypeAlterTable:
 		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }

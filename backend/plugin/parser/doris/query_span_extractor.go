@@ -104,6 +104,8 @@ func (l *accessTableListener) EnterTableAtom(ctx *parser.TableAtomContext) {
 			Database: list[0],
 			Table:    list[1],
 		}] = true
+	default:
+		// Ignore qualified names with more than 2 parts
 	}
 }
 

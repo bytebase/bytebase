@@ -111,6 +111,8 @@ func (v *indexPrimaryKeyTypeAllowlistChecker) Enter(in ast.Node) (ast.Node, bool
 				}
 				pds := v.changeColumn(tableName, oldColumnName, node.OriginTextPosition(), newColumnDef)
 				pkDataList = append(pkDataList, pds...)
+			default:
+				// Ignore other alter table specs
 			}
 		}
 	}

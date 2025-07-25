@@ -158,6 +158,7 @@ func needSemicolon(stmt parser.IUnit_statementContext) bool {
 		stmt.Create_package_body() != nil,
 		stmt.Create_trigger() != nil:
 		return true
+	default:
+		return false
 	}
-	return false
 }

@@ -239,6 +239,8 @@ func getDriver(ctx context.Context, engine storepb.Engine, container *testcontai
 	case storepb.Engine_MSSQL:
 		config.DataSource.Username = "sa"
 		config.Password = "Test123!"
+	default:
+		// Use default config for other engines
 	}
 
 	driver, err := db.Open(ctx, engine, config)

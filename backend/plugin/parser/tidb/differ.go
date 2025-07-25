@@ -316,6 +316,9 @@ func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) {
 					},
 				},
 			})
+		default:
+			// Skip other constraint types (e.g., key, index, unique)
+			// These are handled separately by diffIndex
 		}
 	}
 
@@ -352,6 +355,8 @@ func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) {
 					},
 				},
 			})
+		default:
+			// Skip other constraint types
 		}
 	}
 }
@@ -938,6 +943,8 @@ func getID(node ast.Node) string {
 				return in.Table.Name.String()
 			case ast.AlterTableDropCheck:
 				return fmt.Sprintf("%s.%s", in.Table.Name.String(), spec.Constraint.Name)
+			default:
+				return in.Table.Name.String()
 			}
 		}
 	case *ast.CreateIndexStmt:
@@ -1578,6 +1585,8 @@ func normalizeColumnOptions(options []*ast.ColumnOption) (*ast.ColumnOption, []*
 			if option.Expr.GetType().GetType() == mysql.TypeNull {
 				continue
 			}
+		default:
+			// Include all other column options
 		}
 		retOptions = append(retOptions, option)
 	}
@@ -1872,6 +1881,8 @@ func diffTableOptions(tableName *ast.TableName, o, n []*ast.TableOption) *ast.Al
 			// we skip drop them.
 			case ast.TableOptionEngine, ast.TableOptionCharset, ast.TableOptionCollate:
 				continue
+			default:
+				// Drop other table options
 			}
 			// We should drop the table option if it doesn't exist in the new table options.
 			if astOption := dropTableOption(oldOption); astOption != nil {
@@ -2031,6 +2042,8 @@ func dropTableOption(option *ast.TableOption) *ast.TableOption {
 		// TODO(zp): handle the table space
 	case ast.TableOptionUnion:
 		// TODO(zp): handle the union
+	default:
+		// Return nil for unhandled table options
 	}
 	return nil
 }
@@ -2118,8 +2131,10 @@ func isTableOptionValEqual(o, n *ast.TableOption) bool {
 			}
 		}
 		return true
+	default:
+		// For unknown option types, consider them equal
+		return true
 	}
-	return true
 }
 
 // isViewEqual checks whether two views with same name are equal.

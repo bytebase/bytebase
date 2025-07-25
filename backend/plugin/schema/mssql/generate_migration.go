@@ -79,6 +79,8 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 				_, _ = buf.WriteString(fk.Name)
 				_, _ = buf.WriteString("];\n")
 			}
+		default:
+			// Ignore other actions for this phase
 		}
 	}
 
@@ -456,6 +458,8 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 				_, _ = buf.WriteString(";")
 			}
 			_, _ = buf.WriteString("\nGO\n")
+		default:
+			// Ignore other actions
 		}
 	}
 
@@ -530,6 +534,9 @@ func generateCreateTable(schemaName, tableName string, table *storepb.TableMetad
 			case "CLUSTERED":
 				_, _ = buf.WriteString(" CLUSTERED")
 			case "NONCLUSTERED":
+				_, _ = buf.WriteString(" NONCLUSTERED")
+			default:
+				// Default to NONCLUSTERED if not specified
 				_, _ = buf.WriteString(" NONCLUSTERED")
 			}
 			_, _ = buf.WriteString(" (")

@@ -388,6 +388,9 @@ func waitForRollout(ctx context.Context, w *world.World, client *Client, pending
 				done = false
 			case v1pb.Task_DONE:
 			case v1pb.Task_SKIPPED:
+			default:
+				// Treat unknown task status as not done to be safe
+				done = false
 			}
 		}
 		if foundFailed {

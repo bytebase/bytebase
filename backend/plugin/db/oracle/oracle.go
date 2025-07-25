@@ -397,6 +397,8 @@ func skipAddLimit(stmt string) (bool, error) {
 		return false, nil
 	case len(selectStatement.AllFetch_clause()) != 0:
 		return false, nil
+	default:
+		// No additional clauses
 	}
 
 	selectOnly := selectStatement.Select_only_statement()
@@ -440,6 +442,8 @@ func skipAddLimit(stmt string) (bool, error) {
 		queryBlock.Order_by_clause() != nil,
 		queryBlock.Fetch_clause() != nil:
 		return false, nil
+	default:
+		// Query block has no special clauses
 	}
 
 	from := queryBlock.From_clause()

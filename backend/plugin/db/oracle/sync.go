@@ -743,6 +743,8 @@ func getConstraints(txn *sql.Tx, schemaName string) (
 				}
 				foreignKeyMap[key] = append(foreignKeyMap[key], foreignKey)
 			}
+		default:
+			// Ignore other constraint types
 		}
 	}
 	if err := constraintRows.Err(); err != nil {

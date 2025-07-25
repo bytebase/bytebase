@@ -552,6 +552,9 @@ func getColumnType(definition, typeName sql.NullString, isComputed, isPersisted 
 				}
 			}
 		}
+	default:
+		// For other types, no additional formatting is needed
+		// The type name has already been written to the buffer
 	}
 	return buf.String(), nil
 }

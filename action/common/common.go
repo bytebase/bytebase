@@ -1,3 +1,4 @@
+//nolint:revive
 package common
 
 func ConvertLineToActionLine(line int) int {
