@@ -319,6 +319,8 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			if err := writeCreateOrReplaceView(buf, viewDiff.ViewName, viewDiff.NewView); err != nil {
 				return err
 			}
+		default:
+			// No action needed for other diff actions
 		}
 	}
 
@@ -570,6 +572,9 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 				_, _ = buf.WriteString("STORED")
 			case storepb.GenerationMetadata_TYPE_VIRTUAL:
 				_, _ = buf.WriteString("VIRTUAL")
+			default:
+				// Default to VIRTUAL for unknown types
+				_, _ = buf.WriteString("VIRTUAL")
 			}
 		}
 
@@ -707,6 +712,9 @@ func writeAddColumn(buf *strings.Builder, table string, column *storepb.ColumnMe
 			_, _ = buf.WriteString("STORED")
 		case storepb.GenerationMetadata_TYPE_VIRTUAL:
 			_, _ = buf.WriteString("VIRTUAL")
+		default:
+			// Default to VIRTUAL for unknown types
+			_, _ = buf.WriteString("VIRTUAL")
 		}
 	}
 
@@ -767,6 +775,9 @@ func writeModifyColumn(buf *strings.Builder, table string, column *storepb.Colum
 		case storepb.GenerationMetadata_TYPE_STORED:
 			_, _ = buf.WriteString("STORED")
 		case storepb.GenerationMetadata_TYPE_VIRTUAL:
+			_, _ = buf.WriteString("VIRTUAL")
+		default:
+			// Default to VIRTUAL for unknown types
 			_, _ = buf.WriteString("VIRTUAL")
 		}
 	}

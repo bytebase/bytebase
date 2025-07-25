@@ -508,6 +508,8 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 		case antlr.ATNStateRuleStop:
 			result[currentEntry.TokenIndex] = true
 			continue
+		default:
+			// Other state types don't require special handling
 		}
 
 		for _, t := range currentEntry.State.GetTransitions() {
@@ -538,6 +540,8 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 					if c.lastShadowQueryRuleContext != nil {
 						c.lastShadowQueryRuleContext.CTEList = append(c.lastShadowQueryRuleContext.CTEList, c.tokens[currentEntry.TokenIndex].StartPosition)
 					}
+				default:
+					// Other rule indices don't require special handling
 				}
 			case *antlr.PredicateTransition:
 				if checkPredicate(c.parser, transition) {

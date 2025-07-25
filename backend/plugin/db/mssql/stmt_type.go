@@ -46,6 +46,9 @@ func (l *stmtTypeListener) EnterBatch_without_go(ctx *rawparser.Batch_without_go
 		l.stmtType = stmtTypeUnknown
 	case ctx.Execute_body_batch() != nil:
 		l.err = errors.Errorf("unsupported execute func proc")
+	default:
+		// For any other unhandled cases, set the statement type to unknown
+		l.stmtType = stmtTypeUnknown
 	}
 }
 
@@ -70,6 +73,8 @@ func getStmtTypeFromSQLClauses(ctx rawparser.ISql_clausesContext) (stmtType, err
 		return stmtTypeUnknown, nil
 	case ctx.Backup_statement() != nil:
 		return stmtTypeUnknown, nil
+	default:
+		// For any unhandled SQL clause types, return unknown
+		return stmtTypeUnknown, nil
 	}
-	return stmtTypeUnknown, nil
 }

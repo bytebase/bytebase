@@ -123,6 +123,8 @@ func (checker *disallowOfflineDdlChecker) EnterAlterTable(ctx *mysql.AlterTableC
 				if item.TableConstraintDef().PRIMARY_SYMBOL() != nil && item.TableConstraintDef().KEY_SYMBOL() != nil {
 					checker.advice(ctx, "Adding primary keys")
 				}
+			default:
+				// Skip other ADD operations
 			}
 		// modify column
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
@@ -148,10 +150,14 @@ func (checker *disallowOfflineDdlChecker) EnterAlterTable(ctx *mysql.AlterTableC
 			// drop primary key
 			case item.PRIMARY_SYMBOL() != nil && item.KEY_SYMBOL() != nil:
 				checker.advice(ctx, "Dropping primary keys")
+			default:
+				// Skip other DROP operations
 			}
 		// change charset or collate
 		case item.Charset() != nil || item.Collate() != nil:
 			checker.advice(ctx, "Changing charset or collate")
+		default:
+			// Skip other ALTER TABLE operations
 		}
 	}
 }
@@ -184,6 +190,8 @@ func (checker *disallowOfflineDdlChecker) EnterAlterPartition(ctx *mysql.AlterPa
 		checker.advice(ctx, "Dropping partitions")
 	case ctx.TRUNCATE_SYMBOL() != nil:
 		checker.advice(ctx, "Truncating partitions")
+	default:
+		// Skip other partition operations
 	}
 }
 

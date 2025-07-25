@@ -103,6 +103,8 @@ func (checker *columnAutoIncrementMustIntegerChecker) Enter(in ast.Node) (ast.No
 						line:   node.OriginTextPosition(),
 					})
 				}
+			default:
+				// Ignore other alter table specs
 			}
 		}
 	}

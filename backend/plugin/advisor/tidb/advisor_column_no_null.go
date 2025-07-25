@@ -151,6 +151,8 @@ func (checker *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
 				if _, exists := checker.columnSet[col.name()]; !exists {
 					checker.columnSet[col.name()] = col
 				}
+			default:
+				// Skip other alter table specification types
 			}
 		}
 	}

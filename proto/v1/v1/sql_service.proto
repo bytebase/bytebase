@@ -462,14 +462,6 @@ message CheckResponse {
   int32 affected_rows = 2;
 }
 
-message ParseMyBatisMapperRequest {
-  bytes content = 1;
-}
-
-message ParseMyBatisMapperResponse {
-  repeated string statements = 1;
-}
-
 message DiffMetadataRequest {
   // The metadata of the source schema.
   DatabaseMetadata source_metadata = 1 [(google.api.field_behavior) = REQUIRED];

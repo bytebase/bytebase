@@ -321,6 +321,8 @@ func deparseIndexMethod(method ast.IndexMethodType, buf *strings.Builder) (err e
 		_, err = buf.WriteString("brin")
 	case ast.IndexMethodTypeIvfflat:
 		_, err = buf.WriteString("ivfflat")
+	default:
+		return errors.Errorf("unsupported index method type: %v", method)
 	}
 	return err
 }
@@ -345,6 +347,8 @@ func deparseIndexKey(context DeparseContext, in *ast.IndexKeyDef, buf *strings.B
 		if err := buf.WriteByte(')'); err != nil {
 			return err
 		}
+	default:
+		return errors.Errorf("unsupported index key type: %v", in.Type)
 	}
 
 	if in.SortOrder == ast.SortOrderTypeDescending {
@@ -362,6 +366,8 @@ func deparseIndexKey(context DeparseContext, in *ast.IndexKeyDef, buf *strings.B
 		if _, err := buf.WriteString(" NULLS LAST"); err != nil {
 			return err
 		}
+	default:
+		// No explicit null ordering specified
 	}
 
 	return nil
@@ -707,6 +713,8 @@ func deparseConstraintDef(_ DeparseContext, in *ast.ConstraintDef, buf *strings.
 		if err := deparseReferentialAction(DeparseContext{}, "ON UPDATE", in.Foreign.OnUpdate, buf); err != nil {
 			return err
 		}
+	default:
+		return errors.Errorf("unsupported constraint type: %v", in.Type)
 	}
 	return nil
 }
@@ -742,6 +750,8 @@ func deparseReferentialAction(_ DeparseContext, prefix string, in *ast.Referenti
 		if _, err := buf.WriteString("SET DEFAULT"); err != nil {
 			return err
 		}
+	default:
+		return errors.Errorf("unsupported referential action type: %v", in.Type)
 	}
 	return nil
 }
@@ -758,6 +768,8 @@ func deparseForeignMatchType(_ DeparseContext, in ast.ForeignMatchType, buf *str
 		if _, err := buf.WriteString(" MATCH PARTIAL"); err != nil {
 			return err
 		}
+	default:
+		return errors.Errorf("unsupported foreign match type: %v", in)
 	}
 	return nil
 }
@@ -955,6 +967,8 @@ func deparsePartitionDef(_ DeparseContext, in *ast.PartitionDef, buf *strings.Bu
 		strategy = "RANGE"
 	case pgquery.PartitionStrategy_PARTITION_STRATEGY_HASH:
 		strategy = "HASH"
+	default:
+		return errors.Errorf("unsupported partition strategy: %v", in.Strategy)
 	}
 	if _, err := buf.WriteString(strategy); err != nil {
 		return err
@@ -983,6 +997,8 @@ func deparsePartitionDef(_ DeparseContext, in *ast.PartitionDef, buf *strings.Bu
 			if _, err := buf.WriteString(")"); err != nil {
 				return err
 			}
+		default:
+			return errors.Errorf("unsupported partition key type: %v", key.Type)
 		}
 	}
 	if _, err := buf.WriteString(")"); err != nil {
@@ -1502,6 +1518,8 @@ func deparseAddEnumValue(_ DeparseContext, in *ast.AddEnumLabelStmt, buf *string
 		if _, err := buf.WriteString(" AFTER "); err != nil {
 			return err
 		}
+	default:
+		return errors.Errorf("unsupported position type: %v", in.Position)
 	}
 	return writeSurrounding(buf, in.NeighborLabel, "'")
 }
@@ -1821,6 +1839,8 @@ func deparseRoleSpec(_ DeparseContext, in *ast.RoleSpec, buf *strings.Builder) e
 			if _, err := buf.WriteString("SESSION_USER"); err != nil {
 				return err
 			}
+		default:
+			return errors.Errorf("unsupported role spec type: %v", in.Type)
 		}
 	}
 	return nil

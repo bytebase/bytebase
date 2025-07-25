@@ -120,6 +120,8 @@ func extractPredicateFieldsFromScalarExpressionInWhere(ctx parser.IScalar_expres
 				// Rebuild the ast because of the different level of array index and array name.
 				last := paths[i][len(paths[i])-1]
 				paths[i][len(paths[i])-1] = base.NewArraySelector(last.GetIdentifier(), index)
+			default:
+				// Do nothing for other cases
 			}
 		}
 		return paths
@@ -152,9 +154,14 @@ func extractPredicateFieldsFromScalarExpressionInWhere(ctx parser.IScalar_expres
 				paths = append(paths, path...)
 			}
 			return paths
+		default:
+			// Other scalar function expression types
+			return nil
 		}
 	case ctx.LR_BRACKET_SYMBOL() != nil:
 		return extractPredicateFieldsFromScalarExpressionInWhere(ctx.Scalar_expression_in_where(0), originalContainerName, fromAlias)
+	default:
+		// Return nil for unhandled cases
 	}
 
 	return nil

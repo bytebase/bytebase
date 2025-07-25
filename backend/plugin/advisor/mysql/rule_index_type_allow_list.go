@@ -89,6 +89,8 @@ func (r *IndexTypeAllowListRule) OnEnter(ctx antlr.ParserRuleContext, nodeType s
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
 	case NodeTypeCreateIndex:
 		r.checkCreateIndex(ctx.(*mysql.CreateIndexContext))
+	default:
+		// No action required for other node types
 	}
 	return nil
 }

@@ -192,6 +192,8 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 						line:      in.OriginTextPosition(),
 					})
 				}
+			default:
+				// Skip other alter table specification types
 			}
 		}
 	case *ast.CreateIndexStmt:

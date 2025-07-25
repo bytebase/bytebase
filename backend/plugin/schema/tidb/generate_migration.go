@@ -215,6 +215,8 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			if err := writeCreateOrReplaceView(buf, viewDiff.ViewName, viewDiff.NewView); err != nil {
 				return err
 			}
+		default:
+			// Ignore other view actions
 		}
 	}
 
@@ -601,6 +603,8 @@ func writePartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 		_, _ = fmt.Fprintf(buf, "HASH (%s)", partitions[0].Expression)
 	case storepb.TablePartitionMetadata_KEY:
 		_, _ = fmt.Fprintf(buf, "KEY (%s)", partitions[0].Expression)
+	default:
+		// Unsupported partition type
 	}
 
 	// Add partitions count if specified
@@ -624,6 +628,8 @@ func writePartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 					}
 				case storepb.TablePartitionMetadata_LIST, storepb.TablePartitionMetadata_LIST_COLUMNS:
 					_, _ = fmt.Fprintf(buf, " VALUES IN (%s)", partition.Value)
+				default:
+					// No VALUES clause for other partition types like HASH/KEY
 				}
 			}
 		}
@@ -1073,6 +1079,8 @@ func writeSequenceDiff(buf *strings.Builder, seqDiff *schema.SequenceDiff) error
 		return writeCreateSequence(buf, seqDiff.NewSequence)
 	case schema.MetadataDiffActionAlter:
 		return writeAlterSequence(buf, seqDiff.SequenceName, seqDiff.NewSequence)
+	default:
+		// Ignore other sequence actions
 	}
 	return nil
 }

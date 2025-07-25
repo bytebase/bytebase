@@ -496,7 +496,7 @@ func getColumnType(definition, typeName sql.NullString, isComputed, isPersisted 
 			return "", err
 		}
 		if isPersisted.Valid && isPersisted.Bool {
-			if _, err := fmt.Fprintf(&buf, " PERSISTED"); err != nil {
+			if _, err := fmt.Fprint(&buf, " PERSISTED"); err != nil {
 				return "", err
 			}
 		}
@@ -537,7 +537,7 @@ func getColumnType(definition, typeName sql.NullString, isComputed, isPersisted 
 	case "char", "nchar", "varchar", "nvarchar", "binary", "varbinary":
 		if maxLength.Valid {
 			if maxLength.Int64 == -1 {
-				if _, err := fmt.Fprintf(&buf, "(max)"); err != nil {
+				if _, err := fmt.Fprint(&buf, "(max)"); err != nil {
 					return "", err
 				}
 			} else {
@@ -552,6 +552,9 @@ func getColumnType(definition, typeName sql.NullString, isComputed, isPersisted 
 				}
 			}
 		}
+	default:
+		// For other types, no additional formatting is needed
+		// The type name has already been written to the buffer
 	}
 	return buf.String(), nil
 }

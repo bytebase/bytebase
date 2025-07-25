@@ -371,6 +371,8 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(selectCtx parser.ISele
 				Name:          aliasName,
 				SourceColumns: sourceColumnSet,
 			})
+		default:
+			// Ignore other select list item types
 		}
 	}
 	return &base.PseudoTable{
@@ -908,6 +910,8 @@ func joinTable(anchor base.TableSource, tp joinType, usingColumns []string, tabl
 		}
 
 		resultField = append(resultField, rFields...)
+	default:
+		// No special handling for other join types
 	}
 	return &base.PseudoTable{
 		Name:    "",
@@ -928,9 +932,9 @@ func getJoinTypeFromJoinType(joinType parser.IJoin_typeContext) joinType {
 		return leftOuterJoin
 	case joinType.RIGHT_SYMBOL() != nil:
 		return rightOuterJoin
+	default:
+		return innerJoin
 	}
-
-	return crossJoin
 }
 
 func getJoinTypeFromJoinItem(joinItem parser.IJoin_itemContext) joinType {

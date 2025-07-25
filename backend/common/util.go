@@ -221,6 +221,8 @@ func IsNil(val any) bool {
 	case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer,
 		reflect.UnsafePointer, reflect.Interface, reflect.Slice:
 		return v.IsNil()
+	default:
+		// Other types cannot be nil
 	}
 
 	return false

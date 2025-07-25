@@ -231,7 +231,7 @@ GO
 					require.Equal(t, "MEDIUM", gridMap[3], "Level 3 should be MEDIUM")
 					require.Equal(t, "LOW", gridMap[4], "Level 4 should be LOW")
 				} else {
-					t.Errorf("Expected spatial index idx_location_point not found")
+					t.Error("Expected spatial index idx_location_point not found")
 				}
 
 				if idx, exists := spatialIndexes["idx_boundary_polygon"]; exists {
@@ -252,7 +252,7 @@ GO
 					require.Equal(t, "HIGH", gridMap[3], "Level 3 should be HIGH")
 					require.Equal(t, "MEDIUM", gridMap[4], "Level 4 should be MEDIUM")
 				} else {
-					t.Errorf("Expected spatial index idx_boundary_polygon not found")
+					t.Error("Expected spatial index idx_boundary_polygon not found")
 				}
 
 				if idx, exists := spatialIndexes["idx_area_shape"]; exists {
@@ -273,7 +273,7 @@ GO
 					require.Equal(t, "MEDIUM", gridMap[3], "Level 3 should be MEDIUM")
 					require.Equal(t, "LOW", gridMap[4], "Level 4 should be LOW")
 				} else {
-					t.Errorf("Expected spatial index idx_area_shape not found")
+					t.Error("Expected spatial index idx_area_shape not found")
 				}
 
 				// Verify that we have at least the expected number of spatial indexes
@@ -558,7 +558,7 @@ GO
 					require.Equal(t, "LOW", gridMap[3], "Level 3 should be LOW")
 					require.Equal(t, "LOW", gridMap[4], "Level 4 should be LOW")
 				} else {
-					t.Errorf("Expected spatial index idx_location_geom not found")
+					t.Error("Expected spatial index idx_location_geom not found")
 				}
 
 				if idx, exists := spatialIndexes["idx_boundary_geom"]; exists {
@@ -586,7 +586,7 @@ GO
 					require.Equal(t, "MEDIUM", gridMap[3], "Level 3 should be MEDIUM")
 					require.Equal(t, "LOW", gridMap[4], "Level 4 should be LOW")
 				} else {
-					t.Errorf("Expected spatial index idx_boundary_geom not found")
+					t.Error("Expected spatial index idx_boundary_geom not found")
 				}
 
 				require.GreaterOrEqual(t, len(spatialIndexes), 2, "Should have at least 2 GEOMETRY spatial indexes")

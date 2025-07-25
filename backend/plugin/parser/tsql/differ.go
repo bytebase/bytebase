@@ -391,7 +391,7 @@ func (d *diffNode) appendAddConstraint(schemaName, tableName string, addConstrai
 	}
 	for i, addConstraint := range addConstraints {
 		if i > 0 {
-			if _, err := fmt.Fprintf(&buf, ","); err != nil {
+			if _, err := fmt.Fprint(&buf, ","); err != nil {
 				return err
 			}
 		}
@@ -484,7 +484,7 @@ func (d *diffNode) appendAddColumn(schemaName, tableName string, addColumns []ts
 	}
 	for i, addColumn := range addColumns {
 		if i > 0 {
-			if _, err := fmt.Fprintf(&buf, ","); err != nil {
+			if _, err := fmt.Fprint(&buf, ","); err != nil {
 				return err
 			}
 		}

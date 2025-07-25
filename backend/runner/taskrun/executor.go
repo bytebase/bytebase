@@ -307,6 +307,8 @@ func doMigrationWithFunc(
 			default:
 				// do nothing
 			}
+		default:
+			// No task run log needed for other task types
 		}
 	}
 
@@ -584,6 +586,8 @@ func convertTaskType(t storepb.Task_Type) storepb.ChangelogPayload_Type {
 
 	case storepb.Task_DATABASE_CREATE:
 	case storepb.Task_DATABASE_EXPORT:
+	default:
+		// Return unspecified for other task types
 	}
 	return storepb.ChangelogPayload_TYPE_UNSPECIFIED
 }

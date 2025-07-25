@@ -187,7 +187,7 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 	}
 	for i, column := range uk {
 		if i > 0 {
-			if _, err := fmt.Fprintf(&buf, " AND"); err != nil {
+			if _, err := fmt.Fprint(&buf, " AND"); err != nil {
 				g.err = err
 				return
 			}
@@ -197,13 +197,13 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 			return
 		}
 	}
-	if _, err := fmt.Fprintf(&buf, ")\nWHEN MATCHED THEN\n  UPDATE SET"); err != nil {
+	if _, err := fmt.Fprint(&buf, ")\nWHEN MATCHED THEN\n  UPDATE SET"); err != nil {
 		g.err = err
 		return
 	}
 	for i, field := range l.result {
 		if i > 0 {
-			if _, err := fmt.Fprintf(&buf, ","); err != nil {
+			if _, err := fmt.Fprint(&buf, ","); err != nil {
 				g.err = err
 				return
 			}
@@ -214,13 +214,13 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 			return
 		}
 	}
-	if _, err := fmt.Fprintf(&buf, "\nWHEN NOT MATCHED THEN\n INSERT ("); err != nil {
+	if _, err := fmt.Fprint(&buf, "\nWHEN NOT MATCHED THEN\n INSERT ("); err != nil {
 		g.err = err
 		return
 	}
 	for i, column := range g.table.GetColumns() {
 		if i > 0 {
-			if _, err := fmt.Fprintf(&buf, ", "); err != nil {
+			if _, err := fmt.Fprint(&buf, ", "); err != nil {
 				g.err = err
 				return
 			}
@@ -230,13 +230,13 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 			return
 		}
 	}
-	if _, err := fmt.Fprintf(&buf, ") VALUES ("); err != nil {
+	if _, err := fmt.Fprint(&buf, ") VALUES ("); err != nil {
 		g.err = err
 		return
 	}
 	for i, column := range g.table.GetColumns() {
 		if i > 0 {
-			if _, err := fmt.Fprintf(&buf, ", "); err != nil {
+			if _, err := fmt.Fprint(&buf, ", "); err != nil {
 				g.err = err
 				return
 			}
@@ -246,7 +246,7 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 			return
 		}
 	}
-	if _, err := fmt.Fprintf(&buf, ");"); err != nil {
+	if _, err := fmt.Fprint(&buf, ");"); err != nil {
 		g.err = err
 		return
 	}

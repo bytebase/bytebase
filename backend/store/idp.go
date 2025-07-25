@@ -330,6 +330,9 @@ func convertIdentityProviderConfigString(identityProviderType storepb.IdentityPr
 		identityProviderConfig.Config = &storepb.IdentityProviderConfig_LdapConfig{
 			LdapConfig: &formattedConfig,
 		}
+	default:
+		// Return nil for unknown identity provider types
+		return nil
 	}
 	return identityProviderConfig
 }

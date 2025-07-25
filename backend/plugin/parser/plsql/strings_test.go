@@ -99,6 +99,8 @@ func convertActionsForTest(actions []testAction) []base.StringsManipulatorAction
 			result = append(result, NewDropIndexAction(schemaName, action.Arguments[0], action.Arguments[1]))
 		case "modifyIndex":
 			result = append(result, NewModifyIndexAction(schemaName, action.Arguments[0], action.Arguments[1], action.Arguments[2]))
+		default:
+			// Unknown action type, skip
 		}
 	}
 

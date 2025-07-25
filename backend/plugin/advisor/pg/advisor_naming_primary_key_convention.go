@@ -199,6 +199,8 @@ func (checker *namingPKConventionChecker) getPrimaryKeyMetadata(schemaName strin
 				metaData:  metaData,
 			}
 		}
+	default:
+		// Not a primary key constraint, return nil
 	}
 	return nil
 }

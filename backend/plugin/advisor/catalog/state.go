@@ -96,6 +96,8 @@ func newTableState(t *storepb.TableMetadata, context *FinderContext) *TableState
 		switch context.EngineType {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			columnName = strings.ToLower(columnName)
+		default:
+			// For other engine types, keep the original column name without normalization
 		}
 		table.columnSet[columnName] = newColumnState(column, i+1)
 	}
@@ -105,6 +107,8 @@ func newTableState(t *storepb.TableMetadata, context *FinderContext) *TableState
 		switch context.EngineType {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			indexName = strings.ToLower(indexName)
+		default:
+			// For other engine types, keep the original index name without normalization
 		}
 		table.indexSet[indexName] = newIndexState(index)
 	}
@@ -210,6 +214,8 @@ func (d *DatabaseState) FindIndex(find *IndexFind) (string, *IndexState) {
 	switch d.dbType {
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		find.IndexName = strings.ToLower(find.IndexName)
+	default:
+		// For other engine types, keep the original index name without normalization
 	}
 	// There are two cases to find a index:
 	// 1. find an index in specific table. e.g. MySQL and TiDB.
@@ -313,6 +319,8 @@ func (d *DatabaseState) FindColumn(find *ColumnFind) *ColumnState {
 	switch d.dbType {
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		find.ColumnName = strings.ToLower(find.ColumnName)
+	default:
+		// For other engine types, keep the original column name without normalization
 	}
 	schema, exists := d.schemaSet[find.SchemaName]
 	if !exists {
@@ -537,6 +545,8 @@ func (col *ColumnState) HasDefault() bool {
 	switch strings.ToLower(col.Type()) {
 	case "serial", "smallserial", "bigserial":
 		return true
+	default:
+		// For other column types, check if defaultValue is not nil
 	}
 	return col.defaultValue != nil
 }

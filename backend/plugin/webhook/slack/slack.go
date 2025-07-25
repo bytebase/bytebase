@@ -68,6 +68,8 @@ func GetBlocks(context webhook.Context) []Block {
 		status = ":warning: "
 	case webhook.WebhookError:
 		status = ":exclamation: "
+	default:
+		status = ""
 	}
 	blockList = append(blockList, Block{
 		Type: "section",

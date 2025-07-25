@@ -840,6 +840,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) []b
 					}
 				}
 			}
+		default:
+			// Ignore other rule candidates
 		}
 	}
 
@@ -1104,6 +1106,9 @@ func deriveObjectRefContextsFromCandidates(candidates []string, includeColumn bo
 		if includeColumn {
 			results = append(results, refCtx.clone().setCatalog(candidates[0]).setSchema(candidates[1]).setObject(candidates[2]).setColumn(candidates[3]))
 		}
+	default:
+		// For cases with more than 4 identifiers, ignore them
+		return []*objectRefContext{refCtx.clone()}
 	}
 
 	// If no results were generated, return the default empty context
@@ -1214,6 +1219,8 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int) {
 				}
 			case trinoparser.TrinoParserFROM_:
 				found = true
+			default:
+				// Continue scanning for other tokens
 			}
 		}
 		if !found {
@@ -1251,6 +1258,8 @@ func (c *Completer) collectRemainingTableReferences() {
 				if level == 0 {
 					found = true
 				}
+			default:
+				// Continue scanning for other tokens
 			}
 		}
 
@@ -1532,6 +1541,8 @@ func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []stri
 		case trinoparser.TrinoParserRULE_groupBy, trinoparser.TrinoParserRULE_sortItem, trinoparser.TrinoParserRULE_booleanExpression:
 			// These represent ORDER BY, GROUP BY, and HAVING contexts
 			canUseAliases = true
+		default:
+			// Continue iterating through other rule types
 		}
 	}
 

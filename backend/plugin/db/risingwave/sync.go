@@ -230,6 +230,8 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 			column.Type = fmt.Sprintf("%s.%s", udtSchema.String, udtName.String)
 		case "ARRAY":
 			column.Type = udtName.String
+		default:
+			// Keep the original type for other cases
 		}
 		column.Collation = collation.String
 		column.Comment = ""

@@ -81,6 +81,8 @@ func (checker *indexNoDuplicateColumnChecker) Visit(node ast.Node) ast.Visitor {
 						line:           checker.line,
 					})
 				}
+			default:
+				// Other constraint types are not checked for duplicate columns
 			}
 		}
 	case *ast.CreateIndexStmt:
@@ -112,6 +114,8 @@ func (checker *indexNoDuplicateColumnChecker) Visit(node ast.Node) ast.Visitor {
 							line:           checker.line,
 						})
 					}
+				default:
+					// Other constraint types are not checked for duplicate columns
 				}
 			default:
 				continue

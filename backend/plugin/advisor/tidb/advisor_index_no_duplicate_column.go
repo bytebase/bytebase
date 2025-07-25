@@ -88,6 +88,8 @@ func (checker *indexNoDuplicateColumnChecker) Enter(in ast.Node) (ast.Node, bool
 						line:   constraint.OriginTextPosition(),
 					})
 				}
+			default:
+				// Ignore other constraint types
 			}
 		}
 	case *ast.CreateIndexStmt:

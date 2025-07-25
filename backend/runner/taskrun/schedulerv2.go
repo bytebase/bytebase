@@ -704,6 +704,15 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		s.createActivityForTaskRunStatusUpdate(ctx, task, storepb.TaskRun_DONE, "")
 		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
 		return
+	default:
+		// This case should not happen in normal flow, but adding for completeness
+		slog.Error("Unexpected task execution state",
+			slog.Int("id", task.ID),
+			slog.String("type", string(task.Type)),
+			slog.Bool("done", done),
+			slog.Bool("has_error", err != nil),
+		)
+		return
 	}
 }
 

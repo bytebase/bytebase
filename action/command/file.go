@@ -23,12 +23,15 @@ func getReleaseFiles(w *world.World, pattern string) ([]*v1pb.Release_File, erro
 			return nil, err
 		}
 		base := filepath.Base(m)
-		t := v1pb.Release_File_DDL
+		var t v1pb.Release_File_ChangeType
 		switch {
 		case strings.HasSuffix(base, "dml"):
 			t = v1pb.Release_File_DML
 		case strings.HasSuffix(base, "ghost"):
 			t = v1pb.Release_File_DDL_GHOST
+		default:
+			// Default to DDL for files without recognized suffixes
+			t = v1pb.Release_File_DDL
 		}
 
 		version := extractVersion(base)

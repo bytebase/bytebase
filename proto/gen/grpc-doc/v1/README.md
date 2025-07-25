@@ -507,8 +507,6 @@
     - [ExportRequest](#bytebase-v1-ExportRequest)
     - [ExportResponse](#bytebase-v1-ExportResponse)
     - [MaskingReason](#bytebase-v1-MaskingReason)
-    - [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest)
-    - [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse)
     - [PrettyRequest](#bytebase-v1-PrettyRequest)
     - [PrettyResponse](#bytebase-v1-PrettyResponse)
     - [QueryHistory](#bytebase-v1-QueryHistory)
@@ -8411,36 +8409,6 @@ ISSUE_CREATE represents creating an issue. |
 | context | [string](#string) |  | Additional context (e.g., &#34;Matched global rule: PII Protection&#34;). |
 | classification_level | [string](#string) |  | Whether masking was due to classification level. |
 | semantic_type_icon | [string](#string) |  | Icon associated with the semantic type (if any). |
-
-
-
-
-
-
-<a name="bytebase-v1-ParseMyBatisMapperRequest"></a>
-
-### ParseMyBatisMapperRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| content | [bytes](#bytes) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ParseMyBatisMapperResponse"></a>
-
-### ParseMyBatisMapperResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| statements | [string](#string) | repeated |  |
 
 
 

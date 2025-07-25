@@ -523,6 +523,8 @@ func (r *expressionRewriter) rewriteExpression(expr *exprpb.Expr) error {
 			schema.tables[args[2]] = &resourceTable{
 				name: args[2],
 			}
+		default:
+			// Ignore other function calls
 		}
 	default:
 		return errors.Errorf("invalid expression: %v", expr)

@@ -59,6 +59,9 @@ func getMessageCard(context webhook.Context) *WebhookMarkdown {
 		status = "<font color=\"yellow\">Warn</font> "
 	case webhook.WebhookError:
 		status = "<font color=\"red\">Error</font> "
+	default:
+		// For any other level (including WebhookInfo), use no special formatting
+		status = ""
 	}
 	content := fmt.Sprintf("# %s%s\n\n%s\n[View in Bytebase](%s)", status, context.Title, strings.Join(metaStrList, "\n"), context.Link)
 	if context.Description != "" {

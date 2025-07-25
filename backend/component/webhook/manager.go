@@ -102,6 +102,9 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		case "CANCELED":
 			title = "Issue canceled"
 			titleZh = "工单取消"
+		default:
+			title = "Issue status changed"
+			titleZh = "工单状态变更"
 		}
 
 	case common.EventTypeIssueCommentCreate:
@@ -188,6 +191,8 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 					usersGetters = append(usersGetters, getUsersFromIssueLastApprover(m.store, e.Issue.Approval))
 				case "roles/CREATOR":
 					usersGetters = append(usersGetters, getUsersFromUsers(e.Issue.Creator))
+				default:
+					// Skip unknown issue roles
 				}
 			}
 		}
@@ -260,6 +265,9 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 				mentions = append(mentions, phone)
 			}
 		}
+	default:
+		// Unsupported event type
+		return nil, errors.Errorf("unsupported activity type %q for generating webhook context", e.Type)
 	}
 
 	var mentionEndUsers []*store.UserMessage

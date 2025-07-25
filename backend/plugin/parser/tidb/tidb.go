@@ -303,8 +303,9 @@ func TypeString(tp byte) string {
 		return "binary"
 	case mysql.TypeGeometry:
 		return "geometry"
+	default:
+		return "unknown"
 	}
-	return "unknown"
 }
 
 func tidbAddSemicolonIfNeeded(sql string) string {

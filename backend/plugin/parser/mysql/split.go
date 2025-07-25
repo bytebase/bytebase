@@ -367,6 +367,8 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]b
 			}
 		case parser.MySQLParserSEMICOLON_SYMBOL:
 			semicolonStack = append(semicolonStack, i)
+		default:
+			// Do nothing for other token types
 		}
 	}
 

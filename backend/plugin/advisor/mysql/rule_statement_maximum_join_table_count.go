@@ -90,6 +90,8 @@ func (r *StatementMaximumJoinTableCountRule) OnEnter(ctx antlr.ParserRuleContext
 		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
 	case NodeTypeJoinedTable:
 		r.checkJoinedTable(ctx.(*mysql.JoinedTableContext))
+	default:
+		// No action required for other node types
 	}
 	return nil
 }

@@ -33,6 +33,8 @@ func loggingReleaseChecks(resp *v1pb.CheckReleaseResponse) error {
 					hasWarning = true
 				case v1pb.Advice_ERROR:
 					hasError = true
+				default:
+					// Handle other advice statuses (SUCCESS, UNSPECIFIED) - no action needed
 				}
 
 				position := fmt.Sprintf("line %d", common.ConvertLineToActionLine(int(advice.GetStartPosition().GetLine())))

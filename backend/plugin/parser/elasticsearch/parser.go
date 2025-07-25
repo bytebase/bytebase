@@ -366,6 +366,8 @@ func splitDataIntoJSONObjects(s string) []string {
 				depth++
 			case '}':
 				depth--
+			default:
+				// Other characters don't affect depth
 			}
 
 			if depth == 0 {
@@ -722,6 +724,7 @@ func (p *parser) word() (any, error) {
 		if err := p.next('e'); err != nil {
 			return nil, err
 		}
+		return true, nil
 	case 'f':
 		if err := p.next('f'); err != nil {
 			return nil, err
@@ -753,8 +756,9 @@ func (p *parser) word() (any, error) {
 			return nil, err
 		}
 		return nil, nil
+	default:
+		return nil, errors.Errorf("unexpected '%c'", p.ch)
 	}
-	return nil, errors.Errorf("unexpected '%c'", p.ch)
 }
 
 func (p *parser) number() (float64, error) {

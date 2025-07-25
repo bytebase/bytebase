@@ -20,6 +20,7 @@ func (s *Serial) EquivalentType(tp string) bool {
 		return tp == "serial" || tp == "serial4"
 	case 8:
 		return tp == "bigserial" || tp == "serial8"
+	default:
+		return false
 	}
-	return false
 }

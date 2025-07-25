@@ -279,6 +279,8 @@ func (exec *DataUpdateExecutor) backupData(
 			if _, err := driver.Execute(driverCtx, fmt.Sprintf(`COMMENT ON TABLE "%s"."%s" IS '%s, source table (%s, %s)'`, backupDatabaseName, statement.TargetTableName, bbSource, database.DatabaseName, statement.SourceTableName), db.ExecuteOptions{}); err != nil {
 				return nil, errors.Wrap(err, "failed to set table comment")
 			}
+		default:
+			// No action needed for other database engines
 		}
 
 		item := &storepb.PriorBackupDetail_Item{
@@ -401,6 +403,8 @@ func getPrependStatements(engine storepb.Engine, statement string) (string, erro
 			switch n.Name {
 			case "role", "search_path":
 				return n.Text(), nil
+			default:
+				// Ignore other variable names
 			}
 		}
 	}

@@ -292,6 +292,9 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 				view.Comment = comment
 				schemaMetadata.Views = append(schemaMetadata.Views, view)
 			}
+		default:
+			// Skip unknown table types (e.g., SYSTEM VIEW, TEMPORARY, etc.)
+			slog.Debug("skipping unknown table type", slog.String("tableName", tableName), slog.String("tableType", tableType))
 		}
 	}
 	if err := tableRows.Err(); err != nil {

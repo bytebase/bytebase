@@ -1031,38 +1031,6 @@ export declare type CheckResponse = Message<"bytebase.v1.CheckResponse"> & {
 export declare const CheckResponseSchema: GenMessage<CheckResponse>;
 
 /**
- * @generated from message bytebase.v1.ParseMyBatisMapperRequest
- */
-export declare type ParseMyBatisMapperRequest = Message<"bytebase.v1.ParseMyBatisMapperRequest"> & {
-  /**
-   * @generated from field: bytes content = 1;
-   */
-  content: Uint8Array;
-};
-
-/**
- * Describes the message bytebase.v1.ParseMyBatisMapperRequest.
- * Use `create(ParseMyBatisMapperRequestSchema)` to create a new message.
- */
-export declare const ParseMyBatisMapperRequestSchema: GenMessage<ParseMyBatisMapperRequest>;
-
-/**
- * @generated from message bytebase.v1.ParseMyBatisMapperResponse
- */
-export declare type ParseMyBatisMapperResponse = Message<"bytebase.v1.ParseMyBatisMapperResponse"> & {
-  /**
-   * @generated from field: repeated string statements = 1;
-   */
-  statements: string[];
-};
-
-/**
- * Describes the message bytebase.v1.ParseMyBatisMapperResponse.
- * Use `create(ParseMyBatisMapperResponseSchema)` to create a new message.
- */
-export declare const ParseMyBatisMapperResponseSchema: GenMessage<ParseMyBatisMapperResponse>;
-
-/**
  * @generated from message bytebase.v1.DiffMetadataRequest
  */
 export declare type DiffMetadataRequest = Message<"bytebase.v1.DiffMetadataRequest"> & {

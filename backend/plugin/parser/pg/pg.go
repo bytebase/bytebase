@@ -209,9 +209,9 @@ func normalizePostgreSQLAnyIdentifier(ctx parser.IAny_identifierContext) string 
 		return NormalizePostgreSQLColid(ctx.Colid())
 	case ctx.Plsql_unreserved_keyword() != nil:
 		return strings.ToLower(ctx.Plsql_unreserved_keyword().GetText())
+	default:
+		return ""
 	}
-
-	return ""
 }
 
 func normalizePostgreSQLIdentifier(ctx parser.IIdentifierContext) string {

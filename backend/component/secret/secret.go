@@ -27,6 +27,8 @@ func ReplaceExternalSecret(ctx context.Context, secret string, externalSecret *s
 			return getSecretFromVault(ctx, externalSecret)
 		case storepb.DataSourceExternalSecret_GCP_SECRET_MANAGER:
 			return getSecretFromGCP(ctx, externalSecret)
+		default:
+			return "", errors.Errorf("unsupported secret type: %v", externalSecret.SecretType)
 		}
 	}
 

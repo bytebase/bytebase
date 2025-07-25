@@ -365,6 +365,8 @@ func (checker *SDLTypeChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 						},
 					},
 				})
+			default:
+				// Other drop types are not tracked
 			}
 		default:
 		}

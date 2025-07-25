@@ -86,6 +86,8 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 			if err := createBitbucketReport(checkReleaseResponse); err != nil {
 				return err
 			}
+		default:
+			// Unknown platform, no specific output handling
 		}
 
 		// Evaluate check results and return errors based on CheckRelease flag
@@ -101,6 +103,8 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 					errorCount++
 				case v1pb.Advice_WARNING:
 					warningCount++
+				default:
+					// Other advice statuses don't affect counts
 				}
 			}
 		}

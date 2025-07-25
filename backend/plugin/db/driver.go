@@ -99,8 +99,9 @@ func (t MigrationType) GetVersionTypeSuffix() string {
 		return "sdl"
 	case Baseline:
 		return "baseline"
+	default:
+		return ""
 	}
-	return ""
 }
 
 func (t MigrationType) NeedDump() bool {

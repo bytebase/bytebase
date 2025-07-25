@@ -84,6 +84,8 @@ func (r *ViewDisallowCreateRule) OnEnter(ctx antlr.ParserRuleContext, nodeType s
 		}
 	case NodeTypeCreateView:
 		r.checkCreateView(ctx.(*mysql.CreateViewContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }

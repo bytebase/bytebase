@@ -710,6 +710,8 @@ func (s *SchemaState) pgCreateTableConstraint(t *TableState, constraint *ast.Con
 		// We do not deal with EXCLUSION constraint.
 	case ast.ConstraintTypeForeign:
 		// We do not deal with FOREIGN constraint.
+	default:
+		// For any other constraint types, skip processing
 	}
 	return nil
 }

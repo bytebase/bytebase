@@ -161,8 +161,12 @@ func runAndWaitForPlanChecks(ctx context.Context, w *world.World, client *Client
 						errorCount++
 					case v1pb.PlanCheckRun_Result_WARNING:
 						warningCount++
+					default:
+						// Other result statuses don't affect counts
 					}
 				}
+			default:
+				// Other run statuses don't affect counts
 			}
 		}
 		if failedCount > 0 {
@@ -384,6 +388,9 @@ func waitForRollout(ctx context.Context, w *world.World, client *Client, pending
 				done = false
 			case v1pb.Task_DONE:
 			case v1pb.Task_SKIPPED:
+			default:
+				// Treat unknown task status as not done to be safe
+				done = false
 			}
 		}
 		if foundFailed {

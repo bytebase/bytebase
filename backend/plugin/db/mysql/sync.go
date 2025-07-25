@@ -591,6 +591,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			if view, ok := viewMap[key]; ok {
 				schemaMetadata.Views = append(schemaMetadata.Views, view)
 			}
+		default:
+			// Unknown table type, skip
 		}
 	}
 	if err := tableRows.Err(); err != nil {

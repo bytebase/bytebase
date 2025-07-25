@@ -429,6 +429,8 @@ func normalizePostgreSQLType(typeName string) string {
 		return "timestamp with time zone"
 	case "timetz":
 		return "time with time zone"
+	default:
+		// Return type as-is for unrecognized types
 	}
 
 	// Handle specific length specifications for character types
@@ -649,6 +651,8 @@ func (e *metadataExtractor) extractColumnConstraint(ctx parser.IColconstraintele
 
 		// Create identity sequence for this column
 		e.createIdentitySequence(table, column, schemaName)
+	default:
+		// Ignore other column constraints
 	}
 }
 

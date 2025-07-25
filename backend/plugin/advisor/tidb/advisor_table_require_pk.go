@@ -119,6 +119,8 @@ func (v *tableRequirePKChecker) Enter(in ast.Node) (ast.Node, bool) {
 				if v.dropColumn(tableName, spec.OldColumnName.Name.String()) {
 					v.line[tableName] = node.OriginTextPosition()
 				}
+			default:
+				// Skip other alter table specification types
 			}
 		}
 	}

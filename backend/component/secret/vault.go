@@ -36,6 +36,8 @@ func getVaultClient(ctx context.Context, externalSecret *storepb.DataSourceExter
 			appRoleSecret.FromString = role.SecretId
 		case storepb.DataSourceExternalSecret_AppRoleAuthOption_ENVIRONMENT:
 			appRoleSecret.FromEnv = role.SecretId
+		default:
+			return nil, errors.Errorf("unsupported app role auth type: %v", role.Type)
 		}
 
 		opts := []approle.LoginOption{}
@@ -58,6 +60,8 @@ func getVaultClient(ctx context.Context, externalSecret *storepb.DataSourceExter
 			return nil, errors.Wrapf(err, "failed to login with approle: %v", err.Error())
 		}
 		token = resp.Auth.ClientToken
+	default:
+		return nil, errors.Errorf("unsupported auth type: %v", externalSecret.AuthType)
 	}
 
 	client.SetToken(token)

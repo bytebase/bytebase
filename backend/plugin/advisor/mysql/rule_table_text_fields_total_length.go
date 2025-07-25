@@ -91,6 +91,8 @@ func (r *TableTextFieldsTotalLengthRule) OnEnter(ctx antlr.ParserRuleContext, no
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }
