@@ -422,6 +422,11 @@ const connect = (node: SQLEditorTreeNode) => {
     },
     context: editorContext,
   });
+  if (tabStore.currentTab?.batchQueryContext?.databases.length === 1) {
+    tabStore.updateBatchQueryContext({
+      databases: [],
+    });
+  }
   showConnectionPanel.value = false;
 };
 
