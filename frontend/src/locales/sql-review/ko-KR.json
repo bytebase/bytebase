@@ -1,0 +1,734 @@
+{
+  "engine": {
+    "mysql": "MySQL",
+    "tidb": "TiDB",
+    "postgres": "PostgreSQL",
+    "oracle": "Oracle",
+    "oceanbase": "OceanBase",
+    "snowflake": "Snowflake",
+    "mssql": "SQL Server",
+    "dm": "DM",
+    "mariadb": "MariaDB",
+    "oceanbase_oracle": "OceanBase (Oracle)"
+  },
+  "category": {
+    "engine": "엔진",
+    "naming": "명명",
+    "statement": "구문",
+    "table": "테이블",
+    "column": "열",
+    "schema": "스키마",
+    "database": "데이터베이스",
+    "index": "인덱스",
+    "system": "시스템",
+    "advice": "조언",
+    "builtin": "내장 규칙"
+  },
+  "template": {
+    "bb-sql-review-prod": "고급 템플릿",
+    "bb-sql-review-prod-desc": "데이터베이스의 완벽한 보호와 모범 사례를 위한 종합적인 정책입니다.",
+    "bb-sql-review-dev": "기본 템플릿",
+    "bb-sql-review-dev-desc": "데이터베이스를 일반적인 오용으로부터 보호하기 위한 기본 커버리지입니다.",
+    "bb-sql-review-sample": "샘플 템플릿",
+    "bb-sql-review-sample-desc": "DROP 보호 및 열 NULL 불허를 포함한 최소 템플릿입니다.",
+    "bb-sql-review-empty": "처음부터 시작",
+    "bb-sql-review-empty-desc": "빈 템플릿입니다. 필요한 규칙을 직접 추가해야 합니다."
+  },
+  "rule": {
+    "engine-mysql-use-innodb": {
+      "title": "InnoDB 스토리지 엔진 강제 사용",
+      "description": "InnoDB는 트랜잭션 지원을 제공하는 MySQL의 기본 스토리지 엔진입니다. 또한 높은 동시성과 낮은 지연 시간 시나리오에서 더 나은 성능을 제공하며, 온라인 데이터 백업 및 복구를 지원합니다. OLTP 비즈니스에 선호되는 선택입니다. 제안 오류 수준: 오류"
+    },
+    "table-require-pk": {
+      "title": "테이블에 기본 키 포함 강제",
+      "description": "다양한 데이터 동기화, 비교 및 롤백 도구는 테이블에 기본 키가 있어야 합니다. 제안 오류 수준: 오류"
+    },
+    "table-no-foreign-key": {
+      "title": "외래 키 제약 조건 사용 금지",
+      "description": "외래 키의 장단점은 매우 논쟁적입니다. 외래 키를 사용하면 데이터베이스 변경, 확장성(예: 샤딩) 등의 어려움이 크게 증가할 수 있습니다. 그리고 일부 도구 사용을 방해할 수도 있습니다. 따라서 다른 옵션은 애플리케이션 계층에서 외래 키 제약 조건을 구현하는 것입니다. 제안 오류 수준: 경고"
+    },
+    "table-drop-naming-convention": {
+      "title": "삭제할 테이블의 명명 형식 제한",
+      "description": "예를 들어 \"_del\" 접미사를 요구함으로써 실수로 인한 삭제를 효과적으로 방지할 수 있습니다. 제안 오류 수준: 오류",
+      "component": {
+        "format": {
+          "title": "테이블 이름 형식 (정규식)"
+        }
+      }
+    },
+    "table-disallow-partition": {
+      "title": "파티션 테이블 사용 금지",
+      "description": "일부 데이터베이스 엔진에서는 파티션 테이블이 성숙하지 않고, 사용 및 유지 관리가 불편합니다. 따라서 데이터베이스 및 테이블 샤딩과 같은 수동 데이터 파티셔닝 방법을 사용하는 것이 더 선호됩니다. 제안 오류 수준: 경고"
+    },
+    "table-disallow-trigger": {
+      "title": "테이블에 트리거 사용 방지",
+      "description": "이 규칙은 테이블에서 트리거 사용을 제한합니다. 트리거는 데이터베이스 작업에 복잡성과 잠재적인 성능 문제를 도입할 수 있습니다. 트리거를 허용하지 않음으로써 시스템은 더 단순하고 예측 가능한 동작을 유지할 수 있습니다. 제안 오류 수준: 경고"
+    },
+    "table-no-duplicate-index": {
+      "title": "중복 인덱스 허용 안 함",
+      "description": "이 규칙은 테이블에 중복 인덱스 생성을 금지합니다. 중복 인덱스는 추가 저장 공간을 소비하고 잠재적으로 쿼리 성능을 저하시킬 수 있습니다. 제안 오류 수준: 경고"
+    },
+    "table-text-fields-total-length": {
+      "title": "테이블의 텍스트 필드 총 길이 제한",
+      "description": "이 규칙은 테이블이 보유할 수 있는 데이터의 양을 제한하여 과도한 저장소 사용을 방지합니다.",
+      "component": {
+        "number": {
+          "title": "최대 길이"
+        }
+      }
+    },
+    "table-disallow-set-charset": {
+      "title": "테이블 속성에서 문자 집합 정의 금지",
+      "description": "데이터베이스 수준에서 문자 집합을 설정하는 것이 권장됩니다. 더 세밀한 단위에서 문자 집합을 설정하면 불필요한 복잡성을 가져올 수 있습니다. 제안 오류 수준: 오류."
+    },
+    "table-comment": {
+      "title": "테이블 주석 규칙",
+      "description": "테이블에 주석이 필요한지 여부와 최대 주석 길이를 설정합니다.",
+      "component": {
+        "required": {
+          "title": "주석 필요"
+        },
+        "requiredClassification": {
+          "title": "분류 필요",
+          "tooltip": "주석은 {'{'}분류 ID{'}'}-{'{'}주석{'}'} 형식을 따라야 합니다."
+        },
+        "maxLength": {
+          "title": "최대 길이"
+        }
+      }
+    },
+    "table-disallow-ddl": {
+      "title": "DDL 허용 안 함",
+      "description": "어떤 테이블에서 DDL 실행을 금지할지 설정합니다. 제안 오류 수준: 경고",
+      "component": {
+        "list": {
+          "title": "테이블 이름"
+        }
+      }
+    },
+    "table-limit-size": {
+      "title": "행 수가 많은 테이블에 대한 DDL 작업 제한",
+      "description": "DDL을 실행할 수 있는 테이블의 최대 행 수를 설정합니다. 권장 오류 수준: 경고",
+      "component": {
+        "number": {
+          "title": "최대 행 수"
+        }
+      }
+    },
+    "table-disallow-dml": {
+      "title": "DML 허용 안 함",
+      "description": "어떤 테이블에서 DML 실행을 금지할지 설정합니다. 제안 오류 수준: 경고",
+      "component": {
+        "list": {
+          "title": "테이블 이름"
+        }
+      }
+    },
+    "table-require-charset": {
+      "title": "문자 집합 필요",
+      "description": "테이블의 문자 집합을 반드시 지정해야 합니다. 제안 오류 수준: 경고"
+    },
+    "table-require-collation": {
+      "title": "콜레이션 필요",
+      "description": "테이블의 콜레이션을 반드시 지정해야 합니다. 제안 오류 수준: 경고"
+    },
+    "naming-fully-qualified": {
+      "title": "완전한 객체 이름 사용",
+      "description": "완전한 객체 이름 사용을 강제합니다. 예: “schema.table”, 제안 오류 수준: 경고"
+    },
+    "naming-table": {
+      "title": "테이블 명명 형식 강제",
+      "description": "기본 형식은 모두 소문자, 단어 사이는 밑줄로 구분, 최대 63자까지 허용하며, \"abc\"와 \"abc_def\"와 같은 형식입니다. 제안 오류 수준: 경고",
+      "component": {
+        "format": {
+          "title": "테이블 이름 형식 (정규식)"
+        },
+        "maxLength": {
+          "title": "길이 제한"
+        }
+      }
+    },
+    "naming-column": {
+      "title": "열 명명 형식 강제",
+      "description": "기본 형식은 모두 소문자, 단어 사이는 밑줄로 구분, 최대 63자까지 허용하며, \"abc\"와 \"abc_def\"와 같은 형식입니다. 제안 오류 수준: 경고",
+      "component": {
+        "format": {
+          "title": "열 이름 형식 (정규식)"
+        },
+        "maxLength": {
+          "title": "길이 제한"
+        }
+      }
+    },
+    "naming-index-uk": {
+      "title": "고유 키 명명 형식 강제",
+      "description": "이름이 비어 있을 수 있으며 데이터베이스에 의해 명명됩니다. 비어 있지 않은 경우, 기본 형식은 \"uk_<테이블 이름>_<고유 키 열 이름 조합>\"이며, 최대 63자까지 허용하며, \"uk_my_table_id_name\"과 같은 형식입니다. 제안 오류 수준: 경고",
+      "component": {
+        "format": {
+          "title": "고유 키 이름 형식",
+          "template": {
+            "table": "테이블 이름",
+            "column_list": "인덱스 열 이름, _로 결합"
+          }
+        },
+        "maxLength": {
+          "title": "길이 제한"
+        }
+      }
+    },
+    "naming-index-pk": {
+      "title": "기본 키 명명 형식 강제",
+      "description": "이름이 비어 있을 수 있으며 데이터베이스에 의해 명명됩니다. 비어 있지 않은 경우, 기본 형식은 \"pk_<테이블 이름>_<고유 키 열 이름 조합>\"이며, 최대 63자까지 허용하며, \"pk_my_table_id_name\"과 같은 형식입니다. 제안 오류 수준: 경고",
+      "component": {
+        "format": {
+          "title": "기본 키 이름 형식",
+          "template": {
+            "table": "테이블 이름",
+            "column_list": "인덱스 열 이름, _로 결합"
+          }
+        },
+        "maxLength": {
+          "title": "길이 제한"
+        }
+      }
+    },
+    "naming-index-fk": {
+      "title": "외래 키 명명 형식 강제",
+      "description": "이름이 비어 있을 수 있으며 데이터베이스에 의해 명명됩니다. 비어 있지 않은 경우, 기본 형식은 \"fk_<테이블 이름>_<고유 키 열 이름 조합>\"이며, 최대 63자까지 허용하며, \"fk_my_table_id_name\"과 같은 형식입니다. 제안 오류 수준: 경고",
+      "component": {
+        "format": {
+          "title": "외래 키 이름 형식",
+          "template": {
+            "referencing_table": "참조하는 테이블 이름",
+            "referencing_column": "참조하는 열 이름",
+            "referenced_table": "참조되는 테이블 이름",
+            "referenced_column": "참조되는 열 이름"
+          }
+        },
+        "maxLength": {
+          "title": "길이 제한"
+        }
+      }
+    },
+    "naming-index-idx": {
+      "title": "인덱스 명명 형식 강제",
+      "description": "이름이 비어 있을 수 있으며 데이터베이스에 의해 명명됩니다. 비어 있지 않은 경우, 기본 형식은 \"idx_<테이블 이름>_<고유 키 열 이름 조합>\"이며, 최대 63자까지 허용하며, \"idx_my_table_id_name\"과 같은 형식입니다. 제안 오류 수준: 경고",
+      "component": {
+        "format": {
+          "title": "인덱스 이름 형식",
+          "template": {
+            "table": "테이블 이름",
+            "column_list": "인덱스 열 이름, _로 결합"
+          }
+        },
+        "maxLength": {
+          "title": "길이 제한"
+        }
+      }
+    },
+    "naming-column-auto-increment": {
+      "title": "자동 증가 열 명명 형식 강제",
+      "description": "기본 열 이름은 \"ID\"이며, 최대 63자까지 허용합니다.",
+      "component": {
+        "format": {
+          "title": "자동 증가 열 이름 형식 (정규식)"
+        },
+        "maxLength": {
+          "title": "길이 제한"
+        }
+      }
+    },
+    "naming-table-no-keyword": {
+      "title": "테이블 이름으로 키워드 사용 금지",
+      "description": ""
+    },
+    "naming-identifier-no-keyword": {
+      "title": "식별자로 키워드 사용 금지",
+      "description": ""
+    },
+    "naming-identifier-case": {
+      "title": "식별자 대소문자 강제",
+      "description": "",
+      "component": {
+        "upper": {
+          "title": "대문자"
+        }
+      }
+    },
+    "column-required": {
+      "title": "테이블에 특정 열 포함 강제",
+      "description": "일부 공통 열은 더 나은 애플리케이션 유지 관리에 도움이 됩니다. 예를 들어, 비즈니스 독립적인 \"ID\" 열을 기본 키로 추가하면 비즈니스 변경(예: 비즈니스 병합)으로 인한 기본 키 충돌을 방지할 수 있으며, 일부 시나리오에서는 더 나은 데이터 삽입 성능을 가져올 수도 있습니다. 제안 오류 수준: 경고",
+      "component": {
+        "list": {
+          "title": "필수 열 이름"
+        }
+      }
+    },
+    "column-type-disallow-list": {
+      "title": "특정 열 데이터 유형 사용 금지",
+      "description": "열 유형의 남용은 시스템 유지 관리 및 성능에 심각한 부정적인 영향을 미칠 수 있습니다. 예를 들어, \"LOB\" 열을 사용하여 대량의 오디오 및 비디오 데이터를 저장하면 데이터베이스 성능이 저하되고, 백업 및 복구 시간이 길어지며, 데이터 동기화 도구와 호환되지 않을 수 있습니다. 제안 오류 수준: 오류",
+      "component": {
+        "list": {
+          "title": "금지 목록"
+        }
+      }
+    },
+    "column-no-null": {
+      "title": "열에 \"NOT NULL\" 제약 조건 강제",
+      "description": "열은 NULL 값을 가질 수 없습니다."
+    },
+    "column-disallow-set-charset": {
+      "title": "열 속성에서 문자 집합 정의 금지",
+      "description": "데이터베이스 수준이나 테이블 수준에서 문자 집합을 설정하는 것이 권장됩니다. 더 세밀한 단위에서 문자 집합을 설정하면 불필요한 복잡성을 가져올 수 있습니다. 제안 오류 수준: 오류."
+    },
+    "column-disallow-change-type": {
+      "title": "열 유형 수정 금지",
+      "description": "열 유형 수정은 시스템 성능, 유지 관리성에 영향을 미치고 심지어 데이터 손실로 이어질 수 있습니다. 제안 오류 수준: 경고"
+    },
+    "column-disallow-change": {
+      "title": "\"CHANGE COLUMN\" 구문 사용 금지",
+      "description": "\"CHANGE COLUMN\"은 MySQL 구문에 고유하며 열 이름과 다른 속성을 동시에 수정하는 데 사용할 수 있습니다. 그러나 속성을 수정할 때 열 이름이 실수로 변경될 수 있습니다. 여전히 표준 \"RENAME\"과 \"MODIFY\" 구문을 사용하여 두 가지 유형의 변경을 구분하는 것이 좋습니다. 제안 오류 수준: 오류"
+    },
+    "column-disallow-changing-order": {
+      "title": "테이블의 열 순서 변경 금지",
+      "description": "열 순서 수정은 원래 테이블의 기본 순서에 의존하는 일부 애플리케이션이나 뷰에서 \"select *\"와 같은 예상치 못한 결과를 일으킬 수 있습니다. 제안 오류 수준: 경고"
+    },
+    "column-disallow-drop": {
+      "title": "열 삭제 금지",
+      "description": "열 삭제를 금지합니다. 제안 오류 수준: 경고"
+    },
+    "column-disallow-drop-in-index": {
+      "title": "인덱스의 열 삭제 금지",
+      "description": "인덱스의 열 삭제를 금지합니다. 제안 오류 수준: 오류"
+    },
+    "column-set-default-for-not-null": {
+      "title": "\"NOT NULL\" 열에 기본값 강제",
+      "description": "'NOT NULL' 열의 경우, 새 행을 삽입할 때 열에 값이 할당되지 않고 열에 기본값이 없으면 데이터베이스는 해당 행의 삽입을 거부합니다. 새 열에 기본값을 설정하면 기존 애플리케이션과의 호환성도 보장할 수 있습니다. 제안 오류 수준: 오류"
+    },
+    "column-auto-increment-must-integer": {
+      "title": "자동 증가 열에 \"INTEGER\" 데이터 유형 사용 강제",
+      "description": "MySQL의 자동 증가 열은 일반적으로 비즈니스와 독립적인 기본 키로 사용됩니다. 정수 유형을 사용하면 저장 공간을 적게 차지하고 기본 키 인덱스 구조가 더 간결해져 더 나은 쿼리 및 DML 성능을 제공합니다. 제안 오류 수준: 오류"
+    },
+    "column-auto-increment-must-unsigned": {
+      "title": "자동 증가 열에 \"UNSIGNED\" 데이터 유형 사용 강제",
+      "description": "부호 없는 유형은 음수를 저장하지 않으며, 동일한 유형으로 저장할 수 있는 값의 범위가 두 배가 되어 자동 증가 열 오버플로우를 방지할 수 있습니다. 제안 오류 수준: 경고"
+    },
+    "column-comment": {
+      "title": "열 주석 규칙",
+      "description": "열에 주석을 추가하는 것은 좋은 개발 관행이지만, 너무 긴 주석은 스키마의 가독성을 떨어뜨릴 수 있습니다. 제안 오류 수준: 경고",
+      "component": {
+        "required": {
+          "title": "주석 필요"
+        },
+        "requiredClassification": {
+          "title": "분류 필요",
+          "tooltip": "주석은 {'{'}분류 ID{'}'}-{'{'}주석{'}'} 형식을 따라야 합니다."
+        },
+        "maxLength": {
+          "title": "최대 길이"
+        }
+      }
+    },
+    "column-maximum-character-length": {
+      "title": "\"CHAR\" 데이터 유형의 길이 제한",
+      "description": "\"CHAR\"은 고정 길이 유형입니다. 예를 들어, CHAR(20) 열은 한 문자만 저장하더라도 20개의 문자 공간을 차지하여 낭비를 초래합니다. 문자열이 너무 길고 길이가 고정되지 않은 경우 MySQL에서는 VARCHAR를, PostgreSQL에서는 TEXT를 사용하는 것이 좋습니다. 제안 오류 수준: 오류",
+      "component": {
+        "number": {
+          "title": "최대 길이"
+        }
+      }
+    },
+    "column-maximum-varchar-length": {
+      "title": "\"VARCHAR\" 데이터 유형의 길이 제한",
+      "description": "",
+      "component": {
+        "number": {
+          "title": "최대 길이"
+        }
+      }
+    },
+    "column-auto-increment-initial-value": {
+      "title": "자동 증가 열의 초기값 제한",
+      "description": "관리 요구 사항에 따라 자동 증가 열의 초기값을 제한합니다. 제안 오류 수준: 경고",
+      "component": {
+        "number": {
+          "title": "초기값"
+        }
+      }
+    },
+    "column-current-time-count-limit": {
+      "title": "시스템 시간을 획득하는 테이블의 열 수 제한",
+      "description": "\"DEFAULT NOW()\"로 레코드 생성 시간을 기록하고 \"DEFAULT NOW() ON UPDATE\"로 레코드 업데이트 시간을 기록하는 열만 시스템 시간을 가져오기 위해 함수를 호출해야 합니다. 다른 열에 시스템 시간을 기록하는 것은 의미가 없으며 리소스 오버헤드를 증가시킵니다. 제안 오류 수준: 오류"
+    },
+    "column-require-default": {
+      "title": "열에 기본값 설정 강제",
+      "description": "비즈니스 로직을 충족하는 기본값을 설정하면 다운스트림 분석 파이프라인의 데이터 품질을 효과적으로 향상시킬 수 있습니다. 이 규칙은 \"PRIMARY KEY\", \"JSON\", \"BLOB\", \"TEXT\", \"GEOMETRY\", \"AUTO_INCREMENT\", \"GENERATED\" 유형은 확인하지 않습니다. 제안 오류 수준: 경고"
+    },
+    "column-default-disallow-volatile": {
+      "title": "열에 휘발성 기본값 설정 금지",
+      "description": "휘발성 함수(예: clock_timestamp())는 ALTER TABLE ADD COLUMN 실행 시점의 값으로 각 행을 업데이트하여 잠재적으로 긴 업데이트를 유발할 수 있습니다."
+    },
+    "column-require-charset": {
+      "title": "텍스트 열에 문자 집합 필요",
+      "description": "텍스트 데이터 유형의 열에는 문자 집합을 지정해야 합니다. 제안 오류 수준: 경고"
+    },
+    "column-require-collation": {
+      "title": "텍스트 열에 콜레이션 필요",
+      "description": "텍스트 데이터 유형의 열에는 콜레이션을 지정해야 합니다. 제안 오류 수준: 경고"
+    },
+    "statement-select-no-select-all": {
+      "title": "\"SELECT *\" 사용 금지",
+      "description": "SELECT *로 전체 행 데이터를 가져오면 불필요한 리소스 오버헤드가 발생할 수 있으며, 테이블에 열이 추가되거나 제거되면 애플리케이션에서 예상치 못한 결과가 발생할 수도 있습니다. 제안 오류 수준: 오류"
+    },
+    "statement-where-require-select": {
+      "title": "SELECT 문에 \"WHERE\" 조건 존재 강제",
+      "description": "WHERE 절이 없는 쿼리는 불필요한 리소스 오버헤드를 초래할 수 있습니다. 제안 오류 수준: 오류"
+    },
+    "statement-where-require-update-delete": {
+      "title": "UDPATE/DELETE 문에 \"WHERE\" 조건 존재 강제",
+      "description": "WHERE 절이 없는 DML은 대규모 우발적 데이터 손실을 초래할 수 있습니다. 제안 오류 수준: 오류"
+    },
+    "statement-where-no-leading-wildcard-like": {
+      "title": "필터 조건에서 선행 와일드카드 사용 금지",
+      "description": "\"LIKE '%ABC'\"와 같이 선행 와일드카드를 사용하면 데이터베이스 최적화 도구가 빠른 인덱스 스캔을 사용할 수 없고 전체 테이블 스캔이나 전체 인덱스 스캔으로 대체되어 심각한 성능 영향을 미칠 수 있습니다. 제안 오류 수준: 오류"
+    },
+    "statement-disallow-on-del-cascade": {
+      "title": "ON DELETE 절에 CASCADE 옵션 사용 금지",
+      "description": "'ON DELETE'의 \"CASCADE\" 옵션은 많은 수의 종속 객체가 삭제되거나 수정되어 예상치 못한 결과를 초래할 수 있습니다. 제안 오류 수준: 오류"
+    },
+    "statement-disallow-rm-tbl-cascade": {
+      "title": "테이블 제거 시 CASCADE 사용 금지",
+      "description": "테이블을 제거할 때 \"CASCADE\" 옵션을 사용하면 많은 수의 종속 객체가 삭제되거나 수정되어 예상치 못한 결과를 초래할 수 있습니다. 제안 오류 수준: 오류"
+    },
+    "statement-disallow-commit": {
+      "title": "명시적 \"COMMIT\" 구문 금지",
+      "description": "일부 경우에는 부분 실패 시 빠르게 다시 실행하기 위해 시스템에서 커밋한 트랜잭션에 여러 문을 포함해야 합니다. 따라서 명시적 \"COMMIT\"은 허용되지 않습니다. 제안 오류 수준: 경고"
+    },
+    "statement-disallow-limit": {
+      "title": "DML 문에서 \"LIMIT\" 절 사용 금지",
+      "description": "ORDER BY 절 없이 DML 문에서 LIMIT를 사용하면 영향을 받는 행의 순서가 고정되지 않아 일부 복제 모드에서 기본 데이터베이스와 복제본 데이터베이스 간의 데이터 불일치를 초래할 수 있습니다. 제안 오류 수준: 오류"
+    },
+    "statement-disallow-order-by": {
+      "title": "\"UPDATE\" 및 \"DELETE\" 문에서 \"ORDER BY\" 절 사용 금지",
+      "description": "정렬 작업은 극도로 리소스를 많이 소비하므로 업데이트 및 삭제 작업의 경우 ORDER BY와 LIMIT를 사용하는 대신 가능한 한 결정적인 필터링 조건을 사용하는 것이 좋습니다. 제안 오류 수준: 오류"
+    },
+    "statement-merge-alter-table": {
+      "title": "동일한 테이블에 여러 독립적인 변경 발행 금지",
+      "description": "테이블에 대한 모든 변경은 테이블 수준 잠금을 유발하고 많은 리소스를 소비할 수 있습니다. 동일한 테이블에 대한 여러 변경이 있는 경우 이를 단일 변경 문으로 병합해야 합니다. 제안 오류 수준: 오류"
+    },
+    "statement-insert-must-specify-column": {
+      "title": "\"INSERT\" 문에서 열 이름 지정 강제",
+      "description": "\"INSERT INTO table VALUES (...)\" 문은 열 이름을 명시적으로 나열하지 않습니다. 열 순서가 변경되거나 열이 추가 또는 삭제되면 문이 실패하거나 예상치 못한 데이터가 생성될 수 있습니다. 제안 오류 수준: 오류"
+    },
+    "statement-insert-disallow-order-by-rand": {
+      "title": "\"INSERT\" 문에서 \"ORDER BY rand()\" 사용 금지",
+      "description": "삽입할 데이터를 무작위로 정렬하는 것은 무의미하며 불필요한 리소스만 소비합니다. 제안 오류 수준: 오류"
+    },
+    "statement-insert-row-limit": {
+      "title": "삽입되는 행의 최대 수 제한",
+      "description": "삽입될 행의 수를 공개하면 문이 비즈니스 기대치를 충족하는지 여부를 결정하는 데 도움이 됩니다. 제안 오류 수준: 경고",
+      "component": {
+        "number": {
+          "title": "최대 삽입 수량"
+        }
+      }
+    },
+    "statement-affected-row-limit": {
+      "title": "업데이트 또는 삭제되는 행의 최대 수 제한(추정).",
+      "description": "업데이트 또는 삭제될 행의 수를 공개하면 문이 비즈니스 기대치를 충족하는지 여부를 결정하는 데 도움이 됩니다. 제안 오류 수준: 경고",
+      "component": {
+        "number": {
+          "title": "최대 영향 행 수"
+        }
+      }
+    },
+    "statement-dml-dry-run": {
+      "title": "DML 문의 실행 가능성 검증",
+      "description": "구문이 올바르지만 테이블 이름이 잘못되었거나 권한이 부족한 경우 실제 실행 전에 드라이 런으로 발견할 수 있습니다. 제안 오류 수준: 경고"
+    },
+    "statement-disallow-add-column-with-default": {
+      "title": "테이블에 기본값이 있는 열 추가 제한",
+      "description": "PostgreSQL 11 이전에는 기본값이 있는 열을 추가하면 테이블이 잠기고 읽기 및 쓰기가 불가능하여 비즈니스 중단을 초래할 수 있었습니다. PostgreSQL 11 이상에서는 이 문제가 최적화되었으므로 이 규칙에 주의를 기울일 필요가 없습니다. 제안 오류 수준: 경고"
+    },
+    "statement-add-check-not-valid": {
+      "title": "\"CHECK\" 제약 조건 추가 시 \"NOT VALID\" 옵션 포함 강제",
+      "description": "CHECK 제약 조건을 추가하려면 기존 데이터를 확인하고 ACCESS EXCLUSIVE 테이블 잠금이 필요합니다. 이는 읽기 및 쓰기를 차단하여 비즈니스 중단을 초래할 수 있습니다. \"NOT VALID\" 옵션을 추가하여 새 데이터를 검증하고 변경이 완료된 후 수동으로 기존 데이터를 검증하는 것이 좋습니다. 제안 오류 수준: 경고"
+    },
+    "statement-disallow-add-not-null": {
+      "title": "기존 열에 \"NOT NULL\" 제약 조건 추가 제한",
+      "description": "PostgreSQL 11 이전에 기본값이 있는 NOT NULL 제약 조건을 추가하거나 기본값 없이 NOT NULL 제약 조건을 추가하려면 기존 데이터를 확인해야 합니다. 이는 읽기 및 쓰기를 차단하여 비즈니스 중단을 초래할 수 있습니다. 제안 오류 수준: 경고"
+    },
+    "statement-select-full-table-scan": {
+      "title": "쿼리의 전체 테이블 스캔 확인",
+      "description": "전체 테이블 스캔은 리소스를 많이 소비하는 작업이며 심각한 성능 영향을 미칠 수 있습니다. 제안 오류 수준: 오류"
+    },
+    "statement-create-specify-schema": {
+      "title": "스키마를 지정하지 않고 객체 생성 금지",
+      "description": "스키마가 지정되지 않으면 객체가 기본 스키마에 생성되어 예상치 못한 결과를 초래할 수 있습니다."
+    },
+    "statement-check-set-role-variable": {
+      "title": "세션 시작 시 역할 변수 설정 확인",
+      "description": "세션 시작 시 역할 설정 문을 제대로 설정하지 않으면 권한이 없는 액세스나 부적절한 권한 할당으로 이어질 수 있어 데이터 보안과 무결성이 손상될 수 있습니다. 제안 오류 수준: 경고"
+    },
+    "statement-disallow-using-temporary": {
+      "title": "임시 테이블 사용 금지",
+      "description": "임시 테이블은 프로덕션 환경에서 사용을 권장하지 않습니다. 리소스 경합 및 성능 문제를 일으킬 수 있습니다. 제안 오류 수준: 경고"
+    },
+    "statement-disallow-using-filesort": {
+      "title": "파일 정렬 사용 금지",
+      "description": "파일 정렬은 리소스를 많이 소비하는 작업이며 심각한 성능 영향을 미칠 수 있습니다. 제안 오류 수준: 경고"
+    },
+    "statement-where-no-equal-null": {
+      "title": "WHERE 절에서 NULL 동등 비교 사용 금지",
+      "description": "NULL 동등 비교의 결과는 항상 NULL이며, 이는 예상치 못한 결과를 초래할 수 있습니다. 제안 오류 수준: 경고"
+    },
+    "statement-where-disallow-functions-and-calculations": {
+      "title": "WHERE 절에서 인덱스된 필드에 함수 적용 또는 계산 수행 금지",
+      "description": "인덱스된 필드에 함수를 적용하거나 계산을 수행하면 데이터베이스가 인덱스를 사용할 수 없어 전체 테이블을 스캔해야 합니다."
+    },
+    "statement-query-minimum-plan-level": {
+      "title": "쿼리 접근 방식의 최대 수준 제한",
+      "description": "SQL 성능 최적화는 상수(const) 접근을 위해 노력하며, 기준선으로 참조(ref) 수준을 목표로 하고, 범위 수준에서 허용 가능한 성능을 목표로 합니다.",
+      "component": {
+        "level": {
+          "title": "최대 수준"
+        }
+      }
+    },
+    "statement-where-maximum-logical-operator-count": {
+      "title": "WHERE 절의 IN 또는 OR 절에 있는 값의 수 제한",
+      "description": "이는 광범위한 비교와 리소스 제한으로 인한 성능 저하를 방지합니다.",
+      "component": {
+        "number": {
+          "title": "최대 개수"
+        }
+      }
+    },
+    "statement-maximum-limit-value": {
+      "title": "LIMIT 절의 최대 수 제한",
+      "description": "LIMIT를 통해 행 수를 제한하면 데이터베이스가 관리 가능한 청크를 처리하여 쿼리 실행 속도를 향상시킵니다. 제한된 LIMIT 값은 과도한 메모리 사용을 방지하여 전체 시스템 안정성을 보호하고 성능 저하를 방지합니다.",
+      "component": {
+        "number": {
+          "title": "최대값"
+        }
+      }
+    },
+    "statement-maximum-join-table-count": {
+      "title": "조인할 테이블의 수 제한",
+      "description": "조인하는 테이블이 많을수록 쿼리가 더 복잡해지고 실행 시간이 길어집니다. 일반적으로 조인 수를 최소화하는 것이 좋습니다.",
+      "component": {
+        "number": {
+          "title": "최대값"
+        }
+      }
+    },
+    "statement-maximum-statements-in-transaction": {
+      "title": "트랜잭션의 문 수 제한",
+      "description": "대규모 트랜잭션은 데이터베이스 성능에 큰 영향을 미칠 수 있습니다. 많은 수의 문이 관련되어 있고 하나가 실패하면 전체 트랜잭션을 롤백하는 것이 복잡해집니다. 문의 수를 제한하면 단일 실패로 인한 잠재적 손상을 최소화하고 롤백 절차를 단순화합니다.",
+      "component": {
+        "number": {
+          "title": "최대값"
+        }
+      }
+    },
+    "statement-join-strict-column-attrs": {
+      "title": "조인할 필드는 동일한 데이터 유형, 문자 집합을 가져야 함",
+      "description": "조인 열의 데이터 유형, 문자 집합이 동일하지 않으면 데이터베이스가 일치하는 행을 올바르게 식별하지 못하여 부정확하거나 불완전한 결과가 발생할 수 있습니다."
+    },
+    "statement-disallow-mix-ddl-dml": {
+      "title": "DDL과 DML 혼합 금지",
+      "description": "최적의 성능과 데이터 무결성을 위해 동일한 스크립트 내에서 DDL 및 DML 문을 결합하지 않도록 합니다."
+    },
+    "statement-disallow-mix-in-ddl": {
+      "title": "스키마 업데이트 작업에서 문 혼합 금지",
+      "description": "최적의 성능과 데이터 무결성을 위해 동일한 스크립트 내에서 DDL 및 DML 문을 결합하지 않도록 합니다."
+    },
+    "statement-disallow-mix-in-dml": {
+      "title": "데이터 업데이트 작업에서 문 혼합 금지",
+      "description": "최적의 성능과 데이터 무결성을 위해 동일한 스크립트 내에서 DDL 및 DML 문을 결합하지 않도록 합니다."
+    },
+    "statement-prior-backup-check": {
+      "title": "데이터 변경 전 백업 확인",
+      "description": "이 규칙은 데이터 변경 전에 백업을 생성할 수 있는지 확인합니다. 자세한 내용은 백업 대상 데이터베이스 존재 여부를 포함하며 DDL 문을 허용하지 않습니다."
+    },
+    "statement-add-column-without-position": {
+      "title": "ADD COLUMN 절에 위치 없는지 확인",
+      "description": "일부 경우 FIRST/AFTER를 사용하여 열을 추가하면 데이터 재구성(모든 데이터 다시 쓰기)이 발생합니다. 제안 오류 수준: 경고"
+    },
+    "statement-disallow-offline-ddl": {
+      "title": "오프라인 DDL 허용 안 함",
+      "description": "데이터베이스 변경이 비즈니스에 영향을 미치지 않도록 오프라인 DDL을 사용하지 마십시오."
+    },
+    "statement-disallow-cross-db-queries": {
+      "title": "교차 데이터베이스 쿼리 허용 안 함",
+      "description": "교차 데이터베이스 쿼리는 시스템 결합을 증가시키고 효율성 문제로 이어질 수 있습니다. 제안 오류 수준: 경고"
+    },
+    "schema-backward-compatibility": {
+      "title": "애플리케이션 하위 호환성 확인",
+      "description": "데이터베이스 객체 이름 수정, 새 제약 조건 추가 등과 같은 일부 변경 사항은 실행 중인 애플리케이션에 영향을 미칠 수 있습니다. 이 규칙은 기존 애플리케이션의 실패로 이어지는 부주의한 변경을 방지할 수 있습니다. 제안 오류 수준: 경고"
+    },
+    "statement-max-execution-time": {
+      "title": "최대 실행 시간 매개변수 설정 강제",
+      "description": "SQL 문의 최대 실행 시간을 설정합니다. 실행 시간이 제한을 초과하면 문이 종료됩니다. 제안 오류 수준: 경고",
+      "mysql": {
+        "title": "MAX_EXECUTION_TIME 매개변수를 명시적으로 설정하도록 강제",
+        "description": "변경 스크립트에서 MAX_EXECUTION_TIME 매개변수를 설정하여 문의 최대 실행 시간을 명시적으로 제어합니다. 제안 오류 수준: 경고"
+      },
+      "mariadb": {
+        "title": "MAX_STATEMENT_TIME 매개변수를 명시적으로 설정하도록 강제",
+        "description": "변경 스크립트에서 MAX_STATEMENT_TIME 매개변수를 설정하여 문의 최대 실행 시간을 명시적으로 제어합니다. 제안 오류 수준: 경고"
+      }
+    },
+    "statement-require-algorithm-option": {
+      "title": "ALTER TABLE 문에서 ALGORITHM 옵션 지정 요구",
+      "description": "ALTER TABLE 문에서 ALGORITHM 옵션을 지정하면 테이블 변경 적용 방법을 더 잘 제어할 수 있어 전체 테이블 복사나 잠금으로 인한 잠재적 중단을 최소화할 수 있습니다. 이는 성능을 최적화하고 스키마 수정 중 다운타임을 줄이는 데 도움이 됩니다. 제안 오류 수준: 경고."
+    },
+    "statement-require-lock-option": {
+      "title": "ALTER TABLE 문에서 LOCK 옵션 지정 요구",
+      "description": "ALTER TABLE 문의 LOCK 옵션을 사용하면 스키마 변경 중 잠금 수준을 제어할 수 있어 불필요한 테이블 잠금을 방지하고 더 나은 동시성을 보장할 수 있습니다. 이 옵션을 적절히 사용하면 DDL 작업이 활성 쿼리에 미치는 영향을 크게 줄일 수 있습니다. 제안 오류 수준: 경고."
+    },
+    "database-drop-empty-database": {
+      "title": "비어 있지 않은 데이터베이스 삭제 금지",
+      "description": "데이터베이스에 테이블이 없을 때만 삭제가 허용되어 실수로 인한 삭제를 크게 방지할 수 있습니다. 제안 오류 수준: 오류"
+    },
+    "index-no-duplicate-column": {
+      "title": "중복 열이 포함된 인덱스 금지",
+      "description": "중복 열이 있는 인덱스를 만들면 실패합니다. 제안 오류 수준: 오류"
+    },
+    "index-type-no-blob": {
+      "title": "\"BLOB\" 및 \"TEXT\" 데이터 유형 열에 인덱스 생성 금지",
+      "description": "\"BLOB\" 유형은 일반적으로 이진 데이터를 저장하는 데 사용되며 쿼리 조건으로 사용해서는 안 됩니다. 실수로 이 열 유형에 인덱스를 만들면 많은 리소스를 소비하고 심각한 성능 영향을 미칩니다. 제안 오류 수준: 오류"
+    },
+    "index-pk-type-limit": {
+      "title": "기본 키 유형 제한",
+      "description": "기본 키 유형이 INT 또는 BIGINT여야 합니다."
+    },
+    "index-key-number-limit": {
+      "title": "단일 인덱스의 열 수 제한",
+      "description": "5개 이상의 열로 구성된 복합 인덱스는 쿼리 성능을 크게 향상시키지 않지만 많은 공간을 차지하고 DML 성능을 저하시킵니다. 제안 오류 수준: 경고",
+      "component": {
+        "number": {
+          "title": "최대 열 수"
+        }
+      }
+    },
+    "index-total-number-limit": {
+      "title": "단일 테이블의 인덱스 수 제한",
+      "description": "인덱스는 쿼리 성능을 향상시킬 수 있지만 많은 공간을 차지하고 DML 성능을 저하시킵니다. 따라서 테이블에 5개 이상의 인덱스를 만드는 것은 권장하지 않습니다. 제안 오류 수준: 경고",
+      "component": {
+        "number": {
+          "title": "최대 인덱스 수"
+        }
+      }
+    },
+    "index-primary-key-type-allowlist": {
+      "title": "기본 키 유형의 허용 목록",
+      "description": "적절한 기본 키 유형은 저장 구조를 최적화하고, 공간 사용을 줄이며, 삽입 및 쿼리 성능에 유리합니다. 제안 오류 수준: 경고",
+      "component": {
+        "list": {
+          "title": "허용 목록"
+        }
+      }
+    },
+    "index-create-concurrently": {
+      "title": "동시 인덱스 생성 강제",
+      "description": "PostgreSQL 11 이상에서는 표준 문을 사용하여 인덱스를 만들면 테이블이 잠기고 쓰기가 불가능해집니다. \"CONCURRENTLY\" 모드를 사용하면 이 문제를 방지할 수 있습니다. 제안 오류 수준: 경고"
+    },
+    "index-type-allow-list": {
+      "title": "인덱스 유형의 허용 목록",
+      "description": "다양한 인덱스 유형은 서로 다른 성능 특성을 가집니다. 예를 들어, B-트리 인덱스는 범위 쿼리에 적합하고 해시 인덱스는 동등 쿼리에 적합합니다. 제안 오류 수준: 경고",
+      "component": {
+        "list": {
+          "title": "허용 목록"
+        }
+      }
+    },
+    "index-not-redundant": {
+      "title": "중복 인덱스 허용 안 함",
+      "description": "중복 인덱스는 성능 손실로 이어지고 추가 공간을 차지할 수 있습니다. 예를 들어, 열 (c1)에 이미 인덱스가 있다면 열 (c1, c2)의 인덱스는 중복 인덱스로 취급됩니다. 제안 오류 수준: 경고"
+    },
+    "system-charset-allowlist": {
+      "title": "문자 집합 허용 목록",
+      "description": "문자 집합은 테이블에 저장할 수 있는 문자를 결정합니다. 잘못된 문자 집합을 사용하면 CJK 및 이모티콘과 같은 애플리케이션의 특정 문자를 올바르게 저장하고 표시할 수 없게 될 수 있습니다. 제안 오류 수준: 오류",
+      "component": {
+        "list": {
+          "title": "허용 목록"
+        }
+      }
+    },
+    "system-collation-allowlist": {
+      "title": "콜레이션 허용 목록",
+      "description": "콜레이션은 문자 비교 및 정렬 규칙을 결정합니다. 예를 들어, 대소문자를 구분하지 않는 콜레이션을 사용할 때 쿼리에서 \"ABC\"와 \"abc\"는 동일한 문자열로 취급됩니다. 제안 오류 수준: 오류",
+      "component": {
+        "list": {
+          "title": "허용 목록"
+        }
+      }
+    },
+    "system-comment-length": {
+      "title": "주석 길이 제한",
+      "description": "",
+      "component": {
+        "number": {
+          "title": "최대 주석 길이"
+        }
+      }
+    },
+    "system-procedure-disallow-create": {
+      "title": "프로시저 생성 금지",
+      "description": "이 규칙은 데이터베이스 내에서 프로시저의 실행을 금지합니다. 시스템 프로시저는 종종 데이터베이스 환경의 안정성과 보안에 영향을 미칠 수 있는 중요한 작업을 수행합니다. 실행을 금지함으로써 의도하지 않은 변경과 잠재적인 취약점을 방지하는 데 도움이 됩니다. 제안 오류 수준: 경고"
+    },
+    "system-event-disallow-create": {
+      "title": "이벤트 생성 금지",
+      "description": "이 규칙은 데이터베이스 내에서 이벤트 생성을 금지합니다. 시스템 이벤트는 종종 데이터베이스 환경에 영향을 미칠 수 있는 자동화된 작업을 수행합니다. 생성을 금지함으로써 데이터베이스 작업 제어를 유지하고 잠재적인 중단을 방지하는 데 도움이 됩니다. 제안 오류 수준: 경고"
+    },
+    "system-view-disallow-create": {
+      "title": "뷰 생성 금지",
+      "description": "이 규칙은 데이터베이스 내에서 뷰 생성을 금지합니다. 뷰는 쿼리를 단순화하고 데이터 보안을 강화할 수 있는 데이터의 가상 표현을 제공합니다. 생성을 금지함으로써 데이터베이스 스키마 제어를 유지하고 잠재적인 보안 위험을 방지하는 데 도움이 됩니다. 제안 오류 수준: 경고"
+    },
+    "system-function-disallow-create": {
+      "title": "함수 생성 금지",
+      "description": "이 규칙은 데이터베이스 내에서 함수 생성을 금지합니다. 함수는 쿼리를 단순화하고 데이터 무결성을 강화할 수 있는 재사용 가능한 로직을 제공합니다. 생성을 금지함으로써 데이터베이스 스키마 제어를 유지하고 잠재적인 보안 위험을 방지하는 데 도움이 됩니다. 제안 오류 수준: 경고"
+    },
+    "system-function-disallowed-list": {
+      "title": "특정 함수 사용 금지",
+      "description": "이 규칙은 데이터베이스 내에서 특정 함수의 사용을 제한합니다. 이러한 함수의 사용을 금지함으로써 데이터 일관성과 보안을 유지하는 데 도움이 됩니다. 제안 오류 수준: 경고",
+      "component": {
+        "list": {
+          "title": "금지 목록"
+        }
+      }
+    },
+    "advice-online-migration": {
+      "title": "온라인 마이그레이션",
+      "description": "마이그레이션된 테이블 행 수가 설정을 초과하는 경우 온라인 마이그레이션을 활성화하도록 조언합니다. 제안 오류 수준: 경고",
+      "component": {
+        "number": {
+          "title": "임계값"
+        }
+      }
+    },
+    "statement-add-foreign-key-not-valid": {
+      "title": "외래 키 추가 시 \"NOT VALID\" 옵션 포함 강제",
+      "description": "외래 키를 추가하려면 기존 데이터를 확인하고 SHARE ROW EXCLUSIVE 테이블 잠금이 필요합니다. 이는 쓰기를 차단하여 비즈니스 중단을 초래할 수 있습니다. \"NOT VALID\" 옵션을 추가하여 새 데이터를 검증하고 변경이 완료된 후 기존 데이터를 검증하는 것이 좋습니다. 제안 오류 수준: 경고"
+    },
+    "statement-non-transactional": {
+      "title": "비트랜잭션 문 감지 및 보고",
+      "description": ""
+    },
+    "builtin-prior-backup-check": {
+      "title": "사전 백업 가능성 확인",
+      "description": "이 규칙은 데이터 변경 전에 백업을 생성할 수 있는지 확인합니다. 백업 대상 데이터베이스의 존재 여부를 확인하고 지원되지 않는 시나리오를 허용하지 않습니다. 이는 내장되어 있으며 건너뛸 수 없습니다."
+    },
+    "statement-object-owner-check": {
+      "title": "객체 소유자 확인",
+      "description": "이 규칙은 DDL에 대한 객체 소유자가 현재 사용자와 동일한지 확인합니다."
+    }
+  },
+  "level": {
+    "name": "오류 수준",
+    "error": "오류",
+    "warning": "경고",
+    "disabled": "비활성화"
+  }
+}
