@@ -7,8 +7,8 @@ const STORAGE_KEY = "bb.issue.layout";
 const CURRENT_DEFAULT_VERSION = 1;
 
 export function useIssueLayoutVersion() {
-  // Store whether user prefers the new layout (true) or old layout (false)
-  const enabled = useLocalStorage<boolean>(STORAGE_KEY, false);
+  // Store whether user prefers the new layout (true) or old layout (false).
+  const enabled = useLocalStorage<boolean>(`${STORAGE_KEY}.enabled`, true);
 
   // Store the version number when user last made a choice
   const lastVersion = useLocalStorage<number>(
