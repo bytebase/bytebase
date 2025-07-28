@@ -283,7 +283,14 @@
     "action-all-tasks-in-current-stage": "{action} tất cả các tác vụ trong giai đoạn hiện tại",
     "cancel-task": "Hủy tác vụ | Hủy các tác vụ",
     "created": "Đã tạo",
-    "run-immediately": "Chạy nhiệm vụ ngay lập tức",
+    "run-immediately": {
+      "self": "Chạy ngay lập tức",
+      "description": "Các tác vụ sẽ bắt đầu thực thi ngay khi bạn nhấp vào Chạy. Không cần trì hoãn hay lên lịch."
+    },
+    "schedule-for-later": {
+      "self": "Lên lịch cho sau",
+      "description": "Đặt ngày và giờ cụ thể để các tác vụ tự động bắt đầu chạy. Hữu ích cho các khung giờ bảo trì hoặc ngoài giờ cao điểm."
+    },
     "select-task": "Chọn nhiệm vụ | Chọn nhiệm vụ",
     "selected-n-tasks": "{n} nhiệm vụ đã chọn | {n} nhiệm vụ đã chọn",
     "no-tasks-selected": "Không có nhiệm vụ nào được chọn",

@@ -283,7 +283,14 @@
     "action-all-tasks-in-current-stage": "{action}当前阶段的所有任务",
     "cancel-task": "取消任务",
     "created": "创建于",
-    "run-immediately": "立即运行任务",
+    "run-immediately": {
+      "self": "立即运行",
+      "description": "点击“运行”后，任务将立即开始执行。"
+    },
+    "schedule-for-later": {
+      "self": "定时运行",
+      "description": "设置任务自动开始运行的特定时间。"
+    },
     "select-task": "选择任务 | 选择任务",
     "selected-n-tasks": "已选择 {n} 个任务",
     "no-tasks-selected": "未选择任何任务",
