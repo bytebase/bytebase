@@ -536,8 +536,7 @@ func generateCreateTable(schemaName, tableName string, table *storepb.TableMetad
 			case "NONCLUSTERED":
 				_, _ = buf.WriteString(" NONCLUSTERED")
 			default:
-				// Default to NONCLUSTERED if not specified
-				_, _ = buf.WriteString(" NONCLUSTERED")
+				// Default to "" if not specified
 			}
 			_, _ = buf.WriteString(" (")
 			for j, expr := range idx.Expressions {
