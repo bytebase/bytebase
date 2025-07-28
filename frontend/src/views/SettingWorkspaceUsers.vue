@@ -43,7 +43,7 @@
             <p class="text-base font-medium leading-7 text-main">
               <span>{{ $t("settings.members.groups.self") }}</span>
               <span class="ml-1 font-normal text-control-light">
-                ({{ groupStore.groupList.length }})
+                ({{ groupList.length }})
               </span>
             </p>
           </div>
@@ -204,7 +204,7 @@ import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSet
 import {
   featureToRef,
   useActuatorV1Store,
-  useGroupStore,
+  useGroupList,
   useSettingV1Store,
   useSubscriptionV1Store,
   useUIStateStore,
@@ -252,7 +252,7 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
-const groupStore = useGroupStore();
+const groupList = useGroupList();
 const uiStateStore = useUIStateStore();
 const actuatorStore = useActuatorV1Store();
 const settingV1Store = useSettingV1Store();
@@ -357,17 +357,15 @@ onMounted(() => {
   const name = route.query.name as string;
   if (name?.startsWith(groupNamePrefix)) {
     state.typeTab = "GROUPS";
-    state.editingGroup = groupStore.groupList.find(
-      (group) => group.name === name
-    );
+    state.editingGroup = groupList.value.find((group) => group.name === name);
     state.showCreateGroupDrawer = !!state.editingGroup;
   }
 });
 
 const filteredGroupList = computed(() => {
   const keyword = state.activeUserFilterText.trim().toLowerCase();
-  if (!keyword) return groupStore.groupList;
-  return groupStore.groupList.filter((group) => {
+  if (!keyword) return groupList.value;
+  return groupList.value.filter((group) => {
     return (
       group.title.toLowerCase().includes(keyword) ||
       group.name.toLowerCase().includes(keyword)
