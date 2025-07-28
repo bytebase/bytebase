@@ -65,31 +65,6 @@
       </div>
     </div>
 
-    <!-- Inline Results Display -->
-    <div v-if="inlineAdvices.length > 0" class="mt-2 space-y-2">
-      <CheckResultItem
-        v-for="(advice, idx) in inlineAdvices"
-        :key="`inline-${idx}`"
-        :status="getCheckResultStatus(advice.status)"
-        :title="advice.title"
-        :content="advice.content"
-        :position="advice.startPosition"
-        :report-type="'sqlReviewReport'"
-      />
-
-      <!-- Show More Link -->
-      <div v-if="hasMoreAdvices" class="flex justify-end">
-        <NButton size="tiny" quaternary @click="openDrawer('ERROR')">
-          {{
-            $t("plan.targets.view-all", {
-              count: allAdvices.filter((a) => a.status === Advice_Status.ERROR)
-                .length,
-            })
-          }}
-        </NButton>
-      </div>
-    </div>
-
     <!-- Status Drawer -->
     <Drawer v-model:show="drawerVisible">
       <DrawerContent
@@ -274,20 +249,6 @@ const drawerAdvices = computed(() => {
       return advice.status === Advice_Status.SUCCESS;
     }
   });
-});
-
-// Get top 3 error results for inline display
-const inlineAdvices = computed(() => {
-  return allAdvices.value
-    .filter((advice) => advice.status === Advice_Status.ERROR)
-    .slice(0, 3);
-});
-
-const hasMoreAdvices = computed(() => {
-  const errorCount = allAdvices.value.filter(
-    (advice) => advice.status === Advice_Status.ERROR
-  ).length;
-  return errorCount > 3;
 });
 
 const runChecks = async () => {
