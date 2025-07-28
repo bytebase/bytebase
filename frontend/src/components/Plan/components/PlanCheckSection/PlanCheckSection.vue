@@ -72,6 +72,36 @@
       </div>
     </div>
 
+    <!-- Inline Error Results Display -->
+    <div v-if="errorResults.length > 0" class="mt-2 space-y-2">
+      <CheckResultItem
+        v-for="result in errorResults.slice(0, MAX_INLINE_ERROR_RESULTS)"
+        :key="result.id"
+        :status="result.status"
+        :title="result.title"
+        :content="result.content"
+        :code="result.code"
+        :report-type="result.reportType"
+        :position="result.position"
+        :affected-rows="result.affectedRows"
+      />
+
+      <!-- Show More Link -->
+      <div v-if="hasMoreErrors" class="flex justify-end">
+        <NButton
+          size="tiny"
+          quaternary
+          @click="openChecksDrawer(PlanCheckRun_Result_Status.ERROR)"
+        >
+          {{
+            $t("plan.targets.view-all", {
+              count: errorResults.length,
+            })
+          }}
+        </NButton>
+      </div>
+    </div>
+
     <ChecksDrawer
       v-model:show="showChecksDrawer"
       :status="selectedResultStatus"
@@ -107,6 +137,9 @@ import { usePlanContext } from "../../logic/context";
 import { useResourcePoller } from "../../logic/poller";
 import ChecksDrawer from "../ChecksView/ChecksDrawer.vue";
 import { useSelectedSpec } from "../SpecDetailView/context";
+import CheckResultItem from "../common/CheckResultItem.vue";
+
+const MAX_INLINE_ERROR_RESULTS = 3;
 
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
@@ -160,6 +193,47 @@ const getChecksCount = (status: PlanCheckRun_Result_Status) => {
     plan.value.planCheckRunStatusCount[PlanCheckRun_Result_Status[status]] || 0
   );
 };
+
+const errorResults = computed(() => {
+  return checksOfSelectedSpec.value.flatMap((checkRun) => {
+    return checkRun.results
+      .filter((result) => result.status === PlanCheckRun_Result_Status.ERROR)
+      .map((result) => {
+        return {
+          id: `${checkRun.name}-${result.title}`,
+          title: result.title,
+          content: result.content,
+          status: "ERROR" as "ERROR" | "SUCCESS" | "WARNING",
+          code: result.code,
+          reportType: result.report?.case,
+          position:
+            result.report?.case === "sqlReviewReport" &&
+            result.report.value.startPosition
+              ? result.report.value.startPosition
+              : undefined,
+          affectedRows:
+            result.report?.case === "sqlSummaryReport"
+              ? result.report.value.affectedRows
+              : undefined,
+        };
+      });
+  });
+});
+
+const hasMoreErrors = computed(() => {
+  let errorCount = 0;
+  for (const checkRun of checksOfSelectedSpec.value) {
+    for (const result of checkRun.results) {
+      if (result.status === PlanCheckRun_Result_Status.ERROR) {
+        errorCount++;
+        if (errorCount > 3) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+});
 
 const runChecks = async () => {
   if (!plan.value.name || !selectedSpec.value) return;
