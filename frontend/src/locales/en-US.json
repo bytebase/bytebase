@@ -283,7 +283,14 @@
     "action-all-tasks-in-current-stage": "{action} all tasks in current stage",
     "cancel-task": "Cancel task | Cancel tasks",
     "created": "Created",
-    "run-immediately": "Run task immediately | Run tasks immediately",
+    "run-immediately": {
+      "self": "Run immediately",
+      "description": "Tasks will start executing as soon as you click Run. No delay or scheduling required."
+    },
+    "schedule-for-later": {
+      "self": "Schedule for later",
+      "description": "Set a specific date and time for tasks to automatically start running. Useful for maintenance windows or off-peak hours."
+    },
     "select-task": "Select task | Select tasks",
     "selected-n-tasks": "{n} task selected | {n} tasks selected",
     "no-tasks-selected": "No tasks selected",
