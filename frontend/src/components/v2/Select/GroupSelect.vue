@@ -20,7 +20,7 @@ import {
   getMemberBindings,
 } from "@/components/Member/utils";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
-import { useGroupStore, useProjectV1Store, useWorkspaceV1Store } from "@/store";
+import { useGroupList, useProjectV1Store, useWorkspaceV1Store } from "@/store";
 import { PRESET_WORKSPACE_ROLES } from "@/types";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import ResourceSelect from "./ResourceSelect.vue";
@@ -50,13 +50,13 @@ defineEmits<{
   (event: "update:groups", val: string[]): void;
 }>();
 
-const groupStore = useGroupStore();
+const groupList = useGroupList();
 const projectV1Store = useProjectV1Store();
 const workspaceStore = useWorkspaceV1Store();
 
-const groupList = computedAsync(async () => {
+const filteredGroupList = computedAsync(async () => {
   if (!props.projectName) {
-    return groupStore.groupList;
+    return groupList.value;
   }
   const project = await projectV1Store.getOrFetchProjectByName(
     props.projectName
@@ -82,7 +82,7 @@ const groupList = computedAsync(async () => {
 }, []);
 
 const options = computed(() => {
-  return groupList.value.map((group) => ({
+  return filteredGroupList.value.map((group) => ({
     value: group.name,
     label: group.title,
     resource: group,

@@ -15,7 +15,7 @@
 <script lang="ts" setup>
 import { NTag } from "naive-ui";
 import { computed } from "vue";
-import { useGroupStore } from "@/store";
+import { useGroupList } from "@/store";
 import { extractUserId } from "@/store/modules/v1/common";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import { type User } from "@/types/proto-es/v1/user_service_pb";
@@ -28,11 +28,11 @@ defineEmits<{
   (event: "select-group", group: Group): void;
 }>();
 
-const groupStore = useGroupStore();
+const groupList = useGroupList();
 
 const groups = computed(() => {
   const groups = [];
-  for (const group of groupStore.groupList) {
+  for (const group of groupList.value) {
     for (const member of group.members) {
       if (extractUserId(member.member) === props.user.email) {
         groups.push(group);
