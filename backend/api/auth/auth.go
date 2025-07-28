@@ -387,6 +387,8 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 		authMethod = common.AuthMethodIAM
 	case v1pb.AuthMethod_CUSTOM:
 		authMethod = common.AuthMethodCustom
+	default:
+		return nil, errs.Errorf("unknown auth method %v for full method name %q", am, fullMethod)
 	}
 	auditAny := proto.GetExtension(md, v1pb.E_Audit)
 	audit, ok := auditAny.(bool)

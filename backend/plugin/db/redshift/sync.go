@@ -392,6 +392,8 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 				// https://www.postgresql.org/docs/current/infoschema-columns.html.
 				column.Type = fmt.Sprintf("%s(%s)", column.Type, characterMaxLength.String)
 			}
+		default:
+			// No special handling needed for other types
 		}
 		column.Collation = collation.String
 		column.Comment = comment.String
@@ -686,6 +688,8 @@ func getPgVersionAndRedshiftVersion(version string) (string, string, error) {
 				pgVersion = matches[i]
 			case "redshiftVersion":
 				redshiftVersion = matches[i]
+			default:
+				// Ignore other named groups
 			}
 		}
 	}

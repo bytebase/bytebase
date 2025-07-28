@@ -74,6 +74,8 @@ func (checker *columnDisallowChangingTypeChecker) Enter(in ast.Node) (ast.Node, 
 				changeType = checker.changeColumnType(node.Table.Name.O, spec.OldColumnName.Name.O, spec.NewColumns[0].Tp.String())
 			case ast.AlterTableModifyColumn:
 				changeType = checker.changeColumnType(node.Table.Name.O, spec.NewColumns[0].Name.Name.O, spec.NewColumns[0].Tp.String())
+			default:
+				// Skip other alter table specification types
 			}
 			if changeType {
 				break

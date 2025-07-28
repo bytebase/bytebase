@@ -302,6 +302,8 @@ func splitTiDBStatement(stream *antlr.CommonTokenStream, statement string) ([]ba
 			}
 		case parser.MySQLParserSEMICOLON_SYMBOL:
 			semicolonStack = append(semicolonStack, i)
+		default:
+			// Continue processing other token types
 		}
 	}
 

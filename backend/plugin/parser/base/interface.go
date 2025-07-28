@@ -306,6 +306,8 @@ func TSQLRecognizeExplainType(spans []*QuerySpan, stmt []string) {
 						on = true
 					case "off":
 						on = false
+					default:
+						// Unknown status, keep default value
 					}
 				}
 			}

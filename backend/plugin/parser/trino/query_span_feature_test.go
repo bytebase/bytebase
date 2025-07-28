@@ -60,6 +60,8 @@ func TestPredicateExtraction(t *testing.T) {
 			foundIDCol = true
 		case "name":
 			foundNameCol = true
+		default:
+			// Other columns that we don't track in this test
 		}
 	}
 

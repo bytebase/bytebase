@@ -110,6 +110,8 @@ func buildCommentMessage(resp *v1pb.CheckReleaseResponse) string {
 				errorCount++
 			case v1pb.Advice_STATUS_UNSPECIFIED, v1pb.Advice_SUCCESS:
 				// No action needed
+			default:
+				// Ignore unknown advice statuses
 			}
 		}
 	}
@@ -146,6 +148,8 @@ func buildCommentMessage(resp *v1pb.CheckReleaseResponse) string {
 				errorCount++
 			case v1pb.Advice_STATUS_UNSPECIFIED, v1pb.Advice_SUCCESS:
 				// No action needed
+			default:
+				// Ignore unknown advice statuses
 			}
 		}
 		counts := []string{}

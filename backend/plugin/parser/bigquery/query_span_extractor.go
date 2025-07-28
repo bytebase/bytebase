@@ -371,6 +371,8 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(selectCtx parser.ISele
 				Name:          aliasName,
 				SourceColumns: sourceColumnSet,
 			})
+		default:
+			// Skip unrecognized select list item types
 		}
 	}
 	return &base.PseudoTable{
@@ -909,6 +911,10 @@ func joinTable(anchor base.TableSource, tp joinType, usingColumns []string, tabl
 		}
 
 		resultField = append(resultField, rFields...)
+	default:
+		// For unhandled join types, combine all fields from both sources
+		resultField = append(resultField, anchor.GetQuerySpanResult()...)
+		resultField = append(resultField, tableSource.GetQuerySpanResult()...)
 	}
 	return &base.PseudoTable{
 		Name:    "",
@@ -929,9 +935,9 @@ func getJoinTypeFromJoinType(joinType parser.IJoin_typeContext) joinType {
 		return leftOuterJoin
 	case joinType.RIGHT_SYMBOL() != nil:
 		return rightOuterJoin
+	default:
+		return crossJoin
 	}
-
-	return crossJoin
 }
 
 func getJoinTypeFromJoinItem(joinItem parser.IJoin_itemContext) joinType {

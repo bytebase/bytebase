@@ -275,6 +275,8 @@ func convertValue(v bigquery.Value, fieldType bigquery.FieldType) *v1pb.RowValue
 	case bigquery.IntervalFieldType:
 	case bigquery.JSONFieldType:
 	case bigquery.RangeFieldType:
+	default:
+		// Unknown field type, will fall back to string representation
 	}
 
 	// Fall back to string representation.

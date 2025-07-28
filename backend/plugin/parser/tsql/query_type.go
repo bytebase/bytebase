@@ -41,9 +41,9 @@ func (l *queryTypeListener) getQueryTypeForBatchWithoutGo(batch parser.IBatch_wi
 		return l.getQueryTypeForBatchLevelStatement(batch.Batch_level_statement())
 	case batch.Execute_body_batch() != nil:
 		return l.getQueryTypeForExecuteBodyBatch(batch.Execute_body_batch())
+	default:
+		return base.QueryTypeUnknown, nil
 	}
-
-	return base.QueryTypeUnknown, nil
 }
 
 func (l *queryTypeListener) getQueryTypeForSQLClause(clause parser.ISql_clausesContext) (base.QueryType, error) {
@@ -67,8 +67,9 @@ func (l *queryTypeListener) getQueryTypeForSQLClause(clause parser.ISql_clausesC
 		return base.QueryTypeUnknown, nil
 	case clause.Cfl_statement() != nil, clause.Dbcc_clause() != nil, clause.Backup_statement() != nil:
 		return base.QueryTypeUnknown, nil
+	default:
+		return base.QueryTypeUnknown, nil
 	}
-	return base.QueryTypeUnknown, nil
 }
 
 func (*queryTypeListener) getQueryTypeForBatchLevelStatement(parser.IBatch_level_statementContext) (base.QueryType, error) {

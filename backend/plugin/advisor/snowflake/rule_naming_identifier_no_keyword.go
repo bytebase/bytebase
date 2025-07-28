@@ -80,6 +80,8 @@ func (r *NamingIdentifierNoKeywordRule) OnEnter(ctx antlr.ParserRuleContext, nod
 		r.enterColumnDeclItemList(ctx.(*parser.Column_decl_item_listContext))
 	case NodeTypeAlterTable:
 		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }
@@ -89,6 +91,8 @@ func (r *NamingIdentifierNoKeywordRule) OnExit(_ antlr.ParserRuleContext, nodeTy
 	switch nodeType {
 	case NodeTypeCreateTable, "Create_table_as_select":
 		r.currentOriginalTableName = ""
+	default:
+		// Ignore other node types
 	}
 	return nil
 }

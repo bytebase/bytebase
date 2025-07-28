@@ -96,6 +96,8 @@ func (r *ColumnRequireRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string
 		r.handleDropColumnClause(ctx.(*parser.Drop_column_clauseContext))
 	case "Rename_column_clause":
 		r.handleRenameColumnClause(ctx.(*parser.Rename_column_clauseContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }
@@ -107,6 +109,8 @@ func (r *ColumnRequireRule) OnExit(ctx antlr.ParserRuleContext, nodeType string)
 		r.handleCreateTableExit(ctx.(*parser.Create_tableContext))
 	case "Alter_table":
 		r.handleAlterTableExit(ctx.(*parser.Alter_tableContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }

@@ -745,6 +745,9 @@ func (m *InnerOuterMasker) Mask(data *MaskData) *v1pb.RowValue {
 		maskedData = m.maskInner([]rune(unmaskedData))
 	case InnerOuterMaskerTypeOuter:
 		maskedData = m.maskOuter([]rune(unmaskedData))
+	default:
+		// For undefined or unknown masker types, return the original data unmasked
+		maskedData = unmaskedData
 	}
 
 	return &v1pb.RowValue{
