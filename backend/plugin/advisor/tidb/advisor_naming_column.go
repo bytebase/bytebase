@@ -46,7 +46,6 @@ func (*NamingColumnConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 		title:     string(checkCtx.Rule.Type),
 		format:    format,
 		maxLength: maxLength,
-		tables:    make(tableState),
 	}
 
 	for _, stmtNode := range root {
@@ -62,7 +61,6 @@ type namingColumnConventionChecker struct {
 	title      string
 	format     *regexp.Regexp
 	maxLength  int
-	tables     tableState
 }
 
 // Enter implements the ast.Visitor interface.
@@ -108,6 +106,8 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 					name: spec.NewColumns[0].Name.Name.O,
 					line: in.OriginTextPosition(),
 				})
+			default:
+				// Skip other alter table specification types
 			}
 		}
 	}

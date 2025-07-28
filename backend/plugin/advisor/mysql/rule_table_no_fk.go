@@ -83,6 +83,8 @@ func (r *TableNoFKRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) er
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
+		// No action required for other node types
 	}
 	return nil
 }

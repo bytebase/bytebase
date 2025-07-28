@@ -90,6 +90,8 @@ func (r *ColumnNoNullRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string)
 		r.handleAlterTable(ctx.(*parser.Alter_tableContext))
 	case "Modify_col_properties":
 		r.handleModifyColProperties(ctx.(*parser.Modify_col_propertiesContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }
@@ -103,6 +105,8 @@ func (r *ColumnNoNullRule) OnExit(_ antlr.ParserRuleContext, nodeType string) er
 		r.columnID = ""
 	case "Alter_table":
 		r.tableName = ""
+	default:
+		// Ignore other node types
 	}
 	return nil
 }

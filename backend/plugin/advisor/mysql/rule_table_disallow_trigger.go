@@ -85,6 +85,8 @@ func (r *TableDisallowTriggerRule) OnEnter(ctx antlr.ParserRuleContext, nodeType
 		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
 	case NodeTypeCreateTrigger:
 		r.checkCreateTrigger(ctx.(*mysql.CreateTriggerContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }

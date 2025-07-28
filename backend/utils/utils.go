@@ -1,4 +1,6 @@
 // Package utils is a utility library for server.
+//
+//nolint:revive
 package utils
 
 import (

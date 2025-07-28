@@ -1275,6 +1275,8 @@ func writeFunctionDiff(out *strings.Builder, funcDiff *schema.FunctionDiff) erro
 			_, _ = out.WriteString(";")
 		}
 		_, _ = out.WriteString("\n\n")
+	default:
+		// Ignore other actions
 	}
 	return nil
 }

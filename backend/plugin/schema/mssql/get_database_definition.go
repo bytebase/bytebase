@@ -337,7 +337,7 @@ func writeTable(out *strings.Builder, schemaName string, table *storepb.TableMet
 		_, _ = out.WriteString(",\n")
 		writeCheck(out, check)
 	}
-	_, _ = fmt.Fprintf(out, "\n);\n\n")
+	_, _ = fmt.Fprint(out, "\n);\n\n")
 
 	for _, index := range table.Indexes {
 		if index.IsConstraint {

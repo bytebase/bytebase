@@ -196,8 +196,10 @@ func matchMySQLTableConstraint(text string, cons *tidbast.Constraint) bool {
 		notForeign := !strings.Contains(text, "foreign key")
 		isIndex := strings.Contains(text, "index") || strings.Contains(text, "key")
 		return notUnique && notPrimary && notForeign && isIndex
+	default:
+		// Unknown constraint type
+		return false
 	}
-	return false
 }
 
 // SetLineForPGCreateTableStmt sets the line for columns and table constraints in CREATE TABLE statements.
@@ -357,8 +359,10 @@ func matchTableConstraint(text string, cons *ast.ConstraintDef) bool {
 		return strings.Contains(text, "primary key")
 	case ast.ConstraintTypeForeign:
 		return strings.Contains(text, "foreign key")
+	default:
+		// Unknown constraint type
+		return false
 	}
-	return false
 }
 
 // SplitTiDBMultiSQL splits the statement to a string slice.
@@ -792,6 +796,8 @@ func (t *Tokenizer) scanComment() error {
 		t.skip(1)
 		t.skipToNewLine()
 		return nil
+	default:
+		// Not a comment
 	}
 	return errors.Errorf("no comment found")
 }

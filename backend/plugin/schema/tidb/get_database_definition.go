@@ -607,7 +607,7 @@ func writeTable(out *strings.Builder, table *storepb.TableMetadata) error {
 
 	for i, column := range table.Columns {
 		if i != 0 {
-			if _, err := fmt.Fprintf(out, ",\n"); err != nil {
+			if _, err := fmt.Fprint(out, ",\n"); err != nil {
 				return err
 			}
 		}
@@ -746,7 +746,7 @@ func printPartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 	}
 
 	if len(partitions[0].Subpartitions) > 0 {
-		if _, err := fmt.Fprintf(buf, "\nSUBPARTITION BY "); err != nil {
+		if _, err := fmt.Fprint(buf, "\nSUBPARTITION BY "); err != nil {
 			return err
 		}
 		switch partitions[0].Subpartitions[0].Type {
@@ -787,7 +787,7 @@ func printPartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 	}
 
 	if useDefault == 0 {
-		if _, err := fmt.Fprintf(buf, "\n("); err != nil {
+		if _, err := fmt.Fprint(buf, "\n("); err != nil {
 			return err
 		}
 		preposition, err := getPrepositionByType(partitions[0].Type)
@@ -796,7 +796,7 @@ func printPartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 		}
 		for i, partition := range partitions {
 			if i != 0 {
-				if _, err := fmt.Fprintf(buf, ",\n "); err != nil {
+				if _, err := fmt.Fprint(buf, ",\n "); err != nil {
 					return err
 				}
 			}
@@ -816,7 +816,7 @@ func printPartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 			}
 
 			if subUseDefault == 0 && len(partition.Subpartitions) > 0 {
-				if _, err := fmt.Fprintf(buf, "\n ("); err != nil {
+				if _, err := fmt.Fprint(buf, "\n ("); err != nil {
 					return err
 				}
 				for j, subPartition := range partition.Subpartitions {
@@ -827,11 +827,11 @@ func printPartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 						return err
 					}
 					if j == len(partition.Subpartitions)-1 {
-						if _, err := fmt.Fprintf(buf, ")"); err != nil {
+						if _, err := fmt.Fprint(buf, ")"); err != nil {
 							return err
 						}
 					} else {
-						if _, err := fmt.Fprintf(buf, ",\n  "); err != nil {
+						if _, err := fmt.Fprint(buf, ",\n  "); err != nil {
 							return err
 						}
 					}
@@ -843,14 +843,14 @@ func printPartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 			}
 
 			if i == len(partitions)-1 {
-				if _, err := fmt.Fprintf(buf, ")"); err != nil {
+				if _, err := fmt.Fprint(buf, ")"); err != nil {
 					return err
 				}
 			}
 		}
 	}
 
-	if _, err := fmt.Fprintf(buf, " */"); err != nil {
+	if _, err := fmt.Fprint(buf, " */"); err != nil {
 		return err
 	}
 
@@ -933,7 +933,7 @@ func printForeignKeyClause(buf *strings.Builder, fk *storepb.ForeignKeyMetadata)
 
 	for i, column := range fk.Columns {
 		if i != 0 {
-			if _, err := fmt.Fprintf(buf, ", "); err != nil {
+			if _, err := fmt.Fprint(buf, ", "); err != nil {
 				return err
 			}
 		}
@@ -948,7 +948,7 @@ func printForeignKeyClause(buf *strings.Builder, fk *storepb.ForeignKeyMetadata)
 
 	for i, column := range fk.ReferencedColumns {
 		if i != 0 {
-			if _, err := fmt.Fprintf(buf, ", "); err != nil {
+			if _, err := fmt.Fprint(buf, ", "); err != nil {
 				return err
 			}
 		}
@@ -957,7 +957,7 @@ func printForeignKeyClause(buf *strings.Builder, fk *storepb.ForeignKeyMetadata)
 		}
 	}
 
-	if _, err := fmt.Fprintf(buf, ")"); err != nil {
+	if _, err := fmt.Fprint(buf, ")"); err != nil {
 		return err
 	}
 
@@ -981,20 +981,20 @@ func printIndexClause(buf *strings.Builder, index *storepb.IndexMetadata) error 
 		return nil
 	}
 
-	if _, err := fmt.Fprintf(buf, ",\n  "); err != nil {
+	if _, err := fmt.Fprint(buf, ",\n  "); err != nil {
 		return err
 	}
 
 	if index.Unique {
-		if _, err := fmt.Fprintf(buf, "UNIQUE "); err != nil {
+		if _, err := fmt.Fprint(buf, "UNIQUE "); err != nil {
 			return err
 		}
 	} else if strings.EqualFold(index.Type, mysqlIndexFullText) {
-		if _, err := fmt.Fprintf(buf, "FULLTEXT "); err != nil {
+		if _, err := fmt.Fprint(buf, "FULLTEXT "); err != nil {
 			return err
 		}
 	} else if strings.EqualFold(index.Type, mysqlIndexSpatial) {
-		if _, err := fmt.Fprintf(buf, "SPATIAL "); err != nil {
+		if _, err := fmt.Fprint(buf, "SPATIAL "); err != nil {
 			return err
 		}
 	}
@@ -1005,7 +1005,7 @@ func printIndexClause(buf *strings.Builder, index *storepb.IndexMetadata) error 
 
 	for i, expr := range index.Expressions {
 		if i != 0 {
-			if _, err := fmt.Fprintf(buf, ", "); err != nil {
+			if _, err := fmt.Fprint(buf, ", "); err != nil {
 				return err
 			}
 		}
@@ -1022,7 +1022,7 @@ func printIndexClause(buf *strings.Builder, index *storepb.IndexMetadata) error 
 		}
 	}
 
-	if _, err := fmt.Fprintf(buf, ")"); err != nil {
+	if _, err := fmt.Fprint(buf, ")"); err != nil {
 		return err
 	}
 
@@ -1070,12 +1070,12 @@ func printIndexKeyPart(buf *strings.Builder, expr string, length int64, descendi
 func printPrimaryKeyClause(buf *strings.Builder, table *storepb.TableMetadata) error {
 	for _, index := range table.GetIndexes() {
 		if index.Primary {
-			if _, err := fmt.Fprintf(buf, ",\n  PRIMARY KEY ("); err != nil {
+			if _, err := fmt.Fprint(buf, ",\n  PRIMARY KEY ("); err != nil {
 				return err
 			}
 			for i, column := range index.Expressions {
 				if i != 0 {
-					if _, err := fmt.Fprintf(buf, ", "); err != nil {
+					if _, err := fmt.Fprint(buf, ", "); err != nil {
 						return err
 					}
 				}
@@ -1091,7 +1091,7 @@ func printPrimaryKeyClause(buf *strings.Builder, table *storepb.TableMetadata) e
 					return err
 				}
 			}
-			if _, err := fmt.Fprintf(buf, ")"); err != nil {
+			if _, err := fmt.Fprint(buf, ")"); err != nil {
 				return err
 			}
 			if _, err := fmt.Fprintf(buf, " /*T![clustered_index] %s */", table.PrimaryKeyType); err != nil {
@@ -1135,18 +1135,20 @@ func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata, tab
 		}
 		switch column.Generation.Type {
 		case storepb.GenerationMetadata_TYPE_STORED:
-			if _, err := fmt.Fprintf(buf, "STORED"); err != nil {
+			if _, err := fmt.Fprint(buf, "STORED"); err != nil {
 				return err
 			}
 		case storepb.GenerationMetadata_TYPE_VIRTUAL:
-			if _, err := fmt.Fprintf(buf, "VIRTUAL"); err != nil {
+			if _, err := fmt.Fprint(buf, "VIRTUAL"); err != nil {
 				return err
 			}
+		default:
+			// No special handling for other generation types
 		}
 	}
 
 	if !column.Nullable {
-		if _, err := fmt.Fprintf(buf, " NOT NULL"); err != nil {
+		if _, err := fmt.Fprint(buf, " NOT NULL"); err != nil {
 			return err
 		}
 	}
@@ -1195,7 +1197,7 @@ func printDefaultClause(buf *strings.Builder, column *storepb.ColumnMetadata) er
 		if column.Generation != nil && column.Generation.Expression != "" {
 			return nil
 		}
-		if _, err := fmt.Fprintf(buf, " DEFAULT NULL"); err != nil {
+		if _, err := fmt.Fprint(buf, " DEFAULT NULL"); err != nil {
 			return err
 		}
 		return nil

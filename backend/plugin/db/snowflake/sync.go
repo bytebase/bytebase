@@ -179,6 +179,8 @@ func (d *Driver) getStreamSchema(ctx context.Context, database string) (map[stri
 			staleIndex = i
 		case "mode":
 			modeIndex = i
+		default:
+			// Ignore other columns
 		}
 	}
 
@@ -216,6 +218,8 @@ func (d *Driver) getStreamSchema(ctx context.Context, database string) (map[stri
 			storePbMode = storepb.StreamMetadata_MODE_APPEND_ONLY
 		case "INSERT_ONLY":
 			storePbMode = storepb.StreamMetadata_MODE_INSERT_ONLY
+		default:
+			// Keep as MODE_UNSPECIFIED for unknown modes
 		}
 		streamMetadata := &storepb.StreamMetadata{
 			Name:      streamName,
@@ -314,6 +318,8 @@ func (d *Driver) getTaskSchema(ctx context.Context, database string) (map[string
 			stateIndex = i
 		case "condition":
 			nullConditionIndex = i
+		default:
+			// Ignore other columns
 		}
 	}
 	for streamMetaRows.Next() {
@@ -346,6 +352,8 @@ func (d *Driver) getTaskSchema(ctx context.Context, database string) (map[string
 			storePbState = storepb.TaskMetadata_STATE_STARTED
 		case "suspended":
 			storePbState = storepb.TaskMetadata_STATE_SUSPENDED
+		default:
+			// Keep as STATE_UNSPECIFIED for unknown states
 		}
 		var schedule, condition, warehouse string
 		if nullSchedule.Valid {

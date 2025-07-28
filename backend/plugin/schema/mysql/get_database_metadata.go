@@ -1078,6 +1078,8 @@ func normalizeDefaultValue(defaultValue string) string {
 		return "1"
 	case "false":
 		return "0"
+	default:
+		// Return as-is for non-boolean values
 	}
 
 	return defaultValue

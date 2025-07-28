@@ -102,6 +102,8 @@ func (r *MigrationCompatibilityRule) OnEnter(ctx antlr.ParserRuleContext, nodeTy
 		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
 	case "Execute_body":
 		r.enterExecuteBody(ctx.(*parser.Execute_bodyContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }

@@ -106,6 +106,8 @@ func (p *Provider) LoadSubscription(ctx context.Context) *v1pb.Subscription {
 			subscription.Instances = subscription.ActiveInstances
 		case "seat":
 			subscription.Seats = int32(aws.ToInt64(entitlement.MaxCount))
+		default:
+			// Ignore unknown entitlement names
 		}
 	}
 

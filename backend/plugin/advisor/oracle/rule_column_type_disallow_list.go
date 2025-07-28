@@ -83,6 +83,8 @@ func (r *ColumnTypeDisallowListRule) OnEnter(ctx antlr.ParserRuleContext, nodeTy
 		r.handleColumnDefinition(ctx.(*parser.Column_definitionContext))
 	case "Modify_col_properties":
 		r.handleModifyColProperties(ctx.(*parser.Modify_col_propertiesContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }

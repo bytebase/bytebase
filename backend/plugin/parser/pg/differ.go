@@ -1901,13 +1901,13 @@ func printDropMaterializedView(buf io.Writer, viewName *ast.TableDef) error {
 		return nil
 	}
 
-	if _, err := fmt.Fprintf(buf, "DROP MATERIALIZED VIEW "); err != nil {
+	if _, err := fmt.Fprint(buf, "DROP MATERIALIZED VIEW "); err != nil {
 		return err
 	}
 	if _, err := fmt.Fprintf(buf, `"%s"."%s"`, viewName.Schema, viewName.Name); err != nil {
 		return err
 	}
-	if _, err := fmt.Fprintf(buf, ";\n\n"); err != nil {
+	if _, err := fmt.Fprint(buf, ";\n\n"); err != nil {
 		return err
 	}
 	return nil
@@ -1917,13 +1917,13 @@ func printDropView(buf io.Writer, viewName *ast.TableDef) error {
 	if viewName == nil {
 		return nil
 	}
-	if _, err := fmt.Fprintf(buf, "DROP VIEW "); err != nil {
+	if _, err := fmt.Fprint(buf, "DROP VIEW "); err != nil {
 		return err
 	}
 	if _, err := fmt.Fprintf(buf, `"%s"."%s"`, viewName.Schema, viewName.Name); err != nil {
 		return err
 	}
-	if _, err := fmt.Fprintf(buf, ";\n\n"); err != nil {
+	if _, err := fmt.Fprint(buf, ";\n\n"); err != nil {
 		return err
 	}
 	return nil
@@ -1939,7 +1939,7 @@ func printDropFunction(buf io.Writer, function *ast.FunctionDef) error {
 }
 
 func printDropTable(buf io.Writer, table *ast.TableDef) error {
-	if _, err := fmt.Fprintf(buf, "DROP TABLE "); err != nil {
+	if _, err := fmt.Fprint(buf, "DROP TABLE "); err != nil {
 		return err
 	}
 
@@ -1947,7 +1947,7 @@ func printDropTable(buf io.Writer, table *ast.TableDef) error {
 		return err
 	}
 
-	_, err := fmt.Fprintf(buf, ";\n\n")
+	_, err := fmt.Fprint(buf, ";\n\n")
 	return err
 }
 

@@ -58,8 +58,10 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 		return new([]byte)
 	case "SQL_VARIANT":
 		return new([]byte)
+	default:
+		// For unknown types, default to sql.NullString which can handle most values
+		return new(sql.NullString)
 	}
-	return new(sql.NullString)
 }
 
 func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {

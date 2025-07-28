@@ -3,7 +3,6 @@ package ldap
 import (
 	"crypto/tls"
 	"flag"
-	"os"
 	"testing"
 	"time"
 
@@ -20,7 +19,7 @@ func TestMain(m *testing.M) {
 	if !testing.Verbose() {
 		ldapserver.Logger = ldapserver.DiscardingLogger
 	}
-	os.Exit(m.Run())
+	m.Run()
 }
 
 func TestNewIdentityProvider(t *testing.T) {

@@ -95,6 +95,8 @@ func (r *TableRequirePkRule) OnEnter(ctx antlr.ParserRuleContext, nodeType strin
 		r.enterColumnDefTableConstraints(ctx.(*parser.Column_def_table_constraintsContext))
 	case NodeTypeAlterTable:
 		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }
