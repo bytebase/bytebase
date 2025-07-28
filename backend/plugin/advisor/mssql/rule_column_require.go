@@ -100,6 +100,8 @@ func (r *ColumnRequireRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string
 		r.enterColumnDefinition(ctx.(*parser.Column_definitionContext))
 	case NodeTypeAlterTable:
 		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }

@@ -150,6 +150,8 @@ func (m *metadataExtractor) processCreateDatabase(stmt *ast.CreateDatabaseStmt) 
 			m.result.CharacterSet = option.Value
 		case ast.DatabaseOptionCollate:
 			m.result.Collation = option.Value
+		default:
+			// Ignore other database options
 		}
 	}
 
@@ -213,6 +215,8 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 			case ast.ColumnOptionUniqKey:
 				// Handle unique constraint at column level
 				// We'll handle creating unique indexes after processing all columns
+			default:
+				// Ignore other column options
 			}
 		}
 
@@ -288,6 +292,8 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 		case ast.ConstraintCheck:
 			// Handle check constraints
 			m.processCheckConstraint(constraint, table)
+		default:
+			// Ignore other constraint types
 		}
 	}
 
@@ -313,6 +319,8 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 		case ast.TableOptionRowFormat:
 			// Handle row format (DYNAMIC, COMPACT, etc.)
 			// Store in comment for now as TableMetadata doesn't have RowFormat field
+		default:
+			// Ignore other table options
 		}
 	}
 
@@ -470,6 +478,8 @@ func (*metadataExtractor) getColumnType(tp *types.FieldType) string {
 		case mysql.TypeYear:
 			// YEAR(4) - MySQL/TiDB YEAR type
 			return fmt.Sprintf("%s(%d)", baseType, tp.GetFlen())
+		default:
+			// Return baseType for other types that don't need length specification
 		}
 	}
 
@@ -699,6 +709,8 @@ func (*metadataExtractor) processColumnLevelConstraints(stmt *ast.CreateTableStm
 					columnName: columnName,
 					indexName:  columnName, // Use column name as index name for single-column unique
 				})
+			default:
+				// Ignore other column options
 			}
 		}
 	}

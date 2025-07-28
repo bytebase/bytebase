@@ -67,6 +67,9 @@ func (l *queryTypeListener) EnterSimpleStatement(ctx *mysql.SimpleStatementConte
 				l.result = base.Explain
 			}
 		}
+	default:
+		// For any other statement type, default to Select
+		l.result = base.Select
 	}
 }
 

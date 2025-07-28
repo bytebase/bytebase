@@ -152,6 +152,8 @@ func (r *StatementDisallowMixDMLRule) OnEnter(ctx antlr.ParserRuleContext, nodeT
 		r.enterUpdateStatement(ctx.(*parser.Update_statementContext))
 	case NodeTypeDeleteStatement:
 		r.enterDeleteStatement(ctx.(*parser.Delete_statementContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }

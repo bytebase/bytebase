@@ -156,9 +156,9 @@ func (q *querySpanExtractor) extractSelectStatement(ctx parser.ISelectStatementC
 		return q.extractQueryExpressionParens(ctx.QueryExpressionParens())
 	case ctx.SelectStatementWithInto() != nil:
 		return nil, errors.New("meet unsupported select statement with into")
+	default:
+		return nil, errors.New("unexpected select statement")
 	}
-
-	panic("unreachable")
 }
 
 func (q *querySpanExtractor) extractQueryExpression(ctx parser.IQueryExpressionContext) (*base.PseudoTable, error) {

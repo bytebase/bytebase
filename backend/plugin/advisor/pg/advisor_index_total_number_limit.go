@@ -159,12 +159,17 @@ func createIndex(in ast.Node) bool {
 			switch constraint.Type {
 			case ast.ConstraintTypePrimary, ast.ConstraintTypeUnique:
 				return true
+			default:
+				// Other constraint types don't count as indexes
 			}
 		}
 	case *ast.ConstraintDef:
 		switch node.Type {
 		case ast.ConstraintTypePrimary, ast.ConstraintTypeUnique:
 			return true
+		default:
+			// Other constraint types don't count as indexes
+			return false
 		}
 	}
 	return false

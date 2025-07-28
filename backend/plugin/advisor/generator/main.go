@@ -72,6 +72,8 @@ var (
 						case lowerMSSQL:
 							advisorComment = strings.Join(wordList[i+1:], " ")
 							engineType = lowerMSSQL
+						default:
+							// Continue to next word
 						}
 						if advisorComment != "" {
 							break
@@ -89,6 +91,8 @@ var (
 						switch token {
 						case lowerMySQL, lowerPostgreSQL, lowerOracle, lowerSnowflake, lowerMSSQL:
 							needed = true
+						default:
+							// Not a database engine type
 						}
 					}
 					break

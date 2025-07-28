@@ -179,7 +179,7 @@ GO
 					require.Equal(t, "GEOMETRY", idx.SpatialConfig.Dimensional.DataType)
 					require.Equal(t, int32(2), idx.SpatialConfig.Dimensional.Dimensions)
 				} else {
-					t.Errorf("idx_location_point not found")
+					t.Error("idx_location_point not found")
 				}
 
 				// Validate idx_boundary_polygon
@@ -205,7 +205,7 @@ GO
 					require.Equal(t, "HIGH", gridMap[3])
 					require.Equal(t, "HIGH", gridMap[4])
 				} else {
-					t.Errorf("idx_boundary_polygon not found")
+					t.Error("idx_boundary_polygon not found")
 				}
 
 				// Validate idx_geo_location
@@ -238,7 +238,7 @@ GO
 					require.Equal(t, "GEOGRAPHY", idx.SpatialConfig.Dimensional.DataType)
 					require.Equal(t, int32(2), idx.SpatialConfig.Dimensional.Dimensions)
 				} else {
-					t.Errorf("idx_geo_location not found")
+					t.Error("idx_geo_location not found")
 				}
 
 				// Validate idx_route_line
@@ -257,7 +257,7 @@ GO
 					require.Equal(t, "HIGH", gridMap[3])
 					require.Equal(t, "HIGH", gridMap[4])
 				} else {
-					t.Errorf("idx_route_line not found")
+					t.Error("idx_route_line not found")
 				}
 			},
 		},
@@ -365,7 +365,7 @@ GO
 						require.Equal(t, "LOW", level.Density)
 					}
 				} else {
-					t.Errorf("idx_min_geom not found")
+					t.Error("idx_min_geom not found")
 				}
 
 				// Validate maximum GEOMETRY index
@@ -390,7 +390,7 @@ GO
 					require.True(t, idx.SpatialConfig.Storage.AllowRowLocks)
 					require.True(t, idx.SpatialConfig.Storage.AllowPageLocks)
 				} else {
-					t.Errorf("idx_max_geom not found")
+					t.Error("idx_max_geom not found")
 				}
 
 				// Validate minimal GEOGRAPHY index
@@ -404,7 +404,7 @@ GO
 						require.Equal(t, "LOW", level.Density)
 					}
 				} else {
-					t.Errorf("idx_min_geog not found")
+					t.Error("idx_min_geog not found")
 				}
 
 				// Validate maximum GEOGRAPHY index
@@ -419,7 +419,7 @@ GO
 
 					require.Equal(t, int32(50), idx.SpatialConfig.Storage.Fillfactor)
 				} else {
-					t.Errorf("idx_max_geog not found")
+					t.Error("idx_max_geog not found")
 				}
 			},
 		},

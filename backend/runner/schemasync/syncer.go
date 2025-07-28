@@ -628,6 +628,10 @@ func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.In
 			return false
 		}
 		return backupDB != nil
+	default:
+		// Unsupported database engine for backup
+		slog.Debug("Unsupported database engine for backup", "engine", instance.Metadata.GetEngine())
+		return false
 	}
 	return false
 }

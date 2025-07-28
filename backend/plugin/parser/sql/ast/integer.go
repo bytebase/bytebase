@@ -20,6 +20,7 @@ func (i *Integer) EquivalentType(tp string) bool {
 		return tp == "int" || tp == "int4" || tp == "integer"
 	case 8:
 		return tp == "bigint" || tp == "int8"
+	default:
+		return false
 	}
-	return false
 }

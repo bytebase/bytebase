@@ -170,6 +170,8 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 				l.err = err
 				return
 			}
+		default:
+			// Ignore other table element types
 		}
 	}
 }
@@ -297,6 +299,8 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 					l.err = err
 					return
 				}
+			default:
+				// Ignore other ADD variations
 			}
 		// drop column or key.
 		case item.DROP_SYMBOL() != nil && item.ALTER_SYMBOL() == nil:
@@ -324,6 +328,8 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 					l.err = err
 					return
 				}
+			default:
+				// Ignore other DROP variations
 			}
 		// modify column.
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil:
@@ -381,6 +387,8 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 				l.err = err
 				return
 			}
+		default:
+			// Ignore other alter table actions
 		}
 	}
 }

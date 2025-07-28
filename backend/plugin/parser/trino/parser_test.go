@@ -2,7 +2,6 @@ package trino
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -197,6 +196,5 @@ func TestGetQuerySpan(t *testing.T) {
 
 func TestMain(m *testing.M) {
 	// Run the tests and print results to stdout
-	code := m.Run()
-	os.Exit(code)
+	m.Run()
 }

@@ -186,7 +186,7 @@ func (g *generator) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 		}
 		for i, field := range l.result {
 			if i > 0 {
-				if _, err := fmt.Fprintf(&buf, ", "); err != nil {
+				if _, err := fmt.Fprint(&buf, ", "); err != nil {
 					g.err = errors.Wrapf(err, "failed to generate update statement")
 					return
 				}
@@ -197,7 +197,7 @@ func (g *generator) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 				return
 			}
 		}
-		if _, err := fmt.Fprintf(&buf, `;`); err != nil {
+		if _, err := fmt.Fprint(&buf, `;`); err != nil {
 			g.err = errors.Wrapf(err, "failed to generate update statement")
 			return
 		}
