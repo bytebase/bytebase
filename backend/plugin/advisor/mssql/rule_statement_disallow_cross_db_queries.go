@@ -72,6 +72,8 @@ func (r *DisallowCrossDBQueriesRule) OnEnter(ctx antlr.ParserRuleContext, nodeTy
 		r.enterTableSourceItem(ctx.(*parser.Table_source_itemContext))
 	case "Use_statement":
 		r.enterUseStatement(ctx.(*parser.Use_statementContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }

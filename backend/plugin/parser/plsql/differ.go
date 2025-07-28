@@ -351,6 +351,8 @@ func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) error {
 				dropConstraints = append(dropConstraints, id)
 			}
 			delete(oldConstraintMap, id)
+		default:
+			// Ignore other relational properties
 		}
 	}
 	for _, item := range oldConstraintMap {

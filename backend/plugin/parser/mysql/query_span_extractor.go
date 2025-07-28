@@ -159,8 +159,6 @@ func (q *querySpanExtractor) extractSelectStatement(ctx parser.ISelectStatementC
 	default:
 		return nil, errors.New("unexpected select statement")
 	}
-
-	panic("unreachable")
 }
 
 func (q *querySpanExtractor) extractQueryExpression(ctx parser.IQueryExpressionContext) (*base.PseudoTable, error) {

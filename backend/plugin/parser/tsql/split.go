@@ -236,6 +236,8 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 			})
 			start = pos + 1
 		}
+	default:
+		// No statements found in this batch
 	}
 	return result, start
 }

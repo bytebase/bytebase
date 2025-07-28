@@ -217,6 +217,8 @@ func getPKExpressions(pks []primaryKey) []string {
 			partition = append(partition, k.name)
 		case "clustering":
 			clustering = append(clustering, k.name)
+		default:
+			// Ignore other key types
 		}
 	}
 
@@ -247,6 +249,8 @@ func getPKDefinition(pks []primaryKey) string {
 			partition = append(partition, k.name)
 		case "clustering":
 			clustering = append(clustering, k.name)
+		default:
+			// Ignore other key types
 		}
 	}
 	if len(partition) == 1 {

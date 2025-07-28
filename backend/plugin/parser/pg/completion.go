@@ -659,6 +659,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 					columnEntries.insertColumns(c, schemas, tables)
 				}
 			}
+		default:
+			// No specific completion for this rule
 		}
 	}
 

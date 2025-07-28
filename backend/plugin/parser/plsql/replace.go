@@ -141,6 +141,8 @@ func getNormalizeIndexName(ctx *parser.Create_indexContext) string {
 			slog.Debug("Failed to write byte", log.BBError(err))
 			return ""
 		}
+	default:
+		// No table/cluster name to add
 	}
 	if err := buf.WriteByte('_'); err != nil {
 		slog.Debug("Failed to write byte", log.BBError(err))
@@ -184,6 +186,12 @@ func getNormalizeIndexName(ctx *parser.Create_indexContext) string {
 		}
 	case ctx.Bitmap_join_index_clause() != nil:
 		if err := buf.WriteByte('3'); err != nil {
+			slog.Debug("Failed to write byte", log.BBError(err))
+			return ""
+		}
+	default:
+		// No index type specified
+		if err := buf.WriteByte('0'); err != nil {
 			slog.Debug("Failed to write byte", log.BBError(err))
 			return ""
 		}
