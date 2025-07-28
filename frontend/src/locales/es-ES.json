@@ -283,7 +283,14 @@
     "action-all-tasks-in-current-stage": "{action} todas las tareas en la etapa actual",
     "cancel-task": "Cancelar tarea | Cancelar tareas",
     "created": "Creado",
-    "run-immediately": "Ejecutar tarea inmediatamente",
+    "run-immediately": {
+      "self": "Corre inmediatamente",
+      "description": "Las tareas comenzarán a ejecutarse en cuanto haga clic en \"Ejecutar\". No requiere demora ni programación."
+    },
+    "schedule-for-later": {
+      "self": "Programar para más tarde",
+      "description": "Establezca una fecha y hora específicas para que las tareas comiencen a ejecutarse automáticamente. Útil para periodos de mantenimiento o horas de baja demanda."
+    },
     "select-task": "Seleccionar tarea | Seleccionar tareas",
     "selected-n-tasks": "{n} tarea seleccionada | {n} tareas seleccionadas",
     "no-tasks-selected": "No hay tareas seleccionadas",

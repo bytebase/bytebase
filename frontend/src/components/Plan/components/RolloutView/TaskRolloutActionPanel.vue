@@ -56,8 +56,10 @@
           class="flex flex-col gap-y-1 shrink overflow-y-hidden justify-start"
         >
           <div class="flex items-center justify-between">
-            <label class="font-medium text-control">
-              {{ $t("common.task", eligibleTasks.length) }}
+            <label class="text-control">
+              <span class="font-medium">{{
+                $t("common.task", eligibleTasks.length)
+              }}</span>
               <span class="opacity-80" v-if="eligibleTasks.length > 1">
                 ({{
                   eligibleTasks.length === target.stage.tasks.length
@@ -120,27 +122,39 @@
           </div>
         </div>
 
-        <div
-          v-if="showScheduledTimePicker"
-          class="flex flex-col gap-y-3 shrink-0"
-        >
-          <div class="flex items-center">
-            <NCheckbox
-              :checked="runTimeInMS === undefined"
-              @update:checked="
-                (checked) =>
-                  (runTimeInMS = checked
-                    ? undefined
-                    : Date.now() + DEFAULT_RUN_DELAY_MS)
-              "
-            >
-              {{ $t("task.run-immediately") }}
-            </NCheckbox>
+        <div v-if="showScheduledTimePicker" class="flex flex-col">
+          <h3 class="font-medium text-control mb-1">
+            {{ $t("task.execution-time") }}
+          </h3>
+          <NRadioGroup
+            :size="'large'"
+            :value="runTimeInMS === undefined ? 'immediate' : 'scheduled'"
+            @update:value="handleExecutionModeChange"
+            class="!flex flex-row gap-x-4"
+          >
+            <!-- Run Immediately Option -->
+            <NRadio value="immediate">
+              <span>{{ $t("task.run-immediately.self") }}</span>
+            </NRadio>
+
+            <!-- Schedule for Later Option -->
+            <NRadio value="scheduled">
+              <span>{{ $t("task.schedule-for-later.self") }}</span>
+            </NRadio>
+          </NRadioGroup>
+
+          <!-- Description based on selection -->
+          <div class="mt-1 text-sm text-control-light">
+            <span v-if="runTimeInMS === undefined">
+              {{ $t("task.run-immediately.description") }}
+            </span>
+            <span v-else>
+              {{ $t("task.schedule-for-later.description") }}
+            </span>
           </div>
-          <div v-if="runTimeInMS !== undefined" class="flex flex-col gap-y-1">
-            <p class="font-medium text-control">
-              {{ $t("task.scheduled-time", { count: runnableTasks.length }) }}
-            </p>
+
+          <!-- Scheduled Time Options -->
+          <div v-if="runTimeInMS !== undefined" class="flex flex-col">
             <NDatePicker
               v-model:value="runTimeInMS"
               type="datetime"
@@ -151,12 +165,17 @@
               format="yyyy-MM-dd HH:mm:ss"
               :actions="['clear', 'confirm']"
               clearable
+              class="mt-2"
             />
           </div>
         </div>
 
-        <div class="flex flex-col gap-y-1 shrink-0">
-          <p class="font-medium text-control">
+        <!-- Only show reason/comment input if issue is available -->
+        <div
+          v-if="shouldShowComment"
+          class="flex flex-col gap-y-1 shrink-0 border-t pt-2"
+        >
+          <p class="text-control">
             {{ $t("common.comment") }}
           </p>
           <NInput
@@ -229,6 +248,8 @@ import {
   NTooltip,
   NVirtualList,
   NCheckbox,
+  NRadio,
+  NRadioGroup,
 } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -251,14 +272,15 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2, isNullOrUndefined } from "@/utils";
 import { usePlanContextWithRollout } from "../../logic";
 import { useIssueReviewContext } from "../../logic/issue-review";
 import TaskDatabaseName from "./TaskDatabaseName.vue";
 import { useTaskActionPermissions } from "./taskPermissions";
 
 // Default delay for running tasks if not scheduled immediately.
-const DEFAULT_RUN_DELAY_MS = 60000;
+// 1 hour in milliseconds
+const DEFAULT_RUN_DELAY_MS = 60 * 60 * 1000;
 
 type LocalState = {
   loading: boolean;
@@ -355,6 +377,8 @@ const previousStagesStatus = computed(() => {
   return { allComplete: true, hasIncomplete: false };
 });
 
+const shouldShowComment = computed(() => !isNullOrUndefined(issue?.value));
+
 const shouldShowForceRollout = computed(() => {
   // Show force rollout checkbox for RUN action when:
   // 1. Issue approval is not complete, OR
@@ -445,6 +469,15 @@ const itemHeight = computed(() => 32); // Height of each task item in pixels
 const showScheduledTimePicker = computed(() => {
   return props.action === "RUN";
 });
+
+// Handle execution mode change (immediate vs scheduled)
+const handleExecutionModeChange = (value: string) => {
+  if (value === "immediate") {
+    runTimeInMS.value = undefined;
+  } else {
+    runTimeInMS.value = Date.now() + DEFAULT_RUN_DELAY_MS;
+  }
+};
 
 const confirmErrors = computed(() => {
   const errors: string[] = [];
