@@ -1,7 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import type { RemovableRef } from "@vueuse/core";
 import { useLocalStorage } from "@vueuse/core";
-import axios from "axios";
 import { defineStore } from "pinia";
 import semver from "semver";
 import { computed } from "vue";
@@ -241,9 +240,15 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
     },
     async fetchLatestRelease(): Promise<Release | undefined> {
       try {
-        const { data: releaseList } = await useSilentRequest(() =>
-          axios.get<Release[]>(`${GITHUB_API_LIST_BYTEBASE_RELEASE}?per_page=1`)
-        );
+        const releaseList = await useSilentRequest(async () => {
+          const response = await fetch(
+            `${GITHUB_API_LIST_BYTEBASE_RELEASE}?per_page=1`
+          );
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json() as Promise<Release[]>;
+        });
         return releaseList[0];
       } catch {
         // It's okay to ignore the failure and just return undefined.
