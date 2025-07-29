@@ -1,4 +1,6 @@
 // Package util provides the library for database drivers.
+//
+//nolint:revive
 package util
 
 import (
