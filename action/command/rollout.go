@@ -29,7 +29,6 @@ func NewRolloutCommand(w *world.World) *cobra.Command {
 	}
 	defaultTitle := time.Now().Format(time.RFC3339)
 	cmdRollout.Flags().StringVar(&w.ReleaseTitle, "release-title", defaultTitle, "The title of the release")
-	cmdRollout.Flags().StringVar(&w.RolloutTitle, "rollout-title", defaultTitle, "The title of the rollout")
 	cmdRollout.Flags().StringVar(&w.CheckPlan, "check-plan", "SKIP", "Whether to check the plan and fail on warning/error. Valid values: SKIP, FAIL_ON_WARNING, FAIL_ON_ERROR")
 	cmdRollout.Flags().StringVar(&w.TargetStage, "target-stage", "", "Rollout up to the target stage. Format: environments/{environment}.")
 	cmdRollout.Flags().StringVar(&w.Plan, "plan", "", "The plan to rollout. Format: projects/{project}/plans/{plan}. Shadows file-pattern and targets.")
@@ -215,8 +214,7 @@ func runAndWaitForRollout(ctx context.Context, w *world.World, client *Client, p
 	rolloutEmpty, err := client.CreateRollout(ctx, &v1pb.CreateRolloutRequest{
 		Parent: w.Project,
 		Rollout: &v1pb.Rollout{
-			Plan:  planName,
-			Title: w.RolloutTitle,
+			Plan: planName,
 		},
 		Target:       &emptyTarget, // zero stage
 		ValidateOnly: false,
