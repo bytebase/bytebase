@@ -376,16 +376,11 @@ func (s *IssueService) getUserByIdentifier(ctx context.Context, identifier strin
 
 // CreateIssue creates a issue.
 func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1pb.CreateIssueRequest]) (*connect.Response[v1pb.Issue], error) {
-	// Validate requests.
-	if req.Msg.Issue.Title == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue title is required"))
-	}
-	if req.Msg.Issue.Type == v1pb.Issue_TYPE_UNSPECIFIED {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue type is required"))
-	}
-
 	switch req.Msg.Issue.Type {
 	case v1pb.Issue_GRANT_REQUEST:
+		if req.Msg.Issue.Title == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue title is required"))
+		}
 		return s.createIssueGrantRequest(ctx, req.Msg)
 	case v1pb.Issue_DATABASE_CHANGE:
 		return s.createIssueDatabaseChange(ctx, req.Msg)
@@ -1146,6 +1141,10 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			}
 
 		case "title":
+			// Prevent updating title if plan exists.
+			if issue.PlanUID != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot update issue title when plan exists"))
+			}
 			if req.Msg.Issue.Title == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("title cannot be empty"))
 			}
@@ -1176,6 +1175,11 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			})
 
 		case "description":
+			// Prevent updating description if plan exists
+			if issue.PlanUID != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot update issue description when plan exists"))
+			}
+
 			patch.Description = &req.Msg.Issue.Description
 
 			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{

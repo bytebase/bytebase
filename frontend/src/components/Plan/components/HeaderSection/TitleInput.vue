@@ -22,17 +22,13 @@ import { NInput } from "naive-ui";
 import type { CSSProperties } from "vue";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { planServiceClientConnect, issueServiceClientConnect } from "@/grpcweb";
+import { planServiceClientConnect } from "@/grpcweb";
 import {
   pushNotification,
   useCurrentUserV1,
   extractUserId,
   useCurrentProjectV1,
 } from "@/store";
-import {
-  IssueSchema,
-  UpdateIssueRequestSchema,
-} from "@/types/proto-es/v1/issue_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
@@ -43,19 +39,19 @@ type ViewMode = "EDIT" | "VIEW";
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
-const { isCreating, plan, issue, readonly } = usePlanContext();
+const { isCreating, plan, readonly } = usePlanContext();
 
 const state = reactive({
   isEditing: false,
   isUpdating: false,
-  title: issue?.value ? issue?.value.title : plan.value.title,
+  title: plan.value.title,
 });
 
 // Watch for changes in issue/plan to update the title
 watch(
-  () => [issue?.value, plan.value],
+  () => [plan.value],
   () => {
-    state.title = issue?.value ? issue?.value.title : plan.value.title;
+    state.title = plan.value.title;
   },
   { immediate: true }
 );
@@ -111,58 +107,30 @@ const onBlur = async () => {
     return;
   }
 
-  // Check if we're updating issue or plan
-  if (issue?.value) {
-    // Update issue title
-    if (state.title === issue.value.title) {
-      cleanup();
-      return;
-    }
-    try {
-      state.isUpdating = true;
-      const request = create(UpdateIssueRequestSchema, {
-        issue: create(IssueSchema, {
-          name: issue.value.name,
-          title: state.title,
-        }),
-        updateMask: { paths: ["title"] },
-      });
-      const response = await issueServiceClientConnect.updateIssue(request);
-      Object.assign(issue.value, response);
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.updated"),
-      });
-    } finally {
-      cleanup();
-    }
-  } else {
-    // Update plan title
-    if (state.title === plan.value.title) {
-      cleanup();
-      return;
-    }
-    try {
-      state.isUpdating = true;
-      const planPatch = create(PlanSchema, {
-        ...plan.value,
-        title: state.title,
-      });
-      const request = create(UpdatePlanRequestSchema, {
-        plan: planPatch,
-        updateMask: { paths: ["title"] },
-      });
-      const response = await planServiceClientConnect.updatePlan(request);
-      Object.assign(plan.value, response);
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.updated"),
-      });
-    } finally {
-      cleanup();
-    }
+  // Update plan title
+  if (state.title === plan.value.title) {
+    cleanup();
+    return;
+  }
+  try {
+    state.isUpdating = true;
+    const planPatch = create(PlanSchema, {
+      ...plan.value,
+      title: state.title,
+    });
+    const request = create(UpdatePlanRequestSchema, {
+      plan: planPatch,
+      updateMask: { paths: ["title"] },
+    });
+    const response = await planServiceClientConnect.updatePlan(request);
+    Object.assign(plan.value, response);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
+  } finally {
+    cleanup();
   }
 };
 
