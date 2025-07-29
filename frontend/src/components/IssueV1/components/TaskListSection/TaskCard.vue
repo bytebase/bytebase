@@ -63,7 +63,7 @@ import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Type, Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
-import { databaseV1Url, extractSchemaVersionFromTask, isDev } from "@/utils";
+import { databaseV1Url, extractSchemaVersionFromTask } from "@/utils";
 import { useInstanceForTask, specForTask, useIssueContext } from "../../logic";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
@@ -78,11 +78,6 @@ const selected = computed(() => props.task === selectedTask.value);
 
 const schemaVersion = computed(() => {
   const v = extractSchemaVersionFromTask(props.task);
-  if (isDev()) {
-    // For unversioned tasks, the schema version of task should be empty.
-    return v;
-  }
-
   // Always show the schema version for tasks from a release source.
   if (
     (
