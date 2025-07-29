@@ -100,6 +100,8 @@ func (checker *compatibilityChecker) Visit(node ast.Node) ast.Visitor {
 				if !n.Constraint.SkipValidation {
 					code = advisor.CompatibilityAddCheck
 				}
+			default:
+				// Other constraint types
 			}
 		}
 	// ALTER TABLE ALTER COLUMN TYPE

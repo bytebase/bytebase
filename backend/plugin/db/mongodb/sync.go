@@ -128,6 +128,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			collectionNames = append(collectionNames, collectionName)
 		case "view":
 			viewNames = append(viewNames, collectionName)
+		default:
+			// Other types like system collections
 		}
 	}
 	if err := collectionList.Err(); err != nil {

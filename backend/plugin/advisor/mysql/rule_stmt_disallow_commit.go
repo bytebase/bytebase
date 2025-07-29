@@ -87,6 +87,7 @@ func (r *StatementDisallowCommitRule) OnEnter(ctx antlr.ParserRuleContext, nodeT
 		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
 	case NodeTypeTransactionStatement:
 		r.checkTransactionStatement(ctx.(*mysql.TransactionStatementContext))
+	default:
 	}
 	return nil
 }

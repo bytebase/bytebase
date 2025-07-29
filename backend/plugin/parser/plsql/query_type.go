@@ -149,5 +149,7 @@ func (l *queryTypeListener) EnterUnit_statement(ctx *plsql.Unit_statementContext
 			return
 		}
 		l.result = base.DML
+	default:
+		// Other statement types
 	}
 }

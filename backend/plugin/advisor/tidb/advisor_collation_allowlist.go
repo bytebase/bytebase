@@ -128,6 +128,8 @@ func (checker *collationAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 					code = advisor.DisabledCollation
 					disabledCollation = collation
 				}
+			default:
+				// Other alter table types
 			}
 		}
 	}

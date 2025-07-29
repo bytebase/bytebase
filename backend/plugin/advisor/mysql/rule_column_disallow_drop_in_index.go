@@ -87,6 +87,7 @@ func (r *ColumnDisallowDropInIndexRule) OnEnter(ctx antlr.ParserRuleContext, nod
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }

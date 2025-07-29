@@ -81,6 +81,8 @@ func (r *NamingIdentifierCaseRule) OnEnter(ctx antlr.ParserRuleContext, nodeType
 		r.enterColumnDeclItemList(ctx.(*parser.Column_decl_item_listContext))
 	case NodeTypeAlterTable:
 		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
+	default:
+		// Other node types
 	}
 	return nil
 }
@@ -90,6 +92,8 @@ func (r *NamingIdentifierCaseRule) OnExit(_ antlr.ParserRuleContext, nodeType st
 	switch nodeType {
 	case NodeTypeCreateTable, "Create_table_as_select":
 		r.currentOriginalTableName = ""
+	default:
+		// Other node types
 	}
 	return nil
 }

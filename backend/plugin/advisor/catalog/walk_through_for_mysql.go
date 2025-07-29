@@ -446,6 +446,8 @@ func (l *mysqlListener) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 		isSpatial = true
 		tp = SpatialName
 	case mysql.MySQLParserINDEX_SYMBOL:
+	default:
+		// Other index types
 	}
 	if ctx.UNIQUE_SYMBOL() != nil {
 		unique = true
@@ -499,6 +501,8 @@ func (l *mysqlListener) EnterAlterDatabase(ctx *mysql.AlterDatabaseContext) {
 		case option.CreateDatabaseOption().DefaultCollation() != nil && option.CreateDatabaseOption().DefaultCollation().CollationName() != nil:
 			collation := mysqlparser.NormalizeMySQLCollationName(option.CreateDatabaseOption().DefaultCollation().CollationName())
 			l.databaseState.collation = collation
+		default:
+			// Other options
 		}
 	}
 }
@@ -663,6 +667,8 @@ func (t *TableState) mysqlChangeIndexVisibility(ctx *FinderContext, indexName st
 		index.visible = newTruePointer()
 	case visibility.INVISIBLE_SYMBOL() != nil:
 		index.visible = newFalsePointer()
+	default:
+		// No visibility specified
 	}
 	return nil
 }
@@ -698,6 +704,8 @@ func (t *TableState) mysqlAlterColumn(ctx *FinderContext, itemDef mysql.IAlterLi
 							// Content comes from MySQL Error content.
 							Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
 						}
+					default:
+						// Other column types allow default values
 					}
 				}
 
@@ -707,6 +715,8 @@ func (t *TableState) mysqlAlterColumn(ctx *FinderContext, itemDef mysql.IAlterLi
 					defaultValue = itemDef.ExprWithParentheses().GetText()
 				case itemDef.SignedLiteral() != nil:
 					defaultValue = itemDef.SignedLiteral().GetText()
+				default:
+					// No default value expression
 				}
 
 				colState.defaultValue = &defaultValue
@@ -727,6 +737,8 @@ func (t *TableState) mysqlAlterColumn(ctx *FinderContext, itemDef mysql.IAlterLi
 	case itemDef.DROP_SYMBOL() != nil && itemDef.DEFAULT_SYMBOL() != nil:
 		// DROP DEFAULT.
 		colState.defaultValue = nil
+	default:
+		// Other ALTER operations
 	}
 	return nil
 }
@@ -823,6 +835,8 @@ func positionFromPlaceContext(place mysql.IPlaceContext) *mysqlColumnPosition {
 				columnPosition.tp = ColumnPositionAfter
 				columnName := mysqlparser.NormalizeMySQLIdentifier(place.Identifier())
 				columnPosition.relativeColumn = columnName
+			default:
+				// No position specified
 			}
 		}
 	}
@@ -937,6 +951,8 @@ func (t *TableState) mysqlCreateConstraint(ctx *FinderContext, constraintDef mys
 			}
 		case mysql.MySQLParserFOREIGN_SYMBOL:
 			// we do not deal with FOREIGN KEY constraints.
+		default:
+			// Other constraint types
 		}
 	}
 
@@ -1039,6 +1055,9 @@ func mysqlGetIndexType(tableConstraint mysql.ITableConstraintDefContext) string 
 	case mysql.MySQLParserFULLTEXT_SYMBOL:
 		return "FULLTEXT"
 	case mysql.MySQLParserFOREIGN_SYMBOL:
+		// Foreign key - no specific index type
+	default:
+		// Other constraint types
 	}
 	// for mysql, we use BTREE as default index type.
 	return "BTREE"
@@ -1155,6 +1174,8 @@ func (t *TableState) mysqlCreateColumn(ctx *FinderContext, columnName string, fi
 			// storage.
 			case mysql.MySQLParserSTORAGE_SYMBOL:
 				// we do not deal with STORAGE.
+			default:
+				// Other column attributes
 			}
 		}
 	}
@@ -1193,10 +1214,11 @@ func (t *TableState) mysqlReorderColumn(position *mysqlColumnPosition) (int, *Wa
 			}
 		}
 		return *column.position + 1, nil
-	}
-	return 0, &WalkThroughError{
-		Type:    ErrorTypeUnsupported,
-		Content: fmt.Sprintf("Unsupported column position type: %d", position.tp),
+	default:
+		return 0, &WalkThroughError{
+			Type:    ErrorTypeUnsupported,
+			Content: fmt.Sprintf("Unsupported column position type: %d", position.tp),
+		}
 	}
 }
 
@@ -1360,6 +1382,8 @@ func mysqlCheckDefault(columnName string, fieldDefinition mysql.IFieldDefinition
 			// Content comes from MySQL Error content.
 			Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
 		}
+	default:
+		// Other data types are allowed to have default values
 	}
 
 	return checkDefaultConvert(columnName, fieldDefinition)

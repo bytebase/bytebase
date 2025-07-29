@@ -101,6 +101,7 @@ func (r *ColumnNoNullRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string)
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }
@@ -215,12 +216,14 @@ func (r *ColumnNoNullRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 					_, _, column := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
 					columns = append(columns, column)
 				}
+			default:
 			}
 		// change column
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
 			// only care new column name.
 			column := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
 			columns = append(columns, column)
+		default:
 		}
 
 		for _, column := range columns {

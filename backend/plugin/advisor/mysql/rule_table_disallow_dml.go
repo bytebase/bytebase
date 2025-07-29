@@ -89,6 +89,7 @@ func (r *TableDisallowDMLRule) OnEnter(ctx antlr.ParserRuleContext, nodeType str
 		r.checkSelectStatementWithInto(ctx.(*mysql.SelectStatementWithIntoContext))
 	case NodeTypeUpdateStatement:
 		r.checkUpdateStatement(ctx.(*mysql.UpdateStatementContext))
+	default:
 	}
 	return nil
 }

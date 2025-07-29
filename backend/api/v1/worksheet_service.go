@@ -553,9 +553,9 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 	case store.ProjectWriteWorkSheet:
 		// For READ visibility, needs "bb.worksheets.get" permission in the project.
 		return s.checkWorksheetPermission(ctx, worksheet.ProjectID, user, iam.PermissionWorksheetsGet)
+	default:
+		return false, nil
 	}
-
-	return false, nil
 }
 
 // canReadWorksheet check if the principal can read the worksheet.
@@ -587,9 +587,9 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 	case store.ProjectReadWorkSheet, store.ProjectWriteWorkSheet:
 		// Check the "bb.worksheets.get" permission in the project.
 		return s.checkWorksheetPermission(ctx, worksheet.ProjectID, user, iam.PermissionWorksheetsGet)
+	default:
+		return false, nil
 	}
-
-	return false, nil
 }
 
 func (s *WorksheetService) checkWorksheetPermission(
@@ -635,6 +635,8 @@ func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, wor
 		visibility = v1pb.Worksheet_PROJECT_WRITE
 	case store.PrivateWorkSheet:
 		visibility = v1pb.Worksheet_PRIVATE
+	default:
+		// Keep VISIBILITY_UNSPECIFIED
 	}
 
 	creator, err := s.store.GetUserByID(ctx, worksheet.CreatorID)

@@ -90,6 +90,7 @@ func (r *IndexPkTypeRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) 
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }
@@ -124,6 +125,7 @@ func (r *IndexPkTypeRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 			r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
 		case tableElement.TableConstraintDef() != nil:
 			r.checkConstraintDef(tableName, tableElement.TableConstraintDef())
+		default:
 		}
 	}
 }
@@ -166,6 +168,7 @@ func (r *IndexPkTypeRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
 					r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
 				}
+			default:
 			}
 		// modify column
 		case alterListItem.MODIFY_SYMBOL() != nil && alterListItem.ColumnInternalRef() != nil:
@@ -180,6 +183,7 @@ func (r *IndexPkTypeRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 		// add constriant.
 		case alterListItem.ADD_SYMBOL() != nil && alterListItem.TableConstraintDef() != nil:
 			r.checkConstraintDef(tableName, alterListItem.TableConstraintDef())
+		default:
 		}
 	}
 }
@@ -253,6 +257,7 @@ func (*IndexPkTypeRule) getIntOrBigIntStr(ctx mysql.IDataTypeContext) string {
 	case mysql.MySQLParserBIGINT_SYMBOL:
 		// tp.String() return bigint(20)
 		return "BIGINT"
+	default:
 	}
 	return strings.ToLower(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx))
 }

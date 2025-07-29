@@ -118,6 +118,7 @@ func getVariableAndValueFromExpr(expr celast.Expr) (string, any) {
 				}
 			}
 			value = list
+		default:
 		}
 	}
 	return variable, value
@@ -499,6 +500,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 				return nil, errors.Wrapf(err, "failed to create changelog")
 			}
 			patch.Metadata.Drifted = false
+		default:
 		}
 	}
 
@@ -794,6 +796,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, req *connect.Re
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert schema to sdl format, error %v", err.Error()))
 			}
 			schema = sdlSchema
+		default:
 		}
 	}
 	return connect.NewResponse(&v1pb.DatabaseSchema{Schema: schema}), nil

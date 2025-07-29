@@ -235,6 +235,8 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 				default:
 					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q with %v operator", variable, celoperators.In))
 				}
+			default:
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported function %q", functionName))
 			}
 		default:
 			return "", errors.Errorf("unexpected expr kind %v", expr.Kind())
@@ -1220,6 +1222,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 					},
 				},
 			})
+		default:
 		}
 	}
 

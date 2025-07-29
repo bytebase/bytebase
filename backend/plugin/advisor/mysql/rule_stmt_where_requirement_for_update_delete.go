@@ -89,6 +89,7 @@ func (r *WhereRequirementForUpdateDeleteRule) OnEnter(ctx antlr.ParserRuleContex
 		r.checkDeleteStatement(ctx.(*mysql.DeleteStatementContext))
 	case NodeTypeUpdateStatement:
 		r.checkUpdateStatement(ctx.(*mysql.UpdateStatementContext))
+	default:
 	}
 	return nil
 }

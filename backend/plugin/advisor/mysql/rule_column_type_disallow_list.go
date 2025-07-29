@@ -95,6 +95,7 @@ func (r *ColumnTypeDisallowListRule) OnEnter(ctx antlr.ParserRuleContext, nodeTy
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }
@@ -185,6 +186,7 @@ func (r *ColumnTypeDisallowListRule) checkAlterTable(ctx *mysql.AlterTableContex
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
 					r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
 				}
+			default:
 			}
 		// modify column
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
@@ -194,6 +196,7 @@ func (r *ColumnTypeDisallowListRule) checkAlterTable(ctx *mysql.AlterTableContex
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
 			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
 			r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+		default:
 		}
 	}
 }

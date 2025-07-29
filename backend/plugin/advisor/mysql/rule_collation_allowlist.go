@@ -106,6 +106,7 @@ func (r *CollationAllowlistRule) OnEnter(ctx antlr.ParserRuleContext, nodeType s
 		r.checkAlterDatabase(ctx.(*mysql.AlterDatabaseContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }

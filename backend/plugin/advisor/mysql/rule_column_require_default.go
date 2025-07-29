@@ -82,6 +82,7 @@ func (r *ColumnRequireDefaultRule) OnEnter(ctx antlr.ParserRuleContext, nodeType
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }
@@ -155,6 +156,7 @@ func (r *ColumnRequireDefaultRule) checkAlterTable(ctx *mysql.AlterTableContext)
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
 					r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
 				}
+			default:
 			}
 		// modify column
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
@@ -164,6 +166,7 @@ func (r *ColumnRequireDefaultRule) checkAlterTable(ctx *mysql.AlterTableContext)
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
 			columnName = mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
 			r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+		default:
 		}
 	}
 }
@@ -266,6 +269,7 @@ func (*ColumnRequireDefaultRule) columnNeedDefault(ctx mysql.IFieldDefinitionCon
 		mysql.MySQLParserPOLYGON_SYMBOL,
 		mysql.MySQLParserMULTIPOLYGON_SYMBOL:
 		return false
+	default:
 	}
 	return true
 }

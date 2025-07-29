@@ -87,6 +87,7 @@ func (r *NamingTableRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) 
 		r.enterCreateTable(ctx.(*parser.Create_tableContext))
 	case "Execute_body":
 		r.enterExecuteBody(ctx.(*parser.Execute_bodyContext))
+	default:
 	}
 	return nil
 }

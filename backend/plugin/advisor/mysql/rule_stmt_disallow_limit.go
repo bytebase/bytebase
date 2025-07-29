@@ -93,6 +93,8 @@ func (r *StatementDisallowLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeTy
 		r.isInsertStmt = true
 	case NodeTypeQueryExpression:
 		r.checkQueryExpression(ctx.(*mysql.QueryExpressionContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }

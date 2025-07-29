@@ -89,6 +89,7 @@ func (r *ColumnNoNullRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string)
 		r.enterColumnDefinition(ctx.(*parser.Column_definitionContext))
 	case NodeTypeAlterTable:
 		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
+	default:
 	}
 	return nil
 }
@@ -100,6 +101,7 @@ func (r *ColumnNoNullRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) 
 		r.exitCreateTable(ctx.(*parser.Create_tableContext))
 	case NodeTypeAlterTable:
 		r.exitAlterTable(ctx.(*parser.Alter_tableContext))
+	default:
 	}
 	return nil
 }

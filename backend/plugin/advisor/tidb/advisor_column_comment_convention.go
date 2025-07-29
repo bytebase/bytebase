@@ -116,6 +116,7 @@ func (checker *columnCommentConventionChecker) Enter(in ast.Node) (ast.Node, boo
 					column:  spec.NewColumns[0].Name.Name.O,
 					line:    checker.line,
 				})
+			default:
 			}
 		}
 	}

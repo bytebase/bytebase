@@ -36,6 +36,8 @@ func getStatementType(node ast.Node) string {
 			return "CREATE_VIEW"
 		case ast.TableTypeBaseTable:
 			return "CREATE_TABLE"
+		default:
+			return "CREATE_TABLE"
 		}
 	case *ast.CreateSequenceStmt:
 		return "CREATE_SEQUENCE"
@@ -91,6 +93,8 @@ func getStatementType(node ast.Node) string {
 			return "ALTER_VIEW"
 		case ast.TableTypeBaseTable:
 			return "ALTER_TABLE"
+		default:
+			return "ALTER_TABLE"
 		}
 	case *ast.AlterTypeStmt:
 		return "ALTER_TYPE"
@@ -114,6 +118,8 @@ func getStatementType(node ast.Node) string {
 		case ast.TableTypeView:
 			return "RENAME_VIEW"
 		case ast.TableTypeBaseTable:
+			return "RENAME_TABLE"
+		default:
 			return "RENAME_TABLE"
 		}
 

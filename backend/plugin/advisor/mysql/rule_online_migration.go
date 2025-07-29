@@ -165,6 +165,7 @@ func (r *OnlineMigrationRule) OnEnter(ctx antlr.ParserRuleContext, nodeType stri
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
 	case NodeTypeAlterTableActions:
 		r.checkAlterTableActions(ctx.(*mysql.AlterTableActionsContext))
+	default:
 	}
 	return nil
 }

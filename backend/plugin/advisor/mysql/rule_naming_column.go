@@ -89,6 +89,7 @@ func (r *NamingColumnRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string)
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }
@@ -162,6 +163,7 @@ func (r *NamingColumnRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
 					r.handleColumn(tableName, columnName, tableElement.GetStart().GetLine())
 				}
+			default:
 			}
 		// rename column
 		case item.RENAME_SYMBOL() != nil && item.COLUMN_SYMBOL() != nil:

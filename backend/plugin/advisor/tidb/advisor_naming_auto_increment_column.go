@@ -112,6 +112,7 @@ func (checker *namingAutoIncrementColumnChecker) Enter(in ast.Node) (ast.Node, b
 						line: in.OriginTextPosition(),
 					})
 				}
+			default:
 			}
 		}
 	}

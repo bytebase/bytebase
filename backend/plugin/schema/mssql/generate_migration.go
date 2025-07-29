@@ -636,6 +636,8 @@ func generateAlterTable(tableDiff *schema.TableDiff) string {
 					_, _ = buf.WriteString(" CLUSTERED")
 				case "NONCLUSTERED":
 					_, _ = buf.WriteString(" NONCLUSTERED")
+				default:
+					// Other index types
 				}
 				_, _ = buf.WriteString(" (")
 				for j, expr := range indexDiff.NewIndex.Expressions {
@@ -866,6 +868,8 @@ func generateCreateIndex(schemaName, tableName string, index *storepb.IndexMetad
 			_, _ = buf.WriteString(" CLUSTERED")
 		case "NONCLUSTERED":
 			_, _ = buf.WriteString(" NONCLUSTERED")
+		default:
+			// Other index types
 		}
 
 		_, _ = buf.WriteString(" INDEX [")
@@ -992,6 +996,8 @@ func generateExtendedPropertySQL(action, objectType, schemaName, objectName, com
 		_, _ = buf.WriteString("', '")
 		_, _ = buf.WriteString(objectName)
 		_, _ = buf.WriteString("'")
+	default:
+		// Other actions
 	}
 
 	return buf.String()
@@ -1050,6 +1056,8 @@ func generateColumnCommentSQL(action, schemaName, tableName, columnName, comment
 		_, _ = buf.WriteString("', 'COLUMN', '")
 		_, _ = buf.WriteString(columnName)
 		_, _ = buf.WriteString("'")
+	default:
+		// Other actions
 	}
 
 	return buf.String()

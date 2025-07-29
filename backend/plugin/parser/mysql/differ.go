@@ -188,6 +188,8 @@ func (diff *diffNode) diffTableOptions(oldTable, newTable *tableDef) {
 			// we skip drop them.
 			case "ENGINE", "DEFAULT COLLATE", "DEFAULT CHARACTER SET":
 				continue
+			default:
+				// Handle other table options
 			}
 			// We should drop the table option if it doesn't exist in the new table options.
 			if astOption := dropTableOption(oldOption); astOption != nil {
@@ -277,6 +279,8 @@ func dropTableOption(oldOption *tableOptionDef) *tableOptionDef {
 	case "UNION":
 	case "ENCRYPTION":
 		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` ENCRYPTION = 'N';", oldOption.tableName)
+	default:
+		// Other table options not explicitly handled
 	}
 	return oldOption
 }
@@ -1356,6 +1360,8 @@ func writeAddColumnStatement(buf *strings.Builder, column *columnDef) error {
 			pos = " FIRST"
 		case "AFTER":
 			pos = fmt.Sprintf(" AFTER `%s`", column.columnPosition.relativeColumn)
+		default:
+			// No specific position
 		}
 		if _, err := buf.WriteString(pos); err != nil {
 			return err
@@ -2324,6 +2330,8 @@ func (t *mysqlTransformer) EnterCreateTableOptions(ctx *mysql.CreateTableOptions
 				newTableOption.option = "ENCRYPTION"
 			case tableOption.DATA_SYMBOL() != nil && tableOption.DIRECTORY_SYMBOL() != nil:
 				newTableOption.option = "DATA DIRECTORY"
+			default:
+				// Other table options
 			}
 			table := t.db.schemas[""].tables[t.currentTable]
 			table.tableOptions[newTableOption.option] = newTableOption
@@ -2392,6 +2400,8 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 				tableName: t.currentTable,
 			}
 			table.indexConstraints[index.name] = index
+		default:
+			// Other constraint types
 		}
 	}
 
@@ -2758,6 +2768,8 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 			}
 		case attribute.INVISIBLE_SYMBOL() != nil:
 			columnState.visible = false
+		default:
+			// Other column attributes
 		}
 	}
 	// todo: need handle more types.
@@ -2816,6 +2828,8 @@ func (t *mysqlTransformer) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 			index.tp = "FULLTEXT"
 		case "SPATIAL":
 			index.tp = "SPATIAL"
+		default:
+			// Other index types
 		}
 	}
 }

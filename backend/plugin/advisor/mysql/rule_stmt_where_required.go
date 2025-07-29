@@ -91,6 +91,7 @@ func (r *WhereRequirementRule) OnEnter(ctx antlr.ParserRuleContext, nodeType str
 		r.checkUpdateStatement(ctx.(*mysql.UpdateStatementContext))
 	case NodeTypeQuerySpecification:
 		r.checkQuerySpecification(ctx.(*mysql.QuerySpecificationContext))
+	default:
 	}
 	return nil
 }

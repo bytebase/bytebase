@@ -108,6 +108,7 @@ func (r *TableRequirePkRule) OnExit(ctx antlr.ParserRuleContext, nodeType string
 		r.exitCreateTable(ctx.(*parser.Create_tableContext))
 	case NodeTypeAlterTable:
 		r.exitAlterTable(ctx.(*parser.Alter_tableContext))
+	default:
 	}
 	return nil
 }

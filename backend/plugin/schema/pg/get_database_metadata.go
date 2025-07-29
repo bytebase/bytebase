@@ -789,6 +789,8 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintCo
 			table.ForeignKeys = []*storepb.ForeignKeyMetadata{}
 		}
 		table.ForeignKeys = append(table.ForeignKeys, fk)
+	default:
+		// Other constraint types not handled
 	}
 }
 
@@ -1416,6 +1418,8 @@ func (*metadataExtractor) extractSequenceOption(ctx parser.ISeqoptelemContext, s
 	case ctx.NO() != nil && ctx.CYCLE() != nil:
 		// NO CYCLE
 		sequence.Cycle = false
+	default:
+		// Other sequence options
 	}
 }
 

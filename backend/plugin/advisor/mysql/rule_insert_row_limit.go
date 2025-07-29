@@ -104,6 +104,7 @@ func (r *InsertRowLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType strin
 		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
 	case NodeTypeInsertStatement:
 		r.checkInsertStatement(ctx.(*mysql.InsertStatementContext))
+	default:
 	}
 	return nil
 }

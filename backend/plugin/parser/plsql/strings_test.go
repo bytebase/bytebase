@@ -113,8 +113,9 @@ func convertConstraintTypeForTest(s string) base.TableConstraintType {
 		return base.TableConstraintTypePrimaryKey
 	case "unique":
 		return base.TableConstraintTypeUnique
+	default:
+		return base.TableConstraintTypeNone
 	}
-	return base.TableConstraintTypeNone
 }
 
 func convertColumnOptionTypeForTest(s string) base.ColumnOptionType {
@@ -123,6 +124,7 @@ func convertColumnOptionTypeForTest(s string) base.ColumnOptionType {
 		return base.ColumnOptionTypeNotNull
 	case "defaultValue":
 		return base.ColumnOptionTypeDefault
+	default:
+		return base.ColumnOptionTypeNone
 	}
-	return base.ColumnOptionTypeNone
 }

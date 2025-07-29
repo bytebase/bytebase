@@ -114,6 +114,7 @@ func (r *StatementJoinStrictColumnAttrsRule) OnEnter(ctx antlr.ParserRuleContext
 		r.handleFromClause(ctx.(*mysql.FromClauseContext))
 	case NodeTypePrimaryExprCompare:
 		r.handlePrimaryExprCompare(ctx.(*mysql.PrimaryExprCompareContext))
+	default:
 	}
 	return nil
 }
@@ -127,6 +128,7 @@ func (r *StatementJoinStrictColumnAttrsRule) OnExit(ctx antlr.ParserRuleContext,
 		}
 	case NodeTypeFromClause:
 		r.isInFromClause = false
+	default:
 	}
 	return nil
 }

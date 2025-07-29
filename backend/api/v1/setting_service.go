@@ -927,6 +927,7 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 		return v1pb.Setting_PASSWORD_RESTRICTION
 	case storepb.SettingName_ENVIRONMENT:
 		return v1pb.Setting_ENVIRONMENT
+	default:
 	}
 	return v1pb.Setting_SETTING_NAME_UNSPECIFIED
 }
@@ -1234,6 +1235,7 @@ func convertV1WorkspaceProfileSettingToStore(v1Setting *v1pb.WorkspaceProfileSet
 			storeSetting.Announcement.Level = storepb.Announcement_ALERT_LEVEL_WARNING
 		case v1pb.Announcement_CRITICAL:
 			storeSetting.Announcement.Level = storepb.Announcement_ALERT_LEVEL_CRITICAL
+		default:
 		}
 	}
 
@@ -1274,6 +1276,7 @@ func convertStoreWorkspaceProfileSettingToV1(storeSetting *storepb.WorkspaceProf
 			v1Setting.Announcement.Level = v1pb.Announcement_WARNING
 		case storepb.Announcement_ALERT_LEVEL_CRITICAL:
 			v1Setting.Announcement.Level = v1pb.Announcement_CRITICAL
+		default:
 		}
 	}
 

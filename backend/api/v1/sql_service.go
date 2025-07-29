@@ -1181,6 +1181,7 @@ func (s *SQLService) convertToV1QueryHistory(ctx context.Context, history *store
 		historyType = v1pb.QueryHistory_EXPORT
 	case store.QueryHistoryTypeQuery:
 		historyType = v1pb.QueryHistory_QUERY
+	default:
 	}
 
 	return &v1pb.QueryHistory{
@@ -1338,6 +1339,7 @@ func (s *SQLService) accessCheck(
 				permission = iam.PermissionSQLInfo
 			case parserbase.Select:
 				// Conditional permission check below.
+			default:
 			}
 			if isExplain {
 				permission = iam.PermissionSQLExplain
@@ -1685,6 +1687,7 @@ func (s *SQLService) SQLReviewCheck(
 			adviceLevel = storepb.Advice_ERROR
 		case storepb.Advice_SUCCESS, storepb.Advice_STATUS_UNSPECIFIED:
 			continue
+		default:
 		}
 
 		advices = append(advices, convertToV1Advice(advice))
@@ -1984,6 +1987,7 @@ func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store,
 			if policy.DisallowDml {
 				return connect.NewError(connect.CodePermissionDenied, errors.Errorf("disallow execute DML statement in environment %q", environment.Title))
 			}
+		default:
 		}
 	}
 	return nil

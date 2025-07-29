@@ -85,6 +85,7 @@ func (r *IndexNoDuplicateColumnRule) OnEnter(ctx antlr.ParserRuleContext, nodeTy
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
 	case NodeTypeCreateIndex:
 		r.checkCreateIndex(ctx.(*mysql.CreateIndexContext))
+	default:
 	}
 	return nil
 }
@@ -157,6 +158,7 @@ func (r *IndexNoDuplicateColumnRule) checkCreateIndex(ctx *mysql.CreateIndexCont
 	switch ctx.GetType_().GetTokenType() {
 	case mysql.MySQLParserFULLTEXT_SYMBOL, mysql.MySQLParserSPATIAL_SYMBOL:
 		return
+	default:
 	}
 	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil || ctx.CreateIndexTarget().KeyListVariants() == nil {
 		return

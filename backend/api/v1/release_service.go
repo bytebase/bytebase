@@ -456,6 +456,7 @@ func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files 
 			// populate sheetSha256 from statement
 			h := sha256.Sum256(f.Statement)
 			f.SheetSha256 = hex.EncodeToString(h[:])
+		default:
 		}
 
 		switch f.Type {

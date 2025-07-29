@@ -115,6 +115,7 @@ func (checker *columRequireDefaultChecker) Enter(in ast.Node) (ast.Node, bool) {
 						line:   node.OriginTextPosition(),
 					})
 				}
+			default:
 			}
 		}
 	}

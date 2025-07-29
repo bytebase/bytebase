@@ -101,6 +101,7 @@ func (checker *columnMaximumCharacterLengthChecker) Enter(in ast.Node) (ast.Node
 					columnName = spec.NewColumns[0].Name.Name.O
 					line = node.OriginTextPosition()
 				}
+			default:
 			}
 			if tableName != "" {
 				break

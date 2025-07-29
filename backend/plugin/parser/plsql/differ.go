@@ -384,8 +384,9 @@ func getConstraintName(ctx plsql.IRelational_propertyContext) string {
 		}
 		_, constraintName := NormalizeConstraintName(constraint.Constraint_name())
 		return constraintName
+	default:
+		return ""
 	}
-	return ""
 }
 
 func (diff *diffNode) appendConstraintDiff(tableName string, addConstraints []plsql.IRelational_propertyContext, dropConstraints []string) error {
