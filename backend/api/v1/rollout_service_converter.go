@@ -568,7 +568,7 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 	rolloutV1 := &v1pb.Rollout{
 		Name:       common.FormatRollout(project.ResourceID, rollout.ID),
 		Plan:       "",
-		Title:      rollout.Name,
+		Title:      "",
 		Stages:     nil,
 		CreateTime: timestamppb.New(rollout.CreatedAt),
 		UpdateTime: timestamppb.New(rollout.UpdatedAt),
@@ -589,10 +589,7 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 	}
 	if plan != nil {
 		rolloutV1.Plan = common.FormatPlan(project.ResourceID, plan.UID)
-		// Use plan's title when available (non-empty).
-		if plan.Name != "" {
-			rolloutV1.Title = plan.Name
-		}
+		rolloutV1.Title = plan.Name
 	}
 
 	if rollout.IssueID != nil {

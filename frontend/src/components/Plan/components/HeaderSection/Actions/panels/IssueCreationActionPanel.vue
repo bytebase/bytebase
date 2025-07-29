@@ -330,7 +330,6 @@ const doCreateIssue = async () => {
     const rolloutRequest = create(CreateRolloutRequestSchema, {
       parent: project.value.name,
       rollout: {
-        title: plan.value.title,
         plan: plan.value.name,
       },
     });

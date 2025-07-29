@@ -1293,7 +1293,9 @@ type Rollout struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The plan that this rollout is based on.
 	// Format: projects/{project}/plans/{plan}
-	Plan  string `protobuf:"bytes,3,opt,name=plan,proto3" json:"plan,omitempty"`
+	Plan string `protobuf:"bytes,3,opt,name=plan,proto3" json:"plan,omitempty"`
+	// The title of the rollout, inherited from the associated plan.
+	// This field is output only and cannot be directly set.
 	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
 	// stages and thus tasks of the rollout.
 	Stages []*Stage `protobuf:"bytes,5,rep,name=stages,proto3" json:"stages,omitempty"`
@@ -3597,11 +3599,11 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x14bytebase.com/TaskRunR\x04name\"L\n" +
 	"\x14GetTaskRunLogRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/TaskRunR\x06parent\"\xfe\x02\n" +
+	"\x14bytebase.com/TaskRunR\x06parent\"\x83\x03\n" +
 	"\aRollout\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x17\n" +
-	"\x04plan\x18\x03 \x01(\tB\x03\xe0A\x02R\x04plan\x12\x14\n" +
-	"\x05title\x18\x04 \x01(\tR\x05title\x12*\n" +
+	"\x04plan\x18\x03 \x01(\tB\x03\xe0A\x02R\x04plan\x12\x19\n" +
+	"\x05title\x18\x04 \x01(\tB\x03\xe0A\x03R\x05title\x12*\n" +
 	"\x06stages\x18\x05 \x03(\v2\x12.bytebase.v1.StageR\x06stages\x12\x1d\n" +
 	"\acreator\x18\x06 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
 	"\vcreate_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
