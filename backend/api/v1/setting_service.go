@@ -11,7 +11,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/anypb"
 
@@ -175,7 +174,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		if request.Msg.UpdateMask == nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
 		}
-		payload := convertV1WorkspaceProfileSettingToStore(request.Msg.Setting.Value.GetWorkspaceProfileSettingValue())
+		payload := convertWorkspaceProfileSetting(request.Msg.Setting.Value.GetWorkspaceProfileSettingValue())
 		oldSetting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", apiSettingName, err))
@@ -289,10 +288,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid approval template: %v, err: %v", rule.Template, err))
 			}
 
-			flow := new(storepb.ApprovalFlow)
-			if err := convertProtoToProto(rule.Template.Flow, flow); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal approval flow with error: %v", err))
-			}
+			flow := convertApprovalFlow(rule.Template.Flow)
 			payload.Rules = append(payload.Rules, &storepb.WorkspaceApprovalSetting_Rule{
 				Condition: rule.Condition,
 				Template: &storepb.ApprovalTemplate{
@@ -314,10 +310,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		storeSettingValue = request.Msg.Setting.Value.GetStringValue()
 
 	case storepb.SettingName_APP_IM:
-		payload := new(storepb.AppIMSetting)
-		if err := convertProtoToProto(request.Msg.Setting.Value.GetAppImSettingValue(), payload); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s, error: %v", apiSettingName, err))
-		}
+		payload := convertAppIMSetting(request.Msg.Setting.Value.GetAppImSettingValue())
 		setting, err := s.store.GetAppIMSetting(ctx)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get old app im setting"))
@@ -397,10 +390,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DATA_CLASSIFICATION); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied, err)
 		}
-		payload := new(storepb.DataClassificationSetting)
-		if err := convertProtoToProto(request.Msg.Setting.Value.GetDataClassificationSettingValue(), payload); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", apiSettingName, err))
-		}
+		payload := convertDataClassificationSetting(request.Msg.Setting.Value.GetDataClassificationSettingValue())
 		// it's a temporary solution to limit only 1 classification config before we support manage it in the UX.
 		if len(payload.Configs) > 1 {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("only support define 1 classification config for now"))
@@ -414,10 +404,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_SEMANTIC_TYPES:
-		storeSemanticTypeSetting := new(storepb.SemanticTypeSetting)
-		if err := convertProtoToProto(request.Msg.Setting.Value.GetSemanticTypeSettingValue(), storeSemanticTypeSetting); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", apiSettingName, err))
-		}
+		storeSemanticTypeSetting := convertSemanticTypeSetting(request.Msg.Setting.Value.GetSemanticTypeSettingValue())
 		idMap := make(map[string]bool)
 		for _, tp := range storeSemanticTypeSetting.Types {
 			if tp.Title == "" {
@@ -445,10 +432,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		storeSettingValue = request.Msg.Setting.Value.GetStringValue()
 	case storepb.SettingName_SQL_RESULT_SIZE_LIMIT:
-		sqlQueryRestrictionSetting := new(storepb.SQLQueryRestrictionSetting)
-		if err := convertProtoToProto(request.Msg.Setting.Value.GetSqlQueryRestrictionSetting(), sqlQueryRestrictionSetting); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", apiSettingName, err))
-		}
+		sqlQueryRestrictionSetting := convertSQLQueryRestrictionSetting(request.Msg.Setting.Value.GetSqlQueryRestrictionSetting())
 		bytes, err := protojson.Marshal(sqlQueryRestrictionSetting)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
@@ -470,10 +454,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_PASSWORD_RESTRICTIONS); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied, err)
 		}
-		passwordSetting := new(storepb.PasswordRestrictionSetting)
-		if err := convertProtoToProto(request.Msg.Setting.Value.GetPasswordRestrictionSetting(), passwordSetting); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", apiSettingName, err))
-		}
+		passwordSetting := convertPasswordRestrictionSetting(request.Msg.Setting.Value.GetPasswordRestrictionSetting())
 		if passwordSetting.MinLength < 8 {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid password minimum length, should no less than 8"))
 		}
@@ -483,10 +464,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_AI:
-		aiSetting := &storepb.AISetting{}
-		if err := convertProtoToProto(request.Msg.Setting.Value.GetAiSetting(), aiSetting); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", apiSettingName, err))
-		}
+		aiSetting := convertAISetting(request.Msg.Setting.Value.GetAiSetting())
 		if aiSetting.Enabled {
 			if aiSetting.Endpoint == "" || aiSetting.Model == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("API endpoint and model are required"))
@@ -587,17 +565,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	return connect.NewResponse(settingMessage), nil
 }
 
-func convertProtoToProto(inputPB, outputPB protoreflect.ProtoMessage) error {
-	bytes, err := protojson.Marshal(inputPB)
-	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting: %v", err))
-	}
-	if err := common.ProtojsonUnmarshaler.Unmarshal(bytes, outputPB); err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting: %v", err))
-	}
-	return nil
-}
-
 func convertToSettingMessage(setting *store.SettingMessage, profile *config.Profile) (*v1pb.Setting, error) {
 	settingName := fmt.Sprintf("%s%s", common.SettingNamePrefix, convertStoreSettingNameToV1(setting.Name).String())
 	switch setting.Name {
@@ -612,19 +579,19 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 				Value: &v1pb.Value_AppImSettingValue{
 					AppImSettingValue: &v1pb.AppIMSetting{
 						Slack: &v1pb.AppIMSetting_Slack{
-							Enabled: storeValue.Slack != nil && storeValue.Slack.Enabled,
+							Enabled: storeValue.GetSlack().GetEnabled(),
 						},
 						Feishu: &v1pb.AppIMSetting_Feishu{
-							Enabled: storeValue.Feishu != nil && storeValue.Feishu.Enabled,
+							Enabled: storeValue.GetFeishu().GetEnabled(),
 						},
 						Wecom: &v1pb.AppIMSetting_Wecom{
-							Enabled: storeValue.Wecom != nil && storeValue.Wecom.Enabled,
+							Enabled: storeValue.GetWecom().GetEnabled(),
 						},
 						Lark: &v1pb.AppIMSetting_Lark{
-							Enabled: storeValue.Lark != nil && storeValue.Lark.Enabled,
+							Enabled: storeValue.GetLark().GetEnabled(),
 						},
 						Dingtalk: &v1pb.AppIMSetting_DingTalk{
-							Enabled: storeValue.Dingtalk != nil && storeValue.Dingtalk.Enabled,
+							Enabled: storeValue.GetDingtalk().GetEnabled(),
 						},
 					},
 				},
@@ -635,7 +602,7 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
-		v1Value := convertStoreWorkspaceProfileSettingToV1(storeValue)
+		v1Value := convertToWorkspaceProfileSetting(storeValue)
 		v1Value.DisallowSignup = v1Value.DisallowSignup || profile.SaaS
 		return &v1pb.Setting{
 			Name: settingName,
@@ -667,12 +634,12 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 			},
 		}, nil
 	case storepb.SettingName_SCHEMA_TEMPLATE:
-		value := new(storepb.SchemaTemplateSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), value); err != nil {
+		storeValue := new(storepb.SchemaTemplateSetting)
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 
-		sts := convertSchemaTemplateSetting(value)
+		sts := convertToSchemaTemplateSetting(storeValue)
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
@@ -682,90 +649,90 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 			},
 		}, nil
 	case storepb.SettingName_DATA_CLASSIFICATION:
-		v1Value := new(v1pb.DataClassificationSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+		storeValue := new(storepb.DataClassificationSetting)
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_DataClassificationSettingValue{
-					DataClassificationSettingValue: v1Value,
+					DataClassificationSettingValue: convertToDataClassificationSetting(storeValue),
 				},
 			},
 		}, nil
 	case storepb.SettingName_SEMANTIC_TYPES:
-		v1Value := new(v1pb.SemanticTypeSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+		storeValue := new(storepb.SemanticTypeSetting)
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_SemanticTypeSettingValue{
-					SemanticTypeSettingValue: v1Value,
+					SemanticTypeSettingValue: convertToSemanticTypeSetting(storeValue),
 				},
 			},
 		}, nil
 	case storepb.SettingName_SQL_RESULT_SIZE_LIMIT:
-		v1Value := new(v1pb.SQLQueryRestrictionSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+		storeValue := new(storepb.SQLQueryRestrictionSetting)
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
-		if v1Value.MaximumResultSize <= 0 {
-			v1Value.MaximumResultSize = common.DefaultMaximumSQLResultSize
+		if storeValue.MaximumResultSize <= 0 {
+			storeValue.MaximumResultSize = common.DefaultMaximumSQLResultSize
 		}
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_SqlQueryRestrictionSetting{
-					SqlQueryRestrictionSetting: v1Value,
+					SqlQueryRestrictionSetting: convertToSQLQueryRestrictionSetting(storeValue),
 				},
 			},
 		}, nil
 	case storepb.SettingName_SCIM:
-		v1Value := new(v1pb.SCIMSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+		storeValue := new(storepb.SCIMSetting)
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_ScimSetting{
-					ScimSetting: v1Value,
+					ScimSetting: convertToSCIMSetting(storeValue),
 				},
 			},
 		}, nil
 	case storepb.SettingName_PASSWORD_RESTRICTION:
-		v1Value := new(v1pb.PasswordRestrictionSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+		storeValue := new(storepb.PasswordRestrictionSetting)
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_PasswordRestrictionSetting{
-					PasswordRestrictionSetting: v1Value,
+					PasswordRestrictionSetting: convertToPasswordRestrictionSetting(storeValue),
 				},
 			},
 		}, nil
 	case storepb.SettingName_AI:
-		v1Value := &v1pb.AISetting{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+		storeValue := new(storepb.AISetting)
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 		// DO NOT expose the api key.
-		v1Value.ApiKey = ""
+		storeValue.ApiKey = ""
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_AiSetting{
-					AiSetting: v1Value,
+					AiSetting: convertToAISetting(storeValue),
 				},
 			},
 		}, nil
 	case storepb.SettingName_ENVIRONMENT:
-		v1Value, err := convertToEnvironmentSetting(setting.Value)
+		storeValue, err := convertToEnvironmentSetting(setting.Value)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting value for %s with error: %v", setting.Name, err))
 		}
@@ -773,7 +740,7 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_EnvironmentSetting{
-					EnvironmentSetting: v1Value,
+					EnvironmentSetting: storeValue,
 				},
 			},
 		}, nil
@@ -803,7 +770,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(settingValue), value); err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %v with error: %v", storepb.SettingName_SCHEMA_TEMPLATE, err))
 	}
-	v1Value := convertSchemaTemplateSetting(value)
+	v1Value := convertToSchemaTemplateSetting(value)
 
 	// validate the changed field(column) template.
 	oldFieldTemplateMap := map[string]*v1pb.SchemaTemplateSetting_FieldTemplate{}
@@ -995,7 +962,7 @@ func validateApprovalTemplate(template *v1pb.ApprovalTemplate) error {
 	return nil
 }
 
-func convertSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) *v1pb.SchemaTemplateSetting {
+func convertToSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) *v1pb.SchemaTemplateSetting {
 	v1Setting := new(v1pb.SchemaTemplateSetting)
 	for _, v := range template.ColumnTypes {
 		v1Setting.ColumnTypes = append(v1Setting.ColumnTypes, &v1pb.SchemaTemplateSetting_ColumnType{
@@ -1201,8 +1168,7 @@ func convertEnvironmentSetting(e *v1pb.EnvironmentSetting) *storepb.EnvironmentS
 	}
 }
 
-// convertV1WorkspaceProfileSettingToStore converts v1pb.WorkspaceProfileSetting to storepb.WorkspaceProfileSetting.
-func convertV1WorkspaceProfileSettingToStore(v1Setting *v1pb.WorkspaceProfileSetting) *storepb.WorkspaceProfileSetting {
+func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *storepb.WorkspaceProfileSetting {
 	if v1Setting == nil {
 		return nil
 	}
@@ -1242,8 +1208,7 @@ func convertV1WorkspaceProfileSettingToStore(v1Setting *v1pb.WorkspaceProfileSet
 	return storeSetting
 }
 
-// convertStoreWorkspaceProfileSettingToV1 converts storepb.WorkspaceProfileSetting to v1pb.WorkspaceProfileSetting.
-func convertStoreWorkspaceProfileSettingToV1(storeSetting *storepb.WorkspaceProfileSetting) *v1pb.WorkspaceProfileSetting {
+func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSetting) *v1pb.WorkspaceProfileSetting {
 	if storeSetting == nil {
 		return nil
 	}
@@ -1260,13 +1225,11 @@ func convertStoreWorkspaceProfileSettingToV1(storeSetting *storepb.WorkspaceProf
 		DisallowPasswordSignin: storeSetting.DisallowPasswordSignin,
 	}
 
-	// Convert announcement if present
 	if storeSetting.Announcement != nil {
 		v1Setting.Announcement = &v1pb.Announcement{
 			Text: storeSetting.Announcement.Text,
 			Link: storeSetting.Announcement.Link,
 		}
-		// Convert alert level
 		switch storeSetting.Announcement.Level {
 		case storepb.Announcement_ALERT_LEVEL_UNSPECIFIED:
 			v1Setting.Announcement.Level = v1pb.Announcement_ALERT_LEVEL_UNSPECIFIED
@@ -1281,4 +1244,442 @@ func convertStoreWorkspaceProfileSettingToV1(storeSetting *storepb.WorkspaceProf
 	}
 
 	return v1Setting
+}
+
+func convertApprovalFlow(v1Flow *v1pb.ApprovalFlow) *storepb.ApprovalFlow {
+	if v1Flow == nil {
+		return nil
+	}
+
+	storeFlow := &storepb.ApprovalFlow{}
+	for _, step := range v1Flow.Steps {
+		storeFlow.Steps = append(storeFlow.Steps, convertApprovalStep(step))
+	}
+	return storeFlow
+}
+
+func convertApprovalStep(v1Step *v1pb.ApprovalStep) *storepb.ApprovalStep {
+	if v1Step == nil {
+		return nil
+	}
+
+	storeStep := &storepb.ApprovalStep{
+		Type: storepb.ApprovalStep_Type(v1Step.Type),
+	}
+	for _, node := range v1Step.Nodes {
+		storeStep.Nodes = append(storeStep.Nodes, convertApprovalNode(node))
+	}
+	return storeStep
+}
+
+func convertApprovalNode(v1Node *v1pb.ApprovalNode) *storepb.ApprovalNode {
+	if v1Node == nil {
+		return nil
+	}
+
+	storeNode := &storepb.ApprovalNode{
+		Type: storepb.ApprovalNode_Type(v1Node.Type),
+		Role: v1Node.Role,
+	}
+
+	return storeNode
+}
+
+func convertAppIMSetting(v1Setting *v1pb.AppIMSetting) *storepb.AppIMSetting {
+	if v1Setting == nil {
+		return nil
+	}
+
+	storeSetting := &storepb.AppIMSetting{}
+
+	if v1Setting.Slack != nil {
+		storeSetting.Slack = &storepb.AppIMSetting_Slack{
+			Enabled: v1Setting.Slack.Enabled,
+			Token:   v1Setting.Slack.Token,
+		}
+	}
+	if v1Setting.Feishu != nil {
+		storeSetting.Feishu = &storepb.AppIMSetting_Feishu{
+			Enabled:   v1Setting.Feishu.Enabled,
+			AppId:     v1Setting.Feishu.AppId,
+			AppSecret: v1Setting.Feishu.AppSecret,
+		}
+	}
+	if v1Setting.Wecom != nil {
+		storeSetting.Wecom = &storepb.AppIMSetting_Wecom{
+			Enabled: v1Setting.Wecom.Enabled,
+			CorpId:  v1Setting.Wecom.CorpId,
+			AgentId: v1Setting.Wecom.AgentId,
+			Secret:  v1Setting.Wecom.Secret,
+		}
+	}
+	if v1Setting.Lark != nil {
+		storeSetting.Lark = &storepb.AppIMSetting_Lark{
+			Enabled:   v1Setting.Lark.Enabled,
+			AppId:     v1Setting.Lark.AppId,
+			AppSecret: v1Setting.Lark.AppSecret,
+		}
+	}
+	if v1Setting.Dingtalk != nil {
+		storeSetting.Dingtalk = &storepb.AppIMSetting_DingTalk{
+			Enabled:      v1Setting.Dingtalk.Enabled,
+			ClientId:     v1Setting.Dingtalk.ClientId,
+			ClientSecret: v1Setting.Dingtalk.ClientSecret,
+			RobotCode:    v1Setting.Dingtalk.RobotCode,
+		}
+	}
+
+	return storeSetting
+}
+
+func convertDataClassificationSetting(v1Setting *v1pb.DataClassificationSetting) *storepb.DataClassificationSetting {
+	if v1Setting == nil {
+		return nil
+	}
+
+	storeSetting := &storepb.DataClassificationSetting{}
+	for _, config := range v1Setting.Configs {
+		storeConfig := convertDataClassificationSettingConfig(config)
+		storeSetting.Configs = append(storeSetting.Configs, storeConfig)
+	}
+	return storeSetting
+}
+
+func convertDataClassificationSettingConfig(c *v1pb.DataClassificationSetting_DataClassificationConfig) *storepb.DataClassificationSetting_DataClassificationConfig {
+	if c == nil {
+		return nil
+	}
+
+	return &storepb.DataClassificationSetting_DataClassificationConfig{
+		Id:                       c.Id,
+		Title:                    c.Title,
+		Levels:                   convertDataClassificationSettingLevels(c.Levels),
+		Classification:           convertDataClassificationSettingClassification(c.Classification),
+		ClassificationFromConfig: c.ClassificationFromConfig,
+	}
+}
+
+func convertDataClassificationSettingLevels(levels []*v1pb.DataClassificationSetting_DataClassificationConfig_Level) []*storepb.DataClassificationSetting_DataClassificationConfig_Level {
+	if levels == nil {
+		return nil
+	}
+
+	storeLevels := make([]*storepb.DataClassificationSetting_DataClassificationConfig_Level, len(levels))
+	for i, level := range levels {
+		storeLevels[i] = &storepb.DataClassificationSetting_DataClassificationConfig_Level{
+			Id:          level.Id,
+			Title:       level.Title,
+			Description: level.Description,
+		}
+	}
+	return storeLevels
+}
+
+func convertDataClassificationSettingClassification(classification map[string]*v1pb.DataClassificationSetting_DataClassificationConfig_DataClassification) map[string]*storepb.DataClassificationSetting_DataClassificationConfig_DataClassification {
+	if classification == nil {
+		return nil
+	}
+
+	storeClassification := make(map[string]*storepb.DataClassificationSetting_DataClassificationConfig_DataClassification, len(classification))
+	for k, v := range classification {
+		storeClassification[k] = &storepb.DataClassificationSetting_DataClassificationConfig_DataClassification{
+			Id:          v.Id,
+			Title:       v.Title,
+			Description: v.Description,
+			LevelId:     v.LevelId,
+		}
+	}
+	return storeClassification
+}
+
+func convertToDataClassificationSetting(storeSetting *storepb.DataClassificationSetting) *v1pb.DataClassificationSetting {
+	if storeSetting == nil {
+		return nil
+	}
+
+	v1Setting := &v1pb.DataClassificationSetting{}
+	for _, config := range storeSetting.Configs {
+		v1Config := convertToDataClassificationSettingConfig(config)
+		v1Setting.Configs = append(v1Setting.Configs, v1Config)
+	}
+	return v1Setting
+}
+
+func convertToDataClassificationSettingConfig(c *storepb.DataClassificationSetting_DataClassificationConfig) *v1pb.DataClassificationSetting_DataClassificationConfig {
+	if c == nil {
+		return nil
+	}
+
+	return &v1pb.DataClassificationSetting_DataClassificationConfig{
+		Id:                       c.Id,
+		Title:                    c.Title,
+		Levels:                   convertToDataClassificationSettingLevels(c.Levels),
+		Classification:           convertToDataClassificationSettingClassification(c.Classification),
+		ClassificationFromConfig: c.ClassificationFromConfig,
+	}
+}
+
+func convertToDataClassificationSettingLevels(levels []*storepb.DataClassificationSetting_DataClassificationConfig_Level) []*v1pb.DataClassificationSetting_DataClassificationConfig_Level {
+	if levels == nil {
+		return nil
+	}
+
+	v1Levels := make([]*v1pb.DataClassificationSetting_DataClassificationConfig_Level, len(levels))
+	for i, level := range levels {
+		v1Levels[i] = &v1pb.DataClassificationSetting_DataClassificationConfig_Level{
+			Id:          level.Id,
+			Title:       level.Title,
+			Description: level.Description,
+		}
+	}
+	return v1Levels
+}
+
+func convertToDataClassificationSettingClassification(classification map[string]*storepb.DataClassificationSetting_DataClassificationConfig_DataClassification) map[string]*v1pb.DataClassificationSetting_DataClassificationConfig_DataClassification {
+	if classification == nil {
+		return nil
+	}
+
+	v1Classification := make(map[string]*v1pb.DataClassificationSetting_DataClassificationConfig_DataClassification, len(classification))
+	for k, v := range classification {
+		v1Classification[k] = &v1pb.DataClassificationSetting_DataClassificationConfig_DataClassification{
+			Id:          v.Id,
+			Title:       v.Title,
+			Description: v.Description,
+			LevelId:     v.LevelId,
+		}
+	}
+	return v1Classification
+}
+
+func convertSemanticTypeSetting(v1Setting *v1pb.SemanticTypeSetting) *storepb.SemanticTypeSetting {
+	if v1Setting == nil {
+		return nil
+	}
+
+	storeSetting := &storepb.SemanticTypeSetting{}
+	for _, v1Type := range v1Setting.Types {
+		storeType := &storepb.SemanticTypeSetting_SemanticType{
+			Id:          v1Type.Id,
+			Title:       v1Type.Title,
+			Description: v1Type.Description,
+			Algorithm:   convertAlgorithm(v1Type.Algorithm),
+			Icon:        v1Type.Icon,
+		}
+		storeSetting.Types = append(storeSetting.Types, storeType)
+	}
+	return storeSetting
+}
+
+func convertToSemanticTypeSetting(storeSetting *storepb.SemanticTypeSetting) *v1pb.SemanticTypeSetting {
+	if storeSetting == nil {
+		return nil
+	}
+
+	v1Setting := &v1pb.SemanticTypeSetting{}
+	for _, storeType := range storeSetting.Types {
+		v1Type := &v1pb.SemanticTypeSetting_SemanticType{
+			Id:          storeType.Id,
+			Title:       storeType.Title,
+			Description: storeType.Description,
+			Algorithm:   convertToAlgorithm(storeType.Algorithm),
+			Icon:        storeType.Icon,
+		}
+		v1Setting.Types = append(v1Setting.Types, v1Type)
+	}
+	return v1Setting
+}
+
+func convertAlgorithm(v1Algo *v1pb.Algorithm) *storepb.Algorithm {
+	if v1Algo == nil {
+		return nil
+	}
+
+	storeAlgo := &storepb.Algorithm{}
+	switch mask := v1Algo.Mask.(type) {
+	case *v1pb.Algorithm_FullMask_:
+		storeAlgo.Mask = &storepb.Algorithm_FullMask_{
+			FullMask: &storepb.Algorithm_FullMask{
+				Substitution: mask.FullMask.Substitution,
+			},
+		}
+	case *v1pb.Algorithm_Md5Mask:
+		storeAlgo.Mask = &storepb.Algorithm_Md5Mask{
+			Md5Mask: &storepb.Algorithm_MD5Mask{
+				Salt: mask.Md5Mask.Salt,
+			},
+		}
+	case *v1pb.Algorithm_RangeMask_:
+		storeAlgo.Mask = &storepb.Algorithm_RangeMask_{
+			RangeMask: &storepb.Algorithm_RangeMask{
+				Slices: convertAlgorithmRangeMaskSlices(mask.RangeMask.Slices),
+			},
+		}
+	case *v1pb.Algorithm_InnerOuterMask_:
+		storeAlgo.Mask = &storepb.Algorithm_InnerOuterMask_{
+			InnerOuterMask: &storepb.Algorithm_InnerOuterMask{
+				PrefixLen:    mask.InnerOuterMask.PrefixLen,
+				SuffixLen:    mask.InnerOuterMask.SuffixLen,
+				Type:         storepb.Algorithm_InnerOuterMask_MaskType(mask.InnerOuterMask.Type),
+				Substitution: mask.InnerOuterMask.Substitution,
+			},
+		}
+	}
+	return storeAlgo
+}
+
+func convertToAlgorithm(storeAlgo *storepb.Algorithm) *v1pb.Algorithm {
+	if storeAlgo == nil {
+		return nil
+	}
+
+	v1Algo := &v1pb.Algorithm{}
+	switch mask := storeAlgo.Mask.(type) {
+	case *storepb.Algorithm_FullMask_:
+		v1Algo.Mask = &v1pb.Algorithm_FullMask_{
+			FullMask: &v1pb.Algorithm_FullMask{
+				Substitution: mask.FullMask.Substitution,
+			},
+		}
+	case *storepb.Algorithm_Md5Mask:
+		v1Algo.Mask = &v1pb.Algorithm_Md5Mask{
+			Md5Mask: &v1pb.Algorithm_MD5Mask{
+				Salt: mask.Md5Mask.Salt,
+			},
+		}
+	case *storepb.Algorithm_RangeMask_:
+		v1Algo.Mask = &v1pb.Algorithm_RangeMask_{
+			RangeMask: &v1pb.Algorithm_RangeMask{
+				Slices: convertToAlgorithmRangeMaskSlices(mask.RangeMask.Slices),
+			},
+		}
+	case *storepb.Algorithm_InnerOuterMask_:
+		v1Algo.Mask = &v1pb.Algorithm_InnerOuterMask_{
+			InnerOuterMask: &v1pb.Algorithm_InnerOuterMask{
+				PrefixLen:    mask.InnerOuterMask.PrefixLen,
+				SuffixLen:    mask.InnerOuterMask.SuffixLen,
+				Type:         v1pb.Algorithm_InnerOuterMask_MaskType(mask.InnerOuterMask.Type),
+				Substitution: mask.InnerOuterMask.Substitution,
+			},
+		}
+	}
+	return v1Algo
+}
+
+func convertAlgorithmRangeMaskSlices(v1Slices []*v1pb.Algorithm_RangeMask_Slice) []*storepb.Algorithm_RangeMask_Slice {
+	var storeSlices []*storepb.Algorithm_RangeMask_Slice
+	for _, v1Slice := range v1Slices {
+		storeSlice := &storepb.Algorithm_RangeMask_Slice{
+			Start:        v1Slice.Start,
+			End:          v1Slice.End,
+			Substitution: v1Slice.Substitution,
+		}
+		storeSlices = append(storeSlices, storeSlice)
+	}
+	return storeSlices
+}
+
+func convertToAlgorithmRangeMaskSlices(storeSlices []*storepb.Algorithm_RangeMask_Slice) []*v1pb.Algorithm_RangeMask_Slice {
+	var v1Slices []*v1pb.Algorithm_RangeMask_Slice
+	for _, storeSlice := range storeSlices {
+		v1Slice := &v1pb.Algorithm_RangeMask_Slice{
+			Start:        storeSlice.Start,
+			End:          storeSlice.End,
+			Substitution: storeSlice.Substitution,
+		}
+		v1Slices = append(v1Slices, v1Slice)
+	}
+	return v1Slices
+}
+
+func convertSQLQueryRestrictionSetting(v1Setting *v1pb.SQLQueryRestrictionSetting) *storepb.SQLQueryRestrictionSetting {
+	if v1Setting == nil {
+		return nil
+	}
+
+	return &storepb.SQLQueryRestrictionSetting{
+		MaximumResultSize: v1Setting.MaximumResultSize,
+		MaximumResultRows: v1Setting.MaximumResultRows,
+	}
+}
+
+func convertToSQLQueryRestrictionSetting(storeSetting *storepb.SQLQueryRestrictionSetting) *v1pb.SQLQueryRestrictionSetting {
+	if storeSetting == nil {
+		return nil
+	}
+
+	return &v1pb.SQLQueryRestrictionSetting{
+		MaximumResultSize: storeSetting.MaximumResultSize,
+		MaximumResultRows: storeSetting.MaximumResultRows,
+	}
+}
+
+func convertPasswordRestrictionSetting(v1Setting *v1pb.PasswordRestrictionSetting) *storepb.PasswordRestrictionSetting {
+	if v1Setting == nil {
+		return nil
+	}
+
+	return &storepb.PasswordRestrictionSetting{
+		MinLength:                         v1Setting.MinLength,
+		RequireNumber:                     v1Setting.RequireNumber,
+		RequireLetter:                     v1Setting.RequireLetter,
+		RequireUppercaseLetter:            v1Setting.RequireUppercaseLetter,
+		RequireSpecialCharacter:           v1Setting.RequireSpecialCharacter,
+		RequireResetPasswordForFirstLogin: v1Setting.RequireResetPasswordForFirstLogin,
+	}
+}
+
+func convertToPasswordRestrictionSetting(storeSetting *storepb.PasswordRestrictionSetting) *v1pb.PasswordRestrictionSetting {
+	if storeSetting == nil {
+		return nil
+	}
+
+	return &v1pb.PasswordRestrictionSetting{
+		MinLength:                         storeSetting.MinLength,
+		RequireNumber:                     storeSetting.RequireNumber,
+		RequireLetter:                     storeSetting.RequireLetter,
+		RequireUppercaseLetter:            storeSetting.RequireUppercaseLetter,
+		RequireSpecialCharacter:           storeSetting.RequireSpecialCharacter,
+		RequireResetPasswordForFirstLogin: storeSetting.RequireResetPasswordForFirstLogin,
+	}
+}
+
+func convertAISetting(v1Setting *v1pb.AISetting) *storepb.AISetting {
+	if v1Setting == nil {
+		return nil
+	}
+
+	return &storepb.AISetting{
+		Enabled:  v1Setting.Enabled,
+		Provider: storepb.AISetting_Provider(v1Setting.Provider),
+		Endpoint: v1Setting.Endpoint,
+		ApiKey:   v1Setting.ApiKey,
+		Model:    v1Setting.Model,
+		Version:  v1Setting.Version,
+	}
+}
+
+func convertToAISetting(storeSetting *storepb.AISetting) *v1pb.AISetting {
+	if storeSetting == nil {
+		return nil
+	}
+
+	return &v1pb.AISetting{
+		Enabled:  storeSetting.Enabled,
+		Provider: v1pb.AISetting_Provider(storeSetting.Provider),
+		Endpoint: storeSetting.Endpoint,
+		ApiKey:   storeSetting.ApiKey,
+		Model:    storeSetting.Model,
+		Version:  storeSetting.Version,
+	}
+}
+
+func convertToSCIMSetting(storeSetting *storepb.SCIMSetting) *v1pb.SCIMSetting {
+	if storeSetting == nil {
+		return nil
+	}
+
+	return &v1pb.SCIMSetting{
+		Token: storeSetting.Token,
+	}
 }
