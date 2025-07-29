@@ -46,8 +46,7 @@ func NewProject(p *store.ProjectMessage) *Project {
 
 func NewRollout(r *store.PipelineMessage) *Rollout {
 	return &Rollout{
-		UID:   r.ID,
-		Title: r.Name,
+		UID: r.ID,
 	}
 }
 
@@ -67,8 +66,7 @@ type Project struct {
 }
 
 type Rollout struct {
-	UID   int
-	Title string
+	UID int
 }
 
 type EventIssueUpdate struct {

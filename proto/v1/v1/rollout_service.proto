@@ -326,7 +326,9 @@ message Rollout {
   // Format: projects/{project}/plans/{plan}
   string plan = 3 [(google.api.field_behavior) = REQUIRED];
 
-  string title = 4;
+  // The title of the rollout, inherited from the associated plan.
+  // This field is output only and cannot be directly set.
+  string title = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // stages and thus tasks of the rollout.
   repeated Stage stages = 5;

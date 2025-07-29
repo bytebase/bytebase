@@ -12557,7 +12557,11 @@ components:
                         The plan that this rollout is based on.
                          Format: projects/{project}/plans/{plan}
                 title:
+                    readOnly: true
                     type: string
+                    description: |-
+                        The title of the rollout, inherited from the associated plan.
+                         This field is output only and cannot be directly set.
                 stages:
                     type: array
                     items:
