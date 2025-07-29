@@ -291,10 +291,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find password restriction setting"))
 	}
-	passwordSetting := new(v1pb.PasswordRestrictionSetting)
-	if err := convertProtoToProto(passwordRestrictionSetting, passwordSetting); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to unmarshal password restriction setting"))
-	}
+	passwordSetting := convertToPasswordRestrictionSetting(passwordRestrictionSetting)
 
 	workspaceID, err := s.store.GetWorkspaceID(ctx)
 	if err != nil {
