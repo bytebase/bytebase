@@ -1398,7 +1398,58 @@ func convertToDataClassificationSetting(storeSetting *storepb.DataClassification
 	}
 
 	v1Setting := &v1pb.DataClassificationSetting{}
+	for _, config := range storeSetting.Configs {
+		v1Config := convertToDataClassificationSettingConfig(config)
+		v1Setting.Configs = append(v1Setting.Configs, v1Config)
+	}
 	return v1Setting
+}
+
+func convertToDataClassificationSettingConfig(c *storepb.DataClassificationSetting_DataClassificationConfig) *v1pb.DataClassificationSetting_DataClassificationConfig {
+	if c == nil {
+		return nil
+	}
+
+	return &v1pb.DataClassificationSetting_DataClassificationConfig{
+		Id:                       c.Id,
+		Title:                    c.Title,
+		Levels:                   convertToDataClassificationSettingLevels(c.Levels),
+		Classification:           convertToDataClassificationSettingClassification(c.Classification),
+		ClassificationFromConfig: c.ClassificationFromConfig,
+	}
+}
+
+func convertToDataClassificationSettingLevels(levels []*storepb.DataClassificationSetting_DataClassificationConfig_Level) []*v1pb.DataClassificationSetting_DataClassificationConfig_Level {
+	if levels == nil {
+		return nil
+	}
+
+	v1Levels := make([]*v1pb.DataClassificationSetting_DataClassificationConfig_Level, len(levels))
+	for i, level := range levels {
+		v1Levels[i] = &v1pb.DataClassificationSetting_DataClassificationConfig_Level{
+			Id:          level.Id,
+			Title:       level.Title,
+			Description: level.Description,
+		}
+	}
+	return v1Levels
+}
+
+func convertToDataClassificationSettingClassification(classification map[string]*storepb.DataClassificationSetting_DataClassificationConfig_DataClassification) map[string]*v1pb.DataClassificationSetting_DataClassificationConfig_DataClassification {
+	if classification == nil {
+		return nil
+	}
+
+	v1Classification := make(map[string]*v1pb.DataClassificationSetting_DataClassificationConfig_DataClassification, len(classification))
+	for k, v := range classification {
+		v1Classification[k] = &v1pb.DataClassificationSetting_DataClassificationConfig_DataClassification{
+			Id:          v.Id,
+			Title:       v.Title,
+			Description: v.Description,
+			LevelId:     v.LevelId,
+		}
+	}
+	return v1Classification
 }
 
 func convertSemanticTypeSetting(v1Setting *v1pb.SemanticTypeSetting) *storepb.SemanticTypeSetting {
