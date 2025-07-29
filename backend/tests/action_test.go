@@ -340,7 +340,6 @@ func TestActionRolloutCommand(t *testing.T) {
 			"--targets", database.Name,
 			"--file-pattern", migrationFile,
 			"--release-title", "Test Release",
-			"--rollout-title", "Test Rollout",
 			"--target-stage", "environments/prod",
 			"--output", outputFile,
 		)
@@ -488,7 +487,6 @@ func TestActionRolloutCommand(t *testing.T) {
 			"--targets", database.Name,
 			"--file-pattern", filepath.Join(testDataDir, "0000*.sql"),
 			"--release-title", "Multi-file Release",
-			"--rollout-title", "Multi-file Rollout",
 			"--target-stage", "environments/prod",
 			"--output", outputFile,
 		)
