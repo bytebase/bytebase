@@ -214,8 +214,7 @@ func runAndWaitForRollout(ctx context.Context, w *world.World, client *Client, p
 	rolloutEmpty, err := client.CreateRollout(ctx, &v1pb.CreateRolloutRequest{
 		Parent: w.Project,
 		Rollout: &v1pb.Rollout{
-			Plan:  planName,
-			Title: w.RolloutTitle,
+			Plan: planName,
 		},
 		Target:       &emptyTarget, // zero stage
 		ValidateOnly: false,
