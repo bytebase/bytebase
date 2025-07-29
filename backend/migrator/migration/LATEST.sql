@@ -179,8 +179,7 @@ CREATE TABLE pipeline (
     id serial PRIMARY KEY,
     creator_id integer NOT NULL REFERENCES principal(id),
     created_at timestamptz NOT NULL DEFAULT now(),
-    project text NOT NULL REFERENCES project(resource_id),
-    name text NOT NULL
+    project text NOT NULL REFERENCES project(resource_id)
 );
 
 ALTER SEQUENCE pipeline_id_seq RESTART WITH 101;

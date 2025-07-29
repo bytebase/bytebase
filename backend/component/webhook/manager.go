@@ -310,8 +310,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	}
 	if e.Rollout != nil {
 		webhookCtx.Rollout = &webhook.Rollout{
-			UID:   e.Rollout.UID,
-			Title: e.Rollout.Title,
+			UID: e.Rollout.UID,
 		}
 	}
 	if u := e.TaskRunStatusUpdate; u != nil {

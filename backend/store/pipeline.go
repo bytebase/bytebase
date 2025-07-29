@@ -15,7 +15,6 @@ import (
 // PipelineMessage is the message for pipelines.
 type PipelineMessage struct {
 	ProjectID string
-	Name      string
 	Tasks     []*TaskMessage
 	// Output only.
 	ID         int
@@ -175,25 +174,21 @@ func (*Store) createPipeline(ctx context.Context, txn *sql.Tx, create *PipelineM
 	query := `
 		INSERT INTO pipeline (
 			project,
-			creator_id,
-			name
+			creator_id
 		)
 		VALUES (
 			$1,
-			$2,
-			$3
+			$2
 		)
 		RETURNING id, created_at
 	`
 	pipeline := &PipelineMessage{
 		ProjectID:  create.ProjectID,
 		CreatorUID: creatorUID,
-		Name:       create.Name,
 	}
 	if err := txn.QueryRowContext(ctx, query,
 		create.ProjectID,
 		creatorUID,
-		create.Name,
 	).Scan(
 		&pipeline.ID,
 		&pipeline.CreatedAt,
@@ -247,7 +242,6 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 			pipeline.creator_id,
 			pipeline.created_at,
 			pipeline.project,
-			pipeline.name,
 			issue.id,
 			COALESCE(
 				(
@@ -289,7 +283,6 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 			&pipeline.CreatorUID,
 			&pipeline.CreatedAt,
 			&pipeline.ProjectID,
-			&pipeline.Name,
 			&pipeline.IssueID,
 			&pipeline.UpdatedAt,
 		); err != nil {
