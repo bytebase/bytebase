@@ -83,6 +83,7 @@ func (r *ColumnSetDefaultForNotNullRule) OnEnter(ctx antlr.ParserRuleContext, no
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }
@@ -177,6 +178,7 @@ func (*ColumnSetDefaultForNotNullRule) canNull(ctx mysql.IFieldDefinitionContext
 			return false
 		case attribute.NullLiteral() != nil && attribute.NOT_SYMBOL() == nil:
 			return true
+		default:
 		}
 	}
 	return true
@@ -229,6 +231,7 @@ func (*ColumnSetDefaultForNotNullRule) columnNeedDefault(ctx mysql.IFieldDefinit
 		// SERIAL type doesn't need defaults
 		case mysql.MySQLParserSERIAL_SYMBOL:
 			return false
+		default:
 		}
 	}
 
@@ -277,6 +280,7 @@ func (r *ColumnSetDefaultForNotNullRule) checkAlterTable(ctx *mysql.AlterTableCo
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
 					r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
 				}
+			default:
 			}
 		// modify column
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
@@ -293,6 +297,7 @@ func (r *ColumnSetDefaultForNotNullRule) checkAlterTable(ctx *mysql.AlterTableCo
 			// only care new column name.
 			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
 			r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+		default:
 		}
 	}
 }

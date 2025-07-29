@@ -109,6 +109,7 @@ func (r *NamingFKConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType s
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }

@@ -88,6 +88,7 @@ func (r *NoLeadingWildcardLikeRule) OnEnter(ctx antlr.ParserRuleContext, nodeTyp
 		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
 	case NodeTypePredicateExprLike:
 		r.checkPredicateExprLike(ctx.(*mysql.PredicateExprLikeContext))
+	default:
 	}
 	return nil
 }

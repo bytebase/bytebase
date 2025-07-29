@@ -240,6 +240,7 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 				continue
 			}
 			config.Resources = append(config.Resources, common.FormatProject(project.ResourceID))
+		default:
 		}
 	}
 
@@ -284,6 +285,7 @@ func validateSQLReviewRules(rules []*v1pb.SQLReviewRule) error {
 			if _, err := advisor.UnmarshalNamingCaseRulePayload(rule.Payload); err != nil {
 				return err
 			}
+		default:
 		}
 	}
 	return nil

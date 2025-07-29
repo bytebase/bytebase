@@ -131,6 +131,7 @@ func (v *indexPkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
 				}
 				pds := v.changeColumn(tableName, oldColumnName, node.OriginTextPosition(), newColumnDef)
 				pkDataList = append(pkDataList, pds...)
+			default:
 			}
 		}
 	}
@@ -238,6 +239,7 @@ func (*indexPkTypeChecker) getIntOrBigIntStr(tp *types.FieldType) string {
 	case mysql.TypeLonglong:
 		// tp.String() return bigint(20)
 		return "BIGINT"
+	default:
 	}
 	return tp.String()
 }

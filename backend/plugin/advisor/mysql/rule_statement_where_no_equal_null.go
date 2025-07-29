@@ -86,6 +86,7 @@ func (r *StatementWhereNoEqualNullRule) OnEnter(ctx antlr.ParserRuleContext, nod
 		r.isSelect = true
 	case NodeTypePrimaryExprCompare:
 		r.checkPrimaryExprCompare(ctx.(*mysql.PrimaryExprCompareContext))
+	default:
 	}
 	return nil
 }

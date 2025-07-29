@@ -202,6 +202,8 @@ func (e *StatementAdviseExecutor) runReview(
 			status = storepb.PlanCheckRunResult_Result_WARNING
 		case storepb.Advice_ERROR:
 			status = storepb.PlanCheckRunResult_Result_ERROR
+		default:
+			// Other status types
 		}
 
 		results = append(results, &storepb.PlanCheckRunResult_Result{

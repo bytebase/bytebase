@@ -114,6 +114,8 @@ func (r *NamingUKConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType s
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
 	case NodeTypeCreateIndex:
 		r.checkCreateIndex(ctx.(*mysql.CreateIndexContext))
+	default:
+		// Other node types
 	}
 	return nil
 }
@@ -211,6 +213,8 @@ func (r *NamingUKConventionRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 				line:      r.baseLine + ctx.GetStart().GetLine(),
 			}
 			indexDataList = append(indexDataList, indexData)
+		default:
+			// Other alter operations
 		}
 	}
 	r.handleIndexList(indexDataList)

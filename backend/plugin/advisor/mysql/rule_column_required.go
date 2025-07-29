@@ -101,6 +101,7 @@ func (r *ColumnRequiredRule) OnEnter(ctx antlr.ParserRuleContext, nodeType strin
 		r.checkDropTable(ctx.(*mysql.DropTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }
@@ -168,6 +169,7 @@ func (r *ColumnRequiredRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
 					r.addColumn(tableName, columnName)
 				}
+			default:
 			}
 		// drop column
 		case item.DROP_SYMBOL() != nil && item.ColumnInternalRef() != nil:
@@ -188,6 +190,7 @@ func (r *ColumnRequiredRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 			if r.renameColumn(tableName, oldColumnName, newColumnName) {
 				r.line[tableName] = lineNumber
 			}
+		default:
 		}
 	}
 }

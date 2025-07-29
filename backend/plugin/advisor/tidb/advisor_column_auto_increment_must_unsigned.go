@@ -96,6 +96,7 @@ func (checker *columnAutoIncrementMustUnsignedChecker) Enter(in ast.Node) (ast.N
 						line:   node.OriginTextPosition(),
 					})
 				}
+			default:
 			}
 		}
 	}

@@ -135,6 +135,8 @@ func (s *IssueService) convertToIssueReleasers(ctx context.Context, issue *store
 				}
 				releasers = append(releasers, common.FormatUserEmail(user.Email))
 			}
+		default:
+			// Handle other roles
 		}
 	}
 

@@ -568,6 +568,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 				}
 			}
 			patch.Phone = &request.Msg.User.Phone
+		default:
 		}
 	}
 	if passwordPatch != nil {

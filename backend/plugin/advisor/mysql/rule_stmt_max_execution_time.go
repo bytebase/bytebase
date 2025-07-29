@@ -98,6 +98,7 @@ func (r *MaxExecutionTimeRule) OnEnter(ctx antlr.ParserRuleContext, nodeType str
 		r.checkSimpleStatement(ctx.(*mysql.SimpleStatementContext))
 	case NodeTypeSetStatement:
 		r.checkSetStatement(ctx.(*mysql.SetStatementContext))
+	default:
 	}
 	return nil
 }

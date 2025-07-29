@@ -1243,6 +1243,8 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 					Name:       currentName,
 					Definition: strings.Join(defText, ""),
 				})
+			default:
+				// Ignore other types
 			}
 			currentName = name
 			currentType = t
@@ -1270,6 +1272,8 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 			Name:       currentName,
 			Definition: strings.Join(defText, ""),
 		})
+	default:
+		// Ignore other types
 	}
 	if err := rows.Err(); err != nil {
 		return nil, nil, nil, err

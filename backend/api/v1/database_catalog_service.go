@@ -141,6 +141,7 @@ func convertStoreObjectSchema(objectSchema *storepb.ObjectSchema) *v1pb.ObjectSc
 		o.Type = v1pb.ObjectSchema_OBJECT
 	case storepb.ObjectSchema_ARRAY:
 		o.Type = v1pb.ObjectSchema_ARRAY
+	default:
 	}
 	switch objectSchema.Kind.(type) {
 	case *storepb.ObjectSchema_StructKind_:
@@ -215,6 +216,7 @@ func convertV1ObjectSchema(objectSchema *v1pb.ObjectSchema) *storepb.ObjectSchem
 		o.Type = storepb.ObjectSchema_OBJECT
 	case v1pb.ObjectSchema_ARRAY:
 		o.Type = storepb.ObjectSchema_ARRAY
+	default:
 	}
 	switch objectSchema.Kind.(type) {
 	case *v1pb.ObjectSchema_StructKind_:

@@ -140,6 +140,8 @@ func (checker *columnCurrentTimeCountLimitChecker) count(tableName string, colum
 			table.line = line
 			checker.tableSet[tableName] = table
 		}
+	default:
+		// Other column types
 	}
 }
 
@@ -161,6 +163,7 @@ func (checker *columnCurrentTimeCountLimitChecker) Enter(in ast.Node) (ast.Node,
 				}
 			case ast.AlterTableModifyColumn, ast.AlterTableChangeColumn:
 				checker.count(tableName, spec.NewColumns[0], node.OriginTextPosition())
+			default:
 			}
 		}
 	}
@@ -202,6 +205,7 @@ func isCurrentTime(name string) bool {
 	// See https://dev.mysql.com/doc/refman/8.0/en/timestamp-initialization.html.
 	case "current_timestamp", "now", "localtime", "localtimestamp":
 		return true
+	default:
 	}
 	return false
 }

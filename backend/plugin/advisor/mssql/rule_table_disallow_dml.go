@@ -88,6 +88,8 @@ func (r *TableDisallowDMLRule) OnEnter(ctx antlr.ParserRuleContext, nodeType str
 		r.enterUpdateStatement(ctx.(*parser.Update_statementContext))
 	case "Select_statement_standalone":
 		r.enterSelectStatementStandalone(ctx.(*parser.Select_statement_standaloneContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }

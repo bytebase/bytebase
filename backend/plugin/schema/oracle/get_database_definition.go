@@ -280,6 +280,8 @@ func writeIndex(buf *strings.Builder, table string, index *storepb.IndexMetadata
 		if _, err := buf.WriteString(` BITMAP`); err != nil {
 			return err
 		}
+	default:
+		// Other index types don't need special syntax
 	}
 
 	if index.Unique {
@@ -521,6 +523,8 @@ func writeConstraint(buf *strings.Builder, constraint *storepb.IndexMetadata) er
 		if _, err := buf.WriteString(`)`); err != nil {
 			return err
 		}
+	default:
+		// Other constraint types (e.g. CHECK, FOREIGN KEY)
 	}
 	return nil
 }

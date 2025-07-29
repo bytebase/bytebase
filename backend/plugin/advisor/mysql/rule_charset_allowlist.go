@@ -102,6 +102,7 @@ func (r *CharsetAllowlistRule) OnEnter(ctx antlr.ParserRuleContext, nodeType str
 		r.checkAlterDatabase(ctx.(*mysql.AlterDatabaseContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }

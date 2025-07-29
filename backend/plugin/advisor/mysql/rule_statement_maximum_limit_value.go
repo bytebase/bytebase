@@ -97,6 +97,7 @@ func (r *StatementMaximumLimitValueRule) OnEnter(ctx antlr.ParserRuleContext, no
 		}
 	case NodeTypeLimitClause:
 		r.checkLimitClause(ctx.(*mysql.LimitClauseContext))
+	default:
 	}
 	return nil
 }

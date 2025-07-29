@@ -101,6 +101,7 @@ func (r *TableNoDuplicateIndexRule) OnEnter(ctx antlr.ParserRuleContext, nodeTyp
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
 	case NodeTypeCreateIndex:
 		r.checkCreateIndex(ctx.(*mysql.CreateIndexContext))
+	default:
 	}
 	return nil
 }

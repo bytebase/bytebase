@@ -155,6 +155,7 @@ func contraintsTypeToString(constrainType ast.ConstraintType) string {
 		return "UNIQUE KEY"
 	case ast.ConstraintTypeForeign:
 		return "FOREIGN KEY"
+	default:
+		return "INDEX"
 	}
-	return "INDEX"
 }

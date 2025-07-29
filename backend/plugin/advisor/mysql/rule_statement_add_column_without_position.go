@@ -132,6 +132,7 @@ func (r *StatementAddColumnWithoutPositionRule) checkAlterTable(ctx *mysql.Alter
 					break
 				}
 			}
+		default:
 		}
 
 		if len(position) != 0 {

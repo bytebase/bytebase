@@ -751,6 +751,8 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 				// https://www.postgresql.org/docs/current/infoschema-columns.html.
 				column.Type = fmt.Sprintf("%s(%s)", column.Type, characterMaxLength.String)
 			}
+		default:
+			// Keep the type as is
 		}
 		column.Collation = collation.String
 		column.Comment = comment.String
@@ -760,6 +762,8 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 				column.IdentityGeneration = storepb.ColumnMetadata_ALWAYS
 			case "BY DEFAULT":
 				column.IdentityGeneration = storepb.ColumnMetadata_BY_DEFAULT
+			default:
+				// Keep the default value
 			}
 		}
 

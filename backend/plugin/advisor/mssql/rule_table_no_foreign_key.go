@@ -96,6 +96,7 @@ func (r *TableNoForeignKeyRule) OnEnter(ctx antlr.ParserRuleContext, nodeType st
 		r.enterColumnDefTableConstraints(ctx.(*parser.Column_def_table_constraintsContext))
 	case NodeTypeAlterTable:
 		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
+	default:
 	}
 	return nil
 }
@@ -107,6 +108,7 @@ func (r *TableNoForeignKeyRule) OnExit(ctx antlr.ParserRuleContext, nodeType str
 		r.exitCreateTable(ctx.(*parser.Create_tableContext))
 	case NodeTypeAlterTable:
 		r.exitAlterTable(ctx.(*parser.Alter_tableContext))
+	default:
 	}
 	return nil
 }

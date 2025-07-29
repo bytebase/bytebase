@@ -79,6 +79,7 @@ func (r *ColumnAddNotNullColumnRequireDefaultRule) OnEnter(ctx antlr.ParserRuleC
 		r.handleColumnDefinitionEnter(ctx.(*parser.Column_definitionContext))
 	case "Inline_constraint":
 		r.handleInlineConstraint(ctx.(*parser.Inline_constraintContext))
+	default:
 	}
 	return nil
 }
@@ -90,6 +91,7 @@ func (r *ColumnAddNotNullColumnRequireDefaultRule) OnExit(ctx antlr.ParserRuleCo
 		r.handleAlterTableExit()
 	case "Column_definition":
 		r.handleColumnDefinitionExit(ctx.(*parser.Column_definitionContext))
+	default:
 	}
 	return nil
 }

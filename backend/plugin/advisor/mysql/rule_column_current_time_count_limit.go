@@ -101,6 +101,8 @@ func (r *ColumnCurrentTimeCountLimitRule) OnEnter(ctx antlr.ParserRuleContext, n
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
+		// Other node types
 	}
 	return nil
 }
@@ -168,6 +170,7 @@ func (r *ColumnCurrentTimeCountLimitRule) checkAlterTable(ctx *mysql.AlterTableC
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
 					r.checkTime(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
 				}
+			default:
 			}
 		// change column.
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
@@ -219,6 +222,7 @@ func (r *ColumnCurrentTimeCountLimitRule) checkTime(tableName string, _ string, 
 			table.line = r.baseLine + ctx.GetStart().GetLine()
 			r.tableSet[tableName] = table
 		}
+	default:
 	}
 }
 

@@ -82,6 +82,7 @@ func (r *StatementDmlDryRunRule) OnEnter(ctx antlr.ParserRuleContext, nodeType s
 		r.handleDeleteStatement(ctx.(*parser.Delete_statementContext))
 	case "Merge_statement":
 		r.handleMergeStatement(ctx.(*parser.Merge_statementContext))
+	default:
 	}
 	return nil
 }

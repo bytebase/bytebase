@@ -85,6 +85,8 @@ func (r *ColumnDisallowSetCharsetRule) OnEnter(ctx antlr.ParserRuleContext, node
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
+		// Other node types
 	}
 	return nil
 }
@@ -180,6 +182,8 @@ func (r *ColumnDisallowSetCharsetRule) checkAlterTable(ctx *mysql.AlterTableCont
 					charsetName := r.getCharSet(tableElement.ColumnDefinition().FieldDefinition().DataType())
 					charsetList = append(charsetList, charsetName)
 				}
+			default:
+				// Other add column formats
 			}
 		// change column.
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:

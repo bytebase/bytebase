@@ -1488,6 +1488,8 @@ func writeIndexKeyList(out io.Writer, index *storepb.IndexMetadata) error {
 			if _, err := io.WriteString(out, " NULLS LAST"); err != nil {
 				return err
 			}
+		default:
+			// Default null ordering (no explicit NULLS FIRST/LAST)
 		}
 	}
 

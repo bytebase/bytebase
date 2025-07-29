@@ -91,6 +91,7 @@ func (r *NamingAutoIncrementColumnRule) OnEnter(ctx antlr.ParserRuleContext, nod
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }
@@ -161,6 +162,7 @@ func (r *NamingAutoIncrementColumnRule) checkAlterTable(ctx *mysql.AlterTableCon
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
 					r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
 				}
+			default:
 			}
 		// modify column
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
@@ -170,6 +172,7 @@ func (r *NamingAutoIncrementColumnRule) checkAlterTable(ctx *mysql.AlterTableCon
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
 			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
 			r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+		default:
 		}
 	}
 }

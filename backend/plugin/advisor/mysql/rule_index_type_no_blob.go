@@ -90,6 +90,7 @@ func (r *IndexTypeNoBlobRule) OnEnter(ctx antlr.ParserRuleContext, nodeType stri
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
 	case NodeTypeCreateIndex:
 		r.checkCreateIndex(ctx.(*mysql.CreateIndexContext))
+	default:
 	}
 	return nil
 }
@@ -124,6 +125,7 @@ func (r *IndexTypeNoBlobRule) checkCreateTable(ctx *mysql.CreateTableContext) {
 			r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
 		case tableElement.TableConstraintDef() != nil:
 			r.checkConstraintDef(tableName, tableElement.TableConstraintDef())
+		default:
 		}
 	}
 }
@@ -170,6 +172,7 @@ func (r *IndexTypeNoBlobRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 			// add constraint.
 			case alterListItem.TableConstraintDef() != nil:
 				r.checkConstraintDef(tableName, alterListItem.TableConstraintDef())
+			default:
 			}
 		// modify column
 		case alterListItem.MODIFY_SYMBOL() != nil && alterListItem.ColumnInternalRef() != nil:
@@ -181,6 +184,7 @@ func (r *IndexTypeNoBlobRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 			r.tablesNewColumns.delete(tableName, oldColumnName)
 			newColumnName := mysqlparser.NormalizeMySQLIdentifier(alterListItem.Identifier())
 			r.checkFieldDefinition(tableName, newColumnName, alterListItem.FieldDefinition())
+		default:
 		}
 	}
 }
@@ -195,6 +199,7 @@ func (r *IndexTypeNoBlobRule) checkCreateIndex(ctx *mysql.CreateIndexContext) {
 	switch ctx.GetType_().GetTokenType() {
 	case mysql.MySQLParserFULLTEXT_SYMBOL, mysql.MySQLParserSPATIAL_SYMBOL, mysql.MySQLParserFOREIGN_SYMBOL:
 		return
+	default:
 	}
 	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil || ctx.CreateIndexTarget().KeyListVariants() == nil {
 		return

@@ -96,6 +96,7 @@ func (r *IndexTotalNumberLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeTyp
 		r.checkCreateIndex(ctx.(*mysql.CreateIndexContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }
@@ -205,6 +206,7 @@ func (r *IndexTotalNumberLimitRule) checkAlterTable(ctx *mysql.AlterTableContext
 				// add constraint.
 			case item.TableConstraintDef() != nil:
 				r.checkTableConstraintDef(tableName, item.TableConstraintDef())
+			default:
 			}
 		// change column.
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
@@ -226,6 +228,7 @@ func (r *IndexTotalNumberLimitRule) checkFieldDefinitionContext(tableName string
 		switch attr.GetValue().GetTokenType() {
 		case mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL:
 			r.lineForTable[tableName] = r.baseLine + ctx.GetStart().GetLine()
+		default:
 		}
 	}
 }
@@ -237,5 +240,6 @@ func (r *IndexTotalNumberLimitRule) checkTableConstraintDef(tableName string, ct
 	switch ctx.GetType_().GetTokenType() {
 	case mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL, mysql.MySQLParserKEY_SYMBOL, mysql.MySQLParserINDEX_SYMBOL, mysql.MySQLParserFULLTEXT_SYMBOL:
 		r.lineForTable[tableName] = r.baseLine + ctx.GetStart().GetLine()
+	default:
 	}
 }

@@ -107,6 +107,7 @@ func (r *TableLimitSizeRule) OnEnter(ctx antlr.ParserRuleContext, nodeType strin
 		r.checkTruncateTableStatement(ctx.(*mysql.TruncateTableStatementContext))
 	case NodeTypeDropTable:
 		r.checkDropTable(ctx.(*mysql.DropTableContext))
+	default:
 	}
 	return nil
 }

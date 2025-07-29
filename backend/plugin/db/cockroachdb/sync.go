@@ -555,6 +555,8 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 				// https://www.postgresql.org/docs/current/infoschema-columns.html.
 				column.Type = fmt.Sprintf("%s(%s)", column.Type, characterMaxLength.String)
 			}
+		default:
+			// Keep the type as is
 		}
 		column.Collation = collation.String
 		column.Comment = comment.String
@@ -847,6 +849,8 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 				index.Unique = true
 			case "UNIQUE":
 				index.Unique = true
+			default:
+				// Other constraint types
 			}
 		}
 		if comment.Valid {

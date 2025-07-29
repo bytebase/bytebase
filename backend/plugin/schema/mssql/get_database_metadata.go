@@ -917,6 +917,8 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITable_constraintC
 					fk.OnDelete = "SET NULL"
 				case onDelete.SET() != nil && onDelete.DEFAULT() != nil:
 					fk.OnDelete = "SET DEFAULT"
+				default:
+					// Keep the default NO ACTION
 				}
 			}
 			if onUpdate := fkOptions.On_update(0); onUpdate != nil {
@@ -927,6 +929,8 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITable_constraintC
 					fk.OnDelete = "SET NULL"
 				case onUpdate.SET() != nil && onUpdate.DEFAULT() != nil:
 					fk.OnUpdate = "SET DEFAULT"
+				default:
+					// Keep the default NO ACTION
 				}
 			}
 		}
@@ -1242,6 +1246,8 @@ func (e *metadataExtractor) parseExtendedPropertyFromStringArgs(args []string) {
 			tableName = levelName
 		case "COLUMN":
 			columnName = levelName
+		default:
+			// Ignore other level types
 		}
 	}
 

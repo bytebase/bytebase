@@ -94,6 +94,7 @@ func (r *ColumnCommentConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeT
 		r.handleAlterTable(ctx.(*parser.Alter_tableContext))
 	case "Comment_on_column":
 		r.handleCommentOnColumn(ctx.(*parser.Comment_on_columnContext))
+	default:
 	}
 	return nil
 }
@@ -107,6 +108,7 @@ func (r *ColumnCommentConventionRule) OnExit(_ antlr.ParserRuleContext, nodeType
 		r.handleAddColumnClauseExit()
 	case "Sql_script":
 		r.handleSQLScriptExit()
+	default:
 	}
 	return nil
 }

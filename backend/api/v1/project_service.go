@@ -1595,6 +1595,8 @@ func validateExpirationInExpression(expr string, maximumRoleExpiration *duration
 							return errors.Errorf("expect string, got %T, hint: filter literals should be string", arg.AsLiteral().Value())
 						}
 						value = lit
+					default:
+						// Other arg kinds
 					}
 				}
 
