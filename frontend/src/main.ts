@@ -4,7 +4,6 @@ import App from "./App.vue";
 import "./assets/css/github-markdown-style.css";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
-import "./axios";
 import dayjs from "./plugins/dayjs";
 import highlight from "./plugins/highlight";
 import i18n from "./plugins/i18n";

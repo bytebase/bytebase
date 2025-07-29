@@ -72,11 +72,7 @@ export default defineConfig({
             return "ui-framework";
           }
           // Utilities
-          if (
-            id.includes("lodash") ||
-            id.includes("dayjs") ||
-            id.includes("axios")
-          ) {
+          if (id.includes("lodash") || id.includes("dayjs")) {
             return "utils";
           }
         },
