@@ -373,7 +373,6 @@ func TestActionRolloutCommand(t *testing.T) {
 		a.NoError(err)
 		a.NotEmpty(rollouts.Msg.Rollouts, "Expected rollout to be created")
 		rollout := rollouts.Msg.Rollouts[0]
-		a.Equal("Test Rollout", rollout.Title)
 		a.Equal(rollout.Name, result.OutputJSON["rollout"])
 
 		// Verify rollout completed by checking all task statuses
@@ -522,7 +521,6 @@ func TestActionRolloutCommand(t *testing.T) {
 		a.NoError(err)
 		a.NotEmpty(rollouts.Msg.Rollouts, "Expected rollout to be created")
 		rollout := rollouts.Msg.Rollouts[0]
-		a.Equal("Multi-file Rollout", rollout.Title)
 		a.Equal(rollout.Name, result.OutputJSON["rollout"])
 
 		// Verify rollout completed by checking all task statuses

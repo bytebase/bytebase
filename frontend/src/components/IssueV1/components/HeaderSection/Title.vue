@@ -22,19 +22,28 @@ import { NInput } from "naive-ui";
 import type { CSSProperties } from "vue";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { issueServiceClientConnect } from "@/grpcweb";
+import { issueServiceClientConnect, planServiceClientConnect } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { pushNotification } from "@/store";
 import {
   IssueSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  PlanSchema,
+  UpdatePlanRequestSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
 import { useIssueContext } from "../../logic";
 
 type ViewMode = "EDIT" | "VIEW";
 
 const { t } = useI18n();
-const { isCreating, issue, allowChange: allowEditIssue } = useIssueContext();
+const {
+  isCreating,
+  issue,
+  allowChange: allowEditIssue,
+  events,
+} = useIssueContext();
 
 const state = reactive({
   isEditing: false,
@@ -80,15 +89,26 @@ const onBlur = async () => {
   }
   try {
     state.isUpdating = true;
-    const request = create(UpdateIssueRequestSchema, {
-      issue: create(IssueSchema, {
-        name: issue.value.name,
-        title: state.title,
-      }),
-      updateMask: { paths: ["title"] },
-    });
-    const updated = await issueServiceClientConnect.updateIssue(request);
-    Object.assign(issue.value, updated);
+    if (issue.value.plan) {
+      const request = create(UpdatePlanRequestSchema, {
+        plan: create(PlanSchema, {
+          name: issue.value.plan,
+          title: state.title,
+        }),
+        updateMask: { paths: ["title"] },
+      });
+      await planServiceClientConnect.updatePlan(request);
+    } else {
+      const request = create(UpdateIssueRequestSchema, {
+        issue: create(IssueSchema, {
+          name: issue.value.name,
+          title: state.title,
+        }),
+        updateMask: { paths: ["title"] },
+      });
+      await issueServiceClientConnect.updateIssue(request);
+    }
+    events.emit("status-changed", { eager: true });
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

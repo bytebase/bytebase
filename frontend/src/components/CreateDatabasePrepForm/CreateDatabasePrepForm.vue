@@ -364,15 +364,16 @@ const createV1 = async () => {
     creator: `users/${currentUserV1.value.email}`,
   });
 
-  issueCreate.title = `${t("issue.title.create-database")} '${databaseName}'`;
   spec.config = {
     case: "createDatabaseConfig",
     value: createDatabaseConfig,
   };
 
+  const title = `${t("issue.title.create-database")} '${databaseName}'`;
   state.creating = true;
   try {
     const planCreate = createProto(PlanSchema, {
+      title: title,
       specs: [spec],
       creator: currentUserV1.value.name,
     });
