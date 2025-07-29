@@ -1339,24 +1339,57 @@ func convertDataClassificationSetting(v1Setting *v1pb.DataClassificationSetting)
 
 	storeSetting := &storepb.DataClassificationSetting{}
 	for _, config := range v1Setting.Configs {
-		storeConfig := &storepb.DataClassificationSetting_DataClassificationConfig{
-			Id:    config.Id,
-			Title: config.Title,
-		}
-		for k, v := range config.Classification {
-			if storeConfig.Classification == nil {
-				storeConfig.Classification = make(map[string]*storepb.DataClassificationSetting_DataClassificationConfig_DataClassification)
-			}
-			storeConfig.Classification[k] = &storepb.DataClassificationSetting_DataClassificationConfig_DataClassification{
-				Id:          v.Id,
-				Title:       v.Title,
-				Description: v.Description,
-				LevelId:     v.LevelId,
-			}
-		}
+		storeConfig := convertDataClassificationSettingConfig(config)
 		storeSetting.Configs = append(storeSetting.Configs, storeConfig)
 	}
 	return storeSetting
+}
+
+func convertDataClassificationSettingConfig(c *v1pb.DataClassificationSetting_DataClassificationConfig) *storepb.DataClassificationSetting_DataClassificationConfig {
+	if c == nil {
+		return nil
+	}
+
+	return &storepb.DataClassificationSetting_DataClassificationConfig{
+		Id:                       c.Id,
+		Title:                    c.Title,
+		Levels:                   convertDataClassificationSettingLevels(c.Levels),
+		Classification:           convertDataClassificationSettingClassification(c.Classification),
+		ClassificationFromConfig: c.ClassificationFromConfig,
+	}
+}
+
+func convertDataClassificationSettingLevels(levels []*v1pb.DataClassificationSetting_DataClassificationConfig_Level) []*storepb.DataClassificationSetting_DataClassificationConfig_Level {
+	if levels == nil {
+		return nil
+	}
+
+	storeLevels := make([]*storepb.DataClassificationSetting_DataClassificationConfig_Level, len(levels))
+	for i, level := range levels {
+		storeLevels[i] = &storepb.DataClassificationSetting_DataClassificationConfig_Level{
+			Id:          level.Id,
+			Title:       level.Title,
+			Description: level.Description,
+		}
+	}
+	return storeLevels
+}
+
+func convertDataClassificationSettingClassification(classification map[string]*v1pb.DataClassificationSetting_DataClassificationConfig_DataClassification) map[string]*storepb.DataClassificationSetting_DataClassificationConfig_DataClassification {
+	if classification == nil {
+		return nil
+	}
+
+	storeClassification := make(map[string]*storepb.DataClassificationSetting_DataClassificationConfig_DataClassification, len(classification))
+	for k, v := range classification {
+		storeClassification[k] = &storepb.DataClassificationSetting_DataClassificationConfig_DataClassification{
+			Id:          v.Id,
+			Title:       v.Title,
+			Description: v.Description,
+			LevelId:     v.LevelId,
+		}
+	}
+	return storeClassification
 }
 
 func convertToDataClassificationSetting(storeSetting *storepb.DataClassificationSetting) *v1pb.DataClassificationSetting {
@@ -1365,24 +1398,6 @@ func convertToDataClassificationSetting(storeSetting *storepb.DataClassification
 	}
 
 	v1Setting := &v1pb.DataClassificationSetting{}
-	for _, config := range storeSetting.Configs {
-		v1Config := &v1pb.DataClassificationSetting_DataClassificationConfig{
-			Id:    config.Id,
-			Title: config.Title,
-		}
-		for k, v := range config.Classification {
-			if v1Config.Classification == nil {
-				v1Config.Classification = make(map[string]*v1pb.DataClassificationSetting_DataClassificationConfig_DataClassification)
-			}
-			v1Config.Classification[k] = &v1pb.DataClassificationSetting_DataClassificationConfig_DataClassification{
-				Id:          v.Id,
-				Title:       v.Title,
-				Description: v.Description,
-				LevelId:     v.LevelId,
-			}
-		}
-		v1Setting.Configs = append(v1Setting.Configs, v1Config)
-	}
 	return v1Setting
 }
 
