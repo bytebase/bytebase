@@ -1,5 +1,5 @@
 // Package common provides common libraries for the service.
-package common
+package common //nolint:revive
 
 // ReleaseMode is the mode for release, such as dev or release.
 type ReleaseMode string
