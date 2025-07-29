@@ -75,13 +75,17 @@ import { NInput, NButton } from "naive-ui";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRenderMarkdown } from "@/components/MarkdownEditor";
-import { issueServiceClientConnect } from "@/grpcweb";
+import { issueServiceClientConnect, planServiceClientConnect } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
 import {
   IssueSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  PlanSchema,
+  UpdatePlanRequestSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
 import { isGrantRequestIssue } from "@/utils";
 import { useIssueContext } from "../../logic";
 
@@ -92,7 +96,12 @@ type LocalState = {
 };
 
 const { t } = useI18n();
-const { isCreating, issue, allowChange: allowEditIssue } = useIssueContext();
+const {
+  isCreating,
+  issue,
+  allowChange: allowEditIssue,
+  events,
+} = useIssueContext();
 const { project } = useCurrentProjectV1();
 const contentPreviewArea = ref<HTMLIFrameElement>();
 
@@ -127,20 +136,31 @@ const beginEdit = () => {
 const saveEdit = async () => {
   try {
     state.isUpdating = true;
-    const request = create(UpdateIssueRequestSchema, {
-      issue: create(IssueSchema, {
-        name: issue.value.name,
-        description: state.description,
-      }),
-      updateMask: { paths: ["description"] },
-    });
-    const updated = await issueServiceClientConnect.updateIssue(request);
-    Object.assign(issue.value, updated);
+    if (issue.value.plan) {
+      const request = create(UpdatePlanRequestSchema, {
+        plan: create(PlanSchema, {
+          name: issue.value.plan,
+          description: state.description,
+        }),
+        updateMask: { paths: ["description"] },
+      });
+      await planServiceClientConnect.updatePlan(request);
+    } else {
+      const request = create(UpdateIssueRequestSchema, {
+        issue: create(IssueSchema, {
+          name: issue.value.name,
+          description: state.description,
+        }),
+        updateMask: { paths: ["description"] },
+      });
+      await issueServiceClientConnect.updateIssue(request);
+    }
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("common.updated"),
     });
+    events.emit("status-changed", { eager: true });
     emitWindowEvent("bb.issue-field-update");
     state.isEditing = false;
   } finally {
