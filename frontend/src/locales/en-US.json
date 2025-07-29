@@ -1972,7 +1972,7 @@
         "tooltip": "Will find available data sources with restriction policy, then apply the selection.",
         "admin": "Admin",
         "readonly": "Read-only",
-        "not-match": "Data source not match, expect {expect} but got {actual}."
+        "not-match": "Data source mismatch, expect {expect} but got {actual}."
       }
     },
     "batch-export": {
