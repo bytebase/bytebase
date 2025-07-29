@@ -594,6 +594,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				}
 				viewEntries.insertViews(c, schemas)
 			}
+		default:
+			// Handle other candidates
 		}
 	}
 
@@ -706,6 +708,8 @@ func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []stri
 			return result
 		case mysql.MySQLParserRULE_orderClause, mysql.MySQLParserRULE_groupByClause, mysql.MySQLParserRULE_havingClause:
 			canUseAliases = true
+		default:
+			// Other cases
 		}
 	}
 
@@ -884,6 +888,8 @@ func (c *Completer) collectRemainingTableReferences() {
 				if level == 0 {
 					found = true
 				}
+			default:
+				// Other tokens, continue scanning
 			}
 		}
 
@@ -929,6 +935,8 @@ func (c *Completer) collectInsertTableReferences(caretIndex int) {
 				level--
 			case mysql.MySQLLexerINSERT_SYMBOL, mysql.MySQLLexerINTO_SYMBOL:
 				found = true
+			default:
+				// Other tokens, continue scanning
 			}
 		}
 
@@ -991,6 +999,8 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int, forTableAlter 
 					c.referencesStack = c.referencesStack[1:]
 				case mysql.MySQLLexerFROM_SYMBOL:
 					found = true
+				default:
+					// Other tokens, continue scanning
 				}
 			}
 

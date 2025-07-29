@@ -598,6 +598,8 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 					},
 				},
 			}, nil
+		default:
+			return nil, NewConvertErrorf("unexpected object type: %q", in.AlterObjectSchemaStmt.ObjectType.String())
 		}
 	case *pgquery.Node_ExplainStmt:
 		explainStmt := &ast.ExplainStmt{}
@@ -708,6 +710,8 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 			default:
 				return nil, errors.Errorf("expect to get a list node but got %T", node)
 			}
+		default:
+			return nil, NewConvertErrorf("unexpected comment object type: %q", in.CommentStmt.Objtype.String())
 		}
 
 		return &commentStmt, nil
@@ -1118,8 +1122,9 @@ func convertRoleSpec(in *pgquery.RoleSpec) (*ast.RoleSpec, error) {
 			Type:  ast.RoleSpecTypeSessionUser,
 			Value: "",
 		}, nil
+	default:
+		return nil, NewConvertErrorf("unexpected role spec type: %q", in.Roletype.String())
 	}
-	return nil, NewConvertErrorf("unexpected role spec type: %q", in.Roletype.String())
 }
 
 func convertNullOrder(order pgquery.SortByNulls) (ast.NullOrderType, error) {
@@ -1245,6 +1250,8 @@ func convertExpressionNode(node *pgquery.Node) (ast.ExpressionNode, []*ast.Patte
 				}
 				likeList = append(likeList, like)
 				return like, likeList, interSubquery, nil
+			default:
+				// Other operators
 			}
 		}
 		return &ast.UnconvertedExpressionDef{}, likeList, subqueryList, nil
@@ -1624,6 +1631,8 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 			}
 			cons.WhereClause = whereClause
 		}
+	default:
+		// Other constraint types
 	}
 
 	return cons, nil
@@ -1688,8 +1697,9 @@ func convertConstraintType(in pgquery.ConstrType, usingIndex bool) ast.Constrain
 		return ast.ConstraintTypeGenerated
 	case pgquery.ConstrType_CONSTR_NULL:
 		return ast.ConstraintTypeNull
+	default:
+		return ast.ConstraintTypeUndefined
 	}
-	return ast.ConstraintTypeUndefined
 }
 
 func convertColumnDef(in *pgquery.Node_ColumnDef) (*ast.ColumnDef, error) {
@@ -1822,6 +1832,8 @@ func convertDataType(tp *pgquery.TypeName) (ast.DataType, error) {
 				return &ast.JSON{}
 			case s == "jsonb":
 				return &ast.JSON{JSONB: true}
+			default:
+				// Other data types
 			}
 		}
 		return convertToUnconvertedDataType(tp)

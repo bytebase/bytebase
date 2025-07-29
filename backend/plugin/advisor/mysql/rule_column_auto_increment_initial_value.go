@@ -90,6 +90,8 @@ func (r *ColumnAutoIncrementInitialValueRule) OnEnter(ctx antlr.ParserRuleContex
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
+		// Other node types
 	}
 	return nil
 }

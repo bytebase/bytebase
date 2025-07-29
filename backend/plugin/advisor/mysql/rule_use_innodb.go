@@ -88,6 +88,7 @@ func (r *UseInnoDBRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) er
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
 	case NodeTypeSetStatement:
 		r.checkSetStatement(ctx.(*mysql.SetStatementContext))
+	default:
 	}
 	return nil
 }

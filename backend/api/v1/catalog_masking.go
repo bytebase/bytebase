@@ -165,6 +165,9 @@ func getObjectSchemaByPath(objectSchema *storepb.ObjectSchema, path *base.PathAS
 			}
 			outer = inner
 			outerSemanticType = outer.SemanticType
+		default:
+			// Other schema types
+			return nil, outerSemanticType
 		}
 	}
 

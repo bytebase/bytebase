@@ -84,6 +84,7 @@ func (r *FunctionDisallowCreateRule) OnEnter(ctx antlr.ParserRuleContext, nodeTy
 		}
 	case NodeTypeCreateFunction:
 		r.checkCreateFunction(ctx.(*mysql.CreateFunctionContext))
+	default:
 	}
 	return nil
 }

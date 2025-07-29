@@ -86,6 +86,7 @@ func (r *TableDisallowDDLRule) OnEnter(ctx antlr.ParserRuleContext, nodeType str
 		r.enterDropTable(ctx.(*parser.Drop_tableContext))
 	case NodeTypeTruncateTable:
 		r.enterTruncateTable(ctx.(*parser.Truncate_tableContext))
+	default:
 	}
 	return nil
 }

@@ -95,6 +95,7 @@ func (r *RequireAlgorithmOrLockOptionRule) OnEnter(ctx antlr.ParserRuleContext, 
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
 	case NodeTypeAlterTableActions:
 		r.checkAlterTableActions(ctx.(*mysql.AlterTableActionsContext))
+	default:
 	}
 	return nil
 }

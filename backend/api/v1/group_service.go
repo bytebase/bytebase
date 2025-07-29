@@ -320,6 +320,7 @@ func (s *GroupService) convertToV1Group(ctx context.Context, groupMessage *store
 			m.Role = v1pb.GroupMember_MEMBER
 		case storepb.GroupMember_OWNER:
 			m.Role = v1pb.GroupMember_OWNER
+		default:
 		}
 		group.Members = append(group.Members, m)
 	}

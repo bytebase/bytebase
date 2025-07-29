@@ -306,6 +306,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 				ct += ";"
 			}
 			command.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", ct, owner)
+		default:
+			// Regular statements, keep as is
 		}
 		tmpCommands = append(tmpCommands, command)
 		tmpOriginalIndex = append(tmpOriginalIndex, originalIndex[i])

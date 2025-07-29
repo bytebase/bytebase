@@ -116,6 +116,7 @@ func (checker *columnTypeDisallowListChecker) Enter(in ast.Node) (ast.Node, bool
 						line:   node.OriginTextPosition(),
 					})
 				}
+			default:
 			}
 		}
 	}

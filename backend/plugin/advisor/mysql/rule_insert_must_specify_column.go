@@ -90,6 +90,8 @@ func (r *InsertMustSpecifyColumnRule) OnEnter(ctx antlr.ParserRuleContext, nodeT
 		r.checkInsertStatement(ctx.(*mysql.InsertStatementContext))
 	case NodeTypeSelectItemList:
 		r.checkSelectItemList(ctx.(*mysql.SelectItemListContext))
+	default:
+		// Other node types
 	}
 	return nil
 }

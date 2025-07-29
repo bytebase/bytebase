@@ -206,6 +206,8 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 					changeType = storepb.PlanCheckRunConfig_DDL_GHOST
 				case v1pb.Release_File_DML:
 					changeType = storepb.PlanCheckRunConfig_DML
+				default:
+					// Keep DDL as default change type
 				}
 				// Get SQL summary report for the statement and target database.
 				// Including affected rows.
@@ -377,6 +379,8 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 			adviceLevel = storepb.Advice_ERROR
 		case storepb.Advice_SUCCESS, storepb.Advice_STATUS_UNSPECIFIED:
 			continue
+		default:
+			// Other advice statuses
 		}
 		advices = append(advices, convertToV1Advice(advice))
 	}
@@ -404,6 +408,7 @@ func convertRiskLevel(riskLevel int32) (v1pb.CheckReleaseResponse_RiskLevel, err
 		return v1pb.CheckReleaseResponse_MODERATE, nil
 	case 300:
 		return v1pb.CheckReleaseResponse_HIGH, nil
+	default:
+		return v1pb.CheckReleaseResponse_RISK_LEVEL_UNSPECIFIED, errors.Errorf("unexpected risk level %d", riskLevel)
 	}
-	return v1pb.CheckReleaseResponse_RISK_LEVEL_UNSPECIFIED, errors.Errorf("unexpected risk level %d", riskLevel)
 }

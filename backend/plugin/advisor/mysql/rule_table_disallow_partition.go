@@ -89,6 +89,7 @@ func (r *TableDisallowPartitionRule) OnEnter(ctx antlr.ParserRuleContext, nodeTy
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }

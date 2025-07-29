@@ -87,6 +87,8 @@ func (r *NoSelectAllRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) 
 		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
 	case NodeTypeSelectItemList:
 		r.checkSelectItemList(ctx.(*mysql.SelectItemListContext))
+	default:
+		// Other node types
 	}
 	return nil
 }

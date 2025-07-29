@@ -134,6 +134,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					metaData:  metaData,
 					line:      constraint.OriginTextPosition(),
 				})
+			default:
 			}
 		}
 	case *ast.AlterTableStmt:
@@ -179,7 +180,9 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 						metaData:  metaData,
 						line:      in.OriginTextPosition(),
 					})
+				default:
 				}
+			default:
 			}
 		}
 	case *ast.CreateIndexStmt:

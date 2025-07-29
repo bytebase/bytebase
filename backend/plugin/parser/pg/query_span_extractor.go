@@ -2001,6 +2001,8 @@ func pgExtractFieldName(node *pgquery.Node) (string, error) {
 			return "xmlserialize", nil
 		case pgquery.XmlExprOp_IS_DOCUMENT:
 			return pgUnknownFieldName, nil
+		default:
+			return pgUnknownFieldName, nil
 		}
 	case *pgquery.Node_TypeCast:
 		// return the arg name

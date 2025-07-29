@@ -99,6 +99,8 @@ func (r *TableNoForeignKeyRule) OnEnter(ctx antlr.ParserRuleContext, nodeType st
 		r.enterConstraintAction(ctx.(*parser.Constraint_actionContext))
 	case NodeTypeAlterTable:
 		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }
@@ -110,6 +112,8 @@ func (r *TableNoForeignKeyRule) OnExit(_ antlr.ParserRuleContext, nodeType strin
 		r.exitCreateTable()
 	case NodeTypeAlterTable:
 		r.exitAlterTable()
+	default:
+		// Ignore other node types
 	}
 	return nil
 }
@@ -165,6 +169,8 @@ func (r *TableNoForeignKeyRule) enterOutOfLineConstraint(ctx *parser.Out_of_line
 		if times, ok := r.tableForeignKeyTimes[r.currentNormalizedTableName]; ok && times > 0 {
 			r.tableForeignKeyTimes[r.currentNormalizedTableName]--
 		}
+	default:
+		// Other constraint actions
 	}
 }
 

@@ -105,6 +105,7 @@ func (v *columnRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 				if v.renameColumn(table, spec.OldColumnName.Name.O, spec.NewColumns[0].Name.Name.O) {
 					v.line[table] = node.OriginTextPosition()
 				}
+			default:
 			}
 		}
 	}

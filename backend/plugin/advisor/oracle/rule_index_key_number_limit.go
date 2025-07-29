@@ -85,6 +85,7 @@ func (r *IndexKeyNumberLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType 
 		r.handleTableIndexClause(ctx.(*parser.Table_index_clauseContext))
 	case "Out_of_line_constraint":
 		r.handleOutOfLineConstraint(ctx.(*parser.Out_of_line_constraintContext))
+	default:
 	}
 	return nil
 }

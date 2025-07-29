@@ -566,6 +566,8 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 									},
 								})
 							}
+						default:
+							// Other task types
 						}
 						return nil
 					}(); err != nil {
@@ -1379,6 +1381,8 @@ func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (storepb.Task_Type, error) {
 			return storepb.Task_DATABASE_SCHEMA_UPDATE, nil
 		case v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST:
 			return storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST, nil
+		default:
+			return storepb.Task_TASK_TYPE_UNSPECIFIED, errors.Errorf("invalid change database config type %s", s.ChangeDatabaseConfig.Type)
 		}
 	case *v1pb.Plan_Spec_ExportDataConfig:
 		return storepb.Task_DATABASE_EXPORT, nil

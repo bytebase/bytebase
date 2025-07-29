@@ -103,6 +103,8 @@ func (r *DisallowFuncAndCalculationsRule) OnEnter(ctx antlr.ParserRuleContext, n
 		r.enterExpression(ctx.(*parser.ExpressionContext))
 	case "Unary_operator_expression":
 		r.enterUnaryOperatorExpression(ctx.(*parser.Unary_operator_expressionContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }
@@ -116,6 +118,8 @@ func (r *DisallowFuncAndCalculationsRule) OnExit(ctx antlr.ParserRuleContext, no
 		r.exitHavingClause(ctx.(*parser.Having_clauseContext))
 	case NodeTypeSearchCondition:
 		r.exitSearchCondition(ctx.(*parser.Search_conditionContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }

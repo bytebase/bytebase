@@ -29,8 +29,9 @@ func NewStatusBySQLReviewRuleLevel(level storepb.SQLReviewRuleLevel) (storepb.Ad
 		return storepb.Advice_ERROR, nil
 	case storepb.SQLReviewRuleLevel_WARNING:
 		return storepb.Advice_WARNING, nil
+	default:
+		return storepb.Advice_STATUS_UNSPECIFIED, errors.Errorf("unexpected rule level type: %s", level)
 	}
-	return storepb.Advice_STATUS_UNSPECIFIED, errors.Errorf("unexpected rule level type: %s", level)
 }
 
 // Context is the context for advisor.

@@ -90,6 +90,7 @@ func (r *TableRequirePKRule) OnEnter(ctx antlr.ParserRuleContext, nodeType strin
 		r.handleDropTable(ctx.(*parser.Drop_tableContext))
 	case "Drop_primary_key_or_unique_or_generic_clause":
 		r.handleDropPrimaryKey(ctx.(*parser.Drop_primary_key_or_unique_or_generic_clauseContext))
+	default:
 	}
 	return nil
 }
@@ -101,6 +102,7 @@ func (r *TableRequirePKRule) OnExit(_ antlr.ParserRuleContext, nodeType string) 
 		r.tableName = ""
 	case "Alter_table":
 		r.tableName = ""
+	default:
 	}
 	return nil
 }

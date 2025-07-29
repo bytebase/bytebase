@@ -89,6 +89,7 @@ func (r *StatementWhereDisallowUsingFunctionRule) OnEnter(ctx antlr.ParserRuleCo
 		r.inWhereClause = true
 	case NodeTypeFunctionCall:
 		r.checkFunctionCall(ctx.(*mysql.FunctionCallContext))
+	default:
 	}
 	return nil
 }
@@ -100,6 +101,7 @@ func (r *StatementWhereDisallowUsingFunctionRule) OnExit(_ antlr.ParserRuleConte
 		r.isSelect = false
 	case NodeTypeWhereClause:
 		r.inWhereClause = false
+	default:
 	}
 	return nil
 }

@@ -186,9 +186,9 @@ func (q *querySpanExtractor) extractQueryExpression(ctx parser.IQueryExpressionC
 		return q.extractQueryExpressionParens(ctx.QueryExpressionParens())
 	case ctx.QueryExpressionBody() != nil:
 		return q.extractQueryExpressionBody(ctx.QueryExpressionBody())
+	default:
+		panic("unreachable")
 	}
-
-	panic("unreachable")
 }
 
 func (q *querySpanExtractor) extractQueryExpressionParens(ctx parser.IQueryExpressionParensContext) (*base.PseudoTable, error) {
@@ -201,9 +201,9 @@ func (q *querySpanExtractor) extractQueryExpressionParens(ctx parser.IQueryExpre
 		return q.extractQueryExpression(ctx.QueryExpression())
 	case ctx.QueryExpressionParens() != nil:
 		return q.extractQueryExpressionParens(ctx.QueryExpressionParens())
+	default:
+		return nil, nil
 	}
-
-	return nil, nil
 }
 
 func (q *querySpanExtractor) extractQueryExpressionBody(ctx parser.IQueryExpressionBodyContext) (*base.PseudoTable, error) {
@@ -281,9 +281,9 @@ func (q *querySpanExtractor) extractQueryPrimary(ctx parser.IQueryPrimaryContext
 		return q.extractTableValueConstructor(ctx.TableValueConstructor())
 	case ctx.ExplicitTable() != nil:
 		return q.extractExplicitTable(ctx.ExplicitTable())
+	default:
+		panic("unreachable")
 	}
-
-	panic("unreachable")
 }
 
 func (q *querySpanExtractor) extractExplicitTable(ctx parser.IExplicitTableContext) (base.TableSource, error) {
@@ -428,9 +428,9 @@ func (q *querySpanExtractor) extractSelectItem(ctx parser.ISelectItemContext) ([
 				IsPlainField:  isPlain,
 			},
 		}, nil
+	default:
+		panic("unreachable")
 	}
-
-	panic("unreachable")
 }
 
 func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRuleContext) (string, base.SourceColumnSet, bool, error) {
@@ -706,9 +706,9 @@ func joinTableSources(l, r base.TableSource, tp joinType, using []string) base.T
 			Name:    "",
 			Columns: columns,
 		}
+	default:
+		return nil
 	}
-
-	return nil
 }
 
 func (q *querySpanExtractor) extractTableFactor(ctx parser.ITableFactorContext) (base.TableSource, error) {
@@ -741,9 +741,9 @@ func (q *querySpanExtractor) extractTableFactor(ctx parser.ITableFactorContext) 
 		return result, nil
 	case ctx.TableFunction() != nil:
 		return q.extractTableFunction(ctx.TableFunction())
+	default:
+		panic("unreachable")
 	}
-
-	panic("unreachable")
 }
 
 func (q *querySpanExtractor) extractTableFunction(ctx parser.ITableFunctionContext) (base.TableSource, error) {
@@ -785,9 +785,9 @@ func (q *querySpanExtractor) extractTableReferenceListParens(ctx parser.ITableRe
 		return q.extractTableReferenceList(ctx.TableReferenceList())
 	case ctx.TableReferenceListParens() != nil:
 		return q.extractTableReferenceListParens(ctx.TableReferenceListParens())
+	default:
+		panic("unreachable")
 	}
-
-	panic("unreachable")
 }
 
 func (q *querySpanExtractor) extractSubquery(ctx parser.ISubqueryContext) (*base.PseudoTable, error) {
@@ -863,9 +863,9 @@ func (q *querySpanExtractor) extractSingleTableParens(ctx parser.ISingleTablePar
 		return q.extractSingleTable(ctx.SingleTable())
 	case ctx.SingleTableParens() != nil:
 		return q.extractSingleTableParens(ctx.SingleTableParens())
+	default:
+		panic("unreachable")
 	}
-
-	panic("unreachable")
 }
 
 // extractCommonTableExpression extracts the pseudo table from the common table expression.
@@ -1577,9 +1577,9 @@ func extractQueryExpression(ctx parser.IQueryExpressionParensContext) parser.IQu
 		return ctx.QueryExpression()
 	case ctx.QueryExpressionParens() != nil:
 		return extractQueryExpression(ctx.QueryExpressionParens())
+	default:
+		return nil
 	}
-
-	return nil
 }
 
 func mysqlExtractJtColumn(ctx parser.IJtColumnContext) []string {
@@ -1592,9 +1592,9 @@ func mysqlExtractJtColumn(ctx parser.IJtColumnContext) []string {
 		return []string{NormalizeMySQLIdentifier(ctx.Identifier())}
 	case ctx.ColumnsClause() != nil:
 		return mysqlExtractColumnsClause(ctx.ColumnsClause())
+	default:
+		return []string{}
 	}
-
-	return []string{}
 }
 
 func extractTableRefs(database string, ctx antlr.ParserRuleContext) []base.SchemaResource {

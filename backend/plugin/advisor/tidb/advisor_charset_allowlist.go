@@ -127,6 +127,7 @@ func (checker *charsetAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 					code = advisor.DisabledCharset
 					disabledCharset = charset
 				}
+			default:
 			}
 		}
 	}

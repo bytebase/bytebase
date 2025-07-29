@@ -413,6 +413,8 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 			format = "^[A-Z]+(_[A-Z]+)*$"
 		case storepb.Engine_MSSQL:
 			format = "^[A-Z]([_A-Za-z])*$"
+		default:
+			// Use default format for other databases
 		}
 		payload, err = json.Marshal(NamingRulePayload{
 			Format:    format,

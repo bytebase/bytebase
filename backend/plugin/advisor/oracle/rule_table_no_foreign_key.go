@@ -82,6 +82,7 @@ func (r *TableNoForeignKeyRule) OnEnter(ctx antlr.ParserRuleContext, nodeType st
 		r.handleReferencesClause(ctx.(*parser.References_clauseContext))
 	case "Alter_table":
 		r.handleAlterTable(ctx.(*parser.Alter_tableContext))
+	default:
 	}
 	return nil
 }
@@ -93,6 +94,7 @@ func (r *TableNoForeignKeyRule) OnExit(_ antlr.ParserRuleContext, nodeType strin
 		r.tableName = ""
 	case "Alter_table":
 		r.tableName = ""
+	default:
 	}
 	return nil
 }

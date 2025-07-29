@@ -101,6 +101,8 @@ func (r *TableRequirePkRule) OnEnter(ctx antlr.ParserRuleContext, nodeType strin
 		r.enterConstraintAction(ctx.(*parser.Constraint_actionContext))
 	case NodeTypeAlterTable:
 		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }
@@ -112,6 +114,8 @@ func (r *TableRequirePkRule) OnExit(_ antlr.ParserRuleContext, nodeType string) 
 		r.exitCreateTable()
 	case NodeTypeAlterTable:
 		r.exitAlterTable()
+	default:
+		// Other node types
 	}
 	return nil
 }
@@ -174,6 +178,8 @@ func (r *TableRequirePkRule) enterOutOfLineConstraint(ctx *parser.Out_of_line_co
 	case currentConstraintActionDrop:
 		r.tableHasPrimaryKey[r.currentNormalizedTableName] = false
 		r.tableLine[r.currentNormalizedTableName] = ctx.GetStart().GetLine()
+	default:
+		// No action for other constraint actions
 	}
 }
 

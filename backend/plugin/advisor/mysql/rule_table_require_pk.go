@@ -100,6 +100,7 @@ func (r *TableRequirePKRule) OnEnter(ctx antlr.ParserRuleContext, nodeType strin
 		r.checkDropTable(ctx.(*mysql.DropTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }
@@ -137,6 +138,7 @@ func (r *TableRequirePKRule) createTable(tableName string, ctx *mysql.CreateTabl
 		// add primary key from table constraint.
 		case tableElement.TableConstraintDef() != nil:
 			r.handleTableConstraintDef(tableName, tableElement.TableConstraintDef())
+		default:
 		}
 	}
 }
@@ -217,6 +219,7 @@ func (r *TableRequirePKRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 			if r.dropColumn(tableName, columnName) {
 				r.line[tableName] = lineNumber
 			}
+		default:
 		}
 	}
 }

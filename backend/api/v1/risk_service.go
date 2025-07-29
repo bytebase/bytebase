@@ -121,6 +121,7 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *connect.Request[v
 			if risk.Source != source {
 				patch.Source = &source
 			}
+		default:
 		}
 	}
 
@@ -174,6 +175,7 @@ func ConvertToV1Source(source store.RiskSource) v1pb.Risk_Source {
 		return v1pb.Risk_DATA_EXPORT
 	case store.RiskRequestRole:
 		return v1pb.Risk_REQUEST_ROLE
+	default:
 	}
 	return v1pb.Risk_SOURCE_UNSPECIFIED
 }
@@ -190,6 +192,7 @@ func convertToSource(source v1pb.Risk_Source) store.RiskSource {
 		return store.RiskSourceDatabaseDataExport
 	case v1pb.Risk_REQUEST_ROLE:
 		return store.RiskRequestRole
+	default:
 	}
 	return store.RiskSourceUnknown
 }

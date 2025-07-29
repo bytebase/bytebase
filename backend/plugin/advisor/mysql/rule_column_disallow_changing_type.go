@@ -92,6 +92,7 @@ func (r *ColumnDisallowChangingTypeRule) OnEnter(ctx antlr.ParserRuleContext, no
 		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }

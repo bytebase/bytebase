@@ -93,6 +93,7 @@ func (r *NamingTableRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) 
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
 	case NodeTypeRenameTableStatement:
 		r.checkRenameTableStatement(ctx.(*mysql.RenameTableStatementContext))
+	default:
 	}
 	return nil
 }

@@ -80,6 +80,7 @@ func (r *ColumnRequireCharsetRule) OnEnter(ctx antlr.ParserRuleContext, nodeType
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }

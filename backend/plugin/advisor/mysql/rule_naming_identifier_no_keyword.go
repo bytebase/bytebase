@@ -80,6 +80,7 @@ func (r *NamingIdentifierNoKeywordRule) OnEnter(ctx antlr.ParserRuleContext, nod
 		r.checkPureIdentifier(ctx.(*mysql.PureIdentifierContext))
 	case NodeTypeIdentifierKeyword:
 		r.checkIdentifierKeyword(ctx.(*mysql.IdentifierKeywordContext))
+	default:
 	}
 	return nil
 }

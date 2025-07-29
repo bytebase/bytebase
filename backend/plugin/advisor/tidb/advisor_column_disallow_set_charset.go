@@ -87,6 +87,8 @@ func (checker *columnDisallowSetCharsetChecker) Enter(in ast.Node) (ast.Node, bo
 				if !checkCharset(charset) {
 					code = advisor.SetColumnCharset
 				}
+			default:
+				// Other alter table types
 			}
 			if code != advisor.Ok {
 				break
