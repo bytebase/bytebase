@@ -101,6 +101,7 @@ func (r *CompatibilityRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
 	case NodeTypeCreateIndex:
 		r.checkCreateIndex(ctx.(*mysql.CreateIndexContext))
+	default:
 	}
 	return nil
 }
@@ -213,6 +214,7 @@ func (r *CompatibilityRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 				case mysql.MySQLParserFOREIGN_SYMBOL:
 					r.code = advisor.CompatibilityAddForeignKey
 					return
+				default:
 				}
 			}
 

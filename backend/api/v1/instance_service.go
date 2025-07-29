@@ -859,6 +859,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 				} else {
 					dataSource.IamExtension = nil
 				}
+			default:
 			}
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupported update_mask "%s"`, path))
@@ -1123,6 +1124,7 @@ func convertDataSourceExternalSecret(externalSecret *storepb.DataSourceExternalS
 		resp.AuthOption = &v1pb.DataSourceExternalSecret_Token{
 			Token: "",
 		}
+	default:
 	}
 
 	return resp
@@ -1139,6 +1141,7 @@ func convertDataSources(dataSources []*storepb.DataSource) []*v1pb.DataSource {
 			dataSourceType = v1pb.DataSourceType_ADMIN
 		case storepb.DataSourceType_READ_ONLY:
 			dataSourceType = v1pb.DataSourceType_READ_ONLY
+		default:
 		}
 
 		authenticationType := v1pb.DataSource_AUTHENTICATION_UNSPECIFIED
@@ -1151,6 +1154,7 @@ func convertDataSources(dataSources []*storepb.DataSource) []*v1pb.DataSource {
 			authenticationType = v1pb.DataSource_AWS_RDS_IAM
 		case storepb.DataSource_AZURE_IAM:
 			authenticationType = v1pb.DataSource_AZURE_IAM
+		default:
 		}
 
 		dataSource := &v1pb.DataSource{
@@ -1205,6 +1209,7 @@ func convertDataSources(dataSources []*storepb.DataSource) []*v1pb.DataSource {
 					GcpCredential: &v1pb.DataSource_GCPCredential{},
 				}
 			}
+		default:
 		}
 
 		v1DataSources = append(v1DataSources, dataSource)
@@ -1264,6 +1269,7 @@ func convertV1DataSourceExternalSecret(externalSecret *v1pb.DataSourceExternalSe
 		if secret.SecretName == "" {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("missing GCP secret name"))
 		}
+	default:
 	}
 
 	switch secret.AuthType {
@@ -1275,6 +1281,7 @@ func convertV1DataSourceExternalSecret(externalSecret *v1pb.DataSourceExternalSe
 		if secret.GetAppRole() == nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("missing Vault approle"))
 		}
+	default:
 	}
 
 	return secret, nil
@@ -1361,6 +1368,7 @@ func convertV1AuthenticationType(authType v1pb.DataSource_AuthenticationType) st
 		authenticationType = storepb.DataSource_AWS_RDS_IAM
 	case v1pb.DataSource_AZURE_IAM:
 		authenticationType = storepb.DataSource_AZURE_IAM
+	default:
 	}
 	return authenticationType
 }
@@ -1374,6 +1382,7 @@ func convertV1RedisType(redisType v1pb.DataSource_RedisType) storepb.DataSource_
 		authenticationType = storepb.DataSource_SENTINEL
 	case v1pb.DataSource_CLUSTER:
 		authenticationType = storepb.DataSource_CLUSTER
+	default:
 	}
 	return authenticationType
 }
@@ -1387,6 +1396,7 @@ func convertRedisType(redisType storepb.DataSource_RedisType) v1pb.DataSource_Re
 		authenticationType = v1pb.DataSource_SENTINEL
 	case storepb.DataSource_CLUSTER:
 		authenticationType = v1pb.DataSource_CLUSTER
+	default:
 	}
 	return authenticationType
 }
@@ -1468,6 +1478,7 @@ func convertV1DataSource(dataSource *v1pb.DataSource) (*storepb.DataSource, erro
 				},
 			}
 		}
+	default:
 	}
 
 	return storeDataSource, nil

@@ -100,6 +100,8 @@ func (r *MigrationCompatibilityRule) OnEnter(ctx antlr.ParserRuleContext, nodeTy
 		r.enterDropDatabase(ctx.(*parser.Drop_databaseContext))
 	case NodeTypeAlterTable:
 		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
+	default:
+		// Other node types
 	}
 	return nil
 }

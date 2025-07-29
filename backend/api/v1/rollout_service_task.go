@@ -141,6 +141,8 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			if lowerCaseTableNames == 1 {
 				databaseName = strings.ToLower(databaseName)
 			}
+		default:
+			// Other engines use the original database name
 		}
 
 		statement, err := getCreateDatabaseStatement(instance.Metadata.GetEngine(), c, databaseName, adminDataSource.GetUsername())
@@ -569,6 +571,7 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 		return fmt.Sprintf("%s;", stmt), nil
 	case storepb.Engine_HIVE:
 		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
+	default:
+		return "", errors.Errorf("unsupported database type %s", dbType)
 	}
-	return "", errors.Errorf("unsupported database type %s", dbType)
 }

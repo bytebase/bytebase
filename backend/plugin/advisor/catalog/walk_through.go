@@ -396,6 +396,8 @@ func (d *DatabaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) *WalkThro
 			d.characterSet = option.Value
 		case tidbast.DatabaseOptionCollate:
 			d.collation = option.Value
+		default:
+			// Other database options
 		}
 	}
 	return nil
@@ -450,6 +452,8 @@ func (d *DatabaseState) createIndex(node *tidbast.CreateIndexStmt) *WalkThroughE
 	case tidbast.IndexKeyTypeSpatial:
 		isSpatial = true
 		tp = SpatialName
+	default:
+		// Other index key types
 	}
 
 	keyList, err := table.validateAndGetKeyStringList(d.ctx, node.IndexPartSpecifications, false /* primary */, isSpatial)
@@ -477,6 +481,8 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 					table.comment = newStringPointer(option.StrValue)
 				case tidbast.TableOptionEngine:
 					table.engine = newStringPointer(option.StrValue)
+				default:
+					// Other table options
 				}
 			}
 		case tidbast.AlterTableAddColumns:
@@ -542,6 +548,8 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 			if err := table.changeIndexVisibility(d.ctx, spec.IndexName.O, spec.Visibility); err != nil {
 				return err
 			}
+		default:
+			// Other ALTER TABLE types
 		}
 	}
 
@@ -561,6 +569,8 @@ func (t *TableState) changeIndexVisibility(ctx *FinderContext, indexName string,
 		index.visible = newTruePointer()
 	case tidbast.IndexVisibilityInvisible:
 		index.visible = newFalsePointer()
+	default:
+		// Keep current visibility
 	}
 	return nil
 }
@@ -629,6 +639,8 @@ func (t *TableState) changeColumnDefault(ctx *FinderContext, column *tidbast.Col
 						// Content comes from MySQL Error content.
 						Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
 					}
+				default:
+					// Other column types allow default values
 				}
 			}
 
@@ -932,10 +944,11 @@ func (t *TableState) reorderColumn(position *tidbast.ColumnPosition) (int, *Walk
 			}
 		}
 		return *column.position + 1, nil
-	}
-	return 0, &WalkThroughError{
-		Type:    ErrorTypeUnsupported,
-		Content: fmt.Sprintf("Unsupported column position type: %d", position.Tp),
+	default:
+		return 0, &WalkThroughError{
+			Type:    ErrorTypeUnsupported,
+			Content: fmt.Sprintf("Unsupported column position type: %d", position.Tp),
+		}
 	}
 }
 
@@ -1100,6 +1113,8 @@ func (t *TableState) createConstraint(ctx *FinderContext, constraint *tidbast.Co
 		}
 	case tidbast.ConstraintCheck:
 		// we do not deal with CHECK constraints
+	default:
+		// Other constraint types
 	}
 
 	return nil
@@ -1158,6 +1173,8 @@ func checkDefault(columnName string, columnType *types.FieldType, value tidbast.
 				// Content comes from MySQL Error content.
 				Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
 			}
+		default:
+			// Other column types allow default values
 		}
 	}
 
@@ -1262,6 +1279,8 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 			// we do not deal with STORAGE
 		case tidbast.ColumnOptionAutoRandom:
 			// we do not deal with AUTO_RANDOM
+		default:
+			// Other column options
 		}
 	}
 
@@ -1372,6 +1391,8 @@ func getIndexType(option *tidbast.IndexOption) string {
 			model.IndexTypeHash,
 			model.IndexTypeRtree:
 			return option.Tp.String()
+		default:
+			// Other index types
 		}
 	}
 	return model.IndexTypeBtree.String()

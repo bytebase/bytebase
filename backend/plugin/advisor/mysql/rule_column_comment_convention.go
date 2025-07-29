@@ -90,6 +90,7 @@ func (r *ColumnCommentConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeT
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }
@@ -164,6 +165,7 @@ func (r *ColumnCommentConventionRule) checkAlterTable(ctx *mysql.AlterTableConte
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
 					r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
 				}
+			default:
 			}
 		// modify column
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
@@ -173,6 +175,7 @@ func (r *ColumnCommentConventionRule) checkAlterTable(ctx *mysql.AlterTableConte
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
 			columnName = mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
 			r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+		default:
 		}
 	}
 }

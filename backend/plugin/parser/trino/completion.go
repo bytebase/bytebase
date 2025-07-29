@@ -1672,6 +1672,8 @@ func normalizeQualifiedNameFallback(ctx *trinoparser.QualifiedNameContext, _ str
 		catalog = parts[0]
 		schema = parts[1]
 		table = parts[2]
+	default:
+		// Handle other cases (0 or more than 3 parts)
 	}
 
 	return catalog, schema, table

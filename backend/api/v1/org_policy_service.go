@@ -171,6 +171,7 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 			patch.Payload = &payloadStr
 		case "enforce":
 			patch.Enforce = &req.Msg.Policy.Enforce
+		default:
 		}
 	}
 
@@ -473,6 +474,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 			return "", errors.Wrap(err, "failed to marshal data source query policy")
 		}
 		return string(payloadBytes), nil
+	default:
 	}
 
 	return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid policy %v", policy.Type))
@@ -487,6 +489,7 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, policyMessage *s
 		resourceType = v1pb.PolicyResourceType_ENVIRONMENT
 	case storepb.Policy_PROJECT:
 		resourceType = v1pb.PolicyResourceType_PROJECT
+	default:
 	}
 	policy := &v1pb.Policy{
 		InheritFromParent: policyMessage.InheritFromParent,
@@ -558,6 +561,7 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, policyMessage *s
 			return nil, err
 		}
 		policy.Policy = payload
+	default:
 	}
 
 	policy.Type = pType
@@ -580,6 +584,7 @@ func convertToV1PBSQLReviewRules(ruleList []*storepb.SQLReviewRule) []*v1pb.SQLR
 			level = v1pb.SQLReviewRuleLevel_WARNING
 		case storepb.SQLReviewRuleLevel_DISABLED:
 			level = v1pb.SQLReviewRuleLevel_DISABLED
+		default:
 		}
 		rules = append(rules, &v1pb.SQLReviewRule{
 			Level:   level,
@@ -627,6 +632,7 @@ func convertToV1PBAction(action storepb.MaskingExceptionPolicy_MaskingException_
 		return v1pb.MaskingExceptionPolicy_MaskingException_QUERY
 	case storepb.MaskingExceptionPolicy_MaskingException_EXPORT:
 		return v1pb.MaskingExceptionPolicy_MaskingException_EXPORT
+	default:
 	}
 	return v1pb.MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED
 }
@@ -639,6 +645,7 @@ func convertToStorePBAction(action v1pb.MaskingExceptionPolicy_MaskingException_
 		return storepb.MaskingExceptionPolicy_MaskingException_QUERY
 	case v1pb.MaskingExceptionPolicy_MaskingException_EXPORT:
 		return storepb.MaskingExceptionPolicy_MaskingException_EXPORT
+	default:
 	}
 	return storepb.MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED
 }
@@ -865,6 +872,7 @@ func convertV1PBToStorePBPolicyType(pType v1pb.PolicyType) (storepb.Policy_Type,
 		return storepb.Policy_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW, nil
 	case v1pb.PolicyType_DATA_SOURCE_QUERY:
 		return storepb.Policy_DATA_SOURCE_QUERY, nil
+	default:
 	}
 	return storepb.Policy_TYPE_UNSPECIFIED, errors.Errorf("invalid policy type %v", pType)
 }
@@ -889,6 +897,7 @@ func convertStorePBToV1PBPolicyType(pType storepb.Policy_Type) v1pb.PolicyType {
 		return v1pb.PolicyType_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
 	case storepb.Policy_DATA_SOURCE_QUERY:
 		return v1pb.PolicyType_DATA_SOURCE_QUERY
+	default:
 	}
 	return v1pb.PolicyType_POLICY_TYPE_UNSPECIFIED
 }

@@ -86,6 +86,7 @@ func (r *TableDisallowSetCharsetRule) OnEnter(ctx antlr.ParserRuleContext, nodeT
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }

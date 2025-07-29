@@ -84,6 +84,8 @@ func (r *ProcedureDisallowCreateRule) OnEnter(ctx antlr.ParserRuleContext, nodeT
 		}
 	case NodeTypeCreateProcedure:
 		r.checkCreateProcedure(ctx.(*mysql.CreateProcedureContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }

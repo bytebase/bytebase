@@ -134,6 +134,7 @@ func (checker *indexTotalNumberLimitChecker) Enter(in ast.Node) (ast.Node, bool)
 				if createIndex(spec.NewColumns[0]) {
 					checker.lineForTable[node.Table.Name.O] = node.OriginTextPosition()
 				}
+			default:
 			}
 		}
 	case *ast.CreateIndexStmt:
@@ -155,6 +156,7 @@ func createIndex(in ast.Node) bool {
 			switch option.Tp {
 			case ast.ColumnOptionPrimaryKey, ast.ColumnOptionUniqKey:
 				return true
+			default:
 			}
 		}
 	case *ast.Constraint:
@@ -167,6 +169,7 @@ func createIndex(in ast.Node) bool {
 			ast.ConstraintIndex,
 			ast.ConstraintFulltext:
 			return true
+		default:
 		}
 	}
 	return false

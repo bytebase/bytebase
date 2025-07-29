@@ -89,6 +89,7 @@ func (r *DisallowOrderByRule) OnEnter(ctx antlr.ParserRuleContext, nodeType stri
 		r.checkDeleteStatement(ctx.(*mysql.DeleteStatementContext))
 	case NodeTypeUpdateStatement:
 		r.checkUpdateStatement(ctx.(*mysql.UpdateStatementContext))
+	default:
 	}
 	return nil
 }

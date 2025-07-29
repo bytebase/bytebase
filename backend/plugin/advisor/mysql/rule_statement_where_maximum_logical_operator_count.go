@@ -114,6 +114,7 @@ func (r *StatementWhereMaximumLogicalOperatorCountRule) OnEnter(ctx antlr.Parser
 		r.checkExprList(ctx.(*mysql.ExprListContext))
 	case NodeTypeExprOr:
 		r.checkExprOr(ctx.(*mysql.ExprOrContext))
+	default:
 	}
 	return nil
 }
@@ -125,6 +126,7 @@ func (r *StatementWhereMaximumLogicalOperatorCountRule) OnExit(_ antlr.ParserRul
 		r.inPredicateExprIn = false
 	case NodeTypeExprOr:
 		r.depth--
+	default:
 	}
 	return nil
 }

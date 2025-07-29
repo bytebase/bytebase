@@ -102,6 +102,8 @@ func (v *indexTypeNoBlobChecker) Enter(in ast.Node) (ast.Node, bool) {
 				}
 				pds := v.changeColumn(tableName, oldColumnName, node.OriginTextPosition(), newColumnDef)
 				pkDataList = append(pkDataList, pds...)
+			default:
+				// Other alter table types
 			}
 		}
 	case *ast.CreateIndexStmt:
@@ -240,6 +242,7 @@ func (*indexTypeNoBlobChecker) getBlobStr(tp *types.FieldType) string {
 		return "mediumblob"
 	case mysql.TypeLongBlob:
 		return "longblob"
+	default:
 	}
 	return tp.String()
 }

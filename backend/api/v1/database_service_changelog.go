@@ -144,6 +144,7 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 			}
 			converted.PrevSchema = sdlSchema
 			converted.PrevSchemaSize = int64(len(sdlSchema))
+		default:
 		}
 	}
 	return connect.NewResponse(converted), nil

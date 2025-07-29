@@ -59,6 +59,8 @@ func needDefault(column *ast.ColumnDef) bool {
 		switch option.Tp {
 		case ast.ColumnOptionAutoIncrement, ast.ColumnOptionPrimaryKey, ast.ColumnOptionGenerated:
 			return false
+		default:
+			// Other options
 		}
 	}
 
@@ -68,6 +70,8 @@ func needDefault(column *ast.ColumnDef) bool {
 	switch column.Tp.GetType() {
 	case mysql.TypeJSON, mysql.TypeGeometry:
 		return false
+	default:
+		// Other types can have default values
 	}
 	return true
 }

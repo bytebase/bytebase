@@ -89,6 +89,7 @@ func (r *TableCommentConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeTy
 		r.handleCreateTable(ctx.(*parser.Create_tableContext))
 	case "Comment_on_table":
 		r.handleCommentOnTable(ctx.(*parser.Comment_on_tableContext))
+	default:
 	}
 	return nil
 }

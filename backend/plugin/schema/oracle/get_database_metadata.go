@@ -559,6 +559,8 @@ func (e *metadataExtractor) extractRelationalTable(ctx parser.IRelational_tableC
 			e.extractOutOfLineConstraint(prop.Out_of_line_constraint(), table)
 		case prop.Out_of_line_ref_constraint() != nil:
 			e.extractOutOfLineRefConstraint(prop.Out_of_line_ref_constraint(), table)
+		default:
+			// Other relational properties
 		}
 	}
 }
@@ -660,6 +662,8 @@ func (e *metadataExtractor) extractVirtualColumnDefinition(ctx parser.IVirtual_c
 					parenCount++
 				case ')':
 					parenCount--
+				default:
+					// Other characters
 				}
 				i++
 			}
@@ -776,6 +780,8 @@ func (e *metadataExtractor) extractOutOfLineConstraint(ctx parser.IOut_of_line_c
 		e.extractUniqueConstraint(ctx, table, constraintName)
 	case ctx.CHECK() != nil:
 		e.extractCheckConstraint(ctx, table, constraintName)
+	default:
+		// Other constraint types
 	}
 }
 

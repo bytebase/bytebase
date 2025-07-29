@@ -91,6 +91,7 @@ func (r *TableDisallowDDLRule) OnEnter(ctx antlr.ParserRuleContext, nodeType str
 		r.checkRenameTableStatement(ctx.(*mysql.RenameTableStatementContext))
 	case NodeTypeTruncateTableStatement:
 		r.checkTruncateTableStatement(ctx.(*mysql.TruncateTableStatementContext))
+	default:
 	}
 	return nil
 }

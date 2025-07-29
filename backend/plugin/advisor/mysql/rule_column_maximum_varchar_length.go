@@ -89,6 +89,7 @@ func (r *VarcharLengthRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }
@@ -187,6 +188,7 @@ func (r *VarcharLengthRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 					varcharLengthMap[columnName] = length
 					columnList = append(columnList, columnName)
 				}
+			default:
 			}
 		// change column.
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:

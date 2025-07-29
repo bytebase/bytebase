@@ -101,6 +101,8 @@ func (r *InsertDisallowOrderByRandRule) OnEnter(ctx antlr.ParserRuleContext, nod
 		}
 	case NodeTypeQueryExpression:
 		r.checkQueryExpression(ctx.(*mysql.QueryExpressionContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }

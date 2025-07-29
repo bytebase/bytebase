@@ -84,6 +84,7 @@ func (r *EventDisallowCreateRule) OnEnter(ctx antlr.ParserRuleContext, nodeType 
 		}
 	case NodeTypeCreateEvent:
 		r.checkCreateEvent(ctx.(*mysql.CreateEventContext))
+	default:
 	}
 	return nil
 }

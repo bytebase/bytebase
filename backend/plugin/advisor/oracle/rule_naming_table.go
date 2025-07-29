@@ -84,6 +84,7 @@ func (r *NamingTableRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) 
 		r.handleCreateTable(ctx.(*parser.Create_tableContext))
 	case "Alter_table_properties":
 		r.handleAlterTableProperties(ctx.(*parser.Alter_table_propertiesContext))
+	default:
 	}
 	return nil
 }

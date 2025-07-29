@@ -791,6 +791,8 @@ func (s *SchemaState) pgCreateColumn(t *TableState, column *ast.ColumnDef, ifNot
 			// We do not deal with EXCLUSION constraint.
 		case ast.ConstraintTypeForeign:
 			// We do not deal with FOREIGN constraint.
+		default:
+			// Other constraint types
 		}
 	}
 
@@ -981,8 +983,9 @@ func getIndexMethod(method ast.IndexMethodType) string {
 		return "brin"
 	case ast.IndexMethodTypeIvfflat:
 		return "ivfflat"
+	default:
+		return ""
 	}
-	return ""
 }
 
 func pgKeyListToStringList(keyList []*ast.IndexKeyDef) []string {
@@ -1019,6 +1022,8 @@ func (s *SchemaState) pgGenerateIndexName(createIndex *ast.CreateIndexStmt) (str
 				}
 			}
 			expressionID++
+		default:
+			// Other key types
 		}
 	}
 	if _, err := buf.WriteString("_idx"); err != nil {

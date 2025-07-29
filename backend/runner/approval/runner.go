@@ -759,6 +759,8 @@ func getRiskSourceFromPlan(config *storepb.PlanConfig) store.RiskSource {
 				return store.RiskSourceDatabaseSchemaUpdate
 			case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
 				return store.RiskSourceDatabaseDataUpdate
+			default:
+				return store.RiskSourceDatabaseSchemaUpdate
 			}
 		}
 	}
@@ -786,6 +788,7 @@ func convertRiskLevel(riskLevel int32) (storepb.IssuePayloadApproval_RiskLevel, 
 		return storepb.IssuePayloadApproval_MODERATE, nil
 	case 300:
 		return storepb.IssuePayloadApproval_HIGH, nil
+	default:
+		return storepb.IssuePayloadApproval_RISK_LEVEL_UNSPECIFIED, errors.Errorf("unexpected risk level %d", riskLevel)
 	}
-	return storepb.IssuePayloadApproval_RISK_LEVEL_UNSPECIFIED, errors.Errorf("unexpected risk level %d", riskLevel)
 }

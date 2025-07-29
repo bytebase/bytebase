@@ -90,6 +90,7 @@ func (r *IndexKeyNumberLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType 
 		r.checkCreateIndex(ctx.(*mysql.CreateIndexContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }
@@ -165,6 +166,7 @@ func (r *IndexKeyNumberLimitRule) checkCreateIndex(ctx *mysql.CreateIndexContext
 	switch ctx.GetType_().GetTokenType() {
 	case mysql.MySQLParserFULLTEXT_SYMBOL, mysql.MySQLParserSPATIAL_SYMBOL:
 		return
+	default:
 	}
 	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil || ctx.CreateIndexTarget().KeyListVariants() == nil {
 		return

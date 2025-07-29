@@ -331,8 +331,9 @@ func NormalizeMySQLCharsetName(ctx parser.ICharsetNameContext) string {
 		return "DEFAULT"
 	case ctx.BINARY_SYMBOL() != nil:
 		return "BINARY"
+	default:
+		return ""
 	}
-	return ""
 }
 
 // NormalizeMySQLCollationName noamalizes the given collation name.
@@ -344,8 +345,9 @@ func NormalizeMySQLCollationName(ctx parser.ICollationNameContext) string {
 		return "DEFAULT"
 	case ctx.BINARY_SYMBOL() != nil:
 		return "BINARY"
+	default:
+		return ""
 	}
-	return ""
 }
 
 // NormalizeMySQLDataType noamalizes the given dataType.

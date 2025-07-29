@@ -86,6 +86,7 @@ func (r *ColumnDisallowChangingRule) OnEnter(ctx antlr.ParserRuleContext, nodeTy
 		}
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }

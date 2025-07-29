@@ -305,8 +305,9 @@ func convertToPlanCheckRunType(t store.PlanCheckRunType) v1pb.PlanCheckRun_Type 
 		return v1pb.PlanCheckRun_DATABASE_CONNECT
 	case store.PlanCheckDatabaseGhostSync:
 		return v1pb.PlanCheckRun_DATABASE_GHOST_SYNC
+	default:
+		return v1pb.PlanCheckRun_TYPE_UNSPECIFIED
 	}
-	return v1pb.PlanCheckRun_TYPE_UNSPECIFIED
 }
 
 func convertToPlanCheckRunStatus(status store.PlanCheckRunStatus) v1pb.PlanCheckRun_Status {
@@ -319,8 +320,9 @@ func convertToPlanCheckRunStatus(status store.PlanCheckRunStatus) v1pb.PlanCheck
 		return v1pb.PlanCheckRun_FAILED
 	case store.PlanCheckRunStatusRunning:
 		return v1pb.PlanCheckRun_RUNNING
+	default:
+		return v1pb.PlanCheckRun_STATUS_UNSPECIFIED
 	}
-	return v1pb.PlanCheckRun_STATUS_UNSPECIFIED
 }
 
 func convertToPlanCheckRunResults(results []*storepb.PlanCheckRunResult_Result) []*v1pb.PlanCheckRun_Result {
@@ -371,8 +373,9 @@ func convertToPlanCheckRunResultStatus(status storepb.PlanCheckRunResult_Result_
 		return v1pb.PlanCheckRun_Result_WARNING
 	case storepb.PlanCheckRunResult_Result_ERROR:
 		return v1pb.PlanCheckRun_Result_ERROR
+	default:
+		return v1pb.PlanCheckRun_Result_STATUS_UNSPECIFIED
 	}
-	return v1pb.PlanCheckRun_Result_STATUS_UNSPECIFIED
 }
 
 func convertToTaskRuns(ctx context.Context, s *store.Store, stateCfg *state.State, taskRuns []*store.TaskRunMessage) ([]*v1pb.TaskRun, error) {
@@ -1002,6 +1005,7 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 				},
 			}
 			entries = append(entries, e)
+		default:
 		}
 	}
 

@@ -152,6 +152,8 @@ func (r *StatementQueryMinumumPlanLevelRule) OnEnter(ctx antlr.ParserRuleContext
 		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
 	case NodeTypeSelectStatement:
 		r.checkSelectStatement(ctx.(*mysql.SelectStatementContext))
+	default:
+		// Other node types
 	}
 	return nil
 }

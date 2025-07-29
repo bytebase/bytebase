@@ -595,6 +595,8 @@ func (r *rewriter) ExitCreate_index(ctx *parser.Create_indexContext) {
 			r.err = err
 			return
 		}
+	default:
+		// Other states
 	}
 }
 
@@ -702,6 +704,8 @@ func (r *rewriter) ExitCreate_table(ctx *parser.Create_tableContext) {
 			r.err = err
 			return
 		}
+	default:
+		// Other states
 	}
 }
 

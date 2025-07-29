@@ -87,6 +87,7 @@ func (r *WhereRequirementForSelectRule) OnEnter(ctx antlr.ParserRuleContext, nod
 		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
 	case NodeTypeQuerySpecification:
 		r.checkQuerySpecification(ctx.(*mysql.QuerySpecificationContext))
+	default:
 	}
 	return nil
 }

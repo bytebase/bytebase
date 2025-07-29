@@ -216,6 +216,8 @@ func (checker *namingUKConventionChecker) getUniqueKeyMetadata(schemaName string
 				metaData:  metaData,
 			}
 		}
+	default:
+		// Not a unique constraint type
 	}
 	return nil
 }

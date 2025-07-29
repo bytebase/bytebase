@@ -139,6 +139,7 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 			patch.Domain = &req.Msg.IdentityProvider.Domain
 		case "config":
 			patch.Config = convertIdentityProviderConfigToStore(req.Msg.IdentityProvider.Config)
+		default:
 		}
 	}
 	if patch.Config != nil {
@@ -159,6 +160,7 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 			if req.Msg.IdentityProvider.Config.GetLdapConfig().BindPassword == "" {
 				patch.Config.GetLdapConfig().BindPassword = identityProviderMessage.Config.GetLdapConfig().BindPassword
 			}
+		default:
 		}
 	}
 

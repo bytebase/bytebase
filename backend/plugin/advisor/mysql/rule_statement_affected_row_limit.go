@@ -110,6 +110,7 @@ func (r *StatementAffectedRowLimitRule) OnEnter(ctx antlr.ParserRuleContext, nod
 		if mysqlparser.IsTopMySQLRule(&ctx.(*mysql.DeleteStatementContext).BaseParserRuleContext) {
 			r.handleStmt(ctx.GetStart().GetLine())
 		}
+	default:
 	}
 	return nil
 }

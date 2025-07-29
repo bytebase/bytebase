@@ -1162,6 +1162,8 @@ func writeFunctionDiff(out *strings.Builder, funcDiff *schema.FunctionDiff) {
 			writeFunctionComment(out, funcDiff.SchemaName, funcDiff.FunctionName, funcDiff.NewFunction.Comment)
 		}
 		_, _ = out.WriteString("\n")
+	default:
+		// Handle other actions if needed
 	}
 }
 
@@ -1298,6 +1300,8 @@ func writeProcedureDiff(out *strings.Builder, procDiff *schema.ProcedureDiff) {
 		// Note: ProcedureMetadata doesn't have a comment field in the protobuf,
 		// so we don't add procedure comments here
 		_, _ = out.WriteString("\n")
+	default:
+		// Handle other actions if needed
 	}
 }
 

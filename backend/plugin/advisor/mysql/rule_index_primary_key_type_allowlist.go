@@ -97,6 +97,7 @@ func (r *IndexPrimaryKeyTypeAllowlistRule) OnEnter(ctx antlr.ParserRuleContext, 
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }
@@ -131,6 +132,7 @@ func (r *IndexPrimaryKeyTypeAllowlistRule) checkCreateTable(ctx *mysql.CreateTab
 			r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
 		case tableElement.TableConstraintDef() != nil:
 			r.checkConstraintDef(tableName, tableElement.TableConstraintDef())
+		default:
 		}
 	}
 }
@@ -173,6 +175,7 @@ func (r *IndexPrimaryKeyTypeAllowlistRule) checkAlterTable(ctx *mysql.AlterTable
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
 					r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
 				}
+			default:
 			}
 		// modify column
 		case alterListItem.MODIFY_SYMBOL() != nil && alterListItem.ColumnInternalRef() != nil:
@@ -187,6 +190,7 @@ func (r *IndexPrimaryKeyTypeAllowlistRule) checkAlterTable(ctx *mysql.AlterTable
 		// add constriant.
 		case alterListItem.ADD_SYMBOL() != nil && alterListItem.TableConstraintDef() != nil:
 			r.checkConstraintDef(tableName, alterListItem.TableConstraintDef())
+		default:
 		}
 	}
 }

@@ -166,6 +166,8 @@ func (checker *columnNoNullChecker) removeColumnByConstraintList(table *ast.Tabl
 			for _, expression := range index.ExpressionList() {
 				checker.removeColumn(table, expression)
 			}
+		default:
+			// Other constraint types
 		}
 	}
 }

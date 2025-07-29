@@ -882,6 +882,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 					}
 				}
 			}
+		default:
+			// Handle other candidates
 		}
 	}
 
@@ -1232,6 +1234,8 @@ func deriveObjectRefContextsFromCandidates(candidates []string, ignoredLinkedSer
 		if includeColumn {
 			results = append(results, refCtx.clone().setLinkedServer(candidates[0]).setDatabase(candidates[1]).setSchema(candidates[2]).setObject(candidates[3]).setColumn(candidates[4]))
 		}
+	default:
+		// Other cases
 	}
 
 	if len(results) == 0 {
@@ -1341,6 +1345,8 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int) {
 				}
 			case tsqlparser.TSqlLexerFROM:
 				found = true
+			default:
+				// Other tokens, continue scanning
 			}
 		}
 		if !found {
@@ -1378,6 +1384,8 @@ func (c *Completer) collectRemainingTableReferences() {
 				if level == 0 {
 					found = true
 				}
+			default:
+				// Other tokens, continue scanning
 			}
 		}
 
@@ -1685,6 +1693,8 @@ func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []stri
 			return result
 		case tsqlparser.TSqlParserRULE_group_by_clause, tsqlparser.TSqlParserRULE_order_by_clause, tsqlparser.TSqlParserRULE_having_clause:
 			canUseAliases = true
+		default:
+			// Other cases
 		}
 	}
 

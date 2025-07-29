@@ -93,6 +93,7 @@ func (r *FunctionDisallowedListRule) OnEnter(ctx antlr.ParserRuleContext, nodeTy
 		r.checkQuery(ctx.(*mysql.QueryContext))
 	case NodeTypeFunctionCall:
 		r.checkFunctionCall(ctx.(*mysql.FunctionCallContext))
+	default:
 	}
 	return nil
 }

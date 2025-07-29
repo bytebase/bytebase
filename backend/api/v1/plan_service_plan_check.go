@@ -234,6 +234,7 @@ func convertToChangeDatabaseType(t storepb.PlanConfig_ChangeDatabaseConfig_Type)
 		return storepb.PlanCheckRunConfig_SDL
 	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
 		return storepb.PlanCheckRunConfig_DML
+	default:
 	}
 	return storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED
 }

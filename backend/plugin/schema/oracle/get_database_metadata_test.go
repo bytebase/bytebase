@@ -1113,6 +1113,8 @@ func getColumnExtraInfo(col *storepb.ColumnMetadata) string {
 			extras = append(extras, "virtual")
 		case storepb.GenerationMetadata_TYPE_STORED:
 			extras = append(extras, "stored")
+		default:
+			// Other generation types
 		}
 	}
 

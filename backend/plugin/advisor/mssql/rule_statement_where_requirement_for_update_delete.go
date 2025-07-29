@@ -74,6 +74,8 @@ func (r *WhereRequirementForUpdateDeleteRule) OnEnter(ctx antlr.ParserRuleContex
 		r.enterDeleteStatement(ctx.(*parser.Delete_statementContext))
 	case NodeTypeUpdateStatement:
 		r.enterUpdateStatement(ctx.(*parser.Update_statementContext))
+	default:
+		// Ignore other node types
 	}
 	return nil
 }

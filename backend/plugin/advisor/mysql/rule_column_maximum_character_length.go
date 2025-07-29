@@ -90,6 +90,7 @@ func (r *ColumnMaximumCharacterLengthRule) OnEnter(ctx antlr.ParserRuleContext, 
 		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
 	case NodeTypeAlterTable:
 		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+	default:
 	}
 	return nil
 }
@@ -191,6 +192,7 @@ func (r *ColumnMaximumCharacterLengthRule) checkAlterTable(ctx *mysql.AlterTable
 					charLengthMap[columnName] = charLength
 					columnList = append(columnList, columnName)
 				}
+			default:
 			}
 		// change column.
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:

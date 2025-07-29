@@ -113,6 +113,8 @@ func (r *StatementDmlDryRunRule) OnEnter(ctx antlr.ParserRuleContext, nodeType s
 		if mysqlparser.IsTopMySQLRule(&insertCtx.BaseParserRuleContext) {
 			r.handleStmt(insertCtx.GetParser().GetTokenStream().GetTextFromRuleContext(insertCtx), insertCtx.GetStart().GetLine())
 		}
+	default:
+		// Other node types
 	}
 	return nil
 }
