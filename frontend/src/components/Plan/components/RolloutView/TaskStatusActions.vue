@@ -128,7 +128,9 @@ const stage = computed((): Stage => {
 });
 
 const primaryAction = computed((): TaskStatusAction | null => {
-  if (props.task.status === Task_Status.NOT_STARTED) {
+  if (
+    [Task_Status.NOT_STARTED, Task_Status.CANCELED].includes(props.task.status)
+  ) {
     return "RUN";
   } else if (props.task.status === Task_Status.FAILED) {
     return "RETRY";

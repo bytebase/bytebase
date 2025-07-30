@@ -88,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { head } from "lodash-es";
+import { last } from "lodash-es";
 import { ChevronRightIcon } from "lucide-vue-next";
 import { NTag, NTooltip } from "naive-ui";
 import { computed, watchEffect } from "vue";
@@ -144,7 +144,7 @@ const taskRuns = computed(() => {
   );
 });
 
-const latestTaskRun = computed(() => head(taskRuns.value));
+const latestTaskRun = computed(() => last(taskRuns.value));
 
 const rollbackableTaskRun = computed(() => {
   if (
