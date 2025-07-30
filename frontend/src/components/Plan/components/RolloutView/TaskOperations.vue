@@ -120,7 +120,11 @@ const actionTarget = computed(() => {
 // Check if tasks have the right status for each action
 const hasRunnableTasks = computed(() => {
   return props.tasks.some((task) =>
-    [Task_Status.NOT_STARTED, Task_Status.FAILED].includes(task.status)
+    [
+      Task_Status.NOT_STARTED,
+      Task_Status.FAILED,
+      Task_Status.CANCELED,
+    ].includes(task.status)
   );
 });
 
