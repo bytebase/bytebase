@@ -59,31 +59,6 @@ export const useTaskActionPermissions = () => {
   };
 
   /**
-   * Check if user can perform task actions based on environment rollout policy
-   * This follows the logic from canUserRunEnvironmentTasks in backend
-   */
-  const canPerformTaskActionForEnvironment = (
-    project: ComposedProject,
-    _environment: string
-  ): boolean => {
-    // Users with bb.taskRuns.create can always create task runs
-    if (hasWorkspacePermissionV2("bb.taskRuns.create")) {
-      return true;
-    }
-
-    // Check project-level permissions for task runs
-    if (hasProjectPermissionV2(project, "bb.taskRuns.create")) {
-      return true;
-    }
-
-    // TODO: Check rollout policy for environment-specific permissions
-    // This would require fetching the rollout policy for the environment
-    // For now, we'll use basic project permissions
-
-    return false;
-  };
-
-  /**
    * Main function to check if user can perform task actions
    */
   const canPerformTaskAction = (
@@ -96,35 +71,25 @@ export const useTaskActionPermissions = () => {
       return false;
     }
 
+    // Users with bb.taskRuns.create can always create task runs
+    if (hasWorkspacePermissionV2("bb.taskRuns.create")) {
+      return true;
+    }
+
+    // Check project-level permissions for task runs
+    if (hasProjectPermissionV2(project, "bb.taskRuns.create")) {
+      return true;
+    }
+
     // If there's an issue, check issue-based permissions.
     if (issue) {
       return canPerformTaskActionForIssue(issue);
     }
 
-    // Otherwise, check environment-based permissions
-    // Get unique environments from tasks
-    const environments = new Set<string>();
-    rollout.stages.forEach((stage) => {
-      stage.tasks.forEach((task) => {
-        if (tasks.some((selectedTask) => selectedTask.name === task.name)) {
-          environments.add(stage.environment);
-        }
-      });
-    });
-
-    // Check permissions for each environment
-    for (const environment of environments) {
-      if (!canPerformTaskActionForEnvironment(project, environment)) {
-        return false;
-      }
-    }
-
-    return true;
+    return false;
   };
 
   return {
     canPerformTaskAction,
-    canPerformTaskActionForIssue,
-    canPerformTaskActionForEnvironment,
   };
 };
