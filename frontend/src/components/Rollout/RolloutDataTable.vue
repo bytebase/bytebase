@@ -13,16 +13,15 @@
 
 <script lang="tsx" setup>
 import type { DataTableColumn } from "naive-ui";
-import { NDataTable, NTooltip } from "naive-ui";
+import { NDataTable, NPerformantEllipsis, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBAvatar } from "@/bbkit";
 import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import Timestamp from "@/components/misc/Timestamp.vue";
-import { useEnvironmentV1Store, useUserStore } from "@/store";
-import { unknownUser, type ComposedRollout } from "@/types";
+import { useEnvironmentV1Store } from "@/store";
+import { type ComposedRollout } from "@/types";
 import type { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   stringifyTaskStatus,
@@ -46,10 +45,7 @@ withDefaults(
 
 const { t } = useI18n();
 const router = useRouter();
-const userStore = useUserStore();
 const environmentStore = useEnvironmentV1Store();
-
-// Using unified task status filters from constants
 
 const getStageTaskCount = (stage: any, status: Task_Status) => {
   return stage.tasks.filter((task: any) => task.status === status).length;
@@ -59,13 +55,30 @@ const columnList = computed(
   (): (DataTableColumn<ComposedRollout> & { hide?: boolean })[] => {
     const columns: (DataTableColumn<ComposedRollout> & { hide?: boolean })[] = [
       {
-        key: "uid",
-        title: "",
-        width: 32,
+        key: "title",
+        title: t("issue.table.name"),
+        resizable: true,
+        ellipsis: true,
         render: (rollout) => {
           return (
-            <div class="whitespace-nowrap text-control opacity-60">
-              {extractRolloutUID(rollout.name)}
+            <div class={`flex items-center overflow-hidden space-x-2`}>
+              <div class="whitespace-nowrap text-control opacity-60">
+                {extractRolloutUID(rollout.name)}
+              </div>
+              {rollout.title ? (
+                <NPerformantEllipsis class="truncate">
+                  {{
+                    default: () => <span>{rollout.title}</span>,
+                    tooltip: () => (
+                      <div class="whitespace-pre-wrap break-words break-all">
+                        {rollout.title}
+                      </div>
+                    ),
+                  }}
+                </NPerformantEllipsis>
+              ) : (
+                <span class="opacity-60 italic">{t("common.untitled")}</span>
+              )}
             </div>
           );
         },
@@ -73,6 +86,7 @@ const columnList = computed(
       {
         key: "stages",
         title: t("rollout.stage.self", 2),
+        resizable: true,
         render: (rollout) => {
           if (rollout.stages.length === 0) {
             return (
@@ -157,21 +171,6 @@ const columnList = computed(
         title: t("common.updated-at"),
         width: 128,
         render: (rollout) => <Timestamp timestamp={rollout.updateTime} />,
-      },
-      {
-        key: "creator",
-        title: t("common.creator"),
-        width: 128,
-        render: (rollout) => {
-          const creator =
-            userStore.getUserByIdentifier(rollout.creator) || unknownUser();
-          return (
-            <div class="flex flex-row items-center overflow-hidden gap-x-2">
-              <BBAvatar size="SMALL" username={creator.title} />
-              <span class="truncate">{creator.title}</span>
-            </div>
-          );
-        },
       },
     ];
     return columns.filter((column) => !column.hide);
