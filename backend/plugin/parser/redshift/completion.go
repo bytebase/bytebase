@@ -601,6 +601,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 							Type: base.CandidateTypeTable,
 							Text: c.quotedIdentifierIfNeeded(reference.Table),
 						})
+					default:
 					}
 				}
 			}
@@ -632,6 +633,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 									})
 								}
 							}
+						default:
 						}
 					}
 				} else if len(c.references) > 0 {
@@ -654,6 +656,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 									Text: c.quotedIdentifierIfNeeded(column),
 								})
 							}
+						default:
 						}
 					}
 				} else {
@@ -782,6 +785,7 @@ func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []stri
 			return result
 		case parser.RedshiftParserRULE_opt_sort_clause, parser.RedshiftParserRULE_group_clause, parser.RedshiftParserRULE_having_clause:
 			canUseAliases = true
+		default:
 		}
 	}
 
@@ -977,6 +981,7 @@ func (c *Completer) collectRemainingTableReferences() {
 				if level == 0 {
 					found = true
 				}
+			default:
 			}
 		}
 
@@ -1019,6 +1024,7 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int) {
 				c.referencesStack = c.referencesStack[1:]
 			case parser.RedshiftLexerFROM:
 				found = true
+			default:
 			}
 		}
 
@@ -1142,6 +1148,7 @@ func (l *TableRefListener) EnterTable_ref(ctx *parser.Table_refContext) {
 
 				l.context.referencesStack[0] = append(l.context.referencesStack[0], virtualReference)
 			}
+		default:
 		}
 	}
 }
