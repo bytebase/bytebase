@@ -80,19 +80,22 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import { NButton, NCheckbox, NInput, NTooltip } from "naive-ui";
-import { computed, reactive, ref } from "vue";
+import { computed, nextTick, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import { usePlanContextWithIssue } from "@/components/Plan/logic";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { issueServiceClientConnect } from "@/grpcweb";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
 import {
   ApproveIssueRequestSchema,
   RejectIssueRequestSchema,
   RequestIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanCheckRun_Status } from "@/types/proto-es/v1/plan_service_pb";
+import { extractIssueUID, extractProjectResourceName } from "@/utils";
 import type { IssueReviewAction } from "../unified";
 
 type LocalState = {
@@ -107,6 +110,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const router = useRouter();
 const state = reactive<LocalState>({
   loading: false,
 });
@@ -231,6 +235,17 @@ const handleConfirm = async () => {
     events.emit("perform-issue-review-action", { action });
   } finally {
     state.loading = false;
+    // Redirect to issue comment section.
+    nextTick(() => {
+      router.push({
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+        params: {
+          projectId: extractProjectResourceName(issue.value.name),
+          issueId: extractIssueUID(issue.value.name),
+        },
+        hash: `#issue-comment-editor`,
+      });
+    });
     emit("close");
   }
 };

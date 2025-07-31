@@ -1072,7 +1072,8 @@
       "rejected-description": "This issue has been rejected by approvers. Please enable force run to proceed.",
       "pending-description": "This issue is waiting for approval. Please enable force run to proceed.",
       "rejected-error": "Issue approval has been rejected. Please enable force run to proceed.",
-      "pending-error": "Issue approval is pending. Please enable force run to proceed."
+      "pending-error": "Issue approval is pending. Please enable force run to proceed.",
+      "approved-and-waiting-for-rollout": "This issue has been approved and is ready to rollout."
     },
     "new-layout": "New CI/CD Layout"
   },
