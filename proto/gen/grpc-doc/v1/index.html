@@ -24863,7 +24863,8 @@ Format: projects/{project}/releases/{release} </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/releases/{release} </p></td>
+                  <td><p>Format: projects/{project}/releases/{release}
+Format: projects/{project}/releases/{release-digest} </p></td>
                 </tr>
               
             </tbody>
@@ -25014,6 +25015,16 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#bytebase.v1.State">State</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>digest</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The digest of the release.
+The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease.
+Whether to provide digest and how to generate it is up to the user.
+If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned. </p></td>
                 </tr>
               
             </tbody>
