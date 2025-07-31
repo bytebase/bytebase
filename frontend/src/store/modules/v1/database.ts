@@ -159,6 +159,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     pageToken?: string;
     parent: string;
     filter?: DatabaseFilter;
+    skipCacheRemoval?: boolean;
   }): Promise<{
     databases: ComposedDatabase[];
     nextPageToken: string;
@@ -180,7 +181,10 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     const response = await databaseServiceClientConnect.listDatabases(request);
     const databases = response.databases; // Work directly with proto-es types
     const { nextPageToken } = response;
-    if (params.parent.startsWith(instanceNamePrefix)) {
+    if (
+      params.parent.startsWith(instanceNamePrefix) &&
+      !params.skipCacheRemoval
+    ) {
       removeCacheByInstance(params.parent);
     }
 
