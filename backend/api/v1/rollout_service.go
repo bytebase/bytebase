@@ -680,7 +680,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 
 	// Don't need to check if issue is approved if
 	// the user has bb.taskruns.create permission.
-	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionTaskRunsCreate, user)
+	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionTaskRunsCreate, user, projectID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
