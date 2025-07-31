@@ -1072,7 +1072,8 @@
       "rejected-description": "此工单已被审批者退回。确认并勾选强制运行才能继续。",
       "pending-description": "此工单正在等待审批。确认并勾选强制运行才能继续。",
       "rejected-error": "此工单已被退回。请确认并勾选强制运行才能继续。",
-      "pending-error": "此工单正在等待审批。请确认并勾选强制运行才能继续。"
+      "pending-error": "此工单正在等待审批。请确认并勾选强制运行才能继续。",
+      "approved-and-waiting-for-rollout": "该工单已批准，等待发布。"
     },
     "new-layout": "使用新版 CI/CD 页面"
   },

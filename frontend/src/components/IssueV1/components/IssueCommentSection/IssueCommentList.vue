@@ -84,6 +84,7 @@
           </div>
         </div>
         <div class="ml-3 min-w-0 flex-1">
+          <h3 class="sr-only" id="issue-comment-editor"></h3>
           <label for="comment" class="sr-only">
             {{ $t("issue.add-a-comment") }}
           </label>
