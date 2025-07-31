@@ -27,9 +27,9 @@ export type PlanContext = {
   isCreating: Ref<boolean>;
   plan: Ref<Plan>;
   planCheckRuns: Ref<PlanCheckRun[]>;
-  issue?: Ref<Issue | undefined>;
-  rollout?: Ref<Rollout | undefined>;
-  taskRuns?: Ref<TaskRun[]>;
+  issue: Ref<Issue | undefined>;
+  rollout: Ref<Rollout | undefined>;
+  taskRuns: Ref<TaskRun[]>;
 
   readonly: ComputedRef<boolean>;
 
@@ -51,7 +51,7 @@ export const usePlanContext = () => {
 
 export const usePlanContextWithIssue = () => {
   const context = inject(KEY)!;
-  if (!context.issue?.value) {
+  if (!context.issue.value) {
     throw new Error("Issue is required but not available in plan context");
   }
   return {
@@ -62,7 +62,7 @@ export const usePlanContextWithIssue = () => {
 
 export const usePlanContextWithRollout = () => {
   const context = inject(KEY)!;
-  if (!context.rollout?.value) {
+  if (!context.rollout.value) {
     throw new Error("Rollout is required but not available in plan context");
   }
   return {

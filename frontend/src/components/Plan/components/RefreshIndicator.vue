@@ -70,6 +70,9 @@ const lastRefreshDisplay = computed(() => {
 });
 
 const handleRefresh = async () => {
-  await resourcePoller.refreshResources();
+  await resourcePoller.refreshResources(
+    ["issue", "plan", "planCheckRuns", "rollout", "taskRuns"],
+    true /** force */
+  );
 };
 </script>
