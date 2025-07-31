@@ -100,6 +100,7 @@ func EngineSupportMasking(e storepb.Engine) bool {
 		storepb.Engine_TIDB,
 		storepb.Engine_BIGQUERY,
 		storepb.Engine_SPANNER,
+		storepb.Engine_REDSHIFT,
 		storepb.Engine_TRINO:
 		return true
 	case
@@ -112,7 +113,6 @@ func EngineSupportMasking(e storepb.Engine) bool {
 		storepb.Engine_OCEANBASE_ORACLE,
 		storepb.Engine_DM,
 		storepb.Engine_SNOWFLAKE,
-		storepb.Engine_REDSHIFT,
 		storepb.Engine_STARROCKS,
 		storepb.Engine_RISINGWAVE,
 		storepb.Engine_HIVE,
