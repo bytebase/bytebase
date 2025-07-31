@@ -140,15 +140,15 @@ func NewDatabaseConfig(config *storepb.DatabaseConfig) *DatabaseConfig {
 	return databaseConfig
 }
 
-// CreateOrGetSchemaConfig creates or gets a new schema config by name.
-func (d *DatabaseConfig) CreateOrGetSchemaConfig(name string) *SchemaConfig {
+// GetSchemaConfig gets the schema config by name.
+// If not found, returns a new empty schema config.
+func (d *DatabaseConfig) GetSchemaConfig(name string) *SchemaConfig {
 	if config := d.internal[name]; config != nil {
 		return config
 	}
-	d.internal[name] = &SchemaConfig{
+	return &SchemaConfig{
 		internal: make(map[string]*TableConfig),
 	}
-	return d.internal[name]
 }
 
 // RemoveSchemaConfig delete the schema config by name.
@@ -191,20 +191,15 @@ func (s *SchemaConfig) IsEmpty() bool {
 	return len(s.internal) == 0
 }
 
-// CreateOrGetTableConfig creates or gets the table config by name.
-func (s *SchemaConfig) CreateOrGetTableConfig(name string) *TableConfig {
+// GetTableConfig gets the table config by name.
+// If not found, returns a new empty table config.
+func (s *SchemaConfig) GetTableConfig(name string) *TableConfig {
 	if config := s.internal[name]; config != nil {
 		return config
 	}
-	s.internal[name] = &TableConfig{
+	return &TableConfig{
 		internal: make(map[string]*storepb.ColumnCatalog),
 	}
-	return s.internal[name]
-}
-
-// RemoveTableConfig delete the table config by name.
-func (s *SchemaConfig) RemoveTableConfig(name string) {
-	delete(s.internal, name)
 }
 
 // TableConfig is the config for a table.
@@ -213,15 +208,15 @@ type TableConfig struct {
 	internal       map[string]*storepb.ColumnCatalog
 }
 
-// CreateOrGetColumnConfig creates or gets the column config by name.
-func (t *TableConfig) CreateOrGetColumnConfig(name string) *storepb.ColumnCatalog {
+// GetColumnConfig gets the column config by name.
+// If not found, returns a new empty column config.
+func (t *TableConfig) GetColumnConfig(name string) *storepb.ColumnCatalog {
 	if config := t.internal[name]; config != nil {
 		return config
 	}
-	t.internal[name] = &storepb.ColumnCatalog{
+	return &storepb.ColumnCatalog{
 		Name: name,
 	}
-	return t.internal[name]
 }
 
 // RemoveColumnConfig delete the column config by name.
