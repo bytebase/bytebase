@@ -308,7 +308,7 @@ CREATE TABLE instance_change_history (
     version text NOT NULL
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_instance_change_history_unique_version ON instance_change_history (version);
+CREATE UNIQUE INDEX idx_instance_change_history_unique_version ON instance_change_history (version);
 
 ALTER SEQUENCE instance_change_history_id_seq RESTART WITH 101;
 
@@ -467,9 +467,9 @@ CREATE TABLE revision (
 
 ALTER SEQUENCE revision_id_seq RESTART WITH 101;
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_revision_unique_instance_db_name_version_deleted_at_null ON revision(instance, db_name, version) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX idx_revision_unique_instance_db_name_version_deleted_at_null ON revision(instance, db_name, version) WHERE deleted_at IS NULL;
 
-CREATE INDEX IF NOT EXISTS idx_revision_instance_db_name_version ON revision(instance, db_name, version);
+CREATE INDEX idx_revision_instance_db_name_version ON revision(instance, db_name, version);
 
 CREATE TABLE sync_history (
     id bigserial PRIMARY KEY,
@@ -483,7 +483,7 @@ CREATE TABLE sync_history (
 
 ALTER SEQUENCE sync_history_id_seq RESTART WITH 101;
 
-CREATE INDEX IF NOT EXISTS idx_sync_history_instance_db_name_created_at ON sync_history (instance, db_name, created_at);
+CREATE INDEX idx_sync_history_instance_db_name_created_at ON sync_history (instance, db_name, created_at);
 
 CREATE TABLE changelog (
     id bigserial PRIMARY KEY,
@@ -499,20 +499,23 @@ CREATE TABLE changelog (
 
 ALTER SEQUENCE changelog_id_seq RESTART WITH 101;
 
-CREATE INDEX IF NOT EXISTS idx_changelog_instance_db_name ON changelog (instance, db_name);
+CREATE INDEX idx_changelog_instance_db_name ON changelog (instance, db_name);
 
-CREATE TABLE IF NOT EXISTS release (
+CREATE TABLE release (
     id bigserial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
     project text NOT NULL REFERENCES project(resource_id),
     creator_id integer NOT NULL REFERENCES principal (id),
     created_at timestamptz NOT NULL DEFAULT now(),
+    digest text NOT NULL DEFAULT '',
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
 ALTER SEQUENCE release_id_seq RESTART WITH 101;
 
 CREATE INDEX idx_release_project ON release(project);
+
+CREATE UNIQUE INDEX idx_release_unique_project_digest ON release(project, digest) WHERE digest != '';
 
 
 -- Default bytebase system account id is 1.
