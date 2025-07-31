@@ -35,7 +35,10 @@
                   :key="preview.taskRunName"
                   class="space-y-2"
                 >
-                  <DatabaseDisplay :database="preview.task.target" />
+                  <DatabaseDisplay
+                    :database="preview.task.target"
+                    :project="project.name"
+                  />
                   <template v-if="!isUndefined(preview.statement)">
                     <MonacoEditor
                       v-if="preview.statement"
