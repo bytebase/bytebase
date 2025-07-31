@@ -40,7 +40,7 @@
 
         <!-- Plan Check Status -->
         <div v-if="planCheckStatus.total > 0" class="flex items-center gap-3">
-          <span class="text-control shrink-0">{{
+          <span class="font-medium text-control shrink-0">{{
             $t("plan.navigator.checks")
           }}</span>
           <div class="flex items-center gap-3">
