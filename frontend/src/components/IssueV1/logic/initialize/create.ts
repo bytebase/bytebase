@@ -74,7 +74,7 @@ const buildIssue = async (params: CreatePlanParams) => {
   issue.name = `${project.name}/issues/${nextUID()}`;
   issue.status = IssueStatus.OPEN;
   // Only set title from query if enforceIssueTitle is false.
-  if (issue.type === Issue_Type.GRANT_REQUEST && !project.enforceIssueTitle) {
+  if (!project.enforceIssueTitle) {
     issue.title = query.name;
   }
 
