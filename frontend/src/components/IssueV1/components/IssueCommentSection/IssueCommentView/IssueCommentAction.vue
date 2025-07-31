@@ -1,5 +1,9 @@
 <template>
   <div class="ml-3 min-w-0 flex-1">
+    <h3
+      class="sr-only"
+      :id="`${issueCommentNamePrefix}${getProjectIdIssueIdIssueCommentId(issueComment.name).issueCommentId}`"
+    ></h3>
     <div class="min-w-0 flex-1 pt-1 flex justify-between">
       <div class="text-sm text-control-light space-x-1">
         <ActionCreator
@@ -56,7 +60,12 @@
 
 <script lang="ts" setup>
 import HumanizeTs from "@/components/misc/HumanizeTs.vue";
-import { IssueCommentType, type ComposedIssueComment } from "@/store";
+import {
+  getProjectIdIssueIdIssueCommentId,
+  issueCommentNamePrefix,
+  IssueCommentType,
+  type ComposedIssueComment,
+} from "@/store";
 import { useUserStore, extractUserId } from "@/store";
 import { getTimeForPbTimestampProtoEs, type ComposedIssue } from "@/types";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
