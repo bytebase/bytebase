@@ -19,6 +19,7 @@ export declare const file_v1_release_service: GenFile;
 export declare type GetReleaseRequest = Message<"bytebase.v1.GetReleaseRequest"> & {
   /**
    * Format: projects/{project}/releases/{release}
+   * Format: projects/{project}/releases/{release-digest}
    *
    * @generated from field: string name = 1;
    */
@@ -374,6 +375,16 @@ export declare type Release = Message<"bytebase.v1.Release"> & {
    * @generated from field: bytebase.v1.State state = 7;
    */
   state: State;
+
+  /**
+   * The digest of the release.
+   * The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease.
+   * Whether to provide digest and how to generate it is up to the user.
+   * If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned.
+   *
+   * @generated from field: string digest = 8;
+   */
+  digest: string;
 };
 
 /**

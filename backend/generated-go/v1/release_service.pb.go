@@ -178,6 +178,7 @@ func (Release_File_ChangeType) EnumDescriptor() ([]byte, []int) {
 type GetReleaseRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/releases/{release}
+	// Format: projects/{project}/releases/{release-digest}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -690,9 +691,14 @@ type Release struct {
 	Files     []*Release_File    `protobuf:"bytes,3,rep,name=files,proto3" json:"files,omitempty"`
 	VcsSource *Release_VCSSource `protobuf:"bytes,4,opt,name=vcs_source,json=vcsSource,proto3" json:"vcs_source,omitempty"`
 	// Format: users/hello@world.com
-	Creator       string                 `protobuf:"bytes,5,opt,name=creator,proto3" json:"creator,omitempty"`
-	CreateTime    *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
-	State         State                  `protobuf:"varint,7,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
+	Creator    string                 `protobuf:"bytes,5,opt,name=creator,proto3" json:"creator,omitempty"`
+	CreateTime *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	State      State                  `protobuf:"varint,7,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
+	// The digest of the release.
+	// The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease.
+	// Whether to provide digest and how to generate it is up to the user.
+	// If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned.
+	Digest        string `protobuf:"bytes,8,opt,name=digest,proto3" json:"digest,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -774,6 +780,13 @@ func (x *Release) GetState() State {
 		return x.State
 	}
 	return State_STATE_UNSPECIFIED
+}
+
+func (x *Release) GetDigest() string {
+	if x != nil {
+		return x.Digest
+	}
+	return ""
 }
 
 type CheckReleaseResponse_CheckResult struct {
@@ -1086,7 +1099,7 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03LOW\x10\x01\x12\f\n" +
 	"\bMODERATE\x10\x02\x12\b\n" +
-	"\x04HIGH\x10\x03\"\xa6\a\n" +
+	"\x04HIGH\x10\x03\"\xbe\a\n" +
 	"\aRelease\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12/\n" +
@@ -1096,7 +1109,8 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\acreator\x18\x05 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
 	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12-\n" +
-	"\x05state\x18\a \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x1a\xd9\x03\n" +
+	"\x05state\x18\a \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12\x16\n" +
+	"\x06digest\x18\b \x01(\tR\x06digest\x1a\xd9\x03\n" +
 	"\x04File\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x122\n" +
