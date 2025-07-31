@@ -157,13 +157,13 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const router = useRouter();
-const loading = ref(false);
-const description = ref("");
-const labels = ref<string[]>([]);
 const { project } = useCurrentProjectV1();
 const currentUser = useCurrentUserV1();
 const policyV1Store = usePolicyV1Store();
 const { plan, events } = usePlanContext();
+const loading = ref(false);
+const description = ref(plan.value.description || "");
+const labels = ref<string[]>([]);
 const restrictIssueCreationForSqlReviewPolicy = ref(false);
 
 const title = computed(() => {
@@ -297,15 +297,18 @@ const doCreateIssue = async () => {
     });
     const createdIssue = await issueServiceClientConnect.createIssue(request);
 
-    await planServiceClientConnect.updatePlan(
-      create(UpdatePlanRequestSchema, {
-        plan: {
-          name: plan.value.name,
-          description: description.value,
-        },
-        updateMask: { paths: ["description"] },
-      })
-    );
+    // Update the plan description if it has changed.
+    if (description.value !== plan.value.description) {
+      await planServiceClientConnect.updatePlan(
+        create(UpdatePlanRequestSchema, {
+          plan: {
+            name: plan.value.name,
+            description: description.value,
+          },
+          updateMask: { paths: ["description"] },
+        })
+      );
+    }
 
     // Then create the rollout from the plan
     const rolloutRequest = create(CreateRolloutRequestSchema, {
