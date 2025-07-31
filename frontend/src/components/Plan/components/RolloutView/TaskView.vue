@@ -9,6 +9,7 @@
             <DatabaseDisplay
               :database="database.name"
               :project="project.name"
+              :size="'large'"
             />
           </div>
           <div class="flex flex-row gap-x-2">
