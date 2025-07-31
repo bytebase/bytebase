@@ -97,7 +97,10 @@
                   <TaskStatus :status="task.status" size="tiny" disabled />
                 </template>
                 <div class="flex items-center flex-nowrap">
-                  <DatabaseDisplay :database="task.target" />
+                  <DatabaseDisplay
+                    :database="task.target"
+                    :project="project.name"
+                  />
                   <NTooltip v-if="task.runTime">
                     <template #trigger>
                       <CalendarClockIcon
