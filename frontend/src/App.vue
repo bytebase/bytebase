@@ -71,7 +71,7 @@ onErrorCaptured((error: any /* , _, info */) => {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: `Internal error occurred`,
+      title: `Internal error captured`,
       description: isDev() ? error.stack : undefined,
     });
   }
