@@ -22,8 +22,10 @@ import {
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1 } from "@/store";
+import { isValidRolloutName } from "@/types";
 import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { RolloutSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import { isValidIssueName } from "@/utils";
 import { usePlanContext } from "../context";
 import {
   refreshPlan,
@@ -263,17 +265,17 @@ export const provideResourcePoller = () => {
         const issueAdded = !oldValues?.issue && newValues.issue;
         const rolloutAdded = !oldValues?.rollout && newValues.rollout;
 
-        if (issueAdded) {
+        if (issueAdded && isValidIssueName(newValues.issue)) {
           issue.value = create(IssueSchema, {
-            name: newValues.issue || "",
+            name: newValues.issue,
           });
-          refreshIssueOnly();
+          await refreshIssueOnly();
         }
-        if (rolloutAdded) {
+        if (rolloutAdded && isValidRolloutName(newValues.rollout)) {
           rollout.value = create(RolloutSchema, {
-            name: newValues.rollout || "",
+            name: newValues.rollout,
           });
-          refreshRolloutOnly();
+          await refreshRolloutOnly();
         }
         if (issueAdded || rolloutAdded) {
           // Emit status changed to refresh the UI
