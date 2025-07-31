@@ -1789,16 +1789,16 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 
 func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata, dbModelConfig *model.DatabaseConfig, classificationFromConfig bool) {
 	for _, schema := range dbSchema.Schemas {
-		schemaConfig := dbModelConfig.CreateOrGetSchemaConfig(schema.Name)
+		schemaConfig := dbModelConfig.GetSchemaConfig(schema.Name)
 		for _, table := range schema.Tables {
-			tableConfig := schemaConfig.CreateOrGetTableConfig(table.Name)
+			tableConfig := schemaConfig.GetTableConfig(table.Name)
 			classificationID := ""
 			if !classificationFromConfig {
 				classificationID = tableConfig.Classification
 			}
 			table.Comment = common.GetCommentFromClassificationAndUserComment(classificationID, table.UserComment)
 			for _, col := range table.Columns {
-				columnConfig := tableConfig.CreateOrGetColumnConfig(col.Name)
+				columnConfig := tableConfig.GetColumnConfig(col.Name)
 				classificationID := ""
 				if !classificationFromConfig {
 					classificationID = columnConfig.Classification
