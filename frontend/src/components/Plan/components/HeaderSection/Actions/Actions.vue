@@ -33,7 +33,7 @@ import { useDialog } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { usePlanContext } from "@/components/Plan/logic";
-import { provideIssueReviewContext } from "@/components/Plan/logic/issue-review";
+import { useIssueReviewContext } from "@/components/Plan/logic/issue-review";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
 import {
   useCurrentUserV1,
@@ -67,13 +67,13 @@ import {
 const { t } = useI18n();
 const dialog = useDialog();
 const resourcePoller = useResourcePoller();
-const { isCreating, plan, issue, rollout } = usePlanContext();
+const { isCreating, plan, issue } = usePlanContext();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
 const planStore = usePlanStore();
 
 // Provide issue review context when an issue exists
-const reviewContext = provideIssueReviewContext(issue);
+const reviewContext = useIssueReviewContext();
 
 // Panel visibility state
 const pendingReviewAction = ref<IssueReviewAction | undefined>(undefined);
@@ -88,17 +88,15 @@ const availableActions = computed(() => {
 
   const currentUserEmail = currentUser.value.email;
   // If no issue exists, show create issue action or close plan action.
-  if (!issue?.value) {
+  if (plan.value.issue === "") {
     // If rollout exists, no actions are available.
-    if (rollout?.value) {
+    if (plan.value.rollout !== "") {
       return actions;
     }
 
     // Check if user can close the plan
     const canClosePlan =
       plan.value.state === State.ACTIVE &&
-      plan.value.issue === "" &&
-      plan.value.rollout === "" &&
       (currentUserEmail === extractUserId(plan.value.creator || "") ||
         hasProjectPermissionV2(project.value, "bb.plans.update"));
 
@@ -109,8 +107,6 @@ const availableActions = computed(() => {
     // Check if user can reopen the plan
     const canReopenPlan =
       plan.value.state === State.DELETED &&
-      plan.value.issue === "" &&
-      plan.value.rollout === "" &&
       currentUserEmail === extractUserId(plan.value.creator || "") &&
       hasProjectPermissionV2(project.value, "bb.plans.update");
 
@@ -129,7 +125,9 @@ const availableActions = computed(() => {
     return actions;
   }
 
-  const issueValue = issue.value;
+  const issueValue = issue?.value;
+  // Should not reach here.
+  if (!issueValue) return actions;
   const isCanceled = issueValue.status === IssueStatus.CANCELED;
   const isDone = issueValue.status === IssueStatus.DONE;
 
