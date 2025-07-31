@@ -1,4 +1,4 @@
-package pg
+package redshift
 
 import (
 	"context"
@@ -8,29 +8,26 @@ import (
 	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
-	pg "github.com/bytebase/postgresql-parser"
+	parser "github.com/bytebase/redshift-parser"
 
 	"github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
 	// globalFollowSetsByState is the global follow sets by state.
-	// It is shared by all PostgreSQL completers.
+	// It is shared by all Redshift completers.
 	// The FollowSetsByState is the thread-safe struct.
 	globalFollowSetsByState = base.NewFollowSetsByState()
 )
 
 func init() {
-	base.RegisterCompleteFunc(store.Engine_POSTGRES, Completion)
-	base.RegisterCompleteFunc(store.Engine_RISINGWAVE, Completion)
-	base.RegisterCompleteFunc(store.Engine_DM, Completion)
-	base.RegisterCompleteFunc(store.Engine_SNOWFLAKE, Completion)
-	base.RegisterCompleteFunc(store.Engine_COCKROACHDB, Completion)
+	base.RegisterCompleteFunc(store.Engine_REDSHIFT, Completion)
 }
 
-// Completion is the entry point of PostgreSQL code completion.
+// Completion is the entry point of Redshift code completion.
 func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
 	completer := NewStandardCompleter(ctx, cCtx, statement, caretLine, caretOffset)
 	result, err := completer.completion()
@@ -47,101 +44,101 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 
 func newIgnoredTokens() map[int]bool {
 	return map[int]bool{
-		antlr.TokenEOF:                                                 true,
-		pg.PostgreSQLLexerDollar:                                       true,
-		pg.PostgreSQLLexerOPEN_PAREN:                                   true,
-		pg.PostgreSQLLexerCLOSE_PAREN:                                  true,
-		pg.PostgreSQLLexerOPEN_BRACKET:                                 true,
-		pg.PostgreSQLLexerCLOSE_BRACKET:                                true,
-		pg.PostgreSQLLexerCOMMA:                                        true,
-		pg.PostgreSQLLexerSEMI:                                         true,
-		pg.PostgreSQLLexerCOLON:                                        true,
-		pg.PostgreSQLLexerEQUAL:                                        true,
-		pg.PostgreSQLLexerDOT:                                          true,
-		pg.PostgreSQLLexerPLUS:                                         true,
-		pg.PostgreSQLLexerMINUS:                                        true,
-		pg.PostgreSQLLexerSLASH:                                        true,
-		pg.PostgreSQLLexerCARET:                                        true,
-		pg.PostgreSQLLexerLT:                                           true,
-		pg.PostgreSQLLexerGT:                                           true,
-		pg.PostgreSQLLexerLESS_LESS:                                    true,
-		pg.PostgreSQLLexerGREATER_GREATER:                              true,
-		pg.PostgreSQLLexerCOLON_EQUALS:                                 true,
-		pg.PostgreSQLLexerLESS_EQUALS:                                  true,
-		pg.PostgreSQLLexerEQUALS_GREATER:                               true,
-		pg.PostgreSQLLexerGREATER_EQUALS:                               true,
-		pg.PostgreSQLLexerDOT_DOT:                                      true,
-		pg.PostgreSQLLexerNOT_EQUALS:                                   true,
-		pg.PostgreSQLLexerTYPECAST:                                     true,
-		pg.PostgreSQLLexerPERCENT:                                      true,
-		pg.PostgreSQLLexerPARAM:                                        true,
-		pg.PostgreSQLLexerOperator:                                     true,
-		pg.PostgreSQLLexerIdentifier:                                   true,
-		pg.PostgreSQLLexerQuotedIdentifier:                             true,
-		pg.PostgreSQLLexerUnterminatedQuotedIdentifier:                 true,
-		pg.PostgreSQLLexerInvalidQuotedIdentifier:                      true,
-		pg.PostgreSQLLexerInvalidUnterminatedQuotedIdentifier:          true,
-		pg.PostgreSQLLexerUnicodeQuotedIdentifier:                      true,
-		pg.PostgreSQLLexerUnterminatedUnicodeQuotedIdentifier:          true,
-		pg.PostgreSQLLexerInvalidUnicodeQuotedIdentifier:               true,
-		pg.PostgreSQLLexerInvalidUnterminatedUnicodeQuotedIdentifier:   true,
-		pg.PostgreSQLLexerStringConstant:                               true,
-		pg.PostgreSQLLexerUnterminatedStringConstant:                   true,
-		pg.PostgreSQLLexerUnicodeEscapeStringConstant:                  true,
-		pg.PostgreSQLLexerUnterminatedUnicodeEscapeStringConstant:      true,
-		pg.PostgreSQLLexerBeginDollarStringConstant:                    true,
-		pg.PostgreSQLLexerBinaryStringConstant:                         true,
-		pg.PostgreSQLLexerUnterminatedBinaryStringConstant:             true,
-		pg.PostgreSQLLexerInvalidBinaryStringConstant:                  true,
-		pg.PostgreSQLLexerInvalidUnterminatedBinaryStringConstant:      true,
-		pg.PostgreSQLLexerHexadecimalStringConstant:                    true,
-		pg.PostgreSQLLexerUnterminatedHexadecimalStringConstant:        true,
-		pg.PostgreSQLLexerInvalidHexadecimalStringConstant:             true,
-		pg.PostgreSQLLexerInvalidUnterminatedHexadecimalStringConstant: true,
-		pg.PostgreSQLLexerIntegral:                                     true,
-		pg.PostgreSQLLexerNumericFail:                                  true,
-		pg.PostgreSQLLexerNumeric:                                      true,
+		antlr.TokenEOF:                                                   true,
+		parser.RedshiftLexerDollar:                                       true,
+		parser.RedshiftLexerOPEN_PAREN:                                   true,
+		parser.RedshiftLexerCLOSE_PAREN:                                  true,
+		parser.RedshiftLexerOPEN_BRACKET:                                 true,
+		parser.RedshiftLexerCLOSE_BRACKET:                                true,
+		parser.RedshiftLexerCOMMA:                                        true,
+		parser.RedshiftLexerSEMI:                                         true,
+		parser.RedshiftLexerCOLON:                                        true,
+		parser.RedshiftLexerEQUAL:                                        true,
+		parser.RedshiftLexerDOT:                                          true,
+		parser.RedshiftLexerPLUS:                                         true,
+		parser.RedshiftLexerMINUS:                                        true,
+		parser.RedshiftLexerSLASH:                                        true,
+		parser.RedshiftLexerCARET:                                        true,
+		parser.RedshiftLexerLT:                                           true,
+		parser.RedshiftLexerGT:                                           true,
+		parser.RedshiftLexerLESS_LESS:                                    true,
+		parser.RedshiftLexerGREATER_GREATER:                              true,
+		parser.RedshiftLexerCOLON_EQUALS:                                 true,
+		parser.RedshiftLexerLESS_EQUALS:                                  true,
+		parser.RedshiftLexerEQUALS_GREATER:                               true,
+		parser.RedshiftLexerGREATER_EQUALS:                               true,
+		parser.RedshiftLexerDOT_DOT:                                      true,
+		parser.RedshiftLexerNOT_EQUALS:                                   true,
+		parser.RedshiftLexerTYPECAST:                                     true,
+		parser.RedshiftLexerPERCENT:                                      true,
+		parser.RedshiftLexerPARAM:                                        true,
+		parser.RedshiftLexerOperator:                                     true,
+		parser.RedshiftLexerIdentifier:                                   true,
+		parser.RedshiftLexerQuotedIdentifier:                             true,
+		parser.RedshiftLexerUnterminatedQuotedIdentifier:                 true,
+		parser.RedshiftLexerInvalidQuotedIdentifier:                      true,
+		parser.RedshiftLexerInvalidUnterminatedQuotedIdentifier:          true,
+		parser.RedshiftLexerUnicodeQuotedIdentifier:                      true,
+		parser.RedshiftLexerUnterminatedUnicodeQuotedIdentifier:          true,
+		parser.RedshiftLexerInvalidUnicodeQuotedIdentifier:               true,
+		parser.RedshiftLexerInvalidUnterminatedUnicodeQuotedIdentifier:   true,
+		parser.RedshiftLexerStringConstant:                               true,
+		parser.RedshiftLexerUnterminatedStringConstant:                   true,
+		parser.RedshiftLexerUnicodeEscapeStringConstant:                  true,
+		parser.RedshiftLexerUnterminatedUnicodeEscapeStringConstant:      true,
+		parser.RedshiftLexerBeginDollarStringConstant:                    true,
+		parser.RedshiftLexerBinaryStringConstant:                         true,
+		parser.RedshiftLexerUnterminatedBinaryStringConstant:             true,
+		parser.RedshiftLexerInvalidBinaryStringConstant:                  true,
+		parser.RedshiftLexerInvalidUnterminatedBinaryStringConstant:      true,
+		parser.RedshiftLexerHexadecimalStringConstant:                    true,
+		parser.RedshiftLexerUnterminatedHexadecimalStringConstant:        true,
+		parser.RedshiftLexerInvalidHexadecimalStringConstant:             true,
+		parser.RedshiftLexerInvalidUnterminatedHexadecimalStringConstant: true,
+		parser.RedshiftLexerIntegral:                                     true,
+		parser.RedshiftLexerNumericFail:                                  true,
+		parser.RedshiftLexerNumeric:                                      true,
 	}
 }
 
 func newPreferredRules() map[int]bool {
 	return map[int]bool{
-		pg.PostgreSQLParserRULE_relation_expr:  true,
-		pg.PostgreSQLParserRULE_qualified_name: true,
-		pg.PostgreSQLParserRULE_columnref:      true,
-		pg.PostgreSQLParserRULE_func_name:      true,
+		parser.RedshiftParserRULE_relation_expr:  true,
+		parser.RedshiftParserRULE_qualified_name: true,
+		parser.RedshiftParserRULE_columnref:      true,
+		parser.RedshiftParserRULE_func_name:      true,
 	}
 }
 
 func newNoSeparatorRequired() map[int]bool {
 	return map[int]bool{
-		pg.PostgreSQLLexerDollar:          true,
-		pg.PostgreSQLLexerOPEN_PAREN:      true,
-		pg.PostgreSQLLexerCLOSE_PAREN:     true,
-		pg.PostgreSQLLexerOPEN_BRACKET:    true,
-		pg.PostgreSQLLexerCLOSE_BRACKET:   true,
-		pg.PostgreSQLLexerCOMMA:           true,
-		pg.PostgreSQLLexerSEMI:            true,
-		pg.PostgreSQLLexerCOLON:           true,
-		pg.PostgreSQLLexerEQUAL:           true,
-		pg.PostgreSQLLexerDOT:             true,
-		pg.PostgreSQLLexerPLUS:            true,
-		pg.PostgreSQLLexerMINUS:           true,
-		pg.PostgreSQLLexerSLASH:           true,
-		pg.PostgreSQLLexerCARET:           true,
-		pg.PostgreSQLLexerLT:              true,
-		pg.PostgreSQLLexerGT:              true,
-		pg.PostgreSQLLexerLESS_LESS:       true,
-		pg.PostgreSQLLexerGREATER_GREATER: true,
-		pg.PostgreSQLLexerCOLON_EQUALS:    true,
-		pg.PostgreSQLLexerLESS_EQUALS:     true,
-		pg.PostgreSQLLexerEQUALS_GREATER:  true,
-		pg.PostgreSQLLexerGREATER_EQUALS:  true,
-		pg.PostgreSQLLexerDOT_DOT:         true,
-		pg.PostgreSQLLexerNOT_EQUALS:      true,
-		pg.PostgreSQLLexerTYPECAST:        true,
-		pg.PostgreSQLLexerPERCENT:         true,
-		pg.PostgreSQLLexerPARAM:           true,
+		parser.RedshiftLexerDollar:          true,
+		parser.RedshiftLexerOPEN_PAREN:      true,
+		parser.RedshiftLexerCLOSE_PAREN:     true,
+		parser.RedshiftLexerOPEN_BRACKET:    true,
+		parser.RedshiftLexerCLOSE_BRACKET:   true,
+		parser.RedshiftLexerCOMMA:           true,
+		parser.RedshiftLexerSEMI:            true,
+		parser.RedshiftLexerCOLON:           true,
+		parser.RedshiftLexerEQUAL:           true,
+		parser.RedshiftLexerDOT:             true,
+		parser.RedshiftLexerPLUS:            true,
+		parser.RedshiftLexerMINUS:           true,
+		parser.RedshiftLexerSLASH:           true,
+		parser.RedshiftLexerCARET:           true,
+		parser.RedshiftLexerLT:              true,
+		parser.RedshiftLexerGT:              true,
+		parser.RedshiftLexerLESS_LESS:       true,
+		parser.RedshiftLexerGREATER_GREATER: true,
+		parser.RedshiftLexerCOLON_EQUALS:    true,
+		parser.RedshiftLexerLESS_EQUALS:     true,
+		parser.RedshiftLexerEQUALS_GREATER:  true,
+		parser.RedshiftLexerGREATER_EQUALS:  true,
+		parser.RedshiftLexerDOT_DOT:         true,
+		parser.RedshiftLexerNOT_EQUALS:      true,
+		parser.RedshiftLexerTYPECAST:        true,
+		parser.RedshiftLexerPERCENT:         true,
+		parser.RedshiftLexerPARAM:           true,
 	}
 }
 
@@ -149,8 +146,8 @@ type Completer struct {
 	ctx                 context.Context
 	core                *base.CodeCompletionCore
 	scene               base.SceneType
-	parser              *pg.PostgreSQLParser
-	lexer               *pg.PostgreSQLLexer
+	parser              *parser.RedshiftParser
+	lexer               *parser.RedshiftLexer
 	scanner             *base.Scanner
 	instanceID          string
 	defaultDatabase     string
@@ -171,19 +168,19 @@ type Completer struct {
 }
 
 func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
-	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
-	// For all PostgreSQL completers, we use one global follow sets by state.
+	p, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
+	// For all Redshift completers, we use one global follow sets by state.
 	// The FollowSetsByState is the thread-safe struct.
 	core := base.NewCodeCompletionCore(
 		ctx,
-		parser,
+		p,
 		newIgnoredTokens(),
 		newPreferredRules(),
 		&globalFollowSetsByState,
-		pg.PostgreSQLParserRULE_simple_select_pramary,
-		pg.PostgreSQLParserRULE_select_no_parens,
-		pg.PostgreSQLParserRULE_target_alias,
-		pg.PostgreSQLParserRULE_with_clause,
+		parser.RedshiftParserRULE_simple_select_pramary,
+		parser.RedshiftParserRULE_select_no_parens,
+		parser.RedshiftParserRULE_target_alias,
+		parser.RedshiftParserRULE_with_clause,
 	)
 	defaultSchema := cCtx.DefaultSchema
 	if defaultSchema == "" {
@@ -193,7 +190,7 @@ func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statem
 		ctx:                 ctx,
 		core:                core,
 		scene:               cCtx.Scene,
-		parser:              parser,
+		parser:              p,
 		lexer:               lexer,
 		scanner:             scanner,
 		instanceID:          cCtx.InstanceID,
@@ -207,19 +204,19 @@ func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statem
 }
 
 func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
-	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
-	// For all PostgreSQL completers, we use one global follow sets by state.
+	p, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
+	// For all Redshift completers, we use one global follow sets by state.
 	// The FollowSetsByState is the thread-safe struct.
 	core := base.NewCodeCompletionCore(
 		ctx,
-		parser,
+		p,
 		newIgnoredTokens(),
 		newPreferredRules(),
 		&globalFollowSetsByState,
-		pg.PostgreSQLParserRULE_simple_select_pramary,
-		pg.PostgreSQLParserRULE_select_no_parens,
-		pg.PostgreSQLParserRULE_target_alias,
-		pg.PostgreSQLParserRULE_with_clause,
+		parser.RedshiftParserRULE_simple_select_pramary,
+		parser.RedshiftParserRULE_select_no_parens,
+		parser.RedshiftParserRULE_target_alias,
+		parser.RedshiftParserRULE_with_clause,
 	)
 	defaultSchema := cCtx.DefaultSchema
 	if defaultSchema == "" {
@@ -229,7 +226,7 @@ func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, stat
 		ctx:                 ctx,
 		core:                core,
 		scene:               cCtx.Scene,
-		parser:              parser,
+		parser:              p,
 		lexer:               lexer,
 		scanner:             scanner,
 		instanceID:          cCtx.InstanceID,
@@ -245,9 +242,9 @@ func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, stat
 func (c *Completer) completion() ([]base.Candidate, error) {
 	// Check the caret token is quoted or not.
 	// This check should be done before checking the caret token is a separator or not.
-	if c.scanner.IsTokenType(pg.PostgreSQLLexerQuotedIdentifier) ||
-		c.scanner.IsTokenType(pg.PostgreSQLLexerInvalidQuotedIdentifier) ||
-		c.scanner.IsTokenType(pg.PostgreSQLLexerUnicodeQuotedIdentifier) {
+	if c.scanner.IsTokenType(parser.RedshiftLexerQuotedIdentifier) ||
+		c.scanner.IsTokenType(parser.RedshiftLexerInvalidQuotedIdentifier) ||
+		c.scanner.IsTokenType(parser.RedshiftLexerUnicodeQuotedIdentifier) {
 		c.caretTokenIsQuoted = true
 	}
 
@@ -267,7 +264,7 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 	candidates := c.core.CollectCandidates(caretIndex, context)
 
 	for ruleName := range candidates.Rules {
-		if ruleName == pg.PostgreSQLParserRULE_columnref {
+		if ruleName == parser.RedshiftParserRULE_columnref {
 			c.collectLeadingTableReferences(caretIndex)
 			c.takeReferencesSnapshot()
 			c.collectRemainingTableReferences()
@@ -285,7 +282,17 @@ func (m CompletionMap) Insert(entry base.Candidate) {
 }
 
 func (m CompletionMap) insertFunctions() {
-	for _, name := range pg.GetBuiltinFunctions() {
+	// TODO: Add Redshift-specific functions
+	// For now, use a basic set of common functions
+	commonFunctions := []string{
+		"count", "sum", "avg", "min", "max", "abs", "ceil", "floor", "round",
+		"upper", "lower", "trim", "ltrim", "rtrim", "length", "substring",
+		"current_date", "current_timestamp", "date_part", "extract",
+		"coalesce", "nullif", "cast", "convert",
+		"row_number", "rank", "dense_rank", "lead", "lag",
+		"listagg", "median", "percentile_cont", "approximate_count_distinct",
+	}
+	for _, name := range commonFunctions {
 		m.Insert(base.Candidate{
 			Type: base.CandidateTypeFunction,
 			Text: name + "()",
@@ -482,7 +489,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 		list := 0
 		if len(value) > 0 {
 			// For function call:
-			if value[0] == pg.PostgreSQLLexerOPEN_PAREN {
+			if value[0] == parser.RedshiftLexerOPEN_PAREN {
 				list = 1
 			} else {
 				for _, item := range value {
@@ -518,9 +525,9 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 		c.fetchCommonTableExpression(candidates.Rules[candidate])
 
 		switch candidate {
-		case pg.PostgreSQLParserRULE_func_name:
+		case parser.RedshiftParserRULE_func_name:
 			runtimeFunctionEntries.insertFunctions()
-		case pg.PostgreSQLParserRULE_relation_expr, pg.PostgreSQLParserRULE_qualified_name:
+		case parser.RedshiftParserRULE_relation_expr, parser.RedshiftParserRULE_qualified_name:
 			qualifier, flags := c.determineQualifiedName()
 
 			if flags&ObjectFlagsShowFirst != 0 {
@@ -540,7 +547,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				tableEntries.insertTables(c, schemas)
 				viewEntries.insertViews(c, schemas)
 			}
-		case pg.PostgreSQLParserRULE_columnref:
+		case parser.RedshiftParserRULE_columnref:
 			schema, table, flags := c.determineColumnRef()
 			if flags&ObjectFlagsShowSchemas != 0 {
 				schemaEntries.insertSchemas(c)
@@ -594,6 +601,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 							Type: base.CandidateTypeTable,
 							Text: c.quotedIdentifierIfNeeded(reference.Table),
 						})
+					default:
 					}
 				}
 			}
@@ -625,6 +633,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 									})
 								}
 							}
+						default:
 						}
 					}
 				} else if len(c.references) > 0 {
@@ -647,6 +656,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 									Text: c.quotedIdentifierIfNeeded(column),
 								})
 							}
+						default:
 						}
 					}
 				} else {
@@ -678,7 +688,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 func (c *Completer) fetchCommonTableExpression(ruleStack []*base.RuleContext) {
 	c.cteTables = nil
 	for _, rule := range ruleStack {
-		if rule.ID == pg.PostgreSQLParserRULE_select_no_parens {
+		if rule.ID == parser.RedshiftParserRULE_select_no_parens {
 			for _, pos := range rule.CTEList {
 				c.cteTables = append(c.cteTables, c.extractCTETables(pos)...)
 			}
@@ -696,14 +706,14 @@ func (c *Completer) extractCTETables(pos int) []*base.VirtualTableReference {
 	}
 
 	input := antlr.NewInputStream(followingText)
-	lexer := pg.NewPostgreSQLLexer(input)
+	lexer := parser.NewRedshiftLexer(input)
 	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := pg.NewPostgreSQLParser(tokens)
+	p := parser.NewRedshiftParser(tokens)
 
-	parser.BuildParseTrees = true
-	parser.RemoveErrorListeners()
+	p.BuildParseTrees = true
+	p.RemoveErrorListeners()
 	lexer.RemoveErrorListeners()
-	tree := parser.With_clause()
+	tree := p.With_clause()
 
 	listener := &CTETableListener{context: c}
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
@@ -713,23 +723,25 @@ func (c *Completer) extractCTETables(pos int) []*base.VirtualTableReference {
 }
 
 type CTETableListener struct {
-	*pg.BasePostgreSQLParserListener
+	*parser.BaseRedshiftParserListener
 
 	context *Completer
 	tables  []*base.VirtualTableReference
 }
 
-func (l *CTETableListener) EnterCommon_table_expr(ctx *pg.Common_table_exprContext) {
+func (l *CTETableListener) EnterCommon_table_expr(ctx *parser.Common_table_exprContext) {
 	table := &base.VirtualTableReference{}
 	if ctx.Name() != nil {
-		table.Table = normalizePostgreSQLName(ctx.Name())
+		table.Table = normalizeRedshiftName(ctx.Name())
 	}
 	if ctx.Opt_name_list() != nil {
 		for _, column := range ctx.Opt_name_list().Name_list().AllName() {
-			table.Columns = append(table.Columns, normalizePostgreSQLName(column))
+			table.Columns = append(table.Columns, normalizeRedshiftName(column))
 		}
 	} else {
-		if span, err := GetQuerySpan(
+		// For query span extraction, we still use PostgreSQL GetQuerySpan
+		// because it uses pg_query_go internally
+		if span, err := pg.GetQuerySpan(
 			l.context.ctx,
 			base.GetQuerySpanContext{
 				InstanceID:              l.context.instanceID,
@@ -754,7 +766,7 @@ func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []stri
 	canUseAliases := false
 	for i := len(ruleStack) - 1; i >= 0; i-- {
 		switch ruleStack[i].ID {
-		case pg.PostgreSQLParserRULE_simple_select_pramary, pg.PostgreSQLParserRULE_select_no_parens:
+		case parser.RedshiftParserRULE_simple_select_pramary, parser.RedshiftParserRULE_select_no_parens:
 			if !canUseAliases {
 				return nil
 			}
@@ -771,10 +783,9 @@ func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []stri
 			}
 			slices.Sort(result)
 			return result
-		case pg.PostgreSQLParserRULE_opt_sort_clause, pg.PostgreSQLParserRULE_group_clause, pg.PostgreSQLParserRULE_having_clause:
+		case parser.RedshiftParserRULE_opt_sort_clause, parser.RedshiftParserRULE_group_clause, parser.RedshiftParserRULE_having_clause:
 			canUseAliases = true
 		default:
-			// Other cases
 		}
 	}
 
@@ -788,14 +799,14 @@ func (c *Completer) extractAliasText(pos int) string {
 	}
 
 	input := antlr.NewInputStream(followingText)
-	lexer := pg.NewPostgreSQLLexer(input)
+	lexer := parser.NewRedshiftLexer(input)
 	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := pg.NewPostgreSQLParser(tokens)
+	p := parser.NewRedshiftParser(tokens)
 
-	parser.BuildParseTrees = true
-	parser.RemoveErrorListeners()
+	p.BuildParseTrees = true
+	p.RemoveErrorListeners()
 	lexer.RemoveErrorListeners()
-	tree := parser.Target_alias()
+	tree := p.Target_alias()
 
 	listener := &TargetAliasListener{}
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
@@ -803,16 +814,16 @@ func (c *Completer) extractAliasText(pos int) string {
 }
 
 type TargetAliasListener struct {
-	*pg.BasePostgreSQLParserListener
+	*parser.BaseRedshiftParserListener
 
 	result string
 }
 
-func (l *TargetAliasListener) EnterTarget_alias(ctx *pg.Target_aliasContext) {
+func (l *TargetAliasListener) EnterTarget_alias(ctx *parser.Target_aliasContext) {
 	if ctx.Identifier() != nil {
-		l.result = normalizePostgreSQLIdentifier(ctx.Identifier())
+		l.result = normalizeRedshiftIdentifier(ctx.Identifier())
 	} else if ctx.Collabel() != nil {
-		l.result = normalizePostgreSQLCollabel(ctx.Collabel())
+		l.result = normalizeRedshiftCollabel(ctx.Collabel())
 	}
 }
 
@@ -832,7 +843,7 @@ func (c *Completer) determineQualifiedName() (string, ObjectFlags) {
 		c.scanner.Forward(true /* skipHidden */)
 	}
 
-	if !c.scanner.IsTokenType(pg.PostgreSQLLexerONLY) && !c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
+	if !c.scanner.IsTokenType(parser.RedshiftLexerONLY) && !c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
 		// We are at the end of an incomplete identifier spec.
 		// Jump back.
 		c.scanner.Backward(true /* skipHidden */)
@@ -840,10 +851,10 @@ func (c *Completer) determineQualifiedName() (string, ObjectFlags) {
 
 	// Go left until we hit a non-identifier token.
 	if position > 0 {
-		if c.lexer.IsIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenType(false /* skipHidden */) == pg.PostgreSQLLexerDOT {
+		if c.lexer.IsIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenType(false /* skipHidden */) == parser.RedshiftLexerDOT {
 			c.scanner.Backward(true /* skipHidden */)
 		}
-		if c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) && c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
+		if c.scanner.IsTokenType(parser.RedshiftLexerDOT) && c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
 			c.scanner.Backward(true /* skipHidden */)
 		}
 	}
@@ -856,7 +867,7 @@ func (c *Completer) determineQualifiedName() (string, ObjectFlags) {
 		c.scanner.Forward(true /* skipHidden */)
 	}
 
-	if !c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) || position <= c.scanner.GetIndex() {
+	if !c.scanner.IsTokenType(parser.RedshiftLexerDOT) || position <= c.scanner.GetIndex() {
 		return qualifier, ObjectFlagsShowFirst | ObjectFlagsShowSecond
 	}
 
@@ -871,20 +882,20 @@ func (c *Completer) determineColumnRef() (schema, table string, flags ObjectFlag
 	}
 
 	tokenType := c.scanner.GetTokenType()
-	if tokenType != pg.PostgreSQLLexerDOT && !c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
+	if tokenType != parser.RedshiftLexerDOT && !c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
 		// We are at the end of an incomplete identifier spec.
 		// Jump back.
 		c.scanner.Backward(true /* skipHidden */)
 	}
 
 	if position > 0 {
-		if c.lexer.IsIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenType(false /* skipHidden */) == pg.PostgreSQLLexerDOT {
+		if c.lexer.IsIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenType(false /* skipHidden */) == parser.RedshiftLexerDOT {
 			c.scanner.Backward(true /* skipHidden */)
 		}
-		if c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) && c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
+		if c.scanner.IsTokenType(parser.RedshiftLexerDOT) && c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
 			c.scanner.Backward(true /* skipHidden */)
 
-			if c.scanner.GetPreviousTokenType(false /* skipHidden */) == pg.PostgreSQLLexerDOT {
+			if c.scanner.GetPreviousTokenType(false /* skipHidden */) == parser.RedshiftLexerDOT {
 				c.scanner.Backward(true /* skipHidden */)
 				if c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
 					c.scanner.Backward(true /* skipHidden */)
@@ -901,7 +912,7 @@ func (c *Completer) determineColumnRef() (schema, table string, flags ObjectFlag
 		c.scanner.Forward(true /* skipHidden */)
 	}
 
-	if !c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) || position <= c.scanner.GetIndex() {
+	if !c.scanner.IsTokenType(parser.RedshiftLexerDOT) || position <= c.scanner.GetIndex() {
 		return schema, table, ObjectFlagsShowSchemas | ObjectFlagsShowTables | ObjectFlagsShowColumns
 	}
 
@@ -912,7 +923,7 @@ func (c *Completer) determineColumnRef() (schema, table string, flags ObjectFlag
 		temp = normalizeIdentifier(c.scanner.GetTokenText())
 		c.scanner.Forward(true /* skipHidden */)
 
-		if !c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) || position <= c.scanner.GetIndex() {
+		if !c.scanner.IsTokenType(parser.RedshiftLexerDOT) || position <= c.scanner.GetIndex() {
 			return schema, table, ObjectFlagsShowTables | ObjectFlagsShowColumns
 		}
 
@@ -925,7 +936,7 @@ func (c *Completer) determineColumnRef() (schema, table string, flags ObjectFlag
 
 func normalizeIdentifier(tokenText string) string {
 	if len(tokenText) >= 2 && tokenText[0] == '"' && tokenText[len(tokenText)-1] == '"' {
-		return normalizePostgreSQLQuotedIdentifier(tokenText)
+		return normalizeRedshiftQuotedIdentifier(tokenText)
 	}
 	return unquote(tokenText)
 }
@@ -952,26 +963,25 @@ func (c *Completer) collectRemainingTableReferences() {
 
 	level := 0
 	for {
-		found := c.scanner.GetTokenType() == pg.PostgreSQLLexerFROM
+		found := c.scanner.GetTokenType() == parser.RedshiftLexerFROM
 		for !found {
 			if !c.scanner.Forward(false /* skipHidden */) {
 				break
 			}
 
 			switch c.scanner.GetTokenType() {
-			case pg.PostgreSQLLexerOPEN_PAREN:
+			case parser.RedshiftLexerOPEN_PAREN:
 				level++
-			case pg.PostgreSQLLexerCLOSE_PAREN:
+			case parser.RedshiftLexerCLOSE_PAREN:
 				if level > 0 {
 					level--
 				}
-			case pg.PostgreSQLLexerFROM:
+			case parser.RedshiftLexerFROM:
 				// Open and close parenthesis don't need to match, if we come from within a subquery.
 				if level == 0 {
 					found = true
 				}
 			default:
-				// Other tokens, continue scanning
 			}
 		}
 
@@ -981,7 +991,7 @@ func (c *Completer) collectRemainingTableReferences() {
 		}
 
 		c.parseTableReferences(c.scanner.GetFollowingText())
-		if c.scanner.GetTokenType() == pg.PostgreSQLLexerFROM {
+		if c.scanner.GetTokenType() == parser.RedshiftLexerFROM {
 			c.scanner.Forward(false /* skipHidden */)
 		}
 	}
@@ -994,17 +1004,17 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int) {
 
 	level := 0
 	for {
-		found := c.scanner.GetTokenType() == pg.PostgreSQLLexerFROM
+		found := c.scanner.GetTokenType() == parser.RedshiftLexerFROM
 		for !found {
 			if !c.scanner.Forward(false /* skipHidden */) || c.scanner.GetIndex() >= caretIndex {
 				break
 			}
 
 			switch c.scanner.GetTokenType() {
-			case pg.PostgreSQLLexerOPEN_PAREN:
+			case parser.RedshiftLexerOPEN_PAREN:
 				level++
 				c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
-			case pg.PostgreSQLLexerCLOSE_PAREN:
+			case parser.RedshiftLexerCLOSE_PAREN:
 				if level == 0 {
 					c.scanner.PopAndRestore()
 					return // We cannot go above the initial nesting level.
@@ -1012,10 +1022,9 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int) {
 
 				level--
 				c.referencesStack = c.referencesStack[1:]
-			case pg.PostgreSQLLexerFROM:
+			case parser.RedshiftLexerFROM:
 				found = true
 			default:
-				// Other tokens, continue scanning
 			}
 		}
 
@@ -1025,7 +1034,7 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int) {
 		}
 
 		c.parseTableReferences(c.scanner.GetFollowingText())
-		if c.scanner.GetTokenType() == pg.PostgreSQLLexerFROM {
+		if c.scanner.GetTokenType() == parser.RedshiftLexerFROM {
 			c.scanner.Forward(false /* skipHidden */)
 		}
 	}
@@ -1033,14 +1042,14 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int) {
 
 func (c *Completer) parseTableReferences(fromClause string) {
 	input := antlr.NewInputStream(fromClause)
-	lexer := pg.NewPostgreSQLLexer(input)
+	lexer := parser.NewRedshiftLexer(input)
 	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := pg.NewPostgreSQLParser(tokens)
+	p := parser.NewRedshiftParser(tokens)
 
-	parser.BuildParseTrees = true
-	parser.RemoveErrorListeners()
+	p.BuildParseTrees = true
+	p.RemoveErrorListeners()
 	lexer.RemoveErrorListeners()
-	tree := parser.From_clause()
+	tree := p.From_clause()
 
 	listener := &TableRefListener{
 		context: c,
@@ -1049,14 +1058,14 @@ func (c *Completer) parseTableReferences(fromClause string) {
 }
 
 type TableRefListener struct {
-	*pg.BasePostgreSQLParserListener
+	*parser.BaseRedshiftParserListener
 
 	context *Completer
 	level   int
 }
 
-func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
-	if _, ok := ctx.GetParent().(*pg.Table_refContext); ok {
+func (l *TableRefListener) EnterTable_ref(ctx *parser.Table_refContext) {
+	if _, ok := ctx.GetParent().(*parser.Table_refContext); ok {
 		// if the table reference is nested, we should not process it.
 		l.level++
 	}
@@ -1068,7 +1077,7 @@ func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
 			physicalReference := &base.PhysicalTableReference{}
 			// We should use the physical reference as the default reference.
 			reference = physicalReference
-			list := NormalizePostgreSQLQualifiedName(ctx.Relation_expr().Qualified_name())
+			list := NormalizeRedshiftQualifiedName(ctx.Relation_expr().Qualified_name())
 			switch len(list) {
 			case 1:
 				physicalReference.Table = list[0]
@@ -1106,7 +1115,9 @@ func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
 				if len(columnAlias) > 0 {
 					virtualReference.Columns = columnAlias
 				} else {
-					if span, err := GetQuerySpan(
+					// For query span extraction, we still use PostgreSQL GetQuerySpan
+					// because it uses pg_query_go internally
+					if span, err := pg.GetQuerySpan(
 						l.context.ctx,
 						base.GetQuerySpanContext{
 							InstanceID:              l.context.instanceID,
@@ -1138,26 +1149,25 @@ func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
 				l.context.referencesStack[0] = append(l.context.referencesStack[0], virtualReference)
 			}
 		default:
-			// Other cases
 		}
 	}
 }
 
-func (l *TableRefListener) ExitTable_ref(ctx *pg.Table_refContext) {
-	if _, ok := ctx.GetParent().(*pg.Table_refContext); ok {
+func (l *TableRefListener) ExitTable_ref(ctx *parser.Table_refContext) {
+	if _, ok := ctx.GetParent().(*parser.Table_refContext); ok {
 		l.level--
 	}
 }
 
-func (l *TableRefListener) EnterSelect_with_parens(_ *pg.Select_with_parensContext) {
+func (l *TableRefListener) EnterSelect_with_parens(_ *parser.Select_with_parensContext) {
 	l.level++
 }
 
-func (l *TableRefListener) ExitSelect_with_parens(_ *pg.Select_with_parensContext) {
+func (l *TableRefListener) ExitSelect_with_parens(_ *parser.Select_with_parensContext) {
 	l.level--
 }
 
-func normalizeTableAlias(ctx pg.IOpt_alias_clauseContext) (string, []string) {
+func normalizeTableAlias(ctx parser.IOpt_alias_clauseContext) (string, []string) {
 	if ctx == nil || ctx.Table_alias_clause() == nil {
 		return "", nil
 	}
@@ -1165,43 +1175,44 @@ func normalizeTableAlias(ctx pg.IOpt_alias_clauseContext) (string, []string) {
 	tableAlias := ""
 	aliasClause := ctx.Table_alias_clause()
 	if aliasClause.Table_alias() != nil {
-		tableAlias = normalizePostgreSQLTableAlias(aliasClause.Table_alias())
+		tableAlias = normalizeRedshiftTableAlias(aliasClause.Table_alias())
 	}
 
 	var columnAliases []string
 	if aliasClause.Name_list() != nil {
-		columnAliases = append(columnAliases, normalizePostgreSQLNameList(aliasClause.Name_list())...)
+		columnAliases = append(columnAliases, normalizeRedshiftNameList(aliasClause.Name_list())...)
 	}
 
 	return tableAlias, columnAliases
 }
-func prepareTrickyParserAndScanner(statement string, caretLine int, caretOffset int) (*pg.PostgreSQLParser, *pg.PostgreSQLLexer, *base.Scanner) {
+
+func prepareTrickyParserAndScanner(statement string, caretLine int, caretOffset int) (*parser.RedshiftParser, *parser.RedshiftLexer, *base.Scanner) {
 	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
 	statement, caretLine, caretOffset = skipHeadingSQLWithoutSemicolon(statement, caretLine, caretOffset)
 	input := antlr.NewInputStream(statement)
-	lexer := pg.NewPostgreSQLLexer(input)
+	lexer := parser.NewRedshiftLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := pg.NewPostgreSQLParser(stream)
-	parser.RemoveErrorListeners()
+	p := parser.NewRedshiftParser(stream)
+	p.RemoveErrorListeners()
 	lexer.RemoveErrorListeners()
 	scanner := base.NewScanner(stream, true /* fillInput */)
 	scanner.SeekPosition(caretLine, caretOffset)
 	scanner.Push()
-	return parser, lexer, scanner
+	return p, lexer, scanner
 }
 
-func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (*pg.PostgreSQLParser, *pg.PostgreSQLLexer, *base.Scanner) {
+func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (*parser.RedshiftParser, *parser.RedshiftLexer, *base.Scanner) {
 	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
 	input := antlr.NewInputStream(statement)
-	lexer := pg.NewPostgreSQLLexer(input)
+	lexer := parser.NewRedshiftLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := pg.NewPostgreSQLParser(stream)
-	parser.RemoveErrorListeners()
+	p := parser.NewRedshiftParser(stream)
+	p.RemoveErrorListeners()
 	lexer.RemoveErrorListeners()
 	scanner := base.NewScanner(stream, true /* fillInput */)
 	scanner.SeekPosition(caretLine, caretOffset)
 	scanner.Push()
-	return parser, lexer, scanner
+	return p, lexer, scanner
 }
 
 // caretLine is 1-based and caretOffset is 0-based.
@@ -1249,7 +1260,7 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 // caretLine is 1-based and caretOffset is 0-based.
 func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset int) (string, int, int) {
 	input := antlr.NewInputStream(statement)
-	lexer := pg.NewPostgreSQLLexer(input)
+	lexer := parser.NewRedshiftLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	lexer.RemoveErrorListeners()
 	lexerErrorListener := &base.ParseErrorListener{
@@ -1265,7 +1276,7 @@ func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset
 		if token.GetLine() > caretLine || (token.GetLine() == caretLine && token.GetColumn() >= caretOffset) {
 			break
 		}
-		if token.GetTokenType() == pg.PostgreSQLLexerSELECT && token.GetColumn() == 0 {
+		if token.GetTokenType() == parser.RedshiftLexerSELECT && token.GetColumn() == 0 {
 			latestSelect = token.GetTokenIndex()
 			newCaretLine = caretLine - token.GetLine() + 1 // convert to 1-based.
 			newCaretOffset = caretOffset
@@ -1364,7 +1375,7 @@ func (c *Completer) quotedIdentifierIfNeeded(s string) string {
 	if c.lexer.IsReservedKeyword(strings.ToUpper(s)) {
 		return fmt.Sprintf(`"%s"`, s)
 	}
-	// PostgreSQL requires double quotes for identifiers with special characters or start with digits
+	// Redshift requires double quotes for identifiers with special characters or start with digits
 	if !isValidUnquotedIdentifier(s) {
 		// If the identifier contains double quotes, we need to escape them by doubling them
 		if strings.Contains(s, `"`) {
@@ -1375,8 +1386,8 @@ func (c *Completer) quotedIdentifierIfNeeded(s string) string {
 	return s
 }
 
-// isValidUnquotedIdentifier checks if the identifier can be used without quotes in PostgreSQL.
-// PostgreSQL unquoted identifiers must:
+// isValidUnquotedIdentifier checks if the identifier can be used without quotes in Redshift.
+// Redshift unquoted identifiers must:
 // - Begin with a letter (a-z, A-Z) or underscore
 // - Contain only letters, digits, and underscores
 func isValidUnquotedIdentifier(s string) bool {
@@ -1398,4 +1409,103 @@ func isValidUnquotedIdentifier(s string) bool {
 	}
 
 	return true
+}
+
+// Normalization functions for Redshift
+func normalizeRedshiftName(ctx parser.INameContext) string {
+	if ctx == nil {
+		return ""
+	}
+	text := ctx.GetText()
+	return normalizeRedshiftIdentifierText(text)
+}
+
+func normalizeRedshiftColid(ctx parser.IColidContext) string {
+	if ctx == nil {
+		return ""
+	}
+	text := ctx.GetText()
+	return normalizeRedshiftIdentifierText(text)
+}
+
+func normalizeRedshiftIdentifier(ctx parser.IIdentifierContext) string {
+	if ctx == nil {
+		return ""
+	}
+	text := ctx.GetText()
+	return normalizeRedshiftIdentifierText(text)
+}
+
+func normalizeRedshiftCollabel(ctx parser.ICollabelContext) string {
+	if ctx == nil {
+		return ""
+	}
+	text := ctx.GetText()
+	return normalizeRedshiftIdentifierText(text)
+}
+
+func normalizeRedshiftAttrName(ctx parser.IAttr_nameContext) string {
+	if ctx == nil {
+		return ""
+	}
+	text := ctx.GetText()
+	return normalizeRedshiftIdentifierText(text)
+}
+
+func normalizeRedshiftTableAlias(ctx parser.ITable_aliasContext) string {
+	if ctx == nil {
+		return ""
+	}
+	text := ctx.GetText()
+	return normalizeRedshiftIdentifierText(text)
+}
+
+func normalizeRedshiftNameList(ctx parser.IName_listContext) []string {
+	if ctx == nil {
+		return nil
+	}
+	var result []string
+	for _, name := range ctx.AllName() {
+		result = append(result, normalizeRedshiftName(name))
+	}
+	return result
+}
+
+func normalizeRedshiftQuotedIdentifier(text string) string {
+	if len(text) < 2 {
+		return text
+	}
+	// Remove quotes and handle escaped quotes
+	return strings.ReplaceAll(text[1:len(text)-1], `""`, `"`)
+}
+
+func normalizeRedshiftIdentifierText(text string) string {
+	if len(text) >= 2 && text[0] == '"' && text[len(text)-1] == '"' {
+		return normalizeRedshiftQuotedIdentifier(text)
+	}
+	// Redshift stores unquoted identifiers in lowercase
+	return strings.ToLower(text)
+}
+
+func NormalizeRedshiftQualifiedName(ctx parser.IQualified_nameContext) []string {
+	if ctx == nil {
+		return nil
+	}
+	var result []string
+
+	// First part is the colid
+	if ctx.Colid() != nil {
+		result = append(result, normalizeRedshiftColid(ctx.Colid()))
+	}
+
+	// Additional parts come from indirection
+	if ctx.Indirection() != nil {
+		for _, el := range ctx.Indirection().AllIndirection_el() {
+			if el.Attr_name() != nil {
+				result = append(result, normalizeRedshiftAttrName(el.Attr_name()))
+			}
+		}
+	}
+
+	return result
 }

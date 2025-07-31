@@ -36,6 +36,7 @@ require (
 	github.com/bytebase/mysql-parser v0.0.0-20241224071214-cb9fd84811dd
 	github.com/bytebase/plsql-parser v0.0.0-20250218041636-9fed633593d1
 	github.com/bytebase/postgresql-parser v0.0.0-20250610072402-8c3c7a857eb8
+	github.com/bytebase/redshift-parser v0.0.0-20250731035514-fca15643d5ac
 	github.com/bytebase/snowsql-parser v0.0.0-20250124075214-562d62e69c35
 	github.com/bytebase/tidb-parser v0.0.0-20240821091609-162fffe2a839
 	github.com/bytebase/trino-parser v0.0.0-20250502000119-9977709a63e8
