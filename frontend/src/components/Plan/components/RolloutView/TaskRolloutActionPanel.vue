@@ -310,7 +310,11 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { hasWorkspacePermissionV2, isNullOrUndefined } from "@/utils";
+import {
+  hasProjectPermissionV2,
+  hasWorkspacePermissionV2,
+  isNullOrUndefined,
+} from "@/utils";
 import { usePlanContextWithRollout } from "../../logic";
 import { useIssueReviewContext } from "../../logic/issue-review";
 import TaskDatabaseName from "./TaskDatabaseName.vue";
@@ -446,7 +450,8 @@ const shouldShowForceRollout = computed(() => {
   // 2. Previous stages are not complete
   return (
     props.action === "RUN" &&
-    hasWorkspacePermissionV2("bb.taskRuns.create") &&
+    (hasWorkspacePermissionV2("bb.taskRuns.create") ||
+      hasProjectPermissionV2(project.value, "bb.taskRuns.create")) &&
     ((issueApprovalStatus.value.hasIssue &&
       !issueApprovalStatus.value.isApproved) ||
       previousStagesStatus.value.hasIncomplete)

@@ -72,12 +72,10 @@ export const useTaskActionPermissions = () => {
     }
 
     // Users with bb.taskRuns.create can always create task runs
-    if (hasWorkspacePermissionV2("bb.taskRuns.create")) {
-      return true;
-    }
-
-    // Check project-level permissions for task runs
-    if (hasProjectPermissionV2(project, "bb.taskRuns.create")) {
+    if (
+      hasWorkspacePermissionV2("bb.taskRuns.create") ||
+      hasProjectPermissionV2(project, "bb.taskRuns.create")
+    ) {
       return true;
     }
 
