@@ -18,7 +18,7 @@ import (
 )
 
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	version, err := d.getVerison()
+	version, err := d.getVersion()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to fetch version from Elasticsearch server")
 	}
@@ -66,7 +66,7 @@ type VersionResult struct {
 	} `json:"version"`
 }
 
-func (d *Driver) getVerison() (string, error) {
+func (d *Driver) getVersion() (string, error) {
 	if d.isOpenSearch && d.opensearchAPI != nil {
 		ctx := context.Background()
 		info, err := d.opensearchAPI.Info(ctx, &opensearchapi.InfoReq{})
