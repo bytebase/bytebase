@@ -9,9 +9,14 @@ import { hasWorkspacePermissionV2 } from "../iam";
 import { extractProjectResourceName } from "./project";
 
 export const databaseV1Url = (db: ComposedDatabase) => {
-  const project = extractProjectResourceName(db.project);
-  const { databaseName, instanceName } = extractDatabaseResourceName(db.name);
-  return `/projects/${encodeURIComponent(project)}/${instanceNamePrefix}${encodeURIComponent(instanceName)}/${databaseNamePrefix}${encodeURIComponent(databaseName)}`;
+  return databaseV1UrlWithProject(db.project, db.name);
+};
+
+export const databaseV1UrlWithProject = (project: string, database: string) => {
+  const projectId = extractProjectResourceName(project);
+  const { databaseName, instanceName } = extractDatabaseResourceName(database);
+
+  return `/projects/${encodeURIComponent(projectId)}/${instanceNamePrefix}${encodeURIComponent(instanceName)}/${databaseNamePrefix}${encodeURIComponent(databaseName)}`;
 };
 
 export const extractDatabaseResourceName = (
