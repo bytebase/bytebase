@@ -23,14 +23,6 @@
         </div>
       </div>
       <template v-else>
-        <div class="flex items-center gap-1 mb-4 pl-4">
-          <h3 class="text-base font-medium">
-            {{ $t("rollout.stage.self", mergedStages.length) }}
-          </h3>
-          <span class="text-control-light" v-if="mergedStages.length > 1"
-            >({{ mergedStages.length }})</span
-          >
-        </div>
         <StagesView
           :rollout="rollout"
           :merged-stages="mergedStages"
