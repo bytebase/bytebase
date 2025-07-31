@@ -1,12 +1,17 @@
 <template>
   <div class="w-full flex flex-col">
-    <!-- Breadcrumb - only show on stage and task routes -->
-    <NBreadcrumb v-if="showBreadcrumb" class="px-4 pt-2">
-      <NBreadcrumbItem @click="navigateToRollout">
+    <NBreadcrumb class="px-4 pt-2">
+      <NBreadcrumbItem :clickable="false">
         {{ $t("common.rollout") }}
       </NBreadcrumbItem>
-      <NBreadcrumbItem v-if="stageId" @click="navigateToStage">
+      <NBreadcrumbItem @click="navigateToRollout">
+        {{ $t("rollout.stage.self", 2) }}
+      </NBreadcrumbItem>
+      <NBreadcrumbItem v-if="stageId" :clickable="false">
         {{ stageTitle }}
+      </NBreadcrumbItem>
+      <NBreadcrumbItem v-if="stageId" @click="navigateToStage">
+        {{ $t("common.task", 2) }}
       </NBreadcrumbItem>
       <NBreadcrumbItem v-if="taskId" :clickable="false">
         {{ $t("common.task") }} #{{ taskId }}
@@ -42,11 +47,6 @@ const { mergedStages } = provideRolloutViewContext();
 const rolloutId = computed(() => route.params.rolloutId as string);
 const stageId = computed(() => route.params.stageId as string);
 const taskId = computed(() => route.params.taskId as string);
-
-// Only show breadcrumb on stage and task routes
-const showBreadcrumb = computed(() => {
-  return Boolean(stageId.value || taskId.value);
-});
 
 // Get stage title from environment
 const stageTitle = computed(() => {

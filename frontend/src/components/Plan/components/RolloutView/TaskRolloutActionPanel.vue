@@ -38,6 +38,42 @@
           {{ $t("rollout.message.pervious-stages-incomplete.description") }}
         </NAlert>
 
+        <!-- Plan Check Status -->
+        <div v-if="planCheckStatus.total > 0" class="flex items-center gap-3">
+          <span class="font-medium text-control shrink-0">{{
+            $t("plan.navigator.checks")
+          }}</span>
+          <div class="flex items-center gap-3">
+            <div
+              v-if="planCheckStatus.error > 0"
+              class="flex items-center gap-1"
+            >
+              <XCircleIcon class="w-5 h-5 text-error" />
+              <span class="text-base font-semibold text-error">{{
+                planCheckStatus.error
+              }}</span>
+            </div>
+            <div
+              v-if="planCheckStatus.warning > 0"
+              class="flex items-center gap-1"
+            >
+              <AlertCircleIcon class="w-5 h-5 text-warning" />
+              <span class="text-base font-semibold text-warning">{{
+                planCheckStatus.warning
+              }}</span>
+            </div>
+            <div
+              v-if="planCheckStatus.success > 0"
+              class="flex items-center gap-1"
+            >
+              <CheckCircleIcon class="w-5 h-5 text-success" />
+              <span class="text-base font-semibold text-success">{{
+                planCheckStatus.success
+              }}</span>
+            </div>
+          </div>
+        </div>
+
         <div
           class="flex flex-row gap-x-2 shrink-0 overflow-y-hidden justify-start items-center"
         >
@@ -238,6 +274,7 @@ import { create } from "@bufbuild/protobuf";
 import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import { head } from "lodash-es";
+import { CheckCircleIcon, XCircleIcon, AlertCircleIcon } from "lucide-vue-next";
 import {
   NAlert,
   NButton,
@@ -263,6 +300,7 @@ import {
   useEnvironmentV1Store,
 } from "@/store";
 import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
+import { PlanCheckRun_Result_Status } from "@/types/proto-es/v1/plan_service_pb";
 import {
   BatchRunTasksRequestSchema,
   BatchSkipTasksRequestSchema,
@@ -272,11 +310,7 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  hasProjectPermissionV2,
-  hasWorkspacePermissionV2,
-  isNullOrUndefined,
-} from "@/utils";
+import { hasWorkspacePermissionV2, isNullOrUndefined } from "@/utils";
 import { usePlanContextWithRollout } from "../../logic";
 import { useIssueReviewContext } from "../../logic/issue-review";
 import TaskDatabaseName from "./TaskDatabaseName.vue";
@@ -305,7 +339,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { project } = useCurrentProjectV1();
-const { issue, rollout } = usePlanContextWithRollout();
+const { issue, rollout, plan } = usePlanContextWithRollout();
 const reviewContext = useIssueReviewContext();
 const state = reactive<LocalState>({
   loading: false,
@@ -315,6 +349,29 @@ const { canPerformTaskAction } = useTaskActionPermissions();
 const comment = ref("");
 const runTimeInMS = ref<number | undefined>(undefined);
 const forceRollout = ref(false);
+
+// Plan check status computed property
+const planCheckStatus = computed(() => {
+  const statusCount = plan.value.planCheckRunStatusCount || {};
+  const success =
+    statusCount[
+      PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.SUCCESS]
+    ] || 0;
+  const warning =
+    statusCount[
+      PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.WARNING]
+    ] || 0;
+  const error =
+    statusCount[PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.ERROR]] ||
+    0;
+
+  return {
+    total: success + warning + error,
+    success,
+    warning,
+    error,
+  };
+});
 
 // Check issue approval status using the review context
 const issueApprovalStatus = computed(() => {
@@ -389,8 +446,7 @@ const shouldShowForceRollout = computed(() => {
   // 2. Previous stages are not complete
   return (
     props.action === "RUN" &&
-    (hasWorkspacePermissionV2("bb.taskRuns.create") ||
-      hasProjectPermissionV2(project.value, "bb.taskRuns.create")) &&
+    hasWorkspacePermissionV2("bb.taskRuns.create") &&
     ((issueApprovalStatus.value.hasIssue &&
       !issueApprovalStatus.value.isApproved) ||
       previousStagesStatus.value.hasIncomplete)
