@@ -1,5 +1,5 @@
 import { head } from "lodash-es";
-import type { InjectionKey, MaybeRef } from "vue";
+import type { ComputedRef, InjectionKey } from "vue";
 import { computed, inject, provide, unref } from "vue";
 import {
   Issue_Approver_Status,
@@ -15,10 +15,10 @@ export const useIssueReviewContext = () => {
 };
 
 export const provideIssueReviewContext = (
-  issue: MaybeRef<Issue | undefined>
+  issue: ComputedRef<Issue | undefined>
 ) => {
   const status = computed(() => {
-    const tempIssue = unref(issue);
+    const tempIssue = issue.value;
     if (!tempIssue) {
       return Issue_Approver_Status.PENDING;
     }

@@ -1,3 +1,4 @@
+import { create } from "@bufbuild/protobuf";
 import { includes, uniq } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -21,6 +22,10 @@ import {
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1 } from "@/store";
+import { isValidRolloutName } from "@/types";
+import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
+import { RolloutSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import { isValidIssueName } from "@/utils";
 import { usePlanContext } from "../context";
 import {
   refreshPlan,
@@ -234,6 +239,50 @@ export const provideResourcePoller = () => {
       }
     },
     { deep: true }
+  );
+
+  // Watch for plan issue/rollout changes on plan pages
+  // This ensures we fetch issue/rollout once when they are created
+  watch(
+    () => ({
+      issue: plan.value?.issue,
+      rollout: plan.value?.rollout,
+    }),
+    async (newValues, oldValues) => {
+      const routeName = route.name as string;
+      // Only react to changes on plan-specific pages
+      if (
+        includes(
+          [
+            PROJECT_V1_ROUTE_PLAN_DETAIL,
+            PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
+            PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+          ],
+          routeName
+        )
+      ) {
+        // Check if issue or rollout was added (changed from empty to non-empty)
+        const issueAdded = !oldValues?.issue && newValues.issue;
+        const rolloutAdded = !oldValues?.rollout && newValues.rollout;
+
+        if (issueAdded && isValidIssueName(newValues.issue)) {
+          issue.value = create(IssueSchema, {
+            name: newValues.issue,
+          });
+          await refreshIssueOnly();
+        }
+        if (rolloutAdded && isValidRolloutName(newValues.rollout)) {
+          rollout.value = create(RolloutSchema, {
+            name: newValues.rollout,
+          });
+          await refreshRolloutOnly();
+        }
+        if (issueAdded || rolloutAdded) {
+          // Emit status changed to refresh the UI
+          events.emit("status-changed", { eager: true });
+        }
+      }
+    }
   );
 
   const refreshAll = async (isManual = false) => {
