@@ -62,6 +62,7 @@ const props = withDefaults(
     fetchList: (params: {
       pageSize: number;
       pageToken: string;
+      refresh?: boolean;
     }) => Promise<{ nextPageToken?: string; list: T[] }>;
   }>(),
   {
@@ -135,6 +136,7 @@ const fetchData = async (refresh = false) => {
     const { nextPageToken, list } = await props.fetchList({
       pageSize: expectedRowCount,
       pageToken: state.paginationToken,
+      refresh,
     });
     if (refresh) {
       dataList.value = list;
