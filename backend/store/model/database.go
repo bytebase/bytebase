@@ -6,6 +6,9 @@ import (
 	"slices"
 	"strings"
 
+	"google.golang.org/protobuf/encoding/protojson"
+
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -1134,4 +1137,102 @@ func NormalizeSearchPath(searchPath string) []string {
 	}
 
 	return result
+}
+
+// DeepCopy creates a deep copy of the DatabaseSchema.
+func (dbs *DatabaseSchema) DeepCopy() *DatabaseSchema {
+	if dbs == nil {
+		return nil
+	}
+
+	// Deep copy the metadata
+	var metadataCopy *storepb.DatabaseSchemaMetadata
+	if dbs.metadata != nil {
+		// Use protojson to create a deep copy of the proto message
+		data, _ := protojson.Marshal(dbs.metadata)
+		metadataCopy = &storepb.DatabaseSchemaMetadata{}
+		_ = common.ProtojsonUnmarshaler.Unmarshal(data, metadataCopy)
+	}
+
+	// Deep copy the config
+	var configCopy *storepb.DatabaseConfig
+	if dbs.config != nil {
+		data, _ := protojson.Marshal(dbs.config)
+		configCopy = &storepb.DatabaseConfig{}
+		_ = common.ProtojsonUnmarshaler.Unmarshal(data, configCopy)
+	}
+
+	// Deep copy the schema bytes
+	schemaCopy := make([]byte, len(dbs.schema))
+	copy(schemaCopy, dbs.schema)
+
+	// Create a new DatabaseSchema with the copied data
+	return &DatabaseSchema{
+		metadata:              metadataCopy,
+		schema:                schemaCopy,
+		config:                configCopy,
+		isObjectCaseSensitive: dbs.isObjectCaseSensitive,
+		isDetailCaseSensitive: dbs.isDetailCaseSensitive,
+		metadataInternal:      dbs.metadataInternal.DeepCopy(),
+		configInternal:        dbs.configInternal.DeepCopy(),
+	}
+}
+
+// DeepCopy creates a deep copy of the DatabaseConfig.
+func (d *DatabaseConfig) DeepCopy() *DatabaseConfig {
+	if d == nil {
+		return nil
+	}
+
+	copiedConfig := &DatabaseConfig{
+		name:     d.name,
+		internal: make(map[string]*SchemaConfig),
+	}
+
+	for schemaName, schemaConfig := range d.internal {
+		copiedConfig.internal[schemaName] = schemaConfig.DeepCopy()
+	}
+
+	return copiedConfig
+}
+
+// DeepCopy creates a deep copy of the SchemaConfig.
+func (s *SchemaConfig) DeepCopy() *SchemaConfig {
+	if s == nil {
+		return nil
+	}
+
+	copiedConfig := &SchemaConfig{
+		internal: make(map[string]*TableConfig),
+	}
+
+	for tableName, tableConfig := range s.internal {
+		copiedConfig.internal[tableName] = tableConfig.DeepCopy()
+	}
+
+	return copiedConfig
+}
+
+// DeepCopy creates a deep copy of the TableConfig.
+func (t *TableConfig) DeepCopy() *TableConfig {
+	if t == nil {
+		return nil
+	}
+
+	copiedConfig := &TableConfig{
+		Classification: t.Classification,
+		internal:       make(map[string]*storepb.ColumnCatalog),
+	}
+
+	for columnName, columnCatalog := range t.internal {
+		// Deep copy the ColumnCatalog proto
+		if columnCatalog != nil {
+			data, _ := protojson.Marshal(columnCatalog)
+			columnCopy := &storepb.ColumnCatalog{}
+			_ = common.ProtojsonUnmarshaler.Unmarshal(data, columnCopy)
+			copiedConfig.internal[columnName] = columnCopy
+		}
+	}
+
+	return copiedConfig
 }

@@ -21,7 +21,8 @@ type UpdateDBSchemaMessage struct {
 // GetDBSchema gets the schema for a database.
 func (s *Store) GetDBSchema(ctx context.Context, instanceID, databaseName string) (*model.DatabaseSchema, error) {
 	if v, ok := s.dbSchemaCache.Get(getDatabaseCacheKey(instanceID, databaseName)); ok && s.enableCache {
-		return v, nil
+		// Return a deep copy to avoid concurrent access issues
+		return v.DeepCopy(), nil
 	}
 
 	where, args := []string{"TRUE"}, []any{}
@@ -63,7 +64,7 @@ func (s *Store) GetDBSchema(ctx context.Context, instanceID, databaseName string
 	}
 
 	s.dbSchemaCache.Add(getDatabaseCacheKey(instanceID, databaseName), dbSchema)
-	return dbSchema, nil
+	return dbSchema.DeepCopy(), nil
 }
 
 // UpsertDBSchema upserts a database schema.
