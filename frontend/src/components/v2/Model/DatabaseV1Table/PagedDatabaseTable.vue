@@ -2,7 +2,7 @@
   <PagedTable
     ref="databasePagedTable"
     :session-key="`bb.databases-table.${parent}`"
-    :fetch-list="fetchDatabses"
+    :fetch-list="fetchDatabases"
     :class="customClass"
     :footer-class="footerClass"
   >
@@ -55,18 +55,22 @@ const router = useRouter();
 const databasePagedTable =
   ref<ComponentExposed<typeof PagedTable<ComposedDatabase>>>();
 
-const fetchDatabses = async ({
+const fetchDatabases = async ({
   pageToken,
   pageSize,
+  refresh,
 }: {
   pageToken: string;
   pageSize: number;
+  refresh?: boolean;
 }) => {
   const { nextPageToken, databases } = await databaseStore.fetchDatabases({
     pageToken,
     pageSize,
     parent: props.parent,
     filter: props.filter,
+    // Skip cache removal when refresh is false (loading more data).
+    skipCacheRemoval: !refresh,
   });
   return {
     nextPageToken,
