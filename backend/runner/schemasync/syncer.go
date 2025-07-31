@@ -402,13 +402,17 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 		// Force to disable classification from comment if the engine is not MYSQL or PG.
 		classificationConfig.ClassificationFromConfig = true
 	}
+	var dbConfig *storepb.DatabaseConfig
 	if classificationConfig.ClassificationFromConfig {
 		// Only set the user comment.
 		setUserCommentFromComment(databaseMetadata)
+		dbConfig = dbModelConfig.BuildDatabaseConfig()
 	} else {
 		// Get classification from the comment.
 		if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_CLASSIFICATION, instance); err == nil {
-			setClassificationAndUserCommentFromComment(databaseMetadata, dbModelConfig, classificationConfig)
+			dbConfig = buildDatabaseConfigWithClassificationFromComment(databaseMetadata, dbModelConfig, classificationConfig)
+		} else {
+			dbConfig = dbModelConfig.BuildDatabaseConfig()
 		}
 	}
 
@@ -437,7 +441,7 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 	todo := !common.EngineDBSchemaReadyToMigrate(instance.Metadata.GetEngine())
 	if err := s.store.UpsertDBSchema(ctx,
 		database.InstanceID, database.DatabaseName,
-		databaseMetadata, dbModelConfig.BuildDatabaseConfig(), rawDump, todo,
+		databaseMetadata, dbConfig, rawDump, todo,
 	); err != nil {
 		if strings.Contains(err.Error(), "escape sequence") {
 			if metadataBytes, err := protojson.Marshal(databaseMetadata); err == nil {
@@ -512,12 +516,14 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		// Force to disable classification from comment if the engine is not MYSQL or PG.
 		classificationConfig.ClassificationFromConfig = true
 	}
+	var dbConfig *storepb.DatabaseConfig
 	if classificationConfig.ClassificationFromConfig {
 		// Only set the user comment.
 		setUserCommentFromComment(databaseMetadata)
+		dbConfig = dbModelConfig.BuildDatabaseConfig()
 	} else {
 		// Get classification from the comment.
-		setClassificationAndUserCommentFromComment(databaseMetadata, dbModelConfig, classificationConfig)
+		dbConfig = buildDatabaseConfigWithClassificationFromComment(databaseMetadata, dbModelConfig, classificationConfig)
 	}
 
 	d := false
@@ -547,7 +553,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	todo := !common.EngineDBSchemaReadyToMigrate(instance.Metadata.GetEngine())
 	if err := s.store.UpsertDBSchema(ctx,
 		database.InstanceID, database.DatabaseName,
-		databaseMetadata, dbModelConfig.BuildDatabaseConfig(), rawDump, todo,
+		databaseMetadata, dbConfig, rawDump, todo,
 	); err != nil {
 		if strings.Contains(err.Error(), "escape sequence") {
 			if metadataBytes, err := protojson.Marshal(databaseMetadata); err == nil {
@@ -636,43 +642,78 @@ func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.In
 	return false
 }
 
-func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata, databaseConfig *model.DatabaseConfig, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) {
+func buildDatabaseConfigWithClassificationFromComment(dbSchema *storepb.DatabaseSchemaMetadata, databaseConfig *model.DatabaseConfig, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) *storepb.DatabaseConfig {
+	// Create a new DatabaseConfig to build from scratch
+	newConfig := &storepb.DatabaseConfig{
+		Name: dbSchema.Name,
+	}
+
 	for _, schema := range dbSchema.Schemas {
-		schemaConfig := databaseConfig.CreateOrGetSchemaConfig(schema.Name)
+		var tables []*storepb.TableCatalog
+		hasSchemaContent := false
+
+		// Get existing schema config to preserve SemanticType and Labels
+		schemaConfig := databaseConfig.GetSchemaConfig(schema.Name)
 
 		for _, table := range schema.Tables {
-			tableConfig := schemaConfig.CreateOrGetTableConfig(table.Name)
 			classification, userComment := common.GetClassificationAndUserComment(table.Comment, classificationConfig)
 
 			table.UserComment = userComment
-			tableConfig.Classification = classification
+
+			// Get existing table config
+			tableConfig := schemaConfig.GetTableConfig(table.Name)
+
+			var columns []*storepb.ColumnCatalog
+			hasTableContent := false
+
+			// Check if table has classification
+			if classification != "" {
+				hasTableContent = true
+			}
 
 			for _, col := range table.Columns {
-				columnConfig := tableConfig.CreateOrGetColumnConfig(col.Name)
 				colClassification, colUserComment := common.GetClassificationAndUserComment(col.Comment, classificationConfig)
 
 				col.UserComment = colUserComment
-				columnConfig.Classification = colClassification
 
-				if isEmptyColumnConfig(columnConfig) {
-					tableConfig.RemoveColumnConfig(col.Name)
+				// Get existing column config to preserve SemanticType and Labels
+				existingColumnConfig := tableConfig.GetColumnConfig(col.Name)
+
+				// Add column config if it has any meaningful data
+				if colClassification != "" || existingColumnConfig.SemanticType != "" || len(existingColumnConfig.Labels) > 0 {
+					columns = append(columns, &storepb.ColumnCatalog{
+						Name:           col.Name,
+						Classification: colClassification,
+						SemanticType:   existingColumnConfig.SemanticType,
+						Labels:         existingColumnConfig.Labels,
+					})
+					hasTableContent = true
 				}
 			}
 
-			if tableConfig.IsEmpty() {
-				schemaConfig.RemoveTableConfig(table.Name)
+			// Only add table catalog if it has content (either table classification or column configurations)
+			if hasTableContent {
+				tableCatalog := &storepb.TableCatalog{
+					Name:           table.Name,
+					Classification: classification,
+					Columns:        columns,
+				}
+				tables = append(tables, tableCatalog)
+				hasSchemaContent = true
 			}
 		}
-		if schemaConfig.IsEmpty() {
-			databaseConfig.RemoveSchemaConfig(schema.Name)
+
+		// Only add schema catalog if it has content
+		if hasSchemaContent {
+			schemaCatalog := &storepb.SchemaCatalog{
+				Name:   schema.Name,
+				Tables: tables,
+			}
+			newConfig.Schemas = append(newConfig.Schemas, schemaCatalog)
 		}
 	}
-}
 
-func isEmptyColumnConfig(config *storepb.ColumnCatalog) bool {
-	return config == nil || (len(config.Labels) == 0 &&
-		config.Classification == "" &&
-		config.SemanticType == "")
+	return newConfig
 }
 
 func setUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata) {

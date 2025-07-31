@@ -356,9 +356,9 @@ func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, inst
 	if config == nil {
 		return columnMetadata, nil, nil
 	}
-	schemaConfig := config.CreateOrGetSchemaConfig(sourceColumn.Schema)
-	tableConfig := schemaConfig.CreateOrGetTableConfig(sourceColumn.Table)
-	columnConfig = tableConfig.CreateOrGetColumnConfig(sourceColumn.Column)
+	schemaConfig := config.GetSchemaConfig(sourceColumn.Schema)
+	tableConfig := schemaConfig.GetTableConfig(sourceColumn.Table)
+	columnConfig = tableConfig.GetColumnConfig(sourceColumn.Column)
 	return columnMetadata, columnConfig, nil
 }
 
