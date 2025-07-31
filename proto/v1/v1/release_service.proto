@@ -82,6 +82,7 @@ service ReleaseService {
 
 message GetReleaseRequest {
   // Format: projects/{project}/releases/{release}
+  // Format: projects/{project}/releases/{release-digest}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Release"}
@@ -230,6 +231,12 @@ message Release {
   google.protobuf.Timestamp create_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   State state = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The digest of the release.
+  // The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease.
+  // Whether to provide digest and how to generate it is up to the user.
+  // If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned.
+  string digest = 8;
 
   message File {
     // The unique identifier for the file.

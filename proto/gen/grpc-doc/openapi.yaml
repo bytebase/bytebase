@@ -12185,6 +12185,13 @@ components:
                         - DELETED
                     type: string
                     format: enum
+                digest:
+                    type: string
+                    description: |-
+                        The digest of the release.
+                         The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease.
+                         Whether to provide digest and how to generate it is up to the user.
+                         If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned.
         Release_File:
             type: object
             properties:

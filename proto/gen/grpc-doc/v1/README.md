@@ -8905,7 +8905,7 @@ For example: project == &#34;projects/{project}&#34; database == &#34;instances/
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/releases/{release} |
+| name | [string](#string) |  | Format: projects/{project}/releases/{release} Format: projects/{project}/releases/{release-digest} |
 
 
 
@@ -8963,6 +8963,7 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | state | [State](#bytebase-v1-State) |  |  |
+| digest | [string](#string) |  | The digest of the release. The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease. Whether to provide digest and how to generate it is up to the user. If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned. |
 
 
 
