@@ -147,7 +147,7 @@ providePlanContext({
   ...planBaseContext,
 });
 
-provideIssueReviewContext(issue);
+provideIssueReviewContext(computed(() => issue.value));
 
 watch(
   () => isInitializing.value,
