@@ -179,6 +179,7 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sin
 				semicolonStack = popSemicolonStack(semicolonStack, beginCaseStack[len(beginCaseStack)-1].pos)
 				beginCaseStack = beginCaseStack[:len(beginCaseStack)-1]
 			}
+		default:
 		}
 	}
 
