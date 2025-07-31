@@ -13,7 +13,8 @@
         basicInfo.engine === Engine.MYSQL ||
         basicInfo.engine === Engine.POSTGRES ||
         basicInfo.engine === Engine.COSMOSDB ||
-        basicInfo.engine === Engine.MSSQL
+        basicInfo.engine === Engine.MSSQL ||
+        basicInfo.engine === Engine.ELASTICSEARCH
       "
       class="mt-2 sm:col-span-3 sm:col-start-1"
     >
@@ -39,6 +40,20 @@
           </NRadio>
           <NRadio :value="DataSource_AuthenticationType.AZURE_IAM">
             {{ $t("instance.password-type.azure-iam") }}
+          </NRadio>
+        </NRadioGroup>
+      </template>
+      <template v-else-if="basicInfo.engine === Engine.ELASTICSEARCH">
+        <NRadioGroup
+          v-model:value="dataSource.authenticationType"
+          class="textlabel"
+          :disabled="!allowEdit"
+        >
+          <NRadio :value="DataSource_AuthenticationType.PASSWORD">
+            {{ $t("instance.password-type.password") }}
+          </NRadio>
+          <NRadio :value="DataSource_AuthenticationType.AWS_RDS_IAM">
+            {{ $t("instance.password-type.aws-iam") }}
           </NRadio>
         </NRadioGroup>
       </template>
