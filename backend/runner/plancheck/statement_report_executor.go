@@ -25,6 +25,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	redshiftparser "github.com/bytebase/bytebase/backend/plugin/parser/redshift"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -196,8 +197,8 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		}
 		explainCalculator = rd.CountAffectedRows
 
-		// Use pg parser for Redshift.
-		sqlTypes, err = pg.GetStatementTypes(asts)
+		// Use Redshift parser for statement types
+		sqlTypes, err = redshiftparser.GetStatementTypes(asts)
 		if err != nil {
 			return nil, err
 		}
