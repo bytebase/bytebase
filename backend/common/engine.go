@@ -18,6 +18,7 @@ func EngineSupportSQLReview(engine storepb.Engine) bool {
 		storepb.Engine_OCEANBASE,
 		storepb.Engine_SNOWFLAKE,
 		storepb.Engine_DM,
+		storepb.Engine_REDSHIFT,
 		storepb.Engine_MSSQL:
 		return true
 	case
@@ -29,7 +30,6 @@ func EngineSupportSQLReview(engine storepb.Engine) bool {
 		storepb.Engine_CLICKHOUSE,
 		storepb.Engine_SPANNER,
 		storepb.Engine_BIGQUERY,
-		storepb.Engine_REDSHIFT,
 		storepb.Engine_STARROCKS,
 		storepb.Engine_RISINGWAVE,
 		storepb.Engine_HIVE,
