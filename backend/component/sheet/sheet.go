@@ -25,6 +25,7 @@ import (
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	partiqlparser "github.com/bytebase/bytebase/backend/plugin/parser/partiql"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	redshiftparser "github.com/bytebase/bytebase/backend/plugin/parser/redshift"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
@@ -227,8 +228,10 @@ func syntaxCheck(dbType storepb.Engine, statement string) (any, []*storepb.Advic
 		return tidbSyntaxCheck(statement)
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		return mysqlSyntaxCheck(statement)
-	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT:
+	case storepb.Engine_POSTGRES:
 		return postgresSyntaxCheck(statement)
+	case storepb.Engine_REDSHIFT:
+		return redshiftSyntaxCheck(statement)
 	case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
 		return oracleSyntaxCheck(statement)
 	case storepb.Engine_SNOWFLAKE:
@@ -427,6 +430,37 @@ func postgresSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		}
 	}
 	return res, nil
+}
+
+func redshiftSyntaxCheck(statement string) (any, []*storepb.Advice) {
+	// Parse using redshift parser to get ANTLR tree
+	result, err := redshiftparser.ParseRedshift(statement)
+	if err != nil {
+		if syntaxErr, ok := err.(*base.SyntaxError); ok {
+			return nil, []*storepb.Advice{
+				{
+					Status:        storepb.Advice_ERROR,
+					Code:          StatementSyntaxErrorCode,
+					Title:         SyntaxErrorTitle,
+					Content:       syntaxErr.Message,
+					StartPosition: syntaxErr.Position,
+				},
+			}
+		}
+		return nil, []*storepb.Advice{
+			{
+				Status:        storepb.Advice_ERROR,
+				Code:          InternalErrorCode,
+				Title:         "Parse error",
+				Content:       err.Error(),
+				StartPosition: common.FirstLinePosition,
+			},
+		}
+	}
+	if result == nil {
+		return nil, nil
+	}
+	return result.Tree, nil
 }
 
 func calculatePostgresErrorLine(statement string) int {
