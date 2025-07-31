@@ -274,13 +274,3 @@ func isBeginTransaction(tokens []antlr.Token, index int) bool {
 		return false
 	}
 }
-
-// RegisterRedshift registers the Redshift splitter.
-// This should be called after PostgreSQL parser initialization to override
-// the default PostgreSQL splitter for Redshift.
-func RegisterRedshift() {
-	// When using the pg package, it will register REDSHIFT to use PostgreSQL parser.
-	// We need to re-register to use Redshift parser instead.
-	// The init() function already does this, but this provides explicit control.
-	base.RegisterSplitterFunc(storepb.Engine_REDSHIFT, SplitSQL)
-}
