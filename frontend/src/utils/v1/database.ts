@@ -15,9 +15,9 @@ export const databaseV1Url = (db: ComposedDatabase) => {
 export const databaseV1UrlWithProject = (project: string, database: string) => {
   const projectId = extractProjectResourceName(project);
   const { databaseName, instanceName } = extractDatabaseResourceName(database);
-  
+
   return `/projects/${encodeURIComponent(projectId)}/${instanceNamePrefix}${encodeURIComponent(instanceName)}/${databaseNamePrefix}${encodeURIComponent(databaseName)}`;
-}
+};
 
 export const extractDatabaseResourceName = (
   resource: string
