@@ -37,6 +37,7 @@ import { usePlanContext, useIssueReviewContext } from "../../../logic";
 
 const { rollout, issue } = usePlanContext();
 const { project } = useCurrentProjectV1();
+const reviewContext = useIssueReviewContext();
 
 // Show alert when issue is approved and rollout hasn't started yet
 const showApprovedAlert = computed(() => {
@@ -46,9 +47,7 @@ const showApprovedAlert = computed(() => {
   if (issue.value.status !== IssueStatus.OPEN) return false;
 
   // Check if issue is approved
-  const reviewContext = useIssueReviewContext();
   const isApproved = reviewContext.done.value;
-
   if (!isApproved) return false;
 
   // Check if rollout has started
