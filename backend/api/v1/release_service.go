@@ -111,6 +111,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 
 	releaseMessage := &store.ReleaseMessage{
 		ProjectID: project.ResourceID,
+		Digest:    req.Msg.Release.Digest,
 		Payload: &storepb.ReleasePayload{
 			Title:     req.Msg.Release.Title,
 			Files:     files,
@@ -301,6 +302,7 @@ func convertToRelease(ctx context.Context, s *store.Store, release *store.Releas
 		CreateTime: timestamppb.New(release.At),
 		VcsSource:  convertToReleaseVcsSource(release.Payload.VcsSource),
 		State:      convertDeletedToState(release.Deleted),
+		Digest:     release.Digest,
 	}
 
 	files, err := convertToReleaseFiles(ctx, s, release.Payload.Files)
