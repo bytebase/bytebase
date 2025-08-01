@@ -209,6 +209,10 @@ func (s *ReleaseService) ListReleases(ctx context.Context, req *connect.Request[
 	}), nil
 }
 
+func (s *ReleaseService) SearchReleases(ctx context.Context, req *connect.Request[v1pb.SearchReleasesRequest]) (*connect.Response[v1pb.SearchReleasesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("not implemented"))
+}
+
 func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request[v1pb.UpdateReleaseRequest]) (*connect.Response[v1pb.Release], error) {
 	if req.Msg.UpdateMask == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask must be set"))
