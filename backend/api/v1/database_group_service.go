@@ -229,7 +229,7 @@ func (s *DatabaseGroupService) ListDatabaseGroups(ctx context.Context, req *conn
 		ProjectID: &project.ResourceID,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list database groups, err"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list database groups"))
 	}
 
 	var apiDatabaseGroups []*v1pb.DatabaseGroup

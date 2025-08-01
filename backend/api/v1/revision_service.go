@@ -64,7 +64,7 @@ func (s *RevisionService) ListRevisions(
 
 	revisions, err := s.store.ListRevisions(ctx, find)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find revisions, err"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find revisions"))
 	}
 
 	var nextPageToken string
@@ -77,7 +77,7 @@ func (s *RevisionService) ListRevisions(
 
 	converted, err := convertToRevisions(ctx, s.store, request.Parent, revisions)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to revisions, err"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to revisions"))
 	}
 
 	return connect.NewResponse(&v1pb.ListRevisionsResponse{
@@ -102,7 +102,7 @@ func (s *RevisionService) GetRevision(
 	parent := fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, instanceName, common.DatabaseIDPrefix, databaseName)
 	converted, err := convertToRevision(ctx, s.store, parent, revision)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to revision, err"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to revision"))
 	}
 	return connect.NewResponse(converted), nil
 }
@@ -128,7 +128,7 @@ func (s *RevisionService) CreateRevision(
 	}
 	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get sheet, err"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get sheet"))
 	}
 	if sheet == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %q not found", request.Revision.Sheet))
@@ -141,7 +141,7 @@ func (s *RevisionService) CreateRevision(
 		}
 		taskRun, err := s.store.GetTaskRun(ctx, taskRunID)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get taskRun, err"))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get taskRun"))
 		}
 		if taskRun == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("taskRun %q not found", request.Revision.TaskRun))
@@ -174,7 +174,7 @@ func (s *RevisionService) CreateRevision(
 		}
 		release, err := s.store.GetRelease(ctx, releaseUID)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get release, err"))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get release"))
 		}
 		if release == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %q not found", request.Revision.Release))
@@ -197,11 +197,11 @@ func (s *RevisionService) CreateRevision(
 	revisionCreate := convertRevision(request.Revision, database, sheet)
 	revisionM, err := s.store.CreateRevision(ctx, revisionCreate)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create revision, err"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create revision"))
 	}
 	converted, err := convertToRevision(ctx, s.store, request.Parent, revisionM)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to revision, err"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to revision"))
 	}
 
 	return connect.NewResponse(converted), nil
