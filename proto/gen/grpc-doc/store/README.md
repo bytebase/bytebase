@@ -4856,6 +4856,7 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | DATABASE_SCHEMA_UPDATE_GHOST | 3 |  |
 | DATABASE_DATA_UPDATE | 4 |  |
 | DATABASE_EXPORT | 5 |  |
+| DATABASE_SCHEMA_UPDATE_SDL | 6 |  |
 
 
  
