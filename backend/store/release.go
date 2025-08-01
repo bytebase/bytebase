@@ -16,6 +16,7 @@ import (
 
 type ReleaseMessage struct {
 	ProjectID string
+	Digest    string
 	Payload   *storepb.ReleasePayload
 
 	// output only
@@ -45,11 +46,13 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 		INSERT INTO release (
 			creator_id,
 			project,
+			digest,
 			payload
 		) VALUES (
 			$1,
 			$2,
-			$3
+			$3,
+			$4
 		) RETURNING id, created_at
 	`
 
@@ -69,6 +72,7 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 	if err := tx.QueryRowContext(ctx, query,
 		creatorUID,
 		release.ProjectID,
+		release.Digest,
 		p,
 	).Scan(&id, &createdTime); err != nil {
 		return nil, errors.Wrapf(err, "failed to insert release")
@@ -118,6 +122,7 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 			id,
 			deleted,
 			project,
+			digest,
 			creator_id,
 			created_at,
 			payload
@@ -156,6 +161,7 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 			&r.UID,
 			&r.Deleted,
 			&r.ProjectID,
+			&r.Digest,
 			&r.CreatorUID,
 			&r.At,
 			&payload,
