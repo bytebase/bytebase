@@ -30,6 +30,7 @@ const (
 	Task_DATABASE_SCHEMA_UPDATE_GHOST Task_Type = 3
 	Task_DATABASE_DATA_UPDATE         Task_Type = 4
 	Task_DATABASE_EXPORT              Task_Type = 5
+	Task_DATABASE_SCHEMA_UPDATE_SDL   Task_Type = 6
 )
 
 // Enum value maps for Task_Type.
@@ -41,6 +42,7 @@ var (
 		3: "DATABASE_SCHEMA_UPDATE_GHOST",
 		4: "DATABASE_DATA_UPDATE",
 		5: "DATABASE_EXPORT",
+		6: "DATABASE_SCHEMA_UPDATE_SDL",
 	}
 	Task_Type_value = map[string]int32{
 		"TASK_TYPE_UNSPECIFIED":        0,
@@ -49,6 +51,7 @@ var (
 		"DATABASE_SCHEMA_UPDATE_GHOST": 3,
 		"DATABASE_DATA_UPDATE":         4,
 		"DATABASE_EXPORT":              5,
+		"DATABASE_SCHEMA_UPDATE_SDL":   6,
 	}
 )
 
@@ -289,7 +292,7 @@ var File_store_task_proto protoreflect.FileDescriptor
 
 const file_store_task_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/task.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xbc\x06\n" +
+	"\x10store/task.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xdc\x06\n" +
 	"\x04Task\x12\x18\n" +
 	"\askipped\x18\x01 \x01(\bR\askipped\x12%\n" +
 	"\x0eskipped_reason\x18\x02 \x01(\tR\rskippedReason\x12\x17\n" +
@@ -311,14 +314,15 @@ const file_store_task_proto_rawDesc = "" +
 	"\n" +
 	"FlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa3\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc3\x01\n" +
 	"\x04Type\x12\x19\n" +
 	"\x15TASK_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fDATABASE_CREATE\x10\x01\x12\x1a\n" +
 	"\x16DATABASE_SCHEMA_UPDATE\x10\x02\x12 \n" +
 	"\x1cDATABASE_SCHEMA_UPDATE_GHOST\x10\x03\x12\x18\n" +
 	"\x14DATABASE_DATA_UPDATE\x10\x04\x12\x13\n" +
-	"\x0fDATABASE_EXPORT\x10\x05\"'\n" +
+	"\x0fDATABASE_EXPORT\x10\x05\x12\x1e\n" +
+	"\x1aDATABASE_SCHEMA_UPDATE_SDL\x10\x06\"'\n" +
 	"\x11TaskReleaseSource\x12\x12\n" +
 	"\x04file\x18\x01 \x01(\tR\x04fileB\x14Z\x12generated-go/storeb\x06proto3"
 
