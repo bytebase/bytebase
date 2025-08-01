@@ -37,7 +37,7 @@
     "dompurify": "3.2.6",
     "downloadjs": "1.4.7",
     "elkjs": "^0.10.0",
-    "emittery": "^1.1.0",
+    "emittery": "^1.2.0",
     "file-saver": "^2.0.5",
     "highlight.js": "11.10.0",
     "html-to-image": "^1.11.13",
