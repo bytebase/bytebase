@@ -32,6 +32,14 @@ service ReleaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Permissions required: bb.releases.get
+  rpc SearchReleases(SearchReleasesRequest) returns (SearchReleasesResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/releases:search"};
+    option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.releases.get";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
   // Permissions required: bb.releases.create
   rpc CreateRelease(CreateReleaseRequest) returns (Release) {
     option (google.api.http) = {
@@ -82,7 +90,6 @@ service ReleaseService {
 
 message GetReleaseRequest {
   // Format: projects/{project}/releases/{release}
-  // Format: projects/{project}/releases/{release-digest}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Release"}
@@ -119,6 +126,21 @@ message ListReleasesResponse {
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
+}
+
+message SearchReleasesRequest {
+  // Format: projects/{project}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  // Search by the digest of the release.
+  optional string digest = 2;
+}
+
+message SearchReleasesResponse {
+  repeated Release releases = 1;
 }
 
 message CreateReleaseRequest {
