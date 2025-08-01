@@ -58,7 +58,7 @@
     "pinia": "2.3.1",
     "pouchdb": "^9.0.0",
     "pouchdb-find": "^9.0.0",
-    "pretty-print-json": "^3.0.4",
+    "pretty-print-json": "^3.0.5",
     "qrcode": "^1.5.4",
     "qs": "6.14.0",
     "regenerator-runtime": "^0.14.1",
