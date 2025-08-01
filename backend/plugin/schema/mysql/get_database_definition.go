@@ -1132,12 +1132,6 @@ func printDefaultClause(buf *strings.Builder, column *storepb.ColumnMetadata) er
 		}
 	}
 
-	if column.OnUpdate != "" {
-		if _, err := fmt.Fprintf(buf, " ON UPDATE %s", column.OnUpdate); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
