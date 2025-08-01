@@ -293,24 +293,7 @@ func doMigrationWithFunc(
 	opts.DeleteConnectionID = func() {
 		stateCfg.TaskRunConnectionID.Delete(mc.taskRunUID)
 	}
-
-	if stateCfg != nil {
-		switch mc.task.Type {
-		case storepb.Task_DATABASE_SCHEMA_UPDATE, storepb.Task_DATABASE_DATA_UPDATE:
-			switch instance.Metadata.GetEngine() {
-			case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_OCEANBASE,
-				storepb.Engine_STARROCKS, storepb.Engine_DORIS, storepb.Engine_POSTGRES,
-				storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE, storepb.Engine_ORACLE,
-				storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_MSSQL,
-				storepb.Engine_DYNAMODB:
-				opts.CreateTaskRunLog = getCreateTaskRunLog(ctx, mc.taskRunUID, stores, profile)
-			default:
-				// do nothing
-			}
-		default:
-			// No task run log needed for other task types
-		}
-	}
+	opts.CreateTaskRunLog = getCreateTaskRunLog(ctx, mc.taskRunUID, stores, profile)
 
 	if execFunc == nil {
 		execFunc = func(ctx context.Context, execStatement string) error {
