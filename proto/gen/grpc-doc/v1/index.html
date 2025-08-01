@@ -2257,6 +2257,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.SearchReleasesRequest"><span class="badge">M</span>SearchReleasesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SearchReleasesResponse"><span class="badge">M</span>SearchReleasesResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.UndeleteReleaseRequest"><span class="badge">M</span>UndeleteReleaseRequest</a>
                 </li>
               
@@ -24863,8 +24871,7 @@ Format: projects/{project}/releases/{release} </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/releases/{release}
-Format: projects/{project}/releases/{release-digest} </p></td>
+                  <td><p>Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
             </tbody>
@@ -25151,6 +25158,61 @@ Format: projects/{project}/sheets/{sheet} </p></td>
 
         
       
+        <h3 id="bytebase.v1.SearchReleasesRequest">SearchReleasesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>digest</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Search by the digest of the release. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SearchReleasesResponse">SearchReleasesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>releases</td>
+                  <td><a href="#bytebase.v1.Release">Release</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.UndeleteReleaseRequest">UndeleteReleaseRequest</h3>
         <p></p>
 
@@ -25329,6 +25391,13 @@ Format: projects/{project}/releases/{release} </p></td>
               </tr>
             
               <tr>
+                <td>SearchReleases</td>
+                <td><a href="#bytebase.v1.SearchReleasesRequest">SearchReleasesRequest</a></td>
+                <td><a href="#bytebase.v1.SearchReleasesResponse">SearchReleasesResponse</a></td>
+                <td><p>Permissions required: bb.releases.get</p></td>
+              </tr>
+            
+              <tr>
                 <td>CreateRelease</td>
                 <td><a href="#bytebase.v1.CreateReleaseRequest">CreateReleaseRequest</a></td>
                 <td><a href="#bytebase.v1.Release">Release</a></td>
@@ -25397,6 +25466,16 @@ Format: projects/{project}/releases/{release} </p></td>
                 <td>ListReleases</td>
                 <td>GET</td>
                 <td>/v1/{parent=projects/*}/releases</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>SearchReleases</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/releases:search</td>
                 <td></td>
               </tr>
               

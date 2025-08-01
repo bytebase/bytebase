@@ -543,6 +543,8 @@
     - [Release](#bytebase-v1-Release)
     - [Release.File](#bytebase-v1-Release-File)
     - [Release.VCSSource](#bytebase-v1-Release-VCSSource)
+    - [SearchReleasesRequest](#bytebase-v1-SearchReleasesRequest)
+    - [SearchReleasesResponse](#bytebase-v1-SearchReleasesResponse)
     - [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest)
     - [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest)
   
@@ -8905,7 +8907,7 @@ For example: project == &#34;projects/{project}&#34; database == &#34;instances/
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/releases/{release} Format: projects/{project}/releases/{release-digest} |
+| name | [string](#string) |  | Format: projects/{project}/releases/{release} |
 
 
 
@@ -9011,6 +9013,37 @@ The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 
 
 
+<a name="bytebase-v1-SearchReleasesRequest"></a>
+
+### SearchReleasesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: projects/{project} |
+| digest | [string](#string) | optional | Search by the digest of the release. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchReleasesResponse"></a>
+
+### SearchReleasesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| releases | [Release](#bytebase-v1-Release) | repeated |  |
+
+
+
+
+
+
 <a name="bytebase-v1-UndeleteReleaseRequest"></a>
 
 ### UndeleteReleaseRequest
@@ -9097,6 +9130,7 @@ The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | ----------- | ------------ | ------------- | ------------|
 | GetRelease | [GetReleaseRequest](#bytebase-v1-GetReleaseRequest) | [Release](#bytebase-v1-Release) | Permissions required: bb.releases.get |
 | ListReleases | [ListReleasesRequest](#bytebase-v1-ListReleasesRequest) | [ListReleasesResponse](#bytebase-v1-ListReleasesResponse) | Permissions required: bb.releases.list |
+| SearchReleases | [SearchReleasesRequest](#bytebase-v1-SearchReleasesRequest) | [SearchReleasesResponse](#bytebase-v1-SearchReleasesResponse) | Permissions required: bb.releases.get |
 | CreateRelease | [CreateReleaseRequest](#bytebase-v1-CreateReleaseRequest) | [Release](#bytebase-v1-Release) | Permissions required: bb.releases.create |
 | UpdateRelease | [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest) | [Release](#bytebase-v1-Release) | Permissions required: bb.releases.update |
 | DeleteRelease | [DeleteReleaseRequest](#bytebase-v1-DeleteReleaseRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Permissions required: bb.releases.delete |
