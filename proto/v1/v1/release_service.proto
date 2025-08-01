@@ -108,7 +108,6 @@ message ListReleasesRequest {
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 2;
 
-  // Not used.
   // A page token, received from a previous `ListReleases` call.
   // Provide this to retrieve the subsequent page.
   //
@@ -140,7 +139,6 @@ message SearchReleasesRequest {
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 2;
 
-  // Not used.
   // A page token, received from a previous `ListReleases` call.
   // Provide this to retrieve the subsequent page.
   //

@@ -52,7 +52,6 @@ export declare type ListReleasesRequest = Message<"bytebase.v1.ListReleasesReque
   pageSize: number;
 
   /**
-   * Not used.
    * A page token, received from a previous `ListReleases` call.
    * Provide this to retrieve the subsequent page.
    *
@@ -122,7 +121,6 @@ export declare type SearchReleasesRequest = Message<"bytebase.v1.SearchReleasesR
   pageSize: number;
 
   /**
-   * Not used.
    * A page token, received from a previous `ListReleases` call.
    * Provide this to retrieve the subsequent page.
    *

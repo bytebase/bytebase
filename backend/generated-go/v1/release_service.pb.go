@@ -228,7 +228,6 @@ type ListReleasesRequest struct {
 	// If unspecified, at most 10 releases will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used.
 	// A page token, received from a previous `ListReleases` call.
 	// Provide this to retrieve the subsequent page.
 	//
@@ -361,7 +360,6 @@ type SearchReleasesRequest struct {
 	// If unspecified, at most 10 releases will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used.
 	// A page token, received from a previous `ListReleases` call.
 	// Provide this to retrieve the subsequent page.
 	//
