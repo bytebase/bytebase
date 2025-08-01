@@ -29,6 +29,7 @@ type ReleaseMessage struct {
 type FindReleaseMessage struct {
 	ProjectID   *string
 	UID         *int64
+	Digest      *string
 	Limit       *int
 	Offset      *int
 	ShowDeleted bool
@@ -111,6 +112,10 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 	}
 	if v := find.UID; v != nil {
 		where = append(where, fmt.Sprintf("id= $%d", len(args)+1))
+		args = append(args, *v)
+	}
+	if v := find.Digest; v != nil {
+		where = append(where, fmt.Sprintf("digest = $%d", len(args)+1))
 		args = append(args, *v)
 	}
 	if !find.ShowDeleted {
