@@ -74,7 +74,7 @@ func (x CheckReleaseResponse_RiskLevel) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use CheckReleaseResponse_RiskLevel.Descriptor instead.
 func (CheckReleaseResponse_RiskLevel) EnumDescriptor() ([]byte, []int) {
-	return file_v1_release_service_proto_rawDescGZIP(), []int{8, 0}
+	return file_v1_release_service_proto_rawDescGZIP(), []int{10, 0}
 }
 
 type Release_File_Type int32
@@ -120,7 +120,7 @@ func (x Release_File_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Release_File_Type.Descriptor instead.
 func (Release_File_Type) EnumDescriptor() ([]byte, []int) {
-	return file_v1_release_service_proto_rawDescGZIP(), []int{9, 0, 0}
+	return file_v1_release_service_proto_rawDescGZIP(), []int{11, 0, 0}
 }
 
 type Release_File_ChangeType int32
@@ -172,13 +172,12 @@ func (x Release_File_ChangeType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Release_File_ChangeType.Descriptor instead.
 func (Release_File_ChangeType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_release_service_proto_rawDescGZIP(), []int{9, 0, 1}
+	return file_v1_release_service_proto_rawDescGZIP(), []int{11, 0, 1}
 }
 
 type GetReleaseRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/releases/{release}
-	// Format: projects/{project}/releases/{release-digest}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -354,6 +353,104 @@ func (x *ListReleasesResponse) GetNextPageToken() string {
 	return ""
 }
 
+type SearchReleasesRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Format: projects/{project}
+	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	// Search by the digest of the release.
+	Digest        *string `protobuf:"bytes,2,opt,name=digest,proto3,oneof" json:"digest,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchReleasesRequest) Reset() {
+	*x = SearchReleasesRequest{}
+	mi := &file_v1_release_service_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchReleasesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchReleasesRequest) ProtoMessage() {}
+
+func (x *SearchReleasesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_release_service_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchReleasesRequest.ProtoReflect.Descriptor instead.
+func (*SearchReleasesRequest) Descriptor() ([]byte, []int) {
+	return file_v1_release_service_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *SearchReleasesRequest) GetParent() string {
+	if x != nil {
+		return x.Parent
+	}
+	return ""
+}
+
+func (x *SearchReleasesRequest) GetDigest() string {
+	if x != nil && x.Digest != nil {
+		return *x.Digest
+	}
+	return ""
+}
+
+type SearchReleasesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Releases      []*Release             `protobuf:"bytes,1,rep,name=releases,proto3" json:"releases,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchReleasesResponse) Reset() {
+	*x = SearchReleasesResponse{}
+	mi := &file_v1_release_service_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchReleasesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchReleasesResponse) ProtoMessage() {}
+
+func (x *SearchReleasesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_release_service_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchReleasesResponse.ProtoReflect.Descriptor instead.
+func (*SearchReleasesResponse) Descriptor() ([]byte, []int) {
+	return file_v1_release_service_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *SearchReleasesResponse) GetReleases() []*Release {
+	if x != nil {
+		return x.Releases
+	}
+	return nil
+}
+
 type CreateReleaseRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}
@@ -366,7 +463,7 @@ type CreateReleaseRequest struct {
 
 func (x *CreateReleaseRequest) Reset() {
 	*x = CreateReleaseRequest{}
-	mi := &file_v1_release_service_proto_msgTypes[3]
+	mi := &file_v1_release_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -378,7 +475,7 @@ func (x *CreateReleaseRequest) String() string {
 func (*CreateReleaseRequest) ProtoMessage() {}
 
 func (x *CreateReleaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_release_service_proto_msgTypes[3]
+	mi := &file_v1_release_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -391,7 +488,7 @@ func (x *CreateReleaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateReleaseRequest.ProtoReflect.Descriptor instead.
 func (*CreateReleaseRequest) Descriptor() ([]byte, []int) {
-	return file_v1_release_service_proto_rawDescGZIP(), []int{3}
+	return file_v1_release_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *CreateReleaseRequest) GetParent() string {
@@ -420,7 +517,7 @@ type UpdateReleaseRequest struct {
 
 func (x *UpdateReleaseRequest) Reset() {
 	*x = UpdateReleaseRequest{}
-	mi := &file_v1_release_service_proto_msgTypes[4]
+	mi := &file_v1_release_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -432,7 +529,7 @@ func (x *UpdateReleaseRequest) String() string {
 func (*UpdateReleaseRequest) ProtoMessage() {}
 
 func (x *UpdateReleaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_release_service_proto_msgTypes[4]
+	mi := &file_v1_release_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -445,7 +542,7 @@ func (x *UpdateReleaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateReleaseRequest.ProtoReflect.Descriptor instead.
 func (*UpdateReleaseRequest) Descriptor() ([]byte, []int) {
-	return file_v1_release_service_proto_rawDescGZIP(), []int{4}
+	return file_v1_release_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *UpdateReleaseRequest) GetRelease() *Release {
@@ -473,7 +570,7 @@ type DeleteReleaseRequest struct {
 
 func (x *DeleteReleaseRequest) Reset() {
 	*x = DeleteReleaseRequest{}
-	mi := &file_v1_release_service_proto_msgTypes[5]
+	mi := &file_v1_release_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -485,7 +582,7 @@ func (x *DeleteReleaseRequest) String() string {
 func (*DeleteReleaseRequest) ProtoMessage() {}
 
 func (x *DeleteReleaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_release_service_proto_msgTypes[5]
+	mi := &file_v1_release_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -498,7 +595,7 @@ func (x *DeleteReleaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteReleaseRequest.ProtoReflect.Descriptor instead.
 func (*DeleteReleaseRequest) Descriptor() ([]byte, []int) {
-	return file_v1_release_service_proto_rawDescGZIP(), []int{5}
+	return file_v1_release_service_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DeleteReleaseRequest) GetName() string {
@@ -519,7 +616,7 @@ type UndeleteReleaseRequest struct {
 
 func (x *UndeleteReleaseRequest) Reset() {
 	*x = UndeleteReleaseRequest{}
-	mi := &file_v1_release_service_proto_msgTypes[6]
+	mi := &file_v1_release_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -531,7 +628,7 @@ func (x *UndeleteReleaseRequest) String() string {
 func (*UndeleteReleaseRequest) ProtoMessage() {}
 
 func (x *UndeleteReleaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_release_service_proto_msgTypes[6]
+	mi := &file_v1_release_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -544,7 +641,7 @@ func (x *UndeleteReleaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UndeleteReleaseRequest.ProtoReflect.Descriptor instead.
 func (*UndeleteReleaseRequest) Descriptor() ([]byte, []int) {
-	return file_v1_release_service_proto_rawDescGZIP(), []int{6}
+	return file_v1_release_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *UndeleteReleaseRequest) GetName() string {
@@ -572,7 +669,7 @@ type CheckReleaseRequest struct {
 
 func (x *CheckReleaseRequest) Reset() {
 	*x = CheckReleaseRequest{}
-	mi := &file_v1_release_service_proto_msgTypes[7]
+	mi := &file_v1_release_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -584,7 +681,7 @@ func (x *CheckReleaseRequest) String() string {
 func (*CheckReleaseRequest) ProtoMessage() {}
 
 func (x *CheckReleaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_release_service_proto_msgTypes[7]
+	mi := &file_v1_release_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -597,7 +694,7 @@ func (x *CheckReleaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckReleaseRequest.ProtoReflect.Descriptor instead.
 func (*CheckReleaseRequest) Descriptor() ([]byte, []int) {
-	return file_v1_release_service_proto_rawDescGZIP(), []int{7}
+	return file_v1_release_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *CheckReleaseRequest) GetParent() string {
@@ -634,7 +731,7 @@ type CheckReleaseResponse struct {
 
 func (x *CheckReleaseResponse) Reset() {
 	*x = CheckReleaseResponse{}
-	mi := &file_v1_release_service_proto_msgTypes[8]
+	mi := &file_v1_release_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -646,7 +743,7 @@ func (x *CheckReleaseResponse) String() string {
 func (*CheckReleaseResponse) ProtoMessage() {}
 
 func (x *CheckReleaseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_release_service_proto_msgTypes[8]
+	mi := &file_v1_release_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -659,7 +756,7 @@ func (x *CheckReleaseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckReleaseResponse.ProtoReflect.Descriptor instead.
 func (*CheckReleaseResponse) Descriptor() ([]byte, []int) {
-	return file_v1_release_service_proto_rawDescGZIP(), []int{8}
+	return file_v1_release_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *CheckReleaseResponse) GetResults() []*CheckReleaseResponse_CheckResult {
@@ -705,7 +802,7 @@ type Release struct {
 
 func (x *Release) Reset() {
 	*x = Release{}
-	mi := &file_v1_release_service_proto_msgTypes[9]
+	mi := &file_v1_release_service_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -717,7 +814,7 @@ func (x *Release) String() string {
 func (*Release) ProtoMessage() {}
 
 func (x *Release) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_release_service_proto_msgTypes[9]
+	mi := &file_v1_release_service_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -730,7 +827,7 @@ func (x *Release) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Release.ProtoReflect.Descriptor instead.
 func (*Release) Descriptor() ([]byte, []int) {
-	return file_v1_release_service_proto_rawDescGZIP(), []int{9}
+	return file_v1_release_service_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Release) GetName() string {
@@ -808,7 +905,7 @@ type CheckReleaseResponse_CheckResult struct {
 
 func (x *CheckReleaseResponse_CheckResult) Reset() {
 	*x = CheckReleaseResponse_CheckResult{}
-	mi := &file_v1_release_service_proto_msgTypes[10]
+	mi := &file_v1_release_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -820,7 +917,7 @@ func (x *CheckReleaseResponse_CheckResult) String() string {
 func (*CheckReleaseResponse_CheckResult) ProtoMessage() {}
 
 func (x *CheckReleaseResponse_CheckResult) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_release_service_proto_msgTypes[10]
+	mi := &file_v1_release_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -833,7 +930,7 @@ func (x *CheckReleaseResponse_CheckResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckReleaseResponse_CheckResult.ProtoReflect.Descriptor instead.
 func (*CheckReleaseResponse_CheckResult) Descriptor() ([]byte, []int) {
-	return file_v1_release_service_proto_rawDescGZIP(), []int{8, 0}
+	return file_v1_release_service_proto_rawDescGZIP(), []int{10, 0}
 }
 
 func (x *CheckReleaseResponse_CheckResult) GetFile() string {
@@ -902,7 +999,7 @@ type Release_File struct {
 
 func (x *Release_File) Reset() {
 	*x = Release_File{}
-	mi := &file_v1_release_service_proto_msgTypes[11]
+	mi := &file_v1_release_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -914,7 +1011,7 @@ func (x *Release_File) String() string {
 func (*Release_File) ProtoMessage() {}
 
 func (x *Release_File) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_release_service_proto_msgTypes[11]
+	mi := &file_v1_release_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -927,7 +1024,7 @@ func (x *Release_File) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Release_File.ProtoReflect.Descriptor instead.
 func (*Release_File) Descriptor() ([]byte, []int) {
-	return file_v1_release_service_proto_rawDescGZIP(), []int{9, 0}
+	return file_v1_release_service_proto_rawDescGZIP(), []int{11, 0}
 }
 
 func (x *Release_File) GetId() string {
@@ -1004,7 +1101,7 @@ type Release_VCSSource struct {
 
 func (x *Release_VCSSource) Reset() {
 	*x = Release_VCSSource{}
-	mi := &file_v1_release_service_proto_msgTypes[12]
+	mi := &file_v1_release_service_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1016,7 +1113,7 @@ func (x *Release_VCSSource) String() string {
 func (*Release_VCSSource) ProtoMessage() {}
 
 func (x *Release_VCSSource) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_release_service_proto_msgTypes[12]
+	mi := &file_v1_release_service_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1029,7 +1126,7 @@ func (x *Release_VCSSource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Release_VCSSource.ProtoReflect.Descriptor instead.
 func (*Release_VCSSource) Descriptor() ([]byte, []int) {
-	return file_v1_release_service_proto_rawDescGZIP(), []int{9, 1}
+	return file_v1_release_service_proto_rawDescGZIP(), []int{11, 1}
 }
 
 func (x *Release_VCSSource) GetVcsType() VCSType {
@@ -1063,7 +1160,14 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\fshow_deleted\x18\x04 \x01(\bR\vshowDeleted\"p\n" +
 	"\x14ListReleasesResponse\x120\n" +
 	"\breleases\x18\x01 \x03(\v2\x14.bytebase.v1.ReleaseR\breleases\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x81\x01\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"u\n" +
+	"\x15SearchReleasesRequest\x124\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
+	"\x06digest\x18\x02 \x01(\tH\x00R\x06digest\x88\x01\x01B\t\n" +
+	"\a_digest\"J\n" +
+	"\x16SearchReleasesResponse\x120\n" +
+	"\breleases\x18\x01 \x03(\v2\x14.bytebase.v1.ReleaseR\breleases\"\x81\x01\n" +
 	"\x14CreateReleaseRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x123\n" +
@@ -1135,11 +1239,13 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\tVCSSource\x12/\n" +
 	"\bvcs_type\x18\x01 \x01(\x0e2\x14.bytebase.v1.VCSTypeR\avcsType\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03url:@\xeaA=\n" +
-	"\x14bytebase.com/Release\x12%projects/{project}/releases/{release}2\xf5\b\n" +
+	"\x14bytebase.com/Release\x12%projects/{project}/releases/{release}2\xa2\n" +
+	"\n" +
 	"\x0eReleaseService\x12\x8a\x01\n" +
 	"\n" +
 	"GetRelease\x12\x1e.bytebase.v1.GetReleaseRequest\x1a\x14.bytebase.v1.Release\"F\xdaA\x04name\x8a\xea0\x0fbb.releases.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\"\x12 /v1/{name=projects/*/releases/*}\x12\x9e\x01\n" +
-	"\fListReleases\x12 .bytebase.v1.ListReleasesRequest\x1a!.bytebase.v1.ListReleasesResponse\"I\xdaA\x06parent\x8a\xea0\x10bb.releases.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\"\x12 /v1/{parent=projects/*}/releases\x12\xa6\x01\n" +
+	"\fListReleases\x12 .bytebase.v1.ListReleasesRequest\x1a!.bytebase.v1.ListReleasesResponse\"I\xdaA\x06parent\x8a\xea0\x10bb.releases.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\"\x12 /v1/{parent=projects/*}/releases\x12\xaa\x01\n" +
+	"\x0eSearchReleases\x12\".bytebase.v1.SearchReleasesRequest\x1a#.bytebase.v1.SearchReleasesResponse\"O\xdaA\x06parent\x8a\xea0\x0fbb.releases.get\x90\xea0\x01\x82\xd3\xe4\x93\x02)\x12'/v1/{parent=projects/*}/releases:search\x12\xa6\x01\n" +
 	"\rCreateRelease\x12!.bytebase.v1.CreateReleaseRequest\x1a\x14.bytebase.v1.Release\"\\\xdaA\x0eparent,release\x8a\xea0\x12bb.releases.create\x90\xea0\x01\x82\xd3\xe4\x93\x02+:\arelease\" /v1/{parent=projects/*}/releases\x12\xb3\x01\n" +
 	"\rUpdateRelease\x12!.bytebase.v1.UpdateReleaseRequest\x1a\x14.bytebase.v1.Release\"i\xdaA\x13release,update_mask\x8a\xea0\x12bb.releases.update\x90\xea0\x01\x82\xd3\xe4\x93\x023:\arelease2(/v1/{release.name=projects/*/releases/*}\x12\x95\x01\n" +
 	"\rDeleteRelease\x12!.bytebase.v1.DeleteReleaseRequest\x1a\x16.google.protobuf.Empty\"I\xdaA\x04name\x8a\xea0\x12bb.releases.delete\x90\xea0\x01\x82\xd3\xe4\x93\x02\"* /v1/{name=projects/*/releases/*}\x12\x9b\x01\n" +
@@ -1159,7 +1265,7 @@ func file_v1_release_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_release_service_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_v1_release_service_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_v1_release_service_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_v1_release_service_proto_goTypes = []any{
 	(CheckReleaseResponse_RiskLevel)(0),      // 0: bytebase.v1.CheckReleaseResponse.RiskLevel
 	(Release_File_Type)(0),                   // 1: bytebase.v1.Release.File.Type
@@ -1167,59 +1273,64 @@ var file_v1_release_service_proto_goTypes = []any{
 	(*GetReleaseRequest)(nil),                // 3: bytebase.v1.GetReleaseRequest
 	(*ListReleasesRequest)(nil),              // 4: bytebase.v1.ListReleasesRequest
 	(*ListReleasesResponse)(nil),             // 5: bytebase.v1.ListReleasesResponse
-	(*CreateReleaseRequest)(nil),             // 6: bytebase.v1.CreateReleaseRequest
-	(*UpdateReleaseRequest)(nil),             // 7: bytebase.v1.UpdateReleaseRequest
-	(*DeleteReleaseRequest)(nil),             // 8: bytebase.v1.DeleteReleaseRequest
-	(*UndeleteReleaseRequest)(nil),           // 9: bytebase.v1.UndeleteReleaseRequest
-	(*CheckReleaseRequest)(nil),              // 10: bytebase.v1.CheckReleaseRequest
-	(*CheckReleaseResponse)(nil),             // 11: bytebase.v1.CheckReleaseResponse
-	(*Release)(nil),                          // 12: bytebase.v1.Release
-	(*CheckReleaseResponse_CheckResult)(nil), // 13: bytebase.v1.CheckReleaseResponse.CheckResult
-	(*Release_File)(nil),                     // 14: bytebase.v1.Release.File
-	(*Release_VCSSource)(nil),                // 15: bytebase.v1.Release.VCSSource
-	(*fieldmaskpb.FieldMask)(nil),            // 16: google.protobuf.FieldMask
-	(*timestamppb.Timestamp)(nil),            // 17: google.protobuf.Timestamp
-	(State)(0),                               // 18: bytebase.v1.State
-	(*Advice)(nil),                           // 19: bytebase.v1.Advice
-	(VCSType)(0),                             // 20: bytebase.v1.VCSType
-	(*emptypb.Empty)(nil),                    // 21: google.protobuf.Empty
+	(*SearchReleasesRequest)(nil),            // 6: bytebase.v1.SearchReleasesRequest
+	(*SearchReleasesResponse)(nil),           // 7: bytebase.v1.SearchReleasesResponse
+	(*CreateReleaseRequest)(nil),             // 8: bytebase.v1.CreateReleaseRequest
+	(*UpdateReleaseRequest)(nil),             // 9: bytebase.v1.UpdateReleaseRequest
+	(*DeleteReleaseRequest)(nil),             // 10: bytebase.v1.DeleteReleaseRequest
+	(*UndeleteReleaseRequest)(nil),           // 11: bytebase.v1.UndeleteReleaseRequest
+	(*CheckReleaseRequest)(nil),              // 12: bytebase.v1.CheckReleaseRequest
+	(*CheckReleaseResponse)(nil),             // 13: bytebase.v1.CheckReleaseResponse
+	(*Release)(nil),                          // 14: bytebase.v1.Release
+	(*CheckReleaseResponse_CheckResult)(nil), // 15: bytebase.v1.CheckReleaseResponse.CheckResult
+	(*Release_File)(nil),                     // 16: bytebase.v1.Release.File
+	(*Release_VCSSource)(nil),                // 17: bytebase.v1.Release.VCSSource
+	(*fieldmaskpb.FieldMask)(nil),            // 18: google.protobuf.FieldMask
+	(*timestamppb.Timestamp)(nil),            // 19: google.protobuf.Timestamp
+	(State)(0),                               // 20: bytebase.v1.State
+	(*Advice)(nil),                           // 21: bytebase.v1.Advice
+	(VCSType)(0),                             // 22: bytebase.v1.VCSType
+	(*emptypb.Empty)(nil),                    // 23: google.protobuf.Empty
 }
 var file_v1_release_service_proto_depIdxs = []int32{
-	12, // 0: bytebase.v1.ListReleasesResponse.releases:type_name -> bytebase.v1.Release
-	12, // 1: bytebase.v1.CreateReleaseRequest.release:type_name -> bytebase.v1.Release
-	12, // 2: bytebase.v1.UpdateReleaseRequest.release:type_name -> bytebase.v1.Release
-	16, // 3: bytebase.v1.UpdateReleaseRequest.update_mask:type_name -> google.protobuf.FieldMask
-	12, // 4: bytebase.v1.CheckReleaseRequest.release:type_name -> bytebase.v1.Release
-	13, // 5: bytebase.v1.CheckReleaseResponse.results:type_name -> bytebase.v1.CheckReleaseResponse.CheckResult
-	0,  // 6: bytebase.v1.CheckReleaseResponse.risk_level:type_name -> bytebase.v1.CheckReleaseResponse.RiskLevel
-	14, // 7: bytebase.v1.Release.files:type_name -> bytebase.v1.Release.File
-	15, // 8: bytebase.v1.Release.vcs_source:type_name -> bytebase.v1.Release.VCSSource
-	17, // 9: bytebase.v1.Release.create_time:type_name -> google.protobuf.Timestamp
-	18, // 10: bytebase.v1.Release.state:type_name -> bytebase.v1.State
-	19, // 11: bytebase.v1.CheckReleaseResponse.CheckResult.advices:type_name -> bytebase.v1.Advice
-	0,  // 12: bytebase.v1.CheckReleaseResponse.CheckResult.risk_level:type_name -> bytebase.v1.CheckReleaseResponse.RiskLevel
-	1,  // 13: bytebase.v1.Release.File.type:type_name -> bytebase.v1.Release.File.Type
-	2,  // 14: bytebase.v1.Release.File.change_type:type_name -> bytebase.v1.Release.File.ChangeType
-	20, // 15: bytebase.v1.Release.VCSSource.vcs_type:type_name -> bytebase.v1.VCSType
-	3,  // 16: bytebase.v1.ReleaseService.GetRelease:input_type -> bytebase.v1.GetReleaseRequest
-	4,  // 17: bytebase.v1.ReleaseService.ListReleases:input_type -> bytebase.v1.ListReleasesRequest
-	6,  // 18: bytebase.v1.ReleaseService.CreateRelease:input_type -> bytebase.v1.CreateReleaseRequest
-	7,  // 19: bytebase.v1.ReleaseService.UpdateRelease:input_type -> bytebase.v1.UpdateReleaseRequest
-	8,  // 20: bytebase.v1.ReleaseService.DeleteRelease:input_type -> bytebase.v1.DeleteReleaseRequest
-	9,  // 21: bytebase.v1.ReleaseService.UndeleteRelease:input_type -> bytebase.v1.UndeleteReleaseRequest
-	10, // 22: bytebase.v1.ReleaseService.CheckRelease:input_type -> bytebase.v1.CheckReleaseRequest
-	12, // 23: bytebase.v1.ReleaseService.GetRelease:output_type -> bytebase.v1.Release
-	5,  // 24: bytebase.v1.ReleaseService.ListReleases:output_type -> bytebase.v1.ListReleasesResponse
-	12, // 25: bytebase.v1.ReleaseService.CreateRelease:output_type -> bytebase.v1.Release
-	12, // 26: bytebase.v1.ReleaseService.UpdateRelease:output_type -> bytebase.v1.Release
-	21, // 27: bytebase.v1.ReleaseService.DeleteRelease:output_type -> google.protobuf.Empty
-	12, // 28: bytebase.v1.ReleaseService.UndeleteRelease:output_type -> bytebase.v1.Release
-	11, // 29: bytebase.v1.ReleaseService.CheckRelease:output_type -> bytebase.v1.CheckReleaseResponse
-	23, // [23:30] is the sub-list for method output_type
-	16, // [16:23] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	14, // 0: bytebase.v1.ListReleasesResponse.releases:type_name -> bytebase.v1.Release
+	14, // 1: bytebase.v1.SearchReleasesResponse.releases:type_name -> bytebase.v1.Release
+	14, // 2: bytebase.v1.CreateReleaseRequest.release:type_name -> bytebase.v1.Release
+	14, // 3: bytebase.v1.UpdateReleaseRequest.release:type_name -> bytebase.v1.Release
+	18, // 4: bytebase.v1.UpdateReleaseRequest.update_mask:type_name -> google.protobuf.FieldMask
+	14, // 5: bytebase.v1.CheckReleaseRequest.release:type_name -> bytebase.v1.Release
+	15, // 6: bytebase.v1.CheckReleaseResponse.results:type_name -> bytebase.v1.CheckReleaseResponse.CheckResult
+	0,  // 7: bytebase.v1.CheckReleaseResponse.risk_level:type_name -> bytebase.v1.CheckReleaseResponse.RiskLevel
+	16, // 8: bytebase.v1.Release.files:type_name -> bytebase.v1.Release.File
+	17, // 9: bytebase.v1.Release.vcs_source:type_name -> bytebase.v1.Release.VCSSource
+	19, // 10: bytebase.v1.Release.create_time:type_name -> google.protobuf.Timestamp
+	20, // 11: bytebase.v1.Release.state:type_name -> bytebase.v1.State
+	21, // 12: bytebase.v1.CheckReleaseResponse.CheckResult.advices:type_name -> bytebase.v1.Advice
+	0,  // 13: bytebase.v1.CheckReleaseResponse.CheckResult.risk_level:type_name -> bytebase.v1.CheckReleaseResponse.RiskLevel
+	1,  // 14: bytebase.v1.Release.File.type:type_name -> bytebase.v1.Release.File.Type
+	2,  // 15: bytebase.v1.Release.File.change_type:type_name -> bytebase.v1.Release.File.ChangeType
+	22, // 16: bytebase.v1.Release.VCSSource.vcs_type:type_name -> bytebase.v1.VCSType
+	3,  // 17: bytebase.v1.ReleaseService.GetRelease:input_type -> bytebase.v1.GetReleaseRequest
+	4,  // 18: bytebase.v1.ReleaseService.ListReleases:input_type -> bytebase.v1.ListReleasesRequest
+	6,  // 19: bytebase.v1.ReleaseService.SearchReleases:input_type -> bytebase.v1.SearchReleasesRequest
+	8,  // 20: bytebase.v1.ReleaseService.CreateRelease:input_type -> bytebase.v1.CreateReleaseRequest
+	9,  // 21: bytebase.v1.ReleaseService.UpdateRelease:input_type -> bytebase.v1.UpdateReleaseRequest
+	10, // 22: bytebase.v1.ReleaseService.DeleteRelease:input_type -> bytebase.v1.DeleteReleaseRequest
+	11, // 23: bytebase.v1.ReleaseService.UndeleteRelease:input_type -> bytebase.v1.UndeleteReleaseRequest
+	12, // 24: bytebase.v1.ReleaseService.CheckRelease:input_type -> bytebase.v1.CheckReleaseRequest
+	14, // 25: bytebase.v1.ReleaseService.GetRelease:output_type -> bytebase.v1.Release
+	5,  // 26: bytebase.v1.ReleaseService.ListReleases:output_type -> bytebase.v1.ListReleasesResponse
+	7,  // 27: bytebase.v1.ReleaseService.SearchReleases:output_type -> bytebase.v1.SearchReleasesResponse
+	14, // 28: bytebase.v1.ReleaseService.CreateRelease:output_type -> bytebase.v1.Release
+	14, // 29: bytebase.v1.ReleaseService.UpdateRelease:output_type -> bytebase.v1.Release
+	23, // 30: bytebase.v1.ReleaseService.DeleteRelease:output_type -> google.protobuf.Empty
+	14, // 31: bytebase.v1.ReleaseService.UndeleteRelease:output_type -> bytebase.v1.Release
+	13, // 32: bytebase.v1.ReleaseService.CheckRelease:output_type -> bytebase.v1.CheckReleaseResponse
+	25, // [25:33] is the sub-list for method output_type
+	17, // [17:25] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_v1_release_service_proto_init() }
@@ -1230,13 +1341,14 @@ func file_v1_release_service_proto_init() {
 	file_v1_annotation_proto_init()
 	file_v1_common_proto_init()
 	file_v1_sql_service_proto_init()
+	file_v1_release_service_proto_msgTypes[3].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_release_service_proto_rawDesc), len(file_v1_release_service_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   13,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

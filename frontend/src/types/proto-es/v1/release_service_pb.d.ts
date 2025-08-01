@@ -19,7 +19,6 @@ export declare const file_v1_release_service: GenFile;
 export declare type GetReleaseRequest = Message<"bytebase.v1.GetReleaseRequest"> & {
   /**
    * Format: projects/{project}/releases/{release}
-   * Format: projects/{project}/releases/{release-digest}
    *
    * @generated from field: string name = 1;
    */
@@ -101,6 +100,47 @@ export declare type ListReleasesResponse = Message<"bytebase.v1.ListReleasesResp
  * Use `create(ListReleasesResponseSchema)` to create a new message.
  */
 export declare const ListReleasesResponseSchema: GenMessage<ListReleasesResponse>;
+
+/**
+ * @generated from message bytebase.v1.SearchReleasesRequest
+ */
+export declare type SearchReleasesRequest = Message<"bytebase.v1.SearchReleasesRequest"> & {
+  /**
+   * Format: projects/{project}
+   *
+   * @generated from field: string parent = 1;
+   */
+  parent: string;
+
+  /**
+   * Search by the digest of the release.
+   *
+   * @generated from field: optional string digest = 2;
+   */
+  digest?: string;
+};
+
+/**
+ * Describes the message bytebase.v1.SearchReleasesRequest.
+ * Use `create(SearchReleasesRequestSchema)` to create a new message.
+ */
+export declare const SearchReleasesRequestSchema: GenMessage<SearchReleasesRequest>;
+
+/**
+ * @generated from message bytebase.v1.SearchReleasesResponse
+ */
+export declare type SearchReleasesResponse = Message<"bytebase.v1.SearchReleasesResponse"> & {
+  /**
+   * @generated from field: repeated bytebase.v1.Release releases = 1;
+   */
+  releases: Release[];
+};
+
+/**
+ * Describes the message bytebase.v1.SearchReleasesResponse.
+ * Use `create(SearchReleasesResponseSchema)` to create a new message.
+ */
+export declare const SearchReleasesResponseSchema: GenMessage<SearchReleasesResponse>;
 
 /**
  * @generated from message bytebase.v1.CreateReleaseRequest
@@ -567,6 +607,16 @@ export declare const ReleaseService: GenService<{
     methodKind: "unary";
     input: typeof ListReleasesRequestSchema;
     output: typeof ListReleasesResponseSchema;
+  },
+  /**
+   * Permissions required: bb.releases.get
+   *
+   * @generated from rpc bytebase.v1.ReleaseService.SearchReleases
+   */
+  searchReleases: {
+    methodKind: "unary";
+    input: typeof SearchReleasesRequestSchema;
+    output: typeof SearchReleasesResponseSchema;
   },
   /**
    * Permissions required: bb.releases.create

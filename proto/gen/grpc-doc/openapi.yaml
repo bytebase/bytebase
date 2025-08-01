@@ -5330,6 +5330,37 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/releases:search:
+        get:
+            tags:
+                - ReleaseService
+            description: 'Permissions required: bb.releases.get'
+            operationId: ReleaseService_SearchReleases
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: digest
+                  in: query
+                  description: Search by the digest of the release.
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SearchReleasesResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/rollouts:
         get:
             tags:
@@ -13197,6 +13228,13 @@ components:
                         A token to retrieve next page of history.
                          Pass this value in the page_token field in the subsequent call to
                          `ListQueryHistory` method to retrieve the next page of history.
+        SearchReleasesResponse:
+            type: object
+            properties:
+                releases:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Release'
         SearchWorksheetsRequest:
             type: object
             properties:
