@@ -43,7 +43,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/cockroachdb/cockroachdb-parser v0.25.2
 	github.com/coreos/go-oidc v2.3.0+incompatible
-	github.com/databricks/databricks-sdk-go v0.71.0
+	github.com/databricks/databricks-sdk-go v0.78.0
 	github.com/docker/docker v28.3.3+incompatible
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/github/gh-ost v1.1.7
