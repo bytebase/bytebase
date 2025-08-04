@@ -5,13 +5,13 @@
         {{ $t("common.rollout") }}
       </NBreadcrumbItem>
       <NBreadcrumbItem @click="navigateToRollout">
-        {{ $t("rollout.stage.self", 2) }}
-      </NBreadcrumbItem>
-      <NBreadcrumbItem v-if="stageId" :clickable="false">
-        {{ stageTitle }}
+        <span>{{ $t("rollout.stage.self", 2) }}</span>
+        <span v-if="rollout.stages.length > 1" class="opacity-80 ml-1"
+          >({{ rollout.stages.length }})</span
+        >
       </NBreadcrumbItem>
       <NBreadcrumbItem v-if="stageId" @click="navigateToStage">
-        {{ $t("common.task", 2) }}
+        {{ stageTitle }}
       </NBreadcrumbItem>
       <NBreadcrumbItem v-if="taskId" :clickable="false">
         {{ $t("common.task") }} #{{ taskId }}
@@ -29,6 +29,7 @@
 import { NBreadcrumb, NBreadcrumbItem } from "naive-ui";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { usePlanContextWithRollout } from "@/components/Plan";
 import { provideRolloutViewContext } from "@/components/Plan/components/RolloutView/context";
 import {
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
@@ -39,6 +40,7 @@ import { extractProjectResourceName } from "@/utils";
 
 const route = useRoute();
 const router = useRouter();
+const { rollout } = usePlanContextWithRollout();
 const { project } = useCurrentProjectV1();
 const environmentStore = useEnvironmentV1Store();
 const { mergedStages } = provideRolloutViewContext();

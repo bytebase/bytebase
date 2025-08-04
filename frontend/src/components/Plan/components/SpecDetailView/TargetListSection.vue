@@ -38,11 +38,7 @@
           class="inline-flex items-center gap-x-1 px-2 py-1 border rounded-lg transition-all cursor-default"
         >
           <template v-if="isValidDatabaseName(target)">
-            <DatabaseDisplay
-              :database="target"
-              :project="project?.name"
-              show-environment
-            />
+            <DatabaseDisplay :database="target" show-environment />
           </template>
           <template v-else-if="isValidDatabaseGroupName(target)">
             <DatabaseGroupIcon
