@@ -8924,7 +8924,7 @@ For example: project == &#34;projects/{project}&#34; database == &#34;instances/
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | Format: projects/{project} |
 | page_size | [int32](#int32) |  | The maximum number of releases to return. The service may return fewer than this value. If unspecified, at most 10 releases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListReleases` call. Provide this to retrieve the subsequent page.
+| page_token | [string](#string) |  | A page token, received from a previous `ListReleases` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListReleases` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted releases if specified. |
@@ -9022,6 +9022,10 @@ The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | Format: projects/{project} |
+| page_size | [int32](#int32) |  | The maximum number of releases to return. The service may return fewer than this value. If unspecified, at most 10 releases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListReleases` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListReleases` must match the call that provided the page token. |
 | digest | [string](#string) | optional | Search by the digest of the release. |
 
 
@@ -9038,6 +9042,7 @@ The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | releases | [Release](#bytebase-v1-Release) | repeated |  |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
