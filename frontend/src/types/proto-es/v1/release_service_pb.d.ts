@@ -52,7 +52,6 @@ export declare type ListReleasesRequest = Message<"bytebase.v1.ListReleasesReque
   pageSize: number;
 
   /**
-   * Not used.
    * A page token, received from a previous `ListReleases` call.
    * Provide this to retrieve the subsequent page.
    *
@@ -113,9 +112,29 @@ export declare type SearchReleasesRequest = Message<"bytebase.v1.SearchReleasesR
   parent: string;
 
   /**
+   * The maximum number of releases to return. The service may return fewer than this value.
+   * If unspecified, at most 10 releases will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   *
+   * @generated from field: int32 page_size = 2;
+   */
+  pageSize: number;
+
+  /**
+   * A page token, received from a previous `ListReleases` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListReleases` must match
+   * the call that provided the page token.
+   *
+   * @generated from field: string page_token = 3;
+   */
+  pageToken: string;
+
+  /**
    * Search by the digest of the release.
    *
-   * @generated from field: optional string digest = 2;
+   * @generated from field: optional string digest = 4;
    */
   digest?: string;
 };
@@ -134,6 +153,14 @@ export declare type SearchReleasesResponse = Message<"bytebase.v1.SearchReleases
    * @generated from field: repeated bytebase.v1.Release releases = 1;
    */
   releases: Release[];
+
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   *
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
 };
 
 /**
