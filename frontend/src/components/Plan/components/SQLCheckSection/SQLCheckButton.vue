@@ -89,7 +89,7 @@ withDefaults(
 const { t } = useI18n();
 const { database, project, selectedSpec, upsertResult } =
   usePlanSQLCheckContext();
-const { sheetStatement } = useSpecSheet(selectedSpec.value);
+const { sheetStatement } = useSpecSheet(computed(() => selectedSpec.value));
 
 const isRunning = ref(false);
 const showDetailPanel = ref(false);

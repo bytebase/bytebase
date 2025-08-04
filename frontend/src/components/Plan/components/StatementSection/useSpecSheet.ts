@@ -1,5 +1,5 @@
 import { computedAsync } from "@vueuse/core";
-import { computed, ref } from "vue";
+import { computed, ref, type ComputedRef } from "vue";
 import { getLocalSheetByName } from "@/components/Plan";
 import { useSheetV1Store } from "@/store";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
@@ -10,13 +10,11 @@ import {
   sheetNameOfSpec,
 } from "@/utils";
 
-export const useSpecSheet = (spec: Plan_Spec) => {
+export const useSpecSheet = (spec: ComputedRef<Plan_Spec>) => {
   const sheetStore = useSheetV1Store();
 
-  const sheetName = computed(() => {
-    return sheetNameOfSpec(spec);
-  });
   const isFetchingSheet = ref(false);
+  const sheetName = computed(() => sheetNameOfSpec(spec.value));
   const sheetReady = computed(() => {
     return !isFetchingSheet.value;
   });
