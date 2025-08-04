@@ -890,8 +890,8 @@ github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443/go.mod h1:W+zGtBO5Y1Ig
 github.com/cockroachdb/apd v1.1.0/go.mod h1:8Sl8LxpKi29FqWXR16WEFZRNSz3SoPzUzeMeY4+DwBQ=
 github.com/cockroachdb/apd/v3 v3.2.1 h1:U+8j7t0axsIgvQUqthuNm82HIrYXodOV2iWLWtEaIwg=
 github.com/cockroachdb/apd/v3 v3.2.1/go.mod h1:klXJcjp+FffLTHlhIG69tezTDvdP065naDsHzKhYSqc=
-github.com/cockroachdb/cockroach-go/v2 v2.4.0 h1:7K5vpE3m7LylIbmpbr4eEhApDTPMgFgR+eDPy1sdJjM=
-github.com/cockroachdb/cockroach-go/v2 v2.4.0/go.mod h1:9U179XbCx4qFWtNhc7BiWLPfuyMVQ7qdAhfrwLz1vH0=
+github.com/cockroachdb/cockroach-go/v2 v2.4.1 h1:ACVT/zXsuK6waRPVYtDQpsM8pPA7IA/3fkgA02RR/Gw=
+github.com/cockroachdb/cockroach-go/v2 v2.4.1/go.mod h1:9U179XbCx4qFWtNhc7BiWLPfuyMVQ7qdAhfrwLz1vH0=
 github.com/cockroachdb/cockroachdb-parser v0.25.2 h1:upbvXIfWpwjjXTxAXpGLqSsHmQN3ih+IG0TgOFKobgs=
 github.com/cockroachdb/cockroachdb-parser v0.25.2/go.mod h1:O3KI7hF30on+BZ65bdK5HigMfZP2G+g9F4xR6JAnzkA=
 github.com/cockroachdb/errors v1.11.3 h1:5bA+k2Y6r+oz/6Z/RFlNeVCesGARKuC6YymtcDrbC/I=
