@@ -18,7 +18,7 @@
     </span>
     <template v-if="project">
       <router-link
-        class="pl-2"
+        class="pl-2 opacity-60 hover:opacity-100"
         :to="databaseV1UrlWithProject(project, database)"
         target="_blank"
         @click.stop
