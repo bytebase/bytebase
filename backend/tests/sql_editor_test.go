@@ -62,8 +62,9 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 							},
 						},
 					},
-					Statement: "INSERT INTO tbl VALUES(1);",
-					RowsCount: 1,
+					Statement:   "INSERT INTO tbl VALUES(1);",
+					RowsCount:   1,
+					AllowExport: true,
 				},
 				{
 					ColumnNames:     []string{"Affected Rows"},
