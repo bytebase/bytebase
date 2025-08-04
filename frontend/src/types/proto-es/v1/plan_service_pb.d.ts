@@ -321,6 +321,7 @@ export declare type Plan = Message<"bytebase.v1.Plan"> & {
    * - SUCCESS
    * - WARNING
    * - ERROR
+   * - RUNNING
    *
    * @generated from field: map<string, int32> plan_check_run_status_count = 11;
    */

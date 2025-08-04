@@ -25,34 +25,64 @@
       <div class="flex items-center gap-2">
         <!-- Status Summary -->
         <div class="flex items-center gap-2 text-sm">
+          <div
+            v-if="
+              getChecksCount(PlanCheckRun_Status[PlanCheckRun_Status.RUNNING]) >
+              0
+            "
+            class="flex items-center gap-1"
+          >
+            <LoaderIcon class="w-5 h-5 text-control animate-spin" />
+            <span class="text-control">{{
+              getChecksCount(PlanCheckRun_Status[PlanCheckRun_Status.RUNNING])
+            }}</span>
+          </div>
           <button
-            v-if="getChecksCount(PlanCheckRun_Result_Status.ERROR) > 0"
+            v-if="
+              getChecksCount(
+                PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.ERROR]
+              ) > 0
+            "
             class="flex items-center gap-1 hover:opacity-80"
             @click="openChecksDrawer(PlanCheckRun_Result_Status.ERROR)"
           >
             <XCircleIcon class="w-5 h-5 text-error" />
             <span class="text-error">{{
-              getChecksCount(PlanCheckRun_Result_Status.ERROR)
+              getChecksCount(
+                PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.ERROR]
+              )
             }}</span>
           </button>
           <button
-            v-if="getChecksCount(PlanCheckRun_Result_Status.WARNING) > 0"
+            v-if="
+              getChecksCount(
+                PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.WARNING]
+              ) > 0
+            "
             class="flex items-center gap-1 hover:opacity-80"
             @click="openChecksDrawer(PlanCheckRun_Result_Status.WARNING)"
           >
             <AlertCircleIcon class="w-5 h-5 text-warning" />
             <span class="text-warning">{{
-              getChecksCount(PlanCheckRun_Result_Status.WARNING)
+              getChecksCount(
+                PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.WARNING]
+              )
             }}</span>
           </button>
           <button
-            v-if="getChecksCount(PlanCheckRun_Result_Status.SUCCESS) > 0"
+            v-if="
+              getChecksCount(
+                PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.SUCCESS]
+              ) > 0
+            "
             class="flex items-center gap-1 hover:opacity-80"
             @click="openChecksDrawer(PlanCheckRun_Result_Status.SUCCESS)"
           >
             <CheckCircleIcon class="w-5 h-5 text-success" />
             <span class="text-success">{{
-              getChecksCount(PlanCheckRun_Result_Status.SUCCESS)
+              getChecksCount(
+                PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.SUCCESS]
+              )
             }}</span>
           </button>
         </div>
@@ -87,6 +117,7 @@ import {
   AlertCircleIcon,
   XCircleIcon,
   PlayIcon,
+  LoaderIcon,
 } from "lucide-vue-next";
 import { NButton, NTooltip, NTag } from "naive-ui";
 import { computed, ref, watch } from "vue";
@@ -99,6 +130,7 @@ import {
 } from "@/store";
 import {
   PlanCheckRun_Result_Status,
+  PlanCheckRun_Status,
   RunPlanChecksRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
@@ -155,10 +187,8 @@ const affectedRows = computed(() => {
   }, 0);
 });
 
-const getChecksCount = (status: PlanCheckRun_Result_Status) => {
-  return (
-    plan.value.planCheckRunStatusCount[PlanCheckRun_Result_Status[status]] || 0
-  );
+const getChecksCount = (status: string) => {
+  return plan.value.planCheckRunStatusCount[status] || 0;
 };
 
 const runChecks = async () => {
