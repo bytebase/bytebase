@@ -658,6 +658,8 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 		return convertToTaskFromDataUpdate(ctx, s, project, task)
 	case storepb.Task_DATABASE_EXPORT:
 		return convertToTaskFromDatabaseDataExport(ctx, s, project, task)
+	case storepb.Task_TASK_TYPE_UNSPECIFIED:
+		return nil, errors.Errorf("task type %v is not supported", task.Type)
 	default:
 		return nil, errors.Errorf("task type %v is not supported", task.Type)
 	}
@@ -846,6 +848,8 @@ func convertToTaskType(taskType storepb.Task_Type) v1pb.Task_Type {
 		return v1pb.Task_DATABASE_DATA_UPDATE
 	case storepb.Task_DATABASE_EXPORT:
 		return v1pb.Task_DATABASE_EXPORT
+	case storepb.Task_TASK_TYPE_UNSPECIFIED:
+		return v1pb.Task_TYPE_UNSPECIFIED
 	default:
 		return v1pb.Task_TYPE_UNSPECIFIED
 	}
@@ -866,6 +870,8 @@ func convertToStoreTaskType(taskType v1pb.Task_Type) storepb.Task_Type {
 		return storepb.Task_DATABASE_DATA_UPDATE
 	case v1pb.Task_DATABASE_EXPORT:
 		return storepb.Task_DATABASE_EXPORT
+	case v1pb.Task_TYPE_UNSPECIFIED:
+		return storepb.Task_TASK_TYPE_UNSPECIFIED
 	default:
 		return storepb.Task_TASK_TYPE_UNSPECIFIED
 	}

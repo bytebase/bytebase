@@ -3,8 +3,9 @@ package common
 
 import (
 	"connectrpc.com/connect"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/pkg/errors"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func EngineSupportSQLReview(engine storepb.Engine) bool {

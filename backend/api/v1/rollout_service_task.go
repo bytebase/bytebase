@@ -474,7 +474,8 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 					Payload:      payload,
 				}
 				taskCreates = append(taskCreates, taskCreate)
-
+			default:
+				return nil, errors.Errorf("unsupported release file type %q", file.Type)
 			}
 		}
 	}

@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -17,7 +19,6 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
-	"github.com/pkg/errors"
 )
 
 // NewSchemaDeclareExecutor creates a schema declare (SDL) task executor.
