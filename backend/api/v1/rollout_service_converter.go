@@ -660,15 +660,18 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 }
 
 func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
+	//exhaustive:enforce
 	switch task.Type {
 	case storepb.Task_DATABASE_CREATE:
 		return convertToTaskFromDatabaseCreate(ctx, s, project, task)
-	case storepb.Task_DATABASE_SCHEMA_UPDATE, storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
+	case storepb.Task_DATABASE_SCHEMA_UPDATE, storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST, storepb.Task_DATABASE_SCHEMA_UPDATE_SDL:
 		return convertToTaskFromSchemaUpdate(ctx, s, project, task)
 	case storepb.Task_DATABASE_DATA_UPDATE:
 		return convertToTaskFromDataUpdate(ctx, s, project, task)
 	case storepb.Task_DATABASE_EXPORT:
 		return convertToTaskFromDatabaseDataExport(ctx, s, project, task)
+	case storepb.Task_TASK_TYPE_UNSPECIFIED:
+		return nil, errors.Errorf("task type %v is not supported", task.Type)
 	default:
 		return nil, errors.Errorf("task type %v is not supported", task.Type)
 	}
@@ -843,6 +846,7 @@ func convertToTaskStatus(latestTaskRunStatus storepb.TaskRun_Status, skipped boo
 }
 
 func convertToTaskType(taskType storepb.Task_Type) v1pb.Task_Type {
+	//exhaustive:enforce
 	switch taskType {
 	case storepb.Task_DATABASE_CREATE:
 		return v1pb.Task_DATABASE_CREATE
@@ -850,16 +854,21 @@ func convertToTaskType(taskType storepb.Task_Type) v1pb.Task_Type {
 		return v1pb.Task_DATABASE_SCHEMA_UPDATE
 	case storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
 		return v1pb.Task_DATABASE_SCHEMA_UPDATE_GHOST
+	case storepb.Task_DATABASE_SCHEMA_UPDATE_SDL:
+		return v1pb.Task_DATABASE_SCHEMA_UPDATE_SDL
 	case storepb.Task_DATABASE_DATA_UPDATE:
 		return v1pb.Task_DATABASE_DATA_UPDATE
 	case storepb.Task_DATABASE_EXPORT:
 		return v1pb.Task_DATABASE_EXPORT
+	case storepb.Task_TASK_TYPE_UNSPECIFIED:
+		return v1pb.Task_TYPE_UNSPECIFIED
 	default:
 		return v1pb.Task_TYPE_UNSPECIFIED
 	}
 }
 
 func convertToStoreTaskType(taskType v1pb.Task_Type) storepb.Task_Type {
+	//exhaustive:enforce
 	switch taskType {
 	case v1pb.Task_DATABASE_CREATE:
 		return storepb.Task_DATABASE_CREATE
@@ -867,10 +876,14 @@ func convertToStoreTaskType(taskType v1pb.Task_Type) storepb.Task_Type {
 		return storepb.Task_DATABASE_SCHEMA_UPDATE
 	case v1pb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
 		return storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST
+	case v1pb.Task_DATABASE_SCHEMA_UPDATE_SDL:
+		return storepb.Task_DATABASE_SCHEMA_UPDATE_SDL
 	case v1pb.Task_DATABASE_DATA_UPDATE:
 		return storepb.Task_DATABASE_DATA_UPDATE
 	case v1pb.Task_DATABASE_EXPORT:
 		return storepb.Task_DATABASE_EXPORT
+	case v1pb.Task_TYPE_UNSPECIFIED, v1pb.Task_GENERAL:
+		return storepb.Task_TASK_TYPE_UNSPECIFIED
 	default:
 		return storepb.Task_TASK_TYPE_UNSPECIFIED
 	}

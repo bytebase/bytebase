@@ -395,59 +395,88 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 		}
 
 		for _, file := range release.Payload.Files {
-			// Skip if this version has already been applied
-			if _, ok := appliedVersions[file.Version]; ok {
-				// Skip files that have been applied with the same content
-				// If SHA256 differs, it means the file has been modified after being applied. CheckRelease should have warned it.
-				continue
-			}
+			switch file.Type {
+			case storepb.ReleasePayload_File_VERSIONED:
+				// Skip if this version has already been applied
+				if _, ok := appliedVersions[file.Version]; ok {
+					// Skip files that have been applied with the same content
+					// If SHA256 differs, it means the file has been modified after being applied. CheckRelease should have warned it.
+					continue
+				}
 
-			// Parse sheet ID from the file's sheet reference
-			_, sheetUID, err := common.GetProjectResourceIDSheetUID(file.Sheet)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q in release file %q", file.Sheet, file.Id)
-			}
+				// Parse sheet ID from the file's sheet reference
+				_, sheetUID, err := common.GetProjectResourceIDSheetUID(file.Sheet)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q in release file %q", file.Sheet, file.Id)
+				}
 
-			// Determine task type based on file change type
-			var taskType storepb.Task_Type
-			switch file.ChangeType {
-			case storepb.ReleasePayload_File_DDL, storepb.ReleasePayload_File_CHANGE_TYPE_UNSPECIFIED:
-				taskType = storepb.Task_DATABASE_SCHEMA_UPDATE
-			case storepb.ReleasePayload_File_DDL_GHOST:
-				taskType = storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST
-			case storepb.ReleasePayload_File_DML:
-				taskType = storepb.Task_DATABASE_DATA_UPDATE
+				// Determine task type based on file change type
+				var taskType storepb.Task_Type
+				switch file.ChangeType {
+				case storepb.ReleasePayload_File_DDL, storepb.ReleasePayload_File_CHANGE_TYPE_UNSPECIFIED:
+					taskType = storepb.Task_DATABASE_SCHEMA_UPDATE
+				case storepb.ReleasePayload_File_DDL_GHOST:
+					taskType = storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST
+				case storepb.ReleasePayload_File_DML:
+					taskType = storepb.Task_DATABASE_DATA_UPDATE
+				default:
+					return nil, errors.Errorf("unsupported release file change type %q", file.ChangeType)
+				}
+
+				// Create task payload
+				payload := &storepb.Task{
+					SpecId:        spec.Id,
+					SheetId:       int32(sheetUID),
+					SchemaVersion: file.Version,
+					TaskReleaseSource: &storepb.TaskReleaseSource{
+						File: common.FormatReleaseFile(c.Release, file.Id),
+					},
+				}
+
+				// Add ghost flags if this is a ghost migration
+				if taskType == storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST && c.GhostFlags != nil {
+					payload.Flags = c.GhostFlags
+				}
+
+				if taskType == storepb.Task_DATABASE_DATA_UPDATE {
+					payload.EnablePriorBackup = c.EnablePriorBackup
+				}
+
+				taskCreate := &store.TaskMessage{
+					InstanceID:   database.InstanceID,
+					DatabaseName: &database.DatabaseName,
+					Environment:  database.EffectiveEnvironmentID,
+					Type:         taskType,
+					Payload:      payload,
+				}
+				taskCreates = append(taskCreates, taskCreate)
+			case storepb.ReleasePayload_File_DECLARATIVE:
+				// TODO(p0ny): error if applied revisions contain a higher version than the declarative file
+
+				// Parse sheet ID from the file's sheet reference
+				_, sheetUID, err := common.GetProjectResourceIDSheetUID(file.Sheet)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q in release file %q", file.Sheet, file.Id)
+				}
+				payload := &storepb.Task{
+					SpecId:        spec.Id,
+					SheetId:       int32(sheetUID),
+					SchemaVersion: file.Version,
+					TaskReleaseSource: &storepb.TaskReleaseSource{
+						File: common.FormatReleaseFile(c.Release, file.Id),
+					},
+				}
+				taskCreate := &store.TaskMessage{
+					InstanceID:   database.InstanceID,
+					DatabaseName: &database.DatabaseName,
+					Environment:  database.EffectiveEnvironmentID,
+					Type:         storepb.Task_DATABASE_SCHEMA_UPDATE_SDL,
+					Payload:      payload,
+				}
+				taskCreates = append(taskCreates, taskCreate)
 			default:
-				return nil, errors.Errorf("unsupported release file change type %q", file.ChangeType)
+				return nil, errors.Errorf("unsupported release file type %q", file.Type)
 			}
-
-			// Create task payload
-			payload := &storepb.Task{
-				SpecId:        spec.Id,
-				SheetId:       int32(sheetUID),
-				SchemaVersion: file.Version,
-				TaskReleaseSource: &storepb.TaskReleaseSource{
-					File: common.FormatReleaseFile(c.Release, file.Id),
-				},
-			}
-
-			// Add ghost flags if this is a ghost migration
-			if taskType == storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST && c.GhostFlags != nil {
-				payload.Flags = c.GhostFlags
-			}
-
-			if taskType == storepb.Task_DATABASE_DATA_UPDATE {
-				payload.EnablePriorBackup = c.EnablePriorBackup
-			}
-
-			taskCreate := &store.TaskMessage{
-				InstanceID:   database.InstanceID,
-				DatabaseName: &database.DatabaseName,
-				Environment:  database.EffectiveEnvironmentID,
-				Type:         taskType,
-				Payload:      payload,
-			}
-			taskCreates = append(taskCreates, taskCreate)
 		}
 	}
 
