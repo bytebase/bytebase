@@ -63,7 +63,7 @@ const doSaveSheet = async (
   const sheetId = Number(extractWorksheetUID(worksheet ?? ""));
 
   if (sheetId !== UNKNOWN_ID) {
-    const currentSheet = await worksheetV1Store.getWorksheetByName(worksheet);
+    const currentSheet = worksheetV1Store.getWorksheetByName(worksheet);
     if (!currentSheet) return;
 
     const updatedSheet = await worksheetV1Store.patchWorksheet(
@@ -130,6 +130,9 @@ const trySaveSheet = (
   editTitle?: boolean,
   mask?: Array<keyof Worksheet>
 ) => {
+  if (!tab.connection.database) {
+    return;
+  }
   if (needSheetTitle(tab) || editTitle) {
     state.pendingEdit = {
       tab,

@@ -156,7 +156,6 @@ const handleProjectSwitched = async () => {
   if (project) {
     await projectStore.getOrFetchProjectByName(project, true /* silent */);
   }
-  tabStore.maybeInitProject(project);
 };
 
 const connect = (connection: SQLEditorConnection) => {

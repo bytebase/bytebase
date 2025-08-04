@@ -2,7 +2,7 @@
   <div
     class="flex h-full w-full flex-col justify-start items-stretch overflow-hidden bg-dark-bg"
   >
-    <EditorAction @execute="handleExecute" @clear-screen="handleClearScreen" />
+    <EditorAction />
 
     <div
       v-if="!tabStore.isDisconnected"
