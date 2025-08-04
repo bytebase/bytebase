@@ -266,6 +266,7 @@ message Plan {
   // - SUCCESS
   // - WARNING
   // - ERROR
+  // - RUNNING
   map<string, int32> plan_check_run_status_count = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   Deployment deployment = 13;
