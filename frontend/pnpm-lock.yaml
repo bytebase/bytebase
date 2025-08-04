@@ -319,7 +319,7 @@ importers:
         version: 0.20.17
       dotenv:
         specifier: ^16.5.0
-        version: 16.5.0
+        version: 16.6.1
       eslint:
         specifier: 9.32.0
         version: 9.32.0(jiti@1.21.7)
@@ -3191,8 +3191,8 @@ packages:
   dompurify@3.2.6:
     resolution: {integrity: sha512-/2GogDQlohXPZe6D6NOgQvXLPSYBqIWMnZ8zzOhn09REE4eyAzb+Hed3jhoM9OkuaJ8P6ZGTTVWQKAi8ieIzfQ==}
 
-  dotenv@16.5.0:
-    resolution: {integrity: sha512-m/C+AwOAr9/W1UOIZUo232ejMNnJAJtYQjUbHoNTBNTJSvqzzDh7vnrei3o3r3m9blf6ZoDkvcw0VmozNRFJxg==}
+  dotenv@16.6.1:
+    resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
     engines: {node: '>=12'}
 
   double-ended-queue@2.1.0-0:
@@ -8904,7 +8904,7 @@ snapshots:
     dependencies:
       '@vue/compiler-dom': 3.5.18
       chalk: 4.1.2
-      dotenv: 16.5.0
+      dotenv: 16.6.1
       launch-ide: 1.0.8
       portfinder: 1.0.37
     transitivePeerDependencies:
@@ -8914,7 +8914,7 @@ snapshots:
     dependencies:
       chalk: 4.1.1
       code-inspector-core: 0.20.17
-      dotenv: 16.5.0
+      dotenv: 16.6.1
       esbuild-code-inspector-plugin: 0.20.17
       vite-code-inspector-plugin: 0.20.17
       webpack-code-inspector-plugin: 0.20.17
@@ -9212,7 +9212,7 @@ snapshots:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
-  dotenv@16.5.0: {}
+  dotenv@16.6.1: {}
 
   double-ended-queue@2.1.0-0: {}
 
@@ -9810,7 +9810,7 @@ snapshots:
   launch-ide@1.0.8:
     dependencies:
       chalk: 4.1.2
-      dotenv: 16.5.0
+      dotenv: 16.6.1
 
   level-codec@9.0.2:
     dependencies:
