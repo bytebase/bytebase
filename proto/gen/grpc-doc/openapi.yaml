@@ -12254,6 +12254,7 @@ components:
                     enum:
                         - TYPE_UNSPECIFIED
                         - VERSIONED
+                        - DECLARATIVE
                     type: string
                     description: The type of the file.
                     format: enum
