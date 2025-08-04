@@ -125,8 +125,8 @@ importers:
         specifier: ^1.0.1
         version: 1.0.1
       pev2:
-        specifier: 1.15.0
-        version: 1.15.0(@popperjs/core@2.11.8)(typescript@5.8.3)
+        specifier: 1.16.0
+        version: 1.16.0(@popperjs/core@2.11.8)(typescript@5.8.3)
       pinia:
         specifier: 2.3.1
         version: 2.3.1(typescript@5.8.3)(vue@3.5.18(typescript@5.8.3))
@@ -2779,6 +2779,11 @@ packages:
     peerDependencies:
       '@popperjs/core': ^2.11.8
 
+  bootstrap@5.3.7:
+    resolution: {integrity: sha512-7KgiD8UHjfcPBHEpDNg+zGz8L3LqR3GVwqZiBRFX04a1BCArZOz1r2kjly2HQ0WokqTO0v1nF+QAt8dsW4lKlw==}
+    peerDependencies:
+      '@popperjs/core': ^2.11.8
+
   brace-expansion@1.1.11:
     resolution: {integrity: sha512-iCuPHDFgrHX7H2vEI/5xpz07zSHB00TpugqhmYtVmMO6518mCuRMoOYFldEBl0g187ufozdaHgWKcYFb61qGiA==}
 
@@ -4264,8 +4269,8 @@ packages:
     resolution: {integrity: sha512-vE7JKRyES09KiunauX7nd2Q9/L7lhok4smP9RZTDeD4MVs72Dp2qNFVz39Nz5a0FVEW0BJR6C0DYrq6unoziZA==}
     engines: {node: '>= 14.16'}
 
-  pev2@1.15.0:
-    resolution: {integrity: sha512-g6VcSY+EEjUpBUgouUPkO4Vnqq5wqdQO4v6lWS4/g9CeV0cmQxxne+gtIaqGRzoPGDq9S983Bpwaa80NeH3zQQ==}
+  pev2@1.16.0:
+    resolution: {integrity: sha512-U00WDBS0RK0+L7F9Ao8RQHDQcGrfr0kYHxEf7iPv22zCPTyBdph0MFYFlJYLXs0dUzwtQASyC0zqyohgcT6pPw==}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -8778,6 +8783,10 @@ snapshots:
     dependencies:
       '@popperjs/core': 2.11.8
 
+  bootstrap@5.3.7(@popperjs/core@2.11.8):
+    dependencies:
+      '@popperjs/core': 2.11.8
+
   brace-expansion@1.1.11:
     dependencies:
       balanced-match: 1.0.2
@@ -10456,12 +10465,12 @@ snapshots:
 
   pathval@2.0.0: {}
 
-  pev2@1.15.0(@popperjs/core@2.11.8)(typescript@5.8.3):
+  pev2@1.16.0(@popperjs/core@2.11.8)(typescript@5.8.3):
     dependencies:
       '@fortawesome/fontawesome-svg-core': 6.7.2
       '@fortawesome/free-solid-svg-icons': 6.7.2
       '@fortawesome/vue-fontawesome': 3.0.8(@fortawesome/fontawesome-svg-core@6.7.2)(vue@3.5.18(typescript@5.8.3))
-      bootstrap: 5.3.6(@popperjs/core@2.11.8)
+      bootstrap: 5.3.7(@popperjs/core@2.11.8)
       d3: 7.9.0
       d3-flextree: 2.1.2
       highlight.js: 11.11.1
