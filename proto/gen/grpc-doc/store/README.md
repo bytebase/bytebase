@@ -3932,6 +3932,7 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | VERSIONED | 1 |  |
+| DECLARATIVE | 2 |  |
 
 
  

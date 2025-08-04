@@ -27,6 +27,7 @@ type ReleasePayload_File_Type int32
 const (
 	ReleasePayload_File_TYPE_UNSPECIFIED ReleasePayload_File_Type = 0
 	ReleasePayload_File_VERSIONED        ReleasePayload_File_Type = 1
+	ReleasePayload_File_DECLARATIVE      ReleasePayload_File_Type = 2
 )
 
 // Enum value maps for ReleasePayload_File_Type.
@@ -34,10 +35,12 @@ var (
 	ReleasePayload_File_Type_name = map[int32]string{
 		0: "TYPE_UNSPECIFIED",
 		1: "VERSIONED",
+		2: "DECLARATIVE",
 	}
 	ReleasePayload_File_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED": 0,
 		"VERSIONED":        1,
+		"DECLARATIVE":      2,
 	}
 )
 
@@ -333,12 +336,12 @@ var File_store_release_proto protoreflect.FileDescriptor
 
 const file_store_release_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/release.proto\x12\x0ebytebase.store\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\"\x9e\x05\n" +
+	"\x13store/release.proto\x12\x0ebytebase.store\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\"\xaf\x05\n" +
 	"\x0eReleasePayload\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x129\n" +
 	"\x05files\x18\x02 \x03(\v2#.bytebase.store.ReleasePayload.FileR\x05files\x12G\n" +
 	"\n" +
-	"vcs_source\x18\x03 \x01(\v2(.bytebase.store.ReleasePayload.VCSSourceR\tvcsSource\x1a\x9e\x03\n" +
+	"vcs_source\x18\x03 \x01(\v2(.bytebase.store.ReleasePayload.VCSSourceR\tvcsSource\x1a\xaf\x03\n" +
 	"\x04File\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12-\n" +
@@ -348,10 +351,11 @@ const file_store_release_proto_rawDesc = "" +
 	"\x04type\x18\x05 \x01(\x0e2(.bytebase.store.ReleasePayload.File.TypeR\x04type\x12\x18\n" +
 	"\aversion\x18\x06 \x01(\tR\aversion\x12O\n" +
 	"\vchange_type\x18\a \x01(\x0e2..bytebase.store.ReleasePayload.File.ChangeTypeR\n" +
-	"changeType\"+\n" +
+	"changeType\"<\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
-	"\tVERSIONED\x10\x01\"J\n" +
+	"\tVERSIONED\x10\x01\x12\x0f\n" +
+	"\vDECLARATIVE\x10\x02\"J\n" +
 	"\n" +
 	"ChangeType\x12\x1b\n" +
 	"\x17CHANGE_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
