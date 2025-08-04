@@ -829,7 +829,7 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 
 		// Filter out bbdataarchive schema changes for Postgres
 		if engine == storepb.Engine_POSTGRES {
-			schemaDiff = filterPostgresArchiveSchema(schemaDiff)
+			schemaDiff = schema.FilterPostgresArchiveSchema(schemaDiff)
 		}
 
 		migrationSQL, err := schema.GenerateMigration(engine, schemaDiff)
@@ -1098,48 +1098,30 @@ func (s *DatabaseService) getTargetSchema(ctx context.Context, request *v1pb.Dif
 
 func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.DiffSchemaRequest) (storepb.Engine, error) {
 	var instanceID string
-	var engine storepb.Engine
 
 	if strings.Contains(request.Name, common.ChangelogPrefix) {
 		insID, _, _, err := common.GetInstanceDatabaseChangelogUID(request.Name)
 		if err != nil {
-			return engine, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
+			return storepb.Engine_ENGINE_UNSPECIFIED, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 		}
 		instanceID = insID
 	} else {
 		insID, _, err := common.GetInstanceDatabaseID(request.Name)
 		if err != nil {
-			return engine, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
+			return storepb.Engine_ENGINE_UNSPECIFIED, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 		}
 		instanceID = insID
 	}
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
-		return engine, errors.Wrapf(err, "failed to get instance %s", instanceID)
+		return storepb.Engine_ENGINE_UNSPECIFIED, errors.Wrapf(err, "failed to get instance %s", instanceID)
 	}
 	if instance == nil {
-		return engine, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
+		return storepb.Engine_ENGINE_UNSPECIFIED, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
 	}
 
-	switch instance.Metadata.GetEngine() {
-	case storepb.Engine_POSTGRES:
-		engine = storepb.Engine_POSTGRES
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		engine = storepb.Engine_MYSQL
-	case storepb.Engine_TIDB:
-		engine = storepb.Engine_TIDB
-	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
-		engine = storepb.Engine_ORACLE
-	case storepb.Engine_MSSQL:
-		engine = storepb.Engine_MSSQL
-	case storepb.Engine_COCKROACHDB:
-		engine = storepb.Engine_COCKROACHDB
-	default:
-		return engine, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid engine type %v", instance.Metadata.GetEngine()))
-	}
-
-	return engine, nil
+	return common.ConvertToParserEngine(instance.Metadata.GetEngine())
 }
 
 func convertToChangedResources(r *storepb.ChangedResources) *v1pb.ChangedResources {
@@ -1381,79 +1363,4 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported schema type %v", req.Msg.Type))
 	}
-}
-
-// filterPostgresArchiveSchema filters out schema diff objects related to bbdataarchive schema.
-func filterPostgresArchiveSchema(diff *schema.MetadataDiff) *schema.MetadataDiff {
-	if diff == nil {
-		return nil
-	}
-
-	archiveSchemaName := common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)
-
-	// Create a new diff object with filtered changes
-	filtered := &schema.MetadataDiff{
-		DatabaseName: diff.DatabaseName,
-	}
-
-	// Filter schema changes
-	for _, schemaChange := range diff.SchemaChanges {
-		if schemaChange.SchemaName != archiveSchemaName {
-			filtered.SchemaChanges = append(filtered.SchemaChanges, schemaChange)
-		}
-	}
-
-	// Filter table changes
-	for _, tableChange := range diff.TableChanges {
-		if tableChange.SchemaName != archiveSchemaName {
-			filtered.TableChanges = append(filtered.TableChanges, tableChange)
-		}
-	}
-
-	// Filter view changes
-	for _, viewChange := range diff.ViewChanges {
-		if viewChange.SchemaName != archiveSchemaName {
-			filtered.ViewChanges = append(filtered.ViewChanges, viewChange)
-		}
-	}
-
-	// Filter materialized view changes
-	for _, mvChange := range diff.MaterializedViewChanges {
-		if mvChange.SchemaName != archiveSchemaName {
-			filtered.MaterializedViewChanges = append(filtered.MaterializedViewChanges, mvChange)
-		}
-	}
-
-	// Filter function changes
-	for _, funcChange := range diff.FunctionChanges {
-		if funcChange.SchemaName != archiveSchemaName {
-			filtered.FunctionChanges = append(filtered.FunctionChanges, funcChange)
-		}
-	}
-
-	// Filter procedure changes
-	for _, procChange := range diff.ProcedureChanges {
-		if procChange.SchemaName != archiveSchemaName {
-			filtered.ProcedureChanges = append(filtered.ProcedureChanges, procChange)
-		}
-	}
-
-	// Filter sequence changes
-	for _, seqChange := range diff.SequenceChanges {
-		if seqChange.SchemaName != archiveSchemaName {
-			filtered.SequenceChanges = append(filtered.SequenceChanges, seqChange)
-		}
-	}
-
-	// Filter enum type changes
-	for _, enumChange := range diff.EnumTypeChanges {
-		if enumChange.SchemaName != archiveSchemaName {
-			filtered.EnumTypeChanges = append(filtered.EnumTypeChanges, enumChange)
-		}
-	}
-
-	// Events are database-level objects, not schema-specific, so copy them all
-	filtered.EventChanges = diff.EventChanges
-
-	return filtered
 }

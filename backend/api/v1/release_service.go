@@ -487,6 +487,7 @@ func convertReleaseVcsSource(vs *v1pb.Release_VCSSource) *storepb.ReleasePayload
 func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Release_File) ([]*v1pb.Release_File, error) {
 	versionSet := map[string]struct{}{}
 
+	fileTypeCount := map[v1pb.Release_File_Type]int{}
 	for _, f := range files {
 		f.Id = uuid.NewString()
 
@@ -523,7 +524,7 @@ func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files 
 		}
 
 		switch f.Type {
-		case v1pb.Release_File_VERSIONED:
+		case v1pb.Release_File_VERSIONED, v1pb.Release_File_DECLARATIVE:
 		default:
 			return nil, errors.Errorf("unexpected file type %q", f.Type.String())
 		}
@@ -532,6 +533,14 @@ func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files 
 			return nil, errors.Errorf("found duplicate version %q", f.Version)
 		}
 		versionSet[f.Version] = struct{}{}
+		fileTypeCount[f.Type]++
+	}
+
+	if fileTypeCount[v1pb.Release_File_VERSIONED] > 0 && fileTypeCount[v1pb.Release_File_DECLARATIVE] > 0 {
+		return nil, errors.Errorf("cannot have both versioned and declarative files")
+	}
+	if fileTypeCount[v1pb.Release_File_DECLARATIVE] > 1 {
+		return nil, errors.Errorf("expect exactly one declarative file, but found %d", fileTypeCount[v1pb.Release_File_DECLARATIVE])
 	}
 
 	// Create files with additional parsed version data for sorting.

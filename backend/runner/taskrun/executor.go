@@ -417,6 +417,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 	// users can create revisions though via API
 	// however we can warn users not to unless they know
 	// what they are doing
+	// TODO(p0ny): handle SDL case
 	if mc.version != "" {
 		list, err := stores.ListRevisions(ctx, &store.FindRevisionMessage{
 			InstanceID:   &mc.database.InstanceID,

@@ -2,6 +2,9 @@
 package common
 
 import (
+	"connectrpc.com/connect"
+	"github.com/pkg/errors"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -526,4 +529,23 @@ const (
 func GetDefaultTransactionMode() TransactionMode {
 	// All engines default to "on" for safety and backward compatibility
 	return TransactionModeOn
+}
+
+func ConvertToParserEngine(e storepb.Engine) (storepb.Engine, error) {
+	switch e {
+	case storepb.Engine_POSTGRES:
+		return storepb.Engine_POSTGRES, nil
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+		return storepb.Engine_MYSQL, nil
+	case storepb.Engine_TIDB:
+		return storepb.Engine_TIDB, nil
+	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
+		return storepb.Engine_ORACLE, nil
+	case storepb.Engine_MSSQL:
+		return storepb.Engine_MSSQL, nil
+	case storepb.Engine_COCKROACHDB:
+		return storepb.Engine_COCKROACHDB, nil
+	default:
+		return storepb.Engine_ENGINE_UNSPECIFIED, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid engine type %v", e))
+	}
 }
