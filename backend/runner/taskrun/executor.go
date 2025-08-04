@@ -129,7 +129,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		storepb.Task_TASK_TYPE_UNSPECIFIED,
 		storepb.Task_DATABASE_EXPORT,
 		storepb.Task_DATABASE_CREATE:
-		return nil, errors.Errorf("task type %s is not unexpected", task.Type)
+		return nil, errors.Errorf("task type %s is unexpected", task.Type)
 	case
 		storepb.Task_DATABASE_DATA_UPDATE,
 		storepb.Task_DATABASE_SCHEMA_UPDATE,
