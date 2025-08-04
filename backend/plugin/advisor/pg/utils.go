@@ -35,11 +35,8 @@ func normalizeSchemaName(name string) string {
 	return "public"
 }
 
-func normalizeTableName(table *ast.TableDef, defaultSchema string) string {
+func normalizeTableName(table *ast.TableDef) string {
 	schema := table.Schema
-	if schema == "" && defaultSchema != "" {
-		schema = defaultSchema
-	}
 
 	if schema == "" {
 		return fmt.Sprintf("%q", table.Name)

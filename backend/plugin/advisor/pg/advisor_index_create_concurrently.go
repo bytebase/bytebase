@@ -37,9 +37,20 @@ func (*IndexConcurrentlyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	if err != nil {
 		return nil, err
 	}
+
+	// First pass: collect all newly created tables
+	newlyCreatedTables := make(map[string]bool)
+	for _, stmt := range stmtList {
+		if createTable, ok := stmt.(*ast.CreateTableStmt); ok {
+			tableName := normalizeTableName(createTable.Name)
+			newlyCreatedTables[tableName] = true
+		}
+	}
+
 	checker := &indexCreateConcurrentlyChecker{
-		level: level,
-		title: string(checkCtx.Rule.Type),
+		level:              level,
+		title:              string(checkCtx.Rule.Type),
+		newlyCreatedTables: newlyCreatedTables,
 	}
 
 	for _, stmt := range stmtList {
@@ -50,9 +61,10 @@ func (*IndexConcurrentlyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 }
 
 type indexCreateConcurrentlyChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
+	adviceList         []*storepb.Advice
+	level              storepb.Advice_Status
+	title              string
+	newlyCreatedTables map[string]bool
 }
 
 // Visit implements ast.Visitor interface.
@@ -60,6 +72,15 @@ func (checker *indexCreateConcurrentlyChecker) Visit(in ast.Node) ast.Visitor {
 	switch node := in.(type) {
 	case *ast.CreateIndexStmt:
 		if !node.Concurrently {
+			// Check if the index is being created on a newly created table
+			if node.Index != nil && node.Index.Table != nil {
+				tableName := normalizeTableName(node.Index.Table)
+				// Skip the check if the table is newly created
+				if checker.newlyCreatedTables[tableName] {
+					return checker
+				}
+			}
+
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
 				Code:          advisor.CreateIndexUnconcurrently.Int32(),
