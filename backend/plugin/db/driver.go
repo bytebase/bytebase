@@ -88,33 +88,6 @@ const (
 	Data MigrationType = "DATA"
 )
 
-// GetVersionTypeSuffix returns the suffix used for schema version string from GitOps.
-func (t MigrationType) GetVersionTypeSuffix() string {
-	switch t {
-	case Migrate:
-		return "ddl"
-	case Data:
-		return "dml"
-	case MigrateSDL:
-		return "sdl"
-	case Baseline:
-		return "baseline"
-	default:
-		return ""
-	}
-}
-
-func (t MigrationType) NeedDump() bool {
-	switch t {
-	case Baseline, Migrate, MigrateSDL:
-		return true
-	case Data:
-		return false
-	default:
-		return false
-	}
-}
-
 // MigrationStatus is the status of migration.
 type MigrationStatus string
 

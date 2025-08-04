@@ -427,7 +427,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 
 	// sync history
 	var syncHistoryPrevUID *int64
-	if mc.migrateType.NeedDump() {
+	if needDump(mc.task.Type) {
 		opts.LogDatabaseSyncStart()
 		syncHistoryPrev, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
@@ -469,7 +469,7 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 		UID: mc.changelog,
 	}
 
-	if mc.migrateType.NeedDump() {
+	if needDump(mc.task.Type) {
 		syncHistory, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
 			return errors.Wrapf(err, "failed to sync database metadata and schema")
@@ -583,6 +583,25 @@ func isChangeDatabaseTask(taskType storepb.Task_Type) bool {
 		storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
 		return true
 	case storepb.Task_DATABASE_CREATE,
+		storepb.Task_DATABASE_EXPORT:
+		return false
+	default:
+		return false
+	}
+}
+
+func needDump(taskType storepb.Task_Type) bool {
+	//exhaustive:enforce
+	switch taskType {
+	case
+		storepb.Task_DATABASE_SCHEMA_UPDATE,
+		storepb.Task_DATABASE_SCHEMA_UPDATE_SDL,
+		storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
+		return true
+	case
+		storepb.Task_TASK_TYPE_UNSPECIFIED,
+		storepb.Task_DATABASE_CREATE,
+		storepb.Task_DATABASE_DATA_UPDATE,
 		storepb.Task_DATABASE_EXPORT:
 		return false
 	default:
