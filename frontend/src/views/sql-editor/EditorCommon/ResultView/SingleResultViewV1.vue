@@ -250,7 +250,7 @@ import {
   extractProjectResourceName,
   extractSQLRowValuePlain,
   generateIssueTitle,
-  hasPermissionToCreateRequestGrantIssue,
+  hasPermissionToCreateDataExportIssue,
   instanceV1HasStructuredQueryResult,
   isNullOrUndefined,
 } from "@/utils";
@@ -365,7 +365,7 @@ const allowToRequestExportData = computed(() => {
     return false;
   }
 
-  return hasPermissionToCreateRequestGrantIssue(database);
+  return hasPermissionToCreateDataExportIssue(database);
 });
 
 // use a debounced value to improve performance when typing rapidly
