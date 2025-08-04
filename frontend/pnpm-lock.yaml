@@ -137,8 +137,8 @@ importers:
         specifier: ^9.0.0
         version: 9.0.0
       pretty-print-json:
-        specifier: ^3.0.4
-        version: 3.0.4
+        specifier: ^3.0.5
+        version: 3.0.5
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
@@ -4425,8 +4425,8 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
 
-  pretty-print-json@3.0.4:
-    resolution: {integrity: sha512-sVupP4x7magteGomyHFUiL8trOVVo45BP74gVo6IiRhQFp3qtmlqCdFt/Tjkim1+/Rr+P/wKl4p67d1BQ8h9bw==}
+  pretty-print-json@3.0.5:
+    resolution: {integrity: sha512-rriU5eEpTeEPZNO6OfyJkDiXPoF6W0AOLAgOl7KvjhIVw/jd2Br1v4dPcBw45cu4h+8sLRsytXfIAweD4RMiTA==}
 
   process-nextick-args@2.0.1:
     resolution: {integrity: sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==}
@@ -10712,7 +10712,7 @@ snapshots:
 
   prettier@3.5.3: {}
 
-  pretty-print-json@3.0.4: {}
+  pretty-print-json@3.0.5: {}
 
   process-nextick-args@2.0.1: {}
 
