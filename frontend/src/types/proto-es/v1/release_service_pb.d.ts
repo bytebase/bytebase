@@ -551,6 +551,11 @@ export enum Release_File_Type {
    * @generated from enum value: VERSIONED = 1;
    */
   VERSIONED = 1,
+
+  /**
+   * @generated from enum value: DECLARATIVE = 2;
+   */
+  DECLARATIVE = 2,
 }
 
 /**

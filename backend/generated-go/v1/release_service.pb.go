@@ -82,6 +82,7 @@ type Release_File_Type int32
 const (
 	Release_File_TYPE_UNSPECIFIED Release_File_Type = 0
 	Release_File_VERSIONED        Release_File_Type = 1
+	Release_File_DECLARATIVE      Release_File_Type = 2
 )
 
 // Enum value maps for Release_File_Type.
@@ -89,10 +90,12 @@ var (
 	Release_File_Type_name = map[int32]string{
 		0: "TYPE_UNSPECIFIED",
 		1: "VERSIONED",
+		2: "DECLARATIVE",
 	}
 	Release_File_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED": 0,
 		"VERSIONED":        1,
+		"DECLARATIVE":      2,
 	}
 )
 
@@ -1240,7 +1243,7 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03LOW\x10\x01\x12\f\n" +
 	"\bMODERATE\x10\x02\x12\b\n" +
-	"\x04HIGH\x10\x03\"\xbe\a\n" +
+	"\x04HIGH\x10\x03\"\xcf\a\n" +
 	"\aRelease\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12/\n" +
@@ -1251,7 +1254,7 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12-\n" +
 	"\x05state\x18\a \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12\x16\n" +
-	"\x06digest\x18\b \x01(\tR\x06digest\x1a\xd9\x03\n" +
+	"\x06digest\x18\b \x01(\tR\x06digest\x1a\xea\x03\n" +
 	"\x04File\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x122\n" +
@@ -1263,10 +1266,11 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x12bytebase.com/SheetR\x05sheet\x12\x1c\n" +
 	"\tstatement\x18\a \x01(\fR\tstatement\x12&\n" +
 	"\fsheet_sha256\x18\x04 \x01(\tB\x03\xe0A\x03R\vsheetSha256\x12*\n" +
-	"\x0estatement_size\x18\b \x01(\x03B\x03\xe0A\x03R\rstatementSize\"+\n" +
+	"\x0estatement_size\x18\b \x01(\x03B\x03\xe0A\x03R\rstatementSize\"<\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
-	"\tVERSIONED\x10\x01\"J\n" +
+	"\tVERSIONED\x10\x01\x12\x0f\n" +
+	"\vDECLARATIVE\x10\x02\"J\n" +
 	"\n" +
 	"ChangeType\x12\x1b\n" +
 	"\x17CHANGE_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +

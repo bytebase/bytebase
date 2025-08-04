@@ -31,6 +31,7 @@ message ReleasePayload {
     enum Type {
       TYPE_UNSPECIFIED = 0;
       VERSIONED = 1;
+      DECLARATIVE = 2;
     }
 
     enum ChangeType {
