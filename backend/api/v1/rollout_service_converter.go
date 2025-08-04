@@ -870,7 +870,7 @@ func convertToStoreTaskType(taskType v1pb.Task_Type) storepb.Task_Type {
 		return storepb.Task_DATABASE_DATA_UPDATE
 	case v1pb.Task_DATABASE_EXPORT:
 		return storepb.Task_DATABASE_EXPORT
-	case v1pb.Task_TYPE_UNSPECIFIED:
+	case v1pb.Task_TYPE_UNSPECIFIED, v1pb.Task_GENERAL:
 		return storepb.Task_TASK_TYPE_UNSPECIFIED
 	default:
 		return storepb.Task_TASK_TYPE_UNSPECIFIED
