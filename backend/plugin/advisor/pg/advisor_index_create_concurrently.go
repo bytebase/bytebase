@@ -42,7 +42,7 @@ func (*IndexConcurrentlyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	newlyCreatedTables := make(map[string]bool)
 	for _, stmt := range stmtList {
 		if createTable, ok := stmt.(*ast.CreateTableStmt); ok {
-			tableName := normalizeTableName(createTable.Name, "")
+			tableName := normalizeTableName(createTable.Name)
 			newlyCreatedTables[tableName] = true
 		}
 	}
@@ -74,7 +74,7 @@ func (checker *indexCreateConcurrentlyChecker) Visit(in ast.Node) ast.Visitor {
 		if !node.Concurrently {
 			// Check if the index is being created on a newly created table
 			if node.Index != nil && node.Index.Table != nil {
-				tableName := normalizeTableName(node.Index.Table, "")
+				tableName := normalizeTableName(node.Index.Table)
 				// Skip the check if the table is newly created
 				if checker.newlyCreatedTables[tableName] {
 					return checker
