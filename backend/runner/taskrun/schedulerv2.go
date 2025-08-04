@@ -559,7 +559,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 	case !done && err != nil:
 		slog.Debug("Encountered transient error running task, will retry",
 			slog.Int("id", task.ID),
-			slog.String("type", string(task.Type)),
+			slog.String("type", task.Type.String()),
 			log.BBError(err),
 		)
 		return
@@ -567,7 +567,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 	case done && err != nil && errors.Is(err, context.Canceled):
 		slog.Warn("task run is canceled",
 			slog.Int("id", task.ID),
-			slog.String("type", string(task.Type)),
+			slog.String("type", task.Type.String()),
 			log.BBError(err),
 		)
 		resultBytes, marshalErr := protojson.Marshal(&storepb.TaskRunResult{
@@ -578,7 +578,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		if marshalErr != nil {
 			slog.Error("Failed to marshal task run result",
 				slog.Int("task_id", task.ID),
-				slog.String("type", string(task.Type)),
+				slog.String("type", task.Type.String()),
 				log.BBError(marshalErr),
 			)
 			return
@@ -604,7 +604,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 	case done && err != nil:
 		slog.Warn("task run failed",
 			slog.Int("id", task.ID),
-			slog.String("type", string(task.Type)),
+			slog.String("type", task.Type.String()),
 			log.BBError(err),
 		)
 		taskRunResult := &storepb.TaskRunResult{
@@ -621,7 +621,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		if marshalErr != nil {
 			slog.Error("Failed to marshal task run result",
 				slog.Int("task_id", task.ID),
-				slog.String("type", string(task.Type)),
+				slog.String("type", task.Type.String()),
 				log.BBError(marshalErr),
 			)
 			return
@@ -665,7 +665,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		if marshalErr != nil {
 			slog.Error("Failed to marshal task run result",
 				slog.Int("task_id", task.ID),
-				slog.String("type", string(task.Type)),
+				slog.String("type", task.Type.String()),
 				log.BBError(marshalErr),
 			)
 			return
@@ -708,7 +708,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		// This case should not happen in normal flow, but adding for completeness
 		slog.Error("Unexpected task execution state",
 			slog.Int("id", task.ID),
-			slog.String("type", string(task.Type)),
+			slog.String("type", task.Type.String()),
 			slog.Bool("done", done),
 			slog.Bool("has_error", err != nil),
 		)
