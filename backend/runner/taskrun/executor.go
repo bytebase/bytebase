@@ -136,7 +136,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST,
 		storepb.Task_DATABASE_SCHEMA_UPDATE_SDL:
 	default:
-		return nil, errors.Errorf("task type %s is not unexpected", task.Type)
+		return nil, errors.Errorf("task type %s is unexpected", task.Type)
 	}
 
 	if sheetID != nil {
