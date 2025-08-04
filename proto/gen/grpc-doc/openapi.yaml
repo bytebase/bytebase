@@ -11547,6 +11547,7 @@ components:
                          - SUCCESS
                          - WARNING
                          - ERROR
+                         - RUNNING
                 deployment:
                     $ref: '#/components/schemas/Plan_Deployment'
         PlanCheckRun:

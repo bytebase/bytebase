@@ -37,8 +37,8 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		Deployment:              convertToPlanDeployment(plan.Config.Deployment),
 		CreateTime:              timestamppb.New(plan.CreatedAt),
 		UpdateTime:              timestamppb.New(plan.UpdatedAt),
-		PlanCheckRunStatusCount: plan.PlanCheckRunStatusCount,
 		State:                   convertDeletedToState(plan.Deleted),
+		PlanCheckRunStatusCount: map[string]int32{},
 	}
 
 	creator, err := s.GetUserByID(ctx, plan.CreatorUID)
@@ -56,6 +56,18 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 	}
 	if plan.PipelineUID != nil {
 		p.Rollout = common.FormatRollout(plan.ProjectID, *plan.PipelineUID)
+	}
+	planCheckRuns, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
+		PlanUID: &plan.UID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list plan check runs for plan uid %d", plan.UID)
+	}
+	for _, run := range planCheckRuns {
+		p.PlanCheckRunStatusCount[string(run.Status)]++
+		for _, result := range run.Result.Results {
+			p.PlanCheckRunStatusCount[storepb.PlanCheckRunResult_Result_Status_name[int32(result.Status)]]++
+		}
 	}
 	return p, nil
 }

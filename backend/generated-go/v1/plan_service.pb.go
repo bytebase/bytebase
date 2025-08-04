@@ -716,6 +716,7 @@ type Plan struct {
 	// - SUCCESS
 	// - WARNING
 	// - ERROR
+	// - RUNNING
 	PlanCheckRunStatusCount map[string]int32 `protobuf:"bytes,11,rep,name=plan_check_run_status_count,json=planCheckRunStatusCount,proto3" json:"plan_check_run_status_count,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
 	Deployment              *Plan_Deployment `protobuf:"bytes,13,opt,name=deployment,proto3" json:"deployment,omitempty"`
 	unknownFields           protoimpl.UnknownFields

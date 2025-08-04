@@ -100,13 +100,13 @@ export const usePlanStore = defineStore("plan", () => {
       pageSize,
       pageToken,
     });
-    const resp = await planServiceClientConnect.searchPlans(request);
-    const plans = resp.plans;
+    const { plans, nextPageToken } =
+      await planServiceClientConnect.searchPlans(request);
     // Prepare creator for the plans.
     const users = uniq(plans.map((plan) => plan.creator));
     await useUserStore().batchGetUsers(users);
     return {
-      nextPageToken: resp.nextPageToken,
+      nextPageToken: nextPageToken,
       plans,
     };
   };
