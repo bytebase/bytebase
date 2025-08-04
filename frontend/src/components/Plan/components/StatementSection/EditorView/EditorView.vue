@@ -271,9 +271,8 @@ const isEditorReadonly = computed(() => {
   return !state.isEditing || isSheetOversize.value || false;
 });
 
-const { sheet, sheetName, sheetReady, sheetStatement } = useSpecSheet(
-  selectedSpec.value
-);
+const { sheet, sheetName, sheetReady, sheetStatement } =
+  useSpecSheet(selectedSpec);
 
 const isSheetOversize = computed(() => {
   if (isCreating.value) return false;

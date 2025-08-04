@@ -82,6 +82,7 @@ type Release_File_Type int32
 const (
 	Release_File_TYPE_UNSPECIFIED Release_File_Type = 0
 	Release_File_VERSIONED        Release_File_Type = 1
+	Release_File_DECLARATIVE      Release_File_Type = 2
 )
 
 // Enum value maps for Release_File_Type.
@@ -89,10 +90,12 @@ var (
 	Release_File_Type_name = map[int32]string{
 		0: "TYPE_UNSPECIFIED",
 		1: "VERSIONED",
+		2: "DECLARATIVE",
 	}
 	Release_File_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED": 0,
 		"VERSIONED":        1,
+		"DECLARATIVE":      2,
 	}
 )
 
@@ -228,7 +231,6 @@ type ListReleasesRequest struct {
 	// If unspecified, at most 10 releases will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used.
 	// A page token, received from a previous `ListReleases` call.
 	// Provide this to retrieve the subsequent page.
 	//
@@ -357,8 +359,18 @@ type SearchReleasesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	// The maximum number of releases to return. The service may return fewer than this value.
+	// If unspecified, at most 10 releases will be returned.
+	// The maximum value is 1000; values above 1000 will be coerced to 1000.
+	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// A page token, received from a previous `ListReleases` call.
+	// Provide this to retrieve the subsequent page.
+	//
+	// When paginating, all other parameters provided to `ListReleases` must match
+	// the call that provided the page token.
+	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Search by the digest of the release.
-	Digest        *string `protobuf:"bytes,2,opt,name=digest,proto3,oneof" json:"digest,omitempty"`
+	Digest        *string `protobuf:"bytes,4,opt,name=digest,proto3,oneof" json:"digest,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -400,6 +412,20 @@ func (x *SearchReleasesRequest) GetParent() string {
 	return ""
 }
 
+func (x *SearchReleasesRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *SearchReleasesRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
 func (x *SearchReleasesRequest) GetDigest() string {
 	if x != nil && x.Digest != nil {
 		return *x.Digest
@@ -408,8 +434,11 @@ func (x *SearchReleasesRequest) GetDigest() string {
 }
 
 type SearchReleasesResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Releases      []*Release             `protobuf:"bytes,1,rep,name=releases,proto3" json:"releases,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Releases []*Release             `protobuf:"bytes,1,rep,name=releases,proto3" json:"releases,omitempty"`
+	// A token, which can be sent as `page_token` to retrieve the next page.
+	// If this field is omitted, there are no subsequent pages.
+	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -449,6 +478,13 @@ func (x *SearchReleasesResponse) GetReleases() []*Release {
 		return x.Releases
 	}
 	return nil
+}
+
+func (x *SearchReleasesResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
 }
 
 type CreateReleaseRequest struct {
@@ -1160,14 +1196,18 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\fshow_deleted\x18\x04 \x01(\bR\vshowDeleted\"p\n" +
 	"\x14ListReleasesResponse\x120\n" +
 	"\breleases\x18\x01 \x03(\v2\x14.bytebase.v1.ReleaseR\breleases\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"u\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xb1\x01\n" +
 	"\x15SearchReleasesRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
-	"\x06digest\x18\x02 \x01(\tH\x00R\x06digest\x88\x01\x01B\t\n" +
-	"\a_digest\"J\n" +
+	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x03 \x01(\tR\tpageToken\x12\x1b\n" +
+	"\x06digest\x18\x04 \x01(\tH\x00R\x06digest\x88\x01\x01B\t\n" +
+	"\a_digest\"r\n" +
 	"\x16SearchReleasesResponse\x120\n" +
-	"\breleases\x18\x01 \x03(\v2\x14.bytebase.v1.ReleaseR\breleases\"\x81\x01\n" +
+	"\breleases\x18\x01 \x03(\v2\x14.bytebase.v1.ReleaseR\breleases\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x81\x01\n" +
 	"\x14CreateReleaseRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x123\n" +
@@ -1203,7 +1243,7 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03LOW\x10\x01\x12\f\n" +
 	"\bMODERATE\x10\x02\x12\b\n" +
-	"\x04HIGH\x10\x03\"\xbe\a\n" +
+	"\x04HIGH\x10\x03\"\xcf\a\n" +
 	"\aRelease\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12/\n" +
@@ -1214,7 +1254,7 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12-\n" +
 	"\x05state\x18\a \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12\x16\n" +
-	"\x06digest\x18\b \x01(\tR\x06digest\x1a\xd9\x03\n" +
+	"\x06digest\x18\b \x01(\tR\x06digest\x1a\xea\x03\n" +
 	"\x04File\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x122\n" +
@@ -1226,10 +1266,11 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x12bytebase.com/SheetR\x05sheet\x12\x1c\n" +
 	"\tstatement\x18\a \x01(\fR\tstatement\x12&\n" +
 	"\fsheet_sha256\x18\x04 \x01(\tB\x03\xe0A\x03R\vsheetSha256\x12*\n" +
-	"\x0estatement_size\x18\b \x01(\x03B\x03\xe0A\x03R\rstatementSize\"+\n" +
+	"\x0estatement_size\x18\b \x01(\x03B\x03\xe0A\x03R\rstatementSize\"<\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
-	"\tVERSIONED\x10\x01\"J\n" +
+	"\tVERSIONED\x10\x01\x12\x0f\n" +
+	"\vDECLARATIVE\x10\x02\"J\n" +
 	"\n" +
 	"ChangeType\x12\x1b\n" +
 	"\x17CHANGE_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
