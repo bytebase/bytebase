@@ -192,6 +192,11 @@ export const provideResourcePoller = () => {
     } finally {
       isRefreshing.value = false;
     }
+
+    // If force is true, restart the poller to ensure it continues polling.
+    if (force) {
+      resourcePoller.restart();
+    }
   };
 
   // Create a single poller for all resources

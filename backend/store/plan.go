@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -28,8 +27,6 @@ type PlanMessage struct {
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	Deleted    bool
-
-	PlanCheckRunStatusCount map[string]int32
 }
 
 // FindPlanMessage is the message to find a plan.
@@ -157,27 +154,9 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			plan.name,
 			plan.description,
 			plan.config,
-			plan.deleted,
-			COALESCE(plan_check_run_status_count.status_count, '{}'::jsonb)
+			plan.deleted
 		FROM plan
 		LEFT JOIN issue on plan.id = issue.plan_id
-		LEFT JOIN LATERAL (
-			SELECT
-				jsonb_object_agg(a.status, a.count) AS status_count
-			FROM (
-				SELECT
-					e->>'status' AS status,
-					COUNT(*) AS count
-				FROM (
-					SELECT DISTINCT ON (plan_check_run.type, plan_check_run.config->>'instanceId', plan_check_run.config->>'databaseName', plan_check_run.config->>'sheetUid')
-						jsonb_array_elements(plan_check_run.result->'results') e
-					FROM plan_check_run
-					WHERE plan_check_run.plan_id = plan.id
-					ORDER BY plan_check_run.type, plan_check_run.config->>'instanceId', plan_check_run.config->>'databaseName', plan_check_run.config->>'sheetUid', plan_check_run.id DESC
-				) r
-				GROUP BY e->>'status'
-			) a
-		) plan_check_run_status_count ON TRUE
 		WHERE %s
 		ORDER BY id DESC
 	`, strings.Join(where, " AND "))
@@ -205,7 +184,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		plan := PlanMessage{
 			Config: &storepb.PlanConfig{},
 		}
-		var config, statusCount []byte
+		var config []byte
 		if err := rows.Scan(
 			&plan.UID,
 			&plan.CreatorUID,
@@ -217,15 +196,11 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			&plan.Description,
 			&config,
 			&plan.Deleted,
-			&statusCount,
 		); err != nil {
 			return nil, errors.Wrap(err, "failed to scan plan")
 		}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(config, plan.Config); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal plan config")
-		}
-		if err := json.Unmarshal(statusCount, &plan.PlanCheckRunStatusCount); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal plan check run status count")
 		}
 		plans = append(plans, &plan)
 	}
