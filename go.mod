@@ -8,7 +8,7 @@ godebug x509negativeserial=1
 
 require (
 	cloud.google.com/go/bigquery v1.69.0
-	cloud.google.com/go/cloudsqlconn v1.17.1
+	cloud.google.com/go/cloudsqlconn v1.17.3
 	cloud.google.com/go/secretmanager v1.15.0
 	cloud.google.com/go/spanner v1.83.0
 	connectrpc.com/connect v1.18.1
@@ -74,7 +74,7 @@ require (
 	github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8
 	github.com/mattn/go-oci8 v0.1.1
 	github.com/mattn/go-sqlite3 v1.14.30
-	github.com/microsoft/go-mssqldb v1.8.2
+	github.com/microsoft/go-mssqldb v1.9.2
 	github.com/nyaruka/phonenumbers v1.6.3
 	github.com/opensearch-project/opensearch-go/v4 v4.5.0
 	github.com/paulmach/orb v0.11.1
