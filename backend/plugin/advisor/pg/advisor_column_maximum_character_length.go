@@ -73,7 +73,7 @@ func (checker *columnMaximumCharacterLengthChecker) Visit(in ast.Node) ast.Visit
 		for _, column := range node.ColumnList {
 			charLength := getCharLength(column)
 			if charLength > checker.maximum {
-				tableName = normalizeTableName(node.Name, "")
+				tableName = normalizeTableName(node.Name)
 				columnName = column.ColumnName
 				line = column.LastLine()
 				break
@@ -86,7 +86,7 @@ func (checker *columnMaximumCharacterLengthChecker) Visit(in ast.Node) ast.Visit
 				for _, column := range itemNode.ColumnList {
 					charLength := getCharLength(column)
 					if charLength > checker.maximum {
-						tableName = normalizeTableName(node.Table, "")
+						tableName = normalizeTableName(node.Table)
 						columnName = column.ColumnName
 						line = itemNode.LastLine()
 					}
@@ -94,7 +94,7 @@ func (checker *columnMaximumCharacterLengthChecker) Visit(in ast.Node) ast.Visit
 			case *ast.AlterColumnTypeStmt:
 				if char, ok := itemNode.Type.(*ast.Character); ok {
 					if char.Size > checker.maximum {
-						tableName = normalizeTableName(node.Table, "")
+						tableName = normalizeTableName(node.Table)
 						columnName = itemNode.ColumnName
 						line = itemNode.LastLine()
 					}
