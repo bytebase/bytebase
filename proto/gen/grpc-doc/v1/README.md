@@ -9119,6 +9119,7 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | VERSIONED | 1 |  |
+| DECLARATIVE | 2 |  |
 
 
  
