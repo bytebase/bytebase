@@ -57,16 +57,10 @@ import {
   checkIsEnterEndsStatement,
 } from "./utils";
 
-const props = defineProps({
-  content: {
-    type: String,
-    default: "",
-  },
-  readonly: {
-    type: Boolean,
-    default: false,
-  },
-});
+const props = defineProps<{
+  content: string;
+  readonly: boolean;
+}>();
 
 const emit = defineEmits<{
   (e: "update:content", content: string): void;
@@ -239,7 +233,7 @@ const handleEditorReady = (_: MonacoModule, editor: IStandaloneCodeEditor) => {
     },
     // Tell the editor this should be only
     // triggered when both of the two conditions are satisfied.
-    "!readonly && cursorAtFirstLine && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
+    "!readonly && !content && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
   );
   editor.addCommand(
     monaco.KeyCode.DownArrow,
@@ -267,6 +261,10 @@ const handleEditorReady = (_: MonacoModule, editor: IStandaloneCodeEditor) => {
     },
     { immediate: true }
   );
+
+  if (!props.readonly) {
+    nextTick(() => editor.focus());
+  }
 };
 
 useEmitteryEventListener(editorEvents, "format-content", () => {
