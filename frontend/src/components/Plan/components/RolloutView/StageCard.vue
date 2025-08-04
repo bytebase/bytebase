@@ -90,17 +90,13 @@
                 round
                 size="small"
                 :bordered="false"
-                :class="isCreated && 'cursor-pointer hover:opacity-80'"
                 @click.stop="handleTaskClick(task)"
               >
                 <template #avatar>
                   <TaskStatus :status="task.status" size="tiny" disabled />
                 </template>
                 <div class="flex items-center flex-nowrap">
-                  <DatabaseDisplay
-                    :database="task.target"
-                    :project="project.name"
-                  />
+                  <DatabaseDisplay :database="task.target" />
                   <NTooltip v-if="task.runTime">
                     <template #trigger>
                       <CalendarClockIcon
