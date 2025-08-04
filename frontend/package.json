@@ -82,7 +82,7 @@
   },
   "devDependencies": {
     "@codingame/esbuild-import-meta-url-plugin": "^1.0.3",
-    "@iconify/json": "2.2.345",
+    "@iconify/json": "2.2.366",
     "@intlify/eslint-plugin-vue-i18n": "^3.2.0",
     "@intlify/unplugin-vue-i18n": "6.0.8",
     "@rollup/plugin-yaml": "4.1.2",
