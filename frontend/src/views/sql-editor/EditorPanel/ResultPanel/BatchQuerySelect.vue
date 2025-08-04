@@ -102,7 +102,6 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { useLocalStorage } from "@vueuse/core";
 import dayjs from "dayjs";
 import { head } from "lodash-es";
 import { EyeIcon, EyeOffIcon, CircleAlertIcon, XIcon } from "lucide-vue-next";
@@ -148,10 +147,7 @@ const tabStore = useSQLEditorTabStore();
 const { currentTab: tab } = storeToRefs(tabStore);
 const databaseStore = useDatabaseV1Store();
 const sqlStore = useSQLStore();
-const showEmpty = useLocalStorage(
-  "bb.sql-editor.batch-query.show-empty-result-sets",
-  true
-);
+const showEmpty = ref<boolean>(true);
 
 const selectedDatabaseNameList = ref<string[]>([]);
 
