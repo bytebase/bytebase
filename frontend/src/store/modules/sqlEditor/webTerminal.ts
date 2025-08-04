@@ -1,7 +1,7 @@
 import { create, fromJson, toJson } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import Emittery from "emittery";
-import { uniqueId } from "lodash-es";
+import { uniqueId, cloneDeep } from "lodash-es";
 import { defineStore } from "pinia";
 import type { Subscription } from "rxjs";
 import { fromEventPattern, map, Observable } from "rxjs";
@@ -247,7 +247,7 @@ const useQueryStateLogic = (qs: WebTerminalQueryState) => {
 
   qs.controller.events.on("query", (input) => {
     qs.timer.start();
-    activeQuery().params = input;
+    activeQuery().params = cloneDeep(input);
     activeQuery().status = "RUNNING";
   });
 

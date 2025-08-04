@@ -453,7 +453,7 @@ const connect = (node: SQLEditorTreeNode) => {
   setConnection(node, {
     extra: {
       worksheet: tabStore.currentTab?.worksheet ?? "",
-      mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+      mode: tabStore.currentTab?.mode ?? DEFAULT_SQL_EDITOR_TAB_MODE,
     },
     context: editorContext,
   });

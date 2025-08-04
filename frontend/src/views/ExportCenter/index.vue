@@ -200,10 +200,6 @@ watch(
 useRefreshIssueList(() => issuePagedTable.value?.refresh());
 
 const allowExportData = computed(() => {
-  if (specificProject.value) {
-    return hasPermissionToCreateDataExportIssueInProject(specificProject.value);
-  }
-
   return hasPermissionToCreateDataExportIssueInProject(specificProject.value);
 });
 </script>

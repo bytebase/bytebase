@@ -115,7 +115,7 @@
             />
             <div
               v-if="columnIndex === 0 && !selectionDisabled"
-              class="absolute inset-y-0 left-0 w-3 cursor-pointer bg-accent/5 hover:bg-accent/10 dark:hover:bg-accent/40"
+              class="absolute inset-y-0 left-0 w-3 cursor-pointer bg-accent/5 dark:bg-white/10 hover:bg-accent/10 dark:hover:bg-accent/40"
               :class="{
                 '!bg-accent/10 dark:!bg-accent/40':
                   selectionState.columns.length === 0 &&
