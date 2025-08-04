@@ -1,6 +1,6 @@
 <template>
   <div class="sql-editor-tree gap-y-1 h-full flex flex-col relative">
-    <div class="w-full px-4 mt-4">
+    <div class="w-full px-4 mt-4" v-if="tabStore.supportBatchMode">
       <div
         class="textinfolabel mb-2 w-full leading-4 flex flex-col items-start gap-x-1"
       >

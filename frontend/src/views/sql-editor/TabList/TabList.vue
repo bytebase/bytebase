@@ -66,7 +66,6 @@
 
 <script lang="ts" setup>
 import { useResizeObserver } from "@vueuse/core";
-import { cloneDeep } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { NScrollbar, useDialog } from "naive-ui";
 import { storeToRefs } from "pinia";
@@ -83,14 +82,10 @@ import {
   useTabViewStateStore,
 } from "@/store";
 import type { SQLEditorTab } from "@/types";
-import {
-  defaultSQLEditorTab,
-  defer,
-  suggestedTabTitleForSQLEditorConnection,
-  usePreventBackAndForward,
-} from "@/utils";
+import { defer, usePreventBackAndForward } from "@/utils";
 import { SettingButton } from "../Setting";
 import { useSheetContext } from "../Sheet";
+import { useSQLEditorContext } from "../context";
 import BrandingLogoWrapper from "./BrandingLogoWrapper.vue";
 import ContextMenu from "./ContextMenu.vue";
 import TabItem from "./TabItem";
@@ -105,6 +100,7 @@ const tabStore = useSQLEditorTabStore();
 
 const { t } = useI18n();
 const dialog = useDialog();
+const { showConnectionPanel } = useSQLEditorContext();
 
 const state = reactive<LocalState>({
   dragging: false,
@@ -115,7 +111,7 @@ const { events: sheetEvents } = useSheetContext();
 const scrollbarRef = ref<InstanceType<typeof NScrollbar>>();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
 const { strictProject } = storeToRefs(useSQLEditorStore());
-const { cloneViewState, removeViewState } = useTabViewStateStore();
+const { removeViewState } = useTabViewStateStore();
 const context = provideTabListContext();
 const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
 
@@ -144,25 +140,10 @@ const handleSelectTab = async (tab: SQLEditorTab | undefined) => {
 };
 
 const handleAddTab = () => {
-  const fromTab = tabStore.currentTab;
-  const clonedTab = defaultSQLEditorTab();
-  if (fromTab) {
-    clonedTab.connection = cloneDeep(fromTab.connection);
-    clonedTab.treeState = cloneDeep(fromTab.treeState);
-  }
-  clonedTab.title = suggestedTabTitleForSQLEditorConnection(
-    clonedTab.connection
-  );
-  const newTab = tabStore.addTab(clonedTab);
-  if (fromTab) {
-    const vs = cloneViewState(fromTab.id, newTab.id);
-    if (vs) {
-      vs.view = "CODE";
-      vs.detail = {};
-    }
-  }
+  tabStore.addTab();
 
   nextTick(() => {
+    showConnectionPanel.value = true;
     requestAnimationFrame(() => {
       const elem = scrollElement.value;
       if (elem) {

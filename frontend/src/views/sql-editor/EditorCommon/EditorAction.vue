@@ -187,7 +187,6 @@ defineOptions({
 
 const emit = defineEmits<{
   (e: "execute", params: SQLEditorQueryParams): void;
-  (e: "clear-screen"): void;
 }>();
 
 const state = reactive<LocalState>({});
@@ -268,6 +267,9 @@ const allowSave = computed(() => {
     }
   }
   if (tab.status === "NEW" || tab.status === "CLEAN") {
+    return false;
+  }
+  if (!tab.connection.database) {
     return false;
   }
 

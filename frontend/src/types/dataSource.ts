@@ -1,6 +1,3 @@
-// which from the ops perspective, having different meaning from the normal RW data source.
-export type DataSourceType = "ADMIN" | "RW" | "RO";
-
 // DataSourceOptions is the options for a data source.
 export interface DataSourceOptions {
   srv: boolean;
