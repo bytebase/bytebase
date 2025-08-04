@@ -9,8 +9,8 @@ godebug x509negativeserial=1
 require (
 	cloud.google.com/go/bigquery v1.69.0
 	cloud.google.com/go/cloudsqlconn v1.17.1
-	cloud.google.com/go/secretmanager v1.14.7
-	cloud.google.com/go/spanner v1.82.0
+	cloud.google.com/go/secretmanager v1.15.0
+	cloud.google.com/go/spanner v1.83.0
 	connectrpc.com/connect v1.18.1
 	connectrpc.com/cors v0.1.0
 	connectrpc.com/grpcreflect v1.3.0
@@ -105,19 +105,19 @@ require (
 	golang.org/x/exp v0.0.0-20250531010427-b6e5de432a8b
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/text v0.27.0
-	google.golang.org/api v0.235.0
-	google.golang.org/genproto v0.0.0-20250528174236-200df99c418a
-	google.golang.org/genproto/googleapis/api v0.0.0-20250603155806-513f23925822
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822
-	google.golang.org/grpc v1.73.0
+	google.golang.org/api v0.237.0
+	google.golang.org/genproto v0.0.0-20250728155136-f173205681a0
+	google.golang.org/genproto/googleapis/api v0.0.0-20250721164621-a45f3dfb1074
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250721164621-a45f3dfb1074
+	google.golang.org/grpc v1.74.2
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/inf.v0 v0.9.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
-	cel.dev/expr v0.23.1 // indirect
-	cloud.google.com/go/auth v0.16.1 // indirect
+	cel.dev/expr v0.24.0 // indirect
+	cloud.google.com/go/auth v0.16.2 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/monitoring v1.24.2 // indirect
 	dario.cat/mergo v1.0.1 // indirect
@@ -131,7 +131,7 @@ require (
 	github.com/Azure/go-ntlmssp v0.0.0-20221128193559-754e69321358 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.4.2 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
-	github.com/GoogleCloudPlatform/grpc-gcp-go/grpcgcp v1.5.2 // indirect
+	github.com/GoogleCloudPlatform/grpc-gcp-go/grpcgcp v1.5.3 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.27.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/apache/arrow-go/v18 v18.3.0 // indirect
@@ -257,8 +257,8 @@ require (
 	go.etcd.io/etcd/client/pkg/v3 v3.5.10 // indirect
 	go.etcd.io/etcd/client/v3 v3.5.10 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/contrib/detectors/gcp v1.35.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.60.0 // indirect
+	go.opentelemetry.io/contrib/detectors/gcp v1.36.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.36.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.36.0 // indirect
@@ -277,7 +277,7 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.121.0 // indirect
+	cloud.google.com/go v0.121.2 // indirect
 	cloud.google.com/go/compute/metadata v0.7.0 // indirect
 	cloud.google.com/go/iam v1.5.2 // indirect
 	cloud.google.com/go/longrunning v0.6.7 // indirect
@@ -302,7 +302,7 @@ require (
 	github.com/bytebase/partiql-parser v0.0.0-20240531101102-1962ff456f2c
 	github.com/bytebase/tsql-parser v0.0.0-20250704100832-7b20f2173b45
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cncf/xds/go v0.0.0-20250326154945-ae57f3c0d45f // indirect
+	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443 // indirect
 	github.com/cockroachdb/cockroach-go/v2 v2.4.0
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548 // indirect
 	github.com/danjacques/gofslock v0.0.0-20220131014315-6e321f4509c8 // indirect
@@ -382,7 +382,7 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/net v0.42.0
 	golang.org/x/sync v0.16.0
-	golang.org/x/time v0.11.0 // indirect
+	golang.org/x/time v0.12.0 // indirect
 	golang.org/x/tools v0.34.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
