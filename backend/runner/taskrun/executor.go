@@ -89,11 +89,10 @@ type migrateContext struct {
 	// changelog uid
 	changelog int64
 
-	migrateType          db.MigrationType
 	changeHistoryPayload *storepb.InstanceChangeHistoryPayload
 }
 
-func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, migrationType db.MigrationType, schemaVersion string, sheetID *int, taskRunUID int, dbFactory *dbfactory.DBFactory) (*migrateContext, error) {
+func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, schemaVersion string, sheetID *int, taskRunUID int, dbFactory *dbfactory.DBFactory) (*migrateContext, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return nil, err
@@ -123,7 +122,21 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		version:     schemaVersion,
 		taskRunName: common.FormatTaskRun(pipeline.ProjectID, task.PipelineID, task.Environment, task.ID, taskRunUID),
 		taskRunUID:  taskRunUID,
-		migrateType: migrationType,
+	}
+
+	switch task.Type {
+	case
+		storepb.Task_TASK_TYPE_UNSPECIFIED,
+		storepb.Task_DATABASE_EXPORT,
+		storepb.Task_DATABASE_CREATE:
+		return nil, errors.Errorf("task type %s is unexpected", task.Type)
+	case
+		storepb.Task_DATABASE_DATA_UPDATE,
+		storepb.Task_DATABASE_SCHEMA_UPDATE,
+		storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST,
+		storepb.Task_DATABASE_SCHEMA_UPDATE_SDL:
+	default:
+		return nil, errors.Errorf("task type %s is unexpected", task.Type)
 	}
 
 	if sheetID != nil {
@@ -273,7 +286,7 @@ func doMigrationWithFunc(
 	slog.Debug("Start migration...",
 		slog.String("instance", instance.ResourceID),
 		slog.String("database", database.DatabaseName),
-		slog.String("type", string(mc.migrateType)),
+		slog.String("type", string(mc.task.Type.String())),
 		slog.String("statement", statementRecord),
 	)
 
@@ -336,9 +349,6 @@ func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext,
 	}
 
 	detail := fmt.Sprintf("Applied migration version %s to database %q.", mc.version, database.DatabaseName)
-	if mc.migrateType == db.Baseline {
-		detail = fmt.Sprintf("Established baseline version %s for database %q.", mc.version, database.DatabaseName)
-	}
 
 	return true, &storepb.TaskRunResult{
 		Detail:    detail,
@@ -347,8 +357,8 @@ func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext,
 	}, nil
 }
 
-func runMigrationWithFunc(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, migrationType db.MigrationType, statement string, schemaVersion string, sheetID *int, execFunc execFuncType) (terminated bool, result *storepb.TaskRunResult, err error) {
-	mc, err := getMigrationInfo(ctx, store, profile, syncer, task, migrationType, schemaVersion, sheetID, taskRunUID, dbFactory)
+func runMigrationWithFunc(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, statement string, schemaVersion string, sheetID *int, execFunc execFuncType) (terminated bool, result *storepb.TaskRunResult, err error) {
+	mc, err := getMigrationInfo(ctx, store, profile, syncer, task, schemaVersion, sheetID, taskRunUID, dbFactory)
 	if err != nil {
 		return true, nil, err
 	}
@@ -360,8 +370,8 @@ func runMigrationWithFunc(ctx context.Context, driverCtx context.Context, store 
 	return postMigration(ctx, store, mc, skipped)
 }
 
-func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, migrationType db.MigrationType, statement string, schemaVersion string, sheetID *int) (terminated bool, result *storepb.TaskRunResult, err error) {
-	return runMigrationWithFunc(ctx, driverCtx, store, dbFactory, stateCfg, syncer, profile, task, taskRunUID, migrationType, statement, schemaVersion, sheetID, nil /* default */)
+func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, statement string, schemaVersion string, sheetID *int) (terminated bool, result *storepb.TaskRunResult, err error) {
+	return runMigrationWithFunc(ctx, driverCtx, store, dbFactory, stateCfg, syncer, profile, task, taskRunUID, statement, schemaVersion, sheetID, nil /* default */)
 }
 
 // executeMigrationWithFunc executes the migration with custom migration function.
@@ -387,13 +397,11 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	}()
 
 	// Phase 2 - Executing migration.
-	if mc.migrateType != db.Baseline {
-		// Database secrets feature has been removed
-		// To avoid leak the rendered statement, the error message should use the original statement and not the rendered statement.
-		// Database secrets feature removed - using original statement directly
-		if err := execFunc(driverCtx, statement); err != nil {
-			return false, err
-		}
+	// Database secrets feature has been removed
+	// To avoid leak the rendered statement, the error message should use the original statement and not the rendered statement.
+	// Database secrets feature removed - using original statement directly
+	if err := execFunc(driverCtx, statement); err != nil {
+		return false, err
 	}
 
 	return false, nil
@@ -427,7 +435,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 
 	// sync history
 	var syncHistoryPrevUID *int64
-	if mc.migrateType.NeedDump() {
+	if needDump(mc.task.Type) {
 		opts.LogDatabaseSyncStart()
 		syncHistoryPrev, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
@@ -469,7 +477,7 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 		UID: mc.changelog,
 	}
 
-	if mc.migrateType.NeedDump() {
+	if needDump(mc.task.Type) {
 		syncHistory, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
 			return errors.Wrapf(err, "failed to sync database metadata and schema")
@@ -583,6 +591,25 @@ func isChangeDatabaseTask(taskType storepb.Task_Type) bool {
 		storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
 		return true
 	case storepb.Task_DATABASE_CREATE,
+		storepb.Task_DATABASE_EXPORT:
+		return false
+	default:
+		return false
+	}
+}
+
+func needDump(taskType storepb.Task_Type) bool {
+	//exhaustive:enforce
+	switch taskType {
+	case
+		storepb.Task_DATABASE_SCHEMA_UPDATE,
+		storepb.Task_DATABASE_SCHEMA_UPDATE_SDL,
+		storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
+		return true
+	case
+		storepb.Task_TASK_TYPE_UNSPECIFIED,
+		storepb.Task_DATABASE_CREATE,
+		storepb.Task_DATABASE_DATA_UPDATE,
 		storepb.Task_DATABASE_EXPORT:
 		return false
 	default:

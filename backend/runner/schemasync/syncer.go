@@ -575,7 +575,7 @@ func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceM
 	list, err := s.store.ListChangelogs(ctx, &store.FindChangelogMessage{
 		InstanceID:     &database.InstanceID,
 		DatabaseName:   &database.DatabaseName,
-		TypeList:       []string{string(db.Migrate), string(db.Baseline)},
+		TypeList:       []string{storepb.ChangelogPayload_BASELINE.String(), storepb.ChangelogPayload_MIGRATE.String(), storepb.ChangelogPayload_MIGRATE_GHOST.String(), storepb.ChangelogPayload_MIGRATE_SDL.String()},
 		HasSyncHistory: true,
 		Limit:          &limit,
 		ShowFull:       true,
