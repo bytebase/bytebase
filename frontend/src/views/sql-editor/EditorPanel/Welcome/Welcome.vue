@@ -71,7 +71,7 @@
 <script setup lang="ts">
 import { LayersIcon, LinkIcon, SquarePenIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed } from "vue";
+import { computed, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import { SQL_EDITOR_SETTING_INSTANCE_MODULE } from "@/router/sqlEditor";
@@ -99,6 +99,7 @@ const changeConnection = () => {
 
 const createNewWorksheet = () => {
   useSQLEditorTabStore().addTab();
+  nextTick(() => changeConnection());
 };
 
 const gotoInstanceCreatePage = () => {

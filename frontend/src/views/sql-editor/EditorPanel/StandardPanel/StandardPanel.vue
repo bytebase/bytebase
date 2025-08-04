@@ -61,7 +61,8 @@
     <Pane
       v-if="!isDisconnected && allowReadonlyMode"
       class="relative"
-      :size="40"
+      :size="50"
+      :min-size="20"
     >
       <ResultPanel />
     </Pane>

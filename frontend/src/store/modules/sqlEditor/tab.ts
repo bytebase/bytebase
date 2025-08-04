@@ -201,8 +201,13 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     return tabById(currId);
   });
 
+  const supportBatchMode = computed(() => currentTab.value?.mode !== "ADMIN");
+
   const isInBatchMode = computed(() => {
     if (!currentTab.value) {
+      return false;
+    }
+    if (!supportBatchMode.value) {
       return false;
     }
     if (!hasFeature(PlanFeature.FEATURE_BATCH_QUERY)) {
@@ -481,6 +486,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     isDisconnected,
     isSwitchingTab,
     isInBatchMode,
+    supportBatchMode,
   };
 });
 

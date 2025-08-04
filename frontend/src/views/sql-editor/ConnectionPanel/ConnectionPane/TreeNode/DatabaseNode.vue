@@ -1,15 +1,17 @@
 <template>
   <div class="flex items-center max-w-full overflow-hidden gap-x-1">
-    <LinkIcon
-      v-if="tabStore.currentTab?.connection.database === database.name"
-      class="w-4 textinfolabel"
-    />
-    <NCheckbox
-      v-else-if="canQuery"
-      :checked="checked"
-      @click.stop.prevent=""
-      @update:checked="$emit('update:checked', $event)"
-    />
+    <template v-if="tabStore.supportBatchMode">
+      <LinkIcon
+        v-if="tabStore.currentTab?.connection.database === database.name"
+        class="w-4 textinfolabel"
+      />
+      <NCheckbox
+        v-else-if="canQuery"
+        :checked="checked"
+        @click.stop.prevent=""
+        @update:checked="$emit('update:checked', $event)"
+      />
+    </template>
 
     <RichDatabaseName
       :database="database"
