@@ -36,10 +36,10 @@ importers:
         version: 15.0.3
       '@connectrpc/connect':
         specifier: ^2.0.2
-        version: 2.0.2(@bufbuild/protobuf@2.5.1)
+        version: 2.0.3(@bufbuild/protobuf@2.5.1)
       '@connectrpc/connect-web':
         specifier: ^2.0.2
-        version: 2.0.2(@bufbuild/protobuf@2.5.1)(@connectrpc/connect@2.0.2(@bufbuild/protobuf@2.5.1))
+        version: 2.0.2(@bufbuild/protobuf@2.5.1)(@connectrpc/connect@2.0.3(@bufbuild/protobuf@2.5.1))
       '@markdoc/markdoc':
         specifier: 0.5.2
         version: 0.5.2
@@ -1671,8 +1671,8 @@ packages:
       '@bufbuild/protobuf': ^2.2.0
       '@connectrpc/connect': 2.0.2
 
-  '@connectrpc/connect@2.0.2':
-    resolution: {integrity: sha512-xZuylIUNvNlH52e/4eQsZvY4QZyDJRtEFEDnn/yBrv5Xi5ZZI/p8X+GAHH35ucVaBvv9u7OzHZo8+tEh1EFTxA==}
+  '@connectrpc/connect@2.0.3':
+    resolution: {integrity: sha512-jAbVMHVtDCydGt2P20VpmLjbLtERqSV0RMSyQF3k2zhK8pzQ2QaCAcyVhufClqrOAFZUKL5BqVYtttaxvhmRgg==}
     peerDependencies:
       '@bufbuild/protobuf': ^2.2.0
 
@@ -7649,12 +7649,12 @@ snapshots:
       '@codingame/monaco-vscode-api': 15.0.3
       '@codingame/monaco-vscode-files-service-override': 15.0.3
 
-  '@connectrpc/connect-web@2.0.2(@bufbuild/protobuf@2.5.1)(@connectrpc/connect@2.0.2(@bufbuild/protobuf@2.5.1))':
+  '@connectrpc/connect-web@2.0.2(@bufbuild/protobuf@2.5.1)(@connectrpc/connect@2.0.3(@bufbuild/protobuf@2.5.1))':
     dependencies:
       '@bufbuild/protobuf': 2.5.1
-      '@connectrpc/connect': 2.0.2(@bufbuild/protobuf@2.5.1)
+      '@connectrpc/connect': 2.0.3(@bufbuild/protobuf@2.5.1)
 
-  '@connectrpc/connect@2.0.2(@bufbuild/protobuf@2.5.1)':
+  '@connectrpc/connect@2.0.3(@bufbuild/protobuf@2.5.1)':
     dependencies:
       '@bufbuild/protobuf': 2.5.1
 
