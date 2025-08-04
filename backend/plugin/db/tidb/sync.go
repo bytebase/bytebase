@@ -25,6 +25,8 @@ const (
 	autoIncrementSymbol    = "AUTO_INCREMENT"
 	autoRandSymbol         = "AUTO_RANDOM"
 	pkAutoRandomBitsSymbol = "PK_AUTO_RANDOM_BITS"
+	virtualGenerated       = "VIRTUAL GENERATED"
+	storedGenerated        = "STORED GENERATED"
 )
 
 var (
@@ -227,6 +229,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			IFNULL(CHARACTER_SET_NAME, ''),
 			IFNULL(COLLATION_NAME, ''),
 			QUOTE(COLUMN_COMMENT),
+			GENERATION_EXPRESSION,
 			EXTRA
 		FROM information_schema.COLUMNS
 		WHERE TABLE_SCHEMA = ?
@@ -239,7 +242,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	for columnRows.Next() {
 		column := &storepb.ColumnMetadata{}
 		var tableName, nullable, extra string
-		var defaultStr sql.NullString
+		var defaultStr, generationExpr sql.NullString
 		if err := columnRows.Scan(
 			&tableName,
 			&column.Name,
@@ -250,6 +253,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			&column.CharacterSet,
 			&column.Collation,
 			&column.Comment,
+			&generationExpr,
 			&extra,
 		); err != nil {
 			return nil, err
@@ -263,6 +267,22 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		}
 		column.Nullable = nullableBool
 		setColumnMetadataDefault(column, defaultStr, nullableBool, extra)
+
+		// Handle generated columns
+		if generationExpr.Valid && generationExpr.String != "" {
+			if strings.Contains(strings.ToUpper(extra), virtualGenerated) {
+				column.Generation = &storepb.GenerationMetadata{
+					Type:       storepb.GenerationMetadata_TYPE_VIRTUAL,
+					Expression: generationExpr.String,
+				}
+			} else if strings.Contains(strings.ToUpper(extra), storedGenerated) {
+				column.Generation = &storepb.GenerationMetadata{
+					Type:       storepb.GenerationMetadata_TYPE_STORED,
+					Expression: generationExpr.String,
+				}
+			}
+		}
+
 		key := db.TableKey{Schema: "", Table: tableName}
 		columnMap[key] = append(columnMap[key], column)
 	}
