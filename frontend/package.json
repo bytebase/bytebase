@@ -129,7 +129,7 @@
     "jquery": "3.7.1",
     "jsdom": "25.0.1",
     "micromark-util-sanitize-uri": "^2.0.1",
-    "postcss": "8.5.4",
+    "postcss": "8.5.6",
     "prettier": "3.5.3",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
