@@ -6,11 +6,7 @@
         <div class="flex flex-row items-center gap-x-3">
           <TaskStatus :size="'large'" :status="task.status" />
           <div class="flex flex-row items-center text-xl">
-            <DatabaseDisplay
-              :database="database.name"
-              :project="project.name"
-              :size="'large'"
-            />
+            <DatabaseDisplay :database="database.name" :size="'large'" />
           </div>
           <div class="flex flex-row gap-x-2">
             <NTag round>{{ semanticTaskType(task.type) }}</NTag>

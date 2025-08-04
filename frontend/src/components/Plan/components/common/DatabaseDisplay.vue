@@ -16,16 +16,14 @@
     <span class="truncate text-gray-800">
       {{ databaseDisplayName }}
     </span>
-    <template v-if="project">
-      <router-link
-        class="pl-2 opacity-60 hover:opacity-100"
-        :to="databaseV1UrlWithProject(project, database)"
-        target="_blank"
-        @click.stop
-      >
-        <ExternalLinkIcon :size="16" />
-      </router-link>
-    </template>
+    <router-link
+      class="pl-2 opacity-60 hover:opacity-100"
+      :to="`/${database}`"
+      target="_blank"
+      @click.stop
+    >
+      <ExternalLinkIcon :size="16" />
+    </router-link>
   </div>
 </template>
 
@@ -40,14 +38,12 @@ import {
 } from "@/store";
 import { isValidDatabaseName, unknownInstance } from "@/types";
 import {
-  databaseV1UrlWithProject,
   extractDatabaseResourceName,
   extractInstanceResourceName,
 } from "@/utils";
 
 const props = defineProps<{
   database: string;
-  project?: string;
   showEnvironment?: boolean;
   size?: "small" | "medium" | "large";
 }>();

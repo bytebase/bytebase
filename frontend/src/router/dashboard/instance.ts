@@ -5,6 +5,7 @@ import DashboardSidebar from "@/views/DashboardSidebar.vue";
 import { INSTANCE_ROUTE_DASHBOARD } from "./workspaceRoutes";
 
 export const INSTANCE_ROUTE_DETAIL = `${INSTANCE_ROUTE_DASHBOARD}.detail`;
+export const INSTANCE_ROUTE_DATABASE_DETAIL = `${INSTANCE_ROUTE_DASHBOARD}.database.detail`;
 
 const instanceRoutes: RouteRecordRaw[] = [
   {
@@ -25,6 +26,15 @@ const instanceRoutes: RouteRecordRaw[] = [
           requiredPermissionList: () => ["bb.instances.get"],
         },
         component: () => import("@/views/InstanceDetail.vue"),
+        props: true,
+      },
+      {
+        path: "databases/:databaseName",
+        name: INSTANCE_ROUTE_DATABASE_DETAIL,
+        meta: {
+          requiredPermissionList: () => ["bb.projects.get", "bb.databases.get"],
+        },
+        component: () => import("@/components/InstanceDatabaseRedirect.vue"),
         props: true,
       },
     ],
