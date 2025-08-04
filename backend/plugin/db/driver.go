@@ -68,26 +68,6 @@ var (
 
 type driverFunc func() Driver
 
-// MigrationType is the type of a migration.
-type MigrationType string
-
-const (
-	// Baseline is the migration type for BASELINE.
-	// Used for establishing schema baseline, this is used when
-	// 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
-	// 2. Had schema drift and need to re-establish the baseline.
-	Baseline MigrationType = "BASELINE"
-	// Migrate is the migration type for MIGRATE.
-	// Used for DDL change including CREATE DATABASE.
-	Migrate MigrationType = "MIGRATE"
-	// MigrateSDL is the migration type via state-based schema migration.
-	// Used for schema change including CREATE DATABASE.
-	MigrateSDL MigrationType = "MIGRATE_SDL"
-	// Data is the migration type for DATA.
-	// Used for DML change.
-	Data MigrationType = "DATA"
-)
-
 // MigrationStatus is the status of migration.
 type MigrationStatus string
 
