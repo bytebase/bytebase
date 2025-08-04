@@ -171,6 +171,11 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	}
 
 	if request.Web {
+		// Only allow end users to use web login, not service accounts.
+		if loginUser.Type != storepb.PrincipalType_END_USER {
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("only users can use web login"))
+		}
+
 		origin := req.Header().Get("Origin")
 		if origin == "" {
 			origin = req.Header().Get("grpcgateway-origin")
