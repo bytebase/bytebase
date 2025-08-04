@@ -986,90 +986,103 @@ func getViews(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*store
 		return nil, errors.Wrapf(err, "failed to close rows")
 	}
 
-	// Populate view dependencies
+	// Fetch all view dependencies in a single query to avoid N+1 problem
+	viewDependenciesMap, err := getAllViewDependencies(txn, schemaName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get view dependencies")
+	}
+
+	// Populate view dependencies from the map
 	for schemaName, list := range viewMap {
 		for _, view := range list {
-			dependencies, err := getViewDependencies(txn, schemaName, view.Name)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get view %q dependencies", view.Name)
+			key := db.TableKey{Schema: schemaName, Table: view.Name}
+			if dependencies, ok := viewDependenciesMap[key]; ok {
+				view.DependencyColumns = dependencies
 			}
-			view.DependencyColumns = dependencies
 		}
 	}
 
 	return viewMap, nil
 }
 
-// getViewDependencies gets the dependencies of a view.
-func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.DependencyColumn, error) {
-	var result []*storepb.DependencyColumn
+// getAllViewDependencies gets all view dependencies for a schema in a single query.
+func getAllViewDependencies(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.DependencyColumn, error) {
+	dependenciesMap := make(map[db.TableKey][]*storepb.DependencyColumn)
 
 	query := fmt.Sprintf(`
 		SELECT 
+			NAME as view_name,
 			REFERENCED_OWNER as source_schema,
 			REFERENCED_NAME as source_table,
 			'*' as column_name
 		FROM ALL_DEPENDENCIES
 		WHERE OWNER = '%s'
-			AND NAME = '%s'
 			AND TYPE = 'VIEW'
 			AND REFERENCED_TYPE IN ('TABLE', 'VIEW')
-		ORDER BY REFERENCED_OWNER, REFERENCED_NAME
-	`, schemaName, viewName)
+		ORDER BY NAME, REFERENCED_OWNER, REFERENCED_NAME
+	`, schemaName)
 
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
 	for rows.Next() {
+		var viewName string
 		dependencyColumn := &storepb.DependencyColumn{}
-		if err := rows.Scan(&dependencyColumn.Schema, &dependencyColumn.Table, &dependencyColumn.Column); err != nil {
+		if err := rows.Scan(&viewName, &dependencyColumn.Schema, &dependencyColumn.Table, &dependencyColumn.Column); err != nil {
 			return nil, err
 		}
-		result = append(result, dependencyColumn)
+
+		key := db.TableKey{Schema: schemaName, Table: viewName}
+		dependenciesMap[key] = append(dependenciesMap[key], dependencyColumn)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	return dependenciesMap, nil
 }
 
-// getMaterializedViewDependencies gets the dependencies of a materialized view.
-func getMaterializedViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.DependencyColumn, error) {
-	var result []*storepb.DependencyColumn
+// getAllMaterializedViewDependencies gets all materialized view dependencies for a schema in a single query.
+func getAllMaterializedViewDependencies(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.DependencyColumn, error) {
+	dependenciesMap := make(map[db.TableKey][]*storepb.DependencyColumn)
 
 	query := fmt.Sprintf(`
 		SELECT 
+			NAME as mview_name,
 			REFERENCED_OWNER as source_schema,
 			REFERENCED_NAME as source_table,
 			'*' as column_name
 		FROM ALL_DEPENDENCIES
 		WHERE OWNER = '%s'
-			AND NAME = '%s'
 			AND TYPE = 'MATERIALIZED VIEW'
 			AND REFERENCED_TYPE IN ('TABLE', 'VIEW')
-		ORDER BY REFERENCED_OWNER, REFERENCED_NAME
-	`, schemaName, viewName)
+		ORDER BY NAME, REFERENCED_OWNER, REFERENCED_NAME
+	`, schemaName)
 
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
 	for rows.Next() {
+		var mviewName string
 		dependencyColumn := &storepb.DependencyColumn{}
-		if err := rows.Scan(&dependencyColumn.Schema, &dependencyColumn.Table, &dependencyColumn.Column); err != nil {
+		if err := rows.Scan(&mviewName, &dependencyColumn.Schema, &dependencyColumn.Table, &dependencyColumn.Column); err != nil {
 			return nil, err
 		}
-		result = append(result, dependencyColumn)
+
+		key := db.TableKey{Schema: schemaName, Table: mviewName}
+		dependenciesMap[key] = append(dependenciesMap[key], dependencyColumn)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	return dependenciesMap, nil
 }
 
 // getMaterializedViews gets all materialized views of a database.
@@ -1123,13 +1136,18 @@ func getMaterializedViews(txn *sql.Tx, schemaName string, _ map[db.TableKey][]*s
 		return nil, errors.Wrapf(err, "failed to close rows")
 	}
 
-	// Populate dependencies for each materialized view
+	// Fetch all materialized view dependencies in a single query to avoid N+1 problem
+	materializedViewDependenciesMap, err := getAllMaterializedViewDependencies(txn, schemaName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get materialized view dependencies")
+	}
+
+	// Populate dependencies from the map
 	for _, materializedView := range materializedViews {
-		dependencies, err := getMaterializedViewDependencies(txn, schemaName, materializedView.Name)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get materialized view %q dependencies", materializedView.Name)
+		key := db.TableKey{Schema: schemaName, Table: materializedView.Name}
+		if dependencies, ok := materializedViewDependenciesMap[key]; ok {
+			materializedView.DependencyColumns = dependencies
 		}
-		materializedView.DependencyColumns = dependencies
 	}
 
 	return materializedViews, nil
