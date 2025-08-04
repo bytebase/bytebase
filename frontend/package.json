@@ -130,7 +130,7 @@
     "jsdom": "25.0.1",
     "micromark-util-sanitize-uri": "^2.0.1",
     "postcss": "8.5.6",
-    "prettier": "3.5.3",
+    "prettier": "3.6.2",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
     "rollup": "4.46.2",
