@@ -143,17 +143,20 @@
     <div
       class="w-full flex items-center justify-between text-xs mt-1 gap-x-4 text-control-light"
     >
-      <NTooltip :disabled="!isSupported">
-        <template #trigger>
-          <div
-            class="truncate cursor-pointer hover:bg-gray-200"
-            @click="copyStatement"
-          >
-            {{ result.statement }}
-          </div>
-        </template>
-        {{ $t("common.click-to-copy") }}
-      </NTooltip>
+      <div class="flex flex-1 items-center space-x-2">
+        <RichDatabaseName :database="database" />
+        <NTooltip :disabled="!isSupported">
+          <template #trigger>
+            <div
+              class="truncate cursor-pointer hover:bg-gray-200"
+              @click="copyStatement"
+            >
+              {{ result.statement }}
+            </div>
+          </template>
+          {{ $t("common.click-to-copy") }}
+        </NTooltip>
+      </div>
       <div class="shrink-0 space-x-2">
         <NButton
           v-if="showVisualizeButton"
@@ -217,6 +220,7 @@ import type {
 } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
+import { RichDatabaseName } from "@/components/v2";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
@@ -250,7 +254,7 @@ import {
   extractProjectResourceName,
   extractSQLRowValuePlain,
   generateIssueTitle,
-  hasPermissionToCreateRequestGrantIssue,
+  hasPermissionToCreateDataExportIssue,
   instanceV1HasStructuredQueryResult,
   isNullOrUndefined,
 } from "@/utils";
@@ -365,7 +369,7 @@ const allowToRequestExportData = computed(() => {
     return false;
   }
 
-  return hasPermissionToCreateRequestGrantIssue(database);
+  return hasPermissionToCreateDataExportIssue(database);
 });
 
 // use a debounced value to improve performance when typing rapidly

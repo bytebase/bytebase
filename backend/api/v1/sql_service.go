@@ -83,7 +83,9 @@ func NewSQLService(
 func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStream[v1pb.AdminExecuteRequest, v1pb.AdminExecuteResponse]) error {
 	var driver db.Driver
 	var conn *sql.Conn
-	defer func() {
+	var connectionName string
+
+	clean := func() {
 		if conn != nil {
 			if err := conn.Close(); err != nil {
 				slog.Warn("failed to close connection", log.BBError(err))
@@ -92,7 +94,8 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 		if driver != nil {
 			driver.Close(ctx)
 		}
-	}()
+	}
+	defer clean()
 	for {
 		request, err := stream.Receive()
 		if err != nil {
@@ -108,7 +111,9 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 		}
 
 		// We only need to get the driver and connection once.
-		if driver == nil {
+		if driver == nil || connectionName != request.Name {
+			clean()
+			connectionName = request.Name
 			driver, err = s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 			if err != nil {
 				return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database driver: %v", err))
@@ -146,6 +151,10 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 			}
 		} else {
 			response.Results = result
+			for _, result := range response.Results {
+				// The AdminExecute requires bb.sql.admin permission, so we can presume the users have enough permission to export.
+				result.AllowExport = true
+			}
 		}
 
 		if err := stream.Send(response); err != nil {
