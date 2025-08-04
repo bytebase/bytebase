@@ -121,7 +121,7 @@
     "autoprefixer": "10.4.21",
     "code-inspector-plugin": "^0.20.12",
     "dotenv": "^16.5.0",
-    "eslint": "9.28.0",
+    "eslint": "9.32.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.5.3",
     "eslint-plugin-vue": "9.33.0",
