@@ -1618,14 +1618,15 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(node *pgqu
 		// So that the subquery can access the outer schema.
 		// The reason for new extractor is that we still need the current fromFieldList, overriding it is not expected.
 		subqueryExtractor := &querySpanExtractor{
-			ctx:               q.ctx,
-			defaultDatabase:   q.defaultDatabase,
-			searchPath:        q.searchPath,
-			metaCache:         q.metaCache,
-			gCtx:              q.gCtx,
-			ctes:              q.ctes,
-			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
-			tableSourcesFrom:  []base.TableSource{},
+			ctx:                     q.ctx,
+			defaultDatabase:         q.defaultDatabase,
+			searchPath:              q.searchPath,
+			metaCache:               q.metaCache,
+			gCtx:                    q.gCtx,
+			ctes:                    q.ctes,
+			outerTableSources:       append(q.outerTableSources, q.tableSourcesFrom...),
+			tableSourcesFrom:        []base.TableSource{},
+			sourceColumnsInFunction: make(base.SourceColumnSet),
 		}
 		tableSource, err := subqueryExtractor.extractTableSourceFromNode(node.SubLink.Subselect)
 		if err != nil {
