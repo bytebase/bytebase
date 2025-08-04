@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -19,14 +20,40 @@ type UserResult struct {
 }
 
 func (d *Driver) getInstanceRoles() ([]*storepb.InstanceRole, error) {
-	resp, err := esapi.SecurityGetUserRequest{Pretty: true}.Do(context.Background(), d.typedClient)
-	if err != nil {
-		return nil, err
-	}
+	var bytes []byte
 
-	bytes, err := readBytesAndClose(resp)
-	if err != nil {
-		return nil, err
+	if d.isOpenSearch && d.opensearchClient != nil {
+		resp, err := d.basicAuthClient.Do("GET", []byte("/_plugins/_security/api/internalusers"), nil)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		bytes, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+	} else if d.typedClient != nil {
+		resp, err := esapi.SecurityGetUserRequest{Pretty: true}.Do(context.Background(), d.typedClient)
+		if err != nil {
+			return nil, err
+		}
+
+		bytes, err = readBytesAndClose(resp)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		resp, err := d.basicAuthClient.Do("GET", []byte("/_security/user"), nil)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		bytes, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var instanceRoles []*storepb.InstanceRole
@@ -51,17 +78,22 @@ func (d *Driver) getInstanceRoles() ([]*storepb.InstanceRole, error) {
 }
 
 func (d *Driver) getUserPrivileges(usrName string) (string, error) {
-	header := http.Header{}
-	header.Add("Authorization", d.config.DataSource.GetAuthenticationPrivateKey())
-	header.Add("es-security-runas-user", usrName)
-	resp, err := esapi.SecurityGetUserPrivilegesRequest{Header: header}.Do(context.Background(), d.typedClient)
-	if err != nil {
-		return "", err
-	}
+	if d.isOpenSearch && d.opensearchClient != nil {
+		return "", nil
+	} else if d.typedClient != nil {
+		header := http.Header{}
+		header.Add("Authorization", d.config.DataSource.GetAuthenticationPrivateKey())
+		header.Add("es-security-runas-user", usrName)
+		resp, err := esapi.SecurityGetUserPrivilegesRequest{Header: header}.Do(context.Background(), d.typedClient)
+		if err != nil {
+			return "", err
+		}
 
-	bytes, err := readBytesAndClose(resp)
-	if err != nil {
-		return "", err
+		bytes, err := readBytesAndClose(resp)
+		if err != nil {
+			return "", err
+		}
+		return string(bytes), nil
 	}
-	return string(bytes), nil
+	return "", nil
 }

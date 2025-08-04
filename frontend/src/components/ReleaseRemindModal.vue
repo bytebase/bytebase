@@ -41,7 +41,7 @@ const subscriptionStore = useSubscriptionV1Store();
 
 const link = computed(() => {
   if (subscriptionStore.isSelfHostLicense) {
-    return "https://docs.bytebase.com/get-started/self-host";
+    return "https://docs.bytebase.com/get-started/deploy-with-docker";
   }
   return subscriptionStore.purchaseLicenseUrl;
 });

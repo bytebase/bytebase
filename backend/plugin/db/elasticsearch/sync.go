@@ -3,14 +3,14 @@ package elasticsearch
 import (
 	"context"
 	"encoding/json"
+	"io"
+	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"io"
-	"net/http"
-
 	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -18,19 +18,16 @@ import (
 )
 
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	// version.
-	version, err := d.getVerison()
+	version, err := d.getVersion()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to fetch version from Elasticsearch server")
 	}
 
-	// databases.
 	dbMetadata, err := d.SyncDBSchema(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to fetch indices from Elasticsearch server")
 	}
 
-	// roles.
 	instanceRoles, err := d.getInstanceRoles()
 	if err != nil {
 		return nil, err
@@ -69,7 +66,15 @@ type VersionResult struct {
 	} `json:"version"`
 }
 
-func (d *Driver) getVerison() (string, error) {
+func (d *Driver) getVersion() (string, error) {
+	if d.isOpenSearch && d.opensearchAPI != nil {
+		ctx := context.Background()
+		info, err := d.opensearchAPI.Info(ctx, &opensearchapi.InfoReq{})
+		if err != nil {
+			return "", err
+		}
+		return info.Version.Number, nil
+	}
 	resp, err := d.basicAuthClient.Do("GET", []byte("/"), nil)
 	if err != nil {
 		return "", err
@@ -78,9 +83,6 @@ func (d *Driver) getVerison() (string, error) {
 
 	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
-	}
-	if err := resp.Body.Close(); err != nil {
 		return "", err
 	}
 
@@ -100,20 +102,88 @@ type IndicesResult struct {
 }
 
 func (d *Driver) getIndices() ([]*storepb.TableMetadata, error) {
-	// GET _cat/indices.
-	res, err := esapi.CatIndicesRequest{Format: "json", Pretty: true}.Do(context.Background(), d.typedClient)
+	var indicesMetadata []*storepb.TableMetadata
 
+	if d.isOpenSearch && d.opensearchAPI != nil {
+		ctx := context.Background()
+		resp, err := d.opensearchAPI.Cat.Indices(ctx, &opensearchapi.CatIndicesReq{})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to list indices")
+		}
+
+		for _, idx := range resp.Indices {
+			var datasize int64
+			if idx.StoreSize != nil {
+				datasize, err = unitConversion(*idx.StoreSize)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			var docCount int64
+			if idx.DocsCount != nil {
+				docCount = int64(*idx.DocsCount)
+			}
+
+			indicesMetadata = append(indicesMetadata, &storepb.TableMetadata{
+				Name:     idx.Index,
+				DataSize: datasize,
+				RowCount: docCount,
+			})
+		}
+
+		return indicesMetadata, nil
+	} else if d.typedClient != nil {
+		res, err := esapi.CatIndicesRequest{Format: "json", Pretty: true}.Do(context.Background(), d.typedClient)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to list indices")
+		}
+
+		bytes, err := readBytesAndClose(res)
+		if err != nil {
+			return nil, err
+		}
+
+		var results []IndicesResult
+		if err := json.Unmarshal(bytes, &results); err != nil {
+			return nil, err
+		}
+
+		for _, m := range results {
+			// index size.
+			datasize, err := unitConversion(m.IndexSize)
+			if err != nil {
+				return nil, err
+			}
+
+			// document count.
+			docCount, err := strconv.Atoi(m.DocsCount)
+			if err != nil {
+				return nil, err
+			}
+
+			indicesMetadata = append(indicesMetadata, &storepb.TableMetadata{
+				Name:     m.Index,
+				DataSize: datasize,
+				RowCount: int64(docCount),
+			})
+		}
+		return indicesMetadata, nil
+	}
+
+	// Fallback to basic auth client
+	resp, err := d.basicAuthClient.Do("GET", []byte("/_cat/indices?format=json&pretty"), nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list indices")
 	}
+	defer resp.Body.Close()
 
-	bytes, err := readBytesAndClose(res)
+	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	var results []IndicesResult
-	var indicesMetadata []*storepb.TableMetadata
 	if err := json.Unmarshal(bytes, &results); err != nil {
 		return nil, err
 	}

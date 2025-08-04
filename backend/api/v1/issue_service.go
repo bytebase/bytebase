@@ -1283,7 +1283,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list task runs, err: %v", err))
 			}
 			if len(taskRuns) > 0 {
-				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot update status because there are running/pending task runs for issue %q", issueName))
+				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot update status because there are running/pending task runs for issue %q, cancel the task runs first", issueName))
 			}
 		}
 	}

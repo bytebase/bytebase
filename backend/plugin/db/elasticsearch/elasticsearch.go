@@ -3,12 +3,10 @@ package elasticsearch
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"database/sql"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,10 +15,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4" //nolint:revive
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/elastic/go-elasticsearch/v7"
+	opensearch "github.com/opensearch-project/opensearch-go/v4"
+	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
+	"github.com/opensearch-project/opensearch-go/v4/signer/awsv2"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -43,9 +42,15 @@ var (
 )
 
 type Driver struct {
-	typedClient     *elasticsearch.Client
+	// For Elasticsearch
+	typedClient *elasticsearch.Client
+	// For OpenSearch
+	opensearchClient *opensearch.Client
+	opensearchAPI    *opensearchapi.Client
+	// Common basic auth client for REST operations
 	basicAuthClient *BasicAuthClient
 	config          db.ConnectionConfig
+	isOpenSearch    bool
 }
 
 type BasicAuthClient struct {
@@ -56,7 +61,16 @@ type BasicAuthClient struct {
 
 func (client *BasicAuthClient) Do(method string, route []byte, queryString []byte) (*http.Response, error) {
 	address := client.addrScheduler.GetNewAddress()
-	req, err := http.NewRequest(method, fmt.Sprintf("%s%s", address, string(route)), bytes.NewReader(queryString))
+
+	// Parse base URL and join with route path
+	baseURL, err := url.Parse(address)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse base URL")
+	}
+
+	fullURL := baseURL.JoinPath(string(route)).String()
+
+	req, err := http.NewRequest(method, fullURL, bytes.NewReader(queryString))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to init a HTTP request")
 	}
@@ -82,69 +96,31 @@ func (scheduler *AddressScheduler) GetNewAddress() string {
 	return address
 }
 
-// sigV4RoundTripper implements http.RoundTripper with AWS SigV4 signing
-type sigV4RoundTripper struct {
-	signer      *v4.Signer
-	credentials aws.CredentialsProvider
-	region      string
-	service     string
-	wrapped     http.RoundTripper
-}
-
-func (rt *sigV4RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Clone request to avoid mutating the original
-	signedReq := req.Clone(req.Context())
-
-	// Read and hash the body
-	var bodyBytes []byte
-	if req.Body != nil {
-		bodyBytes, _ = io.ReadAll(req.Body)
-		req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
-		signedReq.Body = io.NopCloser(bytes.NewReader(bodyBytes))
-	}
-
-	// Calculate payload hash
-	h := sha256.New()
-	h.Write(bodyBytes)
-	payloadHash := hex.EncodeToString(h.Sum(nil))
-
-	// Get credentials
-	creds, err := rt.credentials.Retrieve(req.Context())
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to retrieve AWS credentials")
-	}
-
-	// Sign the request
-	err = rt.signer.SignHTTP(req.Context(), creds, signedReq,
-		payloadHash, rt.service, rt.region, time.Now())
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to sign request")
-	}
-
-	return rt.wrapped.RoundTrip(signedReq)
-}
-
 func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	address := fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port)
-	u, err := url.Parse(address)
-	if err != nil || u.Host == "" {
+
+	// Check if address already has a protocol
+	if !strings.HasPrefix(address, "http://") && !strings.HasPrefix(address, "https://") {
 		protocol := "http"
 		if config.DataSource.GetUseSsl() {
 			protocol = "https"
 		}
-		address = fmt.Sprintf("%s://%s", protocol, address)
-
-		if _, err := url.Parse(address); err != nil {
-			return nil, errors.Wrapf(err, "failed to parse address: %v", address)
+		// AWS OpenSearch always requires HTTPS (port 443)
+		// Even if UseSsl is false, AWS managed services enforce HTTPS
+		if config.DataSource.GetAuthenticationType() == storepb.DataSource_AWS_RDS_IAM {
+			protocol = "https"
 		}
+		address = fmt.Sprintf("%s://%s", protocol, address)
 	}
 
-	// Check if AWS IAM authentication is requested
+	if _, err := url.Parse(address); err != nil {
+		return nil, errors.Wrapf(err, "failed to parse address: %v", address)
+	}
+
 	if config.DataSource.GetAuthenticationType() == storepb.DataSource_AWS_RDS_IAM {
-		return openWithAWSAuth(ctx, config, address)
+		return openWithOpenSearchClient(ctx, config, address)
 	}
 
-	// Existing basic auth implementation
 	return openWithBasicAuth(ctx, config, address)
 }
 
@@ -155,7 +131,7 @@ func openWithBasicAuth(_ context.Context, config db.ConnectionConfig, address st
 		Addresses: []string{address},
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost:   10,
-			ResponseHeaderTimeout: time.Second,
+			ResponseHeaderTimeout: 5 * time.Second,
 			TLSClientConfig: &tls.Config{
 				MinVersion:         tls.VersionTLS12,
 				InsecureSkipVerify: true,
@@ -212,27 +188,58 @@ func openWithBasicAuth(_ context.Context, config db.ConnectionConfig, address st
 	}, nil
 }
 
-func openWithAWSAuth(ctx context.Context, config db.ConnectionConfig, address string) (db.Driver, error) {
-	// Validate AWS-specific requirements
-	if config.DataSource.GetRegion() == "" {
-		return nil, errors.New("region is required for AWS IAM authentication")
-	}
+func openWithOpenSearchClient(ctx context.Context, config db.ConnectionConfig, address string) (db.Driver, error) {
+	// Keep debugInfo for error messages
+	debugInfo := fmt.Sprintf("OpenSearch config - address: %s, authType: %v", address, config.DataSource.GetAuthenticationType())
 
-	// Load AWS configuration
-	awsCfg, err := awsconfig.LoadDefaultConfig(ctx,
-		awsconfig.WithRegion(config.DataSource.GetRegion()),
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to load AWS config")
-	}
-
-	// Create base transport with TLS config
 	baseTransport := &http.Transport{
 		MaxIdleConnsPerHost:   10,
-		ResponseHeaderTimeout: time.Second,
+		ResponseHeaderTimeout: 5 * time.Second, // Increase timeout for AWS
 		TLSClientConfig: &tls.Config{
-			MinVersion: tls.VersionTLS12,
+			MinVersion:         tls.VersionTLS12,
+			InsecureSkipVerify: true,
 		},
+	}
+
+	osConfig := opensearch.Config{
+		Addresses: []string{address},
+		Transport: baseTransport,
+	}
+
+	// Configure authentication
+	switch config.DataSource.GetAuthenticationType() {
+	case storepb.DataSource_AWS_RDS_IAM:
+		// Validate AWS-specific requirements
+		if config.DataSource.GetRegion() == "" {
+			return nil, errors.New("region is required for AWS IAM authentication")
+		}
+
+		// Load AWS configuration
+		awsCfg, err := awsconfig.LoadDefaultConfig(ctx,
+			awsconfig.WithRegion(config.DataSource.GetRegion()),
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to load AWS config")
+		}
+
+		// Verify credentials are available
+		_, err = awsCfg.Credentials.Retrieve(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to retrieve AWS credentials")
+		}
+
+		// Create AWS signer
+		signer, err := awsv2.NewSigner(awsCfg)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create AWS signer")
+		}
+
+		osConfig.Signer = signer
+
+	default:
+		// Basic auth
+		osConfig.Username = config.DataSource.Username
+		osConfig.Password = config.Password
 	}
 
 	// Add custom CA if provided
@@ -241,36 +248,51 @@ func openWithAWSAuth(ctx context.Context, config db.ConnectionConfig, address st
 		if ok := certPool.AppendCertsFromPEM([]byte(config.DataSource.GetSslCert())); !ok {
 			return nil, errors.New("cannot add CA cert to pool")
 		}
+		// Update the base transport, not the debug transport
 		baseTransport.TLSClientConfig.RootCAs = certPool
+		baseTransport.TLSClientConfig.InsecureSkipVerify = false
 	}
 
-	// Create SigV4 transport
-	sigV4Transport := &sigV4RoundTripper{
-		signer:      v4.NewSigner(),
-		credentials: awsCfg.Credentials,
-		region:      config.DataSource.GetRegion(),
-		service:     "es", // AWS OpenSearch uses "es" service name
-		wrapped:     baseTransport,
+	// Create OpenSearch client
+	osClient, err := opensearch.NewClient(osConfig)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create OpenSearch client; %s", debugInfo)
 	}
 
-	// Create HTTP client with SigV4 transport
+	// Create OpenSearch API client
+	apiClient, err := opensearchapi.NewClient(opensearchapi.Config{
+		Client: osConfig,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create OpenSearch API client; %s", debugInfo)
+	}
+
+	// For consistency, still create a basic auth client for REST operations
 	httpClient := &http.Client{
-		Transport: sigV4Transport,
+		Transport: osConfig.Transport,
 	}
 
-	// Create basic auth client that will use the SigV4 HTTP client
-	// Note: basicAuthString will be empty but the structure is reused
+	basicAuthString := ""
+	// For AWS IAM, we don't use basic auth - the AWS signer handles authentication
+	if config.DataSource.GetAuthenticationType() != storepb.DataSource_AWS_RDS_IAM &&
+		config.DataSource.Username != "" && config.Password != "" {
+		encodedUsrAndPasswd := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.DataSource.Username, config.Password)))
+		basicAuthString = fmt.Sprintf("Basic %s", string(encodedUsrAndPasswd))
+	}
+
 	return &Driver{
-		typedClient: nil, // Will use basicAuthClient for AWS IAM mode
+		opensearchClient: osClient,
+		opensearchAPI:    apiClient,
 		basicAuthClient: &BasicAuthClient{
 			httpClient: httpClient,
 			addrScheduler: &AddressScheduler{
 				addresses: []string{address},
 				count:     0,
 			},
-			basicAuthString: "", // No basic auth header needed for AWS IAM
+			basicAuthString: basicAuthString,
 		},
-		config: config,
+		config:       config,
+		isOpenSearch: true,
 	}, nil
 }
 
@@ -280,8 +302,37 @@ func (*Driver) Close(_ context.Context) error {
 }
 
 func (d *Driver) Ping(_ context.Context) error {
-	// For AWS IAM mode, use basicAuthClient
-	if d.typedClient == nil && d.basicAuthClient != nil {
+	if d.isOpenSearch && d.opensearchAPI != nil {
+		ctx := context.Background()
+		info, err := d.opensearchAPI.Info(ctx, &opensearchapi.InfoReq{})
+		if err != nil {
+			// Check if it's an authentication or connection issue
+			errStr := err.Error()
+			if strings.Contains(errStr, "401") || strings.Contains(errStr, "403") {
+				return errors.Errorf("authentication failed: %v", err)
+			}
+			if strings.Contains(errStr, "404") {
+				return errors.Errorf("endpoint not found (check if path is correct): %v", err)
+			}
+			// For any other error, return the full error
+			return errors.Wrapf(err, "failed to connect to OpenSearch")
+		}
+		if info == nil || info.Version.Number == "" {
+			return errors.New("invalid response from server")
+		}
+		return nil
+	}
+
+	// Use Elasticsearch client
+	if d.typedClient != nil {
+		if _, err := d.typedClient.Ping(); err != nil {
+			return errors.Wrapf(err, "failed to ping db")
+		}
+		return nil
+	}
+
+	// Fallback to basic auth client
+	if d.basicAuthClient != nil {
 		resp, err := d.basicAuthClient.Do("GET", []byte("/"), nil)
 		if err != nil {
 			return errors.Wrapf(err, "failed to ping db")
@@ -295,11 +346,7 @@ func (d *Driver) Ping(_ context.Context) error {
 		return nil
 	}
 
-	// Existing typed client logic
-	if _, err := d.typedClient.Ping(); err != nil {
-		return errors.Wrapf(err, "failed to ping db")
-	}
-	return nil
+	return errors.New("no client available for ping")
 }
 
 func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
@@ -332,9 +379,34 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 				data = append(data, []byte(item)...)
 				data = append(data, '\n')
 			}
-			resp, err := d.basicAuthClient.Do(request.Method, []byte(request.URL), data)
-			if err != nil {
-				return errors.Wrapf(err, "failed to send HTTP request")
+			var resp *http.Response
+
+			// For AWS IAM auth, we need to use the OpenSearch client which has the signer
+			if d.isOpenSearch && d.opensearchClient != nil && d.config.DataSource.GetAuthenticationType() == storepb.DataSource_AWS_RDS_IAM {
+				// Create request for OpenSearch client
+				// Ensure the path starts with "/" for proper HTTP request
+				requestPath := strings.TrimSpace(request.URL)
+				if requestPath != "" && !strings.HasPrefix(requestPath, "/") {
+					requestPath = "/" + requestPath
+				}
+
+				req, err := http.NewRequest(request.Method, requestPath, bytes.NewReader(data))
+				if err != nil {
+					return errors.Wrapf(err, "failed to create HTTP request")
+				}
+				req.Header.Set("Content-Type", "application/json")
+
+				// Use OpenSearch client's Perform method which handles AWS signing
+				resp, err = d.opensearchClient.Perform(req)
+				if err != nil {
+					return errors.Wrapf(err, "failed to send HTTP request via OpenSearch client")
+				}
+			} else {
+				// For basic auth, use the basic auth client as before
+				resp, err = d.basicAuthClient.Do(request.Method, []byte(request.URL), data)
+				if err != nil {
+					return errors.Wrapf(err, "failed to send HTTP request")
+				}
 			}
 			defer resp.Body.Close()
 
@@ -348,6 +420,12 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 			var row v1pb.QueryRow
 
 			contentType := resp.Header.Get("Content-Type")
+
+			// Debug HTML responses
+			if strings.Contains(contentType, "text/html") && resp.StatusCode >= 400 {
+				return errors.Errorf("received HTML error response (status %d): %s", resp.StatusCode, string(respBytes))
+			}
+
 			switch {
 			case strings.Contains(contentType, "application/json"):
 				pairs := map[string]any{}
