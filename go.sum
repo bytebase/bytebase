@@ -825,6 +825,8 @@ github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0 h1:bJ8NSf2K+
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0/go.mod h1:BEWMfiZtqshdmulKJcIsWb45MUaEvDO4CROcgi8dfFg=
 github.com/bytebase/mysql-parser v0.0.0-20241224071214-cb9fd84811dd h1:nKWY30Pq9y/z0+MScRm90KU1U3i0U3j0KGBLN0JL/3M=
 github.com/bytebase/mysql-parser v0.0.0-20241224071214-cb9fd84811dd/go.mod h1:n22yoTeLcphIYQlV6nbufQbHMxNceOjeGDOrpaRIhiY=
+github.com/bytebase/parser v0.0.0-20250804064707-064601e79372 h1:n41t/XcYBXbLZYFRqFCKJFHpWdidhYomyMp+wtGB3eI=
+github.com/bytebase/parser v0.0.0-20250804064707-064601e79372/go.mod h1:m18BLl2+PxBG2b2SlwEt1LGVEAhCV7r0S+8pKE0BQVo=
 github.com/bytebase/partiql-parser v0.0.0-20240531101102-1962ff456f2c h1:TMANvCCN7gpqXHrzRWeWRkPTXmFvTSEyXTZ1Fz20EvM=
 github.com/bytebase/partiql-parser v0.0.0-20240531101102-1962ff456f2c/go.mod h1:hNMKtZBMCbNyhUFR47Ct9mqmpzZVtHgC0OsOIQhR27k=
 github.com/bytebase/pg_query_go2/v6 v6.0.0-20250403034815-22c5b71007ed h1:5DEnBIrnxAxCTbh/tbjmg/9uw9/auyvKu8s0M+ePTOs=
@@ -837,8 +839,6 @@ github.com/bytebase/plsql-parser v0.0.0-20250218041636-9fed633593d1 h1:QDmyzL8Kp
 github.com/bytebase/plsql-parser v0.0.0-20250218041636-9fed633593d1/go.mod h1:sEtLYOfHyi8zz5vo5gKT//A8c4P8FnDZLNVSLtVPxj0=
 github.com/bytebase/postgresql-parser v0.0.0-20250610072402-8c3c7a857eb8 h1:pFo/RV1+pe3ACfAqG5ZJJ0Y/YHfHZwkhQGgFcI4A4eM=
 github.com/bytebase/postgresql-parser v0.0.0-20250610072402-8c3c7a857eb8/go.mod h1:Jft7oabwuwD+t5BYiUfTjcNVaihZ8F5KT8TsROG0EaE=
-github.com/bytebase/redshift-parser v0.0.0-20250731035514-fca15643d5ac h1:2GEc7ABqyFip8xoAaTy9LZEUfxCZjSYBTdgAA6iitYY=
-github.com/bytebase/redshift-parser v0.0.0-20250731035514-fca15643d5ac/go.mod h1:JB7o9o4ZdFO4XOvDfJhVCmnaU+NeCozTf5VUzIEJnYM=
 github.com/bytebase/snowsql-parser v0.0.0-20250124075214-562d62e69c35 h1:eP0Ox7IGGROy2cdvWQP6mmFOZvNnoT8dUPJBUXCakec=
 github.com/bytebase/snowsql-parser v0.0.0-20250124075214-562d62e69c35/go.mod h1:gJ1aclz1e9xLArQTbCpDjL+A79Jt3Ro9+/QEw8A6vMM=
 github.com/bytebase/tidb-parser v0.0.0-20240821091609-162fffe2a839 h1:OLOEfNV20wqC4nPHQllr4mrMhchAhPrgXlKn0URgum8=
