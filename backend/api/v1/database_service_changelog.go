@@ -216,6 +216,7 @@ func convertToChangelogStatus(s store.ChangelogStatus) v1pb.Changelog_Status {
 }
 
 func convertToChangelogType(t storepb.ChangelogPayload_Type) v1pb.Changelog_Type {
+	//exhaustive:enforce
 	switch t {
 	case storepb.ChangelogPayload_BASELINE:
 		return v1pb.Changelog_BASELINE
@@ -227,6 +228,8 @@ func convertToChangelogType(t storepb.ChangelogPayload_Type) v1pb.Changelog_Type
 		return v1pb.Changelog_MIGRATE_GHOST
 	case storepb.ChangelogPayload_DATA:
 		return v1pb.Changelog_DATA
+	case storepb.ChangelogPayload_TYPE_UNSPECIFIED:
+		return v1pb.Changelog_TYPE_UNSPECIFIED
 	default:
 		return v1pb.Changelog_TYPE_UNSPECIFIED
 	}
