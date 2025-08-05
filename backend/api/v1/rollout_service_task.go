@@ -22,14 +22,11 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
-func applyDatabaseGroupSpecTransformations(specs []*storepb.PlanConfig_Spec, deployment *storepb.PlanConfig_Deployment) ([]*storepb.PlanConfig_Spec, error) {
+func applyDatabaseGroupSpecTransformations(specs []*storepb.PlanConfig_Spec, deployment *storepb.PlanConfig_Deployment) []*storepb.PlanConfig_Spec {
 	var result []*storepb.PlanConfig_Spec
 	for _, spec := range specs {
 		// Clone the spec to avoid modifying the original
-		clonedSpec, ok := proto.Clone(spec).(*storepb.PlanConfig_Spec)
-		if !ok {
-			return nil, errors.Errorf("failed to clone spec, got %T", clonedSpec)
-		}
+		clonedSpec := proto.CloneOf(spec)
 
 		if config := clonedSpec.GetChangeDatabaseConfig(); config != nil {
 			// transform database group.
@@ -46,7 +43,7 @@ func applyDatabaseGroupSpecTransformations(specs []*storepb.PlanConfig_Spec, dep
 		}
 		result = append(result, clonedSpec)
 	}
-	return result, nil
+	return result
 }
 
 func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage) ([]*store.TaskMessage, error) {
