@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -335,15 +334,12 @@ func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext,
 	)
 
 	// Remove schema drift.
-	metadata, ok := proto.Clone(database.Metadata).(*storepb.DatabaseMetadata)
-	if !ok {
-		return false, nil, errors.Errorf("failed to convert database metadata type")
-	}
-	metadata.Drifted = false
 	if _, err := stores.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
-		Metadata:     metadata,
+		Metadata: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
+			md.Drifted = false
+		}},
 	}); err != nil {
 		return false, nil, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
@@ -513,17 +509,13 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 			update.RevisionUID = &revision.UID
 
 			// Update database metadata with the version only if the new version is greater
-			metadata := mc.database.Metadata
-			if metadata == nil {
-				metadata = &storepb.DatabaseMetadata{}
-			}
-
-			if shouldUpdateVersion(metadata.Version, mc.version) {
-				metadata.Version = mc.version
+			if shouldUpdateVersion(mc.database.Metadata.Version, mc.version) {
 				if _, err := storeInstance.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 					InstanceID:   mc.database.InstanceID,
 					DatabaseName: mc.database.DatabaseName,
-					Metadata:     metadata,
+					Metadata: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
+						md.Version = mc.version
+					}},
 				}); err != nil {
 					return errors.Wrapf(err, "failed to update database metadata with version")
 				}
