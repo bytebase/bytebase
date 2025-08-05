@@ -76,7 +76,10 @@ bytebase:
     #             values:
     #               - value
 
+  # If specified, the pod's tolerations.
   # ref: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
-  # An empty key with operator Exists matches all keys, values and effects which means this will tolerate everything.
-  tolerations:
-    - operator: "Exists"
+  tolerations: []
+  # - key: "key"
+  #   operator: "Equal"
+  #   value: "value"
+  #   effect: "NoSchedule"
