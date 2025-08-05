@@ -436,7 +436,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 
 	// sync history
 	var syncHistoryPrevUID *int64
-	if needDump(mc.task.Type) {
+	if needDump(mc.task.Type, mc.instance) {
 		opts.LogDatabaseSyncStart()
 		syncHistoryPrev, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
@@ -478,7 +478,7 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 		UID: mc.changelog,
 	}
 
-	if needDump(mc.task.Type) {
+	if needDump(mc.task.Type, mc.instance) {
 		syncHistory, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
 			return errors.Wrapf(err, "failed to sync database metadata and schema")
@@ -599,7 +599,12 @@ func isChangeDatabaseTask(taskType storepb.Task_Type) bool {
 	}
 }
 
-func needDump(taskType storepb.Task_Type) bool {
+func needDump(taskType storepb.Task_Type, instance *store.InstanceMessage) bool {
+	// Skip dump for TiDB DML operations
+	if taskType == storepb.Task_DATABASE_DATA_UPDATE && instance.Metadata.GetEngine() == storepb.Engine_TIDB {
+		return false
+	}
+
 	//exhaustive:enforce
 	switch taskType {
 	case
