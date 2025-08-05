@@ -32,12 +32,13 @@ type webhookRequest struct {
 	Time    time.Time
 }
 
+
 func (c *webhookCollector) addRequest(r *http.Request) error {
+	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return err
 	}
-	defer r.Body.Close()
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
