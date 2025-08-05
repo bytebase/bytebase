@@ -200,7 +200,7 @@ import { useTitle } from "@vueuse/core";
 import dayjs from "dayjs";
 import { ArrowRightLeftIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, watch, watchEffect } from "vue";
 import { useRouter, useRoute, type LocationQueryRaw } from "vue-router";
 import { BBModal } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
@@ -226,6 +226,7 @@ import {
 } from "@/components/v2";
 import { CopyButton } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useAppFeature,
   useEnvironmentV1Store,
@@ -322,6 +323,25 @@ const { database, ready } = useDatabaseV1ByName(
 );
 
 const project = computed(() => database.value.projectEntity);
+
+watchEffect(() => {
+  if (!ready.value) {
+    return;
+  }
+  if (extractProjectResourceName(project.value.name) === props.projectId) {
+    return;
+  }
+  router.replace({
+    name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+    params: {
+      projectId: extractProjectResourceName(project.value.name),
+      instanceId: props.instanceId,
+      databaseName: props.databaseName,
+    },
+    hash: `#${state.selectedTab}`,
+    query: route.query,
+  });
+});
 
 const hasSchemaDiagramFeature = computed((): boolean => {
   return instanceV1HasAlterSchema(database.value.instanceResource);
