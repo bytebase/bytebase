@@ -19,7 +19,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-// webhookCollector collects webhook requests for testing
+// webhookCollector collects webhook requests for testing.
 type webhookCollector struct {
 	mu       sync.Mutex
 	requests []webhookRequest
@@ -62,7 +62,7 @@ func (c *webhookCollector) reset() {
 	c.requests = nil
 }
 
-// Helper to parse Slack webhook payload
+// Helper to parse Slack webhook payload.
 func parseSlackWebhook(body []byte) (title, description string, err error) {
 	var payload map[string]any
 	if err := json.Unmarshal(body, &payload); err != nil {
@@ -97,7 +97,7 @@ func parseSlackWebhook(body []byte) (title, description string, err error) {
 	return title, description, nil
 }
 
-// TestWebhookIntegration tests webhook functionality
+// TestWebhookIntegration tests webhook functionality.
 func TestWebhookIntegration(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
