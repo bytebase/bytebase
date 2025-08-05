@@ -249,8 +249,7 @@ func getRequestString(request any) (string, error) {
 		}
 		switch r := request.(type) {
 		case *v1pb.ExportRequest:
-			//nolint:revive
-			r = proto.Clone(r).(*v1pb.ExportRequest)
+			r = proto.CloneOf(r)
 			r.Password = maskedString
 			return r
 		case *v1pb.CreateUserRequest:
@@ -258,10 +257,7 @@ func getRequestString(request any) (string, error) {
 		case *v1pb.UpdateUserRequest:
 			return redactUpdateUserRequest(r)
 		case *v1pb.LoginRequest:
-			if r, ok := proto.Clone(r).(*v1pb.LoginRequest); ok {
-				return redactLoginRequest(r)
-			}
-			return nil
+			return redactLoginRequest(proto.CloneOf(r))
 		case *v1pb.CreateInstanceRequest:
 			r.Instance = redactInstance(r.Instance)
 			return r
