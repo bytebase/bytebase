@@ -225,8 +225,10 @@ import {
   ProjectV1Name,
 } from "@/components/v2";
 import { CopyButton } from "@/components/v2";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_DATABASE_DETAIL,
+} from "@/router/dashboard/projectV1";
 import {
   useAppFeature,
   useEnvironmentV1Store,
