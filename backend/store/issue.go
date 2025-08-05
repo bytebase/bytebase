@@ -372,13 +372,14 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		issue.project,
 		issue.pipeline_id,
 		issue.plan_id,
-		issue.name,
+		COALESCE(plan.name, issue.name) AS name,
 		issue.status,
 		issue.type,
-		issue.description,
+		COALESCE(plan.description, issue.description) AS description,
 		issue.payload,
 		COALESCE(task_run_status_count.status_count, '{}'::jsonb)
 	FROM %s
+	LEFT JOIN plan ON issue.plan_id = plan.id
 	LEFT JOIN LATERAL (
 		SELECT
 			jsonb_object_agg(t.status, t.count) AS status_count
