@@ -132,16 +132,10 @@ func (s *Store) GetIssueV2(ctx context.Context, find *FindIssueMessage) (*IssueM
 // CreateIssueV2 creates a new issue.
 func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creatorID int) (*IssueMessage, error) {
 	create.Status = storepb.Issue_OPEN
-
 	payload, err := protojson.Marshal(create.Payload)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal issue payload")
 	}
-	creator, err := s.GetUserByID(ctx, creatorID)
-	if err != nil {
-		return nil, err
-	}
-
 	tsVector := getTSVector(fmt.Sprintf("%s %s", create.Title, create.Description))
 	query := `
 		INSERT INTO issue (
@@ -157,8 +151,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 			ts_vector
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, created_at, updated_at
-	`
+		RETURNING id`
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -179,25 +172,17 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		tsVector,
 	).Scan(
 		&create.UID,
-		&create.CreatedAt,
-		&create.UpdatedAt,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
 		return nil, err
 	}
-	create.Creator = creator
-
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
-	s.issueCache.Add(create.UID, create)
-	if create.PipelineUID != nil {
-		s.issueByPipelineCache.Add(*create.PipelineUID, create)
-	}
-	return create, nil
+	return s.GetIssueV2(ctx, &FindIssueMessage{UID: &create.UID})
 }
 
 // UpdateIssueV2 updates an issue.
@@ -579,10 +564,14 @@ func (s *Store) BackfillIssueTSVector(ctx context.Context) error {
 	chunkSize := 50
 	offset := 0
 	selectQuery := `
-		SELECT id, name, description
+		SELECT 
+			issue.id, 
+			COALESCE(plan.name, issue.name) AS name, 
+			COALESCE(plan.description, issue.description) AS description
 		FROM issue
-		WHERE ts_vector IS NULL
-		ORDER BY id
+		LEFT JOIN plan ON issue.plan_id = plan.id
+		WHERE issue.ts_vector IS NULL
+		ORDER BY issue.id
 		LIMIT $1
 		OFFSET $2
 	`
