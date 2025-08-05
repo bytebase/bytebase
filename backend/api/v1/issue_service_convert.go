@@ -61,19 +61,7 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 	}
 
 	if issue.PlanUID != nil {
-		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get plan by uid %v", issue.PlanUID)
-		}
 		issueV1.Plan = common.FormatPlan(issue.Project.ResourceID, *issue.PlanUID)
-		// Unification logic: Plan takes precedence over Issue when both exist.
-		// Use plan's title and description when available (non-empty).
-		if plan.Name != "" {
-			issueV1.Title = plan.Name
-		}
-		if plan.Description != "" {
-			issueV1.Description = plan.Description
-		}
 	}
 	if issue.PipelineUID != nil {
 		issueV1.Rollout = common.FormatRollout(issue.Project.ResourceID, *issue.PipelineUID)
