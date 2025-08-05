@@ -7,14 +7,15 @@
       <FeatureBadge :feature="PlanFeature.FEATURE_PASSWORD_RESTRICTIONS" />
     </p>
     <div class="w-full flex flex-col space-y-3">
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center">
         <NInputNumber
           :value="state.minLength"
           :readonly="!allowEdit"
-          class="w-24"
+          class="w-24 mr-2"
           :min="1"
           :placeholder="'Minimum length'"
           :precision="0"
+          size="small"
           @update:value="
             (val) =>
               onUpdate({
@@ -25,13 +26,11 @@
               })
           "
         />
-        <span class="textlabel">
-          {{
-            $t("settings.general.workspace.password-restriction.min-length", {
-              min: state.minLength || DEFAULT_MIN_LENGTH,
-            })
-          }}
-        </span>
+        {{
+          $t("settings.general.workspace.password-restriction.min-length", {
+            min: state.minLength || DEFAULT_MIN_LENGTH,
+          })
+        }}
       </div>
       <NCheckbox
         :checked="state.requireNumber"
@@ -42,11 +41,9 @@
           }
         "
       >
-        <span class="textlabel">
-          {{
-            $t("settings.general.workspace.password-restriction.require-number")
-          }}
-        </span>
+        {{
+          $t("settings.general.workspace.password-restriction.require-number")
+        }}
       </NCheckbox>
       <NCheckbox
         :checked="state.requireLetter"
@@ -57,11 +54,9 @@
           }
         "
       >
-        <span class="textlabel">
-          {{
-            $t("settings.general.workspace.password-restriction.require-letter")
-          }}
-        </span>
+        {{
+          $t("settings.general.workspace.password-restriction.require-letter")
+        }}
       </NCheckbox>
       <NCheckbox
         :checked="state.requireUppercaseLetter"
@@ -72,13 +67,11 @@
           }
         "
       >
-        <span class="textlabel">
-          {{
-            $t(
-              "settings.general.workspace.password-restriction.require-uppercase-letter"
-            )
-          }}
-        </span>
+        {{
+          $t(
+            "settings.general.workspace.password-restriction.require-uppercase-letter"
+          )
+        }}
       </NCheckbox>
       <NCheckbox
         :checked="state.requireSpecialCharacter"
@@ -89,13 +82,11 @@
           }
         "
       >
-        <span class="textlabel">
-          {{
-            $t(
-              "settings.general.workspace.password-restriction.require-special-character"
-            )
-          }}
-        </span>
+        {{
+          $t(
+            "settings.general.workspace.password-restriction.require-special-character"
+          )
+        }}
       </NCheckbox>
       <NCheckbox
         :checked="state.requireResetPasswordForFirstLogin"
@@ -106,13 +97,11 @@
           }
         "
       >
-        <span class="textlabel">
-          {{
-            $t(
-              "settings.general.workspace.password-restriction.require-reset-password-for-first-login"
-            )
-          }}
-        </span>
+        {{
+          $t(
+            "settings.general.workspace.password-restriction.require-reset-password-for-first-login"
+          )
+        }}
       </NCheckbox>
       <NCheckbox
         :checked="!!state.passwordRotation"
@@ -136,7 +125,7 @@
         <i18n-t
           tag="div"
           keypath="settings.general.workspace.password-restriction.password-rotation"
-          class="flex items-center space-x-2 textlabel"
+          class="flex items-center space-x-2"
         >
           <template #day>
             <NInputNumber
