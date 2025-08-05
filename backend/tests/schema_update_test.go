@@ -99,8 +99,8 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		{
 			Type:       v1pb.Changelog_DATA,
 			Status:     v1pb.Changelog_DONE,
-			Schema:     "",
-			PrevSchema: "",
+			Schema:     dumpedSchema,
+			PrevSchema: dumpedSchema,
 			Version:    "",
 		},
 		{
