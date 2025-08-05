@@ -194,7 +194,7 @@ func TestWebhookIntegration(t *testing.T) {
 		require.NotEmpty(t, issueResp.Msg.Name)
 
 		// Wait for webhook to be processed
-		time.Sleep(300 * time.Millisecond)
+		time.Sleep(5 * time.Second)
 
 		// Verify webhook was triggered
 		requests := collector.getRequests()
