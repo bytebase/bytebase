@@ -605,12 +605,12 @@ func needDump(taskType storepb.Task_Type) bool {
 	case
 		storepb.Task_DATABASE_SCHEMA_UPDATE,
 		storepb.Task_DATABASE_SCHEMA_UPDATE_SDL,
-		storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
+		storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST,
+		storepb.Task_DATABASE_CREATE,
+		storepb.Task_DATABASE_DATA_UPDATE:
 		return true
 	case
 		storepb.Task_TASK_TYPE_UNSPECIFIED,
-		storepb.Task_DATABASE_CREATE,
-		storepb.Task_DATABASE_DATA_UPDATE,
 		storepb.Task_DATABASE_EXPORT:
 		return false
 	default:
