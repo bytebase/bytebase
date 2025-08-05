@@ -231,7 +231,7 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 			WHERE ((resource_type = '` + storepb.Policy_PROJECT.String() + `' AND resource = 'projects/` + *v + `') OR resource_type = '` + storepb.Policy_WORKSPACE.String() + `') AND type = '` + storepb.Policy_IAM.String() + `'
 		),
 		project_members AS (
-			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role LIKE 'roles/project%'
+			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role NOT LIKE 'roles/workspace%'
 		)`
 		join = `INNER JOIN project_members ON (CONCAT('users/', principal.id) = ANY(project_members.members) OR '` + common.AllUsers + `' = ANY(project_members.members))`
 	}
