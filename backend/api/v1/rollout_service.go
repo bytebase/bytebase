@@ -1076,10 +1076,7 @@ func filterTasksByEnvironments(tasks []*store.TaskMessage, environmentIndex map[
 func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, specs []*storepb.PlanConfig_Spec, deployment *storepb.PlanConfig_Deployment /* nullable */, project *store.ProjectMessage) (*store.PipelineMessage, error) {
 	// Step 1 - transform database group specs.
 	// Others are untouched.
-	transformedSpecs, err := applyDatabaseGroupSpecTransformations(specs, deployment)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to apply database group spec transformations")
-	}
+	transformedSpecs := applyDatabaseGroupSpecTransformations(specs, deployment)
 
 	// Step 2 - list snapshot environments.
 	_, environmentIndex, err := getPlanEnvironmentSnapshots(ctx, s, deployment)

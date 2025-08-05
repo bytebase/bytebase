@@ -326,10 +326,7 @@ func (s *Store) obfuscateInstance(ctx context.Context, instance *storepb.Instanc
 		return nil, err
 	}
 
-	redacted, ok := proto.Clone(instance).(*storepb.Instance)
-	if !ok {
-		return nil, errors.Errorf("failed to clone instance")
-	}
+	redacted := proto.CloneOf(instance)
 	for _, ds := range redacted.GetDataSources() {
 		ds.ObfuscatedPassword = common.Obfuscate(ds.GetPassword(), secret)
 		ds.Password = ""

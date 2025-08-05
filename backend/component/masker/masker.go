@@ -613,8 +613,7 @@ func maskProtoValue(m Masker, value *structpb.Value) *structpb.Value {
 			},
 		}
 	case *structpb.Value_StructValue:
-		//nolint
-		v := proto.Clone(value).(*structpb.Value)
+		v := proto.CloneOf(value)
 		//nolint
 		f := v.Kind.(*structpb.Value_StructValue)
 		for field, value := range f.StructValue.Fields {
@@ -622,8 +621,7 @@ func maskProtoValue(m Masker, value *structpb.Value) *structpb.Value {
 		}
 		return v
 	case *structpb.Value_ListValue:
-		//nolint
-		v := proto.Clone(value).(*structpb.Value)
+		v := proto.CloneOf(value)
 		//nolint
 		l := v.Kind.(*structpb.Value_ListValue)
 		for i, value := range l.ListValue.Values {

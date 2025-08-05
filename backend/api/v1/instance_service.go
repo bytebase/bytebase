@@ -420,10 +420,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", req.Msg.Instance.Name))
 	}
 
-	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to convert instance metadata type"))
-	}
+	metadata := proto.CloneOf(instance.Metadata)
 	patch := &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
 		Metadata:   metadata,
@@ -531,10 +528,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 		}
 	}
 
-	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to convert instance metadata type"))
-	}
+	metadata := proto.CloneOf(instance.Metadata)
 	metadata.Activation = false
 	if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
@@ -702,10 +696,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 
-	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to convert instance metadata type"))
-	}
+	metadata := proto.CloneOf(instance.Metadata)
 	metadata.DataSources = append(metadata.DataSources, dataSource)
 	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{ResourceID: instance.ResourceID, Metadata: metadata})
 	if err != nil {
@@ -732,10 +723,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 	if instance.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", req.Msg.Name))
 	}
-	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to convert instance metadata type"))
-	}
+	metadata := proto.CloneOf(instance.Metadata)
 	var dataSource *storepb.DataSource
 	for _, ds := range metadata.GetDataSources() {
 		if ds.GetId() == req.Msg.DataSource.Id {
@@ -915,10 +903,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", req.Msg.Name))
 	}
 
-	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to convert instance metadata type"))
-	}
+	metadata := proto.CloneOf(instance.Metadata)
 	var updatedDataSources []*storepb.DataSource
 	var dataSource *storepb.DataSource
 	for _, ds := range instance.Metadata.GetDataSources() {

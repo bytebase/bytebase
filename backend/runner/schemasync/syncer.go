@@ -288,10 +288,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
-	if !ok {
-		return nil, nil, nil, errors.Errorf("failed to convert instance metadata type")
-	}
+	metadata := proto.CloneOf(instance.Metadata)
 	metadata.LastSyncTime = instanceMeta.Metadata.LastSyncTime
 	metadata.MysqlLowerCaseTableNames = instanceMeta.Metadata.MysqlLowerCaseTableNames
 	metadata.Roles = instanceMeta.Metadata.Roles
