@@ -443,7 +443,8 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 
 	// sync history
 	var syncHistoryPrevUID *int64
-	if mc.migrateType.NeedDump() {
+	// Special case: Skip dump for TiDB DML operations
+	if mc.migrateType.NeedDump() && (mc.migrateType != db.Data || mc.instance.Metadata.GetEngine() != storepb.Engine_TIDB) {
 		opts.LogDatabaseSyncStart()
 		syncHistoryPrev, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
@@ -485,7 +486,8 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 		UID: mc.changelog,
 	}
 
-	if mc.migrateType.NeedDump() {
+	// Special case: Skip dump for TiDB DML operations
+	if mc.migrateType.NeedDump() && (mc.migrateType != db.Data || mc.instance.Metadata.GetEngine() != storepb.Engine_TIDB) {
 		syncHistory, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
 			return errors.Wrapf(err, "failed to sync database metadata and schema")
