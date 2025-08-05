@@ -560,6 +560,7 @@ func shouldUpdateVersion(currentVersion, newVersion string) bool {
 }
 
 func convertTaskType(t storepb.Task_Type) storepb.ChangelogPayload_Type {
+	//exhaustive:enforce
 	switch t {
 	case storepb.Task_DATABASE_DATA_UPDATE:
 		return storepb.ChangelogPayload_DATA
@@ -567,13 +568,16 @@ func convertTaskType(t storepb.Task_Type) storepb.ChangelogPayload_Type {
 		return storepb.ChangelogPayload_MIGRATE
 	case storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
 		return storepb.ChangelogPayload_MIGRATE_GHOST
-
-	case storepb.Task_DATABASE_CREATE:
-	case storepb.Task_DATABASE_EXPORT:
+	case storepb.Task_DATABASE_SCHEMA_UPDATE_SDL:
+		return storepb.ChangelogPayload_MIGRATE_SDL
+	case
+		storepb.Task_TASK_TYPE_UNSPECIFIED,
+		storepb.Task_DATABASE_CREATE,
+		storepb.Task_DATABASE_EXPORT:
+		return storepb.ChangelogPayload_TYPE_UNSPECIFIED
 	default:
-		// Return unspecified for other task types
+		return storepb.ChangelogPayload_TYPE_UNSPECIFIED
 	}
-	return storepb.ChangelogPayload_TYPE_UNSPECIFIED
 }
 
 // isChangeDatabaseTask returns whether the task involves changing a database.
