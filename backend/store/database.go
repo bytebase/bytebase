@@ -39,8 +39,8 @@ type UpdateDatabaseMessage struct {
 	ProjectID *string
 	Deleted   *bool
 	// Empty string will unset the environment.
-	EnvironmentID *string
-	Metadata      []func(*storepb.DatabaseMetadata)
+	EnvironmentID   *string
+	MetadataUpdates []func(*storepb.DatabaseMetadata)
 }
 
 // BatchUpdateDatabases is the message for batch updating databases.
@@ -245,7 +245,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	if v := patch.Deleted; v != nil {
 		set, args = append(set, fmt.Sprintf("deleted = $%d", len(args)+1)), append(args, *v)
 	}
-	if fs := patch.Metadata; fs != nil {
+	if fs := patch.MetadataUpdates; len(fs) > 0 {
 		database, err := s.GetDatabaseV2(ctx, &FindDatabaseMessage{
 			InstanceID:   &patch.InstanceID,
 			DatabaseName: &patch.DatabaseName,
