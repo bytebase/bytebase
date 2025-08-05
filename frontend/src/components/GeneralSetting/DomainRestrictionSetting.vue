@@ -12,36 +12,19 @@
       {{ $t("settings.general.workspace.domain-restriction.description") }}
     </p>
     <div class="w-full flex flex-col gap-2 mt-2">
-      <div
-        v-for="(domain, i) in state.domains"
-        :key="i"
-        class="w-full flex items-center justify-center space-x-1"
-      >
-        <NInput
-          :value="domain"
-          :disabled="!allowEdit"
-          :placeholder="
-            $t(
-              'settings.general.workspace.domain-restriction.domain-input-placeholder'
-            )
-          "
-          type="text"
-          @update:value="($event) => updateDomain(i, $event)"
-        />
-        <NButton quaternary size="small" @click="removeDomain(i)">
-          <template #icon>
-            <XIcon class="w-4" />
-          </template>
-        </NButton>
-      </div>
-      <div>
-        <NButton tertiary size="small" @click="addDomain">
-          <template #icon>
-            <PlusIcon class="w-4" />
-          </template>
-          Add domain
-        </NButton>
-      </div>
+      <NDynamicTags
+        :size="'large'"
+        :disabled="!allowEdit"
+        :value="state.domains"
+        :input-props="{
+          placeholder: $t(
+            'settings.general.workspace.domain-restriction.domain-input-placeholder'
+          ),
+          clearable: true,
+        }"
+        :input-style="'min-width: 20rem;'"
+        @update:value="onDomainsUpdate"
+      />
 
       <div class="w-full flex flex-row justify-between items-center">
         <NCheckbox
@@ -75,8 +58,7 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual, cloneDeep } from "lodash-es";
-import { PlusIcon, XIcon } from "lucide-vue-next";
-import { NCheckbox, NInput, NButton } from "naive-ui";
+import { NCheckbox, NDynamicTags } from "naive-ui";
 import { computed, reactive } from "vue";
 import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
@@ -112,16 +94,8 @@ const hasFeature = featureToRef(
   PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION
 );
 
-const updateDomain = (index: number, domain: string) => {
-  state.domains[index] = domain;
-};
-
-const addDomain = () => {
-  state.domains.push("");
-};
-
-const removeDomain = (index: number) => {
-  state.domains.splice(index, 1);
+const onDomainsUpdate = (values: string[]) => {
+  state.domains = values;
   if (validDomains.value.length === 0) {
     state.enableRestriction = false;
   }
