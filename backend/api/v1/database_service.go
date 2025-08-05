@@ -459,7 +459,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 			}
 			patch.ProjectID = &project.ResourceID
 		case "labels":
-			patch.Metadata = append(patch.Metadata, func(dm *storepb.DatabaseMetadata) {
+			patch.MetadataUpdates = append(patch.MetadataUpdates, func(dm *storepb.DatabaseMetadata) {
 				dm.Labels = req.Msg.Database.Labels
 			})
 		case "environment":
@@ -499,7 +499,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 				}}); err != nil {
 				return nil, errors.Wrapf(err, "failed to create changelog")
 			}
-			patch.Metadata = append(patch.Metadata, func(dm *storepb.DatabaseMetadata) {
+			patch.MetadataUpdates = append(patch.MetadataUpdates, func(dm *storepb.DatabaseMetadata) {
 				dm.Drifted = false
 			})
 		default:
