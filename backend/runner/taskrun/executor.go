@@ -337,7 +337,7 @@ func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext,
 	if _, err := stores.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
-		Metadata: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
+		MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
 			md.Drifted = false
 		}},
 	}); err != nil {
@@ -513,7 +513,7 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 				if _, err := storeInstance.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 					InstanceID:   mc.database.InstanceID,
 					DatabaseName: mc.database.DatabaseName,
-					Metadata: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
+					MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
 						md.Version = mc.version
 					}},
 				}); err != nil {

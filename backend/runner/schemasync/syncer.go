@@ -420,7 +420,7 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 		Deleted:      proto.Bool(false),
-		Metadata: []func(*storepb.DatabaseMetadata){
+		MetadataUpdates: []func(*storepb.DatabaseMetadata){
 			func(md *storepb.DatabaseMetadata) {
 				md.LastSyncTime = timestamppb.Now()
 				md.BackupAvailable = s.databaseBackupAvailable(ctx, instance, databaseMetadata)
@@ -532,7 +532,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 		Deleted:      proto.Bool(false),
-		Metadata: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
+		MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
 			md.LastSyncTime = timestamppb.Now()
 			md.BackupAvailable = s.databaseBackupAvailable(ctx, instance, databaseMetadata)
 			md.Datashare = databaseMetadata.Datashare
