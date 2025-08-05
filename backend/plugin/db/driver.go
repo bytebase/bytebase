@@ -99,16 +99,15 @@ func (t MigrationType) GetVersionTypeSuffix() string {
 		return "sdl"
 	case Baseline:
 		return "baseline"
+	default:
+		return ""
 	}
-	return ""
 }
 
 func (t MigrationType) NeedDump() bool {
 	switch t {
-	case Baseline, Migrate, MigrateSDL:
+	case Baseline, Migrate, MigrateSDL, Data:
 		return true
-	case Data:
-		return false
 	default:
 		return false
 	}
