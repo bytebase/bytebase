@@ -105,7 +105,11 @@ const downloadExportArchive = async () => {
     })
   );
   const fileType = getExportFileType(exportDataConfig.value);
-  const blob = new Blob([content], {
+  const buffer = content.buffer.slice(
+    content.byteOffset,
+    content.byteOffset + content.byteLength
+  ) as ArrayBuffer;
+  const blob = new Blob([buffer], {
     type: fileType,
   });
   const url = window.URL.createObjectURL(blob);
