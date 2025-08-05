@@ -284,6 +284,19 @@ const doCreateIssue = async () => {
   loading.value = true;
 
   try {
+    // Update the plan description if it has changed before creating the issue.
+    if (description.value !== plan.value.description) {
+      await planServiceClientConnect.updatePlan(
+        create(UpdatePlanRequestSchema, {
+          plan: {
+            name: plan.value.name,
+            description: description.value,
+          },
+          updateMask: { paths: ["description"] },
+        })
+      );
+    }
+
     const request = create(CreateIssueRequestSchema, {
       parent: project.value.name,
       issue: create(IssueSchema, {
@@ -297,20 +310,7 @@ const doCreateIssue = async () => {
     });
     const createdIssue = await issueServiceClientConnect.createIssue(request);
 
-    // Update the plan description if it has changed.
-    if (description.value !== plan.value.description) {
-      await planServiceClientConnect.updatePlan(
-        create(UpdatePlanRequestSchema, {
-          plan: {
-            name: plan.value.name,
-            description: description.value,
-          },
-          updateMask: { paths: ["description"] },
-        })
-      );
-    }
-
-    // Then create the rollout from the plan
+    // Then create the rollout from the plan.
     const rolloutRequest = create(CreateRolloutRequestSchema, {
       parent: project.value.name,
       rollout: {
