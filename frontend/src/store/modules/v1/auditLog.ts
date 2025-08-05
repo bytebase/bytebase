@@ -1,7 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import type { BinaryLike } from "node:crypto";
 import { defineStore } from "pinia";
 import { auditLogServiceClientConnect } from "@/grpcweb";
 import type { SearchAuditLogsParams } from "@/types";
@@ -62,7 +61,7 @@ export const useAuditLogStore = defineStore("audit_log", () => {
     pageSize: number;
     pageToken: string;
   }): Promise<{
-    content: BinaryLike | Blob;
+    content: Uint8Array;
     nextPageToken: string;
   }> => {
     const request = create(ExportAuditLogsRequestSchema, {

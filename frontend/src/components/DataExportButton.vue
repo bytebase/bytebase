@@ -133,7 +133,6 @@ import {
   NRadioGroup,
   NTooltip,
 } from "naive-ui";
-import type { BinaryLike } from "node:crypto";
 import { computed, reactive, ref, watch } from "vue";
 import { BBModal, BBTextField } from "@/bbkit";
 import { t } from "@/plugins/i18n";
@@ -150,7 +149,7 @@ interface LocalState {
 }
 
 export type DownloadContent = Array<{
-  content: BinaryLike | Blob;
+  content: Uint8Array;
   filename: string;
 }>;
 
@@ -339,8 +338,8 @@ const getExportFileType = (format: ExportFormat) => {
   }
 };
 
-const cnovertSingleFile = async (
-  content: BinaryLike | Blob,
+const convertSingleFile = async (
+  content: Uint8Array,
   options: ExportOption
 ) => {
   const isZip = downloadFileAsZip(options);
@@ -348,7 +347,12 @@ const cnovertSingleFile = async (
     ? "application/zip"
     : getExportFileType(options.format);
 
-  let blob = new Blob([content], {
+  // Create Blob from Uint8Array
+  const buffer = content.buffer.slice(
+    content.byteOffset,
+    content.byteOffset + content.byteLength
+  ) as ArrayBuffer; // TypeScript 5.9.2 requires explicit ArrayBuffer type
+  let blob = new Blob([buffer], {
     type: fileType,
   });
   if (options.format === ExportFormat.JSON) {
@@ -366,12 +370,12 @@ const doDownloadSingleFile = async (
     content,
     filename,
   }: {
-    content: BinaryLike | Blob;
+    content: Uint8Array;
     filename: string;
   },
   options: ExportOption
 ) => {
-  const blob = await cnovertSingleFile(content, options);
+  const blob = await convertSingleFile(content, options);
   const isZip = downloadFileAsZip(options);
   const url = window.URL.createObjectURL(blob);
 
@@ -390,7 +394,7 @@ const doDownload = async (content: DownloadContent, options: ExportOption) => {
   const fileFormat = ExportFormat[options.format].toLowerCase();
   const zip = new JSZip();
   for (const c of content) {
-    const blob = await cnovertSingleFile(c.content, options);
+    const blob = await convertSingleFile(c.content, options);
     zip.file(`${c.filename}.${fileFormat}`, blob);
   }
 
