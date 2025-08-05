@@ -12,7 +12,6 @@ import (
 	celoperators "github.com/google/cel-go/common/operators"
 	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -437,7 +436,6 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 	patch := &store.UpdateDatabaseMessage{
 		InstanceID:   databaseMessage.InstanceID,
 		DatabaseName: databaseMessage.DatabaseName,
-		Metadata:     proto.Clone(databaseMessage.Metadata).(*storepb.DatabaseMetadata),
 	}
 	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
@@ -461,7 +459,9 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 			}
 			patch.ProjectID = &project.ResourceID
 		case "labels":
-			patch.Metadata.Labels = req.Msg.Database.Labels
+			patch.Metadata = append(patch.Metadata, func(dm *storepb.DatabaseMetadata) {
+				dm.Labels = req.Msg.Database.Labels
+			})
 		case "environment":
 			if req.Msg.Database.Environment != "" {
 				environmentID, err := common.GetEnvironmentID(req.Msg.Database.Environment)
@@ -499,7 +499,9 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 				}}); err != nil {
 				return nil, errors.Wrapf(err, "failed to create changelog")
 			}
-			patch.Metadata.Drifted = false
+			patch.Metadata = append(patch.Metadata, func(dm *storepb.DatabaseMetadata) {
+				dm.Drifted = false
+			})
 		default:
 		}
 	}
