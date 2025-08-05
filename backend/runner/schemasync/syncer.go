@@ -416,19 +416,17 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 		}
 	}
 
-	d := false
-	metadata, ok := proto.Clone(database.Metadata).(*storepb.DatabaseMetadata)
-	if !ok {
-		return 0, errors.Errorf("failed to convert database metadata type")
-	}
-	metadata.LastSyncTime = timestamppb.New(time.Now())
-	metadata.BackupAvailable = s.databaseBackupAvailable(ctx, instance, databaseMetadata)
-	metadata.Datashare = databaseMetadata.Datashare
 	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
-		Deleted:      &d,
-		Metadata:     metadata,
+		Deleted:      proto.Bool(false),
+		Metadata: []func(*storepb.DatabaseMetadata){
+			func(md *storepb.DatabaseMetadata) {
+				md.LastSyncTime = timestamppb.Now()
+				md.BackupAvailable = s.databaseBackupAvailable(ctx, instance, databaseMetadata)
+				md.Datashare = databaseMetadata.Datashare
+			},
+		},
 	}); err != nil {
 		return 0, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
@@ -526,26 +524,20 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		dbConfig = buildDatabaseConfigWithClassificationFromComment(databaseMetadata, dbModelConfig, classificationConfig)
 	}
 
-	d := false
-	metadata, ok := proto.Clone(database.Metadata).(*storepb.DatabaseMetadata)
-	if !ok {
-		return errors.Errorf("failed to convert database metadata type")
-	}
-	metadata.LastSyncTime = timestamppb.New(time.Now())
-	metadata.BackupAvailable = s.databaseBackupAvailable(ctx, instance, databaseMetadata)
-	metadata.Datashare = databaseMetadata.Datashare
 	drifted, skipped, err := s.getSchemaDrifted(ctx, instance, database, string(rawDump))
 	if err != nil {
 		return errors.Wrapf(err, "failed to get schema drifted for database %q", database.DatabaseName)
 	}
-	if !skipped {
-		metadata.Drifted = drifted
-	}
 	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
-		Deleted:      &d,
-		Metadata:     metadata,
+		Deleted:      proto.Bool(false),
+		Metadata: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
+			md.LastSyncTime = timestamppb.Now()
+			md.BackupAvailable = s.databaseBackupAvailable(ctx, instance, databaseMetadata)
+			md.Datashare = databaseMetadata.Datashare
+			md.Drifted = !skipped && drifted
+		}},
 	}); err != nil {
 		return errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
