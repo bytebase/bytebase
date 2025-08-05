@@ -32,7 +32,6 @@ type webhookRequest struct {
 	Time    time.Time
 }
 
-
 func (c *webhookCollector) addRequest(r *http.Request) error {
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)
@@ -114,7 +113,7 @@ func TestWebhookIntegration(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"success": true}`))
+		_, _ = w.Write([]byte(`{"success": true}`))
 	}))
 	defer webhookServer.Close()
 
