@@ -14,8 +14,6 @@ import (
 
 func init() {
 	base.RegisterDiagnoseFunc(store.Engine_ORACLE, Diagnose)
-	base.RegisterDiagnoseFunc(store.Engine_DM, Diagnose)
-	base.RegisterDiagnoseFunc(store.Engine_OCEANBASE_ORACLE, Diagnose)
 }
 
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {

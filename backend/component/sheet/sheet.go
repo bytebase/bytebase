@@ -232,7 +232,7 @@ func syntaxCheck(dbType storepb.Engine, statement string) (any, []*storepb.Advic
 		return postgresSyntaxCheck(statement)
 	case storepb.Engine_REDSHIFT:
 		return redshiftSyntaxCheck(statement)
-	case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
+	case storepb.Engine_ORACLE:
 		return oracleSyntaxCheck(statement)
 	case storepb.Engine_SNOWFLAKE:
 		return snowflakeSyntaxCheck(statement)

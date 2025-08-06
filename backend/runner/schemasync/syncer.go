@@ -738,10 +738,9 @@ func getOrDefaultLastSyncTime(t *timestamppb.Timestamp) time.Time {
 
 func disableSchemaDriftCheck(dbTp storepb.Engine) bool {
 	m := map[storepb.Engine]struct{}{
-		storepb.Engine_MONGODB:    {},
-		storepb.Engine_REDIS:      {},
-		storepb.Engine_REDSHIFT:   {},
-		storepb.Engine_RISINGWAVE: {},
+		storepb.Engine_MONGODB:  {},
+		storepb.Engine_REDIS:    {},
+		storepb.Engine_REDSHIFT: {},
 	}
 	_, ok := m[dbTp]
 	return ok

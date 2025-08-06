@@ -9807,9 +9807,6 @@ components:
                         - REDSHIFT
                         - MARIADB
                         - OCEANBASE
-                        - DM
-                        - RISINGWAVE
-                        - OCEANBASE_ORACLE
                         - STARROCKS
                         - DORIS
                         - HIVE
@@ -10563,9 +10560,6 @@ components:
                         - REDSHIFT
                         - MARIADB
                         - OCEANBASE
-                        - DM
-                        - RISINGWAVE
-                        - OCEANBASE_ORACLE
                         - STARROCKS
                         - DORIS
                         - HIVE
@@ -10642,9 +10636,6 @@ components:
                         - REDSHIFT
                         - MARIADB
                         - OCEANBASE
-                        - DM
-                        - RISINGWAVE
-                        - OCEANBASE_ORACLE
                         - STARROCKS
                         - DORIS
                         - HIVE
@@ -11817,9 +11808,6 @@ components:
                         - REDSHIFT
                         - MARIADB
                         - OCEANBASE
-                        - DM
-                        - RISINGWAVE
-                        - OCEANBASE_ORACLE
                         - STARROCKS
                         - DORIS
                         - HIVE
@@ -12799,9 +12787,6 @@ components:
                         - REDSHIFT
                         - MARIADB
                         - OCEANBASE
-                        - DM
-                        - RISINGWAVE
-                        - OCEANBASE_ORACLE
                         - STARROCKS
                         - DORIS
                         - HIVE
@@ -12861,9 +12846,6 @@ components:
                         - REDSHIFT
                         - MARIADB
                         - OCEANBASE
-                        - DM
-                        - RISINGWAVE
-                        - OCEANBASE_ORACLE
                         - STARROCKS
                         - DORIS
                         - HIVE
@@ -12905,9 +12887,6 @@ components:
                         - REDSHIFT
                         - MARIADB
                         - OCEANBASE
-                        - DM
-                        - RISINGWAVE
-                        - OCEANBASE_ORACLE
                         - STARROCKS
                         - DORIS
                         - HIVE
@@ -12949,9 +12928,6 @@ components:
                         - REDSHIFT
                         - MARIADB
                         - OCEANBASE
-                        - DM
-                        - RISINGWAVE
-                        - OCEANBASE_ORACLE
                         - STARROCKS
                         - DORIS
                         - HIVE
@@ -13426,9 +13402,6 @@ components:
                         - REDSHIFT
                         - MARIADB
                         - OCEANBASE
-                        - DM
-                        - RISINGWAVE
-                        - OCEANBASE_ORACLE
                         - STARROCKS
                         - DORIS
                         - HIVE

@@ -79,7 +79,6 @@ const showSensitiveColumn = computed(() => {
       engine.value === Engine.SNOWFLAKE ||
       engine.value === Engine.MSSQL ||
       engine.value === Engine.BIGQUERY ||
-      engine.value === Engine.RISINGWAVE ||
       engine.value === Engine.SPANNER ||
       engine.value === Engine.TRINO)
   );

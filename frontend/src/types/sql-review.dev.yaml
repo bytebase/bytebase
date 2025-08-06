@@ -20,9 +20,6 @@ ruleList:
     engine: ORACLE
   - type: table.require-pk
     level: ERROR
-    engine: OCEANBASE_ORACLE
-  - type: table.require-pk
-    level: ERROR
     engine: OCEANBASE
   - type: table.require-pk
     level: ERROR
@@ -45,9 +42,6 @@ ruleList:
   - type: table.no-foreign-key
     level: WARNING
     engine: ORACLE
-  - type: table.no-foreign-key
-    level: WARNING
-    engine: OCEANBASE_ORACLE
   - type: table.no-foreign-key
     level: WARNING
     engine: OCEANBASE
@@ -162,9 +156,6 @@ ruleList:
     engine: ORACLE
   - type: statement.select.no-select-all
     level: WARNING
-    engine: OCEANBASE_ORACLE
-  - type: statement.select.no-select-all
-    level: WARNING
     engine: OCEANBASE
   - type: statement.select.no-select-all
     level: WARNING
@@ -187,9 +178,6 @@ ruleList:
   - type: statement.where.require.select
     level: WARNING
     engine: ORACLE
-  - type: statement.where.require.select
-    level: WARNING
-    engine: OCEANBASE_ORACLE
   - type: statement.where.require.select
     level: WARNING
     engine: OCEANBASE
@@ -216,9 +204,6 @@ ruleList:
     engine: ORACLE
   - type: statement.where.require.update-delete
     level: WARNING
-    engine: OCEANBASE_ORACLE
-  - type: statement.where.require.update-delete
-    level: WARNING
     engine: OCEANBASE
   - type: statement.where.require.update-delete
     level: WARNING
@@ -241,9 +226,6 @@ ruleList:
   - type: statement.where.no-leading-wildcard-like
     level: WARNING
     engine: ORACLE
-  - type: statement.where.no-leading-wildcard-like
-    level: WARNING
-    engine: OCEANBASE_ORACLE
   - type: statement.where.no-leading-wildcard-like
     level: WARNING
     engine: OCEANBASE
@@ -322,9 +304,6 @@ ruleList:
   - type: statement.insert.must-specify-column
     level: WARNING
     engine: ORACLE
-  - type: statement.insert.must-specify-column
-    level: WARNING
-    engine: OCEANBASE_ORACLE
   - type: statement.insert.must-specify-column
     level: WARNING
     engine: OCEANBASE
@@ -525,63 +504,54 @@ ruleList:
   - type: naming.table
     level: WARNING
     payload:
-      format: "^[a-z]+(_[a-z]+)*$"
+      format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: MYSQL
   - type: naming.table
     level: WARNING
     payload:
-      format: "^[a-z]+(_[a-z]+)*$"
+      format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: TIDB
   - type: naming.table
     level: WARNING
     payload:
-      format: "^[a-z]+(_[a-z]+)*$"
+      format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: POSTGRES
   - type: naming.table
     level: WARNING
     payload:
-      format: "^[a-z]+(_[a-z]+)*$"
+      format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: ORACLE
   - type: naming.table
     level: WARNING
     payload:
-      format: "^[a-z]+(_[a-z]+)*$"
-      maxLength: 63
-    engine: OCEANBASE_ORACLE
-  - type: naming.table
-    level: WARNING
-    payload:
-      format: "^[a-z]+(_[a-z]+)*$"
+      format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: OCEANBASE
   - type: naming.table
     level: WARNING
     payload:
-      format: "^[a-z]+(_[a-z]+)*$"
+      format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: SNOWFLAKE
   - type: naming.table
     level: WARNING
     payload:
-      format: "^[a-z]+(_[a-z]+)*$"
+      format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: MSSQL
   - type: naming.table
     level: WARNING
     payload:
-      format: "^[a-z]+(_[a-z]+)*$"
+      format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: MARIADB
   - type: naming.table.no-keyword
     level: WARNING
     engine: ORACLE
-  - type: naming.table.no-keyword
-    level: WARNING
-    engine: OCEANBASE_ORACLE
   - type: naming.table.no-keyword
     level: WARNING
     engine: SNOWFLAKE
@@ -591,132 +561,127 @@ ruleList:
   - type: naming.column
     level: WARNING
     payload:
-      format: "^[a-z]+(_[a-z]+)*$"
+      format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: MYSQL
   - type: naming.column
     level: WARNING
     payload:
-      format: "^[a-z]+(_[a-z]+)*$"
+      format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: TIDB
   - type: naming.column
     level: WARNING
     payload:
-      format: "^[a-z]+(_[a-z]+)*$"
+      format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: POSTGRES
   - type: naming.column
     level: WARNING
     payload:
-      format: "^[a-z]+(_[a-z]+)*$"
+      format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: OCEANBASE
   - type: naming.column
     level: WARNING
     payload:
-      format: "^[a-z]+(_[a-z]+)*$"
+      format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: MARIADB
   - type: naming.index.uk
     level: WARNING
     payload:
-      format: "^$|^uk_{{table}}_{{column_list}}$"
+      format: ^$|^uk_{{table}}_{{column_list}}$
       maxLength: 63
     engine: MYSQL
   - type: naming.index.uk
     level: WARNING
     payload:
-      format: "^$|^uk_{{table}}_{{column_list}}$"
+      format: ^$|^uk_{{table}}_{{column_list}}$
       maxLength: 63
     engine: TIDB
   - type: naming.index.uk
     level: WARNING
     payload:
-      format: "^$|^uk_{{table}}_{{column_list}}$"
+      format: ^$|^uk_{{table}}_{{column_list}}$
       maxLength: 63
     engine: POSTGRES
   - type: naming.index.uk
     level: WARNING
     payload:
-      format: "^$|^uk_{{table}}_{{column_list}}$"
+      format: ^$|^uk_{{table}}_{{column_list}}$
       maxLength: 63
     engine: OCEANBASE
   - type: naming.index.uk
     level: WARNING
     payload:
-      format: "^$|^uk_{{table}}_{{column_list}}$"
+      format: ^$|^uk_{{table}}_{{column_list}}$
       maxLength: 63
     engine: MARIADB
   - type: naming.index.pk
     level: WARNING
     payload:
-      format: "^$|^pk_{{table}}_{{column_list}}$"
+      format: ^$|^pk_{{table}}_{{column_list}}$
       maxLength: 63
     engine: POSTGRES
   - type: naming.index.idx
     level: WARNING
     payload:
-      format: "^$|^idx_{{table}}_{{column_list}}$"
+      format: ^$|^idx_{{table}}_{{column_list}}$
       maxLength: 63
     engine: MYSQL
   - type: naming.index.idx
     level: WARNING
     payload:
-      format: "^$|^idx_{{table}}_{{column_list}}$"
+      format: ^$|^idx_{{table}}_{{column_list}}$
       maxLength: 63
     engine: TIDB
   - type: naming.index.idx
     level: WARNING
     payload:
-      format: "^$|^idx_{{table}}_{{column_list}}$"
+      format: ^$|^idx_{{table}}_{{column_list}}$
       maxLength: 63
     engine: POSTGRES
   - type: naming.index.idx
     level: WARNING
     payload:
-      format: "^$|^idx_{{table}}_{{column_list}}$"
+      format: ^$|^idx_{{table}}_{{column_list}}$
       maxLength: 63
     engine: OCEANBASE
   - type: naming.index.idx
     level: WARNING
     payload:
-      format: "^$|^idx_{{table}}_{{column_list}}$"
+      format: ^$|^idx_{{table}}_{{column_list}}$
       maxLength: 63
     engine: MARIADB
   - type: naming.index.fk
     level: WARNING
     payload:
-      format: >-
-        ^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
+      format: ^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
       maxLength: 63
     engine: MYSQL
   - type: naming.index.fk
     level: WARNING
     payload:
-      format: >-
-        ^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
+      format: ^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
       maxLength: 63
     engine: TIDB
   - type: naming.index.fk
     level: WARNING
     payload:
-      format: >-
-        ^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
+      format: ^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
       maxLength: 63
     engine: POSTGRES
   - type: naming.index.fk
     level: WARNING
     payload:
-      format: >-
-        ^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
+      format: ^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
       maxLength: 63
     engine: OCEANBASE
   - type: naming.index.fk
     level: WARNING
     payload:
-      format: >-
-        ^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
+      format: ^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
       maxLength: 63
     engine: MARIADB
   - type: naming.column.auto-increment
@@ -746,9 +711,6 @@ ruleList:
   - type: naming.identifier.no-keyword
     level: WARNING
     engine: ORACLE
-  - type: naming.identifier.no-keyword
-    level: WARNING
-    engine: OCEANBASE_ORACLE
   - type: naming.identifier.no-keyword
     level: WARNING
     engine: SNOWFLAKE
@@ -767,11 +729,6 @@ ruleList:
     level: WARNING
     payload:
       upper: true
-    engine: OCEANBASE_ORACLE
-  - type: naming.identifier.case
-    level: WARNING
-    payload:
-      upper: true
     engine: SNOWFLAKE
   - type: column.required
     level: WARNING
@@ -813,16 +770,6 @@ ruleList:
         - creator_id
         - updater_id
     engine: ORACLE
-  - type: column.required
-    level: WARNING
-    payload:
-      list:
-        - id
-        - created_ts
-        - updated_ts
-        - creator_id
-        - updater_id
-    engine: OCEANBASE_ORACLE
   - type: column.required
     level: WARNING
     payload:
@@ -904,12 +851,6 @@ ruleList:
     payload:
       list:
         - JSON
-    engine: OCEANBASE_ORACLE
-  - type: column.type-disallow-list
-    level: WARNING
-    payload:
-      list:
-        - JSON
     engine: OCEANBASE
   - type: column.type-disallow-list
     level: WARNING
@@ -935,9 +876,6 @@ ruleList:
   - type: column.no-null
     level: WARNING
     engine: ORACLE
-  - type: column.no-null
-    level: WARNING
-    engine: OCEANBASE_ORACLE
   - type: column.no-null
     level: WARNING
     engine: OCEANBASE
@@ -988,9 +926,6 @@ ruleList:
     engine: ORACLE
   - type: column.set-default-for-not-null
     level: ERROR
-    engine: OCEANBASE_ORACLE
-  - type: column.set-default-for-not-null
-    level: ERROR
     engine: OCEANBASE
   - type: column.set-default-for-not-null
     level: ERROR
@@ -1103,11 +1038,6 @@ ruleList:
     level: WARNING
     payload:
       number: 20
-    engine: OCEANBASE_ORACLE
-  - type: column.maximum-character-length
-    level: WARNING
-    payload:
-      number: 20
     engine: OCEANBASE
   - type: column.maximum-character-length
     level: WARNING
@@ -1134,11 +1064,6 @@ ruleList:
     payload:
       number: 2560
     engine: ORACLE
-  - type: column.maximum-varchar-length
-    level: WARNING
-    payload:
-      number: 2560
-    engine: OCEANBASE_ORACLE
   - type: column.maximum-varchar-length
     level: WARNING
     payload:
@@ -1201,9 +1126,6 @@ ruleList:
   - type: column.require-default
     level: WARNING
     engine: ORACLE
-  - type: column.require-default
-    level: WARNING
-    engine: OCEANBASE_ORACLE
   - type: column.require-default
     level: WARNING
     engine: OCEANBASE
@@ -1305,11 +1227,6 @@ ruleList:
     payload:
       number: 5
     engine: ORACLE
-  - type: index.key-number-limit
-    level: WARNING
-    payload:
-      number: 5
-    engine: OCEANBASE_ORACLE
   - type: index.key-number-limit
     level: WARNING
     payload:

@@ -21,8 +21,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_ORACLE, advisor.OracleIdentifierNamingNoKeyword, &NamingIdentifierNoKeywordAdvisor{})
-	advisor.Register(storepb.Engine_DM, advisor.OracleIdentifierNamingNoKeyword, &NamingIdentifierNoKeywordAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE_ORACLE, advisor.OracleIdentifierNamingNoKeyword, &NamingIdentifierNoKeywordAdvisor{})
 }
 
 // NamingIdentifierNoKeywordAdvisor is the advisor checking for identifier naming convention without keyword.

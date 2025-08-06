@@ -85,12 +85,10 @@ export const supportedEngineV1List = () => {
     Engine.REDIS,
     Engine.TIDB,
     Engine.OCEANBASE,
-    Engine.OCEANBASE_ORACLE,
     Engine.SPANNER,
     Engine.REDSHIFT,
     Engine.MARIADB,
     Engine.STARROCKS,
-    Engine.RISINGWAVE,
     Engine.HIVE,
     Engine.ELASTICSEARCH,
     Engine.BIGQUERY,
@@ -102,7 +100,6 @@ export const supportedEngineV1List = () => {
     Engine.TRINO,
   ];
   if (locale.value === "zh-CN") {
-    engines.push(Engine.DM);
     engines.push(Engine.DORIS);
   }
   return engines;
@@ -136,7 +133,6 @@ export const enginesSupportCreateDatabase = () => {
     Engine.REDSHIFT,
     Engine.MARIADB,
     Engine.STARROCKS,
-    Engine.RISINGWAVE,
     Engine.HIVE,
     Engine.COCKROACHDB,
     Engine.DORIS,
@@ -172,7 +168,6 @@ export const instanceV1HasSSL = (
     Engine.ORACLE,
     Engine.MARIADB,
     Engine.OCEANBASE,
-    Engine.DM,
     Engine.STARROCKS,
     Engine.DORIS,
     Engine.MONGODB,
@@ -221,7 +216,6 @@ export const instanceV1HasCollationAndCharacterSet = (
     Engine.CLICKHOUSE,
     Engine.SNOWFLAKE,
     Engine.REDSHIFT,
-    Engine.RISINGWAVE,
     Engine.STARROCKS,
     Engine.DORIS,
     Engine.COSMOSDB,
@@ -253,14 +247,11 @@ export const instanceV1AllowsExplain = (
     Engine.TIDB,
     Engine.CLICKHOUSE,
     Engine.COCKROACHDB,
-    Engine.DM,
     Engine.HIVE,
     Engine.MSSQL,
-    Engine.OCEANBASE_ORACLE,
     Engine.ORACLE,
     Engine.POSTGRES,
     Engine.REDSHIFT,
-    Engine.RISINGWAVE,
     Engine.SNOWFLAKE,
     Engine.STARROCKS,
   ].includes(engine);
@@ -291,7 +282,7 @@ export const instanceV1SupportsPackage = (
   instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
-  return [Engine.ORACLE, Engine.OCEANBASE_ORACLE].includes(engine);
+  return [Engine.ORACLE].includes(engine);
 };
 
 export const instanceV1SupportsSequence = (
@@ -368,12 +359,6 @@ export const engineNameV1 = (type: Engine): string => {
       return "MariaDB";
     case Engine.OCEANBASE:
       return "OceanBase (MySQL)";
-    case Engine.OCEANBASE_ORACLE:
-      return "OceanBase (Oracle)";
-    case Engine.DM:
-      return "DM";
-    case Engine.RISINGWAVE:
-      return "RisingWave";
     case Engine.STARROCKS:
       return "StarRocks";
     case Engine.DORIS:
@@ -404,7 +389,6 @@ export const hasSchemaProperty = (databaseEngine: Engine) => {
     databaseEngine === Engine.SNOWFLAKE ||
     databaseEngine === Engine.MSSQL ||
     databaseEngine === Engine.REDSHIFT ||
-    databaseEngine === Engine.RISINGWAVE ||
     databaseEngine === Engine.COCKROACHDB ||
     databaseEngine === Engine.SPANNER ||
     databaseEngine === Engine.TRINO ||

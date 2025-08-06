@@ -20,7 +20,6 @@ import (
 func init() {
 	base.RegisterQueryValidator(storepb.Engine_POSTGRES, validateQuery)
 	base.RegisterQueryValidator(storepb.Engine_REDSHIFT, validateQuery)
-	base.RegisterQueryValidator(storepb.Engine_RISINGWAVE, validateQuery)
 	base.RegisterQueryValidator(storepb.Engine_COCKROACHDB, validateQuery)
 }
 

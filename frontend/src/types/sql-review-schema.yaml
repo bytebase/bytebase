@@ -18,9 +18,6 @@
   engine: ORACLE
 - type: table.require-pk
   category: TABLE
-  engine: OCEANBASE_ORACLE
-- type: table.require-pk
-  category: TABLE
   engine: OCEANBASE
 - type: table.require-pk
   category: TABLE
@@ -43,9 +40,6 @@
 - type: table.no-foreign-key
   category: TABLE
   engine: ORACLE
-- type: table.no-foreign-key
-  category: TABLE
-  engine: OCEANBASE_ORACLE
 - type: table.no-foreign-key
   category: TABLE
   engine: OCEANBASE
@@ -202,22 +196,6 @@
         type: NUMBER
         default: 64
   engine: ORACLE
-- type: table.comment
-  category: TABLE
-  componentList:
-    - key: required
-      payload:
-        type: BOOLEAN
-        default: false
-    - key: requiredClassification
-      payload:
-        type: BOOLEAN
-        default: false
-    - key: maxLength
-      payload:
-        type: NUMBER
-        default: 64
-  engine: OCEANBASE_ORACLE
 - type: table.disallow-partition
   category: TABLE
   engine: MYSQL
@@ -310,9 +288,6 @@
   engine: ORACLE
 - type: statement.select.no-select-all
   category: STATEMENT
-  engine: OCEANBASE_ORACLE
-- type: statement.select.no-select-all
-  category: STATEMENT
   engine: OCEANBASE
 - type: statement.select.no-select-all
   category: STATEMENT
@@ -335,9 +310,6 @@
 - type: statement.where.require.select
   category: STATEMENT
   engine: ORACLE
-- type: statement.where.require.select
-  category: STATEMENT
-  engine: OCEANBASE_ORACLE
 - type: statement.where.require.select
   category: STATEMENT
   engine: OCEANBASE
@@ -364,9 +336,6 @@
   engine: ORACLE
 - type: statement.where.require.update-delete
   category: STATEMENT
-  engine: OCEANBASE_ORACLE
-- type: statement.where.require.update-delete
-  category: STATEMENT
   engine: OCEANBASE
 - type: statement.where.require.update-delete
   category: STATEMENT
@@ -389,9 +358,6 @@
 - type: statement.where.no-leading-wildcard-like
   category: STATEMENT
   engine: ORACLE
-- type: statement.where.no-leading-wildcard-like
-  category: STATEMENT
-  engine: OCEANBASE_ORACLE
 - type: statement.where.no-leading-wildcard-like
   category: STATEMENT
   engine: OCEANBASE
@@ -502,9 +468,6 @@
 - type: statement.insert.must-specify-column
   category: STATEMENT
   engine: ORACLE
-- type: statement.insert.must-specify-column
-  category: STATEMENT
-  engine: OCEANBASE_ORACLE
 - type: statement.insert.must-specify-column
   category: STATEMENT
   engine: OCEANBASE
@@ -756,7 +719,7 @@
     - key: format
       payload:
         type: STRING
-        default: "^[a-z]+(_[a-z]+)*$"
+        default: ^[a-z]+(_[a-z]+)*$
     - key: maxLength
       payload:
         type: NUMBER
@@ -768,7 +731,7 @@
     - key: format
       payload:
         type: STRING
-        default: "^[a-z]+(_[a-z]+)*$"
+        default: ^[a-z]+(_[a-z]+)*$
     - key: maxLength
       payload:
         type: NUMBER
@@ -780,7 +743,7 @@
     - key: format
       payload:
         type: STRING
-        default: "^[a-z]+(_[a-z]+)*$"
+        default: ^[a-z]+(_[a-z]+)*$
     - key: maxLength
       payload:
         type: NUMBER
@@ -792,7 +755,7 @@
     - key: format
       payload:
         type: STRING
-        default: "^[a-z]+(_[a-z]+)*$"
+        default: ^[a-z]+(_[a-z]+)*$
     - key: maxLength
       payload:
         type: NUMBER
@@ -804,19 +767,7 @@
     - key: format
       payload:
         type: STRING
-        default: "^[a-z]+(_[a-z]+)*$"
-    - key: maxLength
-      payload:
-        type: NUMBER
-        default: 64
-  engine: OCEANBASE_ORACLE
-- type: naming.table
-  category: NAMING
-  componentList:
-    - key: format
-      payload:
-        type: STRING
-        default: "^[a-z]+(_[a-z]+)*$"
+        default: ^[a-z]+(_[a-z]+)*$
     - key: maxLength
       payload:
         type: NUMBER
@@ -828,7 +779,7 @@
     - key: format
       payload:
         type: STRING
-        default: "^[a-z]+(_[a-z]+)*$"
+        default: ^[a-z]+(_[a-z]+)*$
     - key: maxLength
       payload:
         type: NUMBER
@@ -840,7 +791,7 @@
     - key: format
       payload:
         type: STRING
-        default: "^[a-z]+(_[a-z]+)*$"
+        default: ^[a-z]+(_[a-z]+)*$
     - key: maxLength
       payload:
         type: NUMBER
@@ -852,7 +803,7 @@
     - key: format
       payload:
         type: STRING
-        default: "^[a-z]+(_[a-z]+)*$"
+        default: ^[a-z]+(_[a-z]+)*$
     - key: maxLength
       payload:
         type: NUMBER
@@ -864,7 +815,7 @@
     - key: format
       payload:
         type: STRING
-        default: "^[a-z]+(_[a-z]+)*$"
+        default: ^[a-z]+(_[a-z]+)*$
     - key: maxLength
       payload:
         type: NUMBER
@@ -876,7 +827,7 @@
     - key: format
       payload:
         type: STRING
-        default: "^[a-z]+(_[a-z]+)*$"
+        default: ^[a-z]+(_[a-z]+)*$
     - key: maxLength
       payload:
         type: NUMBER
@@ -888,7 +839,7 @@
     - key: format
       payload:
         type: STRING
-        default: "^[a-z]+(_[a-z]+)*$"
+        default: ^[a-z]+(_[a-z]+)*$
     - key: maxLength
       payload:
         type: NUMBER
@@ -900,7 +851,7 @@
     - key: format
       payload:
         type: STRING
-        default: "^[a-z]+(_[a-z]+)*$"
+        default: ^[a-z]+(_[a-z]+)*$
     - key: maxLength
       payload:
         type: NUMBER
@@ -912,7 +863,7 @@
     - key: format
       payload:
         type: STRING
-        default: "^[a-z]+(_[a-z]+)*$"
+        default: ^[a-z]+(_[a-z]+)*$
     - key: maxLength
       payload:
         type: NUMBER
@@ -924,7 +875,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: "^uk_{{table}}_{{column_list}}$"
+        default: ^uk_{{table}}_{{column_list}}$
         templateList:
           - table
           - column_list
@@ -939,7 +890,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: "^uk_{{table}}_{{column_list}}$"
+        default: ^uk_{{table}}_{{column_list}}$
         templateList:
           - table
           - column_list
@@ -954,7 +905,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: "^uk_{{table}}_{{column_list}}$"
+        default: ^uk_{{table}}_{{column_list}}$
         templateList:
           - table
           - column_list
@@ -969,7 +920,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: "^uk_{{table}}_{{column_list}}$"
+        default: ^uk_{{table}}_{{column_list}}$
         templateList:
           - table
           - column_list
@@ -984,7 +935,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: "^uk_{{table}}_{{column_list}}$"
+        default: ^uk_{{table}}_{{column_list}}$
         templateList:
           - table
           - column_list
@@ -999,7 +950,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: "^idx_{{table}}_{{column_list}}$"
+        default: ^idx_{{table}}_{{column_list}}$
         templateList:
           - table
           - column_list
@@ -1014,7 +965,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: "^idx_{{table}}_{{column_list}}$"
+        default: ^idx_{{table}}_{{column_list}}$
         templateList:
           - table
           - column_list
@@ -1029,7 +980,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: "^idx_{{table}}_{{column_list}}$"
+        default: ^idx_{{table}}_{{column_list}}$
         templateList:
           - table
           - column_list
@@ -1044,7 +995,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: "^idx_{{table}}_{{column_list}}$"
+        default: ^idx_{{table}}_{{column_list}}$
         templateList:
           - table
           - column_list
@@ -1059,7 +1010,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: "^idx_{{table}}_{{column_list}}$"
+        default: ^idx_{{table}}_{{column_list}}$
         templateList:
           - table
           - column_list
@@ -1074,8 +1025,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: >-
-          ^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
+        default: ^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
         templateList:
           - referencing_table
           - referencing_column
@@ -1092,8 +1042,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: >-
-          ^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
+        default: ^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
         templateList:
           - referencing_table
           - referencing_column
@@ -1110,8 +1059,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: >-
-          ^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
+        default: ^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
         templateList:
           - referencing_table
           - referencing_column
@@ -1128,8 +1076,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: >-
-          ^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
+        default: ^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
         templateList:
           - referencing_table
           - referencing_column
@@ -1146,8 +1093,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: >-
-          ^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
+        default: ^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
         templateList:
           - referencing_table
           - referencing_column
@@ -1164,7 +1110,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: "^pk_{{table}}_{{column_list}}$"
+        default: ^pk_{{table}}_{{column_list}}$
         templateList:
           - table
           - column_list
@@ -1226,9 +1172,6 @@
   engine: ORACLE
 - type: naming.table.no-keyword
   category: NAMING
-  engine: OCEANBASE_ORACLE
-- type: naming.table.no-keyword
-  category: NAMING
   engine: SNOWFLAKE
 - type: naming.table.no-keyword
   category: NAMING
@@ -1236,9 +1179,6 @@
 - type: naming.identifier.no-keyword
   category: NAMING
   engine: ORACLE
-- type: naming.identifier.no-keyword
-  category: NAMING
-  engine: OCEANBASE_ORACLE
 - type: naming.identifier.no-keyword
   category: NAMING
   engine: SNOWFLAKE
@@ -1256,14 +1196,6 @@
         type: BOOLEAN
         default: true
   engine: ORACLE
-- type: naming.identifier.case
-  category: NAMING
-  componentList:
-    - key: upper
-      payload:
-        type: BOOLEAN
-        default: true
-  engine: OCEANBASE_ORACLE
 - type: naming.identifier.case
   category: NAMING
   componentList:
@@ -1336,19 +1268,6 @@
           - updated_ts
           - creator_id
           - updater_id
-  engine: OCEANBASE_ORACLE
-- type: column.required
-  category: COLUMN
-  componentList:
-    - key: list
-      payload:
-        type: STRING_ARRAY
-        default:
-          - id
-          - created_ts
-          - updated_ts
-          - creator_id
-          - updater_id
   engine: OCEANBASE
 - type: column.required
   category: COLUMN
@@ -1403,9 +1322,6 @@
   engine: ORACLE
 - type: column.no-null
   category: COLUMN
-  engine: OCEANBASE_ORACLE
-- type: column.no-null
-  category: COLUMN
   engine: OCEANBASE
 - type: column.no-null
   category: COLUMN
@@ -1440,9 +1356,6 @@
 - type: column.set-default-for-not-null
   category: COLUMN
   engine: ORACLE
-- type: column.set-default-for-not-null
-  category: COLUMN
-  engine: OCEANBASE_ORACLE
 - type: column.set-default-for-not-null
   category: COLUMN
   engine: OCEANBASE
@@ -1568,22 +1481,6 @@
         type: NUMBER
         default: 64
   engine: ORACLE
-- type: column.comment
-  category: COLUMN
-  componentList:
-    - key: required
-      payload:
-        type: BOOLEAN
-        default: false
-    - key: requiredClassification
-      payload:
-        type: BOOLEAN
-        default: false
-    - key: maxLength
-      payload:
-        type: NUMBER
-        default: 64
-  engine: OCEANBASE_ORACLE
 - type: column.auto-increment-must-integer
   category: COLUMN
   engine: MYSQL
@@ -1628,14 +1525,6 @@
         type: STRING_ARRAY
         default: []
   engine: ORACLE
-- type: column.type-disallow-list
-  category: COLUMN
-  componentList:
-    - key: list
-      payload:
-        type: STRING_ARRAY
-        default: []
-  engine: OCEANBASE_ORACLE
 - type: column.type-disallow-list
   category: COLUMN
   componentList:
@@ -1711,14 +1600,6 @@
       payload:
         type: NUMBER
         default: 20
-  engine: OCEANBASE_ORACLE
-- type: column.maximum-character-length
-  category: COLUMN
-  componentList:
-    - key: number
-      payload:
-        type: NUMBER
-        default: 20
   engine: OCEANBASE
 - type: column.maximum-character-length
   category: COLUMN
@@ -1760,14 +1641,6 @@
         type: NUMBER
         default: 2560
   engine: ORACLE
-- type: column.maximum-varchar-length
-  category: COLUMN
-  componentList:
-    - key: number
-      payload:
-        type: NUMBER
-        default: 2560
-  engine: OCEANBASE_ORACLE
 - type: column.maximum-varchar-length
   category: COLUMN
   componentList:
@@ -1852,9 +1725,6 @@
 - type: column.require-default
   category: COLUMN
   engine: ORACLE
-- type: column.require-default
-  category: COLUMN
-  engine: OCEANBASE_ORACLE
 - type: column.require-default
   category: COLUMN
   engine: OCEANBASE
@@ -1950,14 +1820,6 @@
         type: NUMBER
         default: 5
   engine: ORACLE
-- type: index.key-number-limit
-  category: INDEX
-  componentList:
-    - key: number
-      payload:
-        type: NUMBER
-        default: 5
-  engine: OCEANBASE_ORACLE
 - type: index.key-number-limit
   category: INDEX
   componentList:

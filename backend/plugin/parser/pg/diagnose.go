@@ -14,7 +14,6 @@ import (
 
 func init() {
 	base.RegisterDiagnoseFunc(store.Engine_POSTGRES, Diagnose)
-	base.RegisterDiagnoseFunc(store.Engine_RISINGWAVE, Diagnose)
 	base.RegisterDiagnoseFunc(store.Engine_COCKROACHDB, Diagnose)
 }
 

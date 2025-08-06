@@ -105,9 +105,7 @@ const hasSensitiveDataFeature = featureToRef(PlanFeature.FEATURE_DATA_MASKING);
 
 const engine = computed(() => props.database.instanceResource.engine);
 
-const isPostgres = computed(
-  () => engine.value === Engine.POSTGRES || engine.value === Engine.RISINGWAVE
-);
+const isPostgres = computed(() => engine.value === Engine.POSTGRES);
 
 const hasEngineProperty = computed(() => {
   return !isPostgres.value;

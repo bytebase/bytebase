@@ -229,18 +229,16 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 			slog.Error("failed to get statement types", log.BBError(err))
 		}
 		defaultSchema = ""
-	case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
+	case storepb.Engine_ORACLE:
 		od, ok := driver.(*oracledriver.Driver)
 		if !ok {
 			return nil, errors.Errorf("invalid oracle driver type")
 		}
 		explainCalculator = od.CountAffectedRows
 
-		if instance.Metadata.GetEngine() != storepb.Engine_OCEANBASE_ORACLE {
-			sqlTypes, err = plsql.GetStatementTypes(asts)
-			if err != nil {
-				return nil, err
-			}
+		sqlTypes, err = plsql.GetStatementTypes(asts)
+		if err != nil {
+			return nil, err
 		}
 		defaultSchema = database.DatabaseName
 	case storepb.Engine_MSSQL:
