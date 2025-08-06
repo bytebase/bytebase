@@ -2,7 +2,7 @@
 // @generated from file v1/revision_service.proto (package bytebase.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
 
@@ -284,6 +284,13 @@ export declare type Revision = Message<"bytebase.v1.Revision"> & {
    * @generated from field: string task_run = 14;
    */
   taskRun: string;
+
+  /**
+   * The type of the revision.
+   *
+   * @generated from field: bytebase.v1.Revision.Type type = 15;
+   */
+  type: Revision_Type;
 };
 
 /**
@@ -291,6 +298,31 @@ export declare type Revision = Message<"bytebase.v1.Revision"> & {
  * Use `create(RevisionSchema)` to create a new message.
  */
 export declare const RevisionSchema: GenMessage<Revision>;
+
+/**
+ * @generated from enum bytebase.v1.Revision.Type
+ */
+export enum Revision_Type {
+  /**
+   * @generated from enum value: TYPE_UNSPECIFIED = 0;
+   */
+  TYPE_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: VERSIONED = 1;
+   */
+  VERSIONED = 1,
+
+  /**
+   * @generated from enum value: DECLARATIVE = 2;
+   */
+  DECLARATIVE = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.Revision.Type.
+ */
+export declare const Revision_TypeSchema: GenEnum<Revision_Type>;
 
 /**
  * @generated from service bytebase.v1.RevisionService

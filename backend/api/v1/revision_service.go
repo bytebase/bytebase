@@ -311,6 +311,7 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 		File:          revision.Payload.File,
 		Issue:         issueName,
 		TaskRun:       taskRunName,
+		Type:          convertToRevisionType(revision.Payload.Type),
 	}
 
 	if revision.DeleterUID != nil {
@@ -330,6 +331,20 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 	return r, nil
 }
 
+func convertToRevisionType(t storepb.RevisionPayload_Type) v1pb.Revision_Type {
+	//exhaustive:enforce
+	switch t {
+	case storepb.RevisionPayload_TYPE_UNSPECIFIED:
+		return v1pb.Revision_TYPE_UNSPECIFIED
+	case storepb.RevisionPayload_VERSIONED:
+		return v1pb.Revision_VERSIONED
+	case storepb.RevisionPayload_DECLARATIVE:
+		return v1pb.Revision_DECLARATIVE
+	default:
+		return v1pb.Revision_TYPE_UNSPECIFIED
+	}
+}
+
 func convertRevision(revision *v1pb.Revision, database *store.DatabaseMessage, sheet *store.SheetMessage) *store.RevisionMessage {
 	r := &store.RevisionMessage{
 		InstanceID:   database.InstanceID,
@@ -341,7 +356,22 @@ func convertRevision(revision *v1pb.Revision, database *store.DatabaseMessage, s
 			Sheet:       revision.Sheet,
 			SheetSha256: sheet.GetSha256Hex(),
 			TaskRun:     revision.TaskRun,
+			Type:        convertRevisionType(revision.Type),
 		},
 	}
 	return r
+}
+
+func convertRevisionType(t v1pb.Revision_Type) storepb.RevisionPayload_Type {
+	//exhaustive:enforce
+	switch t {
+	case v1pb.Revision_TYPE_UNSPECIFIED:
+		return storepb.RevisionPayload_TYPE_UNSPECIFIED
+	case v1pb.Revision_VERSIONED:
+		return storepb.RevisionPayload_VERSIONED
+	case v1pb.Revision_DECLARATIVE:
+		return storepb.RevisionPayload_DECLARATIVE
+	default:
+		return storepb.RevisionPayload_TYPE_UNSPECIFIED
+	}
 }
