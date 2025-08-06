@@ -12436,6 +12436,7 @@ components:
                     type: string
                     format: date-time
                 deleter:
+                    readOnly: true
                     type: string
                     description: |-
                         Format: users/hello@world.com

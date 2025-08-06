@@ -153,7 +153,7 @@ message Revision {
 
   // Format: users/hello@world.com
   // Can be empty.
-  string deleter = 5;
+  string deleter = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Can be empty.
   google.protobuf.Timestamp delete_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
