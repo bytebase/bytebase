@@ -412,18 +412,46 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 	// what they are doing
 	// TODO(p0ny): handle SDL case
 	if mc.version != "" {
-		list, err := stores.ListRevisions(ctx, &store.FindRevisionMessage{
-			InstanceID:   &mc.database.InstanceID,
-			DatabaseName: &mc.database.DatabaseName,
-			Version:      &mc.version,
-		})
-		if err != nil {
-			return false, errors.Wrapf(err, "failed to list revisions")
-		}
-		if len(list) > 0 {
-			// This version has been executed.
-			// skip execution.
-			return true, nil
+		if mc.task.Type == storepb.Task_DATABASE_SCHEMA_UPDATE_SDL {
+			list, err := stores.ListRevisions(ctx, &store.FindRevisionMessage{
+				InstanceID:   &mc.database.InstanceID,
+				DatabaseName: &mc.database.DatabaseName,
+				Limit:        common.NewP(1),
+				Type:         common.NewP(storepb.RevisionPayload_DECLARATIVE),
+			})
+			if err != nil {
+				return false, errors.Wrapf(err, "failed to list revisions")
+			}
+			if len(list) > 0 {
+				// If the version is higher than the current version, return error
+				latestRevision := list[0]
+				latestVersion, err := model.NewVersion(latestRevision.Version)
+				if err != nil {
+					return false, errors.Wrapf(err, "failed to parse latest revision version %q", latestRevision.Version)
+				}
+				currentVersion, err := model.NewVersion(mc.version)
+				if err != nil {
+					return false, errors.Wrapf(err, "failed to parse current version %q", mc.version)
+				}
+				if currentVersion.LessThan(latestVersion) {
+					return false, errors.Errorf("cannot apply SDL migration with version %s because a newer version %s already exists", mc.version, latestRevision.Version)
+				}
+			}
+		} else {
+			list, err := stores.ListRevisions(ctx, &store.FindRevisionMessage{
+				InstanceID:   &mc.database.InstanceID,
+				DatabaseName: &mc.database.DatabaseName,
+				Version:      &mc.version,
+				Type:         common.NewP(storepb.RevisionPayload_VERSIONED),
+			})
+			if err != nil {
+				return false, errors.Wrapf(err, "failed to list revisions")
+			}
+			if len(list) > 0 {
+				// This version has been executed.
+				// skip execution.
+				return true, nil
+			}
 		}
 	}
 
