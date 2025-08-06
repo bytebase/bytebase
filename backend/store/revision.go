@@ -31,6 +31,7 @@ type FindRevisionMessage struct {
 	UID          *int64
 	InstanceID   *string
 	DatabaseName *string
+	Type         *storepb.RevisionPayload_Type
 
 	Version  *string
 	Versions *[]string
@@ -41,6 +42,8 @@ type FindRevisionMessage struct {
 	ShowDeleted bool
 }
 
+// ListRevisions lists revisions.
+// The results are ordered by version desc.
 func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([]*RevisionMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 
@@ -55,6 +58,10 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 	if v := find.DatabaseName; v != nil {
 		where = append(where, fmt.Sprintf("db_name = $%d", len(args)+1))
 		args = append(args, *v)
+	}
+	if v := find.Type; v != nil {
+		where = append(where, fmt.Sprintf("payload->>'type' = $%d", len(args)+1))
+		args = append(args, v.String())
 	}
 	if v := find.Version; v != nil {
 		where = append(where, fmt.Sprintf("version = $%d", len(args)+1))
