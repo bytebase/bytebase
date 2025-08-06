@@ -1657,6 +1657,18 @@
       "available-files-description": "Select files to import as new revisions",
       "files-already-imported": "Already Imported",
       "files-already-imported-description": "These files' versions already exist in the target database and cannot be imported again",
+      "upload-files": "Upload Files",
+      "upload-files-description": "Upload SQL files from your local computer to create database revisions",
+      "drag-drop-or-click": "Drag and drop files here, or click to select",
+      "supported-formats": "Supported: .sql, .txt, .md files",
+      "uploaded-files": "Uploaded Files",
+      "add-more-files": "Add More",
+      "content-preview": "Content Preview",
+      "revision-type": "Revision Type",
+      "type-versioned": "Versioned",
+      "type-declarative": "Declarative",
+      "invalid-version-format": "Version must be numeric parts separated by dots (e.g., 1.0.0)",
+      "version-already-exists": "This version already exists in the database",
       "delete-confirm-dialog": {
         "title": "Are you sure to delete?",
         "content": "This will delete these applied revisions and the database schema will not be changed. This action cannot be undone."

@@ -13,8 +13,18 @@
         <!-- Steps indicator -->
         <NSteps :current="currentStep">
           <NStep :title="$t('database.revision.select-source')" />
-          <NStep :title="$t('database.revision.select-release')" />
-          <NStep :title="$t('database.revision.select-files')" />
+          <NStep
+            v-if="selectedSource === 'release'"
+            :title="$t('database.revision.select-release')"
+          />
+          <NStep
+            v-if="selectedSource === 'release'"
+            :title="$t('database.revision.select-files')"
+          />
+          <NStep
+            v-if="selectedSource === 'local'"
+            :title="$t('database.revision.upload-files')"
+          />
         </NSteps>
 
         <!-- Step content -->
@@ -52,9 +62,12 @@
                 </NRadio>
               </div>
               <div
-                class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors opacity-50 cursor-not-allowed"
+                class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+                :class="{
+                  'border-blue-500 bg-blue-50': selectedSource === 'local',
+                }"
               >
-                <NRadio value="local" disabled class="w-full">
+                <NRadio value="local" class="w-full">
                   <div class="flex items-start space-x-3 w-full">
                     <FolderOpenIcon
                       class="w-6 h-6 mt-1 flex-shrink-0"
@@ -65,9 +78,6 @@
                         <span class="text-lg font-medium text-gray-900">
                           {{ $t("database.revision.from-local-files") }}
                         </span>
-                        <NBadge type="info">
-                          {{ "Coming soon" }}
-                        </NBadge>
                       </div>
                       <p class="text-sm text-gray-600 mt-1">
                         {{
@@ -81,8 +91,163 @@
             </NRadioGroup>
           </template>
 
-          <!-- Step 2: Select Release -->
-          <template v-else-if="currentStep === Step.SELECT_RELEASE">
+          <!-- Step 2: Upload Local Files (for local source) -->
+          <template
+            v-else-if="
+              currentStep === Step.UPLOAD_FILES && selectedSource === 'local'
+            "
+          >
+            <div class="space-y-4">
+              <div class="text-sm text-gray-600">
+                {{ $t("database.revision.upload-files-description") }}
+              </div>
+
+              <!-- File upload area (only show when no files selected) -->
+              <div
+                v-if="localFiles.length === 0"
+                class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer"
+                @click="triggerFileInput"
+                @dragover.prevent
+                @drop.prevent="handleFileDrop"
+              >
+                <input
+                  ref="fileInput"
+                  type="file"
+                  multiple
+                  accept=".sql,.txt,.md,text/plain,text/markdown,text/x-sql"
+                  class="hidden"
+                  @change="handleFileSelect"
+                />
+                <FolderOpenIcon class="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                <p class="text-sm text-gray-600">
+                  {{ $t("database.revision.drag-drop-or-click") }}
+                </p>
+                <p class="text-xs text-gray-500 mt-1">
+                  {{ $t("database.revision.supported-formats") }}
+                </p>
+              </div>
+
+              <!-- Hidden file input for when files are already selected -->
+              <input
+                v-else
+                ref="fileInput"
+                type="file"
+                multiple
+                accept=".sql,.txt,.md,text/plain,text/markdown,text/x-sql"
+                class="hidden"
+                @change="handleFileSelect"
+              />
+
+              <!-- Uploaded files list -->
+              <div v-if="localFiles.length > 0" class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <h4 class="font-medium text-control">
+                    {{ $t("database.revision.uploaded-files") }}
+                    <span
+                      v-if="localFiles.length > 1"
+                      class="text-control-light"
+                    >
+                      ({{ localFiles.length }})
+                    </span>
+                  </h4>
+                  <NButton size="small" @click="triggerFileInput">
+                    <template #icon>
+                      <PlusIcon class="w-4 h-4" />
+                    </template>
+                    {{ $t("database.revision.add-more-files") }}
+                  </NButton>
+                </div>
+                <div
+                  v-for="(file, index) in localFiles"
+                  :key="index"
+                  class="border border-gray-200 rounded-lg p-4 space-y-3"
+                >
+                  <div class="flex items-start justify-between">
+                    <div class="flex-1 space-y-3">
+                      <div class="flex items-center gap-2">
+                        <FileIcon class="w-4 h-4 text-gray-500" />
+                        <span class="text-sm font-medium">{{ file.name }}</span>
+                        <span class="text-xs text-gray-500"
+                          >({{ formatFileSize(file.size) }})</span
+                        >
+                      </div>
+
+                      <!-- Version and Type inputs -->
+                      <div class="grid grid-cols-4 gap-3">
+                        <div class="col-span-3">
+                          <label class="block text-xs text-gray-500 mb-1">
+                            {{ $t("common.version") }} *
+                          </label>
+                          <NInput
+                            v-model:value="file.version"
+                            size="small"
+                            placeholder="e.g., 1.0.0"
+                            :status="getVersionStatus(file.version)"
+                          />
+                          <p
+                            v-if="
+                              file.version && !validateVersion(file.version)
+                            "
+                            class="text-xs text-red-600 mt-1"
+                          >
+                            {{ $t("database.revision.invalid-version-format") }}
+                          </p>
+                          <p
+                            v-else-if="
+                              file.version && isVersionDuplicate(file.version)
+                            "
+                            class="text-xs text-red-600 mt-1"
+                          >
+                            {{ $t("database.revision.version-already-exists") }}
+                          </p>
+                        </div>
+                        <div class="col-span-1">
+                          <label class="block text-xs text-gray-500 mb-1">
+                            {{ $t("database.revision.revision-type") }}
+                          </label>
+                          <NSelect
+                            v-model:value="file.type"
+                            size="small"
+                            :options="revisionTypeOptions"
+                          />
+                        </div>
+                      </div>
+
+                      <!-- File content preview -->
+                      <div v-if="file.content" class="mt-2">
+                        <label class="block text-xs text-gray-500 mb-1">
+                          {{ $t("database.revision.content-preview") }}
+                        </label>
+                        <div
+                          class="bg-gray-50 rounded p-2 text-xs font-mono text-gray-700 max-h-32 overflow-auto"
+                        >
+                          <pre
+                            >{{ file.content.substring(0, 500)
+                            }}{{ file.content.length > 500 ? "..." : "" }}</pre
+                          >
+                        </div>
+                      </div>
+                    </div>
+                    <NButton
+                      quaternary
+                      size="tiny"
+                      @click="removeLocalFile(index)"
+                    >
+                      <XIcon class="w-4 h-4" />
+                    </NButton>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- Step 2: Select Release (for release source) -->
+          <template
+            v-else-if="
+              currentStep === Step.SELECT_RELEASE &&
+              selectedSource === 'release'
+            "
+          >
             <div class="space-y-4">
               <div class="text-sm text-gray-600">
                 {{ $t("database.revision.select-release-description") }}
@@ -221,8 +386,22 @@
 
 <script setup lang="ts">
 import { create as createProto } from "@bufbuild/protobuf";
-import { PackageIcon, FolderOpenIcon } from "lucide-vue-next";
-import { NButton, NRadio, NRadioGroup, NSteps, NStep, NBadge } from "naive-ui";
+import {
+  PackageIcon,
+  FolderOpenIcon,
+  FileIcon,
+  XIcon,
+  PlusIcon,
+} from "lucide-vue-next";
+import {
+  NButton,
+  NRadio,
+  NRadioGroup,
+  NSteps,
+  NStep,
+  NInput,
+  NSelect,
+} from "naive-ui";
 import type { Ref } from "vue";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -234,6 +413,7 @@ import {
   useCurrentProjectV1,
   useReleaseStore,
   useRevisionStore,
+  useSheetV1Store,
   pushNotification,
 } from "@/store";
 import type { ComposedRelease } from "@/types";
@@ -245,6 +425,7 @@ import {
   BatchCreateRevisionsRequestSchema,
   CreateRevisionRequestSchema,
   Revision_Type,
+  type CreateRevisionRequest,
   type Revision,
 } from "@/types/proto-es/v1/revision_service_pb";
 
@@ -260,12 +441,22 @@ enum Step {
   SELECT_SOURCE = 1,
   SELECT_RELEASE = 2,
   SELECT_FILES = 3,
+  UPLOAD_FILES = 4, // Alternative step 2 for local files path
+}
+
+interface LocalFile {
+  name: string;
+  size: number;
+  content: string;
+  version: string;
+  type: Revision_Type;
 }
 
 const { project } = useCurrentProjectV1();
 const { t } = useI18n();
 const releaseStore = useReleaseStore();
 const revisionStore = useRevisionStore();
+const sheetStore = useSheetV1Store();
 const show = defineModel<boolean>("show", { default: false });
 
 const selectedSource: Ref<"release" | "local"> = ref("release");
@@ -276,6 +467,21 @@ const releaseList = ref<ComposedRelease[]>([]);
 const selectedRelease = ref<ComposedRelease | null>(null);
 const selectedFiles = ref<Release_File[]>([]);
 const existingRevisionVersions = ref<Set<string>>(new Set());
+
+// Local files state
+const fileInput = ref<HTMLInputElement>();
+const localFiles = ref<LocalFile[]>([]);
+
+const revisionTypeOptions = [
+  {
+    label: t("database.revision.type-versioned"),
+    value: Revision_Type.VERSIONED,
+  },
+  {
+    label: t("database.revision.type-declarative"),
+    value: Revision_Type.DECLARATIVE,
+  },
+];
 
 const canProceedToNextStep = computed(() => {
   if (currentStep.value === Step.SELECT_SOURCE) {
@@ -288,10 +494,24 @@ const canProceedToNextStep = computed(() => {
 });
 
 const isLastStep = computed(() => {
+  if (selectedSource.value === "local") {
+    return currentStep.value === Step.UPLOAD_FILES;
+  }
   return currentStep.value === Step.SELECT_FILES;
 });
 
 const canSubmit = computed(() => {
+  if (selectedSource.value === "local") {
+    return (
+      localFiles.value.length > 0 &&
+      localFiles.value.every(
+        (f) =>
+          validateVersion(f.version) &&
+          !isVersionDuplicate(f.version) &&
+          f.content
+      )
+    );
+  }
   return selectedFiles.value.length > 0;
 });
 
@@ -350,6 +570,11 @@ const isFileSelectable = (file: Release_File): boolean => {
   return !existingRevisionVersions.value.has(file.version);
 };
 
+// Check if a version already exists (for local files)
+const isVersionDuplicate = (version: string): boolean => {
+  return existingRevisionVersions.value.has(version);
+};
+
 // Map release file type to revision type
 const mapFileTypeToRevisionType = (
   fileType: Release_File_Type
@@ -364,6 +589,138 @@ const mapFileTypeToRevisionType = (
   }
 };
 
+// Version validation - must match backend format (numeric parts separated by dots)
+const validateVersion = (version: string): boolean => {
+  if (!version) return false;
+  // Version must be numeric parts separated by dots (e.g., "1", "1.0", "1.0.0")
+  const versionRegex = /^(\d+)(\.(\d+))*$/;
+  return versionRegex.test(version);
+};
+
+// Get version input status for validation display
+const getVersionStatus = (version: string): "error" | undefined => {
+  if (!version) return "error";
+  if (!validateVersion(version)) return "error";
+  if (isVersionDuplicate(version)) return "error";
+  return undefined;
+};
+
+// File handling functions
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return bytes + " B";
+  const kb = bytes / 1024;
+  if (kb < 1024) return kb.toFixed(1) + " KB";
+  const mb = kb / 1024;
+  return mb.toFixed(1) + " MB";
+};
+
+const triggerFileInput = () => {
+  fileInput.value?.click();
+};
+
+const readFileContent = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target?.result as string);
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+};
+
+const handleFileSelect = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  if (input.files) {
+    await processFiles(Array.from(input.files));
+  }
+  input.value = ""; // Reset input
+};
+
+const handleFileDrop = async (event: DragEvent) => {
+  if (event.dataTransfer?.files) {
+    await processFiles(Array.from(event.dataTransfer.files));
+  }
+};
+
+const processFiles = async (files: File[]) => {
+  for (const file of files) {
+    // Check if file is acceptable
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    if (!["sql", "txt", "md"].includes(extension || "")) {
+      pushNotification({
+        module: "bytebase",
+        style: "WARN",
+        title: `Unsupported file type ${extension} for ${file.name}`,
+      });
+      continue;
+    }
+
+    // Check for duplicates
+    if (localFiles.value.some((f) => f.name === file.name)) {
+      continue;
+    }
+
+    try {
+      const content = await readFileContent(file);
+
+      // Auto-generate version from filename if possible
+      let version = "";
+
+      // Try different patterns to extract version
+      // Priority order: most specific to least specific
+      const patterns = [
+        // Match semantic versioning: v1.0.0, V1.2.3, 1.0.0
+        /[Vv]?(\d+\.\d+\.\d+)/,
+        // Match two-part version: v1.0, V2.1, 1.0
+        /[Vv]?(\d+\.\d+)/,
+        // Match version with underscores: v1_0_0, V2_1_3
+        /[Vv]?(\d+)[_](\d+)(?:[_](\d+))?/,
+        // Match simple numeric version: v001, V123, 001, 123
+        /[Vv]?(\d{3,})/,
+        // Match any number sequence: v1, V2, 1, 2
+        /[Vv]?(\d+)/,
+      ];
+
+      for (const pattern of patterns) {
+        const match = file.name.match(pattern);
+        if (match) {
+          if (pattern.source.includes("_")) {
+            // Handle underscore-separated versions
+            const parts = [match[1], match[2], match[3]].filter(Boolean);
+            version = parts.join(".");
+          } else {
+            // For other patterns, use the first captured group
+            version = match[1];
+          }
+          break;
+        }
+      }
+
+      // If we found a 3-digit number like 001, format it as 0.0.1
+      if (version && /^\d{3}$/.test(version)) {
+        version = version.split("").join(".");
+      }
+
+      localFiles.value.push({
+        name: file.name,
+        size: file.size,
+        content,
+        version,
+        type: Revision_Type.VERSIONED,
+      });
+    } catch {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: `Failed to read file ${file.name}`,
+      });
+    }
+  }
+};
+
+const removeLocalFile = (index: number) => {
+  localFiles.value.splice(index, 1);
+};
+
 // Reset state when drawer opens
 watch(show, async (newVal) => {
   if (newVal) {
@@ -374,6 +731,7 @@ watch(show, async (newVal) => {
     selectedRelease.value = null;
     selectedFiles.value = [];
     existingRevisionVersions.value = new Set();
+    localFiles.value = [];
     // Load existing revisions to check for duplicates
     await loadExistingRevisions();
   }
@@ -399,8 +757,12 @@ const handleCancel = () => {
 
 const handleNextStep = async () => {
   if (currentStep.value === Step.SELECT_SOURCE) {
-    currentStep.value = Step.SELECT_RELEASE;
-    await loadReleases();
+    if (selectedSource.value === "local") {
+      currentStep.value = Step.UPLOAD_FILES;
+    } else {
+      currentStep.value = Step.SELECT_RELEASE;
+      await loadReleases();
+    }
   } else if (
     currentStep.value === Step.SELECT_RELEASE &&
     selectedRelease.value
@@ -412,7 +774,10 @@ const handleNextStep = async () => {
 };
 
 const handlePrevStep = () => {
-  if (currentStep.value === Step.SELECT_RELEASE) {
+  if (
+    currentStep.value === Step.SELECT_RELEASE ||
+    currentStep.value === Step.UPLOAD_FILES
+  ) {
     currentStep.value = Step.SELECT_SOURCE;
   } else if (currentStep.value === Step.SELECT_FILES) {
     currentStep.value = Step.SELECT_RELEASE;
@@ -420,23 +785,60 @@ const handlePrevStep = () => {
 };
 
 const handleConfirm = async () => {
-  if (!canSubmit.value || !selectedRelease.value) return;
+  if (!canSubmit.value) return;
 
   isCreating.value = true;
   try {
-    // Create revision requests using the existing sheet from release files
-    const requests = selectedFiles.value.map((file) =>
-      createProto(CreateRevisionRequestSchema, {
-        parent: props.database,
-        revision: {
-          release: selectedRelease.value!.name,
-          version: file.version,
-          file: `${selectedRelease.value!.name}/files/${file.id}`,
-          sheet: file.sheet,
-          type: mapFileTypeToRevisionType(file.type),
-        },
-      })
-    );
+    let requests: CreateRevisionRequest[] = [];
+
+    if (selectedSource.value === "local") {
+      // For local files, create sheets first
+      for (const file of localFiles.value) {
+        try {
+          // Create a sheet for each file
+          const sheet = await sheetStore.createSheet(project.value.name, {
+            title: file.name,
+            content: new TextEncoder().encode(file.content),
+          });
+
+          // Create revision request with the new sheet
+          requests.push(
+            createProto(CreateRevisionRequestSchema, {
+              parent: props.database,
+              revision: {
+                version: file.version,
+                sheet: sheet.name,
+                type: file.type,
+              },
+            })
+          );
+        } catch (error) {
+          pushNotification({
+            module: "bytebase",
+            style: "CRITICAL",
+            title: `Failed to create sheet for ${file.name}`,
+          });
+          throw error;
+        }
+      }
+    } else if (selectedRelease.value) {
+      // Create revision requests using the existing sheet from release files
+      requests = selectedFiles.value.map((file) =>
+        createProto(CreateRevisionRequestSchema, {
+          parent: props.database,
+          revision: {
+            release: selectedRelease.value!.name,
+            version: file.version,
+            file: `${selectedRelease.value!.name}/files/${file.id}`,
+            sheet: file.sheet,
+            type: mapFileTypeToRevisionType(file.type),
+          },
+        })
+      );
+    }
+    if (requests.length === 0) {
+      return;
+    }
 
     const batchRequest = createProto(BatchCreateRevisionsRequestSchema, {
       parent: props.database,
@@ -451,7 +853,7 @@ const handleConfirm = async () => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
-      title: "Imported revisions successfully",
+      title: "Revisions Created",
     });
 
     show.value = false;

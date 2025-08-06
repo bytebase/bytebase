@@ -1657,6 +1657,18 @@
       "available-files-description": "Chọn các tập tin để nhập dưới dạng bản sửa đổi mới",
       "files-already-imported": "Đã nhập khẩu",
       "files-already-imported-description": "Các phiên bản của các tệp này đã tồn tại trong cơ sở dữ liệu đích và không thể nhập lại được",
+      "upload-files": "Tải lên tập tin",
+      "upload-files-description": "Tải lên các tệp SQL từ máy tính cục bộ của bạn để tạo bản sửa đổi cơ sở dữ liệu",
+      "drag-drop-or-click": "Kéo và thả tệp vào đây hoặc nhấp để chọn",
+      "supported-formats": "Được hỗ trợ: các tệp .sql, .txt, .md",
+      "uploaded-files": "Tệp đã tải lên",
+      "add-more-files": "Thêm nữa",
+      "content-preview": "Xem trước nội dung",
+      "revision-type": "Loại sửa đổi",
+      "type-versioned": "Phiên bản",
+      "type-declarative": "Tuyên bố",
+      "invalid-version-format": "Phiên bản phải là các phần số được phân tách bằng dấu chấm (ví dụ: 1.0.0)",
+      "version-already-exists": "Phiên bản này đã tồn tại trong cơ sở dữ liệu",
       "delete-confirm-dialog": {
         "title": "Bạn có chắc chắn muốn xóa?",
         "content": "Thao tác này sẽ xóa các bản sửa đổi đã áp dụng này và lược đồ cơ sở dữ liệu sẽ không bị thay đổi. Hành động này không thể hoàn tác."
