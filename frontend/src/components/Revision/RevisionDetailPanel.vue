@@ -24,9 +24,7 @@
     </div>
   </div>
 
-  <NDivider />
-
-  <div class="flex flex-col">
+  <div class="flex flex-col my-4">
     <p class="w-auto flex items-center text-base text-main mb-2 gap-x-2">
       <span>{{ $t("common.statement") }}</span>
       <CopyButton :content="statement" />
@@ -39,9 +37,7 @@
     />
   </div>
 
-  <NDivider />
-
-  <div v-if="taskRun">
+  <div v-if="taskRun" class="my-4">
     <p class="w-auto flex items-center text-base text-main mb-2">
       {{ $t("issue.task-run.logs") }}
     </p>
@@ -51,7 +47,6 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { NDivider } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { CopyButton } from "@/components/v2";
@@ -91,14 +86,17 @@ watch(
     state.loading = true;
     const revision = await revisionStore.getOrFetchRevisionByName(revisionName);
     if (revision) {
-      const request = create(GetTaskRunRequestSchema, {
-        name: revision.taskRun,
-      });
-      const response = await rolloutServiceClientConnect.getTaskRun(request);
-      taskRun.value = response;
+      if (revision.taskRun) {
+        // Fetch the task run details.
+        const request = create(GetTaskRunRequestSchema, {
+          name: revision.taskRun,
+        });
+        const response = await rolloutServiceClientConnect.getTaskRun(request);
+        taskRun.value = response;
+      }
       // Prepare the sheet data from task run.
-      if (response.sheet) {
-        await sheetStore.getOrFetchSheetByName(response.sheet, "FULL");
+      if (revision.sheet) {
+        await sheetStore.getOrFetchSheetByName(revision.sheet, "FULL");
       }
     }
     state.loading = false;
@@ -111,8 +109,8 @@ const revision = computed(() =>
 );
 
 const sheet = computed(() =>
-  taskRun.value && taskRun.value.sheet
-    ? sheetStore.getSheetByName(taskRun.value.sheet)
+  revision.value?.sheet
+    ? sheetStore.getSheetByName(revision.value.sheet)
     : undefined
 );
 

@@ -88,7 +88,7 @@ const columnList = computed(() => {
       width: 96,
       render: (revision) => {
         const uid = extractIssueUID(revision.issue);
-        if (!uid) return null;
+        if (!uid) return "-";
         return (
           <RouterLink
             to={{
