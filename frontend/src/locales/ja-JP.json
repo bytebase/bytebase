@@ -236,7 +236,8 @@
     "removed": "削除されました",
     "submit": "提出する",
     "start": "始める",
-    "draft": "下書き"
+    "draft": "下書き",
+    "import": "輸入"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -1640,6 +1641,22 @@
       "self": "リビジョン",
       "applied-at": "申請先",
       "filename": "ファイル名",
+      "import-revision": "インポートリビジョン",
+      "select-source": "ソースを選択",
+      "select-release": "リリースを選択",
+      "select-files": "ファイルを選択",
+      "from-release": "リリースより",
+      "from-release-description": "リリース内のファイルからデータベースのリビジョンをインポートする",
+      "from-local-files": "ローカルファイルから",
+      "from-local-files-description": "ローカルSQLファイルからデータベースリビジョンをアップロードおよびインポートする",
+      "select-release-description": "リビジョンをインポートするリリースを選択してください",
+      "select-files-description": "1 つ以上のファイルを選択してリビジョンを作成します",
+      "no-releases-found": "このプロジェクトにはリリースが見つかりません",
+      "no-files-found": "このリリースではファイルが見つかりません",
+      "available-files": "利用可能なファイル",
+      "available-files-description": "新しいリビジョンとしてインポートするファイルを選択",
+      "files-already-imported": "すでにインポート済み",
+      "files-already-imported-description": "これらのファイルのバージョンはターゲットデータベースに既に存在するため、再度インポートすることはできません。",
       "delete-confirm-dialog": {
         "title": "本当に削除しますか?",
         "content": "これにより、適用されたリビジョンが削除され、データベース スキーマは変更されません。このアクションは元に戻せません。"

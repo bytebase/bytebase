@@ -236,7 +236,8 @@
     "removed": "Removed",
     "submit": "Submit",
     "start": "Start",
-    "draft": "Draft"
+    "draft": "Draft",
+    "import": "Import"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1640,6 +1641,22 @@
       "self": "Revision",
       "applied-at": "Applied at",
       "filename": "Filename",
+      "import-revision": "Import Revision",
+      "select-source": "Select Source",
+      "select-release": "Select Release",
+      "select-files": "Select Files",
+      "from-release": "From Release",
+      "from-release-description": "Import database revisions from files in a release",
+      "from-local-files": "From Local Files",
+      "from-local-files-description": "Upload and import database revisions from local SQL files",
+      "select-release-description": "Select a release to import revisions from",
+      "select-files-description": "Select one or more files to create revisions",
+      "no-releases-found": "No releases found in this project",
+      "no-files-found": "No files found in this release",
+      "available-files": "Available Files",
+      "available-files-description": "Select files to import as new revisions",
+      "files-already-imported": "Already Imported",
+      "files-already-imported-description": "These files' versions already exist in the target database and cannot be imported again",
       "delete-confirm-dialog": {
         "title": "Are you sure to delete?",
         "content": "This will delete these applied revisions and the database schema will not be changed. This action cannot be undone."

@@ -9,7 +9,7 @@
     :row-key="(release: ComposedRelease) => release.name"
     :checked-row-keys="Array.from(state.selectedReleaseNameList)"
     :row-props="rowProps"
-    @update:checked-row-keys="(val) => (state.selectedReleaseNameList = new Set(val as string[]))"
+    @update:checked-row-keys="handleSelectionChange"
   />
 </template>
 
@@ -37,23 +37,36 @@ const props = withDefaults(
     bordered?: boolean;
     loading?: boolean;
     showSelection?: boolean;
+    singleSelect?: boolean;
+    selectedRowKeys?: string[];
   }>(),
   {
     loading: true,
     bordered: false,
     showSelection: false,
+    singleSelect: false,
+    selectedRowKeys: () => [],
   }
 );
+
+const emit = defineEmits<{
+  (event: "update:checked-row-keys", keys: string[]): void;
+}>();
 
 const { t } = useI18n();
 const router = useRouter();
 const state = reactive<LocalState>({
-  selectedReleaseNameList: new Set(),
+  selectedReleaseNameList: new Set(props.selectedRowKeys),
 });
 
 const columnList = computed(
   (): (DataTableColumn<ComposedRelease> & { hide?: boolean })[] => {
     const columns: (DataTableColumn<ComposedRelease> & { hide?: boolean })[] = [
+      {
+        type: "selection",
+        hide: !props.showSelection,
+        multiple: !props.singleSelect,
+      },
       {
         key: "title",
         width: 160,
@@ -135,16 +148,67 @@ const rowProps = (release: ComposedRelease) => {
   return {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
-      const url = `/${release.name}`;
-      if (e.ctrlKey || e.metaKey) {
-        window.open(url, "_blank");
+      // Check if we're in selection mode
+      if (props.showSelection) {
+        // Don't toggle if clicking on the checkbox itself
+        const target = e.target as HTMLElement;
+        if (target.closest(".n-checkbox")) {
+          return;
+        }
+
+        const releaseName = release.name;
+
+        if (props.singleSelect) {
+          // For single select, simply select the clicked row
+          state.selectedReleaseNameList = new Set([releaseName]);
+          emit("update:checked-row-keys", [releaseName]);
+        } else {
+          // For multi-select, toggle the selection
+          if (state.selectedReleaseNameList.has(releaseName)) {
+            state.selectedReleaseNameList.delete(releaseName);
+          } else {
+            state.selectedReleaseNameList.add(releaseName);
+          }
+          emit(
+            "update:checked-row-keys",
+            Array.from(state.selectedReleaseNameList)
+          );
+        }
       } else {
-        router.push(url);
+        // Navigation mode when not in selection mode
+        const url = `/${release.name}`;
+        if (e.ctrlKey || e.metaKey) {
+          window.open(url, "_blank");
+        } else {
+          router.push(url);
+        }
       }
     },
   };
 };
 
+const handleSelectionChange = (val: Array<string | number>) => {
+  const stringKeys = val.map((v) => String(v));
+  if (props.singleSelect && stringKeys.length > 1) {
+    // For single select, keep only the most recently selected item
+    const newSelection = stringKeys[stringKeys.length - 1];
+    state.selectedReleaseNameList = new Set([newSelection]);
+    emit("update:checked-row-keys", [newSelection]);
+  } else {
+    state.selectedReleaseNameList = new Set(stringKeys);
+    emit("update:checked-row-keys", stringKeys);
+  }
+};
+
+// Watch for external selection changes
+watch(
+  () => props.selectedRowKeys,
+  (newKeys) => {
+    state.selectedReleaseNameList = new Set(newKeys);
+  }
+);
+
+// Clean up selected items that are no longer in the list
 watch(
   () => props.releaseList,
   (list) => {
