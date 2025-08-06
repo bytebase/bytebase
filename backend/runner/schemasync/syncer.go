@@ -352,8 +352,8 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	return updatedInstance, instanceMeta.Databases, newDatabases, nil
 }
 
-// SyncDatabaseSchema will sync the schema for a database.
-func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *store.DatabaseMessage) (int64, error) {
+// syncDatabaseSchemaImpl is the internal implementation that handles both regular sync and sync with history.
+func (s *Syncer) syncDatabaseSchemaImpl(ctx context.Context, database *store.DatabaseMessage, createSyncHistory bool) (syncHistoryID int64, retErr error) {
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
@@ -373,6 +373,11 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to sync database schema for database %q", database.DatabaseName)
 	}
+	var schemaBuf bytes.Buffer
+	if err := driver.Dump(deadlineCtx, &schemaBuf, databaseMetadata); err != nil {
+		return 0, errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
+	}
+	rawDump := schemaBuf.Bytes()
 
 	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
@@ -413,25 +418,35 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 		}
 	}
 
-	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-		Deleted:      proto.Bool(false),
-		MetadataUpdates: []func(*storepb.DatabaseMetadata){
-			func(md *storepb.DatabaseMetadata) {
-				md.LastSyncTime = timestamppb.Now()
-				md.BackupAvailable = s.databaseBackupAvailable(ctx, instance, databaseMetadata)
-				md.Datashare = databaseMetadata.Datashare
-			},
+	// Check for schema drift only when not creating sync history
+	var drifted, skipped bool
+	if !createSyncHistory {
+		drifted, skipped, err = s.getSchemaDrifted(ctx, instance, database, string(rawDump))
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to get schema drifted for database %q", database.DatabaseName)
+		}
+	}
+
+	// Build metadata updates
+	metadataUpdates := []func(*storepb.DatabaseMetadata){
+		func(md *storepb.DatabaseMetadata) {
+			md.LastSyncTime = timestamppb.Now()
+			md.BackupAvailable = s.databaseBackupAvailable(ctx, instance, databaseMetadata)
+			md.Datashare = databaseMetadata.Datashare
+			if !createSyncHistory {
+				md.Drifted = !skipped && drifted
+			}
 		},
+	}
+
+	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+		InstanceID:      database.InstanceID,
+		DatabaseName:    database.DatabaseName,
+		Deleted:         proto.Bool(false),
+		MetadataUpdates: metadataUpdates,
 	}); err != nil {
 		return 0, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
-	var schemaBuf bytes.Buffer
-	if err := driver.Dump(ctx, &schemaBuf, databaseMetadata); err != nil {
-		return 0, errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
-	}
-	rawDump := schemaBuf.Bytes()
 
 	todo := !common.EngineDBSchemaReadyToMigrate(instance.Metadata.GetEngine())
 	if err := s.store.UpsertDBSchema(ctx,
@@ -446,113 +461,32 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 		return 0, errors.Wrapf(err, "failed to upsert database schema for database %q", database.DatabaseName)
 	}
 
-	id, err := s.store.CreateSyncHistory(ctx, database.InstanceID, database.DatabaseName, databaseMetadata, string(rawDump))
-	if err != nil {
-		if strings.Contains(err.Error(), "escape sequence") {
-			if metadataBytes, err := protojson.Marshal(databaseMetadata); err == nil {
-				slog.Error("unsupported Unicode escape sequence", slog.String("metadata", string(metadataBytes)), slog.String("raw_dump", string(rawDump)))
+	// Create sync history if requested
+	if createSyncHistory {
+		id, err := s.store.CreateSyncHistory(ctx, database.InstanceID, database.DatabaseName, databaseMetadata, string(rawDump))
+		if err != nil {
+			if strings.Contains(err.Error(), "escape sequence") {
+				if metadataBytes, err := protojson.Marshal(databaseMetadata); err == nil {
+					slog.Error("unsupported Unicode escape sequence", slog.String("metadata", string(metadataBytes)), slog.String("raw_dump", string(rawDump)))
+				}
 			}
+			return 0, errors.Wrapf(err, "failed to insert sync history for database %q", database.DatabaseName)
 		}
-		return 0, errors.Wrapf(err, "failed to insert sync history for database %q", database.DatabaseName)
+		return id, nil
 	}
 
-	return id, nil
+	return 0, nil
+}
+
+// SyncDatabaseSchemaToHistory will sync the schema for a database and create a sync history record.
+func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *store.DatabaseMessage) (int64, error) {
+	return s.syncDatabaseSchemaImpl(ctx, database, true)
 }
 
 // SyncDatabaseSchema will sync the schema for a database.
-func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage) (retErr error) {
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-	if err != nil {
-		return errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
-	}
-	if instance == nil {
-		return errors.Errorf("instance %q not found", database.InstanceID)
-	}
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-	if err != nil {
-		return err
-	}
-	defer driver.Close(ctx)
-	// Sync database schema
-	deadlineCtx, cancelFunc := context.WithDeadline(ctx, time.Now().Add(syncTimeout))
-	defer cancelFunc()
-	databaseMetadata, err := driver.SyncDBSchema(deadlineCtx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to sync database schema for database %q", database.DatabaseName)
-	}
-	var schemaBuf bytes.Buffer
-	if err := driver.Dump(deadlineCtx, &schemaBuf, databaseMetadata); err != nil {
-		return errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
-	}
-	rawDump := schemaBuf.Bytes()
-
-	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
-	}
-
-	dbModelConfig := model.NewDatabaseConfig(nil)
-	if dbSchema != nil {
-		dbModelConfig = dbSchema.GetInternalConfig()
-	}
-
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &database.ProjectID,
-	})
-	if err != nil {
-		return errors.Wrapf(err, `failed to get project by id "%s"`, database.ProjectID)
-	}
-	classificationConfig, err := s.store.GetDataClassificationConfigByID(ctx, project.DataClassificationConfigID)
-	if err != nil {
-		return errors.Wrapf(err, `failed to get classification config by id "%s"`, project.DataClassificationConfigID)
-	}
-
-	if instance.Metadata.GetEngine() != storepb.Engine_MYSQL && instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
-		// Force to disable classification from comment if the engine is not MYSQL or PG.
-		classificationConfig.ClassificationFromConfig = true
-	}
-	var dbConfig *storepb.DatabaseConfig
-	if classificationConfig.ClassificationFromConfig {
-		// Only set the user comment.
-		setUserCommentFromComment(databaseMetadata)
-		dbConfig = dbModelConfig.BuildDatabaseConfig()
-	} else {
-		// Get classification from the comment.
-		dbConfig = buildDatabaseConfigWithClassificationFromComment(databaseMetadata, dbModelConfig, classificationConfig)
-	}
-
-	drifted, skipped, err := s.getSchemaDrifted(ctx, instance, database, string(rawDump))
-	if err != nil {
-		return errors.Wrapf(err, "failed to get schema drifted for database %q", database.DatabaseName)
-	}
-	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-		Deleted:      proto.Bool(false),
-		MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
-			md.LastSyncTime = timestamppb.Now()
-			md.BackupAvailable = s.databaseBackupAvailable(ctx, instance, databaseMetadata)
-			md.Datashare = databaseMetadata.Datashare
-			md.Drifted = !skipped && drifted
-		}},
-	}); err != nil {
-		return errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
-	}
-
-	todo := !common.EngineDBSchemaReadyToMigrate(instance.Metadata.GetEngine())
-	if err := s.store.UpsertDBSchema(ctx,
-		database.InstanceID, database.DatabaseName,
-		databaseMetadata, dbConfig, rawDump, todo,
-	); err != nil {
-		if strings.Contains(err.Error(), "escape sequence") {
-			if metadataBytes, err := protojson.Marshal(databaseMetadata); err == nil {
-				slog.Error("unsupported Unicode escape sequence", slog.String("metadata", string(metadataBytes)), slog.String("raw_dump", string(rawDump)))
-			}
-		}
-		return errors.Wrapf(err, "failed to upsert database schema for database %q", database.DatabaseName)
-	}
-
-	return nil
+func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage) error {
+	_, err := s.syncDatabaseSchemaImpl(ctx, database, false)
+	return err
 }
 
 func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, rawDump string) (drifted bool, skipped bool, err error) {
