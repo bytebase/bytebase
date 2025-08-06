@@ -24,68 +24,11 @@
 
       <div class="flex items-center gap-2">
         <!-- Status Summary -->
-        <div class="flex items-center gap-2 text-sm">
-          <div
-            v-if="
-              getChecksCount(PlanCheckRun_Status[PlanCheckRun_Status.RUNNING]) >
-              0
-            "
-            class="flex items-center gap-1"
-          >
-            <LoaderIcon class="w-5 h-5 text-control animate-spin" />
-            <span class="text-control">{{
-              getChecksCount(PlanCheckRun_Status[PlanCheckRun_Status.RUNNING])
-            }}</span>
-          </div>
-          <button
-            v-if="
-              getChecksCount(
-                PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.ERROR]
-              ) > 0
-            "
-            class="flex items-center gap-1 hover:opacity-80"
-            @click="openChecksDrawer(PlanCheckRun_Result_Status.ERROR)"
-          >
-            <XCircleIcon class="w-5 h-5 text-error" />
-            <span class="text-error">{{
-              getChecksCount(
-                PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.ERROR]
-              )
-            }}</span>
-          </button>
-          <button
-            v-if="
-              getChecksCount(
-                PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.WARNING]
-              ) > 0
-            "
-            class="flex items-center gap-1 hover:opacity-80"
-            @click="openChecksDrawer(PlanCheckRun_Result_Status.WARNING)"
-          >
-            <AlertCircleIcon class="w-5 h-5 text-warning" />
-            <span class="text-warning">{{
-              getChecksCount(
-                PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.WARNING]
-              )
-            }}</span>
-          </button>
-          <button
-            v-if="
-              getChecksCount(
-                PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.SUCCESS]
-              ) > 0
-            "
-            class="flex items-center gap-1 hover:opacity-80"
-            @click="openChecksDrawer(PlanCheckRun_Result_Status.SUCCESS)"
-          >
-            <CheckCircleIcon class="w-5 h-5 text-success" />
-            <span class="text-success">{{
-              getChecksCount(
-                PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.SUCCESS]
-              )
-            }}</span>
-          </button>
-        </div>
+        <PlanCheckStatusCount
+          :plan="plan"
+          clickable
+          @click="openChecksDrawer($event)"
+        />
 
         <!-- Run Checks Button -->
         <NButton
@@ -112,13 +55,7 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import type { ConnectError } from "@connectrpc/connect";
-import {
-  CheckCircleIcon,
-  AlertCircleIcon,
-  XCircleIcon,
-  PlayIcon,
-  LoaderIcon,
-} from "lucide-vue-next";
+import { PlayIcon } from "lucide-vue-next";
 import { NButton, NTooltip, NTag } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { planServiceClientConnect } from "@/grpcweb";
@@ -130,14 +67,18 @@ import {
 } from "@/store";
 import {
   PlanCheckRun_Result_Status,
-  PlanCheckRun_Status,
   RunPlanChecksRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
-import { planCheckRunListForSpec, planSpecHasPlanChecks } from "../../logic";
-import { usePlanContext } from "../../logic/context";
+import {
+  planCheckRunListForSpec,
+  planSpecHasPlanChecks,
+  usePlanContext,
+  usePlanCheckStatus,
+} from "../../logic";
 import { useResourcePoller } from "../../logic/poller";
 import ChecksDrawer from "../ChecksView/ChecksDrawer.vue";
+import PlanCheckStatusCount from "../PlanCheckStatusCount.vue";
 import { useSelectedSpec } from "../SpecDetailView/context";
 
 const currentUser = useCurrentUserV1();
@@ -145,6 +86,7 @@ const { project } = useCurrentProjectV1();
 const { plan, planCheckRuns } = usePlanContext();
 const selectedSpec = useSelectedSpec();
 const { refreshResources } = useResourcePoller();
+const { statusCountString } = usePlanCheckStatus(plan);
 
 const isRunningChecks = ref(false);
 const showChecksDrawer = ref(false);
@@ -187,10 +129,6 @@ const affectedRows = computed(() => {
   }, 0);
 });
 
-const getChecksCount = (status: string) => {
-  return plan.value.planCheckRunStatusCount[status] || 0;
-};
-
 const runChecks = async () => {
   if (!plan.value.name || !selectedSpec.value) return;
 
@@ -228,7 +166,7 @@ const openChecksDrawer = (status: PlanCheckRun_Result_Status) => {
 
 // Prepare plan check runs.
 watch(
-  [selectedSpec.value.id, JSON.stringify(plan.value.planCheckRunStatusCount)],
+  [selectedSpec.value.id, statusCountString],
   async () => {
     if (planSpecHasPlanChecks(selectedSpec.value)) {
       await refreshResources(["planCheckRuns"], true /** force */);

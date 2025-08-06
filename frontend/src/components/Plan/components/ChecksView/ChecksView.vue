@@ -3,66 +3,15 @@
     <!-- Header with filters -->
     <div class="flex items-center justify-between px-4">
       <div class="flex items-center gap-4">
-        <!-- Check result summary with icons -->
-        <div class="flex items-center gap-3">
-          <div
-            v-if="getChecksCount(PlanCheckRun_Result_Status.ERROR) > 0"
-            class="flex items-center gap-1 px-2 py-1 cursor-pointer"
-            :class="[
-              selectedStatus &&
-                selectedStatus === PlanCheckRun_Result_Status.ERROR &&
-                'bg-gray-100 rounded-lg',
-              'text-lg text-error',
-            ]"
-            @click="toggleSelectedStatus(PlanCheckRun_Result_Status.ERROR)"
-          >
-            <XCircleIcon class="w-6 h-6" />
-            <span>
-              {{ $t("common.error") }}
-            </span>
-            <span class="font-semibold">
-              {{ getChecksCount(PlanCheckRun_Result_Status.ERROR) }}
-            </span>
-          </div>
-          <div
-            v-if="getChecksCount(PlanCheckRun_Result_Status.WARNING) > 0"
-            class="flex items-center gap-1 px-2 py-1 cursor-pointer"
-            :class="[
-              selectedStatus &&
-                selectedStatus === PlanCheckRun_Result_Status.WARNING &&
-                'bg-gray-100 rounded-lg',
-              'text-lg text-warning',
-            ]"
-            @click="toggleSelectedStatus(PlanCheckRun_Result_Status.WARNING)"
-          >
-            <AlertCircleIcon class="w-6 h-6" />
-            <span>
-              {{ $t("common.warning") }}
-            </span>
-            <span class="font-semibold">
-              {{ getChecksCount(PlanCheckRun_Result_Status.WARNING) }}
-            </span>
-          </div>
-          <div
-            v-if="getChecksCount(PlanCheckRun_Result_Status.SUCCESS) > 0"
-            class="flex items-center gap-1 px-2 py-1 cursor-pointer"
-            :class="[
-              selectedStatus &&
-                selectedStatus === PlanCheckRun_Result_Status.SUCCESS &&
-                'bg-gray-100 rounded-lg',
-              'text-lg text-success',
-            ]"
-            @click="toggleSelectedStatus(PlanCheckRun_Result_Status.SUCCESS)"
-          >
-            <CheckCircleIcon class="w-6 h-6" />
-            <span>
-              {{ $t("common.success") }}
-            </span>
-            <span class="font-semibold">
-              {{ getChecksCount(PlanCheckRun_Result_Status.SUCCESS) }}
-            </span>
-          </div>
-        </div>
+        <PlanCheckStatusCount
+          :plan="plan"
+          :show-label="true"
+          :clickable="true"
+          :selected-status="selectedStatus"
+          size="normal"
+          class="text-lg"
+          @click="toggleSelectedStatus($event)"
+        />
       </div>
     </div>
 
@@ -148,8 +97,6 @@
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import {
   CheckCircleIcon,
-  AlertCircleIcon,
-  XCircleIcon,
   FileCodeIcon,
   DatabaseIcon,
   ShieldIcon,
@@ -164,8 +111,9 @@ import {
   type PlanCheckRun,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { humanizeTs } from "@/utils";
-import { usePlanContext } from "../../logic/context";
+import { usePlanContext } from "../../logic";
 import { useResourcePoller } from "../../logic/poller";
+import PlanCheckStatusCount from "../PlanCheckStatusCount.vue";
 import CheckResultItem from "../common/CheckResultItem.vue";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
@@ -211,12 +159,6 @@ watch(
   },
   { immediate: true }
 );
-
-const getChecksCount = (status: PlanCheckRun_Result_Status) => {
-  return (
-    plan.value.planCheckRunStatusCount[PlanCheckRun_Result_Status[status]] || 0
-  );
-};
 
 const toggleSelectedStatus = (status: PlanCheckRun_Result_Status) => {
   if (selectedStatus.value === status) {
