@@ -385,7 +385,7 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	defer func() {
 		// Phase 3 - Dump after migration.
 		// Insert revision for versioned.
-		if err := endMigration(ctx, s, mc, resErr == nil /* isDone */); err != nil {
+		if err := endMigration(ctx, s, mc, resErr == nil /* isDone */, opts); err != nil {
 			slog.Error("failed to end migration",
 				log.BBError(err),
 			)
@@ -393,9 +393,6 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	}()
 
 	// Phase 2 - Executing migration.
-	// Database secrets feature has been removed
-	// To avoid leak the rendered statement, the error message should use the original statement and not the rendered statement.
-	// Database secrets feature removed - using original statement directly
 	if err := execFunc(driverCtx, statement); err != nil {
 		return false, err
 	}
@@ -469,16 +466,19 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 }
 
 // endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateContext, isDone bool) error {
+func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateContext, isDone bool, opts db.ExecuteOptions) error {
 	update := &store.UpdateChangelogMessage{
 		UID: mc.changelog,
 	}
 
 	if needDump(mc.task.Type, mc.instance) {
+		opts.LogDatabaseSyncStart()
 		syncHistory, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
+			opts.LogDatabaseSyncEnd(err.Error())
 			return errors.Wrapf(err, "failed to sync database metadata and schema")
 		}
+		opts.LogDatabaseSyncEnd("")
 		update.SyncHistoryUID = &syncHistory
 	}
 
