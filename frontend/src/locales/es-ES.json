@@ -1657,6 +1657,18 @@
       "available-files-description": "Seleccionar archivos para importar como nuevas revisiones",
       "files-already-imported": "Ya importado",
       "files-already-imported-description": "Las versiones de estos archivos ya existen en la base de datos de destino y no se pueden volver a importar.",
+      "upload-files": "Subir archivos",
+      "upload-files-description": "Cargue archivos SQL desde su computadora local para crear revisiones de base de datos",
+      "drag-drop-or-click": "Arrastre y suelte archivos aquí, o haga clic para seleccionar",
+      "supported-formats": "Compatible con: archivos .sql, .txt, .md",
+      "uploaded-files": "Archivos subidos",
+      "add-more-files": "Añadir más",
+      "content-preview": "Vista previa del contenido",
+      "revision-type": "Tipo de revisión",
+      "type-versioned": "Versionado",
+      "type-declarative": "Declarativo",
+      "invalid-version-format": "La versión debe tener partes numéricas separadas por puntos (por ejemplo, 1.0.0)",
+      "version-already-exists": "Esta versión ya existe en la base de datos",
       "delete-confirm-dialog": {
         "title": "¿Estas seguro de eliminarlo?",
         "content": "Esto eliminará las revisiones aplicadas y el esquema de la base de datos no se modificará. Esta acción no se puede deshacer."
