@@ -650,14 +650,14 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\x15bytebase.com/RevisionR\x04name\"J\n" +
 	"\x15DeleteRevisionRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
-	"\x15bytebase.com/RevisionR\x04name\"\xf4\x05\n" +
+	"\x15bytebase.com/RevisionR\x04name\"\xf9\x05\n" +
 	"\bRevision\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x123\n" +
 	"\arelease\x18\x02 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ReleaseR\arelease\x12@\n" +
 	"\vcreate_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"createTime\x12\x18\n" +
-	"\adeleter\x18\x05 \x01(\tR\adeleter\x12@\n" +
+	"createTime\x12\x1d\n" +
+	"\adeleter\x18\x05 \x01(\tB\x03\xe0A\x03R\adeleter\x12@\n" +
 	"\vdelete_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"deleteTime\x12\x12\n" +
 	"\x04file\x18\a \x01(\tR\x04file\x12\x18\n" +

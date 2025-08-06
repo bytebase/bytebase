@@ -1,5 +1,11 @@
 <template>
   <div class="flex flex-col space-y-2" v-bind="$attrs">
+    <div class="flex justify-between items-center">
+      <div></div>
+      <NButton type="primary" @click="showCreateRevisionDrawer = true">
+        {{ $t("common.import") }}
+      </NButton>
+    </div>
     <PagedTable
       :key="pagedRevisionTableSessionKey"
       :session-key="pagedRevisionTableSessionKey"
@@ -15,11 +21,21 @@
       </template>
     </PagedTable>
   </div>
+
+  <!-- Create Revision Drawer -->
+  <CreateRevisionDrawer
+    v-model:show="showCreateRevisionDrawer"
+    :database="database.name"
+    @created="handleRevisionCreated"
+  />
 </template>
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
+import { NButton } from "naive-ui";
+import { ref } from "vue";
 import { RevisionDataTable } from "@/components/Revision";
+import CreateRevisionDrawer from "@/components/Revision/CreateRevisionDrawer.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { revisionServiceClientConnect } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
@@ -31,6 +47,7 @@ const props = defineProps<{
 }>();
 
 const { pagedRevisionTableSessionKey } = useDatabaseDetailContext();
+const showCreateRevisionDrawer = ref(false);
 
 const fetchRevisionList = async ({
   pageToken,
@@ -50,5 +67,13 @@ const fetchRevisionList = async ({
     nextPageToken,
     list: revisions,
   };
+};
+
+const handleRevisionCreated = () => {
+  showCreateRevisionDrawer.value = false;
+
+  // Refresh the revision list to show the newly created revision
+  // The PagedTable component will automatically refresh when we trigger it
+  pagedRevisionTableSessionKey.value = `${pagedRevisionTableSessionKey.value}-refresh-${Date.now()}`;
 };
 </script>
