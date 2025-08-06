@@ -908,7 +908,7 @@ Based on actual implementation in the codebase, the following database engines s
 
 ### No SQL Review Support
 The following engines do **NOT** support SQL review rules:
-- ClickHouse, SQLite, MongoDB, Redis, Spanner, Redshift, DM, RisingWave, StarRocks, Doris, Hive, Elasticsearch, BigQuery, DynamoDB, Databricks, CockroachDB, CosmosDB, Trino, Cassandra
+- ClickHouse, SQLite, MongoDB, Redis, Spanner, Redshift, StarRocks, Doris, Hive, Elasticsearch, BigQuery, DynamoDB, Databricks, CockroachDB, CosmosDB, Trino, Cassandra
 
 ### Engine-Specific Rules
 

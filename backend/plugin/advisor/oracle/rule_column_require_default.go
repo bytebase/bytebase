@@ -21,8 +21,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_ORACLE, advisor.OracleRequireColumnDefault, &ColumnRequireDefaultAdvisor{})
-	advisor.Register(storepb.Engine_DM, advisor.OracleRequireColumnDefault, &ColumnRequireDefaultAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE_ORACLE, advisor.OracleRequireColumnDefault, &ColumnRequireDefaultAdvisor{})
 }
 
 // ColumnRequireDefaultAdvisor is the advisor checking for column default requirement.

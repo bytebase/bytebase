@@ -36,8 +36,7 @@
         v-if="
           props.engine === Engine.MYSQL ||
           props.engine === Engine.TIDB ||
-          props.engine === Engine.OCEANBASE ||
-          props.engine === Engine.RISINGWAVE
+          props.engine === Engine.OCEANBASE
         "
       >
         <i18n-t
@@ -377,7 +376,6 @@ GRANT ALL PRIVILEGES ON FUTURE SESSION POLICIES IN DATABASE {{YOUR_DB_NAME}} TO 
 -- PIPE are not allowed to be bulk granted, you need to grant them one by one.
 GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE BYTEBASE;
 `;
-      case Engine.RISINGWAVE:
       case Engine.POSTGRES:
         if (
           props.authenticationType ===
@@ -431,11 +429,6 @@ ALTER SERVER ROLE sysadmin ADD MEMBER ${DATASOURCE_ADMIN_USER_NAME};`;
       case Engine.ORACLE:
         return `-- If you use Cloud RDS, you need to checkout their documentation for setting up a semi-super privileged user.
 CREATE USER ${DATASOURCE_ADMIN_USER_NAME} IDENTIFIED BY 'YOUR_DB_PWD';
-GRANT ALL PRIVILEGES TO ${DATASOURCE_ADMIN_USER_NAME};`;
-      case Engine.DM:
-        return `CREATE USER ${DATASOURCE_ADMIN_USER_NAME.toUpperCase()} IDENTIFIED BY "YOUR_DB_PWD";\nGRANT "DBA" TO ${DATASOURCE_ADMIN_USER_NAME.toUpperCase()};`;
-      case Engine.OCEANBASE_ORACLE:
-        return `CREATE USER ${DATASOURCE_ADMIN_USER_NAME} IDENTIFIED BY 'YOUR_DB_PWD';
 GRANT ALL PRIVILEGES TO ${DATASOURCE_ADMIN_USER_NAME};`;
     }
   } else {
@@ -552,7 +545,6 @@ GRANT ALL PRIVILEGES ON FUTURE SESSION POLICIES IN DATABASE {{YOUR_DB_NAME}} TO 
 -- PIPE are not allowed to be bulk granted, you need to grant them one by one.
 GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE BYTEBASE_READER;
 `;
-      case Engine.RISINGWAVE:
       case Engine.POSTGRES:
         if (
           props.authenticationType ===

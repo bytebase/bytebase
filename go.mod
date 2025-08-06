@@ -14,7 +14,6 @@ require (
 	connectrpc.com/connect v1.18.1
 	connectrpc.com/cors v0.1.0
 	connectrpc.com/grpcreflect v1.3.0
-	gitee.com/chunanyong/dm v1.8.20
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.2
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.10.1
 	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos v1.4.0
@@ -71,7 +70,6 @@ require (
 	github.com/lestrrat-go/jwx/v2 v2.1.6
 	github.com/lib/pq v1.10.9
 	github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8
-	github.com/mattn/go-oci8 v0.1.1
 	github.com/mattn/go-sqlite3 v1.14.30
 	github.com/microsoft/go-mssqldb v1.9.2
 	github.com/nyaruka/phonenumbers v1.6.4

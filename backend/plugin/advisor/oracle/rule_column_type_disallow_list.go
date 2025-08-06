@@ -21,8 +21,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_ORACLE, advisor.OracleColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
-	advisor.Register(storepb.Engine_DM, advisor.OracleColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE_ORACLE, advisor.OracleColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
 }
 
 // ColumnTypeDisallowListAdvisor is the advisor checking for column type disallow list.

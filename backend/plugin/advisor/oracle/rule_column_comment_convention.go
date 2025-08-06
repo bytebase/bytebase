@@ -21,7 +21,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_ORACLE, advisor.OracleColumnCommentConvention, &ColumnCommentConventionAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE_ORACLE, advisor.OracleColumnCommentConvention, &ColumnCommentConventionAdvisor{})
 }
 
 // ColumnCommentConventionAdvisor is the advisor checking for column comment convention.

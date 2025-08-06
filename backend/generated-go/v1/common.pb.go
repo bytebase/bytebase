@@ -88,9 +88,6 @@ const (
 	Engine_REDSHIFT           Engine = 12
 	Engine_MARIADB            Engine = 13
 	Engine_OCEANBASE          Engine = 14
-	Engine_DM                 Engine = 15
-	Engine_RISINGWAVE         Engine = 16
-	Engine_OCEANBASE_ORACLE   Engine = 17
 	Engine_STARROCKS          Engine = 18
 	Engine_DORIS              Engine = 19
 	Engine_HIVE               Engine = 20
@@ -122,9 +119,6 @@ var (
 		12: "REDSHIFT",
 		13: "MARIADB",
 		14: "OCEANBASE",
-		15: "DM",
-		16: "RISINGWAVE",
-		17: "OCEANBASE_ORACLE",
 		18: "STARROCKS",
 		19: "DORIS",
 		20: "HIVE",
@@ -153,9 +147,6 @@ var (
 		"REDSHIFT":           12,
 		"MARIADB":            13,
 		"OCEANBASE":          14,
-		"DM":                 15,
-		"RISINGWAVE":         16,
-		"OCEANBASE_ORACLE":   17,
 		"STARROCKS":          18,
 		"DORIS":              19,
 		"HIVE":               20,
@@ -430,7 +421,7 @@ const file_v1_common_proto_rawDesc = "" +
 	"\x11STATE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
 	"\x06ACTIVE\x10\x01\x12\v\n" +
-	"\aDELETED\x10\x02*\x9e\x03\n" +
+	"\aDELETED\x10\x02*\xf0\x02\n" +
 	"\x06Engine\x12\x16\n" +
 	"\x12ENGINE_UNSPECIFIED\x10\x00\x12\x0e\n" +
 	"\n" +
@@ -450,11 +441,7 @@ const file_v1_common_proto_rawDesc = "" +
 	"\x05MSSQL\x10\v\x12\f\n" +
 	"\bREDSHIFT\x10\f\x12\v\n" +
 	"\aMARIADB\x10\r\x12\r\n" +
-	"\tOCEANBASE\x10\x0e\x12\x06\n" +
-	"\x02DM\x10\x0f\x12\x0e\n" +
-	"\n" +
-	"RISINGWAVE\x10\x10\x12\x14\n" +
-	"\x10OCEANBASE_ORACLE\x10\x11\x12\r\n" +
+	"\tOCEANBASE\x10\x0e\x12\r\n" +
 	"\tSTARROCKS\x10\x12\x12\t\n" +
 	"\x05DORIS\x10\x13\x12\b\n" +
 	"\x04HIVE\x10\x14\x12\x11\n" +

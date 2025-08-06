@@ -68,7 +68,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 	if err != nil {
 		return nil, err
 	}
-	if instance.Metadata.GetEngine() == storepb.Engine_ORACLE || instance.Metadata.GetEngine() == storepb.Engine_OCEANBASE_ORACLE {
+	if instance.Metadata.GetEngine() == storepb.Engine_ORACLE {
 		return nil, errors.Errorf("creating Oracle database is not supported")
 	}
 
@@ -513,13 +513,6 @@ func checkCharacterSetCollationOwner(dbType storepb.Engine, characterSet, collat
 	case storepb.Engine_REDSHIFT:
 		if owner == "" {
 			return errors.Errorf("database owner is required for Redshift")
-		}
-	case storepb.Engine_RISINGWAVE:
-		if characterSet != "" {
-			return errors.Errorf("RisingWave does not support character set, but got %s", characterSet)
-		}
-		if collation != "" {
-			return errors.Errorf("RisingWave does not support collation, but got %s", collation)
 		}
 	case storepb.Engine_COCKROACHDB:
 		if owner == "" {

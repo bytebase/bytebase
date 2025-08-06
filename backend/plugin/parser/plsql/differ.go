@@ -17,7 +17,6 @@ import (
 
 func init() {
 	base.RegisterSchemaDiffFunc(storepb.Engine_ORACLE, SchemaDiff)
-	base.RegisterSchemaDiffFunc(storepb.Engine_OCEANBASE_ORACLE, SchemaDiff)
 }
 
 type diffNode struct {
