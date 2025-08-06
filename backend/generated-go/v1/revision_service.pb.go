@@ -24,6 +24,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type Revision_Type int32
+
+const (
+	Revision_TYPE_UNSPECIFIED Revision_Type = 0
+	Revision_VERSIONED        Revision_Type = 1
+	Revision_DECLARATIVE      Revision_Type = 2
+)
+
+// Enum value maps for Revision_Type.
+var (
+	Revision_Type_name = map[int32]string{
+		0: "TYPE_UNSPECIFIED",
+		1: "VERSIONED",
+		2: "DECLARATIVE",
+	}
+	Revision_Type_value = map[string]int32{
+		"TYPE_UNSPECIFIED": 0,
+		"VERSIONED":        1,
+		"DECLARATIVE":      2,
+	}
+)
+
+func (x Revision_Type) Enum() *Revision_Type {
+	p := new(Revision_Type)
+	*p = x
+	return p
+}
+
+func (x Revision_Type) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Revision_Type) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_revision_service_proto_enumTypes[0].Descriptor()
+}
+
+func (Revision_Type) Type() protoreflect.EnumType {
+	return &file_v1_revision_service_proto_enumTypes[0]
+}
+
+func (x Revision_Type) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Revision_Type.Descriptor instead.
+func (Revision_Type) EnumDescriptor() ([]byte, []int) {
+	return file_v1_revision_service_proto_rawDescGZIP(), []int{7, 0}
+}
+
 type ListRevisionsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent of the revisions.
@@ -436,7 +485,9 @@ type Revision struct {
 	// Can be empty.
 	// Format:
 	// projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-	TaskRun       string `protobuf:"bytes,14,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
+	TaskRun string `protobuf:"bytes,14,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
+	// The type of the revision.
+	Type          Revision_Type `protobuf:"varint,15,opt,name=type,proto3,enum=bytebase.v1.Revision_Type" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -562,6 +613,13 @@ func (x *Revision) GetTaskRun() string {
 	return ""
 }
 
+func (x *Revision) GetType() Revision_Type {
+	if x != nil {
+		return x.Type
+	}
+	return Revision_TYPE_UNSPECIFIED
+}
+
 var File_v1_revision_service_proto protoreflect.FileDescriptor
 
 const file_v1_revision_service_proto_rawDesc = "" +
@@ -592,7 +650,7 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\x15bytebase.com/RevisionR\x04name\"J\n" +
 	"\x15DeleteRevisionRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
-	"\x15bytebase.com/RevisionR\x04name\"\x86\x05\n" +
+	"\x15bytebase.com/RevisionR\x04name\"\xf4\x05\n" +
 	"\bRevision\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x123\n" +
 	"\arelease\x18\x02 \x01(\tB\x19\xfaA\x16\n" +
@@ -613,7 +671,12 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\x05issue\x18\r \x01(\tB\x17\xfaA\x14\n" +
 	"\x12bytebase.com/IssueR\x05issue\x124\n" +
 	"\btask_run\x18\x0e \x01(\tB\x19\xfaA\x16\n" +
-	"\x14bytebase.com/TaskRunR\ataskRun:Z\xeaAW\n" +
+	"\x14bytebase.com/TaskRunR\ataskRun\x12.\n" +
+	"\x04type\x18\x0f \x01(\x0e2\x1a.bytebase.v1.Revision.TypeR\x04type\"<\n" +
+	"\x04Type\x12\x14\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
+	"\tVERSIONED\x10\x01\x12\x0f\n" +
+	"\vDECLARATIVE\x10\x02:Z\xeaAW\n" +
 	"\x15bytebase.com/Revision\x12>instances/{instance}/databases/{database}/revisions/{revision}2\x87\a\n" +
 	"\x0fRevisionService\x12\xb0\x01\n" +
 	"\rListRevisions\x12!.bytebase.v1.ListRevisionsRequest\x1a\".bytebase.v1.ListRevisionsResponse\"X\xdaA\x06parent\x8a\xea0\x11bb.revisions.list\x90\xea0\x01\x82\xd3\xe4\x93\x020\x12./v1/{parent=instances/*/databases/*}/revisions\x12\x9c\x01\n" +
@@ -634,41 +697,44 @@ func file_v1_revision_service_proto_rawDescGZIP() []byte {
 	return file_v1_revision_service_proto_rawDescData
 }
 
+var file_v1_revision_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_v1_revision_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_v1_revision_service_proto_goTypes = []any{
-	(*ListRevisionsRequest)(nil),         // 0: bytebase.v1.ListRevisionsRequest
-	(*ListRevisionsResponse)(nil),        // 1: bytebase.v1.ListRevisionsResponse
-	(*CreateRevisionRequest)(nil),        // 2: bytebase.v1.CreateRevisionRequest
-	(*BatchCreateRevisionsRequest)(nil),  // 3: bytebase.v1.BatchCreateRevisionsRequest
-	(*BatchCreateRevisionsResponse)(nil), // 4: bytebase.v1.BatchCreateRevisionsResponse
-	(*GetRevisionRequest)(nil),           // 5: bytebase.v1.GetRevisionRequest
-	(*DeleteRevisionRequest)(nil),        // 6: bytebase.v1.DeleteRevisionRequest
-	(*Revision)(nil),                     // 7: bytebase.v1.Revision
-	(*timestamppb.Timestamp)(nil),        // 8: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),                // 9: google.protobuf.Empty
+	(Revision_Type)(0),                   // 0: bytebase.v1.Revision.Type
+	(*ListRevisionsRequest)(nil),         // 1: bytebase.v1.ListRevisionsRequest
+	(*ListRevisionsResponse)(nil),        // 2: bytebase.v1.ListRevisionsResponse
+	(*CreateRevisionRequest)(nil),        // 3: bytebase.v1.CreateRevisionRequest
+	(*BatchCreateRevisionsRequest)(nil),  // 4: bytebase.v1.BatchCreateRevisionsRequest
+	(*BatchCreateRevisionsResponse)(nil), // 5: bytebase.v1.BatchCreateRevisionsResponse
+	(*GetRevisionRequest)(nil),           // 6: bytebase.v1.GetRevisionRequest
+	(*DeleteRevisionRequest)(nil),        // 7: bytebase.v1.DeleteRevisionRequest
+	(*Revision)(nil),                     // 8: bytebase.v1.Revision
+	(*timestamppb.Timestamp)(nil),        // 9: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                // 10: google.protobuf.Empty
 }
 var file_v1_revision_service_proto_depIdxs = []int32{
-	7,  // 0: bytebase.v1.ListRevisionsResponse.revisions:type_name -> bytebase.v1.Revision
-	7,  // 1: bytebase.v1.CreateRevisionRequest.revision:type_name -> bytebase.v1.Revision
-	2,  // 2: bytebase.v1.BatchCreateRevisionsRequest.requests:type_name -> bytebase.v1.CreateRevisionRequest
-	7,  // 3: bytebase.v1.BatchCreateRevisionsResponse.revisions:type_name -> bytebase.v1.Revision
-	8,  // 4: bytebase.v1.Revision.create_time:type_name -> google.protobuf.Timestamp
-	8,  // 5: bytebase.v1.Revision.delete_time:type_name -> google.protobuf.Timestamp
-	0,  // 6: bytebase.v1.RevisionService.ListRevisions:input_type -> bytebase.v1.ListRevisionsRequest
-	5,  // 7: bytebase.v1.RevisionService.GetRevision:input_type -> bytebase.v1.GetRevisionRequest
-	2,  // 8: bytebase.v1.RevisionService.CreateRevision:input_type -> bytebase.v1.CreateRevisionRequest
-	3,  // 9: bytebase.v1.RevisionService.BatchCreateRevisions:input_type -> bytebase.v1.BatchCreateRevisionsRequest
-	6,  // 10: bytebase.v1.RevisionService.DeleteRevision:input_type -> bytebase.v1.DeleteRevisionRequest
-	1,  // 11: bytebase.v1.RevisionService.ListRevisions:output_type -> bytebase.v1.ListRevisionsResponse
-	7,  // 12: bytebase.v1.RevisionService.GetRevision:output_type -> bytebase.v1.Revision
-	7,  // 13: bytebase.v1.RevisionService.CreateRevision:output_type -> bytebase.v1.Revision
-	4,  // 14: bytebase.v1.RevisionService.BatchCreateRevisions:output_type -> bytebase.v1.BatchCreateRevisionsResponse
-	9,  // 15: bytebase.v1.RevisionService.DeleteRevision:output_type -> google.protobuf.Empty
-	11, // [11:16] is the sub-list for method output_type
-	6,  // [6:11] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	8,  // 0: bytebase.v1.ListRevisionsResponse.revisions:type_name -> bytebase.v1.Revision
+	8,  // 1: bytebase.v1.CreateRevisionRequest.revision:type_name -> bytebase.v1.Revision
+	3,  // 2: bytebase.v1.BatchCreateRevisionsRequest.requests:type_name -> bytebase.v1.CreateRevisionRequest
+	8,  // 3: bytebase.v1.BatchCreateRevisionsResponse.revisions:type_name -> bytebase.v1.Revision
+	9,  // 4: bytebase.v1.Revision.create_time:type_name -> google.protobuf.Timestamp
+	9,  // 5: bytebase.v1.Revision.delete_time:type_name -> google.protobuf.Timestamp
+	0,  // 6: bytebase.v1.Revision.type:type_name -> bytebase.v1.Revision.Type
+	1,  // 7: bytebase.v1.RevisionService.ListRevisions:input_type -> bytebase.v1.ListRevisionsRequest
+	6,  // 8: bytebase.v1.RevisionService.GetRevision:input_type -> bytebase.v1.GetRevisionRequest
+	3,  // 9: bytebase.v1.RevisionService.CreateRevision:input_type -> bytebase.v1.CreateRevisionRequest
+	4,  // 10: bytebase.v1.RevisionService.BatchCreateRevisions:input_type -> bytebase.v1.BatchCreateRevisionsRequest
+	7,  // 11: bytebase.v1.RevisionService.DeleteRevision:input_type -> bytebase.v1.DeleteRevisionRequest
+	2,  // 12: bytebase.v1.RevisionService.ListRevisions:output_type -> bytebase.v1.ListRevisionsResponse
+	8,  // 13: bytebase.v1.RevisionService.GetRevision:output_type -> bytebase.v1.Revision
+	8,  // 14: bytebase.v1.RevisionService.CreateRevision:output_type -> bytebase.v1.Revision
+	5,  // 15: bytebase.v1.RevisionService.BatchCreateRevisions:output_type -> bytebase.v1.BatchCreateRevisionsResponse
+	10, // 16: bytebase.v1.RevisionService.DeleteRevision:output_type -> google.protobuf.Empty
+	12, // [12:17] is the sub-list for method output_type
+	7,  // [7:12] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_v1_revision_service_proto_init() }
@@ -682,13 +748,14 @@ func file_v1_revision_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_revision_service_proto_rawDesc), len(file_v1_revision_service_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_v1_revision_service_proto_goTypes,
 		DependencyIndexes: file_v1_revision_service_proto_depIdxs,
+		EnumInfos:         file_v1_revision_service_proto_enumTypes,
 		MessageInfos:      file_v1_revision_service_proto_msgTypes,
 	}.Build()
 	File_v1_revision_service_proto = out.File

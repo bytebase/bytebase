@@ -467,9 +467,9 @@ CREATE TABLE revision (
 
 ALTER SEQUENCE revision_id_seq RESTART WITH 101;
 
-CREATE UNIQUE INDEX idx_revision_unique_instance_db_name_version_deleted_at_null ON revision(instance, db_name, version) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX idx_revision_unique_instance_db_name_version_deleted_at_null ON revision(instance, db_name, (payload->>'type'), version) WHERE deleted_at IS NULL;
 
-CREATE INDEX idx_revision_instance_db_name_version ON revision(instance, db_name, version);
+CREATE INDEX idx_revision_instance_db_name_version ON revision(instance, db_name, (payload->>'type'), version);
 
 CREATE TABLE sync_history (
     id bigserial PRIMARY KEY,
