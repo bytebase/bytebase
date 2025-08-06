@@ -12,35 +12,7 @@
           <span class="text-control shrink-0">{{
             $t("plan.navigator.checks")
           }}</span>
-          <div class="flex items-center gap-3">
-            <div
-              v-if="planCheckStatus.error > 0"
-              class="flex items-center gap-1"
-            >
-              <XCircleIcon class="w-5 h-5 text-error" />
-              <span class="text-base font-semibold text-error">{{
-                planCheckStatus.error
-              }}</span>
-            </div>
-            <div
-              v-if="planCheckStatus.warning > 0"
-              class="flex items-center gap-1"
-            >
-              <AlertCircleIcon class="w-5 h-5 text-warning" />
-              <span class="text-base font-semibold text-warning">{{
-                planCheckStatus.warning
-              }}</span>
-            </div>
-            <div
-              v-if="planCheckStatus.success > 0"
-              class="flex items-center gap-1"
-            >
-              <CheckCircleIcon class="w-5 h-5 text-success" />
-              <span class="text-base font-semibold text-success">{{
-                planCheckStatus.success
-              }}</span>
-            </div>
-          </div>
+          <PlanCheckStatusCount :plan="plan" />
         </div>
 
         <div class="flex flex-col gap-y-1">
@@ -110,15 +82,15 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { CheckCircleIcon, XCircleIcon, AlertCircleIcon } from "lucide-vue-next";
 import { NButton, NInput, NTooltip } from "naive-ui";
 import { computed, nextTick, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import IssueLabelSelector from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue";
+import PlanCheckStatusCount from "@/components/Plan/components/PlanCheckStatusCount.vue";
 import { ErrorList } from "@/components/Plan/components/common";
-import { usePlanContext } from "@/components/Plan/logic";
+import { usePlanContext, usePlanCheckStatus } from "@/components/Plan/logic";
 import {
   issueServiceClientConnect,
   planServiceClientConnect,
@@ -170,40 +142,10 @@ const title = computed(() => {
   return t("plan.ready-for-review");
 });
 
-const planCheckStatus = computed(() => {
-  const statusCount = plan.value.planCheckRunStatusCount || {};
-  const success =
-    statusCount[
-      PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.SUCCESS]
-    ] || 0;
-  const warning =
-    statusCount[
-      PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.WARNING]
-    ] || 0;
-  const error =
-    statusCount[PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.ERROR]] ||
-    0;
-
-  return {
-    total: success + warning + error,
-    success,
-    warning,
-    error,
-  };
-});
-
-const planCheckSummaryStatus = computed((): PlanCheckRun_Result_Status => {
-  if (planCheckStatus.value.error > 0) {
-    return PlanCheckRun_Result_Status.ERROR;
-  }
-  if (planCheckStatus.value.warning > 0) {
-    return PlanCheckRun_Result_Status.WARNING;
-  }
-  if (planCheckStatus.value.success > 0) {
-    return PlanCheckRun_Result_Status.SUCCESS;
-  }
-  return PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;
-});
+const {
+  statusSummary: planCheckStatus,
+  getOverallStatus: planCheckSummaryStatus,
+} = usePlanCheckStatus(plan);
 
 const tips = computed(() => {
   const tipsList: string[] = [];
