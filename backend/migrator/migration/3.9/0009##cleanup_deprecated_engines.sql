@@ -2,14 +2,19 @@
 -- Mapping: RISINGWAVE -> POSTGRES, DM -> ORACLE, OCEANBASE_ORACLE -> ORACLE
 
 -- Update instances table to handle any deprecated engine references
+-- The engine field is stored in the metadata JSONB column, not as a direct column
 UPDATE instance
-SET engine = CASE 
-    WHEN engine = 'DM' THEN 'ORACLE'                     -- DM -> ORACLE
-    WHEN engine = 'RISINGWAVE' THEN 'POSTGRES'           -- RISINGWAVE -> POSTGRES (PostgreSQL-compatible)
-    WHEN engine = 'OCEANBASE_ORACLE' THEN 'ORACLE'       -- OCEANBASE_ORACLE -> ORACLE
-    ELSE engine
-END
-WHERE engine IN ('DM', 'RISINGWAVE', 'OCEANBASE_ORACLE');
+SET metadata = jsonb_set(
+    metadata,
+    '{engine}',
+    CASE 
+        WHEN metadata->>'engine' = 'DM' THEN '"ORACLE"'::jsonb                     -- DM -> ORACLE
+        WHEN metadata->>'engine' = 'RISINGWAVE' THEN '"POSTGRES"'::jsonb           -- RISINGWAVE -> POSTGRES (PostgreSQL-compatible)
+        WHEN metadata->>'engine' = 'OCEANBASE_ORACLE' THEN '"ORACLE"'::jsonb       -- OCEANBASE_ORACLE -> ORACLE
+        ELSE metadata->'engine'
+    END
+)
+WHERE metadata->>'engine' IN ('DM', 'RISINGWAVE', 'OCEANBASE_ORACLE');
 
 -- Update review_config table to remove deprecated engines from SQL review rules
 UPDATE review_config 
