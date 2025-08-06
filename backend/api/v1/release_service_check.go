@@ -153,6 +153,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 			revisionMap[revision.Version] = revision
 		}
 
+		// TODO(p0ny): handle declarative type
 		for _, file := range request.Release.Files {
 			if stopChecking {
 				break

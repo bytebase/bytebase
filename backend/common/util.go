@@ -228,3 +228,7 @@ func IsNil(val any) bool {
 
 	return false
 }
+
+func NewP[T any](x T) *T {
+	return &x
+}
