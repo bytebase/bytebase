@@ -22,6 +22,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type RevisionPayload_Type int32
+
+const (
+	RevisionPayload_TYPE_UNSPECIFIED RevisionPayload_Type = 0
+	RevisionPayload_VERSIONED        RevisionPayload_Type = 1
+	RevisionPayload_DECLARATIVE      RevisionPayload_Type = 2
+)
+
+// Enum value maps for RevisionPayload_Type.
+var (
+	RevisionPayload_Type_name = map[int32]string{
+		0: "TYPE_UNSPECIFIED",
+		1: "VERSIONED",
+		2: "DECLARATIVE",
+	}
+	RevisionPayload_Type_value = map[string]int32{
+		"TYPE_UNSPECIFIED": 0,
+		"VERSIONED":        1,
+		"DECLARATIVE":      2,
+	}
+)
+
+func (x RevisionPayload_Type) Enum() *RevisionPayload_Type {
+	p := new(RevisionPayload_Type)
+	*p = x
+	return p
+}
+
+func (x RevisionPayload_Type) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RevisionPayload_Type) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_revision_proto_enumTypes[0].Descriptor()
+}
+
+func (RevisionPayload_Type) Type() protoreflect.EnumType {
+	return &file_store_revision_proto_enumTypes[0]
+}
+
+func (x RevisionPayload_Type) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RevisionPayload_Type.Descriptor instead.
+func (RevisionPayload_Type) EnumDescriptor() ([]byte, []int) {
+	return file_store_revision_proto_rawDescGZIP(), []int{0, 0}
+}
+
 type RevisionPayload struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/releases/{release}
@@ -38,7 +87,9 @@ type RevisionPayload struct {
 	// The task run associated with the revision.
 	// Can be empty.
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-	TaskRun       string `protobuf:"bytes,5,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
+	TaskRun string `protobuf:"bytes,5,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
+	// The type of the revision.
+	Type          RevisionPayload_Type `protobuf:"varint,6,opt,name=type,proto3,enum=bytebase.store.RevisionPayload_Type" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -108,11 +159,18 @@ func (x *RevisionPayload) GetTaskRun() string {
 	return ""
 }
 
+func (x *RevisionPayload) GetType() RevisionPayload_Type {
+	if x != nil {
+		return x.Type
+	}
+	return RevisionPayload_TYPE_UNSPECIFIED
+}
+
 var File_store_revision_proto protoreflect.FileDescriptor
 
 const file_store_revision_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/revision.proto\x12\x0ebytebase.store\x1a\x19google/api/resource.proto\"\xe2\x01\n" +
+	"\x14store/revision.proto\x12\x0ebytebase.store\x1a\x19google/api/resource.proto\"\xda\x02\n" +
 	"\x0fRevisionPayload\x123\n" +
 	"\arelease\x18\x01 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ReleaseR\arelease\x12\x12\n" +
@@ -121,7 +179,12 @@ const file_store_revision_proto_rawDesc = "" +
 	"\x12bytebase.com/SheetR\x05sheet\x12!\n" +
 	"\fsheet_sha256\x18\x04 \x01(\tR\vsheetSha256\x124\n" +
 	"\btask_run\x18\x05 \x01(\tB\x19\xfaA\x16\n" +
-	"\x14bytebase.com/TaskRunR\ataskRunB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x14bytebase.com/TaskRunR\ataskRun\x128\n" +
+	"\x04type\x18\x06 \x01(\x0e2$.bytebase.store.RevisionPayload.TypeR\x04type\"<\n" +
+	"\x04Type\x12\x14\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
+	"\tVERSIONED\x10\x01\x12\x0f\n" +
+	"\vDECLARATIVE\x10\x02B\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
 	file_store_revision_proto_rawDescOnce sync.Once
@@ -135,16 +198,19 @@ func file_store_revision_proto_rawDescGZIP() []byte {
 	return file_store_revision_proto_rawDescData
 }
 
+var file_store_revision_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_revision_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_store_revision_proto_goTypes = []any{
-	(*RevisionPayload)(nil), // 0: bytebase.store.RevisionPayload
+	(RevisionPayload_Type)(0), // 0: bytebase.store.RevisionPayload.Type
+	(*RevisionPayload)(nil),   // 1: bytebase.store.RevisionPayload
 }
 var file_store_revision_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: bytebase.store.RevisionPayload.type:type_name -> bytebase.store.RevisionPayload.Type
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_store_revision_proto_init() }
@@ -157,13 +223,14 @@ func file_store_revision_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_revision_proto_rawDesc), len(file_store_revision_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_store_revision_proto_goTypes,
 		DependencyIndexes: file_store_revision_proto_depIdxs,
+		EnumInfos:         file_store_revision_proto_enumTypes,
 		MessageInfos:      file_store_revision_proto_msgTypes,
 	}.Build()
 	File_store_revision_proto = out.File

@@ -1,0 +1,1 @@
+UPDATE revision SET payload = payload || '{"type": "VERSIONED"}';

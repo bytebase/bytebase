@@ -43,35 +43,7 @@
           <span class="font-medium text-control shrink-0">{{
             $t("plan.navigator.checks")
           }}</span>
-          <div class="flex items-center gap-3">
-            <div
-              v-if="planCheckStatus.error > 0"
-              class="flex items-center gap-1"
-            >
-              <XCircleIcon class="w-5 h-5 text-error" />
-              <span class="text-base font-semibold text-error">{{
-                planCheckStatus.error
-              }}</span>
-            </div>
-            <div
-              v-if="planCheckStatus.warning > 0"
-              class="flex items-center gap-1"
-            >
-              <AlertCircleIcon class="w-5 h-5 text-warning" />
-              <span class="text-base font-semibold text-warning">{{
-                planCheckStatus.warning
-              }}</span>
-            </div>
-            <div
-              v-if="planCheckStatus.success > 0"
-              class="flex items-center gap-1"
-            >
-              <CheckCircleIcon class="w-5 h-5 text-success" />
-              <span class="text-base font-semibold text-success">{{
-                planCheckStatus.success
-              }}</span>
-            </div>
-          </div>
+          <PlanCheckStatusCount :plan="plan" />
         </div>
 
         <div
@@ -274,7 +246,6 @@ import { create } from "@bufbuild/protobuf";
 import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import { head } from "lodash-es";
-import { CheckCircleIcon, XCircleIcon, AlertCircleIcon } from "lucide-vue-next";
 import {
   NAlert,
   NButton,
@@ -300,7 +271,6 @@ import {
   useEnvironmentV1Store,
 } from "@/store";
 import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
-import { PlanCheckRun_Result_Status } from "@/types/proto-es/v1/plan_service_pb";
 import {
   BatchRunTasksRequestSchema,
   BatchSkipTasksRequestSchema,
@@ -315,8 +285,9 @@ import {
   hasWorkspacePermissionV2,
   isNullOrUndefined,
 } from "@/utils";
-import { usePlanContextWithRollout } from "../../logic";
+import { usePlanContextWithRollout, usePlanCheckStatus } from "../../logic";
 import { useIssueReviewContext } from "../../logic/issue-review";
+import PlanCheckStatusCount from "../PlanCheckStatusCount.vue";
 import TaskDatabaseName from "./TaskDatabaseName.vue";
 import { useTaskActionPermissions } from "./taskPermissions";
 
@@ -353,29 +324,7 @@ const { canPerformTaskAction } = useTaskActionPermissions();
 const comment = ref("");
 const runTimeInMS = ref<number | undefined>(undefined);
 const forceRollout = ref(false);
-
-// Plan check status computed property
-const planCheckStatus = computed(() => {
-  const statusCount = plan.value.planCheckRunStatusCount || {};
-  const success =
-    statusCount[
-      PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.SUCCESS]
-    ] || 0;
-  const warning =
-    statusCount[
-      PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.WARNING]
-    ] || 0;
-  const error =
-    statusCount[PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.ERROR]] ||
-    0;
-
-  return {
-    total: success + warning + error,
-    success,
-    warning,
-    error,
-  };
-});
+const { statusSummary: planCheckStatus } = usePlanCheckStatus(plan);
 
 // Check issue approval status using the review context
 const issueApprovalStatus = computed(() => {
