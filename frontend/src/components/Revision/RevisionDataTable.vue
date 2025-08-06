@@ -83,12 +83,29 @@ const columnList = computed(() => {
       hide: !props.showSelection,
     },
     {
+      key: "version",
+      title: t("common.version"),
+      width: 128,
+      resizable: true,
+      render: (revision) => revision.version,
+    },
+    {
+      key: "statement",
+      title: t("common.statement"),
+      resizable: true,
+      minWidth: "13rem",
+      ellipsis: true,
+      render: (revision) => {
+        return <p class="truncate whitespace-nowrap">{revision.statement}</p>;
+      },
+    },
+    {
       key: "issue",
       title: t("common.issue"),
       width: 96,
       render: (revision) => {
         const uid = extractIssueUID(revision.issue);
-        if (!uid) return "-";
+        if (!uid) return <span class="text-control-light">-</span>;
         return (
           <RouterLink
             to={{
@@ -116,26 +133,9 @@ const columnList = computed(() => {
       },
     },
     {
-      key: "version",
-      title: t("common.version"),
-      width: 128,
-      render: (revision) => revision.version,
-    },
-    {
-      key: "statement",
-      title: t("common.statement"),
-      resizable: true,
-      minWidth: "13rem",
-      ellipsis: true,
-      render: (revision) => {
-        return <p class="truncate whitespace-nowrap">{revision.statement}</p>;
-      },
-    },
-    {
       key: "created-at",
       title: t("common.created-at"),
       width: 128,
-      resizable: true,
       render: (revision) => (
         <HumanizeDate
           date={getDateForPbTimestampProtoEs(revision.createTime)}
