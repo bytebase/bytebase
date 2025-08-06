@@ -1657,6 +1657,18 @@
       "available-files-description": "新しいリビジョンとしてインポートするファイルを選択",
       "files-already-imported": "すでにインポート済み",
       "files-already-imported-description": "これらのファイルのバージョンはターゲットデータベースに既に存在するため、再度インポートすることはできません。",
+      "upload-files": "ファイルをアップロードする",
+      "upload-files-description": "ローカルコンピュータからSQLファイルをアップロードしてデータベースのリビジョンを作成します",
+      "drag-drop-or-click": "ファイルをここにドラッグアンドドロップするか、クリックして選択してください",
+      "supported-formats": "サポート対象: .sql、.txt、.md ファイル",
+      "uploaded-files": "アップロードされたファイル",
+      "add-more-files": "さらに追加",
+      "content-preview": "コンテンツプレビュー",
+      "revision-type": "リビジョンタイプ",
+      "type-versioned": "バージョン管理",
+      "type-declarative": "宣言的",
+      "invalid-version-format": "バージョンはドットで区切られた数字部分でなければなりません（例：1.0.0）",
+      "version-already-exists": "このバージョンは既にデータベースに存在します",
       "delete-confirm-dialog": {
         "title": "本当に削除しますか?",
         "content": "これにより、適用されたリビジョンが削除され、データベース スキーマは変更されません。このアクションは元に戻せません。"

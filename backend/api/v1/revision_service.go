@@ -16,6 +16,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // RevisionService implements the revision service.
@@ -114,6 +115,10 @@ func (s *RevisionService) CreateRevision(
 	request := req.Msg
 	if request.Revision == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("request.Revision is not set"))
+	}
+	// Validate the version format.
+	if _, err := model.NewVersion(request.Revision.Version); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse version %q", request.Revision.Version))
 	}
 	database, err := getDatabaseMessage(ctx, s.store, request.Parent)
 	if err != nil {
