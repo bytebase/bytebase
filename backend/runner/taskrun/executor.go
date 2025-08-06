@@ -524,7 +524,11 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 					Sheet:       "",
 					SheetSha256: "",
 					TaskRun:     mc.taskRunName,
+					Type:        storepb.RevisionPayload_VERSIONED,
 				},
+			}
+			if mc.task.Type == storepb.Task_DATABASE_SCHEMA_UPDATE_SDL {
+				r.Payload.Type = storepb.RevisionPayload_DECLARATIVE
 			}
 			if mc.sheet != nil {
 				r.Payload.Sheet = mc.sheetName
