@@ -236,7 +236,8 @@
     "removed": "Remoto",
     "submit": "Entregar",
     "start": "Comenzar",
-    "draft": "Borrador"
+    "draft": "Borrador",
+    "import": "Importar"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -1640,6 +1641,22 @@
       "self": "Revisión",
       "applied-at": "Aplicado en",
       "filename": "Nombre del archivo",
+      "import-revision": "Revisión de importación",
+      "select-source": "Seleccionar fuente",
+      "select-release": "Seleccionar lanzamiento",
+      "select-files": "Seleccionar archivos",
+      "from-release": "Desde el lanzamiento",
+      "from-release-description": "Importar revisiones de bases de datos desde archivos en una versión",
+      "from-local-files": "De archivos locales",
+      "from-local-files-description": "Cargar e importar revisiones de bases de datos desde archivos SQL locales",
+      "select-release-description": "Seleccione una versión para importar revisiones desde",
+      "select-files-description": "Seleccione uno o más archivos para crear revisiones",
+      "no-releases-found": "No se encontraron lanzamientos en este proyecto",
+      "no-files-found": "No se encontraron archivos en esta versión",
+      "available-files": "Archivos disponibles",
+      "available-files-description": "Seleccionar archivos para importar como nuevas revisiones",
+      "files-already-imported": "Ya importado",
+      "files-already-imported-description": "Las versiones de estos archivos ya existen en la base de datos de destino y no se pueden volver a importar.",
       "delete-confirm-dialog": {
         "title": "¿Estas seguro de eliminarlo?",
         "content": "Esto eliminará las revisiones aplicadas y el esquema de la base de datos no se modificará. Esta acción no se puede deshacer."

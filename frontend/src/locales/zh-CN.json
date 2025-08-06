@@ -236,7 +236,8 @@
     "removed": "已移除",
     "submit": "提交",
     "start": "开始",
-    "draft": "草稿"
+    "draft": "草稿",
+    "import": "导入"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -1640,6 +1641,22 @@
       "self": "版本",
       "applied-at": "应用时间",
       "filename": "文件名",
+      "import-revision": "导入版本",
+      "select-source": "选择来源",
+      "select-release": "选择发布包",
+      "select-files": "选择文件",
+      "from-release": "从发布包开始",
+      "from-release-description": "从发布文件中导入数据库版本记录",
+      "from-local-files": "来自本地文件",
+      "from-local-files-description": "从本地 SQL 文件上传并导入数据库版本记录",
+      "select-release-description": "选择要导入发布包",
+      "select-files-description": "选择一个或多个文件来创建版本记录",
+      "no-releases-found": "该项目中未找到任何发布包",
+      "no-files-found": "在此发布包中未找到任何文件",
+      "available-files": "可用文件",
+      "available-files-description": "选择要作为新版本导入的文件",
+      "files-already-imported": "已导入",
+      "files-already-imported-description": "这些文件的版本已存在于目标数据库中，无法再次导入",
       "delete-confirm-dialog": {
         "title": "确定要删除吗？",
         "content": "这将删除这些已应用的修改，但不会影响数据库 Schema。此操作无法撤消。"

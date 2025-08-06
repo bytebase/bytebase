@@ -236,7 +236,8 @@
     "removed": "LOẠI BỎ",
     "submit": "Nộp",
     "start": "Bắt đầu",
-    "draft": "Bản nháp"
+    "draft": "Bản nháp",
+    "import": "Nhập khẩu"
   },
   "error-page": {
     "go-back-home": "Về trang chủ"
@@ -1640,6 +1641,22 @@
       "self": "Bản sửa đổi",
       "applied-at": "Đã áp dụng vào",
       "filename": "Tên tệp",
+      "import-revision": "Nhập bản sửa đổi",
+      "select-source": "Chọn nguồn",
+      "select-release": "Chọn bản phát hành",
+      "select-files": "Chọn tệp",
+      "from-release": "Từ bản phát hành",
+      "from-release-description": "Nhập bản sửa đổi cơ sở dữ liệu từ các tệp trong bản phát hành",
+      "from-local-files": "Từ các tập tin cục bộ",
+      "from-local-files-description": "Tải lên và nhập bản sửa đổi cơ sở dữ liệu từ các tệp SQL cục bộ",
+      "select-release-description": "Chọn bản phát hành để nhập bản sửa đổi từ",
+      "select-files-description": "Chọn một hoặc nhiều tệp để tạo bản sửa đổi",
+      "no-releases-found": "Không tìm thấy bản phát hành nào trong dự án này",
+      "no-files-found": "Không tìm thấy tệp nào trong bản phát hành này",
+      "available-files": "Các tập tin có sẵn",
+      "available-files-description": "Chọn các tập tin để nhập dưới dạng bản sửa đổi mới",
+      "files-already-imported": "Đã nhập khẩu",
+      "files-already-imported-description": "Các phiên bản của các tệp này đã tồn tại trong cơ sở dữ liệu đích và không thể nhập lại được",
       "delete-confirm-dialog": {
         "title": "Bạn có chắc chắn muốn xóa?",
         "content": "Thao tác này sẽ xóa các bản sửa đổi đã áp dụng này và lược đồ cơ sở dữ liệu sẽ không bị thay đổi. Hành động này không thể hoàn tác."
