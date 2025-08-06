@@ -427,9 +427,6 @@ offset.
 | REDSHIFT | 12 |  |
 | MARIADB | 13 |  |
 | OCEANBASE | 14 |  |
-| DM | 15 |  |
-| RISINGWAVE | 16 |  |
-| OCEANBASE_ORACLE | 17 |  |
 | STARROCKS | 18 |  |
 | DORIS | 19 |  |
 | HIVE | 20 |  |

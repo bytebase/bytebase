@@ -83,8 +83,6 @@ export const defaultCharsetOfEngineV1 = (engine: Engine): string => {
       return "";
     case Engine.REDSHIFT:
       return "UNICODE";
-    case Engine.DM:
-      return "UTF8";
     case Engine.HIVE:
       return "default";
     case Engine.BIGQUERY:
@@ -127,8 +125,6 @@ export const defaultCollationOfEngineV1 = (engine: Engine): string => {
       return "";
     case Engine.REDSHIFT:
       return "";
-    case Engine.DM:
-      return "BINARY_CI";
     case Engine.HIVE:
       return "default";
     case Engine.BIGQUERY:
@@ -145,7 +141,6 @@ export function isPostgresFamily(type: Engine): boolean {
   return (
     type == Engine.POSTGRES ||
     type == Engine.REDSHIFT ||
-    type == Engine.RISINGWAVE ||
     type == Engine.COCKROACHDB
   );
 }

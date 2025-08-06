@@ -61,9 +61,6 @@ ruleList:
     engine: ORACLE
   - type: column.no-null
     level: WARNING
-    engine: OCEANBASE_ORACLE
-  - type: column.no-null
-    level: WARNING
     engine: OCEANBASE
   - type: column.no-null
     level: WARNING

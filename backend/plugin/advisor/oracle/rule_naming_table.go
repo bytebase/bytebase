@@ -21,8 +21,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_ORACLE, advisor.OracleNamingTableConvention, &NamingTableAdvisor{})
-	advisor.Register(storepb.Engine_DM, advisor.OracleNamingTableConvention, &NamingTableAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE_ORACLE, advisor.OracleNamingTableConvention, &NamingTableAdvisor{})
 }
 
 // NamingTableAdvisor is the advisor checking for table naming convention.

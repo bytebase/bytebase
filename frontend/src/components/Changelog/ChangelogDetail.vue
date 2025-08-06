@@ -141,7 +141,6 @@ import {
   useDatabaseV1ByName,
 } from "@/store";
 import { getDateForPbTimestampProtoEs } from "@/types";
-import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import { ChangelogView } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -218,7 +217,7 @@ const affectedTables = computed(() => {
 });
 
 const showSchemaSnapshot = computed(() => {
-  return database.value.instanceResource.engine !== Engine.RISINGWAVE;
+  return true;
 });
 
 // "Show diff" feature is enabled when current migration has changed the schema.

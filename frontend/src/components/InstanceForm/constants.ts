@@ -32,12 +32,6 @@ export const defaultPortForEngine = (engine: OldEngine) => {
       return "3306";
     case OldEngine.OCEANBASE:
       return "2883";
-    case OldEngine.DM:
-      return "5236";
-    case OldEngine.RISINGWAVE:
-      return "4566";
-    case OldEngine.OCEANBASE_ORACLE:
-      return "1521";
     case OldEngine.STARROCKS:
       return "9030";
     case OldEngine.DORIS:
@@ -81,7 +75,6 @@ export const EngineIconPath: Record<string, string> = {
   [OldEngine.SPANNER]: new URL("@/assets/db/spanner.png", import.meta.url).href,
   [OldEngine.REDIS]: new URL("@/assets/db/redis.png", import.meta.url).href,
   [OldEngine.ORACLE]: new URL("@/assets/db/oracle.svg", import.meta.url).href,
-  [OldEngine.DM]: new URL("@/assets/db/dm.png", import.meta.url).href,
   [OldEngine.MSSQL]: new URL("@/assets/db/mssql.svg", import.meta.url).href,
   [OldEngine.REDSHIFT]: new URL("@/assets/db/redshift.svg", import.meta.url)
     .href,
@@ -90,12 +83,6 @@ export const EngineIconPath: Record<string, string> = {
     "@/assets/db/oceanbase-mysql.svg",
     import.meta.url
   ).href,
-  [OldEngine.OCEANBASE_ORACLE]: new URL(
-    "@/assets/db/oceanbase-oracle.svg",
-    import.meta.url
-  ).href,
-  [OldEngine.RISINGWAVE]: new URL("@/assets/db/risingwave.png", import.meta.url)
-    .href,
   [OldEngine.STARROCKS]: new URL("@/assets/db/starrocks.png", import.meta.url)
     .href,
   [OldEngine.DORIS]: new URL("@/assets/db/doris.png", import.meta.url).href,

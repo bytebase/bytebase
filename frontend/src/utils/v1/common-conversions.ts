@@ -92,15 +92,6 @@ export const convertScopeValueToEngine = (
     case 14:
     case "OCEANBASE":
       return NewEngine.OCEANBASE;
-    case 15:
-    case "DM":
-      return NewEngine.DM;
-    case 16:
-    case "RISINGWAVE":
-      return NewEngine.RISINGWAVE;
-    case 17:
-    case "OCEANBASE_ORACLE":
-      return NewEngine.OCEANBASE_ORACLE;
     case 18:
     case "STARROCKS":
       return NewEngine.STARROCKS;

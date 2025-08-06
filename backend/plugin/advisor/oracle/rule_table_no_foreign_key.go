@@ -20,8 +20,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_ORACLE, advisor.OracleTableNoFK, &TableNoForeignKeyAdvisor{})
-	advisor.Register(storepb.Engine_DM, advisor.OracleTableNoFK, &TableNoForeignKeyAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE_ORACLE, advisor.OracleTableNoFK, &TableNoForeignKeyAdvisor{})
 }
 
 // TableNoForeignKeyAdvisor is the advisor checking for table disallow foreign key.

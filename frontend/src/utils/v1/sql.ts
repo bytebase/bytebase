@@ -142,7 +142,6 @@ export const wrapSQLIdentifier = (id: string, engine: Engine) => {
       Engine.SQLITE,
       Engine.SNOWFLAKE,
       Engine.ORACLE,
-      Engine.OCEANBASE_ORACLE,
       Engine.REDSHIFT,
       Engine.COCKROACHDB,
       Engine.CASSANDRA,
@@ -191,7 +190,6 @@ export const generateSimpleSelectAllStatement = (
     case Engine.MSSQL:
       return `SELECT TOP ${limit} * FROM ${schemaAndTable};`;
     case Engine.ORACLE:
-    case Engine.OCEANBASE_ORACLE:
       return `SELECT * FROM ${schemaAndTable} WHERE ROWNUM <= ${limit};`;
     default:
       return `SELECT * FROM ${schemaAndTable} LIMIT ${limit};`;

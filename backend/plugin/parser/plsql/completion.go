@@ -24,7 +24,6 @@ var (
 
 func init() {
 	base.RegisterCompleteFunc(store.Engine_ORACLE, Completion)
-	base.RegisterCompleteFunc(store.Engine_OCEANBASE_ORACLE, Completion)
 }
 
 func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
