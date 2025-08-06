@@ -395,7 +395,7 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	defer func() {
 		// Phase 3 - Dump after migration.
 		// Insert revision for versioned.
-		if err := endMigration(ctx, s, mc, resErr == nil /* isDone */); err != nil {
+		if err := endMigration(ctx, s, mc, resErr == nil /* isDone */, opts); err != nil {
 			slog.Error("failed to end migration",
 				log.BBError(err),
 			)
@@ -481,17 +481,20 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 }
 
 // endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateContext, isDone bool) error {
+func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateContext, isDone bool, opts db.ExecuteOptions) error {
 	update := &store.UpdateChangelogMessage{
 		UID: mc.changelog,
 	}
 
 	// Special case: Skip dump for TiDB DML operations
 	if mc.migrateType.NeedDump() && (mc.migrateType != db.Data || mc.instance.Metadata.GetEngine() != storepb.Engine_TIDB) {
+		opts.LogDatabaseSyncStart()
 		syncHistory, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
+			opts.LogDatabaseSyncEnd(err.Error())
 			return errors.Wrapf(err, "failed to sync database metadata and schema")
 		}
+		opts.LogDatabaseSyncEnd("")
 		update.SyncHistoryUID = &syncHistory
 	}
 
