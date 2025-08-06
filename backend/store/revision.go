@@ -155,6 +155,7 @@ func (s *Store) GetRevision(ctx context.Context, uid int64) (*RevisionMessage, e
 	return revisions[0], nil
 }
 
+// TODO(p0ny): make sure revision.type is set
 func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage) (*RevisionMessage, error) {
 	query := `
 		INSERT INTO revision (

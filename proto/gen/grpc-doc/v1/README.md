@@ -575,6 +575,8 @@
     - [ListRevisionsResponse](#bytebase-v1-ListRevisionsResponse)
     - [Revision](#bytebase-v1-Revision)
   
+    - [Revision.Type](#bytebase-v1-Revision-Type)
+  
     - [RevisionService](#bytebase-v1-RevisionService)
   
 - [v1/risk_service.proto](#v1_risk_service-proto)
@@ -9435,12 +9437,26 @@ When paginating, all other parameters provided to `ListRevisions` must match the
 | statement_size | [int64](#int64) |  |  |
 | issue | [string](#string) |  | The issue associated with the revision. Can be empty. Format: projects/{project}/issues/{issue} |
 | task_run | [string](#string) |  | The task run associated with the revision. Can be empty. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
+| type | [Revision.Type](#bytebase-v1-Revision-Type) |  | The type of the revision. |
 
 
 
 
 
  
+
+
+<a name="bytebase-v1-Revision-Type"></a>
+
+### Revision.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| VERSIONED | 1 |  |
+| DECLARATIVE | 2 |  |
+
 
  
 

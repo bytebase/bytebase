@@ -25,4 +25,13 @@ message RevisionPayload {
   // Can be empty.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string task_run = 5 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
+
+  // The type of the revision.
+  Type type = 6;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    VERSIONED = 1;
+    DECLARATIVE = 2;
+  }
 }
