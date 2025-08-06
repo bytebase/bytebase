@@ -19,8 +19,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_ORACLE, advisor.OracleWhereRequirementForUpdateDelete, &WhereRequireForUpdateDeleteAdvisor{})
-	advisor.Register(storepb.Engine_DM, advisor.OracleWhereRequirementForUpdateDelete, &WhereRequireForUpdateDeleteAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE_ORACLE, advisor.OracleWhereRequirementForUpdateDelete, &WhereRequireForUpdateDeleteAdvisor{})
 }
 
 // WhereRequireForUpdateDeleteAdvisor is the advisor checking for WHERE clause requirement.

@@ -11,8 +11,6 @@ import (
 
 func init() {
 	base.RegisterGetQuerySpan(storepb.Engine_ORACLE, GetQuerySpan)
-	base.RegisterGetQuerySpan(storepb.Engine_DM, GetQuerySpan)
-	base.RegisterGetQuerySpan(storepb.Engine_OCEANBASE_ORACLE, GetQuerySpan)
 }
 
 func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statement, database, _ string, _ bool) (*base.QuerySpan, error) {

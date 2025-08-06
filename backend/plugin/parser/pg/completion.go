@@ -24,8 +24,6 @@ var (
 
 func init() {
 	base.RegisterCompleteFunc(store.Engine_POSTGRES, Completion)
-	base.RegisterCompleteFunc(store.Engine_RISINGWAVE, Completion)
-	base.RegisterCompleteFunc(store.Engine_DM, Completion)
 	base.RegisterCompleteFunc(store.Engine_SNOWFLAKE, Completion)
 	base.RegisterCompleteFunc(store.Engine_COCKROACHDB, Completion)
 }

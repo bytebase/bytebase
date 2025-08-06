@@ -130,16 +130,13 @@ const useSimpleInput = computed(() => {
     props.engine === Engine.ORACLE ||
     props.engine === Engine.TIDB ||
     props.engine === Engine.MARIADB ||
-    props.engine === Engine.OCEANBASE_ORACLE ||
     props.engine === Engine.OCEANBASE ||
     props.engine === Engine.SNOWFLAKE ||
-    props.engine === Engine.DM ||
     props.engine === Engine.CLICKHOUSE ||
     props.engine === Engine.COCKROACHDB ||
     props.engine === Engine.SPANNER ||
     props.engine === Engine.BIGQUERY ||
     props.engine === Engine.REDSHIFT ||
-    props.engine === Engine.RISINGWAVE ||
     props.engine === Engine.STARROCKS ||
     props.engine === Engine.DORIS
   );
@@ -154,16 +151,13 @@ const simpleInputValue = computed(() => {
     props.engine === Engine.ORACLE ||
     props.engine === Engine.TIDB ||
     props.engine === Engine.MARIADB ||
-    props.engine === Engine.OCEANBASE_ORACLE ||
     props.engine === Engine.OCEANBASE ||
     props.engine === Engine.SNOWFLAKE ||
-    props.engine === Engine.DM ||
     props.engine === Engine.CLICKHOUSE ||
     props.engine === Engine.COCKROACHDB ||
     props.engine === Engine.SPANNER ||
     props.engine === Engine.BIGQUERY ||
     props.engine === Engine.REDSHIFT ||
-    props.engine === Engine.RISINGWAVE ||
     props.engine === Engine.STARROCKS ||
     props.engine === Engine.DORIS
   ) {

@@ -164,21 +164,6 @@ export enum Engine {
   OCEANBASE = 14,
 
   /**
-   * @generated from enum value: DM = 15;
-   */
-  DM = 15,
-
-  /**
-   * @generated from enum value: RISINGWAVE = 16;
-   */
-  RISINGWAVE = 16,
-
-  /**
-   * @generated from enum value: OCEANBASE_ORACLE = 17;
-   */
-  OCEANBASE_ORACLE = 17,
-
-  /**
    * @generated from enum value: STARROCKS = 18;
    */
   STARROCKS = 18,

@@ -20,8 +20,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_ORACLE, advisor.OracleWhereRequirementForSelect, &WhereRequireForSelectAdvisor{})
-	advisor.Register(storepb.Engine_DM, advisor.OracleWhereRequirementForSelect, &WhereRequireForSelectAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE_ORACLE, advisor.OracleWhereRequirementForSelect, &WhereRequireForSelectAdvisor{})
 }
 
 // WhereRequireForSelectAdvisor is the advisor checking for WHERE clause requirement.
