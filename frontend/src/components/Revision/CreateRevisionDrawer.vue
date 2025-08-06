@@ -210,7 +210,7 @@
               :loading="isCreating"
               @click="handleConfirm"
             >
-              {{ $t("common.create") }}
+              {{ $t("common.confirm") }}
             </NButton>
           </div>
         </div>
