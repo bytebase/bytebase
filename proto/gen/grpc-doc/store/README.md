@@ -250,6 +250,8 @@
 - [store/revision.proto](#store_revision-proto)
     - [RevisionPayload](#bytebase-store-RevisionPayload)
   
+    - [RevisionPayload.Type](#bytebase-store-RevisionPayload-Type)
+  
 - [store/role.proto](#store_role-proto)
     - [RolePermissions](#bytebase-store-RolePermissions)
   
@@ -3994,12 +3996,26 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | task_run | [string](#string) |  | The task run associated with the revision. Can be empty. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
+| type | [RevisionPayload.Type](#bytebase-store-RevisionPayload-Type) |  | The type of the revision. |
 
 
 
 
 
  
+
+
+<a name="bytebase-store-RevisionPayload-Type"></a>
+
+### RevisionPayload.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| VERSIONED | 1 |  |
+| DECLARATIVE | 2 |  |
+
 
  
 

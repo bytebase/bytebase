@@ -12481,6 +12481,14 @@ components:
                          Can be empty.
                          Format:
                          projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+                type:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - VERSIONED
+                        - DECLARATIVE
+                    type: string
+                    description: The type of the revision.
+                    format: enum
         Risk:
             type: object
             properties:
