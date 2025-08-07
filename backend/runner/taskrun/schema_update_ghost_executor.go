@@ -149,32 +149,5 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 		}
 	}
 
-	terminated, result, err := runMigrationWithFunc(ctx, driverCtx, exec.s, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, statement, task.Payload.GetSchemaVersion(), &sheetID, execFunc)
-	// sync database schema anyways
-	exec.s.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
-		Type:              storepb.TaskRunLog_DATABASE_SYNC_START,
-		DatabaseSyncStart: &storepb.TaskRunLog_DatabaseSyncStart{},
-	})
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
-		exec.s.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
-			Type: storepb.TaskRunLog_DATABASE_SYNC_END,
-			DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{
-				Error: err.Error(),
-			},
-		})
-		slog.Error("failed to sync database schema",
-			slog.String("instanceName", instance.ResourceID),
-			slog.String("databaseName", database.DatabaseName),
-			log.BBError(err),
-		)
-	} else {
-		exec.s.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
-			Type: storepb.TaskRunLog_DATABASE_SYNC_END,
-			DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{
-				Error: "",
-			},
-		})
-	}
-
-	return terminated, result, err
+	return runMigrationWithFunc(ctx, driverCtx, exec.s, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, statement, task.Payload.GetSchemaVersion(), &sheetID, execFunc)
 }

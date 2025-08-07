@@ -352,8 +352,8 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	return updatedInstance, instanceMeta.Databases, newDatabases, nil
 }
 
-// syncDatabaseSchemaImpl is the internal implementation that handles both regular sync and sync with history.
-func (s *Syncer) syncDatabaseSchemaImpl(ctx context.Context, database *store.DatabaseMessage, createSyncHistory bool) (syncHistoryID int64, retErr error) {
+// doSyncDatabaseSchema is the core implementation that syncs the schema for a database and optionally creates a sync history record.
+func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage, createSyncHistory bool) (syncHistoryID int64, retErr error) {
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
@@ -480,12 +480,12 @@ func (s *Syncer) syncDatabaseSchemaImpl(ctx context.Context, database *store.Dat
 
 // SyncDatabaseSchemaToHistory will sync the schema for a database and create a sync history record.
 func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *store.DatabaseMessage) (int64, error) {
-	return s.syncDatabaseSchemaImpl(ctx, database, true)
+	return s.doSyncDatabaseSchema(ctx, database, true)
 }
 
 // SyncDatabaseSchema will sync the schema for a database.
 func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage) error {
-	_, err := s.syncDatabaseSchemaImpl(ctx, database, false)
+	_, err := s.doSyncDatabaseSchema(ctx, database, false)
 	return err
 }
 
