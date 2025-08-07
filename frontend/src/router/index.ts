@@ -16,6 +16,7 @@ import {
   useInstanceV1Store,
 } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { isAuthRelatedRoute } from "@/utils/auth";
 import authRoutes, {
   AUTH_2FA_SETUP_MODULE,
   AUTH_MFA_MODULE,
@@ -74,9 +75,10 @@ router.beforeEach((to, from, next) => {
   const routerStore = useRouterStore();
 
   if (
-    to.path.startsWith("/auth") &&
+    isAuthRelatedRoute(to.name as string) &&
     authStore.isLoggedIn &&
-    !authStore.unauthenticatedOccurred
+    !authStore.unauthenticatedOccurred &&
+    !authStore.requireResetPassword
   ) {
     const redirect = (to.query["redirect"] as string) || "/";
     next(redirect);
