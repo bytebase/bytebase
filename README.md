@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://docs.bytebase.com/get-started/self-host" target="_blank">⚙️ Install</a> •
+  <a href="https://docs.bytebase.com/get-started/deploy-with-docker" target="_blank">⚙️ Install</a> •
   <a href="https://docs.bytebase.com">📚 Docs</a> •
   <a href="https://demo.bytebase.com">🎮 Demo</a> •
   <a href="https://discord.gg/huyw7gRsyA">💬 Discord</a> •
@@ -33,7 +33,7 @@
 
 ## What is Bytebase?
 
-Bytebase is an open-source database DevOps tool, it's the **only database CI/CD project** included by the [CNCF Landscape](https://landscape.cncf.io/?selected=bytebase) and [Platform Engineering](https://platformengineering.org/tools/bytebase).
+Bytebase is an open-source database DevOps tool, it's the **only database CI/CD project** included by the [CNCF Landscape](https://landscape.cncf.io/?selected=bytebase&item=app-definition-and-development--continuous-integration-delivery--bytebase) and [Platform Engineering](https://platformengineering.org/tools/bytebase).
 
 It offers a web-based collaboration workspace to help DBAs and Developers manage the lifecycle of application database schemas.
 
@@ -88,7 +88,6 @@ Visit [http://localhost:8080](http://localhost:8080) and follow the setup wizard
 - [Installation Guide](https://docs.bytebase.com/get-started/deploy-with-docker)
 - [Tutorials](https://docs.bytebase.com/tutorials)
 - [API Reference](https://docs.bytebase.com/api/overview)
-- [Best Practices](https://docs.bytebase.com/tutorials/risk-center-best-practice)
 - [FAQ](https://docs.bytebase.com/faq)
 
 ## The Bytebase Family
