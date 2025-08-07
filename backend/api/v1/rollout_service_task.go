@@ -19,6 +19,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
@@ -385,10 +386,25 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 			return nil, errors.Wrapf(err, "failed to list revisions for database %q", database.DatabaseName)
 		}
 
-		// Create a map of applied versions
+		// Find the max declarative version. Could be nil.
+		var maxDeclarativeVersion *model.Version
+		// Create a map of applied versions of VERSIONED revisions
 		appliedVersions := make(map[string]string) // version -> sha256
 		for _, revision := range revisions {
-			appliedVersions[revision.Version] = revision.Payload.SheetSha256
+			switch revision.Payload.Type {
+			case storepb.RevisionPayload_VERSIONED:
+				appliedVersions[revision.Version] = revision.Payload.SheetSha256
+			case storepb.RevisionPayload_DECLARATIVE:
+				v, err := model.NewVersion(revision.Version)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to parse revision version %q", revision.Version)
+				}
+				if maxDeclarativeVersion == nil || maxDeclarativeVersion.LessThan(v) {
+					maxDeclarativeVersion = v
+				}
+			default:
+				return nil, errors.Errorf("unexpected revision type %q", revision.Payload.Type)
+			}
 		}
 
 		for _, file := range release.Payload.Files {
@@ -448,7 +464,14 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 				}
 				taskCreates = append(taskCreates, taskCreate)
 			case storepb.ReleasePayload_File_DECLARATIVE:
-				// TODO(p0ny): error if applied revisions contain a higher version than the declarative file
+				// error if applied revisions contain a higher version than the declarative file
+				v, err := model.NewVersion(file.Version)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to parse file version %q", file.Version)
+				}
+				if maxDeclarativeVersion != nil && v.LessThan(maxDeclarativeVersion) {
+					return nil, errors.Errorf("cannot run declarative file %q with version %q, because there is a higher versioned declarative revision %q applied", file.Id, file.Version, maxDeclarativeVersion.String())
+				}
 
 				// Parse sheet ID from the file's sheet reference
 				_, sheetUID, err := common.GetProjectResourceIDSheetUID(file.Sheet)
