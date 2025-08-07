@@ -33,28 +33,32 @@
 
 ## What is Bytebase?
 
-Bytebase is an open-source database DevOps tool, it's the **only database CI/CD project** included by the [CNCF Landscape](https://landscape.cncf.io/?selected=bytebase) and [Platform Engineering](https://platformengineering.org/tools/bytebase). 
+Bytebase is an open-source database DevOps tool, it's the **only database CI/CD project** included by the [CNCF Landscape](https://landscape.cncf.io/?selected=bytebase) and [Platform Engineering](https://platformengineering.org/tools/bytebase).
 
 It offers a web-based collaboration workspace to help DBAs and Developers manage the lifecycle of application database schemas.
 
 ## Key Features
 
 ### 🔄 **Database CI/CD**
+
 - **GitOps Integration**: Native GitHub/GitLab integration for database-as-code workflows
 - **Migration Management**: Automated schema migration with rollback support
 - **SQL Review**: 200+ lint rules to enforce SQL standards and best practices
 
 ### 🔒 **Security & Compliance**
+
 - **Data Masking**: Advanced column-level masking for sensitive data protection
 - **Access Control**: Fine-grained RBAC with project and workspace-level permissions
 - **Audit Logging**: Complete audit trail of all database activities
 
 ### 🎯 **Developer Experience**
+
 - **Web SQL Editor**: Feature-rich IDE for database development
 - **Batch Changes**: Apply changes across multiple databases and tenants
 - **API & Terraform**: Full API access and Terraform provider for automation
 
 ### 📊 **Operations**
+
 - **Multi-Database Support**: PostgreSQL, MySQL, MongoDB, Redis, Snowflake, and more
 - **Drift Detection**: Automatic detection of schema drift across environments
 - **Admin Mode**: CLI-like experience without bastion setup
@@ -62,6 +66,7 @@ It offers a web-based collaboration workspace to help DBAs and Developers manage
 ## Quick Start
 
 ### Docker
+
 ```bash
 docker run --init \
   --name bytebase \
@@ -71,6 +76,7 @@ docker run --init \
 ```
 
 ### Kubernetes
+
 ```bash
 helm install bytebase bytebase/bytebase
 ```
@@ -79,10 +85,10 @@ Visit [http://localhost:8080](http://localhost:8080) and follow the setup wizard
 
 ## Documentation
 
-- [Installation Guide](https://docs.bytebase.com/get-started/self-host)
+- [Installation Guide](https://docs.bytebase.com/get-started/deploy-with-docker)
 - [Tutorials](https://docs.bytebase.com/tutorials)
 - [API Reference](https://docs.bytebase.com/api/overview)
-- [Best Practices](https://docs.bytebase.com/best-practices)
+- [Best Practices](https://docs.bytebase.com/tutorials/risk-center-best-practice)
 - [FAQ](https://docs.bytebase.com/faq)
 
 ## The Bytebase Family
@@ -94,16 +100,19 @@ Visit [http://localhost:8080](http://localhost:8080) and follow the setup wizard
 ## Use Cases
 
 ### For Development Teams
+
 - Implement database schema version control
 - Automate database deployments through CI/CD pipelines
 - Collaborate on database changes with review workflows
 
 ### For DBAs
+
 - Centralize database management across all environments
 - Enforce organization-wide SQL standards and policies
 - Monitor and audit all database activities
 
 ### For Security Teams
+
 - Control data access with column-level permissions
 - Implement data masking for sensitive information
 - Maintain compliance with audit trails
