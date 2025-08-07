@@ -485,9 +485,13 @@ func convertReleaseVcsSource(vs *v1pb.Release_VCSSource) *storepb.ReleasePayload
 // The function also generates a unique ID for each file.
 // The files are sorted by version in ascending order.
 func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Release_File) ([]*v1pb.Release_File, error) {
-	versionSet := map[string]struct{}{}
+	if len(files) == 0 {
+		return nil, errors.Errorf("release files cannot be empty")
+	}
 
+	versionSet := map[string]struct{}{}
 	fileTypeCount := map[v1pb.Release_File_Type]int{}
+
 	for _, f := range files {
 		f.Id = uuid.NewString()
 
