@@ -35,7 +35,8 @@ export const usePlanCheckStatus = (
       return PlanCheckRun_Result_Status.SUCCESS;
     }
 
-    return PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;
+    // Default to SUCCESS if no errors or warnings.
+    return PlanCheckRun_Result_Status.SUCCESS;
   });
 
   const statusSummary = computed<PlanCheckStatusSummary>(() => {
