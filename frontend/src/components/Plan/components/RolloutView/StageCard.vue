@@ -95,21 +95,37 @@
                 <template #avatar>
                   <TaskStatus :status="task.status" size="tiny" disabled />
                 </template>
-                <div class="flex items-center flex-nowrap">
+                <div class="flex items-center flex-nowrap gap-2">
                   <DatabaseDisplay :database="task.target" />
-                  <NTooltip v-if="task.runTime">
-                    <template #trigger>
-                      <CalendarClockIcon
-                        class="w-3.5 h-3.5 ml-1 text-gray-500"
-                      />
-                    </template>
-                    ({{ $t("task.scheduled-time") }})
-                    {{
-                      humanizeTs(
-                        getTimeForPbTimestampProtoEs(task.runTime, 0) / 1000
-                      )
-                    }}
-                  </NTooltip>
+                  <template v-if="task.runTime">
+                    <span class="font-mono text-control-light opacity-80"
+                      >/</span
+                    >
+                    <NTooltip>
+                      <template #trigger>
+                        <div class="flex items-center gap-1">
+                          <CalendarClockIcon
+                            :size="14"
+                            class="text-control-light"
+                          />
+                          <span class="text-control">{{
+                            humanizeTs(
+                              getTimeForPbTimestampProtoEs(task.runTime, 0) /
+                                1000
+                            )
+                          }}</span>
+                        </div>
+                      </template>
+                      <div class="space-y-1">
+                        <div class="text-sm opacity-80">
+                          {{ $t("task.scheduled-time") }}
+                        </div>
+                        <div class="text-sm whitespace-nowrap">
+                          {{ formatFullDateTime(task.runTime) }}
+                        </div>
+                      </div>
+                    </NTooltip>
+                  </template>
                 </div>
               </NTag>
               <NTag
@@ -166,6 +182,7 @@
 
 <script setup lang="ts">
 import type { Timestamp as TimestampPb } from "@bufbuild/protobuf/wkt";
+import dayjs from "dayjs";
 import {
   CircleFadingPlusIcon,
   ChevronDownIcon,
@@ -313,6 +330,11 @@ const latestUpdateTimestamp = computed(() => {
 
   return latestTimestamp;
 });
+
+const formatFullDateTime = (timestamp: TimestampPb) => {
+  const timestampInMilliseconds = getTimeForPbTimestampProtoEs(timestamp, 0);
+  return dayjs(timestampInMilliseconds).local().format();
+};
 
 const getTaskCount = (status: Task_Status) => {
   return filteredTasks.value.filter((task) => task.status === status).length;
