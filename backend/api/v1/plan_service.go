@@ -273,6 +273,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan, error: %v", err))
 	}
 
+	// If the plan comes from releases, the plan check run results might not match the release check results.
 	planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check runs for plan, error: %v", err))
