@@ -502,6 +502,7 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 
 	if needDump(mc.task.Type, mc.instance) {
 		opts.LogDatabaseSyncStart()
+		// Sync with history creation - this also updates metadata
 		syncHistory, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
 			opts.LogDatabaseSyncEnd(err.Error())
@@ -509,6 +510,20 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 		}
 		opts.LogDatabaseSyncEnd("")
 		update.SyncHistoryUID = &syncHistory
+	} else {
+		// Even if we don't need to create history, we still need to sync metadata
+		// This handles cases where needDump returns false but metadata still needs updating
+		opts.LogDatabaseSyncStart()
+		if err := mc.syncer.SyncDatabaseSchema(ctx, mc.database); err != nil {
+			opts.LogDatabaseSyncEnd(err.Error())
+			slog.Error("failed to sync database schema",
+				slog.String("instanceName", mc.instance.ResourceID),
+				slog.String("databaseName", mc.database.DatabaseName),
+				log.BBError(err),
+			)
+		} else {
+			opts.LogDatabaseSyncEnd("")
+		}
 	}
 
 	if isDone {
