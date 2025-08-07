@@ -16,6 +16,28 @@
               </template>
               {{ $t("common.version") }}
             </NTooltip>
+            <NTooltip v-if="task.runTime">
+              <template #trigger>
+                <NTag round>
+                  <div class="flex items-center gap-1">
+                    <CalendarClockIcon class="w-4 h-4 opacity-80" />
+                    <span>{{
+                      humanizeTs(
+                        getTimeForPbTimestampProtoEs(task.runTime, 0) / 1000
+                      )
+                    }}</span>
+                  </div>
+                </NTag>
+              </template>
+              <div class="space-y-1">
+                <div class="text-sm opacity-80">
+                  {{ $t("task.scheduled-time") }}
+                </div>
+                <div class="text-sm whitespace-nowrap">
+                  {{ formatFullDateTime(task.runTime) }}
+                </div>
+              </div>
+            </NTooltip>
           </div>
         </div>
 
@@ -81,7 +103,9 @@
 </template>
 
 <script setup lang="ts">
+import dayjs from "dayjs";
 import { last } from "lodash-es";
+import { CalendarClockIcon } from "lucide-vue-next";
 import { NTag, NTooltip } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { semanticTaskType } from "@/components/IssueV1";
@@ -94,7 +118,7 @@ import {
   useCurrentProjectV1,
   useSheetV1Store,
 } from "@/store";
-import { unknownTask } from "@/types";
+import { getTimeForPbTimestampProtoEs, unknownTask } from "@/types";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import {
@@ -153,6 +177,11 @@ const rollbackableTaskRun = computed(() => {
 // Task basic info
 const database = computed(() => databaseForTask(project.value, task.value));
 const schemaVersion = computed(() => extractSchemaVersionFromTask(task.value));
+
+const formatFullDateTime = (timestamp: any) => {
+  const timestampInMilliseconds = getTimeForPbTimestampProtoEs(timestamp, 0);
+  return dayjs(timestampInMilliseconds).local().format();
+};
 
 // Sheet statement
 const statement = computed(() => {

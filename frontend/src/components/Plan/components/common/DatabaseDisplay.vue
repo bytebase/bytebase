@@ -17,12 +17,12 @@
       {{ databaseDisplayName }}
     </span>
     <router-link
-      class="pl-2 opacity-60 hover:opacity-100"
+      class="pl-1 opacity-60 hover:opacity-100"
       :to="`/${database}`"
       target="_blank"
       @click.stop
     >
-      <ExternalLinkIcon :size="16" />
+      <ExternalLinkIcon :size="14" />
     </router-link>
   </div>
 </template>
