@@ -16,6 +16,7 @@
 </template>
 
 <script lang="tsx" setup>
+import dayjs from "dayjs";
 import { head } from "lodash-es";
 import { CalendarClockIcon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
@@ -163,6 +164,12 @@ const getLatestTaskRun = (task: Task) => {
   return head(relatedTaskRuns);
 };
 
+// Format full datetime for display
+const formatFullDateTime = (timestamp: any) => {
+  const timestampInMilliseconds = getTimeForPbTimestampProtoEs(timestamp, 0);
+  return dayjs(timestampInMilliseconds).local().format();
+};
+
 const columnList = computed((): DataTableColumn<Task>[] => {
   return [
     {
@@ -216,7 +223,16 @@ const columnList = computed((): DataTableColumn<Task>[] => {
                       </div>
                     </NTag>
                   ),
-                  default: () => t("task.scheduled-time"),
+                  default: () => (
+                    <div class="space-y-1">
+                      <div class="text-sm opacity-80">
+                        {t("task.scheduled-time")}
+                      </div>
+                      <div class="text-sm whitespace-nowrap">
+                        {formatFullDateTime(task.runTime)}
+                      </div>
+                    </div>
+                  ),
                 }}
               </NTooltip>
             )}
