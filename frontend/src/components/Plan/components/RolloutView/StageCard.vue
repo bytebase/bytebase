@@ -95,21 +95,30 @@
                 <template #avatar>
                   <TaskStatus :status="task.status" size="tiny" disabled />
                 </template>
-                <div class="flex items-center flex-nowrap">
+                <div class="flex items-center flex-nowrap gap-2">
                   <DatabaseDisplay :database="task.target" />
-                  <NTooltip v-if="task.runTime">
-                    <template #trigger>
-                      <CalendarClockIcon
-                        class="w-3.5 h-3.5 ml-1 text-gray-500"
-                      />
-                    </template>
-                    ({{ $t("task.scheduled-time") }})
-                    {{
-                      humanizeTs(
-                        getTimeForPbTimestampProtoEs(task.runTime, 0) / 1000
-                      )
-                    }}
-                  </NTooltip>
+                  <template v-if="task.runTime">
+                    <span class="font-mono text-control-light opacity-80"
+                      >/</span
+                    >
+                    <NTooltip>
+                      <template #trigger>
+                        <div class="flex items-center gap-1">
+                          <CalendarClockIcon
+                            :size="14"
+                            class="text-control-light"
+                          />
+                          <span class="text-control">{{
+                            humanizeTs(
+                              getTimeForPbTimestampProtoEs(task.runTime, 0) /
+                                1000
+                            )
+                          }}</span>
+                        </div>
+                      </template>
+                      {{ $t("task.scheduled-time") }}
+                    </NTooltip>
+                  </template>
                 </div>
               </NTag>
               <NTag
