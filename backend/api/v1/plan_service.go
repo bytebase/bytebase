@@ -274,7 +274,6 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 	}
 
 	// Don't create plan checks if the plan comes from releases.
-	// Plan check results don't match release checks.
 	if !planHasRelease(req.Plan) {
 		planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
 		if err != nil {
