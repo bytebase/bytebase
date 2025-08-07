@@ -121,7 +121,7 @@
                     : Date.now() + DEFAULT_RUN_DELAY_MS)
               "
             >
-              {{ $t("task.run-immediately") }}
+              {{ $t("task.run-immediately.self") }}
             </NCheckbox>
           </div>
           <div v-if="runTimeInMS !== undefined" class="flex flex-col gap-y-1">
