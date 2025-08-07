@@ -128,32 +128,5 @@ func (exec *SchemaDeclareExecutor) RunOnce(ctx context.Context, driverCtx contex
 		return true, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate migration SQL, error: %v", err))
 	}
 
-	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, migrationSQL, task.Payload.GetSchemaVersion(), &sheetID)
-	// sync database schema anyways
-	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
-		Type:              storepb.TaskRunLog_DATABASE_SYNC_START,
-		DatabaseSyncStart: &storepb.TaskRunLog_DatabaseSyncStart{},
-	})
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
-		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
-			Type: storepb.TaskRunLog_DATABASE_SYNC_END,
-			DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{
-				Error: err.Error(),
-			},
-		})
-		slog.Error("failed to sync database schema",
-			slog.String("instanceName", instance.ResourceID),
-			slog.String("databaseName", database.DatabaseName),
-			log.BBError(err),
-		)
-	} else {
-		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
-			Type: storepb.TaskRunLog_DATABASE_SYNC_END,
-			DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{
-				Error: "",
-			},
-		})
-	}
-
-	return terminated, result, err
+	return runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, migrationSQL, task.Payload.GetSchemaVersion(), &sheetID)
 }
