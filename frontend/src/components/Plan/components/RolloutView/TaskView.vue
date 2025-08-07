@@ -29,7 +29,14 @@
                   </div>
                 </NTag>
               </template>
-              {{ $t("task.scheduled-time") }}
+              <div class="space-y-1">
+                <div class="text-sm opacity-80">
+                  {{ $t("task.scheduled-time") }}
+                </div>
+                <div class="text-sm whitespace-nowrap">
+                  {{ formatFullDateTime(task.runTime) }}
+                </div>
+              </div>
             </NTooltip>
           </div>
         </div>
@@ -96,6 +103,7 @@
 </template>
 
 <script setup lang="ts">
+import dayjs from "dayjs";
 import { last } from "lodash-es";
 import { CalendarClockIcon } from "lucide-vue-next";
 import { NTag, NTooltip } from "naive-ui";
@@ -169,6 +177,11 @@ const rollbackableTaskRun = computed(() => {
 // Task basic info
 const database = computed(() => databaseForTask(project.value, task.value));
 const schemaVersion = computed(() => extractSchemaVersionFromTask(task.value));
+
+const formatFullDateTime = (timestamp: any) => {
+  const timestampInMilliseconds = getTimeForPbTimestampProtoEs(timestamp, 0);
+  return dayjs(timestampInMilliseconds).local().format();
+};
 
 // Sheet statement
 const statement = computed(() => {

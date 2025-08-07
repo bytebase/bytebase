@@ -116,7 +116,14 @@
                           }}</span>
                         </div>
                       </template>
-                      {{ $t("task.scheduled-time") }}
+                      <div class="space-y-1">
+                        <div class="text-sm opacity-80">
+                          {{ $t("task.scheduled-time") }}
+                        </div>
+                        <div class="text-sm whitespace-nowrap">
+                          {{ formatFullDateTime(task.runTime) }}
+                        </div>
+                      </div>
                     </NTooltip>
                   </template>
                 </div>
@@ -175,6 +182,7 @@
 
 <script setup lang="ts">
 import type { Timestamp as TimestampPb } from "@bufbuild/protobuf/wkt";
+import dayjs from "dayjs";
 import {
   CircleFadingPlusIcon,
   ChevronDownIcon,
@@ -322,6 +330,11 @@ const latestUpdateTimestamp = computed(() => {
 
   return latestTimestamp;
 });
+
+const formatFullDateTime = (timestamp: TimestampPb) => {
+  const timestampInMilliseconds = getTimeForPbTimestampProtoEs(timestamp, 0);
+  return dayjs(timestampInMilliseconds).local().format();
+};
 
 const getTaskCount = (status: Task_Status) => {
   return filteredTasks.value.filter((task) => task.status === status).length;
