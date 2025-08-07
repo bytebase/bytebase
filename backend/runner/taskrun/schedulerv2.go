@@ -999,13 +999,17 @@ func tasksSkippedOrDone(tasks []*store.TaskMessage) bool {
 
 // isSequentialTask returns whether the task should be executed sequentially.
 func isSequentialTask(taskType storepb.Task_Type) bool {
+	//exhaustive:enforce
 	switch taskType {
 	case storepb.Task_DATABASE_SCHEMA_UPDATE,
-		storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
+		storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST,
+		storepb.Task_DATABASE_SCHEMA_UPDATE_SDL:
 		return true
 	case storepb.Task_DATABASE_CREATE,
 		storepb.Task_DATABASE_DATA_UPDATE,
 		storepb.Task_DATABASE_EXPORT:
+		return false
+	case storepb.Task_TASK_TYPE_UNSPECIFIED:
 		return false
 	default:
 		return false
