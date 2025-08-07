@@ -11,6 +11,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/type/expr"
 
 	"github.com/bytebase/bytebase/action/command"
 	"github.com/bytebase/bytebase/action/world"
@@ -56,6 +57,78 @@ func TestActionCheckCommand(t *testing.T) {
 			"--service-account-secret", "1024bytebase",
 			"--project", ctl.project.Name,
 			"--targets", database.Name,
+			"--file-pattern", filepath.Join(validMigrationsDir, "*.sql"),
+			"--check-release", "FAIL_ON_ERROR",
+		)
+
+		a.NoError(err, "Check command should succeed for valid migrations")
+
+		// E2E Verification for check command:
+		// The key expectation is that check validates files without modifying target databases
+
+		// Verify database was NOT modified (this is the critical check)
+		// Query database to ensure no tables were created
+		metadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
+			Name: database.Name + "/metadata",
+		}))
+		a.NoError(err)
+		// Verify no user tables exist (only SQLite system tables)
+		for _, schema := range metadata.Msg.Schemas {
+			for _, table := range schema.Tables {
+				a.NotEqual("users", table.Name, "Check command should not create tables")
+			}
+		}
+
+		// 4. Verify command succeeded with proper exit code
+		a.Contains(result.Stdout, "", "Check should complete without errors")
+	})
+
+	t.Run("ValidMigrationsForDatabaseGroup", func(t *testing.T) {
+		t.Parallel()
+		a := require.New(t)
+		ctx := context.Background()
+		ctl := &controller{}
+
+		ctx, err := ctl.StartServerWithExternalPg(ctx)
+		a.NoError(err)
+		defer ctl.Close(ctx)
+
+		// Create test instance and database
+		database := ctl.createTestDatabase(ctx, t)
+
+		databaseGroup, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, connect.NewRequest(&v1pb.CreateDatabaseGroupRequest{
+			Parent:          ctl.project.Name,
+			DatabaseGroupId: "test-database-group",
+			DatabaseGroup: &v1pb.DatabaseGroup{
+				Title:        "test database group",
+				DatabaseExpr: &expr.Expr{Expression: "true"},
+			},
+		}))
+		a.NoError(err)
+
+		// Create test data directory
+		testDataDir := t.TempDir()
+		validMigrationsDir := filepath.Join(testDataDir, "valid-migrations")
+		err = os.MkdirAll(validMigrationsDir, 0755)
+		a.NoError(err)
+
+		// Create a valid migration file
+		migrationContent := `CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`
+		err = os.WriteFile(filepath.Join(validMigrationsDir, "00001_create_users.sql"), []byte(migrationContent), 0644)
+		a.NoError(err)
+
+		// Execute check command using backend test credentials
+		result, err := executeActionCommand(ctx,
+			"check",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", databaseGroup.Msg.Name,
 			"--file-pattern", filepath.Join(validMigrationsDir, "*.sql"),
 			"--check-release", "FAIL_ON_ERROR",
 		)
