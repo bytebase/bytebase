@@ -273,12 +273,16 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan, error: %v", err))
 	}
 
-	planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check runs for plan, error: %v", err))
-	}
-	if err := s.store.CreatePlanCheckRuns(ctx, plan, planCheckRuns...); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check runs, error: %v", err))
+	// Don't create plan checks if the plan comes from releases.
+	// Plan check results don't match release checks.
+	if !planHasRelease(req.Plan) {
+		planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check runs for plan, error: %v", err))
+		}
+		if err := s.store.CreatePlanCheckRuns(ctx, plan, planCheckRuns...); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check runs, error: %v", err))
+		}
 	}
 
 	// Tickle plan check scheduler.
@@ -1340,6 +1344,17 @@ func getPlanDeployment(ctx context.Context, s *store.Store, specs []*storepb.Pla
 	}
 
 	return snapshot, nil
+}
+
+func planHasRelease(plan *v1pb.Plan) bool {
+	for _, spec := range plan.GetSpecs() {
+		if c, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig); ok {
+			if c.ChangeDatabaseConfig.Release != "" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func storePlanConfigHasRelease(plan *storepb.PlanConfig) bool {
