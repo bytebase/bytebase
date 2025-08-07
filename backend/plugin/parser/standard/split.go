@@ -18,6 +18,7 @@ func init() {
 	base.RegisterSplitterFunc(storepb.Engine_SPANNER, SplitSQL)
 	base.RegisterSplitterFunc(storepb.Engine_HIVE, SplitSQL)
 	base.RegisterSplitterFunc(storepb.Engine_DATABRICKS, SplitSQL)
+	base.RegisterSplitterFunc(storepb.Engine_CASSANDRA, SplitSQL)
 }
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.

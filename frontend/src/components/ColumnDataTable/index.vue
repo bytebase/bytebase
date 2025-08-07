@@ -81,7 +81,8 @@ const showSensitiveColumn = computed(() => {
       engine.value === Engine.BIGQUERY ||
       engine.value === Engine.RISINGWAVE ||
       engine.value === Engine.SPANNER ||
-      engine.value === Engine.TRINO)
+      engine.value === Engine.TRINO ||
+      engine.value === Engine.CASSANDRA)
   );
 });
 
