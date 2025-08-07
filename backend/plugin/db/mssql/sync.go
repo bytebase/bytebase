@@ -175,29 +175,89 @@ func getTables(txn *sql.Tx, schemas []string, columnMap map[db.TableKey][]*store
 		return nil, errors.Wrapf(err, "failed to get checks")
 	}
 
+	// Get table comments separately
+	tableCommentsMap := make(map[db.TableKey]string)
+
+	// First get object IDs with schema info
+	objectSchemaMap := make(map[int]struct{ Schema, Table string })
+	objectQuery := `
+		SELECT o.object_id, s.name AS schema_name, o.name AS table_name
+		FROM sys.all_objects o
+		INNER JOIN sys.schemas s ON s.schema_id = o.schema_id
+		WHERE o.type = 'U'`
+	objectRows, err := txn.Query(objectQuery)
+	if err == nil {
+		defer objectRows.Close()
+		for objectRows.Next() {
+			var objectID int
+			var schemaName, tableName string
+			if err := objectRows.Scan(&objectID, &schemaName, &tableName); err != nil {
+				continue
+			}
+			objectSchemaMap[objectID] = struct{ Schema, Table string }{schemaName, tableName}
+		}
+		if err := objectRows.Err(); err != nil {
+			return nil, errors.Wrap(err, "failed to iterate object schema mapping")
+		}
+	}
+
+	// Then get extended properties
+	commentsQuery := `
+		SELECT major_id, value
+		FROM sys.extended_properties
+		WHERE name = 'MS_Description' AND minor_id = 0 AND class = 1`
+	commentsRows, err := txn.Query(commentsQuery)
+	if err == nil {
+		defer commentsRows.Close()
+		for commentsRows.Next() {
+			var objectID int
+			var comment string
+			if err := commentsRows.Scan(&objectID, &comment); err != nil {
+				continue
+			}
+			// Join in Go
+			if obj, ok := objectSchemaMap[objectID]; ok {
+				key := db.TableKey{Schema: obj.Schema, Table: obj.Table}
+				tableCommentsMap[key] = comment
+			}
+		}
+		if err := commentsRows.Err(); err != nil {
+			// Log error but continue - comments are not critical
+			return nil, errors.Wrap(err, "failed to fetch table comments")
+		}
+	}
+
+	// Get table row counts separately
+	rowCountMap := make(map[int]int64)
+	rowCountQuery := `
+		SELECT object_id, SUM(row_count) AS total_rows
+		FROM sys.dm_db_partition_stats
+		WHERE index_id < 2
+		GROUP BY object_id`
+	rowCountRows, err := txn.Query(rowCountQuery)
+	if err == nil {
+		defer rowCountRows.Close()
+		for rowCountRows.Next() {
+			var objectID int
+			var rowCount int64
+			if err := rowCountRows.Scan(&objectID, &rowCount); err != nil {
+				continue
+			}
+			rowCountMap[objectID] = rowCount
+		}
+		if err := rowCountRows.Err(); err != nil {
+			return nil, errors.Wrap(err, "failed to iterate row counts")
+		}
+	}
+
 	tableMap := make(map[string][]*storepb.TableMetadata)
 	query := `
 		SELECT
+			t.object_id,
 			SCHEMA_NAME(t.schema_id),
-			t.name,
-			SUM(ps.row_count),
-			lj.PropertyValue AS comment
+			t.name
 		FROM sys.tables t
-		INNER JOIN sys.dm_db_partition_stats ps ON ps.object_id = t.object_id
-		LEFT JOIN (
-			SELECT
-				EP.value AS PropertyValue,
-				S.name AS SchemaName,
-				O.name AS TableName
-			FROM
-				(SELECT major_id, name, value FROM sys.extended_properties WHERE name = 'MS_Description' AND minor_id = 0) AS EP
-				INNER JOIN sys.all_objects AS O ON EP.major_id = O.object_id
-				INNER JOIN sys.schemas AS S ON O.schema_id = S.schema_id
-		) lj ON lj.SchemaName = SCHEMA_NAME(t.schema_id) AND lj.TableName = t.name
-        WHERE index_id < 2
-		GROUP BY t.name, t.schema_id, lj.PropertyValue
-		ORDER BY 1, 2 ASC
-		OPTION (RECOMPILE);`
+		ORDER BY SCHEMA_NAME(t.schema_id), t.name ASC`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -206,18 +266,24 @@ func getTables(txn *sql.Tx, schemas []string, columnMap map[db.TableKey][]*store
 
 	for rows.Next() {
 		table := &storepb.TableMetadata{}
+		var objectID int
 		var schemaName string
-		var comment sql.NullString
-		if err := rows.Scan(&schemaName, &table.Name, &table.RowCount, &comment); err != nil {
+		if err := rows.Scan(&objectID, &schemaName, &table.Name); err != nil {
 			return nil, err
+		}
+		// Join with row count in Go
+		if rowCount, ok := rowCountMap[objectID]; ok {
+			table.RowCount = rowCount
 		}
 		key := db.TableKey{Schema: schemaName, Table: table.Name}
 		table.Columns = columnMap[key]
 		table.Indexes = indexMap[key]
 		table.ForeignKeys = fkMap[key]
 		table.CheckConstraints = checkMap[key]
-		if comment.Valid {
-			table.Comment = comment.String
+
+		// Join with comments in Go
+		if comment, ok := tableCommentsMap[key]; ok {
+			table.Comment = comment
 		}
 
 		tableMap[schemaName] = append(tableMap[schemaName], table)
@@ -231,19 +297,68 @@ func getTables(txn *sql.Tx, schemas []string, columnMap map[db.TableKey][]*store
 
 func getChecks(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.CheckConstraintMetadata, error) {
 	checkMap := make(map[db.TableKey][]*storepb.CheckConstraintMetadata)
-	dumpCheckConstraintSQL := fmt.Sprintf(`
-	SELECT
-		t.schema_name,
-	    t.name AS table_name,
-	    c.name,
-	    c.comment,
-	    c.definition
-	FROM
-	    (SELECT s.name as schema_name, o.name, o.object_id, o.type FROM sys.all_objects o LEFT JOIN sys.schemas s ON s.schema_id = o.schema_id WHERE s.name in (%s) ) t
-	        INNER JOIN (SELECT ch.name, ch.object_id, ch.parent_object_id, ch.is_disabled, CAST(p.[value] AS nvarchar(4000)) AS comment, ch.is_not_for_replication, ch.definition FROM sys.check_constraints ch LEFT JOIN sys.extended_properties p ON p.major_id = ch.object_id AND p.minor_id = 0 AND p.name = 'MS_Description') c ON c.parent_object_id = t.object_id
-	        LEFT JOIN sys.objects co ON co.object_id = c.object_id
-	ORDER BY t.schema_name ASC, t.object_id ASC, c.object_id ASC
+
+	// Get check constraint comments separately
+	checkCommentsMap := make(map[int]string)
+	commentsQuery := `
+	SELECT 
+		p.major_id AS object_id,
+		CAST(p.[value] AS nvarchar(4000)) AS comment
+	FROM sys.extended_properties p
+	WHERE p.minor_id = 0 AND p.name = 'MS_Description'
+		AND p.major_id IN (SELECT object_id FROM sys.check_constraints)`
+	commentsRows, err := txn.Query(commentsQuery)
+	if err == nil {
+		defer commentsRows.Close()
+		for commentsRows.Next() {
+			var objectID int
+			var comment sql.NullString
+			if err := commentsRows.Scan(&objectID, &comment); err != nil {
+				continue
+			}
+			if comment.Valid {
+				checkCommentsMap[objectID] = comment.String
+			}
+		}
+		if err := commentsRows.Err(); err != nil {
+			// Log error but continue - comments are not critical
+			return nil, errors.Wrap(err, "failed to fetch check constraint comments")
+		}
+	}
+
+	// Get object schema mapping first
+	objectSchemaMap := make(map[int]struct{ Schema, Table string })
+	objectQuery := fmt.Sprintf(`
+	SELECT o.object_id, s.name AS schema_name, o.name AS table_name
+	FROM sys.objects o
+	INNER JOIN sys.schemas s ON s.schema_id = o.schema_id
+	WHERE s.name in (%s) AND o.type IN ('U')
 	`, quoteList(schemas))
+	objectRows, err := txn.Query(objectQuery)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, objectQuery)
+	}
+	defer objectRows.Close()
+	for objectRows.Next() {
+		var objectID int
+		var schemaName, tableName string
+		if err := objectRows.Scan(&objectID, &schemaName, &tableName); err != nil {
+			continue
+		}
+		objectSchemaMap[objectID] = struct{ Schema, Table string }{schemaName, tableName}
+	}
+	if err := objectRows.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to fetch object schema mapping")
+	}
+
+	dumpCheckConstraintSQL := `
+	SELECT
+		ch.parent_object_id,
+		ch.name,
+		ch.object_id,
+		ch.definition
+	FROM sys.check_constraints ch
+	ORDER BY ch.parent_object_id, ch.object_id`
 
 	rows, err := txn.Query(dumpCheckConstraintSQL)
 	if err != nil {
@@ -251,20 +366,34 @@ func getChecks(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.CheckC
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var schemaName, tableName, checkName, comment, definition sql.NullString
-		if err := rows.Scan(&schemaName, &tableName, &checkName, &comment, &definition); err != nil {
+		var parentObjectID int
+		var checkName, definition sql.NullString
+		var objectID sql.NullInt32
+		if err := rows.Scan(&parentObjectID, &checkName, &objectID, &definition); err != nil {
 			return nil, err
 		}
-		if !schemaName.Valid || !tableName.Valid || !checkName.Valid || !definition.Valid {
+		if !checkName.Valid || !definition.Valid {
 			continue
 		}
-		key := db.TableKey{Schema: schemaName.String, Table: tableName.String}
-		// todo: set comments.
-		_ = comment
-		checkMap[key] = append(checkMap[key], &storepb.CheckConstraintMetadata{
+		// Join with schema mapping in Go
+		obj, ok := objectSchemaMap[parentObjectID]
+		if !ok {
+			continue
+		}
+		key := db.TableKey{Schema: obj.Schema, Table: obj.Table}
+		check := &storepb.CheckConstraintMetadata{
 			Name:       checkName.String,
 			Expression: definition.String,
-		})
+		}
+		// TODO: Join with comments when CheckConstraintMetadata supports it
+		// Currently the proto doesn't support comments for check constraints
+		// When support is added, use:
+		// if objectID.Valid {
+		//     if comment, ok := checkCommentsMap[int(objectID.Int32)]; ok {
+		//         check.Comment = comment
+		//     }
+		// }
+		checkMap[key] = append(checkMap[key], check)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -289,22 +418,55 @@ func referentialAction(action int) string {
 
 func getForeignKeys(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
 	fkMap := make(map[db.TableKey]map[string]*storepb.ForeignKeyMetadata)
+
+	// Get foreign key comments separately
+	fkCommentsMap := make(map[int]string)
+	commentsQuery := `
+	SELECT 
+		p.major_id AS object_id,
+		CAST(p.[value] AS nvarchar(4000)) AS comment
+	FROM sys.extended_properties p
+	WHERE p.minor_id = 0 AND p.name = 'MS_Description'
+		AND p.major_id IN (SELECT object_id FROM sys.foreign_keys)`
+	commentsRows, err := txn.Query(commentsQuery)
+	if err == nil {
+		defer commentsRows.Close()
+		for commentsRows.Next() {
+			var objectID int
+			var comment sql.NullString
+			if err := commentsRows.Scan(&objectID, &comment); err != nil {
+				continue
+			}
+			if comment.Valid {
+				fkCommentsMap[objectID] = comment.String
+			}
+		}
+		if err := commentsRows.Err(); err != nil {
+			// Log error but continue - comments are not critical
+			return nil, errors.Wrap(err, "failed to fetch foreign key comments")
+		}
+	}
+
 	dumpForeignKeySQL := fmt.Sprintf(`
 	SELECT
-		t.schema_name,
-	    t.name AS table_name,
-	    f.name,
-	    f.referenced_schema,
-	    f.referenced_table,
-	    f.comment,
-	    f.delete_referential_action,
-	    f.update_referential_action,
-	    f.parent_column,
-	    f.referenced_column
-	FROM (SELECT s.name AS schema_name, o.name, o.object_id, o.type FROM sys.all_objects o LEFT JOIN sys.schemas s ON s.schema_id = o.schema_id WHERE s.name in (%s) ) t
-	    INNER JOIN (SELECT fk.object_id, fk.parent_object_id, fk.name, OBJECT_SCHEMA_NAME(fk.referenced_object_id) AS referenced_schema, OBJECT_NAME(fk.referenced_object_id) AS referenced_table, fk.is_disabled, fk.is_not_for_replication, fk.delete_referential_action, fk.update_referential_action, fc.parent_column, CAST(p.[value] AS nvarchar(4000)) AS comment, fc.referenced_column FROM sys.foreign_keys fk LEFT JOIN (SELECT fkc.constraint_object_id, pc.name AS parent_column, rc.name AS referenced_column FROM sys.foreign_key_columns fkc LEFT JOIN sys.all_columns pc ON pc.object_id = fkc.parent_object_id AND pc.column_id = fkc.parent_column_id LEFT JOIN sys.all_columns rc ON rc.object_id = fkc.referenced_object_id AND rc.column_id = fkc.referenced_column_id) fc ON fc.constraint_object_id = fk.object_id LEFT JOIN sys.extended_properties p ON p.major_id = fk.object_id AND p.minor_id = 0 AND p.name = 'MS_Description' ) f ON f.parent_object_id = t.object_id
-	    LEFT JOIN sys.objects co ON co.object_id = f.object_id
-	ORDER BY t.schema_name ASC, t.object_id ASC, f.object_id ASC
+		s.name AS schema_name,
+		o.name AS table_name,
+		fk.object_id,
+		fk.name,
+		OBJECT_SCHEMA_NAME(fk.referenced_object_id) AS referenced_schema,
+		OBJECT_NAME(fk.referenced_object_id) AS referenced_table,
+		fk.delete_referential_action,
+		fk.update_referential_action,
+		pc.name AS parent_column,
+		rc.name AS referenced_column
+	FROM sys.foreign_keys fk
+	INNER JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id = fk.object_id
+	INNER JOIN sys.objects o ON o.object_id = fk.parent_object_id
+	INNER JOIN sys.schemas s ON s.schema_id = o.schema_id
+	INNER JOIN sys.all_columns pc ON pc.object_id = fkc.parent_object_id AND pc.column_id = fkc.parent_column_id
+	INNER JOIN sys.all_columns rc ON rc.object_id = fkc.referenced_object_id AND rc.column_id = fkc.referenced_column_id
+	WHERE s.name in (%s)
+	ORDER BY s.name ASC, o.object_id ASC, fk.object_id ASC, fkc.constraint_column_id ASC
 	`, quoteList(schemas))
 
 	rows, err := txn.Query(dumpForeignKeySQL)
@@ -313,9 +475,9 @@ func getForeignKeys(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.F
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var schemaName, tableName, fkName, referencedSchemaName, referencedTableName, comment, parentColumnName, referencedColumnName sql.NullString
-		var onDelete, onUpdate sql.NullInt32
-		if err := rows.Scan(&schemaName, &tableName, &fkName, &referencedSchemaName, &referencedTableName, &comment, &onDelete, &onUpdate, &parentColumnName, &referencedColumnName); err != nil {
+		var schemaName, tableName, fkName, referencedSchemaName, referencedTableName, parentColumnName, referencedColumnName sql.NullString
+		var objectID, onDelete, onUpdate sql.NullInt32
+		if err := rows.Scan(&schemaName, &tableName, &objectID, &fkName, &referencedSchemaName, &referencedTableName, &onDelete, &onUpdate, &parentColumnName, &referencedColumnName); err != nil {
 			return nil, err
 		}
 		if !schemaName.Valid || !tableName.Valid || !fkName.Valid || !referencedSchemaName.Valid || !referencedTableName.Valid || !parentColumnName.Valid || !referencedColumnName.Valid {
@@ -332,8 +494,14 @@ func getForeignKeys(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.F
 				ReferencedSchema: referencedSchemaName.String,
 				ReferencedTable:  referencedTableName.String,
 			}
-			// Set comments.
-			_ = comment
+			// TODO: Join with comments when ForeignKeyMetadata supports it
+			// Currently the proto doesn't support comments for foreign keys
+			// When support is added, use:
+			// if objectID.Valid {
+			//     if comment, ok := fkCommentsMap[int(objectID.Int32)]; ok {
+			//         fk.Comment = comment
+			//     }
+			// }
 
 			if onDelete.Valid {
 				fk.OnDelete = referentialAction(int(onDelete.Int32))
@@ -385,10 +553,69 @@ func quoteList(schemas []string) string {
 func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
 	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
 
+	// Get column comments separately
+	columnCommentsMap := make(map[struct{ ObjectID, ColumnID int }]string)
+	commentsQuery := `
+	SELECT
+		p.major_id AS object_id,
+		p.minor_id AS column_id,
+		CAST(p.[value] AS nvarchar(4000)) AS comment
+	FROM sys.extended_properties p
+	WHERE p.class = 1 AND p.name = 'MS_Description' AND p.minor_id > 0`
+	commentsRows, err := txn.Query(commentsQuery)
+	if err == nil {
+		defer commentsRows.Close()
+		for commentsRows.Next() {
+			var objectID, columnID int
+			var comment sql.NullString
+			if err := commentsRows.Scan(&objectID, &columnID, &comment); err != nil {
+				continue
+			}
+			if comment.Valid {
+				columnCommentsMap[struct{ ObjectID, ColumnID int }{objectID, columnID}] = comment.String
+			}
+		}
+		if err := commentsRows.Err(); err != nil {
+			// Log error but continue - comments are not critical
+			return nil, errors.Wrap(err, "failed to fetch column comments")
+		}
+	}
+
+	// Get default constraints separately
+	defaultsMap := make(map[int]struct{ Definition, Name string })
+	defaultsQuery := `
+	SELECT 
+		so.object_id,
+		dc.definition,
+		so.name AS default_name
+	FROM sys.objects so
+	INNER JOIN sys.default_constraints dc ON dc.object_id = so.object_id
+	WHERE so.type = 'D'`
+	defaultsRows, err := txn.Query(defaultsQuery)
+	if err == nil {
+		defer defaultsRows.Close()
+		for defaultsRows.Next() {
+			var objectID int
+			var definition, name sql.NullString
+			if err := defaultsRows.Scan(&objectID, &definition, &name); err != nil {
+				continue
+			}
+			if definition.Valid && name.Valid {
+				defaultsMap[objectID] = struct{ Definition, Name string }{definition.String, name.String}
+			}
+		}
+		if err := defaultsRows.Err(); err != nil {
+			// Log error but continue - defaults are not critical
+			return nil, errors.Wrap(err, "failed to fetch default constraints")
+		}
+	}
+
 	getColumnSQL := fmt.Sprintf(`
 	SELECT
 		s.name AS schema_name,
 		OBJECT_NAME(c.object_id) AS table_name,
+		c.object_id,
+		c.column_id,
 		c.name AS column_name,
 		t.name AS type_name,
 		c.is_computed,
@@ -400,19 +627,15 @@ func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.
 		c.collation_name,
 		c.is_nullable,
 		c.is_identity,
-		d.definition AS default_value,
-		d.default_name AS default_name,
-		CAST(p.[value] AS nvarchar(4000)) AS comment,
+		c.default_object_id,
 		id.seed_value AS seed_value,
 		id.increment_value AS increment_value
 	FROM sys.columns c
 		LEFT JOIN sys.computed_columns cc ON cc.object_id = c.object_id AND cc.column_id = c.column_id
 		LEFT JOIN sys.types t ON c.user_type_id = t.user_type_id
-		LEFT JOIN (SELECT so.object_id, sc.name as default_schema, so.name AS default_name, dc.definition FROM sys.objects so LEFT JOIN sys.schemas sc ON sc.schema_id = so.schema_id LEFT JOIN sys.default_constraints dc ON dc.object_id = so.object_id WHERE so.type = 'D') d ON d.object_id = c.default_object_id
 		LEFT JOIN sys.objects o ON o.object_id = c.object_id
 		LEFT JOIN sys.schemas s ON s.schema_id = o.schema_id
 		LEFT JOIN sys.identity_columns id ON c.object_id = id.object_id AND c.column_id = id.column_id
-		LEFT JOIN sys.extended_properties p ON p.major_id = c.object_id AND p.minor_id = c.column_id AND p.class = 1 AND p.name = 'MS_Description'
 	WHERE s.name in (%s)
 	ORDER BY s.name ASC, c.object_id ASC, c.column_id ASC 
 	`, quoteList(schemas))
@@ -423,12 +646,15 @@ func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var schemaName, tableName, columnName, typeName, definition, collationName, defaultValue, defaultName, comment sql.NullString
+		var schemaName, tableName, columnName, typeName, definition, collationName sql.NullString
 		var isComputed, isPersisted, isNullable, isIdentity sql.NullBool
+		var objectID, columnID, defaultObjectID sql.NullInt32
 		var maxLength, precision, scale, seedValue, incrementValue sql.NullInt64
 		if err := rows.Scan(
 			&schemaName,
 			&tableName,
+			&objectID,
+			&columnID,
 			&columnName,
 			&typeName,
 			&isComputed,
@@ -440,9 +666,7 @@ func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.
 			&collationName,
 			&isNullable,
 			&isIdentity,
-			&defaultValue,
-			&defaultName,
-			&comment,
+			&defaultObjectID,
 			&seedValue,
 			&incrementValue,
 		); err != nil {
@@ -466,18 +690,22 @@ func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.
 		if collationName.Valid {
 			column.Collation = collationName.String
 		}
-		if defaultValue.Valid {
-			column.Default = defaultValue.String
-		}
-		if defaultName.Valid {
-			column.DefaultConstraintName = defaultName.String
+		// Join with defaults in Go
+		if defaultObjectID.Valid {
+			if def, ok := defaultsMap[int(defaultObjectID.Int32)]; ok {
+				column.Default = def.Definition
+				column.DefaultConstraintName = def.Name
+			}
 		}
 		column.Nullable = true
 		if isNullable.Valid && !isNullable.Bool {
 			column.Nullable = false
 		}
-		if comment.Valid {
-			column.Comment = comment.String
+		// Join with comments in Go
+		if objectID.Valid && columnID.Valid {
+			if comment, ok := columnCommentsMap[struct{ ObjectID, ColumnID int }{int(objectID.Int32), int(columnID.Int32)}]; ok {
+				column.Comment = comment
+			}
 		}
 		key := db.TableKey{Schema: schemaName.String, Table: tableName.String}
 		columnsMap[key] = append(columnsMap[key], column)
@@ -563,27 +791,52 @@ func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.Index
 	// MSSQL doesn't support function-based indexes.
 	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
 
+	// Get index comments separately
+	indexCommentsMap := make(map[struct{ ObjectID, IndexID int }]string)
+	commentsQuery := `
+	SELECT 
+		ep.major_id AS object_id,
+		ep.minor_id AS index_id,
+		CAST(ep.value AS NVARCHAR(MAX)) AS comment
+	FROM sys.extended_properties ep
+	WHERE ep.class = 7 AND ep.name = 'MS_Description' AND ep.minor_id > 0`
+	commentsRows, err := txn.Query(commentsQuery)
+	if err == nil {
+		defer commentsRows.Close()
+		for commentsRows.Next() {
+			var objectID, indexID int
+			var comment sql.NullString
+			if err := commentsRows.Scan(&objectID, &indexID, &comment); err != nil {
+				continue
+			}
+			if comment.Valid {
+				indexCommentsMap[struct{ ObjectID, IndexID int }{objectID, indexID}] = comment.String
+			}
+		}
+		if err := commentsRows.Err(); err != nil {
+			// Log error but continue - comments are not critical
+			return nil, errors.Wrap(err, "failed to fetch index comments")
+		}
+	}
+
 	query := fmt.Sprintf(`
 	SELECT
 		s.name AS schema_name,
-	    o.name AS table_name,
-	    i.name,
-	    i.type_desc,
-	    col.name AS column_name,
-	    ic.is_descending_key,
-	    CAST(ep.value AS NVARCHAR(MAX)) comment
-	FROM
-	    sys.indexes i
-	        LEFT JOIN sys.all_objects o ON o.object_id = i.object_id
-	        LEFT JOIN sys.schemas s ON s.schema_id = o.schema_id
-	        LEFT JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id
-	        LEFT JOIN sys.all_columns col ON ic.column_id = col.column_id AND ic.object_id = col.object_id
-	        LEFT JOIN sys.key_constraints cons ON (cons.parent_object_id = ic.object_id AND cons.unique_index_id = i.index_id)
-	        LEFT JOIN sys.extended_properties ep ON (((i.is_primary_key <> 1 AND i.is_unique_constraint <> 1 AND ep.class = 7 AND i.object_id = ep.major_id AND ep.minor_id = i.index_id) OR ((i.is_primary_key = 1 OR i.is_unique_constraint = 1) AND ep.class = 1 AND cons.object_id = ep.major_id AND ep.minor_id = 0)) AND ep.name = 'MS_Description'),
-	    sys.stats stat
-	        LEFT JOIN sys.all_objects so ON (stat.object_id = so.object_id)
-	WHERE (i.object_id = so.object_id OR i.object_id = so.parent_object_id) AND i.name = stat.name AND i.index_id > 0 AND (i.is_primary_key = 0 AND i.is_unique_constraint = 0) AND s.name in (%s) AND o.type IN ('U', 'S', 'V')
-	ORDER BY s.name, table_name, i.index_id, ic.key_ordinal, ic.index_column_id
+		o.name AS table_name,
+		i.object_id,
+		i.index_id,
+		i.name,
+		i.type_desc,
+		col.name AS column_name,
+		ic.is_descending_key
+	FROM sys.indexes i
+	INNER JOIN sys.all_objects o ON o.object_id = i.object_id
+	INNER JOIN sys.schemas s ON s.schema_id = o.schema_id
+	INNER JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id
+	INNER JOIN sys.all_columns col ON ic.column_id = col.column_id AND ic.object_id = col.object_id
+	WHERE i.index_id > 0 AND i.is_primary_key = 0 AND i.is_unique_constraint = 0 
+		AND s.name in (%s) AND o.type IN ('U', 'S', 'V')
+	ORDER BY s.name, o.name, i.index_id, ic.key_ordinal
 	`, quoteList(schemas))
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -591,9 +844,10 @@ func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.Index
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var schemaName, tableName, indexName, typeDesc, colName, comment sql.NullString
+		var schemaName, tableName, indexName, typeDesc, colName sql.NullString
+		var objectID, indexID sql.NullInt32
 		var isDescending sql.NullBool
-		if err := rows.Scan(&schemaName, &tableName, &indexName, &typeDesc, &colName, &isDescending, &comment); err != nil {
+		if err := rows.Scan(&schemaName, &tableName, &objectID, &indexID, &indexName, &typeDesc, &colName, &isDescending); err != nil {
 			return nil, err
 		}
 
@@ -629,8 +883,11 @@ func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.Index
 					}
 				}
 			}
-			if comment.Valid {
-				index.Comment = comment.String
+			// Join with comments in Go
+			if objectID.Valid && indexID.Valid {
+				if comment, ok := indexCommentsMap[struct{ ObjectID, IndexID int }{int(objectID.Int32), int(indexID.Int32)}]; ok {
+					index.Comment = comment
+				}
 			}
 			indexMap[key][indexName.String] = index
 		}
@@ -699,47 +956,108 @@ func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.Index
 func getSpatialIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
 
-	// Use proper sys.spatial_indexes and sys.spatial_index_tessellations views
-	// Reference: https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-spatial-indexes-transact-sql
-	// Reference: https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-spatial-index-tessellations-transact-sql
+	// Get spatial index comments separately
+	spatialCommentsMap := make(map[struct{ ObjectID, IndexID int }]string)
+	commentsQuery := `
+	SELECT 
+		ep.major_id AS object_id,
+		ep.minor_id AS index_id,
+		CAST(ep.value AS NVARCHAR(MAX)) AS comment
+	FROM sys.extended_properties ep
+	WHERE ep.class = 7 AND ep.name = 'MS_Description' AND ep.minor_id > 0
+		AND ep.major_id IN (SELECT object_id FROM sys.spatial_indexes)`
+	commentsRows, err := txn.Query(commentsQuery)
+	if err == nil {
+		defer commentsRows.Close()
+		for commentsRows.Next() {
+			var objectID, indexID int
+			var comment sql.NullString
+			if err := commentsRows.Scan(&objectID, &indexID, &comment); err != nil {
+				continue
+			}
+			if comment.Valid {
+				spatialCommentsMap[struct{ ObjectID, IndexID int }{objectID, indexID}] = comment.String
+			}
+		}
+		if err := commentsRows.Err(); err != nil {
+			return nil, errors.Wrap(err, "failed to fetch spatial index comments")
+		}
+	}
+
+	// Get tessellation data separately
+	tessellationMap := make(map[struct{ ObjectID, IndexID int }]struct {
+		BoundingBox    [4]float64
+		GridLevels     [4]string
+		CellsPerObject int32
+	})
+	tessellationQuery := `
+	SELECT
+		object_id,
+		index_id,
+		COALESCE(bounding_box_xmin, 0),
+		COALESCE(bounding_box_ymin, 0),
+		COALESCE(bounding_box_xmax, 0),
+		COALESCE(bounding_box_ymax, 0),
+		COALESCE(level_1_grid_desc, ''),
+		COALESCE(level_2_grid_desc, ''),
+		COALESCE(level_3_grid_desc, ''),
+		COALESCE(level_4_grid_desc, ''),
+		COALESCE(cells_per_object, 0)
+	FROM sys.spatial_index_tessellations`
+	tessRows, err := txn.Query(tessellationQuery)
+	if err == nil {
+		defer tessRows.Close()
+		for tessRows.Next() {
+			var objectID, indexID int
+			var xmin, ymin, xmax, ymax float64
+			var level1, level2, level3, level4 string
+			var cellsPerObject int32
+			if err := tessRows.Scan(&objectID, &indexID, &xmin, &ymin, &xmax, &ymax,
+				&level1, &level2, &level3, &level4, &cellsPerObject); err != nil {
+				continue
+			}
+			key := struct{ ObjectID, IndexID int }{objectID, indexID}
+			tessellationMap[key] = struct {
+				BoundingBox    [4]float64
+				GridLevels     [4]string
+				CellsPerObject int32
+			}{
+				BoundingBox:    [4]float64{xmin, ymin, xmax, ymax},
+				GridLevels:     [4]string{level1, level2, level3, level4},
+				CellsPerObject: cellsPerObject,
+			}
+		}
+		if err := tessRows.Err(); err != nil {
+			return nil, errors.Wrap(err, "failed to iterate tessellation data")
+		}
+	}
+
+	// Main query for spatial indexes
 	query := fmt.Sprintf(`
 	SELECT
 		s.name AS schema_name,
 		o.name AS table_name,
+		si.object_id,
+		si.index_id,
 		i.name AS index_name,
+		ic.key_ordinal,
 		col.name AS column_name,
 		si.spatial_index_type,
 		si.spatial_index_type_desc,
 		si.tessellation_scheme,
-		COALESCE(sit.bounding_box_xmin, 0) AS bounding_box_xmin,
-		COALESCE(sit.bounding_box_ymin, 0) AS bounding_box_ymin,
-		COALESCE(sit.bounding_box_xmax, 0) AS bounding_box_xmax,
-		COALESCE(sit.bounding_box_ymax, 0) AS bounding_box_ymax,
-		COALESCE(sit.level_1_grid_desc, '') AS level_1_grid_desc,
-		COALESCE(sit.level_2_grid_desc, '') AS level_2_grid_desc,
-		COALESCE(sit.level_3_grid_desc, '') AS level_3_grid_desc,
-		COALESCE(sit.level_4_grid_desc, '') AS level_4_grid_desc,
-		COALESCE(sit.cells_per_object, 0) AS cells_per_object,
 		col.system_type_id,
 		i.filter_definition,
 		i.fill_factor,
 		CASE WHEN i.is_padded = 1 THEN 1 ELSE 0 END AS is_padded,
 		CASE WHEN i.allow_row_locks = 1 THEN 1 ELSE 0 END AS allow_row_locks,
-		CASE WHEN i.allow_page_locks = 1 THEN 1 ELSE 0 END AS allow_page_locks,
-		'NONE' AS data_compression_desc,
-		CAST(ep.value AS NVARCHAR(MAX)) AS comment
-	FROM
-		sys.spatial_indexes si
-		INNER JOIN sys.indexes i ON si.object_id = i.object_id AND si.index_id = i.index_id
-		INNER JOIN sys.objects o ON i.object_id = o.object_id
-		INNER JOIN sys.schemas s ON o.schema_id = s.schema_id
-		LEFT JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-		LEFT JOIN sys.columns col ON ic.object_id = col.object_id AND ic.column_id = col.column_id
-		LEFT JOIN sys.spatial_index_tessellations sit ON si.object_id = sit.object_id AND si.index_id = sit.index_id
-		LEFT JOIN sys.extended_properties ep ON ep.class = 7 AND i.object_id = ep.major_id AND ep.minor_id = i.index_id AND ep.name = 'MS_Description'
-	WHERE
-		s.name IN (%s)
-		AND o.type IN ('U', 'S', 'V')
+		CASE WHEN i.allow_page_locks = 1 THEN 1 ELSE 0 END AS allow_page_locks
+	FROM sys.spatial_indexes si
+	INNER JOIN sys.indexes i ON si.object_id = i.object_id AND si.index_id = i.index_id
+	INNER JOIN sys.objects o ON i.object_id = o.object_id
+	INNER JOIN sys.schemas s ON o.schema_id = s.schema_id
+	INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+	INNER JOIN sys.columns col ON ic.object_id = col.object_id AND ic.column_id = col.column_id
+	WHERE s.name IN (%s) AND o.type IN ('U', 'S', 'V')
 	ORDER BY s.name, o.name, i.name, ic.key_ordinal
 	`, quoteList(schemas))
 
@@ -751,23 +1069,18 @@ func getSpatialIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storep
 
 	for rows.Next() {
 		var schemaName, tableName, indexName, columnName sql.NullString
+		var objectID, indexID, keyOrdinal sql.NullInt32
 		var spatialIndexType sql.NullInt32
 		var spatialIndexTypeDesc, tessellationScheme sql.NullString
-		var boundingBoxXmin, boundingBoxYmin, boundingBoxXmax, boundingBoxYmax sql.NullFloat64
-		var level1Grid, level2Grid, level3Grid, level4Grid sql.NullString
-		var cellsPerObject sql.NullInt32
 		var systemTypeID sql.NullInt32
 		var filterDefinition sql.NullString
 		var fillFactor sql.NullInt32
 		var isPadded, allowRowLocks, allowPageLocks sql.NullInt32
-		var dataCompressionDesc, comment sql.NullString
 
-		if err := rows.Scan(&schemaName, &tableName, &indexName, &columnName,
+		if err := rows.Scan(&schemaName, &tableName, &objectID, &indexID, &indexName, &keyOrdinal, &columnName,
 			&spatialIndexType, &spatialIndexTypeDesc, &tessellationScheme,
-			&boundingBoxXmin, &boundingBoxYmin, &boundingBoxXmax, &boundingBoxYmax,
-			&level1Grid, &level2Grid, &level3Grid, &level4Grid, &cellsPerObject,
 			&systemTypeID, &filterDefinition, &fillFactor, &isPadded,
-			&allowRowLocks, &allowPageLocks, &dataCompressionDesc, &comment); err != nil {
+			&allowRowLocks, &allowPageLocks); err != nil {
 			return nil, err
 		}
 
@@ -792,9 +1105,11 @@ func getSpatialIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storep
 				},
 			}
 
-			// Set comment if available
-			if comment.Valid {
-				index.Comment = comment.String
+			// Join with comments in Go
+			if objectID.Valid && indexID.Valid {
+				if comment, ok := spatialCommentsMap[struct{ ObjectID, IndexID int }{int(objectID.Int32), int(indexID.Int32)}]; ok {
+					index.Comment = comment
+				}
 			}
 
 			// Determine data type from spatial_index_type_desc (more reliable)
@@ -818,38 +1133,35 @@ func getSpatialIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storep
 				index.SpatialConfig.Tessellation.Scheme = fmt.Sprintf("%s_GRID", dataType)
 			}
 
-			// Add bounding box (for GEOMETRY indexes or when explicitly provided)
-			if boundingBoxXmin.Valid && boundingBoxYmin.Valid &&
-				boundingBoxXmax.Valid && boundingBoxYmax.Valid &&
-				(boundingBoxXmin.Float64 != 0 || boundingBoxYmin.Float64 != 0 ||
-					boundingBoxXmax.Float64 != 0 || boundingBoxYmax.Float64 != 0) {
-				index.SpatialConfig.Tessellation.BoundingBox = &storepb.BoundingBox{
-					Xmin: boundingBoxXmin.Float64,
-					Ymin: boundingBoxYmin.Float64,
-					Xmax: boundingBoxXmax.Float64,
-					Ymax: boundingBoxYmax.Float64,
+			// Join with tessellation data in Go
+			if objectID.Valid && indexID.Valid {
+				tessKey := struct{ ObjectID, IndexID int }{int(objectID.Int32), int(indexID.Int32)}
+				if tessData, ok := tessellationMap[tessKey]; ok {
+					// Add bounding box (for GEOMETRY indexes or when explicitly provided)
+					if tessData.BoundingBox[0] != 0 || tessData.BoundingBox[1] != 0 ||
+						tessData.BoundingBox[2] != 0 || tessData.BoundingBox[3] != 0 {
+						index.SpatialConfig.Tessellation.BoundingBox = &storepb.BoundingBox{
+							Xmin: tessData.BoundingBox[0],
+							Ymin: tessData.BoundingBox[1],
+							Xmax: tessData.BoundingBox[2],
+							Ymax: tessData.BoundingBox[3],
+						}
+					}
+
+					// Add grid levels with proper descriptions
+					gridLevels := []*storepb.GridLevel{}
+					for i, level := range tessData.GridLevels {
+						if level != "" {
+							gridLevels = append(gridLevels, &storepb.GridLevel{Level: int32(i + 1), Density: level})
+						}
+					}
+					index.SpatialConfig.Tessellation.GridLevels = gridLevels
+
+					// Add cells per object
+					if tessData.CellsPerObject > 0 {
+						index.SpatialConfig.Tessellation.CellsPerObject = tessData.CellsPerObject
+					}
 				}
-			}
-
-			// Add grid levels with proper descriptions
-			gridLevels := []*storepb.GridLevel{}
-			if level1Grid.Valid && level1Grid.String != "" {
-				gridLevels = append(gridLevels, &storepb.GridLevel{Level: 1, Density: level1Grid.String})
-			}
-			if level2Grid.Valid && level2Grid.String != "" {
-				gridLevels = append(gridLevels, &storepb.GridLevel{Level: 2, Density: level2Grid.String})
-			}
-			if level3Grid.Valid && level3Grid.String != "" {
-				gridLevels = append(gridLevels, &storepb.GridLevel{Level: 3, Density: level3Grid.String})
-			}
-			if level4Grid.Valid && level4Grid.String != "" {
-				gridLevels = append(gridLevels, &storepb.GridLevel{Level: 4, Density: level4Grid.String})
-			}
-			index.SpatialConfig.Tessellation.GridLevels = gridLevels
-
-			// Add cells per object
-			if cellsPerObject.Valid && cellsPerObject.Int32 > 0 {
-				index.SpatialConfig.Tessellation.CellsPerObject = cellsPerObject.Int32
 			}
 
 			// Configure storage options - always create storage config
@@ -869,10 +1181,6 @@ func getSpatialIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storep
 
 			if allowPageLocks.Valid && allowPageLocks.Int32 == 1 {
 				index.SpatialConfig.Storage.AllowPageLocks = true
-			}
-
-			if dataCompressionDesc.Valid && dataCompressionDesc.String != "" && dataCompressionDesc.String != "NONE" {
-				index.SpatialConfig.Storage.DataCompression = dataCompressionDesc.String
 			}
 
 			// Configure dimensional properties
@@ -907,7 +1215,10 @@ func getSpatialIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storep
 	// Try to get additional spatial index parameters from XML showplan if available
 	// This is a best-effort attempt to retrieve MAXDOP, SORT_IN_TEMPDB, and ONLINE options
 	if len(tableIndexes) > 0 {
-		enhanceSpatialIndexesWithXMLPlan(txn, tableIndexes)
+		// Try to enhance spatial indexes with additional properties
+		if err := enhanceSpatialIndexesWithXMLPlan(txn, tableIndexes); err != nil {
+			return nil, errors.Wrap(err, "failed to enhance spatial indexes")
+		}
 	}
 
 	return tableIndexes, nil
@@ -915,45 +1226,88 @@ func getSpatialIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storep
 
 // enhanceSpatialIndexesWithXMLPlan attempts to extract additional spatial index options
 // that are not available in system tables but might be visible in execution plans
-func enhanceSpatialIndexesWithXMLPlan(txn *sql.Tx, spatialIndexes map[db.TableKey][]*storepb.IndexMetadata) {
+func enhanceSpatialIndexesWithXMLPlan(txn *sql.Tx, spatialIndexes map[db.TableKey][]*storepb.IndexMetadata) error {
 	// This is a best-effort function, so we ignore errors
+	// Collect all spatial indexes that need enhancement
+	type indexKey struct {
+		schema string
+		table  string
+		index  string
+	}
+	indexMap := make(map[indexKey]*storepb.IndexMetadata)
+
 	for tableKey, indexes := range spatialIndexes {
 		for _, index := range indexes {
 			if index.Type != "SPATIAL" || index.SpatialConfig == nil {
 				continue
 			}
+			key := indexKey{
+				schema: tableKey.Schema,
+				table:  tableKey.Table,
+				index:  index.Name,
+			}
+			indexMap[key] = index
+		}
+	}
 
-			// Try to get the index creation statement from sys.sql_modules or other sources
-			// This is SQL Server version dependent and might not always work
-			query := `
-			SELECT 
-				OBJECTPROPERTY(i.object_id, 'ExecIsAnsiNullsOn') AS ansi_nulls,
-				OBJECTPROPERTY(i.object_id, 'ExecIsQuotedIdentOn') AS quoted_ident
-			FROM sys.indexes i
-			INNER JOIN sys.objects o ON i.object_id = o.object_id
-			INNER JOIN sys.schemas s ON o.schema_id = s.schema_id
-			WHERE s.name = @schema AND o.name = @table AND i.name = @index
-			`
-			var ansiNulls, quotedIdent sql.NullInt32
-			err := txn.QueryRow(query,
-				sql.Named("schema", tableKey.Schema),
-				sql.Named("table", tableKey.Table),
-				sql.Named("index", index.Name)).Scan(&ansiNulls, &quotedIdent)
+	if len(indexMap) == 0 {
+		return nil
+	}
 
-			if err == nil && index.SpatialConfig.Storage == nil {
-				// If we don't have storage config yet, create a basic one
-				// These properties give us hints about the index creation context
-				if ansiNulls.Valid || quotedIdent.Valid {
-					if index.SpatialConfig.Storage == nil {
-						index.SpatialConfig.Storage = &storepb.StorageConfig{}
-					}
-					// These are indirect indicators but better than nothing
-					index.SpatialConfig.Storage.AllowRowLocks = true
-					index.SpatialConfig.Storage.AllowPageLocks = true
-				}
+	// Batch query all spatial index properties in a single roundtrip
+	query := `
+	SELECT 
+		s.name AS schema_name,
+		o.name AS table_name,
+		i.name AS index_name,
+		OBJECTPROPERTY(i.object_id, 'ExecIsAnsiNullsOn') AS ansi_nulls,
+		OBJECTPROPERTY(i.object_id, 'ExecIsQuotedIdentOn') AS quoted_ident
+	FROM sys.indexes i
+	INNER JOIN sys.objects o ON i.object_id = o.object_id
+	INNER JOIN sys.schemas s ON o.schema_id = s.schema_id
+	INNER JOIN sys.spatial_indexes si ON si.object_id = i.object_id AND si.index_id = i.index_id
+	WHERE i.type = 4 -- SPATIAL index type
+	`
+
+	rows, err := txn.Query(query)
+	if err != nil {
+		return errors.Wrap(err, "failed to query spatial index properties")
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var schemaName, tableName, indexName sql.NullString
+		var ansiNulls, quotedIdent sql.NullInt32
+
+		if err := rows.Scan(&schemaName, &tableName, &indexName, &ansiNulls, &quotedIdent); err != nil {
+			continue
+		}
+
+		if !schemaName.Valid || !tableName.Valid || !indexName.Valid {
+			continue
+		}
+
+		key := indexKey{
+			schema: schemaName.String,
+			table:  tableName.String,
+			index:  indexName.String,
+		}
+
+		if index, ok := indexMap[key]; ok {
+			// If we don't have storage config yet, create a basic one
+			// These properties give us hints about the index creation context
+			if (ansiNulls.Valid || quotedIdent.Valid) && index.SpatialConfig.Storage == nil {
+				index.SpatialConfig.Storage = &storepb.StorageConfig{}
+				// These are indirect indicators but better than nothing
+				index.SpatialConfig.Storage.AllowRowLocks = true
+				index.SpatialConfig.Storage.AllowPageLocks = true
 			}
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return errors.Wrap(err, "error iterating spatial index properties")
+	}
+	return nil
 }
 
 func getKeys(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.IndexMetadata, error) {
@@ -1072,18 +1426,42 @@ func getKeyAndIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb
 func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.ViewMetadata, error) {
 	viewMap := make(map[string][]*storepb.ViewMetadata)
 
+	// Get view comments separately
+	viewCommentsMap := make(map[int]string)
+	commentsQuery := `
+	SELECT 
+		ep.major_id AS object_id,
+		CAST(ep.value AS NVARCHAR(MAX)) AS comment
+	FROM sys.extended_properties ep
+	WHERE ep.minor_id = 0 AND ep.class = 1 AND ep.name = 'MS_Description'
+		AND ep.major_id IN (SELECT object_id FROM sys.views)`
+	commentsRows, err := txn.Query(commentsQuery)
+	if err == nil {
+		defer commentsRows.Close()
+		for commentsRows.Next() {
+			var objectID int
+			var comment sql.NullString
+			if err := commentsRows.Scan(&objectID, &comment); err != nil {
+				continue
+			}
+			if comment.Valid {
+				viewCommentsMap[objectID] = comment.String
+			}
+		}
+		if err := commentsRows.Err(); err != nil {
+			// Log error but continue - comments are not critical
+			return nil, errors.Wrap(err, "failed to fetch view comments")
+		}
+	}
+
 	query := `
 		SELECT
 			SCHEMA_NAME(v.schema_id) AS schema_name,
 			v.name AS view_name,
-			m.definition,
-			CAST(ep.value AS NVARCHAR(MAX)) AS comment
+			v.object_id,
+			m.definition
 		FROM sys.views v
 		INNER JOIN sys.sql_modules m ON v.object_id = m.object_id
-		LEFT JOIN sys.extended_properties ep ON ep.major_id = v.object_id 
-			AND ep.minor_id = 0 
-			AND ep.class = 1 
-			AND ep.name = 'MS_Description'
 		ORDER BY schema_name, view_name;`
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -1093,8 +1471,9 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) 
 	for rows.Next() {
 		view := &storepb.ViewMetadata{}
 		var schemaName string
-		var definition, comment sql.NullString
-		if err := rows.Scan(&schemaName, &view.Name, &definition, &comment); err != nil {
+		var objectID sql.NullInt32
+		var definition sql.NullString
+		if err := rows.Scan(&schemaName, &view.Name, &objectID, &definition); err != nil {
 			return nil, err
 		}
 
@@ -1110,8 +1489,11 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) 
 		}
 		view.Definition = viewDefinition
 
-		if comment.Valid {
-			view.Comment = comment.String
+		// Join with comments in Go
+		if objectID.Valid {
+			if comment, ok := viewCommentsMap[int(objectID.Int32)]; ok {
+				view.Comment = comment
+			}
 		}
 
 		key := db.TableKey{Schema: schemaName, Table: view.Name}
@@ -1127,8 +1509,37 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) 
 }
 
 func getTriggers(txn *sql.Tx) (map[db.TableKey][]*storepb.TriggerMetadata, map[db.TableKey][]*storepb.TriggerMetadata, error) {
+	// Get trigger comments separately
+	triggerCommentsMap := make(map[int]string)
+	commentsQuery := `
+	SELECT 
+		ep.major_id AS object_id,
+		CAST(ep.value AS NVARCHAR(MAX)) AS comment
+	FROM sys.extended_properties ep
+	WHERE ep.minor_id = 0 AND ep.class = 1 AND ep.name = 'MS_Description'
+		AND ep.major_id IN (SELECT object_id FROM sys.triggers WHERE is_disabled = 0 AND is_ms_shipped = 0)`
+	commentsRows, err := txn.Query(commentsQuery)
+	if err == nil {
+		defer commentsRows.Close()
+		for commentsRows.Next() {
+			var objectID int
+			var comment sql.NullString
+			if err := commentsRows.Scan(&objectID, &comment); err != nil {
+				continue
+			}
+			if comment.Valid {
+				triggerCommentsMap[objectID] = comment.String
+			}
+		}
+		if err := commentsRows.Err(); err != nil {
+			// Log error but continue - comments are not critical
+			return nil, nil, errors.Wrap(err, "failed to fetch trigger comments")
+		}
+	}
+
 	query := `
 SELECT
+    st.object_id,
     st.name,
     STUFF((
         SELECT ',' + te.type_desc
@@ -1145,26 +1556,12 @@ END AS timing,
 ssm.definition AS body,
 so.name AS parentName,
 ss.name AS schemaName,
-so.type AS objectType,
-CAST(ep.value AS NVARCHAR(MAX)) AS comment
-FROM
-    sys.triggers AS st
-JOIN
-    sys.sql_modules AS ssm
-ON
-    st.object_id = ssm.object_id
-JOIN
-    sys.objects AS so
-ON
-    st.parent_id = so.object_id
-JOIN
-    sys.schemas AS ss
-ON so.schema_id = ss.schema_id
-LEFT JOIN sys.extended_properties ep ON ep.major_id = st.object_id 
-	AND ep.minor_id = 0 
-	AND ep.class = 1 
-	AND ep.name = 'MS_Description'
-WHERE st.is_disabled = 0 AND st.is_ms_shipped = 0 AND st.parent_id <> 0 AND  so.type IN ('U', 'V')
+so.type AS objectType
+FROM sys.triggers AS st
+JOIN sys.sql_modules AS ssm ON st.object_id = ssm.object_id
+JOIN sys.objects AS so ON st.parent_id = so.object_id
+JOIN sys.schemas AS ss ON so.schema_id = ss.schema_id
+WHERE st.is_disabled = 0 AND st.is_ms_shipped = 0 AND st.parent_id <> 0 AND so.type IN ('U', 'V')
 ORDER BY st.name;
 `
 	tableTriggers := make(map[db.TableKey][]*storepb.TriggerMetadata)
@@ -1175,9 +1572,10 @@ ORDER BY st.name;
 	}
 	defer rows.Close()
 	for rows.Next() {
+		var objectID sql.NullInt32
 		var name, events, timing, parentName, schemaName, parentType string
-		var body, comment sql.NullString
-		if err := rows.Scan(&name, &events, &timing, &body, &parentName, &schemaName, &parentType, &comment); err != nil {
+		var body sql.NullString
+		if err := rows.Scan(&objectID, &name, &events, &timing, &body, &parentName, &schemaName, &parentType); err != nil {
 			return nil, nil, err
 		}
 		bodyString := fmt.Sprintf("/* Definition of trigger %s.%s.%s is encrypted. */", schemaName, parentName, name)
@@ -1194,8 +1592,11 @@ ORDER BY st.name;
 			Timing: timing,
 			Body:   bodyString,
 		}
-		if comment.Valid {
-			trigger.Comment = comment.String
+		// Join with comments in Go
+		if objectID.Valid {
+			if comment, ok := triggerCommentsMap[int(objectID.Int32)]; ok {
+				trigger.Comment = comment
+			}
 		}
 		key := db.TableKey{Schema: schemaName, Table: parentName}
 		m[key] = append(m[key], trigger)
