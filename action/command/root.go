@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/bytebase/bytebase/action/common"
 	"github.com/bytebase/bytebase/action/world"
 )
 
@@ -28,7 +29,7 @@ func NewRootCommand(w *world.World) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&w.ServiceAccount, "service-account", "api@service.bytebase.com", "Bytebase Service account")
 	cmd.PersistentFlags().StringVar(&w.ServiceAccountSecret, "service-account-secret", "", "Bytebase Service account secret")
 	cmd.PersistentFlags().StringVar(&w.Project, "project", "projects/hr", "Bytebase project")
-	cmd.PersistentFlags().StringSliceVar(&w.Targets, "targets", []string{"instances/test-sample-instance/databases/hr_test", "instances/prod-sample-instance/databases/hr_prod"}, "Bytebase targets")
+	cmd.PersistentFlags().StringSliceVar(&w.Targets, "targets", []string{"instances/test-sample-instance/databases/hr_test", "instances/prod-sample-instance/databases/hr_prod"}, "Bytebase targets. Either one or more databases or a single databaseGroup")
 	cmd.PersistentFlags().StringVar(&w.FilePattern, "file-pattern", "", "File pattern to glob migration files")
 
 	cmd.AddCommand(NewCheckCommand(w))
@@ -67,10 +68,21 @@ func rootPreRun(w *world.World) func(cmd *cobra.Command, args []string) error {
 		}
 
 		// Validate targets format
+		var databaseTarget, databaseGroupTarget int
 		for _, target := range w.Targets {
-			if !strings.HasPrefix(target, "instances/") || !strings.Contains(target, "/databases/") {
-				return errors.Errorf("invalid target format, must be instances/{instance}/databases/{database}: %s", target)
+			if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
+				databaseTarget++
+			} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
+				databaseGroupTarget++
+			} else {
+				return errors.Errorf("invalid target format, must be instances/{instance}/databases/{database} or projects/{project}/databaseGroups/{databaseGroup}")
 			}
+		}
+		if databaseTarget > 0 && databaseGroupTarget > 0 {
+			return errors.Errorf("targets must be either databases or databaseGroups")
+		}
+		if databaseGroupTarget > 1 {
+			return errors.Errorf("targets must be a single databaseGroup")
 		}
 
 		return nil
