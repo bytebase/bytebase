@@ -6,8 +6,10 @@
       <SpecListSection v-if="isCreating || plan.specs.length > 1" />
       <TargetListSection />
     </div>
-    <SQLCheckV1Section v-if="isCreating" />
-    <PlanCheckSection v-else />
+    <template v-if="!specHasRelease">
+      <SQLCheckV1Section v-if="isCreating" />
+      <PlanCheckSection v-else />
+    </template>
     <div class="w-full space-y-3 pt-3">
       <StatementSection />
       <Configuration />
@@ -16,8 +18,9 @@
 </template>
 
 <script setup lang="ts">
-import type { Ref } from "vue";
+import { computed, type Ref } from "vue";
 import { useCurrentProjectV1 } from "@/store";
+import { isValidReleaseName } from "@/types";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { usePlanContext } from "../../logic/context";
 import Configuration from "../Configuration";
@@ -38,5 +41,12 @@ providePlanSQLCheckContext({
   project,
   plan,
   selectedSpec: selectedSpec as Ref<Plan_Spec>,
+});
+
+const specHasRelease = computed(() => {
+  return (
+    selectedSpec.value.config.case === "changeDatabaseConfig" &&
+    isValidReleaseName(selectedSpec.value.config.value.release)
+  );
 });
 </script>
