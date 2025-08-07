@@ -2,11 +2,11 @@ package cassandra
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func init() {
@@ -25,14 +25,14 @@ func GetQuerySpan(
 ) (*base.QuerySpan, error) {
 	// Create an extractor with our context
 	extractor := newQuerySpanExtractor(keyspace, gCtx, ignoreCaseSensitive)
-	
+
 	// Extract the query span from the statement
 	return extractor.getQuerySpan(ctx, statement)
 }
 
 // querySpanExtractor handles the extraction of table and column information from CQL queries
 type querySpanExtractor struct {
-	keyspace            string  // The current keyspace (database in Cassandra terms)
+	keyspace            string // The current keyspace (database in Cassandra terms)
 	gCtx                base.GetQuerySpanContext
 	ignoreCaseSensitive bool
 }
@@ -51,7 +51,7 @@ func (e *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	// Normalize the statement
 	normalizedStmt := strings.TrimSpace(statement)
 	upperStmt := strings.ToUpper(normalizedStmt)
-	
+
 	// Check if it's a SELECT statement
 	if !strings.HasPrefix(upperStmt, "SELECT") {
 		// Not a SELECT, so no masking needed
@@ -59,19 +59,19 @@ func (e *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 			Type: base.QueryTypeUnknown,
 		}, nil
 	}
-	
+
 	// Parse the SELECT statement to extract table and columns
 	tableName, columns, err := e.parseSelectStatement(ctx, normalizedStmt)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Build the query span with the extracted information
 	span := &base.QuerySpan{
 		Type:          base.Select,
 		SourceColumns: make(base.SourceColumnSet),
 	}
-	
+
 	// Add each column to the source columns and results
 	for _, col := range columns {
 		columnResource := base.ColumnResource{
@@ -79,17 +79,17 @@ func (e *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 			Table:    tableName,
 			Column:   col,
 		}
-		
+
 		// Mark this column as being accessed
 		span.SourceColumns[columnResource] = true
-		
+
 		// Add to the result set (what will be returned to the client)
 		span.Results = append(span.Results, base.QuerySpanResult{
 			Name:          col,
 			SourceColumns: base.SourceColumnSet{columnResource: true},
 		})
 	}
-	
+
 	return span, nil
 }
 
@@ -97,25 +97,25 @@ func (e *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 func (e *querySpanExtractor) parseSelectStatement(ctx context.Context, stmt string) (string, []string, error) {
 	// Convert to uppercase for keyword searching, but keep original for extracting values
 	upperStmt := strings.ToUpper(stmt)
-	
+
 	// 1. Find where SELECT ends and FROM begins
 	selectIdx := strings.Index(upperStmt, "SELECT")
 	fromIdx := strings.Index(upperStmt, "FROM")
-	
+
 	// Validate we have both keywords in the right order
 	if selectIdx == -1 || fromIdx == -1 || fromIdx <= selectIdx {
-		return "", nil, fmt.Errorf("invalid CQL SELECT statement: missing SELECT or FROM")
+		return "", nil, errors.New("invalid CQL SELECT statement: missing SELECT or FROM")
 	}
-	
+
 	// 2. Extract the column list between SELECT and FROM
 	// Start after "SELECT" (position + 6 for the length of "SELECT")
 	columnsPart := strings.TrimSpace(stmt[selectIdx+6 : fromIdx])
-	
+
 	// 3. Extract the table name after FROM
 	// Start after "FROM" (position + 4 for the length of "FROM")
 	tablePartStart := fromIdx + 4
 	tablePartEnd := len(stmt)
-	
+
 	// Find where the table name ends (at WHERE, LIMIT, ORDER BY, or end of statement)
 	for _, keyword := range []string{"WHERE", "LIMIT", "ORDER", "ALLOW"} {
 		if idx := strings.Index(upperStmt[tablePartStart:], keyword); idx != -1 {
@@ -124,13 +124,13 @@ func (e *querySpanExtractor) parseSelectStatement(ctx context.Context, stmt stri
 			}
 		}
 	}
-	
+
 	tableName := strings.TrimSpace(stmt[tablePartStart:tablePartEnd])
-	
+
 	// Remove semicolon if present at the end
 	tableName = strings.TrimSuffix(tableName, ";")
 	tableName = strings.TrimSpace(tableName)
-	
+
 	// Handle keyspace.table format
 	if strings.Contains(tableName, ".") {
 		parts := strings.Split(tableName, ".")
@@ -139,7 +139,7 @@ func (e *querySpanExtractor) parseSelectStatement(ctx context.Context, stmt stri
 			tableName = parts[1]
 		}
 	}
-	
+
 	// Parse the columns from columnsPart
 	var columns []string
 	if strings.TrimSpace(columnsPart) == "*" {
@@ -169,7 +169,7 @@ func (e *querySpanExtractor) parseSelectStatement(ctx context.Context, stmt stri
 			columns = append(columns, col)
 		}
 	}
-	
+
 	return tableName, columns, nil
 }
 
@@ -178,14 +178,14 @@ func (e *querySpanExtractor) getTableColumns(ctx context.Context, tableName stri
 	if e.gCtx.GetDatabaseMetadataFunc == nil {
 		return nil
 	}
-	
+
 	// Get database metadata - for Cassandra, the keyspace is the "database"
 	// GetDatabaseMetadataFunc expects (instanceID, databaseName)
 	_, metadata, err := e.gCtx.GetDatabaseMetadataFunc(ctx, e.gCtx.InstanceID, e.keyspace)
 	if err != nil || metadata == nil {
 		return nil
 	}
-	
+
 	// For Cassandra, there's a single schema with empty name
 	// Try the empty schema first (which is what Cassandra uses)
 	schema := metadata.GetSchema("")
@@ -199,11 +199,11 @@ func (e *querySpanExtractor) getTableColumns(ctx context.Context, tableName stri
 			}
 		}
 	}
-	
+
 	if schema == nil {
 		return nil
 	}
-	
+
 	// Get the table from the schema
 	table := schema.GetTable(tableName)
 	if table != nil {
@@ -213,14 +213,6 @@ func (e *querySpanExtractor) getTableColumns(ctx context.Context, tableName stri
 		}
 		return columns
 	}
-	
-	return nil
-}
 
-// matchTableName compares table names considering case sensitivity
-func (e *querySpanExtractor) matchTableName(metadataName, queryName string) bool {
-	if e.ignoreCaseSensitive {
-		return strings.EqualFold(metadataName, queryName)
-	}
-	return metadataName == queryName
+	return nil
 }
