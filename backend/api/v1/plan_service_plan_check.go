@@ -68,8 +68,9 @@ func getPlanCheckRunsFromPlanSpecs(ctx context.Context, s *store.Store, plan *st
 func getPlanCheckRunsFromSpec(ctx context.Context, s *store.Store, plan *store.PlanMessage, spec *storepb.PlanConfig_Spec) ([]*store.PlanCheckRunMessage, error) {
 	switch config := spec.Config.(type) {
 	case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
+		// No checks for create database.
 	case *storepb.PlanConfig_Spec_ExportDataConfig:
-		// TODO(p0ny): implement
+		// No checks export data.
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 		// Filtered using scheduledDatabase for ChangeDatabase specs.
 		if len(config.ChangeDatabaseConfig.Targets) == 1 {
