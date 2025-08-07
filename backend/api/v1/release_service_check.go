@@ -148,6 +148,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 			revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
 				InstanceID:   &database.InstanceID,
 				DatabaseName: &database.DatabaseName,
+				Type:         common.NewP(storepb.RevisionPayload_VERSIONED),
 				Versions:     &releaseFileVersions,
 				ShowDeleted:  false,
 			})

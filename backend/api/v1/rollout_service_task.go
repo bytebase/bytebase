@@ -402,6 +402,8 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 				if maxDeclarativeVersion == nil || maxDeclarativeVersion.LessThan(v) {
 					maxDeclarativeVersion = v
 				}
+			default:
+				return nil, errors.Errorf("unexpected revision type %q", revision.Payload.Type)
 			}
 		}
 
