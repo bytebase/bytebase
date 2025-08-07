@@ -697,7 +697,7 @@ func TestActionErrorScenarios(t *testing.T) {
 		testDataDir := t.TempDir()
 
 		// Use a pattern that matches no files
-		result, err := executeActionCommand(ctx,
+		_, err = executeActionCommand(ctx,
 			"rollout",
 			"--url", ctl.rootURL,
 			"--service-account", "demo@example.com",
@@ -708,17 +708,8 @@ func TestActionErrorScenarios(t *testing.T) {
 			"--release-title", "Empty Release",
 			"--target-stage", "environments/prod",
 		)
-		a.NoError(err)
-		a.Contains(result.Stderr, "no stages in the rollout. exiting...", "Expected no stages in the rollout error in stderr")
 
-		// Should create a release with no files
-		releases, err := ctl.releaseServiceClient.ListReleases(ctx, connect.NewRequest(&v1pb.ListReleasesRequest{
-			Parent: ctl.project.Name,
-		}))
-		a.NoError(err)
-		a.Equal(1, len(releases.Msg.Releases), "Should create a release")
-		release := releases.Msg.Releases[0]
-		a.Equal("Empty Release", release.Title, "Release title should be 'Empty Release'")
-		a.Equal(0, len(release.Files), "Release files should be empty")
+		a.Error(err, "Command should fail with empty file pattern")
+		a.ErrorContains(err, "release files cannot be empty")
 	})
 }

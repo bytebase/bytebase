@@ -410,9 +410,9 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 	// users can create revisions though via API
 	// however we can warn users not to unless they know
 	// what they are doing
-	// TODO(p0ny): handle SDL case
 	if mc.version != "" {
 		if mc.task.Type == storepb.Task_DATABASE_SCHEMA_UPDATE_SDL {
+			// Declarative case
 			list, err := stores.ListRevisions(ctx, &store.FindRevisionMessage{
 				InstanceID:   &mc.database.InstanceID,
 				DatabaseName: &mc.database.DatabaseName,
@@ -438,6 +438,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 				}
 			}
 		} else {
+			// Versioned case
 			list, err := stores.ListRevisions(ctx, &store.FindRevisionMessage{
 				InstanceID:   &mc.database.InstanceID,
 				DatabaseName: &mc.database.DatabaseName,
@@ -523,7 +524,11 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 					Sheet:       "",
 					SheetSha256: "",
 					TaskRun:     mc.taskRunName,
+					Type:        storepb.RevisionPayload_VERSIONED,
 				},
+			}
+			if mc.task.Type == storepb.Task_DATABASE_SCHEMA_UPDATE_SDL {
+				r.Payload.Type = storepb.RevisionPayload_DECLARATIVE
 			}
 			if mc.sheet != nil {
 				r.Payload.Sheet = mc.sheetName
