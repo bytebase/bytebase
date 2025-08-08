@@ -2795,7 +2795,7 @@
     "files": "Files",
     "archive-this-release": "Archive this release",
     "total-files": "Total {count} files",
-    "plan-tip": "This plan is configured to use a release. Database changes will be executed using the SQL statements from the selected release files.",
+    "change-tip": "This change is configured to use a release. Database changes will be executed using the SQL statements from the selected release files.",
     "not-found": "Not found",
     "vcs-source": "VCS Source",
     "view-all-files": "View all files",

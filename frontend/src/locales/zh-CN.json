@@ -2795,7 +2795,7 @@
     "files": "文件",
     "archive-this-release": "归档此发布",
     "total-files": "共 {count} 个文件",
-    "plan-tip": "此变更计划已配置为使用发布包。数据库变更将使用所选发布包文件中的 SQL 语句执行。",
+    "change-tip": "此变更项已配置为使用发布包。数据库变更将使用所选发布包文件中的 SQL 语句执行。",
     "not-found": "未找到",
     "vcs-source": "VCS 源",
     "view-all-files": "查看全部文件",
