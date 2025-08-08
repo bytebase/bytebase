@@ -1,10 +1,11 @@
 <template>
-  <div class="flex items-center gap-2">
+  <div class="flex items-center">
     <NTabs
-      :value="selectedSpec?.id"
-      type="bar"
+      :value="selectedSpec.id"
+      type="line"
       size="small"
       class="flex-1"
+      tab-class="first:ml-4"
       @update:value="handleTabChange"
     >
       <NTab v-for="(spec, index) in plan.specs" :key="spec.id" :name="spec.id">
@@ -22,17 +23,19 @@
       </NTab>
 
       <template #suffix>
-        <NButton
-          v-if="isCreating"
-          type="default"
-          size="small"
-          @click="showAddSpecDrawer = true"
-        >
-          <template #icon>
-            <PlusIcon class="w-4 h-4" />
-          </template>
-          {{ $t("plan.add-spec") }}
-        </NButton>
+        <div class="pr-4">
+          <NButton
+            v-if="isCreating"
+            type="default"
+            size="small"
+            @click="showAddSpecDrawer = true"
+          >
+            <template #icon>
+              <PlusIcon class="w-4 h-4" />
+            </template>
+            {{ $t("plan.add-spec") }}
+          </NButton>
+        </div>
       </template>
     </NTabs>
   </div>

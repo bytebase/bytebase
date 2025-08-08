@@ -22,6 +22,7 @@
           <HeaderSection />
 
           <NTabs
+            v-if="shouldShowNavigation"
             type="line"
             :value="tabKey"
             tab-class="first:ml-4"
@@ -39,7 +40,7 @@
             <!-- Suffix slot -->
             <template #suffix>
               <div class="pr-3 flex flex-row justify-end items-center gap-4">
-                <RefreshIndicator v-if="!isCreating" />
+                <RefreshIndicator />
               </div>
             </template>
           </NTabs>
@@ -134,6 +135,10 @@ const ready = computed(() => {
   return !isInitializing.value && !!plan.value && !isLoading.value;
 });
 
+const shouldShowNavigation = computed(() => {
+  return !isCreating.value && (plan.value.issue || plan.value.rollout);
+});
+
 const route = useRoute();
 const router = useRouter();
 
@@ -206,13 +211,11 @@ const tabKey = computed(() => {
 
 const availableTabs = computed<TabKey[]>(() => {
   const tabs: TabKey[] = [TabKey.Plan];
-  if (!isCreating.value) {
-    if (plan.value.issue && enabledNewLayout.value) {
-      tabs.unshift(TabKey.Issue);
-    }
-    if (plan.value.rollout) {
-      tabs.push(TabKey.Rollout);
-    }
+  if (plan.value.issue && enabledNewLayout.value) {
+    tabs.unshift(TabKey.Issue);
+  }
+  if (plan.value.rollout) {
+    tabs.push(TabKey.Rollout);
   }
   return tabs;
 });

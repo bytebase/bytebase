@@ -327,7 +327,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	}
 
 	if storePlanConfigHasRelease(oldPlan.Config) && slices.Contains(req.UpdateMask.Paths, "specs") {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("disallowed to update the plan steps because the plan is created from a release"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("disallowed to update the plan specs because the plan is created from a release"))
 	}
 
 	ok, err = func() (bool, error) {
