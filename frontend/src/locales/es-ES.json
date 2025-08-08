@@ -2795,7 +2795,7 @@
     "files": "Archivos",
     "archive-this-release": "Archivar este comunicado",
     "total-files": "Total de {count} archivos",
-    "plan-tip": "Este plan está configurado para usar una versión. Los cambios en la base de datos se ejecutarán mediante las sentencias SQL de los archivos de la versión seleccionada.",
+    "change-tip": "Este cambio está configurado para usar una versión. Los cambios en la base de datos se ejecutarán mediante las sentencias SQL de los archivos de la versión seleccionada.",
     "not-found": "Extraviado",
     "vcs-source": "Fuente VCS",
     "view-all-files": "Ver todos los archivos",
