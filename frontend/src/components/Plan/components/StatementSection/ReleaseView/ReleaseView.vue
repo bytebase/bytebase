@@ -5,7 +5,7 @@
         <heroicons-outline:information-circle class="w-5 h-5" />
       </template>
       <div class="text-sm">
-        {{ $t("release.plan-tip") }}
+        {{ $t("release.change-tip") }}
       </div>
     </NAlert>
 
