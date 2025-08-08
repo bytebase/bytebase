@@ -2,7 +2,7 @@
   <div
     class="flex-1 flex flex-col hide-scrollbar gap-3 divide-y overflow-x-hidden"
   >
-    <div class="w-full flex flex-col px-4 gap-2">
+    <div class="w-full flex flex-col">
       <SpecListSection v-if="isCreating || plan.specs.length > 1" />
       <TargetListSection />
     </div>
