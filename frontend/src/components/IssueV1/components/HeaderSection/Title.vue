@@ -23,7 +23,6 @@ import type { CSSProperties } from "vue";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { issueServiceClientConnect, planServiceClientConnect } from "@/grpcweb";
-import { emitWindowEvent } from "@/plugins";
 import { pushNotification } from "@/store";
 import {
   IssueSchema,
@@ -114,7 +113,6 @@ const onBlur = async () => {
       style: "SUCCESS",
       title: t("common.updated"),
     });
-    emitWindowEvent("bb.issue-field-update");
   } finally {
     cleanup();
   }

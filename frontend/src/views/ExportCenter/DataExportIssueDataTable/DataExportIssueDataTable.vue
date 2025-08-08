@@ -27,7 +27,6 @@ import IssueLabelSelector, {
 } from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import IssueStatusIconWithTaskSummary from "@/components/IssueV1/components/IssueStatusIconWithTaskSummary.vue";
 import { projectOfIssue } from "@/components/IssueV1/logic";
-import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSheetV1Store } from "@/store";
 import { getTimeForPbTimestampProtoEs, type ComposedIssue } from "@/types";
@@ -154,9 +153,6 @@ const rowProps = (issue: ComposedIssue) => {
   return {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
-      emitWindowEvent("bb.issue-detail", {
-        uid: extractIssueUID(issue.name),
-      });
       const route = router.resolve({
         name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         params: {
