@@ -45,6 +45,8 @@
     "no-license": "无证书",
     "logout": "登出",
     "close": "关闭",
+    "leave": "离开",
+    "stay": "停留",
     "latest": "最新",
     "error": "错误",
     "canceled": "已取消",
@@ -1122,6 +1124,11 @@
       "applies-to-all-tasks": "适用于所有任务",
       "applies-to-some-tasks": "适用于部分任务 {count}/{total}",
       "split-into-multiple-issues-tip": "如果您想为每个任务设置不同的配置项，请拆分成多个工单。"
+    },
+    "editor": {
+      "save-changes-before-continuing": "请保存或取消更改，然后再继续",
+      "unsaved-changes": "未保存的更改",
+      "unsaved-changes-message": "有未保存的更改。您确定要离开吗？"
     },
     "pre-backup": {
       "only-some-databases-checked": "仅检查部分数据库",

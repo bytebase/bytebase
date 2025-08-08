@@ -24,7 +24,7 @@
         </template>
 
         <template v-else>
-          <template v-if="!state.isEditing">
+          <template v-if="!editorState.isEditing.value">
             <template v-if="shouldShowEditButton">
               <!-- for small size sheets, show full featured UI editing button group -->
               <NTooltip :disabled="denyEditStatementReasons.length === 0">
@@ -63,7 +63,7 @@
               {{ $t("issue.upload-sql") }}
             </SQLUploadButton>
             <NButton
-              v-if="state.isEditing"
+              v-if="editorState.isEditing.value"
               size="small"
               :disabled="!allowSaveSQL"
               @click.prevent="saveEdit"
@@ -71,7 +71,7 @@
               {{ $t("common.save") }}
             </NButton>
             <NButton
-              v-if="state.isEditing"
+              v-if="editorState.isEditing.value"
               size="small"
               quaternary
               @click.prevent="cancelEdit"
@@ -183,6 +183,7 @@ import {
   usePlanContext,
   planCheckRunListForSpec,
 } from "@/components/Plan/logic";
+import { useEditorState } from "@/components/Plan/logic/useEditorState";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { planServiceClientConnect } from "@/grpcweb";
@@ -207,7 +208,6 @@ import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import { useSpecSheet } from "../useSpecSheet";
 
 type LocalState = {
-  isEditing: boolean;
   statement: string;
   showEditorModal: boolean;
   isUploadingFile: boolean;
@@ -220,9 +220,9 @@ const { isCreating, plan, planCheckRuns, rollout, events, readonly } =
   usePlanContext();
 const selectedSpec = useSelectedSpec();
 const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
+const editorState = useEditorState();
 
 const state = reactive<LocalState>({
-  isEditing: false,
   statement: "",
   showEditorModal: false,
   isUploadingFile: false,
@@ -268,7 +268,7 @@ const isEditorReadonly = computed(() => {
   if (isCreating.value) {
     return false;
   }
-  return !state.isEditing || isSheetOversize.value || false;
+  return !editorState.isEditing.value || isSheetOversize.value || false;
 });
 
 const { sheet, sheetName, sheetReady, sheetStatement } =
@@ -276,7 +276,7 @@ const { sheet, sheetName, sheetReady, sheetStatement } =
 
 const isSheetOversize = computed(() => {
   if (isCreating.value) return false;
-  if (state.isEditing) return false;
+  if (editorState.isEditing.value) return false;
   if (!sheetReady.value) return false;
   if (!sheet.value) return false;
   return (
@@ -306,7 +306,7 @@ const shouldShowEditButton = computed(() => {
   }
   // Will show another button group as [Upload][Cancel][Save]
   // while editing
-  if (state.isEditing) {
+  if (editorState.isEditing.value) {
     return false;
   }
   if (plan.value.rollout && rollout?.value) {
@@ -350,20 +350,20 @@ const allowSaveSQL = computed((): boolean => {
 });
 
 const beginEdit = () => {
-  state.isEditing = true;
+  editorState.setEditingState(true);
 };
 
 const saveEdit = async () => {
   try {
     await updateStatement(state.statement);
   } finally {
-    state.isEditing = false;
+    editorState.setEditingState(false);
   }
 };
 
 const cancelEdit = () => {
   state.statement = sheetStatement.value;
-  state.isEditing = false;
+  editorState.setEditingState(false);
 };
 
 const showOverwriteConfirmDialog = () => {
@@ -397,7 +397,7 @@ const handleUpdateStatementAndOverwrite = async (
     return;
   }
 
-  state.isEditing = true;
+  editorState.setEditingState(true);
   state.statement = statement;
   await handleUpdateStatement(statement, filename);
 };
@@ -482,7 +482,7 @@ watch(
 watch(isCreating, (curr, prev) => {
   // Reset the edit state after creating the plan.
   if (!curr && prev) {
-    state.isEditing = false;
+    editorState.setEditingState(false);
   }
 });
 </script>

@@ -63,7 +63,12 @@ import { CirclePlayIcon, FileDiffIcon, Layers2Icon } from "lucide-vue-next";
 import { NSpin, NTab, NTabs, NTag } from "naive-ui";
 import { computed, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute, useRouter } from "vue-router";
+import {
+  useRoute,
+  useRouter,
+  onBeforeRouteLeave,
+  onBeforeRouteUpdate,
+} from "vue-router";
 import {
   providePlanContext,
   useBasePlanContext,
@@ -73,6 +78,7 @@ import PollerProvider from "@/components/Plan/PollerProvider.vue";
 import { HeaderSection } from "@/components/Plan/components";
 import RefreshIndicator from "@/components/Plan/components/RefreshIndicator.vue";
 import { provideIssueReviewContext } from "@/components/Plan/logic/issue-review";
+import { useNavigationGuard } from "@/components/Plan/logic/useNavigationGuard";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { useBodyLayoutContext } from "@/layouts/common";
 import {
@@ -141,6 +147,7 @@ const shouldShowNavigation = computed(() => {
 
 const route = useRoute();
 const router = useRouter();
+const { confirmNavigation } = useNavigationGuard();
 
 providePlanContext({
   isCreating,
@@ -333,4 +340,23 @@ const showBanner = computed(() => {
 });
 
 useTitle(documentTitle);
+
+// Set up navigation guards to check for unsaved changes
+onBeforeRouteLeave(async (_to, _from, next) => {
+  const canNavigate = await confirmNavigation();
+  if (canNavigate) {
+    next();
+  } else {
+    next(false);
+  }
+});
+
+onBeforeRouteUpdate(async (_to, _from, next) => {
+  const canNavigate = await confirmNavigation();
+  if (canNavigate) {
+    next();
+  } else {
+    next(false);
+  }
+});
 </script>

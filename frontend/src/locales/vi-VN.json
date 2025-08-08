@@ -45,6 +45,8 @@
     "no-license": "Không có giấy phép",
     "logout": "Đăng xuất",
     "close": "Đóng",
+    "leave": "Rời khỏi",
+    "stay": "Ở lại",
     "latest": "Mới nhất",
     "error": "Lỗi",
     "canceled": "Đã hủy",
@@ -1122,6 +1124,11 @@
       "applies-to-all-tasks": "Áp dụng cho tất cả các nhiệm vụ",
       "applies-to-some-tasks": "Áp dụng cho một số tác vụ {count}/{total}",
       "split-into-multiple-issues-tip": "Nếu bạn muốn cấu hình các tùy chọn khác nhau cho mỗi tác vụ, vui lòng chia thành nhiều vấn đề."
+    },
+    "editor": {
+      "save-changes-before-continuing": "Vui lòng lưu hoặc hủy thay đổi của bạn trước khi tiếp tục",
+      "unsaved-changes": "Những thay đổi chưa lưu",
+      "unsaved-changes-message": "Bạn chưa lưu thay đổi. Bạn có chắc chắn muốn thoát không?"
     },
     "pre-backup": {
       "only-some-databases-checked": "Chỉ một số cơ sở dữ liệu được kiểm tra",
