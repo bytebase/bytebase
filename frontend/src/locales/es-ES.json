@@ -45,6 +45,8 @@
     "no-license": "Sin licencia",
     "logout": "Cerrar sesión",
     "close": "Cerrar",
+    "leave": "Dejar",
+    "stay": "Permanecer",
     "latest": "Último",
     "error": "Error",
     "canceled": "Cancelado",
@@ -1122,6 +1124,11 @@
       "applies-to-all-tasks": "Se aplica a todas las tareas.",
       "applies-to-some-tasks": "Se aplica a algunas tareas {count}/{total}",
       "split-into-multiple-issues-tip": "Si desea configurar diferentes opciones para cada tarea, divídala en varios problemas."
+    },
+    "editor": {
+      "save-changes-before-continuing": "Guarde o cancele sus cambios antes de continuar.",
+      "unsaved-changes": "Cambios no guardados",
+      "unsaved-changes-message": "Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?"
     },
     "pre-backup": {
       "only-some-databases-checked": "Sólo se comprueban algunas bases de datos",

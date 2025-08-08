@@ -45,6 +45,8 @@
     "no-license": "ライセンスがありません",
     "logout": "サインアウト",
     "close": "閉じる",
+    "leave": "離れる",
+    "stay": "滞在する",
     "latest": "最新の",
     "error": "間違い",
     "canceled": "キャンセル",
@@ -1122,6 +1124,11 @@
       "applies-to-all-tasks": "すべてのタスクに適用",
       "applies-to-some-tasks": "一部のタスクに適用されます {count}/{total}",
       "split-into-multiple-issues-tip": "タスクごとに異なるオプションを設定する場合は、複数の問題に分割してください。"
+    },
+    "editor": {
+      "save-changes-before-continuing": "続行する前に変更を保存またはキャンセルしてください",
+      "unsaved-changes": "保存されていない変更",
+      "unsaved-changes-message": "保存されていない変更があります。終了してもよろしいですか?"
     },
     "pre-backup": {
       "only-some-databases-checked": "一部のデータベースのみがチェックされます",
