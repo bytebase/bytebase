@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
@@ -141,7 +142,46 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 
 		switch releaseFileType {
 		case v1pb.Release_File_DECLARATIVE:
-			// TODO(p0ny): handle declarative type
+			// TODO(p0ny): check sql
+			// TODO(p0ny): make stopChecking effective. need to refactor first.
+			revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
+				InstanceID:   &database.InstanceID,
+				DatabaseName: &database.DatabaseName,
+				Type:         common.NewP(storepb.RevisionPayload_DECLARATIVE),
+				Limit:        common.NewP(1),
+				ShowDeleted:  false,
+			})
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list revisions"))
+			}
+			if len(revisions) > 0 {
+				rv, err := model.NewVersion(revisions[0].Version)
+				if err != nil {
+					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to parse version %q", revisions[0].Version))
+				}
+				for _, file := range request.Release.Files {
+					fv, err := model.NewVersion(file.Version)
+					if err != nil {
+						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to parse version %q", file.Version))
+					}
+					if fv.LessThan(rv) {
+						checkResult := &v1pb.CheckReleaseResponse_CheckResult{
+							File:   file.Path,
+							Target: common.FormatDatabase(instance.ResourceID, database.DatabaseName),
+							Advices: []*v1pb.Advice{
+								{
+									Status:  v1pb.Advice_WARNING,
+									Code:    advisor.Internal.Int32(),
+									Title:   "Applied file has been modified",
+									Content: fmt.Sprintf("The file %q has version %q, but there is a higher version %q applied", file.Path, file.Version, revisions[0].Version),
+								},
+							},
+						}
+						response.Results = append(response.Results, checkResult)
+						warningAdviceCount++
+					}
+				}
+			}
 			return nil, connect.NewError(connect.CodeUnimplemented, errors.New("declarative release files are not supported yet"))
 		case v1pb.Release_File_VERSIONED:
 			// Batch fetch all revisions for this database
