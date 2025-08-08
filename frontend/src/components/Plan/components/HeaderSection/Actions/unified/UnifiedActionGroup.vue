@@ -4,7 +4,8 @@
     <UnifiedActionButton
       v-if="primaryAction"
       :action="primaryAction.action"
-      :disabled="primaryAction.disabled"
+      :disabled="disabled || primaryAction.disabled"
+      :disabled-tooltip="disabled ? disabledTooltip : undefined"
       @perform-action="handleAction"
     />
 
@@ -15,9 +16,16 @@
       placement="bottom-end"
       :options="dropdownOptions"
       :render-option="renderDropdownOption"
+      :disabled="disabled"
       @select="handleDropdownSelect"
     >
-      <NButton :quaternary="true" size="medium" style="--n-padding: 0 4px">
+      <NButton
+        :quaternary="true"
+        size="medium"
+        style="--n-padding: 0 4px"
+        :disabled="disabled"
+        :title="disabled ? disabledTooltip : undefined"
+      >
         <EllipsisVerticalIcon class="w-5 h-5" />
       </NButton>
     </NDropdown>
@@ -37,6 +45,8 @@ import type { ActionConfig, UnifiedAction } from "./types";
 const props = defineProps<{
   primaryAction?: ActionConfig;
   secondaryActions: ActionConfig[];
+  disabled?: boolean;
+  disabledTooltip?: string;
 }>();
 
 const emit = defineEmits<{

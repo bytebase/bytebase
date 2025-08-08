@@ -5,6 +5,8 @@
     <UnifiedActionGroup
       :primary-action="primaryAction"
       :secondary-actions="secondaryActions"
+      :disabled="actionsDisabled"
+      :disabled-tooltip="disabledTooltip"
       @perform-action="handlePerformAction"
     />
 
@@ -35,6 +37,7 @@ import { useI18n } from "vue-i18n";
 import { usePlanContext } from "@/components/Plan/logic";
 import { useIssueReviewContext } from "@/components/Plan/logic/issue-review";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
+import { useEditorState } from "@/components/Plan/logic/useEditorState";
 import {
   useCurrentUserV1,
   candidatesOfApprovalStepV1,
@@ -71,9 +74,23 @@ const { isCreating, plan, issue } = usePlanContext();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
 const planStore = usePlanStore();
+const editorState = useEditorState();
 
 // Provide issue review context when an issue exists
 const reviewContext = useIssueReviewContext();
+
+// Computed property for actions disabled state.
+const actionsDisabled = computed(() => {
+  return editorState.isEditing.value;
+});
+
+// Tooltip message for disabled state.
+const disabledTooltip = computed(() => {
+  if (editorState.isEditing.value) {
+    return t("plan.editor.save-changes-before-continuing");
+  }
+  return "";
+});
 
 // Panel visibility state
 const pendingReviewAction = ref<IssueReviewAction | undefined>(undefined);
