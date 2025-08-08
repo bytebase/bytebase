@@ -1,23 +1,31 @@
 <template>
-  <NButton
-    size="medium"
-    tag="div"
-    v-bind="actionButtonProps(action)"
-    :disabled="disabled"
-    @click="$emit('perform-action', action)"
-  >
-    {{ actionDisplayName(action) }}
-  </NButton>
+  <NTooltip :disabled="!disabledTooltip" placement="top">
+    <template #trigger>
+      <NButton
+        size="medium"
+        tag="div"
+        v-bind="actionButtonProps(action)"
+        :disabled="disabled"
+        @click="$emit('perform-action', action)"
+      >
+        {{ actionDisplayName(action) }}
+      </NButton>
+    </template>
+    <template #default>
+      {{ disabledTooltip }}
+    </template>
+  </NTooltip>
 </template>
 
 <script setup lang="ts">
-import { NButton } from "naive-ui";
+import { NButton, NTooltip } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import type { UnifiedAction } from "./types";
 
 defineProps<{
   action: UnifiedAction;
   disabled?: boolean;
+  disabledTooltip?: string;
 }>();
 
 defineEmits<{

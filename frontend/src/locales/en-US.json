@@ -45,6 +45,8 @@
     "no-license": "No license",
     "logout": "Logout",
     "close": "Close",
+    "leave": "Leave",
+    "stay": "Stay",
     "latest": "Latest",
     "error": "Error",
     "canceled": "Canceled",
@@ -1122,6 +1124,11 @@
       "applies-to-all-tasks": "Applies to all tasks",
       "applies-to-some-tasks": "Applies to some tasks {count}/{total}",
       "split-into-multiple-issues-tip": "If you want to configure different options for each task, please split into multiple issues."
+    },
+    "editor": {
+      "save-changes-before-continuing": "Please save or cancel your changes before continuing",
+      "unsaved-changes": "Unsaved Changes",
+      "unsaved-changes-message": "You have unsaved changes. Are you sure you want to leave?"
     },
     "pre-backup": {
       "only-some-databases-checked": "Only some databases are checked",
