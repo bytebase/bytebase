@@ -76,7 +76,6 @@ import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRenderMarkdown } from "@/components/MarkdownEditor";
 import { issueServiceClientConnect, planServiceClientConnect } from "@/grpcweb";
-import { emitWindowEvent } from "@/plugins";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
 import {
   IssueSchema,
@@ -161,7 +160,6 @@ const saveEdit = async () => {
       title: t("common.updated"),
     });
     events.emit("status-changed", { eager: true });
-    emitWindowEvent("bb.issue-field-update");
     state.isEditing = false;
   } finally {
     state.isUpdating = false;

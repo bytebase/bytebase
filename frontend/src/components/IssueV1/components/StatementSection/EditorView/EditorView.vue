@@ -198,7 +198,6 @@ import {
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { planServiceClientConnect } from "@/grpcweb";
-import { emitWindowEvent } from "@/plugins";
 import {
   pushNotification,
   useCurrentProjectV1,
@@ -491,8 +490,6 @@ const updateStatement = async (statement: string) => {
     style: "SUCCESS",
     title: t("common.updated"),
   });
-
-  emitWindowEvent("bb.pipeline-task-statement-update");
 };
 
 const handleStatementChange = (value: string) => {

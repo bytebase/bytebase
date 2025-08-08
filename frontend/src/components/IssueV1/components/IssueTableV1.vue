@@ -49,7 +49,6 @@ import { BBAvatar } from "@/bbkit";
 import BatchIssueActionsV1 from "@/components/IssueV1/components/BatchIssueActionsV1.vue";
 import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1.vue";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
-import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
 import {
@@ -263,9 +262,6 @@ const rowProps = (issue: ComposedIssue) => {
   return {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
-      emitWindowEvent("bb.issue-detail", {
-        uid: extractIssueUID(issue.name),
-      });
       const url = issueUrl(issue);
       if (e.ctrlKey || e.metaKey) {
         window.open(url, "_blank");

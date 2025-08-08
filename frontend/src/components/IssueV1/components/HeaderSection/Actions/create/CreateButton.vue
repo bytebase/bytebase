@@ -74,13 +74,11 @@ import {
   releaseServiceClientConnect,
   rolloutServiceClientConnect,
 } from "@/grpcweb";
-import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSheetV1Store, useCurrentProjectV1 } from "@/store";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import { CreateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
-import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueSchema, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type { Plan_ExportDataConfig } from "@/types/proto-es/v1/plan_service_pb";
@@ -95,7 +93,6 @@ import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import { databaseForTask } from "@/utils";
 import {
   defer,
-  extractIssueUID,
   extractProjectResourceName,
   extractSheetUID,
   flattenTaskV1List,
@@ -192,7 +189,6 @@ const doCreateIssue = async () => {
     });
     await rolloutServiceClientConnect.createRollout(rolloutRequest);
 
-    emitIssueCreateWindowEvent(createdIssue);
     router.replace({
       name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
@@ -287,15 +283,6 @@ const maybeFormatSQL = async (sheet: Sheet, engine: Engine) => {
   }
 
   setSheetStatement(sheet, formatted);
-};
-
-const emitIssueCreateWindowEvent = (issue: Issue) => {
-  const eventParams = {
-    uid: extractIssueUID(issue.name),
-    name: issue.name,
-    description: issue.description,
-  };
-  emitWindowEvent("bb.issue-create", eventParams);
 };
 
 const runSQLCheckForIssue = async () => {
