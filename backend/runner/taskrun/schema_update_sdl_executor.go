@@ -62,6 +62,7 @@ func (exec *SchemaDeclareExecutor) RunOnce(ctx context.Context, driverCtx contex
 
 	// sync database schema
 	// TODO(p0ny): see if we can reduce the number of syncs.
+	// TODO(p0ny): move the diff calculation into the Exec func, which is after the beginMigration. so that we can avoid the sync.
 	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
 		Type:              storepb.TaskRunLog_DATABASE_SYNC_START,
 		DatabaseSyncStart: &storepb.TaskRunLog_DatabaseSyncStart{},
@@ -128,5 +129,5 @@ func (exec *SchemaDeclareExecutor) RunOnce(ctx context.Context, driverCtx contex
 		return true, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate migration SQL, error: %v", err))
 	}
 
-	return runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, migrationSQL, task.Payload.GetSchemaVersion(), &sheetID)
+	return runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, migrationSQL, task.Payload.GetSchemaVersion(), &sheetID, nil)
 }
