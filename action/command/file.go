@@ -1,26 +1,39 @@
 package command
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/action/world"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-func getReleaseFiles(w *world.World, pattern string) ([]*v1pb.Release_File, error) {
+// getReleaseFiles returns the release files and the digest of the release.
+func getReleaseFiles(w *world.World, pattern string) ([]*v1pb.Release_File, string, error) {
 	matches, err := filepath.Glob(pattern)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
+	if len(matches) == 0 {
+		return nil, "", errors.Errorf("no files found for pattern: %s", pattern)
+	}
+
+	slices.Sort(matches)
+
+	h := sha256.New()
 
 	var files []*v1pb.Release_File
 	for _, m := range matches {
 		content, err := os.ReadFile(m)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		base := filepath.Base(m)
 		var t v1pb.Release_File_ChangeType
@@ -40,6 +53,12 @@ func getReleaseFiles(w *world.World, pattern string) ([]*v1pb.Release_File, erro
 			continue
 		}
 
+		if _, err := h.Write([]byte(m)); err != nil {
+			return nil, "", errors.Wrapf(err, "failed to write file path")
+		}
+		if _, err := h.Write(content); err != nil {
+			return nil, "", errors.Wrapf(err, "failed to write file content")
+		}
 		files = append(files, &v1pb.Release_File{
 			Path:       m,
 			Type:       v1pb.Release_File_VERSIONED,
@@ -49,7 +68,7 @@ func getReleaseFiles(w *world.World, pattern string) ([]*v1pb.Release_File, erro
 		})
 	}
 
-	return files, nil
+	return files, hex.EncodeToString(h.Sum(nil)), nil
 }
 
 var versionReg = regexp.MustCompile(`^[vV]?(\d+(\.\d+)*)`)
