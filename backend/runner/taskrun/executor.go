@@ -35,7 +35,7 @@ type Executor interface {
 	RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error)
 }
 
-type execFuncType func(context.Context, string, db.ExecuteOptions) error
+type execFuncType func(context.Context, string, db.Driver, db.ExecuteOptions) error
 
 // RunExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
 func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Executor, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error) {
@@ -339,14 +339,14 @@ func doMigrationWithFunc(
 	opts.CreateTaskRunLog = getCreateTaskRunLog(ctx, mc.taskRunUID, stores, profile)
 
 	if execFunc == nil {
-		execFunc = func(ctx context.Context, execStatement string, opts db.ExecuteOptions) error {
+		execFunc = func(ctx context.Context, execStatement string, driver db.Driver, opts db.ExecuteOptions) error {
 			if _, err := driver.Execute(ctx, execStatement, opts); err != nil {
 				return err
 			}
 			return nil
 		}
 	}
-	return executeMigrationWithFunc(ctx, driverCtx, stores, mc, statement, execFunc, opts)
+	return executeMigrationWithFunc(ctx, driverCtx, stores, mc, statement, execFunc, driver, opts)
 }
 
 func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext, skipped bool) (bool, *storepb.TaskRunResult, error) {
@@ -392,6 +392,7 @@ func executeMigrationWithFunc(
 	mc *migrateContext,
 	statement string,
 	execFunc execFuncType,
+	driver db.Driver,
 	opts db.ExecuteOptions,
 ) (skipped bool, resErr error) {
 	// Phase 1 - Dump before migration.
@@ -415,7 +416,7 @@ func executeMigrationWithFunc(
 	}()
 
 	// Phase 2 - Executing migration.
-	if err := execFunc(driverCtx, statement, opts); err != nil {
+	if err := execFunc(driverCtx, statement, driver, opts); err != nil {
 		return false, err
 	}
 

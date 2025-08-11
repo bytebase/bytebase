@@ -70,7 +70,7 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 		return true, nil, errors.Errorf("database not found")
 	}
 
-	execFunc := func(execCtx context.Context, execStatement string, _ db.ExecuteOptions) error {
+	execFunc := func(execCtx context.Context, execStatement string, driver db.Driver, _ db.ExecuteOptions) error {
 		// set buffer size to 1 to unblock the sender because there is no listener if the task is canceled.
 		migrationError := make(chan error, 1)
 
@@ -104,11 +104,6 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 		defer func() {
 			if err := func() error {
 				ctx := context.Background()
-				driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-				if err != nil {
-					return errors.Wrapf(err, "failed to get driver")
-				}
-				defer driver.Close(ctx)
 
 				// Use the backup database name of MySQL as the ghost database name.
 				ghostDBName := common.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
