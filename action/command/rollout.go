@@ -73,19 +73,33 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 			plan = planP
 			w.Logger.Info("use the provided plan", "url", fmt.Sprintf("%s/%s", client.url, plan.Name))
 		} else {
-			releaseFiles, err := getReleaseFiles(w, w.FilePattern)
+			var release string
+			releaseFiles, releaseDigest, err := getReleaseFiles(w, w.FilePattern)
 			if err != nil {
 				return errors.Wrapf(err, "failed to get release files")
 			}
-			createReleaseResponse, err := client.CreateRelease(ctx, w.Project, &v1pb.Release{
-				Title:     w.ReleaseTitle,
-				Files:     releaseFiles,
-				VcsSource: getVCSSource(w),
-			})
+			// Search release by digest so that we don't create duplicate releases.
+			searchRelease, err := client.GetReleaseByDigest(ctx, w.Project, releaseDigest)
 			if err != nil {
-				return errors.Wrapf(err, "failed to create release")
+				return errors.Wrapf(err, "failed to get release by digest")
 			}
-			w.OutputMap["release"] = createReleaseResponse.Name
+			if searchRelease != nil {
+				w.Logger.Info("found release by digest", "url", fmt.Sprintf("%s/%s", client.url, searchRelease.Name))
+				release = searchRelease.Name
+			} else {
+				createReleaseResponse, err := client.CreateRelease(ctx, w.Project, &v1pb.Release{
+					Title:     w.ReleaseTitle,
+					Files:     releaseFiles,
+					VcsSource: getVCSSource(w),
+					Digest:    releaseDigest,
+				})
+				if err != nil {
+					return errors.Wrapf(err, "failed to create release")
+				}
+				w.Logger.Info("release created", "url", fmt.Sprintf("%s/%s", client.url, createReleaseResponse.Name))
+				release = createReleaseResponse.Name
+			}
+			w.OutputMap["release"] = release
 
 			planCreated, err := client.CreatePlan(ctx, w.Project, &v1pb.Plan{
 				Title: w.ReleaseTitle,
@@ -95,7 +109,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 						Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 							ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 								Targets: w.Targets,
-								Release: createReleaseResponse.Name,
+								Release: release,
 							},
 						},
 					},
