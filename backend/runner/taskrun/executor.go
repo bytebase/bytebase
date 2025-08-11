@@ -35,7 +35,7 @@ type Executor interface {
 	RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error)
 }
 
-type execFuncType func(context.Context, string) error
+type execFuncType func(context.Context, string, db.ExecuteOptions) error
 
 // RunExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
 func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Executor, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error) {
@@ -308,7 +308,7 @@ func doMigrationWithFunc(
 	opts.CreateTaskRunLog = getCreateTaskRunLog(ctx, mc.taskRunUID, stores, profile)
 
 	if execFunc == nil {
-		execFunc = func(ctx context.Context, execStatement string) error {
+		execFunc = func(ctx context.Context, execStatement string, opts db.ExecuteOptions) error {
 			if _, err := driver.Execute(ctx, execStatement, opts); err != nil {
 				return err
 			}
@@ -353,7 +353,21 @@ func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext,
 	}, nil
 }
 
-func runMigrationWithFunc(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, statement string, schemaVersion string, sheetID *int, execFunc execFuncType) (terminated bool, result *storepb.TaskRunResult, err error) {
+func runMigrationWithFunc(
+	ctx context.Context,
+	driverCtx context.Context,
+	store *store.Store,
+	dbFactory *dbfactory.DBFactory,
+	stateCfg *state.State,
+	syncer *schemasync.Syncer,
+	profile *config.Profile,
+	task *store.TaskMessage,
+	taskRunUID int,
+	statement string,
+	schemaVersion string,
+	sheetID *int,
+	execFunc execFuncType,
+) (terminated bool, result *storepb.TaskRunResult, err error) {
 	mc, err := getMigrationInfo(ctx, store, profile, syncer, task, schemaVersion, sheetID, taskRunUID, dbFactory)
 	if err != nil {
 		return true, nil, err
@@ -371,7 +385,15 @@ func runMigration(ctx context.Context, driverCtx context.Context, store *store.S
 }
 
 // executeMigrationWithFunc executes the migration with custom migration function.
-func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, mc *migrateContext, statement string, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions) (skipped bool, resErr error) {
+func executeMigrationWithFunc(
+	ctx context.Context,
+	driverCtx context.Context,
+	s *store.Store,
+	mc *migrateContext,
+	statement string,
+	execFunc execFuncType,
+	opts db.ExecuteOptions,
+) (skipped bool, resErr error) {
 	// Phase 1 - Dump before migration.
 	// Check if versioned is already applied.
 	skipExecution, err := beginMigration(ctx, s, mc, opts)
@@ -393,7 +415,7 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	}()
 
 	// Phase 2 - Executing migration.
-	if err := execFunc(driverCtx, statement); err != nil {
+	if err := execFunc(driverCtx, statement, opts); err != nil {
 		return false, err
 	}
 

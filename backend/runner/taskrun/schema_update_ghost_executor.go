@@ -70,7 +70,7 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 		return true, nil, errors.Errorf("database not found")
 	}
 
-	execFunc := func(execCtx context.Context, execStatement string) error {
+	execFunc := func(execCtx context.Context, execStatement string, _ db.ExecuteOptions) error {
 		// set buffer size to 1 to unblock the sender because there is no listener if the task is canceled.
 		migrationError := make(chan error, 1)
 
