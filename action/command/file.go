@@ -9,9 +9,10 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/action/world"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/pkg/errors"
 )
 
 // getReleaseFiles returns the release files and the digest of the release.

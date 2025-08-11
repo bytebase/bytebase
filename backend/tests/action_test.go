@@ -1001,6 +1001,6 @@ func TestActionErrorScenarios(t *testing.T) {
 		)
 
 		a.Error(err, "Command should fail with empty file pattern")
-		a.ErrorContains(err, "release files cannot be empty")
+		a.ErrorContains(err, "no files found for pattern")
 	})
 }
