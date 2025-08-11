@@ -416,7 +416,7 @@ func TestGetOpenIDConfigration(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.issuer, func(t *testing.T) {
-			response, err := GetOpenIDConfiguration(test.issuer)
+			response, err := GetOpenIDConfiguration(test.issuer, false)
 			require.NoError(t, err)
 			assert.Equal(t, test.response, response)
 		})

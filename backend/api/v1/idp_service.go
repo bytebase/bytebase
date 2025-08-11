@@ -434,7 +434,7 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 		}
 
 		// Fetch openid configuration to get the auth endpoint.
-		openidConfiguration, err := oidc.GetOpenIDConfiguration(v.Issuer)
+		openidConfiguration, err := oidc.GetOpenIDConfiguration(v.Issuer, v.SkipTlsVerify)
 		if err != nil {
 			// Log the error but continue as it's not critical.
 			slog.Warn("failed to fetch openid configuration", slog.String("issuer", v.Issuer), log.BBError(err))
