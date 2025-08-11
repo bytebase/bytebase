@@ -106,6 +106,11 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("release files cannot be empty"))
 	}
 
+	risks, err := s.store.ListRisks(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list risks"))
+	}
+
 	releaseFileType := request.Release.Files[0].Type
 	releaseFileVersions := make([]string, 0, len(request.Release.Files))
 	for _, file := range request.Release.Files {
@@ -134,10 +139,6 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 		catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, engine, store.IsObjectCaseSensitive(instance), nil)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create catalog"))
-		}
-		risks, err := s.store.ListRisks(ctx)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list risks"))
 		}
 
 		switch releaseFileType {
