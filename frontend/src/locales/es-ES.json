@@ -605,7 +605,8 @@
           "rows": {
             "self": "Máximo de filas de resultados de SQL",
             "rows": "Filas",
-            "description": "Limite las filas de salida en el resultado de la consulta SQL, el valor <= 0 significa que no hay límite."
+            "description": "Limite las filas de salida en el resultado de la consulta SQL, el valor <= 0 significa que no hay límite.",
+            "limit-warning": "Exportación máxima de {count} filas debido a la restricción de la consulta"
           }
         },
         "query-data-policy": {
