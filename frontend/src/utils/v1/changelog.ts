@@ -117,6 +117,8 @@ export const getChangelogChangeType = (type: Changelog_Type) => {
       return "DDL";
     case Changelog_Type.DATA:
       return "DML";
+    case Changelog_Type.BASELINE:
+      return t("common.baseline");
     default:
       return "-";
   }
