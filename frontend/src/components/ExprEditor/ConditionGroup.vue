@@ -64,12 +64,14 @@
       <div class="flex-1 space-y-1 overflow-x-hidden">
         <ConditionGroup
           v-if="isConditionGroupExpr(operand)"
+          :key="i"
           :expr="operand"
           @remove="removeConditionGroup(operand)"
           @update="$emit('update')"
         />
         <Condition
           v-if="isConditionExpr(operand)"
+          :key="`${i}.${operand.args[0]}.${operand.operator}`"
           :expr="operand"
           @remove="removeCondition(operand)"
           @update="$emit('update')"
