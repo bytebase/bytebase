@@ -4,6 +4,18 @@
       <StageSection />
       <TaskListSection />
       <div class="w-full py-2 px-2 sm:px-4">
+        <BBAttention
+          v-if="settingV1Store.maximumResultRows !== Number.MAX_VALUE"
+          class="w-full mb-2"
+          :type="'warning'"
+        >
+          {{
+            $t(
+              "settings.general.workspace.maximum-sql-result.rows.limit-warning",
+              { count: settingV1Store.maximumResultRows }
+            )
+          }}
+        </BBAttention>
         <ExportOptionSection />
       </div>
     </template>
@@ -20,15 +32,17 @@
 <script lang="ts" setup>
 import { NEmpty } from "naive-ui";
 import { computed } from "vue";
+import { BBAttention } from "@/bbkit";
 import { useIssueContext } from "@/components/IssueV1/logic";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
-import { useCurrentProjectV1 } from "@/store";
+import { useCurrentProjectV1, useSettingV1Store } from "@/store";
 import { hasProjectPermissionV2 } from "@/utils";
 import { StageSection, TaskListSection } from "../../components";
 import ExportOptionSection from "./ExportOptionSection";
 
 const { isCreating, issue } = useIssueContext();
 const { project } = useCurrentProjectV1();
+const settingV1Store = useSettingV1Store();
 
 // For database data export issue, the stageList should always be only 1 stage.
 const stageList = computed(() => {

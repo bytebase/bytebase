@@ -20,7 +20,7 @@
           :value="value"
           :show-button="false"
           :min="0"
-          :max="100000"
+          :max="rowCountOptions[rowCountOptions.length - 1]"
           style="width: 5rem"
           @update:value="handleInput"
         />
@@ -35,6 +35,7 @@ import { first, last } from "lodash-es";
 import { NButton, NInputNumber, NPopselect, type SelectOption } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { useSettingV1Store } from "@/store";
 import { minmax } from "@/utils";
 
 defineProps<{
@@ -46,10 +47,23 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const rowCountOptions = [1, 100, 500, 1000, 5000, 10000, 100000];
+const settingV1Store = useSettingV1Store();
+
+const rowCountOptions = computed(() => {
+  const list = [1, 100, 500, 1000, 5000, 10000, 100000].filter(
+    (num) => num <= settingV1Store.maximumResultRows
+  );
+  if (
+    settingV1Store.maximumResultRows !== Number.MAX_VALUE &&
+    !list.includes(settingV1Store.maximumResultRows)
+  ) {
+    list.push(settingV1Store.maximumResultRows);
+  }
+  return list;
+});
 
 const options = computed((): SelectOption[] => {
-  return rowCountOptions.map((n) => ({
+  return rowCountOptions.value.map((n) => ({
     label: t("common.rows.n-rows", { n }),
     value: n,
   }));
@@ -58,8 +72,8 @@ const options = computed((): SelectOption[] => {
 const handleInput = (value: number | null) => {
   const normalizedValue = minmax(
     value ?? 0,
-    first(rowCountOptions)!,
-    last(rowCountOptions)!
+    first(rowCountOptions.value)!,
+    last(rowCountOptions.value)!
   );
   emit("update:value", normalizedValue);
 };
