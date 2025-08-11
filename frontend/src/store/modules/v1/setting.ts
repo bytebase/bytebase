@@ -32,6 +32,19 @@ export const useSettingV1Store = defineStore("setting_v1", {
     settingMapByName: new Map(),
   }),
   getters: {
+    maximumResultRows(state): number {
+      const setting = state.settingMapByName.get(
+        `${settingNamePrefix}${Setting_SettingName[Setting_SettingName.SQL_RESULT_SIZE_LIMIT]}`
+      );
+      if (setting?.value?.value?.case === "sqlQueryRestrictionSetting") {
+        const limit = setting.value.value.value.maximumResultRows ?? -1;
+        if (limit <= 0) {
+          return Number.MAX_VALUE;
+        }
+        return limit;
+      }
+      return Number.MAX_VALUE;
+    },
     workspaceProfileSetting(state): WorkspaceProfileSetting | undefined {
       const setting = state.settingMapByName.get(
         `${settingNamePrefix}${Setting_SettingName[Setting_SettingName.WORKSPACE_PROFILE]}`

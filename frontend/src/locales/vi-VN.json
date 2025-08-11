@@ -605,7 +605,8 @@
           "rows": {
             "self": "Số lượng hàng kết quả SQL tối đa",
             "rows": "Hàng",
-            "description": "Giới hạn số hàng đầu ra trong kết quả truy vấn SQL, giá trị <= 0 nghĩa là không giới hạn."
+            "description": "Giới hạn số hàng đầu ra trong kết quả truy vấn SQL, giá trị <= 0 nghĩa là không giới hạn.",
+            "limit-warning": "Xuất tối đa {count} hàng do hạn chế truy vấn"
           }
         },
         "query-data-policy": {

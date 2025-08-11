@@ -605,7 +605,8 @@
           "rows": {
             "self": "Maximum SQL result rows",
             "rows": "Rows",
-            "description": "Limit the output rows in SQL query result, the value <= 0 means no limit."
+            "description": "Limit the output rows in SQL query result, the value <= 0 means no limit.",
+            "limit-warning": "Maximum export {count} rows due to the query restriction"
           }
         },
         "query-data-policy": {

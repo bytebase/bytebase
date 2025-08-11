@@ -605,7 +605,8 @@
           "rows": {
             "self": "最大SQL結果行数",
             "rows": "行",
-            "description": "SQL クエリ結果の出力行を制限します。値 <= 0 は制限がないことを意味します。"
+            "description": "SQL クエリ結果の出力行を制限します。値 <= 0 は制限がないことを意味します。",
+            "limit-warning": "クエリ制限により、最大エクスポート行数は {count} 行です"
           }
         },
         "query-data-policy": {
