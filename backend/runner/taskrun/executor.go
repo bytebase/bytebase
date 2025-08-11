@@ -35,7 +35,7 @@ type Executor interface {
 	RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error)
 }
 
-type execFuncType func(context.Context, string, db.ExecuteOptions) error
+type execFuncType func(context.Context, string, db.Driver, db.ExecuteOptions) error
 
 // RunExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
 func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Executor, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error) {
@@ -89,6 +89,61 @@ type migrateContext struct {
 	changelog int64
 
 	changeHistoryPayload *storepb.InstanceChangeHistoryPayload
+}
+
+func getCreateTaskRunLog(ctx context.Context, taskRunUID int, s *store.Store, profile *config.Profile) func(t time.Time, e *storepb.TaskRunLog) error {
+	return func(t time.Time, e *storepb.TaskRunLog) error {
+		return s.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), profile.DeployID, e)
+	}
+}
+
+func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage) (bool, error) {
+	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
+		return false, nil
+	}
+
+	// Check the project setting to see if we should use the database owner.
+	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get project")
+	}
+
+	if project.Setting == nil {
+		return false, nil
+	}
+
+	return project.Setting.PostgresDatabaseTenantMode, nil
+}
+
+func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, statement string, schemaVersion string, sheetID *int) (terminated bool, result *storepb.TaskRunResult, err error) {
+	return runMigrationWithFunc(ctx, driverCtx, store, dbFactory, stateCfg, syncer, profile, task, taskRunUID, statement, schemaVersion, sheetID, nil /* default */)
+}
+
+func runMigrationWithFunc(
+	ctx context.Context,
+	driverCtx context.Context,
+	store *store.Store,
+	dbFactory *dbfactory.DBFactory,
+	stateCfg *state.State,
+	syncer *schemasync.Syncer,
+	profile *config.Profile,
+	task *store.TaskMessage,
+	taskRunUID int,
+	statement string,
+	schemaVersion string,
+	sheetID *int,
+	execFunc execFuncType,
+) (terminated bool, result *storepb.TaskRunResult, err error) {
+	mc, err := getMigrationInfo(ctx, store, profile, syncer, task, schemaVersion, sheetID, taskRunUID, dbFactory)
+	if err != nil {
+		return true, nil, err
+	}
+
+	skipped, err := doMigrationWithFunc(ctx, driverCtx, store, stateCfg, profile, statement, mc, execFunc)
+	if err != nil {
+		return true, nil, err
+	}
+	return postMigration(ctx, store, mc, skipped)
 }
 
 func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, schemaVersion string, sheetID *int, taskRunUID int, dbFactory *dbfactory.DBFactory) (*migrateContext, error) {
@@ -232,30 +287,6 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 	return mc, nil
 }
 
-func getCreateTaskRunLog(ctx context.Context, taskRunUID int, s *store.Store, profile *config.Profile) func(t time.Time, e *storepb.TaskRunLog) error {
-	return func(t time.Time, e *storepb.TaskRunLog) error {
-		return s.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), profile.DeployID, e)
-	}
-}
-
-func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage) (bool, error) {
-	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
-		return false, nil
-	}
-
-	// Check the project setting to see if we should use the database owner.
-	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get project")
-	}
-
-	if project.Setting == nil {
-		return false, nil
-	}
-
-	return project.Setting.PostgresDatabaseTenantMode, nil
-}
-
 func doMigrationWithFunc(
 	ctx context.Context,
 	driverCtx context.Context,
@@ -308,14 +339,14 @@ func doMigrationWithFunc(
 	opts.CreateTaskRunLog = getCreateTaskRunLog(ctx, mc.taskRunUID, stores, profile)
 
 	if execFunc == nil {
-		execFunc = func(ctx context.Context, execStatement string, opts db.ExecuteOptions) error {
+		execFunc = func(ctx context.Context, execStatement string, driver db.Driver, opts db.ExecuteOptions) error {
 			if _, err := driver.Execute(ctx, execStatement, opts); err != nil {
 				return err
 			}
 			return nil
 		}
 	}
-	return executeMigrationWithFunc(ctx, driverCtx, stores, mc, statement, execFunc, opts)
+	return executeMigrationWithFunc(ctx, driverCtx, stores, mc, statement, execFunc, driver, opts)
 }
 
 func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext, skipped bool) (bool, *storepb.TaskRunResult, error) {
@@ -353,37 +384,6 @@ func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext,
 	}, nil
 }
 
-func runMigrationWithFunc(
-	ctx context.Context,
-	driverCtx context.Context,
-	store *store.Store,
-	dbFactory *dbfactory.DBFactory,
-	stateCfg *state.State,
-	syncer *schemasync.Syncer,
-	profile *config.Profile,
-	task *store.TaskMessage,
-	taskRunUID int,
-	statement string,
-	schemaVersion string,
-	sheetID *int,
-	execFunc execFuncType,
-) (terminated bool, result *storepb.TaskRunResult, err error) {
-	mc, err := getMigrationInfo(ctx, store, profile, syncer, task, schemaVersion, sheetID, taskRunUID, dbFactory)
-	if err != nil {
-		return true, nil, err
-	}
-
-	skipped, err := doMigrationWithFunc(ctx, driverCtx, store, stateCfg, profile, statement, mc, execFunc)
-	if err != nil {
-		return true, nil, err
-	}
-	return postMigration(ctx, store, mc, skipped)
-}
-
-func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, statement string, schemaVersion string, sheetID *int) (terminated bool, result *storepb.TaskRunResult, err error) {
-	return runMigrationWithFunc(ctx, driverCtx, store, dbFactory, stateCfg, syncer, profile, task, taskRunUID, statement, schemaVersion, sheetID, nil /* default */)
-}
-
 // executeMigrationWithFunc executes the migration with custom migration function.
 func executeMigrationWithFunc(
 	ctx context.Context,
@@ -392,6 +392,7 @@ func executeMigrationWithFunc(
 	mc *migrateContext,
 	statement string,
 	execFunc execFuncType,
+	driver db.Driver,
 	opts db.ExecuteOptions,
 ) (skipped bool, resErr error) {
 	// Phase 1 - Dump before migration.
@@ -415,7 +416,7 @@ func executeMigrationWithFunc(
 	}()
 
 	// Phase 2 - Executing migration.
-	if err := execFunc(driverCtx, statement, opts); err != nil {
+	if err := execFunc(driverCtx, statement, driver, opts); err != nil {
 		return false, err
 	}
 
