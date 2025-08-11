@@ -35,7 +35,7 @@ type Executor interface {
 	RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error)
 }
 
-type execFuncType func(context.Context, string) error
+type execFuncType func(context.Context, string, db.ExecuteOptions) error
 
 // RunExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
 func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Executor, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error) {
@@ -308,7 +308,7 @@ func doMigrationWithFunc(
 	opts.CreateTaskRunLog = getCreateTaskRunLog(ctx, mc.taskRunUID, stores, profile)
 
 	if execFunc == nil {
-		execFunc = func(ctx context.Context, execStatement string) error {
+		execFunc = func(ctx context.Context, execStatement string, opts db.ExecuteOptions) error {
 			if _, err := driver.Execute(ctx, execStatement, opts); err != nil {
 				return err
 			}
@@ -415,7 +415,7 @@ func executeMigrationWithFunc(
 	}()
 
 	// Phase 2 - Executing migration.
-	if err := execFunc(driverCtx, statement); err != nil {
+	if err := execFunc(driverCtx, statement, opts); err != nil {
 		return false, err
 	}
 
