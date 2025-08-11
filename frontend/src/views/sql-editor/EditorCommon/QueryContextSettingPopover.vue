@@ -139,7 +139,6 @@ import {
   DataSourceQueryPolicy_Restriction,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
-import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
 import { getValidDataSourceByPolicy, readableDataSourceType } from "@/utils";
 import { getAdminDataSourceRestrictionOfDatabase } from "@/utils";
@@ -273,17 +272,7 @@ watch(
 );
 
 const maximumResultRows = computed(() => {
-  const setting = settingV1Store.getSettingByName(
-    Setting_SettingName.SQL_RESULT_SIZE_LIMIT
-  );
-  if (setting?.value?.value?.case === "sqlQueryRestrictionSetting") {
-    const limit = setting.value.value.value.maximumResultRows ?? -1;
-    if (limit <= 0) {
-      return Number.MAX_VALUE;
-    }
-    return limit;
-  }
-  return Number.MAX_VALUE;
+  return settingV1Store.maximumResultRows;
 });
 
 watchEffect(() => {
