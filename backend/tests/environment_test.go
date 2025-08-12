@@ -35,7 +35,7 @@ func TestDatabaseEnvironment(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "test",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: prodEnvironment.Name,
+			Environment: stringPtr(prodEnvironment.Name),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Id: "admin-ds", Host: instanceDir}},
 		},
@@ -77,7 +77,7 @@ func TestDatabaseEnvironment(t *testing.T) {
 	db2Resp, err = ctl.databaseServiceClient.UpdateDatabase(ctx, connect.NewRequest(&v1pb.UpdateDatabaseRequest{
 		Database: &v1pb.Database{
 			Name:        db2.Name,
-			Environment: testEnvironment.Name,
+			Environment: stringPtr(testEnvironment.Name),
 		},
 		UpdateMask: &fieldmaskpb.FieldMask{
 			Paths: []string{"environment"},
@@ -92,7 +92,7 @@ func TestDatabaseEnvironment(t *testing.T) {
 	db2Resp, err = ctl.databaseServiceClient.UpdateDatabase(ctx, connect.NewRequest(&v1pb.UpdateDatabaseRequest{
 		Database: &v1pb.Database{
 			Name:        db2.Name,
-			Environment: "",
+			Environment: stringPtr(""),
 		},
 		UpdateMask: &fieldmaskpb.FieldMask{
 			Paths: []string{"environment"},
