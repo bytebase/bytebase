@@ -323,6 +323,8 @@
     - [TaskRunLog](#bytebase-store-TaskRunLog)
     - [TaskRunLog.CommandExecute](#bytebase-store-TaskRunLog-CommandExecute)
     - [TaskRunLog.CommandResponse](#bytebase-store-TaskRunLog-CommandResponse)
+    - [TaskRunLog.ComputeDiffEnd](#bytebase-store-TaskRunLog-ComputeDiffEnd)
+    - [TaskRunLog.ComputeDiffStart](#bytebase-store-TaskRunLog-ComputeDiffStart)
     - [TaskRunLog.DatabaseSyncEnd](#bytebase-store-TaskRunLog-DatabaseSyncEnd)
     - [TaskRunLog.DatabaseSyncStart](#bytebase-store-TaskRunLog-DatabaseSyncStart)
     - [TaskRunLog.PriorBackupEnd](#bytebase-store-TaskRunLog-PriorBackupEnd)
@@ -5057,6 +5059,8 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | prior_backup_start | [TaskRunLog.PriorBackupStart](#bytebase-store-TaskRunLog-PriorBackupStart) |  |  |
 | prior_backup_end | [TaskRunLog.PriorBackupEnd](#bytebase-store-TaskRunLog-PriorBackupEnd) |  |  |
 | retry_info | [TaskRunLog.RetryInfo](#bytebase-store-TaskRunLog-RetryInfo) |  |  |
+| compute_diff_start | [TaskRunLog.ComputeDiffStart](#bytebase-store-TaskRunLog-ComputeDiffStart) |  |  |
+| compute_diff_end | [TaskRunLog.ComputeDiffEnd](#bytebase-store-TaskRunLog-ComputeDiffEnd) |  |  |
 
 
 
@@ -5071,7 +5075,8 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| command_indexes | [int32](#int32) | repeated | The indexes of the executed commands. |
+| command_indexes | [int32](#int32) | repeated | Either `command_indexes` or `statement` is set. The indexes of the executed commands. |
+| statement | [string](#string) |  | The statement to be executed. |
 
 
 
@@ -5086,10 +5091,35 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| command_indexes | [int32](#int32) | repeated | The indexes of the executed commands. |
+| command_indexes | [int32](#int32) | repeated | **Deprecated.** The indexes of the executed commands. |
 | error | [string](#string) |  |  |
 | affected_rows | [int32](#int32) |  |  |
 | all_affected_rows | [int32](#int32) | repeated | `all_affected_rows` is the affected rows of each command. `all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. |
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunLog-ComputeDiffEnd"></a>
+
+### TaskRunLog.ComputeDiffEnd
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunLog-ComputeDiffStart"></a>
+
+### TaskRunLog.ComputeDiffStart
+
 
 
 
@@ -5268,6 +5298,8 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | PRIOR_BACKUP_START | 9 |  |
 | PRIOR_BACKUP_END | 10 |  |
 | RETRY_INFO | 11 |  |
+| COMPUTE_DIFF_START | 12 |  |
+| COMPUTE_DIFF_END | 13 |  |
 
 
  
