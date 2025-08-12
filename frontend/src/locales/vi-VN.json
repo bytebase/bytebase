@@ -1038,7 +1038,7 @@
           "prior-backup": "Sao lưu trước",
           "retry-info": "Thông tin thử lại"
         },
-        "estimated-affected-rows-n": "Số dòng bị ảnh hưởng ước tính: {n}",
+        "affected-rows-n": "Số dòng bị ảnh hưởng: {n}",
         "prior-backup-tables": "Bảng sao lưu trước",
         "status-update": {
           "waiting": "Sẵn sàng để thực thi",

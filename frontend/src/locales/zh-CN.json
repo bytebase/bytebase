@@ -1038,7 +1038,7 @@
           "prior-backup": "数据预备份",
           "retry-info": "重试信息"
         },
-        "estimated-affected-rows-n": "预估影响行数：{n}",
+        "affected-rows-n": "影响行数：{n}",
         "prior-backup-tables": "数据预备份相关的表",
         "status-update": {
           "waiting": "准备就绪，等待执行",

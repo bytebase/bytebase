@@ -1038,7 +1038,7 @@
           "prior-backup": "Copia de seguridad previa",
           "retry-info": "Reintento de información"
         },
-        "estimated-affected-rows-n": "Filas afectadas estimadas: {n}",
+        "affected-rows-n": "Filas afectadas: {n}",
         "prior-backup-tables": "Tablas de respaldo anteriores",
         "status-update": {
           "waiting": "Listo para ser ejecutado",
