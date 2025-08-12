@@ -1,13 +1,17 @@
 <template>
   <component
-    :is="link ? 'router-link' : tag"
+    :is="isLink ? 'router-link' : tag"
     v-bind="bindings"
     class="inline-flex items-center gap-x-1"
-    :class="[link && !plain && 'normal-link', link && 'hover:underline']"
+    :class="[isLink && !plain && 'normal-link', isLink && 'hover:underline']"
   >
     <span class="line-clamp-1 select-none" :class="textClass">
       {{ prefix }}
+      <span v-if="isUnknown" class="text-gray-400 italic">
+        NULL ENVIRONMENT
+      </span>
       <HighlightLabelText
+        v-else
         :text="environmentV1Name(environment)"
         :keyword="keyword"
       />
@@ -27,6 +31,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useRouter } from "vue-router";
+import { UNKNOWN_ENVIRONMENT_NAME } from "@/types";
 import type { Environment } from "@/types/v1/environment";
 import type { VueClass } from "@/utils";
 import { autoEnvironmentRoute, environmentV1Name } from "@/utils";
@@ -63,8 +68,14 @@ const props = withDefaults(
 
 const router = useRouter();
 
+const isUnknown = computed(
+  () => props.environment.name === UNKNOWN_ENVIRONMENT_NAME
+);
+
+const isLink = computed(() => props.link && !isUnknown.value);
+
 const bindings = computed(() => {
-  if (props.link) {
+  if (isLink.value) {
     return {
       to: {
         ...autoEnvironmentRoute(router, props.environment),

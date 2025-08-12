@@ -294,7 +294,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	metadata.Roles = instanceMeta.Metadata.Roles
 
 	updateInstance := &store.UpdateInstanceMessage{
-		ResourceID: instance.ResourceID,
+		ResourceID: &instance.ResourceID,
 		Metadata:   metadata,
 	}
 	if instanceMeta.Version != instance.Metadata.GetVersion() {

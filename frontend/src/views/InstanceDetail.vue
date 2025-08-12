@@ -1,6 +1,13 @@
 <template>
   <div class="space-y-2 px-6" v-bind="$attrs">
     <ArchiveBanner v-if="instance.state === State.DELETED" />
+    <BBAttention
+      v-if="!instance.environment"
+      class="w-full mb-4"
+      :type="'warning'"
+    >
+      {{ $t("instance.no-environment") }}
+    </BBAttention>
 
     <div v-if="!embedded" class="flex items-center justify-between">
       <div class="flex items-center gap-x-2">
@@ -76,9 +83,7 @@
     :title="$t('quick-action.create-db')"
   >
     <CreateDatabasePrepPanel
-      :environment-name="
-        environment ? formatEnvironmentName(environment.id) : undefined
-      "
+      :environment-name="formatEnvironmentName(environment.id)"
       :instance-name="instance.name"
       @dismiss="state.showCreateDatabaseModal = false"
     />
@@ -93,6 +98,7 @@ import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
+import { BBAttention } from "@/bbkit";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";

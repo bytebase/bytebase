@@ -25,7 +25,9 @@ type InstanceMessage struct {
 
 // UpdateInstanceMessage is the message for updating an instance.
 type UpdateInstanceMessage struct {
-	ResourceID string
+	// allow batch update
+	ResourceID          *string
+	FindByEnvironmentID *string
 
 	Deleted       *bool
 	EnvironmentID *string
@@ -169,7 +171,19 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		}
 		set, args = append(set, fmt.Sprintf("metadata = $%d", len(args)+1)), append(args, metadata)
 	}
-	where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, patch.ResourceID)
+	if v := patch.ResourceID; v != nil {
+		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.FindByEnvironmentID; v != nil {
+		where, args = append(where, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
+	}
+
+	if len(set) == 0 {
+		return nil, errors.New("no update field specified")
+	}
+	if len(where) == 0 {
+		return nil, errors.Errorf("empty where")
+	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
@@ -191,8 +205,12 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		return nil, err
 	}
 
-	s.instanceCache.Remove(getInstanceCacheKey(patch.ResourceID))
-	return s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &patch.ResourceID})
+	if v := patch.ResourceID; v != nil {
+		s.instanceCache.Remove(getInstanceCacheKey(*v))
+		return s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: v})
+	}
+
+	return nil, nil
 }
 
 func (s *Store) listInstanceImplV2(ctx context.Context, txn *sql.Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {

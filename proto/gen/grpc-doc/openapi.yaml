@@ -930,6 +930,7 @@ paths:
                      resource_id.matches("sample")
                      state == "DELETED"
                      environment == "environments/test"
+                     environment == "" (find instances which environment is not set)
                      engine == "MYSQL"
                      engine in ["MYSQL", "POSTGRES"]
                      !(engine in ["MYSQL", "POSTGRES"])
@@ -1138,6 +1139,7 @@ paths:
 
                      For example:
                      environment == "environments/{environment resource id}"
+                     environment == "" (find databases which environment is not set)
                      project == "projects/{project resource id}"
                      instance == "instances/{instance resource id}"
                      name.matches("database name")
@@ -3938,6 +3940,7 @@ paths:
 
                      For example:
                      environment == "environments/{environment resource id}"
+                     environment == "" (find databases which environment is not set)
                      project == "projects/{project resource id}"
                      instance == "instances/{instance resource id}"
                      name.matches("database name")
@@ -7803,6 +7806,7 @@ paths:
 
                      For example:
                      environment == "environments/{environment resource id}"
+                     environment == "" (find databases which environment is not set)
                      project == "projects/{project resource id}"
                      instance == "instances/{instance resource id}"
                      name.matches("database name")
