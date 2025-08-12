@@ -18,9 +18,6 @@ type Profile struct {
 	// DatastorePort is the binding port for database instance for storing Bytebase metadata.
 	// Only applicable when using embedded PG (PgURL is empty).
 	DatastorePort int
-	// SampleDatabasePort is the start binding port for sample database instance.
-	// If SampleDatabasePort is not 0, then we start 2 sample instance at SampleDatabasePort and SampleDatabasePort+1.
-	SampleDatabasePort int
 	// Port is the binding port for the server.
 	Port int
 	// When we are running in SaaS mode, some features are not allowed to edit by users.

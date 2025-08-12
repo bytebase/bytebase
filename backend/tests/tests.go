@@ -242,11 +242,10 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 // pgURL for connect to Postgres.
 func getTestProfileWithExternalPg(port int, pgURL string) *component.Profile {
 	return &component.Profile{
-		Mode:               common.ReleaseModeDev,
-		ExternalURL:        fmt.Sprintf("http://localhost:%d", port),
-		Port:               port,
-		SampleDatabasePort: 0,
-		PgURL:              pgURL,
+		Mode:        common.ReleaseModeDev,
+		ExternalURL: fmt.Sprintf("http://localhost:%d", port),
+		Port:        port,
+		PgURL:       pgURL,
 	}
 }
 
