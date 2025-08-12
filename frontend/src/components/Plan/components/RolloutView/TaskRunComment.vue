@@ -1,6 +1,10 @@
 <template>
   <div class="flex flex-col xl:flex-row xl:items-center xl:space-x-1">
-    <NEllipsis expand-trigger="click" line-clamp="2" :tooltip="false">
+    <NEllipsis
+      :expand-trigger="expandTrigger || undefined"
+      :line-clamp="lineClamp"
+      :tooltip="false"
+    >
       <span>{{ comment }}</span>
     </NEllipsis>
     <template v-if="commentLink.link">
@@ -40,9 +44,17 @@ export type CommentLink = {
   link: string;
 };
 
-const props = defineProps<{
-  taskRun: TaskRun;
-}>();
+const props = withDefaults(
+  defineProps<{
+    taskRun: TaskRun;
+    expandTrigger?: false | "click";
+    lineClamp?: number;
+  }>(),
+  {
+    expandTrigger: "click",
+    lineClamp: 2,
+  }
+);
 
 const { t } = useI18n();
 
