@@ -14564,6 +14564,9 @@ components:
                 disallowPasswordSignin:
                     type: boolean
                     description: Whether to disallow password signin. (Except workspace admins)
+                enableMetricCollection:
+                    type: boolean
+                    description: Whether to enable metric collection for the workspace.
 tags:
     - name: ActuatorService
     - name: AuditLogService

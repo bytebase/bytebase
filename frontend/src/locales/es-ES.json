@@ -567,6 +567,11 @@
           "enable": "Habilitar la exportación de datos",
           "description": "Permitir a los usuarios exportar datos en el Editor SQL"
         },
+        "product-improvement": {
+          "self": "Mejora del Producto",
+          "participate": "Participar en el programa de mejora",
+          "description": "Ayuda a mejorar Bytebase compartiendo datos de uso anónimos"
+        },
         "disallow-signup": {
           "enable": "Deshabilitar el registro de autoservicio",
           "description": "Una vez deshabilitado, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el administrador del espacio de trabajo."

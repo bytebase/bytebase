@@ -60,6 +60,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Go Resources**: Always use `defer` for resource cleanup like `rows.Close()` (sqlclosecheck)
 - **Go Defer**: Avoid using `defer` inside loops (revive) - use IIFE or scope properly
 
+## Pull Request Guidelines
+When creating pull requests:
+- **Breaking Changes**: Add the `breaking` label to PRs that contain breaking changes, including:
+  - API breaking changes (removed/renamed endpoints, changed request/response formats)
+  - Database schema breaking changes that are not backward-compatible
+  - Proto message breaking changes (removed/renamed fields, changed field types)
+  - Configuration breaking changes (removed flags, changed behavior)
+- **Description**: Clearly describe what the PR changes and why
+- **Testing**: Include information about how the changes were tested
+
 ## Common Go Lint Rules
 Always follow these guidelines to avoid common linting errors:
 
