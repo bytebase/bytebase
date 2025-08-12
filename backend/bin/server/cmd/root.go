@@ -69,8 +69,6 @@ var (
 		// demo mode.
 		demo  bool
 		debug bool
-		// disableMetric is the flag to disable the metric collector.
-		disableMetric bool
 		// disableSample is the flag to disable the sample instance.
 		disableSample bool
 		// memoryProfileThreshold is the threshold of memory usage in bytes to trigger a memory profile.
@@ -108,7 +106,6 @@ func init() {
 	// Must be one of the subpath name in the ../migrator/demo directory
 	rootCmd.PersistentFlags().BoolVar(&flags.demo, "demo", false, "run in demo mode.")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
-	rootCmd.PersistentFlags().BoolVar(&flags.disableMetric, "disable-metric", false, "disable the metric collector")
 	rootCmd.PersistentFlags().BoolVar(&flags.disableSample, "disable-sample", false, "disable the sample instance")
 	rootCmd.PersistentFlags().Uint64Var(&flags.memoryProfileThreshold, "memory-profile-threshold", 0, "the threshold of memory usage in bytes to trigger a memory profile")
 }

@@ -349,6 +349,8 @@ type WorkspaceProfileSetting struct {
 	DatabaseChangeMode DatabaseChangeMode `protobuf:"varint,11,opt,name=database_change_mode,json=databaseChangeMode,proto3,enum=bytebase.store.DatabaseChangeMode" json:"database_change_mode,omitempty"`
 	// Whether to disallow password signin. (Except workspace admins)
 	DisallowPasswordSignin bool `protobuf:"varint,12,opt,name=disallow_password_signin,json=disallowPasswordSignin,proto3" json:"disallow_password_signin,omitempty"`
+	// Whether to enable metric collection for the workspace.
+	EnableMetricCollection bool `protobuf:"varint,13,opt,name=enable_metric_collection,json=enableMetricCollection,proto3" json:"enable_metric_collection,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -449,6 +451,13 @@ func (x *WorkspaceProfileSetting) GetDatabaseChangeMode() DatabaseChangeMode {
 func (x *WorkspaceProfileSetting) GetDisallowPasswordSignin() bool {
 	if x != nil {
 		return x.DisallowPasswordSignin
+	}
+	return false
+}
+
+func (x *WorkspaceProfileSetting) GetEnableMetricCollection() bool {
+	if x != nil {
+		return x.EnableMetricCollection
 	}
 	return false
 }
@@ -2443,7 +2452,7 @@ var File_store_setting_proto protoreflect.FileDescriptor
 
 const file_store_setting_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/setting.proto\x12\x0ebytebase.store\x1a%google/api/expr/v1alpha1/syntax.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x14store/database.proto\"\xbf\x04\n" +
+	"\x13store/setting.proto\x12\x0ebytebase.store\x1a%google/api/expr/v1alpha1/syntax.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x14store/database.proto\"\xf9\x04\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2456,7 +2465,8 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x17enforce_identity_domain\x18\n" +
 	" \x01(\bR\x15enforceIdentityDomain\x12T\n" +
 	"\x14database_change_mode\x18\v \x01(\x0e2\".bytebase.store.DatabaseChangeModeR\x12databaseChangeMode\x128\n" +
-	"\x18disallow_password_signin\x18\f \x01(\bR\x16disallowPasswordSignin\"\xe9\x01\n" +
+	"\x18disallow_password_signin\x18\f \x01(\bR\x16disallowPasswordSignin\x128\n" +
+	"\x18enable_metric_collection\x18\r \x01(\bR\x16enableMetricCollection\"\xe9\x01\n" +
 	"\fAnnouncement\x12=\n" +
 	"\x05level\x18\x01 \x01(\x0e2'.bytebase.store.Announcement.AlertLevelR\x05level\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x12\n" +

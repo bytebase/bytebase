@@ -5,6 +5,7 @@ import BrandingSetting from "./BrandingSetting.vue";
 import DatabaseChangeModeSetting from "./DatabaseChangeModeSetting.vue";
 import MaximumSQLResultSizeSetting from "./MaximumSQLResultSizeSetting.vue";
 import NetworkSetting from "./NetworkSetting.vue";
+import ProductImprovementSetting from "./ProductImprovementSetting.vue";
 import SecuritySetting from "./SecuritySetting.vue";
 
 export {
@@ -16,4 +17,5 @@ export {
   AIAugmentationSetting,
   AnnouncementSetting,
   DatabaseChangeModeSetting,
+  ProductImprovementSetting,
 };

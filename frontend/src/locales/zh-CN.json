@@ -567,6 +567,11 @@
           "enable": "启用数据导出",
           "description": "允许用户在 SQL 编辑器里导出数据"
         },
+        "product-improvement": {
+          "self": "产品改进",
+          "participate": "参与改进计划",
+          "description": "通过分享匿名使用数据帮助改进 Bytebase"
+        },
         "disallow-signup": {
           "enable": "禁用自助注册",
           "description": "禁用之后，新用户将无法自助注册，只能通过管理员邀请来创建账户。"

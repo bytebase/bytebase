@@ -567,6 +567,11 @@
           "enable": "Enable data export",
           "description": "Allow users to export data in SQL Editor"
         },
+        "product-improvement": {
+          "self": "Product Improvement",
+          "participate": "Participate in improvement program",
+          "description": "Help improve Bytebase by sharing anonymous usage data"
+        },
         "disallow-signup": {
           "enable": "Disallow self-service signup",
           "description": "Users cannot self-service signup and can only be invited by the workspace admin."
