@@ -124,7 +124,11 @@
         :confirm-title="
           $t('environment.delete') + ` '${state.environment.title}'?`
         "
-        :confirm-description="$t('environment.delete-description')"
+        :confirm-description="
+          isDev()
+            ? $t('environment.delete-description')
+            : $t('common.cannot-undo-this-action')
+        "
         :require-confirm="true"
         @confirm="deleteEnvironment"
       />
@@ -146,6 +150,7 @@ import {
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { isDev } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import SQLReviewForResource from "../SQLReview/components/SQLReviewForResource.vue";
 import { ResourceIdField } from "../v2";
