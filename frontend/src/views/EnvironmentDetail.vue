@@ -29,7 +29,7 @@ import {
   usePolicyV1Store,
   getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
-import { formatEnvironmentName, unknownEnvironment } from "@/types";
+import { formatEnvironmentName } from "@/types";
 import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   PolicyType,
@@ -58,10 +58,9 @@ const environmentV1Store = useEnvironmentV1Store();
 const policyV1Store = usePolicyV1Store();
 
 const state = reactive<LocalState>({
-  environment:
-    environmentV1Store.getEnvironmentByName(
-      `${environmentNamePrefix}${props.environmentName}`
-    ) || unknownEnvironment(),
+  environment: environmentV1Store.getEnvironmentByName(
+    `${environmentNamePrefix}${props.environmentName}`
+  ),
   showArchiveModal: false,
 });
 

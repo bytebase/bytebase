@@ -12,7 +12,6 @@ import {
   isValidInstanceName,
   isValidDatabaseName,
   unknownDatabase,
-  unknownEnvironment,
   unknownInstanceResource,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -405,8 +404,7 @@ export const batchComposeDatabase = async (databaseList: Database[]) => {
     composed.environment = composed.instanceResource.environment;
     composed.projectEntity = projectV1Store.getProjectByName(db.project);
     composed.effectiveEnvironmentEntity =
-      environmentV1Store.getEnvironmentByName(db.effectiveEnvironment) ??
-      unknownEnvironment();
+      environmentV1Store.getEnvironmentByName(db.effectiveEnvironment ?? "");
     return markRaw(composed);
   });
 };

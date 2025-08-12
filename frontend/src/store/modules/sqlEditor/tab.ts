@@ -525,7 +525,7 @@ export const useSQLEditorConnectionDetail = (
     }
 
     return useEnvironmentV1Store().getEnvironmentByName(
-      instance.value.environment
+      instance.value.environment ?? ""
     );
   });
 

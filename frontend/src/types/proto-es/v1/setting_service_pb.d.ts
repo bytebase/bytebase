@@ -1315,7 +1315,7 @@ export declare type PasswordRestrictionSetting = Message<"bytebase.v1.PasswordRe
   requireUppercaseLetter: boolean;
 
   /**
-   * require_uppercase_letter requires the password must contains at least one special character.
+   * require_special_character requires the password must contains at least one special character.
    *
    * @generated from field: bool require_special_character = 5;
    */

@@ -70,7 +70,6 @@ import {
 } from "@/components/Icon";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
-import { unknownEnvironment } from "@/types";
 import { useSchemaEditorContext } from "../context";
 import NodeCheckbox from "./NodeCheckbox";
 import type { TreeNode, TreeNodeForInstance } from "./common";
@@ -100,9 +99,8 @@ const isIndexColumn = computed(() => {
 });
 
 const environmentForInstanceNode = (node: TreeNodeForInstance) => {
-  return (
-    useEnvironmentV1Store().getEnvironmentByName(node.instance.environment) ??
-    unknownEnvironment()
+  return useEnvironmentV1Store().getEnvironmentByName(
+    node.instance.environment ?? ""
   );
 };
 </script>

@@ -431,18 +431,24 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 		case "title":
 			patch.Metadata.Title = req.Msg.Instance.Title
 		case "environment":
-			environmentID, err := common.GetEnvironmentID(req.Msg.Instance.Environment)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			if req.Msg.Instance.Environment == nil || *req.Msg.Instance.Environment == "" {
+				// Clear the environment if null or empty string is provided
+				emptyStr := ""
+				patch.EnvironmentID = &emptyStr
+			} else {
+				envID, err := common.GetEnvironmentID(*req.Msg.Instance.Environment)
+				if err != nil {
+					return nil, connect.NewError(connect.CodeInvalidArgument, err)
+				}
+				environment, err := s.store.GetEnvironmentByID(ctx, envID)
+				if err != nil {
+					return nil, connect.NewError(connect.CodeInternal, err)
+				}
+				if environment == nil {
+					return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("environment %q not found", envID))
+				}
+				patch.EnvironmentID = &envID
 			}
-			environment, err := s.store.GetEnvironmentByID(ctx, environmentID)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, err)
-			}
-			if environment == nil {
-				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("environment %q not found", environmentID))
-			}
-			patch.EnvironmentID = &environmentID
 		case "external_link":
 			patch.Metadata.ExternalLink = req.Msg.Instance.ExternalLink
 		case "data_sources":
@@ -969,12 +975,16 @@ func buildInstanceName(instanceID string) string {
 }
 
 // buildEnvironmentName builds the environment name with the given environment ID.
-func buildEnvironmentName(environmentID string) string {
+func buildEnvironmentName(environmentID *string) *string {
+	if environmentID == nil || *environmentID == "" {
+		return nil
+	}
 	var b strings.Builder
-	b.Grow(len("environments/") + len(environmentID))
+	b.Grow(len("environments/") + len(*environmentID))
 	_, _ = b.WriteString("environments/")
-	_, _ = b.WriteString(environmentID)
-	return b.String()
+	_, _ = b.WriteString(*environmentID)
+	result := b.String()
+	return &result
 }
 
 func convertInstanceMessage(instance *store.InstanceMessage) *v1pb.Instance {
@@ -1032,9 +1042,14 @@ func convertInstanceToInstanceMessage(instanceID string, instance *v1pb.Instance
 	if err != nil {
 		return nil, err
 	}
-	environmentID, err := common.GetEnvironmentID(instance.Environment)
-	if err != nil {
-		return nil, err
+
+	var environmentID *string
+	if instance.Environment != nil && *instance.Environment != "" {
+		envID, err := common.GetEnvironmentID(*instance.Environment)
+		if err != nil {
+			return nil, err
+		}
+		environmentID = &envID
 	}
 
 	return &store.InstanceMessage{

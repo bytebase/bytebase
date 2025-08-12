@@ -14,7 +14,6 @@ import {
   isValidDatabaseName,
   isValidInstanceName,
   unknownDatabase,
-  unknownEnvironment,
   unknownInstance,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -94,10 +93,9 @@ export const mockDatabase = (
   });
   db.environment = db.instanceResource.environment;
   db.effectiveEnvironment = db.instanceResource.environment;
-  db.effectiveEnvironmentEntity =
-    useEnvironmentV1Store().getEnvironmentByName(
-      db.instanceResource.environment
-    ) ?? unknownEnvironment();
+  db.effectiveEnvironmentEntity = useEnvironmentV1Store().getEnvironmentByName(
+    db.instanceResource.environment ?? ""
+  );
   db.state = State.DELETED;
   return db;
 };
@@ -131,7 +129,7 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
       engineVersion: instanceData.engineVersion ?? "",
     });
     const effectiveEnvironmentEntity = environmentStore.getEnvironmentByName(
-      instanceResource.environment
+      instanceResource.environment ?? ""
     );
     return {
       ...unknownDatabase(),
@@ -141,8 +139,7 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
       project: project.name,
       projectEntity: project,
       effectiveEnvironment: instanceResource.environment,
-      effectiveEnvironmentEntity:
-        effectiveEnvironmentEntity ?? unknownEnvironment(),
+      effectiveEnvironmentEntity: effectiveEnvironmentEntity,
       instanceResource,
     };
   };

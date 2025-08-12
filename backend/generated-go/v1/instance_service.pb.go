@@ -1351,7 +1351,7 @@ type Instance struct {
 	DataSources   []*DataSource `protobuf:"bytes,8,rep,name=data_sources,json=dataSources,proto3" json:"data_sources,omitempty"`
 	// The environment resource.
 	// Format: environments/prod where prod is the environment resource ID.
-	Environment string          `protobuf:"bytes,9,opt,name=environment,proto3" json:"environment,omitempty"`
+	Environment *string         `protobuf:"bytes,9,opt,name=environment,proto3,oneof" json:"environment,omitempty"`
 	Activation  bool            `protobuf:"varint,10,opt,name=activation,proto3" json:"activation,omitempty"`
 	Roles       []*InstanceRole `protobuf:"bytes,12,rep,name=roles,proto3" json:"roles,omitempty"`
 	// How often the instance is synced.
@@ -1448,8 +1448,8 @@ func (x *Instance) GetDataSources() []*DataSource {
 }
 
 func (x *Instance) GetEnvironment() string {
-	if x != nil {
-		return x.Environment
+	if x != nil && x.Environment != nil {
+		return *x.Environment
 	}
 	return ""
 }
@@ -2045,7 +2045,7 @@ type InstanceResource struct {
 	Name string `protobuf:"bytes,6,opt,name=name,proto3" json:"name,omitempty"`
 	// The environment resource.
 	// Format: environments/prod where prod is the environment resource ID.
-	Environment   string `protobuf:"bytes,7,opt,name=environment,proto3" json:"environment,omitempty"`
+	Environment   *string `protobuf:"bytes,7,opt,name=environment,proto3,oneof" json:"environment,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2123,8 +2123,8 @@ func (x *InstanceResource) GetName() string {
 }
 
 func (x *InstanceResource) GetEnvironment() string {
-	if x != nil {
-		return x.Environment
+	if x != nil && x.Environment != nil {
+		return *x.Environment
 	}
 	return ""
 }
@@ -2644,7 +2644,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"dataSource\x12;\n" +
 	"\vupdate_mask\x18\x03 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
-	"\rvalidate_only\x18\x04 \x01(\bR\fvalidateOnly\"\xa6\x05\n" +
+	"\rvalidate_only\x18\x04 \x01(\bR\fvalidateOnly\"\xbb\x05\n" +
 	"\bInstance\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
@@ -2652,8 +2652,8 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x06engine\x18\x05 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\x12*\n" +
 	"\x0eengine_version\x18\x06 \x01(\tB\x03\xe0A\x03R\rengineVersion\x12#\n" +
 	"\rexternal_link\x18\a \x01(\tR\fexternalLink\x12:\n" +
-	"\fdata_sources\x18\b \x03(\v2\x17.bytebase.v1.DataSourceR\vdataSources\x12%\n" +
-	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x12\x1e\n" +
+	"\fdata_sources\x18\b \x03(\v2\x17.bytebase.v1.DataSourceR\vdataSources\x12*\n" +
+	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01H\x00R\venvironment\x88\x01\x01\x12\x1e\n" +
 	"\n" +
 	"activation\x18\n" +
 	" \x01(\bR\n" +
@@ -2663,7 +2663,8 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x13maximum_connections\x18\x0e \x01(\x05R\x12maximumConnections\x12%\n" +
 	"\x0esync_databases\x18\x0f \x03(\tR\rsyncDatabases\x12E\n" +
 	"\x0elast_sync_time\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\flastSyncTime:0\xeaA-\n" +
-	"\x15bytebase.com/Instance\x12\x14instances/{instance}\"\x84\a\n" +
+	"\x15bytebase.com/Instance\x12\x14instances/{instance}B\x0e\n" +
+	"\f_environment\"\x84\a\n" +
 	"\x18DataSourceExternalSecret\x12Q\n" +
 	"\vsecret_type\x18\x01 \x01(\x0e20.bytebase.v1.DataSourceExternalSecret.SecretTypeR\n" +
 	"secretType\x12\x10\n" +
@@ -2771,7 +2772,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"STANDALONE\x10\x01\x12\f\n" +
 	"\bSENTINEL\x10\x02\x12\v\n" +
 	"\aCLUSTER\x10\x03B\x0f\n" +
-	"\riam_extension\"\x93\x02\n" +
+	"\riam_extension\"\xa8\x02\n" +
 	"\x10InstanceResource\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12+\n" +
 	"\x06engine\x18\x02 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\x12*\n" +
@@ -2780,8 +2781,9 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\n" +
 	"activation\x18\x05 \x01(\bR\n" +
 	"activation\x12\x12\n" +
-	"\x04name\x18\x06 \x01(\tR\x04name\x12 \n" +
-	"\venvironment\x18\a \x01(\tR\venvironment\"W\n" +
+	"\x04name\x18\x06 \x01(\tR\x04name\x12%\n" +
+	"\venvironment\x18\a \x01(\tH\x00R\venvironment\x88\x01\x01B\x0e\n" +
+	"\f_environment\"W\n" +
 	"\n" +
 	"SASLConfig\x12<\n" +
 	"\n" +
@@ -2951,6 +2953,7 @@ func file_v1_instance_service_proto_init() {
 	file_v1_common_proto_init()
 	file_v1_instance_role_service_proto_init()
 	file_v1_instance_service_proto_msgTypes[8].OneofWrappers = []any{}
+	file_v1_instance_service_proto_msgTypes[18].OneofWrappers = []any{}
 	file_v1_instance_service_proto_msgTypes[19].OneofWrappers = []any{
 		(*DataSourceExternalSecret_AppRole)(nil),
 		(*DataSourceExternalSecret_Token)(nil),
@@ -2960,6 +2963,7 @@ func file_v1_instance_service_proto_init() {
 		(*DataSource_AwsCredential)(nil),
 		(*DataSource_GcpCredential)(nil),
 	}
+	file_v1_instance_service_proto_msgTypes[21].OneofWrappers = []any{}
 	file_v1_instance_service_proto_msgTypes[22].OneofWrappers = []any{
 		(*SASLConfig_KrbConfig)(nil),
 	}

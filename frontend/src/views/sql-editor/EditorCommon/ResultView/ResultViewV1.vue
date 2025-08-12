@@ -263,15 +263,17 @@ const disallowCopyingData = computed(() => {
   }
 
   // Check if the environment has a policy that disables copying data.
-  const policy = policyStore.getPolicyByParentAndType({
-    parentPath: environment,
-    policyType: PolicyType.DISABLE_COPY_DATA,
-  });
-  if (
-    policy?.policy?.case === "disableCopyDataPolicy" &&
-    policy.policy.value.active
-  ) {
-    return true;
+  if (environment) {
+    const policy = policyStore.getPolicyByParentAndType({
+      parentPath: environment,
+      policyType: PolicyType.DISABLE_COPY_DATA,
+    });
+    if (
+      policy?.policy?.case === "disableCopyDataPolicy" &&
+      policy.policy.value.active
+    ) {
+      return true;
+    }
   }
   return false;
 });

@@ -203,21 +203,25 @@ func (s *Store) GetQueryDataPolicy(ctx context.Context) (*storepb.QueryDataPolic
 	return p, nil
 }
 
+type reviewConfigResource struct {
+	resourceType storepb.Policy_Resource
+	resource     string
+}
+
 // GetReviewConfigForDatabase will get the review config for a database.
 func (s *Store) GetReviewConfigForDatabase(ctx context.Context, database *DatabaseMessage) (*storepb.ReviewConfigPayload, error) {
-	for _, v := range []struct {
-		resourceType storepb.Policy_Resource
-		resource     string
-	}{
-		{
+	resources := []*reviewConfigResource{}
+	if database.EffectiveEnvironmentID != nil {
+		resources = append(resources, &reviewConfigResource{
 			resourceType: storepb.Policy_ENVIRONMENT,
-			resource:     common.FormatEnvironment(database.EffectiveEnvironmentID),
-		},
-		{
-			resourceType: storepb.Policy_PROJECT,
-			resource:     common.FormatProject(database.ProjectID),
-		},
-	} {
+			resource:     common.FormatEnvironment(*database.EffectiveEnvironmentID),
+		})
+	}
+	resources = append(resources, &reviewConfigResource{
+		resourceType: storepb.Policy_PROJECT,
+		resource:     common.FormatProject(database.ProjectID),
+	})
+	for _, v := range resources {
 		reviewConfig, err := s.getReviewConfigByResource(ctx, v.resourceType, v.resource)
 		if err != nil {
 			slog.Debug("failed to get review config", slog.String("resource_type", string(v.resourceType)), slog.String("database", database.DatabaseName), log.BBError(err))

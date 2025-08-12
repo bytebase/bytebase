@@ -1520,11 +1520,11 @@ type Database struct {
 	SchemaVersion string `protobuf:"bytes,6,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
 	// The environment resource.
 	// Format: environments/prod where prod is the environment resource ID.
-	Environment string `protobuf:"bytes,7,opt,name=environment,proto3" json:"environment,omitempty"`
+	Environment *string `protobuf:"bytes,7,opt,name=environment,proto3,oneof" json:"environment,omitempty"`
 	// The effective environment based on environment tag above and environment
 	// tag on the instance. Inheritance follows
 	// https://cloud.google.com/resource-manager/docs/tags/tags-overview.
-	EffectiveEnvironment string `protobuf:"bytes,8,opt,name=effective_environment,json=effectiveEnvironment,proto3" json:"effective_environment,omitempty"`
+	EffectiveEnvironment *string `protobuf:"bytes,8,opt,name=effective_environment,json=effectiveEnvironment,proto3,oneof" json:"effective_environment,omitempty"`
 	// Labels will be used for deployment and policy control.
 	Labels map[string]string `protobuf:"bytes,9,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// The instance resource.
@@ -1603,15 +1603,15 @@ func (x *Database) GetSchemaVersion() string {
 }
 
 func (x *Database) GetEnvironment() string {
-	if x != nil {
-		return x.Environment
+	if x != nil && x.Environment != nil {
+		return *x.Environment
 	}
 	return ""
 }
 
 func (x *Database) GetEffectiveEnvironment() string {
-	if x != nil {
-		return x.EffectiveEnvironment
+	if x != nil && x.EffectiveEnvironment != nil {
+		return *x.EffectiveEnvironment
 	}
 	return ""
 }
@@ -5929,15 +5929,15 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"sdl_format\x18\x04 \x01(\bR\tsdlFormatB\b\n" +
 	"\x06target\"(\n" +
 	"\x12DiffSchemaResponse\x12\x12\n" +
-	"\x04diff\x18\x01 \x01(\tR\x04diff\"\xaa\x05\n" +
+	"\x04diff\x18\x01 \x01(\tR\x04diff\"\xde\x05\n" +
 	"\bDatabase\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12-\n" +
 	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12Q\n" +
 	"\x14successful_sync_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\x12successfulSyncTime\x12\x18\n" +
 	"\aproject\x18\x05 \x01(\tR\aproject\x12*\n" +
-	"\x0eschema_version\x18\x06 \x01(\tB\x03\xe0A\x03R\rschemaVersion\x12%\n" +
-	"\venvironment\x18\a \x01(\tB\x03\xe0A\x01R\venvironment\x128\n" +
-	"\x15effective_environment\x18\b \x01(\tB\x03\xe0A\x03R\x14effectiveEnvironment\x129\n" +
+	"\x0eschema_version\x18\x06 \x01(\tB\x03\xe0A\x03R\rschemaVersion\x12*\n" +
+	"\venvironment\x18\a \x01(\tB\x03\xe0A\x01H\x00R\venvironment\x88\x01\x01\x12=\n" +
+	"\x15effective_environment\x18\b \x01(\tB\x03\xe0A\x03H\x01R\x14effectiveEnvironment\x88\x01\x01\x129\n" +
 	"\x06labels\x18\t \x03(\v2!.bytebase.v1.Database.LabelsEntryR\x06labels\x12O\n" +
 	"\x11instance_resource\x18\n" +
 	" \x01(\v2\x1d.bytebase.v1.InstanceResourceB\x03\xe0A\x03R\x10instanceResource\x12.\n" +
@@ -5946,7 +5946,9 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:E\xeaAB\n" +
-	"\x15bytebase.com/Database\x12)instances/{instance}/databases/{database}J\x04\b\x02\x10\x03\"\xf0\x02\n" +
+	"\x15bytebase.com/Database\x12)instances/{instance}/databases/{database}B\x0e\n" +
+	"\f_environmentB\x18\n" +
+	"\x16_effective_environmentJ\x04\b\x02\x10\x03\"\xf0\x02\n" +
 	"\x10DatabaseMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x125\n" +
 	"\aschemas\x18\x02 \x03(\v2\x1b.bytebase.v1.SchemaMetadataR\aschemas\x12#\n" +
@@ -6644,6 +6646,7 @@ func file_v1_database_service_proto_init() {
 		(*DiffSchemaRequest_Schema)(nil),
 		(*DiffSchemaRequest_Changelog)(nil),
 	}
+	file_v1_database_service_proto_msgTypes[16].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
