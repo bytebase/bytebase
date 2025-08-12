@@ -1036,7 +1036,8 @@
           "transaction-control": "Kiểm soát giao dịch",
           "database-sync": "Đồng bộ cơ sở dữ liệu",
           "prior-backup": "Sao lưu trước",
-          "retry-info": "Thông tin thử lại"
+          "retry-info": "Thông tin thử lại",
+          "compute-diff": "Tính toán khác"
         },
         "affected-rows-n": "Số dòng bị ảnh hưởng: {n}",
         "prior-backup-tables": "Bảng sao lưu trước",

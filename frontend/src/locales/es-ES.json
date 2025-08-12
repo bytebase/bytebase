@@ -1036,7 +1036,8 @@
           "transaction-control": "Control de transacciones",
           "database-sync": "Sincronización de base de datos",
           "prior-backup": "Copia de seguridad previa",
-          "retry-info": "Reintento de información"
+          "retry-info": "Reintento de información",
+          "compute-diff": "Calcular diff"
         },
         "affected-rows-n": "Filas afectadas: {n}",
         "prior-backup-tables": "Tablas de respaldo anteriores",

@@ -9,6 +9,7 @@ import {
   type TaskRunLogEntry,
   type TaskRunLogEntry_PriorBackup,
   type TaskRunLogEntry_RetryInfo,
+  type TaskRunLogEntry_ComputeDiff,
 } from "@/types/proto-es/v1/rollout_service_pb";
 
 export type FlattenLogEntry = {
@@ -40,6 +41,7 @@ export type FlattenLogEntry = {
   databaseSync?: TaskRunLogEntry_DatabaseSync;
   priorBackup?: TaskRunLogEntry_PriorBackup;
   retryInfo?: TaskRunLogEntry_RetryInfo;
+  computeDiff?: TaskRunLogEntry_ComputeDiff;
 };
 
 export const displayTaskRunLogEntryType = (type: TaskRunLogEntry_Type) => {
@@ -60,6 +62,9 @@ export const displayTaskRunLogEntryType = (type: TaskRunLogEntry_Type) => {
   }
   if (type === TaskRunLogEntry_Type.PRIOR_BACKUP) {
     return t("issue.task-run.task-run-log.entry-type.prior-backup");
+  }
+  if (type === TaskRunLogEntry_Type.COMPUTE_DIFF) {
+    return t("issue.task-run.task-run-log.entry-type.compute-diff");
   }
   if (type === TaskRunLogEntry_Type.RETRY_INFO) {
     return t("issue.task-run.task-run-log.entry-type.retry-info");
@@ -85,6 +90,7 @@ export const convertTaskRunLogEntryToFlattenLogEntries = (
     deployId,
     priorBackup,
     retryInfo,
+    computeDiff,
   } = entry;
   const flattenLogEntries: FlattenLogEntry[] = [];
   if (
@@ -190,6 +196,17 @@ export const convertTaskRunLogEntryToFlattenLogEntries = (
       startTime: getDateForPbTimestampProtoEs(priorBackup.startTime),
       endTime: getDateForPbTimestampProtoEs(priorBackup.endTime),
       priorBackup: priorBackup,
+    });
+  }
+  if (type === TaskRunLogEntry_Type.COMPUTE_DIFF && computeDiff) {
+    flattenLogEntries.push({
+      batch,
+      deployId,
+      serial: 0,
+      type: TaskRunLogEntry_Type.COMPUTE_DIFF,
+      startTime: getDateForPbTimestampProtoEs(computeDiff.startTime),
+      endTime: getDateForPbTimestampProtoEs(computeDiff.endTime),
+      computeDiff,
     });
   }
   if (type === TaskRunLogEntry_Type.RETRY_INFO && retryInfo) {

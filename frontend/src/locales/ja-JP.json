@@ -1036,7 +1036,8 @@
           "transaction-control": "トランザクション制御",
           "database-sync": "データベースの同期",
           "prior-backup": "事前のバックアップ",
-          "retry-info": "情報を再試行します"
+          "retry-info": "情報を再試行します",
+          "compute-diff": "Diffを計算します"
         },
         "affected-rows-n": "影響行数: {n}",
         "prior-backup-tables": "以前のバックアップテーブル",
