@@ -2,19 +2,17 @@ package taskrun
 
 import (
 	"context"
-	"log/slog"
-	"time"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -60,50 +58,38 @@ func (exec *SchemaDeclareExecutor) RunOnce(ctx context.Context, driverCtx contex
 		return true, nil, err
 	}
 
-	// sync database schema
-	// TODO(p0ny): see if we can reduce the number of syncs.
-	// TODO(p0ny): move the diff calculation into the Exec func, which is after the beginMigration. so that we can avoid the sync.
-	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
-		Type:              storepb.TaskRunLog_DATABASE_SYNC_START,
-		DatabaseSyncStart: &storepb.TaskRunLog_DatabaseSyncStart{},
-	})
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
-		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
-			Type: storepb.TaskRunLog_DATABASE_SYNC_END,
-			DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{
-				Error: err.Error(),
-			},
-		})
-		slog.Error("failed to sync database schema",
-			slog.String("instanceName", instance.ResourceID),
-			slog.String("databaseName", database.DatabaseName),
-			log.BBError(err),
-		)
-	} else {
-		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
-			Type: storepb.TaskRunLog_DATABASE_SYNC_END,
-			DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{
-				Error: "",
-			},
-		})
+	execFunc := func(ctx context.Context, execStatement string, driver db.Driver, opts db.ExecuteOptions) error {
+		// TODO(p0ny): log diff and migration SQL
+		migrationSQL, err := diff(ctx, exec.store, instance, database, execStatement)
+		if err != nil {
+			return errors.Wrapf(err, "failed to diff database schema")
+		}
+		if _, err := driver.Execute(ctx, migrationSQL, opts); err != nil {
+			return err
+		}
+		return nil
 	}
 
+	return runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, sheetContent, task.Payload.GetSchemaVersion(), &sheetID, execFunc)
+}
+
+func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, sheetContent string) (string, error) {
 	pengine, err := common.ConvertToParserEngine(instance.Metadata.GetEngine())
 	if err != nil {
-		return true, nil, errors.Wrapf(err, "failed to convert %q to parser engine", instance.Metadata.GetEngine())
+		return "", errors.Wrapf(err, "failed to convert %q to parser engine", instance.Metadata.GetEngine())
 	}
 
-	dbSchema, err := exec.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+	dbSchema, err := s.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
-		return true, nil, errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
+		return "", errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
 	}
 	if dbSchema == nil {
-		return true, nil, errors.Errorf("database schema %q not found", database.DatabaseName)
+		return "", errors.Errorf("database schema %q not found", database.DatabaseName)
 	}
 
 	targetSchemaMetadata, err := schema.GetDatabaseMetadata(pengine, sheetContent)
 	if err != nil {
-		return true, nil, errors.Wrapf(err, "failed to get database metadata for database %q", database.DatabaseName)
+		return "", errors.Wrapf(err, "failed to get database metadata for database %q", database.DatabaseName)
 	}
 
 	targetSchema := model.NewDatabaseSchema(
@@ -116,7 +102,7 @@ func (exec *SchemaDeclareExecutor) RunOnce(ctx context.Context, driverCtx contex
 
 	schemaDiff, err := schema.GetDatabaseSchemaDiff(pengine, dbSchema, targetSchema)
 	if err != nil {
-		return true, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to compute schema diff, error: %v", err))
+		return "", connect.NewError(connect.CodeInternal, errors.Errorf("failed to compute schema diff, error: %v", err))
 	}
 
 	// Filter out bbdataarchive schema changes for Postgres
@@ -126,8 +112,8 @@ func (exec *SchemaDeclareExecutor) RunOnce(ctx context.Context, driverCtx contex
 
 	migrationSQL, err := schema.GenerateMigration(pengine, schemaDiff)
 	if err != nil {
-		return true, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate migration SQL, error: %v", err))
+		return "", connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate migration SQL, error: %v", err))
 	}
 
-	return runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, migrationSQL, task.Payload.GetSchemaVersion(), &sheetID, nil)
+	return migrationSQL, nil
 }
