@@ -79,17 +79,24 @@ const rowSpan = (entry: FlattenLogEntry) => {
     entry.commandExecute
   ) {
     const { commandExecute } = entry;
-    return commandExecute.raw.commandIndexes.length;
+    if (commandExecute.kind === "commandIndexes") {
+      return commandExecute.commandIndexes.length;
+    }
+    return 1;
   }
   return 1;
 };
+
 const colSpan = (entry: FlattenLogEntry) => {
   if (
     entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE &&
     entry.commandExecute
   ) {
     const { commandExecute } = entry;
-    if (commandExecute.raw.commandIndexes.length > 1) {
+    if (
+      commandExecute.kind === "commandIndexes" &&
+      commandExecute.commandIndexes.length > 1
+    ) {
       return 1;
     }
   }

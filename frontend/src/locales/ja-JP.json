@@ -326,6 +326,7 @@
     }
   },
   "task-run": {
+    "failed-runs": "失敗したタスク - 最新の実行ログ",
     "history": "タスク実行履歴",
     "latest-logs": "最新のログ",
     "status": {
@@ -1036,9 +1037,10 @@
           "transaction-control": "トランザクション制御",
           "database-sync": "データベースの同期",
           "prior-backup": "事前のバックアップ",
-          "retry-info": "情報を再試行します"
+          "retry-info": "情報を再試行します",
+          "compute-diff": "Diffを計算します"
         },
-        "estimated-affected-rows-n": "推定影響行数: {n}",
+        "affected-rows-n": "影響行数: {n}",
         "prior-backup-tables": "以前のバックアップテーブル",
         "status-update": {
           "waiting": "実行の準備完了",

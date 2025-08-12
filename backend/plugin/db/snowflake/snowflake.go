@@ -273,11 +273,11 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, statement string,
 	}
 
 	// Log the entire multi-statement execution
-	opts.LogCommandExecute([]int32{0})
+	opts.LogCommandExecute([]int32{0}, statement)
 
 	result, err := tx.ExecContext(mctx, statement)
 	if err != nil {
-		opts.LogCommandResponse([]int32{0}, 0, nil, err.Error())
+		opts.LogCommandResponse(0, nil, err.Error())
 		return 0, err
 	}
 
@@ -292,10 +292,10 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, statement string,
 	// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
 	if err != nil {
 		slog.Debug("rowsAffected returns error", log.BBError(err))
-		opts.LogCommandResponse([]int32{0}, 0, nil, "")
+		opts.LogCommandResponse(0, nil, "")
 		return 0, nil
 	}
-	opts.LogCommandResponse([]int32{0}, int32(rowsAffected), nil, "")
+	opts.LogCommandResponse(int32(rowsAffected), nil, "")
 	return rowsAffected, nil
 }
 
@@ -309,11 +309,11 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, 
 	}
 
 	// Log the entire multi-statement execution
-	opts.LogCommandExecute([]int32{0})
+	opts.LogCommandExecute([]int32{0}, statement)
 
 	result, err := d.db.ExecContext(mctx, statement)
 	if err != nil {
-		opts.LogCommandResponse([]int32{0}, 0, nil, err.Error())
+		opts.LogCommandResponse(0, nil, err.Error())
 		return 0, err
 	}
 
@@ -321,10 +321,10 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, 
 	// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
 	if err != nil {
 		slog.Debug("rowsAffected returns error", log.BBError(err))
-		opts.LogCommandResponse([]int32{0}, 0, nil, "")
+		opts.LogCommandResponse(0, nil, "")
 		return 0, nil
 	}
-	opts.LogCommandResponse([]int32{0}, int32(rowsAffected), nil, "")
+	opts.LogCommandResponse(int32(rowsAffected), nil, "")
 	return rowsAffected, nil
 }
 

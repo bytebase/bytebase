@@ -264,7 +264,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, c
 
 		for i, command := range commands {
 			indexes := []int32{originalIndex[remainingSQLsIndex[i]]}
-			opts.LogCommandExecute(indexes)
+			opts.LogCommandExecute(indexes, command.Text)
 
 			sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(command.Text)
 			sqlResult, err := exer.ExecContext(ctx, sqlWithBytebaseAppComment, nil)
@@ -276,7 +276,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, c
 					}
 				}
 
-				opts.LogCommandResponse(indexes, 0, nil, err.Error())
+				opts.LogCommandResponse(0, nil, err.Error())
 
 				return &db.ErrorWithPosition{
 					Err:   errors.Wrapf(err, "failed to execute context in a transaction"),
@@ -294,7 +294,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, c
 			}
 			totalRowsAffected += rowsAffected
 
-			opts.LogCommandResponse(indexes, int32(rowsAffected), allRowsAffectedInt32, "")
+			opts.LogCommandResponse(int32(rowsAffected), allRowsAffectedInt32, "")
 		}
 
 		if err := tx.Commit(); err != nil {
@@ -312,12 +312,12 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, c
 	// Run non-transaction statements at the end.
 	for i, stmt := range nonTransactionStmts {
 		indexes := []int32{originalIndex[nonTransactionStmtsIndex[i]]}
-		opts.LogCommandExecute(indexes)
+		opts.LogCommandExecute(indexes, stmt.Text)
 		if _, err := d.db.ExecContext(ctx, stmt.Text); err != nil {
-			opts.LogCommandResponse(indexes, 0, []int32{0}, err.Error())
+			opts.LogCommandResponse(0, []int32{0}, err.Error())
 			return 0, err
 		}
-		opts.LogCommandResponse(indexes, 0, []int32{0}, "")
+		opts.LogCommandResponse(0, []int32{0}, "")
 	}
 	return totalRowsAffected, nil
 }
@@ -358,7 +358,7 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, co
 
 		for i, command := range allCommands {
 			indexes := []int32{originalIndex[allIndexes[i]]}
-			opts.LogCommandExecute(indexes)
+			opts.LogCommandExecute(indexes, command.Text)
 
 			sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(command.Text)
 			sqlResult, err := exer.ExecContext(ctx, sqlWithBytebaseAppComment, nil)
@@ -370,7 +370,7 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, co
 					}
 				}
 
-				opts.LogCommandResponse(indexes, 0, nil, err.Error())
+				opts.LogCommandResponse(0, nil, err.Error())
 				// In auto-commit mode, we stop at the first error
 				// The database is left in a partially migrated state
 				return &db.ErrorWithPosition{
@@ -389,7 +389,7 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, co
 			}
 			totalRowsAffected += rowsAffected
 
-			opts.LogCommandResponse(indexes, int32(rowsAffected), allRowsAffectedInt32, "")
+			opts.LogCommandResponse(int32(rowsAffected), allRowsAffectedInt32, "")
 		}
 
 		return nil

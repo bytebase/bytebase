@@ -5,6 +5,7 @@
     <div class="w-full flex flex-col">
       <SpecListSection v-if="isCreating || plan.specs.length > 1" />
       <TargetListSection />
+      <FailedTaskRunsSection v-if="!isCreating && rollout" />
     </div>
     <template v-if="!specHasRelease">
       <SQLCheckV1Section v-if="isCreating" />
@@ -28,12 +29,13 @@ import PlanCheckSection from "../PlanCheckSection";
 import { providePlanSQLCheckContext } from "../SQLCheckSection";
 import SQLCheckV1Section from "../SQLCheckV1Section";
 import StatementSection from "../StatementSection";
+import FailedTaskRunsSection from "./FailedTaskRunsSection.vue";
 import SpecListSection from "./SpecListSection.vue";
 import TargetListSection from "./TargetListSection.vue";
 import { useSelectedSpec } from "./context";
 
 const { project } = useCurrentProjectV1();
-const { isCreating, plan } = usePlanContext();
+const { isCreating, plan, rollout } = usePlanContext();
 
 const selectedSpec = useSelectedSpec();
 

@@ -51,6 +51,9 @@ const statement = computed(() => {
     entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE &&
     entry.commandExecute
   ) {
+    if (entry.commandExecute.kind === "statement") {
+      return entry.commandExecute.statement;
+    }
     if (!sheet) {
       return "";
     }

@@ -54,18 +54,13 @@ const view = computed((): View => {
     retryInfo,
   } = props.entry;
   if (type === TaskRunLogEntry_Type.COMMAND_EXECUTE && commandExecute) {
-    if (!commandExecute.raw.response) {
-      return "N/A";
-    }
-    if (commandExecute.raw.response.error) {
+    if (commandExecute.error) {
       return "ERROR";
     }
     if (typeof commandExecute.affectedRows !== "undefined") {
       return "AFFECTED_ROWS";
     }
-    if (typeof commandExecute.raw.response.affectedRows !== "undefined") {
-      return "AFFECTED_ROWS";
-    }
+    return "N/A";
   }
   if (
     type === TaskRunLogEntry_Type.TASK_RUN_STATUS_UPDATE &&

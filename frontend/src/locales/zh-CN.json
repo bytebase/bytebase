@@ -326,6 +326,7 @@
     }
   },
   "task-run": {
+    "failed-runs": "失败的任务 - 最新的执行日志",
     "history": "执行记录",
     "latest-logs": "执行日志",
     "status": {
@@ -1036,9 +1037,10 @@
           "transaction-control": "事务控制",
           "database-sync": "数据库同步",
           "prior-backup": "数据预备份",
-          "retry-info": "重试信息"
+          "retry-info": "重试信息",
+          "compute-diff": "计算差异"
         },
-        "estimated-affected-rows-n": "预估影响行数：{n}",
+        "affected-rows-n": "影响行数：{n}",
         "prior-backup-tables": "数据预备份相关的表",
         "status-update": {
           "waiting": "准备就绪，等待执行",
