@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	lru "github.com/hashicorp/golang-lru/v2"
-	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -16,8 +15,8 @@ import (
 
 // Store provides database access to all raw objects.
 type Store struct {
-	db          *sql.DB
-	enableCache bool
+	dbConnManager *DBConnectionManager
+	enableCache   bool
 
 	// Cache.
 	Secret               string
@@ -44,6 +43,7 @@ type Store struct {
 }
 
 // New creates a new instance of Store.
+// pgURL can be either a direct PostgreSQL URL or a file path containing the URL.
 func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	userIDCache, err := lru.New[int, *UserMessage](32768)
 	if err != nil {
@@ -118,30 +118,15 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		return nil, err
 	}
 
-	db, err := sql.Open("pgx", pgURL)
-	if err != nil {
+	// Initialize database connection (handles both direct URL and file-based)
+	dbConnManager := NewDBConnectionManager(pgURL)
+	if err := dbConnManager.Initialize(ctx); err != nil {
 		return nil, err
 	}
 
-	// Set the max open connections so that we won't exceed the connection limit of metaDB.
-	// The limit is the max connections minus connections reserved for superuser.
-	var maxConns, reservedConns int
-	if err := db.QueryRowContext(ctx, `SHOW max_connections`).Scan(&maxConns); err != nil {
-		return nil, errors.Wrap(err, "failed to get max_connections from metaDB")
-	}
-	if err := db.QueryRowContext(ctx, `SHOW superuser_reserved_connections`).Scan(&reservedConns); err != nil {
-		return nil, errors.Wrap(err, "failed to get superuser_reserved_connections from metaDB")
-	}
-	maxOpenConns := maxConns - reservedConns
-	if maxOpenConns > 50 {
-		// capped to 50
-		maxOpenConns = 50
-	}
-	db.SetMaxOpenConns(maxOpenConns)
-
-	return &Store{
-		db:          db,
-		enableCache: enableCache,
+	s := &Store{
+		dbConnManager: dbConnManager,
+		enableCache:   enableCache,
 
 		// Cache.
 		userIDCache:          userIDCache,
@@ -162,16 +147,18 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		sheetStatementCache:  sheetStatementCache,
 		dbSchemaCache:        dbSchemaCache,
 		groupCache:           groupCache,
-	}, nil
+	}
+
+	return s, nil
 }
 
 // Close closes underlying db.
 func (s *Store) Close() error {
-	return s.db.Close()
+	return s.dbConnManager.Close()
 }
 
 func (s *Store) GetDB() *sql.DB {
-	return s.db
+	return s.dbConnManager.GetDB()
 }
 
 func getInstanceCacheKey(instanceID string) string {

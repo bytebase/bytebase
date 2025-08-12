@@ -84,7 +84,7 @@ func (s *Store) CreateProjectWebhookV2(ctx context.Context, projectID string, cr
 		Payload:   create.Payload,
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
@@ -114,7 +114,7 @@ func (s *Store) CreateProjectWebhookV2(ctx context.Context, projectID string, cr
 
 // FindProjectWebhookV2 finds a list of ProjectWebhook instances.
 func (s *Store) FindProjectWebhookV2(ctx context.Context, find *FindProjectWebhookMessage) ([]*ProjectWebhookMessage, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
@@ -132,7 +132,7 @@ func (s *Store) FindProjectWebhookV2(ctx context.Context, find *FindProjectWebho
 
 // GetProjectWebhookV2 gets an instance of ProjectWebhook.
 func (s *Store) GetProjectWebhookV2(ctx context.Context, find *FindProjectWebhookMessage) (*ProjectWebhookMessage, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
@@ -158,7 +158,7 @@ func (s *Store) GetProjectWebhookV2(ctx context.Context, find *FindProjectWebhoo
 
 // UpdateProjectWebhookV2 updates an instance of ProjectWebhook.
 func (s *Store) UpdateProjectWebhookV2(ctx context.Context, projectResourceID string, projectWebhookID int, update *UpdateProjectWebhookMessage) (*ProjectWebhookMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
@@ -226,7 +226,7 @@ func (s *Store) UpdateProjectWebhookV2(ctx context.Context, projectResourceID st
 
 // DeleteProjectWebhookV2 deletes an existing projectWebhook by projectUID and url.
 func (s *Store) DeleteProjectWebhookV2(ctx context.Context, projectResourceID string, projectWebhookUID int) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
 	}

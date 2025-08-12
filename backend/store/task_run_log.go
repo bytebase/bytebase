@@ -41,7 +41,7 @@ func (s *Store) CreateTaskRunLog(ctx context.Context, taskRunUID int, t time.Tim
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal task run log")
 	}
-	if _, err := s.db.ExecContext(ctx, query, taskRunUID, t, p); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, taskRunUID, t, p); err != nil {
 		return errors.Wrapf(err, "failed to create task run log")
 	}
 	return nil
@@ -57,7 +57,7 @@ func (s *Store) ListTaskRunLogs(ctx context.Context, taskRunUID int) ([]*TaskRun
 		ORDER BY id
 	`
 
-	rows, err := s.db.QueryContext(ctx, query, taskRunUID)
+	rows, err := s.GetDB().QueryContext(ctx, query, taskRunUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query task run log")
 	}

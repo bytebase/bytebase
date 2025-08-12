@@ -65,7 +65,7 @@ func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage
 		where, args = append(where, fmt.Sprintf("changelist.name = $%d", len(args)+1)), append(args, *v)
 	}
 
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 		RETURNING updated_at;
 	`
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 
 // UpdateChangelist updates a changelist.
 func (s *Store) UpdateChangelist(ctx context.Context, update *UpdateChangelistMessage) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
@@ -190,7 +190,7 @@ func (s *Store) UpdateChangelist(ctx context.Context, update *UpdateChangelistMe
 
 // DeleteChangelist deletes a changelist.
 func (s *Store) DeleteChangelist(ctx context.Context, projectID, resourceID string) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}

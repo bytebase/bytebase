@@ -103,7 +103,7 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 		statementField = "worksheet.statement"
 	}
 
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +187,7 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 		RETURNING id, created_at, updated_at, OCTET_LENGTH(statement)
 	`
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +221,7 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 
 // PatchWorkSheet updates a sheet.
 func (s *Store) PatchWorkSheet(ctx context.Context, patch *PatchWorkSheetMessage) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
@@ -238,7 +238,7 @@ func (s *Store) PatchWorkSheet(ctx context.Context, patch *PatchWorkSheetMessage
 
 // DeleteWorkSheet deletes an existing sheet by ID.
 func (s *Store) DeleteWorkSheet(ctx context.Context, sheetUID int) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -297,7 +297,7 @@ type WorksheetOrganizerMessage struct {
 
 // UpsertWorksheetOrganizer upserts a new SheetOrganizerMessage.
 func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, organizer *WorksheetOrganizerMessage) (*WorksheetOrganizerMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}

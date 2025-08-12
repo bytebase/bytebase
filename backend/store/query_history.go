@@ -64,7 +64,7 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 		return nil, err
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 		where, args = append(where, fmt.Sprintf("query_history.type = $%d", len(args)+1)), append(args, *v)
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
