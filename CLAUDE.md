@@ -67,7 +67,6 @@ When creating pull requests:
   - Database schema breaking changes that are not backward-compatible
   - Proto message breaking changes (removed/renamed fields, changed field types)
   - Configuration breaking changes (removed flags, changed behavior)
-- **Labels**: Use appropriate labels to categorize the PR (e.g., `breaking`, `bug`, `feature`, `documentation`)
 - **Description**: Clearly describe what the PR changes and why
 - **Testing**: Include information about how the changes were tested
 
