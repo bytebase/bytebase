@@ -1038,7 +1038,7 @@
           "prior-backup": "Prior backup",
           "retry-info": "Retry information"
         },
-        "estimated-affected-rows-n": "Estimated affected rows: {n}",
+        "affected-rows-n": "Affected rows: {n}",
         "prior-backup-tables": "Prior backup tables",
         "status-update": {
           "waiting": "Ready to be executed",
