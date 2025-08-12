@@ -2632,6 +2632,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.ComputeDiff"><span class="badge">M</span>TaskRunLogEntry.ComputeDiff</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.TaskRunLogEntry.DatabaseSync"><span class="badge">M</span>TaskRunLogEntry.DatabaseSync</a>
                 </li>
               
@@ -28720,6 +28724,13 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>compute_diff</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.ComputeDiff">TaskRunLogEntry.ComputeDiff</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -28748,7 +28759,15 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>command_indexes</td>
                   <td><a href="#int32">int32</a></td>
                   <td>repeated</td>
-                  <td><p>The indexes of the executed commands. </p></td>
+                  <td><p>Either `command_indexes` or `statement` is set.
+The indexes of the executed commands. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>statement</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The executed statement. </p></td>
                 </tr>
               
                 <tr>
@@ -28802,6 +28821,44 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>repeated</td>
                   <td><p>`all_affected_rows` is the affected rows of each command.
 `all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry.ComputeDiff">TaskRunLogEntry.ComputeDiff</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -29522,6 +29579,12 @@ Format: instances/{instance}/databases/{database} </p></td>
               <tr>
                 <td>RETRY_INFO</td>
                 <td>7</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>COMPUTE_DIFF</td>
+                <td>8</td>
                 <td><p></p></td>
               </tr>
             

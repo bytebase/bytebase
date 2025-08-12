@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"fmt"
-	"slices"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -930,6 +929,7 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 				CommandExecute: &v1pb.TaskRunLogEntry_CommandExecute{
 					LogTime:        timestamppb.New(l.T),
 					CommandIndexes: l.Payload.CommandExecute.CommandIndexes,
+					Statement:      l.Payload.CommandExecute.Statement,
 				},
 			}
 			entries = append(entries, e)
@@ -940,9 +940,6 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 			}
 			prev := entries[len(entries)-1]
 			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_COMMAND_EXECUTE {
-				continue
-			}
-			if !slices.Equal(prev.CommandExecute.CommandIndexes, l.Payload.CommandResponse.CommandIndexes) {
 				continue
 			}
 			prev.CommandExecute.Response = &v1pb.TaskRunLogEntry_CommandExecute_CommandResponse{
@@ -1019,6 +1016,29 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 			prev.PriorBackup.EndTime = timestamppb.New(l.T)
 			prev.PriorBackup.Error = l.Payload.PriorBackupEnd.Error
 			prev.PriorBackup.PriorBackupDetail = convertToTaskRunPriorBackupDetail(l.Payload.PriorBackupEnd.PriorBackupDetail)
+
+		case storepb.TaskRunLog_COMPUTE_DIFF_START:
+			e := &v1pb.TaskRunLogEntry{
+				Type:     v1pb.TaskRunLogEntry_COMPUTE_DIFF,
+				LogTime:  timestamppb.New(l.T),
+				DeployId: l.Payload.DeployId,
+				ComputeDiff: &v1pb.TaskRunLogEntry_ComputeDiff{
+					StartTime: timestamppb.New(l.T),
+				},
+			}
+			entries = append(entries, e)
+
+		case storepb.TaskRunLog_COMPUTE_DIFF_END:
+			if len(entries) == 0 {
+				continue
+			}
+			prev := entries[len(entries)-1]
+			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_COMPUTE_DIFF {
+				continue
+			}
+			prev.ComputeDiff.EndTime = timestamppb.New(l.T)
+			prev.ComputeDiff.Error = l.Payload.ComputeDiffEnd.Error
+
 		case storepb.TaskRunLog_RETRY_INFO:
 			e := &v1pb.TaskRunLogEntry{
 				Type:     v1pb.TaskRunLogEntry_RETRY_INFO,

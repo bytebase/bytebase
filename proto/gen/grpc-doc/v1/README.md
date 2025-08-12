@@ -642,6 +642,7 @@
     - [TaskRunLogEntry](#bytebase-v1-TaskRunLogEntry)
     - [TaskRunLogEntry.CommandExecute](#bytebase-v1-TaskRunLogEntry-CommandExecute)
     - [TaskRunLogEntry.CommandExecute.CommandResponse](#bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse)
+    - [TaskRunLogEntry.ComputeDiff](#bytebase-v1-TaskRunLogEntry-ComputeDiff)
     - [TaskRunLogEntry.DatabaseSync](#bytebase-v1-TaskRunLogEntry-DatabaseSync)
     - [TaskRunLogEntry.PriorBackup](#bytebase-v1-TaskRunLogEntry-PriorBackup)
     - [TaskRunLogEntry.RetryInfo](#bytebase-v1-TaskRunLogEntry-RetryInfo)
@@ -10401,6 +10402,7 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | transaction_control | [TaskRunLogEntry.TransactionControl](#bytebase-v1-TaskRunLogEntry-TransactionControl) |  |  |
 | prior_backup | [TaskRunLogEntry.PriorBackup](#bytebase-v1-TaskRunLogEntry-PriorBackup) |  |  |
 | retry_info | [TaskRunLogEntry.RetryInfo](#bytebase-v1-TaskRunLogEntry-RetryInfo) |  |  |
+| compute_diff | [TaskRunLogEntry.ComputeDiff](#bytebase-v1-TaskRunLogEntry-ComputeDiff) |  |  |
 
 
 
@@ -10416,7 +10418,8 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| command_indexes | [int32](#int32) | repeated | The indexes of the executed commands. |
+| command_indexes | [int32](#int32) | repeated | Either `command_indexes` or `statement` is set. The indexes of the executed commands. |
+| statement | [string](#string) |  | The executed statement. |
 | response | [TaskRunLogEntry.CommandExecute.CommandResponse](#bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse) |  |  |
 
 
@@ -10436,6 +10439,23 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | error | [string](#string) |  |  |
 | affected_rows | [int32](#int32) |  |  |
 | all_affected_rows | [int32](#int32) | repeated | `all_affected_rows` is the affected rows of each command. `all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-ComputeDiff"></a>
+
+### TaskRunLogEntry.ComputeDiff
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| error | [string](#string) |  |  |
 
 
 
@@ -10712,6 +10732,7 @@ Read from `pg_stat_activity`
 | TRANSACTION_CONTROL | 5 |  |
 | PRIOR_BACKUP | 6 |  |
 | RETRY_INFO | 7 |  |
+| COMPUTE_DIFF | 8 |  |
 
 
  
