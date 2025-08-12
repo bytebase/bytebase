@@ -3,5 +3,5 @@
   "extends": ["config:recommended"],
   "schedule": ["* * 31 2 *"],
   "postUpdateOptions": ["gomodTidy", "pnpmDedupe"],
-  "ignoreDeps": ["github.com/pingcap/tidb/pkg/parser"]
+  "ignoreDeps": ["github.com/pingcap/tidb/pkg/parser", "github.com/elastic/go-elasticsearch/v7"]
 }
