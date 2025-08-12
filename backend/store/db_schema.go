@@ -28,7 +28,7 @@ func (s *Store) GetDBSchema(ctx context.Context, instanceID, databaseName string
 	where, args = append(where, fmt.Sprintf("instance = $%d", len(args)+1)), append(args, instanceID)
 	where, args = append(where, fmt.Sprintf("db_name = $%d", len(args)+1)), append(args, databaseName)
 
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (s *Store) UpsertDBSchema(
 			todo = EXCLUDED.todo
 		RETURNING metadata, raw_dump, config
 	`
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -151,7 +151,7 @@ func (s *Store) UpdateDBSchema(ctx context.Context, instanceID, databaseName str
 	where, args = append(where, fmt.Sprintf("instance = $%d", len(args)+1)), append(args, instanceID)
 	where, args = append(where, fmt.Sprintf("db_name = $%d", len(args)+1)), append(args, databaseName)
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ type DBSchemaWithTodo struct {
 
 // ListDBSchemasWithTodo lists all db_schemas with todo = true.
 func (s *Store) ListDBSchemasWithTodo(ctx context.Context, engineType storepb.Engine, limit int) ([]*DBSchemaWithTodo, error) {
-	rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.GetDB().QueryContext(ctx, `
 		SELECT
 			db_schema.id,
 			db_schema.instance,
@@ -220,7 +220,7 @@ func (s *Store) ListDBSchemasWithTodo(ctx context.Context, engineType storepb.En
 
 // UpdateDBSchemaTodo updates the todo column of a db_schema.
 func (s *Store) UpdateDBSchemaTodo(ctx context.Context, id int, todo bool) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -239,7 +239,7 @@ func (s *Store) UpdateDBSchemaTodo(ctx context.Context, id int, todo bool) error
 
 // UpdateDBSchemaMetadata updates the metadata of a db_schema.
 func (s *Store) UpdateDBSchemaMetadata(ctx context.Context, id int, metadata string) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -260,7 +260,7 @@ func (s *Store) UpdateDBSchemaMetadata(ctx context.Context, id int, metadata str
 // This is used by the migrator to avoid race conditions with the sync process.
 // The WHERE condition ensures atomic check-and-update, preventing any race conditions.
 func (s *Store) UpdateDBSchemaMetadataIfTodo(ctx context.Context, id int, metadata string) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}

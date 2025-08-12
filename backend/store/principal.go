@@ -112,7 +112,7 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 }
 
 func (s *Store) StatUsers(ctx context.Context) ([]*UserStat, error) {
-	rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.GetDB().QueryContext(ctx, `
 	SELECT
 		COUNT(*),
 		type,
@@ -152,7 +152,7 @@ func (s *Store) StatUsers(ctx context.Context) ([]*UserStat, error) {
 
 // ListUsers list users.
 func (s *Store) ListUsers(ctx context.Context, find *FindUserMessage) ([]*UserMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func (s *Store) ListUsers(ctx context.Context, find *FindUserMessage) ([]*UserMe
 
 // listAndCacheAllUsers is used for caching all users.
 func (s *Store) listAndCacheAllUsers(ctx context.Context) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -316,7 +316,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage) (*UserMessa
 		return nil, errors.Errorf("emails must be lower-case when they are passed into store")
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -416,7 +416,7 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 		return currentUser, nil
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}

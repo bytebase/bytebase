@@ -58,7 +58,7 @@ func (s *Store) ListReviewConfigs(ctx context.Context, find *FindReviewConfigMes
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func (s *Store) CreateReviewConfig(ctx context.Context, create *ReviewConfigMess
 		VALUES ($1, $2, $3)
 	`
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (s *Store) CreateReviewConfig(ctx context.Context, create *ReviewConfigMess
 
 // DeleteReviewConfig deletes sql review by ID.
 func (s *Store) DeleteReviewConfig(ctx context.Context, id string) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -188,7 +188,7 @@ func (s *Store) UpdateReviewConfig(ctx context.Context, patch *PatchReviewConfig
 	}
 	args = append(args, patch.ID)
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}

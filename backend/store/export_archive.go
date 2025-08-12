@@ -49,7 +49,7 @@ func (s *Store) ListExportArchives(ctx context.Context, find *FindExportArchiveM
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func (s *Store) CreateExportArchive(ctx context.Context, create *ExportArchiveMe
 		RETURNING id;
 	`
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func (s *Store) CreateExportArchive(ctx context.Context, create *ExportArchiveMe
 
 // DeleteExportArchive deletes a export archive.
 func (s *Store) DeleteExportArchive(ctx context.Context, uid int) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func (s *Store) DeleteExpiredExportArchives(ctx context.Context, retentionPeriod
 		WHERE created_at < $1
 	`
 
-	result, err := s.db.ExecContext(ctx, query, cutoffTime)
+	result, err := s.GetDB().ExecContext(ctx, query, cutoffTime)
 	if err != nil {
 		return 0, err
 	}

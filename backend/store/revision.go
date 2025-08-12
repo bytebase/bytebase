@@ -99,7 +99,7 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 		%s
 	`, strings.Join(where, " AND "), limitOffsetClause)
 
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin tx")
 	}
@@ -183,7 +183,7 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage) (
 		return nil, errors.Wrapf(err, "failed to marshal revision payload")
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin tx")
 	}
@@ -214,7 +214,7 @@ func (s *Store) DeleteRevision(ctx context.Context, uid int64, deleterUID int) e
 		SET deleter_id = $1, deleted_at = now()
 		WHERE id = $2`
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin tx")
 	}

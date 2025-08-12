@@ -39,7 +39,7 @@ type PipelineFind struct {
 
 // CreatePipelineAIO creates a pipeline with tasks all in one.
 func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *PipelineMessage, creatorUID int) (createdPipelineUID int, err error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to begin tx")
 	}
@@ -263,7 +263,7 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 		query += fmt.Sprintf(" OFFSET %d", *v)
 	}
 
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}

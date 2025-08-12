@@ -230,7 +230,7 @@ func (s *Store) GetSettingV2(ctx context.Context, name storepb.SettingName) (*Se
 		return v, nil
 	}
 
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin transaction")
 	}
@@ -257,7 +257,7 @@ func (s *Store) GetSettingV2(ctx context.Context, name storepb.SettingName) (*Se
 
 // ListSettingV2 returns a list of settings.
 func (s *Store) ListSettingV2(ctx context.Context, find *FindSettingMessage) ([]*SettingMessage, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin transaction")
 	}
@@ -302,7 +302,7 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage) 
 		ON CONFLICT (name) DO UPDATE SET ` + strings.Join(updateFields, ", ") + `
 		RETURNING name, value`
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin transaction")
 	}
@@ -338,7 +338,7 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 		return v, false, nil
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to begin transaction")
 	}
@@ -384,7 +384,7 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 
 // DeleteSettingV2 deletes a setting by the name.
 func (s *Store) DeleteSettingV2(ctx context.Context, name storepb.SettingName) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin transaction")
 	}
