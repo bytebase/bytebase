@@ -104,7 +104,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	nonEmptyStatements, idxMap := base.FilterEmptySQLWithIndexes(statements)
 
 	for currentIndex, statement := range nonEmptyStatements {
-		opts.LogCommandExecute([]int32{int32(idxMap[currentIndex])})
+		opts.LogCommandExecute([]int32{int32(idxMap[currentIndex])}, statement.Text)
 		_, err := d.client.ExecuteTransaction(ctx, &dynamodb.ExecuteTransactionInput{
 			TransactStatements: []types.ParameterizedStatement{
 				{
@@ -113,13 +113,14 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			},
 		})
 		if err != nil {
+			opts.LogCommandResponse(0, []int32{0}, err.Error())
 			return 0, &db.ErrorWithPosition{
 				Err:   errors.Wrap(err, "failed to execute statement"),
 				Start: statement.Start,
 				End:   statement.End,
 			}
 		}
-		opts.LogCommandResponse([]int32{int32(currentIndex)}, 0, []int32{}, "")
+		opts.LogCommandResponse(0, []int32{0}, "")
 	}
 
 	return 0, nil

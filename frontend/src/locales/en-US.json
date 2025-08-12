@@ -1036,7 +1036,8 @@
           "transaction-control": "Transaction control",
           "database-sync": "Database sync",
           "prior-backup": "Prior backup",
-          "retry-info": "Retry information"
+          "retry-info": "Retry information",
+          "compute-diff": "Compute diff"
         },
         "affected-rows-n": "Affected rows: {n}",
         "prior-backup-tables": "Prior backup tables",
