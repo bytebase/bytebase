@@ -90,7 +90,7 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (
 		RETURNING id
 	`
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to begin tx")
 	}
@@ -139,7 +139,7 @@ func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMess
 		WHERE id = $1
 	`, strings.Join(set, " , "))
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin tx")
 	}
@@ -237,7 +237,7 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		query += fmt.Sprintf(" OFFSET %d", *v)
 	}
 
-	rows, err := s.db.QueryContext(ctx, query, args...)
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query")
 	}

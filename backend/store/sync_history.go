@@ -39,7 +39,7 @@ func (s *Store) GetSyncHistoryByUID(ctx context.Context, uid int64) (*SyncHistor
 	}
 
 	var m []byte
-	if err := s.db.QueryRowContext(ctx, query, uid).Scan(
+	if err := s.GetDB().QueryRowContext(ctx, query, uid).Scan(
 		&h.UID,
 		&h.CreatedAt,
 		&h.InstanceID,
@@ -74,7 +74,7 @@ func (s *Store) CreateSyncHistory(ctx context.Context, instanceID, databaseName 
 		VALUES ($1, $2, $3, $4)
 		RETURNING id
 	`
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to begin tx")
 	}

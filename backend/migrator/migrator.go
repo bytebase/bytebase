@@ -22,17 +22,12 @@ const latestSchemaFileName = "migration/LATEST.sql"
 var migrationFS embed.FS
 
 // MigrateSchema migrates the schema for metadata database.
-func MigrateSchema(ctx context.Context, pgURL string) error {
+func MigrateSchema(ctx context.Context, db *sql.DB) error {
 	files, err := getSortedVersionedFiles()
 	if err != nil {
 		return err
 	}
 
-	db, err := sql.Open("pgx", pgURL)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		return err

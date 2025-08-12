@@ -135,7 +135,7 @@ func (s *Store) FindBlockingTaskByVersion(ctx context.Context, pipelineUID int, 
 		AND COALESCE(issue.status, 'OPEN') = 'OPEN'
 		ORDER BY task.id ASC
 	`
-	rows, err := s.db.QueryContext(ctx, query, pipelineUID, instanceID, databaseName)
+	rows, err := s.GetDB().QueryContext(ctx, query, pipelineUID, instanceID, databaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -363,7 +363,7 @@ func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*
 
 // ListTasks retrieves a list of tasks based on find.
 func (s *Store) ListTasks(ctx context.Context, find *TaskFind) ([]*TaskMessage, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -418,7 +418,7 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 	}
 	args = append(args, patch.ID)
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -474,7 +474,7 @@ func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment stri
 	WHERE id = ANY($3)`
 	args := []any{true, comment, taskUIDs}
 
-	if _, err := s.db.ExecContext(ctx, query, args...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to batch skip tasks")
 	}
 
@@ -489,7 +489,7 @@ func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment stri
 // 5. are the first task in the pipeline for their environment
 // 6. are not data export tasks.
 func (s *Store) ListTasksToAutoRollout(ctx context.Context, environments []string) ([]int, error) {
-	rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.GetDB().QueryContext(ctx, `
 	SELECT
 		task.pipeline_id,
 		task.environment,

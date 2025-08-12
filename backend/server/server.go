@@ -131,19 +131,21 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		s.stopper = append(s.stopper, stopper...)
 	}
 
-	if profile.Demo {
-		if err := demo.LoadDemoData(ctx, pgURL); err != nil {
-			return nil, errors.Wrapf(err, "failed to load demo data")
-		}
-	}
-	if err := migrator.MigrateSchema(ctx, pgURL); err != nil {
-		return nil, errors.Wrapf(err, "failed to migrate schema")
-	}
-
 	// Connect to the instance that stores bytebase's own metadata.
 	stores, err := store.New(ctx, pgURL, !profile.HA)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to new store")
+	}
+
+	if profile.Demo {
+		if err := demo.LoadDemoData(ctx, stores.GetDB()); err != nil {
+			stores.Close()
+			return nil, errors.Wrapf(err, "failed to load demo data")
+		}
+	}
+	if err := migrator.MigrateSchema(ctx, stores.GetDB()); err != nil {
+		stores.Close()
+		return nil, errors.Wrapf(err, "failed to migrate schema")
 	}
 	s.store = stores
 	sheetManager := sheet.NewManager(stores)
