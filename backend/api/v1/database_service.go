@@ -195,8 +195,9 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 			positionalArgs = append(positionalArgs, instanceID)
 			return fmt.Sprintf("db.instance = $%d", len(positionalArgs)), nil
 		case "environment":
-			if value.(string) != "" {
-				environmentID, err := common.GetEnvironmentID(value.(string))
+			environment := value.(string)
+			if environment != "" {
+				environmentID, err := common.GetEnvironmentID(environment)
 				if err != nil {
 					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid environment filter %q", value))
 				}

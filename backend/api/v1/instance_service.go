@@ -96,8 +96,9 @@ func parseListInstanceFilter(filter string) (*store.ListResourceFilter, error) {
 			positionalArgs = append(positionalArgs, value.(string))
 			return fmt.Sprintf("instance.resource_id = $%d", len(positionalArgs)), nil
 		case "environment":
-			if value.(string) != "" {
-				environmentID, err := common.GetEnvironmentID(value.(string))
+			environment := value.(string)
+			if environment != "" {
+				environmentID, err := common.GetEnvironmentID(environment)
 				if err != nil {
 					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid environment filter %q", value))
 				}
