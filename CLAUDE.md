@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Architecture
 - The database schema is defined in `./backend/migrator/migration/LATEST.sql`
-- The database migration files are in `./backend/migrator/<<version>>/`. `TestLatestVersion` in `./backend/migrator/migrator_test.go` needs update after new migration files are added. `./backend/migrator/migration/LATEST.sql` should updated for DDL migrations.
+- The database migration files are in `./backend/migrator/<<version>>/`. `TestLatestVersion` in `./backend/migrator/migrator_test.go` needs update after new migration files are added. `./backend/migrator/migration/LATEST.sql` should be updated for DDL migrations.
 - Files in `./backend/store` are mappings to the database tables.
 
 ## Development Workflow
@@ -46,13 +46,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Code Style
 - **General**: Follow Google style guides for all languages
-- **Conciseness**: Write clean, minimal code; fewer lines is better
+  - **Go**: https://google.github.io/styleguide/go/
+  - **TypeScript**: https://google.github.io/styleguide/tsguide.html and https://google.github.io/styleguide/jsguide.html
+- **Conciseness**: Write clean, minimal code; fewer lines is better. Prioritize simplicity for effective and maintainable software.
 - **Comments**: Only include comments that are essential to understanding functionality or convey non-obvious information
 - **Go**: Use standard Go error handling with detailed error messages
-- **API and Proto**: Follow AIPs in https://google.aip.dev/general
+- **API and Proto**: Follow AIPs at https://google.aip.dev/general. When AIP and the proto guide conflict, AIP takes precedence. For example, use HELLO for enum names, not TYPE_HELLO.
 - **Frontend**: Follow TypeScript style with strict type checking
   - **i18n**: All user-facing display text in the UI must be defined and maintained in `./frontend/src/locales/en-US.json` using the i18n internationalization system. Do not hardcode any display strings directly in the source code.
-- **Naming**: Use American English, avoid plurals like "xxxList"
+- **Naming**: Use American English, avoid plurals like "xxxList" for simplicity and to prevent singular/plural ambiguity stemming from poor design
 - **Git**: Follow conventional commit format
 - **Imports**: Use organized imports (sorted by the import path)
 - **Formatting**: Use linting/formatting tools before committing
@@ -62,6 +64,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Pull Request Guidelines
 When creating pull requests:
+- **Code Review**: Follow [Google's Code Review Guideline](https://google.github.io/eng-practices/)
+- **Author Responsibility**: Authors are responsible for driving discussions, resolving comments, and promptly merging pull requests
 - **Breaking Changes**: Add the `breaking` label to PRs that contain breaking changes, including:
   - API breaking changes (removed/renamed endpoints, changed request/response formats)
   - Database schema breaking changes that are not backward-compatible
@@ -86,7 +90,7 @@ Always follow these guidelines to avoid common linting errors:
 
 ## Misc
 
-- The database JSONB columns store JSON marshalled by protojson.Marshal in go code. protojson.Marshal produces camelCased key rather than the snake_case key defined in the proto files. e.g. task_run becomes taskRun.
+- The database JSONB columns store JSON marshalled by protojson.Marshal in Go code. protojson.Marshal produces camelCased keys rather than the snake_case keys defined in the proto files. e.g. task_run becomes taskRun.
 - When modifying multiple files, run file modification tasks in parallel whenever possible, instead of processing them sequentially.
 
 ## Individual Preferences
