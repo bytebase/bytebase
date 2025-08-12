@@ -20,11 +20,14 @@ export const getSpecTitle = (spec: Plan_Spec): string => {
       case Plan_ChangeDatabaseConfig_Type.MIGRATE:
         title = t("plan.spec.type.schema-change");
         break;
-      case Plan_ChangeDatabaseConfig_Type.DATA:
-        title = t("plan.spec.type.data-change");
+      case Plan_ChangeDatabaseConfig_Type.MIGRATE_SDL:
+        title = "SDL";
         break;
       case Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST:
         title = t("plan.spec.type.ghost-migration");
+        break;
+      case Plan_ChangeDatabaseConfig_Type.DATA:
+        title = t("plan.spec.type.data-change");
         break;
       default:
         title = t("plan.spec.type.database-change");
