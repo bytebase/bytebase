@@ -326,6 +326,7 @@
     }
   },
   "task-run": {
+    "failed-runs": "Failed Tasks - Latest Execution Logs",
     "history": "Execution History",
     "latest-logs": "Latest Logs",
     "status": {
