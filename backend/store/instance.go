@@ -18,7 +18,7 @@ import (
 // InstanceMessage is the message for instance.
 type InstanceMessage struct {
 	ResourceID    string
-	EnvironmentID string
+	EnvironmentID *string
 	Deleted       bool
 	Metadata      *storepb.Instance
 }
@@ -113,8 +113,8 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		return nil, err
 	}
 	var environment *string
-	if instanceCreate.EnvironmentID != "" {
-		environment = &instanceCreate.EnvironmentID
+	if instanceCreate.EnvironmentID != nil && *instanceCreate.EnvironmentID != "" {
+		environment = instanceCreate.EnvironmentID
 	}
 	if _, err := tx.ExecContext(ctx, `
 			INSERT INTO instance (
@@ -147,7 +147,13 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessage) (*InstanceMessage, error) {
 	set, args, where := []string{}, []any{}, []string{}
 	if v := patch.EnvironmentID; v != nil {
-		set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
+		if *v == "" {
+			// Unset the environment by setting it to NULL
+			set = append(set, fmt.Sprintf("environment = $%d", len(args)+1))
+			args = append(args, nil)
+		} else {
+			set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
+		}
 	}
 	if v := patch.Deleted; v != nil {
 		set, args = append(set, fmt.Sprintf(`deleted = $%d`, len(args)+1)), append(args, *v)
@@ -250,7 +256,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, txn *sql.Tx, find *FindI
 			return nil, err
 		}
 		if environment.Valid {
-			instanceMessage.EnvironmentID = environment.String
+			instanceMessage.EnvironmentID = &environment.String
 		}
 
 		instanceMetadata := &storepb.Instance{}

@@ -238,7 +238,7 @@ import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { UNKNOWN_PROJECT_NAME, unknownEnvironment } from "@/types";
+import { UNKNOWN_PROJECT_NAME } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import {
@@ -403,10 +403,8 @@ const handleGotoSQLEditorFailed = () => {
 };
 
 const environment = computed(() => {
-  return (
-    useEnvironmentV1Store().getEnvironmentByName(
-      database.value.effectiveEnvironment
-    ) ?? unknownEnvironment()
+  return useEnvironmentV1Store().getEnvironmentByName(
+    database.value.effectiveEnvironment ?? ""
   );
 });
 

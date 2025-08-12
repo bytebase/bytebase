@@ -28,6 +28,7 @@ import {
   DataSourceQueryPolicy_Restriction,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
+import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
 import { instanceV1AllowsCrossDatabaseQuery } from "./v1/instance";
 
 export const defaultSQLEditorTab = (): SQLEditorTab => {
@@ -181,10 +182,15 @@ export const getAdminDataSourceRestrictionOfDatabase = (
     projectLevelPolicy?.policy?.case === "dataSourceQueryPolicy"
       ? projectLevelPolicy.policy.value.adminDataSourceRestriction
       : undefined;
-  const envLevelPolicy = policyStore.getPolicyByParentAndType({
-    parentPath: database.effectiveEnvironment,
-    policyType: PolicyType.DATA_SOURCE_QUERY,
-  });
+
+  let envLevelPolicy: Policy | undefined;
+  if (database.effectiveEnvironment) {
+    envLevelPolicy = policyStore.getPolicyByParentAndType({
+      parentPath: database.effectiveEnvironment,
+      policyType: PolicyType.DATA_SOURCE_QUERY,
+    });
+  }
+
   const envLevelAdminDSRestriction =
     envLevelPolicy?.policy?.case === "dataSourceQueryPolicy"
       ? envLevelPolicy.policy.value.adminDataSourceRestriction

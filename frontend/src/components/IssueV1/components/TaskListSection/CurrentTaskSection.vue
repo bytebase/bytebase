@@ -90,11 +90,7 @@ import {
   useEnvironmentV1Store,
   useCurrentProjectV1,
 } from "@/store";
-import {
-  formatEnvironmentName,
-  isValidDatabaseName,
-  unknownEnvironment,
-} from "@/types";
+import { formatEnvironmentName, isValidDatabaseName } from "@/types";
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import { extractInstanceResourceName } from "@/utils";
@@ -146,11 +142,8 @@ const database = computedAsync(async () => {
 }, undefined);
 
 const instanceEnvironment = computed(() => {
-  if (!database.value) return unknownEnvironment();
-  return (
-    useEnvironmentV1Store().getEnvironmentByName(
-      database.value.instanceResource.environment
-    ) ?? unknownEnvironment()
+  return useEnvironmentV1Store().getEnvironmentByName(
+    database.value?.instanceResource.environment ?? ""
   );
 });
 </script>

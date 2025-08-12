@@ -31,7 +31,7 @@ const instance = computed(() => {
 });
 
 const environment = computed(() =>
-  useEnvironmentV1Store().getEnvironmentByName(instance.value.environment)
+  useEnvironmentV1Store().getEnvironmentByName(instance.value.environment ?? "")
 );
 
 const hasEnvironmentContext = computed(() => {

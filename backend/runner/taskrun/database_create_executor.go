@@ -90,11 +90,16 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		slog.String("statement", statement),
 	)
 
+	envID := task.Payload.GetEnvironmentId()
+	var environmentID *string
+	if envID != "" {
+		environmentID = &envID
+	}
 	database, err := exec.store.UpsertDatabase(ctx, &store.DatabaseMessage{
 		ProjectID:     pipeline.ProjectID,
 		InstanceID:    instance.ResourceID,
 		DatabaseName:  task.Payload.GetDatabaseName(),
-		EnvironmentID: task.Payload.GetEnvironmentId(),
+		EnvironmentID: environmentID,
 		Metadata:      &storepb.DatabaseMetadata{},
 	})
 	if err != nil {

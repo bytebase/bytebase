@@ -11467,7 +11467,7 @@ components:
                     description: require_uppercase_letter requires the password must contains at least one upper case letter.
                 requireSpecialCharacter:
                     type: boolean
-                    description: require_uppercase_letter requires the password must contains at least one special character.
+                    description: require_special_character requires the password must contains at least one special character.
                 requireResetPasswordForFirstLogin:
                     type: boolean
                     description: require_reset_password_for_first_login requires users to reset their password after the 1st login.

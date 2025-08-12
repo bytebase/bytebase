@@ -20,8 +20,8 @@ type DatabaseMessage struct {
 	InstanceID   string
 	DatabaseName string
 
-	EnvironmentID          string
-	EffectiveEnvironmentID string
+	EnvironmentID          *string
+	EffectiveEnvironmentID *string
 
 	Deleted  bool
 	Metadata *storepb.DatabaseMetadata
@@ -188,8 +188,8 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	defer tx.Rollback()
 
 	var environment *string
-	if create.EnvironmentID != "" {
-		environment = &create.EnvironmentID
+	if create.EnvironmentID != nil && *create.EnvironmentID != "" {
+		environment = create.EnvironmentID
 	}
 	query := `
 		INSERT INTO db (
@@ -339,7 +339,7 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 		}
 		// Update cache for environment field and effective environment field.
 		if update.EnvironmentID != nil {
-			updatedDatabase.EnvironmentID = *update.EnvironmentID
+			updatedDatabase.EnvironmentID = update.EnvironmentID
 			if *update.EnvironmentID == "" {
 				instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &database.InstanceID})
 				if err != nil {
@@ -348,7 +348,7 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 				}
 				updatedDatabase.EffectiveEnvironmentID = instance.EnvironmentID
 			} else {
-				updatedDatabase.EffectiveEnvironmentID = *update.EnvironmentID
+				updatedDatabase.EffectiveEnvironmentID = update.EnvironmentID
 			}
 		}
 		s.databaseCache.Add(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), &updatedDatabase)
@@ -445,10 +445,10 @@ func (*Store) listDatabaseImplV2(ctx context.Context, txn *sql.Tx, find *FindDat
 			return nil, err
 		}
 		if effectiveEnvironment.Valid {
-			databaseMessage.EffectiveEnvironmentID = effectiveEnvironment.String
+			databaseMessage.EffectiveEnvironmentID = &effectiveEnvironment.String
 		}
 		if environment.Valid {
-			databaseMessage.EnvironmentID = environment.String
+			databaseMessage.EnvironmentID = &environment.String
 		}
 
 		var metadata storepb.DatabaseMetadata
