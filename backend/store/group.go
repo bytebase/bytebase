@@ -40,7 +40,7 @@ func (s *Store) GetGroup(ctx context.Context, email string) (*GroupMessage, erro
 		return v, nil
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (s *Store) GetGroup(ctx context.Context, email string) (*GroupMessage, erro
 
 // ListGroups list all groups.
 func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*GroupMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +152,7 @@ func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage) (*GroupMe
 		return nil, err
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin tx")
 	}
@@ -179,7 +179,7 @@ func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage) (*GroupMe
 
 // UpdateGroup updates a group.
 func (s *Store) UpdateGroup(ctx context.Context, email string, patch *UpdateGroupMessage) (*GroupMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
@@ -238,7 +238,7 @@ func (s *Store) UpdateGroup(ctx context.Context, email string, patch *UpdateGrou
 
 // DeleteGroup deletes a group.
 func (s *Store) DeleteGroup(ctx context.Context, email string) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin transaction")
 	}

@@ -72,7 +72,7 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 		limitOffsetClause += fmt.Sprintf(" OFFSET %d", *v)
 	}
 
-	rows, err := s.db.QueryContext(ctx, fmt.Sprintf(`
+	rows, err := s.GetDB().QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			id,
 			creator_id,
@@ -164,7 +164,7 @@ func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMess
 		return nil, errors.Wrapf(err, "failed to marshal payload")
 	}
 
-	if err := s.db.QueryRowContext(ctx, query, creatorUID, create.IssueUID, payload).Scan(&create.UID, &create.CreatedAt, &create.UpdatedAt); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, creatorUID, create.IssueUID, payload).Scan(&create.UID, &create.CreatedAt, &create.UpdatedAt); err != nil {
 		return nil, errors.Wrapf(err, "failed to insert")
 	}
 
@@ -186,7 +186,7 @@ func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommen
 	}
 	args = append(args, patch.UID)
 	query := `UPDATE issue_comment SET ` + strings.Join(set, ", ") + fmt.Sprintf(` WHERE id = $%d`, len(args))
-	if _, err := s.db.ExecContext(ctx, query, args...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to update issue comment")
 	}
 	return nil

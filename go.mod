@@ -45,6 +45,7 @@ require (
 	github.com/databricks/databricks-sdk-go v0.78.0
 	github.com/docker/docker v28.3.3+incompatible
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
+	github.com/fsnotify/fsnotify v1.6.0
 	github.com/github/gh-ost v1.1.7
 	github.com/go-ego/gse v0.80.3
 	github.com/go-ldap/ldap/v3 v3.4.11

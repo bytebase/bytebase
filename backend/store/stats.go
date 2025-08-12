@@ -20,7 +20,7 @@ type CountInstanceMessage struct {
 
 // CountUsers counts the principal.
 func (s *Store) CountUsers(ctx context.Context, userType storepb.PrincipalType) (int, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
@@ -55,7 +55,7 @@ func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (
 		FROM instance
 		WHERE ` + strings.Join(where, " AND ")
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
@@ -73,7 +73,7 @@ func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (
 
 // CountActiveUsers counts the number of endusers.
 func (s *Store) CountActiveUsers(ctx context.Context) (int, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
@@ -100,7 +100,7 @@ func (s *Store) CountActiveUsers(ctx context.Context) (int, error) {
 // CountProjects counts the number of projects and group by workflow type.
 // Used by the metric collector.
 func (s *Store) CountProjects(ctx context.Context) (int, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
@@ -124,7 +124,7 @@ func (s *Store) CountProjects(ctx context.Context) (int, error) {
 // CountIssues counts the number of issues.
 // Used by the metric collector.
 func (s *Store) CountIssues(ctx context.Context) (int, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
@@ -147,7 +147,7 @@ func (s *Store) CountIssues(ctx context.Context) (int, error) {
 // CountInstanceGroupByEngineAndEnvironmentID counts the number of instances and group by engine and environment.
 // Used by the metric collector.
 func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) ([]*metric.InstanceCountMetric, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}

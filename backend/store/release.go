@@ -62,7 +62,7 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 		return nil, errors.Wrapf(err, "failed to marshal release payload")
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin tx")
 	}
@@ -143,7 +143,7 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 		query += fmt.Sprintf(" OFFSET %d", *v)
 	}
 
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin tx")
 	}
@@ -211,7 +211,7 @@ func (s *Store) UpdateRelease(ctx context.Context, update *UpdateReleaseMessage)
 
 	args = append(args, update.UID)
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
