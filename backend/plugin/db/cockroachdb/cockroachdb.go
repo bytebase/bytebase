@@ -363,6 +363,7 @@ func (d *Driver) executeInTransactionMode(
 			_, err := conn.ExecContext(ctx, statement)
 			return err
 		}); err != nil {
+			opts.LogCommandResponse(0, []int32{0}, err.Error())
 			return 0, err
 		}
 		opts.LogCommandResponse(0, []int32{0}, "")
