@@ -3,7 +3,7 @@ package pg
 import (
 	"testing"
 
-	parser "github.com/bytebase/postgresql-parser"
+	parser "github.com/bytebase/parser/postgresql"
 	"github.com/stretchr/testify/require"
 )
 

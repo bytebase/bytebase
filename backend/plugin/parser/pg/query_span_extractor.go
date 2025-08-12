@@ -17,7 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 
-	pgparser "github.com/bytebase/postgresql-parser"
+	pgparser "github.com/bytebase/parser/postgresql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
