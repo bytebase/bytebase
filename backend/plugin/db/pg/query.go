@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	parser "github.com/bytebase/postgresql-parser"
+	parser "github.com/bytebase/parser/postgresql"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/bytebase/bytebase/backend/common/log"
