@@ -195,7 +195,10 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 			positionalArgs = append(positionalArgs, instanceID)
 			return fmt.Sprintf("db.instance = $%d", len(positionalArgs)), nil
 		case "environment":
-			environment := value.(string)
+			environment, ok := value.(string)
+			if !ok {
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse value %v to string", value))
+			}
 			if environment != "" {
 				environmentID, err := common.GetEnvironmentID(environment)
 				if err != nil {
