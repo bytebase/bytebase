@@ -22,12 +22,8 @@ func TestListDatabaseFilter(t *testing.T) {
 		{
 			input: `environment == "environments/test"`,
 			want: &store.ListResourceFilter{
-				Where: `(
-			COALESCE(
-				db.environment,
-				instance.environment
-			) = $1)`,
-				Args: []any{"test"},
+				Where: `(COALESCE(db.environment, instance.environment) = $1)`,
+				Args:  []any{"test"},
 			},
 		},
 		{

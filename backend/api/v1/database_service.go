@@ -205,11 +205,7 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid environment filter %q", value))
 				}
 				positionalArgs = append(positionalArgs, environmentID)
-				return fmt.Sprintf(`
-				COALESCE(
-					db.environment,
-					instance.environment
-				) = $%d`, len(positionalArgs)), nil
+				return fmt.Sprintf(`COALESCE(db.environment, instance.environment) = $%d`, len(positionalArgs)), nil
 			}
 			return "db.environment IS NULL AND instance.environment IS NULL", nil
 		case "engine":
