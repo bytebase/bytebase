@@ -1102,6 +1102,7 @@
       "statement-empty": "ステートメントが空です"
     },
     "spec": {
+      "change": "変化",
       "type": {
         "create-database": "データベースの作成",
         "schema-change": "スキーマの変更",
