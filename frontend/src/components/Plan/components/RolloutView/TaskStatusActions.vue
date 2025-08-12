@@ -4,12 +4,7 @@
       v-if="!props.readonly && (primaryAction || dropdownOptions.length > 0)"
       class="flex flex-row justify-end items-center gap-x-2"
     >
-      <NButton
-        v-if="primaryAction"
-        type="primary"
-        size="small"
-        @click="handlePrimaryAction"
-      >
+      <NButton v-if="primaryAction" size="small" @click="handlePrimaryAction">
         {{ actionDisplayTitle(primaryAction) }}
       </NButton>
       <NDropdown
@@ -18,7 +13,7 @@
         :options="dropdownOptions"
         @select="handleDropdownSelect"
       >
-        <NButton size="small">
+        <NButton size="small" class="!px-1" quaternary>
           <template #icon>
             <EllipsisVerticalIcon class="w-4 h-4" />
           </template>

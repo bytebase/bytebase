@@ -29,7 +29,7 @@ func getBaseProfile(dataDir string) *config.Profile {
 		Demo:               flags.demo,
 		Version:            version,
 		GitCommit:          gitcommit,
-		PgURL:              flags.pgURL,
+		PgURL:              os.Getenv("PG_URL"),
 		DeployID:           uuid.NewString()[:8],
 	}
 

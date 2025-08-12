@@ -1,6 +1,5 @@
-import slug from "slug";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types";
-import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 
 export const sheetNameOfSpec = (spec: Plan_Spec): string => {
   if (spec.config?.case === "changeDatabaseConfig") {
@@ -11,10 +10,6 @@ export const sheetNameOfSpec = (spec: Plan_Spec): string => {
   }
   return "";
 };
-
-export function planV1Slug(plan: Plan): string {
-  return [slug(plan.title), extractPlanUID(plan.name)].join("-");
-}
 
 export const extractPlanUID = (name: string) => {
   const pattern = /(?:^|\/)plans\/(\d+)(?:$|\/)/;

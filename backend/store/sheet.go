@@ -127,7 +127,7 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 		statementField = "sheet_blob.content"
 	}
 
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 		RETURNING id, created_at
 	`
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +294,7 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectID string, creates 
 		RETURNING id, created_at
 	`
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin tx")
 	}
@@ -341,7 +341,7 @@ func (s *Store) BatchCreateSheetBlob(ctx context.Context, sha256s [][]byte, cont
 		ON CONFLICT DO NOTHING
 	`
 
-	if _, err := s.db.ExecContext(ctx, query, sha256s, contents); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, sha256s, contents); err != nil {
 		return errors.Wrapf(err, "failed to exec")
 	}
 
@@ -361,7 +361,7 @@ func (s *Store) PatchSheet(ctx context.Context, patch *PatchSheetMessage) (*Shee
 	}
 
 	var uid int
-	if err := s.db.QueryRowContext(ctx, `
+	if err := s.GetDB().QueryRowContext(ctx, `
 		UPDATE sheet
 		SET
 			sha256 = $1

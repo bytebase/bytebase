@@ -52,7 +52,7 @@ type UpdateIdentityProviderMessage struct {
 
 // CreateIdentityProvider creates an identity provider.
 func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProviderMessage) (*IdentityProviderMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func (s *Store) GetIdentityProvider(ctx context.Context, find *FindIdentityProvi
 		}
 	}
 
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func (s *Store) GetIdentityProvider(ctx context.Context, find *FindIdentityProvi
 
 // ListIdentityProviders lists identity providers.
 func (s *Store) ListIdentityProviders(ctx context.Context, find *FindIdentityProviderMessage) ([]*IdentityProviderMessage, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,7 @@ func (s *Store) ListIdentityProviders(ctx context.Context, find *FindIdentityPro
 
 // UpdateIdentityProvider updates an identity provider.
 func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentityProviderMessage) (*IdentityProviderMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +269,7 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, txn *sql.Tx, find *
 }
 
 func (s *Store) DeleteIdentityProvider(ctx context.Context, resourceID string) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}

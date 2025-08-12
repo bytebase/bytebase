@@ -1288,6 +1288,11 @@ export declare type TaskRunLogEntry = Message<"bytebase.v1.TaskRunLogEntry"> & {
    * @generated from field: bytebase.v1.TaskRunLogEntry.RetryInfo retry_info = 9;
    */
   retryInfo?: TaskRunLogEntry_RetryInfo;
+
+  /**
+   * @generated from field: bytebase.v1.TaskRunLogEntry.ComputeDiff compute_diff = 10;
+   */
+  computeDiff?: TaskRunLogEntry_ComputeDiff;
 };
 
 /**
@@ -1332,11 +1337,19 @@ export declare type TaskRunLogEntry_CommandExecute = Message<"bytebase.v1.TaskRu
   logTime?: Timestamp;
 
   /**
+   * Either `command_indexes` or `statement` is set.
    * The indexes of the executed commands.
    *
    * @generated from field: repeated int32 command_indexes = 2;
    */
   commandIndexes: number[];
+
+  /**
+   * The executed statement.
+   *
+   * @generated from field: string statement = 4;
+   */
+  statement: string;
 
   /**
    * @generated from field: bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse response = 3;
@@ -1564,6 +1577,32 @@ export declare type TaskRunLogEntry_RetryInfo = Message<"bytebase.v1.TaskRunLogE
 export declare const TaskRunLogEntry_RetryInfoSchema: GenMessage<TaskRunLogEntry_RetryInfo>;
 
 /**
+ * @generated from message bytebase.v1.TaskRunLogEntry.ComputeDiff
+ */
+export declare type TaskRunLogEntry_ComputeDiff = Message<"bytebase.v1.TaskRunLogEntry.ComputeDiff"> & {
+  /**
+   * @generated from field: google.protobuf.Timestamp start_time = 1;
+   */
+  startTime?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp end_time = 2;
+   */
+  endTime?: Timestamp;
+
+  /**
+   * @generated from field: string error = 3;
+   */
+  error: string;
+};
+
+/**
+ * Describes the message bytebase.v1.TaskRunLogEntry.ComputeDiff.
+ * Use `create(TaskRunLogEntry_ComputeDiffSchema)` to create a new message.
+ */
+export declare const TaskRunLogEntry_ComputeDiffSchema: GenMessage<TaskRunLogEntry_ComputeDiff>;
+
+/**
  * @generated from enum bytebase.v1.TaskRunLogEntry.Type
  */
 export enum TaskRunLogEntry_Type {
@@ -1606,6 +1645,11 @@ export enum TaskRunLogEntry_Type {
    * @generated from enum value: RETRY_INFO = 7;
    */
   RETRY_INFO = 7,
+
+  /**
+   * @generated from enum value: COMPUTE_DIFF = 8;
+   */
+  COMPUTE_DIFF = 8,
 }
 
 /**

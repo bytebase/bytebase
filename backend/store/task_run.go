@@ -97,7 +97,7 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 		where = append(where, fmt.Sprintf("task_run.status in (%s)", strings.Join(list, ",")))
 	}
 
-	rows, err := s.db.QueryContext(ctx, fmt.Sprintf(`
+	rows, err := s.GetDB().QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			task_run.id,
 			task_run.creator_id,
@@ -201,7 +201,7 @@ func (s *Store) GetTaskRun(ctx context.Context, uid int) (*TaskRunMessage, error
 
 // UpdateTaskRunStatus updates task run status.
 func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPatch) (*TaskRunMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin tx")
 	}
@@ -233,7 +233,7 @@ func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPat
 func (s *Store) UpdateTaskRunStartAt(ctx context.Context, taskRunID int) error {
 	// Get the pipeline ID for cache invalidation
 	var pipelineID int
-	if err := s.db.QueryRowContext(ctx, `
+	if err := s.GetDB().QueryRowContext(ctx, `
 		UPDATE task_run
 		SET started_at = now(), updated_at = now()
 		WHERE id = $1
@@ -263,7 +263,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creates ...*TaskRunMe
 		taskIDs = append(taskIDs, create.TaskUID)
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin tx")
 	}
@@ -435,7 +435,7 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 
 // ListTaskRun returns a list of taskRuns.
 func (s *Store) ListTaskRun(ctx context.Context, find *TaskRunFind) ([]*TaskRunMessage, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -531,7 +531,7 @@ func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int) error
 	}
 
 	// Get affected pipeline IDs for cache invalidation
-	rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.GetDB().QueryContext(ctx, `
 		SELECT DISTINCT task.pipeline_id
 		FROM task_run
 		JOIN task ON task.id = task_run.task_id
@@ -558,7 +558,7 @@ func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int) error
 		UPDATE task_run
 		SET status = $1, updated_at = now()
 		WHERE id = ANY($2)`
-	if _, err := s.db.ExecContext(ctx, query, storepb.TaskRun_CANCELED.String(), taskRunIDs); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, storepb.TaskRun_CANCELED.String(), taskRunIDs); err != nil {
 		return err
 	}
 

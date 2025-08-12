@@ -61,19 +61,14 @@ var (
 		// Used for Bytebase command line config
 		port        int
 		externalURL string
-		// pgURL must follow PostgreSQL connection URIs pattern.
-		// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
-		pgURL   string
-		dataDir string
-		ha      bool
-		saas    bool
+		dataDir     string
+		ha          bool
+		saas        bool
 		// output logs in json format
 		enableJSONLogging bool
 		// demo mode.
 		demo  bool
 		debug bool
-		// disableMetric is the flag to disable the metric collector.
-		disableMetric bool
 		// disableSample is the flag to disable the sample instance.
 		disableSample bool
 		// memoryProfileThreshold is the threshold of memory usage in bytes to trigger a memory profile.
@@ -104,18 +99,13 @@ func init() {
 	// Instead they would configure a gateway to forward the traffic to Bytebase. Users need to set --external-url to the address
 	// exposed on that gateway accordingly.
 	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", "", "the external URL where user visits Bytebase, must start with http:// or https://")
-	// Support environment variable for deploying to render.com using its blueprint file.
-	// Render blueprint allows to specify a postgres database along with a service.
-	// It allows to pass the postgres connection string as an ENV to the service.
-	rootCmd.PersistentFlags().StringVar(&flags.pgURL, "pg", os.Getenv("PG_URL"), "optional external PostgreSQL instance connection url (must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
-	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "not recommended for production. Directory where Bytebase stores data if --pg is not specified. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
+	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "not recommended for production. Directory where Bytebase stores data if PG_URL is not specified. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.ha, "ha", false, "run in HA mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.saas, "saas", false, "run in SaaS mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.enableJSONLogging, "enable-json-logging", false, "enable output logs in bytebase in json format")
 	// Must be one of the subpath name in the ../migrator/demo directory
 	rootCmd.PersistentFlags().BoolVar(&flags.demo, "demo", false, "run in demo mode.")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
-	rootCmd.PersistentFlags().BoolVar(&flags.disableMetric, "disable-metric", false, "disable the metric collector")
 	rootCmd.PersistentFlags().BoolVar(&flags.disableSample, "disable-sample", false, "disable the sample instance")
 	rootCmd.PersistentFlags().Uint64Var(&flags.memoryProfileThreshold, "memory-profile-threshold", 0, "the threshold of memory usage in bytes to trigger a memory profile")
 }
@@ -176,15 +166,15 @@ func start() {
 		return
 	}
 
+	profile := activeProfile(flags.dataDir)
+
 	// A safety measure to prevent accidentally resetting user's actual data with demo data.
 	// For emebeded mode, we control where data is stored and we put demo data in a separate directory
 	// from the non-demo data.
-	if flags.demo && flags.pgURL != "" {
+	if flags.demo && profile.PgURL != "" {
 		slog.Error("demo mode is disallowed when storing metadata in external PostgreSQL instance")
 		return
 	}
-
-	profile := activeProfile(flags.dataDir)
 
 	// The ideal bootstrap order is:
 	// 1. Connect to the metadb

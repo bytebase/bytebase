@@ -180,7 +180,7 @@ type OpenIDConfigurationResponse struct {
 var openidConfigResponseCache = make(map[string]*OpenIDConfigurationResponse)
 
 // GetOpenIDConfiguration fetches the OpenID Configuration from the given issuer.
-func GetOpenIDConfiguration(issuer string) (*OpenIDConfigurationResponse, error) {
+func GetOpenIDConfiguration(issuer string, insecureSkipVerify bool) (*OpenIDConfigurationResponse, error) {
 	// Return from cache if available.
 	if config, found := openidConfigResponseCache[issuer]; found {
 		return config, nil
@@ -194,7 +194,7 @@ func GetOpenIDConfiguration(issuer string) (*OpenIDConfigurationResponse, error)
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: insecureSkipVerify,
 			},
 		},
 	}

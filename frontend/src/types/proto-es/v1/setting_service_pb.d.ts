@@ -622,6 +622,13 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: bool disallow_password_signin = 12;
    */
   disallowPasswordSignin: boolean;
+
+  /**
+   * Whether to enable metric collection for the workspace.
+   *
+   * @generated from field: bool enable_metric_collection = 13;
+   */
+  enableMetricCollection: boolean;
 };
 
 /**
