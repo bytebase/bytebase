@@ -113,6 +113,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			},
 		})
 		if err != nil {
+			opts.LogCommandResponse(0, []int32{}, err.Error())
 			return 0, &db.ErrorWithPosition{
 				Err:   errors.Wrap(err, "failed to execute statement"),
 				Start: statement.Start,
