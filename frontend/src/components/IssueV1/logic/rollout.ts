@@ -89,8 +89,9 @@ export const semanticTaskType = (type: Task_Type) => {
     case Task_Type.DATABASE_DATA_UPDATE:
       return "DML";
     case Task_Type.DATABASE_SCHEMA_UPDATE:
-    case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
       return "DDL";
+    case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
+      return "SDL";
     case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
       return "gh-ost";
     case Task_Type.DATABASE_EXPORT:
