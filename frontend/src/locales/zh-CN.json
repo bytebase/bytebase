@@ -1258,6 +1258,7 @@
       "sync-new": "仅同步新数据库",
       "sync-all-tip": "数据库同步是异步的，可能需要几秒到几分钟"
     },
+    "no-environment": "此实例尚未绑定到环境",
     "selected-n-instances": "已选择 {n} 个实例",
     "users": "用户",
     "successfully-restored-instance": "已成功恢复实例“{0}”。",
@@ -1445,6 +1446,7 @@
   "environment": {
     "select": "选择环境",
     "delete": "删除此环境",
+    "delete-description": "删除环境也会将其从相关实例和数据库中删除。@:common.cannot-undo-this-action",
     "create": "创建环境",
     "successfully-updated-environment": "环境'{name}'更新成功",
     "production-environment": "生产环境",
@@ -1548,6 +1550,8 @@
     "rollback-tip": "选择要回滚到的某个 DDL 历史记录。"
   },
   "database": {
+    "no-environment": "该数据库尚未绑定到环境",
+    "set-environment": "设置环境",
     "sync-database": "同步数据库",
     "select": "选择数据库",
     "sync-status": "同步状态",

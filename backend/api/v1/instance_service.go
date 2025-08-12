@@ -96,12 +96,19 @@ func parseListInstanceFilter(filter string) (*store.ListResourceFilter, error) {
 			positionalArgs = append(positionalArgs, value.(string))
 			return fmt.Sprintf("instance.resource_id = $%d", len(positionalArgs)), nil
 		case "environment":
-			environmentID, err := common.GetEnvironmentID(value.(string))
-			if err != nil {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid environment filter %q", value))
+			environment, ok := value.(string)
+			if !ok {
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse value %v to string", value))
 			}
-			positionalArgs = append(positionalArgs, environmentID)
-			return fmt.Sprintf("instance.environment = $%d", len(positionalArgs)), nil
+			if environment != "" {
+				environmentID, err := common.GetEnvironmentID(environment)
+				if err != nil {
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid environment filter %q", value))
+				}
+				positionalArgs = append(positionalArgs, environmentID)
+				return fmt.Sprintf("instance.environment = $%d", len(positionalArgs)), nil
+			}
+			return "instance.environment IS NULL", nil
 		case "state":
 			v1State, ok := v1pb.State_value[value.(string)]
 			if !ok {
@@ -425,7 +432,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 
 	metadata := proto.CloneOf(instance.Metadata)
 	patch := &store.UpdateInstanceMessage{
-		ResourceID: instance.ResourceID,
+		ResourceID: &instance.ResourceID,
 		Metadata:   metadata,
 	}
 	updateActivation := false
@@ -540,7 +547,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 	metadata := proto.CloneOf(instance.Metadata)
 	metadata.Activation = false
 	if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
-		ResourceID: instance.ResourceID,
+		ResourceID: &instance.ResourceID,
 		Deleted:    &deletePatch,
 		Metadata:   metadata,
 	}); err != nil {
@@ -569,7 +576,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 	}
 
 	ins, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
-		ResourceID: instance.ResourceID,
+		ResourceID: &instance.ResourceID,
 		Deleted:    &undeletePatch,
 	})
 	if err != nil {
@@ -717,7 +724,10 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 
 	metadata := proto.CloneOf(instance.Metadata)
 	metadata.DataSources = append(metadata.DataSources, dataSource)
-	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{ResourceID: instance.ResourceID, Metadata: metadata})
+	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
+		ResourceID: &instance.ResourceID,
+		Metadata:   metadata,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -900,7 +910,10 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		return connect.NewResponse(result), nil
 	}
 
-	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{ResourceID: instance.ResourceID, Metadata: metadata})
+	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
+		ResourceID: &instance.ResourceID,
+		Metadata:   metadata,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -942,7 +955,10 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Req
 	}
 
 	metadata.DataSources = updatedDataSources
-	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{ResourceID: instance.ResourceID, Metadata: metadata})
+	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
+		ResourceID: &instance.ResourceID,
+		Metadata:   metadata,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

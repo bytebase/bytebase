@@ -1258,6 +1258,7 @@
       "sync-new": "新しいデータベースのみを同期する",
       "sync-all-tip": "データベースの同期は非同期で、数秒から数分かかる場合があります。"
     },
+    "no-environment": "このインスタンスは環境にバインドされていません",
     "selected-n-instances": "{n} 個のインスタンスが選択されました",
     "users": "ユーザー",
     "successfully-restored-instance": "インスタンス '{0}' を正常に復元しました。",
@@ -1445,6 +1446,7 @@
   "environment": {
     "select": "環境を選ぶ",
     "delete": "この環境を削除します",
+    "delete-description": "環境を削除すると、関連するインスタンスとデータベースからも削除されます。@:common.cannot-undo-this-action",
     "create": "環境を作成する",
     "successfully-updated-environment": "環境「{name}」は正常に更新されました",
     "production-environment": "本番環境",
@@ -1548,6 +1550,8 @@
     "rollback-tip": "ロールバックする特定の DDL 履歴を選択します。"
   },
   "database": {
+    "no-environment": "このデータベースは環境にバインドされていません",
+    "set-environment": "環境を設定する",
     "sync-database": "データベースを同期",
     "select": "データベースの選択",
     "sync-status": "同期ステータス",

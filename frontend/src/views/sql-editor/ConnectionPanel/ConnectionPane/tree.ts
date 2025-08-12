@@ -18,7 +18,7 @@ import type {
   SQLEditorTreeNode as TreeNode,
   StatefulSQLEditorTreeFactor as StatefulFactor,
 } from "@/types";
-import { DEBOUNCE_SEARCH_DELAY } from "@/types";
+import { DEBOUNCE_SEARCH_DELAY, UNKNOWN_ENVIRONMENT_NAME } from "@/types";
 import {
   isDatabaseV1Queryable,
   getDefaultPagination,
@@ -93,7 +93,8 @@ export const useSQLEditorTreeByEnvironment = (
         pageSize: getDefaultPagination(),
         filter: {
           ...filter,
-          environment,
+          environment:
+            environment === UNKNOWN_ENVIRONMENT_NAME ? "" : environment,
         },
       });
 
