@@ -50,7 +50,7 @@
 
    ```bash
    PG_URL=postgresql://bbdev@localhost/bbdev
-   go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go && ./bytebase-build/bytebase --port 8080 --data . --debug --disable-sample
+   go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go && ./bytebase-build/bytebase --port 8080 --data . --debug
    ```
 
 1. Start frontend (with live reload).

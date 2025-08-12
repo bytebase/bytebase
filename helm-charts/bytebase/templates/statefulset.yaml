@@ -7,7 +7,6 @@
 {{- $port := .Values.bytebase.option.port -}}
 {{- $data := .Values.bytebase.option.data -}}
 {{- $external_url := index .Values.bytebase.option "external-url" -}}
-{{- $disable_sample := index .Values.bytebase.option "disable-sample" }}
 # bytebase.option.externalPg
 {{- $externalPgURL := .Values.bytebase.option.externalPg.url -}}
 {{- $externalPgExistingPgURLSecret := .Values.bytebase.option.externalPg.existingPgURLSecret -}}
@@ -163,9 +162,6 @@ spec:
               {{ $port | quote }} \
               --external-url \
               {{ $external_url | quote }} \
-              {{- if $disable_sample }}
-              --disable-sample
-              {{- end }}
           ports:
             - containerPort: {{ $port }}
               name: web
