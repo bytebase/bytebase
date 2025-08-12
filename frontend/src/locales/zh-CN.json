@@ -326,6 +326,7 @@
     }
   },
   "task-run": {
+    "failed-runs": "失败的任务 - 最新的执行日志",
     "history": "执行记录",
     "latest-logs": "执行日志",
     "status": {

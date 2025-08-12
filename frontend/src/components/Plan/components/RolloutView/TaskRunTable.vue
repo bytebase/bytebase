@@ -17,7 +17,7 @@
         v-if="taskRunDetailContext.taskRun"
         :key="taskRunDetailContext.taskRun.name"
         :task-run="taskRunDetailContext.taskRun"
-        :database="databaseForTask(project, task)"
+        :database="database"
       />
     </DrawerContent>
   </Drawer>
@@ -45,13 +45,17 @@ import { databaseForTask } from "@/utils";
 import { humanizeDurationV1 } from "@/utils";
 import TaskRunComment from "./TaskRunComment.vue";
 
-defineProps<{
+const props = defineProps<{
   task: Task;
   taskRuns: TaskRun[];
 }>();
 
 const { t } = useI18n();
 const { project } = useCurrentProjectV1();
+
+const database = computed(() => {
+  return databaseForTask(project.value, props.task);
+});
 
 const taskRunDetailContext = ref<{
   show: boolean;
