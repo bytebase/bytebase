@@ -255,10 +255,10 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, commands []base.S
 	}()
 
 	for i, command := range commands {
-		opts.LogCommandExecute([]int32{int32(i)})
+		opts.LogCommandExecute([]int32{int32(i)}, command.Text)
 		sqlResult, err := tx.ExecContext(ctx, command.Text)
 		if err != nil {
-			opts.LogCommandResponse([]int32{int32(i)}, 0, nil, err.Error())
+			opts.LogCommandResponse(0, nil, err.Error())
 			return 0, &db.ErrorWithPosition{
 				Err:   errors.Wrapf(err, "failed to execute context in a transaction"),
 				Start: command.Start,
@@ -270,7 +270,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, commands []base.S
 			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
 			slog.Debug("rowsAffected returns error", log.BBError(err))
 		}
-		opts.LogCommandResponse([]int32{int32(i)}, int32(rowsAffected), nil, "")
+		opts.LogCommandResponse(int32(rowsAffected), nil, "")
 		totalRowsAffected += rowsAffected
 	}
 
@@ -289,10 +289,10 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, commands []base.Si
 	totalRowsAffected := int64(0)
 
 	for i, command := range commands {
-		opts.LogCommandExecute([]int32{int32(i)})
+		opts.LogCommandExecute([]int32{int32(i)}, command.Text)
 		sqlResult, err := d.db.ExecContext(ctx, command.Text)
 		if err != nil {
-			opts.LogCommandResponse([]int32{int32(i)}, 0, nil, err.Error())
+			opts.LogCommandResponse(0, nil, err.Error())
 			// In auto-commit mode, we stop at the first error
 			// The database is left in a partially migrated state
 			return totalRowsAffected, &db.ErrorWithPosition{
@@ -306,7 +306,7 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, commands []base.Si
 			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
 			slog.Debug("rowsAffected returns error", log.BBError(err))
 		}
-		opts.LogCommandResponse([]int32{int32(i)}, int32(rowsAffected), nil, "")
+		opts.LogCommandResponse(int32(rowsAffected), nil, "")
 		totalRowsAffected += rowsAffected
 	}
 

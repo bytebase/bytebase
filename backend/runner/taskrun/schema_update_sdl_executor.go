@@ -59,11 +59,16 @@ func (exec *SchemaDeclareExecutor) RunOnce(ctx context.Context, driverCtx contex
 	}
 
 	execFunc := func(ctx context.Context, execStatement string, driver db.Driver, opts db.ExecuteOptions) error {
-		// TODO(p0ny): log diff and migration SQL
+		opts.LogComputeDiffStart()
 		migrationSQL, err := diff(ctx, exec.store, instance, database, execStatement)
 		if err != nil {
+			opts.LogComputeDiffEnd(err.Error())
 			return errors.Wrapf(err, "failed to diff database schema")
 		}
+		opts.LogComputeDiffEnd("")
+
+		// Log statement string.
+		opts.LogCommandStatement = true
 		if _, err := driver.Execute(ctx, migrationSQL, opts); err != nil {
 			return err
 		}

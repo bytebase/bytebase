@@ -182,11 +182,11 @@ func (*Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, com
 	totalRowsAffected := int64(0)
 	for i, command := range commands {
 		indexes := []int32{originalIndex[i]}
-		opts.LogCommandExecute(indexes)
+		opts.LogCommandExecute(indexes, command.Text)
 
 		sqlResult, err := tx.ExecContext(ctx, command.Text)
 		if err != nil {
-			opts.LogCommandResponse(indexes, 0, nil, err.Error())
+			opts.LogCommandResponse(0, nil, err.Error())
 			return 0, &db.ErrorWithPosition{
 				Err:   errors.Wrapf(err, "failed to execute context in a transaction"),
 				Start: command.Start,
@@ -199,7 +199,7 @@ func (*Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, com
 			slog.Debug("rowsAffected returns error", log.BBError(err))
 			rowsAffected = 0
 		}
-		opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+		opts.LogCommandResponse(int32(rowsAffected), []int32{int32(rowsAffected)}, "")
 		totalRowsAffected += rowsAffected
 	}
 
@@ -217,11 +217,11 @@ func (*Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, comm
 	totalRowsAffected := int64(0)
 	for i, command := range commands {
 		indexes := []int32{originalIndex[i]}
-		opts.LogCommandExecute(indexes)
+		opts.LogCommandExecute(indexes, command.Text)
 
 		sqlResult, err := conn.ExecContext(ctx, command.Text)
 		if err != nil {
-			opts.LogCommandResponse(indexes, 0, nil, err.Error())
+			opts.LogCommandResponse(0, nil, err.Error())
 			// In auto-commit mode, we stop at the first error
 			// The database is left in a partially migrated state
 			return totalRowsAffected, &db.ErrorWithPosition{
@@ -236,7 +236,7 @@ func (*Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, comm
 			slog.Debug("rowsAffected returns error", log.BBError(err))
 			rowsAffected = 0
 		}
-		opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+		opts.LogCommandResponse(int32(rowsAffected), []int32{int32(rowsAffected)}, "")
 		totalRowsAffected += rowsAffected
 	}
 	return totalRowsAffected, nil
