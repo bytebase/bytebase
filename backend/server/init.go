@@ -153,7 +153,8 @@ func (s *Server) initializeSetting(ctx context.Context) error {
 	}
 
 	workspaceProfilePayload := &storepb.WorkspaceProfileSetting{
-		ExternalUrl: s.profile.ExternalURL,
+		ExternalUrl:            s.profile.ExternalURL,
+		EnableMetricCollection: true, // Default to enabled for new installations
 	}
 	if workspaceProfileSetting != nil {
 		workspaceProfilePayload = new(storepb.WorkspaceProfileSetting)

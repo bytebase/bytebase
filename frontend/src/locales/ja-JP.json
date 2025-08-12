@@ -567,6 +567,11 @@
           "enable": "データのエクスポートを有効にする",
           "description": "ユーザーがSQLエディタでデータをエクスポートできるようにする"
         },
+        "product-improvement": {
+          "self": "製品改善",
+          "participate": "改善プログラムに参加",
+          "description": "匿名の使用データを共有してBytebaseの改善に協力する"
+        },
         "disallow-signup": {
           "enable": "セルフサービス登録を無効にする",
           "description": "無効化されると、新しいユーザーは自己登録できなくなり、管理者の招待を通じてのみアカウントを作成できます。"

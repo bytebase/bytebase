@@ -567,6 +567,11 @@
           "enable": "Bật xuất dữ liệu",
           "description": "Cho phép người dùng xuất dữ liệu trong Trình soạn thảo SQL"
         },
+        "product-improvement": {
+          "self": "Cải thiện Sản phẩm",
+          "participate": "Tham gia chương trình cải thiện",
+          "description": "Giúp cải thiện Bytebase bằng cách chia sẻ dữ liệu sử dụng ẩn danh"
+        },
         "disallow-signup": {
           "enable": "Không cho phép đăng ký tự phục vụ",
           "description": "Người dùng không thể tự đăng ký và chỉ có thể được mời bởi quản trị viên không gian làm việc."

@@ -10,8 +10,8 @@ import (
 func activeProfile(dataDir string) *config.Profile {
 	p := getBaseProfile(dataDir)
 	p.Mode = common.ReleaseModeProd
-	// Enable metric if it's not explicitly disabled and it's not running in demo mode.
-	if !flags.disableMetric && !p.Demo {
+	// Set metric connection key. Actual collection is controlled by workspace setting.
+	if !p.Demo {
 		p.MetricConnectionKey = "so9lLwj5zLjH09sxNabsyVNYSsAHn68F"
 	}
 	return p
