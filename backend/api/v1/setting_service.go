@@ -260,6 +260,8 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					}
 				}
 				oldSetting.DisallowPasswordSignin = payload.DisallowPasswordSignin
+			case "value.workspace_profile_setting_value.enable_metric_collection":
+				oldSetting.EnableMetricCollection = payload.EnableMetricCollection
 			default:
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
 			}
@@ -1183,6 +1185,7 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		EnforceIdentityDomain:  v1Setting.EnforceIdentityDomain,
 		DatabaseChangeMode:     storepb.DatabaseChangeMode(v1Setting.DatabaseChangeMode),
 		DisallowPasswordSignin: v1Setting.DisallowPasswordSignin,
+		EnableMetricCollection: v1Setting.EnableMetricCollection,
 	}
 
 	// Convert announcement if present
@@ -1223,6 +1226,7 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		EnforceIdentityDomain:  storeSetting.EnforceIdentityDomain,
 		DatabaseChangeMode:     v1pb.DatabaseChangeMode(storeSetting.DatabaseChangeMode),
 		DisallowPasswordSignin: storeSetting.DisallowPasswordSignin,
+		EnableMetricCollection: storeSetting.EnableMetricCollection,
 	}
 
 	if storeSetting.Announcement != nil {

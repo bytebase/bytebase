@@ -1012,6 +1012,8 @@ type WorkspaceProfileSetting struct {
 	DatabaseChangeMode DatabaseChangeMode `protobuf:"varint,11,opt,name=database_change_mode,json=databaseChangeMode,proto3,enum=bytebase.v1.DatabaseChangeMode" json:"database_change_mode,omitempty"`
 	// Whether to disallow password signin. (Except workspace admins)
 	DisallowPasswordSignin bool `protobuf:"varint,12,opt,name=disallow_password_signin,json=disallowPasswordSignin,proto3" json:"disallow_password_signin,omitempty"`
+	// Whether to enable metric collection for the workspace.
+	EnableMetricCollection bool `protobuf:"varint,13,opt,name=enable_metric_collection,json=enableMetricCollection,proto3" json:"enable_metric_collection,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -1112,6 +1114,13 @@ func (x *WorkspaceProfileSetting) GetDatabaseChangeMode() DatabaseChangeMode {
 func (x *WorkspaceProfileSetting) GetDisallowPasswordSignin() bool {
 	if x != nil {
 		return x.DisallowPasswordSignin
+	}
+	return false
+}
+
+func (x *WorkspaceProfileSetting) GetEnableMetricCollection() bool {
+	if x != nil {
+		return x.EnableMetricCollection
 	}
 	return false
 }
@@ -3130,7 +3139,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\tclient_id\x18\x02 \x01(\tB\x03\xe0A\x04R\bclientId\x12(\n" +
 	"\rclient_secret\x18\x03 \x01(\tB\x03\xe0A\x04R\fclientSecret\x12\"\n" +
 	"\n" +
-	"robot_code\x18\x04 \x01(\tB\x03\xe0A\x04R\trobotCode\"\xb9\x04\n" +
+	"robot_code\x18\x04 \x01(\tB\x03\xe0A\x04R\trobotCode\"\xf3\x04\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -3143,7 +3152,8 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x17enforce_identity_domain\x18\n" +
 	" \x01(\bR\x15enforceIdentityDomain\x12Q\n" +
 	"\x14database_change_mode\x18\v \x01(\x0e2\x1f.bytebase.v1.DatabaseChangeModeR\x12databaseChangeMode\x128\n" +
-	"\x18disallow_password_signin\x18\f \x01(\bR\x16disallowPasswordSignin\"\xc2\x01\n" +
+	"\x18disallow_password_signin\x18\f \x01(\bR\x16disallowPasswordSignin\x128\n" +
+	"\x18enable_metric_collection\x18\r \x01(\bR\x16enableMetricCollection\"\xc2\x01\n" +
 	"\fAnnouncement\x12:\n" +
 	"\x05level\x18\x01 \x01(\x0e2$.bytebase.v1.Announcement.AlertLevelR\x05level\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x12\n" +
