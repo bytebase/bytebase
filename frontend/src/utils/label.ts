@@ -34,7 +34,7 @@ export const convertKVListToLabels = (
 
 export const getSemanticLabelValue = (db: ComposedDatabase, key: string) => {
   if (key === "environment") {
-    return extractEnvironmentResourceName(db.effectiveEnvironment);
+    return extractEnvironmentResourceName(db.effectiveEnvironment ?? "");
   }
   return db.labels[key] ?? "";
 };

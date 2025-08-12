@@ -257,10 +257,12 @@ watch(
     if (!isValidDatabaseName(database.value.name)) {
       return;
     }
-    await policyStore.getOrFetchPolicyByParentAndType({
-      parentPath: database.value.effectiveEnvironment,
-      policyType: PolicyType.DATA_SOURCE_QUERY,
-    });
+    if (database.value.effectiveEnvironment) {
+      await policyStore.getOrFetchPolicyByParentAndType({
+        parentPath: database.value.effectiveEnvironment,
+        policyType: PolicyType.DATA_SOURCE_QUERY,
+      });
+    }
     await policyStore.getOrFetchPolicyByParentAndType({
       parentPath: database.value.project,
       policyType: PolicyType.DATA_SOURCE_QUERY,

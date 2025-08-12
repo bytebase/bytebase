@@ -12,8 +12,9 @@ import (
 )
 
 func TestEvalMaskingLevelOfColumn(t *testing.T) {
+	environment := "prod"
 	defaultDatabaseMessage := &store.DatabaseMessage{
-		EffectiveEnvironmentID: "prod",
+		EffectiveEnvironmentID: &environment,
 		ProjectID:              "bytebase",
 		InstanceID:             "neon-host",
 		DatabaseName:           "bb",

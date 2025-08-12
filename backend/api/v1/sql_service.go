@@ -1900,12 +1900,19 @@ func checkAndGetDataSourceQueriable(
 		return dataSource, nil
 	}
 	var envAdminDataSourceRestriction, projectAdminDataSourceRestriction v1pb.DataSourceQueryPolicy_Restriction
-	environment, err := storeInstance.GetEnvironmentByID(ctx, database.EffectiveEnvironmentID)
+	effectiveEnvironmentID := ""
+	if database.EffectiveEnvironmentID != nil {
+		effectiveEnvironmentID = *database.EffectiveEnvironmentID
+	}
+	if effectiveEnvironmentID == "" {
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("no effective environment found for database"))
+	}
+	environment, err := storeInstance.GetEnvironmentByID(ctx, effectiveEnvironmentID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get environment %s with error %v", database.EffectiveEnvironmentID, err.Error()))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get environment %s with error %v", effectiveEnvironmentID, err.Error()))
 	}
 	if environment == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("environment %q not found", database.EffectiveEnvironmentID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("environment %q not found", effectiveEnvironmentID))
 	}
 	dataSourceQueryPolicyType := storepb.Policy_DATA_SOURCE_QUERY
 	environmentResourceType := storepb.Policy_ENVIRONMENT
@@ -1964,12 +1971,19 @@ func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store,
 		// For license backward compatibility.
 		return nil
 	}
-	environment, err := storeInstance.GetEnvironmentByID(ctx, database.EffectiveEnvironmentID)
+	effectiveEnvironmentID := ""
+	if database.EffectiveEnvironmentID != nil {
+		effectiveEnvironmentID = *database.EffectiveEnvironmentID
+	}
+	if effectiveEnvironmentID == "" {
+		return connect.NewError(connect.CodeNotFound, errors.New("no effective environment found for database"))
+	}
+	environment, err := storeInstance.GetEnvironmentByID(ctx, effectiveEnvironmentID)
 	if err != nil {
 		return err
 	}
 	if environment == nil {
-		return connect.NewError(connect.CodeNotFound, errors.Errorf("environment %q not found", database.EffectiveEnvironmentID))
+		return connect.NewError(connect.CodeNotFound, errors.Errorf("environment %q not found", effectiveEnvironmentID))
 	}
 	resourceType := storepb.Policy_ENVIRONMENT
 	environmentResource := common.FormatEnvironment(environment.Id)

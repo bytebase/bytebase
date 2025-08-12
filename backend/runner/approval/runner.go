@@ -457,7 +457,9 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 				return 0, store.RiskSourceUnknown, false, err
 			}
 			databaseName = database.DatabaseName
-			environmentID = database.EffectiveEnvironmentID
+			if database.EffectiveEnvironmentID != nil {
+				environmentID = *database.EffectiveEnvironmentID
+			}
 		}
 
 		commonArgs := map[string]any{

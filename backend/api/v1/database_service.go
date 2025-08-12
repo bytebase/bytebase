@@ -463,8 +463,8 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 				dm.Labels = req.Msg.Database.Labels
 			})
 		case "environment":
-			if req.Msg.Database.Environment != "" {
-				environmentID, err := common.GetEnvironmentID(req.Msg.Database.Environment)
+			if req.Msg.Database.Environment != nil && *req.Msg.Database.Environment != "" {
+				environmentID, err := common.GetEnvironmentID(*req.Msg.Database.Environment)
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 				}
@@ -585,8 +585,8 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, req *connect
 				}
 				batchUpdate.ProjectID = &projectID
 			case "environment":
-				if req.Database.Environment != "" {
-					envID, err := common.GetEnvironmentID(req.Database.Environment)
+				if req.Database.Environment != nil && *req.Database.Environment != "" {
+					envID, err := common.GetEnvironmentID(*req.Database.Environment)
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 					}
@@ -1191,12 +1191,14 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 		return nil, errors.Wrap(err, "failed to find instance")
 	}
 
-	environment, effectiveEnvironment := "", ""
-	if database.EnvironmentID != "" {
-		environment = common.FormatEnvironment(database.EnvironmentID)
+	var environment, effectiveEnvironment *string
+	if database.EnvironmentID != nil && *database.EnvironmentID != "" {
+		env := common.FormatEnvironment(*database.EnvironmentID)
+		environment = &env
 	}
-	if database.EffectiveEnvironmentID != "" {
-		effectiveEnvironment = common.FormatEnvironment(database.EffectiveEnvironmentID)
+	if database.EffectiveEnvironmentID != nil && *database.EffectiveEnvironmentID != "" {
+		effEnv := common.FormatEnvironment(*database.EffectiveEnvironmentID)
+		effectiveEnvironment = &effEnv
 	}
 	instanceResource := convertInstanceMessageToInstanceResource(instance)
 	return &v1pb.Database{

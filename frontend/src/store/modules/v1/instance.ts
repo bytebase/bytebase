@@ -307,7 +307,7 @@ const composeInstance = async (
   const composed = instance as ComposedInstance;
   const environmentEntity =
     (await useEnvironmentV1Store().getOrFetchEnvironmentByName(
-      instance.environment
+      instance.environment ?? ""
     )) ?? unknownEnvironment();
   composed.environmentEntity = environmentEntity;
   return composed;

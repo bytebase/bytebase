@@ -254,7 +254,7 @@ const previewSchemaChangeMessage = computed(() => {
     return "";
   }
   const environment = environmentV1Store.getEnvironmentByName(
-    database.effectiveEnvironment
+    database.effectiveEnvironment ?? ""
   );
   return t("database.sync-schema.schema-change-preview", {
     database: `${database.databaseName} (${environment?.title} - ${database.instanceResource.title})`,

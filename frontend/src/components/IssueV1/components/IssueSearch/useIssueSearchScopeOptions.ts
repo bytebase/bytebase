@@ -152,7 +152,9 @@ export const useIssueSearchScopeOptions = (
                     db.databaseName,
                     extractInstanceResourceName(db.instance),
                     db.instanceResource.title,
-                    extractEnvironmentResourceName(db.effectiveEnvironment),
+                    extractEnvironmentResourceName(
+                      db.effectiveEnvironment ?? ""
+                    ),
                     db.effectiveEnvironmentEntity.title,
                     extractProjectResourceName(db.project),
                     db.projectEntity.title,

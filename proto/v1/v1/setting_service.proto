@@ -440,7 +440,7 @@ message PasswordRestrictionSetting {
   bool require_letter = 3;
   // require_uppercase_letter requires the password must contains at least one upper case letter.
   bool require_uppercase_letter = 4;
-  // require_uppercase_letter requires the password must contains at least one special character.
+  // require_special_character requires the password must contains at least one special character.
   bool require_special_character = 5;
   // require_reset_password_for_first_login requires users to reset their password after the 1st login.
   bool require_reset_password_for_first_login = 6;
