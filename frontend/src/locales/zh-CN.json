@@ -1102,6 +1102,7 @@
       "statement-empty": "变更语句为空"
     },
     "spec": {
+      "change": "变更项",
       "type": {
         "create-database": "创建数据库",
         "schema-change": "Schema 变更",
