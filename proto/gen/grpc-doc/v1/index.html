@@ -5254,6 +5254,7 @@ resource_id = &#34;sample-instance&#34;
 resource_id.matches(&#34;sample&#34;)
 state == &#34;DELETED&#34;
 environment == &#34;environments/test&#34;
+environment == &#34;&#34; (find instances which environment is not set)
 engine == &#34;MYSQL&#34;
 engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]
 !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;])
@@ -8158,6 +8159,7 @@ Supported filter:
 
 For example:
 environment == &#34;environments/{environment resource id}&#34;
+environment == &#34;&#34; (find databases which environment is not set)
 project == &#34;projects/{project resource id}&#34;
 instance == &#34;instances/{instance resource id}&#34;
 name.matches(&#34;database name&#34;)

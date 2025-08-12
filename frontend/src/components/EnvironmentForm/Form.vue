@@ -124,11 +124,10 @@
         :confirm-title="
           $t('environment.delete') + ` '${state.environment.title}'?`
         "
-        :confirm-description="$t('common.cannot-undo-this-action')"
+        :confirm-description="$t('environment.delete-description')"
         :require-confirm="true"
         @confirm="deleteEnvironment"
       />
-      <div v-else></div>
     </div>
   </div>
 </template>

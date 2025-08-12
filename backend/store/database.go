@@ -45,7 +45,8 @@ type UpdateDatabaseMessage struct {
 
 // BatchUpdateDatabases is the message for batch updating databases.
 type BatchUpdateDatabases struct {
-	ProjectID *string
+	ProjectID           *string
+	FindByEnvironmentID *string
 	// Empty string will unset the environment.
 	EnvironmentID *string
 }
@@ -294,18 +295,31 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 
 // BatchUpdateDatabases update databases in batch.
 func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseMessage, update *BatchUpdateDatabases) ([]*DatabaseMessage, error) {
-	if len(databases) == 0 {
-		return nil, errors.Errorf("there is no database in the project")
-	}
 	set, args, wheres := []string{}, []any{}, []string{}
 	if update.ProjectID != nil {
 		set, args = append(set, fmt.Sprintf("project = $%d", len(args)+1)), append(args, *update.ProjectID)
 	}
-	if update.EnvironmentID != nil {
-		set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *update.EnvironmentID)
+	if v := update.EnvironmentID; v != nil {
+		if *v == "" {
+			set = append(set, "environment = NULL")
+		} else {
+			set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
+		}
 	}
 	if len(set) == 0 {
 		return nil, errors.New("no update field specified")
+	}
+
+	if v := update.FindByEnvironmentID; v != nil {
+		wheres, args = append(wheres, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
+	}
+
+	for _, database := range databases {
+		wheres = append(wheres, fmt.Sprintf("(db.instance = $%d AND db.name = $%d)", len(args)+1, len(args)+2))
+		args = append(args, database.InstanceID, database.DatabaseName)
+	}
+	if len(wheres) == 0 {
+		return nil, errors.Errorf("empty where")
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
@@ -313,10 +327,6 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 		return nil, err
 	}
 	defer tx.Rollback()
-	for _, database := range databases {
-		wheres = append(wheres, fmt.Sprintf("(db.instance = $%d AND db.name = $%d)", len(args)+1, len(args)+2))
-		args = append(args, database.InstanceID, database.DatabaseName)
-	}
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
 			UPDATE db
 			SET `+strings.Join(set, ", ")+`

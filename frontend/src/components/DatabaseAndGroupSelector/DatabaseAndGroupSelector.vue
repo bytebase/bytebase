@@ -20,6 +20,7 @@
         :parent="project.name"
         :filter="filter"
         :size="'small'"
+        :select-disabled="(db: ComposedDatabase) => !db.effectiveEnvironment"
         v-model:selected-database-names="
           databaseSelectState.selectedDatabaseNameList
         "
@@ -56,7 +57,7 @@ import {
   instanceNamePrefix,
   environmentNamePrefix,
 } from "@/store/modules/v1/common";
-import { type ComposedProject } from "@/types";
+import type { ComposedDatabase, ComposedProject } from "@/types";
 import {
   CommonFilterScopeIdList,
   extractProjectResourceName,
