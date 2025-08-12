@@ -1102,6 +1102,7 @@
       "statement-empty": "La declaración está vacía"
     },
     "spec": {
+      "change": "Cambiar",
       "type": {
         "create-database": "Crear base de datos",
         "schema-change": "Cambio de esquema",

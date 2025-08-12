@@ -16,7 +16,7 @@
         <span
           v-if="isSpecEmpty(spec)"
           class="text-error ml-0.5"
-          :title="t('plan.navigator.statement-empty')"
+          :title="$t('plan.navigator.statement-empty')"
         >
           *
         </span>
@@ -50,50 +50,21 @@
 import { PlusIcon } from "lucide-vue-next";
 import { NTabs, NTab, NButton } from "naive-ui";
 import { ref } from "vue";
-import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
-import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
 import { usePlanContext } from "../../logic/context";
+import { getSpecTitle } from "../../logic/utils";
 import AddSpecDrawer from "../AddSpecDrawer.vue";
 import { useSpecsValidation } from "../common";
 import { useSelectedSpec } from "./context";
 
-const { t } = useI18n();
 const router = useRouter();
 const { plan, isCreating } = usePlanContext();
 const selectedSpec = useSelectedSpec();
 const { isSpecEmpty } = useSpecsValidation(plan.value.specs);
 
 const showAddSpecDrawer = ref(false);
-
-const getSpecTitle = (spec: Plan_Spec) => {
-  let title = "";
-  if (spec.config?.case === "createDatabaseConfig") {
-    title = t("plan.spec.type.create-database");
-  } else if (spec.config?.case === "changeDatabaseConfig") {
-    const changeType = spec.config.value.type;
-    switch (changeType) {
-      case Plan_ChangeDatabaseConfig_Type.MIGRATE:
-        title = t("plan.spec.type.schema-change");
-        break;
-      case Plan_ChangeDatabaseConfig_Type.DATA:
-        title = t("plan.spec.type.data-change");
-        break;
-      case Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST:
-        title = t("plan.spec.type.ghost-migration");
-        break;
-      default:
-        title = t("plan.spec.type.database-change");
-    }
-  } else if (spec.config?.case === "exportDataConfig") {
-    title = t("plan.spec.type.export-data");
-  } else {
-    title = t("plan.spec.type.unknown");
-  }
-  return title;
-};
 
 const handleTabChange = (specId: string) => {
   if (selectedSpec.value.id !== specId) {
