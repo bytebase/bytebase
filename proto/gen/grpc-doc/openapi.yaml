@@ -13882,6 +13882,8 @@ components:
                         - PRIOR_BACKUP_START
                         - PRIOR_BACKUP_END
                         - RETRY_INFO
+                        - COMPUTE_DIFF_START
+                        - COMPUTE_DIFF_END
                     type: string
                     format: enum
                 deployId:
@@ -13908,6 +13910,10 @@ components:
                     $ref: '#/components/schemas/TaskRunLog_PriorBackupEnd'
                 retryInfo:
                     $ref: '#/components/schemas/TaskRunLog_RetryInfo'
+                computeDiffStart:
+                    $ref: '#/components/schemas/TaskRunLog_ComputeDiffStart'
+                computeDiffEnd:
+                    $ref: '#/components/schemas/TaskRunLog_ComputeDiffEnd'
         TaskRunLog_CommandExecute:
             type: object
             properties:
@@ -13916,7 +13922,12 @@ components:
                     items:
                         type: integer
                         format: int32
-                    description: The indexes of the executed commands.
+                    description: |-
+                        Either `command_indexes` or `statement` is set.
+                         The indexes of the executed commands.
+                statement:
+                    type: string
+                    description: The statement to be executed.
         TaskRunLog_CommandResponse:
             type: object
             properties:
@@ -13939,6 +13950,14 @@ components:
                     description: |-
                         `all_affected_rows` is the affected rows of each command.
                          `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
+        TaskRunLog_ComputeDiffEnd:
+            type: object
+            properties:
+                error:
+                    type: string
+        TaskRunLog_ComputeDiffStart:
+            type: object
+            properties: {}
         TaskRunLog_DatabaseSyncEnd:
             type: object
             properties:
