@@ -1473,6 +1473,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.TaskRunLog.ComputeDiffEnd"><span class="badge">M</span>TaskRunLog.ComputeDiffEnd</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TaskRunLog.ComputeDiffStart"><span class="badge">M</span>TaskRunLog.ComputeDiffStart</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.TaskRunLog.DatabaseSyncEnd"><span class="badge">M</span>TaskRunLog.DatabaseSyncEnd</a>
                 </li>
               
@@ -13115,6 +13123,20 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>compute_diff_start</td>
+                  <td><a href="#bytebase.store.TaskRunLog.ComputeDiffStart">TaskRunLog.ComputeDiffStart</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>compute_diff_end</td>
+                  <td><a href="#bytebase.store.TaskRunLog.ComputeDiffEnd">TaskRunLog.ComputeDiffEnd</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -13136,7 +13158,15 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>command_indexes</td>
                   <td><a href="#int32">int32</a></td>
                   <td>repeated</td>
-                  <td><p>The indexes of the executed commands. </p></td>
+                  <td><p>Either `command_indexes` or `statement` is set.
+The indexes of the executed commands. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>statement</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The statement to be executed. </p></td>
                 </tr>
               
             </tbody>
@@ -13160,7 +13190,7 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>command_indexes</td>
                   <td><a href="#int32">int32</a></td>
                   <td>repeated</td>
-                  <td><p>The indexes of the executed commands. </p></td>
+                  <td><p><strong>Deprecated.</strong> The indexes of the executed commands. </p></td>
                 </tr>
               
                 <tr>
@@ -13189,6 +13219,58 @@ Format: instances/{instance}/databases/{database} </p></td>
           </table>
 
           
+            
+            
+            <h4>Fields with deprecated option</h4>
+            <table>
+              <thead>
+                <tr>
+                  <td>Name</td>
+                  <td>Option</td>
+                </tr>
+              </thead>
+              <tbody>
+              
+                <tr>
+                  <td>command_indexes</td>
+                  <td><p>true</p></td>
+                </tr>
+              
+              </tbody>
+            </table>
+            
+          
+
+        
+      
+        <h3 id="bytebase.store.TaskRunLog.ComputeDiffEnd">TaskRunLog.ComputeDiffEnd</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.TaskRunLog.ComputeDiffStart">TaskRunLog.ComputeDiffStart</h3>
+        <p></p>
+
+        
 
         
       
@@ -13528,6 +13610,18 @@ Format: instances/{instance}/databases/{database} </p></td>
               <tr>
                 <td>RETRY_INFO</td>
                 <td>11</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>COMPUTE_DIFF_START</td>
+                <td>12</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>COMPUTE_DIFF_END</td>
+                <td>13</td>
                 <td><p></p></td>
               </tr>
             

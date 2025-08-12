@@ -590,6 +590,7 @@ message TaskRunLogEntry {
     TRANSACTION_CONTROL = 5;
     PRIOR_BACKUP = 6;
     RETRY_INFO = 7;
+    COMPUTE_DIFF = 8;
   }
   Type type = 1;
   google.protobuf.Timestamp log_time = 6;
@@ -601,6 +602,7 @@ message TaskRunLogEntry {
   TransactionControl transaction_control = 7;
   PriorBackup prior_backup = 8;
   RetryInfo retry_info = 9;
+  ComputeDiff compute_diff = 10;
 
   message SchemaDump {
     google.protobuf.Timestamp start_time = 1;
@@ -610,8 +612,11 @@ message TaskRunLogEntry {
 
   message CommandExecute {
     google.protobuf.Timestamp log_time = 1;
+    // Either `command_indexes` or `statement` is set.
     // The indexes of the executed commands.
     repeated int32 command_indexes = 2;
+    // The executed statement.
+    string statement = 4;
 
     CommandResponse response = 3;
     message CommandResponse {
@@ -663,6 +668,12 @@ message TaskRunLogEntry {
     string error = 1;
     int32 retry_count = 2;
     int32 maximum_retries = 3;
+  }
+
+  message ComputeDiff {
+    google.protobuf.Timestamp start_time = 1;
+    google.protobuf.Timestamp end_time = 2;
+    string error = 3;
   }
 }
 
