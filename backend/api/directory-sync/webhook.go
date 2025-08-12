@@ -50,7 +50,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal body, error %v", err))
 		}
 
-		user, err := s.store.GetUserByEmail(ctx, aadUser.UserName)
+		// Normalize email to lowercase as Bytebase requires lowercase emails
+		normalizedEmail := normalizeEmail(aadUser.UserName)
+		user, err := s.store.GetUserByEmail(ctx, normalizedEmail)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to get user %s, error %v", aadUser.UserName, err))
 		}
@@ -65,7 +67,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			}
 			newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
 				Name:          aadUser.DisplayName,
-				Email:         aadUser.UserName,
+				Email:         normalizedEmail,
 				Type:          storepb.PrincipalType_END_USER,
 				MemberDeleted: !aadUser.Active,
 				PasswordHash:  string(passwordHash),
@@ -81,7 +83,8 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			deleted := !aadUser.Active
 			updatedUser, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{
 				Delete: &deleted,
-				Name:   &aadUser.UserName,
+				Name:   &aadUser.DisplayName,
+				Email:  &normalizedEmail,
 				Profile: &storepb.UserProfile{
 					Source:                 entraIDSource,
 					LastLoginTime:          user.Profile.LastLoginTime,
@@ -166,7 +169,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 				slog.Warn("unsupport filter key", slog.String("key", expr.Key), slog.String("operator", string(expr.Operator)), slog.String("value", expr.Value))
 				continue
 			}
-			find.Email = &expr.Value
+			// Normalize email to lowercase for consistent lookup
+			normalizedEmail := normalizeEmail(expr.Value)
+			find.Email = &normalizedEmail
 		}
 
 		users, err := s.store.ListUsers(ctx, find)
@@ -269,7 +274,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 					slog.Warn("unsupport value, expect string", slog.String("operation", op.OP), slog.String("path", op.Path))
 					continue
 				}
-				updateUser.Email = &email
+				// Normalize email to lowercase as Bytebase requires lowercase emails
+				normalizedEmail := normalizeEmail(email)
+				updateUser.Email = &normalizedEmail
 			case "active":
 				active, ok := op.Value.(bool)
 				if !ok {
@@ -644,4 +651,10 @@ func convertToAADGroup(group *store.GroupMessage) *AADGroup {
 			ResourceType: "Group",
 		},
 	}
+}
+
+// normalizeEmail converts email to lowercase to ensure consistency.
+// Bytebase requires all emails to be lowercase for proper user lookup and authentication.
+func normalizeEmail(email string) string {
+	return strings.ToLower(email)
 }
