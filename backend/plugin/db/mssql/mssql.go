@@ -215,13 +215,13 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, statement string,
 				v := batch.Batch()
 				if v != nil && len(v.Text) > 0 {
 					indexes := []int32{int32(idx)}
-					opts.LogCommandExecute(indexes)
+					opts.LogCommandExecute(indexes, v.Text)
 					rowsAffected, err := execute(ctx, tx, v.Text)
 					if err != nil {
-						opts.LogCommandResponse(indexes, 0, nil, err.Error())
+						opts.LogCommandResponse(0, nil, err.Error())
 						return 0, err
 					}
-					opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+					opts.LogCommandResponse(int32(rowsAffected), []int32{int32(rowsAffected)}, "")
 					totalAffectRows += rowsAffected
 				}
 				break
@@ -238,13 +238,13 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, statement string,
 			indexes := []int32{int32(idx)}
 			idx++
 			for i := uint(0); i < v.Count; i++ {
-				opts.LogCommandExecute(indexes)
+				opts.LogCommandExecute(indexes, b.Text)
 				rowsAffected, err := execute(ctx, tx, b.Text)
 				if err != nil {
-					opts.LogCommandResponse(indexes, 0, nil, err.Error())
+					opts.LogCommandResponse(0, nil, err.Error())
 					return 0, err
 				}
-				opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+				opts.LogCommandResponse(int32(rowsAffected), []int32{int32(rowsAffected)}, "")
 				totalAffectRows += rowsAffected
 			}
 		default:
@@ -276,13 +276,13 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, 
 				v := batch.Batch()
 				if v != nil && len(v.Text) > 0 {
 					indexes := []int32{int32(idx)}
-					opts.LogCommandExecute(indexes)
+					opts.LogCommandExecute(indexes, v.Text)
 					rowsAffected, err := d.executeAutoCommit(ctx, v.Text)
 					if err != nil {
-						opts.LogCommandResponse(indexes, 0, nil, err.Error())
+						opts.LogCommandResponse(0, nil, err.Error())
 						return totalAffectRows, err
 					}
-					opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+					opts.LogCommandResponse(int32(rowsAffected), []int32{int32(rowsAffected)}, "")
 					totalAffectRows += rowsAffected
 				}
 				break
@@ -299,14 +299,14 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, 
 			indexes := []int32{int32(idx)}
 			idx++
 			for i := uint(0); i < v.Count; i++ {
-				opts.LogCommandExecute(indexes)
+				opts.LogCommandExecute(indexes, b.Text)
 				rowsAffected, err := d.executeAutoCommit(ctx, b.Text)
 				if err != nil {
-					opts.LogCommandResponse(indexes, 0, nil, err.Error())
+					opts.LogCommandResponse(0, nil, err.Error())
 					// In auto-commit mode, we stop at the first error
 					return totalAffectRows, err
 				}
-				opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+				opts.LogCommandResponse(int32(rowsAffected), []int32{int32(rowsAffected)}, "")
 				totalAffectRows += rowsAffected
 			}
 		default:
