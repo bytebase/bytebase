@@ -9,7 +9,6 @@ bytebase:
     port: 8080
     data: "/var/opt/bytebase"
     external-url: "https://docs.bytebase.com/get-started/install/external-url"
-    disable-sample: false
     externalPg:
       url: ""
       # If users need to read the pgURL from a secret, they can specify the secret name and key here.
