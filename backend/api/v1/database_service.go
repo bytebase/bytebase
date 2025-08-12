@@ -210,9 +210,8 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 					db.environment,
 					instance.environment
 				) = $%d`, len(positionalArgs)), nil
-			} else {
-				return "db.environment IS NULL AND instance.environment IS NULL", nil
 			}
+			return "db.environment IS NULL AND instance.environment IS NULL", nil
 		case "engine":
 			v1Engine, ok := v1pb.Engine_value[value.(string)]
 			if !ok {

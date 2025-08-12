@@ -107,9 +107,8 @@ func parseListInstanceFilter(filter string) (*store.ListResourceFilter, error) {
 				}
 				positionalArgs = append(positionalArgs, environmentID)
 				return fmt.Sprintf("instance.environment = $%d", len(positionalArgs)), nil
-			} else {
-				return "instance.environment IS NULL", nil
 			}
+			return "instance.environment IS NULL", nil
 		case "state":
 			v1State, ok := v1pb.State_value[value.(string)]
 			if !ok {
