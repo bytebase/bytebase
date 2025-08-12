@@ -349,7 +349,7 @@ func (ctl *controller) createTestDatabase(ctx context.Context, t *testing.T) *v1
 		Instance: &v1pb.Instance{
 			Title:       "Test Instance",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: "environments/prod",
+			Environment: stringPtr("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{
 				Type: v1pb.DataSourceType_ADMIN,

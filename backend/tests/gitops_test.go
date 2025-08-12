@@ -48,7 +48,7 @@ func TestGitOpsCheck(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "gitops-check-test",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: "environments/test",
+			Environment: stringPtr("environments/test"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
 		},
@@ -61,7 +61,7 @@ func TestGitOpsCheck(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "gitops-check-prod",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: "environments/prod",
+			Environment: stringPtr("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir, Id: "admin"}},
 		},
@@ -182,7 +182,7 @@ func TestGitOpsRollout(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "gitops-rollout-test",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: "environments/test",
+			Environment: stringPtr("environments/test"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
 		},
@@ -373,7 +373,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "gitops-multi-test",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: "environments/test",
+			Environment: stringPtr("environments/test"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
 		},
@@ -386,7 +386,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "gitops-multi-prod",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: "environments/prod",
+			Environment: stringPtr("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir, Id: "admin"}},
 		},
@@ -643,7 +643,7 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "gitops-changed-test",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: "environments/test",
+			Environment: stringPtr("environments/test"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
 		},

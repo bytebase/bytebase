@@ -1533,7 +1533,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | engine_version | [string](#string) |  |  |
 | external_link | [string](#string) |  |  |
 | data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
-| environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
+| environment | [string](#string) | optional | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 | activation | [bool](#bool) |  |  |
 | roles | [InstanceRole](#bytebase-v1-InstanceRole) | repeated |  |
 | sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | How often the instance is synced. |
@@ -1560,7 +1560,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
 | activation | [bool](#bool) |  |  |
 | name | [string](#string) |  | The name of the instance. Format: instances/{instance} |
-| environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
+| environment | [string](#string) | optional | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 
 
 
@@ -2211,8 +2211,8 @@ This field is populated when syncing from the database. When empty (e.g., when p
 | successful_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The latest synchronization time. |
 | project | [string](#string) |  | The project for a database. Format: projects/{project} |
 | schema_version | [string](#string) |  | The version of database schema. |
-| environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
-| effective_environment | [string](#string) |  | The effective environment based on environment tag above and environment tag on the instance. Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview. |
+| environment | [string](#string) | optional | The environment resource. Format: environments/prod where prod is the environment resource ID. |
+| effective_environment | [string](#string) | optional | The effective environment based on environment tag above and environment tag on the instance. Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview. |
 | labels | [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry) | repeated | Labels will be used for deployment and policy control. |
 | instance_resource | [InstanceResource](#bytebase-v1-InstanceResource) |  | The instance resource. |
 | backup_available | [bool](#bool) |  | The database is available for DML prior backup. |
@@ -4466,7 +4466,7 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | require_number | [bool](#bool) |  | require_number requires the password must contains at least one number. |
 | require_letter | [bool](#bool) |  | require_letter requires the password must contains at least one letter, regardless of upper case or lower case |
 | require_uppercase_letter | [bool](#bool) |  | require_uppercase_letter requires the password must contains at least one upper case letter. |
-| require_special_character | [bool](#bool) |  | require_uppercase_letter requires the password must contains at least one special character. |
+| require_special_character | [bool](#bool) |  | require_special_character requires the password must contains at least one special character. |
 | require_reset_password_for_first_login | [bool](#bool) |  | require_reset_password_for_first_login requires users to reset their password after the 1st login. |
 | password_rotation | [google.protobuf.Duration](#google-protobuf-Duration) |  | password_rotation requires users to reset their password after the duration. |
 

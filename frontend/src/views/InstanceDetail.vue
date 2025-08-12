@@ -226,7 +226,7 @@ const instance = computed(() => {
 
 const environment = computed(() => {
   return useEnvironmentV1Store().getEnvironmentByName(
-    instance.value.environment
+    instance.value.environment ?? ""
   );
 });
 

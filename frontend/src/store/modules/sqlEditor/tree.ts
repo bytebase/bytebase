@@ -169,9 +169,9 @@ const mapGroupNode = (
   parent: TreeNode | undefined
 ) => {
   if (factor === "environment") {
-    const environment =
-      useEnvironmentV1Store().getEnvironmentByName(value) ??
-      unknownEnvironment();
+    const environment = useEnvironmentV1Store().getEnvironmentByName(
+      value || ""
+    );
     return mapTreeNodeByType("environment", environment, parent);
   }
   if (factor === "instance") {
@@ -239,7 +239,7 @@ const isLeafNodeType = (type: NodeType) => {
 const getSemanticFactorValue = (db: ComposedDatabase, factor: Factor) => {
   switch (factor) {
     case "environment":
-      return db.effectiveEnvironment;
+      return db.effectiveEnvironment || unknownEnvironment().name;
     case "instance":
       return db.instance;
   }

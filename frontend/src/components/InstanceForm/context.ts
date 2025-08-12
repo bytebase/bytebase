@@ -14,7 +14,7 @@ import {
   useEnvironmentV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { isValidEnvironmentName, unknownEnvironment } from "@/types";
+import { isValidEnvironmentName } from "@/types";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import {
   CreateInstanceRequestSchema,
@@ -123,10 +123,8 @@ export const provideInstanceFormContext = (baseContext: {
   const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
   const environment = computed(() => {
-    return (
-      useEnvironmentV1Store().getEnvironmentByName(
-        basicInfo.value.environment
-      ) ?? unknownEnvironment()
+    return useEnvironmentV1Store().getEnvironmentByName(
+      basicInfo.value.environment ?? ""
     );
   });
 

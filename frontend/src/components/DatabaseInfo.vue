@@ -56,11 +56,7 @@ import {
   InstanceV1Name,
 } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
-import {
-  formatEnvironmentName,
-  unknownEnvironment,
-  type ComposedDatabase,
-} from "@/types";
+import { formatEnvironmentName, type ComposedDatabase } from "@/types";
 
 const props = withDefaults(
   defineProps<{
@@ -73,10 +69,8 @@ const props = withDefaults(
 );
 
 const instanceEnvironment = computed(() => {
-  return (
-    useEnvironmentV1Store().getEnvironmentByName(
-      props.database.instanceResource.environment
-    ) ?? unknownEnvironment()
+  return useEnvironmentV1Store().getEnvironmentByName(
+    props.database.instanceResource.environment ?? ""
   );
 });
 </script>

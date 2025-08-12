@@ -1604,7 +1604,7 @@ type PasswordRestrictionSetting struct {
 	RequireLetter bool `protobuf:"varint,3,opt,name=require_letter,json=requireLetter,proto3" json:"require_letter,omitempty"`
 	// require_uppercase_letter requires the password must contains at least one upper case letter.
 	RequireUppercaseLetter bool `protobuf:"varint,4,opt,name=require_uppercase_letter,json=requireUppercaseLetter,proto3" json:"require_uppercase_letter,omitempty"`
-	// require_uppercase_letter requires the password must contains at least one special character.
+	// require_special_character requires the password must contains at least one special character.
 	RequireSpecialCharacter bool `protobuf:"varint,5,opt,name=require_special_character,json=requireSpecialCharacter,proto3" json:"require_special_character,omitempty"`
 	// require_reset_password_for_first_login requires users to reset their password after the 1st login.
 	RequireResetPasswordForFirstLogin bool `protobuf:"varint,6,opt,name=require_reset_password_for_first_login,json=requireResetPasswordForFirstLogin,proto3" json:"require_reset_password_for_first_login,omitempty"`
