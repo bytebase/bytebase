@@ -418,6 +418,7 @@ type ListInstancesRequest struct {
 	// resource_id.matches("sample")
 	// state == "DELETED"
 	// environment == "environments/test"
+	// environment == "" (find instances which environment is not set)
 	// engine == "MYSQL"
 	// engine in ["MYSQL", "POSTGRES"]
 	// !(engine in ["MYSQL", "POSTGRES"])

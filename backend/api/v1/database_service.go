@@ -195,16 +195,19 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 			positionalArgs = append(positionalArgs, instanceID)
 			return fmt.Sprintf("db.instance = $%d", len(positionalArgs)), nil
 		case "environment":
-			environmentID, err := common.GetEnvironmentID(value.(string))
-			if err != nil {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid environment filter %q", value))
+			environment, ok := value.(string)
+			if !ok {
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse value %v to string", value))
 			}
-			positionalArgs = append(positionalArgs, environmentID)
-			return fmt.Sprintf(`
-			COALESCE(
-				db.environment,
-				instance.environment
-			) = $%d`, len(positionalArgs)), nil
+			if environment != "" {
+				environmentID, err := common.GetEnvironmentID(environment)
+				if err != nil {
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid environment filter %q", value))
+				}
+				positionalArgs = append(positionalArgs, environmentID)
+				return fmt.Sprintf(`COALESCE(db.environment, instance.environment) = $%d`, len(positionalArgs)), nil
+			}
+			return "db.environment IS NULL AND instance.environment IS NULL", nil
 		case "engine":
 			v1Engine, ok := v1pb.Engine_value[value.(string)]
 			if !ok {
@@ -632,11 +635,15 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, req *connect
 		}
 	}
 
+	response := &v1pb.BatchUpdateDatabasesResponse{}
+	if len(databases) == 0 {
+		return connect.NewResponse(response), nil
+	}
+
 	updatedDatabases, err := s.store.BatchUpdateDatabases(ctx, databases, batchUpdate)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
 	}
-	response := &v1pb.BatchUpdateDatabasesResponse{}
 	for _, databaseMessage := range updatedDatabases {
 		database, err := s.convertToDatabase(ctx, databaseMessage)
 		if err != nil {

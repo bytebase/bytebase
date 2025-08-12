@@ -1258,6 +1258,7 @@
       "sync-new": "Sincronizar únicamente bases de datos nuevas",
       "sync-all-tip": "La sincronización de la base de datos es asincrónica y puede tardar entre unos segundos y minutos."
     },
+    "no-environment": "Esta instancia no ha sido ligada al medio ambiente.",
     "selected-n-instances": "{n} instancia seleccionada | {n} instancias seleccionadas",
     "users": "Usuarios",
     "successfully-restored-instance": "Se restauró exitosamente la instancia '{0}'.",
@@ -1445,6 +1446,7 @@
   "environment": {
     "select": "Seleccionar entorno",
     "delete": "Eliminar este entorno",
+    "delete-description": "Eliminar el entorno también lo eliminará de las instancias y bases de datos relacionadas. @:common.cannot-undo-this-action",
     "create": "Crear entorno",
     "successfully-updated-environment": "entorno '{name}' actualizado exitosamente.",
     "production-environment": "Entorno de producción",
@@ -1548,6 +1550,8 @@
     "rollback-tip": "Seleccione un historial de DDL específico para revertir."
   },
   "database": {
+    "no-environment": "Esta base de datos no ha sido vinculada al entorno.",
+    "set-environment": "Establecer entorno",
     "sync-database": "Sincronizar base de datos",
     "select": "Seleccionar base de datos",
     "sync-status": "Estado de sincronización",

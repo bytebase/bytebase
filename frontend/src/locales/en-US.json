@@ -1258,6 +1258,7 @@
       "sync-new": "Only sync new databases",
       "sync-all-tip": "Database sync is asynchronous and might take a few seconds to minutes"
     },
+    "no-environment": "This instance has not been bound to the environment",
     "selected-n-instances": "{n} instance selected | {n} instances selected",
     "users": "Users",
     "successfully-restored-instance": "Successfully restored the instance '{0}'.",
@@ -1445,6 +1446,7 @@
   "environment": {
     "select": "Select environment",
     "delete": "Delete this environment",
+    "delete-description": "Delete environment will also remove it from related instances and databases. @:common.cannot-undo-this-action",
     "create": "Create Environment",
     "successfully-updated-environment": "Successfully updated environment '{name}'.",
     "production-environment": "Production environment",
@@ -1548,6 +1550,8 @@
     "rollback-tip": "Select a specific DDL changelog to rollback."
   },
   "database": {
+    "no-environment": "This database has not been bound to the environment",
+    "set-environment": "Set environment",
     "sync-database": "Sync database",
     "select": "Select database",
     "sync-status": "Sync status",

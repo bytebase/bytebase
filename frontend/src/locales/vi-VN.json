@@ -1258,6 +1258,7 @@
       "sync-new": "Chỉ đồng bộ cơ sở dữ liệu mới",
       "sync-all-tip": "Đồng bộ cơ sở dữ liệu không đồng bộ và có thể mất vài giây đến vài phút"
     },
+    "no-environment": "Trường hợp này không bị ràng buộc với môi trường",
     "selected-n-instances": "{n} phiên bản đã chọn | {n} phiên bản đã chọn",
     "users": "Người dùng",
     "successfully-restored-instance": "Đã khôi phục thành công trường hợp '{0}'.",
@@ -1445,6 +1446,7 @@
   "environment": {
     "select": "Chọn môi trường",
     "delete": "Xóa môi trường này",
+    "delete-description": "Xóa môi trường cũng sẽ xóa nó khỏi các phiên bản và cơ sở dữ liệu liên quan. @:common.cannot-undo-this-action",
     "create": "Tạo môi trường",
     "successfully-updated-environment": "Đã cập nhật thành công môi trường '{name}'.",
     "production-environment": "Môi trường sản xuất",
@@ -1548,6 +1550,8 @@
     "rollback-tip": "Chọn một nhật ký thay đổi DDL cụ thể để hoàn tác."
   },
   "database": {
+    "no-environment": "Cơ sở dữ liệu này không bị ràng buộc với môi trường",
+    "set-environment": "Thiết lập môi trường",
     "sync-database": "Đồng bộ cơ sở dữ liệu",
     "select": "Chọn cơ sở dữ liệu",
     "sync-status": "Trạng thái đồng bộ",

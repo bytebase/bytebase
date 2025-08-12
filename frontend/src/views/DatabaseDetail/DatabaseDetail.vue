@@ -4,35 +4,46 @@
     tabindex="0"
     v-bind="$attrs"
   >
+    <BBAttention
+      v-if="!database.effectiveEnvironment"
+      class="w-full mb-4"
+      :type="'warning'"
+      :action-text="$t('database.set-environment')"
+      @click="
+        () => {
+          state.selectedTab = 'setting';
+        }
+      "
+    >
+      {{ $t("database.no-environment") }}
+    </BBAttention>
     <DriftedDatabaseAlert :database="database" />
 
     <main class="flex-1 relative">
       <!-- Highlight Panel -->
       <div
-        class="gap-y-2 flex flex-col items-start lg:flex-row lg:items-center lg:justify-between"
+        class="gap-y-2 flex flex-col items-start xl:flex-row xl:items-center xl:justify-between"
       >
         <div class="flex-1 min-w-0 shrink-0">
           <!-- Summary -->
-          <div class="flex items-center">
-            <div>
-              <div class="flex items-baseline gap-x-2">
-                <h1
-                  class="text-xl font-bold text-main truncate flex items-center gap-x-2"
-                >
-                  {{ database.databaseName }}
+          <div class="w-full flex items-center">
+            <div class="w-full flex items-baseline gap-x-2">
+              <h1
+                class="text-xl font-bold text-main truncate flex items-center gap-x-2"
+              >
+                {{ database.databaseName }}
 
-                  <ProductionEnvironmentV1Icon
-                    :environment="environment"
-                    :tooltip="true"
-                    class="w-5 h-5"
-                  />
-                </h1>
-                <div class="flex items-center space-x-1">
-                  <span class="textinfolabel">
-                    {{ database.name }}
-                  </span>
-                  <CopyButton :content="database.name" />
-                </div>
+                <ProductionEnvironmentV1Icon
+                  :environment="environment"
+                  :tooltip="true"
+                  class="w-5 h-5"
+                />
+              </h1>
+              <div class="flex items-center space-x-1">
+                <span class="textinfolabel">
+                  {{ database.name }}
+                </span>
+                <CopyButton :content="database.name" />
               </div>
             </div>
           </div>
@@ -93,12 +104,14 @@
           </NButton>
           <NButton
             v-if="allowChangeData"
+            :disabled="!database.effectiveEnvironment"
             @click="createMigration('bb.issue.database.data.update')"
           >
             <span>{{ $t("database.change-data") }}</span>
           </NButton>
           <NButton
             v-if="allowAlterSchema"
+            :disabled="!database.effectiveEnvironment"
             @click="createMigration('bb.issue.database.schema.update')"
           >
             <span>{{ $t("database.edit-schema") }}</span>
@@ -193,6 +206,7 @@ import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, watch, watchEffect } from "vue";
 import { useRouter, useRoute, type LocationQueryRaw } from "vue-router";
 import { BBModal } from "@/bbkit";
+import { BBAttention } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import DatabaseChangelogPanel from "@/components/Database/DatabaseChangelogPanel.vue";
 import DatabaseOverviewPanel from "@/components/Database/DatabaseOverviewPanel.vue";

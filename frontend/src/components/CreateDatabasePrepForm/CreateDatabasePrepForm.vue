@@ -2,7 +2,8 @@
   <div class="w-72 mx-auto space-y-4">
     <div v-if="allowEditProject" class="w-full">
       <label for="project" class="textlabel">
-        {{ $t("common.project") }} <span style="color: red">*</span>
+        {{ $t("common.project") }}
+        <RequiredStar />
       </label>
       <ProjectSelect
         class="mt-1 !w-full"
@@ -15,7 +16,7 @@
     <div class="w-full">
       <div class="flex flex-row items-center space-x-1">
         <label for="instance" class="textlabel">
-          {{ $t("common.instance") }} <span class="text-red-600">*</span>
+          {{ $t("common.instance") }} <RequiredStar />
         </label>
       </div>
       <div class="flex flex-row space-x-2 items-center">
@@ -34,7 +35,7 @@
     <div class="w-full">
       <label for="name" class="textlabel">
         {{ $t("create-db.new-database-name") }}
-        <span class="text-red-600">*</span>
+        <RequiredStar />
       </label>
       <NInput
         v-model:value="state.databaseName"
@@ -56,7 +57,7 @@
     <div v-if="selectedInstance.engine === Engine.MONGODB" class="w-full">
       <label for="name" class="textlabel">
         {{ $t("create-db.new-collection-name") }}
-        <span class="text-red-600">*</span>
+        <RequiredStar />
       </label>
       <NInput
         v-model:value="state.tableName"
@@ -82,6 +83,7 @@
     <div class="w-full">
       <label for="environment" class="textlabel">
         {{ $t("common.environment") }}
+        <RequiredStar />
       </label>
       <EnvironmentSelect
         v-model:environment-name="state.environmentName"
@@ -94,7 +96,7 @@
     <div v-if="requireDatabaseOwnerName && state.instanceName" class="w-full">
       <label for="name" class="textlabel">
         {{ $t("create-db.database-owner-name") }}
-        <span class="text-red-600">*</span>
+        <RequiredStar />
       </label>
       <InstanceRoleSelect
         class="mt-1"
@@ -160,6 +162,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import InstanceRoleSelect from "@/components/InstanceRoleSelect.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
 import {
   EnvironmentSelect,
   InstanceSelect,

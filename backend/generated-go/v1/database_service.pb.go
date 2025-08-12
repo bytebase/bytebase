@@ -752,6 +752,7 @@ type ListDatabasesRequest struct {
 	//
 	// For example:
 	// environment == "environments/{environment resource id}"
+	// environment == "" (find databases which environment is not set)
 	// project == "projects/{project resource id}"
 	// instance == "instances/{instance resource id}"
 	// name.matches("database name")
