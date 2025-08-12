@@ -1036,7 +1036,8 @@
           "transaction-control": "事务控制",
           "database-sync": "数据库同步",
           "prior-backup": "数据预备份",
-          "retry-info": "重试信息"
+          "retry-info": "重试信息",
+          "compute-diff": "计算差异"
         },
         "affected-rows-n": "影响行数：{n}",
         "prior-backup-tables": "数据预备份相关的表",
