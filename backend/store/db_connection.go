@@ -149,11 +149,20 @@ func (m *DBConnectionManager) reloadConnection(ctx context.Context, filePath str
 	m.db = newDB
 	m.mu.Unlock()
 
-	// Set max idle connections to 0 on the old pool to gradually close connections
-	// This allows active connections to complete naturally
+	// Gracefully drain old connections and force close after 1 hour
 	if oldDB != nil {
+		// Set max idle connections to 0 to gradually close connections
+		// This allows active connections to complete naturally
 		oldDB.SetMaxIdleConns(0)
 		oldDB.SetConnMaxLifetime(1 * time.Minute)
+
+		// Force close after 1 hour as a safety measure
+		go func() {
+			time.Sleep(1 * time.Hour)
+			if err := oldDB.Close(); err != nil {
+				slog.Warn("Failed to force close old database connection", "error", err)
+			}
+		}()
 	}
 
 	slog.Info("Database connection updated successfully", "file", filePath)
