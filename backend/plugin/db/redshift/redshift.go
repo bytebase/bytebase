@@ -256,6 +256,12 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, commands []base.S
 
 	for i, command := range commands {
 		opts.LogCommandExecute([]int32{int32(i)}, command.Text)
+		// Log the query statement in char code to see if there are some control characters that cause issues.
+		var charCode []rune
+		for _, r := range command.Text {
+			charCode = append(charCode, r)
+		}
+		slog.Debug("executing command", slog.Any("command", charCode), slog.Int("index", i))
 		sqlResult, err := tx.ExecContext(ctx, command.Text)
 		if err != nil {
 			opts.LogCommandResponse(0, nil, err.Error())
@@ -290,6 +296,12 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, commands []base.Si
 
 	for i, command := range commands {
 		opts.LogCommandExecute([]int32{int32(i)}, command.Text)
+		// Log the query statement in char code to see if there are some control characters that cause issues.
+		var charCode []rune
+		for _, r := range command.Text {
+			charCode = append(charCode, r)
+		}
+		slog.Debug("executing command", slog.Any("command", charCode), slog.Int("index", i))
 		sqlResult, err := d.db.ExecContext(ctx, command.Text)
 		if err != nil {
 			opts.LogCommandResponse(0, nil, err.Error())
