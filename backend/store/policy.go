@@ -203,13 +203,6 @@ func (s *Store) GetQueryDataPolicy(ctx context.Context) (*storepb.QueryDataPolic
 	return p, nil
 }
 
-func getEffectiveEnvironmentID(database *DatabaseMessage) string {
-	if database.EffectiveEnvironmentID != nil {
-		return *database.EffectiveEnvironmentID
-	}
-	return ""
-}
-
 type reviewConfigResource struct {
 	resourceType storepb.Policy_Resource
 	resource     string
