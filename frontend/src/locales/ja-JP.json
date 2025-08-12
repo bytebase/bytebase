@@ -1038,7 +1038,7 @@
           "prior-backup": "事前のバックアップ",
           "retry-info": "情報を再試行します"
         },
-        "estimated-affected-rows-n": "推定影響行数: {n}",
+        "affected-rows-n": "影響行数: {n}",
         "prior-backup-tables": "以前のバックアップテーブル",
         "status-update": {
           "waiting": "実行の準備完了",
