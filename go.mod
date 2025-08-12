@@ -34,7 +34,6 @@ require (
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
 	github.com/bytebase/mysql-parser v0.0.0-20241224071214-cb9fd84811dd
 	github.com/bytebase/plsql-parser v0.0.0-20250218041636-9fed633593d1
-	github.com/bytebase/postgresql-parser v0.0.0-20250610072402-8c3c7a857eb8
 	github.com/bytebase/snowsql-parser v0.0.0-20250124075214-562d62e69c35
 	github.com/bytebase/tidb-parser v0.0.0-20240821091609-162fffe2a839
 	github.com/bytebase/trino-parser v0.0.0-20250502000119-9977709a63e8
@@ -299,7 +298,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.35.1
 	github.com/aws/smithy-go v1.22.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bytebase/parser v0.0.0-20250804064707-064601e79372
+	github.com/bytebase/parser v0.0.0-20250812034117-7cd3429471fb
 	github.com/bytebase/partiql-parser v0.0.0-20240531101102-1962ff456f2c
 	github.com/bytebase/tsql-parser v0.0.0-20250704100832-7b20f2173b45
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
