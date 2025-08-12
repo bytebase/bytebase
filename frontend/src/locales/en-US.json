@@ -1102,6 +1102,7 @@
       "statement-empty": "Statement is empty"
     },
     "spec": {
+      "change": "Change",
       "type": {
         "create-database": "Create Database",
         "schema-change": "Schema Change",

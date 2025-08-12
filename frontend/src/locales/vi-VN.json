@@ -1102,6 +1102,7 @@
       "statement-empty": "Câu lệnh trống rỗng"
     },
     "spec": {
+      "change": "Thay đổi",
       "type": {
         "create-database": "Tạo cơ sở dữ liệu",
         "schema-change": "Thay đổi sơ đồ",
