@@ -326,6 +326,7 @@
     }
   },
   "task-run": {
+    "failed-runs": "失敗したタスク - 最新の実行ログ",
     "history": "タスク実行履歴",
     "latest-logs": "最新のログ",
     "status": {

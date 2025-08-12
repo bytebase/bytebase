@@ -57,16 +57,6 @@
               >
               <InstanceV1Name :instance="database.instanceResource" />
             </dd>
-            <dt class="sr-only">{{ $t("common.project") }}</dt>
-            <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel"
-                >{{ $t("common.project") }}&nbsp;-&nbsp;</span
-              >
-              <ProjectV1Name
-                :project="database.projectEntity"
-                hash="#databases"
-              />
-            </dd>
             <SQLEditorButtonV1
               v-if="allowQuery"
               class="text-sm md:mr-4"
@@ -222,7 +212,6 @@ import {
   EnvironmentV1Name,
   InstanceV1Name,
   ProductionEnvironmentV1Icon,
-  ProjectV1Name,
 } from "@/components/v2";
 import { CopyButton } from "@/components/v2";
 import {

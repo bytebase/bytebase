@@ -326,6 +326,7 @@
     }
   },
   "task-run": {
+    "failed-runs": "Tareas fallidas: últimos registros de ejecución",
     "history": "Historial de ejecución de tareas",
     "latest-logs": "Últimos registros",
     "status": {

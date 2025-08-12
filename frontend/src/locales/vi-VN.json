@@ -326,6 +326,7 @@
     }
   },
   "task-run": {
+    "failed-runs": "Nhiệm vụ thất bại - Nhật ký thực thi mới nhất",
     "history": "Lịch sử thực hiện nhiệm vụ",
     "latest-logs": "Nhật ký mới nhất",
     "status": {
