@@ -373,5 +373,6 @@ export const useReviewPolicyForDatabase = (
     if (effectiveEnvironment) {
       return store.getReviewPolicyByResouce(effectiveEnvironment);
     }
+    return undefined;
   });
 };

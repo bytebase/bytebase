@@ -51,8 +51,11 @@ func TestDatabaseEnvironment(t *testing.T) {
 	}))
 	a.NoError(err)
 	db0 := db0Resp.Msg
-	a.Equal(testEnvironment.Name, db0.Environment)
-	a.Equal(testEnvironment.Name, db0.EffectiveEnvironment)
+	a.NotNil(db0.Environment)
+	a.Equal(testEnvironment.Name, *db0.Environment)
+	a.NotNil(db0.EffectiveEnvironment)
+	a.Equal(testEnvironment.Name, *db0.EffectiveEnvironment)
+
 	db1Name := "db1"
 	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, db1Name, "")
 	a.NoError(err)
@@ -61,8 +64,9 @@ func TestDatabaseEnvironment(t *testing.T) {
 	}))
 	a.NoError(err)
 	db1 := db1Resp.Msg
-	a.Equal("", db1.Environment)
-	a.Equal(prodEnvironment.Name, db1.EffectiveEnvironment)
+	a.Nil(db1.Environment)
+	a.NotNil(db1.EffectiveEnvironment)
+	a.Equal(prodEnvironment.Name, *db1.EffectiveEnvironment)
 
 	db2Name := "db2"
 	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, db2Name, "")
@@ -85,8 +89,10 @@ func TestDatabaseEnvironment(t *testing.T) {
 	}))
 	a.NoError(err)
 	db2 = db2Resp.Msg
-	a.Equal(testEnvironment.Name, db2.Environment)
-	a.Equal(testEnvironment.Name, db2.EffectiveEnvironment)
+	a.NotNil(db2.Environment)
+	a.Equal(testEnvironment.Name, *db2.Environment)
+	a.NotNil(db2.EffectiveEnvironment)
+	a.Equal(testEnvironment.Name, *db2.EffectiveEnvironment)
 
 	// Unset database environment for db2.
 	db2Resp, err = ctl.databaseServiceClient.UpdateDatabase(ctx, connect.NewRequest(&v1pb.UpdateDatabaseRequest{
@@ -100,6 +106,7 @@ func TestDatabaseEnvironment(t *testing.T) {
 	}))
 	a.NoError(err)
 	db2 = db2Resp.Msg
-	a.Equal("", db2.Environment)
-	a.Equal(prodEnvironment.Name, db2.EffectiveEnvironment)
+	a.Nil(db2.Environment)
+	a.NotNil(db2.EffectiveEnvironment)
+	a.Equal(prodEnvironment.Name, *db2.EffectiveEnvironment)
 }
