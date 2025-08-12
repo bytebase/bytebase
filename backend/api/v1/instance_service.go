@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/sampleinstance"
 	"github.com/bytebase/bytebase/backend/component/secret"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -36,25 +37,27 @@ import (
 // InstanceService implements the instance service.
 type InstanceService struct {
 	v1connect.UnimplementedInstanceServiceHandler
-	store          *store.Store
-	licenseService *enterprise.LicenseService
-	metricReporter *metricreport.Reporter
-	stateCfg       *state.State
-	dbFactory      *dbfactory.DBFactory
-	schemaSyncer   *schemasync.Syncer
-	iamManager     *iam.Manager
+	store                 *store.Store
+	licenseService        *enterprise.LicenseService
+	metricReporter        *metricreport.Reporter
+	stateCfg              *state.State
+	dbFactory             *dbfactory.DBFactory
+	schemaSyncer          *schemasync.Syncer
+	iamManager            *iam.Manager
+	sampleInstanceManager *sampleinstance.Manager
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, licenseService *enterprise.LicenseService, metricReporter *metricreport.Reporter, stateCfg *state.State, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, iamManager *iam.Manager) *InstanceService {
+func NewInstanceService(store *store.Store, licenseService *enterprise.LicenseService, metricReporter *metricreport.Reporter, stateCfg *state.State, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, iamManager *iam.Manager, sampleInstanceManager *sampleinstance.Manager) *InstanceService {
 	return &InstanceService{
-		store:          store,
-		licenseService: licenseService,
-		metricReporter: metricReporter,
-		stateCfg:       stateCfg,
-		dbFactory:      dbFactory,
-		schemaSyncer:   schemaSyncer,
-		iamManager:     iamManager,
+		store:                 store,
+		licenseService:        licenseService,
+		metricReporter:        metricReporter,
+		stateCfg:              stateCfg,
+		dbFactory:             dbFactory,
+		schemaSyncer:          schemaSyncer,
+		iamManager:            iamManager,
+		sampleInstanceManager: sampleInstanceManager,
 	}
 }
 
@@ -544,6 +547,11 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
+	// Handle sample instance deletion if applicable
+	if err := s.sampleInstanceManager.HandleInstanceDeletion(ctx, instance.ResourceID); err != nil {
+		slog.Warn("failed to handle sample instance deletion", log.BBError(err), slog.String("instance", instance.ResourceID))
+	}
+
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
@@ -566,6 +574,11 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	// Handle sample instance undelete (restart) if applicable
+	if err := s.sampleInstanceManager.HandleInstanceCreation(ctx, ins.ResourceID); err != nil {
+		slog.Warn("failed to handle sample instance undelete", log.BBError(err), slog.String("instance", ins.ResourceID))
 	}
 
 	result := convertInstanceMessage(ins)

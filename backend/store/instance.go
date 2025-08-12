@@ -466,3 +466,15 @@ func (s *Store) unObfuscateInstance(ctx context.Context, instance *storepb.Insta
 	}
 	return nil
 }
+
+// HasSampleInstances checks if there are sample instances in the database.
+func (s *Store) HasSampleInstances(ctx context.Context) (bool, error) {
+	instances, err := s.ListInstancesV2(ctx, &FindInstanceMessage{
+		ResourceIDs: &[]string{"test-sample-instance", "prod-sample-instance"},
+		ShowDeleted: false,
+	})
+	if err != nil {
+		return false, err
+	}
+	return len(instances) > 0, nil
+}
