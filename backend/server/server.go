@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/sampleinstance"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
@@ -61,8 +62,9 @@ type Server struct {
 	exportArchiveCleaner  *runnermigrator.ExportArchiveCleaner
 	runnerWG              sync.WaitGroup
 
-	webhookManager *webhook.Manager
-	iamManager     *iam.Manager
+	webhookManager        *webhook.Manager
+	iamManager            *iam.Manager
+	sampleInstanceManager *sampleinstance.Manager
 
 	licenseService *enterprise.LicenseService
 
@@ -122,15 +124,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		pgURL = profile.PgURL
 	}
 
-	// Start Postgres sample servers. It is used for onboarding users without requiring them to
-	// configure an external instance.
-	if profile.SampleDatabasePort != 0 {
-		// Only create batch sample databases in demo mode. For normal mode, user starts from the free version
-		// and batch databases are useless because batch requires enterprise license.
-		stopper := postgres.StartAllSampleInstances(ctx, profile.DataDir, profile.SampleDatabasePort)
-		s.stopper = append(s.stopper, stopper...)
-	}
-
 	// Connect to the instance that stores bytebase's own metadata.
 	stores, err := store.New(ctx, pgURL, !profile.HA)
 	if err != nil {
@@ -149,6 +142,12 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	}
 	s.store = stores
 	sheetManager := sheet.NewManager(stores)
+
+	// Initialize sample instance manager and start sample instances if they exist
+	s.sampleInstanceManager = sampleinstance.NewManager(stores, profile)
+	if err := s.sampleInstanceManager.StartIfExist(ctx); err != nil {
+		slog.Warn("failed to start sample instances", log.BBError(err))
+	}
 
 	s.stateCfg, err = state.New()
 	if err != nil {
@@ -222,7 +221,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager)
 
-	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret); err != nil {
+	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager); err != nil {
 		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
 	}
 	configureEchoRouters(s.echoServer, s.lspServer, directorySyncServer, profile)
@@ -310,6 +309,9 @@ func (s *Server) Shutdown(ctx context.Context) error {
 			return err
 		}
 	}
+
+	// Shutdown sample instances
+	s.sampleInstanceManager.Stop()
 
 	// Shutdown postgres instances.
 	for _, stopper := range s.stopper {
