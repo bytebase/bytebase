@@ -7,4 +7,4 @@ title: What is 'Workspace Member' ?
 #### Learn more
 
 - [Manage Workspace Members](https://bytebase.cc/docs/get-started/step-by-step/register-accounts/#manage-members-eg-update-password)
-- [Roles and Permissions (RBAC)](https://docs.bytebase.com/concepts/roles-and-permissions)
+- [Roles and Permissions (RBAC)](https://docs.bytebase.com/administration/roles)

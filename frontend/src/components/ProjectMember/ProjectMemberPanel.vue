@@ -3,7 +3,7 @@
     <div class="textinfolabel">
       {{ $t("project.members.description") }}
       <a
-        href="https://docs.bytebase.com/concepts/roles-and-permissions/?source=console#project-roles"
+        href="https://docs.bytebase.com/administration/roles/?source=console#project-roles"
         target="_blank"
         class="normal-link inline-flex flex-row items-center"
       >
