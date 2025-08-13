@@ -10,6 +10,7 @@ import {
   isValidProjectName,
   isValidInstanceName,
   isValidDatabaseName,
+  isValidEnvironmentName,
   unknownDatabase,
   unknownInstanceResource,
 } from "@/types";
@@ -78,7 +79,9 @@ const getListDatabaseFilter = (filter: DatabaseFilter): string => {
     params.push(`instance == "${filter.instance}"`);
   }
   if (filter.environment !== undefined) {
-    params.push(`environment == "${filter.environment}"`);
+    params.push(
+      `environment == "${isValidEnvironmentName(filter.environment) ? filter.environment : ""}"`
+    );
   }
   if (filter.excludeUnassigned) {
     params.push(`exclude_unassigned == true`);

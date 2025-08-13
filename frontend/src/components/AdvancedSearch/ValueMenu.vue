@@ -48,7 +48,9 @@
               @mouseenter.prevent.stop="$emit('hover-item', index)"
               @mousedown.prevent.stop="$emit('select-value', option.value)"
             >
-              <component :is="option.render" class="text-control text-sm" />
+              <template v-if="option.render">
+                <component :is="option.render" class="text-control text-sm" />
+              </template>
               <span v-if="!option.custom" class="text-control-light text-sm">
                 {{ option.value }}
               </span>

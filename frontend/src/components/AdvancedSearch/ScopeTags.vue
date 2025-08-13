@@ -26,9 +26,11 @@ import { useI18n } from "vue-i18n";
 import { UNKNOWN_ID } from "@/types";
 import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
 import { callCssVariable, extractDatabaseResourceName } from "@/utils";
+import type { ScopeOption } from "./types";
 
 const props = defineProps<{
   params: SearchParams;
+  scopeOptions: ScopeOption[];
   focusedTagId?: SearchScopeId;
 }>();
 
@@ -52,6 +54,12 @@ const tagProps = (scope: SearchScope): TagProps => {
 };
 
 const renderValue = (scope: SearchScope, _index: number) => {
+  const scopeOption = props.scopeOptions
+    .find((option) => option.id === scope.id)
+    ?.options?.find((option) => option.value === scope.value);
+  if (scopeOption && scopeOption.render) {
+    return scopeOption.render();
+  }
   if (scope.id === "created" || scope.id === "updated") {
     const [begin, end] = scope.value.split(",").map((ts) => parseInt(ts, 10));
     return [dayjs(begin).format("L"), dayjs(end).format("L")].join("-");

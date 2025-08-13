@@ -52,12 +52,12 @@
           <label class="font-medium text-control">
             {{ $t("common.stage") }}
           </label>
-          <span class="break-all">
-            {{
+          <EnvironmentV1Name
+            :environment="
               environmentStore.getEnvironmentByName(targetStage.environment)
-                .title
-            }}
-          </span>
+            "
+            :link="false"
+          />
         </div>
 
         <div
@@ -264,6 +264,7 @@ import { useI18n } from "vue-i18n";
 import { semanticTaskType } from "@/components/IssueV1";
 import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue";
 import { ErrorList } from "@/components/IssueV1/components/common";
+import { EnvironmentV1Name } from "@/components/v2";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import {
   pushNotification,

@@ -17,5 +17,5 @@ export type ValueOption = {
   value: string;
   keywords: string[];
   custom?: boolean;
-  render: RenderFunction;
+  render?: RenderFunction;
 };
