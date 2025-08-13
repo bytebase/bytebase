@@ -912,4 +912,3 @@ func getPgError(e error) *v1pb.QueryResult_PostgresError_ {
 	}
 	return nil
 }
-
