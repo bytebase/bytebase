@@ -35,7 +35,7 @@
         <MemberDataTableByRole
           scope="workspace"
           :allow-edit="allowEdit"
-          :bindings-by-role="memberBindingsByRole"
+          :bindings="memberBindings"
           :on-click-user="onClickUser"
           @update-binding="selectMember"
           @revoke-binding="revokeMember"
@@ -89,10 +89,7 @@ import EditMemberRoleDrawer from "@/components/Member/EditMemberRoleDrawer.vue";
 import MemberDataTable from "@/components/Member/MemberDataTable/index.vue";
 import MemberDataTableByRole from "@/components/Member/MemberDataTableByRole.vue";
 import type { MemberBinding } from "@/components/Member/types";
-import {
-  getMemberBindings,
-  getMemberBindingsByRole,
-} from "@/components/Member/utils";
+import { getMemberBindings } from "@/components/Member/utils";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import { SearchBox } from "@/components/v2";
 import {
@@ -194,8 +191,8 @@ const revokeMember = async (binding: MemberBinding) => {
   });
 };
 
-const memberBindingsByRole = computedAsync(() => {
-  return getMemberBindingsByRole({
+const memberBindings = computedAsync(() => {
+  return getMemberBindings({
     policies: [
       {
         level: "WORKSPACE",
@@ -205,9 +202,5 @@ const memberBindingsByRole = computedAsync(() => {
     searchText: state.searchText,
     ignoreRoles: new Set([]),
   });
-}, new Map());
-
-const memberBindings = computed(() => {
-  return getMemberBindings(memberBindingsByRole.value);
-});
+}, []);
 </script>
