@@ -140,6 +140,11 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 
 // singleStatement must be a selectStatement for oracle.
 func getStatementWithResultLimitFor11g(statement string, limitCount int) string {
+	trimmedStatement := strings.ToLower(strings.TrimLeftFunc(statement, unicode.IsSpace))
+	// Add limit for select statement only
+	if !strings.HasPrefix(trimmedStatement, "select") && !strings.HasPrefix(trimmedStatement, "with") {
+		return statement
+	}
 	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", util.TrimStatement(statement), limitCount)
 }
 
