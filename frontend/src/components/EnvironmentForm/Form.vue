@@ -132,13 +132,13 @@
       >
         <div class="mt-3">
           <NCheckbox
-            v-if="existRelatedResource"
+            v-if="isDev() && existRelatedResource"
             v-model:checked="confirmDelete"
             class="mr-2"
           />
           <span>
             {{
-              existRelatedResource
+              isDev() && existRelatedResource
                 ? $t("environment.delete-description")
                 : $t("common.cannot-undo-this-action")
             }}
