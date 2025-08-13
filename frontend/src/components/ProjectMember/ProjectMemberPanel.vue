@@ -76,7 +76,7 @@
         <MemberDataTableByRole
           scope="project"
           :allow-edit="allowEdit"
-          :bindings-by-role="memberBindingsByRole"
+          :bindings="memberBindings"
           @update-binding="selectMember"
           @revoke-binding="revokeMember"
         />
@@ -114,10 +114,7 @@ import { useI18n } from "vue-i18n";
 import MemberDataTable from "@/components/Member/MemberDataTable/index.vue";
 import MemberDataTableByRole from "@/components/Member/MemberDataTableByRole.vue";
 import type { MemberBinding } from "@/components/Member/types";
-import {
-  getMemberBindings,
-  getMemberBindingsByRole,
-} from "@/components/Member/utils";
+import { getMemberBindings } from "@/components/Member/utils";
 import {
   extractUserId,
   pushNotification,
@@ -193,8 +190,8 @@ const shouldShowRequestRoleButton = computed(() => {
 
 const workspaceRoles = computed(() => new Set(PRESET_WORKSPACE_ROLES));
 
-const memberBindingsByRole = computedAsync(() => {
-  return getMemberBindingsByRole({
+const memberBindings = computedAsync(() => {
+  return getMemberBindings({
     policies: [
       {
         level: "WORKSPACE",
@@ -208,11 +205,7 @@ const memberBindingsByRole = computedAsync(() => {
     searchText: state.searchText,
     ignoreRoles: workspaceRoles.value,
   });
-}, new Map());
-
-const memberBindings = computed(() => {
-  return getMemberBindings(memberBindingsByRole.value);
-});
+}, []);
 
 const selectMember = (binding: MemberBinding) => {
   state.editingMember = binding.binding;
