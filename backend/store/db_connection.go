@@ -171,7 +171,15 @@ func (m *DBConnectionManager) reloadConnection(ctx context.Context, filePath str
 // Helper functions
 
 func isFilePath(s string) bool {
-	return !strings.HasPrefix(s, "postgresql://") && !strings.HasPrefix(s, "postgres://")
+	if strings.HasPrefix(s, "postgresql://") || strings.HasPrefix(s, "postgres://") {
+		return false
+	}
+
+	if strings.Contains(s, "host=/tmp") {
+		return false
+	}
+
+	return true
 }
 
 func readURLFromFile(path string) (string, error) {
