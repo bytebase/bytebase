@@ -19,7 +19,7 @@ import (
 
 func init() {
 	base.RegisterQueryValidator(storepb.Engine_POSTGRES, validateQuery)
-	base.RegisterQueryValidator(storepb.Engine_REDSHIFT, validateQuery)
+	// Redshift has its own implementation in the redshift package
 	base.RegisterQueryValidator(storepb.Engine_COCKROACHDB, validateQuery)
 }
 
