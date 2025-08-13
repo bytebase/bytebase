@@ -7,4 +7,4 @@ title: 什么是「空间成员」 ?
 #### Learn more
 
 - [管理成员](https://bytebase.cc/docs/get-started/step-by-step/register-accounts/#manage-members-eg-update-password)
-- [角色和权限 RBAC](https://docs.bytebase.com/concepts/roles-and-permissions)
+- [角色和权限 RBAC](https://docs.bytebase.com/administration/roles)
