@@ -14,16 +14,18 @@
     >
       <div class="flex items-start justify-between gap-4">
         <!-- Left side: Stage title and status counts -->
-        <div class="flex items-start gap-2">
+        <div class="flex-1 flex items-start gap-2">
           <div class="flex items-start gap-2">
             <TaskStatus :status="stageStatus" size="medium" />
             <div class="flex flex-col gap-1">
               <h3
-                class="text-base font-medium text-gray-900 whitespace-nowrap w-24 truncate"
+                class="text-base font-medium text-gray-900 whitespace-nowrap truncate"
               >
-                {{
-                  environmentStore.getEnvironmentByName(stage.environment).title
-                }}
+                <EnvironmentV1Name
+                  :environment="
+                    environmentStore.getEnvironmentByName(stage.environment)
+                  "
+                />
               </h3>
               <Timestamp
                 v-if="latestUpdateTimestamp"
@@ -197,6 +199,7 @@ import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay
 import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import Timestamp from "@/components/misc/Timestamp.vue";
+import { EnvironmentV1Name } from "@/components/v2";
 import {
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,

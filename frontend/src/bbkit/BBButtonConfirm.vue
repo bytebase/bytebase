@@ -30,6 +30,7 @@
     :ok-text="okText"
     :title="confirmTitle"
     :description="confirmDescription"
+    :positive-button-props="positiveButtonProps"
     @ok="
       () => {
         state.showModal = false;
@@ -44,7 +45,7 @@
 
 <script lang="ts" setup>
 import { ArchiveIcon, Trash2Icon, Undo2Icon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
+import { NButton, type ButtonProps } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import BBAlert from "./BBAlert.vue";
@@ -55,6 +56,7 @@ const props = withDefaults(
     type?: BBButtonConfirmType;
     text?: boolean;
     buttonText?: string;
+    positiveButtonProps?: ButtonProps | undefined;
     requireConfirm?: boolean;
     okText?: string;
     confirmTitle?: string;

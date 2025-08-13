@@ -124,19 +124,33 @@
         :confirm-title="
           $t('environment.delete') + ` '${state.environment.title}'?`
         "
-        :confirm-description="
-          isDev()
-            ? $t('environment.delete-description')
-            : $t('common.cannot-undo-this-action')
-        "
+        :positive-button-props="{
+          disabled: existRelatedResource ? !confirmDelete : false,
+        }"
         :require-confirm="true"
         @confirm="deleteEnvironment"
-      />
+      >
+        <div class="mt-3">
+          <NCheckbox
+            v-if="isDev() && existRelatedResource"
+            v-model:checked="confirmDelete"
+            class="mr-2"
+          />
+          <span>
+            {{
+              isDev() && existRelatedResource
+                ? $t("environment.delete-description")
+                : $t("common.cannot-undo-this-action")
+            }}
+          </span>
+        </div>
+      </BBButtonConfirm>
     </div>
   </div>
 </template>
 
 <script lang="tsx" setup>
+import { computedAsync } from "@vueuse/core";
 import { NCheckbox, NInput, NColorPicker } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -145,6 +159,8 @@ import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener
 import {
   useEnvironmentV1List,
   useEnvironmentV1Store,
+  useInstanceV1Store,
+  useDatabaseV1Store,
   hasFeature,
   pushNotification,
 } from "@/store";
@@ -175,6 +191,7 @@ withDefaults(
   }
 );
 
+const confirmDelete = ref<boolean>(false);
 const { t } = useI18n();
 const {
   create,
@@ -189,6 +206,8 @@ const {
 } = useEnvironmentFormContext();
 const environmentList = useEnvironmentV1List();
 const environmentStore = useEnvironmentV1Store();
+const instanceStore = useInstanceV1Store();
+const databaseStore = useDatabaseV1Store();
 
 const accessControlConfigureRef =
   ref<InstanceType<typeof AccessControlConfigure>>();
@@ -216,6 +235,50 @@ const hasEnvironmentPolicyFeature = computed(() =>
 const allowArchive = computed(() => {
   return hasPermission("bb.settings.set") && environmentList.value.length > 1;
 });
+
+const fetchInstances = async () => {
+  try {
+    const resp = await instanceStore.fetchInstanceList({
+      pageSize: 1,
+      filter: {
+        environment: environment.value.name,
+      },
+    });
+    return resp.instances;
+  } catch {
+    return [];
+  }
+};
+
+const fetchDatabases = async () => {
+  try {
+    const resp = await databaseStore.fetchDatabases({
+      pageSize: 1,
+      parent: "workspaces/-",
+      filter: {
+        environment: environment.value.name,
+      },
+    });
+    return resp.databases;
+  } catch {
+    return [];
+  }
+};
+
+const existRelatedResource = computedAsync(async () => {
+  if (create.value) {
+    return false;
+  }
+  if (!allowArchive.value) {
+    return false;
+  }
+
+  const [listInstance, listDatabase] = await Promise.all([
+    fetchInstances(),
+    fetchDatabases(),
+  ]);
+  return listInstance.length !== 0 || listDatabase.length !== 0;
+}, false);
 
 const renderColorPicker = () => {
   return (

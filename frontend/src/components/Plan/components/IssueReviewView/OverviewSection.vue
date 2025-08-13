@@ -37,9 +37,10 @@
                   size="small"
                   disabled
                 />
-                <span class="font-medium text-gray-700 whitespace-nowrap">
-                  {{ getEnvironmentTitle(stage.environment) }}
-                </span>
+                <EnvironmentV1Name
+                  :environment="getEnvironmentEntity(stage.environment)"
+                  :link="false"
+                />
               </div>
               <span
                 v-if="index < rollout.stages.length - 1"
@@ -68,6 +69,7 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
+import { EnvironmentV1Name } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
 import { PlanCheckRun_Result_Status } from "@/types/proto-es/v1/plan_service_pb";
@@ -86,9 +88,8 @@ const selectedResultStatus = ref<PlanCheckRun_Result_Status | undefined>(
   undefined
 );
 
-const getEnvironmentTitle = (environmentName: string) => {
-  const environment = environmentStore.getEnvironmentByName(environmentName);
-  return environment.title || environmentName;
+const getEnvironmentEntity = (environmentName: string) => {
+  return environmentStore.getEnvironmentByName(environmentName);
 };
 
 const navigateToStage = (stageName: string) => {
