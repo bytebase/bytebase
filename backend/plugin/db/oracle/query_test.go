@@ -33,7 +33,7 @@ func runLimitTest(t *testing.T, file string, record bool) {
 	require.NoError(t, err)
 
 	for i, tc := range testCases {
-		want := getStatementWithResultLimit(tc.Stmt, tc.Limit)
+		want := addLimitFor12cAndLater(tc.Stmt, tc.Limit)
 		if record {
 			testCases[i].Want = want
 		} else {
