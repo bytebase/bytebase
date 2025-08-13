@@ -35,8 +35,6 @@ var (
 	_ db.Driver = (*Driver)(nil)
 )
 
-const dbVersion12 = 12
-
 func init() {
 	db.Register(storepb.Engine_ORACLE, newDriver)
 }
@@ -271,12 +269,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		}
 
 		if !queryContext.Explain && queryContext.Limit > 0 {
-			stmt, err := d.getStatementWithResultLimit(statement, queryContext)
-			if err != nil {
-				slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
-				stmt = getStatementWithResultLimitFor11g(stmt, queryContext.Limit)
-			}
-			statement = stmt
+			statement = addResultLimit(statement, queryContext.Limit, d.connectionCtx.EngineVersion)
 		}
 
 		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_ORACLE, statement)
@@ -328,27 +321,6 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	}
 
 	return results, nil
-}
-
-func (d *Driver) getStatementWithResultLimit(stmt string, queryContext db.QueryContext) (string, error) {
-	engineVersion := d.connectionCtx.EngineVersion
-	versionIdx := strings.Index(engineVersion, ".")
-	if versionIdx < 0 {
-		return "", errors.New("instance version number is invalid")
-	}
-	versionNumber, err := strconv.Atoi(engineVersion[:versionIdx])
-	if err != nil {
-		return "", err
-	}
-	if ok, err := skipAddLimit(stmt); err == nil && ok {
-		return stmt, nil
-	}
-	switch {
-	case versionNumber < dbVersion12:
-		return getStatementWithResultLimitFor11g(stmt, queryContext.Limit), nil
-	default:
-		return getStatementWithResultLimit(stmt, queryContext.Limit), nil
-	}
 }
 
 // skipAddLimit checks if the statement needs a limit clause.
