@@ -28,6 +28,7 @@
           >
             <ScopeTags
               :params="params"
+              :scope-options="scopeOptions"
               :focused-tag-id="focusedTagId"
               @select-scope="selectScopeFromTag"
               @remove-scope="removeScope"

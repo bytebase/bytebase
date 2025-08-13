@@ -33,7 +33,7 @@
         <div class="flex flex-col gap-y-1">
           <div class="text-control">
             {{ $t("common.labels") }}
-            <span v-if="project.forceIssueLabels" class="text-red-600">*</span>
+            <RequiredStar v-if="project.forceIssueLabels" />
           </div>
           <IssueLabelSelector
             :disabled="false"
@@ -91,6 +91,7 @@ import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue
 import PlanCheckStatusCount from "@/components/Plan/components/PlanCheckStatusCount.vue";
 import { ErrorList } from "@/components/Plan/components/common";
 import { usePlanContext, usePlanCheckStatus } from "@/components/Plan/logic";
+import RequiredStar from "@/components/RequiredStar.vue";
 import {
   issueServiceClientConnect,
   planServiceClientConnect,

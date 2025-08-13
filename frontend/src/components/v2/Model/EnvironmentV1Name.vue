@@ -5,20 +5,22 @@
     class="inline-flex items-center gap-x-1"
     :class="[isLink && !plain && 'normal-link', isLink && 'hover:underline']"
   >
-    <span class="line-clamp-1 select-none" :class="textClass">
-      {{ prefix }}
-      <span v-if="isUnknown" class="text-gray-400 italic">
-        NULL ENVIRONMENT
+    <NEllipsis :line-clamp="1">
+      <span class="select-none" :class="textClass">
+        {{ prefix }}
+        <span v-if="isUnknown" class="text-gray-400 italic">
+          NULL ENVIRONMENT
+        </span>
+        <HighlightLabelText
+          v-else
+          :text="environment.title"
+          :keyword="keyword"
+        />
+        <slot name="suffix">
+          {{ suffix }}
+        </slot>
       </span>
-      <HighlightLabelText
-        v-else
-        :text="environmentV1Name(environment)"
-        :keyword="keyword"
-      />
-      <slot name="suffix">
-        {{ suffix }}
-      </slot>
-    </span>
+    </NEllipsis>
     <ProductionEnvironmentV1Icon
       v-if="showIcon"
       :environment="environment"
@@ -29,12 +31,13 @@
 </template>
 
 <script lang="ts" setup>
+import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { UNKNOWN_ENVIRONMENT_NAME } from "@/types";
 import type { Environment } from "@/types/v1/environment";
 import type { VueClass } from "@/utils";
-import { autoEnvironmentRoute, environmentV1Name } from "@/utils";
+import { autoEnvironmentRoute } from "@/utils";
 import HighlightLabelText from "./HighlightLabelText.vue";
 import ProductionEnvironmentV1Icon from "./ProductionEnvironmentV1Icon.vue";
 

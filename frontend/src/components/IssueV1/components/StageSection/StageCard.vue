@@ -7,13 +7,23 @@
 
     <div class="text" @click="handleClickStage">
       <div
-        class="text-sm min-w-32 lg:min-w-fit with-underline whitespace-nowrap"
+        class="text-sm min-w-32 flex items-center space-x-1 lg:min-w-fit with-underline whitespace-nowrap"
       >
         <heroicons:arrow-small-right
           v-if="isActiveStage"
-          class="w-5 h-5 inline-block mb-0.5 mr-1"
+          class="w-5 h-5 inline-block"
         />
-        <span>{{ $t("common.stage") }}</span> - <span>{{ stageTitle }}</span>
+        <span>{{ $t("common.stage") }}</span>
+        <span>-</span>
+        <i18n-t
+          v-if="!isCreating && isActiveStage"
+          keypath="issue.stage-select.current"
+        >
+          <template #name>
+            <EnvironmentV1Name :environment="environment" :link="false" />
+          </template>
+        </i18n-t>
+        <span v-else>{{ environment.title }}</span>
       </div>
       <div class="text-xs flex gap-1 flex-row items-center">
         <div class="whitespace-no-wrap with-underline">
@@ -63,13 +73,13 @@
 import { first, uniqBy } from "lodash-es";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
 import {
   isTaskFinished,
   isValidStage,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
+import { EnvironmentV1Name } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
 import { EMPTY_TASK_NAME } from "@/types";
 import { PlanCheckRun_Result_Status } from "@/types/proto-es/v1/plan_service_pb";
@@ -83,7 +93,6 @@ const props = defineProps<{
   stage: Stage;
 }>();
 
-const { t } = useI18n();
 const {
   isCreating,
   selectedTask,
@@ -137,15 +146,9 @@ const stageClass = computed(() => {
   return classList;
 });
 
-const stageTitle = computed(() => {
-  const { stage } = props;
-  const environment = environmentStore.getEnvironmentByName(stage.environment);
-  return !isCreating.value && isActiveStage.value
-    ? t("issue.stage-select.current", {
-        name: environment.title,
-      })
-    : environment.title;
-});
+const environment = computed(() =>
+  environmentStore.getEnvironmentByName(props.stage.environment)
+);
 
 const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
   if (isCreating.value) return PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;

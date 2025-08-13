@@ -151,7 +151,6 @@ const scopeOptions = computed((): ScopeOption[] => {
         return {
           value: method,
           keywords: [method],
-          render: () => "",
         };
       }),
     },
@@ -165,7 +164,6 @@ const scopeOptions = computed((): ScopeOption[] => {
           return {
             value: severity,
             keywords: [severity],
-            render: () => "",
           };
         }),
     },

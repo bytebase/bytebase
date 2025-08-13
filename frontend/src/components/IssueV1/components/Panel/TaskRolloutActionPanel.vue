@@ -27,11 +27,12 @@
             <label class="font-medium text-control">
               {{ $t("common.stage") }}
             </label>
-            <span class="break-all">
-              {{
-                environmentStore.getEnvironmentByName(stage.environment).title
-              }}
-            </span>
+            <EnvironmentV1Name
+              :environment="
+                environmentStore.getEnvironmentByName(stage.environment)
+              "
+              :link="false"
+            />
           </div>
         </template>
         <div
@@ -213,6 +214,7 @@ import {
 } from "@/components/IssueV1/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
+import { EnvironmentV1Name } from "@/components/v2";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import {
   pushNotification,
