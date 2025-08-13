@@ -35,8 +35,6 @@ var (
 	_ db.Driver = (*Driver)(nil)
 )
 
-const dbVersion12 = 12
-
 func init() {
 	db.Register(storepb.Engine_ORACLE, newDriver)
 }
@@ -271,7 +269,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		}
 
 		if !queryContext.Explain && queryContext.Limit > 0 {
-			statement = d.addResultLimit(statement, queryContext.Limit)
+			statement = addResultLimit(statement, queryContext.Limit, d.connectionCtx.EngineVersion)
 		}
 
 		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_ORACLE, statement)
@@ -323,40 +321,6 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	}
 
 	return results, nil
-}
-
-// addResultLimit adds a limit clause to the statement based on Oracle version
-func (d *Driver) addResultLimit(stmt string, limit int) string {
-	// Check if we should skip adding limit (e.g., for simple DUAL queries)
-	if shouldSkipLimit(stmt) {
-		return stmt
-	}
-
-	// Determine Oracle version
-	if d.isOracle11gOrEarlier() {
-		return addLimitFor11g(stmt, limit)
-	}
-	return addLimitFor12cAndLater(stmt, limit)
-}
-
-// isOracle11gOrEarlier checks if the Oracle version is 11g or earlier
-func (d *Driver) isOracle11gOrEarlier() bool {
-	engineVersion := d.connectionCtx.EngineVersion
-	versionIdx := strings.Index(engineVersion, ".")
-	if versionIdx < 0 {
-		return true // Default to 11g behavior for invalid version
-	}
-	versionNumber, err := strconv.Atoi(engineVersion[:versionIdx])
-	if err != nil {
-		return true // Default to 11g behavior for parsing errors
-	}
-	return versionNumber < dbVersion12
-}
-
-// shouldSkipLimit checks if the statement needs a limit clause
-func shouldSkipLimit(stmt string) bool {
-	ok, err := skipAddLimit(stmt)
-	return err == nil && ok
 }
 
 // skipAddLimit checks if the statement needs a limit clause.

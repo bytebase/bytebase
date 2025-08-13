@@ -22,6 +22,8 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
+const dbVersion12 = 12
+
 func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	// DATE: date.
 	// TIMESTAMPDTY: timestamp.
@@ -194,6 +196,39 @@ func addFetchNextClause(statement string, limitCount int) (string, error) {
 	res = strings.TrimRightFunc(res, utils.IsSpaceOrSemicolon)
 
 	return res, nil
+}
+
+// addResultLimit adds a limit clause to the statement based on Oracle version
+func addResultLimit(stmt string, limit int, engineVersion string) string {
+	// Check if we should skip adding limit (e.g., for simple DUAL queries)
+	if shouldSkipLimit(stmt) {
+		return stmt
+	}
+
+	// Determine Oracle version
+	if isOracle11gOrEarlier(engineVersion) {
+		return addLimitFor11g(stmt, limit)
+	}
+	return addLimitFor12cAndLater(stmt, limit)
+}
+
+// isOracle11gOrEarlier checks if the Oracle version is 11g or earlier
+func isOracle11gOrEarlier(engineVersion string) bool {
+	versionIdx := strings.Index(engineVersion, ".")
+	if versionIdx < 0 {
+		return true // Default to 11g behavior for invalid version
+	}
+	versionNumber, err := strconv.Atoi(engineVersion[:versionIdx])
+	if err != nil {
+		return true // Default to 11g behavior for parsing errors
+	}
+	return versionNumber < dbVersion12
+}
+
+// shouldSkipLimit checks if the statement needs a limit clause
+func shouldSkipLimit(stmt string) bool {
+	ok, err := skipAddLimit(stmt)
+	return err == nil && ok
 }
 
 type plsqlRewriter struct {
