@@ -5,6 +5,7 @@ import { defineStore } from "pinia";
 import { auditLogServiceClientConnect } from "@/grpcweb";
 import type { SearchAuditLogsParams } from "@/types";
 import {
+  AuditLog_Severity,
   ExportAuditLogsRequestSchema,
   SearchAuditLogsRequestSchema,
 } from "@/types/proto-es/v1/audit_log_service_pb";
@@ -19,7 +20,7 @@ const buildFilter = (search: SearchAuditLogsParams): string => {
     filter.push(`method == "${search.method}"`);
   }
   if (search.level) {
-    filter.push(`severity == "${search.level}"`);
+    filter.push(`severity == "${AuditLog_Severity[search.level]}"`);
   }
   if (search.userEmail) {
     filter.push(`user == "${userNamePrefix}${search.userEmail}"`);
