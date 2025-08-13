@@ -61,7 +61,7 @@ const props = withDefaults(
     includeSystemBot: false,
     includeServiceAccount: false,
     autoReset: true,
-    filter: undefined,
+    filter: (user: User, index: number) => true,
     size: "medium",
   }
 );
@@ -120,7 +120,7 @@ const searchUsers = async (search: string) => {
     filter: getFilter(search),
     pageSize: getDefaultPagination(),
   });
-  return users;
+  return users.filter(props.filter);
 };
 
 const handleSearch = useDebounceFn(async (search: string) => {
