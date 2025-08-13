@@ -271,12 +271,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		}
 
 		if !queryContext.Explain && queryContext.Limit > 0 {
-			stmt, err := d.getStatementWithResultLimit(statement, queryContext)
-			if err != nil {
-				slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
-				stmt = getStatementWithResultLimitFor11g(stmt, queryContext.Limit)
-			}
-			statement = stmt
+			statement = d.addResultLimit(statement, queryContext.Limit)
 		}
 
 		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_ORACLE, statement)
@@ -330,25 +325,38 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	return results, nil
 }
 
-func (d *Driver) getStatementWithResultLimit(stmt string, queryContext db.QueryContext) (string, error) {
+// addResultLimit adds a limit clause to the statement based on Oracle version
+func (d *Driver) addResultLimit(stmt string, limit int) string {
+	// Check if we should skip adding limit (e.g., for simple DUAL queries)
+	if shouldSkipLimit(stmt) {
+		return stmt
+	}
+
+	// Determine Oracle version
+	if d.isOracle11gOrEarlier() {
+		return addLimitFor11g(stmt, limit)
+	}
+	return addLimitFor12cAndLater(stmt, limit)
+}
+
+// isOracle11gOrEarlier checks if the Oracle version is 11g or earlier
+func (d *Driver) isOracle11gOrEarlier() bool {
 	engineVersion := d.connectionCtx.EngineVersion
 	versionIdx := strings.Index(engineVersion, ".")
 	if versionIdx < 0 {
-		return "", errors.New("instance version number is invalid")
+		return true // Default to 11g behavior for invalid version
 	}
 	versionNumber, err := strconv.Atoi(engineVersion[:versionIdx])
 	if err != nil {
-		return "", err
+		return true // Default to 11g behavior for parsing errors
 	}
-	if ok, err := skipAddLimit(stmt); err == nil && ok {
-		return stmt, nil
-	}
-	switch {
-	case versionNumber < dbVersion12:
-		return getStatementWithResultLimitFor11g(stmt, queryContext.Limit), nil
-	default:
-		return getStatementWithResultLimit(stmt, queryContext.Limit), nil
-	}
+	return versionNumber < dbVersion12
+}
+
+// shouldSkipLimit checks if the statement needs a limit clause
+func shouldSkipLimit(stmt string) bool {
+	ok, err := skipAddLimit(stmt)
+	return err == nil && ok
 }
 
 // skipAddLimit checks if the statement needs a limit clause.

@@ -138,32 +138,40 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 	return util.NullRowValue
 }
 
-// singleStatement must be a selectStatement for oracle.
-func getStatementWithResultLimitFor11g(statement string, limitCount int) string {
-	trimmedStatement := strings.ToLower(strings.TrimLeftFunc(statement, unicode.IsSpace))
-	// Add limit for select statement only
-	if !strings.HasPrefix(trimmedStatement, "select") && !strings.HasPrefix(trimmedStatement, "with") {
+// addLimitFor11g adds a ROWNUM-based limit for Oracle 11g and earlier versions.
+// Uses the legacy approach with subquery and ROWNUM.
+func addLimitFor11g(statement string, limitCount int) string {
+	if !isSelectOrWithStatement(statement) {
 		return statement
 	}
 	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", util.TrimStatement(statement), limitCount)
 }
 
-func getStatementWithResultLimit(statement string, limit int) string {
+// isSelectOrWithStatement checks if the statement is a SELECT or WITH statement
+func isSelectOrWithStatement(statement string) bool {
 	trimmedStatement := strings.ToLower(strings.TrimLeftFunc(statement, unicode.IsSpace))
-	// Add limit for select statement only
-	if !strings.HasPrefix(trimmedStatement, "select") && !strings.HasPrefix(trimmedStatement, "with") {
+	return strings.HasPrefix(trimmedStatement, "select") || strings.HasPrefix(trimmedStatement, "with")
+}
+
+// addLimitFor12cAndLater adds a FETCH NEXT clause for Oracle 12c and later versions.
+// Uses the modern SQL standard approach, falling back to 11g approach on error.
+func addLimitFor12cAndLater(statement string, limit int) string {
+	if !isSelectOrWithStatement(statement) {
 		return statement
 	}
-	stmt, err := getStatementWithResultLimitInline(statement, limit)
+
+	stmt, err := addFetchNextClause(statement, limit)
 	if err != nil {
-		slog.Error("fail to add limit clause", slog.String("statement", statement), log.BBError(err))
-		return getStatementWithResultLimitFor11g(statement, limit)
+		slog.Error("failed to add FETCH NEXT clause, falling back to ROWNUM",
+			slog.String("statement", statement), log.BBError(err))
+		return addLimitFor11g(statement, limit)
 	}
 	return stmt
 }
 
-// singleStatement must be a selectStatement for oracle.
-func getStatementWithResultLimitInline(statement string, limitCount int) (string, error) {
+// addFetchNextClause adds a FETCH NEXT clause to a SELECT statement using AST parsing.
+// This provides more precise placement of the limit clause compared to simple string wrapping.
+func addFetchNextClause(statement string, limitCount int) (string, error) {
 	tree, stream, err := plsqlparser.ParsePLSQL(statement)
 	if err != nil {
 		return "", err
