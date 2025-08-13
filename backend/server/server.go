@@ -311,7 +311,9 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	}
 
 	// Shutdown sample instances
-	s.sampleInstanceManager.Stop()
+	if s.sampleInstanceManager != nil {
+		s.sampleInstanceManager.Stop()
+	}
 
 	// Shutdown postgres instances.
 	for _, stopper := range s.stopper {
