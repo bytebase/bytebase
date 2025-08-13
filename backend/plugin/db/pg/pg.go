@@ -22,8 +22,6 @@ import (
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	pgquery "github.com/pganalyze/pg_query_go/v6"
-
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -393,7 +391,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		// we should execute it as a single statement without transaction.
 		// If the statement is a PL/pgSQL block, we should execute it as a single statement.
 		// https://www.postgresql.org/docs/current/plpgsql-control-structures.html
-		if len(singleSQLs) == 1 && isPlSQLBlock(singleSQLs[0].Text) {
+		if len(singleSQLs) == 1 && pgparser.IsPlSQLBlock(singleSQLs[0].Text) {
 			isPlsql = true
 		}
 
@@ -657,13 +655,14 @@ func (d *Driver) executeInAutoCommitMode(
 		}
 	}
 
-	if isPlsql {
-		if d.connectionCtx.UseDatabaseOwner {
-			// USE SET SESSION ROLE to set the role for the current session.
-			if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
-				return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
-			}
+	if d.connectionCtx.UseDatabaseOwner {
+		// USE SET SESSION ROLE to set the role for the current session.
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
+			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
 		}
+	}
+
+	if isPlsql {
 		opts.LogCommandExecute([]int32{0}, statement)
 		if _, err := conn.ExecContext(ctx, statement); err != nil {
 			opts.LogCommandResponse(0, []int32{0}, err.Error())
@@ -671,13 +670,6 @@ func (d *Driver) executeInAutoCommitMode(
 		}
 		opts.LogCommandResponse(0, []int32{0}, "")
 		return 0, nil
-	}
-
-	if d.connectionCtx.UseDatabaseOwner {
-		// USE SET SESSION ROLE to set the role for the current session.
-		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
-			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
-		}
 	}
 
 	totalRowsAffected := int64(0)
@@ -919,32 +911,4 @@ func getPgError(e error) *v1pb.QueryResult_PostgresError_ {
 		}
 	}
 	return nil
-}
-
-func isPlSQLBlock(stmt string) bool {
-	defer func() {
-		if r := recover(); r != nil {
-			perr, ok := r.(error)
-			if !ok {
-				perr = errors.Errorf("%v", r)
-			}
-			err := errors.Errorf("PANIC RECOVER, err: %v", perr)
-			stmtT, _ := common.TruncateString(stmt, 1000)
-			slog.Info("isPlSQLBlock panic", log.BBError(err), "stmt_truncated", stmtT)
-		}
-	}()
-	tree, err := pgquery.Parse(stmt)
-	if err != nil {
-		return false
-	}
-
-	if len(tree.Stmts) != 1 {
-		return false
-	}
-
-	if _, ok := tree.Stmts[0].Stmt.Node.(*pgquery.Node_DoStmt); ok {
-		return true
-	}
-
-	return false
 }
