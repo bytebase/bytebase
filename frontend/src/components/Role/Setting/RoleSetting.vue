@@ -3,7 +3,7 @@
     <div class="textinfolabel">
       {{ $t("role.setting.description") }}
       <a
-        href="https://docs.bytebase.com/administration/custom-roles?source=console"
+        href="https://docs.bytebase.com/administration/roles?source=console"
         class="normal-link text-sm inline-flex flex-row items-center"
         target="_blank"
       >
