@@ -20,9 +20,9 @@
       @select="handleDropdownSelect"
     >
       <NButton
-        :quaternary="true"
+        class="!px-1"
+        quaternary
         size="medium"
-        style="--n-padding: 0 4px"
         :disabled="disabled"
         :title="disabled ? disabledTooltip : undefined"
       >

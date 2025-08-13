@@ -1,7 +1,7 @@
 <template>
   <span v-if="!isNaN(affectedRows)">
     {{
-      $t("issue.task-run.task-run-log.estimated-affected-rows-n", {
+      $t("issue.task-run.task-run-log.affected-rows-n", {
         n: affectedRows,
       })
     }}

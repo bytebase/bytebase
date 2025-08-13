@@ -355,9 +355,10 @@ export const useReviewPolicyForDatabase = (
       return;
     }
 
-    await store.getOrFetchReviewPolicyByResource(
-      unref(database)!.effectiveEnvironment
-    );
+    const { effectiveEnvironment } = unref(database)!;
+    if (effectiveEnvironment) {
+      await store.getOrFetchReviewPolicyByResource(effectiveEnvironment);
+    }
   });
 
   return computed(() => {
@@ -368,8 +369,10 @@ export const useReviewPolicyForDatabase = (
     if (reviewForProject && reviewForProject.enforce) {
       return reviewForProject;
     }
-    return store.getReviewPolicyByResouce(
-      unref(database)!.effectiveEnvironment
-    );
+    const { effectiveEnvironment } = unref(database)!;
+    if (effectiveEnvironment) {
+      return store.getReviewPolicyByResouce(effectiveEnvironment);
+    }
+    return undefined;
   });
 };

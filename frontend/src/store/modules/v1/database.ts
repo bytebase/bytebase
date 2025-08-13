@@ -7,12 +7,10 @@ import { databaseServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type { ComposedInstance, ComposedDatabase, MaybeRef } from "@/types";
 import {
-  isValidEnvironmentName,
   isValidProjectName,
   isValidInstanceName,
   isValidDatabaseName,
   unknownDatabase,
-  unknownEnvironment,
   unknownInstanceResource,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -79,7 +77,7 @@ const getListDatabaseFilter = (filter: DatabaseFilter): string => {
   if (isValidInstanceName(filter.instance)) {
     params.push(`instance == "${filter.instance}"`);
   }
-  if (isValidEnvironmentName(filter.environment)) {
+  if (filter.environment !== undefined) {
     params.push(`environment == "${filter.environment}"`);
   }
   if (filter.excludeUnassigned) {
@@ -405,8 +403,7 @@ export const batchComposeDatabase = async (databaseList: Database[]) => {
     composed.environment = composed.instanceResource.environment;
     composed.projectEntity = projectV1Store.getProjectByName(db.project);
     composed.effectiveEnvironmentEntity =
-      environmentV1Store.getEnvironmentByName(db.effectiveEnvironment) ??
-      unknownEnvironment();
+      environmentV1Store.getEnvironmentByName(db.effectiveEnvironment ?? "");
     return markRaw(composed);
   });
 };

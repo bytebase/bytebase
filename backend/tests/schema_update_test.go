@@ -36,7 +36,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       instanceName,
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: "environments/prod",
+			Environment: stringPtr("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
 		},
@@ -277,7 +277,7 @@ CREATE TABLE "public"."book" (
 					Instance: &v1pb.Instance{
 						Title:       test.name,
 						Engine:      v1pb.Engine_POSTGRES,
-						Environment: environment.Name,
+						Environment: stringPtr(environment.Name),
 						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
 					},
@@ -296,7 +296,7 @@ CREATE TABLE "public"."book" (
 					Instance: &v1pb.Instance{
 						Title:       "mysqlInstance",
 						Engine:      v1pb.Engine_MYSQL,
-						Environment: environment.Name,
+						Environment: stringPtr(environment.Name),
 						Activation:  true,
 						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "root", Password: "root-password", Id: "admin"}},
 					},
@@ -377,7 +377,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       instanceName,
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: "environments/prod",
+			Environment: stringPtr("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
 		},

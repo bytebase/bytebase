@@ -20,6 +20,8 @@ message TaskRunLog {
     PRIOR_BACKUP_START = 9;
     PRIOR_BACKUP_END = 10;
     RETRY_INFO = 11;
+    COMPUTE_DIFF_START = 12;
+    COMPUTE_DIFF_END = 13;
   }
   Type type = 1;
   string deploy_id = 12;
@@ -34,18 +36,23 @@ message TaskRunLog {
   PriorBackupStart prior_backup_start = 10;
   PriorBackupEnd prior_backup_end = 11;
   RetryInfo retry_info = 13;
+  ComputeDiffStart compute_diff_start = 14;
+  ComputeDiffEnd compute_diff_end = 15;
 
   message SchemaDumpStart {}
   message SchemaDumpEnd {
     string error = 1;
   }
   message CommandExecute {
+    // Either `command_indexes` or `statement` is set.
     // The indexes of the executed commands.
     repeated int32 command_indexes = 1;
+    // The statement to be executed.
+    string statement = 2;
   }
   message CommandResponse {
     // The indexes of the executed commands.
-    repeated int32 command_indexes = 1;
+    repeated int32 command_indexes = 1 [deprecated = true];
     string error = 2;
     int32 affected_rows = 3;
     // `all_affected_rows` is the affected rows of each command.
@@ -85,5 +92,9 @@ message TaskRunLog {
     string error = 1;
     int32 retry_count = 2;
     int32 maximum_retries = 3;
+  }
+  message ComputeDiffStart {}
+  message ComputeDiffEnd {
+    string error = 1;
   }
 }

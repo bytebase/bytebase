@@ -326,6 +326,7 @@
     }
   },
   "task-run": {
+    "failed-runs": "失败的任务 - 最新的执行日志",
     "history": "执行记录",
     "latest-logs": "执行日志",
     "status": {
@@ -566,6 +567,11 @@
         "data-export": {
           "enable": "启用数据导出",
           "description": "允许用户在 SQL 编辑器里导出数据"
+        },
+        "product-improvement": {
+          "self": "产品改进",
+          "participate": "参与改进计划",
+          "description": "通过分享匿名使用数据帮助改进 Bytebase"
         },
         "disallow-signup": {
           "enable": "禁用自助注册",
@@ -1031,9 +1037,10 @@
           "transaction-control": "事务控制",
           "database-sync": "数据库同步",
           "prior-backup": "数据预备份",
-          "retry-info": "重试信息"
+          "retry-info": "重试信息",
+          "compute-diff": "计算差异"
         },
-        "estimated-affected-rows-n": "预估影响行数：{n}",
+        "affected-rows-n": "影响行数：{n}",
         "prior-backup-tables": "数据预备份相关的表",
         "status-update": {
           "waiting": "准备就绪，等待执行",
@@ -1102,6 +1109,7 @@
       "statement-empty": "变更语句为空"
     },
     "spec": {
+      "change": "变更项",
       "type": {
         "create-database": "创建数据库",
         "schema-change": "Schema 变更",
@@ -1250,6 +1258,7 @@
       "sync-new": "仅同步新数据库",
       "sync-all-tip": "数据库同步是异步的，可能需要几秒到几分钟"
     },
+    "no-environment": "此实例尚未绑定到环境",
     "selected-n-instances": "已选择 {n} 个实例",
     "users": "用户",
     "successfully-restored-instance": "已成功恢复实例“{0}”。",
@@ -1437,6 +1446,7 @@
   "environment": {
     "select": "选择环境",
     "delete": "删除此环境",
+    "delete-description": "删除环境也会将其从相关实例和数据库中删除。@:common.cannot-undo-this-action",
     "create": "创建环境",
     "successfully-updated-environment": "环境'{name}'更新成功",
     "production-environment": "生产环境",
@@ -1540,6 +1550,8 @@
     "rollback-tip": "选择要回滚到的某个 DDL 历史记录。"
   },
   "database": {
+    "no-environment": "该数据库尚未绑定到环境",
+    "set-environment": "设置环境",
     "sync-database": "同步数据库",
     "select": "选择数据库",
     "sync-status": "同步状态",

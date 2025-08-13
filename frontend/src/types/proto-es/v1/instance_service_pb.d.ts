@@ -85,6 +85,7 @@ export declare type ListInstancesRequest = Message<"bytebase.v1.ListInstancesReq
    * resource_id.matches("sample")
    * state == "DELETED"
    * environment == "environments/test"
+   * environment == "" (find instances which environment is not set)
    * engine == "MYSQL"
    * engine in ["MYSQL", "POSTGRES"]
    * !(engine in ["MYSQL", "POSTGRES"])
@@ -544,9 +545,9 @@ export declare type Instance = Message<"bytebase.v1.Instance"> & {
    * The environment resource.
    * Format: environments/prod where prod is the environment resource ID.
    *
-   * @generated from field: string environment = 9;
+   * @generated from field: optional string environment = 9;
    */
-  environment: string;
+  environment?: string;
 
   /**
    * @generated from field: bool activation = 10;
@@ -1233,9 +1234,9 @@ export declare type InstanceResource = Message<"bytebase.v1.InstanceResource"> &
    * The environment resource.
    * Format: environments/prod where prod is the environment resource ID.
    *
-   * @generated from field: string environment = 7;
+   * @generated from field: optional string environment = 7;
    */
-  environment: string;
+  environment?: string;
 };
 
 /**

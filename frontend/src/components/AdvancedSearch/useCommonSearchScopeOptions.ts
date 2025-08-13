@@ -114,7 +114,7 @@ export const useCommonSearchScopeOptions = (
                     name,
                     ins.title,
                     String(ins.engine),
-                    extractEnvironmentResourceName(ins.environment),
+                    extractEnvironmentResourceName(ins.environment ?? ""),
                   ],
                   render: () => {
                     return h("div", { class: "flex items-center gap-x-1" }, [
@@ -126,7 +126,7 @@ export const useCommonSearchScopeOptions = (
                       h(
                         "span",
                         {},
-                        `(${environmentV1Name(environmentStore.getEnvironmentByName(ins.environment))})`
+                        `(${environmentV1Name(environmentStore.getEnvironmentByName(ins.environment ?? ""))})`
                       ),
                     ]);
                   },

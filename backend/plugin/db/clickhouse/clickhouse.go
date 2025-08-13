@@ -172,10 +172,10 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, singleSQLs []base
 
 	totalRowsAffected := int64(0)
 	for i, singleSQL := range singleSQLs {
-		opts.LogCommandExecute([]int32{int32(i)})
+		opts.LogCommandExecute([]int32{int32(i)}, singleSQL.Text)
 		sqlResult, err := tx.ExecContext(ctx, singleSQL.Text)
 		if err != nil {
-			opts.LogCommandResponse([]int32{int32(i)}, 0, nil, err.Error())
+			opts.LogCommandResponse(0, nil, err.Error())
 			return 0, &db.ErrorWithPosition{
 				Err:   errors.Wrapf(err, "failed to execute context in a transaction"),
 				Start: singleSQL.Start,
@@ -187,7 +187,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, singleSQLs []base
 			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
 			slog.Debug("rowsAffected returns error", log.BBError(err))
 		}
-		opts.LogCommandResponse([]int32{int32(i)}, int32(rowsAffected), nil, "")
+		opts.LogCommandResponse(int32(rowsAffected), nil, "")
 		totalRowsAffected += rowsAffected
 	}
 
@@ -204,10 +204,10 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, singleSQLs []base
 func (d *Driver) executeInAutoCommitMode(ctx context.Context, singleSQLs []base.SingleSQL, opts db.ExecuteOptions) (int64, error) {
 	totalRowsAffected := int64(0)
 	for i, singleSQL := range singleSQLs {
-		opts.LogCommandExecute([]int32{int32(i)})
+		opts.LogCommandExecute([]int32{int32(i)}, singleSQL.Text)
 		sqlResult, err := d.db.ExecContext(ctx, singleSQL.Text)
 		if err != nil {
-			opts.LogCommandResponse([]int32{int32(i)}, 0, nil, err.Error())
+			opts.LogCommandResponse(0, nil, err.Error())
 			return totalRowsAffected, err
 		}
 		rowsAffected, err := sqlResult.RowsAffected()
@@ -217,7 +217,7 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, singleSQLs []base.
 		} else {
 			totalRowsAffected += rowsAffected
 		}
-		opts.LogCommandResponse([]int32{int32(i)}, int32(rowsAffected), nil, "")
+		opts.LogCommandResponse(int32(rowsAffected), nil, "")
 	}
 	return totalRowsAffected, nil
 }

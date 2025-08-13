@@ -326,6 +326,7 @@
     }
   },
   "task-run": {
+    "failed-runs": "失敗したタスク - 最新の実行ログ",
     "history": "タスク実行履歴",
     "latest-logs": "最新のログ",
     "status": {
@@ -566,6 +567,11 @@
         "data-export": {
           "enable": "データのエクスポートを有効にする",
           "description": "ユーザーがSQLエディタでデータをエクスポートできるようにする"
+        },
+        "product-improvement": {
+          "self": "製品改善",
+          "participate": "改善プログラムに参加",
+          "description": "匿名の使用データを共有してBytebaseの改善に協力する"
         },
         "disallow-signup": {
           "enable": "セルフサービス登録を無効にする",
@@ -1031,9 +1037,10 @@
           "transaction-control": "トランザクション制御",
           "database-sync": "データベースの同期",
           "prior-backup": "事前のバックアップ",
-          "retry-info": "情報を再試行します"
+          "retry-info": "情報を再試行します",
+          "compute-diff": "Diffを計算します"
         },
-        "estimated-affected-rows-n": "推定影響行数: {n}",
+        "affected-rows-n": "影響行数: {n}",
         "prior-backup-tables": "以前のバックアップテーブル",
         "status-update": {
           "waiting": "実行の準備完了",
@@ -1102,6 +1109,7 @@
       "statement-empty": "ステートメントが空です"
     },
     "spec": {
+      "change": "変化",
       "type": {
         "create-database": "データベースの作成",
         "schema-change": "スキーマの変更",
@@ -1250,6 +1258,7 @@
       "sync-new": "新しいデータベースのみを同期する",
       "sync-all-tip": "データベースの同期は非同期で、数秒から数分かかる場合があります。"
     },
+    "no-environment": "このインスタンスは環境にバインドされていません",
     "selected-n-instances": "{n} 個のインスタンスが選択されました",
     "users": "ユーザー",
     "successfully-restored-instance": "インスタンス '{0}' を正常に復元しました。",
@@ -1437,6 +1446,7 @@
   "environment": {
     "select": "環境を選ぶ",
     "delete": "この環境を削除します",
+    "delete-description": "環境を削除すると、関連するインスタンスとデータベースからも削除されます。@:common.cannot-undo-this-action",
     "create": "環境を作成する",
     "successfully-updated-environment": "環境「{name}」は正常に更新されました",
     "production-environment": "本番環境",
@@ -1540,6 +1550,8 @@
     "rollback-tip": "ロールバックする特定の DDL 履歴を選択します。"
   },
   "database": {
+    "no-environment": "このデータベースは環境にバインドされていません",
+    "set-environment": "環境を設定する",
     "sync-database": "データベースを同期",
     "select": "データベースの選択",
     "sync-status": "同期ステータス",

@@ -54,7 +54,9 @@ const envStore = useEnvironmentV1Store();
 const { t } = useI18n();
 
 const environment = computed(() => {
-  return envStore.getEnvironmentByName(props.database.effectiveEnvironment);
+  return envStore.getEnvironmentByName(
+    props.database.effectiveEnvironment ?? ""
+  );
 });
 
 const { allowUpdateDatabase } = useDatabaseDetailContext();

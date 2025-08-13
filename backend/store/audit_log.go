@@ -47,7 +47,7 @@ func (s *Store) CreateAuditLog(ctx context.Context, payload *storepb.AuditLog) e
 		return errors.Wrapf(err, "failed to marshal payload")
 	}
 
-	if _, err := s.db.ExecContext(ctx, query, p); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, p); err != nil {
 		return errors.Wrapf(err, "failed to create audit log")
 	}
 	return nil
@@ -88,7 +88,7 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 		query += fmt.Sprintf(" OFFSET %d", *v)
 	}
 
-	rows, err := s.db.QueryContext(ctx, query, args...)
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query context")
 	}

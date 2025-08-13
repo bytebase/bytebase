@@ -642,6 +642,7 @@
     - [TaskRunLogEntry](#bytebase-v1-TaskRunLogEntry)
     - [TaskRunLogEntry.CommandExecute](#bytebase-v1-TaskRunLogEntry-CommandExecute)
     - [TaskRunLogEntry.CommandExecute.CommandResponse](#bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse)
+    - [TaskRunLogEntry.ComputeDiff](#bytebase-v1-TaskRunLogEntry-ComputeDiff)
     - [TaskRunLogEntry.DatabaseSync](#bytebase-v1-TaskRunLogEntry-DatabaseSync)
     - [TaskRunLogEntry.PriorBackup](#bytebase-v1-TaskRunLogEntry-PriorBackup)
     - [TaskRunLogEntry.RetryInfo](#bytebase-v1-TaskRunLogEntry-RetryInfo)
@@ -1532,7 +1533,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | engine_version | [string](#string) |  |  |
 | external_link | [string](#string) |  |  |
 | data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
-| environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
+| environment | [string](#string) | optional | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 | activation | [bool](#bool) |  |  |
 | roles | [InstanceRole](#bytebase-v1-InstanceRole) | repeated |  |
 | sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | How often the instance is synced. |
@@ -1559,7 +1560,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
 | activation | [bool](#bool) |  |  |
 | name | [string](#string) |  | The name of the instance. Format: instances/{instance} |
-| environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
+| environment | [string](#string) | optional | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 
 
 
@@ -1635,7 +1636,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 
 Supported filters: - name: the instance name, support &#34;==&#34; and &#34;.matches()&#34; operator. - resource_id: the instance id, support &#34;==&#34; and &#34;.matches()&#34; operator. - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator. - state: the instance state, check State enum for values, support &#34;==&#34; operator. - engine: the instance engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - host: the instance host, support &#34;==&#34; and &#34;.matches()&#34; operator. - port: the instance port, support &#34;==&#34; and &#34;.matches()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
 
-For example: name == &#34;sample instance&#34; name.matches(&#34;sample&#34;) resource_id = &#34;sample-instance&#34; resource_id.matches(&#34;sample&#34;) state == &#34;DELETED&#34; environment == &#34;environments/test&#34; engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) host == &#34;127.0.0.1&#34; host.matches(&#34;127.0&#34;) port == &#34;54321&#34; port.matches(&#34;543&#34;) project == &#34;projects/sample-project&#34; You can combine filter conditions like: name.matches(&#34;sample&#34;) &amp;&amp; environment == &#34;environments/test&#34; host == &#34;127.0.0.1&#34; &amp;&amp; port == &#34;54321&#34; |
+For example: name == &#34;sample instance&#34; name.matches(&#34;sample&#34;) resource_id = &#34;sample-instance&#34; resource_id.matches(&#34;sample&#34;) state == &#34;DELETED&#34; environment == &#34;environments/test&#34; environment == &#34;&#34; (find instances which environment is not set) engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) host == &#34;127.0.0.1&#34; host.matches(&#34;127.0&#34;) port == &#34;54321&#34; port.matches(&#34;543&#34;) project == &#34;projects/sample-project&#34; You can combine filter conditions like: name.matches(&#34;sample&#34;) &amp;&amp; environment == &#34;environments/test&#34; host == &#34;127.0.0.1&#34; &amp;&amp; port == &#34;54321&#34; |
 
 
 
@@ -2210,8 +2211,8 @@ This field is populated when syncing from the database. When empty (e.g., when p
 | successful_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The latest synchronization time. |
 | project | [string](#string) |  | The project for a database. Format: projects/{project} |
 | schema_version | [string](#string) |  | The version of database schema. |
-| environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
-| effective_environment | [string](#string) |  | The effective environment based on environment tag above and environment tag on the instance. Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview. |
+| environment | [string](#string) | optional | The environment resource. Format: environments/prod where prod is the environment resource ID. |
+| effective_environment | [string](#string) | optional | The effective environment based on environment tag above and environment tag on the instance. Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview. |
 | labels | [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry) | repeated | Labels will be used for deployment and policy control. |
 | instance_resource | [InstanceResource](#bytebase-v1-InstanceResource) |  | The instance resource. |
 | backup_available | [bool](#bool) |  | The database is available for DML prior backup. |
@@ -2722,7 +2723,7 @@ When paginating, all other parameters provided to `ListDatabases` must match the
 
 Supported filter: - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator. - name: the database name, support &#34;.matches()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator. - engine: the database engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - label: the database label in &#34;{key}:{value1},{value2}&#34; format. Support &#34;==&#34; operator. - exclude_unassigned: should be &#34;true&#34; or &#34;false&#34;, will not show unassigned databases if it&#39;s true, support &#34;==&#34; operator. - drifted: should be &#34;true&#34; or &#34;false&#34;, show drifted databases if it&#39;s true, support &#34;==&#34; operator. - table: filter by the database table, support &#34;==&#34; and &#34;.matches()&#34; operator.
 
-For example: environment == &#34;environments/{environment resource id}&#34; project == &#34;projects/{project resource id}&#34; instance == &#34;instances/{instance resource id}&#34; name.matches(&#34;database name&#34;) engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) label == &#34;region:asia&#34; label == &#34;tenant:asia,europe&#34; label == &#34;region:asia&#34; &amp;&amp; label == &#34;tenant:bytebase&#34; exclude_unassigned == true drifted == true table == &#34;sample&#34; table.matches(&#34;sam&#34;)
+For example: environment == &#34;environments/{environment resource id}&#34; environment == &#34;&#34; (find databases which environment is not set) project == &#34;projects/{project resource id}&#34; instance == &#34;instances/{instance resource id}&#34; name.matches(&#34;database name&#34;) engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) label == &#34;region:asia&#34; label == &#34;tenant:asia,europe&#34; label == &#34;region:asia&#34; &amp;&amp; label == &#34;tenant:bytebase&#34; exclude_unassigned == true drifted == true table == &#34;sample&#34; table.matches(&#34;sam&#34;)
 
 You can combine filter conditions like: environment == &#34;environments/prod&#34; &amp;&amp; name.matches(&#34;employee&#34;) |
 | show_deleted | [bool](#bool) |  | Show deleted database if specified. |
@@ -4465,7 +4466,7 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | require_number | [bool](#bool) |  | require_number requires the password must contains at least one number. |
 | require_letter | [bool](#bool) |  | require_letter requires the password must contains at least one letter, regardless of upper case or lower case |
 | require_uppercase_letter | [bool](#bool) |  | require_uppercase_letter requires the password must contains at least one upper case letter. |
-| require_special_character | [bool](#bool) |  | require_uppercase_letter requires the password must contains at least one special character. |
+| require_special_character | [bool](#bool) |  | require_special_character requires the password must contains at least one special character. |
 | require_reset_password_for_first_login | [bool](#bool) |  | require_reset_password_for_first_login requires users to reset their password after the 1st login. |
 | password_rotation | [google.protobuf.Duration](#google-protobuf-Duration) |  | password_rotation requires users to reset their password after the duration. |
 
@@ -4726,6 +4727,7 @@ For examples: (source == &#34;DML&#34; &amp;&amp; level == 200) || (source == &#
 | enforce_identity_domain | [bool](#bool) |  | Only user and group from the domains can be created and login. |
 | database_change_mode | [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode) |  | The workspace database change mode. |
 | disallow_password_signin | [bool](#bool) |  | Whether to disallow password signin. (Except workspace admins) |
+| enable_metric_collection | [bool](#bool) |  | Whether to enable metric collection for the workspace. |
 
 
 
@@ -10401,6 +10403,7 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | transaction_control | [TaskRunLogEntry.TransactionControl](#bytebase-v1-TaskRunLogEntry-TransactionControl) |  |  |
 | prior_backup | [TaskRunLogEntry.PriorBackup](#bytebase-v1-TaskRunLogEntry-PriorBackup) |  |  |
 | retry_info | [TaskRunLogEntry.RetryInfo](#bytebase-v1-TaskRunLogEntry-RetryInfo) |  |  |
+| compute_diff | [TaskRunLogEntry.ComputeDiff](#bytebase-v1-TaskRunLogEntry-ComputeDiff) |  |  |
 
 
 
@@ -10416,7 +10419,8 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| command_indexes | [int32](#int32) | repeated | The indexes of the executed commands. |
+| command_indexes | [int32](#int32) | repeated | Either `command_indexes` or `statement` is set. The indexes of the executed commands. |
+| statement | [string](#string) |  | The executed statement. |
 | response | [TaskRunLogEntry.CommandExecute.CommandResponse](#bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse) |  |  |
 
 
@@ -10436,6 +10440,23 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | error | [string](#string) |  |  |
 | affected_rows | [int32](#int32) |  |  |
 | all_affected_rows | [int32](#int32) | repeated | `all_affected_rows` is the affected rows of each command. `all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-ComputeDiff"></a>
+
+### TaskRunLogEntry.ComputeDiff
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| error | [string](#string) |  |  |
 
 
 
@@ -10712,6 +10733,7 @@ Read from `pg_stat_activity`
 | TRANSACTION_CONTROL | 5 |  |
 | PRIOR_BACKUP | 6 |  |
 | RETRY_INFO | 7 |  |
+| COMPUTE_DIFF | 8 |  |
 
 
  

@@ -326,6 +326,7 @@
     }
   },
   "task-run": {
+    "failed-runs": "Nhiệm vụ thất bại - Nhật ký thực thi mới nhất",
     "history": "Lịch sử thực hiện nhiệm vụ",
     "latest-logs": "Nhật ký mới nhất",
     "status": {
@@ -566,6 +567,11 @@
         "data-export": {
           "enable": "Bật xuất dữ liệu",
           "description": "Cho phép người dùng xuất dữ liệu trong Trình soạn thảo SQL"
+        },
+        "product-improvement": {
+          "self": "Cải thiện Sản phẩm",
+          "participate": "Tham gia chương trình cải thiện",
+          "description": "Giúp cải thiện Bytebase bằng cách chia sẻ dữ liệu sử dụng ẩn danh"
         },
         "disallow-signup": {
           "enable": "Không cho phép đăng ký tự phục vụ",
@@ -1031,9 +1037,10 @@
           "transaction-control": "Kiểm soát giao dịch",
           "database-sync": "Đồng bộ cơ sở dữ liệu",
           "prior-backup": "Sao lưu trước",
-          "retry-info": "Thông tin thử lại"
+          "retry-info": "Thông tin thử lại",
+          "compute-diff": "Tính toán khác"
         },
-        "estimated-affected-rows-n": "Số dòng bị ảnh hưởng ước tính: {n}",
+        "affected-rows-n": "Số dòng bị ảnh hưởng: {n}",
         "prior-backup-tables": "Bảng sao lưu trước",
         "status-update": {
           "waiting": "Sẵn sàng để thực thi",
@@ -1102,6 +1109,7 @@
       "statement-empty": "Câu lệnh trống rỗng"
     },
     "spec": {
+      "change": "Thay đổi",
       "type": {
         "create-database": "Tạo cơ sở dữ liệu",
         "schema-change": "Thay đổi sơ đồ",
@@ -1250,6 +1258,7 @@
       "sync-new": "Chỉ đồng bộ cơ sở dữ liệu mới",
       "sync-all-tip": "Đồng bộ cơ sở dữ liệu không đồng bộ và có thể mất vài giây đến vài phút"
     },
+    "no-environment": "Trường hợp này không bị ràng buộc với môi trường",
     "selected-n-instances": "{n} phiên bản đã chọn | {n} phiên bản đã chọn",
     "users": "Người dùng",
     "successfully-restored-instance": "Đã khôi phục thành công trường hợp '{0}'.",
@@ -1437,6 +1446,7 @@
   "environment": {
     "select": "Chọn môi trường",
     "delete": "Xóa môi trường này",
+    "delete-description": "Xóa môi trường cũng sẽ xóa nó khỏi các phiên bản và cơ sở dữ liệu liên quan. @:common.cannot-undo-this-action",
     "create": "Tạo môi trường",
     "successfully-updated-environment": "Đã cập nhật thành công môi trường '{name}'.",
     "production-environment": "Môi trường sản xuất",
@@ -1540,6 +1550,8 @@
     "rollback-tip": "Chọn một nhật ký thay đổi DDL cụ thể để hoàn tác."
   },
   "database": {
+    "no-environment": "Cơ sở dữ liệu này không bị ràng buộc với môi trường",
+    "set-environment": "Thiết lập môi trường",
     "sync-database": "Đồng bộ cơ sở dữ liệu",
     "select": "Chọn cơ sở dữ liệu",
     "sync-status": "Trạng thái đồng bộ",

@@ -36,6 +36,10 @@
       :title="$t('settings.general.workspace.announcement.self')"
       :allow-edit="allowEdit"
     />
+    <ProductImprovementSetting
+      ref="productImprovementSettingRef"
+      :allow-edit="allowEdit"
+    />
 
     <div v-if="allowEdit && isDirty" class="sticky -bottom-4 z-10">
       <div
@@ -67,6 +71,7 @@ import {
   AIAugmentationSetting,
   AnnouncementSetting,
   DatabaseChangeModeSetting,
+  ProductImprovementSetting,
 } from "@/components/GeneralSetting";
 import { useActuatorV1Store } from "@/store";
 import { pushNotification } from "@/store";
@@ -89,6 +94,8 @@ const securitySettingRef = ref<InstanceType<typeof SecuritySetting>>();
 const aiAugmentationSettingRef =
   ref<InstanceType<typeof AIAugmentationSetting>>();
 const announcementSettingRef = ref<InstanceType<typeof AnnouncementSetting>>();
+const productImprovementSettingRef =
+  ref<InstanceType<typeof ProductImprovementSetting>>();
 
 const settingRefList = computed(() => {
   return [
@@ -99,6 +106,7 @@ const settingRefList = computed(() => {
     securitySettingRef,
     aiAugmentationSettingRef,
     announcementSettingRef,
+    productImprovementSettingRef,
   ];
 });
 

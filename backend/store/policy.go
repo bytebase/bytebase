@@ -203,21 +203,25 @@ func (s *Store) GetQueryDataPolicy(ctx context.Context) (*storepb.QueryDataPolic
 	return p, nil
 }
 
+type reviewConfigResource struct {
+	resourceType storepb.Policy_Resource
+	resource     string
+}
+
 // GetReviewConfigForDatabase will get the review config for a database.
 func (s *Store) GetReviewConfigForDatabase(ctx context.Context, database *DatabaseMessage) (*storepb.ReviewConfigPayload, error) {
-	for _, v := range []struct {
-		resourceType storepb.Policy_Resource
-		resource     string
-	}{
-		{
+	resources := []*reviewConfigResource{}
+	if database.EffectiveEnvironmentID != nil {
+		resources = append(resources, &reviewConfigResource{
 			resourceType: storepb.Policy_ENVIRONMENT,
-			resource:     common.FormatEnvironment(database.EffectiveEnvironmentID),
-		},
-		{
-			resourceType: storepb.Policy_PROJECT,
-			resource:     common.FormatProject(database.ProjectID),
-		},
-	} {
+			resource:     common.FormatEnvironment(*database.EffectiveEnvironmentID),
+		})
+	}
+	resources = append(resources, &reviewConfigResource{
+		resourceType: storepb.Policy_PROJECT,
+		resource:     common.FormatProject(database.ProjectID),
+	})
+	for _, v := range resources {
 		reviewConfig, err := s.getReviewConfigByResource(ctx, v.resourceType, v.resource)
 		if err != nil {
 			slog.Debug("failed to get review config", slog.String("resource_type", string(v.resourceType)), slog.String("database", database.DatabaseName), log.BBError(err))
@@ -366,7 +370,7 @@ func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*Poli
 		}
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -401,7 +405,7 @@ func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*Poli
 
 // ListPoliciesV2 lists all policies.
 func (s *Store) ListPoliciesV2(ctx context.Context, find *FindPolicyMessage) ([]*PolicyMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -425,7 +429,7 @@ func (s *Store) ListPoliciesV2(ctx context.Context, find *FindPolicyMessage) ([]
 
 // CreatePolicyV2 creates a policy.
 func (s *Store) CreatePolicyV2(ctx context.Context, create *PolicyMessage) (*PolicyMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -459,7 +463,7 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 	}
 	args = append(args, patch.ResourceType, patch.Resource, patch.Type.String())
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -505,7 +509,7 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 
 // DeletePolicyV2 deletes the policy.
 func (s *Store) DeletePolicyV2(ctx context.Context, policy *PolicyMessage) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}

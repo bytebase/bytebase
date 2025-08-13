@@ -24,7 +24,7 @@ func (s *Store) GetEnvironmentByID(ctx context.Context, id string) (*storepb.Env
 func (s *Store) CheckDatabaseUseEnvironment(ctx context.Context, id string) (bool, error) {
 	var exists bool
 
-	if err := s.db.QueryRowContext(ctx, `
+	if err := s.GetDB().QueryRowContext(ctx, `
 		SELECT EXISTS (
 			SELECT 1
 			FROM db 

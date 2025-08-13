@@ -326,6 +326,7 @@
     }
   },
   "task-run": {
+    "failed-runs": "Failed Tasks - Latest Execution Logs",
     "history": "Execution History",
     "latest-logs": "Latest Logs",
     "status": {
@@ -566,6 +567,11 @@
         "data-export": {
           "enable": "Enable data export",
           "description": "Allow users to export data in SQL Editor"
+        },
+        "product-improvement": {
+          "self": "Product Improvement",
+          "participate": "Participate in improvement program",
+          "description": "Help improve Bytebase by sharing anonymous usage data"
         },
         "disallow-signup": {
           "enable": "Disallow self-service signup",
@@ -1031,9 +1037,10 @@
           "transaction-control": "Transaction control",
           "database-sync": "Database sync",
           "prior-backup": "Prior backup",
-          "retry-info": "Retry information"
+          "retry-info": "Retry information",
+          "compute-diff": "Compute diff"
         },
-        "estimated-affected-rows-n": "Estimated affected rows: {n}",
+        "affected-rows-n": "Affected rows: {n}",
         "prior-backup-tables": "Prior backup tables",
         "status-update": {
           "waiting": "Ready to be executed",
@@ -1102,6 +1109,7 @@
       "statement-empty": "Statement is empty"
     },
     "spec": {
+      "change": "Change",
       "type": {
         "create-database": "Create Database",
         "schema-change": "Schema Change",
@@ -1250,6 +1258,7 @@
       "sync-new": "Only sync new databases",
       "sync-all-tip": "Database sync is asynchronous and might take a few seconds to minutes"
     },
+    "no-environment": "This instance has not been bound to the environment",
     "selected-n-instances": "{n} instance selected | {n} instances selected",
     "users": "Users",
     "successfully-restored-instance": "Successfully restored the instance '{0}'.",
@@ -1437,6 +1446,7 @@
   "environment": {
     "select": "Select environment",
     "delete": "Delete this environment",
+    "delete-description": "Delete environment will also remove it from related instances and databases. @:common.cannot-undo-this-action",
     "create": "Create Environment",
     "successfully-updated-environment": "Successfully updated environment '{name}'.",
     "production-environment": "Production environment",
@@ -1540,6 +1550,8 @@
     "rollback-tip": "Select a specific DDL changelog to rollback."
   },
   "database": {
+    "no-environment": "This database has not been bound to the environment",
+    "set-environment": "Set environment",
     "sync-database": "Sync database",
     "select": "Select database",
     "sync-status": "Sync status",

@@ -78,9 +78,13 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		dbEnvironmentID = strings.TrimPrefix(c.Environment, common.EnvironmentNamePrefix)
 	}
 	// Fallback to instance.EnvironmentID if user-set environment is not present.
-	effectiveEnvironmentID := instance.EnvironmentID
+	var effectiveEnvironmentID string
 	if dbEnvironmentID != "" {
 		effectiveEnvironmentID = dbEnvironmentID
+	} else if instance.EnvironmentID != nil && *instance.EnvironmentID != "" {
+		effectiveEnvironmentID = *instance.EnvironmentID
+	} else {
+		return nil, errors.Errorf("no environment specified for instance %v", instance.ResourceID)
 	}
 	environment, err := s.GetEnvironmentByID(ctx, effectiveEnvironmentID)
 	if err != nil {
@@ -275,10 +279,14 @@ func getTaskCreatesFromExportDataConfig(
 
 	tasks := []*store.TaskMessage{}
 	for _, database := range databases {
+		env := ""
+		if database.EffectiveEnvironmentID != nil {
+			env = *database.EffectiveEnvironmentID
+		}
 		tasks = append(tasks, &store.TaskMessage{
 			InstanceID:   database.InstanceID,
 			DatabaseName: &database.DatabaseName,
-			Environment:  database.EffectiveEnvironmentID,
+			Environment:  env,
 			Type:         storepb.Task_DATABASE_EXPORT,
 			Payload:      payload,
 		})
@@ -297,10 +305,14 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
+		env := ""
+		if database.EffectiveEnvironmentID != nil {
+			env = *database.EffectiveEnvironmentID
+		}
 		taskCreate := &store.TaskMessage{
 			InstanceID:   database.InstanceID,
 			DatabaseName: &database.DatabaseName,
-			Environment:  database.EffectiveEnvironmentID,
+			Environment:  env,
 			Type:         storepb.Task_DATABASE_SCHEMA_UPDATE,
 			Payload: &storepb.Task{
 				SpecId:  spec.Id,
@@ -317,10 +329,14 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 		if _, err := ghost.GetUserFlags(c.GhostFlags); err != nil {
 			return nil, errors.Wrapf(err, "invalid ghost flags %q", c.GhostFlags)
 		}
+		env := ""
+		if database.EffectiveEnvironmentID != nil {
+			env = *database.EffectiveEnvironmentID
+		}
 		taskCreate := &store.TaskMessage{
 			InstanceID:   database.InstanceID,
 			DatabaseName: &database.DatabaseName,
-			Environment:  database.EffectiveEnvironmentID,
+			Environment:  env,
 			Type:         storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST,
 			Payload: &storepb.Task{
 				SpecId:  spec.Id,
@@ -335,10 +351,14 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
+		env := ""
+		if database.EffectiveEnvironmentID != nil {
+			env = *database.EffectiveEnvironmentID
+		}
 		taskCreate := &store.TaskMessage{
 			InstanceID:   database.InstanceID,
 			DatabaseName: &database.DatabaseName,
-			Environment:  database.EffectiveEnvironmentID,
+			Environment:  env,
 			Type:         storepb.Task_DATABASE_DATA_UPDATE,
 			Payload: &storepb.Task{
 				SpecId:            spec.Id,
@@ -455,10 +475,14 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 					payload.EnablePriorBackup = c.EnablePriorBackup
 				}
 
+				env := ""
+				if database.EffectiveEnvironmentID != nil {
+					env = *database.EffectiveEnvironmentID
+				}
 				taskCreate := &store.TaskMessage{
 					InstanceID:   database.InstanceID,
 					DatabaseName: &database.DatabaseName,
-					Environment:  database.EffectiveEnvironmentID,
+					Environment:  env,
 					Type:         taskType,
 					Payload:      payload,
 				}
@@ -486,10 +510,14 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 						File: common.FormatReleaseFile(c.Release, file.Id),
 					},
 				}
+				env := ""
+				if database.EffectiveEnvironmentID != nil {
+					env = *database.EffectiveEnvironmentID
+				}
 				taskCreate := &store.TaskMessage{
 					InstanceID:   database.InstanceID,
 					DatabaseName: &database.DatabaseName,
-					Environment:  database.EffectiveEnvironmentID,
+					Environment:  env,
 					Type:         storepb.Task_DATABASE_SCHEMA_UPDATE_SDL,
 					Payload:      payload,
 				}

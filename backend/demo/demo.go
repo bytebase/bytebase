@@ -12,14 +12,9 @@ import (
 var demoFS embed.FS
 
 // LoadDemoData loads the demo data.
-func LoadDemoData(ctx context.Context, pgURL string) error {
+func LoadDemoData(ctx context.Context, db *sql.DB) error {
 	slog.Info("Setting up demo...")
 
-	db, err := sql.Open("pgx", pgURL)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
 	// This query in the dump.sql will poison the connection.
 	// SELECT pg_catalog.set_config('search_path', '', false);
 	var ok bool

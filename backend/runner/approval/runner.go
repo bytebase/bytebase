@@ -457,7 +457,9 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 				return 0, store.RiskSourceUnknown, false, err
 			}
 			databaseName = database.DatabaseName
-			environmentID = database.EffectiveEnvironmentID
+			if database.EffectiveEnvironmentID != nil {
+				environmentID = *database.EffectiveEnvironmentID
+			}
 		}
 
 		commonArgs := map[string]any{
@@ -584,10 +586,13 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 					return 0, err
 				}
 				args := map[string]any{
-					"environment_id": environmentID,
+					"environment_id": "",
 					"project_id":     issue.Project.ResourceID,
 					"database_name":  databaseName,
 					"db_engine":      instance.Metadata.GetEngine().String(),
+				}
+				if environmentID != nil {
+					args["environment_id"] = *environmentID
 				}
 
 				vars, err := e.PartialVars(args)
@@ -700,7 +705,11 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 		}
 
 		for _, database := range databaseMap {
-			args["environment_id"] = database.EffectiveEnvironmentID
+			if database.EffectiveEnvironmentID != nil {
+				args["environment_id"] = *database.EffectiveEnvironmentID
+			} else {
+				args["environment_id"] = ""
+			}
 			vars, err := e.PartialVars(args)
 			if err != nil {
 				return 0, store.RiskSourceUnknown, false, err

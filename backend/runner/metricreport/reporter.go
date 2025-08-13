@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/enterprise"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric/segment"
@@ -96,6 +97,12 @@ func (m *Reporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}()
 
 				ctx := context.Background()
+
+				// Check if metric collection is enabled in workspace profile setting
+				if !m.isMetricCollectionEnabled(ctx) {
+					return
+				}
+
 				// identify will be triggered in every schedule loop so that we can update the latest workspace profile such as subscription plan.
 				workspaceID, err := m.identify(ctx)
 				if err != nil {
@@ -145,6 +152,41 @@ func (m *Reporter) reportMetric(id string, metric *metric.Metric) {
 			log.BBError(err),
 		)
 	}
+}
+
+// isMetricCollectionEnabled checks if metric collection is enabled in workspace profile setting.
+func (m *Reporter) isMetricCollectionEnabled(ctx context.Context) bool {
+	// Always disable metrics in demo mode
+	if m.profile.Demo {
+		return false
+	}
+
+	// No connection key means no metrics
+	if m.profile.MetricConnectionKey == "" {
+		return false
+	}
+
+	// Get workspace profile setting
+	setting, err := m.store.GetSettingV2(ctx, storepb.SettingName_WORKSPACE_PROFILE)
+	if err != nil {
+		// If we can't get the setting, default to enabled for backward compatibility
+		slog.Debug("Failed to get workspace profile setting for metric collection", log.BBError(err))
+		return true
+	}
+
+	if setting == nil || setting.Value == "" {
+		// Default to enabled if setting is not found
+		return true
+	}
+
+	var workspaceProfile storepb.WorkspaceProfileSetting
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), &workspaceProfile); err != nil {
+		slog.Debug("Failed to unmarshal workspace profile setting", log.BBError(err))
+		// Default to enabled if we can't parse the setting
+		return true
+	}
+
+	return workspaceProfile.EnableMetricCollection
 }
 
 // Identify will identify the workspace and update the subscription plan.

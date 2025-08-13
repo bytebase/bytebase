@@ -20,8 +20,8 @@ type DatabaseMessage struct {
 	InstanceID   string
 	DatabaseName string
 
-	EnvironmentID          string
-	EffectiveEnvironmentID string
+	EnvironmentID          *string
+	EffectiveEnvironmentID *string
 
 	Deleted  bool
 	Metadata *storepb.DatabaseMetadata
@@ -45,7 +45,8 @@ type UpdateDatabaseMessage struct {
 
 // BatchUpdateDatabases is the message for batch updating databases.
 type BatchUpdateDatabases struct {
-	ProjectID *string
+	ProjectID           *string
+	FindByEnvironmentID *string
 	// Empty string will unset the environment.
 	EnvironmentID *string
 }
@@ -77,7 +78,7 @@ func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*
 		}
 	}
 
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +106,7 @@ func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*
 
 // ListDatabases lists all databases.
 func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +129,7 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 
 // CreateDatabaseDefault creates a new database in the default project.
 func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessage) (*DatabaseMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -181,15 +182,15 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		return nil, err
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
 	var environment *string
-	if create.EnvironmentID != "" {
-		environment = &create.EnvironmentID
+	if create.EnvironmentID != nil && *create.EnvironmentID != "" {
+		environment = create.EnvironmentID
 	}
 	query := `
 		INSERT INTO db (
@@ -265,7 +266,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	}
 	args = append(args, patch.InstanceID, patch.DatabaseName)
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -294,29 +295,38 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 
 // BatchUpdateDatabases update databases in batch.
 func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseMessage, update *BatchUpdateDatabases) ([]*DatabaseMessage, error) {
-	if len(databases) == 0 {
-		return nil, errors.Errorf("there is no database in the project")
-	}
 	set, args, wheres := []string{}, []any{}, []string{}
 	if update.ProjectID != nil {
 		set, args = append(set, fmt.Sprintf("project = $%d", len(args)+1)), append(args, *update.ProjectID)
 	}
-	if update.EnvironmentID != nil {
-		set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *update.EnvironmentID)
+	if v := update.EnvironmentID; v != nil {
+		if *v == "" {
+			set = append(set, "environment = NULL")
+		} else {
+			set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
+		}
 	}
 	if len(set) == 0 {
 		return nil, errors.New("no update field specified")
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
+	if v := update.FindByEnvironmentID; v != nil {
+		wheres, args = append(wheres, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
 	}
-	defer tx.Rollback()
+
 	for _, database := range databases {
 		wheres = append(wheres, fmt.Sprintf("(db.instance = $%d AND db.name = $%d)", len(args)+1, len(args)+2))
 		args = append(args, database.InstanceID, database.DatabaseName)
 	}
+	if len(wheres) == 0 {
+		return nil, errors.Errorf("empty where")
+	}
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
 			UPDATE db
 			SET `+strings.Join(set, ", ")+`
@@ -339,7 +349,7 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 		}
 		// Update cache for environment field and effective environment field.
 		if update.EnvironmentID != nil {
-			updatedDatabase.EnvironmentID = *update.EnvironmentID
+			updatedDatabase.EnvironmentID = update.EnvironmentID
 			if *update.EnvironmentID == "" {
 				instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &database.InstanceID})
 				if err != nil {
@@ -348,7 +358,7 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 				}
 				updatedDatabase.EffectiveEnvironmentID = instance.EnvironmentID
 			} else {
-				updatedDatabase.EffectiveEnvironmentID = *update.EnvironmentID
+				updatedDatabase.EffectiveEnvironmentID = update.EnvironmentID
 			}
 		}
 		s.databaseCache.Add(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), &updatedDatabase)
@@ -445,10 +455,10 @@ func (*Store) listDatabaseImplV2(ctx context.Context, txn *sql.Tx, find *FindDat
 			return nil, err
 		}
 		if effectiveEnvironment.Valid {
-			databaseMessage.EffectiveEnvironmentID = effectiveEnvironment.String
+			databaseMessage.EffectiveEnvironmentID = &effectiveEnvironment.String
 		}
 		if environment.Valid {
-			databaseMessage.EnvironmentID = environment.String
+			databaseMessage.EnvironmentID = &environment.String
 		}
 
 		var metadata storepb.DatabaseMetadata

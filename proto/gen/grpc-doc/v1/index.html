@@ -2632,6 +2632,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.ComputeDiff"><span class="badge">M</span>TaskRunLogEntry.ComputeDiff</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.TaskRunLogEntry.DatabaseSync"><span class="badge">M</span>TaskRunLogEntry.DatabaseSync</a>
                 </li>
               
@@ -4942,7 +4946,7 @@ Format: instances/{instance} </p></td>
                 <tr>
                   <td>environment</td>
                   <td><a href="#string">string</a></td>
-                  <td></td>
+                  <td>optional</td>
                   <td><p>The environment resource.
 Format: environments/prod where prod is the environment resource ID. </p></td>
                 </tr>
@@ -5054,7 +5058,7 @@ Format: instances/{instance} </p></td>
                 <tr>
                   <td>environment</td>
                   <td><a href="#string">string</a></td>
-                  <td></td>
+                  <td>optional</td>
                   <td><p>The environment resource.
 Format: environments/prod where prod is the environment resource ID. </p></td>
                 </tr>
@@ -5250,6 +5254,7 @@ resource_id = &#34;sample-instance&#34;
 resource_id.matches(&#34;sample&#34;)
 state == &#34;DELETED&#34;
 environment == &#34;environments/test&#34;
+environment == &#34;&#34; (find instances which environment is not set)
 engine == &#34;MYSQL&#34;
 engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]
 !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;])
@@ -6796,7 +6801,7 @@ Format: projects/{project} </p></td>
                 <tr>
                   <td>environment</td>
                   <td><a href="#string">string</a></td>
-                  <td></td>
+                  <td>optional</td>
                   <td><p>The environment resource.
 Format: environments/prod where prod is the environment resource ID. </p></td>
                 </tr>
@@ -6804,7 +6809,7 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
                 <tr>
                   <td>effective_environment</td>
                   <td><a href="#string">string</a></td>
-                  <td></td>
+                  <td>optional</td>
                   <td><p>The effective environment based on environment tag above and environment
 tag on the instance. Inheritance follows
 https://cloud.google.com/resource-manager/docs/tags/tags-overview. </p></td>
@@ -8154,6 +8159,7 @@ Supported filter:
 
 For example:
 environment == &#34;environments/{environment resource id}&#34;
+environment == &#34;&#34; (find databases which environment is not set)
 project == &#34;projects/{project resource id}&#34;
 instance == &#34;instances/{instance resource id}&#34;
 name.matches(&#34;database name&#34;)
@@ -13061,7 +13067,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td>require_special_character</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_uppercase_letter requires the password must contains at least one special character. </p></td>
+                  <td><p>require_special_character requires the password must contains at least one special character. </p></td>
                 </tr>
               
                 <tr>
@@ -13720,6 +13726,13 @@ For examples:
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Whether to disallow password signin. (Except workspace admins) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enable_metric_collection</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether to enable metric collection for the workspace. </p></td>
                 </tr>
               
             </tbody>
@@ -28720,6 +28733,13 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>compute_diff</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.ComputeDiff">TaskRunLogEntry.ComputeDiff</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -28748,7 +28768,15 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>command_indexes</td>
                   <td><a href="#int32">int32</a></td>
                   <td>repeated</td>
-                  <td><p>The indexes of the executed commands. </p></td>
+                  <td><p>Either `command_indexes` or `statement` is set.
+The indexes of the executed commands. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>statement</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The executed statement. </p></td>
                 </tr>
               
                 <tr>
@@ -28802,6 +28830,44 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>repeated</td>
                   <td><p>`all_affected_rows` is the affected rows of each command.
 `all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry.ComputeDiff">TaskRunLogEntry.ComputeDiff</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -29522,6 +29588,12 @@ Format: instances/{instance}/databases/{database} </p></td>
               <tr>
                 <td>RETRY_INFO</td>
                 <td>7</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>COMPUTE_DIFF</td>
+                <td>8</td>
                 <td><p></p></td>
               </tr>
             

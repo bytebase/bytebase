@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/sampleinstance"
 	"github.com/bytebase/bytebase/backend/component/secret"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -36,25 +37,27 @@ import (
 // InstanceService implements the instance service.
 type InstanceService struct {
 	v1connect.UnimplementedInstanceServiceHandler
-	store          *store.Store
-	licenseService *enterprise.LicenseService
-	metricReporter *metricreport.Reporter
-	stateCfg       *state.State
-	dbFactory      *dbfactory.DBFactory
-	schemaSyncer   *schemasync.Syncer
-	iamManager     *iam.Manager
+	store                 *store.Store
+	licenseService        *enterprise.LicenseService
+	metricReporter        *metricreport.Reporter
+	stateCfg              *state.State
+	dbFactory             *dbfactory.DBFactory
+	schemaSyncer          *schemasync.Syncer
+	iamManager            *iam.Manager
+	sampleInstanceManager *sampleinstance.Manager
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, licenseService *enterprise.LicenseService, metricReporter *metricreport.Reporter, stateCfg *state.State, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, iamManager *iam.Manager) *InstanceService {
+func NewInstanceService(store *store.Store, licenseService *enterprise.LicenseService, metricReporter *metricreport.Reporter, stateCfg *state.State, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, iamManager *iam.Manager, sampleInstanceManager *sampleinstance.Manager) *InstanceService {
 	return &InstanceService{
-		store:          store,
-		licenseService: licenseService,
-		metricReporter: metricReporter,
-		stateCfg:       stateCfg,
-		dbFactory:      dbFactory,
-		schemaSyncer:   schemaSyncer,
-		iamManager:     iamManager,
+		store:                 store,
+		licenseService:        licenseService,
+		metricReporter:        metricReporter,
+		stateCfg:              stateCfg,
+		dbFactory:             dbFactory,
+		schemaSyncer:          schemaSyncer,
+		iamManager:            iamManager,
+		sampleInstanceManager: sampleInstanceManager,
 	}
 }
 
@@ -93,12 +96,19 @@ func parseListInstanceFilter(filter string) (*store.ListResourceFilter, error) {
 			positionalArgs = append(positionalArgs, value.(string))
 			return fmt.Sprintf("instance.resource_id = $%d", len(positionalArgs)), nil
 		case "environment":
-			environmentID, err := common.GetEnvironmentID(value.(string))
-			if err != nil {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid environment filter %q", value))
+			environment, ok := value.(string)
+			if !ok {
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse value %v to string", value))
 			}
-			positionalArgs = append(positionalArgs, environmentID)
-			return fmt.Sprintf("instance.environment = $%d", len(positionalArgs)), nil
+			if environment != "" {
+				environmentID, err := common.GetEnvironmentID(environment)
+				if err != nil {
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid environment filter %q", value))
+				}
+				positionalArgs = append(positionalArgs, environmentID)
+				return fmt.Sprintf("instance.environment = $%d", len(positionalArgs)), nil
+			}
+			return "instance.environment IS NULL", nil
 		case "state":
 			v1State, ok := v1pb.State_value[value.(string)]
 			if !ok {
@@ -422,7 +432,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 
 	metadata := proto.CloneOf(instance.Metadata)
 	patch := &store.UpdateInstanceMessage{
-		ResourceID: instance.ResourceID,
+		ResourceID: &instance.ResourceID,
 		Metadata:   metadata,
 	}
 	updateActivation := false
@@ -431,18 +441,24 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 		case "title":
 			patch.Metadata.Title = req.Msg.Instance.Title
 		case "environment":
-			environmentID, err := common.GetEnvironmentID(req.Msg.Instance.Environment)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			if req.Msg.Instance.Environment == nil || *req.Msg.Instance.Environment == "" {
+				// Clear the environment if null or empty string is provided
+				emptyStr := ""
+				patch.EnvironmentID = &emptyStr
+			} else {
+				envID, err := common.GetEnvironmentID(*req.Msg.Instance.Environment)
+				if err != nil {
+					return nil, connect.NewError(connect.CodeInvalidArgument, err)
+				}
+				environment, err := s.store.GetEnvironmentByID(ctx, envID)
+				if err != nil {
+					return nil, connect.NewError(connect.CodeInternal, err)
+				}
+				if environment == nil {
+					return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("environment %q not found", envID))
+				}
+				patch.EnvironmentID = &envID
 			}
-			environment, err := s.store.GetEnvironmentByID(ctx, environmentID)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, err)
-			}
-			if environment == nil {
-				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("environment %q not found", environmentID))
-			}
-			patch.EnvironmentID = &environmentID
 		case "external_link":
 			patch.Metadata.ExternalLink = req.Msg.Instance.ExternalLink
 		case "data_sources":
@@ -531,11 +547,16 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 	metadata := proto.CloneOf(instance.Metadata)
 	metadata.Activation = false
 	if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
-		ResourceID: instance.ResourceID,
+		ResourceID: &instance.ResourceID,
 		Deleted:    &deletePatch,
 		Metadata:   metadata,
 	}); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	// Handle sample instance deletion if applicable
+	if err := s.sampleInstanceManager.HandleInstanceDeletion(ctx, instance.ResourceID); err != nil {
+		slog.Warn("failed to handle sample instance deletion", log.BBError(err), slog.String("instance", instance.ResourceID))
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -555,11 +576,16 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 	}
 
 	ins, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
-		ResourceID: instance.ResourceID,
+		ResourceID: &instance.ResourceID,
 		Deleted:    &undeletePatch,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	// Handle sample instance undelete (restart) if applicable
+	if err := s.sampleInstanceManager.HandleInstanceCreation(ctx, ins.ResourceID); err != nil {
+		slog.Warn("failed to handle sample instance undelete", log.BBError(err), slog.String("instance", ins.ResourceID))
 	}
 
 	result := convertInstanceMessage(ins)
@@ -698,7 +724,10 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 
 	metadata := proto.CloneOf(instance.Metadata)
 	metadata.DataSources = append(metadata.DataSources, dataSource)
-	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{ResourceID: instance.ResourceID, Metadata: metadata})
+	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
+		ResourceID: &instance.ResourceID,
+		Metadata:   metadata,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -881,7 +910,10 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		return connect.NewResponse(result), nil
 	}
 
-	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{ResourceID: instance.ResourceID, Metadata: metadata})
+	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
+		ResourceID: &instance.ResourceID,
+		Metadata:   metadata,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -923,7 +955,10 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Req
 	}
 
 	metadata.DataSources = updatedDataSources
-	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{ResourceID: instance.ResourceID, Metadata: metadata})
+	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
+		ResourceID: &instance.ResourceID,
+		Metadata:   metadata,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -969,12 +1004,16 @@ func buildInstanceName(instanceID string) string {
 }
 
 // buildEnvironmentName builds the environment name with the given environment ID.
-func buildEnvironmentName(environmentID string) string {
+func buildEnvironmentName(environmentID *string) *string {
+	if environmentID == nil || *environmentID == "" {
+		return nil
+	}
 	var b strings.Builder
-	b.Grow(len("environments/") + len(environmentID))
+	b.Grow(len("environments/") + len(*environmentID))
 	_, _ = b.WriteString("environments/")
-	_, _ = b.WriteString(environmentID)
-	return b.String()
+	_, _ = b.WriteString(*environmentID)
+	result := b.String()
+	return &result
 }
 
 func convertInstanceMessage(instance *store.InstanceMessage) *v1pb.Instance {
@@ -1032,9 +1071,14 @@ func convertInstanceToInstanceMessage(instanceID string, instance *v1pb.Instance
 	if err != nil {
 		return nil, err
 	}
-	environmentID, err := common.GetEnvironmentID(instance.Environment)
-	if err != nil {
-		return nil, err
+
+	var environmentID *string
+	if instance.Environment != nil && *instance.Environment != "" {
+		envID, err := common.GetEnvironmentID(*instance.Environment)
+		if err != nil {
+			return nil, err
+		}
+		environmentID = &envID
 	}
 
 	return &store.InstanceMessage{

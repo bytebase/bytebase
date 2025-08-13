@@ -31,7 +31,7 @@ func TestRiskLevelCalculation(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "Prod Instance",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: "environments/prod",
+			Environment: stringPtr("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{
 				Type: v1pb.DataSourceType_ADMIN,
@@ -158,7 +158,7 @@ func TestRiskLevelCalculationWithInvalidSQL(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "Prod Instance",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: "environments/prod",
+			Environment: stringPtr("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{
 				Type: v1pb.DataSourceType_ADMIN,

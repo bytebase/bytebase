@@ -19,7 +19,7 @@ const error = computed(() => {
     entry.commandExecute
   ) {
     const exec = entry.commandExecute;
-    return exec.raw.response?.error;
+    return exec.error;
   }
   if (entry.type === TaskRunLogEntry_Type.PRIOR_BACKUP && entry.priorBackup) {
     return entry.priorBackup.error;

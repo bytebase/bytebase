@@ -72,10 +72,7 @@
                 </div>
               </div>
             </NRadio>
-            <NRadio
-              v-if="actuatorV1Store.serverInfo?.enableSample"
-              :value="'builtin-sample'"
-            >
+            <NRadio :value="'builtin-sample'">
               <div>
                 <p class="font-medium">
                   {{ $t("setup.data.built-in") }}

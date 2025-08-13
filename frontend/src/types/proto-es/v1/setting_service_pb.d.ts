@@ -622,6 +622,13 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: bool disallow_password_signin = 12;
    */
   disallowPasswordSignin: boolean;
+
+  /**
+   * Whether to enable metric collection for the workspace.
+   *
+   * @generated from field: bool enable_metric_collection = 13;
+   */
+  enableMetricCollection: boolean;
 };
 
 /**
@@ -1308,7 +1315,7 @@ export declare type PasswordRestrictionSetting = Message<"bytebase.v1.PasswordRe
   requireUppercaseLetter: boolean;
 
   /**
-   * require_uppercase_letter requires the password must contains at least one special character.
+   * require_special_character requires the password must contains at least one special character.
    *
    * @generated from field: bool require_special_character = 5;
    */

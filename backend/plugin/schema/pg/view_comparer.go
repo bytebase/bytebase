@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	pgparser "github.com/bytebase/postgresql-parser"
+	pgparser "github.com/bytebase/parser/postgresql"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"

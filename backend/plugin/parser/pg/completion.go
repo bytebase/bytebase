@@ -8,7 +8,7 @@ import (
 	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
-	pg "github.com/bytebase/postgresql-parser"
+	pg "github.com/bytebase/parser/postgresql"
 
 	"github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"

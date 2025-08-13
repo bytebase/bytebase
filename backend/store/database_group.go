@@ -43,7 +43,7 @@ func (s *Store) DeleteDatabaseGroup(ctx context.Context, projectID, resourceID s
 		FROM db_group
 	WHERE project = $1 AND resource_id = $2
 	`
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
@@ -60,7 +60,7 @@ func (s *Store) DeleteDatabaseGroup(ctx context.Context, projectID, resourceID s
 
 // ListDatabaseGroups lists database groups.
 func (s *Store) ListDatabaseGroups(ctx context.Context, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMes
 			return v, nil
 		}
 	}
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, projectID, resourceID s
 		RETURNING project, resource_id, placeholder, expression, payload;
 	`, strings.Join(set, ", "), len(args)-1, len(args))
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to commit ")
 	}
@@ -251,7 +251,7 @@ func (s *Store) CreateDatabaseGroup(ctx context.Context, create *DatabaseGroupMe
 		return nil, errors.Wrapf(err, "failed to marshal payload")
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}

@@ -260,6 +260,8 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					}
 				}
 				oldSetting.DisallowPasswordSignin = payload.DisallowPasswordSignin
+			case "value.workspace_profile_setting_value.enable_metric_collection":
+				oldSetting.EnableMetricCollection = payload.EnableMetricCollection
 			default:
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
 			}
@@ -505,20 +507,36 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		for _, env := range oldEnvironmentSetting.Environments {
 			if !newEnvIDMap[env.Id] {
 				// deleted
-				// check if instances are using the environments
-				count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{EnvironmentID: &env.Id})
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal, err)
-				}
-				if count > 0 {
-					return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("all instances in the environment %v should be deleted first", env.Id))
-				}
-				uses, err := s.store.CheckDatabaseUseEnvironment(ctx, env.Id)
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal, err)
-				}
-				if uses {
-					return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("all databases in the environment %v should be deleted first", env.Id))
+				if s.profile.Mode == common.ReleaseModeDev {
+					emptyStr := ""
+					if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
+						EnvironmentID:       &emptyStr,
+						FindByEnvironmentID: &env.Id,
+					}); err != nil {
+						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to unset environment %v for instances", env.Id))
+					}
+					if _, err := s.store.BatchUpdateDatabases(ctx, nil, &store.BatchUpdateDatabases{
+						EnvironmentID:       &emptyStr,
+						FindByEnvironmentID: &env.Id,
+					}); err != nil {
+						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to unset environment %v for databases", env.Id))
+					}
+				} else {
+					// check if instances are using the environments
+					count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{EnvironmentID: &env.Id})
+					if err != nil {
+						return nil, connect.NewError(connect.CodeInternal, err)
+					}
+					if count > 0 {
+						return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("all instances in the environment %v should be deleted first", env.Id))
+					}
+					uses, err := s.store.CheckDatabaseUseEnvironment(ctx, env.Id)
+					if err != nil {
+						return nil, connect.NewError(connect.CodeInternal, err)
+					}
+					if uses {
+						return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("all databases in the environment %v should be deleted first", env.Id))
+					}
 				}
 			}
 		}
@@ -1183,6 +1201,7 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		EnforceIdentityDomain:  v1Setting.EnforceIdentityDomain,
 		DatabaseChangeMode:     storepb.DatabaseChangeMode(v1Setting.DatabaseChangeMode),
 		DisallowPasswordSignin: v1Setting.DisallowPasswordSignin,
+		EnableMetricCollection: v1Setting.EnableMetricCollection,
 	}
 
 	// Convert announcement if present
@@ -1223,6 +1242,7 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		EnforceIdentityDomain:  storeSetting.EnforceIdentityDomain,
 		DatabaseChangeMode:     v1pb.DatabaseChangeMode(storeSetting.DatabaseChangeMode),
 		DisallowPasswordSignin: storeSetting.DisallowPasswordSignin,
+		EnableMetricCollection: storeSetting.EnableMetricCollection,
 	}
 
 	if storeSetting.Announcement != nil {

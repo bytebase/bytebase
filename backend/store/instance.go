@@ -18,14 +18,16 @@ import (
 // InstanceMessage is the message for instance.
 type InstanceMessage struct {
 	ResourceID    string
-	EnvironmentID string
+	EnvironmentID *string
 	Deleted       bool
 	Metadata      *storepb.Instance
 }
 
 // UpdateInstanceMessage is the message for updating an instance.
 type UpdateInstanceMessage struct {
-	ResourceID string
+	// allow batch update
+	ResourceID          *string
+	FindByEnvironmentID *string
 
 	Deleted       *bool
 	EnvironmentID *string
@@ -71,7 +73,7 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 
 // ListInstancesV2 lists all instance.
 func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) ([]*InstanceMessage, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +100,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		return nil, err
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -113,8 +115,8 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		return nil, err
 	}
 	var environment *string
-	if instanceCreate.EnvironmentID != "" {
-		environment = &instanceCreate.EnvironmentID
+	if instanceCreate.EnvironmentID != nil && *instanceCreate.EnvironmentID != "" {
+		environment = instanceCreate.EnvironmentID
 	}
 	if _, err := tx.ExecContext(ctx, `
 			INSERT INTO instance (
@@ -147,7 +149,13 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessage) (*InstanceMessage, error) {
 	set, args, where := []string{}, []any{}, []string{}
 	if v := patch.EnvironmentID; v != nil {
-		set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
+		if *v == "" {
+			// Unset the environment by setting it to NULL
+			set = append(set, fmt.Sprintf("environment = $%d", len(args)+1))
+			args = append(args, nil)
+		} else {
+			set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
+		}
 	}
 	if v := patch.Deleted; v != nil {
 		set, args = append(set, fmt.Sprintf(`deleted = $%d`, len(args)+1)), append(args, *v)
@@ -163,9 +171,21 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		}
 		set, args = append(set, fmt.Sprintf("metadata = $%d", len(args)+1)), append(args, metadata)
 	}
-	where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, patch.ResourceID)
+	if v := patch.ResourceID; v != nil {
+		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.FindByEnvironmentID; v != nil {
+		where, args = append(where, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
+	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	if len(set) == 0 {
+		return nil, errors.New("no update field specified")
+	}
+	if len(where) == 0 {
+		return nil, errors.Errorf("empty where")
+	}
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -185,8 +205,12 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		return nil, err
 	}
 
-	s.instanceCache.Remove(getInstanceCacheKey(patch.ResourceID))
-	return s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &patch.ResourceID})
+	if v := patch.ResourceID; v != nil {
+		s.instanceCache.Remove(getInstanceCacheKey(*v))
+		return s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: v})
+	}
+
+	return nil, nil
 }
 
 func (s *Store) listInstanceImplV2(ctx context.Context, txn *sql.Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
@@ -250,7 +274,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, txn *sql.Tx, find *FindI
 			return nil, err
 		}
 		if environment.Valid {
-			instanceMessage.EnvironmentID = environment.String
+			instanceMessage.EnvironmentID = &environment.String
 		}
 
 		instanceMetadata := &storepb.Instance{}
@@ -279,7 +303,7 @@ var countActivateInstanceQuery = "SELECT COUNT(1) FROM instance WHERE (metadata 
 // GetActivatedInstanceCount gets the number of activated instances.
 func (s *Store) GetActivatedInstanceCount(ctx context.Context) (int, error) {
 	var count int
-	if err := s.db.QueryRowContext(ctx, countActivateInstanceQuery).Scan(&count); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, countActivateInstanceQuery).Scan(&count); err != nil {
 		return 0, err
 	}
 	return count, nil
@@ -459,4 +483,16 @@ func (s *Store) unObfuscateInstance(ctx context.Context, instance *storepb.Insta
 		}
 	}
 	return nil
+}
+
+// HasSampleInstances checks if there are sample instances in the database.
+func (s *Store) HasSampleInstances(ctx context.Context) (bool, error) {
+	instances, err := s.ListInstancesV2(ctx, &FindInstanceMessage{
+		ResourceIDs: &[]string{"test-sample-instance", "prod-sample-instance"},
+		ShowDeleted: false,
+	})
+	if err != nil {
+		return false, err
+	}
+	return len(instances) > 0, nil
 }

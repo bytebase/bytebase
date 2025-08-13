@@ -239,13 +239,16 @@ const databaseSupportAlterSchema = computed(() => {
 
 const allowEditSchema = computed(() => {
   return props.databases.every((db) => {
-    return hasPermissionToCreateChangeDatabaseIssue(db);
+    return (
+      hasPermissionToCreateChangeDatabaseIssue(db) && !!db.effectiveEnvironment
+    );
   });
 });
 
 const allowChangeData = computed(() => {
-  return props.databases.every((db) =>
-    hasPermissionToCreateChangeDatabaseIssue(db)
+  return props.databases.every(
+    (db) =>
+      hasPermissionToCreateChangeDatabaseIssue(db) && !!db.effectiveEnvironment
   );
 });
 
@@ -262,7 +265,9 @@ const allowTransferInProject = computedAsync(async () => {
 
 const allowExportData = computed(() => {
   return props.databases.every((db) => {
-    return hasPermissionToCreateDataExportIssue(db);
+    return (
+      hasPermissionToCreateDataExportIssue(db) && !!db.effectiveEnvironment
+    );
   });
 });
 

@@ -9,7 +9,9 @@
             <DatabaseDisplay :database="database.name" :size="'large'" />
           </div>
           <div class="flex flex-row gap-x-2">
-            <NTag round>{{ semanticTaskType(task.type) }}</NTag>
+            <NTag round>
+              {{ semanticTaskType(task.type) }}
+            </NTag>
             <NTooltip v-if="schemaVersion">
               <template #trigger>
                 <NTag round>{{ schemaVersion }}</NTag>
@@ -83,7 +85,28 @@
     <div class="w-full flex-1 min-h-0">
       <div class="flex items-center justify-between mb-2">
         <span class="text-base font-medium">{{ $t("common.statement") }}</span>
-        <CopyButton v-if="statement" :size="'medium'" :content="statement" />
+        <div>
+          <RouterLink
+            v-if="relatedSpec"
+            :to="{
+              name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+              params: {
+                projectId: extractProjectResourceName(plan.name),
+                planId: extractPlanUID(plan.name),
+                specId: relatedSpec.id,
+              },
+            }"
+          >
+            <NButton size="small" text type="primary">
+              <template #icon>
+                <LinkIcon :size="14" />
+              </template>
+              <span class="underline">
+                {{ $t("plan.spec.change") }}: {{ getSpecTitle(relatedSpec) }}
+              </span>
+            </NButton>
+          </RouterLink>
+        </div>
       </div>
       <MonacoEditor
         v-if="statement"
@@ -105,14 +128,15 @@
 <script setup lang="ts">
 import dayjs from "dayjs";
 import { last } from "lodash-es";
-import { CalendarClockIcon } from "lucide-vue-next";
-import { NTag, NTooltip } from "naive-ui";
+import { CalendarClockIcon, LinkIcon } from "lucide-vue-next";
+import { NButton, NTag, NTooltip } from "naive-ui";
 import { computed, watchEffect } from "vue";
+import { RouterLink } from "vue-router";
 import { semanticTaskType } from "@/components/IssueV1";
 import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRunDetail.vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
-import { CopyButton } from "@/components/v2";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
   taskRunNamePrefix,
   useCurrentProjectV1,
@@ -120,13 +144,14 @@ import {
 } from "@/store";
 import { getTimeForPbTimestampProtoEs, unknownTask } from "@/types";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { databaseForTask } from "@/utils";
+import { databaseForTask, extractPlanUID } from "@/utils";
 import {
   extractSchemaVersionFromTask,
   getSheetStatement,
   sheetNameOfTaskV1,
+  extractProjectResourceName,
 } from "@/utils";
-import { usePlanContextWithRollout } from "../../logic";
+import { usePlanContextWithRollout, getSpecTitle } from "../../logic";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 import TaskRollbackButton from "./TaskRollbackButton.vue";
 import TaskRunTable from "./TaskRunTable.vue";
@@ -144,6 +169,7 @@ const {
   taskRuns: allTaskRuns,
   readonly,
   events,
+  plan,
 } = usePlanContextWithRollout();
 const sheetStore = useSheetV1Store();
 
@@ -177,6 +203,12 @@ const rollbackableTaskRun = computed(() => {
 // Task basic info
 const database = computed(() => databaseForTask(project.value, task.value));
 const schemaVersion = computed(() => extractSchemaVersionFromTask(task.value));
+
+// Related spec
+const relatedSpec = computed(() => {
+  if (!plan.value || !task.value.specId) return undefined;
+  return plan.value.specs.find((spec) => spec.id === task.value.specId);
+});
 
 const formatFullDateTime = (timestamp: any) => {
   const timestampInMilliseconds = getTimeForPbTimestampProtoEs(timestamp, 0);

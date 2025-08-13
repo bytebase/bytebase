@@ -326,6 +326,7 @@
     }
   },
   "task-run": {
+    "failed-runs": "Tareas fallidas: últimos registros de ejecución",
     "history": "Historial de ejecución de tareas",
     "latest-logs": "Últimos registros",
     "status": {
@@ -566,6 +567,11 @@
         "data-export": {
           "enable": "Habilitar la exportación de datos",
           "description": "Permitir a los usuarios exportar datos en el Editor SQL"
+        },
+        "product-improvement": {
+          "self": "Mejora del Producto",
+          "participate": "Participar en el programa de mejora",
+          "description": "Ayuda a mejorar Bytebase compartiendo datos de uso anónimos"
         },
         "disallow-signup": {
           "enable": "Deshabilitar el registro de autoservicio",
@@ -1031,9 +1037,10 @@
           "transaction-control": "Control de transacciones",
           "database-sync": "Sincronización de base de datos",
           "prior-backup": "Copia de seguridad previa",
-          "retry-info": "Reintento de información"
+          "retry-info": "Reintento de información",
+          "compute-diff": "Calcular diff"
         },
-        "estimated-affected-rows-n": "Filas afectadas estimadas: {n}",
+        "affected-rows-n": "Filas afectadas: {n}",
         "prior-backup-tables": "Tablas de respaldo anteriores",
         "status-update": {
           "waiting": "Listo para ser ejecutado",
@@ -1102,6 +1109,7 @@
       "statement-empty": "La declaración está vacía"
     },
     "spec": {
+      "change": "Cambiar",
       "type": {
         "create-database": "Crear base de datos",
         "schema-change": "Cambio de esquema",
@@ -1250,6 +1258,7 @@
       "sync-new": "Sincronizar únicamente bases de datos nuevas",
       "sync-all-tip": "La sincronización de la base de datos es asincrónica y puede tardar entre unos segundos y minutos."
     },
+    "no-environment": "Esta instancia no ha sido ligada al medio ambiente.",
     "selected-n-instances": "{n} instancia seleccionada | {n} instancias seleccionadas",
     "users": "Usuarios",
     "successfully-restored-instance": "Se restauró exitosamente la instancia '{0}'.",
@@ -1437,6 +1446,7 @@
   "environment": {
     "select": "Seleccionar entorno",
     "delete": "Eliminar este entorno",
+    "delete-description": "Eliminar el entorno también lo eliminará de las instancias y bases de datos relacionadas. @:common.cannot-undo-this-action",
     "create": "Crear entorno",
     "successfully-updated-environment": "entorno '{name}' actualizado exitosamente.",
     "production-environment": "Entorno de producción",
@@ -1540,6 +1550,8 @@
     "rollback-tip": "Seleccione un historial de DDL específico para revertir."
   },
   "database": {
+    "no-environment": "Esta base de datos no ha sido vinculada al entorno.",
+    "set-environment": "Establecer entorno",
     "sync-database": "Sincronizar base de datos",
     "select": "Seleccionar base de datos",
     "sync-status": "Estado de sincronización",

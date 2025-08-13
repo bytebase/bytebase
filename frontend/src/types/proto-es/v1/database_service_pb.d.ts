@@ -129,6 +129,7 @@ export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesReq
    *
    * For example:
    * environment == "environments/{environment resource id}"
+   * environment == "" (find databases which environment is not set)
    * project == "projects/{project resource id}"
    * instance == "instances/{instance resource id}"
    * name.matches("database name")
@@ -513,18 +514,18 @@ export declare type Database = Message<"bytebase.v1.Database"> & {
    * The environment resource.
    * Format: environments/prod where prod is the environment resource ID.
    *
-   * @generated from field: string environment = 7;
+   * @generated from field: optional string environment = 7;
    */
-  environment: string;
+  environment?: string;
 
   /**
    * The effective environment based on environment tag above and environment
    * tag on the instance. Inheritance follows
    * https://cloud.google.com/resource-manager/docs/tags/tags-overview.
    *
-   * @generated from field: string effective_environment = 8;
+   * @generated from field: optional string effective_environment = 8;
    */
-  effectiveEnvironment: string;
+  effectiveEnvironment?: string;
 
   /**
    * Labels will be used for deployment and policy control.

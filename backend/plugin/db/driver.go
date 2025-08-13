@@ -187,6 +187,9 @@ func Open(ctx context.Context, dbType storepb.Engine, connectionConfig Connectio
 type ExecuteOptions struct {
 	CreateDatabase   bool
 	CreateTaskRunLog func(time.Time, *storepb.TaskRunLog) error
+	// If true, log the statement of the command.
+	// else only log the command index.
+	LogCommandStatement bool
 
 	// Record the connection id first before executing.
 	SetConnectionID    func(id string)
@@ -194,6 +197,34 @@ type ExecuteOptions struct {
 
 	// The maximum number of retries for lock timeout statements.
 	MaximumRetries int
+}
+
+func (o *ExecuteOptions) LogComputeDiffStart() {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type:             storepb.TaskRunLog_COMPUTE_DIFF_START,
+		ComputeDiffStart: &storepb.TaskRunLog_ComputeDiffStart{},
+	})
+	if err != nil {
+		slog.Warn("failed to log compute diff start", log.BBError(err))
+	}
+}
+
+func (o *ExecuteOptions) LogComputeDiffEnd(e string) {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type: storepb.TaskRunLog_COMPUTE_DIFF_END,
+		ComputeDiffEnd: &storepb.TaskRunLog_ComputeDiffEnd{
+			Error: e,
+		},
+	})
+	if err != nil {
+		slog.Warn("failed to log compute diff end", log.BBError(err))
+	}
 }
 
 func (o *ExecuteOptions) LogDatabaseSyncStart() {
@@ -252,29 +283,32 @@ func (o *ExecuteOptions) LogSchemaDumpEnd(derr string) {
 	}
 }
 
-func (o *ExecuteOptions) LogCommandExecute(commandIndexes []int32) {
+func (o *ExecuteOptions) LogCommandExecute(commandIndexes []int32, commandText string) {
 	if o == nil || o.CreateTaskRunLog == nil {
 		return
 	}
+	ce := &storepb.TaskRunLog_CommandExecute{}
+	if o.LogCommandStatement {
+		ce.Statement = commandText
+	} else {
+		ce.CommandIndexes = commandIndexes
+	}
 	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
-		Type: storepb.TaskRunLog_COMMAND_EXECUTE,
-		CommandExecute: &storepb.TaskRunLog_CommandExecute{
-			CommandIndexes: commandIndexes,
-		},
+		Type:           storepb.TaskRunLog_COMMAND_EXECUTE,
+		CommandExecute: ce,
 	})
 	if err != nil {
 		slog.Warn("failed to log command execute", log.BBError(err))
 	}
 }
 
-func (o *ExecuteOptions) LogCommandResponse(commandIndexes []int32, affectedRows int32, allAffectedRows []int32, rerr string) {
+func (o *ExecuteOptions) LogCommandResponse(affectedRows int32, allAffectedRows []int32, rerr string) {
 	if o == nil || o.CreateTaskRunLog == nil {
 		return
 	}
 	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
 		Type: storepb.TaskRunLog_COMMAND_RESPONSE,
 		CommandResponse: &storepb.TaskRunLog_CommandResponse{
-			CommandIndexes:  commandIndexes,
 			AffectedRows:    affectedRows,
 			AllAffectedRows: allAffectedRows,
 			Error:           rerr,

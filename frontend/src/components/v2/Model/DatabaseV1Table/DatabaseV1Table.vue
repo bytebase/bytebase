@@ -51,6 +51,7 @@ const props = withDefaults(
     selectedDatabaseNames?: string[];
     keyword?: string;
     rowClick?: (e: MouseEvent, val: ComposedDatabase) => void;
+    selectDisabled?: (db: ComposedDatabase) => boolean;
     pagination?:
       | false
       | {
@@ -66,6 +67,7 @@ const props = withDefaults(
     keyword: undefined,
     selectedDatabaseNames: () => [],
     pagination: false,
+    selectDisabled: (_: ComposedDatabase) => false,
   }
 );
 
@@ -80,6 +82,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     type: "selection",
     multiple: !props.singleSelection,
     hide: !props.showSelection,
+    disabled: props.selectDisabled,
     cellProps: () => {
       return {
         onClick: (e: MouseEvent) => {

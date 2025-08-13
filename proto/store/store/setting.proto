@@ -62,6 +62,9 @@ message WorkspaceProfileSetting {
 
   // Whether to disallow password signin. (Except workspace admins)
   bool disallow_password_signin = 12;
+
+  // Whether to enable metric collection for the workspace.
+  bool enable_metric_collection = 13;
 }
 
 message Announcement {

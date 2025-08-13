@@ -512,12 +512,12 @@ func (d *Driver) executeInTransactionMode(
 				return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
 			}
 		}
-		opts.LogCommandExecute([]int32{0})
+		opts.LogCommandExecute([]int32{0}, statement)
 		if _, err := conn.ExecContext(ctx, statement); err != nil {
-			opts.LogCommandResponse([]int32{0}, 0, []int32{0}, err.Error())
+			opts.LogCommandResponse(0, []int32{0}, err.Error())
 			return 0, err
 		}
-		opts.LogCommandResponse([]int32{0}, 0, []int32{0}, "")
+		opts.LogCommandResponse(0, []int32{0}, "")
 
 		return 0, nil
 	}
@@ -558,12 +558,12 @@ func (d *Driver) executeInTransactionMode(
 
 			for i, command := range commands {
 				indexes := []int32{originalIndex[i]}
-				opts.LogCommandExecute(indexes)
+				opts.LogCommandExecute(indexes, command.Text)
 
 				rr := tx.Conn().PgConn().Exec(ctx, command.Text)
 				results, err := rr.ReadAll()
 				if err != nil {
-					opts.LogCommandResponse(indexes, 0, nil, err.Error())
+					opts.LogCommandResponse(0, nil, err.Error())
 
 					return &db.ErrorWithPosition{
 						Err:   errors.Wrapf(err, "failed to execute context in a transaction"),
@@ -579,7 +579,7 @@ func (d *Driver) executeInTransactionMode(
 					allRowsAffected = append(allRowsAffected, int32(ra))
 					rowsAffected += ra
 				}
-				opts.LogCommandResponse(indexes, int32(rowsAffected), allRowsAffected, "")
+				opts.LogCommandResponse(int32(rowsAffected), allRowsAffected, "")
 
 				totalRowsAffected += rowsAffected
 			}
@@ -612,12 +612,12 @@ func (d *Driver) executeInTransactionMode(
 	// Run non-transaction statements at the end.
 	for i, stmt := range nonTransactionAndSetRoleStmts {
 		indexes := []int32{nonTransactionAndSetRoleStmtsIndex[i]}
-		opts.LogCommandExecute(indexes)
+		opts.LogCommandExecute(indexes, stmt)
 		if _, err := conn.ExecContext(ctx, stmt); err != nil {
-			opts.LogCommandResponse(indexes, 0, []int32{0}, err.Error())
+			opts.LogCommandResponse(0, []int32{0}, err.Error())
 			return 0, err
 		}
-		opts.LogCommandResponse(indexes, 0, []int32{0}, "")
+		opts.LogCommandResponse(0, []int32{0}, "")
 	}
 	return totalRowsAffected, nil
 }
@@ -664,12 +664,12 @@ func (d *Driver) executeInAutoCommitMode(
 				return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
 			}
 		}
-		opts.LogCommandExecute([]int32{0})
+		opts.LogCommandExecute([]int32{0}, statement)
 		if _, err := conn.ExecContext(ctx, statement); err != nil {
-			opts.LogCommandResponse([]int32{0}, 0, []int32{0}, err.Error())
+			opts.LogCommandResponse(0, []int32{0}, err.Error())
 			return 0, err
 		}
-		opts.LogCommandResponse([]int32{0}, 0, []int32{0}, "")
+		opts.LogCommandResponse(0, []int32{0}, "")
 		return 0, nil
 	}
 
@@ -684,11 +684,11 @@ func (d *Driver) executeInAutoCommitMode(
 	// Execute all statements individually in auto-commit mode
 	for i, stmt := range nonTransactionAndSetRoleStmts {
 		indexes := []int32{nonTransactionAndSetRoleStmtsIndex[i]}
-		opts.LogCommandExecute(indexes)
+		opts.LogCommandExecute(indexes, stmt)
 
 		sqlResult, err := conn.ExecContext(ctx, stmt)
 		if err != nil {
-			opts.LogCommandResponse(indexes, 0, []int32{0}, err.Error())
+			opts.LogCommandResponse(0, []int32{0}, err.Error())
 			if isLockTimeoutError(err.Error()) {
 				return totalRowsAffected, &LockTimeoutError{
 					Message: err.Error(),
@@ -703,7 +703,7 @@ func (d *Driver) executeInAutoCommitMode(
 			rowsAffected = 0
 		}
 
-		opts.LogCommandResponse(indexes, int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+		opts.LogCommandResponse(int32(rowsAffected), []int32{int32(rowsAffected)}, "")
 		totalRowsAffected += rowsAffected
 	}
 

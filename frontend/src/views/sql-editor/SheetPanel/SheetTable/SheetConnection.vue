@@ -39,11 +39,7 @@ import {
   EnvironmentV1Name,
 } from "@/components/v2";
 import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
-import {
-  formatEnvironmentName,
-  isValidDatabaseName,
-  unknownEnvironment,
-} from "@/types";
+import { formatEnvironmentName, isValidDatabaseName } from "@/types";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 
 const props = defineProps<{
@@ -60,11 +56,8 @@ const database = computedAsync(async () => {
 });
 
 const instanceEnvironment = computed(() => {
-  if (!database.value) return unknownEnvironment();
-  return (
-    useEnvironmentV1Store().getEnvironmentByName(
-      database.value.instanceResource.environment
-    ) ?? unknownEnvironment()
+  return useEnvironmentV1Store().getEnvironmentByName(
+    database.value?.instanceResource.environment ?? ""
   );
 });
 </script>

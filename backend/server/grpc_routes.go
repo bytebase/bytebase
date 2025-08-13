@@ -24,6 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/sampleinstance"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
@@ -49,6 +50,7 @@ func configureGrpcRouters(
 	webhookManager *webhook.Manager,
 	iamManager *iam.Manager,
 	secret string,
+	sampleInstanceManager *sampleinstance.Manager,
 ) error {
 	// Note: the gateway response modifier takes the token duration on server startup. If the value is changed,
 	// the user has to restart the server to take the latest value.
@@ -74,7 +76,7 @@ func configureGrpcRouters(
 			grpcruntime.DefaultHTTPErrorHandler(ctx, sm, m, w, r, err)
 		}),
 	)
-	actuatorService := apiv1.NewActuatorService(stores, profile, schemaSyncer, licenseService)
+	actuatorService := apiv1.NewActuatorService(stores, profile, schemaSyncer, licenseService, sampleInstanceManager)
 	auditLogService := apiv1.NewAuditLogService(stores, iamManager, licenseService)
 	authService := apiv1.NewAuthService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager)
 	celService := apiv1.NewCelService()
@@ -85,7 +87,7 @@ func configureGrpcRouters(
 	groupService := apiv1.NewGroupService(stores, iamManager, licenseService)
 	identityProviderService := apiv1.NewIdentityProviderService(stores, licenseService)
 	instanceRoleService := apiv1.NewInstanceRoleService(stores, dbFactory)
-	instanceService := apiv1.NewInstanceService(stores, licenseService, metricReporter, stateCfg, dbFactory, schemaSyncer, iamManager)
+	instanceService := apiv1.NewInstanceService(stores, licenseService, metricReporter, stateCfg, dbFactory, schemaSyncer, iamManager, sampleInstanceManager)
 	issueService := apiv1.NewIssueService(stores, webhookManager, stateCfg, licenseService, profile, iamManager, metricReporter)
 	orgPolicyService := apiv1.NewOrgPolicyService(stores, licenseService)
 	planService := apiv1.NewPlanService(stores, sheetManager, licenseService, dbFactory, stateCfg, profile, iamManager)

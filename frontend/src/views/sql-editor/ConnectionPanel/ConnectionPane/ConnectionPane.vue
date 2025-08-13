@@ -96,9 +96,15 @@
         <div
           v-for="[environment, treeState] of treeByEnvironment.entries()"
           :key="environment"
-          class="flex flex-col space-y-2 pt-2 pb-2"
         >
-          <div v-if="!treeIsEmpty(treeState) || state.showEmptyEnvironment">
+          <div
+            v-if="
+              !treeIsEmpty(treeState) ||
+              (state.showEmptyEnvironment &&
+                environment !== UNKNOWN_ENVIRONMENT_NAME)
+            "
+            class="flex flex-col space-y-2 pt-2 pb-2"
+          >
             <NTree
               :block-line="true"
               :data="treeState.tree.value"
@@ -218,6 +224,8 @@ import {
   isValidDatabaseName,
   getDataSourceTypeI18n,
   isValidProjectName,
+  UNKNOWN_ENVIRONMENT_NAME,
+  unknownEnvironment,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
@@ -626,18 +634,20 @@ watch(
 
 const prepareDatabases = async () => {
   await Promise.all(
-    environmentList.value.map(async (environment) => {
-      if (!treeByEnvironment.value.has(environment.name)) {
-        treeByEnvironment.value.set(
-          environment.name,
-          useSQLEditorTreeByEnvironment(environment.name)
-        );
+    [...environmentList.value, unknownEnvironment()].map(
+      async (environment) => {
+        if (!treeByEnvironment.value.has(environment.name)) {
+          treeByEnvironment.value.set(
+            environment.name,
+            useSQLEditorTreeByEnvironment(environment.name)
+          );
+        }
+        await treeByEnvironment.value
+          .get(environment.name)
+          ?.prepareDatabases(filter.value);
+        treeByEnvironment.value.get(environment.name)?.buildTree();
       }
-      await treeByEnvironment.value
-        .get(environment.name)
-        ?.prepareDatabases(filter.value);
-      treeByEnvironment.value.get(environment.name)?.buildTree();
-    })
+    )
   );
 };
 
