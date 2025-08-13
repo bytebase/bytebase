@@ -57,6 +57,9 @@ func configureEchoRouters(
 	registerPprof(e, &profile.RuntimeDebug)
 
 	p := prometheus.NewPrometheus("api", nil)
+	p.RequestCounterURLLabelMappingFunc = func(c echo.Context) string {
+		return c.Request().URL.Path
+	}
 	p.Use(e)
 
 	e.GET("/healthz", func(c echo.Context) error {
