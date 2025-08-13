@@ -48,7 +48,7 @@
         ref="contentTextArea"
         v-model="state.content"
         rows="3"
-        class="textarea block w-full resize-none whitespace-pre-wrap bg-gray-100 rounded"
+        class="textarea block w-full resize-none whitespace-pre-wrap rounded"
         :placeholder="$t('issue.leave-a-comment')"
         @mousedown="clearIssuePanel"
         @input="(e: any) => sizeToFit(e.target)"

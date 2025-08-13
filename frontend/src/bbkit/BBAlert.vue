@@ -7,6 +7,7 @@
     :content="description"
     :negative-text="cancelText"
     :positive-text="okText"
+    :positive-button-props="positiveButtonProps"
     @update:show="$emit('update:show', $event)"
     @positive-click="() => $emit('ok')"
     @negative-click="() => $emit('cancel')"
@@ -16,7 +17,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NModal } from "naive-ui";
+import { NModal, type ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
 
 withDefaults(
@@ -24,6 +25,7 @@ withDefaults(
     show: boolean;
     type: "info" | "warning";
     title: string;
+    positiveButtonProps?: ButtonProps | undefined;
     description?: string;
     okText?: string;
     cancelText?: string;

@@ -87,7 +87,8 @@ const databaseDisplayName = computed(() => {
 
 const environment = computed(() => {
   const environmentName =
-    databaseEntity.value.environment || instanceResource.value?.environment;
+    databaseEntity.value.effectiveEnvironment ||
+    instanceResource.value?.environment;
   if (!environmentName) {
     return undefined;
   }

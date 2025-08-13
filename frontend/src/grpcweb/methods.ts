@@ -63,15 +63,13 @@ export const ALL_METHODS_WITH_AUDIT = [
   WorksheetService,
   WorkspaceService,
 ]
-  .map((service) => {
-    const methods: string[] = [];
+  .reduce((list, service) => {
     for (const method of service.methods) {
       const auditOption = getOption(method, audit);
       if (auditOption) {
-        methods.push(`/${service.typeName}/${method.name}`);
+        list.push(`/${service.typeName}/${method.name}`);
       }
     }
-    return methods;
-  })
-  .flat()
+    return list;
+  }, [] as string[])
   .sort();

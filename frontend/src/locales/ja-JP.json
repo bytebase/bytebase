@@ -1570,6 +1570,7 @@
     "table-detail": "テーブルの詳細",
     "batch-action-not-support-alter-schema": "一部のデータベースはテーブル構造の変更をサポートしていません",
     "batch-action-permission-denied": "データベース {action} に対する権限がありません",
+    "batch-action-database-not-have-environment": "環境に縛られないデータベースが存在する",
     "batch-action-disabled": "異なるプロジェクトのデータベース {action} を比較できません",
     "batch-action-disabled-for-unassigned": "未割り当てのデータベース {action} にアクセスできません",
     "successfully-transferred-databases": "データベースの移行が完了しました",
