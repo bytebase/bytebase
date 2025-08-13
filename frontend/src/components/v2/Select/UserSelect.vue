@@ -61,7 +61,7 @@ const props = withDefaults(
     includeSystemBot: false,
     includeServiceAccount: false,
     autoReset: true,
-    filter: (user: User, index: number) => true,
+    filter: (_1: User, _2: number) => true,
     size: "medium",
   }
 );
