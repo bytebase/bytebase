@@ -18,7 +18,7 @@
         <div class="mb-3 text-sm text-gray-400">
           {{ $t("settings.general.workspace.external-url.description") }}
           <LearnMoreLink
-            url="https://docs.bytebase.com/get-started/install/external-url?source=console"
+            url="https://docs.bytebase.com/get-started/self-host/external-url?source=console"
           />
         </div>
         <NTooltip placement="top-start" :disabled="allowEdit">
