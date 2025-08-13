@@ -57,6 +57,13 @@
                   :multiple="false"
                   :size="'medium'"
                   :include-all="false"
+                  :filter="
+                    (user, _) =>
+                      !state.group.members.find(
+                        (member) =>
+                          member.member === `${userNamePrefix}${user.email}`
+                      )
+                  "
                   @update:user="(uid) => updateMemberEmail(i, uid)"
                 />
                 <GroupMemberRoleSelect
