@@ -3,18 +3,18 @@
     key="project-members-by-role"
     :columns="columns"
     :data="userListByRole"
-    :row-key="(row) => row.name"
-    :striped="true"
+    :row-key="(row) => row.id"
     :bordered="true"
+    :row-class-name="rowClassName"
     default-expand-all
   />
 </template>
 
 <script lang="tsx" setup>
-import { Building2Icon } from "lucide-vue-next";
+import { Building2Icon, Trash2Icon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
-import { NDataTable, NTooltip } from "naive-ui";
-import { computed, h } from "vue";
+import { NDataTable, NTooltip, NPopconfirm } from "naive-ui";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
@@ -27,6 +27,7 @@ import type { MemberBinding } from "./types";
 type Scope = "workspace" | "project";
 
 interface RoleRowData {
+  id: string;
   type: "role";
   name: string;
   scope: Scope;
@@ -50,6 +51,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: "update-binding", binding: MemberBinding): void;
   (event: "revoke-binding", binding: MemberBinding): void;
+  (event: "revoke-role", role: string, expired: boolean): void;
 }>();
 
 const { t } = useI18n();
@@ -67,7 +69,7 @@ const columns = computed(() => {
               {row.scope === "workspace" && (
                 <NTooltip
                   v-slots={{
-                    trigger: () => <Building2Icon class="w-4 h-auto" />,
+                    trigger: () => <Building2Icon class="w-4 h-auto mr-1" />,
                     default: () => t("project.members.workspace-level-roles"),
                   }}
                 />
@@ -104,19 +106,37 @@ const columns = computed(() => {
       width: "4rem",
       render: (row: RoleRowData | BindingRowData) => {
         if (row.type === "role") {
-          return "";
+          return (
+            row.scope === "project" &&
+            props.allowEdit && (
+              <NPopconfirm
+                positive-Click={() =>
+                  emit("revoke-role", row.name, row.id.endsWith(".expired"))
+                }
+                v-slots={{
+                  trigger: () => (
+                    <Trash2Icon class="w-4 h-auto ml-auto mr-3 cursor-pointer" />
+                  ),
+                  default: () => t("settings.members.revoke-access-alert"),
+                }}
+              />
+            )
+          );
         } else {
-          return h(UserOperationsCell, {
-            scope: props.scope,
-            allowEdit: props.allowEdit,
-            binding: row.member,
-            "onUpdate-binding": () => {
-              emit("update-binding", row.member);
-            },
-            "onRevoke-binding": () => {
-              emit("revoke-binding", row.member);
-            },
-          });
+          return (
+            <UserOperationsCell
+              class="ml-auto"
+              scope={props.scope}
+              allowEdit={props.allowEdit}
+              binding={row.member}
+              onUpdate-binding={() => {
+                emit("update-binding", row.member);
+              }}
+              onRevoke-binding={() => {
+                emit("revoke-binding", row.member);
+              }}
+            />
+          );
         }
       },
     },
@@ -134,45 +154,49 @@ const getRoleDataId = (roleData: RoleRowData): string => {
 const userListByRole = computed(() => {
   const map: Map<string, RoleRowData> = new Map();
 
+  const getRoleRowData = (
+    memberBinding: MemberBinding,
+    data: { name: string; scope: Scope; binding?: Binding | undefined }
+  ) => {
+    const roleData: RoleRowData = {
+      id: "",
+      type: "role",
+      children: [],
+      ...data,
+    };
+    const id = getRoleDataId(roleData);
+    roleData.id = id;
+    if (!map.has(id)) {
+      map.set(id, roleData);
+    }
+    map.get(id)?.children.push({
+      type: "binding",
+      name: `${id}-${memberBinding.binding}`,
+      member: memberBinding,
+    });
+  };
+
   for (const memberBinding of props.bindings) {
     for (const role of memberBinding.workspaceLevelRoles) {
-      const roleData: RoleRowData = {
-        type: "role",
+      getRoleRowData(memberBinding, {
         name: role,
         scope: "workspace",
-        children: [],
-      };
-      const id = getRoleDataId(roleData);
-      if (!map.has(id)) {
-        map.set(id, roleData);
-      }
-      map.get(id)?.children.push({
-        type: "binding",
-        name: `${role}-${memberBinding.binding}`,
-        member: memberBinding,
       });
     }
 
     for (const binding of memberBinding.projectRoleBindings) {
-      const roleData: RoleRowData = {
-        type: "role",
+      getRoleRowData(memberBinding, {
         name: binding.role,
         scope: "project",
-        children: [],
         binding,
-      };
-      const id = getRoleDataId(roleData);
-      if (!map.has(id)) {
-        map.set(id, roleData);
-      }
-      map.get(id)?.children.push({
-        type: "binding",
-        name: `${binding.role}-${memberBinding.binding}`,
-        member: memberBinding,
       });
     }
   }
 
   return [...map.values()];
 });
+
+const rowClassName = (row: RoleRowData) => {
+  return row.type === "role" ? "n-data-table-tr--striped" : "";
+};
 </script>
