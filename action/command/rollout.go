@@ -56,6 +56,9 @@ func validateRolloutFlags(w *world.World) func(*cobra.Command, []string) error {
 
 func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 	return func(command *cobra.Command, _ []string) error {
+		defer func() {
+			writeOutputJSON(w)
+		}()
 		ctx := command.Context()
 		client, err := NewClient(w.URL, w.ServiceAccount, w.ServiceAccountSecret)
 		if err != nil {
