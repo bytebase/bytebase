@@ -6,8 +6,8 @@
       :instance="instanceResource"
       :size="props.size || 'small'"
     />
-    <span v-if="showEnvironment && environment" class="text-gray-500 mr-1">
-      ({{ environment.title }})
+    <span v-if="showEnvironment" class="text-gray-400 mr-1">
+      <EnvironmentV1Name :link="false" :environment="environment" />
     </span>
     <span class="truncate text-gray-600">
       {{ instanceDisplayName }}
@@ -31,6 +31,7 @@
 import { ChevronRightIcon, ExternalLinkIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
+import { EnvironmentV1Name } from "@/components/v2";
 import {
   useDatabaseV1Store,
   useEnvironmentV1Store,
@@ -87,11 +88,9 @@ const databaseDisplayName = computed(() => {
 
 const environment = computed(() => {
   const environmentName =
-    databaseEntity.value.effectiveEnvironment ||
-    instanceResource.value?.environment;
-  if (!environmentName) {
-    return undefined;
-  }
+    databaseEntity.value.effectiveEnvironment ??
+    instanceResource.value?.environment ??
+    "";
 
   return environmentStore.getEnvironmentByName(environmentName);
 });
