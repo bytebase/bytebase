@@ -818,11 +818,21 @@ func compareIndexes(t *testing.T, tableName string, syncIndexes, parseIndexes []
 			continue
 		}
 
+		// 1. Name - explicitly validate name consistency
+		require.Equal(t, syncIdx.Name, parseIdx.Name, "table %s, index %s: name should match", tableName, name)
+
+		// 2. Primary - validate primary key flag
 		require.Equal(t, syncIdx.Primary, parseIdx.Primary, "table %s, index %s: primary should match", tableName, name)
+
+		// 3. Unique - validate unique constraint flag
 		require.Equal(t, syncIdx.Unique, parseIdx.Unique, "table %s, index %s: unique should match", tableName, name)
 
-		// Compare expressions - sync.go gets normalized expressions from PostgreSQL catalog
-		// while parser gets the raw expressions. We need to handle this difference.
+		// 4. Type - validate index type
+		if syncIdx.Type != "" || parseIdx.Type != "" {
+			require.Equal(t, syncIdx.Type, parseIdx.Type, "table %s, index %s: type should match", tableName, name)
+		}
+
+		// 5. Expressions - compare normalized expressions from PostgreSQL catalog vs raw expressions from parser
 		if len(syncIdx.Expressions) == len(parseIdx.Expressions) {
 			for i := range syncIdx.Expressions {
 				syncExpr := normalizeExpression(syncIdx.Expressions[i])
@@ -833,7 +843,7 @@ func compareIndexes(t *testing.T, tableName string, syncIndexes, parseIndexes []
 			require.Equal(t, len(syncIdx.Expressions), len(parseIdx.Expressions), "table %s, index %s: expressions count should match", tableName, name)
 		}
 
-		// Compare descending order for each expression
+		// 6. Descending - compare descending order for each expression
 		// Note: sync.go currently doesn't populate the Descending field, so we need to handle both cases
 		if len(syncIdx.Descending) > 0 && len(parseIdx.Descending) > 0 {
 			// Both have descending info, compare them
@@ -846,13 +856,39 @@ func compareIndexes(t *testing.T, tableName string, syncIndexes, parseIndexes []
 			require.Equal(t, len(parseIdx.Expressions), len(parseIdx.Descending), "table %s, index %s: descending array should match expressions count", tableName, name)
 		}
 
-		// Also compare the index type if available
-		if syncIdx.Type != "" || parseIdx.Type != "" {
-			require.Equal(t, syncIdx.Type, parseIdx.Type, "table %s, index %s: type should match", tableName, name)
+		// 7. KeyLength - validate index key lengths (PostgreSQL specific - prefix lengths on expressions)
+		if len(syncIdx.KeyLength) > 0 || len(parseIdx.KeyLength) > 0 {
+			require.Equal(t, len(syncIdx.KeyLength), len(parseIdx.KeyLength), "table %s, index %s: key length array length should match", tableName, name)
+			for i := range syncIdx.KeyLength {
+				if i < len(parseIdx.KeyLength) {
+					require.Equal(t, syncIdx.KeyLength[i], parseIdx.KeyLength[i], "table %s, index %s: key length[%d] should match", tableName, name, i)
+				}
+			}
 		}
 
-		// Compare IsConstraint field
+		// 8. Visible - validate index visibility (not commonly used in PostgreSQL, but validate if present)
+		require.Equal(t, syncIdx.Visible, parseIdx.Visible, "table %s, index %s: visible should match", tableName, name)
+
+		// 9. Comment - validate index comment
+		if syncIdx.Comment != "" || parseIdx.Comment != "" {
+			require.Equal(t, syncIdx.Comment, parseIdx.Comment, "table %s, index %s: comment should match", tableName, name)
+		}
+
+		// 10. IsConstraint - validate if index represents a constraint
 		require.Equal(t, syncIdx.IsConstraint, parseIdx.IsConstraint, "table %s, index %s: IsConstraint should match", tableName, name)
+
+		// 11. Definition - validate full index definition for comprehensive verification
+		if syncIdx.Definition != "" || parseIdx.Definition != "" {
+			// Normalize definitions for comparison since formatting may differ
+			syncDef := strings.TrimSpace(strings.ToLower(syncIdx.Definition))
+			parseDef := strings.TrimSpace(strings.ToLower(parseIdx.Definition))
+			if syncDef != "" && parseDef != "" {
+				require.Equal(t, syncDef, parseDef, "table %s, index %s: definition should match", tableName, name)
+			}
+		}
+
+		t.Logf("✓ Validated all IndexMetadata fields for index %s: name=%s, primary=%v, unique=%v, type=%s, expressions=%v, visible=%v, comment=%s",
+			name, parseIdx.Name, parseIdx.Primary, parseIdx.Unique, parseIdx.Type, parseIdx.Expressions, parseIdx.Visible, parseIdx.Comment)
 	}
 }
 
