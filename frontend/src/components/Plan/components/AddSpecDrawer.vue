@@ -453,11 +453,17 @@ const handlePreviewDDL = async () => {
   try {
     const target = schemaEditTargets.value[0];
     const applyMetadataEdit = schemaEditorRef.value?.applyMetadataEdit;
+    const refreshPreview = schemaEditorRef.value?.refreshPreview;
 
     if (typeof applyMetadataEdit === "function") {
       const { database, metadata, catalog, baselineMetadata, baselineCatalog } =
         target;
       applyMetadataEdit(database, metadata, catalog);
+
+      // Trigger preview refresh in the schema editor
+      if (typeof refreshPreview === "function") {
+        refreshPreview();
+      }
 
       const result = await generateDiffDDL({
         database,
@@ -509,6 +515,7 @@ const handleConfirm = async () => {
     ) {
       const target = schemaEditTargets.value[0];
       const applyMetadataEdit = schemaEditorRef.value?.applyMetadataEdit;
+      const refreshPreview = schemaEditorRef.value?.refreshPreview;
 
       if (typeof applyMetadataEdit === "function") {
         const {
@@ -519,6 +526,11 @@ const handleConfirm = async () => {
           baselineCatalog,
         } = target;
         applyMetadataEdit(database, metadata, catalog);
+
+        // Trigger preview refresh before generating final DDL
+        if (typeof refreshPreview === "function") {
+          refreshPreview();
+        }
 
         const result = await generateDiffDDL({
           database,
