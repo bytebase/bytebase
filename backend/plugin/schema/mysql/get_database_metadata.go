@@ -27,13 +27,15 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 	}
 
 	extractor := &metadataExtractor{
-		currentDatabase: "",
-		currentSchema:   "",
-		tables:          make(map[string]*storepb.TableMetadata),
-		views:           make(map[string]*storepb.ViewMetadata),
-		functions:       make(map[string]*storepb.FunctionMetadata),
-		procedures:      make(map[string]*storepb.ProcedureMetadata),
-		triggers:        make(map[string]*storepb.TriggerMetadata),
+		currentDatabase:   "",
+		currentSchema:     "",
+		tables:            make(map[string]*storepb.TableMetadata),
+		views:             make(map[string]*storepb.ViewMetadata),
+		functions:         make(map[string]*storepb.FunctionMetadata),
+		procedures:        make(map[string]*storepb.ProcedureMetadata),
+		triggers:          make(map[string]*storepb.TriggerMetadata),
+		columnPrimaryKeys: make(map[string][]string),
+		columnUniqueKeys:  make(map[string]map[string]bool),
 	}
 
 	// Walk each parse tree
@@ -46,6 +48,11 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 	if extractor.err != nil {
 		return nil, extractor.err
 	}
+
+	// Create primary key indexes from column-level definitions
+	extractor.createColumnPrimaryKeyIndexes()
+	// Create unique indexes from column-level definitions
+	extractor.createColumnUniqueKeyIndexes()
 
 	// Build the final metadata structure
 	schemaMetadata := &storepb.DatabaseSchemaMetadata{
@@ -114,7 +121,11 @@ type metadataExtractor struct {
 	functions       map[string]*storepb.FunctionMetadata
 	procedures      map[string]*storepb.ProcedureMetadata
 	triggers        map[string]*storepb.TriggerMetadata
-	err             error
+	// Track column-level primary keys to create index entries later
+	columnPrimaryKeys map[string][]string // tableName -> []columnNames
+	// Track column-level unique constraints to create index entries later
+	columnUniqueKeys map[string]map[string]bool // tableName -> columnName -> true
+	err              error
 }
 
 // Helper function to get or create table
@@ -172,6 +183,9 @@ func (e *metadataExtractor) EnterCreateTable(ctx *mysql.CreateTableContext) {
 
 	// Extract table comment
 	e.extractTableComment(ctx, table)
+
+	// Remove duplicate indexes after all processing is complete
+	e.removeDuplicateIndexes(table)
 }
 
 // extractTableElements extracts columns and constraints from table elements
@@ -220,7 +234,7 @@ func (e *metadataExtractor) extractColumnDefinition(ctx mysql.IColumnDefinitionC
 
 	// Extract column attributes (NULL/NOT NULL, DEFAULT, etc.)
 	if ctx.FieldDefinition() != nil {
-		e.extractFieldAttributes(ctx.FieldDefinition(), column)
+		e.extractFieldAttributes(ctx.FieldDefinition(), column, table.Name)
 	}
 
 	// Extract comment
@@ -320,7 +334,7 @@ func normalizeDataTypeAttributes(dataType string) string {
 }
 
 // extractFieldAttributes extracts field attributes like NULL/NOT NULL, DEFAULT, AUTO_INCREMENT, PRIMARY KEY
-func (*metadataExtractor) extractFieldAttributes(ctx mysql.IFieldDefinitionContext, column *storepb.ColumnMetadata) {
+func (e *metadataExtractor) extractFieldAttributes(ctx mysql.IFieldDefinitionContext, column *storepb.ColumnMetadata, tableName string) {
 	if ctx == nil {
 		return
 	}
@@ -345,6 +359,14 @@ func (*metadataExtractor) extractFieldAttributes(ctx mysql.IFieldDefinitionConte
 		// Check for PRIMARY KEY - inline definition makes column NOT NULL
 		if attr.PRIMARY_SYMBOL() != nil && attr.KEY_SYMBOL() != nil {
 			column.Nullable = false
+			// Track this column as part of a primary key (we'll create the index later)
+			e.addColumnPrimaryKey(tableName, column.Name)
+		}
+
+		// Check for UNIQUE - inline definition creates unique constraint
+		if attr.UNIQUE_SYMBOL() != nil {
+			// Track this column as having a unique constraint (we'll create the index later)
+			e.addColumnUniqueKey(tableName, column.Name)
 		}
 
 		// Check for NULL/NOT NULL
@@ -465,6 +487,16 @@ func (e *metadataExtractor) extractTableConstraint(ctx mysql.ITableConstraintDef
 	// Extract UNIQUE constraint
 	if ctx.UNIQUE_SYMBOL() != nil {
 		e.extractUniqueIndex(ctx, table)
+	}
+
+	// Extract FULLTEXT indexes
+	if ctx.FULLTEXT_SYMBOL() != nil {
+		e.extractFulltextIndex(ctx, table)
+	}
+
+	// Extract SPATIAL indexes
+	if ctx.SPATIAL_SYMBOL() != nil {
+		e.extractSpatialIndex(ctx, table)
 	}
 
 	// Extract CHECK constraint
@@ -592,33 +624,86 @@ func (*metadataExtractor) extractForeignKey(ctx mysql.ITableConstraintDefContext
 	}
 
 	table.ForeignKeys = append(table.ForeignKeys, fk)
+
+	// MySQL automatically creates indexes on foreign key columns if they don't exist
+	// Create an index for the foreign key columns if one doesn't already exist
+	if len(columns) > 0 {
+		// Check if an index already exists on these columns
+		indexExists := false
+		for _, existingIndex := range table.Indexes {
+			// Check if any existing index covers the foreign key columns
+			if len(existingIndex.Expressions) >= len(columns) {
+				// Check if the first N columns of the index match our FK columns
+				match := true
+				for i, fkCol := range columns {
+					if i >= len(existingIndex.Expressions) || existingIndex.Expressions[i] != fkCol {
+						match = false
+						break
+					}
+				}
+				if match {
+					indexExists = true
+					break
+				}
+			}
+		}
+
+		// Create index if none exists
+		if !indexExists {
+			// Generate index name based on constraint name or columns
+			indexName := constraintName
+			if indexName == "" {
+				// Use first column name as index name if no constraint name
+				indexName = columns[0]
+			}
+
+			fkIndex := &storepb.IndexMetadata{
+				Name:        indexName,
+				Type:        "BTREE",
+				Expressions: columns,
+				Primary:     false,
+				Unique:      false,
+			}
+			table.Indexes = append(table.Indexes, fkIndex)
+		}
+	}
 }
 
 // extractIndex extracts regular index
 func (e *metadataExtractor) extractIndex(ctx mysql.ITableConstraintDefContext, table *storepb.TableMetadata) {
-	if ctx.KeyList() == nil {
-		return
-	}
-
 	// Extract index name
 	indexName := ""
 	if ctx.IndexName() != nil {
 		indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
 	}
 
-	// Extract columns/expressions
+	// Fallback: try to get name from IndexNameAndType if IndexName is empty
+	if indexName == "" && ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
+	}
+
+	// Extract columns/expressions - try both KeyList and KeyListVariants
 	var expressions []string
-	for _, keyPart := range ctx.KeyList().AllKeyPart() {
-		if keyPart.Identifier() != nil {
-			columnName := mysqlparser.NormalizeMySQLIdentifier(keyPart.Identifier())
-			// Check for order (ASC/DESC)
-			if keyPart.Direction() != nil {
-				if keyPart.Direction().DESC_SYMBOL() != nil {
-					columnName += " DESC"
+
+	// First try KeyList (for simple KEY definitions)
+	if ctx.KeyList() != nil {
+		for _, keyPart := range ctx.KeyList().AllKeyPart() {
+			if keyPart.Identifier() != nil {
+				columnName := mysqlparser.NormalizeMySQLIdentifier(keyPart.Identifier())
+				// Check for order (ASC/DESC)
+				if keyPart.Direction() != nil {
+					if keyPart.Direction().DESC_SYMBOL() != nil {
+						columnName += " DESC"
+					}
 				}
+				expressions = append(expressions, columnName)
 			}
-			expressions = append(expressions, columnName)
 		}
+	}
+
+	// If KeyList is empty, try KeyListVariants (for INDEX definitions)
+	if len(expressions) == 0 && ctx.KeyListVariants() != nil {
+		expressions = mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
 	}
 
 	if len(expressions) > 0 {
@@ -637,29 +722,39 @@ func (e *metadataExtractor) extractIndex(ctx mysql.ITableConstraintDefContext, t
 
 // extractUniqueIndex extracts unique index
 func (*metadataExtractor) extractUniqueIndex(ctx mysql.ITableConstraintDefContext, table *storepb.TableMetadata) {
-	if ctx.KeyList() == nil {
-		return
-	}
-
 	// Extract index name
 	indexName := ""
 	if ctx.IndexName() != nil {
 		indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
 	}
 
-	// Extract columns
+	// Fallback: try to get name from IndexNameAndType if IndexName is empty
+	if indexName == "" && ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
+	}
+
+	// Extract columns/expressions - try both KeyList and KeyListVariants
 	var expressions []string
-	for _, keyPart := range ctx.KeyList().AllKeyPart() {
-		if keyPart.Identifier() != nil {
-			columnName := mysqlparser.NormalizeMySQLIdentifier(keyPart.Identifier())
-			// Check for order (ASC/DESC)
-			if keyPart.Direction() != nil {
-				if keyPart.Direction().DESC_SYMBOL() != nil {
-					columnName += " DESC"
+
+	// First try KeyList (for simple KEY definitions)
+	if ctx.KeyList() != nil {
+		for _, keyPart := range ctx.KeyList().AllKeyPart() {
+			if keyPart.Identifier() != nil {
+				columnName := mysqlparser.NormalizeMySQLIdentifier(keyPart.Identifier())
+				// Check for order (ASC/DESC)
+				if keyPart.Direction() != nil {
+					if keyPart.Direction().DESC_SYMBOL() != nil {
+						columnName += " DESC"
+					}
 				}
+				expressions = append(expressions, columnName)
 			}
-			expressions = append(expressions, columnName)
 		}
+	}
+
+	// If KeyList is empty, try KeyListVariants (for UNIQUE INDEX definitions)
+	if len(expressions) == 0 && ctx.KeyListVariants() != nil {
+		expressions = mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
 	}
 
 	if len(expressions) > 0 {
@@ -995,7 +1090,7 @@ func (e *metadataExtractor) extractFieldDefinitionForAlter(columnName string, ct
 	}
 
 	// Extract column attributes
-	e.extractFieldAttributes(ctx, column)
+	e.extractFieldAttributes(ctx, column, table.Name)
 
 	// Extract comment
 	if comment := e.extractColumnComment(ctx); comment != "" {
@@ -1109,4 +1204,265 @@ func isLiteralValue(value string) bool {
 
 	// Everything else (strings, etc.) is a literal
 	return true
+}
+
+// removeDuplicateIndexes removes duplicate indexes that cover the same columns
+func (*metadataExtractor) removeDuplicateIndexes(table *storepb.TableMetadata) {
+	if len(table.Indexes) <= 1 {
+		return
+	}
+
+	// Build a map of column signature to indexes
+	indexMap := make(map[string][]*storepb.IndexMetadata)
+	for _, index := range table.Indexes {
+		if len(index.Expressions) == 0 {
+			continue
+		}
+
+		// Create a signature from the column expressions
+		signature := strings.Join(index.Expressions, ",")
+		indexMap[signature] = append(indexMap[signature], index)
+	}
+
+	// Keep only unique indexes, preferring explicit indexes over auto-generated ones
+	var uniqueIndexes []*storepb.IndexMetadata
+	for _, indexes := range indexMap {
+		if len(indexes) == 1 {
+			// No duplicates, keep the index
+			uniqueIndexes = append(uniqueIndexes, indexes[0])
+		} else {
+			// Multiple indexes with same columns, pick the best one
+			bestIndex := chooseBestIndex(indexes)
+			uniqueIndexes = append(uniqueIndexes, bestIndex)
+		}
+	}
+
+	table.Indexes = uniqueIndexes
+}
+
+// chooseBestIndex selects the best index from duplicates based on priority rules
+func chooseBestIndex(indexes []*storepb.IndexMetadata) *storepb.IndexMetadata {
+	if len(indexes) == 1 {
+		return indexes[0]
+	}
+
+	// Priority rules (higher priority first):
+	// 1. PRIMARY key indexes
+	// 2. UNIQUE indexes
+	// 3. Explicitly named indexes (not auto-generated by foreign keys)
+	// 4. Foreign key indexes
+
+	var primaryIndex, uniqueIndex, explicitIndex, foreignKeyIndex *storepb.IndexMetadata
+
+	for _, index := range indexes {
+		if index.Primary {
+			primaryIndex = index
+		} else if index.Unique {
+			uniqueIndex = index
+		} else if !isAutoGeneratedIndexName(index.Name) {
+			explicitIndex = index
+		} else {
+			foreignKeyIndex = index
+		}
+	}
+
+	// Return in priority order
+	if primaryIndex != nil {
+		return primaryIndex
+	}
+	if uniqueIndex != nil {
+		return uniqueIndex
+	}
+	if explicitIndex != nil {
+		return explicitIndex
+	}
+	if foreignKeyIndex != nil {
+		return foreignKeyIndex
+	}
+
+	// Fallback to first index
+	return indexes[0]
+}
+
+// isAutoGeneratedIndexName checks if an index name looks auto-generated
+func isAutoGeneratedIndexName(name string) bool {
+	// Foreign key index names typically match constraint names
+	// Check if this looks like a foreign key constraint name
+	return strings.HasPrefix(name, "fk_") ||
+		strings.HasPrefix(name, "FK_") ||
+		strings.Contains(name, "_fkey") ||
+		strings.Contains(name, "_foreign")
+}
+
+// addColumnPrimaryKey tracks a column-level primary key definition
+func (e *metadataExtractor) addColumnPrimaryKey(tableName, columnName string) {
+	if e.columnPrimaryKeys[tableName] == nil {
+		e.columnPrimaryKeys[tableName] = []string{}
+	}
+	e.columnPrimaryKeys[tableName] = append(e.columnPrimaryKeys[tableName], columnName)
+}
+
+// addColumnUniqueKey tracks a column-level unique constraint definition
+func (e *metadataExtractor) addColumnUniqueKey(tableName, columnName string) {
+	if e.columnUniqueKeys[tableName] == nil {
+		e.columnUniqueKeys[tableName] = make(map[string]bool)
+	}
+	e.columnUniqueKeys[tableName][columnName] = true
+}
+
+// createColumnPrimaryKeyIndexes creates index metadata for column-level primary key definitions
+func (e *metadataExtractor) createColumnPrimaryKeyIndexes() {
+	for tableName, columnNames := range e.columnPrimaryKeys {
+		if len(columnNames) == 0 {
+			continue
+		}
+
+		table, exists := e.tables[tableName]
+		if !exists {
+			continue
+		}
+
+		// Check if a PRIMARY key index already exists (from table-level constraint)
+		hasPrimaryIndex := false
+		for _, index := range table.Indexes {
+			if index.Primary {
+				hasPrimaryIndex = true
+				break
+			}
+		}
+
+		// Only create primary key index if one doesn't already exist
+		if !hasPrimaryIndex {
+			index := &storepb.IndexMetadata{
+				Name:        "PRIMARY",
+				Type:        "BTREE",
+				Expressions: columnNames,
+				Primary:     true,
+				Unique:      true,
+			}
+			table.Indexes = append(table.Indexes, index)
+		}
+	}
+}
+
+// createColumnUniqueKeyIndexes creates index metadata for column-level unique constraint definitions
+func (e *metadataExtractor) createColumnUniqueKeyIndexes() {
+	for tableName, columnMap := range e.columnUniqueKeys {
+		table, exists := e.tables[tableName]
+		if !exists {
+			continue
+		}
+
+		// Create a unique index for each column with UNIQUE constraint
+		for columnName := range columnMap {
+			// Generate a unique index name (MySQL auto-generates these)
+			indexName := columnName
+
+			// Check if an index with this name already exists
+			indexExists := false
+			for _, index := range table.Indexes {
+				if index.Name == indexName {
+					indexExists = true
+					break
+				}
+			}
+
+			if !indexExists {
+				index := &storepb.IndexMetadata{
+					Name:        indexName,
+					Type:        "BTREE",
+					Expressions: []string{columnName},
+					Primary:     false,
+					Unique:      true,
+				}
+				table.Indexes = append(table.Indexes, index)
+			}
+		}
+	}
+}
+
+// extractFulltextIndex extracts FULLTEXT index
+func (*metadataExtractor) extractFulltextIndex(ctx mysql.ITableConstraintDefContext, table *storepb.TableMetadata) {
+	// Extract index name
+	indexName := ""
+	if ctx.IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
+	}
+
+	// Fallback: try to get name from IndexNameAndType if IndexName is empty
+	if indexName == "" && ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
+	}
+
+	// Extract columns/expressions - try both KeyList and KeyListVariants
+	var expressions []string
+
+	// First try KeyList (for simple KEY definitions)
+	if ctx.KeyList() != nil {
+		for _, keyPart := range ctx.KeyList().AllKeyPart() {
+			if keyPart.Identifier() != nil {
+				columnName := mysqlparser.NormalizeMySQLIdentifier(keyPart.Identifier())
+				expressions = append(expressions, columnName)
+			}
+		}
+	}
+
+	// If KeyList is empty, try KeyListVariants (for FULLTEXT INDEX definitions)
+	if len(expressions) == 0 && ctx.KeyListVariants() != nil {
+		expressions = mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
+	}
+
+	if len(expressions) > 0 {
+		index := &storepb.IndexMetadata{
+			Name:        indexName,
+			Type:        "FULLTEXT",
+			Expressions: expressions,
+			Primary:     false,
+			Unique:      false,
+		}
+		table.Indexes = append(table.Indexes, index)
+	}
+}
+
+// extractSpatialIndex extracts SPATIAL index
+func (*metadataExtractor) extractSpatialIndex(ctx mysql.ITableConstraintDefContext, table *storepb.TableMetadata) {
+	// Extract index name
+	indexName := ""
+	if ctx.IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
+	}
+
+	// Fallback: try to get name from IndexNameAndType if IndexName is empty
+	if indexName == "" && ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
+	}
+
+	// Extract columns/expressions - try both KeyList and KeyListVariants
+	var expressions []string
+
+	// First try KeyList (for simple KEY definitions)
+	if ctx.KeyList() != nil {
+		for _, keyPart := range ctx.KeyList().AllKeyPart() {
+			if keyPart.Identifier() != nil {
+				columnName := mysqlparser.NormalizeMySQLIdentifier(keyPart.Identifier())
+				expressions = append(expressions, columnName)
+			}
+		}
+	}
+
+	// If KeyList is empty, try KeyListVariants (for SPATIAL INDEX definitions)
+	if len(expressions) == 0 && ctx.KeyListVariants() != nil {
+		expressions = mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
+	}
+
+	if len(expressions) > 0 {
+		index := &storepb.IndexMetadata{
+			Name:        indexName,
+			Type:        "SPATIAL",
+			Expressions: expressions,
+			Primary:     false,
+			Unique:      false,
+		}
+		table.Indexes = append(table.Indexes, index)
+	}
 }
