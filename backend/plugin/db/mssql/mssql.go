@@ -221,7 +221,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, statement string,
 						opts.LogCommandResponse(0, nil, err.Error())
 						return 0, err
 					}
-					opts.LogCommandResponse(int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+					opts.LogCommandResponse(rowsAffected, []int64{rowsAffected}, "")
 					totalAffectRows += rowsAffected
 				}
 				break
@@ -244,7 +244,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, statement string,
 					opts.LogCommandResponse(0, nil, err.Error())
 					return 0, err
 				}
-				opts.LogCommandResponse(int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+				opts.LogCommandResponse(rowsAffected, []int64{rowsAffected}, "")
 				totalAffectRows += rowsAffected
 			}
 		default:
@@ -282,7 +282,7 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, 
 						opts.LogCommandResponse(0, nil, err.Error())
 						return totalAffectRows, err
 					}
-					opts.LogCommandResponse(int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+					opts.LogCommandResponse(rowsAffected, []int64{rowsAffected}, "")
 					totalAffectRows += rowsAffected
 				}
 				break
@@ -306,7 +306,7 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, 
 					// In auto-commit mode, we stop at the first error
 					return totalAffectRows, err
 				}
-				opts.LogCommandResponse(int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+				opts.LogCommandResponse(rowsAffected, []int64{rowsAffected}, "")
 				totalAffectRows += rowsAffected
 			}
 		default:

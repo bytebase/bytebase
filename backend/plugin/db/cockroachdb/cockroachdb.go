@@ -363,10 +363,10 @@ func (d *Driver) executeInTransactionMode(
 			_, err := conn.ExecContext(ctx, statement)
 			return err
 		}); err != nil {
-			opts.LogCommandResponse(0, []int32{0}, err.Error())
+			opts.LogCommandResponse(0, []int64{0}, err.Error())
 			return 0, err
 		}
-		opts.LogCommandResponse(0, []int32{0}, "")
+		opts.LogCommandResponse(0, []int64{0}, "")
 
 		return 0, nil
 	}
@@ -420,13 +420,13 @@ func (d *Driver) executeInTransactionMode(
 				}
 
 				var rowsAffected int64
-				var allRowsAffected []int32
+				var allRowsAffected []int64
 				for _, result := range results {
 					ra := result.CommandTag.RowsAffected()
-					allRowsAffected = append(allRowsAffected, int32(ra))
+					allRowsAffected = append(allRowsAffected, ra)
 					rowsAffected += ra
 				}
-				opts.LogCommandResponse(int32(rowsAffected), allRowsAffected, "")
+				opts.LogCommandResponse(rowsAffected, allRowsAffected, "")
 
 				totalRowsAffected += rowsAffected
 			}
@@ -460,10 +460,10 @@ func (d *Driver) executeInTransactionMode(
 			_, err := conn.ExecContext(ctx, stmt)
 			return err
 		}); err != nil {
-			opts.LogCommandResponse(0, []int32{0}, err.Error())
+			opts.LogCommandResponse(0, []int64{0}, err.Error())
 			return 0, err
 		}
-		opts.LogCommandResponse(0, []int32{0}, "")
+		opts.LogCommandResponse(0, []int64{0}, "")
 	}
 	return totalRowsAffected, nil
 }
@@ -518,7 +518,7 @@ func (d *Driver) executeInAutoCommitMode(
 		}); err != nil {
 			return 0, err
 		}
-		opts.LogCommandResponse(0, []int32{0}, "")
+		opts.LogCommandResponse(0, []int64{0}, "")
 		return 0, nil
 	}
 
@@ -539,7 +539,7 @@ func (d *Driver) executeInAutoCommitMode(
 		if err := crdb.Execute(func() error {
 			sqlResult, err := conn.ExecContext(ctx, stmt)
 			if err != nil {
-				opts.LogCommandResponse(0, []int32{0}, err.Error())
+				opts.LogCommandResponse(0, []int64{0}, err.Error())
 				return err
 			}
 
@@ -549,7 +549,7 @@ func (d *Driver) executeInAutoCommitMode(
 				rowsAffected = 0
 			}
 
-			opts.LogCommandResponse(int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+			opts.LogCommandResponse(rowsAffected, []int64{rowsAffected}, "")
 			totalRowsAffected += rowsAffected
 			return nil
 		}); err != nil {
