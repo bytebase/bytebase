@@ -11,7 +11,12 @@ import SigninModal from "@/views/auth/SigninModal.vue";
 import { t } from "./plugins/i18n";
 import { AUTH_PASSWORD_RESET_MODULE } from "./router/auth";
 import { WORKSPACE_ROOT_MODULE } from "./router/dashboard/workspaceRoutes";
-import { useAuthStore, pushNotification, useWorkspaceV1Store } from "./store";
+import {
+  useAuthStore,
+  pushNotification,
+  useWorkspaceV1Store,
+  useGroupStore,
+} from "./store";
 import { isDev } from "./utils";
 
 // This interval is used to check if the user's session is still valid.
@@ -21,6 +26,7 @@ const CHECK_AUTHORIZATION_INTERVAL = isDev() ? 60 * 1000 : 60 * 1000 * 5;
 const router = useRouter();
 const authStore = useAuthStore();
 const workspaceStore = useWorkspaceV1Store();
+const groupStore = useGroupStore();
 
 const authCheckIntervalId = ref<NodeJS.Timeout>();
 
@@ -80,6 +86,8 @@ watch(
       return;
     }
 
+    // Fetch groups first as workspace IAM policy depends on group data.
+    await groupStore.fetchGroupList();
     await workspaceStore.fetchIamPolicy();
     if (authStore.requireResetPassword) {
       router.replace({
