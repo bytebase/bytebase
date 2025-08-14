@@ -52,12 +52,11 @@ export const useGroupStore = defineStore("group", () => {
   };
 
   const fetchGroupList = async () => {
-    if (!hasWorkspacePermissionV2("bb.groups.list")) {
-      return [];
-    }
-
     const request = create(ListGroupsRequestSchema, {});
-    const { groups } = await groupServiceClientConnect.listGroups(request);
+    // Ignore errors and silent the request.
+    const { groups } = await groupServiceClientConnect.listGroups(request, {
+      contextValues: createContextValues().set(silentContextKey, true),
+    });
     resetCache();
     for (const group of groups) {
       await composeGroup(group);
