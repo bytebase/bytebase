@@ -525,13 +525,13 @@ func (*metadataExtractor) extractPrimaryKey(ctx mysql.ITableConstraintDefContext
 		expressions := make([]string, len(columnInfo))
 		keyLength := make([]int64, len(columnInfo))
 		descending := make([]bool, len(columnInfo))
-		
+
 		for i, col := range columnInfo {
 			expressions[i] = col.Expression
 			keyLength[i] = col.KeyLength
 			descending[i] = col.Descending
 		}
-		
+
 		// Mark primary key columns as NOT NULL
 		for _, column := range table.Columns {
 			for _, pkExpr := range expressions {
@@ -680,7 +680,7 @@ func (e *metadataExtractor) extractIndex(ctx mysql.ITableConstraintDefContext, t
 		expressions := make([]string, len(columnInfo))
 		keyLength := make([]int64, len(columnInfo))
 		descending := make([]bool, len(columnInfo))
-		
+
 		for i, col := range columnInfo {
 			expressions[i] = col.Expression
 			keyLength[i] = col.KeyLength
@@ -691,7 +691,7 @@ func (e *metadataExtractor) extractIndex(ctx mysql.ITableConstraintDefContext, t
 
 		// Check for visibility - MySQL indexes are visible by default unless marked INVISIBLE
 		visible := !detectInvisibleKeyword(ctx)
-		
+
 		// Extract comment
 		comment := extractIndexComment(ctx)
 
@@ -741,7 +741,7 @@ func (*metadataExtractor) extractUniqueIndex(ctx mysql.ITableConstraintDefContex
 		expressions := make([]string, len(columnInfo))
 		keyLength := make([]int64, len(columnInfo))
 		descending := make([]bool, len(columnInfo))
-		
+
 		for i, col := range columnInfo {
 			expressions[i] = col.Expression
 			keyLength[i] = col.KeyLength
@@ -750,7 +750,7 @@ func (*metadataExtractor) extractUniqueIndex(ctx mysql.ITableConstraintDefContex
 
 		// Check for visibility - MySQL indexes are visible by default unless marked INVISIBLE
 		visible := !detectInvisibleKeyword(ctx)
-		
+
 		// Extract comment
 		comment := extractIndexComment(ctx)
 
@@ -1130,7 +1130,7 @@ func (e *metadataExtractor) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 		expressions := make([]string, len(columnInfo))
 		keyLength := make([]int64, len(columnInfo))
 		descending := make([]bool, len(columnInfo))
-		
+
 		for i, col := range columnInfo {
 			expressions[i] = col.Expression
 			keyLength[i] = col.KeyLength
@@ -1150,10 +1150,10 @@ func (e *metadataExtractor) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 
 		// Check for visibility - MySQL indexes are visible by default unless marked INVISIBLE
 		visible := !detectInvisibleKeyword(ctx)
-		
+
 		// Extract comment
 		comment := extractIndexComment(ctx)
-		
+
 		index := &storepb.IndexMetadata{
 			Name:        indexName,
 			Type:        indexType,
@@ -1192,25 +1192,25 @@ type IndexColumnInfo struct {
 // extractIndexColumns extracts detailed information about index columns including DESC/ASC and key lengths
 func extractIndexColumns(keyList mysql.IKeyListContext) []IndexColumnInfo {
 	var columns []IndexColumnInfo
-	
+
 	if keyList == nil {
 		return columns
 	}
-	
+
 	for _, keyPart := range keyList.AllKeyPart() {
 		if keyPart.Identifier() == nil {
 			continue
 		}
-		
+
 		columnName := mysqlparser.NormalizeMySQLIdentifier(keyPart.Identifier())
-		
+
 		// Initialize column info
 		colInfo := IndexColumnInfo{
 			Expression: columnName,
 			KeyLength:  -1,    // Default: no key length specified
 			Descending: false, // Default: ASC
 		}
-		
+
 		// Check for DESC/ASC direction
 		if keyPart.Direction() != nil {
 			if keyPart.Direction().DESC_SYMBOL() != nil {
@@ -1218,7 +1218,7 @@ func extractIndexColumns(keyList mysql.IKeyListContext) []IndexColumnInfo {
 			}
 			// ASC is default, so we don't need to explicitly check for it
 		}
-		
+
 		// Try to extract key length from FieldLength
 		if keyPart.FieldLength() != nil {
 			lengthText := keyPart.FieldLength().GetText()
@@ -1230,10 +1230,10 @@ func extractIndexColumns(keyList mysql.IKeyListContext) []IndexColumnInfo {
 				colInfo.KeyLength = length
 			}
 		}
-		
+
 		columns = append(columns, colInfo)
 	}
-	
+
 	return columns
 }
 
@@ -1242,26 +1242,30 @@ func extractIndexColumnsFromVariants(keyListVariants mysql.IKeyListVariantsConte
 	if keyListVariants == nil {
 		return nil
 	}
-	
+
 	// First try KeyList
 	if keyListVariants.KeyList() != nil {
 		return extractIndexColumns(keyListVariants.KeyList())
 	}
-	
+
 	// Then try KeyListWithExpression
 	if keyListVariants.KeyListWithExpression() != nil {
 		return extractIndexColumnsFromKeyListWithExpression(keyListVariants.KeyListWithExpression())
 	}
-	
+
 	return nil
 }
 
 // detectInvisibleKeyword tries to detect INVISIBLE keyword in the given parser context
-func detectInvisibleKeyword(ctx interface{ GetStart() antlr.Token; GetStop() antlr.Token; GetParser() antlr.Parser }) bool {
+func detectInvisibleKeyword(ctx interface {
+	GetStart() antlr.Token
+	GetStop() antlr.Token
+	GetParser() antlr.Parser
+}) bool {
 	if ctx.GetStart() == nil || ctx.GetStop() == nil {
 		return false
 	}
-	
+
 	tokens := ctx.GetParser().GetTokenStream()
 	contextText := ""
 	for i := ctx.GetStart().GetTokenIndex(); i <= ctx.GetStop().GetTokenIndex(); i++ {
@@ -1275,11 +1279,15 @@ func detectInvisibleKeyword(ctx interface{ GetStart() antlr.Token; GetStop() ant
 }
 
 // extractIndexComment tries to extract COMMENT from the given parser context
-func extractIndexComment(ctx interface{ GetStart() antlr.Token; GetStop() antlr.Token; GetParser() antlr.Parser }) string {
+func extractIndexComment(ctx interface {
+	GetStart() antlr.Token
+	GetStop() antlr.Token
+	GetParser() antlr.Parser
+}) string {
 	if ctx.GetStart() == nil || ctx.GetStop() == nil {
 		return ""
 	}
-	
+
 	tokens := ctx.GetParser().GetTokenStream()
 	contextText := ""
 	for i := ctx.GetStart().GetTokenIndex(); i <= ctx.GetStop().GetTokenIndex(); i++ {
@@ -1289,20 +1297,20 @@ func extractIndexComment(ctx interface{ GetStart() antlr.Token; GetStop() antlr.
 		}
 	}
 	contextTextUpper := strings.ToUpper(contextText)
-	
+
 	// Look for COMMENT 'text' pattern
 	commentIdx := strings.Index(contextTextUpper, "COMMENT")
 	if commentIdx == -1 {
 		return ""
 	}
-	
+
 	// Find the start of the comment string (after COMMENT keyword)
 	commentStart := commentIdx + 7 // len("COMMENT")
 	remaining := contextText[commentStart:]
-	
+
 	// Skip whitespace
 	remaining = strings.TrimLeft(remaining, " \t\n\r")
-	
+
 	// Extract quoted string
 	if len(remaining) >= 2 && (remaining[0] == '\'' || remaining[0] == '"') {
 		quote := remaining[0]
@@ -1311,37 +1319,37 @@ func extractIndexComment(ctx interface{ GetStart() antlr.Token; GetStop() antlr.
 			return remaining[1 : endIdx+1]
 		}
 	}
-	
+
 	return ""
 }
 
 // extractIndexColumnsFromKeyListWithExpression handles KeyListWithExpression
 func extractIndexColumnsFromKeyListWithExpression(keyListWithExpr mysql.IKeyListWithExpressionContext) []IndexColumnInfo {
 	var columns []IndexColumnInfo
-	
+
 	if keyListWithExpr == nil {
 		return columns
 	}
-	
+
 	for _, expression := range keyListWithExpr.AllKeyPartOrExpression() {
 		colInfo := IndexColumnInfo{
 			KeyLength:  -1,    // Default: no key length specified
 			Descending: false, // Default: ASC
 		}
-		
+
 		if expression.KeyPart() != nil {
 			// Regular column reference
 			keyPart := expression.KeyPart()
 			if keyPart.Identifier() != nil {
 				colInfo.Expression = mysqlparser.NormalizeMySQLIdentifier(keyPart.Identifier())
-				
+
 				// Check for DESC/ASC direction
 				if keyPart.Direction() != nil {
 					if keyPart.Direction().DESC_SYMBOL() != nil {
 						colInfo.Descending = true
 					}
 				}
-				
+
 				// Try to extract key length from FieldLength
 				if keyPart.FieldLength() != nil {
 					lengthText := keyPart.FieldLength().GetText()
@@ -1359,10 +1367,10 @@ func extractIndexColumnsFromKeyListWithExpression(keyListWithExpr mysql.IKeyList
 			colInfo.Expression = keyListWithExpr.GetParser().GetTokenStream().GetTextFromRuleContext(expression.ExprWithParentheses().Expr())
 			// Expressions don't support DESC, so keep default false
 		}
-		
+
 		columns = append(columns, colInfo)
 	}
-	
+
 	return columns
 }
 
@@ -1667,12 +1675,12 @@ func (*metadataExtractor) extractSpatialIndex(ctx mysql.ITableConstraintDefConte
 		expressions := make([]string, len(columnInfo))
 		keyLength := make([]int64, len(columnInfo))
 		descending := make([]bool, len(columnInfo))
-		
+
 		for i, col := range columnInfo {
 			expressions[i] = col.Expression
 			keyLength[i] = col.KeyLength
 			descending[i] = col.Descending
-			
+
 			// For SPATIAL indexes, MySQL uses default key length of 32 for GEOMETRY types
 			// if no explicit length is specified
 			if keyLength[i] == -1 {
@@ -1680,14 +1688,14 @@ func (*metadataExtractor) extractSpatialIndex(ctx mysql.ITableConstraintDefConte
 				for _, tableCol := range table.Columns {
 					if tableCol.Name == col.Expression {
 						colTypeUpper := strings.ToUpper(tableCol.Type)
-						if strings.Contains(colTypeUpper, "GEOMETRY") || 
-						   strings.Contains(colTypeUpper, "POINT") ||
-						   strings.Contains(colTypeUpper, "LINESTRING") ||
-						   strings.Contains(colTypeUpper, "POLYGON") ||
-						   strings.Contains(colTypeUpper, "MULTIPOINT") ||
-						   strings.Contains(colTypeUpper, "MULTILINESTRING") ||
-						   strings.Contains(colTypeUpper, "MULTIPOLYGON") ||
-						   strings.Contains(colTypeUpper, "GEOMETRYCOLLECTION") {
+						if strings.Contains(colTypeUpper, "GEOMETRY") ||
+							strings.Contains(colTypeUpper, "POINT") ||
+							strings.Contains(colTypeUpper, "LINESTRING") ||
+							strings.Contains(colTypeUpper, "POLYGON") ||
+							strings.Contains(colTypeUpper, "MULTIPOINT") ||
+							strings.Contains(colTypeUpper, "MULTILINESTRING") ||
+							strings.Contains(colTypeUpper, "MULTIPOLYGON") ||
+							strings.Contains(colTypeUpper, "GEOMETRYCOLLECTION") {
 							keyLength[i] = 32 // MySQL default for spatial types
 						}
 						break
@@ -1698,7 +1706,7 @@ func (*metadataExtractor) extractSpatialIndex(ctx mysql.ITableConstraintDefConte
 
 		// Check for visibility - MySQL indexes are visible by default unless marked INVISIBLE
 		visible := !detectInvisibleKeyword(ctx)
-		
+
 		// Extract comment
 		comment := extractIndexComment(ctx)
 

@@ -719,7 +719,7 @@ func compareIndexes(t *testing.T, dbIndexes, parsedIndexes []*storepb.IndexMetad
 		require.True(t, exists, "index %s on table %s not found in database metadata", parsedIdx.Name, tableName)
 
 		// Compare all IndexMetadata members for complete consistency
-		
+
 		// 1. Name (already validated above through map lookup)
 		require.Equal(t, dbIdx.Name, parsedIdx.Name,
 			"name mismatch for index %s on table %s", parsedIdx.Name, tableName)
