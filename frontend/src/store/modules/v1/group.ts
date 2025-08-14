@@ -12,6 +12,7 @@ import {
   GetGroupRequestSchema,
   ListGroupsRequestSchema,
   UpdateGroupRequestSchema,
+  BatchGetGroupsRequestSchema,
 } from "@/types/proto-es/v1/group_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { groupNamePrefix } from "./common";
@@ -52,6 +53,19 @@ export const useGroupStore = defineStore("group", () => {
       contextValues: createContextValues().set(silentContextKey, true),
     });
     resetCache();
+    for (const group of groups) {
+      groupMapByName.set(group.name, group);
+    }
+    return groups;
+  };
+
+  const batchFetchGroups = async (groupNameList: string[]) => {
+    const request = create(BatchGetGroupsRequestSchema, {
+      names: groupNameList.map(ensureGroupIdentifier),
+    });
+    const { groups } = await groupServiceClientConnect.batchGetGroups(request, {
+      contextValues: createContextValues().set(silentContextKey, true),
+    });
     for (const group of groups) {
       groupMapByName.set(group.name, group);
     }
@@ -108,6 +122,7 @@ export const useGroupStore = defineStore("group", () => {
   return {
     groupList,
     fetchGroupList,
+    batchFetchGroups,
     getGroupByIdentifier,
     getOrFetchGroupByIdentifier,
     deleteGroup,

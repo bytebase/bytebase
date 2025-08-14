@@ -20,11 +20,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	GroupService_GetGroup_FullMethodName    = "/bytebase.v1.GroupService/GetGroup"
-	GroupService_ListGroups_FullMethodName  = "/bytebase.v1.GroupService/ListGroups"
-	GroupService_CreateGroup_FullMethodName = "/bytebase.v1.GroupService/CreateGroup"
-	GroupService_UpdateGroup_FullMethodName = "/bytebase.v1.GroupService/UpdateGroup"
-	GroupService_DeleteGroup_FullMethodName = "/bytebase.v1.GroupService/DeleteGroup"
+	GroupService_GetGroup_FullMethodName       = "/bytebase.v1.GroupService/GetGroup"
+	GroupService_BatchGetGroups_FullMethodName = "/bytebase.v1.GroupService/BatchGetGroups"
+	GroupService_ListGroups_FullMethodName     = "/bytebase.v1.GroupService/ListGroups"
+	GroupService_CreateGroup_FullMethodName    = "/bytebase.v1.GroupService/CreateGroup"
+	GroupService_UpdateGroup_FullMethodName    = "/bytebase.v1.GroupService/UpdateGroup"
+	GroupService_DeleteGroup_FullMethodName    = "/bytebase.v1.GroupService/DeleteGroup"
 )
 
 // GroupServiceClient is the client API for GroupService service.
@@ -33,6 +34,9 @@ const (
 type GroupServiceClient interface {
 	// Permissions required: bb.groups.get
 	GetGroup(ctx context.Context, in *GetGroupRequest, opts ...grpc.CallOption) (*Group, error)
+	// Get the groups in batch.
+	// Permissions required: bb.groups.get
+	BatchGetGroups(ctx context.Context, in *BatchGetGroupsRequest, opts ...grpc.CallOption) (*BatchGetGroupsResponse, error)
 	// Permissions required: bb.groups.list
 	ListGroups(ctx context.Context, in *ListGroupsRequest, opts ...grpc.CallOption) (*ListGroupsResponse, error)
 	// Permissions required: bb.groups.create
@@ -57,6 +61,16 @@ func (c *groupServiceClient) GetGroup(ctx context.Context, in *GetGroupRequest, 
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Group)
 	err := c.cc.Invoke(ctx, GroupService_GetGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *groupServiceClient) BatchGetGroups(ctx context.Context, in *BatchGetGroupsRequest, opts ...grpc.CallOption) (*BatchGetGroupsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchGetGroupsResponse)
+	err := c.cc.Invoke(ctx, GroupService_BatchGetGroups_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -109,6 +123,9 @@ func (c *groupServiceClient) DeleteGroup(ctx context.Context, in *DeleteGroupReq
 type GroupServiceServer interface {
 	// Permissions required: bb.groups.get
 	GetGroup(context.Context, *GetGroupRequest) (*Group, error)
+	// Get the groups in batch.
+	// Permissions required: bb.groups.get
+	BatchGetGroups(context.Context, *BatchGetGroupsRequest) (*BatchGetGroupsResponse, error)
 	// Permissions required: bb.groups.list
 	ListGroups(context.Context, *ListGroupsRequest) (*ListGroupsResponse, error)
 	// Permissions required: bb.groups.create
@@ -131,6 +148,9 @@ type UnimplementedGroupServiceServer struct{}
 
 func (UnimplementedGroupServiceServer) GetGroup(context.Context, *GetGroupRequest) (*Group, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGroup not implemented")
+}
+func (UnimplementedGroupServiceServer) BatchGetGroups(context.Context, *BatchGetGroupsRequest) (*BatchGetGroupsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchGetGroups not implemented")
 }
 func (UnimplementedGroupServiceServer) ListGroups(context.Context, *ListGroupsRequest) (*ListGroupsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListGroups not implemented")
@@ -179,6 +199,24 @@ func _GroupService_GetGroup_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(GroupServiceServer).GetGroup(ctx, req.(*GetGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GroupService_BatchGetGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchGetGroupsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupServiceServer).BatchGetGroups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupService_BatchGetGroups_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupServiceServer).BatchGetGroups(ctx, req.(*BatchGetGroupsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -265,6 +303,10 @@ var GroupService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetGroup",
 			Handler:    _GroupService_GetGroup_Handler,
+		},
+		{
+			MethodName: "BatchGetGroups",
+			Handler:    _GroupService_BatchGetGroups_Handler,
 		},
 		{
 			MethodName: "ListGroups",

@@ -21,6 +21,14 @@ service GroupService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Get the groups in batch.
+  // Permissions required: bb.groups.get
+  rpc BatchGetGroups(BatchGetGroupsRequest) returns (BatchGetGroupsResponse) {
+    option (google.api.http) = {get: "/v1/groups:batchGet"};
+    option (bytebase.v1.permission) = "bb.groups.get";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
   // Permissions required: bb.groups.list
   rpc ListGroups(ListGroupsRequest) returns (ListGroupsResponse) {
     option (google.api.http) = {get: "/v1/groups"};
@@ -72,6 +80,20 @@ message GetGroupRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Group"}
   ];
+}
+
+message BatchGetGroupsRequest {
+  // The group names to retrieve.
+  // Format: groups/{email}
+  repeated string names = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Group"}
+  ];
+}
+
+message BatchGetGroupsResponse {
+  // The groups from the specified request.
+  repeated Group groups = 1;
 }
 
 message ListGroupsRequest {

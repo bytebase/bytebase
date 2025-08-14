@@ -31,6 +31,43 @@ export declare type GetGroupRequest = Message<"bytebase.v1.GetGroupRequest"> & {
 export declare const GetGroupRequestSchema: GenMessage<GetGroupRequest>;
 
 /**
+ * @generated from message bytebase.v1.BatchGetGroupsRequest
+ */
+export declare type BatchGetGroupsRequest = Message<"bytebase.v1.BatchGetGroupsRequest"> & {
+  /**
+   * The group names to retrieve.
+   * Format: groups/{email}
+   *
+   * @generated from field: repeated string names = 1;
+   */
+  names: string[];
+};
+
+/**
+ * Describes the message bytebase.v1.BatchGetGroupsRequest.
+ * Use `create(BatchGetGroupsRequestSchema)` to create a new message.
+ */
+export declare const BatchGetGroupsRequestSchema: GenMessage<BatchGetGroupsRequest>;
+
+/**
+ * @generated from message bytebase.v1.BatchGetGroupsResponse
+ */
+export declare type BatchGetGroupsResponse = Message<"bytebase.v1.BatchGetGroupsResponse"> & {
+  /**
+   * The groups from the specified request.
+   *
+   * @generated from field: repeated bytebase.v1.Group groups = 1;
+   */
+  groups: Group[];
+};
+
+/**
+ * Describes the message bytebase.v1.BatchGetGroupsResponse.
+ * Use `create(BatchGetGroupsResponseSchema)` to create a new message.
+ */
+export declare const BatchGetGroupsResponseSchema: GenMessage<BatchGetGroupsResponse>;
+
+/**
  * @generated from message bytebase.v1.ListGroupsRequest
  */
 export declare type ListGroupsRequest = Message<"bytebase.v1.ListGroupsRequest"> & {
@@ -275,6 +312,17 @@ export declare const GroupService: GenService<{
     methodKind: "unary";
     input: typeof GetGroupRequestSchema;
     output: typeof GroupSchema;
+  },
+  /**
+   * Get the groups in batch.
+   * Permissions required: bb.groups.get
+   *
+   * @generated from rpc bytebase.v1.GroupService.BatchGetGroups
+   */
+  batchGetGroups: {
+    methodKind: "unary";
+    input: typeof BatchGetGroupsRequestSchema;
+    output: typeof BatchGetGroupsResponseSchema;
   },
   /**
    * Permissions required: bb.groups.list
