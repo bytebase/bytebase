@@ -27,15 +27,16 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 	}
 
 	extractor := &metadataExtractor{
-		currentDatabase:   "",
-		currentSchema:     "",
-		tables:            make(map[string]*storepb.TableMetadata),
-		views:             make(map[string]*storepb.ViewMetadata),
-		functions:         make(map[string]*storepb.FunctionMetadata),
-		procedures:        make(map[string]*storepb.ProcedureMetadata),
-		triggers:          make(map[string]*storepb.TriggerMetadata),
-		columnPrimaryKeys: make(map[string][]string),
-		columnUniqueKeys:  make(map[string]map[string]bool),
+		currentDatabase:          "",
+		currentSchema:            "",
+		tables:                   make(map[string]*storepb.TableMetadata),
+		views:                    make(map[string]*storepb.ViewMetadata),
+		functions:                make(map[string]*storepb.FunctionMetadata),
+		procedures:               make(map[string]*storepb.ProcedureMetadata),
+		triggers:                 make(map[string]*storepb.TriggerMetadata),
+		columnPrimaryKeys:        make(map[string][]string),
+		columnUniqueKeys:         make(map[string]map[string]bool),
+		pendingForeignKeyIndexes: make(map[string][]*storepb.ForeignKeyMetadata),
 	}
 
 	// Walk each parse tree
@@ -53,6 +54,8 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 	extractor.createColumnPrimaryKeyIndexes()
 	// Create unique indexes from column-level definitions
 	extractor.createColumnUniqueKeyIndexes()
+	// Create indexes for foreign keys that don't have existing suitable indexes
+	extractor.createPendingForeignKeyIndexes()
 
 	// Build the final metadata structure
 	schemaMetadata := &storepb.DatabaseSchemaMetadata{
@@ -125,7 +128,9 @@ type metadataExtractor struct {
 	columnPrimaryKeys map[string][]string // tableName -> []columnNames
 	// Track column-level unique constraints to create index entries later
 	columnUniqueKeys map[string]map[string]bool // tableName -> columnName -> true
-	err              error
+	// Track foreign keys to create index entries after all table elements are processed
+	pendingForeignKeyIndexes map[string][]*storepb.ForeignKeyMetadata // tableName -> []foreignKeys
+	err                      error
 }
 
 // Helper function to get or create table
@@ -183,9 +188,6 @@ func (e *metadataExtractor) EnterCreateTable(ctx *mysql.CreateTableContext) {
 
 	// Extract table comment
 	e.extractTableComment(ctx, table)
-
-	// Remove duplicate indexes after all processing is complete
-	e.removeDuplicateIndexes(table)
 }
 
 // extractTableElements extracts columns and constraints from table elements
@@ -541,7 +543,7 @@ func (*metadataExtractor) extractPrimaryKey(ctx mysql.ITableConstraintDefContext
 }
 
 // extractForeignKey extracts foreign key constraint
-func (*metadataExtractor) extractForeignKey(ctx mysql.ITableConstraintDefContext, table *storepb.TableMetadata) {
+func (e *metadataExtractor) extractForeignKey(ctx mysql.ITableConstraintDefContext, table *storepb.TableMetadata) {
 	if ctx.KeyList() == nil || ctx.References() == nil {
 		return
 	}
@@ -625,48 +627,11 @@ func (*metadataExtractor) extractForeignKey(ctx mysql.ITableConstraintDefContext
 
 	table.ForeignKeys = append(table.ForeignKeys, fk)
 
-	// MySQL automatically creates indexes on foreign key columns if they don't exist
-	// Create an index for the foreign key columns if one doesn't already exist
-	if len(columns) > 0 {
-		// Check if an index already exists on these columns
-		indexExists := false
-		for _, existingIndex := range table.Indexes {
-			// Check if any existing index covers the foreign key columns
-			if len(existingIndex.Expressions) >= len(columns) {
-				// Check if the first N columns of the index match our FK columns
-				match := true
-				for i, fkCol := range columns {
-					if i >= len(existingIndex.Expressions) || existingIndex.Expressions[i] != fkCol {
-						match = false
-						break
-					}
-				}
-				if match {
-					indexExists = true
-					break
-				}
-			}
-		}
-
-		// Create index if none exists
-		if !indexExists {
-			// Generate index name based on constraint name or columns
-			indexName := constraintName
-			if indexName == "" {
-				// Use first column name as index name if no constraint name
-				indexName = columns[0]
-			}
-
-			fkIndex := &storepb.IndexMetadata{
-				Name:        indexName,
-				Type:        "BTREE",
-				Expressions: columns,
-				Primary:     false,
-				Unique:      false,
-			}
-			table.Indexes = append(table.Indexes, fkIndex)
-		}
+	// Store the foreign key for later index creation (after all table elements are processed)
+	if e.pendingForeignKeyIndexes[table.Name] == nil {
+		e.pendingForeignKeyIndexes[table.Name] = []*storepb.ForeignKeyMetadata{}
 	}
+	e.pendingForeignKeyIndexes[table.Name] = append(e.pendingForeignKeyIndexes[table.Name], fk)
 }
 
 // extractIndex extracts regular index
@@ -1206,94 +1171,6 @@ func isLiteralValue(value string) bool {
 	return true
 }
 
-// removeDuplicateIndexes removes duplicate indexes that cover the same columns
-func (*metadataExtractor) removeDuplicateIndexes(table *storepb.TableMetadata) {
-	if len(table.Indexes) <= 1 {
-		return
-	}
-
-	// Build a map of column signature to indexes
-	indexMap := make(map[string][]*storepb.IndexMetadata)
-	for _, index := range table.Indexes {
-		if len(index.Expressions) == 0 {
-			continue
-		}
-
-		// Create a signature from the column expressions
-		signature := strings.Join(index.Expressions, ",")
-		indexMap[signature] = append(indexMap[signature], index)
-	}
-
-	// Keep only unique indexes, preferring explicit indexes over auto-generated ones
-	var uniqueIndexes []*storepb.IndexMetadata
-	for _, indexes := range indexMap {
-		if len(indexes) == 1 {
-			// No duplicates, keep the index
-			uniqueIndexes = append(uniqueIndexes, indexes[0])
-		} else {
-			// Multiple indexes with same columns, pick the best one
-			bestIndex := chooseBestIndex(indexes)
-			uniqueIndexes = append(uniqueIndexes, bestIndex)
-		}
-	}
-
-	table.Indexes = uniqueIndexes
-}
-
-// chooseBestIndex selects the best index from duplicates based on priority rules
-func chooseBestIndex(indexes []*storepb.IndexMetadata) *storepb.IndexMetadata {
-	if len(indexes) == 1 {
-		return indexes[0]
-	}
-
-	// Priority rules (higher priority first):
-	// 1. PRIMARY key indexes
-	// 2. UNIQUE indexes
-	// 3. Explicitly named indexes (not auto-generated by foreign keys)
-	// 4. Foreign key indexes
-
-	var primaryIndex, uniqueIndex, explicitIndex, foreignKeyIndex *storepb.IndexMetadata
-
-	for _, index := range indexes {
-		if index.Primary {
-			primaryIndex = index
-		} else if index.Unique {
-			uniqueIndex = index
-		} else if !isAutoGeneratedIndexName(index.Name) {
-			explicitIndex = index
-		} else {
-			foreignKeyIndex = index
-		}
-	}
-
-	// Return in priority order
-	if primaryIndex != nil {
-		return primaryIndex
-	}
-	if uniqueIndex != nil {
-		return uniqueIndex
-	}
-	if explicitIndex != nil {
-		return explicitIndex
-	}
-	if foreignKeyIndex != nil {
-		return foreignKeyIndex
-	}
-
-	// Fallback to first index
-	return indexes[0]
-}
-
-// isAutoGeneratedIndexName checks if an index name looks auto-generated
-func isAutoGeneratedIndexName(name string) bool {
-	// Foreign key index names typically match constraint names
-	// Check if this looks like a foreign key constraint name
-	return strings.HasPrefix(name, "fk_") ||
-		strings.HasPrefix(name, "FK_") ||
-		strings.Contains(name, "_fkey") ||
-		strings.Contains(name, "_foreign")
-}
-
 // addColumnPrimaryKey tracks a column-level primary key definition
 func (e *metadataExtractor) addColumnPrimaryKey(tableName, columnName string) {
 	if e.columnPrimaryKeys[tableName] == nil {
@@ -1374,6 +1251,61 @@ func (e *metadataExtractor) createColumnUniqueKeyIndexes() {
 					Expressions: []string{columnName},
 					Primary:     false,
 					Unique:      true,
+				}
+				table.Indexes = append(table.Indexes, index)
+			}
+		}
+	}
+}
+
+// createPendingForeignKeyIndexes creates index metadata for foreign keys that don't have existing suitable indexes
+func (e *metadataExtractor) createPendingForeignKeyIndexes() {
+	for tableName, foreignKeys := range e.pendingForeignKeyIndexes {
+		table, exists := e.tables[tableName]
+		if !exists {
+			continue
+		}
+
+		for _, fk := range foreignKeys {
+			// MySQL automatically creates indexes on foreign key columns if they don't already exist.
+			// Check if an index already exists on these columns
+			hasMatchingIndex := false
+			for _, existingIndex := range table.Indexes {
+				// Check if an index already covers the foreign key columns
+				if len(existingIndex.Expressions) >= len(fk.Columns) {
+					matches := true
+					for i, col := range fk.Columns {
+						if i >= len(existingIndex.Expressions) || existingIndex.Expressions[i] != col {
+							matches = false
+							break
+						}
+					}
+					if matches {
+						hasMatchingIndex = true
+						break
+					}
+				}
+			}
+
+			// If no matching index exists, create one
+			if !hasMatchingIndex {
+				// MySQL creates indexes using the constraint name for foreign keys
+				// If no constraint name is provided, MySQL would generate one automatically
+				indexName := fk.Name
+				if indexName == "" {
+					// Fallback to column names if no constraint name (shouldn't happen in practice)
+					indexName = fk.Columns[0]
+					if len(fk.Columns) > 1 {
+						indexName = strings.Join(fk.Columns, "_")
+					}
+				}
+
+				index := &storepb.IndexMetadata{
+					Name:        indexName,
+					Type:        "BTREE",
+					Expressions: fk.Columns,
+					Primary:     false,
+					Unique:      false,
 				}
 				table.Indexes = append(table.Indexes, index)
 			}
