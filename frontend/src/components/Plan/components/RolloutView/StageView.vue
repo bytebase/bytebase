@@ -3,7 +3,13 @@
     <div class="px-4">
       <div class="w-full flex flex-row pt-2 gap-2">
         <NTag round>{{ $t("common.stage") }}</NTag>
-        <span class="font-medium text-lg">{{ environmentTitle }}</span>
+        <span class="font-medium text-lg">
+          <EnvironmentV1Name
+            :environment="
+              environmentStore.getEnvironmentByName(stage.environment)
+            "
+          />
+        </span>
 
         <TaskFilter
           :rollout="rollout"
@@ -29,6 +35,7 @@
 import { NTag } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
+import { EnvironmentV1Name } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
 import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
@@ -72,10 +79,4 @@ watch(
   },
   { immediate: true }
 );
-
-// Stage environment info
-const environmentTitle = computed(() => {
-  if (!stage.value) return "";
-  return environmentStore.getEnvironmentByName(stage.value.environment).title;
-});
 </script>
