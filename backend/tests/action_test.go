@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -372,6 +373,48 @@ func (ctl *controller) createTestDatabase(ctx context.Context, t *testing.T) *v1
 	a.NoError(err)
 
 	return databaseResp.Msg
+}
+
+// createTestMySQLDatabase creates a test MySQL database instance and database
+func (ctl *controller) createTestMySQLDatabase(ctx context.Context, t *testing.T) (*v1pb.Database, *Container) {
+	a := require.New(t)
+
+	// Get MySQL container
+	mysqlContainer, err := getMySQLContainer(ctx)
+	a.NoError(err)
+
+	// Create MySQL instance
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("inst")[:8],
+		Instance: &v1pb.Instance{
+			Title:       "Test MySQL Instance",
+			Engine:      v1pb.Engine_MYSQL,
+			Environment: stringPtr("environments/prod"),
+			Activation:  true,
+			DataSources: []*v1pb.DataSource{{
+				Type:     v1pb.DataSourceType_ADMIN,
+				Host:     mysqlContainer.host,
+				Port:     mysqlContainer.port,
+				Username: "root",
+				Password: "root-password",
+				Id:       "admin",
+			}},
+		},
+	}))
+	a.NoError(err)
+
+	// Create database
+	dbName := generateRandomString("db")[:8]
+	err = ctl.createDatabaseV2(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
+	a.NoError(err)
+
+	// Get database
+	databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, dbName),
+	}))
+	a.NoError(err)
+
+	return databaseResp.Msg, mysqlContainer
 }
 
 func TestActionRolloutCommand(t *testing.T) {
@@ -893,6 +936,494 @@ func TestActionRolloutCommand(t *testing.T) {
 		a.NotEqual(firstRelease.Digest, thirdRelease.Digest, "Different content should produce different digest")
 
 		a.NotContains(result3.Stderr, "error", "Third rollout should complete without errors")
+	})
+}
+
+func TestActionRolloutDeclarativeMode(t *testing.T) {
+	t.Parallel()
+
+	t.Run("BasicDeclarativeRollout", func(t *testing.T) {
+		t.Parallel()
+		a := require.New(t)
+		ctx := context.Background()
+		ctl := &controller{}
+
+		ctx, err := ctl.StartServerWithExternalPg(ctx)
+		a.NoError(err)
+		defer ctl.Close(ctx)
+
+		// Create MySQL test database
+		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer.Close(ctx)
+
+		// Create test data directory and schema.sql file
+		testDataDir := t.TempDir()
+		migrationContent1 := `CREATE TABLE users (
+    id INT,
+    username VARCHAR(255) NOT NULL UNIQUE
+);`
+		schemaFile := filepath.Join(testDataDir, "schema.sql")
+		err = os.WriteFile(schemaFile, []byte(migrationContent1), 0644)
+		a.NoError(err)
+
+		// Create output file
+		outputFile := filepath.Join(t.TempDir(), "rollout-output.json")
+
+		// Execute declarative rollout
+		result, err := executeActionCommand(ctx,
+			"rollout",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", database.Name,
+			"--file-pattern", schemaFile,
+			"--release-title", "Declarative Release V1",
+			"--target-stage", "environments/prod",
+			"--output", outputFile,
+			"--declarative",
+		)
+
+		a.NoError(err, "Declarative rollout command should succeed")
+
+		// Verify release was created
+		releases, err := ctl.releaseServiceClient.ListReleases(ctx, connect.NewRequest(&v1pb.ListReleasesRequest{
+			Parent: ctl.project.Name,
+		}))
+		a.NoError(err)
+		a.Len(releases.Msg.Releases, 1, "Expected exactly one release")
+		release := releases.Msg.Releases[0]
+		a.Equal("Declarative Release V1", release.Title)
+
+		// Verify database schema was created
+		metadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
+			Name: database.Name + "/metadata",
+		}))
+		a.NoError(err)
+		foundUsersTable := false
+		for _, schema := range metadata.Msg.Schemas {
+			for _, table := range schema.Tables {
+				if table.Name == "users" {
+					foundUsersTable = true
+					a.Equal(2, len(table.Columns), "Expected 2 columns (id, username)")
+				}
+			}
+		}
+		a.True(foundUsersTable, "Users table should exist after declarative rollout")
+
+		// Verify command output
+		a.NotContains(result.Stderr, "error", "Declarative rollout should complete without errors")
+	})
+
+	t.Run("DeclarativeSchemaEvolution", func(t *testing.T) {
+		t.Parallel()
+		a := require.New(t)
+		ctx := context.Background()
+		ctl := &controller{}
+
+		ctx, err := ctl.StartServerWithExternalPg(ctx)
+		a.NoError(err)
+		defer ctl.Close(ctx)
+
+		// Create MySQL test database
+		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer.Close(ctx)
+
+		// Create test data directory
+		testDataDir := t.TempDir()
+		schemaFile := filepath.Join(testDataDir, "schema.sql")
+
+		// First version of schema
+		migrationContent1 := `CREATE TABLE users (
+    id INT,
+    username VARCHAR(255) NOT NULL UNIQUE
+);`
+		err = os.WriteFile(schemaFile, []byte(migrationContent1), 0644)
+		a.NoError(err)
+
+		// Execute first declarative rollout
+		result1, err := executeActionCommand(ctx,
+			"rollout",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", database.Name,
+			"--file-pattern", schemaFile,
+			"--release-title", "Initial Schema",
+			"--target-stage", "environments/prod",
+			"--declarative",
+		)
+		a.NoError(err, "First declarative rollout should succeed")
+
+		// Verify initial schema
+		metadata1, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
+			Name: database.Name + "/metadata",
+		}))
+		a.NoError(err)
+		foundTable1 := false
+		for _, schema := range metadata1.Msg.Schemas {
+			for _, table := range schema.Tables {
+				if table.Name == "users" {
+					foundTable1 = true
+					a.Equal(2, len(table.Columns), "Initial schema should have 2 columns")
+				}
+			}
+		}
+		a.True(foundTable1, "Users table should exist after first rollout")
+
+		// Update schema.sql with evolved schema (second version)
+		migrationContent2 := `CREATE TABLE users (
+    id INT,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`
+		err = os.WriteFile(schemaFile, []byte(migrationContent2), 0644)
+		a.NoError(err)
+
+		// Execute second declarative rollout with evolved schema
+		result2, err := executeActionCommand(ctx,
+			"rollout",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", database.Name,
+			"--file-pattern", schemaFile,
+			"--release-title", "Evolved Schema",
+			"--target-stage", "environments/prod",
+			"--declarative",
+		)
+		a.NoError(err, "Second declarative rollout should succeed")
+
+		// Verify evolved schema
+		metadata2, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
+			Name: database.Name + "/metadata",
+		}))
+		a.NoError(err)
+		foundTable2 := false
+		hasCreatedAt := false
+		for _, schema := range metadata2.Msg.Schemas {
+			for _, table := range schema.Tables {
+				if table.Name == "users" {
+					foundTable2 = true
+					a.Equal(3, len(table.Columns), "Evolved schema should have 3 columns")
+					for _, col := range table.Columns {
+						if col.Name == "created_at" {
+							hasCreatedAt = true
+						}
+					}
+				}
+			}
+		}
+		a.True(foundTable2, "Users table should still exist after evolution")
+		a.True(hasCreatedAt, "created_at column should be added")
+
+		// Verify no errors
+		a.NotContains(result1.Stderr, "error", "First rollout should complete without errors")
+		a.NotContains(result2.Stderr, "error", "Second rollout should complete without errors")
+	})
+
+	t.Run("DeclarativeIdempotency", func(t *testing.T) {
+		t.Parallel()
+		a := require.New(t)
+		ctx := context.Background()
+		ctl := &controller{}
+
+		ctx, err := ctl.StartServerWithExternalPg(ctx)
+		a.NoError(err)
+		defer ctl.Close(ctx)
+
+		// Create MySQL test database
+		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer.Close(ctx)
+
+		// Create test data directory and schema.sql file
+		testDataDir := t.TempDir()
+		migrationContent := `CREATE TABLE users (
+    id INT,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`
+		schemaFile := filepath.Join(testDataDir, "schema.sql")
+		err = os.WriteFile(schemaFile, []byte(migrationContent), 0644)
+		a.NoError(err)
+
+		// Create output files
+		outputFile1 := filepath.Join(t.TempDir(), "rollout-output1.json")
+		outputFile2 := filepath.Join(t.TempDir(), "rollout-output2.json")
+		outputFile3 := filepath.Join(t.TempDir(), "rollout-output3.json")
+
+		// Execute first declarative rollout
+		result1, err := executeActionCommand(ctx,
+			"rollout",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", database.Name,
+			"--file-pattern", schemaFile,
+			"--release-title", "Idempotent Release 1",
+			"--target-stage", "environments/prod",
+			"--output", outputFile1,
+			"--declarative",
+		)
+		a.NoError(err, "First declarative rollout should succeed")
+
+		// Read first output
+		var output1 map[string]string
+		data1, err := os.ReadFile(outputFile1)
+		a.NoError(err)
+		err = json.Unmarshal(data1, &output1)
+		a.NoError(err)
+
+		// Execute second declarative rollout with same schema (should fail)
+		result2, err := executeActionCommand(ctx,
+			"rollout",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", database.Name,
+			"--file-pattern", schemaFile,
+			"--release-title", "Idempotent Release 2",
+			"--target-stage", "environments/prod",
+			"--output", outputFile2,
+			"--declarative",
+		)
+		// Second rollout should fail due to idempotency check
+		a.Error(err, "Second declarative rollout should fail")
+
+		// Read second output
+		var output2 map[string]string
+		data2, err := os.ReadFile(outputFile2)
+		a.NoError(err)
+		err = json.Unmarshal(data2, &output2)
+		a.NoError(err)
+
+		// Get rollout details to check task run error
+		rolloutName := output2["rollout"]
+		a.NotEmpty(rolloutName, "Should have rollout name in output")
+
+		// Get the rollout to check task runs
+		rolloutResp, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
+			Name: rolloutName,
+		}))
+		a.NoError(err)
+		rollout := rolloutResp.Msg
+
+		// Check task runs for error message
+		// Use the special parent format to list all task runs from the rollout
+		taskRunsResp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, connect.NewRequest(&v1pb.ListTaskRunsRequest{
+			Parent: fmt.Sprintf("%s/stages/-/tasks/-", rollout.Name),
+		}))
+		a.NoError(err)
+
+		foundExpectedError := false
+		for _, taskRun := range taskRunsResp.Msg.TaskRuns {
+			if taskRun.Detail != "" && strings.Contains(taskRun.Detail, "cannot apply SDL migration with version") &&
+				strings.Contains(taskRun.Detail, "because an equal or newer version") &&
+				strings.Contains(taskRun.Detail, "already exists") {
+				foundExpectedError = true
+				break
+			}
+		}
+		a.True(foundExpectedError, "Should find error message about SDL migration version conflict")
+
+		// Execute third declarative rollout with same schema (should also fail)
+		result3, err := executeActionCommand(ctx,
+			"rollout",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", database.Name,
+			"--file-pattern", schemaFile,
+			"--release-title", "Idempotent Release 3",
+			"--target-stage", "environments/prod",
+			"--output", outputFile3,
+			"--declarative",
+		)
+		// Third rollout should also fail
+		a.Error(err, "Third declarative rollout should fail")
+
+		// Read third output
+		var output3 map[string]string
+		data3, err := os.ReadFile(outputFile3)
+		a.NoError(err)
+		err = json.Unmarshal(data3, &output3)
+		a.NoError(err)
+
+		// Verify that all rollouts reuse the same release
+		releases, err := ctl.releaseServiceClient.ListReleases(ctx, connect.NewRequest(&v1pb.ListReleasesRequest{
+			Parent: ctl.project.Name,
+		}))
+		a.NoError(err)
+		a.Len(releases.Msg.Releases, 1, "Should have only one release (reused)")
+
+		// Verify all outputs reference the same release
+		a.Equal(output1["release"], output2["release"], "Second rollout should reuse first release")
+		a.Equal(output1["release"], output3["release"], "Third rollout should reuse first release")
+
+		// Verify schema remains consistent (only one table created)
+		metadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
+			Name: database.Name + "/metadata",
+		}))
+		a.NoError(err)
+
+		tableCount := 0
+		for _, schema := range metadata.Msg.Schemas {
+			for _, table := range schema.Tables {
+				if table.Name == "users" {
+					tableCount++
+					a.Equal(3, len(table.Columns), "Table should have consistent columns")
+				}
+			}
+		}
+		a.Equal(1, tableCount, "Should have exactly one users table (idempotent)")
+
+		// Verify first rollout succeeded
+		a.NotContains(result1.Stderr, "failed to run and wait for rollout: found failed tasks", "First rollout should complete without errors")
+		// Second and third rollouts should have errors
+		a.Contains(result2.Stderr, "failed to run and wait for rollout: found failed tasks", "Second rollout should have error")
+		a.Contains(result3.Stderr, "failed to run and wait for rollout: found failed tasks", "Third rollout should have error")
+	})
+
+	t.Run("DeclarativeMultipleDatabases", func(t *testing.T) {
+		t.Parallel()
+		a := require.New(t)
+		ctx := context.Background()
+		ctl := &controller{}
+
+		ctx, err := ctl.StartServerWithExternalPg(ctx)
+		a.NoError(err)
+		defer ctl.Close(ctx)
+
+		// Create multiple MySQL test databases
+		database1, mysqlContainer1 := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer1.Close(ctx)
+		database2, mysqlContainer2 := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer2.Close(ctx)
+
+		// Create test data directory and schema.sql file
+		testDataDir := t.TempDir()
+		migrationContent := `CREATE TABLE users (
+    id INT,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`
+		schemaFile := filepath.Join(testDataDir, "schema.sql")
+		err = os.WriteFile(schemaFile, []byte(migrationContent), 0644)
+		a.NoError(err)
+
+		// Execute declarative rollout to multiple databases
+		result, err := executeActionCommand(ctx,
+			"rollout",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", fmt.Sprintf("%s,%s", database1.Name, database2.Name),
+			"--file-pattern", schemaFile,
+			"--release-title", "Multi-DB Declarative Release",
+			"--target-stage", "environments/prod",
+			"--declarative",
+		)
+		a.NoError(err, "Declarative rollout to multiple databases should succeed")
+
+		// Verify schema was applied to both databases
+		for _, db := range []*v1pb.Database{database1, database2} {
+			metadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
+				Name: db.Name + "/metadata",
+			}))
+			a.NoError(err)
+
+			foundUsersTable := false
+			for _, schema := range metadata.Msg.Schemas {
+				for _, table := range schema.Tables {
+					if table.Name == "users" {
+						foundUsersTable = true
+						a.Equal(3, len(table.Columns), "Table should have 3 columns in "+db.Name)
+					}
+				}
+			}
+			a.True(foundUsersTable, "Users table should exist in "+db.Name)
+		}
+
+		// Verify command output
+		a.NotContains(result.Stderr, "error", "Multi-database declarative rollout should complete without errors")
+	})
+
+	t.Run("DeclarativeWithDatabaseGroup", func(t *testing.T) {
+		t.Parallel()
+		a := require.New(t)
+		ctx := context.Background()
+		ctl := &controller{}
+
+		ctx, err := ctl.StartServerWithExternalPg(ctx)
+		a.NoError(err)
+		defer ctl.Close(ctx)
+
+		// Create MySQL test database
+		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer.Close(ctx)
+
+		// Create database group
+		databaseGroup, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, connect.NewRequest(&v1pb.CreateDatabaseGroupRequest{
+			Parent:          ctl.project.Name,
+			DatabaseGroupId: "test-declarative-group",
+			DatabaseGroup: &v1pb.DatabaseGroup{
+				Title:        "Test Declarative Group",
+				DatabaseExpr: &expr.Expr{Expression: "true"},
+			},
+		}))
+		a.NoError(err)
+
+		// Create test data directory and schema.sql file
+		testDataDir := t.TempDir()
+		migrationContent := `CREATE TABLE users (
+    id INT,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`
+		schemaFile := filepath.Join(testDataDir, "schema.sql")
+		err = os.WriteFile(schemaFile, []byte(migrationContent), 0644)
+		a.NoError(err)
+
+		// Execute declarative rollout with database group
+		result, err := executeActionCommand(ctx,
+			"rollout",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", databaseGroup.Msg.Name,
+			"--file-pattern", schemaFile,
+			"--release-title", "Declarative Group Release",
+			"--target-stage", "environments/prod",
+			"--declarative",
+		)
+		a.NoError(err, "Declarative rollout with database group should succeed")
+
+		// Verify schema was applied
+		metadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
+			Name: database.Name + "/metadata",
+		}))
+		a.NoError(err)
+
+		foundUsersTable := false
+		for _, schema := range metadata.Msg.Schemas {
+			for _, table := range schema.Tables {
+				if table.Name == "users" {
+					foundUsersTable = true
+					a.Equal(3, len(table.Columns), "Table should have 3 columns")
+				}
+			}
+		}
+		a.True(foundUsersTable, "Users table should exist after declarative rollout with database group")
+
+		// Verify command output
+		a.NotContains(result.Stderr, "error", "Declarative rollout with database group should complete without errors")
 	})
 }
 
