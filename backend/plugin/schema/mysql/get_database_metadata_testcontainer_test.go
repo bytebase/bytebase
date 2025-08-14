@@ -63,6 +63,23 @@ func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
 		ddl  string
 	}{
 		{
+			name: "basic_table_creation1",
+			ddl: `
+			CREATE TABLE users(
+    			id INT PRIMARY KEY AUTO_INCREMENT,
+				name varchar(220)
+			);
+			`,
+		},
+		{
+			name: "basic_table_creation2",
+			ddl: `
+			CREATE TABLE users(
+    			id INT PRIMARY KEY AUTO_INCREMENT
+			);
+			`,
+		},
+		{
 			name: "basic_tables_with_constraints",
 			ddl: `
 CREATE TABLE users (
@@ -701,13 +718,33 @@ func compareIndexes(t *testing.T, dbIndexes, parsedIndexes []*storepb.IndexMetad
 		dbIdx, exists := dbIndexMap[parsedIdx.Name]
 		require.True(t, exists, "index %s on table %s not found in database metadata", parsedIdx.Name, tableName)
 
-		// Compare index properties
+		// Compare all IndexMetadata members for complete consistency
+
+		// 1. Name (already validated above through map lookup)
+		require.Equal(t, dbIdx.Name, parsedIdx.Name,
+			"name mismatch for index %s on table %s", parsedIdx.Name, tableName)
+
+		// 2. Type (index type: BTREE, HASH, FULLTEXT, SPATIAL, etc.)
+		require.Equal(t, dbIdx.Type, parsedIdx.Type,
+			"type mismatch for index %s on table %s", parsedIdx.Name, tableName)
+
+		// 3. Primary (whether the index is a primary key index)
 		require.Equal(t, dbIdx.Primary, parsedIdx.Primary,
 			"primary mismatch for index %s on table %s", parsedIdx.Name, tableName)
+
+		// 4. Unique (whether the index is unique)
 		require.Equal(t, dbIdx.Unique, parsedIdx.Unique,
 			"unique mismatch for index %s on table %s", parsedIdx.Name, tableName)
 
-		// Compare expressions
+		// 5. Visible (whether the index is visible - MySQL 8.0+ feature)
+		require.Equal(t, dbIdx.Visible, parsedIdx.Visible,
+			"visible mismatch for index %s on table %s", parsedIdx.Name, tableName)
+
+		// 6. Comment (index comment)
+		require.Equal(t, dbIdx.Comment, parsedIdx.Comment,
+			"comment mismatch for index %s on table %s", parsedIdx.Name, tableName)
+
+		// 7. Expressions (columns or expressions that the index is on)
 		require.Equal(t, len(dbIdx.Expressions), len(parsedIdx.Expressions),
 			"expression count mismatch for index %s on table %s", parsedIdx.Name, tableName)
 
@@ -720,6 +757,28 @@ func compareIndexes(t *testing.T, dbIndexes, parsedIndexes []*storepb.IndexMetad
 					"expression mismatch for index %s on table %s at position %d", parsedIdx.Name, tableName, i)
 			}
 		}
+
+		// 8. KeyLength (key lengths for each expression, -1 if not specified)
+		require.Equal(t, len(dbIdx.KeyLength), len(parsedIdx.KeyLength),
+			"key length count mismatch for index %s on table %s", parsedIdx.Name, tableName)
+		require.Equal(t, dbIdx.KeyLength, parsedIdx.KeyLength,
+			"key length mismatch for index %s on table %s", parsedIdx.Name, tableName)
+
+		// 9. Descending (descending flags for each expression)
+		require.Equal(t, len(dbIdx.Descending), len(parsedIdx.Descending),
+			"descending flag count mismatch for index %s on table %s", parsedIdx.Name, tableName)
+		require.Equal(t, dbIdx.Descending, parsedIdx.Descending,
+			"descending flags mismatch for index %s on table %s", parsedIdx.Name, tableName)
+
+		// 10. Definition (the full index definition - may be empty for some parsers)
+		// Note: We only compare if both have non-empty definitions as some parsers may not populate this
+		if dbIdx.Definition != "" && parsedIdx.Definition != "" {
+			require.Equal(t, dbIdx.Definition, parsedIdx.Definition,
+				"definition mismatch for index %s on table %s", parsedIdx.Name, tableName)
+		}
+
+		// Note: Other fields like ParentIndexSchema, ParentIndexName, Granularity, and SupportNullScan
+		// are database-specific and may not apply to MySQL, so we don't validate them here
 	}
 }
 
