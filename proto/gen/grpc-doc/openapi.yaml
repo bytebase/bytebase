@@ -683,6 +683,37 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/groups:batchGet:
+        get:
+            tags:
+                - GroupService
+            description: |-
+                Get the groups in batch.
+                 Permissions required: bb.groups.get
+            operationId: GroupService_BatchGetGroups
+            parameters:
+                - name: names
+                  in: query
+                  description: |-
+                    The group names to retrieve.
+                     Format: groups/{email}
+                  schema:
+                    type: array
+                    items:
+                        type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchGetGroupsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/idps:
         get:
             tags:
@@ -8569,6 +8600,14 @@ components:
                     items:
                         $ref: '#/components/schemas/Database'
                     description: The databases from the specified request.
+        BatchGetGroupsResponse:
+            type: object
+            properties:
+                groups:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Group'
+                    description: The groups from the specified request.
         BatchGetIamPolicyResponse:
             type: object
             properties:

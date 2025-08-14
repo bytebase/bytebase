@@ -36,6 +36,9 @@ const (
 const (
 	// GroupServiceGetGroupProcedure is the fully-qualified name of the GroupService's GetGroup RPC.
 	GroupServiceGetGroupProcedure = "/bytebase.v1.GroupService/GetGroup"
+	// GroupServiceBatchGetGroupsProcedure is the fully-qualified name of the GroupService's
+	// BatchGetGroups RPC.
+	GroupServiceBatchGetGroupsProcedure = "/bytebase.v1.GroupService/BatchGetGroups"
 	// GroupServiceListGroupsProcedure is the fully-qualified name of the GroupService's ListGroups RPC.
 	GroupServiceListGroupsProcedure = "/bytebase.v1.GroupService/ListGroups"
 	// GroupServiceCreateGroupProcedure is the fully-qualified name of the GroupService's CreateGroup
@@ -53,6 +56,9 @@ const (
 type GroupServiceClient interface {
 	// Permissions required: bb.groups.get
 	GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.Group], error)
+	// Get the groups in batch.
+	// Permissions required: bb.groups.get
+	BatchGetGroups(context.Context, *connect.Request[v1.BatchGetGroupsRequest]) (*connect.Response[v1.BatchGetGroupsResponse], error)
 	// Permissions required: bb.groups.list
 	ListGroups(context.Context, *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error)
 	// Permissions required: bb.groups.create
@@ -80,6 +86,12 @@ func NewGroupServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			httpClient,
 			baseURL+GroupServiceGetGroupProcedure,
 			connect.WithSchema(groupServiceMethods.ByName("GetGroup")),
+			connect.WithClientOptions(opts...),
+		),
+		batchGetGroups: connect.NewClient[v1.BatchGetGroupsRequest, v1.BatchGetGroupsResponse](
+			httpClient,
+			baseURL+GroupServiceBatchGetGroupsProcedure,
+			connect.WithSchema(groupServiceMethods.ByName("BatchGetGroups")),
 			connect.WithClientOptions(opts...),
 		),
 		listGroups: connect.NewClient[v1.ListGroupsRequest, v1.ListGroupsResponse](
@@ -111,16 +123,22 @@ func NewGroupServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 
 // groupServiceClient implements GroupServiceClient.
 type groupServiceClient struct {
-	getGroup    *connect.Client[v1.GetGroupRequest, v1.Group]
-	listGroups  *connect.Client[v1.ListGroupsRequest, v1.ListGroupsResponse]
-	createGroup *connect.Client[v1.CreateGroupRequest, v1.Group]
-	updateGroup *connect.Client[v1.UpdateGroupRequest, v1.Group]
-	deleteGroup *connect.Client[v1.DeleteGroupRequest, emptypb.Empty]
+	getGroup       *connect.Client[v1.GetGroupRequest, v1.Group]
+	batchGetGroups *connect.Client[v1.BatchGetGroupsRequest, v1.BatchGetGroupsResponse]
+	listGroups     *connect.Client[v1.ListGroupsRequest, v1.ListGroupsResponse]
+	createGroup    *connect.Client[v1.CreateGroupRequest, v1.Group]
+	updateGroup    *connect.Client[v1.UpdateGroupRequest, v1.Group]
+	deleteGroup    *connect.Client[v1.DeleteGroupRequest, emptypb.Empty]
 }
 
 // GetGroup calls bytebase.v1.GroupService.GetGroup.
 func (c *groupServiceClient) GetGroup(ctx context.Context, req *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.Group], error) {
 	return c.getGroup.CallUnary(ctx, req)
+}
+
+// BatchGetGroups calls bytebase.v1.GroupService.BatchGetGroups.
+func (c *groupServiceClient) BatchGetGroups(ctx context.Context, req *connect.Request[v1.BatchGetGroupsRequest]) (*connect.Response[v1.BatchGetGroupsResponse], error) {
+	return c.batchGetGroups.CallUnary(ctx, req)
 }
 
 // ListGroups calls bytebase.v1.GroupService.ListGroups.
@@ -147,6 +165,9 @@ func (c *groupServiceClient) DeleteGroup(ctx context.Context, req *connect.Reque
 type GroupServiceHandler interface {
 	// Permissions required: bb.groups.get
 	GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.Group], error)
+	// Get the groups in batch.
+	// Permissions required: bb.groups.get
+	BatchGetGroups(context.Context, *connect.Request[v1.BatchGetGroupsRequest]) (*connect.Response[v1.BatchGetGroupsResponse], error)
 	// Permissions required: bb.groups.list
 	ListGroups(context.Context, *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error)
 	// Permissions required: bb.groups.create
@@ -170,6 +191,12 @@ func NewGroupServiceHandler(svc GroupServiceHandler, opts ...connect.HandlerOpti
 		GroupServiceGetGroupProcedure,
 		svc.GetGroup,
 		connect.WithSchema(groupServiceMethods.ByName("GetGroup")),
+		connect.WithHandlerOptions(opts...),
+	)
+	groupServiceBatchGetGroupsHandler := connect.NewUnaryHandler(
+		GroupServiceBatchGetGroupsProcedure,
+		svc.BatchGetGroups,
+		connect.WithSchema(groupServiceMethods.ByName("BatchGetGroups")),
 		connect.WithHandlerOptions(opts...),
 	)
 	groupServiceListGroupsHandler := connect.NewUnaryHandler(
@@ -200,6 +227,8 @@ func NewGroupServiceHandler(svc GroupServiceHandler, opts ...connect.HandlerOpti
 		switch r.URL.Path {
 		case GroupServiceGetGroupProcedure:
 			groupServiceGetGroupHandler.ServeHTTP(w, r)
+		case GroupServiceBatchGetGroupsProcedure:
+			groupServiceBatchGetGroupsHandler.ServeHTTP(w, r)
 		case GroupServiceListGroupsProcedure:
 			groupServiceListGroupsHandler.ServeHTTP(w, r)
 		case GroupServiceCreateGroupProcedure:
@@ -219,6 +248,10 @@ type UnimplementedGroupServiceHandler struct{}
 
 func (UnimplementedGroupServiceHandler) GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.Group], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.GroupService.GetGroup is not implemented"))
+}
+
+func (UnimplementedGroupServiceHandler) BatchGetGroups(context.Context, *connect.Request[v1.BatchGetGroupsRequest]) (*connect.Response[v1.BatchGetGroupsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.GroupService.BatchGetGroups is not implemented"))
 }
 
 func (UnimplementedGroupServiceHandler) ListGroups(context.Context, *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error) {

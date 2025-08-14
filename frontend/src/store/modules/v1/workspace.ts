@@ -66,6 +66,7 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     });
     const policy = await workspaceServiceClientConnect.getIamPolicy(request);
     _workspaceIamPolicy.value = policy;
+    return policy;
   };
 
   const mergeBinding = ({
