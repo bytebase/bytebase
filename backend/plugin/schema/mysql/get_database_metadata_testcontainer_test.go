@@ -687,6 +687,9 @@ func normalizeDefaultExpression(expr string) string {
 }
 
 func compareIndexes(t *testing.T, dbIndexes, parsedIndexes []*storepb.IndexMetadata, tableName string) {
+	require.Equal(t, len(dbIndexes), len(parsedIndexes),
+		"mismatch in number of indexes for table %s", tableName)
+
 	// Create maps for easier lookup
 	dbIndexMap := make(map[string]*storepb.IndexMetadata)
 	for _, idx := range dbIndexes {
