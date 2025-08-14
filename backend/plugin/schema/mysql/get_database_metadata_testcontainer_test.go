@@ -696,33 +696,47 @@ func compareIndexes(t *testing.T, dbIndexes, parsedIndexes []*storepb.IndexMetad
 		dbIndexMap[idx.Name] = idx
 	}
 
-	parsedIndexMap := make(map[string]*storepb.IndexMetadata)
-	for _, idx := range parsedIndexes {
-		parsedIndexMap[idx.Name] = idx
-	}
-
-	// Check that all parsed indexes exist in db
-	for name, parsedIdx := range parsedIndexMap {
-		dbIdx, exists := dbIndexMap[name]
-		if !exists {
-			// Skip if it's a generated index name
-			if strings.HasPrefix(name, "idx_") {
-				continue
-			}
-			t.Errorf("index %s on table %s not found in database metadata", name, tableName)
-			continue
-		}
+	// Check that all parsed indexes exist in db with exact match
+	for _, parsedIdx := range parsedIndexes {
+		dbIdx, exists := dbIndexMap[parsedIdx.Name]
+		require.True(t, exists, "index %s on table %s not found in database metadata", parsedIdx.Name, tableName)
 
 		// Compare index properties
 		require.Equal(t, dbIdx.Primary, parsedIdx.Primary,
-			"primary mismatch for index %s on table %s", name, tableName)
+			"primary mismatch for index %s on table %s", parsedIdx.Name, tableName)
 		require.Equal(t, dbIdx.Unique, parsedIdx.Unique,
-			"unique mismatch for index %s on table %s", name, tableName)
+			"unique mismatch for index %s on table %s", parsedIdx.Name, tableName)
 
-		// Compare expressions (allowing for some differences in formatting)
+		// Compare expressions
 		require.Equal(t, len(dbIdx.Expressions), len(parsedIdx.Expressions),
-			"expression count mismatch for index %s on table %s", name, tableName)
+			"expression count mismatch for index %s on table %s", parsedIdx.Name, tableName)
+
+		for i, expr := range parsedIdx.Expressions {
+			if i < len(dbIdx.Expressions) {
+				// Normalize expressions for comparison
+				dbExpr := normalizeIndexExpression(dbIdx.Expressions[i])
+				parsedExpr := normalizeIndexExpression(expr)
+				require.Equal(t, dbExpr, parsedExpr,
+					"expression mismatch for index %s on table %s at position %d", parsedIdx.Name, tableName, i)
+			}
+		}
 	}
+}
+
+// normalizeIndexExpression normalizes index expressions for comparison
+func normalizeIndexExpression(expr string) string {
+	// Remove backticks
+	expr = strings.ReplaceAll(expr, "`", "")
+
+	// Remove outer parentheses from expressions like "(year(created_at))"
+	if strings.HasPrefix(expr, "(") && strings.HasSuffix(expr, ")") {
+		expr = expr[1 : len(expr)-1]
+	}
+
+	// Convert to uppercase for case-insensitive comparison
+	expr = strings.ToUpper(expr)
+
+	return expr
 }
 
 func compareForeignKeys(t *testing.T, dbFKs, parsedFKs []*storepb.ForeignKeyMetadata, tableName string) {

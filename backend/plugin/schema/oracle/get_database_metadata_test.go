@@ -1145,6 +1145,9 @@ func compareIndexes(t *testing.T, dbIndexes, parsedIndexes []*storepb.IndexMetad
 		parsedIndexMap[idx.Name] = idx
 	}
 
+	// Check that both directions have the same indexes
+	require.Equal(t, len(dbIndexes), len(parsedIndexes), "mismatch in number of indexes for table %s", tableName)
+
 	// Compare each parsed index
 	for idxName, parsedIdx := range parsedIndexMap {
 		dbIdx, exists := dbIndexMap[idxName]
@@ -1185,7 +1188,10 @@ func compareIndexes(t *testing.T, dbIndexes, parsedIndexes []*storepb.IndexMetad
 }
 
 // compareForeignKeys compares foreign key metadata
-func compareForeignKeys(t *testing.T, dbFKs, parsedFKs []*storepb.ForeignKeyMetadata, _ string) {
+func compareForeignKeys(t *testing.T, dbFKs, parsedFKs []*storepb.ForeignKeyMetadata, tableName string) {
+	// Check that both directions have the same foreign keys
+	require.Equal(t, len(dbFKs), len(parsedFKs), "mismatch in number of foreign keys for table %s", tableName)
+
 	// Create maps for easier lookup
 	dbFKMap := make(map[string]*storepb.ForeignKeyMetadata)
 	for _, fk := range dbFKs {
