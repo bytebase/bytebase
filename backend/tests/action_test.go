@@ -374,6 +374,48 @@ func (ctl *controller) createTestDatabase(ctx context.Context, t *testing.T) *v1
 	return databaseResp.Msg
 }
 
+// createTestMySQLDatabase creates a test MySQL database instance and database
+func (ctl *controller) createTestMySQLDatabase(ctx context.Context, t *testing.T) (*v1pb.Database, *Container) {
+	a := require.New(t)
+
+	// Get MySQL container
+	mysqlContainer, err := getMySQLContainer(ctx)
+	a.NoError(err)
+
+	// Create MySQL instance
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("inst")[:8],
+		Instance: &v1pb.Instance{
+			Title:       "Test MySQL Instance",
+			Engine:      v1pb.Engine_MYSQL,
+			Environment: stringPtr("environments/prod"),
+			Activation:  true,
+			DataSources: []*v1pb.DataSource{{
+				Type:     v1pb.DataSourceType_ADMIN,
+				Host:     mysqlContainer.host,
+				Port:     mysqlContainer.port,
+				Username: "root",
+				Password: "root-password",
+				Id:       "admin",
+			}},
+		},
+	}))
+	a.NoError(err)
+
+	// Create database
+	dbName := generateRandomString("db")[:8]
+	err = ctl.createDatabaseV2(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
+	a.NoError(err)
+
+	// Get database
+	databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, dbName),
+	}))
+	a.NoError(err)
+
+	return databaseResp.Msg, mysqlContainer
+}
+
 func TestActionRolloutCommand(t *testing.T) {
 	t.Parallel()
 
@@ -909,14 +951,15 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		a.NoError(err)
 		defer ctl.Close(ctx)
 
-		// Create test database
-		database := ctl.createTestDatabase(ctx, t)
+		// Create MySQL test database
+		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer.Close(ctx)
 
 		// Create test data directory and schema.sql file
 		testDataDir := t.TempDir()
 		migrationContent1 := `CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE
+    id INT,
+    username VARCHAR(255) NOT NULL UNIQUE
 );`
 		schemaFile := filepath.Join(testDataDir, "schema.sql")
 		err = os.WriteFile(schemaFile, []byte(migrationContent1), 0644)
@@ -981,8 +1024,9 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		a.NoError(err)
 		defer ctl.Close(ctx)
 
-		// Create test database
-		database := ctl.createTestDatabase(ctx, t)
+		// Create MySQL test database
+		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer.Close(ctx)
 
 		// Create test data directory
 		testDataDir := t.TempDir()
@@ -990,8 +1034,8 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 
 		// First version of schema
 		migrationContent1 := `CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE
+    id INT,
+    username VARCHAR(255) NOT NULL UNIQUE
 );`
 		err = os.WriteFile(schemaFile, []byte(migrationContent1), 0644)
 		a.NoError(err)
@@ -1029,8 +1073,8 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 
 		// Update schema.sql with evolved schema (second version)
 		migrationContent2 := `CREATE TABLE users (
-    id INTEGER PRIMARY KEY,
-    username TEXT NOT NULL UNIQUE,
+    id INT,
+    username VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
 		err = os.WriteFile(schemaFile, []byte(migrationContent2), 0644)
@@ -1089,14 +1133,15 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		a.NoError(err)
 		defer ctl.Close(ctx)
 
-		// Create test database
-		database := ctl.createTestDatabase(ctx, t)
+		// Create MySQL test database
+		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer.Close(ctx)
 
 		// Create test data directory and schema.sql file
 		testDataDir := t.TempDir()
 		migrationContent := `CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
+    id INT,
+    username VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
 		schemaFile := filepath.Join(testDataDir, "schema.sql")
@@ -1181,15 +1226,17 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		a.NoError(err)
 		defer ctl.Close(ctx)
 
-		// Create multiple test databases
-		database1 := ctl.createTestDatabase(ctx, t)
-		database2 := ctl.createTestDatabase(ctx, t)
+		// Create multiple MySQL test databases
+		database1, mysqlContainer1 := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer1.Close(ctx)
+		database2, mysqlContainer2 := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer2.Close(ctx)
 
 		// Create test data directory and schema.sql file
 		testDataDir := t.TempDir()
 		migrationContent := `CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
+    id INT,
+    username VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
 		schemaFile := filepath.Join(testDataDir, "schema.sql")
@@ -1244,8 +1291,9 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		a.NoError(err)
 		defer ctl.Close(ctx)
 
-		// Create test database
-		database := ctl.createTestDatabase(ctx, t)
+		// Create MySQL test database
+		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer.Close(ctx)
 
 		// Create database group
 		databaseGroup, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, connect.NewRequest(&v1pb.CreateDatabaseGroupRequest{
@@ -1261,8 +1309,8 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		// Create test data directory and schema.sql file
 		testDataDir := t.TempDir()
 		migrationContent := `CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
+    id INT,
+    username VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
 		schemaFile := filepath.Join(testDataDir, "schema.sql")
