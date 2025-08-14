@@ -806,7 +806,10 @@ func compareIndexes(t *testing.T, tableName string, syncIndexes, parseIndexes []
 		parseMap[idx.Name] = idx
 	}
 
-	// Compare common indexes
+	// Check that both directions have the same indexes
+	require.Equal(t, len(syncIndexes), len(parseIndexes), "mismatch in number of indexes for table %s", tableName)
+
+	// Compare indexes that exist in parse
 	for name, parseIdx := range parseMap {
 		syncIdx, exists := syncMap[name]
 		if !exists {
