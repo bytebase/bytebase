@@ -24,7 +24,6 @@ import { SQL_EDITOR_SETTING_MODULE } from "@/router/sqlEditor";
 import {
   useEnvironmentV1Store,
   usePolicyV1Store,
-  useRoleStore,
   useSettingV1Store,
 } from "@/store";
 import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
@@ -55,7 +54,6 @@ const prepare = async () => {
   // Prepare roles, workspace policies and settings.
   await Promise.all([
     useSettingV1Store().fetchSettingList(),
-    useRoleStore().fetchRoleList(),
     useEnvironmentV1Store().fetchEnvironments(),
     policyV1Store.fetchPolicies({
       resourceType: PolicyResourceType.WORKSPACE,
