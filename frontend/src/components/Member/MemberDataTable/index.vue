@@ -61,6 +61,14 @@ const columns = computed(
           memberBinding.type === "groups" &&
           !!memberBinding.group?.members.length,
         renderExpand: (memberBinding: MemberBinding) => {
+          // Fetch user data for group members when expanded
+          if (memberBinding.group?.members) {
+            const memberUserIds = memberBinding.group.members.map(
+              (m) => m.member
+            );
+            userStore.batchGetUsers(memberUserIds);
+          }
+
           return (
             <div class="pl-20 space-y-2">
               {memberBinding.group?.members.map((member) => {

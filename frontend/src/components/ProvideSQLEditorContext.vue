@@ -40,7 +40,6 @@ import {
   useSQLEditorStore,
   useSQLEditorTabStore,
   useWorkSheetStore,
-  useGroupStore,
   pushNotification,
 } from "@/store";
 import type { SQLEditorConnection } from "@/types";
@@ -83,7 +82,6 @@ const databaseStore = useDatabaseV1Store();
 const editorStore = useSQLEditorStore();
 const worksheetStore = useWorkSheetStore();
 const tabStore = useSQLEditorTabStore();
-const groupStore = useGroupStore();
 const policyStore = usePolicyV1Store();
 const { isFetching: isFetchingWorksheet } = useSheetContext();
 const {
@@ -509,7 +507,6 @@ onMounted(async () => {
       resourceType: PolicyResourceType.WORKSPACE,
     }),
     initializeProjects(),
-    groupStore.fetchGroupList(),
   ]);
   tabStore.maybeInitProject(editorStore.project);
   editorStore.projectContextReady = true;

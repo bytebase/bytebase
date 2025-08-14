@@ -10,6 +10,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { computedAsync } from "@vueuse/core";
 import { orderBy } from "lodash-es";
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
@@ -99,10 +100,16 @@ const columns = computed(() => {
   ] as DataTableColumn<GroupRowData | UserRowData>[];
 });
 
-const userListByGroup = computed(() => {
+const userListByGroup = computedAsync(async () => {
   const rowDataList: GroupRowData[] = [];
 
   for (const group of props.groups) {
+    // Fetch user data for all members in this group
+    const memberUserIds = group.members.map((m) => m.member);
+    if (memberUserIds.length > 0) {
+      await userStore.batchGetUsers(memberUserIds);
+    }
+
     const members: UserRowData[] = [];
     for (const member of group.members) {
       const user = userStore.getUserByIdentifier(member.member);
@@ -132,5 +139,5 @@ const userListByGroup = computed(() => {
   }
 
   return rowDataList;
-});
+}, []);
 </script>

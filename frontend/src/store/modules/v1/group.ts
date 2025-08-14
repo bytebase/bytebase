@@ -14,7 +14,6 @@ import {
   UpdateGroupRequestSchema,
 } from "@/types/proto-es/v1/group_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { useUserStore } from "../user";
 import { groupNamePrefix } from "./common";
 
 export const extractGroupEmail = (emailResource: string) => {
@@ -42,11 +41,6 @@ export const useGroupStore = defineStore("group", () => {
     );
   });
 
-  const composeGroup = async (group: Group) => {
-    await useUserStore().batchGetUsers(group.members.map((m) => m.member));
-    groupMapByName.set(group.name, group);
-  };
-
   const getGroupByIdentifier = (id: string) => {
     return groupMapByName.get(ensureGroupIdentifier(id));
   };
@@ -59,7 +53,7 @@ export const useGroupStore = defineStore("group", () => {
     });
     resetCache();
     for (const group of groups) {
-      await composeGroup(group);
+      groupMapByName.set(group.name, group);
     }
     return groups;
   };
@@ -80,7 +74,7 @@ export const useGroupStore = defineStore("group", () => {
     const group = await groupServiceClientConnect.getGroup(request, {
       contextValues: createContextValues().set(silentContextKey, true),
     });
-    await composeGroup(group);
+    groupMapByName.set(group.name, group);
     return group;
   };
 
@@ -96,7 +90,7 @@ export const useGroupStore = defineStore("group", () => {
       groupEmail: extractGroupEmail(group.name),
     });
     const response = await groupServiceClientConnect.createGroup(request);
-    await composeGroup(response);
+    groupMapByName.set(response.name, response);
     return response;
   };
 
@@ -107,7 +101,7 @@ export const useGroupStore = defineStore("group", () => {
       allowMissing: false,
     });
     const response = await groupServiceClientConnect.updateGroup(request);
-    await composeGroup(response);
+    groupMapByName.set(response.name, response);
     return response;
   };
 
