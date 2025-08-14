@@ -16,6 +16,7 @@ import {
   pushNotification,
   useWorkspaceV1Store,
   useGroupStore,
+  useRoleStore,
 } from "./store";
 import { isDev } from "./utils";
 
@@ -27,6 +28,7 @@ const router = useRouter();
 const authStore = useAuthStore();
 const workspaceStore = useWorkspaceV1Store();
 const groupStore = useGroupStore();
+const roleStore = useRoleStore();
 
 const authCheckIntervalId = ref<NodeJS.Timeout>();
 
@@ -86,9 +88,16 @@ watch(
       return;
     }
 
-    // Fetch groups first as workspace IAM policy depends on group data.
-    await groupStore.fetchGroupList();
+    // TODO: Performance optimization needed for large organizations
+    // Instead of fetching ALL groups/roles, we should:
+    // 1. Fetch workspace IAM policy first
+    // 2. Extract used groups/roles from policy members (those starting with groupBindingPrefix)
+    // 3. Use batchGet to fetch only the groups/roles referenced in IAM policy
+    // This avoids loading millions of unused groups/roles in large organizations
+    await Promise.all([groupStore.fetchGroupList(), roleStore.fetchRoleList()]);
     await workspaceStore.fetchIamPolicy();
+
+    // If the user is required to reset their password, redirect them to the reset password page.
     if (authStore.requireResetPassword) {
       router.replace({
         name: AUTH_PASSWORD_RESET_MODULE,

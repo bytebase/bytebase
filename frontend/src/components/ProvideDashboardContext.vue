@@ -18,10 +18,8 @@ import {
 import {
   useEnvironmentV1Store,
   usePolicyV1Store,
-  useRoleStore,
   useSettingV1Store,
   useUIStateStore,
-  useGroupStore,
 } from "@/store";
 import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
 import MaskSpinner from "./misc/MaskSpinner.vue";
@@ -37,7 +35,6 @@ onMounted(async () => {
 
   // Prepare roles, workspace policies and settings first.
   await Promise.all([
-    useRoleStore().fetchRoleList(),
     policyStore.fetchPolicies({
       resourceType: PolicyResourceType.WORKSPACE,
     }),
@@ -45,10 +42,7 @@ onMounted(async () => {
   ]);
 
   // Then prepare the other resources.
-  await Promise.all([
-    useGroupStore().fetchGroupList(),
-    useEnvironmentV1Store().fetchEnvironments(),
-  ]);
+  await Promise.all([useEnvironmentV1Store().fetchEnvironments()]);
 
   useUIStateStore().restoreState();
 
