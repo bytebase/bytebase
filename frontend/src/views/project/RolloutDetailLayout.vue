@@ -11,7 +11,14 @@
         >
       </NBreadcrumbItem>
       <NBreadcrumbItem v-if="stageId" @click="navigateToStage">
-        {{ stageTitle }}
+        <EnvironmentV1Name
+          v-if="stage"
+          :environment="
+            environmentStore.getEnvironmentByName(stage.environment)
+          "
+          :link="false"
+        />
+        <span v-else>{{ stageId }}</span>
       </NBreadcrumbItem>
       <NBreadcrumbItem v-if="taskId" :clickable="false">
         {{ $t("common.task") }} #{{ taskId }}
@@ -31,6 +38,7 @@ import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { usePlanContextWithRollout } from "@/components/Plan";
 import { provideRolloutViewContext } from "@/components/Plan/components/RolloutView/context";
+import { EnvironmentV1Name } from "@/components/v2";
 import {
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
@@ -49,25 +57,9 @@ const { mergedStages } = provideRolloutViewContext();
 const rolloutId = computed(() => route.params.rolloutId as string);
 const stageId = computed(() => route.params.stageId as string);
 const taskId = computed(() => route.params.taskId as string);
-
-// Get stage title from environment
-const stageTitle = computed(() => {
-  if (!stageId.value) return "";
-
-  // Find the stage in merged stages
-  const stage = mergedStages.value.find((s) =>
-    s.name.endsWith(`/${stageId.value}`)
-  );
-
-  if (stage) {
-    const environment = environmentStore.getEnvironmentByName(
-      stage.environment
-    );
-    return environment.title;
-  }
-
-  return stageId.value;
-});
+const stage = computed(() =>
+  mergedStages.value.find((s) => s.name.endsWith(`/${stageId.value}`))
+);
 
 // Navigation handlers
 const navigateToRollout = () => {
