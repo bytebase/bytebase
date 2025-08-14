@@ -357,6 +357,8 @@
     - [DatabaseGroupService](#bytebase-v1-DatabaseGroupService)
   
 - [v1/group_service.proto](#v1_group_service-proto)
+    - [BatchGetGroupsRequest](#bytebase-v1-BatchGetGroupsRequest)
+    - [BatchGetGroupsResponse](#bytebase-v1-BatchGetGroupsResponse)
     - [CreateGroupRequest](#bytebase-v1-CreateGroupRequest)
     - [DeleteGroupRequest](#bytebase-v1-DeleteGroupRequest)
     - [GetGroupRequest](#bytebase-v1-GetGroupRequest)
@@ -6110,6 +6112,36 @@ The database group&#39;s `name` field is used to identify the database group to 
 
 
 
+<a name="bytebase-v1-BatchGetGroupsRequest"></a>
+
+### BatchGetGroupsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| names | [string](#string) | repeated | The group names to retrieve. Format: groups/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchGetGroupsResponse"></a>
+
+### BatchGetGroupsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| groups | [Group](#bytebase-v1-Group) | repeated | The groups from the specified request. |
+
+
+
+
+
+
 <a name="bytebase-v1-CreateGroupRequest"></a>
 
 ### CreateGroupRequest
@@ -6273,6 +6305,7 @@ The group&#39;s `name` field is used to identify the group to update. Format: gr
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetGroup | [GetGroupRequest](#bytebase-v1-GetGroupRequest) | [Group](#bytebase-v1-Group) | Permissions required: bb.groups.get |
+| BatchGetGroups | [BatchGetGroupsRequest](#bytebase-v1-BatchGetGroupsRequest) | [BatchGetGroupsResponse](#bytebase-v1-BatchGetGroupsResponse) | Get the groups in batch. Permissions required: bb.groups.get |
 | ListGroups | [ListGroupsRequest](#bytebase-v1-ListGroupsRequest) | [ListGroupsResponse](#bytebase-v1-ListGroupsResponse) | Permissions required: bb.groups.list |
 | CreateGroup | [CreateGroupRequest](#bytebase-v1-CreateGroupRequest) | [Group](#bytebase-v1-Group) | Permissions required: bb.groups.create |
 | UpdateGroup | [UpdateGroupRequest](#bytebase-v1-UpdateGroupRequest) | [Group](#bytebase-v1-Group) | UpdateGroup updates the group. Users with &#34;bb.groups.update&#34; permission on the workspace or the group owner can access this method. Permissions required: bb.groups.update |

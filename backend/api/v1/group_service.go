@@ -52,6 +52,19 @@ func (s *GroupService) GetGroup(ctx context.Context, req *connect.Request[v1pb.G
 	return connect.NewResponse(result), nil
 }
 
+// BatchGetGroups get groups in batch.
+func (s *GroupService) BatchGetGroups(ctx context.Context, request *connect.Request[v1pb.BatchGetGroupsRequest]) (*connect.Response[v1pb.BatchGetGroupsResponse], error) {
+	response := &v1pb.BatchGetGroupsResponse{}
+	for _, name := range request.Msg.Names {
+		group, err := s.GetGroup(ctx, connect.NewRequest(&v1pb.GetGroupRequest{Name: name}))
+		if err != nil {
+			return nil, err
+		}
+		response.Groups = append(response.Groups, group.Msg)
+	}
+	return connect.NewResponse(response), nil
+}
+
 // ListGroups lists all groups.
 func (s *GroupService) ListGroups(ctx context.Context, _ *connect.Request[v1pb.ListGroupsRequest]) (*connect.Response[v1pb.ListGroupsResponse], error) {
 	groups, err := s.store.ListGroups(ctx, &store.FindGroupMessage{})

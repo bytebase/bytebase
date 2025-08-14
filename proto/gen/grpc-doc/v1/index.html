@@ -1543,6 +1543,14 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.v1.BatchGetGroupsRequest"><span class="badge">M</span>BatchGetGroupsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.BatchGetGroupsResponse"><span class="badge">M</span>BatchGetGroupsResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.CreateGroupRequest"><span class="badge">M</span>CreateGroupRequest</a>
                 </li>
               
@@ -17332,6 +17340,55 @@ The API will default to the BASIC view.</p></td>
       <p></p>
 
       
+        <h3 id="bytebase.v1.BatchGetGroupsRequest">BatchGetGroupsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>names</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The group names to retrieve.
+Format: groups/{email} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.BatchGetGroupsResponse">BatchGetGroupsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>groups</td>
+                  <td><a href="#bytebase.v1.Group">Group</a></td>
+                  <td>repeated</td>
+                  <td><p>The groups from the specified request. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.CreateGroupRequest">CreateGroupRequest</h3>
         <p></p>
 
@@ -17665,6 +17722,14 @@ In this situation, `update_mask` is ignored. </p></td>
               </tr>
             
               <tr>
+                <td>BatchGetGroups</td>
+                <td><a href="#bytebase.v1.BatchGetGroupsRequest">BatchGetGroupsRequest</a></td>
+                <td><a href="#bytebase.v1.BatchGetGroupsResponse">BatchGetGroupsResponse</a></td>
+                <td><p>Get the groups in batch.
+Permissions required: bb.groups.get</p></td>
+              </tr>
+            
+              <tr>
                 <td>ListGroups</td>
                 <td><a href="#bytebase.v1.ListGroupsRequest">ListGroupsRequest</a></td>
                 <td><a href="#bytebase.v1.ListGroupsResponse">ListGroupsResponse</a></td>
@@ -17718,6 +17783,16 @@ Permissions required: bb.groups.update</p></td>
                 <td>GetGroup</td>
                 <td>GET</td>
                 <td>/v1/{name=groups/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>BatchGetGroups</td>
+                <td>GET</td>
+                <td>/v1/groups:batchGet</td>
                 <td></td>
               </tr>
               
