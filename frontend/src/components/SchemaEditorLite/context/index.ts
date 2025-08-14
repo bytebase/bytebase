@@ -22,6 +22,7 @@ export type SchemaEditorEvents = Emittery<{
   };
   ["rebuild-edit-status"]: { resets: RebuildMetadataEditReset[] };
   ["clear-tabs"]: undefined;
+  ["refresh-preview"]: undefined;
 }>;
 
 export type SchemaEditorOptions = {
