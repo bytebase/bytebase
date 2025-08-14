@@ -79,6 +79,7 @@
           :bindings="memberBindings"
           @update-binding="selectMember"
           @revoke-binding="revokeMember"
+          @revoke-role="revokeRole"
         />
       </NTabPane>
     </NTabs>
@@ -130,7 +131,7 @@ import {
   PresetRoleType,
   groupBindingPrefix,
 } from "@/types";
-import { hasProjectPermissionV2 } from "@/utils";
+import { hasProjectPermissionV2, isBindingPolicyExpired } from "@/utils";
 import GrantRequestPanel from "../GrantRequestPanel";
 import { SearchBox } from "../v2";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
@@ -214,6 +215,22 @@ const selectMember = (binding: MemberBinding) => {
 const pendingEditMember = computed(() => {
   return memberBindings.value.find((m) => m.binding === state.editingMember);
 });
+
+const revokeRole = async (role: string, expired: boolean) => {
+  const policy = cloneDeep(iamPolicy.value);
+  policy.bindings = iamPolicy.value.bindings.filter((binding) => {
+    return binding.role !== role || isBindingPolicyExpired(binding) !== expired;
+  });
+  await projectIamPolicyStore.updateProjectIamPolicy(
+    projectResourceName.value,
+    policy
+  );
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
+  });
+};
 
 const revokeMember = async (binding: MemberBinding) => {
   const policy = cloneDeep(iamPolicy.value);
