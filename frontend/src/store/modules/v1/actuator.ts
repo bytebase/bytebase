@@ -23,7 +23,7 @@ import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import { semverCompare } from "@/utils";
 
 const EXTERNAL_URL_PLACEHOLDER =
-  "https://docs.bytebase.com/get-started/install/external-url";
+  "https://docs.bytebase.com/get-started/self-host/external-url";
 const GITHUB_API_LIST_BYTEBASE_RELEASE =
   "https://api.github.com/repos/bytebase/bytebase/releases";
 

@@ -15,10 +15,7 @@
 <script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
-import {
-  getMemberBindingsByRole,
-  getMemberBindings,
-} from "@/components/Member/utils";
+import { getMemberBindings } from "@/components/Member/utils";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { useGroupList, useProjectV1Store, useWorkspaceV1Store } from "@/store";
 import { PRESET_WORKSPACE_ROLES } from "@/types";
@@ -61,7 +58,7 @@ const filteredGroupList = computedAsync(async () => {
   const project = await projectV1Store.getOrFetchProjectByName(
     props.projectName
   );
-  const memberMap = await getMemberBindingsByRole({
+  const bindings = await getMemberBindings({
     policies: [
       {
         level: "WORKSPACE",
@@ -76,9 +73,7 @@ const filteredGroupList = computedAsync(async () => {
     ignoreRoles: new Set(PRESET_WORKSPACE_ROLES),
   });
 
-  return getMemberBindings(memberMap)
-    .map((binding) => binding.group)
-    .filter((g) => g) as Group[];
+  return bindings.map((binding) => binding.group).filter((g) => g) as Group[];
 }, []);
 
 const options = computed(() => {

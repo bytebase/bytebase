@@ -98,9 +98,7 @@ const getMemberBinding = async (
   return memberBinding;
 };
 
-// getMemberBindingsByRole returns a map from the input policies.
-// The map will in the Map<roles/{role}, Map<user:{email} or group:{email}, MemberBinding>> format
-export const getMemberBindingsByRole = async ({
+export const getMemberBindings = async ({
   policies,
   searchText,
   ignoreRoles,
@@ -108,10 +106,8 @@ export const getMemberBindingsByRole = async ({
   policies: { level: "WORKSPACE" | "PROJECT"; policy: IamPolicy }[];
   searchText: string;
   ignoreRoles: Set<string>;
-}): Promise<Map<string, Map<string, MemberBinding>>> => {
-  // Map<role, Map<member, MemberBinding>>
+}): Promise<MemberBinding[]> => {
   const memberMap = new Map<string, MemberBinding>();
-  const roleMap = new Map<string, Map<string, MemberBinding>>();
   const search = searchText.trim().toLowerCase();
 
   const ensureMemberBinding = async (member: string) => {
@@ -132,9 +128,7 @@ export const getMemberBindingsByRole = async ({
       if (ignoreRoles.has(binding.role)) {
         continue;
       }
-      if (!roleMap.has(binding.role)) {
-        roleMap.set(binding.role, new Map<string, MemberBinding>());
-      }
+
       for (const member of binding.members) {
         const memberBinding = await ensureMemberBinding(member);
         if (!memberBinding) {
@@ -145,34 +139,9 @@ export const getMemberBindingsByRole = async ({
         } else if (policy.level === "PROJECT") {
           memberBinding.projectRoleBindings.push(binding);
         }
-
-        if (!roleMap.get(binding.role)?.has(member)) {
-          roleMap.get(binding.role)?.set(member, memberBinding);
-        }
       }
     }
   }
 
-  return roleMap;
-};
-
-export const getMemberBindings = (
-  // Map<role, Map<member, MemberBinding>>
-  memberBindingsByRole: Map<string, Map<string, MemberBinding>>
-) => {
-  const seen = new Set<string>();
-  const bindings: MemberBinding[] = [];
-  for (const memberBindings of memberBindingsByRole.values()) {
-    if (memberBindings.size === 0) {
-      continue;
-    }
-    for (const memberBinding of memberBindings.values()) {
-      if (seen.has(memberBinding.binding)) {
-        continue;
-      }
-      seen.add(memberBinding.binding);
-      bindings.push(memberBinding);
-    }
-  }
-  return bindings;
+  return [...memberMap.values()];
 };
