@@ -44,6 +44,13 @@ func LoadDemoData(ctx context.Context, db *sql.DB) error {
 		return err
 	}
 
+	// Reset the search_path to public after loading demo data
+	// The dump.sql contains pg_catalog.set_config('search_path', '', false) which
+	// clears the search_path for the session, causing subsequent queries to fail
+	if _, err := db.Exec("SET search_path TO public"); err != nil {
+		return err
+	}
+
 	slog.Info("Completed demo data setup.")
 	return nil
 }
