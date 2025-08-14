@@ -565,18 +565,18 @@ func (*metadataExtractor) getIndexColumnsInfo(keys []*ast.IndexPartSpecification
 	}
 
 	var hasDescending bool
-	
+
 	for _, key := range keys {
 		if key.Column != nil {
 			expressions = append(expressions, key.Column.Name.O)
-			
+
 			// Extract key length if specified (for prefix indexes like MySQL)
 			if key.Length > 0 {
 				keyLengths = append(keyLengths, int64(key.Length))
 			} else {
 				keyLengths = append(keyLengths, -1) // -1 indicates no prefix length specified
 			}
-			
+
 			// Extract descending flag
 			if key.Desc {
 				hasDescending = true
@@ -584,13 +584,13 @@ func (*metadataExtractor) getIndexColumnsInfo(keys []*ast.IndexPartSpecification
 			descending = append(descending, key.Desc)
 		}
 	}
-	
+
 	// TiDB always returns KeyLength arrays, but not Descending arrays
 	// Match TiDB database behavior
 	if !hasDescending {
 		descending = nil
 	}
-	
+
 	return expressions, keyLengths, descending
 }
 
@@ -767,7 +767,7 @@ func (*metadataExtractor) processColumnLevelConstraints(stmt *ast.CreateTableStm
 		for i := range keyLengths {
 			keyLengths[i] = -1 // No prefix length for column-level constraints
 		}
-		
+
 		index := &storepb.IndexMetadata{
 			Name:        "PRIMARY",
 			Primary:     true,
@@ -838,7 +838,7 @@ func (*metadataExtractor) ensureForeignKeyIndex(fk *storepb.ForeignKeyMetadata, 
 	for i := range keyLengths {
 		keyLengths[i] = -1 // No prefix length for FK indexes
 	}
-	
+
 	index := &storepb.IndexMetadata{
 		Name:        indexName,
 		Primary:     false,
