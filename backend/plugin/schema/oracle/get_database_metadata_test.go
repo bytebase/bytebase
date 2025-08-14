@@ -1188,7 +1188,7 @@ func compareIndexes(t *testing.T, dbIndexes, parsedIndexes []*storepb.IndexMetad
 }
 
 // compareForeignKeys compares foreign key metadata
-func compareForeignKeys(t *testing.T, dbFKs, parsedFKs []*storepb.ForeignKeyMetadata, tableName string) {
+func compareForeignKeys(t *testing.T, dbFKs, parsedFKs []*storepb.ForeignKeyMetadata, _ string) {
 	// TODO: Oracle foreign key parsing needs improvement - for now we only check that parsed FKs are correct
 	// Full bidirectional comparison would require fixing the Oracle parser first
 	// require.Equal(t, len(dbFKs), len(parsedFKs), "mismatch in number of foreign keys for table %s", tableName)

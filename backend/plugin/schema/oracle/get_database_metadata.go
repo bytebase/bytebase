@@ -143,20 +143,20 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 type metadataExtractor struct {
 	*parser.BasePlSqlParserListener
 
-	currentDatabase     string
-	currentSchema       string
-	currentTable        string // Track current table being processed
-	tables              map[string]*storepb.TableMetadata
-	views               map[string]*storepb.ViewMetadata
-	materializedViews   map[string]*storepb.MaterializedViewMetadata
-	functions           map[string]*storepb.FunctionMetadata
-	procedures          map[string]*storepb.ProcedureMetadata
-	triggers            map[string]*storepb.TriggerMetadata
-	sequences           map[string]*storepb.SequenceMetadata
-	packages            map[string]*storepb.PackageMetadata
-	err                 error
-	inlinePrimaryKeys   map[string][]string // Track inline primary key columns by table
-	inlineUniqueKeys    map[string][]string // Track inline unique key columns by table
+	currentDatabase   string
+	currentSchema     string
+	currentTable      string // Track current table being processed
+	tables            map[string]*storepb.TableMetadata
+	views             map[string]*storepb.ViewMetadata
+	materializedViews map[string]*storepb.MaterializedViewMetadata
+	functions         map[string]*storepb.FunctionMetadata
+	procedures        map[string]*storepb.ProcedureMetadata
+	triggers          map[string]*storepb.TriggerMetadata
+	sequences         map[string]*storepb.SequenceMetadata
+	packages          map[string]*storepb.PackageMetadata
+	err               error
+	inlinePrimaryKeys map[string][]string // Track inline primary key columns by table
+	inlineUniqueKeys  map[string][]string // Track inline unique key columns by table
 }
 
 // Helper function to get or create table
@@ -205,7 +205,7 @@ func (e *metadataExtractor) EnterCreate_table(ctx *parser.Create_tableContext) {
 	// Extract table elements (columns, constraints)
 	if ctx.Relational_table() != nil {
 		e.extractRelationalTable(ctx.Relational_table(), table)
-		
+
 		// Process inline constraints after all columns are parsed
 		e.processInlineConstraints(tableName, table)
 	}
@@ -1407,7 +1407,7 @@ func (e *metadataExtractor) processInlineConstraints(tableName string, table *st
 	// Process inline primary key constraints
 	if primaryKeyColumns := e.inlinePrimaryKeys[tableName]; len(primaryKeyColumns) > 0 {
 		constraintName := fmt.Sprintf("PK_%s", tableName)
-		
+
 		// Check if a primary key index already exists (from out-of-line constraints)
 		hasExistingPK := false
 		for _, idx := range table.Indexes {
@@ -1416,7 +1416,7 @@ func (e *metadataExtractor) processInlineConstraints(tableName string, table *st
 				break
 			}
 		}
-		
+
 		// Oracle automatically creates a unique index for PRIMARY KEY constraints
 		if !hasExistingPK {
 			index := &storepb.IndexMetadata{
@@ -1428,16 +1428,16 @@ func (e *metadataExtractor) processInlineConstraints(tableName string, table *st
 			}
 			table.Indexes = append(table.Indexes, index)
 		}
-		
+
 		// Clean up the tracking
 		delete(e.inlinePrimaryKeys, tableName)
 	}
-	
+
 	// Process inline unique constraints
 	if uniqueKeyColumns := e.inlineUniqueKeys[tableName]; len(uniqueKeyColumns) > 0 {
 		for _, columnName := range uniqueKeyColumns {
 			constraintName := fmt.Sprintf("UK_%s_%s", tableName, columnName)
-			
+
 			// Check if a unique index already exists for this column
 			hasExistingUnique := false
 			for _, idx := range table.Indexes {
@@ -1446,7 +1446,7 @@ func (e *metadataExtractor) processInlineConstraints(tableName string, table *st
 					break
 				}
 			}
-			
+
 			// Oracle automatically creates a unique index for UNIQUE constraints
 			if !hasExistingUnique {
 				index := &storepb.IndexMetadata{
@@ -1459,7 +1459,7 @@ func (e *metadataExtractor) processInlineConstraints(tableName string, table *st
 				table.Indexes = append(table.Indexes, index)
 			}
 		}
-		
+
 		// Clean up the tracking
 		delete(e.inlineUniqueKeys, tableName)
 	}

@@ -175,6 +175,21 @@ func (e *metadataExtractor) getOrCreateTable(schemaName, tableName string) *stor
 	return table
 }
 
+// Helper function to find materialized view in a schema
+func (e *metadataExtractor) findMaterializedView(schemaName, viewName string) *storepb.MaterializedViewMetadata {
+	schema := e.getOrCreateSchema(schemaName)
+	if schema.MaterializedViews == nil {
+		return nil
+	}
+
+	for _, mv := range schema.MaterializedViews {
+		if mv.Name == viewName {
+			return mv
+		}
+	}
+	return nil
+}
+
 // EnterCreateschemastmt is called when entering a create schema statement
 func (e *metadataExtractor) EnterCreateschemastmt(ctx *parser.CreateschemastmtContext) {
 	if e.err != nil {
@@ -1308,13 +1323,33 @@ func (e *metadataExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 		return
 	}
 
-	// Extract table name from relation_expr
+	// Extract table/view name from relation_expr
 	if relationExpr := ctx.Relation_expr(); relationExpr != nil {
 		if qualifiedName := relationExpr.Qualified_name(); qualifiedName != nil {
-			schemaName, tableName := e.extractSchemaAndTableName(qualifiedName)
+			schemaName, relationName := e.extractSchemaAndTableName(qualifiedName)
 
-			// Get or create the table
-			tableMetadata := e.getOrCreateTable(schemaName, tableName)
+			// Try to find materialized view first, then table
+			var indexTarget any
+			var targetIndexes *[]*storepb.IndexMetadata
+
+			if materializedView := e.findMaterializedView(schemaName, relationName); materializedView != nil {
+				// Index is on a materialized view
+				indexTarget = materializedView
+				if materializedView.Indexes == nil {
+					materializedView.Indexes = []*storepb.IndexMetadata{}
+				}
+				targetIndexes = &materializedView.Indexes
+			} else {
+				// Index is on a table - get or create the table
+				tableMetadata := e.getOrCreateTable(schemaName, relationName)
+				indexTarget = tableMetadata
+				targetIndexes = &tableMetadata.Indexes
+			}
+
+			// If we couldn't find either table or materialized view, skip
+			if indexTarget == nil || targetIndexes == nil {
+				return
+			}
 
 			// Create index metadata
 			index := &storepb.IndexMetadata{
@@ -1378,11 +1413,8 @@ func (e *metadataExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 				}
 			}
 
-			// Add the index to the table
-			if tableMetadata.Indexes == nil {
-				tableMetadata.Indexes = []*storepb.IndexMetadata{}
-			}
-			tableMetadata.Indexes = append(tableMetadata.Indexes, index)
+			// Add the index to the table or materialized view
+			*targetIndexes = append(*targetIndexes, index)
 		}
 	}
 }
