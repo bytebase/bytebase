@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -1148,6 +1149,11 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		err = os.WriteFile(schemaFile, []byte(migrationContent), 0644)
 		a.NoError(err)
 
+		// Create output files
+		outputFile1 := filepath.Join(t.TempDir(), "rollout-output1.json")
+		outputFile2 := filepath.Join(t.TempDir(), "rollout-output2.json")
+		outputFile3 := filepath.Join(t.TempDir(), "rollout-output3.json")
+
 		// Execute first declarative rollout
 		result1, err := executeActionCommand(ctx,
 			"rollout",
@@ -1159,11 +1165,19 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 			"--file-pattern", schemaFile,
 			"--release-title", "Idempotent Release 1",
 			"--target-stage", "environments/prod",
+			"--output", outputFile1,
 			"--declarative",
 		)
 		a.NoError(err, "First declarative rollout should succeed")
 
-		// Execute second declarative rollout with same schema (idempotency test)
+		// Read first output
+		var output1 map[string]string
+		data1, err := os.ReadFile(outputFile1)
+		a.NoError(err)
+		err = json.Unmarshal(data1, &output1)
+		a.NoError(err)
+
+		// Execute second declarative rollout with same schema (should fail)
 		result2, err := executeActionCommand(ctx,
 			"rollout",
 			"--url", ctl.rootURL,
@@ -1174,11 +1188,49 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 			"--file-pattern", schemaFile,
 			"--release-title", "Idempotent Release 2",
 			"--target-stage", "environments/prod",
+			"--output", outputFile2,
 			"--declarative",
 		)
-		a.NoError(err, "Second declarative rollout should succeed (idempotent)")
+		// Second rollout should fail due to idempotency check
+		a.Error(err, "Second declarative rollout should fail")
 
-		// Execute third declarative rollout with same schema
+		// Read second output
+		var output2 map[string]string
+		data2, err := os.ReadFile(outputFile2)
+		a.NoError(err)
+		err = json.Unmarshal(data2, &output2)
+		a.NoError(err)
+
+		// Get rollout details to check task run error
+		rolloutName := output2["rollout"]
+		a.NotEmpty(rolloutName, "Should have rollout name in output")
+
+		// Get the rollout to check task runs
+		rolloutResp, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
+			Name: rolloutName,
+		}))
+		a.NoError(err)
+		rollout := rolloutResp.Msg
+
+		// Check task runs for error message
+		// Use the special parent format to list all task runs from the rollout
+		taskRunsResp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, connect.NewRequest(&v1pb.ListTaskRunsRequest{
+			Parent: fmt.Sprintf("%s/stages/-/tasks/-", rollout.Name),
+		}))
+		a.NoError(err)
+
+		foundExpectedError := false
+		for _, taskRun := range taskRunsResp.Msg.TaskRuns {
+			if taskRun.Detail != "" && strings.Contains(taskRun.Detail, "cannot apply SDL migration with version") &&
+				strings.Contains(taskRun.Detail, "because an equal or newer version") &&
+				strings.Contains(taskRun.Detail, "already exists") {
+				foundExpectedError = true
+				break
+			}
+		}
+		a.True(foundExpectedError, "Should find error message about SDL migration version conflict")
+
+		// Execute third declarative rollout with same schema (should also fail)
 		result3, err := executeActionCommand(ctx,
 			"rollout",
 			"--url", ctl.rootURL,
@@ -1189,11 +1241,31 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 			"--file-pattern", schemaFile,
 			"--release-title", "Idempotent Release 3",
 			"--target-stage", "environments/prod",
+			"--output", outputFile3,
 			"--declarative",
 		)
-		a.NoError(err, "Third declarative rollout should succeed (idempotent)")
+		// Third rollout should also fail
+		a.Error(err, "Third declarative rollout should fail")
 
-		// Verify schema remains consistent
+		// Read third output
+		var output3 map[string]string
+		data3, err := os.ReadFile(outputFile3)
+		a.NoError(err)
+		err = json.Unmarshal(data3, &output3)
+		a.NoError(err)
+
+		// Verify that all rollouts reuse the same release
+		releases, err := ctl.releaseServiceClient.ListReleases(ctx, connect.NewRequest(&v1pb.ListReleasesRequest{
+			Parent: ctl.project.Name,
+		}))
+		a.NoError(err)
+		a.Len(releases.Msg.Releases, 1, "Should have only one release (reused)")
+
+		// Verify all outputs reference the same release
+		a.Equal(output1["release"], output2["release"], "Second rollout should reuse first release")
+		a.Equal(output1["release"], output3["release"], "Third rollout should reuse first release")
+
+		// Verify schema remains consistent (only one table created)
 		metadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
 			Name: database.Name + "/metadata",
 		}))
@@ -1210,10 +1282,11 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		}
 		a.Equal(1, tableCount, "Should have exactly one users table (idempotent)")
 
-		// Verify no errors in any rollout
-		a.NotContains(result1.Stderr, "error", "First rollout should complete without errors")
-		a.NotContains(result2.Stderr, "error", "Second rollout should complete without errors")
-		a.NotContains(result3.Stderr, "error", "Third rollout should complete without errors")
+		// Verify first rollout succeeded
+		a.NotContains(result1.Stderr, "failed to run and wait for rollout: found failed tasks", "First rollout should complete without errors")
+		// Second and third rollouts should have errors
+		a.Contains(result2.Stderr, "failed to run and wait for rollout: found failed tasks", "Second rollout should have error")
+		a.Contains(result3.Stderr, "failed to run and wait for rollout: found failed tasks", "Third rollout should have error")
 	})
 
 	t.Run("DeclarativeMultipleDatabases", func(t *testing.T) {
