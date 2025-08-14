@@ -120,9 +120,14 @@ useEmitteryEventListener(
   }
 );
 
+const refreshPreview = () => {
+  context.events.emit("refresh-preview");
+};
+
 defineExpose({
   rebuildMetadataEdit,
   applyMetadataEdit,
+  refreshPreview,
 });
 </script>
 
