@@ -446,7 +446,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 				return false, errors.Wrapf(err, "failed to list revisions")
 			}
 			if len(list) > 0 {
-				// If the version is higher than the current version, return error
+				// If the version is equal or higher than the current version, return error
 				latestRevision := list[0]
 				latestVersion, err := model.NewVersion(latestRevision.Version)
 				if err != nil {
@@ -456,8 +456,8 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 				if err != nil {
 					return false, errors.Wrapf(err, "failed to parse current version %q", mc.version)
 				}
-				if currentVersion.LessThan(latestVersion) {
-					return false, errors.Errorf("cannot apply SDL migration with version %s because a newer version %s already exists", mc.version, latestRevision.Version)
+				if currentVersion.LessOrEqualThan(latestVersion) {
+					return false, errors.Errorf("cannot apply SDL migration with version %s because an equal or newer version %s already exists", mc.version, latestRevision.Version)
 				}
 			}
 		} else {
