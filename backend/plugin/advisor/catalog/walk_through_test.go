@@ -17,7 +17,7 @@ import (
 	// Register postgresql parser driver.
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/sheet"
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
 )
 
 type testData struct {

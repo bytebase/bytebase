@@ -1,0 +1,4 @@
+- stmt: COMMENT ON COLUMN public.t4.c IS 'comment with ''; test escape';
+  want: COMMENT ON COLUMN "public"."t4"."c" IS 'comment with ''; test escape';
+- stmt: COMMENT ON TABLE public.t4 IS 'comment with ''; test escape';
+  want: COMMENT ON TABLE "public"."t4" IS 'comment with ''; test escape';

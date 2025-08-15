@@ -28,7 +28,7 @@ import (
 	redshiftparser "github.com/bytebase/bytebase/backend/plugin/parser/redshift"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
 	tidbbbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	tsqlbatch "github.com/bytebase/bytebase/backend/plugin/parser/tsql/batch"

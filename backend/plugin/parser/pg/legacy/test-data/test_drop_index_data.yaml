@@ -1,0 +1,6 @@
+- stmt: drop index if exists idx1, idx2, idx3 cascade
+  want: DROP INDEX IF EXISTS "idx1", "idx2", "idx3" CASCADE;
+- stmt: drop index idx1 restrict
+  want: DROP INDEX "idx1";
+- stmt: drop index public.idx1 cascade
+  want: DROP INDEX "public"."idx1" CASCADE;
