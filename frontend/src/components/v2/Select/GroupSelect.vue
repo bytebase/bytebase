@@ -1,5 +1,7 @@
 <template>
   <ResourceSelect
+    v-bind="$attrs"
+    :remote="true"
     :value="validSelectedGroup"
     :values="validSelectedGroups"
     :disabled="disabled"
@@ -7,24 +9,20 @@
     :options="options"
     :custom-label="renderLabel"
     :placeholder="$t('settings.members.select-group', multiple ? 2 : 1)"
+    @search="handleSearch"
     @update:value="(val) => $emit('update:group', val)"
     @update:values="(val) => $emit('update:groups', val)"
   />
 </template>
 
 <script lang="tsx" setup>
-import { computedAsync } from "@vueuse/core";
-import { computed, onMounted } from "vue";
-import { getMemberBindings } from "@/components/Member/utils";
+import { useDebounceFn } from "@vueuse/core";
+import { computed, onMounted, reactive } from "vue";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
-import {
-  useGroupList,
-  useGroupStore,
-  useProjectV1Store,
-  useWorkspaceV1Store,
-} from "@/store";
-import { PRESET_WORKSPACE_ROLES } from "@/types";
+import { useGroupStore } from "@/store";
+import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
+import { getDefaultPagination } from "@/utils";
 import ResourceSelect from "./ResourceSelect.vue";
 
 const props = withDefaults(
@@ -52,44 +50,62 @@ defineEmits<{
   (event: "update:groups", val: string[]): void;
 }>();
 
-const groupStore = useGroupStore();
-const groupList = useGroupList();
-const projectV1Store = useProjectV1Store();
-const workspaceStore = useWorkspaceV1Store();
+interface LocalState {
+  loading: boolean;
+  rawList: Group[];
+}
 
-onMounted(async () => {
-  // This component needs ALL groups for selection, not just those in IAM bindings
-  // AuthContext only loads groups that have IAM policy bindings via batchFetchGroups
-  await groupStore.fetchGroupList();
+const state = reactive<LocalState>({
+  loading: false,
+  rawList: [],
 });
 
-const filteredGroupList = computedAsync(async () => {
-  if (!props.projectName) {
-    return groupList.value;
-  }
-  const project = await projectV1Store.getOrFetchProjectByName(
-    props.projectName
-  );
-  const bindings = await getMemberBindings({
-    policies: [
-      {
-        level: "WORKSPACE",
-        policy: workspaceStore.workspaceIamPolicy,
-      },
-      {
-        level: "PROJECT",
-        policy: project.iamPolicy,
-      },
-    ],
-    searchText: "",
-    ignoreRoles: new Set(PRESET_WORKSPACE_ROLES),
-  });
+const groupStore = useGroupStore();
 
-  return bindings.map((binding) => binding.group).filter((g) => g) as Group[];
-}, []);
+const searchGroups = async (search: string) => {
+  const { groups } = await groupStore.fetchGroupList({
+    filter: {
+      query: search,
+      project: props.projectName,
+    },
+    pageSize: getDefaultPagination(),
+  });
+  return groups;
+};
+
+const handleSearch = useDebounceFn(async (search: string) => {
+  state.loading = true;
+  try {
+    const groups = await searchGroups(search);
+    state.rawList = groups;
+    if (!search) {
+      if (props.group) {
+        await initSelectedGroups([props.group]);
+      }
+      if (props.groups) {
+        await initSelectedGroups(props.groups);
+      }
+    }
+  } finally {
+    state.loading = false;
+  }
+}, DEBOUNCE_SEARCH_DELAY);
+
+const initSelectedGroups = async (groupNames: string[]) => {
+  const groups = await groupStore.batchFetchGroups(groupNames);
+  for (const group of groups) {
+    if (!state.rawList.find((g) => g.name === group.name)) {
+      state.rawList.unshift(group);
+    }
+  }
+};
+
+onMounted(async () => {
+  await handleSearch("");
+});
 
 const options = computed(() => {
-  return filteredGroupList.value.map((group) => ({
+  return state.rawList.map((group) => ({
     value: group.name,
     label: group.title,
     resource: group,

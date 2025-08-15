@@ -184,6 +184,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: "close"): void;
+  (event: "updated", group: Group): void;
 }>();
 
 const { t } = useI18n();
@@ -322,10 +323,11 @@ const tryCreateOrUpdateGroup = async () => {
   state.isRequesting = true;
 
   try {
+    let group;
     if (isCreating.value) {
-      await groupStore.createGroup(validGroup.value);
+      group = await groupStore.createGroup(validGroup.value);
     } else {
-      await groupStore.updateGroup(validGroup.value);
+      group = await groupStore.updateGroup(validGroup.value);
     }
     pushNotification({
       module: "bytebase",
@@ -333,6 +335,9 @@ const tryCreateOrUpdateGroup = async () => {
       title: isCreating.value ? t("common.created") : t("common.updated"),
     });
     emit("close");
+    if (group) {
+      emit("updated", group);
+    }
   } finally {
     state.isRequesting = false;
   }

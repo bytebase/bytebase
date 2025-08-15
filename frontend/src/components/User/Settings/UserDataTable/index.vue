@@ -25,7 +25,7 @@ import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
-import { computed, reactive, h, onMounted } from "vue";
+import { computed, reactive, h, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAlert } from "@/bbkit";
 import {
@@ -71,10 +71,16 @@ const userStore = useUserStore();
 const groupStore = useGroupStore();
 const workspaceStore = useWorkspaceV1Store();
 
-onMounted(async () => {
-  // Load all groups once for the entire table to avoid duplicate requests
-  // from individual GroupsCell components
-  await groupStore.fetchGroupList();
+watchEffect(async () => {
+  const groupNames = new Set<string>();
+  for (const user of props.userList) {
+    for (const groupName of user.groups) {
+      if (!groupStore.getGroupByIdentifier(groupName)) {
+        groupNames.add(groupName);
+      }
+    }
+  }
+  await groupStore.batchFetchGroups([...groupNames]);
 });
 
 const state = reactive<LocalState>({

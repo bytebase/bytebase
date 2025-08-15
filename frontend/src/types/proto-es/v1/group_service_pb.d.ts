@@ -72,7 +72,6 @@ export declare const BatchGetGroupsResponseSchema: GenMessage<BatchGetGroupsResp
  */
 export declare type ListGroupsRequest = Message<"bytebase.v1.ListGroupsRequest"> & {
   /**
-   * Not used.
    * The maximum number of groups to return. The service may return fewer than
    * this value.
    * If unspecified, at most 10 groups will be returned.
@@ -83,7 +82,6 @@ export declare type ListGroupsRequest = Message<"bytebase.v1.ListGroupsRequest">
   pageSize: number;
 
   /**
-   * Not used.
    * A page token, received from a previous `ListGroups` call.
    * Provide this to retrieve the subsequent page.
    *
@@ -93,6 +91,28 @@ export declare type ListGroupsRequest = Message<"bytebase.v1.ListGroupsRequest">
    * @generated from field: string page_token = 2;
    */
   pageToken: string;
+
+  /**
+   * Filter is used to filter groups returned in the list.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
+   * Supported filter:
+   * - title: the group title, support "==" and ".matches()" operator.
+   * - email: the group email, support "==" and ".matches()" operator.
+   * - project: the project full name in "projects/{id}" format, support "==" operator.
+   *
+   * For example:
+   * title == "dba"
+   * email == "dba@bytebase.com"
+   * title.matches("dba")
+   * email.matches("dba")
+   * project == "projects/sample-project"
+   * You can combine filter conditions like:
+   * title.matches("dba") || email.matches("dba")
+   *
+   * @generated from field: string filter = 3;
+   */
+  filter: string;
 };
 
 /**

@@ -524,8 +524,7 @@ paths:
                 - name: pageSize
                   in: query
                   description: |-
-                    Not used.
-                     The maximum number of groups to return. The service may return fewer than
+                    The maximum number of groups to return. The service may return fewer than
                      this value.
                      If unspecified, at most 10 groups will be returned.
                      The maximum value is 1000; values above 1000 will be coerced to 1000.
@@ -535,12 +534,32 @@ paths:
                 - name: pageToken
                   in: query
                   description: |-
-                    Not used.
-                     A page token, received from a previous `ListGroups` call.
+                    A page token, received from a previous `ListGroups` call.
                      Provide this to retrieve the subsequent page.
 
                      When paginating, all other parameters provided to `ListGroups` must match
                      the call that provided the page token.
+                  schema:
+                    type: string
+                - name: filter
+                  in: query
+                  description: |-
+                    Filter is used to filter groups returned in the list.
+                     The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+                     Supported filter:
+                     - title: the group title, support "==" and ".matches()" operator.
+                     - email: the group email, support "==" and ".matches()" operator.
+                     - project: the project full name in "projects/{id}" format, support "==" operator.
+
+                     For example:
+                     title == "dba"
+                     email == "dba@bytebase.com"
+                     title.matches("dba")
+                     email.matches("dba")
+                     project == "projects/sample-project"
+                     You can combine filter conditions like:
+                     title.matches("dba") || email.matches("dba")
                   schema:
                     type: string
             responses:
@@ -14361,6 +14380,14 @@ components:
                          Could be empty.
                 profile:
                     $ref: '#/components/schemas/User_Profile'
+                groups:
+                    readOnly: true
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        The groups for the user.
+                         Format: groups/{email}
         User_Profile:
             type: object
             properties:
