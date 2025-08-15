@@ -6,8 +6,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { groupBindingPrefix } from "@/types";
-import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
 import { isAuthRelatedRoute } from "@/utils/auth";
 import SigninModal from "@/views/auth/SigninModal.vue";
 import { t } from "./plugins/i18n";

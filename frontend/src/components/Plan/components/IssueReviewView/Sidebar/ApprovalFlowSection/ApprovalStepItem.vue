@@ -73,11 +73,16 @@ import { computedAsync } from "@vueuse/core";
 import { uniq } from "lodash-es";
 import { ThumbsUp, User, X } from "lucide-vue-next";
 import { NTimelineItem } from "naive-ui";
-import { computed } from "vue";
+import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { useCurrentUserV1, useUserStore, useCurrentProjectV1 } from "@/store";
+import {
+  useCurrentUserV1,
+  useUserStore,
+  useCurrentProjectV1,
+  useGroupStore,
+} from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
-import { SYSTEM_BOT_EMAIL } from "@/types";
+import { SYSTEM_BOT_EMAIL, groupBindingPrefix } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { ApprovalNode_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
@@ -87,7 +92,7 @@ import type {
   Issue_Approver,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { User as UserType } from "@/types/proto-es/v1/user_service_pb";
-import { memberMapToRolesInProjectIAM } from "@/utils";
+import { memberMapToRolesInProjectIAM, isBindingPolicyExpired } from "@/utils";
 import ApprovalUserView from "./ApprovalUserView.vue";
 import PotentialApprovers from "./PotentialApprovers.vue";
 
@@ -100,6 +105,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const { project } = useCurrentProjectV1();
+const groupStore = useGroupStore();
 const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
 const currentUserEmail = computed(() => currentUser.value.email);
@@ -178,16 +184,45 @@ const roleName = computed((): string => {
   return t("custom-approval.approval-flow.node.approver");
 });
 
-// Get candidates for this approval step
-const candidateEmails = computed(() => {
-  const candidates: string[] = [];
-
+const stepRoles = computed(() => {
+  const roles = [];
   for (const node of props.step.nodes) {
     if (node.type !== ApprovalNode_Type.ANY_IN_GROUP) continue;
 
     const role = node.role;
     if (!role) continue;
+    roles.push(role);
+  }
+  return roles;
+});
 
+watchEffect(async () => {
+  const groupNames = new Set<string>();
+
+  for (const role of stepRoles.value) {
+    for (const binding of project.value.iamPolicy.bindings) {
+      if (binding.role !== role || isBindingPolicyExpired(binding)) {
+        continue;
+      }
+      for (const member of binding.members) {
+        if (
+          member.startsWith(groupBindingPrefix) &&
+          !groupStore.getGroupByIdentifier(member)
+        ) {
+          groupNames.add(member);
+        }
+      }
+    }
+  }
+
+  await groupStore.batchFetchGroups([...groupNames]);
+});
+
+// Get candidates for this approval step
+const candidateEmails = computed(() => {
+  const candidates: string[] = [];
+
+  for (const role of stepRoles.value) {
     // Get users with this role from project IAM policy
     const memberMap = memberMapToRolesInProjectIAM(
       project.value.iamPolicy,
