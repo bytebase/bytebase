@@ -897,8 +897,8 @@ func (*metadataExtractor) extractUniqueConstraint(ctx parser.IOut_of_line_constr
 		Unique:       true,
 		Type:         "NORMAL",
 		Expressions:  columns,
-		Visible:      true, // Oracle indexes are visible by default
-		IsConstraint: true, // This represents a unique constraint
+		Visible:      false, // Oracle constraint-based unique indexes are not visible
+		IsConstraint: true,  // This represents a unique constraint
 	}
 
 	table.Indexes = append(table.Indexes, index)
