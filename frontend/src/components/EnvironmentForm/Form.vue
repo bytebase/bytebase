@@ -132,13 +132,13 @@
       >
         <div class="mt-3">
           <NCheckbox
-            v-if="isDev() && existRelatedResource"
+            v-if="existRelatedResource"
             v-model:checked="confirmDelete"
             class="mr-2"
           />
           <span>
             {{
-              isDev() && existRelatedResource
+              existRelatedResource
                 ? $t("environment.delete-description")
                 : $t("common.cannot-undo-this-action")
             }}
@@ -166,7 +166,6 @@ import {
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { isDev } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import SQLReviewForResource from "../SQLReview/components/SQLReviewForResource.vue";
 import { ResourceIdField } from "../v2";
