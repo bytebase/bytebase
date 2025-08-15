@@ -456,7 +456,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 				if err != nil {
 					return false, errors.Wrapf(err, "failed to parse current version %q", mc.version)
 				}
-				if currentVersion.LessOrEqualThan(latestVersion) {
+				if currentVersion.LessThanOrEqual(latestVersion) {
 					return false, errors.Errorf("cannot apply SDL migration with version %s because an equal or newer version %s already exists", mc.version, latestRevision.Version)
 				}
 			}

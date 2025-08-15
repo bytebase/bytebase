@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -1203,32 +1202,7 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 
 		// Get rollout details to check task run error
 		rolloutName := output2["rollout"]
-		a.NotEmpty(rolloutName, "Should have rollout name in output")
-
-		// Get the rollout to check task runs
-		rolloutResp, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
-			Name: rolloutName,
-		}))
-		a.NoError(err)
-		rollout := rolloutResp.Msg
-
-		// Check task runs for error message
-		// Use the special parent format to list all task runs from the rollout
-		taskRunsResp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, connect.NewRequest(&v1pb.ListTaskRunsRequest{
-			Parent: fmt.Sprintf("%s/stages/-/tasks/-", rollout.Name),
-		}))
-		a.NoError(err)
-
-		foundExpectedError := false
-		for _, taskRun := range taskRunsResp.Msg.TaskRuns {
-			if taskRun.Detail != "" && strings.Contains(taskRun.Detail, "cannot apply SDL migration with version") &&
-				strings.Contains(taskRun.Detail, "because an equal or newer version") &&
-				strings.Contains(taskRun.Detail, "already exists") {
-				foundExpectedError = true
-				break
-			}
-		}
-		a.True(foundExpectedError, "Should find error message about SDL migration version conflict")
+		a.Empty(rolloutName, "Should not have rollout name in output")
 
 		// Execute third declarative rollout with same schema (should also fail)
 		result3, err := executeActionCommand(ctx,
@@ -1283,10 +1257,10 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		a.Equal(1, tableCount, "Should have exactly one users table (idempotent)")
 
 		// Verify first rollout succeeded
-		a.NotContains(result1.Stderr, "failed to run and wait for rollout: found failed tasks", "First rollout should complete without errors")
+		a.NotContains(result1.Stderr, "there is an equal or higher versioned declarative revision", "first rollout should complete without errors")
 		// Second and third rollouts should have errors
-		a.Contains(result2.Stderr, "failed to run and wait for rollout: found failed tasks", "Second rollout should have error")
-		a.Contains(result3.Stderr, "failed to run and wait for rollout: found failed tasks", "Third rollout should have error")
+		a.Contains(result2.Stderr, "there is an equal or higher versioned declarative revision", "second rollout should have error")
+		a.Contains(result3.Stderr, "there is an equal or higher versioned declarative revision", "third rollout should have error")
 	})
 
 	t.Run("DeclarativeMultipleDatabases", func(t *testing.T) {

@@ -143,8 +143,6 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 
 		switch releaseFileType {
 		case v1pb.Release_File_DECLARATIVE:
-			// TODO(p0ny): check sql
-			// TODO(p0ny): make stopChecking effective. need to refactor first.
 			revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
 				InstanceID:   &database.InstanceID,
 				DatabaseName: &database.DatabaseName,
@@ -165,7 +163,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to parse version %q", file.Version))
 					}
-					if fv.LessThan(rv) {
+					if fv.LessThanOrEqual(rv) {
 						checkResult := &v1pb.CheckReleaseResponse_CheckResult{
 							File:   file.Path,
 							Target: common.FormatDatabase(instance.ResourceID, database.DatabaseName),
@@ -174,7 +172,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 									Status:  v1pb.Advice_WARNING,
 									Code:    advisor.Internal.Int32(),
 									Title:   "Applied file has been modified",
-									Content: fmt.Sprintf("The file %q has version %q, but there is a higher version %q applied", file.Path, file.Version, revisions[0].Version),
+									Content: fmt.Sprintf("The file %q has version %q, but there is an equal or higher version %q applied", file.Path, file.Version, revisions[0].Version),
 								},
 							},
 						}
