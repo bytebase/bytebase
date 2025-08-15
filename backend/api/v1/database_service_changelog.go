@@ -12,7 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/transform"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
