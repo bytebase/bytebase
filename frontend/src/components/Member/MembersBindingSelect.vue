@@ -111,11 +111,15 @@ const memberType = ref<MemberType>("USERS");
 const userStore = useUserStore();
 const groupStore = useGroupStore();
 
-onMounted(() => {
+onMounted(async () => {
   const isGroupType =
     props.value.length > 0 &&
     props.value.every((member) => member.startsWith(groupBindingPrefix));
   memberType.value = isGroupType ? "GROUPS" : "USERS";
+
+  // This component needs ALL groups for selection when user switches to group mode
+  // AuthContext only loads groups that have IAM policy bindings via batchFetchGroups
+  await groupStore.fetchGroupList();
 });
 
 watchEffect(async () => {
