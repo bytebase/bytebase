@@ -77,7 +77,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 			w.Logger.Info("use the provided plan", "url", fmt.Sprintf("%s/%s", client.url, plan.Name))
 		} else {
 			var release string
-			releaseFiles, releaseDigest, err := getReleaseFiles(w, w.FilePattern)
+			releaseFiles, releaseDigest, err := getReleaseFiles(w)
 			if err != nil {
 				return errors.Wrapf(err, "failed to get release files")
 			}
