@@ -32,7 +32,6 @@ func NewRolloutCommand(w *world.World) *cobra.Command {
 	cmdRollout.Flags().StringVar(&w.CheckPlan, "check-plan", "SKIP", "Whether to check the plan and fail on warning/error. Valid values: SKIP, FAIL_ON_WARNING, FAIL_ON_ERROR")
 	cmdRollout.Flags().StringVar(&w.TargetStage, "target-stage", "", "Rollout up to the target stage. Format: environments/{environment}.")
 	cmdRollout.Flags().StringVar(&w.Plan, "plan", "", "The plan to rollout. Format: projects/{project}/plans/{plan}. Shadows file-pattern and targets.")
-	cmdRollout.Flags().BoolVar(&w.Declarative, "declarative", false, "Whether to use declarative mode.")
 	return cmdRollout
 }
 
@@ -78,7 +77,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 			w.Logger.Info("use the provided plan", "url", fmt.Sprintf("%s/%s", client.url, plan.Name))
 		} else {
 			var release string
-			releaseFiles, releaseDigest, err := getReleaseFiles(w, w.FilePattern)
+			releaseFiles, releaseDigest, err := getReleaseFiles(w)
 			if err != nil {
 				return errors.Wrapf(err, "failed to get release files")
 			}
