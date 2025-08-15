@@ -9,7 +9,7 @@ import (
 
 	pgquery "github.com/pganalyze/pg_query_go/v6"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 )
 
 func deparseImpl(context DeparseContext, in ast.Node, buf *strings.Builder) error {

@@ -14,8 +14,8 @@ import (
 	pgquery "github.com/pganalyze/pg_query_go/v6"
 
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 
 	pgparser "github.com/bytebase/parser/postgresql"
 
