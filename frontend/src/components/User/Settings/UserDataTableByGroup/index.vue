@@ -5,6 +5,7 @@
     :data="userListByGroup"
     :row-key="(row) => row.name"
     :bordered="true"
+    :loading="loading"
     :default-expanded-row-keys="expandedRowKeys"
   />
 </template>
@@ -41,6 +42,7 @@ interface UserRowData {
 const props = withDefaults(
   defineProps<{
     groups: Group[];
+    loading: boolean;
     showGroupRole?: boolean;
     onClickUser?: (user: User, event: MouseEvent) => void;
   }>(),

@@ -5,6 +5,7 @@ import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
 import { groupServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
+import { isValidProjectName } from "@/types";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import {
   CreateGroupRequestSchema,
@@ -17,6 +18,24 @@ import {
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { groupNamePrefix } from "./common";
 
+export interface GroupFilter {
+  query?: string;
+  project?: string;
+}
+
+const getListGroupFilter = (params: GroupFilter) => {
+  const filter = [];
+  const search = params.query?.trim()?.toLowerCase();
+  if (search) {
+    filter.push(`(title.matches("${search}") || email.matches("${search}"))`);
+  }
+  if (isValidProjectName(params.project)) {
+    filter.push(`project == "${params.project}"`);
+  }
+
+  return filter.join(" && ");
+};
+
 export const extractGroupEmail = (emailResource: string) => {
   const matches = emailResource.match(/^(?:group:|groups\/)(.+)$/);
   return matches?.[1] ?? emailResource;
@@ -27,9 +46,6 @@ const ensureGroupIdentifier = (id: string) => {
   return `${groupNamePrefix}${email}`;
 };
 
-// Two-tier loading strategy:
-// 1. AuthContext: batchFetchGroups() for IAM-referenced groups
-// 2. Specific components: fetchGroupList() for ALL groups when needed
 export const useGroupStore = defineStore("group", () => {
   const groupMapByName = reactive(new Map<string, Group>());
   const resetCache = () => {
@@ -49,20 +65,35 @@ export const useGroupStore = defineStore("group", () => {
     return groupMapByName.get(ensureGroupIdentifier(id));
   };
 
-  const fetchGroupList = async () => {
-    const request = create(ListGroupsRequestSchema, {});
-    // Ignore errors and silent the request.
-    const { groups } = await groupServiceClientConnect.listGroups(request, {
-      contextValues: createContextValues().set(silentContextKey, true),
+  const fetchGroupList = async (params: {
+    pageSize: number;
+    pageToken?: string;
+    filter?: GroupFilter;
+  }): Promise<{
+    groups: Group[];
+    nextPageToken: string;
+  }> => {
+    const request = create(ListGroupsRequestSchema, {
+      pageSize: params.pageSize,
+      pageToken: params.pageToken,
+      filter: getListGroupFilter(params.filter ?? {}),
     });
+    // Ignore errors and silent the request.
+    const { groups, nextPageToken } =
+      await groupServiceClientConnect.listGroups(request, {
+        contextValues: createContextValues().set(silentContextKey, true),
+      });
     resetCache();
     for (const group of groups) {
       groupMapByName.set(group.name, group);
     }
-    return groups;
+    return { groups, nextPageToken };
   };
 
   const batchFetchGroups = async (groupNameList: string[]) => {
+    if (groupNameList.length === 0) {
+      return [];
+    }
     const request = create(BatchGetGroupsRequestSchema, {
       names: groupNameList.map(ensureGroupIdentifier),
     });
@@ -133,8 +164,3 @@ export const useGroupStore = defineStore("group", () => {
     createGroup,
   };
 });
-
-export const useGroupList = () => {
-  const groupStore = useGroupStore();
-  return computed(() => groupStore.groupList);
-};

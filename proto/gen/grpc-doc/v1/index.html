@@ -14505,6 +14505,14 @@ Could be empty. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>groups</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The groups for the user.
+Format: groups/{email} </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -17571,8 +17579,7 @@ Format: users/hello@world.com </p></td>
                   <td>page_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>Not used.
-The maximum number of groups to return. The service may return fewer than
+                  <td><p>The maximum number of groups to return. The service may return fewer than
 this value.
 If unspecified, at most 10 groups will be returned.
 The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
@@ -17582,12 +17589,33 @@ The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
                   <td>page_token</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Not used.
-A page token, received from a previous `ListGroups` call.
+                  <td><p>A page token, received from a previous `ListGroups` call.
 Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListGroups` must match
 the call that provided the page token. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter is used to filter groups returned in the list.
+The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter:
+- title: the group title, support &#34;==&#34; and &#34;.matches()&#34; operator.
+- email: the group email, support &#34;==&#34; and &#34;.matches()&#34; operator.
+- project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
+
+For example:
+title == &#34;dba&#34;
+email == &#34;dba@bytebase.com&#34;
+title.matches(&#34;dba&#34;)
+email.matches(&#34;dba&#34;)
+project == &#34;projects/sample-project&#34;
+You can combine filter conditions like:
+title.matches(&#34;dba&#34;) || email.matches(&#34;dba&#34;) </p></td>
                 </tr>
               
             </tbody>

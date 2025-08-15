@@ -611,8 +611,11 @@ type User struct {
 	RecoveryCodes []string `protobuf:"bytes,11,rep,name=recovery_codes,json=recoveryCodes,proto3" json:"recovery_codes,omitempty"`
 	// Should be a valid E.164 compliant phone number.
 	// Could be empty.
-	Phone         string        `protobuf:"bytes,12,opt,name=phone,proto3" json:"phone,omitempty"`
-	Profile       *User_Profile `protobuf:"bytes,13,opt,name=profile,proto3" json:"profile,omitempty"`
+	Phone   string        `protobuf:"bytes,12,opt,name=phone,proto3" json:"phone,omitempty"`
+	Profile *User_Profile `protobuf:"bytes,13,opt,name=profile,proto3" json:"profile,omitempty"`
+	// The groups for the user.
+	// Format: groups/{email}
+	Groups        []string `protobuf:"bytes,14,rep,name=groups,proto3" json:"groups,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -731,6 +734,13 @@ func (x *User) GetProfile() *User_Profile {
 	return nil
 }
 
+func (x *User) GetGroups() []string {
+	if x != nil {
+		return x.Groups
+	}
+	return nil
+}
+
 type User_Profile struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	LastLoginTime          *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=last_login_time,json=lastLoginTime,proto3" json:"last_login_time,omitempty"`
@@ -829,7 +839,7 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x11bytebase.com/UserR\x04name\"D\n" +
 	"\x13UndeleteUserRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
-	"\x11bytebase.com/UserR\x04name\"\x87\x05\n" +
+	"\x11bytebase.com/UserR\x04name\"\xa4\x05\n" +
 	"\x04User\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
@@ -846,7 +856,8 @@ const file_v1_user_service_proto_rawDesc = "" +
 	" \x01(\tR\tmfaSecret\x12%\n" +
 	"\x0erecovery_codes\x18\v \x03(\tR\rrecoveryCodes\x12\x14\n" +
 	"\x05phone\x18\f \x01(\tR\x05phone\x123\n" +
-	"\aprofile\x18\r \x01(\v2\x19.bytebase.v1.User.ProfileR\aprofile\x1a\xbc\x01\n" +
+	"\aprofile\x18\r \x01(\v2\x19.bytebase.v1.User.ProfileR\aprofile\x12\x1b\n" +
+	"\x06groups\x18\x0e \x03(\tB\x03\xe0A\x03R\x06groups\x1a\xbc\x01\n" +
 	"\aProfile\x12B\n" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +
 	"\x19last_change_password_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x16lastChangePasswordTime\x12\x16\n" +
