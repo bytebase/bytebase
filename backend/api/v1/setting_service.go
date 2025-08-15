@@ -1628,6 +1628,7 @@ func convertPasswordRestrictionSetting(v1Setting *v1pb.PasswordRestrictionSettin
 		RequireUppercaseLetter:            v1Setting.RequireUppercaseLetter,
 		RequireSpecialCharacter:           v1Setting.RequireSpecialCharacter,
 		RequireResetPasswordForFirstLogin: v1Setting.RequireResetPasswordForFirstLogin,
+		PasswordRotation:                  v1Setting.GetPasswordRotation(),
 	}
 }
 
@@ -1643,6 +1644,7 @@ func convertToPasswordRestrictionSetting(storeSetting *storepb.PasswordRestricti
 		RequireUppercaseLetter:            storeSetting.RequireUppercaseLetter,
 		RequireSpecialCharacter:           storeSetting.RequireSpecialCharacter,
 		RequireResetPasswordForFirstLogin: storeSetting.RequireResetPasswordForFirstLogin,
+		PasswordRotation:                  storeSetting.GetPasswordRotation(),
 	}
 }
 
