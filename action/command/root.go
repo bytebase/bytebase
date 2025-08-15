@@ -32,6 +32,7 @@ func NewRootCommand(w *world.World) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&w.Project, "project", "projects/hr", "Bytebase project")
 	cmd.PersistentFlags().StringSliceVar(&w.Targets, "targets", []string{"instances/test-sample-instance/databases/hr_test", "instances/prod-sample-instance/databases/hr_prod"}, "Bytebase targets. Either one or more databases or a single databaseGroup")
 	cmd.PersistentFlags().StringVar(&w.FilePattern, "file-pattern", "", "File pattern to glob migration files")
+	cmd.PersistentFlags().BoolVar(&w.Declarative, "declarative", false, "Whether to use declarative mode.")
 
 	cmd.AddCommand(NewCheckCommand(w))
 	cmd.AddCommand(NewRolloutCommand(w))

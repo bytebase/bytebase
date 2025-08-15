@@ -16,13 +16,13 @@ import (
 )
 
 // getReleaseFiles returns the release files and the digest of the release.
-func getReleaseFiles(w *world.World, pattern string) ([]*v1pb.Release_File, string, error) {
-	matches, err := filepath.Glob(pattern)
+func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
+	matches, err := filepath.Glob(w.FilePattern)
 	if err != nil {
 		return nil, "", err
 	}
 	if len(matches) == 0 {
-		return nil, "", errors.Errorf("no files found for pattern: %s", pattern)
+		return nil, "", errors.Errorf("no files found for pattern: %s", w.FilePattern)
 	}
 
 	slices.Sort(matches)
@@ -48,7 +48,7 @@ func getReleaseFiles(w *world.World, pattern string) ([]*v1pb.Release_File, stri
 		return []*v1pb.Release_File{
 			{
 				// use file pattern as the path
-				Path:       pattern,
+				Path:       w.FilePattern,
 				Type:       v1pb.Release_File_DECLARATIVE,
 				Version:    w.CurrentTime.Format("20060102.150405"),
 				ChangeType: v1pb.Release_File_DDL,
