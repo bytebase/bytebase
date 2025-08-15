@@ -19,6 +19,8 @@ type World struct {
 	Project              string // projects/{project}
 	Targets              []string
 	FilePattern          string
+	// Whether to use declarative mode.
+	Declarative bool
 
 	// bytebase-action check flags
 	// An enum to determine should we fail on warning or error.
@@ -40,8 +42,6 @@ type World struct {
 	// Format: environments/{environment}
 	TargetStage string
 	Plan        string
-	// Whether to use declarative mode.
-	Declarative bool
 
 	OutputMap map[string]string
 }

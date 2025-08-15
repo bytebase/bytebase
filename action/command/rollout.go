@@ -32,7 +32,6 @@ func NewRolloutCommand(w *world.World) *cobra.Command {
 	cmdRollout.Flags().StringVar(&w.CheckPlan, "check-plan", "SKIP", "Whether to check the plan and fail on warning/error. Valid values: SKIP, FAIL_ON_WARNING, FAIL_ON_ERROR")
 	cmdRollout.Flags().StringVar(&w.TargetStage, "target-stage", "", "Rollout up to the target stage. Format: environments/{environment}.")
 	cmdRollout.Flags().StringVar(&w.Plan, "plan", "", "The plan to rollout. Format: projects/{project}/plans/{plan}. Shadows file-pattern and targets.")
-	cmdRollout.Flags().BoolVar(&w.Declarative, "declarative", false, "Whether to use declarative mode.")
 	return cmdRollout
 }
 
