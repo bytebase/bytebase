@@ -11,7 +11,7 @@ import (
 
 	// Register PostgreSQL parser engine.
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
 )
 
 type DifferTestData struct {

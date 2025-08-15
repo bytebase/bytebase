@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 )
 
 const (
