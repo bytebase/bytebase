@@ -9,7 +9,6 @@ import { useRouter } from "vue-router";
 import { isAuthRelatedRoute } from "@/utils/auth";
 import SigninModal from "@/views/auth/SigninModal.vue";
 import { t } from "./plugins/i18n";
-import { AUTH_PASSWORD_RESET_MODULE } from "./router/auth";
 import { WORKSPACE_ROOT_MODULE } from "./router/dashboard/workspaceRoutes";
 import {
   useAuthStore,
@@ -96,14 +95,6 @@ watch(
       // we only care about the groups for the current user.
       groupStore.batchFetchGroups(currentUser.value.groups),
     ]);
-
-    // If the user is required to reset their password, redirect them to the reset password page.
-    if (authStore.requireResetPassword) {
-      router.replace({
-        name: AUTH_PASSWORD_RESET_MODULE,
-      });
-      return;
-    }
   },
   {
     immediate: true,
