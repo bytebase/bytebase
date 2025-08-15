@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 )
 
 func TestEquivalentType(t *testing.T) {
