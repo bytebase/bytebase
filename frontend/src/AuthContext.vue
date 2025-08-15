@@ -105,6 +105,9 @@ watch(
       workspaceStore.fetchIamPolicy(),
       roleStore.fetchRoleList(),
     ]);
+
+    // Only load groups that are referenced in IAM policy bindings
+    // Components that need ALL groups will call fetchGroupList() separately
     const groups = getGroupList(policy);
     await groupStore.batchFetchGroups(groups);
 

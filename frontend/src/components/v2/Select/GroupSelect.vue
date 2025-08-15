@@ -14,10 +14,15 @@
 
 <script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { getMemberBindings } from "@/components/Member/utils";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
-import { useGroupList, useProjectV1Store, useWorkspaceV1Store } from "@/store";
+import {
+  useGroupList,
+  useGroupStore,
+  useProjectV1Store,
+  useWorkspaceV1Store,
+} from "@/store";
 import { PRESET_WORKSPACE_ROLES } from "@/types";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import ResourceSelect from "./ResourceSelect.vue";
@@ -47,9 +52,16 @@ defineEmits<{
   (event: "update:groups", val: string[]): void;
 }>();
 
+const groupStore = useGroupStore();
 const groupList = useGroupList();
 const projectV1Store = useProjectV1Store();
 const workspaceStore = useWorkspaceV1Store();
+
+onMounted(async () => {
+  // This component needs ALL groups for selection, not just those in IAM bindings
+  // AuthContext only loads groups that have IAM policy bindings via batchFetchGroups
+  await groupStore.fetchGroupList();
+});
 
 const filteredGroupList = computedAsync(async () => {
   if (!props.projectName) {
