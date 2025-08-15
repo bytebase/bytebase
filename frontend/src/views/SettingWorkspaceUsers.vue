@@ -205,6 +205,7 @@ import {
   featureToRef,
   useActuatorV1Store,
   useGroupList,
+  useGroupStore,
   useSettingV1Store,
   useSubscriptionV1Store,
   useUIStateStore,
@@ -252,6 +253,7 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+const groupStore = useGroupStore();
 const groupList = useGroupList();
 const uiStateStore = useUIStateStore();
 const actuatorStore = useActuatorV1Store();
@@ -346,13 +348,17 @@ const allowCreateUser = computed(() => {
   return hasWorkspacePermissionV2("bb.users.create");
 });
 
-onMounted(() => {
+onMounted(async () => {
   if (!uiStateStore.getIntroStateByKey("member.visit")) {
     uiStateStore.saveIntroStateByKey({
       key: "member.visit",
       newState: true,
     });
   }
+
+  // This page needs ALL groups for the group table and group selectors
+  // AuthContext only loads groups that are in IAM policy bindings
+  await groupStore.fetchGroupList();
 
   const name = route.query.name as string;
   if (name?.startsWith(groupNamePrefix)) {
