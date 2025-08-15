@@ -27,6 +27,9 @@ const ensureGroupIdentifier = (id: string) => {
   return `${groupNamePrefix}${email}`;
 };
 
+// Two-tier loading strategy:
+// 1. AuthContext: batchFetchGroups() for IAM-referenced groups
+// 2. Specific components: fetchGroupList() for ALL groups when needed
 export const useGroupStore = defineStore("group", () => {
   const groupMapByName = reactive(new Map<string, Group>());
   const resetCache = () => {

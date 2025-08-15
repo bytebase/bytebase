@@ -25,10 +25,15 @@ import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
-import { computed, reactive, h } from "vue";
+import { computed, reactive, h, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAlert } from "@/bbkit";
-import { useUserStore, useWorkspaceV1Store, pushNotification } from "@/store";
+import {
+  useUserStore,
+  useWorkspaceV1Store,
+  useGroupStore,
+  pushNotification,
+} from "@/store";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import {
   type User,
@@ -63,7 +68,14 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const userStore = useUserStore();
+const groupStore = useGroupStore();
 const workspaceStore = useWorkspaceV1Store();
+
+onMounted(async () => {
+  // Load all groups once for the entire table to avoid duplicate requests
+  // from individual GroupsCell components
+  await groupStore.fetchGroupList();
+});
 
 const state = reactive<LocalState>({
   showResetKeyAlert: false,
