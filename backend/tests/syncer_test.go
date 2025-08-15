@@ -33,6 +33,33 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 			CONSTRAINT tfk_ibfk_1 FOREIGN KEY (a, b, c) REFERENCES schema1.trd ("A", "B", c)
 		  );
 		CREATE VIEW "VW" AS SELECT * FROM "TFK";
+		
+		-- Additional index test cases
+		CREATE TABLE schema1.test_indexes (
+			id int PRIMARY KEY,
+			name varchar(100),
+			email varchar(255),
+			created_at timestamp,
+			score decimal(10,2)
+		);
+		
+		-- Regular index
+		CREATE INDEX idx_name ON schema1.test_indexes (name);
+		
+		-- Unique index
+		CREATE UNIQUE INDEX idx_email_unique ON schema1.test_indexes (email);
+		
+		-- Composite index
+		CREATE INDEX idx_name_created ON schema1.test_indexes (name, created_at);
+		
+		-- Partial index with WHERE clause
+		CREATE INDEX idx_active_users ON schema1.test_indexes (name) WHERE score > 0;
+		
+		-- Expression index
+		CREATE INDEX idx_lower_name ON schema1.test_indexes (LOWER(name));
+		
+		-- Hash index
+		CREATE INDEX idx_hash_email ON schema1.test_indexes USING hash (email);
 		`
 	)
 	wantDatabaseMetadata := &v1pb.DatabaseMetadata{
@@ -136,6 +163,90 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 				Name:  "schema1",
 				Owner: "bytebase",
 				Tables: []*v1pb.TableMetadata{
+					{
+						Name:  "test_indexes",
+						Owner: "bytebase",
+						Columns: []*v1pb.ColumnMetadata{
+							{
+								Name:     "id",
+								Position: 1,
+								Type:     "integer",
+							},
+							{
+								Name:     "name",
+								Position: 2,
+								Nullable: true,
+								Type:     "character varying(100)",
+							},
+							{
+								Name:     "email",
+								Position: 3,
+								Nullable: true,
+								Type:     "character varying(255)",
+							},
+							{
+								Name:     "created_at",
+								Position: 4,
+								Nullable: true,
+								Type:     "timestamp without time zone",
+							},
+							{
+								Name:     "score",
+								Position: 5,
+								Nullable: true,
+								Type:     "numeric",
+							},
+						},
+						Indexes: []*v1pb.IndexMetadata{
+							{
+								Name:        "idx_active_users",
+								Expressions: []string{"name"},
+								Type:        "btree",
+								Definition:  `CREATE INDEX idx_active_users ON schema1.test_indexes USING btree (name) WHERE (score > (0)::numeric);`,
+							},
+							{
+								Name:        "idx_email_unique",
+								Expressions: []string{"email"},
+								Type:        "btree",
+								Unique:      true,
+								Definition:  `CREATE UNIQUE INDEX idx_email_unique ON schema1.test_indexes USING btree (email);`,
+							},
+							{
+								Name:        "idx_hash_email",
+								Expressions: []string{"email"},
+								Type:        "hash",
+								Definition:  `CREATE INDEX idx_hash_email ON schema1.test_indexes USING hash (email);`,
+							},
+							{
+								Name:        "idx_lower_name",
+								Expressions: []string{"lower((name)::text)"},
+								Type:        "btree",
+								Definition:  `CREATE INDEX idx_lower_name ON schema1.test_indexes USING btree (lower((name)::text));`,
+							},
+							{
+								Name:        "idx_name",
+								Expressions: []string{"name"},
+								Type:        "btree",
+								Definition:  `CREATE INDEX idx_name ON schema1.test_indexes USING btree (name);`,
+							},
+							{
+								Name:        "idx_name_created",
+								Expressions: []string{"name", "created_at"},
+								Type:        "btree",
+								Definition:  `CREATE INDEX idx_name_created ON schema1.test_indexes USING btree (name, created_at);`,
+							},
+							{
+								Name:         "test_indexes_pkey",
+								Expressions:  []string{"id"},
+								Type:         "btree",
+								Primary:      true,
+								Unique:       true,
+								Definition:   `CREATE UNIQUE INDEX test_indexes_pkey ON schema1.test_indexes USING btree (id);`,
+								IsConstraint: true,
+							},
+						},
+						IndexSize: 81920,
+					},
 					{
 						Name:  "trd",
 						Owner: "bytebase",
