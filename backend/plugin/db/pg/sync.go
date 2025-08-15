@@ -9,7 +9,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/blang/semver/v4"
+	parser "github.com/bytebase/parser/postgresql"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -18,8 +20,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 )
 
 // SyncInstance syncs the instance.
@@ -1285,22 +1285,16 @@ func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (
 			return nil, err
 		}
 
-		nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
+		// Parse using the ANTLR-based parser
+		indexInfo, err := parseIndexStatement(statement)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "failed to parse index statement: %q", statement)
 		}
-		if len(nodes) != 1 {
-			return nil, errors.Errorf("invalid number of statements %v, expecting one", len(nodes))
-		}
-		node, ok := nodes[0].(*ast.CreateIndexStmt)
-		if !ok {
-			return nil, errors.Errorf("statement %q is not index statement", statement)
-		}
-		index.Definition = statement + ";" // Add semicolon to the end of the statement.
 
-		index.Type = getIndexMethodType(statement)
-		index.Unique = node.Index.Unique
-		index.Expressions = node.Index.GetKeyNameList()
+		index.Definition = statement + ";" // Add semicolon to the end of the statement.
+		index.Type = indexInfo.IndexType
+		index.Unique = indexInfo.Unique
+		index.Expressions = indexInfo.Expressions
 		if primary.Valid && primary.Int32 == 1 {
 			index.Primary = true
 			index.IsConstraint = true
@@ -1328,13 +1322,71 @@ func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (
 	return indexMap, nil
 }
 
-func getIndexMethodType(stmt string) string {
-	re := regexp.MustCompile(`USING (\w+) `)
-	matches := re.FindStringSubmatch(stmt)
-	if len(matches) == 0 {
+// indexInfo contains the essential information we need from a CREATE INDEX statement
+type indexInfo struct {
+	IndexType   string
+	Unique      bool
+	Expressions []string
+}
+
+// parseIndexStatement parses a CREATE INDEX statement using the ANTLR parser
+// and extracts the essential information needed for schema synchronization
+func parseIndexStatement(statement string) (*indexInfo, error) {
+	result, err := pgparser.ParsePostgreSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract index information using a listener
+	listener := &indexListener{info: &indexInfo{IndexType: "btree"}}
+	antlr.ParseTreeWalkerDefault.Walk(listener, result.Tree)
+
+	return listener.info, nil
+}
+
+// indexListener implements the PostgreSQL parser listener to extract index information
+type indexListener struct {
+	*parser.BasePostgreSQLParserListener
+	info *indexInfo
+}
+
+func (l *indexListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
+	// Check for UNIQUE keyword
+	if ctx.Opt_unique() != nil && ctx.Opt_unique().UNIQUE() != nil {
+		l.info.Unique = true
+	}
+
+	// Extract access method (index type)
+	if ctx.Access_method_clause() != nil && ctx.Access_method_clause().Name() != nil {
+		l.info.IndexType = strings.ToLower(ctx.Access_method_clause().Name().GetText())
+	}
+
+	// Extract index expressions
+	if ctx.Index_params() != nil {
+		var expressions []string
+		for _, elem := range ctx.Index_params().AllIndex_elem() {
+			expr := l.extractIndexElem(elem)
+			if expr != "" {
+				expressions = append(expressions, expr)
+			}
+		}
+		l.info.Expressions = expressions
+	}
+}
+
+func (l *indexListener) extractIndexElem(ctx parser.IIndex_elemContext) string {
+	if ctx == nil {
 		return ""
 	}
-	return matches[1]
+
+	// Check if it's a simple column reference
+	if ctx.Colid() != nil {
+		return pgparser.NormalizePostgreSQLColid(ctx.Colid())
+	}
+
+	// For complex expressions, trust ANTLR and get the text directly
+	// The ANTLR parser should handle the expression parsing correctly
+	return ctx.GetText()
 }
 
 var listFunctionDependencyTablesQuery = `
