@@ -73,6 +73,12 @@ export const useGroupStore = defineStore("group", () => {
     groups: Group[];
     nextPageToken: string;
   }> => {
+    if (!hasWorkspacePermissionV2("bb.groups.list")) {
+      return {
+        groups: [],
+        nextPageToken: "",
+      };
+    }
     const request = create(ListGroupsRequestSchema, {
       pageSize: params.pageSize,
       pageToken: params.pageToken,
@@ -91,6 +97,9 @@ export const useGroupStore = defineStore("group", () => {
   };
 
   const batchFetchGroups = async (groupNameList: string[]) => {
+    if (!hasWorkspacePermissionV2("bb.groups.get")) {
+      return;
+    }
     if (groupNameList.length === 0) {
       return [];
     }
