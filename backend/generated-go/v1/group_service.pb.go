@@ -212,19 +212,34 @@ func (x *BatchGetGroupsResponse) GetGroups() []*Group {
 
 type ListGroupsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Not used.
 	// The maximum number of groups to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 10 groups will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used.
 	// A page token, received from a previous `ListGroups` call.
 	// Provide this to retrieve the subsequent page.
 	//
 	// When paginating, all other parameters provided to `ListGroups` must match
 	// the call that provided the page token.
-	PageToken     string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// Filter is used to filter groups returned in the list.
+	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	//
+	// Supported filter:
+	// - title: the group title, support "==" and ".matches()" operator.
+	// - email: the group email, support "==" and ".matches()" operator.
+	// - project: the project full name in "projects/{id}" format, support "==" operator.
+	//
+	// For example:
+	// title == "dba"
+	// email == "dba@bytebase.com"
+	// title.matches("dba")
+	// email.matches("dba")
+	// project == "projects/sample-project"
+	// You can combine filter conditions like:
+	// title.matches("dba") || email.matches("dba")
+	Filter        string `protobuf:"bytes,3,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -269,6 +284,13 @@ func (x *ListGroupsRequest) GetPageSize() int32 {
 func (x *ListGroupsRequest) GetPageToken() string {
 	if x != nil {
 		return x.PageToken
+	}
+	return ""
+}
+
+func (x *ListGroupsRequest) GetFilter() string {
+	if x != nil {
+		return x.Filter
 	}
 	return ""
 }
@@ -642,11 +664,12 @@ const file_v1_group_service_proto_rawDesc = "" +
 	"\x05names\x18\x01 \x03(\tB\x1a\xe0A\x02\xfaA\x14\n" +
 	"\x12bytebase.com/GroupR\x05names\"D\n" +
 	"\x16BatchGetGroupsResponse\x12*\n" +
-	"\x06groups\x18\x01 \x03(\v2\x12.bytebase.v1.GroupR\x06groups\"O\n" +
+	"\x06groups\x18\x01 \x03(\v2\x12.bytebase.v1.GroupR\x06groups\"g\n" +
 	"\x11ListGroupsRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x02 \x01(\tR\tpageToken\"h\n" +
+	"page_token\x18\x02 \x01(\tR\tpageToken\x12\x16\n" +
+	"\x06filter\x18\x03 \x01(\tR\x06filter\"h\n" +
 	"\x12ListGroupsResponse\x12*\n" +
 	"\x06groups\x18\x01 \x03(\v2\x12.bytebase.v1.GroupR\x06groups\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"i\n" +

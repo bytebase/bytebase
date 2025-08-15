@@ -84,14 +84,16 @@ watch(
 );
 
 const getGroupList = (policy: IamPolicy) => {
-  return policy.bindings.reduce((list, binding) => {
+  const groupNames = new Set<string>();
+  for (const binding of policy.bindings) {
     for (const member of binding.members) {
       if (member.startsWith(groupBindingPrefix)) {
-        list.push(member);
+        groupNames.add(member);
       }
     }
-    return list;
-  }, [] as string[]);
+  }
+
+  return [...groupNames];
 };
 
 watch(
@@ -107,7 +109,6 @@ watch(
     ]);
 
     // Only load groups that are referenced in IAM policy bindings
-    // Components that need ALL groups will call fetchGroupList() separately
     const groups = getGroupList(policy);
     await groupStore.batchFetchGroups(groups);
 

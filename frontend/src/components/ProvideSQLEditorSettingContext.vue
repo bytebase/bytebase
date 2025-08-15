@@ -4,12 +4,9 @@
 
 <script lang="ts" setup>
 import { onMounted } from "vue";
-import { useGroupStore, useRoleStore } from "@/store";
+import { useRoleStore } from "@/store";
 
 onMounted(async () => {
-  await Promise.all([
-    useRoleStore().fetchRoleList(),
-    useGroupStore().fetchGroupList(),
-  ]);
+  await useRoleStore().fetchRoleList();
 });
 </script>

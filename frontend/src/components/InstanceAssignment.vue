@@ -26,24 +26,16 @@
           </div>
         </div>
 
-        <AdvancedSearch
-          v-model:params="state.params"
-          :autofocus="false"
-          :placeholder="$t('instance.filter-instance-name')"
-          :scope-options="scopeOptions"
-        />
         <PagedInstanceTable
           ref="pagedInstanceTableRef"
           session-key="bb.instance-table"
           :bordered="true"
-          :filter="filter"
           :show-address="false"
           :show-external-link="false"
           :show-selection="canManageSubscription"
           :selected-instance-names="Array.from(state.selectedInstance)"
-          :disabled-selected-instance-names="disabledSelectedInstanceNames"
           @update:selected-instance-names="
-            (list) => (state.selectedInstance = new Set(list))
+            (list: string[]) => (state.selectedInstance = new Set(list))
           "
         />
       </div>
@@ -57,7 +49,6 @@
             <NButton
               :disabled="
                 !canManageSubscription ||
-                !assignmentChanged ||
                 state.processing ||
                 state.selectedInstance.size > instanceLicenseCount
               "
@@ -74,12 +65,12 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { NButton } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { reactive, computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import AdvancedSearch from "@/components/AdvancedSearch";
-import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import { PagedInstanceTable } from "@/components/v2";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
@@ -89,11 +80,13 @@ import {
   useDatabaseV1Store,
   useActuatorV1Store,
 } from "@/store";
-import { environmentNamePrefix } from "@/store/modules/v1/common";
-import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
+import type {
+  Instance,
+  UpdateInstanceRequest,
+} from "@/types/proto-es/v1/instance_service_pb";
+import { UpdateInstanceRequestSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
-import { type SearchParams, hasWorkspacePermissionV2 } from "@/utils";
-import { convertScopeValueToEngine } from "@/utils/v1/common-conversions";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import LearnMoreLink from "./LearnMoreLink.vue";
 
 const props = withDefaults(
@@ -108,7 +101,6 @@ const props = withDefaults(
 );
 
 interface LocalState {
-  params: SearchParams;
   selectedInstance: Set<string>;
   processing: boolean;
 }
@@ -116,10 +108,6 @@ interface LocalState {
 const emit = defineEmits(["dismiss"]);
 
 const state = reactive<LocalState>({
-  params: {
-    query: "",
-    scopes: [],
-  },
   selectedInstance: new Set(),
   processing: false,
 });
@@ -132,44 +120,10 @@ const { t } = useI18n();
 const pagedInstanceTableRef = ref<InstanceType<typeof PagedInstanceTable>>();
 const { instanceLicenseCount } = storeToRefs(subscriptionStore);
 
-const scopeOptions = computed(
-  () => useCommonSearchScopeOptions(["environment", "engine"]).value
-);
-
-const selectedEnvironment = computed(() => {
-  const environmentId = state.params.scopes.find(
-    (scope) => scope.id === "environment"
-  )?.value;
-  if (!environmentId) {
-    return;
-  }
-  return `${environmentNamePrefix}${environmentId}`;
-});
-
-const selectedEngines = computed(() => {
-  return state.params.scopes
-    .filter((scope) => scope.id === "engine")
-    .map((scope) => convertScopeValueToEngine(scope.value));
-});
-
-const filter = computed(() => ({
-  environment: selectedEnvironment.value,
-  query: state.params.query,
-  engines: selectedEngines.value,
-}));
-
 const canManageSubscription = computed((): boolean => {
   return (
     hasWorkspacePermissionV2("bb.instances.update") &&
     subscriptionStore.currentPlan !== PlanType.FREE
-  );
-});
-
-const disabledSelectedInstanceNames = computed(() => {
-  return new Set(
-    pagedInstanceTableRef.value?.dataList
-      ?.filter((ins) => ins.activation)
-      ?.map((ins) => ins.name) ?? []
   );
 });
 
@@ -183,7 +137,7 @@ const selectActivationInstances = (instances: Instance[]) => {
 
 watch(
   [() => props.show, () => props.selectedInstanceList],
-  ([show, selectedInstanceList]) => {
+  async ([show, selectedInstanceList]) => {
     if (!show) {
       state.selectedInstance = new Set();
       return;
@@ -192,7 +146,6 @@ watch(
     for (const instanceName of selectedInstanceList) {
       state.selectedInstance.add(instanceName);
     }
-    selectActivationInstances(pagedInstanceTableRef.value?.dataList ?? []);
   },
   { immediate: true }
 );
@@ -201,13 +154,8 @@ watch(
   () => pagedInstanceTableRef.value?.dataList ?? [],
   (dataList) => {
     selectActivationInstances(dataList);
-    for (const instance of dataList) {
-      if (instance.activation) {
-        state.selectedInstance.add(instance.name);
-      }
-    }
   },
-  { deep: true }
+  { deep: true, immediate: true }
 );
 
 const totalLicenseCount = computed((): string => {
@@ -215,16 +163,6 @@ const totalLicenseCount = computed((): string => {
     return t("subscription.unlimited");
   }
   return `${instanceLicenseCount.value}`;
-});
-
-const assignmentChanged = computed(() => {
-  for (const instanceName of state.selectedInstance) {
-    const instance = instanceV1Store.getInstanceByName(instanceName);
-    if (!instance.activation) {
-      return true;
-    }
-  }
-  return false;
 });
 
 const cancel = () => {
@@ -237,17 +175,41 @@ const updateAssignment = async () => {
   }
   state.processing = true;
 
+  const batchUpdate: UpdateInstanceRequest[] = [];
   for (const instanceName of state.selectedInstance) {
     const instance = instanceV1Store.getInstanceByName(instanceName);
     if (instance.activation) {
       continue;
     }
     // activate instance
-    instance.activation = true;
-    const composedInstance = await instanceV1Store.updateInstance(instance, [
-      "activation",
-    ]);
-    databaseV1Store.updateDatabaseInstance(composedInstance);
+    batchUpdate.push(
+      create(UpdateInstanceRequestSchema, {
+        instance: {
+          ...instance,
+          activation: true,
+        },
+        updateMask: create(FieldMaskSchema, { paths: ["activation"] }),
+      })
+    );
+  }
+
+  for (const instance of pagedInstanceTableRef.value?.dataList ?? []) {
+    if (instance.activation && !state.selectedInstance.has(instance.name)) {
+      batchUpdate.push(
+        create(UpdateInstanceRequestSchema, {
+          instance: {
+            ...instance,
+            activation: false,
+          },
+          updateMask: create(FieldMaskSchema, { paths: ["activation"] }),
+        })
+      );
+    }
+  }
+
+  const updated = await instanceV1Store.batchUpdateInstances(batchUpdate);
+  for (const instance of updated) {
+    databaseV1Store.updateDatabaseInstance(instance);
   }
 
   // refresh activatedInstanceCount

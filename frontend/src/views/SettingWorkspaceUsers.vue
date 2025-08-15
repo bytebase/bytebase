@@ -49,11 +49,20 @@
           </div>
         </template>
 
-        <UserDataTableByGroup
-          :groups="filteredGroupList"
-          :on-click-user="onUserClick"
-          @update-group="handleUpdateGroup"
-        />
+        <PagedTable
+          ref="groupPagedTable"
+          session-key="bb.paged-group-table"
+          :fetch-list="fetchGroupList"
+        >
+          <template #table="{ list, loading }">
+            <UserDataTableByGroup
+              :groups="list"
+              :loading="loading"
+              :on-click-user="onUserClick"
+              @update-group="handleUpdateGroup"
+            />
+          </template>
+        </PagedTable>
       </NTabPane>
 
       <template #suffix>
@@ -174,6 +183,7 @@
     v-if="state.showCreateGroupDrawer"
     :group="state.editingGroup"
     @close="state.showCreateGroupDrawer = false"
+    @updated="handleGroupUpdated"
   />
 
   <AADSyncDrawer
@@ -260,6 +270,7 @@ const actuatorStore = useActuatorV1Store();
 const settingV1Store = useSettingV1Store();
 const subscriptionV1Store = useSubscriptionV1Store();
 const userPagedTable = ref<ComponentExposed<typeof PagedTable<User>>>();
+const groupPagedTable = ref<ComponentExposed<typeof PagedTable<Group>>>();
 const deletedUserPagedTable = ref<ComponentExposed<typeof PagedTable<User>>>();
 
 watch(
@@ -284,6 +295,23 @@ watch(
   }
 );
 
+const fetchGroupList = async ({
+  pageToken,
+  pageSize,
+}: {
+  pageToken: string;
+  pageSize: number;
+}) => {
+  const { groups, nextPageToken } = await groupStore.fetchGroupList({
+    pageToken,
+    pageSize,
+    filter: {
+      query: state.activeUserFilterText,
+    },
+  });
+  return { list: groups, nextPageToken };
+};
+
 const fetchUserList = async ({
   pageToken,
   pageSize,
@@ -303,7 +331,13 @@ const fetchUserList = async ({
 
 watch(
   () => state.activeUserFilterText,
-  () => userPagedTable.value?.refresh()
+  () => {
+    if (state.typeTab === "USERS") {
+      userPagedTable.value?.refresh();
+    } else {
+      groupPagedTable.value?.refresh();
+    }
+  }
 );
 
 const fetchInactiveUserList = async ({
@@ -356,27 +390,12 @@ onMounted(async () => {
     });
   }
 
-  // This page needs ALL groups for the group table and group selectors
-  // AuthContext only loads groups that are in IAM policy bindings
-  await groupStore.fetchGroupList();
-
   const name = route.query.name as string;
   if (name?.startsWith(groupNamePrefix)) {
     state.typeTab = "GROUPS";
-    state.editingGroup = groupList.value.find((group) => group.name === name);
+    state.editingGroup = await groupStore.getOrFetchGroupByIdentifier(name);
     state.showCreateGroupDrawer = !!state.editingGroup;
   }
-});
-
-const filteredGroupList = computed(() => {
-  const keyword = state.activeUserFilterText.trim().toLowerCase();
-  if (!keyword) return groupList.value;
-  return groupList.value.filter((group) => {
-    return (
-      group.title.toLowerCase().includes(keyword) ||
-      group.name.toLowerCase().includes(keyword)
-    );
-  });
 });
 
 const activeUserCount = computed(() => {
@@ -436,6 +455,12 @@ const handleUserCreated = (user: User) => {
 const handleUserUpdated = (_: User) => {
   userPagedTable.value?.refresh();
   deletedUserPagedTable.value?.refresh();
+};
+
+const handleGroupUpdated = (group: Group) => {
+  groupPagedTable.value?.refresh().then(() => {
+    groupPagedTable.value?.updateCache([group]);
+  });
 };
 
 const onUserClick = (user: User, event: MouseEvent) => {
