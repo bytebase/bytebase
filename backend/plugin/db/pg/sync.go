@@ -1374,7 +1374,7 @@ func (l *indexListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 	}
 }
 
-func (l *indexListener) extractIndexElem(ctx parser.IIndex_elemContext) string {
+func (*indexListener) extractIndexElem(ctx parser.IIndex_elemContext) string {
 	if ctx == nil {
 		return ""
 	}
