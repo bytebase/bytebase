@@ -479,11 +479,13 @@ func convertReleaseVcsSource(vs *v1pb.Release_VCSSource) *storepb.ReleasePayload
 // validateAndSanitizeReleaseFiles validates and sanitizes the release files inputs.
 // It ensures that each file has either a sheet or a statement, and that the sheet is valid.
 // It also checks for duplicate versions and sorts the files by version.
+//
+// The input files are modified in place.
 // If a sheet is provided, it populates the statement from the sheet.
 // If a statement is provided, it computes the sheetSha256 from the statement.
-// It returns an error if any validation fails.
-// The function also generates a unique ID for each file.
-// The files are sorted by version in ascending order.
+//
+// The returned files are sorted by version in ascending order.
+// For declarative files, all files contents are merged into one file and returned.
 func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Release_File) ([]*v1pb.Release_File, error) {
 	if len(files) == 0 {
 		return nil, errors.Errorf("release files cannot be empty")
@@ -528,15 +530,20 @@ func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files 
 		}
 
 		switch f.Type {
-		case v1pb.Release_File_VERSIONED, v1pb.Release_File_DECLARATIVE:
+		case v1pb.Release_File_VERSIONED:
+			if _, ok := versionSet[f.Version]; ok {
+				return nil, errors.Errorf("found duplicate version %q", f.Version)
+			}
+			versionSet[f.Version] = struct{}{}
+		case v1pb.Release_File_DECLARATIVE:
+			versionSet[f.Version] = struct{}{}
+			if len(versionSet) > 1 {
+				return nil, errors.Errorf("declarative files should have the same version, found %v", versionSet)
+			}
 		default:
 			return nil, errors.Errorf("unexpected file type %q", f.Type.String())
 		}
 
-		if _, ok := versionSet[f.Version]; ok {
-			return nil, errors.Errorf("found duplicate version %q", f.Version)
-		}
-		versionSet[f.Version] = struct{}{}
 		fileTypeCount[f.Type]++
 	}
 
