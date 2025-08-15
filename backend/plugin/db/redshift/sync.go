@@ -15,8 +15,8 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 )
 
 // SyncInstance syncs the instance.

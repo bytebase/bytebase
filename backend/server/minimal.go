@@ -16,7 +16,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 
 	// Editors.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
 
 	// IM webhooks.
 	_ "github.com/bytebase/bytebase/backend/plugin/webhook/dingtalk"
