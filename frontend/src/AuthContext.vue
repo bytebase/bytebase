@@ -6,6 +6,8 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import { groupBindingPrefix } from "@/types";
+import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
 import { isAuthRelatedRoute } from "@/utils/auth";
 import SigninModal from "@/views/auth/SigninModal.vue";
 import { t } from "./plugins/i18n";
@@ -81,6 +83,17 @@ watch(
   }
 );
 
+const getGroupList = (policy: IamPolicy) => {
+  return policy.bindings.reduce((list, binding) => {
+    for (const member of binding.members) {
+      if (member.startsWith(groupBindingPrefix)) {
+        list.push(member);
+      }
+    }
+    return list;
+  }, [] as string[]);
+};
+
 watch(
   () => authStore.isLoggedIn,
   async () => {
@@ -88,14 +101,12 @@ watch(
       return;
     }
 
-    // TODO: Performance optimization needed for large organizations
-    // Instead of fetching ALL groups/roles, we should:
-    // 1. Fetch workspace IAM policy first
-    // 2. Extract used groups/roles from policy members (those starting with groupBindingPrefix)
-    // 3. Use batchGet to fetch only the groups/roles referenced in IAM policy
-    // This avoids loading millions of unused groups/roles in large organizations
-    await Promise.all([groupStore.fetchGroupList(), roleStore.fetchRoleList()]);
-    await workspaceStore.fetchIamPolicy();
+    const [policy, _] = await Promise.all([
+      workspaceStore.fetchIamPolicy(),
+      roleStore.fetchRoleList(),
+    ]);
+    const groups = getGroupList(policy);
+    await groupStore.batchFetchGroups(groups);
 
     // If the user is required to reset their password, redirect them to the reset password page.
     if (authStore.requireResetPassword) {
