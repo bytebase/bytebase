@@ -335,7 +335,9 @@ const tryCreateOrUpdateGroup = async () => {
       title: isCreating.value ? t("common.created") : t("common.updated"),
     });
     emit("close");
-    group && emit("updated", group);
+    if (group) {
+      emit("updated", group);
+    }
   } finally {
     state.isRequesting = false;
   }
