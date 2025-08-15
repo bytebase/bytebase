@@ -488,13 +488,13 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 				}
 				taskCreates = append(taskCreates, taskCreate)
 			case storepb.ReleasePayload_File_DECLARATIVE:
-				// error if applied revisions contain a higher version than the declarative file
+				// error if applied revisions contain an equal or higher version than the declarative file
 				v, err := model.NewVersion(file.Version)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to parse file version %q", file.Version)
 				}
-				if maxDeclarativeVersion != nil && v.LessThan(maxDeclarativeVersion) {
-					return nil, errors.Errorf("cannot run declarative file %q with version %q, because there is a higher versioned declarative revision %q applied", file.Id, file.Version, maxDeclarativeVersion.String())
+				if maxDeclarativeVersion != nil && v.LessThanOrEqual(maxDeclarativeVersion) {
+					return nil, errors.Errorf("cannot run declarative file %q with version %q, because there is an equal or higher versioned declarative revision %q applied", file.Id, file.Version, maxDeclarativeVersion.String())
 				}
 
 				// Parse sheet ID from the file's sheet reference
