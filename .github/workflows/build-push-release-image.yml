@@ -1,6 +1,7 @@
 name: Build and push release image
 
 on:
+  workflow_dispatch:
   push:
     branches:
       # Run on pushing branches like `release/1.0.0`
