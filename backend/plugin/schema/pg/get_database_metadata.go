@@ -596,6 +596,8 @@ func (e *metadataExtractor) extractColumnConstraint(ctx parser.IColconstraintele
 			Expressions:  []string{column.Name},
 			Descending:   []bool{false},
 			Type:         "btree",
+			Visible:      false, // Match PostgreSQL database behavior
+			// Don't set KeyLength - PostgreSQL database doesn't return this information
 		}
 		// Use provided constraint name or generate one
 		if constraintName != "" {
@@ -612,6 +614,8 @@ func (e *metadataExtractor) extractColumnConstraint(ctx parser.IColconstraintele
 			Expressions:  []string{column.Name},
 			Descending:   []bool{false},
 			Type:         "btree",
+			Visible:      false, // Match PostgreSQL database behavior
+			// Don't set KeyLength - PostgreSQL database doesn't return this information
 		}
 		// Use provided constraint name or generate one
 		if constraintName != "" {
@@ -699,6 +703,8 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintCo
 			Expressions:  []string{},
 			Descending:   []bool{},
 			Type:         "btree",
+			Visible:      false, // Match PostgreSQL database behavior
+			// Don't set KeyLength - PostgreSQL database doesn't return this information
 		}
 		if index.Name == "" {
 			index.Name = fmt.Sprintf("%s_pkey", table.Name)
@@ -730,6 +736,8 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintCo
 			Expressions:  []string{},
 			Descending:   []bool{},
 			Type:         "btree",
+			Visible:      false, // Match PostgreSQL database behavior
+			// Don't set KeyLength - PostgreSQL database doesn't return this information
 		}
 		// Extract columns
 		// For UNIQUE constraints, columns are in direct Columnlist, not Opt_column_list
@@ -1359,6 +1367,8 @@ func (e *metadataExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 				Unique:       false,
 				Primary:      false,
 				IsConstraint: false,
+				Visible:      false, // Match PostgreSQL database behavior
+				// Don't set KeyLength - PostgreSQL database doesn't return this information
 			}
 
 			// Check if it's a unique index
@@ -1409,6 +1419,7 @@ func (e *metadataExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 							}
 						}
 						index.Descending = append(index.Descending, isDescending)
+						// Don't set KeyLength - PostgreSQL database doesn't return this information
 					}
 				}
 			}

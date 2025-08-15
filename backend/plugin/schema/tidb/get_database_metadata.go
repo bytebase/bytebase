@@ -230,35 +230,44 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 	for _, constraint := range stmt.Constraints {
 		switch constraint.Tp {
 		case ast.ConstraintPrimaryKey:
+			expressions, keyLengths, descending := m.getIndexColumnsInfo(constraint.Keys)
 			index := &storepb.IndexMetadata{
 				Name:        "PRIMARY",
 				Primary:     true,
 				Unique:      true,
 				Visible:     true,
 				Type:        "BTREE",
-				Expressions: m.getColumnNames(constraint.Keys),
+				Expressions: expressions,
+				KeyLength:   keyLengths,
+				Descending:  descending,
 			}
 			table.Indexes = append(table.Indexes, index)
 
 		case ast.ConstraintKey, ast.ConstraintIndex:
+			expressions, keyLengths, descending := m.getIndexColumnsInfo(constraint.Keys)
 			index := &storepb.IndexMetadata{
 				Name:        constraint.Name,
 				Primary:     false,
 				Unique:      false,
 				Visible:     true,
 				Type:        m.getIndexType(constraint),
-				Expressions: m.getColumnNames(constraint.Keys),
+				Expressions: expressions,
+				KeyLength:   keyLengths,
+				Descending:  descending,
 			}
 			table.Indexes = append(table.Indexes, index)
 
 		case ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex:
+			expressions, keyLengths, descending := m.getIndexColumnsInfo(constraint.Keys)
 			index := &storepb.IndexMetadata{
 				Name:        constraint.Name,
 				Primary:     false,
 				Unique:      true,
 				Visible:     true,
 				Type:        m.getIndexType(constraint),
-				Expressions: m.getColumnNames(constraint.Keys),
+				Expressions: expressions,
+				KeyLength:   keyLengths,
+				Descending:  descending,
 			}
 			table.Indexes = append(table.Indexes, index)
 
@@ -549,6 +558,42 @@ func (*metadataExtractor) getColumnNames(keys []*ast.IndexPartSpecification) []s
 	return names
 }
 
+// getIndexColumnsInfo extracts column names and key lengths from index key specifications
+func (*metadataExtractor) getIndexColumnsInfo(keys []*ast.IndexPartSpecification) (expressions []string, keyLengths []int64, descending []bool) {
+	if keys == nil {
+		return nil, nil, nil
+	}
+
+	var hasDescending bool
+
+	for _, key := range keys {
+		if key.Column != nil {
+			expressions = append(expressions, key.Column.Name.O)
+
+			// Extract key length if specified (for prefix indexes like MySQL)
+			if key.Length > 0 {
+				keyLengths = append(keyLengths, int64(key.Length))
+			} else {
+				keyLengths = append(keyLengths, -1) // -1 indicates no prefix length specified
+			}
+
+			// Extract descending flag
+			if key.Desc {
+				hasDescending = true
+			}
+			descending = append(descending, key.Desc)
+		}
+	}
+
+	// TiDB always returns KeyLength arrays, but not Descending arrays
+	// Match TiDB database behavior
+	if !hasDescending {
+		descending = nil
+	}
+
+	return expressions, keyLengths, descending
+}
+
 func (*metadataExtractor) getReferenceAction(action model.ReferOptionType) string {
 	switch action {
 	case model.ReferOptionCascade:
@@ -717,6 +762,12 @@ func (*metadataExtractor) processColumnLevelConstraints(stmt *ast.CreateTableStm
 
 	// Create PRIMARY index if we have primary key columns
 	if len(primaryKeyColumns) > 0 {
+		// TiDB always provides KeyLength arrays
+		keyLengths := make([]int64, len(primaryKeyColumns))
+		for i := range keyLengths {
+			keyLengths[i] = -1 // No prefix length for column-level constraints
+		}
+
 		index := &storepb.IndexMetadata{
 			Name:        "PRIMARY",
 			Primary:     true,
@@ -724,6 +775,8 @@ func (*metadataExtractor) processColumnLevelConstraints(stmt *ast.CreateTableStm
 			Visible:     true,
 			Type:        "BTREE",
 			Expressions: primaryKeyColumns,
+			KeyLength:   keyLengths,
+			// Don't set Descending for column-level constraints to match TiDB
 		}
 		table.Indexes = append(table.Indexes, index)
 	}
@@ -737,6 +790,8 @@ func (*metadataExtractor) processColumnLevelConstraints(stmt *ast.CreateTableStm
 			Visible:     true,
 			Type:        "BTREE",
 			Expressions: []string{unique.columnName},
+			KeyLength:   []int64{-1}, // TiDB provides KeyLength arrays
+			// Don't set Descending to match TiDB database behavior
 		}
 		table.Indexes = append(table.Indexes, index)
 	}
@@ -778,6 +833,12 @@ func (*metadataExtractor) ensureForeignKeyIndex(fk *storepb.ForeignKeyMetadata, 
 		indexName = strings.Join(fkColumns, "_")
 	}
 
+	// TiDB provides KeyLength arrays for all indexes
+	keyLengths := make([]int64, len(fkColumns))
+	for i := range keyLengths {
+		keyLengths[i] = -1 // No prefix length for FK indexes
+	}
+
 	index := &storepb.IndexMetadata{
 		Name:        indexName,
 		Primary:     false,
@@ -785,6 +846,8 @@ func (*metadataExtractor) ensureForeignKeyIndex(fk *storepb.ForeignKeyMetadata, 
 		Visible:     true,
 		Type:        "BTREE",
 		Expressions: fkColumns,
+		KeyLength:   keyLengths,
+		// Don't set Descending to match TiDB database behavior
 	}
 
 	table.Indexes = append(table.Indexes, index)
