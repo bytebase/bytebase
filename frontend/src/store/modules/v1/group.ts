@@ -164,8 +164,3 @@ export const useGroupStore = defineStore("group", () => {
     createGroup,
   };
 });
-
-export const useGroupList = () => {
-  const groupStore = useGroupStore();
-  return computed(() => groupStore.groupList);
-};

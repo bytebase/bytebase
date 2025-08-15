@@ -42,9 +42,6 @@
           <div>
             <p class="text-base font-medium leading-7 text-main">
               <span>{{ $t("settings.members.groups.self") }}</span>
-              <span class="ml-1 font-normal text-control-light">
-                ({{ groupList.length }})
-              </span>
             </p>
           </div>
         </template>
@@ -214,7 +211,6 @@ import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSet
 import {
   featureToRef,
   useActuatorV1Store,
-  useGroupList,
   useGroupStore,
   useSettingV1Store,
   useSubscriptionV1Store,
@@ -264,7 +260,6 @@ const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 const groupStore = useGroupStore();
-const groupList = useGroupList();
 const uiStateStore = useUIStateStore();
 const actuatorStore = useActuatorV1Store();
 const settingV1Store = useSettingV1Store();
