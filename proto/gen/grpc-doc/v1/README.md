@@ -5018,6 +5018,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | recovery_codes | [string](#string) | repeated | The recovery_codes is the temporary recovery codes using in two phase verification. |
 | phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
 | profile | [User.Profile](#bytebase-v1-User-Profile) |  |  |
+| groups | [string](#string) | repeated | The groups for the user. Format: groups/{email} |
 
 
 
@@ -6233,10 +6234,15 @@ Format: users/hello@world.com |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | Not used. The maximum number of groups to return. The service may return fewer than this value. If unspecified, at most 10 groups will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListGroups` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | The maximum number of groups to return. The service may return fewer than this value. If unspecified, at most 10 groups will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListGroups` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListGroups` must match the call that provided the page token. |
+| filter | [string](#string) |  | Filter is used to filter groups returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - title: the group title, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the group email, support &#34;==&#34; and &#34;.matches()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
+
+For example: title == &#34;dba&#34; email == &#34;dba@bytebase.com&#34; title.matches(&#34;dba&#34;) email.matches(&#34;dba&#34;) project == &#34;projects/sample-project&#34; You can combine filter conditions like: title.matches(&#34;dba&#34;) || email.matches(&#34;dba&#34;) |
 
 
 

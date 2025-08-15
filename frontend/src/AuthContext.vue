@@ -6,8 +6,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { groupBindingPrefix } from "@/types";
-import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
 import { isAuthRelatedRoute } from "@/utils/auth";
 import SigninModal from "@/views/auth/SigninModal.vue";
 import { t } from "./plugins/i18n";
@@ -15,6 +13,7 @@ import { AUTH_PASSWORD_RESET_MODULE } from "./router/auth";
 import { WORKSPACE_ROOT_MODULE } from "./router/dashboard/workspaceRoutes";
 import {
   useAuthStore,
+  useCurrentUserV1,
   pushNotification,
   useWorkspaceV1Store,
   useGroupStore,
@@ -28,6 +27,7 @@ const CHECK_AUTHORIZATION_INTERVAL = isDev() ? 60 * 1000 : 60 * 1000 * 5;
 
 const router = useRouter();
 const authStore = useAuthStore();
+const currentUser = useCurrentUserV1();
 const workspaceStore = useWorkspaceV1Store();
 const groupStore = useGroupStore();
 const roleStore = useRoleStore();
@@ -83,33 +83,19 @@ watch(
   }
 );
 
-const getGroupList = (policy: IamPolicy) => {
-  return policy.bindings.reduce((list, binding) => {
-    for (const member of binding.members) {
-      if (member.startsWith(groupBindingPrefix)) {
-        list.push(member);
-      }
-    }
-    return list;
-  }, [] as string[]);
-};
-
 watch(
   () => authStore.isLoggedIn,
   async () => {
-    if (!authStore.isLoggedIn) {
+    if (!authStore.isLoggedIn || !currentUser.value) {
       return;
     }
 
-    const [policy, _] = await Promise.all([
+    await Promise.all([
       workspaceStore.fetchIamPolicy(),
       roleStore.fetchRoleList(),
+      // we only care about the groups for the current user.
+      groupStore.batchFetchGroups(currentUser.value.groups),
     ]);
-
-    // Only load groups that are referenced in IAM policy bindings
-    // Components that need ALL groups will call fetchGroupList() separately
-    const groups = getGroupList(policy);
-    await groupStore.batchFetchGroups(groups);
 
     // If the user is required to reset their password, redirect them to the reset password page.
     if (authStore.requireResetPassword) {

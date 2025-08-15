@@ -16,7 +16,12 @@ import (
 
 // FindGroupMessage is the message for finding groups.
 type FindGroupMessage struct {
-	Email *string
+	Email     *string
+	ProjectID *string
+	Filter    *ListResourceFilter
+
+	Limit  *int
+	Offset *int
 }
 
 // UpdateGroupMessage is the message to update a group.
@@ -88,21 +93,45 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 
 func (*Store) listGroupImpl(ctx context.Context, txn *sql.Tx, find *FindGroupMessage) ([]*GroupMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
+	if filter := find.Filter; filter != nil {
+		where = append(where, filter.Where)
+		args = append(args, filter.Args...)
+	}
 	if v := find.Email; v != nil {
 		where, args = append(where, fmt.Sprintf("email = $%d", len(args)+1)), append(args, *v)
 	}
 
-	var groups []*GroupMessage
-	rows, err := txn.QueryContext(ctx, fmt.Sprintf(`
+	var with, join string
+	if v := find.ProjectID; v != nil {
+		with = `WITH all_members AS (
+			SELECT
+				jsonb_array_elements_text(jsonb_array_elements(policy.payload->'bindings')->'members') AS member,
+				jsonb_array_elements(policy.payload->'bindings')->>'role' AS role
+			FROM policy
+			WHERE ((resource_type = '` + storepb.Policy_PROJECT.String() + `' AND resource = 'projects/` + *v + `') OR resource_type = '` + storepb.Policy_WORKSPACE.String() + `') AND type = '` + storepb.Policy_IAM.String() + `'
+		),
+		project_members AS (
+			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role NOT LIKE 'roles/workspace%'
+		)`
+		join = `INNER JOIN project_members ON (CONCAT('groups/', user_group.email) = ANY(project_members.members) OR '` + common.AllUsers + `' = ANY(project_members.members))`
+	}
+
+	query := with + `
 	SELECT
-		email,
-		name,
-		description,
-		payload
-	FROM user_group
-	WHERE %s
-	ORDER BY email
-	`, strings.Join(where, " AND ")), args...)
+		user_group.email,
+		user_group.name,
+		user_group.description,
+		user_group.payload
+	FROM user_group ` + join + ` WHERE ` + strings.Join(where, " AND ") + ` ORDER BY email`
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		query += fmt.Sprintf(" OFFSET %d", *v)
+	}
+
+	var groups []*GroupMessage
+	rows, err := txn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

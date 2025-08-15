@@ -64,7 +64,7 @@
 <script setup lang="ts">
 import { uniq } from "lodash-es";
 import { NRadio, NRadioGroup } from "naive-ui";
-import { computed, ref, onMounted, watchEffect } from "vue";
+import { computed, ref, watchEffect } from "vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { GroupSelect, UserSelect } from "@/components/v2";
 import {
@@ -110,17 +110,6 @@ const emit = defineEmits<{
 const memberType = ref<MemberType>("USERS");
 const userStore = useUserStore();
 const groupStore = useGroupStore();
-
-onMounted(async () => {
-  const isGroupType =
-    props.value.length > 0 &&
-    props.value.every((member) => member.startsWith(groupBindingPrefix));
-  memberType.value = isGroupType ? "GROUPS" : "USERS";
-
-  // This component needs ALL groups for selection when user switches to group mode
-  // AuthContext only loads groups that have IAM policy bindings via batchFetchGroups
-  await groupStore.fetchGroupList();
-});
 
 watchEffect(async () => {
   await userStore.batchGetUsers(
