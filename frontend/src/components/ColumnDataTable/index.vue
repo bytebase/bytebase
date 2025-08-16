@@ -80,7 +80,8 @@ const showSensitiveColumn = computed(() => {
       engine.value === Engine.MSSQL ||
       engine.value === Engine.BIGQUERY ||
       engine.value === Engine.SPANNER ||
-      engine.value === Engine.TRINO)
+      engine.value === Engine.TRINO ||
+      engine.value === Engine.CASSANDRA)
   );
 });
 
