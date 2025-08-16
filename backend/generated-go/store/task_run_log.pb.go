@@ -504,10 +504,10 @@ type TaskRunLog_CommandResponse struct {
 	// Deprecated: Marked as deprecated in store/task_run_log.proto.
 	CommandIndexes []int32 `protobuf:"varint,1,rep,packed,name=command_indexes,json=commandIndexes,proto3" json:"command_indexes,omitempty"`
 	Error          string  `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
-	AffectedRows   int32   `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
+	AffectedRows   int64   `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
 	// `all_affected_rows` is the affected rows of each command.
 	// `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
-	AllAffectedRows []int32 `protobuf:"varint,4,rep,packed,name=all_affected_rows,json=allAffectedRows,proto3" json:"all_affected_rows,omitempty"`
+	AllAffectedRows []int64 `protobuf:"varint,4,rep,packed,name=all_affected_rows,json=allAffectedRows,proto3" json:"all_affected_rows,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -557,14 +557,14 @@ func (x *TaskRunLog_CommandResponse) GetError() string {
 	return ""
 }
 
-func (x *TaskRunLog_CommandResponse) GetAffectedRows() int32 {
+func (x *TaskRunLog_CommandResponse) GetAffectedRows() int64 {
 	if x != nil {
 		return x.AffectedRows
 	}
 	return 0
 }
 
-func (x *TaskRunLog_CommandResponse) GetAllAffectedRows() []int32 {
+func (x *TaskRunLog_CommandResponse) GetAllAffectedRows() []int64 {
 	if x != nil {
 		return x.AllAffectedRows
 	}
@@ -1008,8 +1008,8 @@ const file_store_task_run_log_proto_rawDesc = "" +
 	"\x0fCommandResponse\x12+\n" +
 	"\x0fcommand_indexes\x18\x01 \x03(\x05B\x02\x18\x01R\x0ecommandIndexes\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x12#\n" +
-	"\raffected_rows\x18\x03 \x01(\x05R\faffectedRows\x12*\n" +
-	"\x11all_affected_rows\x18\x04 \x03(\x05R\x0fallAffectedRows\x1a\x13\n" +
+	"\raffected_rows\x18\x03 \x01(\x03R\faffectedRows\x12*\n" +
+	"\x11all_affected_rows\x18\x04 \x03(\x03R\x0fallAffectedRows\x1a\x13\n" +
 	"\x11DatabaseSyncStart\x1a'\n" +
 	"\x0fDatabaseSyncEnd\x12\x14\n" +
 	"\x05error\x18\x01 \x01(\tR\x05error\x1a\xb0\x01\n" +

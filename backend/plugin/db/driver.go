@@ -302,7 +302,7 @@ func (o *ExecuteOptions) LogCommandExecute(commandIndexes []int32, commandText s
 	}
 }
 
-func (o *ExecuteOptions) LogCommandResponse(affectedRows int32, allAffectedRows []int32, rerr string) {
+func (o *ExecuteOptions) LogCommandResponse(affectedRows int64, allAffectedRows []int64, rerr string) {
 	if o == nil || o.CreateTaskRunLog == nil {
 		return
 	}

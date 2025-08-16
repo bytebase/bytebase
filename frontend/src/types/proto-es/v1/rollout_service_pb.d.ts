@@ -1378,17 +1378,17 @@ export declare type TaskRunLogEntry_CommandExecute_CommandResponse = Message<"by
   error: string;
 
   /**
-   * @generated from field: int32 affected_rows = 3;
+   * @generated from field: int64 affected_rows = 3;
    */
-  affectedRows: number;
+  affectedRows: bigint;
 
   /**
    * `all_affected_rows` is the affected rows of each command.
    * `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
    *
-   * @generated from field: repeated int32 all_affected_rows = 4;
+   * @generated from field: repeated int64 all_affected_rows = 4;
    */
-  allAffectedRows: number[];
+  allAffectedRows: bigint[];
 };
 
 /**

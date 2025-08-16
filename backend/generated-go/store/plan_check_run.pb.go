@@ -396,7 +396,7 @@ type PlanCheckRunResult_Result_SqlSummaryReport struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// statement_types are the types of statements that are found in the sql.
 	StatementTypes   []string          `protobuf:"bytes,2,rep,name=statement_types,json=statementTypes,proto3" json:"statement_types,omitempty"`
-	AffectedRows     int32             `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
+	AffectedRows     int64             `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
 	ChangedResources *ChangedResources `protobuf:"bytes,4,opt,name=changed_resources,json=changedResources,proto3" json:"changed_resources,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -439,7 +439,7 @@ func (x *PlanCheckRunResult_Result_SqlSummaryReport) GetStatementTypes() []strin
 	return nil
 }
 
-func (x *PlanCheckRunResult_Result_SqlSummaryReport) GetAffectedRows() int32 {
+func (x *PlanCheckRunResult_Result_SqlSummaryReport) GetAffectedRows() int64 {
 	if x != nil {
 		return x.AffectedRows
 	}
@@ -562,7 +562,7 @@ const file_store_plan_check_run_proto_rawDesc = "" +
 	"\x11sql_review_report\x18\x06 \x01(\v29.bytebase.store.PlanCheckRunResult.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a\xb5\x01\n" +
 	"\x10SqlSummaryReport\x12'\n" +
 	"\x0fstatement_types\x18\x02 \x03(\tR\x0estatementTypes\x12#\n" +
-	"\raffected_rows\x18\x03 \x01(\x05R\faffectedRows\x12M\n" +
+	"\raffected_rows\x18\x03 \x01(\x03R\faffectedRows\x12M\n" +
 	"\x11changed_resources\x18\x04 \x01(\v2 .bytebase.store.ChangedResourcesR\x10changedResourcesJ\x04\b\x01\x10\x02\x1a\xc7\x01\n" +
 	"\x0fSqlReviewReport\x12\x12\n" +
 	"\x04line\x18\x01 \x01(\x05R\x04line\x12\x16\n" +

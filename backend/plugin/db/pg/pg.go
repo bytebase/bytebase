@@ -512,10 +512,10 @@ func (d *Driver) executeInTransactionMode(
 		}
 		opts.LogCommandExecute([]int32{0}, statement)
 		if _, err := conn.ExecContext(ctx, statement); err != nil {
-			opts.LogCommandResponse(0, []int32{0}, err.Error())
+			opts.LogCommandResponse(0, []int64{0}, err.Error())
 			return 0, err
 		}
-		opts.LogCommandResponse(0, []int32{0}, "")
+		opts.LogCommandResponse(0, []int64{0}, "")
 
 		return 0, nil
 	}
@@ -571,13 +571,13 @@ func (d *Driver) executeInTransactionMode(
 				}
 
 				var rowsAffected int64
-				var allRowsAffected []int32
+				var allRowsAffected []int64
 				for _, result := range results {
 					ra := result.CommandTag.RowsAffected()
-					allRowsAffected = append(allRowsAffected, int32(ra))
+					allRowsAffected = append(allRowsAffected, ra)
 					rowsAffected += ra
 				}
-				opts.LogCommandResponse(int32(rowsAffected), allRowsAffected, "")
+				opts.LogCommandResponse(rowsAffected, allRowsAffected, "")
 
 				totalRowsAffected += rowsAffected
 			}
@@ -612,10 +612,10 @@ func (d *Driver) executeInTransactionMode(
 		indexes := []int32{nonTransactionAndSetRoleStmtsIndex[i]}
 		opts.LogCommandExecute(indexes, stmt)
 		if _, err := conn.ExecContext(ctx, stmt); err != nil {
-			opts.LogCommandResponse(0, []int32{0}, err.Error())
+			opts.LogCommandResponse(0, []int64{0}, err.Error())
 			return 0, err
 		}
-		opts.LogCommandResponse(0, []int32{0}, "")
+		opts.LogCommandResponse(0, []int64{0}, "")
 	}
 	return totalRowsAffected, nil
 }
@@ -665,10 +665,10 @@ func (d *Driver) executeInAutoCommitMode(
 	if isPlsql {
 		opts.LogCommandExecute([]int32{0}, statement)
 		if _, err := conn.ExecContext(ctx, statement); err != nil {
-			opts.LogCommandResponse(0, []int32{0}, err.Error())
+			opts.LogCommandResponse(0, []int64{0}, err.Error())
 			return 0, err
 		}
-		opts.LogCommandResponse(0, []int32{0}, "")
+		opts.LogCommandResponse(0, []int64{0}, "")
 		return 0, nil
 	}
 
@@ -680,7 +680,7 @@ func (d *Driver) executeInAutoCommitMode(
 
 		sqlResult, err := conn.ExecContext(ctx, stmt)
 		if err != nil {
-			opts.LogCommandResponse(0, []int32{0}, err.Error())
+			opts.LogCommandResponse(0, []int64{0}, err.Error())
 			if isLockTimeoutError(err.Error()) {
 				return totalRowsAffected, &LockTimeoutError{
 					Message: err.Error(),
@@ -695,7 +695,7 @@ func (d *Driver) executeInAutoCommitMode(
 			rowsAffected = 0
 		}
 
-		opts.LogCommandResponse(int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+		opts.LogCommandResponse(rowsAffected, []int64{rowsAffected}, "")
 		totalRowsAffected += rowsAffected
 	}
 

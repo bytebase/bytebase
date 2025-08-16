@@ -269,7 +269,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 
 	return &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 		StatementTypes:   sqlTypes,
-		AffectedRows:     int32(totalAffectedRows),
+		AffectedRows:     totalAffectedRows,
 		ChangedResources: changeSummary.ChangedResources.Build(),
 	}, nil
 }
