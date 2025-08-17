@@ -859,6 +859,14 @@ export declare type ExportRequest = Message<"bytebase.v1.ExportRequest"> & {
    * @generated from field: string data_source_id = 8;
    */
   dataSourceId: string;
+
+  /**
+   * The default schema to search objects. Equals to the current schema in
+   * Oracle and search path in Postgres.
+   *
+   * @generated from field: optional string schema = 9;
+   */
+  schema?: string;
 };
 
 /**
