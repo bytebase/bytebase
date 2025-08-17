@@ -148,6 +148,7 @@ alias y="pnpm --dir frontend i && pnpm --dir frontend dev"
 - [Bytebase vs Flyway](https://www.bytebase.com/blog/bytebase-vs-flyway/)
 - [Bytebase vs Jira](https://www.bytebase.com/blog/use-jira-for-database-change/)
 - [Bytebase vs DBeaver](https://www.bytebase.com/blog/bytebase-vs-dbeaver/)
+- [Bytebase vs DataGrip](https://www.bytebase.com/blog/bytebase-vs-datagrip/)
 - [Bytebase vs Navicat](https://www.bytebase.com/blog/bytebase-vs-navicat/)
 - [Bytebase vs CloudBeaver](https://www.bytebase.com/blog/bytebase-vs-cloudbeaver/)
 
