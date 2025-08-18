@@ -58,29 +58,29 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 					Statement:  contents,
 				},
 			}, hex.EncodeToString(h.Sum(nil)), nil
-		} else {
-			var files []*v1pb.Release_File
-			for _, m := range matches {
-				content, err := os.ReadFile(m)
-				if err != nil {
-					return nil, "", err
-				}
-				if _, err := h.Write([]byte(m)); err != nil {
-					return nil, "", errors.Wrapf(err, "failed to write file path")
-				}
-				if _, err := h.Write(content); err != nil {
-					return nil, "", errors.Wrapf(err, "failed to write file content")
-				}
-				files = append(files, &v1pb.Release_File{
-					Path:       m,
-					Type:       v1pb.Release_File_DECLARATIVE,
-					Version:    w.CurrentTime.Format(versionFormat),
-					ChangeType: v1pb.Release_File_DDL,
-					Statement:  content,
-				})
-			}
-			return files, hex.EncodeToString(h.Sum(nil)), nil
 		}
+
+		var files []*v1pb.Release_File
+		for _, m := range matches {
+			content, err := os.ReadFile(m)
+			if err != nil {
+				return nil, "", err
+			}
+			if _, err := h.Write([]byte(m)); err != nil {
+				return nil, "", errors.Wrapf(err, "failed to write file path")
+			}
+			if _, err := h.Write(content); err != nil {
+				return nil, "", errors.Wrapf(err, "failed to write file content")
+			}
+			files = append(files, &v1pb.Release_File{
+				Path:       m,
+				Type:       v1pb.Release_File_DECLARATIVE,
+				Version:    w.CurrentTime.Format(versionFormat),
+				ChangeType: v1pb.Release_File_DDL,
+				Statement:  content,
+			})
+		}
+		return files, hex.EncodeToString(h.Sum(nil)), nil
 	}
 
 	var files []*v1pb.Release_File
