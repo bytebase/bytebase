@@ -8,9 +8,8 @@ import (
 	"time"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/parser/postgresql"
 	"github.com/pkg/errors"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -18,15 +17,14 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/enterprise"
-	"github.com/bytebase/bytebase/backend/runner/schemasync"
-
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pg "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
-	parser "github.com/bytebase/parser/postgresql"
 )
 
 // NewDataUpdateExecutor creates a data update (DML) task executor.
@@ -410,12 +408,12 @@ func getPrependStatements(engine storepb.Engine, statement string) (string, erro
 
 // prependStatementsVisitor extracts SET role and search_path statements
 type prependStatementsVisitor struct {
-	*parser.BasePostgreSQLParserListener
+	*postgresql.BasePostgreSQLParserListener
 	statement string
 	result    string
 }
 
-func (v *prependStatementsVisitor) EnterVariablesetstmt(ctx *parser.VariablesetstmtContext) {
+func (v *prependStatementsVisitor) EnterVariablesetstmt(ctx *postgresql.VariablesetstmtContext) {
 	// If we already found a result, don't process more statements
 	if v.result != "" {
 		return
@@ -450,7 +448,7 @@ func (v *prependStatementsVisitor) EnterVariablesetstmt(ctx *parser.Variablesets
 
 // extractStatementText extracts the original text for a SET statement context
 // This matches pg_query_go behavior: trim leading/trailing whitespace, preserve internal whitespace
-func (v *prependStatementsVisitor) extractStatementText(ctx *parser.VariablesetstmtContext) string {
+func (v *prependStatementsVisitor) extractStatementText(ctx *postgresql.VariablesetstmtContext) string {
 	// Extract text from the original statement
 	start := ctx.GetStart().GetStart()
 	stop := ctx.GetStop().GetStop()
@@ -462,7 +460,8 @@ func (v *prependStatementsVisitor) extractStatementText(ctx *parser.Variablesets
 
 	// Find the semicolon that ends this statement by looking ahead from the stop token
 	endPos := stop + 1
-	for endPos < len(v.statement) {
+	stmtLen := len(v.statement)
+	for endPos < stmtLen {
 		char := v.statement[endPos]
 		if char == ';' {
 			// Include the semicolon and any whitespace before it
@@ -477,8 +476,8 @@ func (v *prependStatementsVisitor) extractStatementText(ctx *parser.Variablesets
 	}
 
 	// Ensure stop doesn't exceed statement length
-	if stop >= len(v.statement) {
-		stop = len(v.statement) - 1
+	if stop >= stmtLen {
+		stop = stmtLen - 1
 	}
 
 	// Extract the raw text
