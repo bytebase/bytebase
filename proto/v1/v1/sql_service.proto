@@ -407,6 +407,10 @@ message ExportRequest {
   // read-only data sources. Or it can be used to query a specific read-only
   // data source.
   string data_source_id = 8;
+
+  // The default schema to search objects. Equals to the current schema in
+  // Oracle and search path in Postgres.
+  optional string schema = 9;
 }
 
 message ExportResponse {

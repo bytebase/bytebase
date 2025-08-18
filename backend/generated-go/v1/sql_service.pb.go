@@ -1302,7 +1302,10 @@ type ExportRequest struct {
 	// It is used for querying admin data source even if the instance has
 	// read-only data sources. Or it can be used to query a specific read-only
 	// data source.
-	DataSourceId  string `protobuf:"bytes,8,opt,name=data_source_id,json=dataSourceId,proto3" json:"data_source_id,omitempty"`
+	DataSourceId string `protobuf:"bytes,8,opt,name=data_source_id,json=dataSourceId,proto3" json:"data_source_id,omitempty"`
+	// The default schema to search objects. Equals to the current schema in
+	// Oracle and search path in Postgres.
+	Schema        *string `protobuf:"bytes,9,opt,name=schema,proto3,oneof" json:"schema,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1382,6 +1385,13 @@ func (x *ExportRequest) GetPassword() string {
 func (x *ExportRequest) GetDataSourceId() string {
 	if x != nil {
 		return x.DataSourceId
+	}
+	return ""
+}
+
+func (x *ExportRequest) GetSchema() string {
+	if x != nil && x.Schema != nil {
+		return *x.Schema
 	}
 	return ""
 }
@@ -2812,7 +2822,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aSUCCESS\x10\x01\x12\v\n" +
 	"\aWARNING\x10\x02\x12\t\n" +
-	"\x05ERROR\x10\x03J\x04\b\a\x10\bJ\x04\b\x05\x10\x06J\x04\b\x06\x10\a\"\x87\x02\n" +
+	"\x05ERROR\x10\x03J\x04\b\a\x10\bJ\x04\b\x05\x10\x06J\x04\b\x06\x10\a\"\xaf\x02\n" +
 	"\rExportRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
@@ -2821,7 +2831,9 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x06format\x18\x05 \x01(\x0e2\x19.bytebase.v1.ExportFormatR\x06format\x12\x14\n" +
 	"\x05admin\x18\x06 \x01(\bR\x05admin\x12\x1a\n" +
 	"\bpassword\x18\a \x01(\tR\bpassword\x12$\n" +
-	"\x0edata_source_id\x18\b \x01(\tR\fdataSourceIdJ\x04\b\x02\x10\x03\"*\n" +
+	"\x0edata_source_id\x18\b \x01(\tR\fdataSourceId\x12\x1b\n" +
+	"\x06schema\x18\t \x01(\tH\x00R\x06schema\x88\x01\x01B\t\n" +
+	"\a_schemaJ\x04\b\x02\x10\x03\"*\n" +
 	"\x0eExportResponse\x12\x18\n" +
 	"\acontent\x18\x01 \x01(\fR\acontent\"\x8c\x01\n" +
 	"\rPrettyRequest\x12+\n" +
@@ -3058,6 +3070,7 @@ func file_v1_sql_service_proto_init() {
 		(*RowValue_TimestampValue)(nil),
 		(*RowValue_TimestampTzValue)(nil),
 	}
+	file_v1_sql_service_proto_msgTypes[10].OneofWrappers = []any{}
 	file_v1_sql_service_proto_msgTypes[20].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

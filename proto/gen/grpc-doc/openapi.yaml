@@ -10072,6 +10072,11 @@ components:
                          It is used for querying admin data source even if the instance has
                          read-only data sources. Or it can be used to query a specific read-only
                          data source.
+                schema:
+                    type: string
+                    description: |-
+                        The default schema to search objects. Equals to the current schema in
+                         Oracle and search path in Postgres.
         ExportResponse:
             type: object
             properties:
