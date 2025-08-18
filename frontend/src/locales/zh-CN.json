@@ -1574,7 +1574,6 @@
     "table-detail": "表详情",
     "batch-action-not-support-alter-schema": "一些数据库不支持修改表结构",
     "batch-action-permission-denied": "没有权限对数据库{action}",
-    "batch-action-database-not-have-environment": "存在未与环境绑定的数据库",
     "batch-action-disabled": "无法对来自不同项目的数据库{action}",
     "batch-action-disabled-for-unassigned": "无法对未分配的数据库{action}",
     "successfully-transferred-databases": "数据库转移完成",

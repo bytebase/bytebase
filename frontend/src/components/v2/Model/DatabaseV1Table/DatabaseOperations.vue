@@ -237,10 +237,6 @@ const databaseSupportAlterSchema = computed(() => {
   });
 });
 
-const existDatabaseWithoutEnvironment = computed(() =>
-  props.databases.some((db) => !db.effectiveEnvironment)
-);
-
 const allowEditSchema = computed(() => {
   return props.databases.every((db) => {
     return hasPermissionToCreateChangeDatabaseIssue(db);
@@ -447,7 +443,6 @@ const actions = computed((): DatabaseAction[] => {
           text: t("custom-approval.risk-rule.risk.namespace.data_export"),
           disabled:
             !allowExportData.value ||
-            existDatabaseWithoutEnvironment.value ||
             !selectedProjectName.value ||
             props.databases.length < 1 ||
             selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
@@ -457,9 +452,6 @@ const actions = computed((): DatabaseAction[] => {
               return t("database.batch-action-permission-denied", {
                 action,
               });
-            }
-            if (existDatabaseWithoutEnvironment.value) {
-              return t("database.batch-action-database-not-have-environment");
             }
             return "";
           },
@@ -566,7 +558,6 @@ const actions = computed((): DatabaseAction[] => {
           text: t("database.change-data"),
           disabled:
             !allowChangeData.value ||
-            existDatabaseWithoutEnvironment.value ||
             !selectedProjectName.value ||
             props.databases.length < 1 ||
             selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
@@ -576,9 +567,6 @@ const actions = computed((): DatabaseAction[] => {
               return t("database.batch-action-permission-denied", {
                 action,
               });
-            }
-            if (existDatabaseWithoutEnvironment.value) {
-              return t("database.batch-action-database-not-have-environment");
             }
             return getDisabledTooltip(action);
           },
@@ -591,7 +579,6 @@ const actions = computed((): DatabaseAction[] => {
           disabled:
             !databaseSupportAlterSchema.value ||
             !allowEditSchema.value ||
-            existDatabaseWithoutEnvironment.value ||
             !selectedProjectName.value ||
             props.databases.length < 1 ||
             selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
@@ -604,9 +591,6 @@ const actions = computed((): DatabaseAction[] => {
               return t("database.batch-action-permission-denied", {
                 action,
               });
-            }
-            if (existDatabaseWithoutEnvironment.value) {
-              return t("database.batch-action-database-not-have-environment");
             }
             return getDisabledTooltip(action);
           },

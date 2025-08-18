@@ -9,12 +9,10 @@ import { useI18n } from "vue-i18n";
 import { instanceServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import {
-  environmentNamePrefix,
   pushNotification,
   useEnvironmentV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { isValidEnvironmentName } from "@/types";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import {
   CreateInstanceRequestSchema,
@@ -214,11 +212,6 @@ export const provideInstanceFormContext = (baseContext: {
 
   const allowCreate = computed(() => {
     if (!hasWorkspacePermissionV2("bb.instances.create")) {
-      return false;
-    }
-    if (
-      !isValidEnvironmentName(`${environmentNamePrefix}${environment.value.id}`)
-    ) {
       return false;
     }
     if (basicInfo.value.engine === Engine.SPANNER) {
