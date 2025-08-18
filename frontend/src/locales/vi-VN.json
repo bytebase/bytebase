@@ -1118,6 +1118,10 @@
         "database-change": "Thay đổi cơ sở dữ liệu",
         "export-data": "Xuất dữ liệu",
         "unknown": "Không rõ"
+      },
+      "delete-change": {
+        "title": "Xóa thay đổi",
+        "content": "Bạn có chắc chắn muốn xóa thay đổi này không?"
       }
     },
     "targets": {

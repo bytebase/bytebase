@@ -1118,6 +1118,10 @@
         "database-change": "Cambio de base de datos",
         "export-data": "Exportar datos",
         "unknown": "Desconocido"
+      },
+      "delete-change": {
+        "title": "Eliminar cambio",
+        "content": "¿Está seguro de que desea eliminar este cambio?"
       }
     },
     "targets": {
