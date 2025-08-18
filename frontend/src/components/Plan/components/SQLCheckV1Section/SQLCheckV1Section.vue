@@ -297,10 +297,10 @@ const runChecks = async () => {
 };
 
 const affectedRows = computed(() => {
-  if (!checkResults.value) return 0;
+  if (!checkResults.value) return 0n;
   return checkResults.value.reduce((acc, result) => {
     return acc + result.affectedRows;
-  }, 0);
+  }, 0n);
 });
 
 const openDrawer = (status: "ERROR" | "WARNING" | "SUCCESS") => {

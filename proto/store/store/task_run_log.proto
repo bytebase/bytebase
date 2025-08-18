@@ -54,10 +54,10 @@ message TaskRunLog {
     // The indexes of the executed commands.
     repeated int32 command_indexes = 1 [deprecated = true];
     string error = 2;
-    int32 affected_rows = 3;
+    int64 affected_rows = 3;
     // `all_affected_rows` is the affected rows of each command.
     // `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
-    repeated int32 all_affected_rows = 4;
+    repeated int64 all_affected_rows = 4;
   }
   message DatabaseSyncStart {}
   message DatabaseSyncEnd {

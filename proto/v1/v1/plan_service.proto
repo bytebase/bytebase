@@ -496,7 +496,7 @@ message PlanCheckRun {
       reserved 1;
       // statement_types are the types of statements that are found in the sql.
       repeated string statement_types = 2;
-      int32 affected_rows = 3;
+      int64 affected_rows = 3;
       ChangedResources changed_resources = 4;
     }
     message SqlReviewReport {

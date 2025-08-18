@@ -287,14 +287,14 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, c
 
 			allRowsAffected := sqlResult.(mysql.Result).AllRowsAffected()
 			var rowsAffected int64
-			var allRowsAffectedInt32 []int32
+			var allRowsAffectedInt64 []int64
 			for _, a := range allRowsAffected {
 				rowsAffected += a
-				allRowsAffectedInt32 = append(allRowsAffectedInt32, int32(a))
+				allRowsAffectedInt64 = append(allRowsAffectedInt64, a)
 			}
 			totalRowsAffected += rowsAffected
 
-			opts.LogCommandResponse(int32(rowsAffected), allRowsAffectedInt32, "")
+			opts.LogCommandResponse(rowsAffected, allRowsAffectedInt64, "")
 		}
 
 		if err := tx.Commit(); err != nil {
@@ -314,10 +314,10 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, c
 		indexes := []int32{originalIndex[nonTransactionStmtsIndex[i]]}
 		opts.LogCommandExecute(indexes, stmt.Text)
 		if _, err := d.db.ExecContext(ctx, stmt.Text); err != nil {
-			opts.LogCommandResponse(0, []int32{0}, err.Error())
+			opts.LogCommandResponse(0, []int64{0}, err.Error())
 			return 0, err
 		}
-		opts.LogCommandResponse(0, []int32{0}, "")
+		opts.LogCommandResponse(0, []int64{0}, "")
 	}
 	return totalRowsAffected, nil
 }
@@ -382,14 +382,14 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, co
 
 			allRowsAffected := sqlResult.(mysql.Result).AllRowsAffected()
 			var rowsAffected int64
-			var allRowsAffectedInt32 []int32
+			var allRowsAffectedInt64 []int64
 			for _, a := range allRowsAffected {
 				rowsAffected += a
-				allRowsAffectedInt32 = append(allRowsAffectedInt32, int32(a))
+				allRowsAffectedInt64 = append(allRowsAffectedInt64, a)
 			}
 			totalRowsAffected += rowsAffected
 
-			opts.LogCommandResponse(int32(rowsAffected), allRowsAffectedInt32, "")
+			opts.LogCommandResponse(rowsAffected, allRowsAffectedInt64, "")
 		}
 
 		return nil

@@ -3291,7 +3291,7 @@ Type is the database change type.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
-| affected_rows | [int32](#int32) |  |  |
+| affected_rows | [int64](#int64) |  |  |
 | changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
 
 
@@ -5094,8 +5094,8 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | ----- | ---- | ----- | ----------- |
 | command_indexes | [int32](#int32) | repeated | **Deprecated.** The indexes of the executed commands. |
 | error | [string](#string) |  |  |
-| affected_rows | [int32](#int32) |  |  |
-| all_affected_rows | [int32](#int32) | repeated | `all_affected_rows` is the affected rows of each command. `all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. |
+| affected_rows | [int64](#int64) |  |  |
+| all_affected_rows | [int64](#int64) | repeated | `all_affected_rows` is the affected rows of each command. `all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. |
 
 
 

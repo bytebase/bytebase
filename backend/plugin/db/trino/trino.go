@@ -161,7 +161,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 		result, err := conn.ExecContext(ctx, command.Text)
 		if err != nil {
-			opts.LogCommandResponse(0, []int32{0}, err.Error())
+			opts.LogCommandResponse(0, []int64{0}, err.Error())
 			return totalRowsAffected, errors.Wrapf(err, "failed to execute statement")
 		}
 
@@ -172,7 +172,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		}
 
 		totalRowsAffected += rowsAffected
-		opts.LogCommandResponse(int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+		opts.LogCommandResponse(rowsAffected, []int64{rowsAffected}, "")
 	}
 
 	return totalRowsAffected, nil

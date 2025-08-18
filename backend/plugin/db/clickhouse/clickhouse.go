@@ -187,7 +187,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, singleSQLs []base
 			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
 			slog.Debug("rowsAffected returns error", log.BBError(err))
 		}
-		opts.LogCommandResponse(int32(rowsAffected), nil, "")
+		opts.LogCommandResponse(rowsAffected, nil, "")
 		totalRowsAffected += rowsAffected
 	}
 
@@ -217,7 +217,7 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, singleSQLs []base.
 		} else {
 			totalRowsAffected += rowsAffected
 		}
-		opts.LogCommandResponse(int32(rowsAffected), nil, "")
+		opts.LogCommandResponse(rowsAffected, nil, "")
 	}
 	return totalRowsAffected, nil
 }

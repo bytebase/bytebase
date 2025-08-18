@@ -463,7 +463,7 @@ message CheckResponse {
   repeated Advice advices = 1;
 
   // The count of affected rows of the statement on the target database.
-  int32 affected_rows = 2;
+  int64 affected_rows = 2;
 }
 
 message DiffMetadataRequest {

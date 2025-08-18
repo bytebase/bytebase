@@ -58,7 +58,7 @@ const { issue, events } = useIssueContext();
 const tasks = computed(() => flattenTaskV1List(issue.value.rolloutEntity));
 
 const affectedTaskMap = computed(() => {
-  const tempMap = new Map<string, number>();
+  const tempMap = new Map<string, bigint>();
   props.taskSummaryReportMap.forEach((planCheckRun, task) => {
     if (
       planCheckRun.results.every(
@@ -72,13 +72,15 @@ const affectedTaskMap = computed(() => {
 
     const count = planCheckRun.results.reduce((acc, result) => {
       if (result.report?.case === "sqlSummaryReport") {
-        return acc + (result.report.value.affectedRows || 0);
+        return acc + (result.report.value.affectedRows || 0n);
       }
       return acc;
-    }, 0);
+    }, 0n);
     tempMap.set(task, count);
   });
-  return new Map(Array.from(tempMap.entries()).sort((a, b) => b[1] - a[1]));
+  return new Map(
+    Array.from(tempMap.entries()).sort((a, b) => Number(b[1] - a[1]))
+  );
 });
 
 const affectedTasks = computed(
@@ -97,10 +99,10 @@ const summaryReportResults = computed(() =>
 const affectedRows = computed(() =>
   summaryReportResults.value.reduce((acc, result) => {
     if (result.report?.case === "sqlSummaryReport") {
-      return acc + (result.report.value.affectedRows || 0);
+      return acc + (result.report.value.affectedRows || 0n);
     }
     return acc;
-  }, 0)
+  }, 0n)
 );
 
 const shouldShow = computed(() =>
