@@ -5,7 +5,7 @@
       v-if="primaryAction"
       :action="primaryAction.action"
       :disabled="disabled || primaryAction.disabled"
-      :disabled-tooltip="disabled ? disabledTooltip : undefined"
+      :disabled-tooltip="disabled ? disabledTooltip : primaryAction.description"
       @perform-action="handleAction"
     />
 
@@ -81,8 +81,8 @@ const dropdownOptions = computed(() => {
     key: config.action,
     label: actionDisplayName(config.action),
     action: config.action,
-    disabled: config.disabled,
-    description: config.description,
+    disabled: props.disabled || config.disabled,
+    description: props.disabled ? props.disabledTooltip : config.description,
   }));
 });
 
@@ -96,8 +96,10 @@ const renderDropdownOption = ({
   const actionOption = props.secondaryActions.find(
     (config) => config.action === (option as any).key
   );
-  const disabled = actionOption?.disabled;
-  const description = actionOption?.description;
+  const disabled = props.disabled || actionOption?.disabled;
+  const description = props.disabled
+    ? props.disabledTooltip
+    : actionOption?.description;
   const errors = disabled
     ? [
         description ||

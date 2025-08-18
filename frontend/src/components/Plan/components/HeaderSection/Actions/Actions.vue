@@ -34,6 +34,7 @@ import { head } from "lodash-es";
 import { useDialog } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { useSpecsValidation } from "@/components/Plan/components/common";
 import { usePlanContext } from "@/components/Plan/logic";
 import { useIssueReviewContext } from "@/components/Plan/logic/issue-review";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
@@ -75,6 +76,9 @@ const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
 const planStore = usePlanStore();
 const editorState = useEditorState();
+
+// Use the validation hook for all specs
+const { isSpecEmpty } = useSpecsValidation(plan.value.specs);
 
 // Provide issue review context when an issue exists
 const reviewContext = useIssueReviewContext();
@@ -136,6 +140,7 @@ const availableActions = computed(() => {
       plan.value.state === State.ACTIVE &&
       currentUserEmail === extractUserId(plan.value.creator || "") &&
       hasProjectPermissionV2(project.value, "bb.issues.create");
+
     if (canCreateIssue) {
       actions.push("ISSUE_CREATE");
     }
@@ -223,7 +228,13 @@ const primaryAction = computed((): ActionConfig | undefined => {
 
   // ISSUE_CREATE is the highest priority when no issue exists
   if (actions.includes("ISSUE_CREATE")) {
-    return { action: "ISSUE_CREATE" };
+    // Check if all specs have valid statements (not empty)
+    const hasValidSpecs = !plan.value.specs.some((spec) => isSpecEmpty(spec));
+    return {
+      action: "ISSUE_CREATE",
+      disabled: !hasValidSpecs,
+      description: hasValidSpecs ? undefined : "Missing statement",
+    };
   }
 
   // PLAN_REOPEN is primary when plan is deleted
