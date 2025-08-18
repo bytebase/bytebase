@@ -21,7 +21,7 @@
         <div class="sm:col-span-2 sm:col-start-1">
           <label for="name" class="textlabel flex flex-row items-center">
             {{ $t("instance.instance-name") }}
-            <span class="text-red-600 ml-0.5">*</span>
+            <RequiredStar class="ml-0.5" />
             <div v-if="instance" class="ml-2 flex items-center">
               <InstanceV1EngineIcon :instance="instance" :tooltip="false" />
               <span class="ml-1">{{ instance.engineVersion }}</span>
@@ -87,7 +87,6 @@
           <label for="environment" class="textlabel">
             {{ $t("common.environment") }}
           </label>
-          <span class="text-red-600 ml-0.5">*</span>
           <EnvironmentSelect
             class="mt-1 w-full"
             required="true"
@@ -120,7 +119,7 @@
             <label for="host" class="textlabel block">
               <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
                 {{ $t("instance.account-locator") }}
-                <span class="text-red-600 mr-2">*</span>
+                <RequiredStar class="mr-2" />
                 <LearnMoreLink
                   url="https://docs.snowflake.com/en/user-guide/admin-account-identifier#using-an-account-locator-as-an-identifier"
                   class="text-sm"
@@ -128,7 +127,7 @@
               </template>
               <template v-else-if="basicInfo.engine === Engine.COSMOSDB">
                 {{ $t("instance.endpoint") }}
-                <span class="text-red-600 mr-2">*</span>
+                <RequiredStar class="mr-2" />
               </template>
               <div
                 v-else-if="
@@ -138,7 +137,7 @@
               >
                 <span>
                   {{ $t("instance.sentence.google-cloud-sql.instance-name") }}
-                  <span class="text-red-600 mr-2">*</span>
+                  <RequiredStar class="mr-2" />
                 </span>
                 <div class="textinfolabel mb-1">
                   {{
@@ -148,11 +147,10 @@
               </div>
               <template v-else>
                 {{ $t("instance.host-or-socket") }}
-                <span
+                <RequiredStar
                   v-if="basicInfo.engine !== Engine.DYNAMODB"
-                  class="text-red-600 mr-2"
-                  >*</span
-                >
+                  class="mr-2"
+                />
               </template>
             </label>
             <NInput
@@ -500,6 +498,7 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention, BBBetaBadge } from "@/bbkit";
 import { InstanceArchiveRestoreButton } from "@/components/Instance";
+import RequiredStar from "@/components/RequiredStar.vue";
 import {
   EnvironmentSelect,
   InstanceEngineRadioGrid,
