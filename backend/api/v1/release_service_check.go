@@ -98,26 +98,29 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	}
 
 	// Validate and sanitize release files.
-	request.Release.Files, err = validateAndSanitizeReleaseFiles(ctx, s.store, request.Release.Files)
+	sanitizedFiles, err := validateAndSanitizeReleaseFiles(ctx, s.store, request.Release.Files)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid release files"))
 	}
-	if len(request.Release.Files) == 0 {
+	if len(sanitizedFiles) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("release files cannot be empty"))
 	}
 
-	releaseFileType := request.Release.Files[0].Type
+	releaseFileType := sanitizedFiles[0].Type
 
 	response := &v1pb.CheckReleaseResponse{}
 	switch releaseFileType {
 	case v1pb.Release_File_DECLARATIVE:
+		// To check declarative files, we use the original files.
+		// Because the sanitized files are merged into one file for the declarative case and
+		// we lose file path information.
 		resp, err := s.checkReleaseDeclarative(ctx, request.Release.Files, targetDatabases)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check release declarative"))
 		}
 		response = resp
 	case v1pb.Release_File_VERSIONED:
-		resp, err := s.checkReleaseVersioned(ctx, request.Release.Files, targetDatabases)
+		resp, err := s.checkReleaseVersioned(ctx, sanitizedFiles, targetDatabases)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check release versioned"))
 		}
