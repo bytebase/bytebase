@@ -1027,9 +1027,9 @@ export declare type CheckResponse = Message<"bytebase.v1.CheckResponse"> & {
   /**
    * The count of affected rows of the statement on the target database.
    *
-   * @generated from field: int32 affected_rows = 2;
+   * @generated from field: int64 affected_rows = 2;
    */
-  affectedRows: number;
+  affectedRows: bigint;
 };
 
 /**

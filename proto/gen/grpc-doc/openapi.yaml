@@ -9086,9 +9086,8 @@ components:
                     items:
                         $ref: '#/components/schemas/CheckReleaseResponse_CheckResult'
                 affectedRows:
-                    type: integer
+                    type: string
                     description: The affected rows of the check.
-                    format: int32
                 riskLevel:
                     enum:
                         - RISK_LEVEL_UNSPECIFIED
@@ -9115,9 +9114,8 @@ components:
                         $ref: '#/components/schemas/Advice'
                     description: The list of advice for the file and the target.
                 affectedRows:
-                    type: integer
+                    type: string
                     description: The count of affected rows of the statement on the target.
-                    format: int32
                 riskLevel:
                     enum:
                         - RISK_LEVEL_UNSPECIFIED
@@ -9156,9 +9154,8 @@ components:
                     items:
                         $ref: '#/components/schemas/Advice'
                 affectedRows:
-                    type: integer
+                    type: string
                     description: The count of affected rows of the statement on the target database.
-                    format: int32
         ColumnCatalog:
             type: object
             properties:
@@ -12447,8 +12444,7 @@ components:
                         type: string
                     description: statement_types are the types of statements that are found in the sql.
                 affectedRows:
-                    type: integer
-                    format: int32
+                    type: string
                 changedResources:
                     $ref: '#/components/schemas/ChangedResources'
         ReviewConfig:
@@ -14007,13 +14003,11 @@ components:
                 error:
                     type: string
                 affectedRows:
-                    type: integer
-                    format: int32
+                    type: string
                 allAffectedRows:
                     type: array
                     items:
-                        type: integer
-                        format: int32
+                        type: string
                     description: |-
                         `all_affected_rows` is the affected rows of each command.
                          `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.

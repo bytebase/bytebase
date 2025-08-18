@@ -305,9 +305,9 @@ export declare type CheckReleaseResponse = Message<"bytebase.v1.CheckReleaseResp
   /**
    * The affected rows of the check.
    *
-   * @generated from field: int32 affected_rows = 2;
+   * @generated from field: int64 affected_rows = 2;
    */
-  affectedRows: number;
+  affectedRows: bigint;
 
   /**
    * The aggregated risk level of the check.
@@ -352,9 +352,9 @@ export declare type CheckReleaseResponse_CheckResult = Message<"bytebase.v1.Chec
   /**
    * The count of affected rows of the statement on the target.
    *
-   * @generated from field: int32 affected_rows = 4;
+   * @generated from field: int64 affected_rows = 4;
    */
-  affectedRows: number;
+  affectedRows: bigint;
 
   /**
    * The risk level of the statement on the target.
