@@ -281,6 +281,195 @@ func TestActionCheckCommand(t *testing.T) {
 		// 4. Verify command succeeded
 		a.NotContains(result.Stderr, "error", "Check should complete without errors")
 	})
+
+	t.Run("DeclarativeCheckValidSchema", func(t *testing.T) {
+		t.Parallel()
+		a := require.New(t)
+		ctx := context.Background()
+		ctl := &controller{}
+
+		ctx, err := ctl.StartServerWithExternalPg(ctx)
+		a.NoError(err)
+		defer ctl.Close(ctx)
+
+		// Create MySQL test database
+		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer.Close(ctx)
+
+		// Create test data directory and schema.sql file
+		testDataDir := t.TempDir()
+		schemaContent := `CREATE TABLE users (
+    id INT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`
+		schemaFile := filepath.Join(testDataDir, "schema.sql")
+		err = os.WriteFile(schemaFile, []byte(schemaContent), 0644)
+		a.NoError(err)
+
+		// Execute declarative check command
+		_, err = executeActionCommand(ctx,
+			"check",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", database.Name,
+			"--file-pattern", schemaFile,
+			"--check-release", "FAIL_ON_ERROR",
+			"--declarative",
+		)
+
+		a.NoError(err, "Declarative check command should succeed for valid schema")
+	})
+
+	t.Run("DeclarativeCheckMultipleFiles", func(t *testing.T) {
+		t.Parallel()
+		a := require.New(t)
+		ctx := context.Background()
+		ctl := &controller{}
+
+		ctx, err := ctl.StartServerWithExternalPg(ctx)
+		a.NoError(err)
+		defer ctl.Close(ctx)
+
+		// Create MySQL test database
+		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer.Close(ctx)
+
+		// Create test data directory with multiple SQL files
+		testDataDir := t.TempDir()
+
+		// Create users.sql
+		usersContent := `CREATE TABLE users (
+    id INT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`
+		usersFile := filepath.Join(testDataDir, "users.sql")
+		err = os.WriteFile(usersFile, []byte(usersContent), 0644)
+		a.NoError(err)
+
+		// Create products.sql
+		productsContent := `CREATE TABLE products (
+    id INT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(10,2)
+);`
+		productsFile := filepath.Join(testDataDir, "products.sql")
+		err = os.WriteFile(productsFile, []byte(productsContent), 0644)
+		a.NoError(err)
+
+		// Execute declarative check command with multiple files
+		_, err = executeActionCommand(ctx,
+			"check",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", database.Name,
+			"--file-pattern", filepath.Join(testDataDir, "*.sql"),
+			"--check-release", "FAIL_ON_ERROR",
+			"--declarative",
+		)
+
+		a.NoError(err, "Declarative check command should succeed with multiple files")
+	})
+
+	t.Run("DeclarativeCheckWithDatabaseGroup", func(t *testing.T) {
+		t.Parallel()
+		a := require.New(t)
+		ctx := context.Background()
+		ctl := &controller{}
+
+		ctx, err := ctl.StartServerWithExternalPg(ctx)
+		a.NoError(err)
+		defer ctl.Close(ctx)
+
+		// Create MySQL test database
+		_, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer.Close(ctx)
+
+		// Create database group
+		databaseGroup, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, connect.NewRequest(&v1pb.CreateDatabaseGroupRequest{
+			Parent:          ctl.project.Name,
+			DatabaseGroupId: "test-declarative-check-group",
+			DatabaseGroup: &v1pb.DatabaseGroup{
+				Title:        "Test Declarative Check Group",
+				DatabaseExpr: &expr.Expr{Expression: "true"},
+			},
+		}))
+		a.NoError(err)
+
+		// Create test data directory and schema.sql file
+		testDataDir := t.TempDir()
+		schemaContent := `CREATE TABLE users (
+    id INT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255)
+);`
+		schemaFile := filepath.Join(testDataDir, "schema.sql")
+		err = os.WriteFile(schemaFile, []byte(schemaContent), 0644)
+		a.NoError(err)
+
+		// Execute declarative check command with database group
+		_, err = executeActionCommand(ctx,
+			"check",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", databaseGroup.Msg.Name,
+			"--file-pattern", schemaFile,
+			"--check-release", "FAIL_ON_ERROR",
+			"--declarative",
+		)
+
+		a.NoError(err, "Declarative check command should succeed with database group")
+	})
+
+	t.Run("DeclarativeCheckSyntaxErrors", func(t *testing.T) {
+		t.Parallel()
+		a := require.New(t)
+		ctx := context.Background()
+		ctl := &controller{}
+
+		ctx, err := ctl.StartServerWithExternalPg(ctx)
+		a.NoError(err)
+		defer ctl.Close(ctx)
+
+		// Create MySQL test database
+		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer.Close(ctx)
+
+		// Create test data directory with invalid SQL
+		testDataDir := t.TempDir()
+		invalidSchemaContent := `CREATE TABLE users (
+    id INT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE
+    email VARCHAR(255)  -- Missing comma after previous column
+);`
+		schemaFile := filepath.Join(testDataDir, "schema.sql")
+		err = os.WriteFile(schemaFile, []byte(invalidSchemaContent), 0644)
+		a.NoError(err)
+
+		// Execute declarative check command with syntax error
+		_, err = executeActionCommand(ctx,
+			"check",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", database.Name,
+			"--file-pattern", schemaFile,
+			"--check-release", "FAIL_ON_ERROR",
+			"--declarative",
+		)
+
+		// The command may complete but should report the syntax issue
+		a.Error(err, "should error")
+		a.Contains(err.Error(), "found 1 error(s) in release check. view on Bytebase")
+	})
 }
 
 // ActionResult holds the result of executing an action command
