@@ -58,6 +58,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 		defer func() {
 			writeOutputJSON(w)
 		}()
+		w.IsRollout = true
 		ctx := command.Context()
 		client, err := NewClient(w.URL, w.ServiceAccount, w.ServiceAccountSecret)
 		if err != nil {
