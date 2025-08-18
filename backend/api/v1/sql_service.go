@@ -870,6 +870,9 @@ func DoExport(
 		OperatorEmail:        user.Email,
 		MaximumSQLResultSize: queryRestriction.MaximumResultSize,
 	}
+	if request.Schema != nil {
+		queryContext.Schema = *request.Schema
+	}
 	results, spans, duration, queryErr := queryRetry(
 		ctx,
 		stores,
