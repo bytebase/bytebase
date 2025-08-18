@@ -98,7 +98,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	}
 
 	// Validate and sanitize release files.
-	sanitizedFiles, err := validateAndSanitizeReleaseFiles(ctx, s.store, request.Release.Files)
+	sanitizedFiles, err := validateAndSanitizeReleaseFiles(ctx, s.store, request.Release.Files, false)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid release files"))
 	}
@@ -111,10 +111,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	var response *v1pb.CheckReleaseResponse
 	switch releaseFileType {
 	case v1pb.Release_File_DECLARATIVE:
-		// To check declarative files, we use the original files.
-		// Because the sanitized files are merged into one file for the declarative case and
-		// we lose file path information.
-		resp, err := s.checkReleaseDeclarative(ctx, request.Release.Files, targetDatabases)
+		resp, err := s.checkReleaseDeclarative(ctx, sanitizedFiles, targetDatabases)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check release declarative"))
 		}
@@ -190,7 +187,7 @@ loop:
 					// Add a warning advice if SHA256 mismatch
 					checkResult := &v1pb.CheckReleaseResponse_CheckResult{
 						File:   file.Path,
-						Target: fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName),
+						Target: common.FormatDatabase(instance.ResourceID, database.DatabaseName),
 						Advices: []*v1pb.Advice{
 							{
 								Status:  v1pb.Advice_WARNING,
@@ -210,7 +207,7 @@ loop:
 			checkResult, err := func() (*v1pb.CheckReleaseResponse_CheckResult, error) {
 				checkResult := &v1pb.CheckReleaseResponse_CheckResult{
 					File:   file.Path,
-					Target: fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName),
+					Target: common.FormatDatabase(instance.ResourceID, database.DatabaseName),
 				}
 				// statement is guaranteed to be populated by validateAndSanitizeReleaseFiles
 				statement := string(file.Statement)
