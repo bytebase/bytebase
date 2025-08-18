@@ -1118,6 +1118,10 @@
         "database-change": "Database Change",
         "export-data": "Export Data",
         "unknown": "Unknown"
+      },
+      "delete-change": {
+        "title": "Delete Change",
+        "content": "Are you sure you want to delete this change?"
       }
     },
     "targets": {

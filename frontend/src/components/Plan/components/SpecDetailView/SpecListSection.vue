@@ -64,6 +64,7 @@
 import { PlusIcon, XIcon } from "lucide-vue-next";
 import { NTabs, NTab, NButton, useDialog } from "naive-ui";
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
@@ -75,6 +76,7 @@ import { useSelectedSpec } from "./context";
 
 const router = useRouter();
 const dialog = useDialog();
+const { t } = useI18n();
 const { plan, isCreating } = usePlanContext();
 const selectedSpec = useSelectedSpec();
 const { isSpecEmpty } = useSpecsValidation(plan.value.specs);
@@ -107,10 +109,10 @@ const gotoSpec = (specId: string) => {
 
 const handleDeleteSpec = (spec: Plan_Spec) => {
   dialog.warning({
-    title: "Delete Change",
-    content: `Are you sure you want to delete this change: ${getSpecTitle(spec)}?`,
-    positiveText: "Delete",
-    negativeText: "Cancel",
+    title: t("plan.spec.delete-change.title"),
+    content: t("plan.spec.delete-change.content"),
+    positiveText: t("common.delete"),
+    negativeText: t("common.cancel"),
     onPositiveClick: () => {
       const specIndex = plan.value.specs.findIndex((s) => s.id === spec.id);
       if (specIndex >= 0) {

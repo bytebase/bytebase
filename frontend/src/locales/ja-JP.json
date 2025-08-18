@@ -1118,6 +1118,10 @@
         "database-change": "データベースの変更",
         "export-data": "データのエクスポート",
         "unknown": "未知"
+      },
+      "delete-change": {
+        "title": "削除変更",
+        "content": "この変更を削除してもよろしいですか?"
       }
     },
     "targets": {
