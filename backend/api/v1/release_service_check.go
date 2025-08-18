@@ -108,7 +108,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 
 	releaseFileType := sanitizedFiles[0].Type
 
-	response := &v1pb.CheckReleaseResponse{}
+	var response *v1pb.CheckReleaseResponse
 	switch releaseFileType {
 	case v1pb.Release_File_DECLARATIVE:
 		// To check declarative files, we use the original files.
