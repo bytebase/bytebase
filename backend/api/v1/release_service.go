@@ -486,6 +486,7 @@ func convertReleaseVcsSource(vs *v1pb.Release_VCSSource) *storepb.ReleasePayload
 //
 // The returned files are sorted by version in ascending order.
 // For declarative files, all files contents are merged into one file and returned.
+// It is safe to use the input files for CheckRelease with declarative files.
 func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Release_File) ([]*v1pb.Release_File, error) {
 	if len(files) == 0 {
 		return nil, errors.Errorf("release files cannot be empty")
