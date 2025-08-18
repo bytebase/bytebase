@@ -11,6 +11,9 @@ type World struct {
 	Platform    JobPlatform
 	CurrentTime time.Time
 
+	// Whether it is the rollout subcommand.
+	IsRollout bool
+
 	// bytebase-action flags
 	Output               string
 	URL                  string

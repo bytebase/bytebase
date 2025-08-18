@@ -68,7 +68,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
 	}
 
-	req.Msg.Release.Files, err = validateAndSanitizeReleaseFiles(ctx, s.store, req.Msg.Release.Files)
+	sanitizedFiles, err := validateAndSanitizeReleaseFiles(ctx, s.store, req.Msg.Release.Files, true)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid release files"))
 	}
@@ -76,7 +76,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 	var filesWithoutSheet []*v1pb.Release_File
 	// Prepare sheets to create for files with missing sheets.
 	// Check versions.
-	for _, file := range req.Msg.Release.Files {
+	for _, file := range sanitizedFiles {
 		if file.Sheet == "" {
 			// statement must be present due to validation in validateAndSanitizeReleaseFiles
 			sheet := &store.SheetMessage{
@@ -104,7 +104,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 		}
 	}
 
-	files, err := convertReleaseFiles(ctx, s.store, req.Msg.Release.Files)
+	files, err := convertReleaseFiles(ctx, s.store, sanitizedFiles)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert files"))
 	}
@@ -479,14 +479,12 @@ func convertReleaseVcsSource(vs *v1pb.Release_VCSSource) *storepb.ReleasePayload
 // validateAndSanitizeReleaseFiles validates and sanitizes the release files inputs.
 // It ensures that each file has either a sheet or a statement, and that the sheet is valid.
 // It also checks for duplicate versions and sorts the files by version.
+// For creating release with declarative files, it checks if there is only one file.
 //
 // The input files are modified in place.
 // If a sheet is provided, it populates the statement from the sheet.
 // If a statement is provided, it computes the sheetSha256 from the statement.
-//
-// The returned files are sorted by version in ascending order.
-// For declarative files, all files contents are merged into one file and returned.
-func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Release_File) ([]*v1pb.Release_File, error) {
+func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Release_File, createRelease bool) ([]*v1pb.Release_File, error) {
 	if len(files) == 0 {
 		return nil, errors.Errorf("release files cannot be empty")
 	}
@@ -550,8 +548,8 @@ func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files 
 	if fileTypeCount[v1pb.Release_File_VERSIONED] > 0 && fileTypeCount[v1pb.Release_File_DECLARATIVE] > 0 {
 		return nil, errors.Errorf("cannot have both versioned and declarative files")
 	}
-	if fileTypeCount[v1pb.Release_File_DECLARATIVE] > 1 {
-		return nil, errors.Errorf("expect exactly one declarative file, but found %d", fileTypeCount[v1pb.Release_File_DECLARATIVE])
+	if createRelease && fileTypeCount[v1pb.Release_File_DECLARATIVE] > 1 {
+		return nil, errors.Errorf("cannot have multiple declarative files when creating release")
 	}
 
 	// Create files with additional parsed version data for sorting.
