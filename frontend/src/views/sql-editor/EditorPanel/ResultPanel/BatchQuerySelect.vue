@@ -278,6 +278,7 @@ const handleExportBtnClick = async ({
           limit: options.limit,
           admin: tabStore.currentTab?.mode === "ADMIN",
           password: options.password,
+          schema: context.params.connection.schema,
         })
       );
 
