@@ -620,19 +620,9 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		}
 	}
 
-	environmentExists := make(map[string]bool)
-	for _, env := range environmentOrder {
-		environmentExists[env] = true
-	}
-
 	// Group tasks by environment.
 	tasksByEnv := map[string][]*v1pb.Task{}
 	for _, task := range rollout.Tasks {
-		// Skip tasks with environments not in the deployment list
-		if !environmentExists[task.Environment] {
-			continue
-		}
-
 		rolloutTask, err := convertToTask(ctx, s, project, task)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert task"))
@@ -651,6 +641,20 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 				Environment: common.FormatEnvironment(environment),
 				Tasks:       tasks,
 			})
+		}
+		delete(tasksByEnv, environment)
+	}
+
+	for environment, tasks := range tasksByEnv {
+		if len(tasks) > 0 {
+			stages = append([]*v1pb.Stage{
+				{
+					Name:        common.FormatStage(project.ResourceID, rollout.ID, environment),
+					Id:          environment,
+					Environment: common.FormatEnvironment(environment),
+					Tasks:       tasks,
+				},
+			}, stages...)
 		}
 	}
 

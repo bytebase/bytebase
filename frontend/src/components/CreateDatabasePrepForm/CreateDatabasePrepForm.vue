@@ -83,7 +83,6 @@
     <div class="w-full">
       <label for="environment" class="textlabel">
         {{ $t("common.environment") }}
-        <RequiredStar />
       </label>
       <EnvironmentSelect
         v-model:environment-name="state.environmentName"
@@ -178,7 +177,6 @@ import {
 import {
   defaultCharsetOfEngineV1,
   defaultCollationOfEngineV1,
-  isValidEnvironmentName,
   isValidInstanceName,
   isValidProjectName,
   UNKNOWN_PROJECT_NAME,
@@ -256,7 +254,6 @@ const allowCreate = computed(() => {
     validDatabaseOwnerName.value &&
     !isReservedName.value &&
     isValidProjectName(state.projectName) &&
-    isValidEnvironmentName(state.environmentName) &&
     isValidInstanceName(state.instanceName)
   );
 });

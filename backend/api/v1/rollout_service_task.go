@@ -83,15 +83,6 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		effectiveEnvironmentID = dbEnvironmentID
 	} else if instance.EnvironmentID != nil && *instance.EnvironmentID != "" {
 		effectiveEnvironmentID = *instance.EnvironmentID
-	} else {
-		return nil, errors.Errorf("no environment specified for instance %v", instance.ResourceID)
-	}
-	environment, err := s.GetEnvironmentByID(ctx, effectiveEnvironmentID)
-	if err != nil {
-		return nil, err
-	}
-	if environment == nil {
-		return nil, errors.Errorf("environment ID not found %v", effectiveEnvironmentID)
 	}
 
 	if instance.Metadata.GetEngine() == storepb.Engine_MONGODB && c.Table == "" {
