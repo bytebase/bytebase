@@ -758,7 +758,7 @@ type CheckReleaseResponse struct {
 	state   protoimpl.MessageState              `protogen:"open.v1"`
 	Results []*CheckReleaseResponse_CheckResult `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
 	// The affected rows of the check.
-	AffectedRows int32 `protobuf:"varint,2,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
+	AffectedRows int64 `protobuf:"varint,2,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
 	// The aggregated risk level of the check.
 	RiskLevel     CheckReleaseResponse_RiskLevel `protobuf:"varint,3,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.v1.CheckReleaseResponse_RiskLevel" json:"risk_level,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -802,7 +802,7 @@ func (x *CheckReleaseResponse) GetResults() []*CheckReleaseResponse_CheckResult 
 	return nil
 }
 
-func (x *CheckReleaseResponse) GetAffectedRows() int32 {
+func (x *CheckReleaseResponse) GetAffectedRows() int64 {
 	if x != nil {
 		return x.AffectedRows
 	}
@@ -932,7 +932,7 @@ type CheckReleaseResponse_CheckResult struct {
 	// The list of advice for the file and the target.
 	Advices []*Advice `protobuf:"bytes,3,rep,name=advices,proto3" json:"advices,omitempty"`
 	// The count of affected rows of the statement on the target.
-	AffectedRows int32 `protobuf:"varint,4,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
+	AffectedRows int64 `protobuf:"varint,4,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
 	// The risk level of the statement on the target.
 	RiskLevel     CheckReleaseResponse_RiskLevel `protobuf:"varint,5,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.v1.CheckReleaseResponse_RiskLevel" json:"risk_level,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -990,7 +990,7 @@ func (x *CheckReleaseResponse_CheckResult) GetAdvices() []*Advice {
 	return nil
 }
 
-func (x *CheckReleaseResponse_CheckResult) GetAffectedRows() int32 {
+func (x *CheckReleaseResponse_CheckResult) GetAffectedRows() int64 {
 	if x != nil {
 		return x.AffectedRows
 	}
@@ -1229,14 +1229,14 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\atargets\x18\x03 \x03(\tR\atargets\"\xf6\x03\n" +
 	"\x14CheckReleaseResponse\x12G\n" +
 	"\aresults\x18\x01 \x03(\v2-.bytebase.v1.CheckReleaseResponse.CheckResultR\aresults\x12#\n" +
-	"\raffected_rows\x18\x02 \x01(\x05R\faffectedRows\x12J\n" +
+	"\raffected_rows\x18\x02 \x01(\x03R\faffectedRows\x12J\n" +
 	"\n" +
 	"risk_level\x18\x03 \x01(\x0e2+.bytebase.v1.CheckReleaseResponse.RiskLevelR\triskLevel\x1a\xd9\x01\n" +
 	"\vCheckResult\x12\x12\n" +
 	"\x04file\x18\x01 \x01(\tR\x04file\x12\x16\n" +
 	"\x06target\x18\x02 \x01(\tR\x06target\x12-\n" +
 	"\aadvices\x18\x03 \x03(\v2\x13.bytebase.v1.AdviceR\aadvices\x12#\n" +
-	"\raffected_rows\x18\x04 \x01(\x05R\faffectedRows\x12J\n" +
+	"\raffected_rows\x18\x04 \x01(\x03R\faffectedRows\x12J\n" +
 	"\n" +
 	"risk_level\x18\x05 \x01(\x0e2+.bytebase.v1.CheckReleaseResponse.RiskLevelR\triskLevel\"H\n" +
 	"\tRiskLevel\x12\x1a\n" +

@@ -933,9 +933,9 @@ export declare type PlanCheckRun_Result_SqlSummaryReport = Message<"bytebase.v1.
   statementTypes: string[];
 
   /**
-   * @generated from field: int32 affected_rows = 3;
+   * @generated from field: int64 affected_rows = 3;
    */
-  affectedRows: number;
+  affectedRows: bigint;
 
   /**
    * @generated from field: bytebase.v1.ChangedResources changed_resources = 4;

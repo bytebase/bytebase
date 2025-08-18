@@ -1626,7 +1626,7 @@ type CheckResponse struct {
 	state   protoimpl.MessageState `protogen:"open.v1"`
 	Advices []*Advice              `protobuf:"bytes,1,rep,name=advices,proto3" json:"advices,omitempty"`
 	// The count of affected rows of the statement on the target database.
-	AffectedRows  int32 `protobuf:"varint,2,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
+	AffectedRows  int64 `protobuf:"varint,2,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1668,7 +1668,7 @@ func (x *CheckResponse) GetAdvices() []*Advice {
 	return nil
 }
 
-func (x *CheckResponse) GetAffectedRows() int32 {
+func (x *CheckResponse) GetAffectedRows() int64 {
 	if x != nil {
 		return x.AffectedRows
 	}
@@ -2859,7 +2859,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"SQL_EDITOR\x10\x04\"c\n" +
 	"\rCheckResponse\x12-\n" +
 	"\aadvices\x18\x01 \x03(\v2\x13.bytebase.v1.AdviceR\aadvices\x12#\n" +
-	"\raffected_rows\x18\x02 \x01(\x05R\faffectedRows\"\xa4\x03\n" +
+	"\raffected_rows\x18\x02 \x01(\x03R\faffectedRows\"\xa4\x03\n" +
 	"\x13DiffMetadataRequest\x12K\n" +
 	"\x0fsource_metadata\x18\x01 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x03\xe0A\x02R\x0esourceMetadata\x12K\n" +
 	"\x0ftarget_metadata\x18\x02 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x03\xe0A\x02R\x0etargetMetadata\x12C\n" +

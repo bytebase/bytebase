@@ -7528,7 +7528,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
-| affected_rows | [int32](#int32) |  |  |
+| affected_rows | [int64](#int64) |  |  |
 | changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
 
 
@@ -8358,7 +8358,7 @@ ISSUE_CREATE represents creating an issue. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | advices | [Advice](#bytebase-v1-Advice) | repeated |  |
-| affected_rows | [int32](#int32) |  | The count of affected rows of the statement on the target database. |
+| affected_rows | [int64](#int64) |  | The count of affected rows of the statement on the target database. |
 
 
 
@@ -8882,7 +8882,7 @@ For example: project == &#34;projects/{project}&#34; database == &#34;instances/
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | results | [CheckReleaseResponse.CheckResult](#bytebase-v1-CheckReleaseResponse-CheckResult) | repeated |  |
-| affected_rows | [int32](#int32) |  | The affected rows of the check. |
+| affected_rows | [int64](#int64) |  | The affected rows of the check. |
 | risk_level | [CheckReleaseResponse.RiskLevel](#bytebase-v1-CheckReleaseResponse-RiskLevel) |  | The aggregated risk level of the check. |
 
 
@@ -8901,7 +8901,7 @@ For example: project == &#34;projects/{project}&#34; database == &#34;instances/
 | file | [string](#string) |  | The file path that is being checked. |
 | target | [string](#string) |  | The target that the check is performed on. Should be a database. Format: instances/{instance}/databases/{database} |
 | advices | [Advice](#bytebase-v1-Advice) | repeated | The list of advice for the file and the target. |
-| affected_rows | [int32](#int32) |  | The count of affected rows of the statement on the target. |
+| affected_rows | [int64](#int64) |  | The count of affected rows of the statement on the target. |
 | risk_level | [CheckReleaseResponse.RiskLevel](#bytebase-v1-CheckReleaseResponse-RiskLevel) |  | The risk level of the statement on the target. |
 
 
@@ -10478,8 +10478,8 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | ----- | ---- | ----- | ----------- |
 | log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | error | [string](#string) |  |  |
-| affected_rows | [int32](#int32) |  |  |
-| all_affected_rows | [int32](#int32) | repeated | `all_affected_rows` is the affected rows of each command. `all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. |
+| affected_rows | [int64](#int64) |  |  |
+| all_affected_rows | [int64](#int64) | repeated | `all_affected_rows` is the affected rows of each command. `all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. |
 
 
 

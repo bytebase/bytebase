@@ -81,7 +81,7 @@ const props = withDefaults(
     project: string;
     advices: Advice[];
     database?: ComposedDatabase;
-    affectedRows?: number;
+    affectedRows?: bigint;
     riskLevel?: CheckReleaseResponse_RiskLevel;
     overrideTitle?: string;
     confirm?: Defer<boolean>;

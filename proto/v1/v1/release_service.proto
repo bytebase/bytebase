@@ -226,7 +226,7 @@ message CheckReleaseResponse {
     repeated Advice advices = 3;
 
     // The count of affected rows of the statement on the target.
-    int32 affected_rows = 4;
+    int64 affected_rows = 4;
 
     // The risk level of the statement on the target.
     RiskLevel risk_level = 5;
@@ -235,7 +235,7 @@ message CheckReleaseResponse {
   repeated CheckResult results = 1;
 
   // The affected rows of the check.
-  int32 affected_rows = 2;
+  int64 affected_rows = 2;
 
   enum RiskLevel {
     RISK_LEVEL_UNSPECIFIED = 0;

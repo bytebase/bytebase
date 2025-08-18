@@ -197,7 +197,7 @@ func (*Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, com
 			slog.Debug("rowsAffected returns error", log.BBError(err))
 			rowsAffected = 0
 		}
-		opts.LogCommandResponse(int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+		opts.LogCommandResponse(rowsAffected, []int64{rowsAffected}, "")
 		totalRowsAffected += rowsAffected
 	}
 
@@ -234,7 +234,7 @@ func (*Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, comm
 			slog.Debug("rowsAffected returns error", log.BBError(err))
 			rowsAffected = 0
 		}
-		opts.LogCommandResponse(int32(rowsAffected), []int32{int32(rowsAffected)}, "")
+		opts.LogCommandResponse(rowsAffected, []int64{rowsAffected}, "")
 		totalRowsAffected += rowsAffected
 	}
 	return totalRowsAffected, nil

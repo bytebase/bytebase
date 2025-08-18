@@ -126,7 +126,7 @@ const affectedRows = computed(() => {
       });
     }
     return acc;
-  }, 0);
+  }, 0n);
 });
 
 const runChecks = async () => {
