@@ -15,10 +15,10 @@ import {
   useProjectV1Store,
 } from "@/store";
 import type { MaybeRef } from "@/types";
+import { unknownEnvironment, UNKNOWN_ENVIRONMENT_NAME } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { SearchScopeId } from "@/utils";
 import {
-  environmentV1Name,
   extractEnvironmentResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
@@ -123,11 +123,12 @@ export const useCommonSearchScopeOptions = (
                         link: false,
                         tooltip: false,
                       }),
-                      h(
-                        "span",
-                        {},
-                        `(${environmentV1Name(environmentStore.getEnvironmentByName(ins.environment ?? ""))})`
-                      ),
+                      h(EnvironmentV1Name, {
+                        environment: environmentStore.getEnvironmentByName(
+                          ins.environment ?? ""
+                        ),
+                        link: false,
+                      }),
                     ]);
                   },
                 };
@@ -139,10 +140,11 @@ export const useCommonSearchScopeOptions = (
         id: "environment",
         title: t("issue.advanced-search.scope.environment.title"),
         description: t("issue.advanced-search.scope.environment.description"),
-        options: environmentList.value.map((env) => {
+        options: [unknownEnvironment(), ...environmentList.value].map((env) => {
           return {
             value: env.id,
             keywords: [`${environmentNamePrefix}${env.id}`, env.title],
+            custom: env.name === UNKNOWN_ENVIRONMENT_NAME,
             render: () =>
               h(EnvironmentV1Name, {
                 environment: env,

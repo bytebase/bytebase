@@ -2,12 +2,15 @@ package world
 
 import (
 	"log/slog"
+	"time"
 )
 
 // World is the world environment for bytebase-action.
 type World struct {
-	Logger   *slog.Logger
-	Platform JobPlatform
+	Logger      *slog.Logger
+	Platform    JobPlatform
+	CurrentTime time.Time
+
 	// bytebase-action flags
 	Output               string
 	URL                  string
@@ -16,6 +19,8 @@ type World struct {
 	Project              string // projects/{project}
 	Targets              []string
 	FilePattern          string
+	// Whether to use declarative mode.
+	Declarative bool
 
 	// bytebase-action check flags
 	// An enum to determine should we fail on warning or error.
@@ -43,7 +48,8 @@ type World struct {
 
 func NewWorld() *World {
 	return &World{
-		Logger:    slog.Default(),
-		OutputMap: make(map[string]string),
+		CurrentTime: time.Now(),
+		Logger:      slog.Default(),
+		OutputMap:   make(map[string]string),
 	}
 }

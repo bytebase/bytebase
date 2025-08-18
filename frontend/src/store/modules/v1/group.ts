@@ -5,6 +5,7 @@ import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
 import { groupServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
+import { isValidProjectName } from "@/types";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import {
   CreateGroupRequestSchema,
@@ -12,10 +13,28 @@ import {
   GetGroupRequestSchema,
   ListGroupsRequestSchema,
   UpdateGroupRequestSchema,
+  BatchGetGroupsRequestSchema,
 } from "@/types/proto-es/v1/group_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { useUserStore } from "../user";
 import { groupNamePrefix } from "./common";
+
+export interface GroupFilter {
+  query?: string;
+  project?: string;
+}
+
+const getListGroupFilter = (params: GroupFilter) => {
+  const filter = [];
+  const search = params.query?.trim()?.toLowerCase();
+  if (search) {
+    filter.push(`(title.matches("${search}") || email.matches("${search}"))`);
+  }
+  if (isValidProjectName(params.project)) {
+    filter.push(`project == "${params.project}"`);
+  }
+
+  return filter.join(" && ");
+};
 
 export const extractGroupEmail = (emailResource: string) => {
   const matches = emailResource.match(/^(?:group:|groups\/)(.+)$/);
@@ -42,25 +61,47 @@ export const useGroupStore = defineStore("group", () => {
     );
   });
 
-  const composeGroup = async (group: Group) => {
-    await useUserStore().batchGetUsers(group.members.map((m) => m.member));
-    groupMapByName.set(group.name, group);
-  };
-
   const getGroupByIdentifier = (id: string) => {
     return groupMapByName.get(ensureGroupIdentifier(id));
   };
 
-  const fetchGroupList = async () => {
-    if (!hasWorkspacePermissionV2("bb.groups.list")) {
-      return [];
-    }
-
-    const request = create(ListGroupsRequestSchema, {});
-    const { groups } = await groupServiceClientConnect.listGroups(request);
+  const fetchGroupList = async (params: {
+    pageSize: number;
+    pageToken?: string;
+    filter?: GroupFilter;
+  }): Promise<{
+    groups: Group[];
+    nextPageToken: string;
+  }> => {
+    const request = create(ListGroupsRequestSchema, {
+      pageSize: params.pageSize,
+      pageToken: params.pageToken,
+      filter: getListGroupFilter(params.filter ?? {}),
+    });
+    // Ignore errors and silent the request.
+    const { groups, nextPageToken } =
+      await groupServiceClientConnect.listGroups(request, {
+        contextValues: createContextValues().set(silentContextKey, true),
+      });
     resetCache();
     for (const group of groups) {
-      await composeGroup(group);
+      groupMapByName.set(group.name, group);
+    }
+    return { groups, nextPageToken };
+  };
+
+  const batchFetchGroups = async (groupNameList: string[]) => {
+    if (groupNameList.length === 0) {
+      return [];
+    }
+    const request = create(BatchGetGroupsRequestSchema, {
+      names: groupNameList.map(ensureGroupIdentifier),
+    });
+    const { groups } = await groupServiceClientConnect.batchGetGroups(request, {
+      contextValues: createContextValues().set(silentContextKey, true),
+    });
+    for (const group of groups) {
+      groupMapByName.set(group.name, group);
     }
     return groups;
   };
@@ -81,7 +122,7 @@ export const useGroupStore = defineStore("group", () => {
     const group = await groupServiceClientConnect.getGroup(request, {
       contextValues: createContextValues().set(silentContextKey, true),
     });
-    await composeGroup(group);
+    groupMapByName.set(group.name, group);
     return group;
   };
 
@@ -97,7 +138,7 @@ export const useGroupStore = defineStore("group", () => {
       groupEmail: extractGroupEmail(group.name),
     });
     const response = await groupServiceClientConnect.createGroup(request);
-    await composeGroup(response);
+    groupMapByName.set(response.name, response);
     return response;
   };
 
@@ -108,13 +149,14 @@ export const useGroupStore = defineStore("group", () => {
       allowMissing: false,
     });
     const response = await groupServiceClientConnect.updateGroup(request);
-    await composeGroup(response);
+    groupMapByName.set(response.name, response);
     return response;
   };
 
   return {
     groupList,
     fetchGroupList,
+    batchFetchGroups,
     getGroupByIdentifier,
     getOrFetchGroupByIdentifier,
     deleteGroup,
@@ -122,8 +164,3 @@ export const useGroupStore = defineStore("group", () => {
     createGroup,
   };
 });
-
-export const useGroupList = () => {
-  const groupStore = useGroupStore();
-  return computed(() => groupStore.groupList);
-};

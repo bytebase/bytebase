@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://docs.bytebase.com/get-started/deploy-with-docker" target="_blank">⚙️ Install</a> •
+  <a href="https://docs.bytebase.com/get-started/self-host-vs-cloud" target="_blank">⚙️ Install</a> •
   <a href="https://docs.bytebase.com">📚 Docs</a> •
   <a href="https://demo.bytebase.com">🎮 Demo</a> •
   <a href="https://discord.gg/huyw7gRsyA">💬 Discord</a> •
@@ -85,7 +85,7 @@ Visit [http://localhost:8080](http://localhost:8080) and follow the setup wizard
 
 ## Documentation
 
-- [Installation Guide](https://docs.bytebase.com/get-started/deploy-with-docker)
+- [Installation Guide](https://docs.bytebase.com/get-started/self-host-vs-cloud)
 - [Tutorials](https://docs.bytebase.com/tutorials)
 - [API Reference](https://docs.bytebase.com/api/overview)
 - [FAQ](https://docs.bytebase.com/faq)
@@ -148,6 +148,7 @@ alias y="pnpm --dir frontend i && pnpm --dir frontend dev"
 - [Bytebase vs Flyway](https://www.bytebase.com/blog/bytebase-vs-flyway/)
 - [Bytebase vs Jira](https://www.bytebase.com/blog/use-jira-for-database-change/)
 - [Bytebase vs DBeaver](https://www.bytebase.com/blog/bytebase-vs-dbeaver/)
+- [Bytebase vs DataGrip](https://www.bytebase.com/blog/bytebase-vs-datagrip/)
 - [Bytebase vs Navicat](https://www.bytebase.com/blog/bytebase-vs-navicat/)
 - [Bytebase vs CloudBeaver](https://www.bytebase.com/blog/bytebase-vs-cloudbeaver/)
 

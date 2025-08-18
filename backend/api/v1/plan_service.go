@@ -398,16 +398,31 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 			// Compare specs directly
 			oldSpecs := convertToPlanSpecs(oldPlan.Config.Specs)
-
 			removed, added, updated := diffSpecsDirectly(oldSpecs, req.Plan.Specs)
-			if len(removed) > 0 {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot remove specs from plan"))
-			}
-			if len(added) > 0 {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot add specs to plan"))
-			}
-			if len(updated) == 0 {
+
+			// Check if there are any changes at all.
+			hasChanges := len(removed) > 0 || len(added) > 0 || len(updated) > 0
+			if !hasChanges {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("no specs updated"))
+			}
+
+			// Validate spec modifications based on pipeline existence.
+			if oldPlan.PipelineUID != nil {
+				// Plan has a pipeline - only updates are allowed, no adding/removing.
+				if len(removed) > 0 {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot remove specs from plan that has a pipeline"))
+				}
+				if len(added) > 0 {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot add specs to plan that has a pipeline"))
+				}
+				if len(updated) == 0 {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("no specs updated"))
+				}
+			}
+
+			// Validate the new specs
+			if err := validateSpecs(req.Plan.Specs); err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to validate plan specs, error: %v", err))
 			}
 
 			oldSpecsByID := make(map[string]*v1pb.Plan_Spec)
@@ -1187,13 +1202,14 @@ func (s *PlanService) getUserByIdentifier(ctx context.Context, identifier string
 	return user, nil
 }
 
-// diffSpecs check if there are any specs removed, added or updated in the new plan.
-// Only updating sheet is taken into account.
+// diffSpecsDirectly checks if there are any specs removed, added or updated in the new plan.
+// It performs a deep comparison of all spec fields using protocol buffer comparison.
+// Returns (removed, added, updated) slices of specs.
 func diffSpecsDirectly(oldSpecs []*v1pb.Plan_Spec, newSpecs []*v1pb.Plan_Spec) ([]*v1pb.Plan_Spec, []*v1pb.Plan_Spec, []*v1pb.Plan_Spec) {
-	oldSpecsMap := make(map[string]*v1pb.Plan_Spec)
-	newSpecsMap := make(map[string]*v1pb.Plan_Spec)
-	var removed, added, updated []*v1pb.Plan_Spec
+	oldSpecsMap := make(map[string]*v1pb.Plan_Spec, len(oldSpecs))
+	newSpecsMap := make(map[string]*v1pb.Plan_Spec, len(newSpecs))
 
+	// Build maps for efficient lookup
 	for _, spec := range oldSpecs {
 		oldSpecsMap[spec.Id] = spec
 	}
@@ -1201,14 +1217,18 @@ func diffSpecsDirectly(oldSpecs []*v1pb.Plan_Spec, newSpecs []*v1pb.Plan_Spec) (
 		newSpecsMap[spec.Id] = spec
 	}
 
+	var removed, added, updated []*v1pb.Plan_Spec
+
+	// Find removed specs - specs in old but not in new.
 	for _, spec := range oldSpecs {
-		if _, ok := newSpecsMap[spec.Id]; !ok {
+		if _, exists := newSpecsMap[spec.Id]; !exists {
 			removed = append(removed, spec)
 		}
 	}
 
+	// Find added and updated specs - specs in new but not in old, or changed.
 	for _, spec := range newSpecs {
-		if oldSpec, ok := oldSpecsMap[spec.Id]; !ok {
+		if oldSpec, exists := oldSpecsMap[spec.Id]; !exists {
 			added = append(added, spec)
 		} else if !cmp.Equal(oldSpec, spec, protocmp.Transform()) {
 			updated = append(updated, spec)

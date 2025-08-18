@@ -143,8 +143,6 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 
 		switch releaseFileType {
 		case v1pb.Release_File_DECLARATIVE:
-			// TODO(p0ny): check sql
-			// TODO(p0ny): make stopChecking effective. need to refactor first.
 			revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
 				InstanceID:   &database.InstanceID,
 				DatabaseName: &database.DatabaseName,
@@ -165,7 +163,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to parse version %q", file.Version))
 					}
-					if fv.LessThan(rv) {
+					if fv.LessThanOrEqual(rv) {
 						checkResult := &v1pb.CheckReleaseResponse_CheckResult{
 							File:   file.Path,
 							Target: common.FormatDatabase(instance.ResourceID, database.DatabaseName),
@@ -174,7 +172,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 									Status:  v1pb.Advice_WARNING,
 									Code:    advisor.Internal.Int32(),
 									Title:   "Applied file has been modified",
-									Content: fmt.Sprintf("The file %q has version %q, but there is a higher version %q applied", file.Path, file.Version, revisions[0].Version),
+									Content: fmt.Sprintf("The file %q has version %q, but there is an equal or higher version %q applied", file.Path, file.Version, revisions[0].Version),
 								},
 							},
 						}
@@ -183,7 +181,54 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 					}
 				}
 			}
-			return nil, connect.NewError(connect.CodeUnimplemented, errors.New("declarative release files are not supported yet"))
+
+			// Perform syntax check for declarative files
+			for _, file := range request.Release.Files {
+				if stopChecking {
+					break
+				}
+
+				checkResult := &v1pb.CheckReleaseResponse_CheckResult{
+					File:   file.Path,
+					Target: common.FormatDatabase(instance.ResourceID, database.DatabaseName),
+				}
+
+				// statement is guaranteed to be populated by validateAndSanitizeReleaseFiles
+				statement := string(file.Statement)
+
+				// Check if any syntax error in the statement.
+				if common.EngineSupportSyntaxCheck(engine) {
+					_, syntaxAdvices := s.sheetManager.GetASTsForChecks(engine, statement)
+					if len(syntaxAdvices) > 0 {
+						for _, advice := range syntaxAdvices {
+							checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
+						}
+					}
+				}
+
+				// Only add to results if there are syntax errors
+				if len(checkResult.Advices) > 0 {
+					response.Results = append(response.Results, checkResult)
+					for _, advice := range checkResult.Advices {
+						switch advice.Status {
+						case v1pb.Advice_ERROR:
+							if errorAdviceCount < common.MaximumAdvicePerStatus {
+								errorAdviceCount++
+							}
+						case v1pb.Advice_WARNING:
+							if warningAdviceCount < common.MaximumAdvicePerStatus {
+								warningAdviceCount++
+							}
+						default:
+						}
+					}
+					// Check if we need to stop checking for the rest of files.
+					// If we have reached the maximum number of advices for both error and warning, we will stop checking.
+					if errorAdviceCount >= common.MaximumAdvicePerStatus && warningAdviceCount >= common.MaximumAdvicePerStatus {
+						stopChecking = true
+					}
+				}
+			}
 		case v1pb.Release_File_VERSIONED:
 			// Batch fetch all revisions for this database
 			revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{

@@ -9,8 +9,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 

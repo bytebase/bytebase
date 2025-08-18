@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 

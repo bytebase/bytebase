@@ -13,13 +13,13 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 )
 
 func init() {
 	base.RegisterQueryValidator(storepb.Engine_POSTGRES, validateQuery)
-	base.RegisterQueryValidator(storepb.Engine_REDSHIFT, validateQuery)
+	// Redshift has its own implementation in the redshift package
 	base.RegisterQueryValidator(storepb.Engine_COCKROACHDB, validateQuery)
 }
 

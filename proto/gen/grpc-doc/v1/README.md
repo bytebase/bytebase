@@ -357,6 +357,8 @@
     - [DatabaseGroupService](#bytebase-v1-DatabaseGroupService)
   
 - [v1/group_service.proto](#v1_group_service-proto)
+    - [BatchGetGroupsRequest](#bytebase-v1-BatchGetGroupsRequest)
+    - [BatchGetGroupsResponse](#bytebase-v1-BatchGetGroupsResponse)
     - [CreateGroupRequest](#bytebase-v1-CreateGroupRequest)
     - [DeleteGroupRequest](#bytebase-v1-DeleteGroupRequest)
     - [GetGroupRequest](#bytebase-v1-GetGroupRequest)
@@ -5016,6 +5018,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | recovery_codes | [string](#string) | repeated | The recovery_codes is the temporary recovery codes using in two phase verification. |
 | phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
 | profile | [User.Profile](#bytebase-v1-User-Profile) |  |  |
+| groups | [string](#string) | repeated | The groups for the user. Format: groups/{email} |
 
 
 
@@ -6110,6 +6113,36 @@ The database group&#39;s `name` field is used to identify the database group to 
 
 
 
+<a name="bytebase-v1-BatchGetGroupsRequest"></a>
+
+### BatchGetGroupsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| names | [string](#string) | repeated | The group names to retrieve. Format: groups/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchGetGroupsResponse"></a>
+
+### BatchGetGroupsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| groups | [Group](#bytebase-v1-Group) | repeated | The groups from the specified request. |
+
+
+
+
+
+
 <a name="bytebase-v1-CreateGroupRequest"></a>
 
 ### CreateGroupRequest
@@ -6201,10 +6234,15 @@ Format: users/hello@world.com |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | Not used. The maximum number of groups to return. The service may return fewer than this value. If unspecified, at most 10 groups will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListGroups` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | The maximum number of groups to return. The service may return fewer than this value. If unspecified, at most 10 groups will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListGroups` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListGroups` must match the call that provided the page token. |
+| filter | [string](#string) |  | Filter is used to filter groups returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - title: the group title, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the group email, support &#34;==&#34; and &#34;.matches()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
+
+For example: title == &#34;dba&#34; email == &#34;dba@bytebase.com&#34; title.matches(&#34;dba&#34;) email.matches(&#34;dba&#34;) project == &#34;projects/sample-project&#34; You can combine filter conditions like: title.matches(&#34;dba&#34;) || email.matches(&#34;dba&#34;) |
 
 
 
@@ -6273,6 +6311,7 @@ The group&#39;s `name` field is used to identify the group to update. Format: gr
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetGroup | [GetGroupRequest](#bytebase-v1-GetGroupRequest) | [Group](#bytebase-v1-Group) | Permissions required: bb.groups.get |
+| BatchGetGroups | [BatchGetGroupsRequest](#bytebase-v1-BatchGetGroupsRequest) | [BatchGetGroupsResponse](#bytebase-v1-BatchGetGroupsResponse) | Get the groups in batch. Permissions required: bb.groups.get |
 | ListGroups | [ListGroupsRequest](#bytebase-v1-ListGroupsRequest) | [ListGroupsResponse](#bytebase-v1-ListGroupsResponse) | Permissions required: bb.groups.list |
 | CreateGroup | [CreateGroupRequest](#bytebase-v1-CreateGroupRequest) | [Group](#bytebase-v1-Group) | Permissions required: bb.groups.create |
 | UpdateGroup | [UpdateGroupRequest](#bytebase-v1-UpdateGroupRequest) | [Group](#bytebase-v1-Group) | UpdateGroup updates the group. Users with &#34;bb.groups.update&#34; permission on the workspace or the group owner can access this method. Permissions required: bb.groups.update |
@@ -8376,6 +8415,7 @@ ISSUE_CREATE represents creating an issue. |
 | admin | [bool](#bool) |  | The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode. The exported data is not masked. |
 | password | [string](#string) |  | The zip password provide by users. |
 | data_source_id | [string](#string) |  | The id of data source. It is used for querying admin data source even if the instance has read-only data sources. Or it can be used to query a specific read-only data source. |
+| schema | [string](#string) | optional | The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. |
 
 
 

@@ -343,6 +343,14 @@ export declare type User = Message<"bytebase.v1.User"> & {
    * @generated from field: bytebase.v1.User.Profile profile = 13;
    */
   profile?: User_Profile;
+
+  /**
+   * The groups for the user.
+   * Format: groups/{email}
+   *
+   * @generated from field: repeated string groups = 14;
+   */
+  groups: string[];
 };
 
 /**

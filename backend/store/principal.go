@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -62,6 +63,8 @@ type UserMessage struct {
 	Phone string
 	// output only
 	CreatedAt time.Time
+	// The group email list
+	Groups []string
 }
 
 type UserStat struct {
@@ -236,7 +239,20 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		join = `INNER JOIN project_members ON (CONCAT('users/', principal.id) = ANY(project_members.members) OR '` + common.AllUsers + `' = ANY(project_members.members))`
 	}
 
+	// Join the user_group table to find groups for each user.
+	// The user will be stored in the user_group.payload.members.member field, the member is in the "users/{id}" format
 	query := with + `
+	WITH user_groups AS (
+		SELECT
+			principal.id AS user_id,
+			COALESCE(ARRAY_AGG(user_group.email ORDER BY user_group.email) FILTER (WHERE user_group.email IS NOT NULL), '{}') AS groups
+		FROM principal
+		LEFT JOIN user_group ON EXISTS (
+			SELECT 1 FROM jsonb_array_elements(user_group.payload->'members') AS m
+			WHERE m->>'member' = CONCAT('users/', principal.id)
+		)
+		GROUP BY principal.id
+	)
 	SELECT
 		principal.id AS user_id,
 		principal.deleted,
@@ -247,8 +263,11 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		principal.mfa_config,
 		principal.phone,
 		principal.profile,
-		principal.created_at
-	FROM principal ` + join + ` WHERE ` + strings.Join(where, " AND ") + ` ORDER BY type DESC, created_at ASC`
+		principal.created_at,
+		user_groups.groups
+	FROM principal
+	INNER JOIN user_groups ON principal.id = user_groups.user_id
+	` + join + ` WHERE ` + strings.Join(where, " AND ") + ` ORDER BY type DESC, created_at ASC`
 
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
@@ -268,6 +287,7 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		var mfaConfigBytes []byte
 		var profileBytes []byte
 		var typeString string
+		var groups pq.StringArray
 		if err := rows.Scan(
 			&userMessage.ID,
 			&userMessage.MemberDeleted,
@@ -279,9 +299,11 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 			&userMessage.Phone,
 			&profileBytes,
 			&userMessage.CreatedAt,
+			&groups,
 		); err != nil {
 			return nil, err
 		}
+		userMessage.Groups = []string(groups)
 		if typeValue, ok := storepb.PrincipalType_value[typeString]; ok {
 			userMessage.Type = storepb.PrincipalType(typeValue)
 		} else {

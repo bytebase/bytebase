@@ -14,7 +14,7 @@ import { file_v1_annotation } from "./annotation_pb";
  * Describes the file v1/group_service.proto.
  */
 export const file_v1_group_service = /*@__PURE__*/
-  fileDesc("ChZ2MS9ncm91cF9zZXJ2aWNlLnByb3RvEgtieXRlYmFzZS52MSI7Cg9HZXRHcm91cFJlcXVlc3QSKAoEbmFtZRgBIAEoCUIa4EEC+kEUChJieXRlYmFzZS5jb20vR3JvdXAiOgoRTGlzdEdyb3Vwc1JlcXVlc3QSEQoJcGFnZV9zaXplGAEgASgFEhIKCnBhZ2VfdG9rZW4YAiABKAkiUQoSTGlzdEdyb3Vwc1Jlc3BvbnNlEiIKBmdyb3VwcxgBIAMoCzISLmJ5dGViYXNlLnYxLkdyb3VwEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSJWChJDcmVhdGVHcm91cFJlcXVlc3QSJgoFZ3JvdXAYASABKAsyEi5ieXRlYmFzZS52MS5Hcm91cEID4EECEhgKC2dyb3VwX2VtYWlsGAIgASgJQgPgQQIihAEKElVwZGF0ZUdyb3VwUmVxdWVzdBImCgVncm91cBgBIAEoCzISLmJ5dGViYXNlLnYxLkdyb3VwQgPgQQISLwoLdXBkYXRlX21hc2sYAiABKAsyGi5nb29nbGUucHJvdG9idWYuRmllbGRNYXNrEhUKDWFsbG93X21pc3NpbmcYAyABKAgiPgoSRGVsZXRlR3JvdXBSZXF1ZXN0EigKBG5hbWUYASABKAlCGuBBAvpBFAoSYnl0ZWJhc2UuY29tL0dyb3VwIn8KC0dyb3VwTWVtYmVyEg4KBm1lbWJlchgBIAEoCRIrCgRyb2xlGAIgASgOMh0uYnl0ZWJhc2UudjEuR3JvdXBNZW1iZXIuUm9sZSIzCgRSb2xlEhQKEFJPTEVfVU5TUEVDSUZJRUQQABIJCgVPV05FUhABEgoKBk1FTUJFUhACIqIBCgVHcm91cBIRCgRuYW1lGAEgASgJQgPgQQMSDQoFdGl0bGUYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSKQoHbWVtYmVycxgFIAMoCzIYLmJ5dGViYXNlLnYxLkdyb3VwTWVtYmVyEg4KBnNvdXJjZRgHIAEoCTon6kEkChJieXRlYmFzZS5jb20vR3JvdXASDmdyb3Vwcy97Z3JvdXB9Mq0FCgxHcm91cFNlcnZpY2USdQoIR2V0R3JvdXASHC5ieXRlYmFzZS52MS5HZXRHcm91cFJlcXVlc3QaEi5ieXRlYmFzZS52MS5Hcm91cCI32kEEbmFtZYrqMA1iYi5ncm91cHMuZ2V0kOowAYLT5JMCFRITL3YxL3tuYW1lPWdyb3Vwcy8qfRJ6CgpMaXN0R3JvdXBzEh4uYnl0ZWJhc2UudjEuTGlzdEdyb3Vwc1JlcXVlc3QaHy5ieXRlYmFzZS52MS5MaXN0R3JvdXBzUmVzcG9uc2UiK9pBAIrqMA5iYi5ncm91cHMubGlzdJDqMAGC0+STAgwSCi92MS9ncm91cHMSgQEKC0NyZWF0ZUdyb3VwEh8uYnl0ZWJhc2UudjEuQ3JlYXRlR3JvdXBSZXF1ZXN0GhIuYnl0ZWJhc2UudjEuR3JvdXAiPdpBBWdyb3VwiuowEGJiLmdyb3Vwcy5jcmVhdGWQ6jABmOowAYLT5JMCEzoFZ3JvdXAiCi92MS9ncm91cHMSnAEKC1VwZGF0ZUdyb3VwEh8uYnl0ZWJhc2UudjEuVXBkYXRlR3JvdXBSZXF1ZXN0GhIuYnl0ZWJhc2UudjEuR3JvdXAiWNpBEWdyb3VwLHVwZGF0ZV9tYXNriuowEGJiLmdyb3Vwcy51cGRhdGWQ6jACmOowAYLT5JMCIjoFZ3JvdXAyGS92MS97Z3JvdXAubmFtZT1ncm91cHMvKn0ShgEKC0RlbGV0ZUdyb3VwEh8uYnl0ZWJhc2UudjEuRGVsZXRlR3JvdXBSZXF1ZXN0GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5Ij7aQQRuYW1liuowEGJiLmdyb3Vwcy5kZWxldGWQ6jACmOowAYLT5JMCFSoTL3YxL3tuYW1lPWdyb3Vwcy8qfUI2WjRnaXRodWIuY29tL2J5dGViYXNlL2J5dGViYXNlL2JhY2tlbmQvZ2VuZXJhdGVkLWdvL3YxYgZwcm90bzM", [file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_empty, file_google_protobuf_field_mask, file_v1_annotation]);
+  fileDesc("ChZ2MS9ncm91cF9zZXJ2aWNlLnByb3RvEgtieXRlYmFzZS52MSI7Cg9HZXRHcm91cFJlcXVlc3QSKAoEbmFtZRgBIAEoCUIa4EEC+kEUChJieXRlYmFzZS5jb20vR3JvdXAiQgoVQmF0Y2hHZXRHcm91cHNSZXF1ZXN0EikKBW5hbWVzGAEgAygJQhrgQQL6QRQKEmJ5dGViYXNlLmNvbS9Hcm91cCI8ChZCYXRjaEdldEdyb3Vwc1Jlc3BvbnNlEiIKBmdyb3VwcxgBIAMoCzISLmJ5dGViYXNlLnYxLkdyb3VwIkoKEUxpc3RHcm91cHNSZXF1ZXN0EhEKCXBhZ2Vfc2l6ZRgBIAEoBRISCgpwYWdlX3Rva2VuGAIgASgJEg4KBmZpbHRlchgDIAEoCSJRChJMaXN0R3JvdXBzUmVzcG9uc2USIgoGZ3JvdXBzGAEgAygLMhIuYnl0ZWJhc2UudjEuR3JvdXASFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJIlYKEkNyZWF0ZUdyb3VwUmVxdWVzdBImCgVncm91cBgBIAEoCzISLmJ5dGViYXNlLnYxLkdyb3VwQgPgQQISGAoLZ3JvdXBfZW1haWwYAiABKAlCA+BBAiKEAQoSVXBkYXRlR3JvdXBSZXF1ZXN0EiYKBWdyb3VwGAEgASgLMhIuYnl0ZWJhc2UudjEuR3JvdXBCA+BBAhIvCgt1cGRhdGVfbWFzaxgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5GaWVsZE1hc2sSFQoNYWxsb3dfbWlzc2luZxgDIAEoCCI+ChJEZWxldGVHcm91cFJlcXVlc3QSKAoEbmFtZRgBIAEoCUIa4EEC+kEUChJieXRlYmFzZS5jb20vR3JvdXAifwoLR3JvdXBNZW1iZXISDgoGbWVtYmVyGAEgASgJEisKBHJvbGUYAiABKA4yHS5ieXRlYmFzZS52MS5Hcm91cE1lbWJlci5Sb2xlIjMKBFJvbGUSFAoQUk9MRV9VTlNQRUNJRklFRBAAEgkKBU9XTkVSEAESCgoGTUVNQkVSEAIiogEKBUdyb3VwEhEKBG5hbWUYASABKAlCA+BBAxINCgV0aXRsZRgCIAEoCRITCgtkZXNjcmlwdGlvbhgDIAEoCRIpCgdtZW1iZXJzGAUgAygLMhguYnl0ZWJhc2UudjEuR3JvdXBNZW1iZXISDgoGc291cmNlGAcgASgJOifqQSQKEmJ5dGViYXNlLmNvbS9Hcm91cBIOZ3JvdXBzL3tncm91cH0yuwYKDEdyb3VwU2VydmljZRJ1CghHZXRHcm91cBIcLmJ5dGViYXNlLnYxLkdldEdyb3VwUmVxdWVzdBoSLmJ5dGViYXNlLnYxLkdyb3VwIjfaQQRuYW1liuowDWJiLmdyb3Vwcy5nZXSQ6jABgtPkkwIVEhMvdjEve25hbWU9Z3JvdXBzLyp9EosBCg5CYXRjaEdldEdyb3VwcxIiLmJ5dGViYXNlLnYxLkJhdGNoR2V0R3JvdXBzUmVxdWVzdBojLmJ5dGViYXNlLnYxLkJhdGNoR2V0R3JvdXBzUmVzcG9uc2UiMIrqMA1iYi5ncm91cHMuZ2V0kOowAYLT5JMCFRITL3YxL2dyb3VwczpiYXRjaEdldBJ6CgpMaXN0R3JvdXBzEh4uYnl0ZWJhc2UudjEuTGlzdEdyb3Vwc1JlcXVlc3QaHy5ieXRlYmFzZS52MS5MaXN0R3JvdXBzUmVzcG9uc2UiK9pBAIrqMA5iYi5ncm91cHMubGlzdJDqMAGC0+STAgwSCi92MS9ncm91cHMSgQEKC0NyZWF0ZUdyb3VwEh8uYnl0ZWJhc2UudjEuQ3JlYXRlR3JvdXBSZXF1ZXN0GhIuYnl0ZWJhc2UudjEuR3JvdXAiPdpBBWdyb3VwiuowEGJiLmdyb3Vwcy5jcmVhdGWQ6jABmOowAYLT5JMCEzoFZ3JvdXAiCi92MS9ncm91cHMSnAEKC1VwZGF0ZUdyb3VwEh8uYnl0ZWJhc2UudjEuVXBkYXRlR3JvdXBSZXF1ZXN0GhIuYnl0ZWJhc2UudjEuR3JvdXAiWNpBEWdyb3VwLHVwZGF0ZV9tYXNriuowEGJiLmdyb3Vwcy51cGRhdGWQ6jACmOowAYLT5JMCIjoFZ3JvdXAyGS92MS97Z3JvdXAubmFtZT1ncm91cHMvKn0ShgEKC0RlbGV0ZUdyb3VwEh8uYnl0ZWJhc2UudjEuRGVsZXRlR3JvdXBSZXF1ZXN0GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5Ij7aQQRuYW1liuowEGJiLmdyb3Vwcy5kZWxldGWQ6jACmOowAYLT5JMCFSoTL3YxL3tuYW1lPWdyb3Vwcy8qfUI2WjRnaXRodWIuY29tL2J5dGViYXNlL2J5dGViYXNlL2JhY2tlbmQvZ2VuZXJhdGVkLWdvL3YxYgZwcm90bzM", [file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_empty, file_google_protobuf_field_mask, file_v1_annotation]);
 
 /**
  * Describes the message bytebase.v1.GetGroupRequest.
@@ -24,52 +24,66 @@ export const GetGroupRequestSchema = /*@__PURE__*/
   messageDesc(file_v1_group_service, 0);
 
 /**
+ * Describes the message bytebase.v1.BatchGetGroupsRequest.
+ * Use `create(BatchGetGroupsRequestSchema)` to create a new message.
+ */
+export const BatchGetGroupsRequestSchema = /*@__PURE__*/
+  messageDesc(file_v1_group_service, 1);
+
+/**
+ * Describes the message bytebase.v1.BatchGetGroupsResponse.
+ * Use `create(BatchGetGroupsResponseSchema)` to create a new message.
+ */
+export const BatchGetGroupsResponseSchema = /*@__PURE__*/
+  messageDesc(file_v1_group_service, 2);
+
+/**
  * Describes the message bytebase.v1.ListGroupsRequest.
  * Use `create(ListGroupsRequestSchema)` to create a new message.
  */
 export const ListGroupsRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_group_service, 1);
+  messageDesc(file_v1_group_service, 3);
 
 /**
  * Describes the message bytebase.v1.ListGroupsResponse.
  * Use `create(ListGroupsResponseSchema)` to create a new message.
  */
 export const ListGroupsResponseSchema = /*@__PURE__*/
-  messageDesc(file_v1_group_service, 2);
+  messageDesc(file_v1_group_service, 4);
 
 /**
  * Describes the message bytebase.v1.CreateGroupRequest.
  * Use `create(CreateGroupRequestSchema)` to create a new message.
  */
 export const CreateGroupRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_group_service, 3);
+  messageDesc(file_v1_group_service, 5);
 
 /**
  * Describes the message bytebase.v1.UpdateGroupRequest.
  * Use `create(UpdateGroupRequestSchema)` to create a new message.
  */
 export const UpdateGroupRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_group_service, 4);
+  messageDesc(file_v1_group_service, 6);
 
 /**
  * Describes the message bytebase.v1.DeleteGroupRequest.
  * Use `create(DeleteGroupRequestSchema)` to create a new message.
  */
 export const DeleteGroupRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_group_service, 5);
+  messageDesc(file_v1_group_service, 7);
 
 /**
  * Describes the message bytebase.v1.GroupMember.
  * Use `create(GroupMemberSchema)` to create a new message.
  */
 export const GroupMemberSchema = /*@__PURE__*/
-  messageDesc(file_v1_group_service, 6);
+  messageDesc(file_v1_group_service, 8);
 
 /**
  * Describes the enum bytebase.v1.GroupMember.Role.
  */
 export const GroupMember_RoleSchema = /*@__PURE__*/
-  enumDesc(file_v1_group_service, 6, 0);
+  enumDesc(file_v1_group_service, 8, 0);
 
 /**
  * @generated from enum bytebase.v1.GroupMember.Role
@@ -82,7 +96,7 @@ export const GroupMember_Role = /*@__PURE__*/
  * Use `create(GroupSchema)` to create a new message.
  */
 export const GroupSchema = /*@__PURE__*/
-  messageDesc(file_v1_group_service, 7);
+  messageDesc(file_v1_group_service, 9);
 
 /**
  * @generated from service bytebase.v1.GroupService

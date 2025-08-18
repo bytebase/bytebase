@@ -16,18 +16,46 @@ import (
 )
 
 // getReleaseFiles returns the release files and the digest of the release.
-func getReleaseFiles(w *world.World, pattern string) ([]*v1pb.Release_File, string, error) {
-	matches, err := filepath.Glob(pattern)
+func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
+	matches, err := filepath.Glob(w.FilePattern)
 	if err != nil {
 		return nil, "", err
 	}
 	if len(matches) == 0 {
-		return nil, "", errors.Errorf("no files found for pattern: %s", pattern)
+		return nil, "", errors.Errorf("no files found for pattern: %s", w.FilePattern)
 	}
 
 	slices.Sort(matches)
 
 	h := sha256.New()
+
+	if w.Declarative {
+		// For declarative files, we need to concat all the file contents.
+		var contents []byte
+		for _, m := range matches {
+			content, err := os.ReadFile(m)
+			if err != nil {
+				return nil, "", err
+			}
+			if _, err := h.Write([]byte(m)); err != nil {
+				return nil, "", errors.Wrapf(err, "failed to write file path")
+			}
+			if _, err := h.Write(content); err != nil {
+				return nil, "", errors.Wrapf(err, "failed to write file content")
+			}
+			contents = append(contents, content...)
+		}
+		return []*v1pb.Release_File{
+			{
+				// use file pattern as the path
+				Path:       w.FilePattern,
+				Type:       v1pb.Release_File_DECLARATIVE,
+				Version:    w.CurrentTime.Format("20060102.150405"),
+				ChangeType: v1pb.Release_File_DDL,
+				Statement:  contents,
+			},
+		}, hex.EncodeToString(h.Sum(nil)), nil
+	}
 
 	var files []*v1pb.Release_File
 	for _, m := range matches {
@@ -35,6 +63,7 @@ func getReleaseFiles(w *world.World, pattern string) ([]*v1pb.Release_File, stri
 		if err != nil {
 			return nil, "", err
 		}
+
 		base := filepath.Base(m)
 		var t v1pb.Release_File_ChangeType
 		switch {

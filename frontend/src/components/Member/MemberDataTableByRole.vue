@@ -3,28 +3,35 @@
     key="project-members-by-role"
     :columns="columns"
     :data="userListByRole"
-    :row-key="(row) => row.name"
-    :striped="true"
+    :row-key="(row) => row.id"
     :bordered="true"
+    :row-class-name="rowClassName"
     default-expand-all
   />
 </template>
 
 <script lang="tsx" setup>
+import { Building2Icon, Trash2Icon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
-import { NDataTable } from "naive-ui";
-import { computed, h } from "vue";
+import { NDataTable, NTooltip, NPopconfirm } from "naive-ui";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
+import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
-import { displayRoleTitle } from "@/utils";
+import { displayRoleTitle, isBindingPolicyExpired } from "@/utils";
 import UserNameCell from "./MemberDataTable/cells/UserNameCell.vue";
 import UserOperationsCell from "./MemberDataTable/cells/UserOperationsCell.vue";
 import type { MemberBinding } from "./types";
 
+type Scope = "workspace" | "project";
+
 interface RoleRowData {
+  id: string;
   type: "role";
   name: string;
+  scope: Scope;
+  binding?: Binding;
   children: BindingRowData[];
 }
 
@@ -35,15 +42,16 @@ interface BindingRowData {
 }
 
 const props = defineProps<{
-  scope: "workspace" | "project";
+  scope: Scope;
   allowEdit: boolean;
-  bindingsByRole: Map<string, Map<string, MemberBinding>>;
+  bindings: MemberBinding[];
   onClickUser?: (user: User, event: MouseEvent) => void;
 }>();
 
 const emit = defineEmits<{
   (event: "update-binding", binding: MemberBinding): void;
   (event: "revoke-binding", binding: MemberBinding): void;
+  (event: "revoke-role", role: string, expired: boolean): void;
 }>();
 
 const { t } = useI18n();
@@ -56,27 +64,23 @@ const columns = computed(() => {
       className: "flex items-center",
       render: (row: RoleRowData | BindingRowData) => {
         if (row.type === "role") {
-          return h(
-            "div",
-            {
-              class: "flex items-center",
-            },
-            [
-              h(
-                "span",
-                {
-                  class: "font-medium",
-                },
-                displayRoleTitle(row.name)
-              ),
-              h(
-                "span",
-                {
-                  class: "ml-1 font-normal text-control-light",
-                },
-                `(${row.children.length})`
-              ),
-            ]
+          return (
+            <div class="flex items-center space-x-1">
+              {row.scope === "workspace" && (
+                <NTooltip
+                  v-slots={{
+                    trigger: () => <Building2Icon class="w-4 h-auto mr-1" />,
+                    default: () => t("project.members.workspace-level-roles"),
+                  }}
+                />
+              )}
+              <span
+                class={`font-medium ${row.binding && isBindingPolicyExpired(row.binding) ? "line-through" : ""}`}
+              >
+                {displayRoleTitle(row.name)}
+              </span>
+              <span class="font-normal text-control-light">{`(${row.children.length})`}</span>
+            </div>
           );
         }
 
@@ -102,47 +106,97 @@ const columns = computed(() => {
       width: "4rem",
       render: (row: RoleRowData | BindingRowData) => {
         if (row.type === "role") {
-          return "";
+          return (
+            row.scope === "project" &&
+            props.allowEdit && (
+              <NPopconfirm
+                positive-Click={() =>
+                  emit("revoke-role", row.name, row.id.endsWith(".expired"))
+                }
+                v-slots={{
+                  trigger: () => (
+                    <Trash2Icon class="w-4 h-auto ml-auto mr-3 cursor-pointer" />
+                  ),
+                  default: () => t("settings.members.revoke-access-alert"),
+                }}
+              />
+            )
+          );
         } else {
-          return h(UserOperationsCell, {
-            scope: props.scope,
-            allowEdit: props.allowEdit,
-            binding: row.member,
-            "onUpdate-binding": () => {
-              emit("update-binding", row.member);
-            },
-            "onRevoke-binding": () => {
-              emit("revoke-binding", row.member);
-            },
-          });
+          return (
+            <UserOperationsCell
+              class="ml-auto"
+              scope={props.scope}
+              allowEdit={props.allowEdit}
+              binding={row.member}
+              onUpdate-binding={() => {
+                emit("update-binding", row.member);
+              }}
+              onRevoke-binding={() => {
+                emit("revoke-binding", row.member);
+              }}
+            />
+          );
         }
       },
     },
   ] as DataTableColumn<RoleRowData | BindingRowData>[];
 });
 
+const getRoleDataId = (roleData: RoleRowData): string => {
+  const sections = [roleData.scope, roleData.name];
+  if (roleData.binding && isBindingPolicyExpired(roleData.binding)) {
+    sections.push("expired");
+  }
+  return sections.join(".");
+};
+
 const userListByRole = computed(() => {
-  const rowDataList: RoleRowData[] = [];
+  const map: Map<string, RoleRowData> = new Map();
 
-  for (const [role, memberBindings] of props.bindingsByRole.entries()) {
-    const children: BindingRowData[] = [];
+  const getRoleRowData = (
+    memberBinding: MemberBinding,
+    data: { name: string; scope: Scope; binding?: Binding | undefined }
+  ) => {
+    const roleData: RoleRowData = {
+      id: "",
+      type: "role",
+      children: [],
+      ...data,
+    };
+    const id = getRoleDataId(roleData);
+    roleData.id = id;
+    if (!map.has(id)) {
+      map.set(id, roleData);
+    }
+    map.get(id)?.children.push({
+      type: "binding",
+      name: `${id}-${memberBinding.binding}`,
+      member: memberBinding,
+    });
+  };
 
-    for (const memberBinding of memberBindings.values()) {
-      children.push({
-        type: "binding",
-        name: `${role}-${memberBinding.binding}`,
-        member: memberBinding,
+  for (const memberBinding of props.bindings) {
+    for (const role of memberBinding.workspaceLevelRoles) {
+      getRoleRowData(memberBinding, {
+        name: role,
+        scope: "workspace",
       });
     }
-    if (children.length > 0) {
-      rowDataList.push({
-        type: "role",
-        name: role,
-        children,
+
+    for (const binding of memberBinding.projectRoleBindings) {
+      getRoleRowData(memberBinding, {
+        name: binding.role,
+        scope: "project",
+        binding,
       });
     }
   }
 
-  return rowDataList;
+  return [...map.values()];
 });
+
+const rowClassName = (row: RoleRowData) => {
+  return row.type === "role" ? "n-data-table-tr--striped" : "";
+};
 </script>

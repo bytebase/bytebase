@@ -135,6 +135,7 @@
 
 <script lang="tsx" setup>
 import { create } from "@bufbuild/protobuf";
+import { computedAsync } from "@vueuse/core";
 import { cloneDeep, isEqual } from "lodash-es";
 import { Building2Icon, PenIcon, TrashIcon } from "lucide-vue-next";
 import { NButton, NTag, NTooltip, NDataTable, useDialog } from "naive-ui";
@@ -631,12 +632,20 @@ watch(
   { immediate: true, deep: true }
 );
 
-const groupMembers = computed(() => {
+const groupMembers = computedAsync(async () => {
   if (props.binding.type !== "groups") {
     return [];
   }
+
+  // Fetch user data for group members
+  const members = props.binding.group?.members ?? [];
+  if (members.length > 0) {
+    const memberUserIds = members.map((m) => m.member);
+    await userStore.batchGetUsers(memberUserIds);
+  }
+
   const resp = [];
-  for (const member of props.binding.group?.members ?? []) {
+  for (const member of members) {
     const user = userStore.getUserByIdentifier(member.member);
     if (!user) {
       continue;
@@ -647,5 +656,5 @@ const groupMembers = computed(() => {
     });
   }
   return resp;
-});
+}, []);
 </script>

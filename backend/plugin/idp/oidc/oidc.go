@@ -104,6 +104,12 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 		return nil, nil, errors.Wrap(err, "verify raw ID Token")
 	}
 
+	// Parse ID token claims - these are authoritative and verified
+	var idTokenClaims map[string]any
+	if err := idToken.Claims(&idTokenClaims); err != nil {
+		return nil, nil, errors.Wrap(err, "parse ID token claims")
+	}
+
 	// NOTE: Skip checking nonce if the expected nonce is empty. It is OK because
 	// we've given away the security benefits the nonce brings with an empty nonce,
 	// and some IdP implementations are just behaving strangely that would return a
@@ -112,17 +118,36 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 		return nil, nil, errors.Errorf("mismatched nonce, want %q but got %q", nonce, idToken.Nonce)
 	}
 
-	rawUserInfo, err := p.provider.UserInfo(ctx, oauth2.StaticTokenSource(token))
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "fetch user info")
+	// Start with ID token claims as the base
+	claims := make(map[string]any)
+	for k, v := range idTokenClaims {
+		claims[k] = v
 	}
 
-	var claims map[string]any
-	err = rawUserInfo.Claims(&claims)
+	// Try to fetch UserInfo to get additional/updated claims
+	// But if it fails, we can still proceed with ID token claims
+	rawUserInfo, err := p.provider.UserInfo(ctx, oauth2.StaticTokenSource(token))
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "unmarshal claims")
+		// Log as warning, not error, since we can proceed with ID token claims
+		slog.Warn("Failed to fetch UserInfo endpoint, using ID token claims only",
+			slog.String("error", err.Error()),
+			slog.String("issuer", p.config.Issuer))
+	} else {
+		var userInfoClaims map[string]any
+		err = rawUserInfo.Claims(&userInfoClaims)
+		if err != nil {
+			slog.Warn("Failed to parse UserInfo claims, using ID token claims only",
+				slog.String("error", err.Error()))
+		} else {
+			// UserInfo claims override ID token claims (fresher data)
+			for key, value := range userInfoClaims {
+				claims[key] = value
+			}
+		}
 	}
-	slog.Debug("User info", slog.Any("claims", claims))
+
+	// Log the merged claims for debugging
+	slog.Debug("OIDC merged claims", slog.Any("claims", claims))
 
 	userInfo := &storepb.IdentityProviderUserInfo{}
 	if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Identifier).(string); ok {

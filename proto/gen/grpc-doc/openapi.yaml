@@ -524,8 +524,7 @@ paths:
                 - name: pageSize
                   in: query
                   description: |-
-                    Not used.
-                     The maximum number of groups to return. The service may return fewer than
+                    The maximum number of groups to return. The service may return fewer than
                      this value.
                      If unspecified, at most 10 groups will be returned.
                      The maximum value is 1000; values above 1000 will be coerced to 1000.
@@ -535,12 +534,32 @@ paths:
                 - name: pageToken
                   in: query
                   description: |-
-                    Not used.
-                     A page token, received from a previous `ListGroups` call.
+                    A page token, received from a previous `ListGroups` call.
                      Provide this to retrieve the subsequent page.
 
                      When paginating, all other parameters provided to `ListGroups` must match
                      the call that provided the page token.
+                  schema:
+                    type: string
+                - name: filter
+                  in: query
+                  description: |-
+                    Filter is used to filter groups returned in the list.
+                     The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+                     Supported filter:
+                     - title: the group title, support "==" and ".matches()" operator.
+                     - email: the group email, support "==" and ".matches()" operator.
+                     - project: the project full name in "projects/{id}" format, support "==" operator.
+
+                     For example:
+                     title == "dba"
+                     email == "dba@bytebase.com"
+                     title.matches("dba")
+                     email.matches("dba")
+                     project == "projects/sample-project"
+                     You can combine filter conditions like:
+                     title.matches("dba") || email.matches("dba")
                   schema:
                     type: string
             responses:
@@ -677,6 +696,37 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Group'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/groups:batchGet:
+        get:
+            tags:
+                - GroupService
+            description: |-
+                Get the groups in batch.
+                 Permissions required: bb.groups.get
+            operationId: GroupService_BatchGetGroups
+            parameters:
+                - name: names
+                  in: query
+                  description: |-
+                    The group names to retrieve.
+                     Format: groups/{email}
+                  schema:
+                    type: array
+                    items:
+                        type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchGetGroupsResponse'
                 default:
                     description: Default error response
                     content:
@@ -8569,6 +8619,14 @@ components:
                     items:
                         $ref: '#/components/schemas/Database'
                     description: The databases from the specified request.
+        BatchGetGroupsResponse:
+            type: object
+            properties:
+                groups:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Group'
+                    description: The groups from the specified request.
         BatchGetIamPolicyResponse:
             type: object
             properties:
@@ -10014,6 +10072,11 @@ components:
                          It is used for querying admin data source even if the instance has
                          read-only data sources. Or it can be used to query a specific read-only
                          data source.
+                schema:
+                    type: string
+                    description: |-
+                        The default schema to search objects. Equals to the current schema in
+                         Oracle and search path in Postgres.
         ExportResponse:
             type: object
             properties:
@@ -14322,6 +14385,14 @@ components:
                          Could be empty.
                 profile:
                     $ref: '#/components/schemas/User_Profile'
+                groups:
+                    readOnly: true
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        The groups for the user.
+                         Format: groups/{email}
         User_Profile:
             type: object
             properties:

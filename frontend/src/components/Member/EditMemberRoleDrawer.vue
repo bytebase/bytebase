@@ -81,7 +81,7 @@ import {
   pushNotification,
   useWorkspaceV1Store,
 } from "@/store";
-import { ALL_USERS_USER_EMAIL } from "@/types";
+import { ALL_USERS_USER_EMAIL, groupBindingPrefix } from "@/types";
 import MembersBindingSelect from "./MembersBindingSelect.vue";
 import { type MemberBinding } from "./types";
 
@@ -162,9 +162,10 @@ const updateRoleBinding = async () => {
     });
   } else {
     for (const member of memberListInBinding.value) {
+      const isGroup = member.startsWith(groupBindingPrefix);
       const existedRoles = workspaceStore.findRolesByMember({
         member,
-        ignoreGroup: true,
+        ignoreGroup: !isGroup,
       });
       batchPatch.push({
         member,

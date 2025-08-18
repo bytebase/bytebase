@@ -27,13 +27,16 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 	}
 
 	extractor := &metadataExtractor{
-		currentDatabase: "",
-		currentSchema:   "",
-		tables:          make(map[string]*storepb.TableMetadata),
-		views:           make(map[string]*storepb.ViewMetadata),
-		functions:       make(map[string]*storepb.FunctionMetadata),
-		procedures:      make(map[string]*storepb.ProcedureMetadata),
-		triggers:        make(map[string]*storepb.TriggerMetadata),
+		currentDatabase:          "",
+		currentSchema:            "",
+		tables:                   make(map[string]*storepb.TableMetadata),
+		views:                    make(map[string]*storepb.ViewMetadata),
+		functions:                make(map[string]*storepb.FunctionMetadata),
+		procedures:               make(map[string]*storepb.ProcedureMetadata),
+		triggers:                 make(map[string]*storepb.TriggerMetadata),
+		columnPrimaryKeys:        make(map[string][]string),
+		columnUniqueKeys:         make(map[string]map[string]bool),
+		pendingForeignKeyIndexes: make(map[string][]*storepb.ForeignKeyMetadata),
 	}
 
 	// Walk each parse tree
@@ -46,6 +49,13 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 	if extractor.err != nil {
 		return nil, extractor.err
 	}
+
+	// Create primary key indexes from column-level definitions
+	extractor.createColumnPrimaryKeyIndexes()
+	// Create unique indexes from column-level definitions
+	extractor.createColumnUniqueKeyIndexes()
+	// Create indexes for foreign keys that don't have existing suitable indexes
+	extractor.createPendingForeignKeyIndexes()
 
 	// Build the final metadata structure
 	schemaMetadata := &storepb.DatabaseSchemaMetadata{
@@ -114,7 +124,13 @@ type metadataExtractor struct {
 	functions       map[string]*storepb.FunctionMetadata
 	procedures      map[string]*storepb.ProcedureMetadata
 	triggers        map[string]*storepb.TriggerMetadata
-	err             error
+	// Track column-level primary keys to create index entries later
+	columnPrimaryKeys map[string][]string // tableName -> []columnNames
+	// Track column-level unique constraints to create index entries later
+	columnUniqueKeys map[string]map[string]bool // tableName -> columnName -> true
+	// Track foreign keys to create index entries after all table elements are processed
+	pendingForeignKeyIndexes map[string][]*storepb.ForeignKeyMetadata // tableName -> []foreignKeys
+	err                      error
 }
 
 // Helper function to get or create table
@@ -220,7 +236,7 @@ func (e *metadataExtractor) extractColumnDefinition(ctx mysql.IColumnDefinitionC
 
 	// Extract column attributes (NULL/NOT NULL, DEFAULT, etc.)
 	if ctx.FieldDefinition() != nil {
-		e.extractFieldAttributes(ctx.FieldDefinition(), column)
+		e.extractFieldAttributes(ctx.FieldDefinition(), column, table.Name)
 	}
 
 	// Extract comment
@@ -320,7 +336,7 @@ func normalizeDataTypeAttributes(dataType string) string {
 }
 
 // extractFieldAttributes extracts field attributes like NULL/NOT NULL, DEFAULT, AUTO_INCREMENT, PRIMARY KEY
-func (*metadataExtractor) extractFieldAttributes(ctx mysql.IFieldDefinitionContext, column *storepb.ColumnMetadata) {
+func (e *metadataExtractor) extractFieldAttributes(ctx mysql.IFieldDefinitionContext, column *storepb.ColumnMetadata, tableName string) {
 	if ctx == nil {
 		return
 	}
@@ -345,6 +361,14 @@ func (*metadataExtractor) extractFieldAttributes(ctx mysql.IFieldDefinitionConte
 		// Check for PRIMARY KEY - inline definition makes column NOT NULL
 		if attr.PRIMARY_SYMBOL() != nil && attr.KEY_SYMBOL() != nil {
 			column.Nullable = false
+			// Track this column as part of a primary key (we'll create the index later)
+			e.addColumnPrimaryKey(tableName, column.Name)
+		}
+
+		// Check for UNIQUE - inline definition creates unique constraint
+		if attr.UNIQUE_SYMBOL() != nil {
+			// Track this column as having a unique constraint (we'll create the index later)
+			e.addColumnUniqueKey(tableName, column.Name)
 		}
 
 		// Check for NULL/NOT NULL
@@ -467,6 +491,16 @@ func (e *metadataExtractor) extractTableConstraint(ctx mysql.ITableConstraintDef
 		e.extractUniqueIndex(ctx, table)
 	}
 
+	// Extract FULLTEXT indexes
+	if ctx.FULLTEXT_SYMBOL() != nil {
+		e.extractFulltextIndex(ctx, table)
+	}
+
+	// Extract SPATIAL indexes
+	if ctx.SPATIAL_SYMBOL() != nil {
+		e.extractSpatialIndex(ctx, table)
+	}
+
 	// Extract CHECK constraint
 	if ctx.CheckConstraint() != nil {
 		// Extract constraint name if present
@@ -484,13 +518,24 @@ func (*metadataExtractor) extractPrimaryKey(ctx mysql.ITableConstraintDefContext
 		return
 	}
 
-	keyColumns := mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
+	columnInfo := extractIndexColumnsFromVariants(ctx.KeyListVariants())
 
-	if len(keyColumns) > 0 {
+	if len(columnInfo) > 0 {
+		// Extract expressions and flags
+		expressions := make([]string, len(columnInfo))
+		keyLength := make([]int64, len(columnInfo))
+		descending := make([]bool, len(columnInfo))
+
+		for i, col := range columnInfo {
+			expressions[i] = col.Expression
+			keyLength[i] = col.KeyLength
+			descending[i] = col.Descending
+		}
+
 		// Mark primary key columns as NOT NULL
 		for _, column := range table.Columns {
-			for _, pkCol := range keyColumns {
-				if column.Name == pkCol {
+			for _, pkExpr := range expressions {
+				if column.Name == pkExpr {
 					column.Nullable = false
 					break
 				}
@@ -500,16 +545,20 @@ func (*metadataExtractor) extractPrimaryKey(ctx mysql.ITableConstraintDefContext
 		index := &storepb.IndexMetadata{
 			Name:        "PRIMARY",
 			Type:        "BTREE",
-			Expressions: keyColumns,
+			Expressions: expressions,
 			Primary:     true,
 			Unique:      true,
+			Visible:     true,
+			Comment:     "", // Primary keys don't have comments in MySQL
+			KeyLength:   keyLength,
+			Descending:  descending,
 		}
 		table.Indexes = append(table.Indexes, index)
 	}
 }
 
 // extractForeignKey extracts foreign key constraint
-func (*metadataExtractor) extractForeignKey(ctx mysql.ITableConstraintDefContext, table *storepb.TableMetadata) {
+func (e *metadataExtractor) extractForeignKey(ctx mysql.ITableConstraintDefContext, table *storepb.TableMetadata) {
 	if ctx.KeyList() == nil || ctx.References() == nil {
 		return
 	}
@@ -592,37 +641,59 @@ func (*metadataExtractor) extractForeignKey(ctx mysql.ITableConstraintDefContext
 	}
 
 	table.ForeignKeys = append(table.ForeignKeys, fk)
+
+	// Store the foreign key for later index creation (after all table elements are processed)
+	if e.pendingForeignKeyIndexes[table.Name] == nil {
+		e.pendingForeignKeyIndexes[table.Name] = []*storepb.ForeignKeyMetadata{}
+	}
+	e.pendingForeignKeyIndexes[table.Name] = append(e.pendingForeignKeyIndexes[table.Name], fk)
 }
 
 // extractIndex extracts regular index
 func (e *metadataExtractor) extractIndex(ctx mysql.ITableConstraintDefContext, table *storepb.TableMetadata) {
-	if ctx.KeyList() == nil {
-		return
-	}
-
 	// Extract index name
 	indexName := ""
 	if ctx.IndexName() != nil {
 		indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
 	}
 
-	// Extract columns/expressions
-	var expressions []string
-	for _, keyPart := range ctx.KeyList().AllKeyPart() {
-		if keyPart.Identifier() != nil {
-			columnName := mysqlparser.NormalizeMySQLIdentifier(keyPart.Identifier())
-			// Check for order (ASC/DESC)
-			if keyPart.Direction() != nil {
-				if keyPart.Direction().DESC_SYMBOL() != nil {
-					columnName += " DESC"
-				}
-			}
-			expressions = append(expressions, columnName)
-		}
+	// Fallback: try to get name from IndexNameAndType if IndexName is empty
+	if indexName == "" && ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
 	}
 
-	if len(expressions) > 0 {
+	// Extract columns/expressions with detailed information
+	var columnInfo []IndexColumnInfo
+
+	// First try KeyList (for simple KEY definitions)
+	if ctx.KeyList() != nil {
+		columnInfo = extractIndexColumns(ctx.KeyList())
+	}
+
+	// If KeyList is empty, try KeyListVariants (for INDEX definitions)
+	if len(columnInfo) == 0 && ctx.KeyListVariants() != nil {
+		columnInfo = extractIndexColumnsFromVariants(ctx.KeyListVariants())
+	}
+
+	if len(columnInfo) > 0 {
+		// Extract expressions and flags
+		expressions := make([]string, len(columnInfo))
+		keyLength := make([]int64, len(columnInfo))
+		descending := make([]bool, len(columnInfo))
+
+		for i, col := range columnInfo {
+			expressions[i] = col.Expression
+			keyLength[i] = col.KeyLength
+			descending[i] = col.Descending
+		}
+
 		indexType := e.getIndexType(ctx)
+
+		// Check for visibility - MySQL indexes are visible by default unless marked INVISIBLE
+		visible := !detectInvisibleKeyword(ctx)
+
+		// Extract comment
+		comment := extractIndexComment(ctx)
 
 		index := &storepb.IndexMetadata{
 			Name:        indexName,
@@ -630,6 +701,10 @@ func (e *metadataExtractor) extractIndex(ctx mysql.ITableConstraintDefContext, t
 			Expressions: expressions,
 			Primary:     false,
 			Unique:      false,
+			Visible:     visible,
+			Comment:     comment,
+			KeyLength:   keyLength,
+			Descending:  descending,
 		}
 		table.Indexes = append(table.Indexes, index)
 	}
@@ -637,38 +712,58 @@ func (e *metadataExtractor) extractIndex(ctx mysql.ITableConstraintDefContext, t
 
 // extractUniqueIndex extracts unique index
 func (*metadataExtractor) extractUniqueIndex(ctx mysql.ITableConstraintDefContext, table *storepb.TableMetadata) {
-	if ctx.KeyList() == nil {
-		return
-	}
-
 	// Extract index name
 	indexName := ""
 	if ctx.IndexName() != nil {
 		indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
 	}
 
-	// Extract columns
-	var expressions []string
-	for _, keyPart := range ctx.KeyList().AllKeyPart() {
-		if keyPart.Identifier() != nil {
-			columnName := mysqlparser.NormalizeMySQLIdentifier(keyPart.Identifier())
-			// Check for order (ASC/DESC)
-			if keyPart.Direction() != nil {
-				if keyPart.Direction().DESC_SYMBOL() != nil {
-					columnName += " DESC"
-				}
-			}
-			expressions = append(expressions, columnName)
-		}
+	// Fallback: try to get name from IndexNameAndType if IndexName is empty
+	if indexName == "" && ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
 	}
 
-	if len(expressions) > 0 {
+	// Extract columns/expressions with detailed information
+	var columnInfo []IndexColumnInfo
+
+	// First try KeyList (for simple KEY definitions)
+	if ctx.KeyList() != nil {
+		columnInfo = extractIndexColumns(ctx.KeyList())
+	}
+
+	// If KeyList is empty, try KeyListVariants (for UNIQUE INDEX definitions)
+	if len(columnInfo) == 0 && ctx.KeyListVariants() != nil {
+		columnInfo = extractIndexColumnsFromVariants(ctx.KeyListVariants())
+	}
+
+	if len(columnInfo) > 0 {
+		// Extract expressions and flags
+		expressions := make([]string, len(columnInfo))
+		keyLength := make([]int64, len(columnInfo))
+		descending := make([]bool, len(columnInfo))
+
+		for i, col := range columnInfo {
+			expressions[i] = col.Expression
+			keyLength[i] = col.KeyLength
+			descending[i] = col.Descending
+		}
+
+		// Check for visibility - MySQL indexes are visible by default unless marked INVISIBLE
+		visible := !detectInvisibleKeyword(ctx)
+
+		// Extract comment
+		comment := extractIndexComment(ctx)
+
 		index := &storepb.IndexMetadata{
 			Name:        indexName,
 			Type:        "BTREE",
 			Expressions: expressions,
 			Primary:     false,
 			Unique:      true,
+			Visible:     visible,
+			Comment:     comment,
+			KeyLength:   keyLength,
+			Descending:  descending,
 		}
 		table.Indexes = append(table.Indexes, index)
 	}
@@ -995,7 +1090,7 @@ func (e *metadataExtractor) extractFieldDefinitionForAlter(columnName string, ct
 	}
 
 	// Extract column attributes
-	e.extractFieldAttributes(ctx, column)
+	e.extractFieldAttributes(ctx, column, table.Name)
 
 	// Extract comment
 	if comment := e.extractColumnComment(ctx); comment != "" {
@@ -1024,13 +1119,24 @@ func (e *metadataExtractor) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 		indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
 	}
 
-	// Extract columns/expressions
-	var expressions []string
+	// Extract columns/expressions with detailed information
+	var columnInfo []IndexColumnInfo
 	if ctx.CreateIndexTarget().KeyListVariants() != nil {
-		expressions = mysqlparser.NormalizeKeyListVariants(ctx.CreateIndexTarget().KeyListVariants())
+		columnInfo = extractIndexColumnsFromVariants(ctx.CreateIndexTarget().KeyListVariants())
 	}
 
-	if len(expressions) > 0 {
+	if len(columnInfo) > 0 {
+		// Extract expressions and flags
+		expressions := make([]string, len(columnInfo))
+		keyLength := make([]int64, len(columnInfo))
+		descending := make([]bool, len(columnInfo))
+
+		for i, col := range columnInfo {
+			expressions[i] = col.Expression
+			keyLength[i] = col.KeyLength
+			descending[i] = col.Descending
+		}
+
 		indexType := "BTREE"
 		// Check for index type
 		if ctx.FULLTEXT_SYMBOL() != nil {
@@ -1042,12 +1148,22 @@ func (e *metadataExtractor) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 		// Check if it's a unique index
 		unique := ctx.UNIQUE_SYMBOL() != nil
 
+		// Check for visibility - MySQL indexes are visible by default unless marked INVISIBLE
+		visible := !detectInvisibleKeyword(ctx)
+
+		// Extract comment
+		comment := extractIndexComment(ctx)
+
 		index := &storepb.IndexMetadata{
 			Name:        indexName,
 			Type:        indexType,
 			Expressions: expressions,
 			Primary:     false,
 			Unique:      unique,
+			Visible:     visible,
+			Comment:     comment,
+			KeyLength:   keyLength,
+			Descending:  descending,
 		}
 		table.Indexes = append(table.Indexes, index)
 	}
@@ -1064,6 +1180,198 @@ func (*metadataExtractor) getIndexType(_ mysql.ITableConstraintDefContext) strin
 	// TODO: Implement proper index type extraction when parser methods are available
 
 	return indexType
+}
+
+// IndexColumnInfo holds information about a single index column
+type IndexColumnInfo struct {
+	Expression string
+	KeyLength  int64
+	Descending bool
+}
+
+// extractIndexColumns extracts detailed information about index columns including DESC/ASC and key lengths
+func extractIndexColumns(keyList mysql.IKeyListContext) []IndexColumnInfo {
+	var columns []IndexColumnInfo
+
+	if keyList == nil {
+		return columns
+	}
+
+	for _, keyPart := range keyList.AllKeyPart() {
+		if keyPart.Identifier() == nil {
+			continue
+		}
+
+		columnName := mysqlparser.NormalizeMySQLIdentifier(keyPart.Identifier())
+
+		// Initialize column info
+		colInfo := IndexColumnInfo{
+			Expression: columnName,
+			KeyLength:  -1,    // Default: no key length specified
+			Descending: false, // Default: ASC
+		}
+
+		// Check for DESC/ASC direction
+		if keyPart.Direction() != nil {
+			if keyPart.Direction().DESC_SYMBOL() != nil {
+				colInfo.Descending = true
+			}
+			// ASC is default, so we don't need to explicitly check for it
+		}
+
+		// Try to extract key length from FieldLength
+		if keyPart.FieldLength() != nil {
+			lengthText := keyPart.FieldLength().GetText()
+			// Remove parentheses
+			if strings.HasPrefix(lengthText, "(") && strings.HasSuffix(lengthText, ")") {
+				lengthText = lengthText[1 : len(lengthText)-1]
+			}
+			if length, err := strconv.ParseInt(lengthText, 10, 64); err == nil {
+				colInfo.KeyLength = length
+			}
+		}
+
+		columns = append(columns, colInfo)
+	}
+
+	return columns
+}
+
+// extractIndexColumnsFromVariants extracts detailed information from KeyListVariants
+func extractIndexColumnsFromVariants(keyListVariants mysql.IKeyListVariantsContext) []IndexColumnInfo {
+	if keyListVariants == nil {
+		return nil
+	}
+
+	// First try KeyList
+	if keyListVariants.KeyList() != nil {
+		return extractIndexColumns(keyListVariants.KeyList())
+	}
+
+	// Then try KeyListWithExpression
+	if keyListVariants.KeyListWithExpression() != nil {
+		return extractIndexColumnsFromKeyListWithExpression(keyListVariants.KeyListWithExpression())
+	}
+
+	return nil
+}
+
+// detectInvisibleKeyword tries to detect INVISIBLE keyword in the given parser context
+func detectInvisibleKeyword(ctx interface {
+	GetStart() antlr.Token
+	GetStop() antlr.Token
+	GetParser() antlr.Parser
+}) bool {
+	if ctx.GetStart() == nil || ctx.GetStop() == nil {
+		return false
+	}
+
+	tokens := ctx.GetParser().GetTokenStream()
+	contextText := ""
+	for i := ctx.GetStart().GetTokenIndex(); i <= ctx.GetStop().GetTokenIndex(); i++ {
+		token := tokens.Get(i)
+		if token != nil {
+			contextText += token.GetText() + " "
+		}
+	}
+	contextTextUpper := strings.ToUpper(contextText)
+	return strings.Contains(contextTextUpper, "INVISIBLE")
+}
+
+// extractIndexComment tries to extract COMMENT from the given parser context
+func extractIndexComment(ctx interface {
+	GetStart() antlr.Token
+	GetStop() antlr.Token
+	GetParser() antlr.Parser
+}) string {
+	if ctx.GetStart() == nil || ctx.GetStop() == nil {
+		return ""
+	}
+
+	tokens := ctx.GetParser().GetTokenStream()
+	contextText := ""
+	for i := ctx.GetStart().GetTokenIndex(); i <= ctx.GetStop().GetTokenIndex(); i++ {
+		token := tokens.Get(i)
+		if token != nil {
+			contextText += token.GetText() + " "
+		}
+	}
+	contextTextUpper := strings.ToUpper(contextText)
+
+	// Look for COMMENT 'text' pattern
+	commentIdx := strings.Index(contextTextUpper, "COMMENT")
+	if commentIdx == -1 {
+		return ""
+	}
+
+	// Find the start of the comment string (after COMMENT keyword)
+	commentStart := commentIdx + 7 // len("COMMENT")
+	remaining := contextText[commentStart:]
+
+	// Skip whitespace
+	remaining = strings.TrimLeft(remaining, " \t\n\r")
+
+	// Extract quoted string
+	if len(remaining) >= 2 && (remaining[0] == '\'' || remaining[0] == '"') {
+		quote := remaining[0]
+		endIdx := strings.IndexByte(remaining[1:], byte(quote))
+		if endIdx != -1 {
+			return remaining[1 : endIdx+1]
+		}
+	}
+
+	return ""
+}
+
+// extractIndexColumnsFromKeyListWithExpression handles KeyListWithExpression
+func extractIndexColumnsFromKeyListWithExpression(keyListWithExpr mysql.IKeyListWithExpressionContext) []IndexColumnInfo {
+	var columns []IndexColumnInfo
+
+	if keyListWithExpr == nil {
+		return columns
+	}
+
+	for _, expression := range keyListWithExpr.AllKeyPartOrExpression() {
+		colInfo := IndexColumnInfo{
+			KeyLength:  -1,    // Default: no key length specified
+			Descending: false, // Default: ASC
+		}
+
+		if expression.KeyPart() != nil {
+			// Regular column reference
+			keyPart := expression.KeyPart()
+			if keyPart.Identifier() != nil {
+				colInfo.Expression = mysqlparser.NormalizeMySQLIdentifier(keyPart.Identifier())
+
+				// Check for DESC/ASC direction
+				if keyPart.Direction() != nil {
+					if keyPart.Direction().DESC_SYMBOL() != nil {
+						colInfo.Descending = true
+					}
+				}
+
+				// Try to extract key length from FieldLength
+				if keyPart.FieldLength() != nil {
+					lengthText := keyPart.FieldLength().GetText()
+					// Remove parentheses
+					if strings.HasPrefix(lengthText, "(") && strings.HasSuffix(lengthText, ")") {
+						lengthText = lengthText[1 : len(lengthText)-1]
+					}
+					if length, err := strconv.ParseInt(lengthText, 10, 64); err == nil {
+						colInfo.KeyLength = length
+					}
+				}
+			}
+		} else if expression.ExprWithParentheses() != nil {
+			// Expression like (YEAR(created_at))
+			colInfo.Expression = keyListWithExpr.GetParser().GetTokenStream().GetTextFromRuleContext(expression.ExprWithParentheses().Expr())
+			// Expressions don't support DESC, so keep default false
+		}
+
+		columns = append(columns, colInfo)
+	}
+
+	return columns
 }
 
 // normalizeDefaultValue normalizes default values to match MySQL's internal representation
@@ -1109,4 +1417,310 @@ func isLiteralValue(value string) bool {
 
 	// Everything else (strings, etc.) is a literal
 	return true
+}
+
+// addColumnPrimaryKey tracks a column-level primary key definition
+func (e *metadataExtractor) addColumnPrimaryKey(tableName, columnName string) {
+	if e.columnPrimaryKeys[tableName] == nil {
+		e.columnPrimaryKeys[tableName] = []string{}
+	}
+	e.columnPrimaryKeys[tableName] = append(e.columnPrimaryKeys[tableName], columnName)
+}
+
+// addColumnUniqueKey tracks a column-level unique constraint definition
+func (e *metadataExtractor) addColumnUniqueKey(tableName, columnName string) {
+	if e.columnUniqueKeys[tableName] == nil {
+		e.columnUniqueKeys[tableName] = make(map[string]bool)
+	}
+	e.columnUniqueKeys[tableName][columnName] = true
+}
+
+// createColumnPrimaryKeyIndexes creates index metadata for column-level primary key definitions
+func (e *metadataExtractor) createColumnPrimaryKeyIndexes() {
+	for tableName, columnNames := range e.columnPrimaryKeys {
+		if len(columnNames) == 0 {
+			continue
+		}
+
+		table, exists := e.tables[tableName]
+		if !exists {
+			continue
+		}
+
+		// Check if a PRIMARY key index already exists (from table-level constraint)
+		hasPrimaryIndex := false
+		for _, index := range table.Indexes {
+			if index.Primary {
+				hasPrimaryIndex = true
+				break
+			}
+		}
+
+		// Only create primary key index if one doesn't already exist
+		if !hasPrimaryIndex {
+			// Create default key lengths and descending flags
+			keyLength := make([]int64, len(columnNames))
+			descending := make([]bool, len(columnNames))
+			for i := range columnNames {
+				keyLength[i] = -1     // -1 indicates unspecified key length
+				descending[i] = false // Primary keys default to ASC
+			}
+
+			index := &storepb.IndexMetadata{
+				Name:        "PRIMARY",
+				Type:        "BTREE",
+				Expressions: columnNames,
+				Primary:     true,
+				Unique:      true,
+				Visible:     true,
+				KeyLength:   keyLength,
+				Descending:  descending,
+			}
+			table.Indexes = append(table.Indexes, index)
+		}
+	}
+}
+
+// createColumnUniqueKeyIndexes creates index metadata for column-level unique constraint definitions
+func (e *metadataExtractor) createColumnUniqueKeyIndexes() {
+	for tableName, columnMap := range e.columnUniqueKeys {
+		table, exists := e.tables[tableName]
+		if !exists {
+			continue
+		}
+
+		// Create a unique index for each column with UNIQUE constraint
+		for columnName := range columnMap {
+			// Generate a unique index name (MySQL auto-generates these)
+			indexName := columnName
+
+			// Check if an index with this name already exists
+			indexExists := false
+			for _, index := range table.Indexes {
+				if index.Name == indexName {
+					indexExists = true
+					break
+				}
+			}
+
+			if !indexExists {
+				// Create default key lengths and descending flags
+				keyLength := []int64{-1}    // Single column, unspecified length
+				descending := []bool{false} // Default to ASC
+
+				index := &storepb.IndexMetadata{
+					Name:        indexName,
+					Type:        "BTREE",
+					Expressions: []string{columnName},
+					Primary:     false,
+					Unique:      true,
+					Visible:     true,
+					KeyLength:   keyLength,
+					Descending:  descending,
+				}
+				table.Indexes = append(table.Indexes, index)
+			}
+		}
+	}
+}
+
+// createPendingForeignKeyIndexes creates index metadata for foreign keys that don't have existing suitable indexes
+func (e *metadataExtractor) createPendingForeignKeyIndexes() {
+	for tableName, foreignKeys := range e.pendingForeignKeyIndexes {
+		table, exists := e.tables[tableName]
+		if !exists {
+			continue
+		}
+
+		for _, fk := range foreignKeys {
+			// MySQL automatically creates indexes on foreign key columns if they don't already exist.
+			// Check if an index already exists on these columns
+			hasMatchingIndex := false
+			for _, existingIndex := range table.Indexes {
+				// Check if an index already covers the foreign key columns
+				if len(existingIndex.Expressions) >= len(fk.Columns) {
+					matches := true
+					for i, col := range fk.Columns {
+						if i >= len(existingIndex.Expressions) || existingIndex.Expressions[i] != col {
+							matches = false
+							break
+						}
+					}
+					if matches {
+						hasMatchingIndex = true
+						break
+					}
+				}
+			}
+
+			// If no matching index exists, create one
+			if !hasMatchingIndex {
+				// MySQL creates indexes using the constraint name for foreign keys
+				// If no constraint name is provided, MySQL would generate one automatically
+				indexName := fk.Name
+				if indexName == "" {
+					// Fallback to column names if no constraint name (shouldn't happen in practice)
+					indexName = fk.Columns[0]
+					if len(fk.Columns) > 1 {
+						indexName = strings.Join(fk.Columns, "_")
+					}
+				}
+
+				// Create default key lengths and descending flags for FK index
+				keyLength := make([]int64, len(fk.Columns))
+				descending := make([]bool, len(fk.Columns))
+				for i := range fk.Columns {
+					keyLength[i] = -1     // -1 indicates unspecified key length
+					descending[i] = false // Default to ASC
+				}
+
+				index := &storepb.IndexMetadata{
+					Name:        indexName,
+					Type:        "BTREE",
+					Expressions: fk.Columns,
+					Primary:     false,
+					Unique:      false,
+					Visible:     true,
+					KeyLength:   keyLength,
+					Descending:  descending,
+				}
+				table.Indexes = append(table.Indexes, index)
+			}
+		}
+	}
+}
+
+// extractFulltextIndex extracts FULLTEXT index
+func (*metadataExtractor) extractFulltextIndex(ctx mysql.ITableConstraintDefContext, table *storepb.TableMetadata) {
+	// Extract index name
+	indexName := ""
+	if ctx.IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
+	}
+
+	// Fallback: try to get name from IndexNameAndType if IndexName is empty
+	if indexName == "" && ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
+	}
+
+	// Extract columns/expressions - try both KeyList and KeyListVariants
+	var expressions []string
+
+	// First try KeyList (for simple KEY definitions)
+	if ctx.KeyList() != nil {
+		for _, keyPart := range ctx.KeyList().AllKeyPart() {
+			if keyPart.Identifier() != nil {
+				columnName := mysqlparser.NormalizeMySQLIdentifier(keyPart.Identifier())
+				expressions = append(expressions, columnName)
+			}
+		}
+	}
+
+	// If KeyList is empty, try KeyListVariants (for FULLTEXT INDEX definitions)
+	if len(expressions) == 0 && ctx.KeyListVariants() != nil {
+		expressions = mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
+	}
+
+	if len(expressions) > 0 {
+		// Create default key lengths and descending flags
+		keyLength := make([]int64, len(expressions))
+		descending := make([]bool, len(expressions))
+		for i := range expressions {
+			keyLength[i] = -1     // -1 indicates unspecified key length
+			descending[i] = false // FULLTEXT indexes don't support DESC
+		}
+
+		index := &storepb.IndexMetadata{
+			Name:        indexName,
+			Type:        "FULLTEXT",
+			Expressions: expressions,
+			Primary:     false,
+			Unique:      false,
+			Visible:     true,
+			KeyLength:   keyLength,
+			Descending:  descending,
+		}
+		table.Indexes = append(table.Indexes, index)
+	}
+}
+
+// extractSpatialIndex extracts SPATIAL index
+func (*metadataExtractor) extractSpatialIndex(ctx mysql.ITableConstraintDefContext, table *storepb.TableMetadata) {
+	// Extract index name
+	indexName := ""
+	if ctx.IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
+	}
+
+	// Fallback: try to get name from IndexNameAndType if IndexName is empty
+	if indexName == "" && ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
+	}
+
+	// Extract columns/expressions with detailed information
+	var columnInfo []IndexColumnInfo
+
+	// First try KeyList (for simple KEY definitions)
+	if ctx.KeyList() != nil {
+		columnInfo = extractIndexColumns(ctx.KeyList())
+	}
+
+	// If KeyList is empty, try KeyListVariants (for SPATIAL INDEX definitions)
+	if len(columnInfo) == 0 && ctx.KeyListVariants() != nil {
+		columnInfo = extractIndexColumnsFromVariants(ctx.KeyListVariants())
+	}
+
+	if len(columnInfo) > 0 {
+		// Extract expressions and flags
+		expressions := make([]string, len(columnInfo))
+		keyLength := make([]int64, len(columnInfo))
+		descending := make([]bool, len(columnInfo))
+
+		for i, col := range columnInfo {
+			expressions[i] = col.Expression
+			keyLength[i] = col.KeyLength
+			descending[i] = col.Descending
+
+			// For SPATIAL indexes, MySQL uses default key length of 32 for GEOMETRY types
+			// if no explicit length is specified
+			if keyLength[i] == -1 {
+				// Find the column type to determine if we need default SPATIAL key length
+				for _, tableCol := range table.Columns {
+					if tableCol.Name == col.Expression {
+						colTypeUpper := strings.ToUpper(tableCol.Type)
+						if strings.Contains(colTypeUpper, "GEOMETRY") ||
+							strings.Contains(colTypeUpper, "POINT") ||
+							strings.Contains(colTypeUpper, "LINESTRING") ||
+							strings.Contains(colTypeUpper, "POLYGON") ||
+							strings.Contains(colTypeUpper, "MULTIPOINT") ||
+							strings.Contains(colTypeUpper, "MULTILINESTRING") ||
+							strings.Contains(colTypeUpper, "MULTIPOLYGON") ||
+							strings.Contains(colTypeUpper, "GEOMETRYCOLLECTION") {
+							keyLength[i] = 32 // MySQL default for spatial types
+						}
+						break
+					}
+				}
+			}
+		}
+
+		// Check for visibility - MySQL indexes are visible by default unless marked INVISIBLE
+		visible := !detectInvisibleKeyword(ctx)
+
+		// Extract comment
+		comment := extractIndexComment(ctx)
+
+		index := &storepb.IndexMetadata{
+			Name:        indexName,
+			Type:        "SPATIAL",
+			Expressions: expressions,
+			Primary:     false,
+			Unique:      false,
+			Visible:     visible,
+			Comment:     comment,
+			KeyLength:   keyLength,
+			Descending:  descending,
+		}
+		table.Indexes = append(table.Indexes, index)
+	}
 }

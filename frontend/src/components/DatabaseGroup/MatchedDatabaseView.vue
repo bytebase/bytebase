@@ -36,12 +36,11 @@
                 :instance="database.instanceResource"
                 :link="false"
               />
-              <NEllipsis
+              <EnvironmentV1Name
                 class="ml-1 text-sm text-gray-400 max-w-[124px]"
-                line-clamp="1"
-              >
-                ({{ database.effectiveEnvironmentEntity.title }})
-              </NEllipsis>
+                :environment="database.effectiveEnvironmentEntity"
+                :link="false"
+              />
             </div>
           </div>
         </div>
@@ -62,11 +61,12 @@
 <script lang="ts" setup>
 import type { ConnectError } from "@connectrpc/connect";
 import { useDebounceFn } from "@vueuse/core";
-import { NButton, NEllipsis, NCollapse, NCollapseItem } from "naive-ui";
+import { NButton, NCollapse, NCollapseItem } from "naive-ui";
 import { watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
+import { EnvironmentV1Name } from "@/components/v2";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { validateSimpleExpr } from "@/plugins/cel";
 import { useDatabaseV1Store, useDBGroupStore } from "@/store";

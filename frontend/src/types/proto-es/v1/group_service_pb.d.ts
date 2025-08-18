@@ -31,11 +31,47 @@ export declare type GetGroupRequest = Message<"bytebase.v1.GetGroupRequest"> & {
 export declare const GetGroupRequestSchema: GenMessage<GetGroupRequest>;
 
 /**
+ * @generated from message bytebase.v1.BatchGetGroupsRequest
+ */
+export declare type BatchGetGroupsRequest = Message<"bytebase.v1.BatchGetGroupsRequest"> & {
+  /**
+   * The group names to retrieve.
+   * Format: groups/{email}
+   *
+   * @generated from field: repeated string names = 1;
+   */
+  names: string[];
+};
+
+/**
+ * Describes the message bytebase.v1.BatchGetGroupsRequest.
+ * Use `create(BatchGetGroupsRequestSchema)` to create a new message.
+ */
+export declare const BatchGetGroupsRequestSchema: GenMessage<BatchGetGroupsRequest>;
+
+/**
+ * @generated from message bytebase.v1.BatchGetGroupsResponse
+ */
+export declare type BatchGetGroupsResponse = Message<"bytebase.v1.BatchGetGroupsResponse"> & {
+  /**
+   * The groups from the specified request.
+   *
+   * @generated from field: repeated bytebase.v1.Group groups = 1;
+   */
+  groups: Group[];
+};
+
+/**
+ * Describes the message bytebase.v1.BatchGetGroupsResponse.
+ * Use `create(BatchGetGroupsResponseSchema)` to create a new message.
+ */
+export declare const BatchGetGroupsResponseSchema: GenMessage<BatchGetGroupsResponse>;
+
+/**
  * @generated from message bytebase.v1.ListGroupsRequest
  */
 export declare type ListGroupsRequest = Message<"bytebase.v1.ListGroupsRequest"> & {
   /**
-   * Not used.
    * The maximum number of groups to return. The service may return fewer than
    * this value.
    * If unspecified, at most 10 groups will be returned.
@@ -46,7 +82,6 @@ export declare type ListGroupsRequest = Message<"bytebase.v1.ListGroupsRequest">
   pageSize: number;
 
   /**
-   * Not used.
    * A page token, received from a previous `ListGroups` call.
    * Provide this to retrieve the subsequent page.
    *
@@ -56,6 +91,28 @@ export declare type ListGroupsRequest = Message<"bytebase.v1.ListGroupsRequest">
    * @generated from field: string page_token = 2;
    */
   pageToken: string;
+
+  /**
+   * Filter is used to filter groups returned in the list.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
+   * Supported filter:
+   * - title: the group title, support "==" and ".matches()" operator.
+   * - email: the group email, support "==" and ".matches()" operator.
+   * - project: the project full name in "projects/{id}" format, support "==" operator.
+   *
+   * For example:
+   * title == "dba"
+   * email == "dba@bytebase.com"
+   * title.matches("dba")
+   * email.matches("dba")
+   * project == "projects/sample-project"
+   * You can combine filter conditions like:
+   * title.matches("dba") || email.matches("dba")
+   *
+   * @generated from field: string filter = 3;
+   */
+  filter: string;
 };
 
 /**
@@ -275,6 +332,17 @@ export declare const GroupService: GenService<{
     methodKind: "unary";
     input: typeof GetGroupRequestSchema;
     output: typeof GroupSchema;
+  },
+  /**
+   * Get the groups in batch.
+   * Permissions required: bb.groups.get
+   *
+   * @generated from rpc bytebase.v1.GroupService.BatchGetGroups
+   */
+  batchGetGroups: {
+    methodKind: "unary";
+    input: typeof BatchGetGroupsRequestSchema;
+    output: typeof BatchGetGroupsResponseSchema;
   },
   /**
    * Permissions required: bb.groups.list

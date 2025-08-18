@@ -3,7 +3,7 @@
     <div class="textinfolabel">
       {{ $t("project.members.description") }}
       <a
-        href="https://docs.bytebase.com/concepts/roles-and-permissions/?source=console#project-roles"
+        href="https://docs.bytebase.com/administration/roles/?source=console#project-roles"
         target="_blank"
         class="normal-link inline-flex flex-row items-center"
       >
@@ -76,9 +76,10 @@
         <MemberDataTableByRole
           scope="project"
           :allow-edit="allowEdit"
-          :bindings-by-role="memberBindingsByRole"
+          :bindings="memberBindings"
           @update-binding="selectMember"
           @revoke-binding="revokeMember"
+          @revoke-role="revokeRole"
         />
       </NTabPane>
     </NTabs>
@@ -114,10 +115,7 @@ import { useI18n } from "vue-i18n";
 import MemberDataTable from "@/components/Member/MemberDataTable/index.vue";
 import MemberDataTableByRole from "@/components/Member/MemberDataTableByRole.vue";
 import type { MemberBinding } from "@/components/Member/types";
-import {
-  getMemberBindings,
-  getMemberBindingsByRole,
-} from "@/components/Member/utils";
+import { getMemberBindings } from "@/components/Member/utils";
 import {
   extractUserId,
   pushNotification,
@@ -133,7 +131,7 @@ import {
   PresetRoleType,
   groupBindingPrefix,
 } from "@/types";
-import { hasProjectPermissionV2 } from "@/utils";
+import { hasProjectPermissionV2, isBindingPolicyExpired } from "@/utils";
 import GrantRequestPanel from "../GrantRequestPanel";
 import { SearchBox } from "../v2";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
@@ -193,8 +191,8 @@ const shouldShowRequestRoleButton = computed(() => {
 
 const workspaceRoles = computed(() => new Set(PRESET_WORKSPACE_ROLES));
 
-const memberBindingsByRole = computedAsync(() => {
-  return getMemberBindingsByRole({
+const memberBindings = computedAsync(() => {
+  return getMemberBindings({
     policies: [
       {
         level: "WORKSPACE",
@@ -208,11 +206,7 @@ const memberBindingsByRole = computedAsync(() => {
     searchText: state.searchText,
     ignoreRoles: workspaceRoles.value,
   });
-}, new Map());
-
-const memberBindings = computed(() => {
-  return getMemberBindings(memberBindingsByRole.value);
-});
+}, []);
 
 const selectMember = (binding: MemberBinding) => {
   state.editingMember = binding.binding;
@@ -221,6 +215,22 @@ const selectMember = (binding: MemberBinding) => {
 const pendingEditMember = computed(() => {
   return memberBindings.value.find((m) => m.binding === state.editingMember);
 });
+
+const revokeRole = async (role: string, expired: boolean) => {
+  const policy = cloneDeep(iamPolicy.value);
+  policy.bindings = iamPolicy.value.bindings.filter((binding) => {
+    return binding.role !== role || isBindingPolicyExpired(binding) !== expired;
+  });
+  await projectIamPolicyStore.updateProjectIamPolicy(
+    projectResourceName.value,
+    policy
+  );
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
+  });
+};
 
 const revokeMember = async (binding: MemberBinding) => {
   const policy = cloneDeep(iamPolicy.value);

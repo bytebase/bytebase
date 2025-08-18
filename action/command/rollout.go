@@ -27,7 +27,7 @@ func NewRolloutCommand(w *world.World) *cobra.Command {
 		PersistentPreRunE: validateRolloutFlags(w),
 		RunE:              runRollout(w),
 	}
-	defaultTitle := time.Now().Format(time.RFC3339)
+	defaultTitle := w.CurrentTime.Format(time.RFC3339)
 	cmdRollout.Flags().StringVar(&w.ReleaseTitle, "release-title", defaultTitle, "The title of the release")
 	cmdRollout.Flags().StringVar(&w.CheckPlan, "check-plan", "SKIP", "Whether to check the plan and fail on warning/error. Valid values: SKIP, FAIL_ON_WARNING, FAIL_ON_ERROR")
 	cmdRollout.Flags().StringVar(&w.TargetStage, "target-stage", "", "Rollout up to the target stage. Format: environments/{environment}.")
@@ -55,6 +55,9 @@ func validateRolloutFlags(w *world.World) func(*cobra.Command, []string) error {
 
 func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 	return func(command *cobra.Command, _ []string) error {
+		defer func() {
+			writeOutputJSON(w)
+		}()
 		ctx := command.Context()
 		client, err := NewClient(w.URL, w.ServiceAccount, w.ServiceAccountSecret)
 		if err != nil {
@@ -74,7 +77,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 			w.Logger.Info("use the provided plan", "url", fmt.Sprintf("%s/%s", client.url, plan.Name))
 		} else {
 			var release string
-			releaseFiles, releaseDigest, err := getReleaseFiles(w, w.FilePattern)
+			releaseFiles, releaseDigest, err := getReleaseFiles(w)
 			if err != nil {
 				return errors.Wrapf(err, "failed to get release files")
 			}

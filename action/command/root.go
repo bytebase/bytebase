@@ -18,10 +18,11 @@ import (
 
 func NewRootCommand(w *world.World) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                "bytebase-action",
-		Short:              "Bytebase action",
-		PersistentPreRunE:  rootPreRun(w),
-		PersistentPostRunE: writeOutputJSON(w),
+		Use:               "bytebase-action",
+		Short:             "Bytebase action",
+		PersistentPreRunE: rootPreRun(w),
+		// XXX: PersistentPostRunE is not called when the command fails
+		// So we call it manually in the commands
 	}
 	// bytebase-action flags
 	cmd.PersistentFlags().StringVar(&w.Output, "output", "", "Output file location. The output file is a JSON file with the created resource names")
@@ -31,6 +32,7 @@ func NewRootCommand(w *world.World) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&w.Project, "project", "projects/hr", "Bytebase project")
 	cmd.PersistentFlags().StringSliceVar(&w.Targets, "targets", []string{"instances/test-sample-instance/databases/hr_test", "instances/prod-sample-instance/databases/hr_prod"}, "Bytebase targets. Either one or more databases or a single databaseGroup")
 	cmd.PersistentFlags().StringVar(&w.FilePattern, "file-pattern", "", "File pattern to glob migration files")
+	cmd.PersistentFlags().BoolVar(&w.Declarative, "declarative", false, "Whether to use declarative mode.")
 
 	cmd.AddCommand(NewCheckCommand(w))
 	cmd.AddCommand(NewRolloutCommand(w))
@@ -89,8 +91,8 @@ func rootPreRun(w *world.World) func(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func writeOutputJSON(w *world.World) func(cmd *cobra.Command, args []string) error {
-	return func(*cobra.Command, []string) error {
+func writeOutputJSON(w *world.World) {
+	if err := func() error {
 		if w.Output == "" {
 			return nil
 		}
@@ -119,6 +121,8 @@ func writeOutputJSON(w *world.World) func(cmd *cobra.Command, args []string) err
 			return errors.Wrapf(err, "failed to write output file: %s", w.Output)
 		}
 		return nil
+	}(); err != nil {
+		w.Logger.Error("failed to write output JSON", "error", err)
 	}
 }
 
