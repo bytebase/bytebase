@@ -78,7 +78,9 @@ const affectedTaskMap = computed(() => {
     }, 0n);
     tempMap.set(task, count);
   });
-  return new Map(Array.from(tempMap.entries()).sort((a, b) => Number(b[1] - a[1])));
+  return new Map(
+    Array.from(tempMap.entries()).sort((a, b) => Number(b[1] - a[1]))
+  );
 });
 
 const affectedTasks = computed(
