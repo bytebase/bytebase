@@ -202,7 +202,7 @@ func MemberContainsUser(ctx context.Context, stores *store.Store, member string,
 			return false
 		}
 		if group == nil {
-			slog.Error("cannot found group", slog.String("group", member))
+			slog.Error("cannot find group", slog.String("group", member))
 			return false
 		}
 		userIDFullName := common.FormatUserUID(user.ID)
