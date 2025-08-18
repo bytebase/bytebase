@@ -26,14 +26,14 @@ export type FlattenLogEntry = {
         commandIndex: number;
         commandIndexes: number[];
         done: boolean;
-        affectedRows?: number;
+        affectedRows?: bigint;
         error?: string;
       }
     | {
         kind: "statement";
         statement: string;
         done: boolean;
-        affectedRows?: number;
+        affectedRows?: bigint;
         error?: string;
       };
   taskRunStatusUpdate?: TaskRunLogEntry_TaskRunStatusUpdate;

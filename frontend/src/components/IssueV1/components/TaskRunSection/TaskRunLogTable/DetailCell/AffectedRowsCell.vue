@@ -1,8 +1,8 @@
 <template>
-  <span v-if="!isNaN(affectedRows)">
+  <span v-if="affectedRows !== undefined && affectedRows !== null">
     {{
       $t("issue.task-run.task-run-log.affected-rows-n", {
-        n: affectedRows,
+        n: Number(affectedRows),
       })
     }}
   </span>
@@ -21,15 +21,15 @@ const props = defineProps<{
 const affectedRows = computed(() => {
   const { entry } = props;
   if (entry.type === TaskRunLogEntry_Type.SCHEMA_DUMP && entry.schemaDump) {
-    return Number.NaN;
+    return undefined;
   }
   if (
     entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE &&
     entry.commandExecute
   ) {
     const exec = entry.commandExecute;
-    return exec.affectedRows ?? Number.NaN;
+    return exec.affectedRows;
   }
-  return Number.NaN;
+  return undefined;
 });
 </script>
