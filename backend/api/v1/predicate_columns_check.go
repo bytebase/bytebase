@@ -117,12 +117,8 @@ func (s *QueryResultMasker) getSensitiveColumnsForPredicate(
 					continue
 				}
 
-				users := utils.GetUsersByMember(ctx, s.store, maskingException.Member)
-				for _, user := range users {
-					if user.ID == currentPrincipal.ID {
-						maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
-						break
-					}
+				if utils.MemberContainsUser(ctx, s.store, maskingException.Member, currentPrincipal) {
+					maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
 				}
 			}
 		}
