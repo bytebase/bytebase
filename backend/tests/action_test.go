@@ -1399,6 +1399,113 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		// Verify command output
 		a.NotContains(result.Stderr, "error", "Declarative rollout with database group should complete without errors")
 	})
+
+	t.Run("DeclarativeMultipleFilesMerged", func(t *testing.T) {
+		t.Parallel()
+		a := require.New(t)
+		ctx := context.Background()
+		ctl := &controller{}
+
+		ctx, err := ctl.StartServerWithExternalPg(ctx)
+		a.NoError(err)
+		defer ctl.Close(ctx)
+
+		// Create MySQL test database
+		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer.Close(ctx)
+
+		// Create test data directory with multiple SQL files
+		testDataDir := t.TempDir()
+
+		// Create users.sql
+		usersContent := `CREATE TABLE users (
+    id INT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`
+		usersFile := filepath.Join(testDataDir, "users.sql")
+		err = os.WriteFile(usersFile, []byte(usersContent), 0644)
+		a.NoError(err)
+
+		// Create names.sql
+		namesContent := `CREATE TABLE names (
+    id INT PRIMARY KEY,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL
+);`
+		namesFile := filepath.Join(testDataDir, "names.sql")
+		err = os.WriteFile(namesFile, []byte(namesContent), 0644)
+		a.NoError(err)
+
+		// Execute declarative rollout with multiple files (should succeed - files are merged)
+		result, err := executeActionCommand(ctx,
+			"rollout",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", database.Name,
+			"--file-pattern", filepath.Join(testDataDir, "*.sql"),
+			"--release-title", "Multiple Declarative Files Release",
+			"--target-stage", "environments/prod",
+			"--declarative",
+		)
+
+		// This should succeed because bytebase-action merges multiple declarative files
+		a.NoError(err, "Declarative rollout with multiple files should succeed (files are merged)")
+
+		// Verify the release was created with exactly one merged file
+		releases, err := ctl.releaseServiceClient.ListReleases(ctx, connect.NewRequest(&v1pb.ListReleasesRequest{
+			Parent: ctl.project.Name,
+		}))
+		a.NoError(err)
+		a.Len(releases.Msg.Releases, 1, "Expected exactly one release")
+		release := releases.Msg.Releases[0]
+		a.Equal("Multiple Declarative Files Release", release.Title)
+
+		// Verify the release contains exactly one file (the merged result)
+		a.Len(release.Files, 1, "Release should contain exactly one merged file")
+		mergedFile := release.Files[0]
+
+		// Verify the merged file contains both table definitions via Sheet
+		a.NotNil(mergedFile.Sheet, "File should have a Sheet")
+
+		sheet, err := ctl.sheetServiceClient.GetSheet(ctx, connect.NewRequest(&v1pb.GetSheetRequest{
+			Name: mergedFile.Sheet,
+			Raw:  true,
+		}))
+		a.NoError(err)
+
+		a.Contains(string(sheet.Msg.Content), "CREATE TABLE users", "Merged file should contain users table definition")
+		a.Contains(string(sheet.Msg.Content), "CREATE TABLE names", "Merged file should contain names table definition")
+
+		// Verify both tables were created from the merged files
+		metadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
+			Name: database.Name + "/metadata",
+		}))
+		a.NoError(err)
+
+		// Verify both users and names tables were created
+		foundUsersTable := false
+		foundNamesTable := false
+		for _, schema := range metadata.Msg.Schemas {
+			for _, table := range schema.Tables {
+				if table.Name == "users" {
+					foundUsersTable = true
+					a.Equal(3, len(table.Columns), "Users table should have 3 columns")
+				}
+				if table.Name == "names" {
+					foundNamesTable = true
+					a.Equal(3, len(table.Columns), "Names table should have 3 columns")
+				}
+			}
+		}
+		a.True(foundUsersTable, "Users table should exist after merged declarative rollout")
+		a.True(foundNamesTable, "Names table should exist after merged declarative rollout")
+
+		// Verify command output
+		a.NotContains(result.Stderr, "error", "Merged declarative rollout should complete without errors")
+	})
 }
 
 func TestActionErrorScenarios(t *testing.T) {
