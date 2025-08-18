@@ -3,7 +3,7 @@ package pg
 import (
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 )
 
 func GetStatementTypes(asts any) ([]string, error) {

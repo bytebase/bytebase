@@ -260,6 +260,10 @@ message User {
   }
 
   Profile profile = 13;
+
+  // The groups for the user.
+  // Format: groups/{email}
+  repeated string groups = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 enum UserType {

@@ -53,7 +53,7 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 		// Check version compatibility
 		checkVersionCompatibility(w, client, args.Version)
 
-		releaseFiles, _, err := getReleaseFiles(w, w.FilePattern)
+		releaseFiles, _, err := getReleaseFiles(w)
 		if err != nil {
 			return err
 		}

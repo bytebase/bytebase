@@ -17,7 +17,7 @@ import (
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/transform"
 )
 
 var (

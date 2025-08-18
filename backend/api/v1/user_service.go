@@ -800,6 +800,10 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		},
 	}
 
+	for _, group := range user.Groups {
+		convertedUser.Groups = append(convertedUser.Groups, common.FormatGroupEmail(group))
+	}
+
 	if user.MFAConfig != nil {
 		convertedUser.MfaEnabled = user.MFAConfig.OtpSecret != ""
 		convertedUser.MfaSecret = user.MFAConfig.TempOtpSecret

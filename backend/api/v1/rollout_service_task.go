@@ -83,15 +83,6 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		effectiveEnvironmentID = dbEnvironmentID
 	} else if instance.EnvironmentID != nil && *instance.EnvironmentID != "" {
 		effectiveEnvironmentID = *instance.EnvironmentID
-	} else {
-		return nil, errors.Errorf("no environment specified for instance %v", instance.ResourceID)
-	}
-	environment, err := s.GetEnvironmentByID(ctx, effectiveEnvironmentID)
-	if err != nil {
-		return nil, err
-	}
-	if environment == nil {
-		return nil, errors.Errorf("environment ID not found %v", effectiveEnvironmentID)
 	}
 
 	if instance.Metadata.GetEngine() == storepb.Engine_MONGODB && c.Table == "" {
@@ -488,13 +479,13 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 				}
 				taskCreates = append(taskCreates, taskCreate)
 			case storepb.ReleasePayload_File_DECLARATIVE:
-				// error if applied revisions contain a higher version than the declarative file
+				// error if applied revisions contain an equal or higher version than the declarative file
 				v, err := model.NewVersion(file.Version)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to parse file version %q", file.Version)
 				}
-				if maxDeclarativeVersion != nil && v.LessThan(maxDeclarativeVersion) {
-					return nil, errors.Errorf("cannot run declarative file %q with version %q, because there is a higher versioned declarative revision %q applied", file.Id, file.Version, maxDeclarativeVersion.String())
+				if maxDeclarativeVersion != nil && v.LessThanOrEqual(maxDeclarativeVersion) {
+					return nil, errors.Errorf("cannot run declarative file %q with version %q, because there is an equal or higher versioned declarative revision %q applied", file.Id, file.Version, maxDeclarativeVersion.String())
 				}
 
 				// Parse sheet ID from the file's sheet reference

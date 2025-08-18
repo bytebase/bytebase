@@ -507,6 +507,7 @@ const handleExportBtnClick = async ({
         limit,
         admin,
         password: options.password,
+        schema: props.params.connection.schema,
       })
     );
 

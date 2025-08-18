@@ -37,7 +37,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/transform"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -869,6 +869,9 @@ func DoExport(
 		Limit:                int(queryRestriction.MaximumResultRows),
 		OperatorEmail:        user.Email,
 		MaximumSQLResultSize: queryRestriction.MaximumResultSize,
+	}
+	if request.Schema != nil {
+		queryContext.Schema = *request.Schema
 	}
 	results, spans, duration, queryErr := queryRetry(
 		ctx,

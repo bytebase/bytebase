@@ -1148,7 +1148,7 @@ func compareIndexes(t *testing.T, dbIndexes, parsedIndexes []*storepb.IndexMetad
 	// Check that both directions have the same indexes
 	require.Equal(t, len(dbIndexes), len(parsedIndexes), "mismatch in number of indexes for table %s", tableName)
 
-	// Compare each parsed index
+	// Compare each parsed index with comprehensive IndexMetadata validation
 	for idxName, parsedIdx := range parsedIndexMap {
 		dbIdx, exists := dbIndexMap[idxName]
 		if !exists {
@@ -1157,20 +1157,24 @@ func compareIndexes(t *testing.T, dbIndexes, parsedIndexes []*storepb.IndexMetad
 			continue
 		}
 
-		// Compare index properties
-		require.Equal(t, dbIdx.Name, parsedIdx.Name, "index names should match")
-		require.Equal(t, dbIdx.Primary, parsedIdx.Primary, "primary key flag should match for index %s", idxName)
-		require.Equal(t, dbIdx.Unique, parsedIdx.Unique, "unique flag should match for index %s", idxName)
+		// 1. Name - explicitly validate name consistency
+		require.Equal(t, dbIdx.Name, parsedIdx.Name, "table %s, index %s: name should match", tableName, idxName)
 
-		// Compare index type (allowing some flexibility for Oracle-specific types)
+		// 2. Primary - validate primary key flag
+		require.Equal(t, dbIdx.Primary, parsedIdx.Primary, "table %s, index %s: primary key flag should match", tableName, idxName)
+
+		// 3. Unique - validate unique constraint flag
+		require.Equal(t, dbIdx.Unique, parsedIdx.Unique, "table %s, index %s: unique flag should match", tableName, idxName)
+
+		// 4. Type - validate index type with Oracle-specific normalization
 		if parsedIdx.Type != "" && dbIdx.Type != "" {
 			require.Equal(t, normalizeIndexType(dbIdx.Type), normalizeIndexType(parsedIdx.Type),
-				"index types should match for index %s", idxName)
+				"table %s, index %s: index types should match", tableName, idxName)
 		}
 
-		// Compare expressions (column list)
+		// 5. Expressions - compare expressions (column list) with normalization
 		require.Equal(t, len(dbIdx.Expressions), len(parsedIdx.Expressions),
-			"expression count should match for index %s", idxName)
+			"table %s, index %s: expression count should match", tableName, idxName)
 
 		// Log detailed expression information for debugging
 		t.Logf("Index %s expressions - DB: %v, Parsed: %v", idxName, dbIdx.Expressions, parsedIdx.Expressions)
@@ -1178,12 +1182,51 @@ func compareIndexes(t *testing.T, dbIndexes, parsedIndexes []*storepb.IndexMetad
 		for i, dbExpr := range dbIdx.Expressions {
 			if i < len(parsedIdx.Expressions) {
 				require.Equal(t, normalizeExpression(dbExpr), normalizeExpression(parsedIdx.Expressions[i]),
-					"index expressions should match for index %s", idxName)
+					"table %s, index %s: expression[%d] should match", tableName, idxName, i)
 			}
 		}
 
-		t.Logf("✓ Index %s: type=%s, unique=%v, primary=%v, expressions=%v",
-			idxName, parsedIdx.Type, parsedIdx.Unique, parsedIdx.Primary, parsedIdx.Expressions)
+		// 6. Descending - validate descending order for each expression
+		require.Equal(t, len(dbIdx.Descending), len(parsedIdx.Descending), "table %s, index %s: descending array length should match", tableName, idxName)
+		for i := range dbIdx.Descending {
+			if i < len(parsedIdx.Descending) {
+				require.Equal(t, dbIdx.Descending[i], parsedIdx.Descending[i], "table %s, index %s: descending[%d] should match", tableName, idxName, i)
+			}
+		}
+
+		// 7. KeyLength - validate index key lengths (Oracle specific - prefix lengths)
+		if len(dbIdx.KeyLength) > 0 || len(parsedIdx.KeyLength) > 0 {
+			require.Equal(t, len(dbIdx.KeyLength), len(parsedIdx.KeyLength), "table %s, index %s: key length array length should match", tableName, idxName)
+			for i := range dbIdx.KeyLength {
+				if i < len(parsedIdx.KeyLength) {
+					require.Equal(t, dbIdx.KeyLength[i], parsedIdx.KeyLength[i], "table %s, index %s: key length[%d] should match", tableName, idxName, i)
+				}
+			}
+		}
+
+		// 8. Visible - validate index visibility (Oracle supports invisible indexes)
+		require.Equal(t, dbIdx.Visible, parsedIdx.Visible, "table %s, index %s: visible should match", tableName, idxName)
+
+		// 9. Comment - validate index comment
+		if dbIdx.Comment != "" || parsedIdx.Comment != "" {
+			require.Equal(t, dbIdx.Comment, parsedIdx.Comment, "table %s, index %s: comment should match", tableName, idxName)
+		}
+
+		// 10. IsConstraint - validate if index represents a constraint
+		require.Equal(t, dbIdx.IsConstraint, parsedIdx.IsConstraint, "table %s, index %s: IsConstraint should match", tableName, idxName)
+
+		// 11. Definition - validate full index definition for comprehensive verification
+		if dbIdx.Definition != "" || parsedIdx.Definition != "" {
+			// Normalize definitions for comparison since Oracle formatting may vary
+			dbDef := strings.TrimSpace(strings.ToUpper(dbIdx.Definition))
+			parsedDef := strings.TrimSpace(strings.ToUpper(parsedIdx.Definition))
+			if dbDef != "" && parsedDef != "" {
+				require.Equal(t, dbDef, parsedDef, "table %s, index %s: definition should match", tableName, idxName)
+			}
+		}
+
+		t.Logf("✓ Validated all IndexMetadata fields for index %s: name=%s, primary=%v, unique=%v, type=%s, expressions=%v, visible=%v, comment=%s",
+			idxName, parsedIdx.Name, parsedIdx.Primary, parsedIdx.Unique, parsedIdx.Type, parsedIdx.Expressions, parsedIdx.Visible, parsedIdx.Comment)
 	}
 }
 

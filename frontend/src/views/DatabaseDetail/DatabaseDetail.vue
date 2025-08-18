@@ -104,14 +104,12 @@
           </NButton>
           <NButton
             v-if="allowChangeData"
-            :disabled="!database.effectiveEnvironment"
             @click="createMigration('bb.issue.database.data.update')"
           >
             <span>{{ $t("database.change-data") }}</span>
           </NButton>
           <NButton
             v-if="allowAlterSchema"
-            :disabled="!database.effectiveEnvironment"
             @click="createMigration('bb.issue.database.schema.update')"
           >
             <span>{{ $t("database.edit-schema") }}</span>

@@ -40,7 +40,7 @@ func (v *Version) LessThan(other *Version) bool {
 	return len(v.parts) < len(other.parts)
 }
 
-func (v *Version) LessOrEqualThan(other *Version) bool {
+func (v *Version) LessThanOrEqual(other *Version) bool {
 	return !other.LessThan(v)
 }
 

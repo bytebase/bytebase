@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -281,6 +280,195 @@ func TestActionCheckCommand(t *testing.T) {
 
 		// 4. Verify command succeeded
 		a.NotContains(result.Stderr, "error", "Check should complete without errors")
+	})
+
+	t.Run("DeclarativeCheckValidSchema", func(t *testing.T) {
+		t.Parallel()
+		a := require.New(t)
+		ctx := context.Background()
+		ctl := &controller{}
+
+		ctx, err := ctl.StartServerWithExternalPg(ctx)
+		a.NoError(err)
+		defer ctl.Close(ctx)
+
+		// Create MySQL test database
+		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer.Close(ctx)
+
+		// Create test data directory and schema.sql file
+		testDataDir := t.TempDir()
+		schemaContent := `CREATE TABLE users (
+    id INT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`
+		schemaFile := filepath.Join(testDataDir, "schema.sql")
+		err = os.WriteFile(schemaFile, []byte(schemaContent), 0644)
+		a.NoError(err)
+
+		// Execute declarative check command
+		_, err = executeActionCommand(ctx,
+			"check",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", database.Name,
+			"--file-pattern", schemaFile,
+			"--check-release", "FAIL_ON_ERROR",
+			"--declarative",
+		)
+
+		a.NoError(err, "Declarative check command should succeed for valid schema")
+	})
+
+	t.Run("DeclarativeCheckMultipleFiles", func(t *testing.T) {
+		t.Parallel()
+		a := require.New(t)
+		ctx := context.Background()
+		ctl := &controller{}
+
+		ctx, err := ctl.StartServerWithExternalPg(ctx)
+		a.NoError(err)
+		defer ctl.Close(ctx)
+
+		// Create MySQL test database
+		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer.Close(ctx)
+
+		// Create test data directory with multiple SQL files
+		testDataDir := t.TempDir()
+
+		// Create users.sql
+		usersContent := `CREATE TABLE users (
+    id INT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`
+		usersFile := filepath.Join(testDataDir, "users.sql")
+		err = os.WriteFile(usersFile, []byte(usersContent), 0644)
+		a.NoError(err)
+
+		// Create products.sql
+		productsContent := `CREATE TABLE products (
+    id INT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(10,2)
+);`
+		productsFile := filepath.Join(testDataDir, "products.sql")
+		err = os.WriteFile(productsFile, []byte(productsContent), 0644)
+		a.NoError(err)
+
+		// Execute declarative check command with multiple files
+		_, err = executeActionCommand(ctx,
+			"check",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", database.Name,
+			"--file-pattern", filepath.Join(testDataDir, "*.sql"),
+			"--check-release", "FAIL_ON_ERROR",
+			"--declarative",
+		)
+
+		a.NoError(err, "Declarative check command should succeed with multiple files")
+	})
+
+	t.Run("DeclarativeCheckWithDatabaseGroup", func(t *testing.T) {
+		t.Parallel()
+		a := require.New(t)
+		ctx := context.Background()
+		ctl := &controller{}
+
+		ctx, err := ctl.StartServerWithExternalPg(ctx)
+		a.NoError(err)
+		defer ctl.Close(ctx)
+
+		// Create MySQL test database
+		_, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer.Close(ctx)
+
+		// Create database group
+		databaseGroup, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, connect.NewRequest(&v1pb.CreateDatabaseGroupRequest{
+			Parent:          ctl.project.Name,
+			DatabaseGroupId: "test-declarative-check-group",
+			DatabaseGroup: &v1pb.DatabaseGroup{
+				Title:        "Test Declarative Check Group",
+				DatabaseExpr: &expr.Expr{Expression: "true"},
+			},
+		}))
+		a.NoError(err)
+
+		// Create test data directory and schema.sql file
+		testDataDir := t.TempDir()
+		schemaContent := `CREATE TABLE users (
+    id INT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255)
+);`
+		schemaFile := filepath.Join(testDataDir, "schema.sql")
+		err = os.WriteFile(schemaFile, []byte(schemaContent), 0644)
+		a.NoError(err)
+
+		// Execute declarative check command with database group
+		_, err = executeActionCommand(ctx,
+			"check",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", databaseGroup.Msg.Name,
+			"--file-pattern", schemaFile,
+			"--check-release", "FAIL_ON_ERROR",
+			"--declarative",
+		)
+
+		a.NoError(err, "Declarative check command should succeed with database group")
+	})
+
+	t.Run("DeclarativeCheckSyntaxErrors", func(t *testing.T) {
+		t.Parallel()
+		a := require.New(t)
+		ctx := context.Background()
+		ctl := &controller{}
+
+		ctx, err := ctl.StartServerWithExternalPg(ctx)
+		a.NoError(err)
+		defer ctl.Close(ctx)
+
+		// Create MySQL test database
+		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer.Close(ctx)
+
+		// Create test data directory with invalid SQL
+		testDataDir := t.TempDir()
+		invalidSchemaContent := `CREATE TABLE users (
+    id INT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE
+    email VARCHAR(255)  -- Missing comma after previous column
+);`
+		schemaFile := filepath.Join(testDataDir, "schema.sql")
+		err = os.WriteFile(schemaFile, []byte(invalidSchemaContent), 0644)
+		a.NoError(err)
+
+		// Execute declarative check command with syntax error
+		_, err = executeActionCommand(ctx,
+			"check",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", database.Name,
+			"--file-pattern", schemaFile,
+			"--check-release", "FAIL_ON_ERROR",
+			"--declarative",
+		)
+
+		// The command may complete but should report the syntax issue
+		a.Error(err, "should error")
+		a.Contains(err.Error(), "found 1 error(s) in release check. view on Bytebase")
 	})
 }
 
@@ -1203,32 +1391,7 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 
 		// Get rollout details to check task run error
 		rolloutName := output2["rollout"]
-		a.NotEmpty(rolloutName, "Should have rollout name in output")
-
-		// Get the rollout to check task runs
-		rolloutResp, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
-			Name: rolloutName,
-		}))
-		a.NoError(err)
-		rollout := rolloutResp.Msg
-
-		// Check task runs for error message
-		// Use the special parent format to list all task runs from the rollout
-		taskRunsResp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, connect.NewRequest(&v1pb.ListTaskRunsRequest{
-			Parent: fmt.Sprintf("%s/stages/-/tasks/-", rollout.Name),
-		}))
-		a.NoError(err)
-
-		foundExpectedError := false
-		for _, taskRun := range taskRunsResp.Msg.TaskRuns {
-			if taskRun.Detail != "" && strings.Contains(taskRun.Detail, "cannot apply SDL migration with version") &&
-				strings.Contains(taskRun.Detail, "because an equal or newer version") &&
-				strings.Contains(taskRun.Detail, "already exists") {
-				foundExpectedError = true
-				break
-			}
-		}
-		a.True(foundExpectedError, "Should find error message about SDL migration version conflict")
+		a.Empty(rolloutName, "Should not have rollout name in output")
 
 		// Execute third declarative rollout with same schema (should also fail)
 		result3, err := executeActionCommand(ctx,
@@ -1283,10 +1446,10 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		a.Equal(1, tableCount, "Should have exactly one users table (idempotent)")
 
 		// Verify first rollout succeeded
-		a.NotContains(result1.Stderr, "failed to run and wait for rollout: found failed tasks", "First rollout should complete without errors")
+		a.NotContains(result1.Stderr, "there is an equal or higher versioned declarative revision", "first rollout should complete without errors")
 		// Second and third rollouts should have errors
-		a.Contains(result2.Stderr, "failed to run and wait for rollout: found failed tasks", "Second rollout should have error")
-		a.Contains(result3.Stderr, "failed to run and wait for rollout: found failed tasks", "Third rollout should have error")
+		a.Contains(result2.Stderr, "there is an equal or higher versioned declarative revision", "second rollout should have error")
+		a.Contains(result3.Stderr, "there is an equal or higher versioned declarative revision", "third rollout should have error")
 	})
 
 	t.Run("DeclarativeMultipleDatabases", func(t *testing.T) {
@@ -1424,6 +1587,113 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 
 		// Verify command output
 		a.NotContains(result.Stderr, "error", "Declarative rollout with database group should complete without errors")
+	})
+
+	t.Run("DeclarativeMultipleFilesMerged", func(t *testing.T) {
+		t.Parallel()
+		a := require.New(t)
+		ctx := context.Background()
+		ctl := &controller{}
+
+		ctx, err := ctl.StartServerWithExternalPg(ctx)
+		a.NoError(err)
+		defer ctl.Close(ctx)
+
+		// Create MySQL test database
+		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
+		defer mysqlContainer.Close(ctx)
+
+		// Create test data directory with multiple SQL files
+		testDataDir := t.TempDir()
+
+		// Create users.sql
+		usersContent := `CREATE TABLE users (
+    id INT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`
+		usersFile := filepath.Join(testDataDir, "users.sql")
+		err = os.WriteFile(usersFile, []byte(usersContent), 0644)
+		a.NoError(err)
+
+		// Create names.sql
+		namesContent := `CREATE TABLE names (
+    id INT PRIMARY KEY,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL
+);`
+		namesFile := filepath.Join(testDataDir, "names.sql")
+		err = os.WriteFile(namesFile, []byte(namesContent), 0644)
+		a.NoError(err)
+
+		// Execute declarative rollout with multiple files (should succeed - files are merged)
+		result, err := executeActionCommand(ctx,
+			"rollout",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", database.Name,
+			"--file-pattern", filepath.Join(testDataDir, "*.sql"),
+			"--release-title", "Multiple Declarative Files Release",
+			"--target-stage", "environments/prod",
+			"--declarative",
+		)
+
+		// This should succeed because bytebase-action merges multiple declarative files
+		a.NoError(err, "Declarative rollout with multiple files should succeed (files are merged)")
+
+		// Verify the release was created with exactly one merged file
+		releases, err := ctl.releaseServiceClient.ListReleases(ctx, connect.NewRequest(&v1pb.ListReleasesRequest{
+			Parent: ctl.project.Name,
+		}))
+		a.NoError(err)
+		a.Len(releases.Msg.Releases, 1, "Expected exactly one release")
+		release := releases.Msg.Releases[0]
+		a.Equal("Multiple Declarative Files Release", release.Title)
+
+		// Verify the release contains exactly one file (the merged result)
+		a.Len(release.Files, 1, "Release should contain exactly one merged file")
+		mergedFile := release.Files[0]
+
+		// Verify the merged file contains both table definitions via Sheet
+		a.NotNil(mergedFile.Sheet, "File should have a Sheet")
+
+		sheet, err := ctl.sheetServiceClient.GetSheet(ctx, connect.NewRequest(&v1pb.GetSheetRequest{
+			Name: mergedFile.Sheet,
+			Raw:  true,
+		}))
+		a.NoError(err)
+
+		a.Contains(string(sheet.Msg.Content), "CREATE TABLE users", "Merged file should contain users table definition")
+		a.Contains(string(sheet.Msg.Content), "CREATE TABLE names", "Merged file should contain names table definition")
+
+		// Verify both tables were created from the merged files
+		metadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
+			Name: database.Name + "/metadata",
+		}))
+		a.NoError(err)
+
+		// Verify both users and names tables were created
+		foundUsersTable := false
+		foundNamesTable := false
+		for _, schema := range metadata.Msg.Schemas {
+			for _, table := range schema.Tables {
+				if table.Name == "users" {
+					foundUsersTable = true
+					a.Equal(3, len(table.Columns), "Users table should have 3 columns")
+				}
+				if table.Name == "names" {
+					foundNamesTable = true
+					a.Equal(3, len(table.Columns), "Names table should have 3 columns")
+				}
+			}
+		}
+		a.True(foundUsersTable, "Users table should exist after merged declarative rollout")
+		a.True(foundNamesTable, "Names table should exist after merged declarative rollout")
+
+		// Verify command output
+		a.NotContains(result.Stderr, "error", "Merged declarative rollout should complete without errors")
 	})
 }
 

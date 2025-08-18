@@ -348,20 +348,71 @@ func compareIndexes(t *testing.T, dbIndexes, parsedIndexes []*storepb.IndexMetad
 		dbIndexMap[idx.Name] = idx
 	}
 
+	// Compare each parsed index with comprehensive IndexMetadata validation
 	for _, parsedIdx := range parsedIndexes {
 		dbIdx, exists := dbIndexMap[parsedIdx.Name]
 		require.True(t, exists, "index %s not found in database metadata for table %s", parsedIdx.Name, tableName)
 
-		require.Equal(t, dbIdx.Primary, parsedIdx.Primary,
-			"primary flag mismatch for index %s.%s", tableName, parsedIdx.Name)
-		require.Equal(t, dbIdx.Unique, parsedIdx.Unique,
-			"unique flag mismatch for index %s.%s", tableName, parsedIdx.Name)
-		require.Equal(t, dbIdx.Expressions, parsedIdx.Expressions,
-			"expressions mismatch for index %s.%s", tableName, parsedIdx.Name)
+		// 1. Name - explicitly validate name consistency
+		require.Equal(t, dbIdx.Name, parsedIdx.Name, "table %s, index %s: name should match", tableName, parsedIdx.Name)
 
-		// Type comparison with normalization
+		// 2. Primary - validate primary key flag
+		require.Equal(t, dbIdx.Primary, parsedIdx.Primary,
+			"table %s, index %s: primary flag should match", tableName, parsedIdx.Name)
+
+		// 3. Unique - validate unique constraint flag
+		require.Equal(t, dbIdx.Unique, parsedIdx.Unique,
+			"table %s, index %s: unique flag should match", tableName, parsedIdx.Name)
+
+		// 4. Type - validate index type with TiDB-specific normalization
 		require.Equal(t, normalizeIndexType(dbIdx.Type), normalizeIndexType(parsedIdx.Type),
-			"type mismatch for index %s.%s", tableName, parsedIdx.Name)
+			"table %s, index %s: type should match", tableName, parsedIdx.Name)
+
+		// 5. Expressions - validate column list/expressions
+		require.Equal(t, dbIdx.Expressions, parsedIdx.Expressions,
+			"table %s, index %s: expressions should match", tableName, parsedIdx.Name)
+
+		// 6. Descending - validate descending order for each expression
+		if len(dbIdx.Descending) > 0 || len(parsedIdx.Descending) > 0 {
+			require.Equal(t, len(dbIdx.Descending), len(parsedIdx.Descending), "table %s, index %s: descending array length should match", tableName, parsedIdx.Name)
+			for i := range dbIdx.Descending {
+				if i < len(parsedIdx.Descending) {
+					require.Equal(t, dbIdx.Descending[i], parsedIdx.Descending[i], "table %s, index %s: descending[%d] should match", tableName, parsedIdx.Name, i)
+				}
+			}
+		}
+
+		// 7. KeyLength - validate index key lengths (TiDB supports prefix indexes like MySQL)
+		require.Equal(t, len(dbIdx.KeyLength), len(parsedIdx.KeyLength), "table %s, index %s: key length array length should match", tableName, parsedIdx.Name)
+		for i := range dbIdx.KeyLength {
+			if i < len(parsedIdx.KeyLength) {
+				require.Equal(t, dbIdx.KeyLength[i], parsedIdx.KeyLength[i], "table %s, index %s: key length[%d] should match", tableName, parsedIdx.Name, i)
+			}
+		}
+
+		// 8. Visible - validate index visibility (TiDB supports invisible indexes like MySQL)
+		require.Equal(t, dbIdx.Visible, parsedIdx.Visible, "table %s, index %s: visible should match", tableName, parsedIdx.Name)
+
+		// 9. Comment - validate index comment
+		if dbIdx.Comment != "" || parsedIdx.Comment != "" {
+			require.Equal(t, dbIdx.Comment, parsedIdx.Comment, "table %s, index %s: comment should match", tableName, parsedIdx.Name)
+		}
+
+		// 10. IsConstraint - validate if index represents a constraint
+		require.Equal(t, dbIdx.IsConstraint, parsedIdx.IsConstraint, "table %s, index %s: IsConstraint should match", tableName, parsedIdx.Name)
+
+		// 11. Definition - validate full index definition for comprehensive verification
+		if dbIdx.Definition != "" || parsedIdx.Definition != "" {
+			// Normalize definitions for comparison since TiDB formatting may vary
+			dbDef := strings.TrimSpace(strings.ToLower(dbIdx.Definition))
+			parsedDef := strings.TrimSpace(strings.ToLower(parsedIdx.Definition))
+			if dbDef != "" && parsedDef != "" {
+				require.Equal(t, dbDef, parsedDef, "table %s, index %s: definition should match", tableName, parsedIdx.Name)
+			}
+		}
+
+		t.Logf("✓ Validated all IndexMetadata fields for index %s: name=%s, primary=%v, unique=%v, type=%s, expressions=%v, visible=%v, comment=%s",
+			parsedIdx.Name, parsedIdx.Name, parsedIdx.Primary, parsedIdx.Unique, parsedIdx.Type, parsedIdx.Expressions, parsedIdx.Visible, parsedIdx.Comment)
 	}
 }
 

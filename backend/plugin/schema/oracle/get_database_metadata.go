@@ -256,6 +256,7 @@ func (e *metadataExtractor) EnterCreate_index(ctx *parser.Create_indexContext) {
 		Unique:      ctx.UNIQUE() != nil,
 		Type:        "NORMAL", // Oracle default
 		Expressions: []string{},
+		Visible:     true, // Oracle indexes are visible by default
 	}
 
 	// Determine index type
@@ -317,16 +318,18 @@ func (*metadataExtractor) extractIndexExpressions(ctx parser.ITable_index_clause
 		}
 	}
 
-	// Set descending flags if any columns have descending order
+	// Always set descending flags to match the number of expressions
+	if len(descendingFlags) > 0 {
+		index.Descending = descendingFlags
+	}
+
+	// Check if we have any descending columns to determine if this is function-based
 	hasDescending := false
 	for _, desc := range descendingFlags {
 		if desc {
 			hasDescending = true
 			break
 		}
-	}
-	if hasDescending {
-		index.Descending = descendingFlags
 	}
 
 	// Update index type for function-based indexes
@@ -847,11 +850,13 @@ func (*metadataExtractor) extractPrimaryKeyConstraint(ctx parser.IOut_of_line_co
 
 	// Create primary key index
 	index := &storepb.IndexMetadata{
-		Name:        constraintName,
-		Primary:     true,
-		Unique:      true,
-		Type:        "NORMAL",
-		Expressions: columns,
+		Name:         constraintName,
+		Primary:      true,
+		Unique:       true,
+		Type:         "NORMAL",
+		Expressions:  columns,
+		Visible:      true, // Oracle indexes are visible by default
+		IsConstraint: true, // This represents a primary key constraint
 	}
 
 	table.Indexes = append(table.Indexes, index)
@@ -887,11 +892,13 @@ func (*metadataExtractor) extractUniqueConstraint(ctx parser.IOut_of_line_constr
 
 	// Create unique index
 	index := &storepb.IndexMetadata{
-		Name:        constraintName,
-		Primary:     false,
-		Unique:      true,
-		Type:        "NORMAL",
-		Expressions: columns,
+		Name:         constraintName,
+		Primary:      false,
+		Unique:       true,
+		Type:         "NORMAL",
+		Expressions:  columns,
+		Visible:      false, // Oracle constraint-based unique indexes are not visible
+		IsConstraint: true,  // This represents a unique constraint
 	}
 
 	table.Indexes = append(table.Indexes, index)
@@ -1420,11 +1427,13 @@ func (e *metadataExtractor) processInlineConstraints(tableName string, table *st
 		// Oracle automatically creates a unique index for PRIMARY KEY constraints
 		if !hasExistingPK {
 			index := &storepb.IndexMetadata{
-				Name:        constraintName,
-				Primary:     true,
-				Unique:      true,
-				Type:        "NORMAL",
-				Expressions: primaryKeyColumns,
+				Name:         constraintName,
+				Primary:      true,
+				Unique:       true,
+				Type:         "NORMAL",
+				Expressions:  primaryKeyColumns,
+				Visible:      true, // Oracle indexes are visible by default
+				IsConstraint: true, // This represents a primary key constraint
 			}
 			table.Indexes = append(table.Indexes, index)
 		}
@@ -1450,11 +1459,13 @@ func (e *metadataExtractor) processInlineConstraints(tableName string, table *st
 			// Oracle automatically creates a unique index for UNIQUE constraints
 			if !hasExistingUnique {
 				index := &storepb.IndexMetadata{
-					Name:        constraintName,
-					Primary:     false,
-					Unique:      true,
-					Type:        "NORMAL",
-					Expressions: []string{columnName},
+					Name:         constraintName,
+					Primary:      false,
+					Unique:       true,
+					Type:         "NORMAL",
+					Expressions:  []string{columnName},
+					Visible:      true, // Oracle indexes are visible by default
+					IsConstraint: true, // This represents a unique constraint
 				}
 				table.Indexes = append(table.Indexes, index)
 			}

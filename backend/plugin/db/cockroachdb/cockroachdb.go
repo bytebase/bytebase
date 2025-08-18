@@ -20,8 +20,6 @@ import (
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	pgquery "github.com/pganalyze/pg_query_go/v6"
-
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -30,6 +28,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	crdbparser "github.com/bytebase/bytebase/backend/plugin/parser/cockroachdb"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -283,7 +282,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	// we should execute it as a single statement without transaction.
 	// If the statement is a PL/pgSQL block, we should execute it as a single statement.
 	// https://www.postgresql.org/docs/current/plpgsql-control-structures.html
-	if len(singleSQLs) == 1 && isPlSQLBlock(singleSQLs[0]) {
+	if len(singleSQLs) == 1 && pgparser.IsPlSQLBlock(singleSQLs[0]) {
 		isPlsql = true
 	}
 
@@ -753,21 +752,4 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 	// eg. select * from t1 -- this is comment;
 	// Add two new line symbol here.
 	return fmt.Sprintf("WITH result AS (\n%s\n) SELECT * FROM result LIMIT %d;", util.TrimStatement(stmt), limit)
-}
-
-func isPlSQLBlock(stmt string) bool {
-	tree, err := pgquery.Parse(stmt)
-	if err != nil {
-		return false
-	}
-
-	if len(tree.Stmts) != 1 {
-		return false
-	}
-
-	if _, ok := tree.Stmts[0].Stmt.Node.(*pgquery.Node_DoStmt); ok {
-		return true
-	}
-
-	return false
 }
