@@ -239,7 +239,14 @@
     "submit": "Entregar",
     "start": "Comenzar",
     "draft": "Borrador",
-    "import": "Importar"
+    "import": "Importar",
+    "hard-delete": {
+      "self": "Eliminación permanente",
+      "title": "¿Eliminar definitivamente {name}?",
+      "description": "Este recurso y otros recursos relacionados se eliminarán definitivamente. @:common.cannot-undo-this-action",
+      "double-comfirm": "Para confirmar la eliminación, escriba: {name}",
+      "notification": "Se eliminó exitosamente el recurso '{name}'."
+    }
   },
   "error-page": {
     "go-back-home": "Volver al inicio"

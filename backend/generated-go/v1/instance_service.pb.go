@@ -678,7 +678,12 @@ type DeleteInstanceRequest struct {
 	// Format: instances/{instance}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed.
-	Force         bool `protobuf:"varint,2,opt,name=force,proto3" json:"force,omitempty"`
+	Force bool `protobuf:"varint,2,opt,name=force,proto3" json:"force,omitempty"`
+	// If set to true, permanently purge the soft-deleted instance and all related resources.
+	// This operation is irreversible. Following AIP-165, this should only be used for
+	// administrative cleanup of old soft-deleted instances.
+	// The instance must already be soft-deleted for this to work.
+	Purge         bool `protobuf:"varint,3,opt,name=purge,proto3" json:"purge,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -723,6 +728,13 @@ func (x *DeleteInstanceRequest) GetName() string {
 func (x *DeleteInstanceRequest) GetForce() bool {
 	if x != nil {
 		return x.Force
+	}
+	return false
+}
+
+func (x *DeleteInstanceRequest) GetPurge() bool {
+	if x != nil {
+		return x.Purge
 	}
 	return false
 }
@@ -2599,11 +2611,12 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x15UpdateInstanceRequest\x126\n" +
 	"\binstance\x18\x01 \x01(\v2\x15.bytebase.v1.InstanceB\x03\xe0A\x02R\binstance\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"`\n" +
+	"updateMask\"v\n" +
 	"\x15DeleteInstanceRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/InstanceR\x04name\x12\x14\n" +
-	"\x05force\x18\x02 \x01(\bR\x05force\"L\n" +
+	"\x05force\x18\x02 \x01(\bR\x05force\x12\x14\n" +
+	"\x05purge\x18\x03 \x01(\bR\x05purge\"L\n" +
 	"\x17UndeleteInstanceRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/InstanceR\x04name\"r\n" +

@@ -134,6 +134,14 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     const composed = await upsertInstances([instance]);
     return composed[0];
   };
+  const deleteInstance = async (instance: string) => {
+    const request = create(DeleteInstanceRequestSchema, {
+      name: instance,
+      purge: true,
+    });
+    await instanceServiceClientConnect.deleteInstance(request);
+    instanceMapByName.delete(instance);
+  };
   const restoreInstance = async (instance: Instance) => {
     const request = create(UndeleteInstanceRequestSchema, {
       name: instance.name,
@@ -289,6 +297,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     updateInstance,
     archiveInstance,
     restoreInstance,
+    deleteInstance,
     syncInstance,
     batchSyncInstances,
     batchUpdateInstances,

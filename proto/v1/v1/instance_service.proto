@@ -259,6 +259,12 @@ message DeleteInstanceRequest {
 
   // If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed.
   bool force = 2;
+
+  // If set to true, permanently purge the soft-deleted instance and all related resources.
+  // This operation is irreversible. Following AIP-165, this should only be used for
+  // administrative cleanup of old soft-deleted instances.
+  // The instance must already be soft-deleted for this to work.
+  bool purge = 3;
 }
 
 message UndeleteInstanceRequest {
