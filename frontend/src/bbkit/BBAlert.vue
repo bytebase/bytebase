@@ -1,5 +1,6 @@
 <template>
   <NModal
+    v-bind="$attrs"
     :show="show"
     preset="dialog"
     :type="type"
@@ -23,7 +24,7 @@ import { t } from "@/plugins/i18n";
 withDefaults(
   defineProps<{
     show: boolean;
-    type: "info" | "warning";
+    type: "info" | "warning" | "error";
     title: string;
     positiveButtonProps?: ButtonProps | undefined;
     description?: string;

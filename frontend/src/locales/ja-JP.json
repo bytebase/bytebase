@@ -239,7 +239,14 @@
     "submit": "提出する",
     "start": "始める",
     "draft": "下書き",
-    "import": "輸入"
+    "import": "輸入",
+    "hard-delete": {
+      "self": "ハード削除",
+      "title": "{name} を物理的に削除しますか?",
+      "description": "このリソースとその他の関連リソースは物理的に削除されます。@:common.cannot-undo-this-action",
+      "double-comfirm": "削除を確認するには、{name} と入力してください。",
+      "notification": "リソース '{name}' を正常に削除しました。"
+    }
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"

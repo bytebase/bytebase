@@ -496,3 +496,131 @@ func (s *Store) HasSampleInstances(ctx context.Context) (bool, error) {
 	}
 	return len(instances) > 0, nil
 }
+
+// DeleteInstance permanently purges a soft-deleted instance and all related resources.
+// This operation is irreversible and should only be used for:
+// - Administrative cleanup of old soft-deleted instances
+// - Test cleanup
+// Following AIP-164/165, this only works on instances where deleted = TRUE.
+func (s *Store) DeleteInstance(ctx context.Context, resourceID string) error {
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	// Delete query_history entries that reference this instance
+	// The database field contains instance reference like 'instances/{instance}/databases/{database}'
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM query_history
+		WHERE database LIKE 'instances/' || $1 || '/databases/%'
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete query_history for instance %s", resourceID)
+	}
+
+	// Delete task_run_log entries for tasks associated with this instance
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM task_run_log
+		WHERE task_run_id IN (
+			SELECT tr.id FROM task_run tr
+			JOIN task t ON tr.task_id = t.id
+			WHERE t.instance = $1
+		)
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete task_run_log for instance %s", resourceID)
+	}
+
+	// Delete task_run entries for tasks associated with this instance
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM task_run
+		WHERE task_id IN (
+			SELECT id FROM task WHERE instance = $1
+		)
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete task_run for instance %s", resourceID)
+	}
+
+	// Delete tasks associated with this instance
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM task WHERE instance = $1
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete tasks for instance %s", resourceID)
+	}
+
+	// Delete changelogs associated with this instance
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM changelog WHERE instance = $1
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete changelogs for instance %s", resourceID)
+	}
+
+	// Delete sync_history associated with this instance
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM sync_history WHERE instance = $1
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete sync_history for instance %s", resourceID)
+	}
+
+	// Delete revisions associated with this instance
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM revision WHERE instance = $1
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete revisions for instance %s", resourceID)
+	}
+
+	// Update worksheets to nullify instance and db_name references
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE worksheet
+		SET instance = NULL, db_name = NULL
+		WHERE instance = $1
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to update worksheets for instance %s", resourceID)
+	}
+
+	// Delete db_schema entries associated with databases on this instance
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM db_schema WHERE instance = $1
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete db_schema for instance %s", resourceID)
+	}
+
+	// Delete databases associated with this instance
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM db WHERE instance = $1
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete databases for instance %s", resourceID)
+	}
+
+	// Delete data_source entries associated with this instance
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM data_source WHERE instance = $1
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete data_source for instance %s", resourceID)
+	}
+
+	// Finally, delete the instance itself (only if it's marked as deleted)
+	result, err := tx.ExecContext(ctx, `
+		DELETE FROM instance
+		WHERE resource_id = $1 AND deleted = TRUE
+	`, resourceID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to delete instance %s", resourceID)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return errors.Wrap(err, "failed to get rows affected")
+	}
+	if rowsAffected == 0 {
+		return errors.Errorf("instance %s not found or not marked as deleted", resourceID)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(err, "failed to commit transaction")
+	}
+
+	// Clear the instance from cache
+	s.instanceCache.Remove(getInstanceCacheKey(resourceID))
+
+	return nil
+}
