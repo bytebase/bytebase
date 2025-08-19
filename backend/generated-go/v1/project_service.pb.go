@@ -628,7 +628,12 @@ type DeleteProjectRequest struct {
 	// Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
 	// Open issues will remain open but associated with the deleted project.
 	// If set to false, the operation will fail if the project has databases or open issues.
-	Force         bool `protobuf:"varint,2,opt,name=force,proto3" json:"force,omitempty"`
+	Force bool `protobuf:"varint,2,opt,name=force,proto3" json:"force,omitempty"`
+	// If set to true, permanently purge the soft-deleted project and all related resources.
+	// This operation is irreversible. Following AIP-165, this should only be used for
+	// administrative cleanup of old soft-deleted projects.
+	// The project must already be soft-deleted for this to work.
+	Purge         bool `protobuf:"varint,3,opt,name=purge,proto3" json:"purge,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -673,6 +678,13 @@ func (x *DeleteProjectRequest) GetName() string {
 func (x *DeleteProjectRequest) GetForce() bool {
 	if x != nil {
 		return x.Force
+	}
+	return false
+}
+
+func (x *DeleteProjectRequest) GetPurge() bool {
+	if x != nil {
+		return x.Purge
 	}
 	return false
 }
@@ -1648,11 +1660,12 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x14UpdateProjectRequest\x123\n" +
 	"\aproject\x18\x01 \x01(\v2\x14.bytebase.v1.ProjectB\x03\xe0A\x02R\aproject\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"^\n" +
+	"updateMask\"t\n" +
 	"\x14DeleteProjectRequest\x120\n" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x04name\x12\x14\n" +
-	"\x05force\x18\x02 \x01(\bR\x05force\"J\n" +
+	"\x05force\x18\x02 \x01(\bR\x05force\x12\x14\n" +
+	"\x05purge\x18\x03 \x01(\bR\x05purge\"J\n" +
 	"\x16UndeleteProjectRequest\x120\n" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x04name\"f\n" +
@@ -1738,17 +1751,17 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x13ISSUE_STATUS_UPDATE\x10\x04\x12\x19\n" +
 	"\x15ISSUE_APPROVAL_NOTIFY\x10\x15\x12&\n" +
 	"\"ISSUE_PIPELINE_STAGE_STATUS_UPDATE\x10\x05\x12)\n" +
-	"%ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\x162\x91\x12\n" +
+	"%ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\x162\x9d\x12\n" +
 	"\x0eProjectService\x12\x7f\n" +
 	"\n" +
 	"GetProject\x12\x1e.bytebase.v1.GetProjectRequest\x1a\x14.bytebase.v1.Project\";\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=projects/*}\x12\x84\x01\n" +
 	"\fListProjects\x12 .bytebase.v1.ListProjectsRequest\x1a!.bytebase.v1.ListProjectsResponse\"/\xdaA\x00\x8a\xea0\x10bb.projects.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/projects\x12\x80\x01\n" +
 	"\x0eSearchProjects\x12\".bytebase.v1.SearchProjectsRequest\x1a#.bytebase.v1.SearchProjectsResponse\"%\xdaA\x00\x90\xea0\x02\x82\xd3\xe4\x93\x02\x18:\x01*\"\x13/v1/projects:search\x12\x84\x01\n" +
 	"\rCreateProject\x12!.bytebase.v1.CreateProjectRequest\x1a\x14.bytebase.v1.Project\":\xdaA\x00\x8a\xea0\x12bb.projects.create\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17:\aproject\"\f/v1/projects\x12\xa8\x01\n" +
-	"\rUpdateProject\x12!.bytebase.v1.UpdateProjectRequest\x1a\x14.bytebase.v1.Project\"^\xdaA\x13project,update_mask\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x82\xd3\xe4\x93\x02(:\aproject2\x1d/v1/{project.name=projects/*}\x12\x8a\x01\n" +
-	"\rDeleteProject\x12!.bytebase.v1.DeleteProjectRequest\x1a\x16.google.protobuf.Empty\">\xdaA\x04name\x8a\xea0\x12bb.projects.delete\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17*\x15/v1/{name=projects/*}\x12\x93\x01\n" +
-	"\x0fUndeleteProject\x12#.bytebase.v1.UndeleteProjectRequest\x1a\x14.bytebase.v1.Project\"E\x8a\xea0\x14bb.projects.undelete\x90\xea0\x01\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/v1/{name=projects/*}:undelete\x12\x95\x01\n" +
-	"\x13BatchDeleteProjects\x12'.bytebase.v1.BatchDeleteProjectsRequest\x1a\x16.google.protobuf.Empty\"=\x8a\xea0\x12bb.projects.delete\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/v1/projects:batchDelete\x12\x98\x01\n" +
+	"\rUpdateProject\x12!.bytebase.v1.UpdateProjectRequest\x1a\x14.bytebase.v1.Project\"^\xdaA\x13project,update_mask\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x82\xd3\xe4\x93\x02(:\aproject2\x1d/v1/{project.name=projects/*}\x12\x8e\x01\n" +
+	"\rDeleteProject\x12!.bytebase.v1.DeleteProjectRequest\x1a\x16.google.protobuf.Empty\"B\xdaA\x04name\x8a\xea0\x12bb.projects.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x17*\x15/v1/{name=projects/*}\x12\x97\x01\n" +
+	"\x0fUndeleteProject\x12#.bytebase.v1.UndeleteProjectRequest\x1a\x14.bytebase.v1.Project\"I\x8a\xea0\x14bb.projects.undelete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/v1/{name=projects/*}:undelete\x12\x99\x01\n" +
+	"\x13BatchDeleteProjects\x12'.bytebase.v1.BatchDeleteProjectsRequest\x1a\x16.google.protobuf.Empty\"A\x8a\xea0\x12bb.projects.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/v1/projects:batchDelete\x12\x98\x01\n" +
 	"\fGetIamPolicy\x12 .bytebase.v1.GetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"N\x8a\xea0\x18bb.projects.getIamPolicy\x90\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{resource=projects/*}:getIamPolicy\x12\xb0\x01\n" +
 	"\x11BatchGetIamPolicy\x12%.bytebase.v1.BatchGetIamPolicyRequest\x1a&.bytebase.v1.BatchGetIamPolicyResponse\"L\x8a\xea0\x18bb.projects.getIamPolicy\x90\xea0\x02\x82\xd3\xe4\x93\x02&\x12$/v1/{scope=*/*}/iamPolicies:batchGet\x12\x9f\x01\n" +
 	"\fSetIamPolicy\x12 .bytebase.v1.SetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"U\x8a\xea0\x18bb.projects.setIamPolicy\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{resource=projects/*}:setIamPolicy\x12\x8c\x01\n" +
