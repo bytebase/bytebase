@@ -4,7 +4,6 @@ import (
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
 func checkDatabaseMetadata(engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) error {
@@ -64,19 +63,6 @@ func checkDatabaseMetadata(engine storepb.Engine, metadata *storepb.DatabaseSche
 							return errors.Errorf("primary key column %s not found in table %s", key, table.GetName())
 						}
 					}
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func checkDatabaseMetadataColumnType(engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) error {
-	for _, sc := range metadata.GetSchemas() {
-		for _, table := range sc.GetTables() {
-			for _, column := range table.GetColumns() {
-				if !schema.CheckColumnType(engine, column.Type) {
-					return errors.Errorf("column %s type %s is invalid in table %s", column.Name, column.Type, table.Name)
 				}
 			}
 		}
