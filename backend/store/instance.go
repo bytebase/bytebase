@@ -518,15 +518,6 @@ func (s *Store) DeleteInstance(ctx context.Context, resourceID string) error {
 		return errors.Wrapf(err, "failed to delete query_history for instance %s", resourceID)
 	}
 
-	// Delete policy entries that reference this instance
-	if _, err := tx.ExecContext(ctx, `
-		DELETE FROM policy
-		WHERE (resource_type = 'instance' AND resource = 'instances/' || $1)
-		   OR (resource_type = 'database' AND resource LIKE 'instances/' || $1 || '/databases/%')
-	`, resourceID); err != nil {
-		return errors.Wrapf(err, "failed to delete policies for instance %s", resourceID)
-	}
-
 	// Delete task_run_log entries for tasks associated with this instance
 	if _, err := tx.ExecContext(ctx, `
 		DELETE FROM task_run_log
