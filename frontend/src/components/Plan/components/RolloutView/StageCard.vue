@@ -22,9 +22,10 @@
                 class="text-base font-medium text-gray-900 whitespace-nowrap truncate"
               >
                 <EnvironmentV1Name
-                  :environment="
-                    environmentStore.getEnvironmentByName(stage.environment)
-                  "
+                  text-class="w-24"
+                  :environment="environment"
+                  :link="false"
+                  :null-environment-placeholder="'Null'"
                 />
               </h3>
               <Timestamp
@@ -255,6 +256,10 @@ const isCreated = computed(() => {
   );
 });
 
+const environment = computed(() => {
+  return environmentStore.getEnvironmentByName(props.stage.environment);
+});
+
 // Toggle state for showing/hiding tasks - default based on parent coordination
 const showTasks = ref(props.defaultShowTasks || false);
 
@@ -368,7 +373,7 @@ const handleClickStageTitle = () => {
   const rolloutId = props.rollout.name.split("/").pop();
   const stageId = props.stage.name.split("/").pop();
 
-  if (!rolloutId || !stageId) return;
+  if (!rolloutId) return;
 
   // Navigate to the stage detail route
   router.push({
@@ -376,7 +381,7 @@ const handleClickStageTitle = () => {
     params: {
       projectId: extractProjectResourceName(project.value.name),
       rolloutId,
-      stageId,
+      stageId: stageId || "_", // Use placeholder for empty stageId
     },
   });
 };
@@ -388,7 +393,7 @@ const handleTaskStatusClick = (status: Task_Status) => {
   const rolloutId = props.rollout.name.split("/").pop();
   const stageId = props.stage.name.split("/").pop();
 
-  if (!rolloutId || !stageId) return;
+  if (!rolloutId) return;
 
   // Navigate to the stage detail route with task status filter
   router.push({
@@ -396,7 +401,7 @@ const handleTaskStatusClick = (status: Task_Status) => {
     params: {
       projectId: extractProjectResourceName(project.value.name),
       rolloutId,
-      stageId,
+      stageId: stageId || "_", // Use placeholder for empty stageId
     },
     query: {
       taskStatus: Task_Status[status],
@@ -412,7 +417,7 @@ const handleTaskClick = (task: Task) => {
   const stageId = props.stage.name.split("/").pop();
   const taskId = task.name.split("/").pop();
 
-  if (!rolloutId || !stageId || !taskId) return;
+  if (!rolloutId || !taskId) return;
 
   // Navigate to the task detail route
   router.push({
@@ -420,7 +425,7 @@ const handleTaskClick = (task: Task) => {
     params: {
       projectId: extractProjectResourceName(project.value.name),
       rolloutId,
-      stageId,
+      stageId: stageId || "_", // Use placeholder for empty stageId
       taskId,
     },
   });
