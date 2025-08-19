@@ -239,7 +239,14 @@
     "submit": "Submit",
     "start": "Start",
     "draft": "Draft",
-    "import": "Import"
+    "import": "Import",
+    "hard-delete": {
+      "self": "Hard-delete",
+      "title": "Hard-delete {name}?",
+      "description": "This resource and other related resources will be hard-deleted. @:common.cannot-undo-this-action",
+      "double-comfirm": "To confirm deletion, please type: {name}",
+      "notification": "Successfully delete the resource '{name}'."
+    }
   },
   "error-page": {
     "go-back-home": "Go back home"

@@ -239,7 +239,14 @@
     "submit": "提交",
     "start": "开始",
     "draft": "草稿",
-    "import": "导入"
+    "import": "导入",
+    "hard-delete": {
+      "self": "彻底删除",
+      "title": "彻底删除 {name}？",
+      "description": "此资源和其他相关资源将被硬删除。@:common.cannot-undo-this-action",
+      "double-comfirm": "要确认删除，请输入：{name}",
+      "notification": "成功删除资源“{name}”。"
+    }
   },
   "error-page": {
     "go-back-home": "回到主页"

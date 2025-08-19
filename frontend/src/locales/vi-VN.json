@@ -239,7 +239,14 @@
     "submit": "Nộp",
     "start": "Bắt đầu",
     "draft": "Bản nháp",
-    "import": "Nhập khẩu"
+    "import": "Nhập khẩu",
+    "hard-delete": {
+      "self": "Xóa cứng",
+      "title": "Xóa cứng {name}?",
+      "description": "Tài nguyên này và các tài nguyên liên quan khác sẽ bị xóa cứng. @:common.cannot-undo-this-action",
+      "double-comfirm": "Để xác nhận xóa, vui lòng nhập: {name}",
+      "notification": "Xóa thành công tài nguyên '{name}'."
+    }
   },
   "error-page": {
     "go-back-home": "Về trang chủ"

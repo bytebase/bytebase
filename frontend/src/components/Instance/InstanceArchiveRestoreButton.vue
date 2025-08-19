@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="allowArchiveOrRestore"
-    class="t-6 border-t border-block-border flex justify-between items-center pt-4 pb-2"
+    class="t-6 border-t border-block-border flex justify-between items-center pt-4 pb-2 space-x-2"
   >
     <template v-if="instance.state === State.ACTIVE">
       <BBButtonConfirm
@@ -43,6 +43,10 @@
         @confirm="archiveOrRestoreInstance(false)"
       />
     </template>
+    <ResourceHardDeleteButton
+      :resource="instance"
+      @delete="hardDeleteInstance"
+    />
   </div>
 </template>
 
@@ -52,7 +56,9 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBButtonConfirm } from "@/bbkit";
+import ResourceHardDeleteButton from "@/components/v2/Button/ResourceHardDeleteButton.vue";
 import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
+import { SETTING_ROUTE_WORKSPACE_ARCHIVE } from "@/router/dashboard/workspaceSetting";
 import { pushNotification, useInstanceV1Store } from "@/store";
 import type { ComposedInstance } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -101,5 +107,13 @@ const archiveOrRestoreInstance = async (archive: boolean) => {
       name: INSTANCE_ROUTE_DASHBOARD,
     });
   }
+};
+
+const hardDeleteInstance = async (resource: string) => {
+  await instanceStore.deleteInstance(resource);
+  router.replace({
+    name: SETTING_ROUTE_WORKSPACE_ARCHIVE,
+    hash: "#INSTANCE",
+  });
 };
 </script>

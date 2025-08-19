@@ -4,6 +4,7 @@
     class="text-sm"
     :text="text"
     :size="size"
+    :type="type === 'DELETE' ? 'error' : 'default'"
     :class="[!hideIcon && 'btn-icon']"
     @click.prevent.stop="
       () => {
@@ -16,9 +17,7 @@
     "
   >
     <template v-if="!hideIcon">
-      <Trash2Icon v-if="type == 'DELETE'" class="w-4 h-4" />
-      <ArchiveIcon v-if="type == 'ARCHIVE'" class="w-4 h-4" />
-      <Undo2Icon v-if="type == 'RESTORE'" class="w-4 h-4" />
+      <component :is="alertIcon" class="w-4 h-4" />
     </template>
     <span v-if="buttonText" :class="[!hideIcon && 'ml-1']">
       {{ buttonText }}
@@ -26,11 +25,12 @@
   </NButton>
   <BBAlert
     v-model:show="state.showModal"
-    :type="type == 'DELETE' || type == 'ARCHIVE' ? 'warning' : 'info'"
+    :type="alertType"
     :ok-text="okText"
     :title="confirmTitle"
     :description="confirmDescription"
     :positive-button-props="positiveButtonProps"
+    :icon="() => alertIcon"
     @ok="
       () => {
         state.showModal = false;
@@ -43,7 +43,7 @@
   </BBAlert>
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { ArchiveIcon, Trash2Icon, Undo2Icon } from "lucide-vue-next";
 import { NButton, type ButtonProps } from "naive-ui";
 import { computed, reactive } from "vue";
@@ -85,6 +85,28 @@ const { t } = useI18n();
 
 const state = reactive({
   showModal: false,
+});
+
+const alertType = computed(() => {
+  switch (props.type) {
+    case "DELETE":
+      return "error";
+    case "ARCHIVE":
+      return "warning";
+    default:
+      return "info";
+  }
+});
+
+const alertIcon = computed(() => {
+  switch (props.type) {
+    case "DELETE":
+      return <Trash2Icon />;
+    case "ARCHIVE":
+      return <ArchiveIcon />;
+    default:
+      return <Undo2Icon />;
+  }
 });
 
 const okText = computed(() => {

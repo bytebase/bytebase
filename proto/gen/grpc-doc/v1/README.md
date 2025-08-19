@@ -1499,6 +1499,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the instance to delete. Format: instances/{instance} |
 | force | [bool](#bool) |  | If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed. |
+| purge | [bool](#bool) |  | If set to true, permanently purge the soft-deleted instance and all related resources. This operation is irreversible. Following AIP-165, this should only be used for administrative cleanup of old soft-deleted instances. The instance must already be soft-deleted for this to work. |
 
 
 

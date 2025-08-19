@@ -435,6 +435,9 @@ export const provideInstanceFormContext = (baseContext: {
   };
 
   const valueChanged = computed(() => {
+    if (instance.value?.state === State.DELETED) {
+      return false;
+    }
     const original = {
       basicInfo: extractBasicInfo(instance.value),
       dataSources: extractDataSourceEditState(instance.value).dataSources,
