@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -13,6 +13,6 @@ func init() {
 }
 
 func checkColumnType(tp string) bool {
-	_, err := pgrawparser.Parse(pgrawparser.ParseContext{}, fmt.Sprintf("CREATE TABLE t (a %s NOT NULL)", tp))
+	_, err := pgparser.ParsePostgreSQL(fmt.Sprintf("CREATE TABLE t (a %s NOT NULL)", tp))
 	return err == nil
 }
