@@ -356,3 +356,187 @@ func (s *Store) storeProjectCache(project *ProjectMessage) {
 func (s *Store) removeProjectCache(resourceID string) {
 	s.projectCache.Remove(resourceID)
 }
+
+// DeleteProject permanently purges a soft-deleted project and all related resources.
+// This operation is irreversible and should only be used for:
+// - Administrative cleanup of old soft-deleted projects
+// - Test cleanup
+// Following AIP-164/165, this only works on projects where deleted = TRUE.
+func (s *Store) DeleteProject(ctx context.Context, resourceID string) error {
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	// Delete query_history entries that reference this project
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM query_history
+		WHERE project_id = $1
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete query_history for project %s", resourceID)
+	}
+
+	// Delete policy entries that reference this project
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM policy
+		WHERE (resource_type = $1 AND resource = 'projects/' || $2)
+	`, storepb.Policy_PROJECT.String(), resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete policies for project %s", resourceID)
+	}
+
+	// Delete worksheets associated with this project
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE worksheet
+		SET project = $1
+		WHERE project = $2
+	`, common.DefaultProjectID, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to update worksheets for project %s", resourceID)
+	}
+
+	// Delete issue_comment entries for issues in this project
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM issue_comment
+		WHERE issue_id IN (
+			SELECT id FROM issue WHERE project = $1
+		)
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete issue_comment for project %s", resourceID)
+	}
+
+	// Delete issues associated with this project
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM issue WHERE project = $1
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete issues for project %s", resourceID)
+	}
+
+	// Delete plan_check_run entries for plans in this project
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM plan_check_run
+		WHERE plan_id IN (
+			SELECT id FROM plan WHERE project = $1
+		)
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete plan_check_run for project %s", resourceID)
+	}
+
+	// Delete plans associated with this project
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM plan WHERE project = $1
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete plans for project %s", resourceID)
+	}
+
+	// Delete task_run_log entries for tasks in pipelines of this project
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM task_run_log
+		WHERE task_run_id IN (
+			SELECT tr.id FROM task_run tr
+			JOIN task t ON tr.task_id = t.id
+			JOIN pipeline p ON t.pipeline_id = p.id
+			WHERE p.project = $1
+		)
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete task_run_log for project %s", resourceID)
+	}
+
+	// Delete task_run entries for tasks in pipelines of this project
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM task_run
+		WHERE task_id IN (
+			SELECT t.id FROM task t
+			JOIN pipeline p ON t.pipeline_id = p.id
+			WHERE p.project = $1
+		)
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete task_run for project %s", resourceID)
+	}
+
+	// Delete tasks in pipelines of this project
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM task
+		WHERE pipeline_id IN (
+			SELECT id FROM pipeline WHERE project = $1
+		)
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete tasks for project %s", resourceID)
+	}
+
+	// Delete pipelines associated with this project
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM pipeline WHERE project = $1
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete pipelines for project %s", resourceID)
+	}
+
+	// Delete sheets associated with this project
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM sheet WHERE project = $1
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete sheets for project %s", resourceID)
+	}
+
+	// Delete releases associated with this project
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM release WHERE project = $1
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete releases for project %s", resourceID)
+	}
+
+	// Delete changelists associated with this project
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM changelist WHERE project = $1
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete changelists for project %s", resourceID)
+	}
+
+	// Delete db_groups associated with this project
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM db_group WHERE project = $1
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete db_groups for project %s", resourceID)
+	}
+
+	// Move databases to the default project instead of deleting them
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE db
+		SET project = $1
+		WHERE project = $2
+	`, common.DefaultProjectID, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to move databases to default project for project %s", resourceID)
+	}
+
+	// Delete project webhooks
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM project_webhook WHERE project = $1
+	`, resourceID); err != nil {
+		return errors.Wrapf(err, "failed to delete project_webhook for project %s", resourceID)
+	}
+
+	// Finally, delete the project itself (only if it's marked as deleted)
+	result, err := tx.ExecContext(ctx, `
+		DELETE FROM project
+		WHERE resource_id = $1 AND deleted = TRUE
+	`, resourceID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to delete project %s", resourceID)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return errors.Wrap(err, "failed to get rows affected")
+	}
+	if rowsAffected == 0 {
+		return errors.Errorf("project %s not found or not marked as deleted", resourceID)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(err, "failed to commit transaction")
+	}
+
+	// Clear the project from cache
+	s.projectCache.Remove(resourceID)
+
+	return nil
+}

@@ -3427,6 +3427,15 @@ paths:
                      If set to false, the operation will fail if the project has databases or open issues.
                   schema:
                     type: boolean
+                - name: purge
+                  in: query
+                  description: |-
+                    If set to true, permanently purge the soft-deleted project and all related resources.
+                     This operation is irreversible. Following AIP-165, this should only be used for
+                     administrative cleanup of old soft-deleted projects.
+                     The project must already be soft-deleted for this to work.
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     description: OK

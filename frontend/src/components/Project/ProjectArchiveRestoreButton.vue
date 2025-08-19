@@ -1,5 +1,8 @@
 <template>
-  <template v-if="allowArchiveOrRestore">
+  <div
+    v-if="allowArchiveOrRestore"
+    class="w-full flex items-center justify-between"
+  >
     <template v-if="project.state === State.ACTIVE">
       <BBButtonConfirm
         :type="'ARCHIVE'"
@@ -34,7 +37,8 @@
         @confirm="archiveOrRestoreProject(false)"
       />
     </template>
-  </template>
+    <ResourceHardDeleteButton :resource="project" @delete="hardDeleteProject" />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -42,7 +46,9 @@ import { NCheckbox } from "naive-ui";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { BBButtonConfirm } from "@/bbkit";
+import ResourceHardDeleteButton from "@/components/v2/Button/ResourceHardDeleteButton.vue";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
+import { SETTING_ROUTE_WORKSPACE_ARCHIVE } from "@/router/dashboard/workspaceSetting";
 import { useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -54,7 +60,6 @@ const props = defineProps<{
 
 const projectV1Store = useProjectV1Store();
 const router = useRouter();
-
 const force = ref(false);
 
 const allowArchiveOrRestore = computed(() => {
@@ -76,5 +81,13 @@ const archiveOrRestoreProject = async (archive: boolean) => {
       name: PROJECT_V1_ROUTE_DASHBOARD,
     });
   }
+};
+
+const hardDeleteProject = async (resource: string) => {
+  await projectV1Store.deleteProject(resource);
+  router.replace({
+    name: SETTING_ROUTE_WORKSPACE_ARCHIVE,
+    hash: "#PROJECT",
+  });
 };
 </script>
