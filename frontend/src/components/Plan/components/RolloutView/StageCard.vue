@@ -147,14 +147,18 @@
         </div>
 
         <!-- Right side: Actions -->
-        <div v-if="!readonly" class="flex justify-end items-center">
-          <RunTasksButton
-            v-if="isCreated"
-            :stage="stage"
-            :size="'small'"
-            :disabled="!canRunTasks || runableTasks.length === 0"
-            @run-tasks="handleRunAllTasks"
-          />
+        <div class="flex justify-end items-center">
+          <NButton
+            v-if="isCreated && runableTasks.length > 0"
+            size="small"
+            :disabled="!canRunTasks"
+            @click.stop="handleRunAllTasks"
+          >
+            <template #icon>
+              <PlayIcon />
+            </template>
+            {{ $t("common.run") }}
+          </NButton>
           <NPopconfirm
             v-else-if="!isCreated && canCreateRollout"
             :negative-text="null"
@@ -190,6 +194,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   CalendarClockIcon,
+  PlayIcon,
 } from "lucide-vue-next";
 import { NTooltip, NButton, NPopconfirm, NTag } from "naive-ui";
 import { twMerge } from "tailwind-merge";
@@ -222,24 +227,25 @@ import {
   getStageStatus,
   humanizeTs,
 } from "@/utils";
-import RunTasksButton from "./RunTasksButton.vue";
+import { usePlanContextWithRollout } from "../../logic";
 import { useTaskActionPermissions } from "./taskPermissions";
 
 const props = defineProps<{
   rollout: Rollout;
   stage: Stage;
   taskStatusFilter?: Task_Status[];
-  readonly?: boolean;
   defaultShowTasks?: boolean;
+}>();
+
+const emit = defineEmits<{
+  (event: "run-tasks", stage: Stage, tasks: Task[]): void;
+  (event: "create-rollout-to-stage", stage: Stage): void;
 }>();
 
 const router = useRouter();
 const { project } = useCurrentProjectV1();
 const environmentStore = useEnvironmentV1Store();
-const emit = defineEmits<{
-  (event: "run-tasks", stage: Stage, tasks: Task[]): void;
-  (event: "create-rollout-to-stage", stage: Stage): void;
-}>();
+const { readonly, issue } = usePlanContextWithRollout();
 
 const { canPerformTaskAction } = useTaskActionPermissions();
 
@@ -297,10 +303,14 @@ const runableTasks = computed(() => {
 });
 
 const canRunTasks = computed(() => {
+  if (readonly.value) {
+    return false;
+  }
   return canPerformTaskAction(
     filteredTasks.value,
     props.rollout,
-    project.value
+    project.value,
+    issue.value
   );
 });
 
