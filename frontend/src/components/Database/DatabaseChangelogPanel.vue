@@ -189,9 +189,7 @@ const searchChangelogFilter = computed(() => {
     searchChangeLogParams.value.types &&
     searchChangeLogParams.value.types.length > 0
   ) {
-    filter.push(
-      `type = "${searchChangeLogParams.value.types.map(Number).join(" | ")}"`
-    );
+    filter.push(`type = "${searchChangeLogParams.value.types.join(" | ")}"`);
   }
   if (
     searchChangeLogParams.value.tables &&
