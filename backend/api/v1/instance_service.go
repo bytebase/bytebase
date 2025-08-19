@@ -517,6 +517,23 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 	if err != nil {
 		return nil, err
 	}
+
+	// Handle purge (hard delete) of soft-deleted instance
+	if req.Msg.Purge {
+		// Following AIP-165, purge only works on already soft-deleted instances
+		if !instance.Deleted {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("instance %q must be soft-deleted before it can be purged", req.Msg.Name))
+		}
+
+		// Permanently delete the instance and all related resources
+		if err := s.store.DeleteInstance(ctx, instance.ResourceID); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to purge instance"))
+		}
+
+		return connect.NewResponse(&emptypb.Empty{}), nil
+	}
+
+	// Regular soft delete flow
 	if instance.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", req.Msg.Name))
 	}

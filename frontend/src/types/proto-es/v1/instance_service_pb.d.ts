@@ -217,6 +217,16 @@ export declare type DeleteInstanceRequest = Message<"bytebase.v1.DeleteInstanceR
    * @generated from field: bool force = 2;
    */
   force: boolean;
+
+  /**
+   * If set to true, permanently purge the soft-deleted instance and all related resources.
+   * This operation is irreversible. Following AIP-165, this should only be used for
+   * administrative cleanup of old soft-deleted instances.
+   * The instance must already be soft-deleted for this to work.
+   *
+   * @generated from field: bool purge = 3;
+   */
+  purge: boolean;
 };
 
 /**
