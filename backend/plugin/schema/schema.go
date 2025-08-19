@@ -11,7 +11,6 @@ import (
 
 var (
 	mux                            sync.Mutex
-	checkColumnTypes               = make(map[storepb.Engine]checkColumnType)
 	getDatabaseDefinitions         = make(map[storepb.Engine]getDatabaseDefinition)
 	getSchemaDefinitions           = make(map[storepb.Engine]getSchemaDefinition)
 	getTableDefinitions            = make(map[storepb.Engine]getTableDefinition)
@@ -24,7 +23,6 @@ var (
 	generateMigrations             = make(map[storepb.Engine]generateMigration)
 )
 
-type checkColumnType func(string) bool
 type getDatabaseDefinition func(GetDefinitionContext, *storepb.DatabaseSchemaMetadata) (string, error)
 type getSchemaDefinition func(*storepb.SchemaMetadata) (string, error)
 type getTableDefinition func(string, *storepb.TableMetadata, []*storepb.SequenceMetadata) (string, error)
@@ -175,23 +173,6 @@ func GetDatabaseDefinition(engine storepb.Engine, ctx GetDefinitionContext, meta
 		return "", errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(ctx, metadata)
-}
-
-func RegisterCheckColumnType(engine storepb.Engine, f checkColumnType) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := checkColumnTypes[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	checkColumnTypes[engine] = f
-}
-
-func CheckColumnType(engine storepb.Engine, tp string) bool {
-	f, ok := checkColumnTypes[engine]
-	if !ok {
-		return false
-	}
-	return f(tp)
 }
 
 func RegisterGetDatabaseMetadata(engine storepb.Engine, f getDatabaseMetadata) {
