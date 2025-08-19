@@ -11,7 +11,6 @@ import (
 
 var (
 	mux                            sync.Mutex
-	checkColumnTypes               = make(map[storepb.Engine]checkColumnType)
 	getDatabaseDefinitions         = make(map[storepb.Engine]getDatabaseDefinition)
 	getSchemaDefinitions           = make(map[storepb.Engine]getSchemaDefinition)
 	getTableDefinitions            = make(map[storepb.Engine]getTableDefinition)
@@ -24,7 +23,6 @@ var (
 	generateMigrations             = make(map[storepb.Engine]generateMigration)
 )
 
-type checkColumnType func(string) bool
 type getDatabaseDefinition func(GetDefinitionContext, *storepb.DatabaseSchemaMetadata) (string, error)
 type getSchemaDefinition func(*storepb.SchemaMetadata) (string, error)
 type getTableDefinition func(string, *storepb.TableMetadata, []*storepb.SequenceMetadata) (string, error)
