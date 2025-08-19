@@ -10,7 +10,7 @@ This action provides several subcommands to interact with Bytebase.
 
 Usage: `bytebase-action check [global flags]`
 
-Checks the SQL migration files matching the `--file-pattern`. This is typically used for linting or pre-deployment validation within a CI pipeline. It utilizes global flags like `--url`, `--service-account`, `--service-account-secret`, and `--file-pattern`.
+Checks the SQL files matching the `--file-pattern`. This is typically used for linting or pre-deployment validation within a CI pipeline. It utilizes global flags like `--url`, `--service-account`, `--service-account-secret`, `--file-pattern`, and `--declarative`.
 
 ### `rollout`
 
@@ -18,7 +18,7 @@ Usage: `bytebase-action rollout [global flags] [rollout flags]`
 
 Creates a new release and initiates a rollout issue in the specified Bytebase `--project`.
 If a `--plan` is specified, it rolls out that specific plan.
-Otherwise, it applies the SQL migration files matching the `--file-pattern` to the defined `--targets`.
+Otherwise, it applies the SQL files matching the `--file-pattern` to the defined `--targets`.
 The rollout will proceed up to the specified `--target-stage`.
 It uses global flags for connection and file discovery (unless a plan is specified), and specific flags like `--release-title` to name the created resources in Bytebase.
 
