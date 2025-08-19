@@ -1,7 +1,7 @@
 <template>
   <div>
     <div
-      v-if="!props.readonly && (primaryAction || dropdownOptions.length > 0)"
+      v-if="!readonly && (primaryAction || dropdownOptions.length > 0)"
       class="flex flex-row justify-end items-center gap-x-2"
     >
       <NButton v-if="primaryAction" size="small" @click="handlePrimaryAction">
@@ -38,6 +38,7 @@ import { EllipsisVerticalIcon } from "lucide-vue-next";
 import { NButton, NDropdown } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { useCurrentProjectV1 } from "@/store";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import type {
   Task,
@@ -45,7 +46,9 @@ import type {
   Rollout,
   Stage,
 } from "@/types/proto-es/v1/rollout_service_pb";
+import { usePlanContextWithRollout } from "../../logic";
 import TaskRolloutActionPanel from "./TaskRolloutActionPanel.vue";
+import { useTaskActionPermissions } from "./taskPermissions";
 
 type TaskStatusAction =
   // NOT_STARTED -> PENDING
@@ -61,7 +64,6 @@ const props = defineProps<{
   task: Task;
   taskRuns: TaskRun[];
   rollout?: Rollout;
-  readonly?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -69,6 +71,9 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const { project } = useCurrentProjectV1();
+const { readonly, issue } = usePlanContextWithRollout();
+const { canPerformTaskAction } = useTaskActionPermissions();
 const showActionPanel = ref(false);
 const selectedAction = ref<TaskStatusAction>();
 
@@ -122,7 +127,24 @@ const stage = computed((): Stage => {
   } as unknown as Stage;
 });
 
+// Check if user has permission to perform task actions
+const canPerformTaskActions = computed(() => {
+  if (!props.rollout || readonly.value) {
+    return false;
+  }
+  return canPerformTaskAction(
+    [props.task],
+    props.rollout,
+    project.value,
+    issue.value
+  );
+});
+
 const primaryAction = computed((): TaskStatusAction | null => {
+  if (!canPerformTaskActions.value) {
+    return null;
+  }
+
   if (
     [Task_Status.NOT_STARTED, Task_Status.CANCELED].includes(props.task.status)
   ) {
@@ -135,6 +157,10 @@ const primaryAction = computed((): TaskStatusAction | null => {
 });
 
 const dropdownActions = computed((): TaskStatusAction[] => {
+  if (!canPerformTaskActions.value) {
+    return [];
+  }
+
   if (
     [
       Task_Status.NOT_STARTED,

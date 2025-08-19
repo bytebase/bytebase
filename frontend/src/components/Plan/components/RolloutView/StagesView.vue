@@ -12,7 +12,6 @@
       :rollout="rollout"
       :stage="stage"
       :task-status-filter="taskStatusFilter"
-      :readonly="readonly"
       :default-show-tasks="defaultShowTasksStage === stage.name"
       @run-tasks="(stage, tasks) => $emit('run-tasks', stage, tasks)"
       @create-rollout-to-stage="
@@ -37,7 +36,6 @@ const props = defineProps<{
   rollout: Rollout;
   mergedStages: Stage[];
   taskStatusFilter?: Task_Status[];
-  readonly?: boolean;
 }>();
 
 defineEmits<{
