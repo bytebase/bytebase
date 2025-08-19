@@ -1773,10 +1773,6 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 	}
 	sanitizeCommentForSchemaMetadata(storeTargetMetadata, model.NewDatabaseConfig(targetConfig), request.ClassificationFromConfig)
 
-	if err := checkDatabaseMetadataColumnType(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid target metadata"))
-	}
-
 	// Convert metadata to model.DatabaseSchema for diffing
 	isObjectCaseSensitive := true
 	sourceDBSchema := model.NewDatabaseSchema(storeSourceMetadata, nil, nil, storepb.Engine(request.Engine), isObjectCaseSensitive)
