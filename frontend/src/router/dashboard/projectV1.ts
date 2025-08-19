@@ -103,14 +103,24 @@ const cicdRoutes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
             component: () =>
               import("@/components/Plan/components/RolloutView/StageView.vue"),
-            props: true,
+            props: (route) => ({
+              ...route.params,
+              // Convert placeholder back to undefined for empty stageId
+              stageId:
+                route.params.stageId === "_" ? undefined : route.params.stageId,
+            }),
           },
           {
             path: "stages/:stageId/tasks/:taskId",
             name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
             component: () =>
               import("@/components/Plan/components/RolloutView/TaskView.vue"),
-            props: true,
+            props: (route) => ({
+              ...route.params,
+              // Convert placeholder back to undefined for empty stageId
+              stageId:
+                route.params.stageId === "_" ? undefined : route.params.stageId,
+            }),
           },
         ],
       },

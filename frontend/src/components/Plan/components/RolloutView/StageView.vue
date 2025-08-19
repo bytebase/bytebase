@@ -8,6 +8,8 @@
             :environment="
               environmentStore.getEnvironmentByName(stage.environment)
             "
+            :null-environment-placeholder="'Null'"
+            :link="false"
           />
         </span>
 
@@ -41,7 +43,7 @@ import TaskTableView from "./TaskTableView.vue";
 
 const props = defineProps<{
   rolloutId: string;
-  stageId: string;
+  stageId?: string; // Could be undefined for null environment.
 }>();
 
 const route = useRoute();
@@ -49,7 +51,8 @@ const environmentStore = useEnvironmentV1Store();
 const { rollout } = usePlanContextWithRollout();
 
 const stage = computed(() => {
-  return rollout.value.stages.find((s) => s.id === props.stageId) as Stage;
+  const stageId = props.stageId || "";
+  return rollout.value.stages.find((s) => s.id === stageId) as Stage;
 });
 
 const taskStatusFilter = ref<Task_Status[]>([]);
