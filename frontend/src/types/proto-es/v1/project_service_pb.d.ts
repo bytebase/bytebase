@@ -273,6 +273,16 @@ export declare type DeleteProjectRequest = Message<"bytebase.v1.DeleteProjectReq
    * @generated from field: bool force = 2;
    */
   force: boolean;
+
+  /**
+   * If set to true, permanently purge the soft-deleted project and all related resources.
+   * This operation is irreversible. Following AIP-165, this should only be used for
+   * administrative cleanup of old soft-deleted projects.
+   * The project must already be soft-deleted for this to work.
+   *
+   * @generated from field: bool purge = 3;
+   */
+  purge: boolean;
 };
 
 /**

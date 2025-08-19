@@ -1,19 +1,23 @@
 <template>
   <div v-if="visible">
     <template v-if="readonly || !state.manualEdit">
-      <div class="textinfolabel text-sm gap-x-1 flex items-center">
-        {{ $t("resource-id.self", { resource: resourceName }) }}:
-        <div
-          v-if="state.resourceId"
-          class="text-gray-600 font-medium mr-1 flex items-center gap-x-1"
-        >
-          {{ state.resourceId }}
-          <CopyButton v-if="readonly" :content="value" />
+      <div
+        class="textinfolabel text-sm gap-x-1 flex items-start flex-col sm:items-center sm:flex-row"
+      >
+        <div class="gap-x-1 flex items-center">
+          {{ $t("resource-id.self", { resource: resourceName }) }}:
+          <div
+            v-if="state.resourceId"
+            class="text-gray-600 font-medium mr-1 flex items-center gap-x-1"
+          >
+            {{ state.resourceId }}
+            <CopyButton v-if="readonly" :content="value" />
+          </div>
+          <span v-else class="text-control-placeholder italic">
+            &lt;EMPTY&gt;
+          </span>
         </div>
-        <span v-else class="text-control-placeholder italic">
-          &lt;EMPTY&gt;
-        </span>
-        <template v-if="!readonly">
+        <div v-if="!readonly">
           <span>
             {{ $t("resource-id.cannot-be-changed-later") }}
           </span>
@@ -23,7 +27,7 @@
           >
             {{ $t("common.edit") }}
           </span>
-        </template>
+        </div>
       </div>
     </template>
     <div v-else :class="state.manualEdit && editingClass">

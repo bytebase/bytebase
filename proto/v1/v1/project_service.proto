@@ -72,6 +72,7 @@ service ProjectService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.projects.delete";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // Permissions required: bb.projects.undelete
@@ -82,6 +83,7 @@ service ProjectService {
     };
     option (bytebase.v1.permission) = "bb.projects.undelete";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // Permissions required: bb.projects.delete
@@ -92,6 +94,7 @@ service ProjectService {
     };
     option (bytebase.v1.permission) = "bb.projects.delete";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // Permissions required: bb.projects.getIamPolicy
@@ -286,6 +289,12 @@ message DeleteProjectRequest {
   // Open issues will remain open but associated with the deleted project.
   // If set to false, the operation will fail if the project has databases or open issues.
   bool force = 2;
+
+  // If set to true, permanently purge the soft-deleted project and all related resources.
+  // This operation is irreversible. Following AIP-165, this should only be used for
+  // administrative cleanup of old soft-deleted projects.
+  // The project must already be soft-deleted for this to work.
+  bool purge = 3;
 }
 
 message UndeleteProjectRequest {
