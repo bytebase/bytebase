@@ -177,23 +177,6 @@ func GetDatabaseDefinition(engine storepb.Engine, ctx GetDefinitionContext, meta
 	return f(ctx, metadata)
 }
 
-func RegisterCheckColumnType(engine storepb.Engine, f checkColumnType) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := checkColumnTypes[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	checkColumnTypes[engine] = f
-}
-
-func CheckColumnType(engine storepb.Engine, tp string) bool {
-	f, ok := checkColumnTypes[engine]
-	if !ok {
-		return false
-	}
-	return f(tp)
-}
-
 func RegisterGetDatabaseMetadata(engine storepb.Engine, f getDatabaseMetadata) {
 	mux.Lock()
 	defer mux.Unlock()
