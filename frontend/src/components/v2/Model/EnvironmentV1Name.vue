@@ -5,22 +5,16 @@
     class="inline-flex items-center gap-x-1"
     :class="[isLink && !plain && 'normal-link', isLink && 'hover:underline']"
   >
-    <NEllipsis :line-clamp="1">
-      <span class="select-none" :class="textClass">
-        {{ prefix }}
-        <span v-if="isUnknown" class="text-gray-400 italic">
-          NULL ENVIRONMENT
-        </span>
-        <HighlightLabelText
-          v-else
-          :text="environment.title"
-          :keyword="keyword"
-        />
-        <slot name="suffix">
-          {{ suffix }}
-        </slot>
+    <span class="select-none inline-block truncate" :class="textClass">
+      {{ prefix }}
+      <span v-if="isUnknown" class="text-gray-400 italic">
+        {{ nullEnvironmentPlaceholder }}
       </span>
-    </NEllipsis>
+      <HighlightLabelText v-else :text="environment.title" :keyword="keyword" />
+      <slot name="suffix">
+        {{ suffix }}
+      </slot>
+    </span>
     <ProductionEnvironmentV1Icon
       v-if="showIcon"
       :environment="environment"
@@ -31,7 +25,6 @@
 </template>
 
 <script lang="ts" setup>
-import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { UNKNOWN_ENVIRONMENT_NAME } from "@/types";
@@ -54,6 +47,7 @@ const props = withDefaults(
     showIcon?: boolean;
     textClass?: string;
     keyword?: string;
+    nullEnvironmentPlaceholder?: string; // Placeholder for null/unknown environment.
   }>(),
   {
     tag: "span",
@@ -66,6 +60,7 @@ const props = withDefaults(
     showIcon: true,
     textClass: "",
     keyword: "",
+    nullEnvironmentPlaceholder: "NULL ENVIRONMENT",
   }
 );
 

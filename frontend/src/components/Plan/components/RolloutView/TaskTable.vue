@@ -141,7 +141,7 @@ const handleRowClick = (task: Task) => {
       params: {
         projectId: extractProjectResourceName(project.value.name),
         rolloutId: params.rolloutId,
-        stageId: params.stageId,
+        stageId: params.stageId || "_", // Use placeholder for empty stageId
         taskId: params.taskId,
       },
     });
