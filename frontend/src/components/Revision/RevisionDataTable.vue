@@ -35,7 +35,10 @@ import { RouterLink, useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useRevisionStore } from "@/store";
 import { getDateForPbTimestampProtoEs } from "@/types";
-import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
+import {
+  Revision_Type,
+  type Revision,
+} from "@/types/proto-es/v1/revision_service_pb";
 import {
   extractIssueUID,
   extractProjectResourceName,
@@ -81,6 +84,13 @@ const columnList = computed(() => {
         };
       },
       hide: !props.showSelection,
+    },
+    {
+      key: "type",
+      title: t("common.type"),
+      width: 128,
+      resizable: true,
+      render: (revision) => Revision_Type[revision.type],
     },
     {
       key: "version",
