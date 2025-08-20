@@ -1359,8 +1359,6 @@ func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (
 	return indexMap, nil
 }
 
-// getIndexMethodType is no longer needed - we get the index method directly from pg_am.amname
-
 var listFunctionDependencyTablesQuery = `
 select
 	p.oid as function_oid,
