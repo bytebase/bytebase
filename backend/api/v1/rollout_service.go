@@ -642,7 +642,8 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
-		taskEnvironments[stageID] = append(taskEnvironments[stageID], taskID)
+		environment := formatEnvironmentFromStageID(stageID)
+		taskEnvironments[environment] = append(taskEnvironments[environment], taskID)
 		taskIDsToRunMap[taskID] = true
 	}
 	if len(taskEnvironments) > 1 {
@@ -896,7 +897,8 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 
-	ok, err = s.canUserCancelEnvironmentTaskRun(ctx, user, project, issueN, stageID, rollout.CreatorUID)
+	environment := formatEnvironmentFromStageID(stageID)
+	ok, err = s.canUserCancelEnvironmentTaskRun(ctx, user, project, issueN, environment, rollout.CreatorUID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if the user can run tasks, error: %v", err))
 	}

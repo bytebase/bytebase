@@ -6,7 +6,6 @@
     :class="[isLink && !plain && 'normal-link', isLink && 'hover:underline']"
   >
     <span class="select-none inline-block truncate" :class="textClass">
-      {{ prefix }}
       <span v-if="isUnknown" class="text-gray-400 italic">
         {{ nullEnvironmentPlaceholder }}
       </span>
@@ -27,7 +26,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { UNKNOWN_ENVIRONMENT_NAME } from "@/types";
+import { UNKNOWN_ENVIRONMENT_NAME, NULL_ENVIRONMENT_NAME } from "@/types";
 import type { Environment } from "@/types/v1/environment";
 import type { VueClass } from "@/utils";
 import { autoEnvironmentRoute } from "@/utils";
@@ -43,7 +42,6 @@ const props = withDefaults(
     iconClass?: VueClass;
     tooltip?: boolean;
     suffix?: string;
-    prefix?: string;
     showIcon?: boolean;
     textClass?: string;
     keyword?: string;
@@ -67,7 +65,9 @@ const props = withDefaults(
 const router = useRouter();
 
 const isUnknown = computed(
-  () => props.environment.name === UNKNOWN_ENVIRONMENT_NAME
+  () =>
+    props.environment.name === UNKNOWN_ENVIRONMENT_NAME ||
+    props.environment.name === NULL_ENVIRONMENT_NAME
 );
 
 const isLink = computed(() => props.link && !isUnknown.value);

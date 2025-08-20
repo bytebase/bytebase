@@ -506,6 +506,7 @@ export declare const RolloutSchema: GenMessage<Rollout>;
 export declare type Stage = Message<"bytebase.v1.Stage"> & {
   /**
    * Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+   * Use "-" for {stage} when the stage has no environment or deleted environment.
    *
    * @generated from field: string name = 1;
    */
@@ -514,6 +515,7 @@ export declare type Stage = Message<"bytebase.v1.Stage"> & {
   /**
    * id is the environment id of the stage.
    * e.g. "prod".
+   * Use "-" when the stage has no environment or deleted environment.
    *
    * @generated from field: string id = 3;
    */
@@ -521,7 +523,7 @@ export declare type Stage = Message<"bytebase.v1.Stage"> & {
 
   /**
    * environment is the environment of the stage.
-   * Format: environments/{environment}.
+   * Format: environments/{environment} for valid environments, or "environments/-" for stages without environment or with deleted environments.
    *
    * @generated from field: string environment = 4;
    */

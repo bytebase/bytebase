@@ -129,7 +129,11 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	case common.EventTypeStageStatusUpdate:
 		u := e.StageStatusUpdate
 		if e.Issue != nil {
-			link = fmt.Sprintf("%s/projects/%s/issues/%s-%d?stage=%s", setting.ExternalUrl, e.Project.ResourceID, slug.Make(e.Issue.Title), e.Issue.UID, u.StageID)
+			stageID := u.StageID
+			if stageID == "" {
+				stageID = "-" // Use "-" as a placeholder if StageID is not set.
+			}
+			link = fmt.Sprintf("%s/projects/%s/issues/%s-%d?stage=%s", setting.ExternalUrl, e.Project.ResourceID, slug.Make(e.Issue.Title), e.Issue.UID, stageID)
 		}
 		title = "Stage ends"
 		titleZh = "阶段结束"
