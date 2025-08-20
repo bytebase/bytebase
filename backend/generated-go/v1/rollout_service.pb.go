@@ -1402,12 +1402,14 @@ func (x *Rollout) GetIssue() string {
 type Stage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+	// Use "-" for {stage} when the stage has no environment or deleted environment.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// id is the environment id of the stage.
 	// e.g. "prod".
+	// Use "-" when the stage has no environment or deleted environment.
 	Id string `protobuf:"bytes,3,opt,name=id,proto3" json:"id,omitempty"`
 	// environment is the environment of the stage.
-	// Format: environments/{environment}.
+	// Format: environments/{environment} for valid environments, or "environments/-" for stages without environment or with deleted environments.
 	Environment   string  `protobuf:"bytes,4,opt,name=environment,proto3" json:"environment,omitempty"`
 	Tasks         []*Task `protobuf:"bytes,5,rep,name=tasks,proto3" json:"tasks,omitempty"`
 	unknownFields protoimpl.UnknownFields

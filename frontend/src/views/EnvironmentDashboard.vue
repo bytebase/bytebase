@@ -306,7 +306,6 @@ const renderTab = (env: Environment, index: number) => {
     h(EnvironmentV1Name, {
       environment: env,
       link: false,
-      prefix: state.reorder ? "" : `${index + 1}.`,
     }),
   ];
   if (state.reorder) {
@@ -336,6 +335,8 @@ const renderTab = (env: Environment, index: number) => {
         )
       );
     }
+  } else {
+    child.unshift(h("span", { class: "text-opacity-60" }, `${index + 1}.`));
   }
 
   return h("div", { class: "flex items-center space-x-2 py-1" }, child);

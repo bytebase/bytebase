@@ -6,7 +6,11 @@ import { computed } from "vue";
 import { settingServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type { ResourceId } from "@/types";
-import { unknownEnvironment } from "@/types";
+import {
+  unknownEnvironment,
+  nullEnvironment,
+  NULL_ENVIRONMENT_NAME,
+} from "@/types";
 import type {
   EnvironmentSetting,
   EnvironmentSetting_Environment,
@@ -233,6 +237,9 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       return environment;
     },
     getEnvironmentByName(name: string) {
+      if (name === NULL_ENVIRONMENT_NAME) {
+        return nullEnvironment();
+      }
       const id = name.replace(environmentNamePrefix, "");
       return this.environmentMapById.get(id) ?? unknownEnvironment();
     },

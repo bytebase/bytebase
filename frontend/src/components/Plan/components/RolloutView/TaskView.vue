@@ -159,7 +159,7 @@ import TaskStatusActions from "./TaskStatusActions.vue";
 
 const props = defineProps<{
   rolloutId: string;
-  stageId?: string; // Could be undefined for null environment.
+  stageId: string;
   taskId: string;
 }>();
 
@@ -174,10 +174,9 @@ const {
 const sheetStore = useSheetV1Store();
 
 const task = computed(() => {
-  const stageId = props.stageId || "";
   return (
     rollout.value.stages
-      .find((s) => s.id === stageId)
+      .find((s) => s.id === props.stageId)
       ?.tasks.find((t) => t.name.endsWith(`/${props.taskId}`)) || unknownTask()
   );
 });

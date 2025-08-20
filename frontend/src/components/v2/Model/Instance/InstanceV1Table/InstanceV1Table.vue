@@ -119,6 +119,7 @@ const columnList = computed((): InstanceDataTableColumn[] => {
       <EnvironmentV1Name
         environment={instance.environmentEntity}
         link={false}
+        nullEnvironmentPlaceholder="Null"
       />
     ),
   };
