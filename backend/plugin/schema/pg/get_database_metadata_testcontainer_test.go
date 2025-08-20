@@ -191,7 +191,7 @@ CREATE INDEX idx_orders_date_desc ON orders(order_date DESC);
 CREATE INDEX idx_orders_customer_date ON orders(customer_id ASC, order_date DESC);
 
 -- Index with expressions and DESC
-CREATE INDEX idx_orders_year_month ON orders(EXTRACT( 'year' FROM order_date ) DESC, EXTRACT( 'month' FROM order_date ) ASC);
+CREATE INDEX idx_orders_year_month ON orders(EXTRACT( year FROM order_date ) DESC, EXTRACT( month FROM order_date ) ASC);
 
 -- Unique index with DESC
 CREATE UNIQUE INDEX idx_orders_customer_status ON orders(customer_id, status DESC) WHERE status IS NOT NULL;
