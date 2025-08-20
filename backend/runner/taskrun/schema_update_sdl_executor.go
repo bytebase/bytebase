@@ -116,7 +116,7 @@ func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, 
 
 	migrationSQL, err := schema.GenerateMigration(pengine, schemaDiff)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to generate migration SQL, error: %v", err)
+		return "", errors.Wrapf(err, "failed to generate migration SQL")
 	}
 
 	return migrationSQL, nil
