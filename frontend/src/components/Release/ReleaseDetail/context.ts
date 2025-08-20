@@ -4,12 +4,13 @@ import { computed, inject, provide, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 import { useProjectV1Store, useReleaseStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import type { ComposedProject, ComposedRelease } from "@/types";
+import type { ComposedProject } from "@/types";
 import { unknownProject, unknownRelease } from "@/types";
+import type { Release } from "@/types/proto-es/v1/release_service_pb";
 import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
 
 export type ReleaseDetailContext = {
-  release: Ref<ComposedRelease>;
+  release: Ref<Release>;
   project: Ref<ComposedProject>;
   allowApply: Ref<boolean>;
 };
