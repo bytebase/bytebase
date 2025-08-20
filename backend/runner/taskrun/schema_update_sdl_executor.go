@@ -3,7 +3,6 @@ package taskrun
 import (
 	"context"
 
-	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -107,7 +106,7 @@ func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, 
 
 	schemaDiff, err := schema.GetDatabaseSchemaDiff(pengine, dbSchema, targetSchema)
 	if err != nil {
-		return "", connect.NewError(connect.CodeInternal, errors.Errorf("failed to compute schema diff, error: %v", err))
+		return "", errors.Wrap(err, "failed to compute schema diff")
 	}
 
 	// Filter out bbdataarchive schema changes for Postgres
@@ -117,7 +116,7 @@ func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, 
 
 	migrationSQL, err := schema.GenerateMigration(pengine, schemaDiff)
 	if err != nil {
-		return "", connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate migration SQL, error: %v", err))
+		return "", errors.Wrapf(err, "failed to generate migration SQL")
 	}
 
 	return migrationSQL, nil
