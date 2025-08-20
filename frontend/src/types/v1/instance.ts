@@ -1,6 +1,4 @@
 import { create } from "@bufbuild/protobuf";
-import { environmentNamePrefix } from "@/store";
-import type { Environment } from "@/types/v1/environment";
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { Engine, State } from "../proto-es/v1/common_pb";
 import type {
@@ -11,28 +9,18 @@ import {
   InstanceSchema,
   InstanceResourceSchema,
 } from "../proto-es/v1/instance_service_pb";
-import { UNKNOWN_ENVIRONMENT_NAME, unknownEnvironment } from "./environment";
 
 export const EMPTY_INSTANCE_NAME = `instances/${EMPTY_ID}`;
 export const UNKNOWN_INSTANCE_NAME = `instances/${UNKNOWN_ID}`;
 
-export interface ComposedInstance extends Instance {
-  environmentEntity: Environment;
-}
-
-export const unknownInstance = (): ComposedInstance => {
-  const environmentEntity = unknownEnvironment();
+export const unknownInstance = (): Instance => {
   const instance = create(InstanceSchema, {
     name: UNKNOWN_INSTANCE_NAME,
     state: State.ACTIVE,
     title: "<<Unknown instance>>",
     engine: Engine.MYSQL,
-    environment: `${environmentNamePrefix}${environmentEntity.id}`,
   });
-  return {
-    ...instance,
-    environmentEntity,
-  };
+  return instance;
 };
 
 export const unknownInstanceResource = (): InstanceResource => {
@@ -43,7 +31,6 @@ export const unknownInstanceResource = (): InstanceResource => {
     title: "<<Unknown instance>>",
     activation: true,
     dataSources: [],
-    environment: UNKNOWN_ENVIRONMENT_NAME,
   });
 };
 

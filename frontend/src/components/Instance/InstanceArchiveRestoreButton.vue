@@ -60,12 +60,12 @@ import ResourceHardDeleteButton from "@/components/v2/Button/ResourceHardDeleteB
 import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_ARCHIVE } from "@/router/dashboard/workspaceSetting";
 import { pushNotification, useInstanceV1Store } from "@/store";
-import type { ComposedInstance } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
+import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
-  instance: ComposedInstance;
+  instance: Instance;
 }>();
 
 const { t } = useI18n();
