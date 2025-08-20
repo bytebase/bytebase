@@ -162,7 +162,8 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 						Indexes: []*v1pb.IndexMetadata{
 							{
 								Name:         "trd_A_B_c_key",
-								Expressions:  []string{`A`, `B`, "c"},
+								Expressions:  []string{`"A"`, `"B"`, "c"},
+								Descending:   []bool{false, false, false},
 								Type:         "btree",
 								Unique:       true,
 								Definition:   `CREATE UNIQUE INDEX "trd_A_B_c_key" ON schema1.trd USING btree ("A", "B", c);`,

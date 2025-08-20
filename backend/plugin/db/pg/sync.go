@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/blang/semver/v4"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -18,8 +19,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 )
 
 // SyncInstance syncs the instance.
@@ -1219,56 +1218,74 @@ func getTriggers(txn *sql.Tx, extensionDepend map[int]bool) (map[db.TableKey][]*
 	return triggersMap, nil
 }
 
-func getUniqueConstraints(txn *sql.Tx) (map[db.IndexKey]bool, error) {
-	query := `
-	SELECT
-		pn.nspname as schema_name,
-		pg_constraint.conname as constraint_name
-	FROM pg_constraint
-		LEFT JOIN pg_class as pc ON pc.oid = pg_constraint.conrelid
-		LEFT JOIN pg_namespace as pn ON pn.oid = pc.relnamespace
-	WHERE pn.nspname NOT IN (%s) AND pg_constraint.contype = 'u';`
-	rows, err := txn.Query(fmt.Sprintf(query, pgparser.SystemSchemaWhereClause))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	result := make(map[db.IndexKey]bool)
-	for rows.Next() {
-		var schemaName, constraintName string
-		if err := rows.Scan(&schemaName, &constraintName); err != nil {
-			return nil, err
-		}
-		indexKey := db.IndexKey{Schema: schemaName, Index: constraintName}
-		result[indexKey] = true
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
+// getUniqueConstraints is no longer needed - we get constraint info directly from pg_constraint in the main query
 
 var listIndexQuery = `
-SELECT idx.schemaname, idx.tablename, idx.indexname, idx.indexdef, (SELECT 1
-	FROM information_schema.table_constraints
-	WHERE constraint_schema = idx.schemaname
-	AND constraint_name = idx.indexname
-	AND table_schema = idx.schemaname
-	AND table_name = idx.tablename
-	AND constraint_type = 'PRIMARY KEY') AS primary,
-	obj_description(format('%s.%s', quote_ident(idx.schemaname), quote_ident(idx.indexname))::regclass) AS comment` + fmt.Sprintf(`
-FROM pg_indexes AS idx WHERE idx.schemaname NOT IN (%s)
-ORDER BY idx.schemaname, idx.tablename, idx.indexname;`, pgparser.SystemSchemaWhereClause)
+SELECT 
+    n.nspname as schema_name,
+    t.relname as table_name,
+    i.relname as index_name,
+    am.amname as index_method,
+    ix.indisunique as is_unique,
+    ix.indisprimary as is_primary,
+    pg_get_indexdef(i.oid) as index_definition,
+    -- Get array of key expressions
+    (SELECT array_agg(pg_get_indexdef(i.oid, k + 1, true) ORDER BY k)
+     FROM generate_subscripts(ix.indkey, 1) as k
+     WHERE k < ix.indnkeyatts  -- Only key columns, not included columns
+    ) as key_expressions,
+    -- Check if it's a constraint (primary key or unique constraint)
+    CASE 
+        WHEN ix.indisprimary THEN true
+        WHEN EXISTS (
+            SELECT 1 FROM pg_constraint c 
+            WHERE c.conindid = i.oid AND c.contype IN ('u', 'p')
+        ) THEN true
+        ELSE false
+    END as is_constraint,
+    obj_description(i.oid) as comment,
+    -- Extract indoption array for sort order information (ASC/DESC, NULLS FIRST/LAST)
+    ix.indoption as index_options
+FROM pg_class i
+JOIN pg_index ix ON i.oid = ix.indexrelid
+JOIN pg_class t ON ix.indrelid = t.oid
+JOIN pg_namespace n ON t.relnamespace = n.oid
+JOIN pg_am am ON i.relam = am.oid` + fmt.Sprintf(`
+WHERE n.nspname NOT IN (%s)
+ORDER BY n.nspname, t.relname, i.relname;`, pgparser.SystemSchemaWhereClause)
+
+// parseIndexOptions parses PostgreSQL indoption int2vector to extract sort order information
+// indoption is a space-separated string of integers where each integer is a bitmask:
+// - Bit 0: DESC (1 = DESC, 0 = ASC)
+// - Bit 1: NULLS FIRST (1 = NULLS FIRST, 0 = NULLS LAST)
+func parseIndexOptions(optionsStr string, keyCount int) ([]bool, []bool) {
+	descending := make([]bool, keyCount)
+	nullsFirst := make([]bool, keyCount)
+
+	if optionsStr == "" {
+		return descending, nullsFirst
+	}
+
+	// Parse space-separated int2vector
+	optionStrs := strings.Fields(optionsStr)
+
+	for i := 0; i < keyCount && i < len(optionStrs); i++ {
+		option, err := strconv.ParseInt(optionStrs[i], 10, 16)
+		if err != nil {
+			continue // Skip invalid options, keep defaults (false, false)
+		}
+
+		// Bit 0: DESC flag
+		descending[i] = (option & 1) != 0
+		// Bit 1: NULLS FIRST flag
+		nullsFirst[i] = (option & 2) != 0
+	}
+
+	return descending, nullsFirst
+}
 
 // getIndexes gets all indices of a database.
 func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (map[db.TableKey][]*storepb.IndexMetadata, error) {
-	uniqueConstraintMap, err := getUniqueConstraints(txn)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get unique constraints")
-	}
-
 	indexMap := make(map[db.TableKey][]*storepb.IndexMetadata)
 
 	rows, err := txn.Query(listIndexQuery)
@@ -1278,44 +1295,58 @@ func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (
 	defer rows.Close()
 	for rows.Next() {
 		index := &storepb.IndexMetadata{}
-		var schemaName, tableName, statement string
-		var primary sql.NullInt32
+		var schemaName, tableName, indexMethod, indexDefinition string
+		var isUnique, isPrimary, isConstraint bool
+		var keyExpressions pq.StringArray
+		var indexOptions string // indoption as string (int2vector)
 		var comment sql.NullString
-		if err := rows.Scan(&schemaName, &tableName, &index.Name, &statement, &primary, &comment); err != nil {
+
+		if err := rows.Scan(
+			&schemaName,
+			&tableName,
+			&index.Name,
+			&indexMethod,
+			&isUnique,
+			&isPrimary,
+			&indexDefinition,
+			&keyExpressions,
+			&isConstraint,
+			&comment,
+			&indexOptions, // scan indoption string
+		); err != nil {
 			return nil, err
 		}
 
-		nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
-		if err != nil {
-			return nil, err
-		}
-		if len(nodes) != 1 {
-			return nil, errors.Errorf("invalid number of statements %v, expecting one", len(nodes))
-		}
-		node, ok := nodes[0].(*ast.CreateIndexStmt)
-		if !ok {
-			return nil, errors.Errorf("statement %q is not index statement", statement)
-		}
-		index.Definition = statement + ";" // Add semicolon to the end of the statement.
+		// Set index properties from query results
+		index.Type = indexMethod
+		index.Unique = isUnique
+		index.Primary = isPrimary
+		index.IsConstraint = isConstraint
+		index.Expressions = []string(keyExpressions)
 
-		index.Type = getIndexMethodType(statement)
-		index.Unique = node.Index.Unique
-		index.Expressions = node.Index.GetKeyNameList()
-		if primary.Valid && primary.Int32 == 1 {
-			index.Primary = true
-			index.IsConstraint = true
+		// Parse sort order information from indoption string
+		keyCount := len(keyExpressions)
+		if keyCount > 0 {
+			descending, _ := parseIndexOptions(indexOptions, keyCount)
+			index.Descending = descending
+			// Note: nullsFirst would be used when we add the proto field for NULLS handling
 		}
+
+		// Ensure definition ends with semicolon
+		if !strings.HasSuffix(indexDefinition, ";") {
+			index.Definition = indexDefinition + ";"
+		} else {
+			index.Definition = indexDefinition
+		}
+
 		if comment.Valid {
 			index.Comment = comment.String
 		}
+
+		// Handle index inheritance
 		if parentKey, ok := indexInheritanceMap[db.IndexKey{Schema: schemaName, Index: index.Name}]; ok && parentKey != nil {
 			index.ParentIndexSchema = parentKey.Schema
 			index.ParentIndexName = parentKey.Index
-		}
-
-		indexKey := db.IndexKey{Schema: schemaName, Index: index.Name}
-		if uniqueConstraintMap[indexKey] {
-			index.IsConstraint = true
 		}
 
 		key := db.TableKey{Schema: schemaName, Table: tableName}
@@ -1326,15 +1357,6 @@ func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (
 	}
 
 	return indexMap, nil
-}
-
-func getIndexMethodType(stmt string) string {
-	re := regexp.MustCompile(`USING (\w+) `)
-	matches := re.FindStringSubmatch(stmt)
-	if len(matches) == 0 {
-		return ""
-	}
-	return matches[1]
 }
 
 var listFunctionDependencyTablesQuery = `
