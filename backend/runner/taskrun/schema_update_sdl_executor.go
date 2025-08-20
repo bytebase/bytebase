@@ -106,7 +106,7 @@ func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, 
 
 	schemaDiff, err := schema.GetDatabaseSchemaDiff(pengine, dbSchema, targetSchema)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to compute schema diff, error: %v", err)
+		return "", errors.Wrap(err, "failed to compute schema diff")
 	}
 
 	// Filter out bbdataarchive schema changes for Postgres
