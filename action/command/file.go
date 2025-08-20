@@ -15,6 +15,8 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
+const versionFormat = "20060102.150405"
+
 // getReleaseFiles returns the release files and the digest of the release.
 func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 	matches, err := filepath.Glob(w.FilePattern)
@@ -30,8 +32,35 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 	h := sha256.New()
 
 	if w.Declarative {
-		// For declarative files, we need to concat all the file contents.
-		var contents []byte
+		// For declarative files, we need to concat all the file contents if it is rollout.
+		if w.IsRollout {
+			var contents []byte
+			for _, m := range matches {
+				content, err := os.ReadFile(m)
+				if err != nil {
+					return nil, "", err
+				}
+				if _, err := h.Write([]byte(m)); err != nil {
+					return nil, "", errors.Wrapf(err, "failed to write file path")
+				}
+				if _, err := h.Write(content); err != nil {
+					return nil, "", errors.Wrapf(err, "failed to write file content")
+				}
+				contents = append(contents, content...)
+			}
+			return []*v1pb.Release_File{
+				{
+					// use file pattern as the path
+					Path:       w.FilePattern,
+					Type:       v1pb.Release_File_DECLARATIVE,
+					Version:    w.CurrentTime.Format(versionFormat),
+					ChangeType: v1pb.Release_File_DDL,
+					Statement:  contents,
+				},
+			}, hex.EncodeToString(h.Sum(nil)), nil
+		}
+
+		var files []*v1pb.Release_File
 		for _, m := range matches {
 			content, err := os.ReadFile(m)
 			if err != nil {
@@ -43,18 +72,15 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 			if _, err := h.Write(content); err != nil {
 				return nil, "", errors.Wrapf(err, "failed to write file content")
 			}
-			contents = append(contents, content...)
-		}
-		return []*v1pb.Release_File{
-			{
-				// use file pattern as the path
-				Path:       w.FilePattern,
+			files = append(files, &v1pb.Release_File{
+				Path:       m,
 				Type:       v1pb.Release_File_DECLARATIVE,
-				Version:    w.CurrentTime.Format("20060102.150405"),
+				Version:    w.CurrentTime.Format(versionFormat),
 				ChangeType: v1pb.Release_File_DDL,
-				Statement:  contents,
-			},
-		}, hex.EncodeToString(h.Sum(nil)), nil
+				Statement:  content,
+			})
+		}
+		return files, hex.EncodeToString(h.Sum(nil)), nil
 	}
 
 	var files []*v1pb.Release_File

@@ -4859,6 +4859,16 @@ Format: instances/{instance} </p></td>
                   <td><p>If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed. </p></td>
                 </tr>
               
+                <tr>
+                  <td>purge</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, permanently purge the soft-deleted instance and all related resources.
+This operation is irreversible. Following AIP-165, this should only be used for
+administrative cleanup of old soft-deleted instances.
+The instance must already be soft-deleted for this to work. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -21058,7 +21068,7 @@ To supersede `line` and `column` above. </p></td>
               
                 <tr>
                   <td>affected_rows</td>
-                  <td><a href="#int32">int32</a></td>
+                  <td><a href="#int64">int64</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -21824,6 +21834,16 @@ Format: projects/{project} </p></td>
 Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
 Open issues will remain open but associated with the deleted project.
 If set to false, the operation will fail if the project has databases or open issues. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>purge</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, permanently purge the soft-deleted project and all related resources.
+This operation is irreversible. Following AIP-165, this should only be used for
+administrative cleanup of old soft-deleted projects.
+The project must already be soft-deleted for this to work. </p></td>
                 </tr>
               
             </tbody>
@@ -23271,7 +23291,7 @@ Format: instances/{instance}/databases/{database} </p></td>
               
                 <tr>
                   <td>affected_rows</td>
-                  <td><a href="#int32">int32</a></td>
+                  <td><a href="#int64">int64</a></td>
                   <td></td>
                   <td><p>The count of affected rows of the statement on the target database. </p></td>
                 </tr>
@@ -23430,6 +23450,14 @@ Editor Admin mode. The exported data is not masked. </p></td>
 It is used for querying admin data source even if the instance has
 read-only data sources. Or it can be used to query a specific read-only
 data source. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schema</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The default schema to search objects. Equals to the current schema in
+Oracle and search path in Postgres. </p></td>
                 </tr>
               
             </tbody>
@@ -24832,7 +24860,7 @@ instances/{instance}/databases/{database} </p></td>
               
                 <tr>
                   <td>affected_rows</td>
-                  <td><a href="#int32">int32</a></td>
+                  <td><a href="#int64">int64</a></td>
                   <td></td>
                   <td><p>The affected rows of the check. </p></td>
                 </tr>
@@ -24885,7 +24913,7 @@ Should be a database. Format: instances/{instance}/databases/{database} </p></td
               
                 <tr>
                   <td>affected_rows</td>
-                  <td><a href="#int32">int32</a></td>
+                  <td><a href="#int64">int64</a></td>
                   <td></td>
                   <td><p>The count of affected rows of the statement on the target. </p></td>
                 </tr>
@@ -28085,7 +28113,8 @@ Format: projects/{project}/issues/{issue} </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage} </p></td>
+                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+Use &#34;-&#34; for {stage} when the stage has no environment or deleted environment. </p></td>
                 </tr>
               
                 <tr>
@@ -28093,7 +28122,8 @@ Format: projects/{project}/issues/{issue} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>id is the environment id of the stage.
-e.g. &#34;prod&#34;. </p></td>
+e.g. &#34;prod&#34;.
+Use &#34;-&#34; when the stage has no environment or deleted environment. </p></td>
                 </tr>
               
                 <tr>
@@ -28101,7 +28131,7 @@ e.g. &#34;prod&#34;. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>environment is the environment of the stage.
-Format: environments/{environment}. </p></td>
+Format: environments/{environment} for valid environments, or &#34;environments/-&#34; for stages without environment or with deleted environments. </p></td>
                 </tr>
               
                 <tr>
@@ -28922,14 +28952,14 @@ The indexes of the executed commands. </p></td>
               
                 <tr>
                   <td>affected_rows</td>
-                  <td><a href="#int32">int32</a></td>
+                  <td><a href="#int64">int64</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
               
                 <tr>
                   <td>all_affected_rows</td>
-                  <td><a href="#int32">int32</a></td>
+                  <td><a href="#int64">int64</a></td>
                   <td>repeated</td>
                   <td><p>`all_affected_rows` is the affected rows of each command.
 `all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. </p></td>

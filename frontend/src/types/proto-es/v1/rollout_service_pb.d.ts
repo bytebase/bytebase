@@ -506,6 +506,7 @@ export declare const RolloutSchema: GenMessage<Rollout>;
 export declare type Stage = Message<"bytebase.v1.Stage"> & {
   /**
    * Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+   * Use "-" for {stage} when the stage has no environment or deleted environment.
    *
    * @generated from field: string name = 1;
    */
@@ -514,6 +515,7 @@ export declare type Stage = Message<"bytebase.v1.Stage"> & {
   /**
    * id is the environment id of the stage.
    * e.g. "prod".
+   * Use "-" when the stage has no environment or deleted environment.
    *
    * @generated from field: string id = 3;
    */
@@ -521,7 +523,7 @@ export declare type Stage = Message<"bytebase.v1.Stage"> & {
 
   /**
    * environment is the environment of the stage.
-   * Format: environments/{environment}.
+   * Format: environments/{environment} for valid environments, or "environments/-" for stages without environment or with deleted environments.
    *
    * @generated from field: string environment = 4;
    */
@@ -1378,17 +1380,17 @@ export declare type TaskRunLogEntry_CommandExecute_CommandResponse = Message<"by
   error: string;
 
   /**
-   * @generated from field: int32 affected_rows = 3;
+   * @generated from field: int64 affected_rows = 3;
    */
-  affectedRows: number;
+  affectedRows: bigint;
 
   /**
    * `all_affected_rows` is the affected rows of each command.
    * `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
    *
-   * @generated from field: repeated int32 all_affected_rows = 4;
+   * @generated from field: repeated int64 all_affected_rows = 4;
    */
-  allAffectedRows: number[];
+  allAffectedRows: bigint[];
 };
 
 /**

@@ -239,7 +239,14 @@
     "submit": "提交",
     "start": "开始",
     "draft": "草稿",
-    "import": "导入"
+    "import": "导入",
+    "hard-delete": {
+      "self": "彻底删除",
+      "title": "彻底删除 {name}？",
+      "description": "此资源和其他相关资源将被硬删除。@:common.cannot-undo-this-action",
+      "double-comfirm": "要确认删除，请输入：{name}",
+      "notification": "成功删除资源“{name}”。"
+    }
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -1118,6 +1125,10 @@
         "database-change": "数据库变更",
         "export-data": "导出数据",
         "unknown": "未知"
+      },
+      "delete-change": {
+        "title": "删除变更项",
+        "content": "您确定要删除该变更项吗？"
       }
     },
     "targets": {
@@ -1570,7 +1581,6 @@
     "table-detail": "表详情",
     "batch-action-not-support-alter-schema": "一些数据库不支持修改表结构",
     "batch-action-permission-denied": "没有权限对数据库{action}",
-    "batch-action-database-not-have-environment": "存在未与环境绑定的数据库",
     "batch-action-disabled": "无法对来自不同项目的数据库{action}",
     "batch-action-disabled-for-unassigned": "无法对未分配的数据库{action}",
     "successfully-transferred-databases": "数据库转移完成",

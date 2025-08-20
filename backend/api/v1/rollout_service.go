@@ -642,7 +642,8 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
-		taskEnvironments[stageID] = append(taskEnvironments[stageID], taskID)
+		environment := formatEnvironmentFromStageID(stageID)
+		taskEnvironments[environment] = append(taskEnvironments[environment], taskID)
 		taskIDsToRunMap[taskID] = true
 	}
 	if len(taskEnvironments) > 1 {
@@ -896,7 +897,8 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 
-	ok, err = s.canUserCancelEnvironmentTaskRun(ctx, user, project, issueN, stageID, rollout.CreatorUID)
+	environment := formatEnvironmentFromStageID(stageID)
+	ok, err = s.canUserCancelEnvironmentTaskRun(ctx, user, project, issueN, environment, rollout.CreatorUID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if the user can run tasks, error: %v", err))
 	}
@@ -1061,30 +1063,13 @@ func getPlanEnvironmentSnapshots(ctx context.Context, s *store.Store, deployment
 	return snapshotEnvironments, environmentIndex, nil
 }
 
-// filterTasksByEnvironments filters tasks to only include those in the given environment index.
-func filterTasksByEnvironments(tasks []*store.TaskMessage, environmentIndex map[string]int) []*store.TaskMessage {
-	filteredTasks := []*store.TaskMessage{}
-	for _, task := range tasks {
-		if _, ok := environmentIndex[task.Environment]; ok {
-			filteredTasks = append(filteredTasks, task)
-		}
-	}
-	return filteredTasks
-}
-
 // GetPipelineCreate gets a pipeline create message from a plan.
 func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, specs []*storepb.PlanConfig_Spec, deployment *storepb.PlanConfig_Deployment /* nullable */, project *store.ProjectMessage) (*store.PipelineMessage, error) {
 	// Step 1 - transform database group specs.
 	// Others are untouched.
 	transformedSpecs := applyDatabaseGroupSpecTransformations(specs, deployment)
 
-	// Step 2 - list snapshot environments.
-	_, environmentIndex, err := getPlanEnvironmentSnapshots(ctx, s, deployment)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get plan environment snapshots")
-	}
-
-	// Step 3 - convert all task creates.
+	// Step 2 - convert all task creates.
 	var taskCreates []*store.TaskMessage
 	for _, spec := range transformedSpecs {
 		tcs, err := getTaskCreatesFromSpec(ctx, s, sheetManager, dbFactory, spec, project)
@@ -1094,12 +1079,9 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 		taskCreates = append(taskCreates, tcs...)
 	}
 
-	// Filter out tasks not in deployment environments
-	filteredTasks := filterTasksByEnvironments(taskCreates, environmentIndex)
-
 	return &store.PipelineMessage{
 		ProjectID: project.ResourceID,
-		Tasks:     filteredTasks,
+		Tasks:     taskCreates,
 	}, nil
 }
 

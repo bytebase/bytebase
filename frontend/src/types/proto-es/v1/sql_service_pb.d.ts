@@ -859,6 +859,14 @@ export declare type ExportRequest = Message<"bytebase.v1.ExportRequest"> & {
    * @generated from field: string data_source_id = 8;
    */
   dataSourceId: string;
+
+  /**
+   * The default schema to search objects. Equals to the current schema in
+   * Oracle and search path in Postgres.
+   *
+   * @generated from field: optional string schema = 9;
+   */
+  schema?: string;
 };
 
 /**
@@ -1019,9 +1027,9 @@ export declare type CheckResponse = Message<"bytebase.v1.CheckResponse"> & {
   /**
    * The count of affected rows of the statement on the target database.
    *
-   * @generated from field: int32 affected_rows = 2;
+   * @generated from field: int64 affected_rows = 2;
    */
-  affectedRows: number;
+  affectedRows: bigint;
 };
 
 /**

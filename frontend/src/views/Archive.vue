@@ -39,8 +39,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter, useRoute } from "vue-router";
 import {
   SearchBox,
   TabFilter,
@@ -50,6 +51,10 @@ import {
 import { State } from "@/types/proto-es/v1/common_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
+const hashList = ["PROJECT", "INSTANCE"] as const;
+export type TabHash = (typeof hashList)[number];
+const isTabHash = (x: any): x is TabHash => hashList.includes(x);
+
 type LocalTabType = "PROJECT" | "INSTANCE";
 
 interface LocalState {
@@ -57,11 +62,35 @@ interface LocalState {
   searchText: string;
 }
 
+const router = useRouter();
+const route = useRoute();
 const { t } = useI18n();
 const state = reactive<LocalState>({
   selectedTab: "PROJECT",
   searchText: "",
 });
+
+watch(
+  () => route.hash,
+  (hash) => {
+    const targetHash = hash.replace(/^#?/g, "") as TabHash;
+    if (isTabHash(targetHash)) {
+      state.selectedTab = targetHash;
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => state.selectedTab,
+  (tab) => {
+    router.replace({
+      hash: `#${tab}`,
+      query: route.query,
+    });
+  },
+  { immediate: true }
+);
 
 const tabItemList = computed(() => {
   const list: { value: LocalTabType; label: string }[] = [

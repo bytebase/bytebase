@@ -1499,6 +1499,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the instance to delete. Format: instances/{instance} |
 | force | [bool](#bool) |  | If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed. |
+| purge | [bool](#bool) |  | If set to true, permanently purge the soft-deleted instance and all related resources. This operation is irreversible. Following AIP-165, this should only be used for administrative cleanup of old soft-deleted instances. The instance must already be soft-deleted for this to work. |
 
 
 
@@ -7528,7 +7529,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
-| affected_rows | [int32](#int32) |  |  |
+| affected_rows | [int64](#int64) |  |  |
 | changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
 
 
@@ -7830,6 +7831,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the project to delete. Format: projects/{project} |
 | force | [bool](#bool) |  | If set to true, any databases from this project will be moved to default project. Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project. Open issues will remain open but associated with the deleted project. If set to false, the operation will fail if the project has databases or open issues. |
+| purge | [bool](#bool) |  | If set to true, permanently purge the soft-deleted project and all related resources. This operation is irreversible. Following AIP-165, this should only be used for administrative cleanup of old soft-deleted projects. The project must already be soft-deleted for this to work. |
 
 
 
@@ -8358,7 +8360,7 @@ ISSUE_CREATE represents creating an issue. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | advices | [Advice](#bytebase-v1-Advice) | repeated |  |
-| affected_rows | [int32](#int32) |  | The count of affected rows of the statement on the target database. |
+| affected_rows | [int64](#int64) |  | The count of affected rows of the statement on the target database. |
 
 
 
@@ -8415,6 +8417,7 @@ ISSUE_CREATE represents creating an issue. |
 | admin | [bool](#bool) |  | The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode. The exported data is not masked. |
 | password | [string](#string) |  | The zip password provide by users. |
 | data_source_id | [string](#string) |  | The id of data source. It is used for querying admin data source even if the instance has read-only data sources. Or it can be used to query a specific read-only data source. |
+| schema | [string](#string) | optional | The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. |
 
 
 
@@ -8881,7 +8884,7 @@ For example: project == &#34;projects/{project}&#34; database == &#34;instances/
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | results | [CheckReleaseResponse.CheckResult](#bytebase-v1-CheckReleaseResponse-CheckResult) | repeated |  |
-| affected_rows | [int32](#int32) |  | The affected rows of the check. |
+| affected_rows | [int64](#int64) |  | The affected rows of the check. |
 | risk_level | [CheckReleaseResponse.RiskLevel](#bytebase-v1-CheckReleaseResponse-RiskLevel) |  | The aggregated risk level of the check. |
 
 
@@ -8900,7 +8903,7 @@ For example: project == &#34;projects/{project}&#34; database == &#34;instances/
 | file | [string](#string) |  | The file path that is being checked. |
 | target | [string](#string) |  | The target that the check is performed on. Should be a database. Format: instances/{instance}/databases/{database} |
 | advices | [Advice](#bytebase-v1-Advice) | repeated | The list of advice for the file and the target. |
-| affected_rows | [int32](#int32) |  | The count of affected rows of the statement on the target. |
+| affected_rows | [int64](#int64) |  | The count of affected rows of the statement on the target. |
 | risk_level | [CheckReleaseResponse.RiskLevel](#bytebase-v1-CheckReleaseResponse-RiskLevel) |  | The risk level of the statement on the target. |
 
 
@@ -10174,9 +10177,9 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
-| id | [string](#string) |  | id is the environment id of the stage. e.g. &#34;prod&#34;. |
-| environment | [string](#string) |  | environment is the environment of the stage. Format: environments/{environment}. |
+| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage} Use &#34;-&#34; for {stage} when the stage has no environment or deleted environment. |
+| id | [string](#string) |  | id is the environment id of the stage. e.g. &#34;prod&#34;. Use &#34;-&#34; when the stage has no environment or deleted environment. |
+| environment | [string](#string) |  | environment is the environment of the stage. Format: environments/{environment} for valid environments, or &#34;environments/-&#34; for stages without environment or with deleted environments. |
 | tasks | [Task](#bytebase-v1-Task) | repeated |  |
 
 
@@ -10477,8 +10480,8 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | ----- | ---- | ----- | ----------- |
 | log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | error | [string](#string) |  |  |
-| affected_rows | [int32](#int32) |  |  |
-| all_affected_rows | [int32](#int32) | repeated | `all_affected_rows` is the affected rows of each command. `all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. |
+| affected_rows | [int64](#int64) |  |  |
+| all_affected_rows | [int64](#int64) | repeated | `all_affected_rows` is the affected rows of each command. `all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. |
 
 
 

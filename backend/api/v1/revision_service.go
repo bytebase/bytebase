@@ -153,7 +153,7 @@ func (s *RevisionService) CreateRevision(
 		}
 		if taskRun.ProjectID != projectID ||
 			taskRun.PipelineUID != rolloutID ||
-			taskRun.Environment != stageID ||
+			taskRun.Environment != formatEnvironmentFromStageID(stageID) ||
 			taskRun.TaskUID != taskID {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("taskRun %q not found", request.Revision.TaskRun))
 		}

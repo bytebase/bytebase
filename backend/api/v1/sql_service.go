@@ -870,6 +870,9 @@ func DoExport(
 		OperatorEmail:        user.Email,
 		MaximumSQLResultSize: queryRestriction.MaximumResultSize,
 	}
+	if request.Schema != nil {
+		queryContext.Schema = *request.Schema
+	}
 	results, spans, duration, queryErr := queryRetry(
 		ctx,
 		stores,
@@ -1769,10 +1772,6 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid target metadata"))
 	}
 	sanitizeCommentForSchemaMetadata(storeTargetMetadata, model.NewDatabaseConfig(targetConfig), request.ClassificationFromConfig)
-
-	if err := checkDatabaseMetadataColumnType(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid target metadata"))
-	}
 
 	// Convert metadata to model.DatabaseSchema for diffing
 	isObjectCaseSensitive := true

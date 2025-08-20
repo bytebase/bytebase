@@ -55,13 +55,16 @@ import { NButton, NScrollbar, NTooltip } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { useCurrentProjectV1 } from "@/store";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import type {
   Task,
   Rollout,
   Stage,
 } from "@/types/proto-es/v1/rollout_service_pb";
+import { usePlanContextWithRollout } from "../../logic";
 import TaskRolloutActionPanel from "./TaskRolloutActionPanel.vue";
+import { useTaskActionPermissions } from "./taskPermissions";
 
 interface TaskAction {
   icon: VNode;
@@ -80,7 +83,6 @@ const props = defineProps<{
   tasks: Task[];
   rollout: Rollout;
   stage: Stage;
-  readonly?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -94,6 +96,9 @@ const state = reactive<LocalState>({
 });
 
 const { t } = useI18n();
+const { project } = useCurrentProjectV1();
+const { readonly, issue } = usePlanContextWithRollout();
+const { canPerformTaskAction } = useTaskActionPermissions();
 
 // Action target for the panel
 const actionTarget = computed(() => {
@@ -144,9 +149,25 @@ const hasSkippableTasks = computed(() => {
   );
 });
 
+// Check if user has permission to perform task actions
+const canPerformTaskActions = computed(() => {
+  if (readonly.value) {
+    return false;
+  }
+  return canPerformTaskAction(
+    props.tasks,
+    props.rollout,
+    project.value,
+    issue.value
+  );
+});
+
 const getDisabledTooltip = (_action: string) => {
   if (props.tasks.length === 0) {
     return t("task.no-tasks-selected");
+  }
+  if (!canPerformTaskActions.value) {
+    return t("task.no-permission");
   }
   return "";
 };
@@ -158,13 +179,19 @@ const actions = computed((): TaskAction[] => {
   resp.push({
     icon: h(PlayIcon),
     text: t("common.run"),
-    disabled: props.tasks.length === 0 || !hasRunnableTasks.value,
+    disabled:
+      props.tasks.length === 0 ||
+      !hasRunnableTasks.value ||
+      !canPerformTaskActions.value,
     click: () => {
       state.selectedAction = "RUN";
       state.showActionPanel = true;
     },
     tooltip: (action) => {
       if (props.tasks.length === 0) {
+        return getDisabledTooltip(action);
+      }
+      if (!canPerformTaskActions.value) {
         return getDisabledTooltip(action);
       }
       if (!hasRunnableTasks.value) {
@@ -178,13 +205,19 @@ const actions = computed((): TaskAction[] => {
   resp.push({
     icon: h(SkipForwardIcon),
     text: t("common.skip"),
-    disabled: props.tasks.length === 0 || !hasSkippableTasks.value,
+    disabled:
+      props.tasks.length === 0 ||
+      !hasSkippableTasks.value ||
+      !canPerformTaskActions.value,
     click: () => {
       state.selectedAction = "SKIP";
       state.showActionPanel = true;
     },
     tooltip: (action) => {
       if (props.tasks.length === 0) {
+        return getDisabledTooltip(action);
+      }
+      if (!canPerformTaskActions.value) {
         return getDisabledTooltip(action);
       }
       if (!hasSkippableTasks.value) {
@@ -198,13 +231,19 @@ const actions = computed((): TaskAction[] => {
   resp.push({
     icon: h(XIcon),
     text: t("common.cancel"),
-    disabled: props.tasks.length === 0 || !hasCancellableTasks.value,
+    disabled:
+      props.tasks.length === 0 ||
+      !hasCancellableTasks.value ||
+      !canPerformTaskActions.value,
     click: () => {
       state.selectedAction = "CANCEL";
       state.showActionPanel = true;
     },
     tooltip: (action) => {
       if (props.tasks.length === 0) {
+        return getDisabledTooltip(action);
+      }
+      if (!canPerformTaskActions.value) {
         return getDisabledTooltip(action);
       }
       if (!hasCancellableTasks.value) {

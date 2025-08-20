@@ -1402,12 +1402,14 @@ func (x *Rollout) GetIssue() string {
 type Stage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+	// Use "-" for {stage} when the stage has no environment or deleted environment.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// id is the environment id of the stage.
 	// e.g. "prod".
+	// Use "-" when the stage has no environment or deleted environment.
 	Id string `protobuf:"bytes,3,opt,name=id,proto3" json:"id,omitempty"`
 	// environment is the environment of the stage.
-	// Format: environments/{environment}.
+	// Format: environments/{environment} for valid environments, or "environments/-" for stages without environment or with deleted environments.
 	Environment   string  `protobuf:"bytes,4,opt,name=environment,proto3" json:"environment,omitempty"`
 	Tasks         []*Task `protobuf:"bytes,5,rep,name=tasks,proto3" json:"tasks,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -3342,10 +3344,10 @@ type TaskRunLogEntry_CommandExecute_CommandResponse struct {
 	state        protoimpl.MessageState `protogen:"open.v1"`
 	LogTime      *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=log_time,json=logTime,proto3" json:"log_time,omitempty"`
 	Error        string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
-	AffectedRows int32                  `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
+	AffectedRows int64                  `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
 	// `all_affected_rows` is the affected rows of each command.
 	// `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
-	AllAffectedRows []int32 `protobuf:"varint,4,rep,packed,name=all_affected_rows,json=allAffectedRows,proto3" json:"all_affected_rows,omitempty"`
+	AllAffectedRows []int64 `protobuf:"varint,4,rep,packed,name=all_affected_rows,json=allAffectedRows,proto3" json:"all_affected_rows,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -3394,14 +3396,14 @@ func (x *TaskRunLogEntry_CommandExecute_CommandResponse) GetError() string {
 	return ""
 }
 
-func (x *TaskRunLogEntry_CommandExecute_CommandResponse) GetAffectedRows() int32 {
+func (x *TaskRunLogEntry_CommandExecute_CommandResponse) GetAffectedRows() int64 {
 	if x != nil {
 		return x.AffectedRows
 	}
 	return 0
 }
 
-func (x *TaskRunLogEntry_CommandExecute_CommandResponse) GetAllAffectedRows() []int32 {
+func (x *TaskRunLogEntry_CommandExecute_CommandResponse) GetAllAffectedRows() []int64 {
 	if x != nil {
 		return x.AllAffectedRows
 	}
@@ -3845,8 +3847,8 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x0fCommandResponse\x125\n" +
 	"\blog_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\alogTime\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x12#\n" +
-	"\raffected_rows\x18\x03 \x01(\x05R\faffectedRows\x12*\n" +
-	"\x11all_affected_rows\x18\x04 \x03(\x05R\x0fallAffectedRows\x1a\x96\x01\n" +
+	"\raffected_rows\x18\x03 \x01(\x03R\faffectedRows\x12*\n" +
+	"\x11all_affected_rows\x18\x04 \x03(\x03R\x0fallAffectedRows\x1a\x96\x01\n" +
 	"\fDatabaseSync\x129\n" +
 	"\n" +
 	"start_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x125\n" +

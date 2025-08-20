@@ -1,11 +1,7 @@
 import { cloneDeep, first } from "lodash-es";
 import { t } from "@/plugins/i18n";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
-import {
-  emptyDataSource,
-  UNKNOWN_ENVIRONMENT_NAME,
-  UNKNOWN_INSTANCE_NAME,
-} from "@/types";
+import { emptyDataSource, UNKNOWN_INSTANCE_NAME } from "@/types";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import type {
   DataSource,
@@ -73,7 +69,7 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
     title: instance?.title ?? t("instance.new-instance"),
     engine: instance?.engine ?? Engine.MYSQL,
     externalLink: instance?.externalLink ?? "",
-    environment: instance?.environment ?? UNKNOWN_ENVIRONMENT_NAME,
+    environment: instance?.environment,
     activation: instance
       ? instance.activation
       : subscriptionStore.currentPlan !== PlanType.FREE &&

@@ -7,7 +7,11 @@
       :size="props.size || 'small'"
     />
     <span v-if="showEnvironment" class="text-gray-400 mr-1">
-      <EnvironmentV1Name :link="false" :environment="environment" />
+      <EnvironmentV1Name
+        :link="false"
+        :environment="environment"
+        :null-environment-placeholder="'Null'"
+      />
     </span>
     <span class="truncate text-gray-600">
       {{ instanceDisplayName }}

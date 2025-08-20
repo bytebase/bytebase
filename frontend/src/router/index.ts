@@ -23,7 +23,6 @@ import authRoutes, {
   AUTH_OIDC_CALLBACK_MODULE,
   AUTH_PASSWORD_RESET_MODULE,
   AUTH_SIGNIN_MODULE,
-  AUTH_SIGNUP_MODULE,
 } from "./auth";
 import dashboardRoutes from "./dashboard";
 import {
@@ -171,23 +170,6 @@ router.beforeEach((to, from, next) => {
       query,
       replace: true,
     });
-    return;
-  }
-
-  // === POST-AUTH LOGIC ===
-
-  // Handle redirect after successful authentication
-  if (
-    (from.name === AUTH_SIGNIN_MODULE || from.name === AUTH_SIGNUP_MODULE) &&
-    typeof from.query.redirect === "string"
-  ) {
-    const redirectUrl = from.query.redirect;
-    // Validate redirect URL to prevent external redirects and XSS
-    if (redirectUrl.startsWith("/") && !redirectUrl.startsWith("//")) {
-      next(redirectUrl);
-    } else {
-      next("/");
-    }
     return;
   }
 

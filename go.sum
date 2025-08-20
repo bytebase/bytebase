@@ -821,8 +821,8 @@ github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0 h1:bJ8NSf2K+
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0/go.mod h1:BEWMfiZtqshdmulKJcIsWb45MUaEvDO4CROcgi8dfFg=
 github.com/bytebase/mysql-parser v0.0.0-20241224071214-cb9fd84811dd h1:nKWY30Pq9y/z0+MScRm90KU1U3i0U3j0KGBLN0JL/3M=
 github.com/bytebase/mysql-parser v0.0.0-20241224071214-cb9fd84811dd/go.mod h1:n22yoTeLcphIYQlV6nbufQbHMxNceOjeGDOrpaRIhiY=
-github.com/bytebase/parser v0.0.0-20250812034117-7cd3429471fb h1:haNlfvlFkGH9hab6HT+M0lZJn24t7q6eMLtx4ULzavA=
-github.com/bytebase/parser v0.0.0-20250812034117-7cd3429471fb/go.mod h1:m18BLl2+PxBG2b2SlwEt1LGVEAhCV7r0S+8pKE0BQVo=
+github.com/bytebase/parser v0.0.0-20250818234549-4207fbe3500d h1:fa+L7wo/rsnSsgS/lh6afhCvH/fi6Sk3pDFn3tndh/8=
+github.com/bytebase/parser v0.0.0-20250818234549-4207fbe3500d/go.mod h1:m18BLl2+PxBG2b2SlwEt1LGVEAhCV7r0S+8pKE0BQVo=
 github.com/bytebase/partiql-parser v0.0.0-20240531101102-1962ff456f2c h1:TMANvCCN7gpqXHrzRWeWRkPTXmFvTSEyXTZ1Fz20EvM=
 github.com/bytebase/partiql-parser v0.0.0-20240531101102-1962ff456f2c/go.mod h1:hNMKtZBMCbNyhUFR47Ct9mqmpzZVtHgC0OsOIQhR27k=
 github.com/bytebase/pg_query_go2/v6 v6.0.0-20250403034815-22c5b71007ed h1:5DEnBIrnxAxCTbh/tbjmg/9uw9/auyvKu8s0M+ePTOs=

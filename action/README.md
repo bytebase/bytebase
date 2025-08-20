@@ -10,7 +10,7 @@ This action provides several subcommands to interact with Bytebase.
 
 Usage: `bytebase-action check [global flags]`
 
-Checks the SQL migration files matching the `--file-pattern`. This is typically used for linting or pre-deployment validation within a CI pipeline. It utilizes global flags like `--url`, `--service-account`, `--service-account-secret`, and `--file-pattern`.
+Checks the SQL files matching the `--file-pattern`. This is typically used for linting or pre-deployment validation within a CI pipeline. It utilizes global flags like `--url`, `--service-account`, `--service-account-secret`, `--file-pattern`, and `--declarative`.
 
 ### `rollout`
 
@@ -18,7 +18,7 @@ Usage: `bytebase-action rollout [global flags] [rollout flags]`
 
 Creates a new release and initiates a rollout issue in the specified Bytebase `--project`.
 If a `--plan` is specified, it rolls out that specific plan.
-Otherwise, it applies the SQL migration files matching the `--file-pattern` to the defined `--targets`.
+Otherwise, it applies the SQL files matching the `--file-pattern` to the defined `--targets`.
 The rollout will proceed up to the specified `--target-stage`.
 It uses global flags for connection and file discovery (unless a plan is specified), and specific flags like `--release-title` to name the created resources in Bytebase.
 
@@ -55,14 +55,28 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
         -   Database Group: `projects/{project}/databaseGroups/{databaseGroup}`
     -   Default: `instances/test-sample-instance/databases/hr_test,instances/prod-sample-instance/databases/hr_prod`
 
--   **`--file-pattern`**: A glob pattern used to find SQL migration files.
+-   **`--file-pattern`**: A glob pattern used to find SQL files.
     -   Used by subcommands like `check` and `rollout` (when `--plan` is not specified) to locate relevant files.
     -   Default: `""` (empty string)
-    -   Note: Migration filenames should conform to a versioning format. The version part of the filename must start with an optional 'v' or 'V', followed by one or more numbers, with subsequent numbers separated by a dot. For example: v1.2.3_description.sql, 1.0_initial_schema.sql, V2_add_users_table.sql. The version is extracted based on the pattern ^[vV]?(\d+(\.\d+)*)
-    -   **File Type Detection**: Files are automatically categorized based on their base filename suffix:
+    -   **Versioned Mode** (when `--declarative` is false):
+        -   Migration filenames must conform to a versioning format
+        -   The version part of the filename must start with an optional 'v' or 'V', followed by one or more numbers, with subsequent numbers separated by a dot
+        -   Examples: `v1.2.3_description.sql`, `1.0_initial_schema.sql`, `V2_add_users_table.sql`
+        -   The version is extracted based on the pattern `^[vV]?(\d+(\.\d+)*)`
+    -   **Declarative Mode** (when `--declarative` is true):
+        -   Filenames do not need to follow any versioning format
+        -   Files can be named for clarity and organization (e.g., `tables.sql`, `views.sql`, `indexes.sql`)
+        -   Version is automatically generated from the current timestamp
+    -   **File Type Detection** (applies to versioned mode only):
         -   **DDL (default)**: Standard schema change files (e.g., `v1.0_create_table.sql`)
         -   **DML**: Data manipulation files with base filename ending with `dml` (e.g., `v1.0_insert_data_dml.sql`)
-        -   **DDL Ghost**: Schema changes using gh-ost with base filename ending with `ghost` (e.g., `v1.0_alter_table_ghost.sql`).
+        -   **DDL Ghost**: Schema changes using gh-ost with base filename ending with `ghost` (e.g., `v1.0_alter_table_ghost.sql`)
+
+-   **`--declarative`**: Use declarative mode for SQL schema management instead of versioned migrations.
+    -   Treats SQL files as desired state definitions rather than incremental changes
+    -   Allows organizing schema across multiple files (e.g., `tables.sql`, `views.sql`)
+    -   Versions are auto-generated using timestamp format `YYYYMMDD.HHMMSS`
+    -   Default: `false`
 
 ### `check` Command Specific Flags
 

@@ -124,11 +124,11 @@ import {
   useIssueCommentStore,
   useIssueV1Store,
   useCurrentProjectV1,
-  type ComposedIssueComment,
   extractUserId,
 } from "@/store";
 import { isValidProjectName } from "@/types";
 import type { ComposedIssue } from "@/types";
+import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import { ListIssueCommentsRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { useIssueContext } from "../../logic";
@@ -142,7 +142,7 @@ import IssueCreatedComment from "./IssueCommentView/IssueCreatedComment.vue";
 
 interface LocalState {
   editCommentMode: boolean;
-  activeComment?: ComposedIssueComment;
+  activeComment?: IssueComment;
   editComment: string;
   newComment: string;
 }
@@ -228,7 +228,7 @@ const doCreateComment = async (comment: string) => {
   await prepareIssueComments();
 };
 
-const allowEditIssueComment = (comment: ComposedIssueComment) => {
+const allowEditIssueComment = (comment: IssueComment) => {
   if (!isUserEditableComment(comment)) {
     return false;
   }
@@ -238,7 +238,7 @@ const allowEditIssueComment = (comment: ComposedIssueComment) => {
   return hasProjectPermissionV2(project.value, "bb.issueComments.update");
 };
 
-const onUpdateComment = (issueComment: ComposedIssueComment) => {
+const onUpdateComment = (issueComment: IssueComment) => {
   state.activeComment = issueComment;
   state.editCommentMode = true;
   state.editComment = issueComment.comment;

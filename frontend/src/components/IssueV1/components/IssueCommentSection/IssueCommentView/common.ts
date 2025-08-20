@@ -1,21 +1,24 @@
 import { isEqual } from "lodash-es";
-import { IssueCommentType, type ComposedIssueComment } from "@/store";
+import { IssueCommentType, getIssueCommentType } from "@/store";
+import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import { isNullOrUndefined } from "@/utils";
 
 export type DistinctIssueComment = {
-  comment: ComposedIssueComment;
-  similar: ComposedIssueComment[];
+  comment: IssueComment;
+  similar: IssueComment[];
 };
 
 export const isSimilarIssueComment = (
-  a: ComposedIssueComment,
-  b: ComposedIssueComment
+  a: IssueComment,
+  b: IssueComment
 ): boolean => {
-  if (a.type !== b.type || a.creator !== b.creator) {
+  const aType = getIssueCommentType(a);
+  const bType = getIssueCommentType(b);
+  if (aType !== bType || a.creator !== b.creator) {
     return false;
   }
 
-  if (a.type === IssueCommentType.TASK_UPDATE) {
+  if (aType === IssueCommentType.TASK_UPDATE) {
     const fromTaskUpdate =
       a.event?.case === "taskUpdate" ? a.event.value : null;
     const toTaskUpdate = b.event?.case === "taskUpdate" ? b.event.value : null;
@@ -38,7 +41,7 @@ export const isSimilarIssueComment = (
       return true;
     }
   }
-  if (a.type === IssueCommentType.ISSUE_UPDATE) {
+  if (aType === IssueCommentType.ISSUE_UPDATE) {
     const aIssueUpdate = a.event?.case === "issueUpdate" ? a.event.value : null;
     const bIssueUpdate = b.event?.case === "issueUpdate" ? b.event.value : null;
     if (
@@ -64,13 +67,14 @@ export const isSimilarIssueComment = (
   return false;
 };
 
-export const isUserEditableComment = (comment: ComposedIssueComment) => {
+export const isUserEditableComment = (comment: IssueComment) => {
+  const commentType = getIssueCommentType(comment);
   // Always allow editing user comments.
-  if (comment.type === IssueCommentType.USER_COMMENT) {
+  if (commentType === IssueCommentType.USER_COMMENT) {
     return true;
   }
   // For approval comments, we allow editing if the comment is not empty.
-  if (comment.type === IssueCommentType.APPROVAL && comment.comment !== "") {
+  if (commentType === IssueCommentType.APPROVAL && comment.comment !== "") {
     return true;
   }
   return false;

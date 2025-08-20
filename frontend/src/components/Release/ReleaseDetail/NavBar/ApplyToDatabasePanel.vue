@@ -61,17 +61,14 @@ import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
 import { planServiceClientConnect } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store, useDBGroupStore } from "@/store";
+import { getProjectNameReleaseId } from "@/store/modules/v1/common";
 import { DatabaseGroupSchema } from "@/types/proto-es/v1/database_group_service_pb";
 import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import {
   PlanSchema,
   Plan_ChangeDatabaseConfigSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import {
-  extractProjectResourceName,
-  generateIssueTitle,
-  issueV1Slug,
-} from "@/utils";
+import { generateIssueTitle, issueV1Slug } from "@/utils";
 import { useReleaseDetailContext } from "../context";
 import { createIssueFromPlan } from "./utils";
 
@@ -156,7 +153,7 @@ const handleCreate = async () => {
   router.push({
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      projectId: extractProjectResourceName(release.value.project),
+      projectId: getProjectNameReleaseId(release.value.name)[0],
       issueSlug: issueV1Slug(createdIssue.name, createdIssue.title),
     },
   });

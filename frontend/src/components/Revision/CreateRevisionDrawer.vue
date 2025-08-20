@@ -416,9 +416,9 @@ import {
   useSheetV1Store,
   pushNotification,
 } from "@/store";
-import type { ComposedRelease } from "@/types";
 import {
   Release_File_Type,
+  type Release,
   type Release_File,
 } from "@/types/proto-es/v1/release_service_pb";
 import {
@@ -463,8 +463,8 @@ const selectedSource: Ref<"release" | "local"> = ref("release");
 const isCreating = ref(false);
 const currentStep = ref(Step.SELECT_SOURCE);
 const isLoadingReleases = ref(false);
-const releaseList = ref<ComposedRelease[]>([]);
-const selectedRelease = ref<ComposedRelease | null>(null);
+const releaseList = ref<Release[]>([]);
+const selectedRelease = ref<Release | null>(null);
 const selectedFiles = ref<Release_File[]>([]);
 const existingRevisionVersions = ref<Set<string>>(new Set());
 

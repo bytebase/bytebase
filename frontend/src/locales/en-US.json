@@ -239,7 +239,14 @@
     "submit": "Submit",
     "start": "Start",
     "draft": "Draft",
-    "import": "Import"
+    "import": "Import",
+    "hard-delete": {
+      "self": "Hard-delete",
+      "title": "Hard-delete {name}?",
+      "description": "This resource and other related resources will be hard-deleted. @:common.cannot-undo-this-action",
+      "double-comfirm": "To confirm deletion, please type: {name}",
+      "notification": "Successfully delete the resource '{name}'."
+    }
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1118,6 +1125,10 @@
         "database-change": "Database Change",
         "export-data": "Export Data",
         "unknown": "Unknown"
+      },
+      "delete-change": {
+        "title": "Delete Change",
+        "content": "Are you sure you want to delete this change?"
       }
     },
     "targets": {
@@ -1570,7 +1581,6 @@
     "table-detail": "Table detail",
     "batch-action-not-support-alter-schema": "Some databases don't support altering schema",
     "batch-action-permission-denied": "Don't have permission to {action} for databases",
-    "batch-action-database-not-have-environment": "Exist databases which not bound with the environment",
     "batch-action-disabled": "Can not {action} for the databases from different projects",
     "batch-action-disabled-for-unassigned": "Can not {action} for unassigned database",
     "successfully-transferred-databases": "Successfully transferred databases",

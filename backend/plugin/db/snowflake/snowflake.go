@@ -295,7 +295,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, statement string,
 		opts.LogCommandResponse(0, nil, "")
 		return 0, nil
 	}
-	opts.LogCommandResponse(int32(rowsAffected), nil, "")
+	opts.LogCommandResponse(rowsAffected, nil, "")
 	return rowsAffected, nil
 }
 
@@ -324,7 +324,7 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, 
 		opts.LogCommandResponse(0, nil, "")
 		return 0, nil
 	}
-	opts.LogCommandResponse(int32(rowsAffected), nil, "")
+	opts.LogCommandResponse(rowsAffected, nil, "")
 	return rowsAffected, nil
 }
 

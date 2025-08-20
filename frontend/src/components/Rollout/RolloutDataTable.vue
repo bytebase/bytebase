@@ -6,7 +6,7 @@
     :striped="true"
     :bordered="bordered"
     :loading="loading"
-    :row-key="(rollout: ComposedRollout) => rollout.name"
+    :row-key="(rollout) => rollout.name"
     :row-props="rowProps"
   />
 </template>
@@ -22,7 +22,7 @@ import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import Timestamp from "@/components/misc/Timestamp.vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
-import { type ComposedRollout } from "@/types";
+import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   stringifyTaskStatus,
@@ -32,7 +32,7 @@ import {
 
 withDefaults(
   defineProps<{
-    rolloutList: ComposedRollout[];
+    rolloutList: Rollout[];
     bordered?: boolean;
     loading?: boolean;
     showSelection?: boolean;
@@ -53,8 +53,8 @@ const getStageTaskCount = (stage: any, status: Task_Status) => {
 };
 
 const columnList = computed(
-  (): (DataTableColumn<ComposedRollout> & { hide?: boolean })[] => {
-    const columns: (DataTableColumn<ComposedRollout> & { hide?: boolean })[] = [
+  (): (DataTableColumn<Rollout> & { hide?: boolean })[] => {
+    const columns: (DataTableColumn<Rollout> & { hide?: boolean })[] = [
       {
         key: "title",
         title: t("issue.table.name"),
@@ -179,7 +179,7 @@ const columnList = computed(
   }
 );
 
-const rowProps = (rollout: ComposedRollout) => {
+const rowProps = (rollout: Rollout) => {
   return {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {

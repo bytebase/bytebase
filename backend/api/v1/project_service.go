@@ -420,6 +420,26 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 	if err != nil {
 		return nil, err
 	}
+
+	// Handle purge (hard delete) of soft-deleted project
+	if req.Msg.Purge {
+		// Following AIP-165, purge only works on already soft-deleted projects
+		if !project.Deleted {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("project %q must be soft-deleted before it can be purged", req.Msg.Name))
+		}
+		if project.ResourceID == common.DefaultProjectID {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project cannot be purged"))
+		}
+
+		// Permanently delete the project and all related resources
+		if err := s.store.DeleteProject(ctx, project.ResourceID); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to purge project"))
+		}
+
+		return connect.NewResponse(&emptypb.Empty{}), nil
+	}
+
+	// Regular soft delete flow
 	if project.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Name))
 	}

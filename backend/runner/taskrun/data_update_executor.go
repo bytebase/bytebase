@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
+	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/parser/postgresql"
 	"github.com/pkg/errors"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -16,13 +17,12 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/enterprise"
-	"github.com/bytebase/bytebase/backend/runner/schemasync"
-
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -393,21 +393,103 @@ func getPrependStatements(engine storepb.Engine, statement string) (string, erro
 		return "", nil
 	}
 
-	nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
+	parseResult, err := pg.ParsePostgreSQL(statement)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse statement")
 	}
 
-	for _, node := range nodes {
-		if n, ok := node.(*ast.VariableSetStmt); ok {
-			switch n.Name {
-			case "role", "search_path":
-				return n.Text(), nil
-			default:
-				// Ignore other variable names
-			}
-		}
+	visitor := &prependStatementsVisitor{
+		statement: statement,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(visitor, parseResult.Tree)
+
+	return visitor.result, nil
+}
+
+// prependStatementsVisitor extracts SET role and search_path statements
+type prependStatementsVisitor struct {
+	*postgresql.BasePostgreSQLParserListener
+	statement string
+	result    string
+}
+
+func (v *prependStatementsVisitor) EnterVariablesetstmt(ctx *postgresql.VariablesetstmtContext) {
+	// If we already found a result, don't process more statements
+	if v.result != "" {
+		return
 	}
 
-	return "", nil
+	setRest := ctx.Set_rest()
+	if setRest == nil {
+		return
+	}
+	setRestMore := setRest.Set_rest_more()
+	if setRestMore == nil {
+		return
+	}
+	genericSet := setRestMore.Generic_set()
+	if genericSet == nil {
+		return
+	}
+	varName := genericSet.Var_name()
+	if varName == nil {
+		return
+	}
+	if len(varName.AllColid()) != 1 {
+		return
+	}
+
+	name := pg.NormalizePostgreSQLColid(varName.Colid(0))
+	if name == "role" || name == "search_path" {
+		// Extract the text for this SET statement
+		v.result = v.extractStatementText(ctx)
+	}
+}
+
+// extractStatementText extracts the original text for a SET statement context
+// This matches pg_query_go behavior: trim leading/trailing whitespace, preserve internal whitespace
+func (v *prependStatementsVisitor) extractStatementText(ctx *postgresql.VariablesetstmtContext) string {
+	// Extract text from the original statement
+	start := ctx.GetStart().GetStart()
+	stop := ctx.GetStop().GetStop()
+
+	// Handle potential edge cases with token positions
+	if start < 0 || stop < 0 || start >= len(v.statement) {
+		return ""
+	}
+
+	// Find the semicolon that ends this statement by looking ahead from the stop token
+	endPos := stop + 1
+	stmtLen := len(v.statement)
+	for endPos < stmtLen {
+		char := v.statement[endPos]
+		if char == ';' {
+			// Include the semicolon and any whitespace before it
+			stop = endPos
+			break
+		}
+		if char != ' ' && char != '\t' && char != '\n' && char != '\r' {
+			// Hit non-whitespace, non-semicolon character, stop looking
+			break
+		}
+		endPos++
+	}
+
+	// Ensure stop doesn't exceed statement length
+	if stop >= stmtLen {
+		stop = stmtLen - 1
+	}
+
+	// Extract the raw text
+	text := v.statement[start : stop+1]
+
+	// Match pg_query_go behavior: trim leading and trailing whitespace but preserve internal whitespace
+	text = strings.TrimSpace(text)
+
+	// Add semicolon if not present (to match pg_query_go behavior)
+	if !strings.HasSuffix(text, ";") {
+		text += ";"
+	}
+
+	return text
 }

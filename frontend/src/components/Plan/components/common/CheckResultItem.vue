@@ -48,7 +48,7 @@ const props = defineProps<{
   title: string;
   content?: string;
   position?: CheckResultPosition;
-  affectedRows?: number;
+  affectedRows?: bigint;
   code?: number;
   reportType?: "sqlReviewReport" | "sqlSummaryReport" | string;
 }>();

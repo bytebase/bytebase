@@ -17,7 +17,7 @@
 
 <script lang="tsx" setup>
 import dayjs from "dayjs";
-import { head } from "lodash-es";
+import { last } from "lodash-es";
 import { CalendarClockIcon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable, NTag, NTooltip } from "naive-ui";
@@ -141,7 +141,7 @@ const handleRowClick = (task: Task) => {
       params: {
         projectId: extractProjectResourceName(project.value.name),
         rolloutId: params.rolloutId,
-        stageId: params.stageId,
+        stageId: params.stageId || "_", // Use placeholder for empty stageId
         taskId: params.taskId,
       },
     });
@@ -161,7 +161,7 @@ const getLatestTaskRun = (task: Task) => {
   const relatedTaskRuns = taskRuns.value.filter((taskRun) =>
     taskRun.name.startsWith(task.name + "/taskRuns/")
   );
-  return head(relatedTaskRuns);
+  return last(relatedTaskRuns);
 };
 
 // Format full datetime for display

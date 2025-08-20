@@ -26,16 +26,16 @@ import {
   UNKNOWN_INSTANCE_NAME,
   isValidInstanceName,
   unknownInstance,
-  type ComposedInstance,
 } from "@/types";
 import { type Engine } from "@/types/proto-es/v1/common_pb";
+import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { supportedEngineV1List, getDefaultPagination } from "@/utils";
 import { InstanceV1EngineIcon } from "../Model/Instance";
 import ResourceSelect from "./ResourceSelect.vue";
 
 interface LocalState {
   loading: boolean;
-  rawInstanceList: ComposedInstance[];
+  rawInstanceList: Instance[];
 }
 
 const props = withDefaults(
@@ -122,7 +122,7 @@ watch(
   }
 );
 
-const renderLabel = (instance: ComposedInstance) => {
+const renderLabel = (instance: Instance) => {
   if (instance.name === UNKNOWN_INSTANCE_NAME) {
     return t("instance.all");
   }

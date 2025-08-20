@@ -73,7 +73,8 @@ import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import { NInputNumber, NRadio } from "naive-ui";
 import { reactive, watch } from "vue";
-import { getDateForPbTimestampProtoEs, type ComposedInstance } from "@/types";
+import { getDateForPbTimestampProtoEs } from "@/types";
+import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { useInstanceFormContext } from "./context";
 
 type Mode = "DEFAULT" | "CUSTOM";
@@ -89,7 +90,7 @@ const MIN_MINUTES = 30;
 const props = defineProps<{
   scanInterval?: Duration | undefined;
   allowEdit: boolean;
-  instance: ComposedInstance;
+  instance: Instance;
 }>();
 
 const emit = defineEmits<{

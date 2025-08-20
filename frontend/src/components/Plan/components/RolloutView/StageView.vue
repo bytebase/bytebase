@@ -8,6 +8,8 @@
             :environment="
               environmentStore.getEnvironmentByName(stage.environment)
             "
+            :null-environment-placeholder="'Null'"
+            :link="false"
           />
         </span>
 
@@ -22,11 +24,7 @@
 
     <!-- Tasks Table View -->
     <div class="flex-1 min-h-0">
-      <TaskTableView
-        :task-status-filter="taskStatusFilter"
-        :stage="stage"
-        :readonly="readonly"
-      />
+      <TaskTableView :task-status-filter="taskStatusFilter" :stage="stage" />
     </div>
   </div>
 </template>
@@ -50,7 +48,7 @@ const props = defineProps<{
 
 const route = useRoute();
 const environmentStore = useEnvironmentV1Store();
-const { rollout, readonly } = usePlanContextWithRollout();
+const { rollout } = usePlanContextWithRollout();
 
 const stage = computed(() => {
   return rollout.value.stages.find((s) => s.id === props.stageId) as Stage;

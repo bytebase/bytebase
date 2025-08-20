@@ -1090,6 +1090,15 @@ paths:
                   description: If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed.
                   schema:
                     type: boolean
+                - name: purge
+                  in: query
+                  description: |-
+                    If set to true, permanently purge the soft-deleted instance and all related resources.
+                     This operation is irreversible. Following AIP-165, this should only be used for
+                     administrative cleanup of old soft-deleted instances.
+                     The instance must already be soft-deleted for this to work.
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     description: OK
@@ -3416,6 +3425,15 @@ paths:
                      Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
                      Open issues will remain open but associated with the deleted project.
                      If set to false, the operation will fail if the project has databases or open issues.
+                  schema:
+                    type: boolean
+                - name: purge
+                  in: query
+                  description: |-
+                    If set to true, permanently purge the soft-deleted project and all related resources.
+                     This operation is irreversible. Following AIP-165, this should only be used for
+                     administrative cleanup of old soft-deleted projects.
+                     The project must already be soft-deleted for this to work.
                   schema:
                     type: boolean
             responses:
@@ -9086,9 +9104,8 @@ components:
                     items:
                         $ref: '#/components/schemas/CheckReleaseResponse_CheckResult'
                 affectedRows:
-                    type: integer
+                    type: string
                     description: The affected rows of the check.
-                    format: int32
                 riskLevel:
                     enum:
                         - RISK_LEVEL_UNSPECIFIED
@@ -9115,9 +9132,8 @@ components:
                         $ref: '#/components/schemas/Advice'
                     description: The list of advice for the file and the target.
                 affectedRows:
-                    type: integer
+                    type: string
                     description: The count of affected rows of the statement on the target.
-                    format: int32
                 riskLevel:
                     enum:
                         - RISK_LEVEL_UNSPECIFIED
@@ -9156,9 +9172,8 @@ components:
                     items:
                         $ref: '#/components/schemas/Advice'
                 affectedRows:
-                    type: integer
+                    type: string
                     description: The count of affected rows of the statement on the target database.
-                    format: int32
         ColumnCatalog:
             type: object
             properties:
@@ -10072,6 +10087,11 @@ components:
                          It is used for querying admin data source even if the instance has
                          read-only data sources. Or it can be used to query a specific read-only
                          data source.
+                schema:
+                    type: string
+                    description: |-
+                        The default schema to search objects. Equals to the current schema in
+                         Oracle and search path in Postgres.
         ExportResponse:
             type: object
             properties:
@@ -12442,8 +12462,7 @@ components:
                         type: string
                     description: statement_types are the types of statements that are found in the sql.
                 affectedRows:
-                    type: integer
-                    format: int32
+                    type: string
                 changedResources:
                     $ref: '#/components/schemas/ChangedResources'
         ReviewConfig:
@@ -13541,18 +13560,21 @@ components:
             properties:
                 name:
                     type: string
-                    description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}'
+                    description: |-
+                        Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+                         Use "-" for {stage} when the stage has no environment or deleted environment.
                 id:
                     readOnly: true
                     type: string
                     description: |-
                         id is the environment id of the stage.
                          e.g. "prod".
+                         Use "-" when the stage has no environment or deleted environment.
                 environment:
                     type: string
                     description: |-
                         environment is the environment of the stage.
-                         Format: environments/{environment}.
+                         Format: environments/{environment} for valid environments, or "environments/-" for stages without environment or with deleted environments.
                 tasks:
                     type: array
                     items:
@@ -14002,13 +14024,11 @@ components:
                 error:
                     type: string
                 affectedRows:
-                    type: integer
-                    format: int32
+                    type: string
                 allAffectedRows:
                     type: array
                     items:
-                        type: integer
-                        format: int32
+                        type: string
                     description: |-
                         `all_affected_rows` is the affected rows of each command.
                          `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.

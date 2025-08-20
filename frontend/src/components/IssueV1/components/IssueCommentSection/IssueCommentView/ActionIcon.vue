@@ -117,12 +117,9 @@ import {
 import { computed } from "vue";
 import { SkipIcon } from "@/components/Icon";
 import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
-import {
-  IssueCommentType,
-  useUserStore,
-  type ComposedIssueComment,
-} from "@/store";
+import { IssueCommentType, useUserStore, getIssueCommentType } from "@/store";
 import { extractUserId } from "@/store";
+import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import {
   IssueComment_Approval_Status,
   IssueComment_TaskUpdate_Status,
@@ -145,7 +142,7 @@ type ActionIconType =
   | "commit";
 
 const props = defineProps<{
-  issueComment: ComposedIssueComment;
+  issueComment: IssueComment;
 }>();
 
 const userStore = useUserStore();
@@ -156,8 +153,9 @@ const user = computedAsync(() => {
 
 const icon = computed((): ActionIconType => {
   const { issueComment } = props;
+  const commentType = getIssueCommentType(issueComment);
   if (
-    issueComment.type === IssueCommentType.APPROVAL &&
+    commentType === IssueCommentType.APPROVAL &&
     issueComment.event?.case === "approval"
   ) {
     const { status } = issueComment.event.value;
@@ -169,10 +167,10 @@ const icon = computed((): ActionIconType => {
       case IssueComment_Approval_Status.PENDING:
         return "re-request-review";
     }
-  } else if (issueComment.type === IssueCommentType.STAGE_END) {
+  } else if (commentType === IssueCommentType.STAGE_END) {
     return "complete";
   } else if (
-    issueComment.type === IssueCommentType.TASK_UPDATE &&
+    commentType === IssueCommentType.TASK_UPDATE &&
     issueComment.event?.case === "taskUpdate"
   ) {
     const { toStatus } = issueComment.event.value;
@@ -207,7 +205,7 @@ const icon = computed((): ActionIconType => {
     }
     return action;
   } else if (
-    issueComment.type === IssueCommentType.ISSUE_UPDATE &&
+    commentType === IssueCommentType.ISSUE_UPDATE &&
     issueComment.event?.case === "issueUpdate"
   ) {
     const { toTitle, toDescription, toLabels, fromLabels } =
@@ -222,7 +220,7 @@ const icon = computed((): ActionIconType => {
     }
     // Otherwise, show avatar icon based on the creator.
   } else if (
-    issueComment.type === IssueCommentType.TASK_PRIOR_BACKUP &&
+    commentType === IssueCommentType.TASK_PRIOR_BACKUP &&
     issueComment.event?.case === "taskPriorBackup"
   ) {
     const taskPriorBackup = issueComment.event.value;

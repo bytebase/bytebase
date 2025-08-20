@@ -239,7 +239,14 @@
     "submit": "提出する",
     "start": "始める",
     "draft": "下書き",
-    "import": "輸入"
+    "import": "輸入",
+    "hard-delete": {
+      "self": "ハード削除",
+      "title": "{name} を物理的に削除しますか?",
+      "description": "このリソースとその他の関連リソースは物理的に削除されます。@:common.cannot-undo-this-action",
+      "double-comfirm": "削除を確認するには、{name} と入力してください。",
+      "notification": "リソース '{name}' を正常に削除しました。"
+    }
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -1118,6 +1125,10 @@
         "database-change": "データベースの変更",
         "export-data": "データのエクスポート",
         "unknown": "未知"
+      },
+      "delete-change": {
+        "title": "削除変更",
+        "content": "この変更を削除してもよろしいですか?"
       }
     },
     "targets": {
@@ -1570,7 +1581,6 @@
     "table-detail": "テーブルの詳細",
     "batch-action-not-support-alter-schema": "一部のデータベースはテーブル構造の変更をサポートしていません",
     "batch-action-permission-denied": "データベース {action} に対する権限がありません",
-    "batch-action-database-not-have-environment": "環境に縛られないデータベースが存在する",
     "batch-action-disabled": "異なるプロジェクトのデータベース {action} を比較できません",
     "batch-action-disabled-for-unassigned": "未割り当てのデータベース {action} にアクセスできません",
     "successfully-transferred-databases": "データベースの移行が完了しました",
