@@ -4,14 +4,16 @@ import {
   defineConfigWithVueTs,
   vueTsConfigs,
 } from "@vue/eslint-config-typescript";
-import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 import pluginVue from "eslint-plugin-vue";
 
+configureVueProject({
+  scriptLangs: ["ts", "tsx"],
+});
+
 export default defineConfigWithVueTs(
-  vueTsConfigs.recommendedTypeChecked,
+  vueTsConfigs.recommended,
   pluginVue.configs["flat/essential"],
   vueI18n.configs["flat/recommended"],
-  eslintPluginPrettierRecommended,
   {
     ignores: [
       "**/dist/**",
