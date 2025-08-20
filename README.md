@@ -37,6 +37,10 @@ Bytebase is an open-source database DevOps tool, it's the **only database CI/CD 
 
 It offers a web-based collaboration workspace to help DBAs and Developers manage the lifecycle of application database schemas.
 
+<h1 align="center">
+  <img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/fish.webp" />
+</h1>
+
 ## Key Features
 
 ### 🔄 **Database CI/CD**
