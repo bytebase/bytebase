@@ -29,8 +29,8 @@
 </template>
 
 <script lang="ts" setup>
-import type { ComposedIssueComment } from "@/store";
 import type { ComposedIssue } from "@/types";
+import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import ActionIcon from "./ActionIcon.vue";
 import IssueCommentAction from "./IssueCommentAction.vue";
@@ -39,8 +39,8 @@ defineProps<{
   issue: ComposedIssue;
   isLast: boolean;
   index: number;
-  issueComment: ComposedIssueComment;
-  similar: ComposedIssueComment[];
+  issueComment: IssueComment;
+  similar: IssueComment[];
   rollout?: Rollout;
 }>();
 </script>

@@ -6,13 +6,10 @@
 import type { h } from "vue";
 import { defineComponent } from "vue";
 import { Translation, useI18n } from "vue-i18n";
-import {
-  useUserStore,
-  IssueCommentType,
-  type ComposedIssueComment,
-} from "@/store";
+import { useUserStore, IssueCommentType, getIssueCommentType } from "@/store";
 import { extractUserId } from "@/store";
 import { type ComposedIssue } from "@/types";
+import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import {
   IssueComment_Approval_Status,
   IssueComment_TaskUpdate_Status,
@@ -27,7 +24,7 @@ type RenderedContent = string | ReturnType<typeof h>;
 
 const props = defineProps<{
   issue: ComposedIssue;
-  issueComment: ComposedIssueComment;
+  issueComment: IssueComment;
 }>();
 
 const { t } = useI18n();
@@ -35,8 +32,9 @@ const userStore = useUserStore();
 
 const renderActionSentence = () => {
   const { issueComment, issue } = props;
+  const commentType = getIssueCommentType(issueComment);
   if (
-    issueComment.type === IssueCommentType.APPROVAL &&
+    commentType === IssueCommentType.APPROVAL &&
     issueComment.event?.case === "approval"
   ) {
     const { status } = issueComment.event.value;
@@ -52,7 +50,7 @@ const renderActionSentence = () => {
       return maybeAutomaticallyVerb(issueComment, verb);
     }
   } else if (
-    issueComment.type === IssueCommentType.ISSUE_UPDATE &&
+    commentType === IssueCommentType.ISSUE_UPDATE &&
     issueComment.event?.case === "issueUpdate"
   ) {
     const {
@@ -86,7 +84,7 @@ const renderActionSentence = () => {
       return t("activity.sentence.changed-labels");
     }
   } else if (
-    issueComment.type === IssueCommentType.STAGE_END &&
+    commentType === IssueCommentType.STAGE_END &&
     issueComment.event?.case === "stageEnd"
   ) {
     const { stage } = issueComment.event.value;
@@ -99,7 +97,7 @@ const renderActionSentence = () => {
     };
     return renderVerbTypeTarget(params);
   } else if (
-    issueComment.type === IssueCommentType.TASK_UPDATE &&
+    commentType === IssueCommentType.TASK_UPDATE &&
     issueComment.event?.case === "taskUpdate"
   ) {
     const { tasks, fromSheet, toSheet, toStatus } = issueComment.event.value;
@@ -162,7 +160,7 @@ const renderActionSentence = () => {
       );
     }
   } else if (
-    issueComment.type === IssueCommentType.TASK_PRIOR_BACKUP &&
+    commentType === IssueCommentType.TASK_PRIOR_BACKUP &&
     issueComment.event?.case === "taskPriorBackup"
   ) {
     const { task, tables, originalLine, database, error } =
@@ -206,7 +204,7 @@ const renderActionSentence = () => {
 };
 
 const maybeAutomaticallyVerb = (
-  issueComment: ComposedIssueComment,
+  issueComment: IssueComment,
   verb: string
 ): string => {
   if (extractUserId(issueComment.creator) !== userStore.systemBotUser?.email) {
@@ -218,7 +216,7 @@ const maybeAutomaticallyVerb = (
 };
 
 type VerbTypeTarget = {
-  issueComment: ComposedIssueComment;
+  issueComment: IssueComment;
   verb: RenderedContent;
   type: RenderedContent;
   target?: RenderedContent;

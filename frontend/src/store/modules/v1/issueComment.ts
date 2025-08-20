@@ -27,34 +27,26 @@ export enum IssueCommentType {
   TASK_PRIOR_BACKUP = "TASK_PRIOR_BACKUP",
 }
 
-export interface ComposedIssueComment extends IssueComment {
-  type: IssueCommentType;
-}
-
-const composeIssueComment = (
+export const getIssueCommentType = (
   issueComment: IssueComment
-): ComposedIssueComment => {
-  let type = IssueCommentType.USER_COMMENT;
+): IssueCommentType => {
   if (issueComment.event?.case === "approval") {
-    type = IssueCommentType.APPROVAL;
+    return IssueCommentType.APPROVAL;
   } else if (issueComment.event?.case === "issueUpdate") {
-    type = IssueCommentType.ISSUE_UPDATE;
+    return IssueCommentType.ISSUE_UPDATE;
   } else if (issueComment.event?.case === "stageEnd") {
-    type = IssueCommentType.STAGE_END;
+    return IssueCommentType.STAGE_END;
   } else if (issueComment.event?.case === "taskUpdate") {
-    type = IssueCommentType.TASK_UPDATE;
+    return IssueCommentType.TASK_UPDATE;
   } else if (issueComment.event?.case === "taskPriorBackup") {
-    type = IssueCommentType.TASK_PRIOR_BACKUP;
+    return IssueCommentType.TASK_PRIOR_BACKUP;
   }
-  return {
-    ...issueComment,
-    type,
-  };
+  return IssueCommentType.USER_COMMENT;
 };
 
 export const useIssueCommentStore = defineStore("issue_comment", () => {
-  // issueCommentMap is a map of issueName to ComposedIssueComment[].
-  const issueCommentMap = reactive(new Map<string, ComposedIssueComment[]>());
+  // issueCommentMap is a map of issueName to IssueComment[].
+  const issueCommentMap = reactive(new Map<string, IssueComment[]>());
 
   const listIssueComments = async (request: ListIssueCommentsRequest) => {
     const connectRequest = create(ListIssueCommentsRequestSchema, {
@@ -65,7 +57,7 @@ export const useIssueCommentStore = defineStore("issue_comment", () => {
     const resp =
       await issueServiceClientConnect.listIssueComments(connectRequest);
     const issueComments = resp.issueComments;
-    issueCommentMap.set(request.parent, issueComments.map(composeIssueComment));
+    issueCommentMap.set(request.parent, issueComments);
 
     return {
       nextPageToken: resp.nextPageToken,
@@ -91,7 +83,7 @@ export const useIssueCommentStore = defineStore("issue_comment", () => {
     const issueComment = newIssueComment;
     issueCommentMap.set(issueName, [
       ...(issueCommentMap.get(issueName) ?? []),
-      composeIssueComment(issueComment),
+      issueComment,
     ]);
   };
 
@@ -128,7 +120,7 @@ export const useIssueCommentStore = defineStore("issue_comment", () => {
     );
   };
 
-  const getIssueComments = (issueName: string): ComposedIssueComment[] => {
+  const getIssueComments = (issueName: string): IssueComment[] => {
     return issueCommentMap.get(issueName) ?? [];
   };
 
