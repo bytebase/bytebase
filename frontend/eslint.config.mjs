@@ -1,22 +1,26 @@
 import vueI18n from "@intlify/eslint-plugin-vue-i18n";
-import vueTsEslintConfig from "@vue/eslint-config-typescript";
+import {
+  configureVueProject,
+  defineConfigWithVueTs,
+  vueTsConfigs,
+} from "@vue/eslint-config-typescript";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 import pluginVue from "eslint-plugin-vue";
 
-export default [
-  ...pluginVue.configs["flat/essential"],
-  ...vueTsEslintConfig({
-    extends: ["recommended"],
-    supportedScriptLangs: {
-      ts: true,
-      tsx: true,
-    },
-    rootDir: import.meta.dirname,
-  }),
-  ...vueI18n.configs["flat/recommended"],
+export default defineConfigWithVueTs(
+  vueTsConfigs.recommendedTypeChecked,
+  pluginVue.configs["flat/essential"],
+  vueI18n.configs["flat/recommended"],
   eslintPluginPrettierRecommended,
   {
-    ignores: ["**/dist/**", "**/node_modules/**", "**/proto-es/**"],
+    ignores: [
+      "**/dist/**",
+      "**/node_modules/**",
+      "**/proto-es/**",
+      "**/*.yaml",
+      "**/*.yml",
+      "**/*.json",
+    ],
   },
   {
     rules: {
@@ -25,6 +29,7 @@ export default [
       "no-empty-pattern": "error",
       "vue/no-ref-as-operand": "error",
       "no-useless-escape": "error",
+      "@typescript-eslint/restrict-template-expressions": "error",
       "@typescript-eslint/no-empty-interface": "error",
       "@typescript-eslint/no-unused-vars": [
         "error",
@@ -68,5 +73,5 @@ export default [
         messageSyntaxVersion: "^9.0.0",
       },
     },
-  },
-];
+  }
+);
