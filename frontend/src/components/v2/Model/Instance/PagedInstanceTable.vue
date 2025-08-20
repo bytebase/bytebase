@@ -19,7 +19,7 @@ import { ref, watch, computed } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { useInstanceV1Store, type InstanceFilter } from "@/store";
-import { type ComposedInstance } from "@/types";
+import { type Instance } from "@/types/proto-es/v1/instance_service_pb";
 import InstanceV1Table from "./InstanceV1Table";
 
 const props = defineProps<{
@@ -29,8 +29,7 @@ const props = defineProps<{
 
 const instanceStore = useInstanceV1Store();
 
-const instancePagedTable =
-  ref<ComponentExposed<typeof PagedTable<ComposedInstance>>>();
+const instancePagedTable = ref<ComponentExposed<typeof PagedTable<Instance>>>();
 
 const fetchInstances = async ({
   pageToken,
@@ -57,7 +56,7 @@ watch(
 );
 
 defineExpose({
-  updateCache: (instances: ComposedInstance[]) => {
+  updateCache: (instances: Instance[]) => {
     instancePagedTable.value?.updateCache(instances);
   },
   refresh: () => instancePagedTable.value?.refresh(),
