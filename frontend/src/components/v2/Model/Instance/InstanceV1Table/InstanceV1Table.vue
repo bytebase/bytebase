@@ -7,7 +7,7 @@
     :striped="true"
     :bordered="bordered"
     :loading="loading"
-    :row-key="(data: ComposedInstance) => data.name"
+    :row-key="(data: Instance) => data.name"
     :checked-row-keys="selectedInstanceNames"
     :row-props="rowProps"
     :paginate-single-page="false"
@@ -28,11 +28,13 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { InstanceV1Name } from "@/components/v2";
-import type { ComposedInstance } from "@/types";
+import { useEnvironmentV1Store } from "@/store";
+import { NULL_ENVIRONMENT_NAME } from "@/types";
+import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { urlfy, hostPortOfInstanceV1, hostPortOfDataSource } from "@/utils";
 import EnvironmentV1Name from "../../EnvironmentV1Name.vue";
 
-type InstanceDataTableColumn = DataTableColumn<ComposedInstance> & {
+type InstanceDataTableColumn = DataTableColumn<Instance> & {
   hide?: boolean;
 };
 
@@ -43,7 +45,7 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
-    instanceList: ComposedInstance[];
+    instanceList: Instance[];
     bordered?: boolean;
     loading?: boolean;
     showSelection?: boolean;
@@ -52,7 +54,7 @@ const props = withDefaults(
     disabledSelectedInstanceNames?: Set<string>;
     showAddress?: boolean;
     showExternalLink?: boolean;
-    onClick?: (instance: ComposedInstance, e: MouseEvent) => void;
+    onClick?: (instance: Instance, e: MouseEvent) => void;
   }>(),
   {
     bordered: true,
@@ -72,6 +74,7 @@ defineEmits<{
 
 const { t } = useI18n();
 const router = useRouter();
+const environmentStore = useEnvironmentV1Store();
 const state = reactive<LocalState>({
   dataSourceToggle: new Set(),
   processing: false,
@@ -117,7 +120,9 @@ const columnList = computed((): InstanceDataTableColumn[] => {
     resizable: true,
     render: (instance) => (
       <EnvironmentV1Name
-        environment={instance.environmentEntity}
+        environment={environmentStore.getEnvironmentByName(
+          instance.environment || NULL_ENVIRONMENT_NAME
+        )}
         link={false}
         nullEnvironmentPlaceholder="Null"
       />
@@ -185,7 +190,7 @@ const columnList = computed((): InstanceDataTableColumn[] => {
   );
 });
 
-const handleDataSourceToggle = (e: MouseEvent, instance: ComposedInstance) => {
+const handleDataSourceToggle = (e: MouseEvent, instance: Instance) => {
   e.stopPropagation();
   if (state.dataSourceToggle.has(instance.name)) {
     state.dataSourceToggle.delete(instance.name);
@@ -194,7 +199,7 @@ const handleDataSourceToggle = (e: MouseEvent, instance: ComposedInstance) => {
   }
 };
 
-const rowProps = (instance: ComposedInstance) => {
+const rowProps = (instance: Instance) => {
   return {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {

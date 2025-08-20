@@ -5,9 +5,7 @@ import { reactive } from "vue";
 import { instanceServiceClientConnect } from "@/grpcweb";
 // Removed conversion imports - using proto-es types directly
 import { silentContextKey } from "@/grpcweb/context-key";
-import type { ComposedInstance } from "@/types";
 import {
-  unknownEnvironment,
   unknownInstance,
   isValidProjectName,
   isValidInstanceName,
@@ -37,7 +35,6 @@ import type {
   UpdateInstanceRequest,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { extractInstanceResourceName, hasWorkspacePermissionV2 } from "@/utils";
-import { useEnvironmentV1Store } from "./environment";
 
 export interface InstanceFilter {
   environment?: string;
@@ -86,24 +83,19 @@ const getListInstanceFilter = (params: InstanceFilter) => {
 
 export const useInstanceV1Store = defineStore("instance_v1", () => {
   // Store uses proto-es types directly
-  const instanceMapByName = reactive(new Map<string, ComposedInstance>());
-  const instanceRequestCache = new Map<string, Promise<ComposedInstance>>();
+  const instanceMapByName = reactive(new Map<string, Instance>());
+  const instanceRequestCache = new Map<string, Promise<Instance>>();
 
   const reset = () => {
     instanceMapByName.clear();
   };
 
   // Actions
-  const upsertInstances = async (
-    list: Instance[]
-  ): Promise<ComposedInstance[]> => {
-    const composedInstances = await Promise.all(
-      list.map((instance) => composeInstance(instance))
-    );
-    composedInstances.forEach((composed) => {
-      instanceMapByName.set(composed.name, composed);
+  const upsertInstances = async (list: Instance[]): Promise<Instance[]> => {
+    list.forEach((instance) => {
+      instanceMapByName.set(instance.name, instance);
     });
-    return composedInstances;
+    return list;
   };
   const createInstance = async (instance: Instance) => {
     const request = create(CreateInstanceRequestSchema, {
@@ -111,9 +103,9 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       instanceId: extractInstanceResourceName(instance.name),
     });
     const response = await instanceServiceClientConnect.createInstance(request);
-    const composed = await upsertInstances([response]);
+    const instances = await upsertInstances([response]);
 
-    return composed[0];
+    return instances[0];
   };
   const updateInstance = async (instance: Instance, updateMask: string[]) => {
     const request = create(UpdateInstanceRequestSchema, {
@@ -121,8 +113,8 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       updateMask: { paths: updateMask },
     });
     const response = await instanceServiceClientConnect.updateInstance(request);
-    const composed = await upsertInstances([response]);
-    return composed[0];
+    const instances = await upsertInstances([response]);
+    return instances[0];
   };
   const archiveInstance = async (instance: Instance, force = false) => {
     const request = create(DeleteInstanceRequestSchema, {
@@ -131,8 +123,8 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     });
     await instanceServiceClientConnect.deleteInstance(request);
     instance.state = State.DELETED;
-    const composed = await upsertInstances([instance]);
-    return composed[0];
+    const instances = await upsertInstances([instance]);
+    return instances[0];
   };
   const deleteInstance = async (instance: string) => {
     const request = create(DeleteInstanceRequestSchema, {
@@ -148,8 +140,8 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     });
     await instanceServiceClientConnect.undeleteInstance(request);
     instance.state = State.ACTIVE;
-    const composed = await upsertInstances([instance]);
-    return composed[0];
+    const instances = await upsertInstances([instance]);
+    return instances[0];
   };
   const syncInstance = async (instance: string, enableFullSync: boolean) => {
     const request = create(SyncInstanceRequestSchema, {
@@ -181,31 +173,31 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     });
     const response =
       await instanceServiceClientConnect.batchUpdateInstances(request);
-    const composed = await upsertInstances(response.instances);
-    return composed;
+    const instances = await upsertInstances(response.instances);
+    return instances;
   };
 
   const fetchInstanceByName = async (
     name: string,
     silent = false
-  ): Promise<ComposedInstance> => {
+  ): Promise<Instance> => {
     const request = create(GetInstanceRequestSchema, {
       name,
     });
     const response = await instanceServiceClientConnect.getInstance(request, {
       contextValues: createContextValues().set(silentContextKey, silent),
     });
-    const composed = await upsertInstances([response]);
-    return composed[0];
+    const instances = await upsertInstances([response]);
+    return instances[0];
   };
-  const getInstanceByName = (name: string): ComposedInstance => {
+  const getInstanceByName = (name: string): Instance => {
     const instance = instanceMapByName.get(name);
     return instance ?? unknownInstance();
   };
   const getOrFetchInstanceByName = async (
     name: string,
     silent = false
-  ): Promise<ComposedInstance> => {
+  ): Promise<Instance> => {
     const cachedData = instanceMapByName.get(name);
     if (cachedData) {
       return cachedData;
@@ -231,8 +223,8 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       dataSource: dataSource,
     });
     const response = await instanceServiceClientConnect.addDataSource(request);
-    const [composed] = await upsertInstances([response]);
-    return composed;
+    const [updatedInstance] = await upsertInstances([response]);
+    return updatedInstance;
   };
   const updateDataSource = async (
     instance: Instance,
@@ -246,8 +238,8 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     });
     const response =
       await instanceServiceClientConnect.updateDataSource(request);
-    const [composed] = await upsertInstances([response]);
-    return composed;
+    const [updatedInstance] = await upsertInstances([response]);
+    return updatedInstance;
   };
   const deleteDataSource = async (
     instance: Instance,
@@ -259,8 +251,8 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     });
     const response =
       await instanceServiceClientConnect.removeDataSource(request);
-    const [composed] = await upsertInstances([response]);
-    return composed;
+    const [updatedInstance] = await upsertInstances([response]);
+    return updatedInstance;
   };
 
   const fetchInstanceList = async (params: {
@@ -283,9 +275,9 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     const response = await instanceServiceClientConnect.listInstances(request);
     const nextPageToken = response.nextPageToken;
 
-    const composedInstances = await upsertInstances(response.instances);
+    const instances = await upsertInstances(response.instances);
     return {
-      instances: composedInstances,
+      instances: instances,
       nextPageToken,
     };
   };
@@ -310,16 +302,3 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     fetchInstanceList,
   };
 });
-
-// Compose function for proto-es types
-const composeInstance = async (
-  instance: Instance
-): Promise<ComposedInstance> => {
-  const composed = instance as ComposedInstance;
-  const environmentEntity =
-    (await useEnvironmentV1Store().getOrFetchEnvironmentByName(
-      instance.environment ?? ""
-    )) ?? unknownEnvironment();
-  composed.environmentEntity = environmentEntity;
-  return composed;
-};
