@@ -10,7 +10,7 @@
           v-if="
             extractUserId(issueComment.creator) !==
               userStore.systemBotUser?.email ||
-            issueComment.type === IssueCommentType.USER_COMMENT
+            getIssueCommentType(issueComment) === IssueCommentType.USER_COMMENT
           "
           :creator="issueComment.creator"
         />
@@ -26,7 +26,7 @@
           v-if="
             getTimeForPbTimestampProtoEs(issueComment.createTime) !==
               getTimeForPbTimestampProtoEs(issueComment.updateTime) &&
-            issueComment.type === IssueCommentType.USER_COMMENT
+            getIssueCommentType(issueComment) === IssueCommentType.USER_COMMENT
           "
         >
           <span class="opacity-80">({{ $t("common.edited") }}</span>
@@ -64,10 +64,11 @@ import {
   getProjectIdIssueIdIssueCommentId,
   issueCommentNamePrefix,
   IssueCommentType,
-  type ComposedIssueComment,
+  getIssueCommentType,
 } from "@/store";
 import { useUserStore, extractUserId } from "@/store";
 import { getTimeForPbTimestampProtoEs, type ComposedIssue } from "@/types";
+import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import ActionCreator from "./ActionCreator.vue";
 import ActionSentence from "./ActionSentence.vue";
@@ -75,8 +76,8 @@ import ActionSentence from "./ActionSentence.vue";
 defineProps<{
   issue: ComposedIssue;
   index: number;
-  issueComment: ComposedIssueComment;
-  similar: ComposedIssueComment[];
+  issueComment: IssueComment;
+  similar: IssueComment[];
   rollout?: Rollout;
 }>();
 

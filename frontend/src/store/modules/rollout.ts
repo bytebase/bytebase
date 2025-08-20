@@ -1,13 +1,12 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import dayjs from "dayjs";
-import { head } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch } from "vue";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
-import type { MaybeRef, ComposedRollout } from "@/types";
-import { isValidRolloutName, unknownRollout, unknownUser } from "@/types";
+import type { MaybeRef } from "@/types";
+import { isValidRolloutName, unknownRollout } from "@/types";
 import {
   Task_Type,
   type Rollout,
@@ -22,9 +21,6 @@ import {
   type SearchParams,
 } from "@/utils";
 import { DEFAULT_PAGE_SIZE } from "./common";
-import { useUserStore } from "./user";
-import { useProjectV1Store, batchGetOrFetchProjects } from "./v1";
-import { getProjectNameRolloutId, projectNamePrefix } from "./v1/common";
 
 export interface RolloutFind {
   project: string;
@@ -88,7 +84,7 @@ export type ListRolloutParams = {
 };
 
 export const useRolloutStore = defineStore("rollout", () => {
-  const rolloutMapByName = reactive(new Map<string, ComposedRollout>());
+  const rolloutMapByName = reactive(new Map<string, Rollout>());
 
   const rolloutList = computed(() => {
     return Array.from(rolloutMapByName.values());
@@ -106,12 +102,12 @@ export const useRolloutStore = defineStore("rollout", () => {
       filter: buildRolloutFilter(find),
     });
     const resp = await rolloutServiceClientConnect.listRollouts(request);
-    const composedRolloutList = await batchComposeRollout(resp.rollouts);
-    composedRolloutList.forEach((rollout) => {
+    const rollouts = resp.rollouts;
+    rollouts.forEach((rollout) => {
       rolloutMapByName.set(rollout.name, rollout);
     });
     return {
-      rollouts: composedRolloutList,
+      rollouts: rollouts,
       nextPageToken: resp.nextPageToken,
     };
   };
@@ -123,13 +119,8 @@ export const useRolloutStore = defineStore("rollout", () => {
     const rollout = await rolloutServiceClientConnect.getRollout(request, {
       contextValues: createContextValues().set(silentContextKey, silent),
     });
-    const [composedRollout] = await batchComposeRollout([rollout]);
-    rolloutMapByName.set(composedRollout.name, composedRollout);
-    return composedRollout;
-  };
-
-  const getRolloutsByProject = (project: string) => {
-    return rolloutList.value.filter((rollout) => rollout.project === project);
+    rolloutMapByName.set(rollout.name, rollout);
+    return rollout;
   };
 
   const getRolloutByName = (name: string) => {
@@ -140,7 +131,6 @@ export const useRolloutStore = defineStore("rollout", () => {
     rolloutList,
     listRollouts,
     fetchRolloutByName,
-    getRolloutsByProject,
     getRolloutByName,
   };
 });
@@ -170,26 +160,4 @@ export const useRolloutByName = (name: MaybeRef<string>) => {
     rollout,
     ready,
   };
-};
-
-export const batchComposeRollout = async (rolloutList: Rollout[]) => {
-  const userStore = useUserStore();
-  await userStore.batchGetUsers(rolloutList.map((rollout) => rollout.creator));
-
-  const composedRolloutList = rolloutList.map((rollout) => {
-    const composed = rollout as ComposedRollout;
-    composed.project = `${projectNamePrefix}${head(getProjectNameRolloutId(rollout.name))}`;
-    composed.creatorEntity =
-      userStore.getUserByIdentifier(composed.creator) ?? unknownUser();
-    return composed;
-  });
-  await batchGetOrFetchProjects(
-    composedRolloutList.map((rollout) => rollout.project)
-  );
-
-  const projectV1Store = useProjectV1Store();
-  return composedRolloutList.map((rollout) => {
-    rollout.projectEntity = projectV1Store.getProjectByName(rollout.project);
-    return rollout;
-  });
 };
