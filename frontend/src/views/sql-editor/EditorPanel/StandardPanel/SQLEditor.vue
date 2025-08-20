@@ -67,6 +67,7 @@ import {
   useInstanceV1EditorLanguage,
   instanceV1AllowsExplain,
 } from "@/utils";
+import { createOptimizedContentHandler } from "@/utils/performance";
 import { useSQLEditorContext } from "../../context";
 import UploadFileButton from "./UploadFileButton.vue";
 import { activeSQLEditorRef } from "./state";
@@ -116,24 +117,34 @@ const filename = computed(() => {
   return `${name}.${ext}`;
 });
 
-const handleUpdateStatement = (value: string) => {
-  // When we are switching between tabs, the MonacoEditor emits a 'change'
-  // event, but we shouldn't update the current tab;
-  if (isSwitchingTab.value) {
-    return;
+// Optimized content handler using performance utilities
+const handleUpdateStatement = createOptimizedContentHandler(
+  // Heavy operation (debounced)
+  (value: string) => {
+    const tab = currentTab.value;
+    if (!tab || value === tab.statement) {
+      return;
+    }
+    tabStore.updateCurrentTab({
+      statement: value,
+      status: "DIRTY",
+    });
+  },
+  // Immediate operation for UI responsiveness
+  (value: string) => {
+    // When we are switching between tabs, the MonacoEditor emits a 'change'
+    // event, but we shouldn't update the current tab;
+    if (isSwitchingTab.value) {
+      return;
+    }
+    const tab = currentTab.value;
+    if (!tab || value === tab.statement) {
+      return;
+    }
+    // Directly update the reactive tab for immediate UI feedback
+    tab.statement = value;
   }
-  const tab = currentTab.value;
-  if (!tab) {
-    return;
-  }
-  if (value === tab.statement) {
-    return;
-  }
-  tabStore.updateCurrentTab({
-    statement: value,
-    status: "DIRTY",
-  });
-};
+);
 
 const handleUpdateSelectedStatement = (value: string) => {
   tabStore.updateCurrentTab({

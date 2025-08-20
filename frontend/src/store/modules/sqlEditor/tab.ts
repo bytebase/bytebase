@@ -421,14 +421,14 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
           persistentTab
         );
       },
-      { deep: true, immediate, throttle: 100, trailing: true }
+      { deep: true, immediate, throttle: 300, trailing: true } // Increased to 300ms for better performance
     );
     watchThrottled(
       () => pick(tab, EXTENDED_TAB_FIELDS) as ExtendedTab,
       (extended) => {
         saveExtendedTab(tab, extended);
       },
-      { deep: true, immediate, throttle: 100, trailing: true }
+      { deep: true, immediate, throttle: 300, trailing: true } // Increased to 300ms for better performance
     );
   };
   // Load tabs session from localStorage
