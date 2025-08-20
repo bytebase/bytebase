@@ -5,7 +5,7 @@ import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch, markRaw } from "vue";
 import { databaseServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
-import type { ComposedInstance, ComposedDatabase, MaybeRef } from "@/types";
+import type { ComposedDatabase, MaybeRef } from "@/types";
 import {
   isValidProjectName,
   isValidInstanceName,
@@ -32,6 +32,7 @@ import type {
   DiffSchemaRequest,
   BatchUpdateDatabasesRequest,
 } from "@/types/proto-es/v1/database_service_pb";
+import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { extractDatabaseResourceName, isNullOrUndefined } from "@/utils";
 import {
   instanceNamePrefix,
@@ -203,12 +204,12 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     });
     return composedDatabaseList;
   };
-  const updateDatabaseInstance = (instance: ComposedInstance) => {
+  const updateDatabaseInstance = (instance: Instance) => {
     for (const [_, database] of databaseMapByName) {
       if (database.instance !== instance.name) {
         continue;
       }
-      // Conversion boundary: Extract InstanceResource fields from ComposedInstance
+      // Conversion boundary: Extract InstanceResource fields from Instance
       database.instanceResource = {
         name: instance.name,
         uid: "",

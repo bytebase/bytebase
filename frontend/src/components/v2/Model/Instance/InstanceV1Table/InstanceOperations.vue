@@ -58,7 +58,7 @@ import {
   useSubscriptionV1Store,
   pushNotification,
 } from "@/store";
-import type { ComposedInstance } from "@/types";
+import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { UpdateInstanceRequestSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -78,11 +78,11 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  instanceList: ComposedInstance[];
+  instanceList: Instance[];
 }>();
 
 const emit = defineEmits<{
-  (event: "update", instances: ComposedInstance[]): void;
+  (event: "update", instances: Instance[]): void;
 }>();
 
 const { t } = useI18n();
