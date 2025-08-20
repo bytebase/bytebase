@@ -6,9 +6,9 @@ import {
   type EnvironmentSetting_Environment,
 } from "../proto-es/v1/setting_service_pb";
 
-export const ENVIRONMENT_ALL_NAME = "environments/-";
 export const EMPTY_ENVIRONMENT_NAME = `environments/${EMPTY_ID}`;
 export const UNKNOWN_ENVIRONMENT_NAME = `environments/${UNKNOWN_ID}`;
+export const NULL_ENVIRONMENT_NAME = "environments/-";
 
 export interface Environment extends EnvironmentSetting_Environment {
   order: number;
@@ -27,12 +27,26 @@ export const unknownEnvironment = (): Environment => {
   };
 };
 
+export const nullEnvironment = (): Environment => {
+  return {
+    ...create(EnvironmentSetting_EnvironmentSchema, {
+      name: NULL_ENVIRONMENT_NAME,
+      id: "-",
+      title: "No Environment",
+      tags: {},
+      color: "",
+    }),
+    order: -1,
+  };
+};
+
 export const isValidEnvironmentName = (name: any): name is string => {
   return (
     typeof name === "string" &&
     name.startsWith("environments/") &&
     name !== EMPTY_ENVIRONMENT_NAME &&
-    name !== UNKNOWN_ENVIRONMENT_NAME
+    name !== UNKNOWN_ENVIRONMENT_NAME &&
+    name !== NULL_ENVIRONMENT_NAME
   );
 };
 

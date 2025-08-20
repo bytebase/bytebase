@@ -24,7 +24,7 @@ type TaskMessage struct {
 	// Related fields
 	PipelineID     int
 	InstanceID     string
-	Environment    string
+	Environment    string // The environment ID (was stage_id). Could be empty if the task does not have an environment.
 	DatabaseName   *string
 	TaskRunRawList []*TaskRunMessage
 
