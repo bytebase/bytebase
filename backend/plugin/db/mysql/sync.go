@@ -544,7 +544,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			return nil, err
 		}
 		// Quoted string has a single quote around it and is escaped by QUOTE().
-		comment = UnquoteMySQLString(comment)
+		comment = stripSingleQuote(comment)
 
 		// Note: We should NOT skip partitioned tables here.
 		// The CREATE_OPTIONS might contain 'partitioned' for partitioned tables,
