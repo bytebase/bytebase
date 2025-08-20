@@ -353,7 +353,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			return nil, err
 		}
 		// Quoted string has a single quote around it and is escaped by QUOTE().
-		column.Comment = UnquoteMySQLString(column.Comment)
+		column.Comment = stripSingleQuote(column.Comment)
 		nullableBool, err := util.ConvertYesNo(nullable)
 		if err != nil {
 			return nil, err
@@ -544,7 +544,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			return nil, err
 		}
 		// Quoted string has a single quote around it and is escaped by QUOTE().
-		comment = UnquoteMySQLString(comment)
+		comment = stripSingleQuote(comment)
 
 		// Note: We should NOT skip partitioned tables here.
 		// The CREATE_OPTIONS might contain 'partitioned' for partitioned tables,
@@ -976,16 +976,28 @@ func (d *Driver) getCreateProcedureStmt(ctx context.Context, databaseName, funct
 
 func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.NullString, nullableBool bool, extra string) {
 	if defaultStr.Valid {
-		// In MySQL 5.7, the extra value is empty for a column with CURRENT_TIMESTAMP default.
+		// MySQL handles three types of defaults differently:
+		// 1. CURRENT_TIMESTAMP functions - stored as function names, need QUOTE() unescaping only
+		// 2. Expression defaults - stored as escaped expression strings, need double unescaping
+		// 3. Static defaults - stored as literal values, keep quoted for mysqldump compatibility
+
+		// First, remove QUOTE() escaping that was added by our SQL query
 		unquotedDefault := UnquoteMySQLString(defaultStr.String)
 		switch {
 		case IsCurrentTimestampLike(unquotedDefault):
+			// CURRENT_TIMESTAMP, CURRENT_DATE, etc. - these are function names, not expressions
+			// MySQL stores them without quotes in the catalog, so we just need QUOTE() unescaping
 			column.Default = unquotedDefault
 		case strings.Contains(extra, "DEFAULT_GENERATED"):
+			// Expression defaults like DEFAULT (UUID()) or DEFAULT (JSON_OBJECT('key', value))
+			// MySQL stores the expression as an escaped string in the catalog, then QUOTE() adds another layer
+			// We need both QUOTE() unescaping and catalog storage unescaping
 			unescapedDefault := UnescapeExpressionDefault(unquotedDefault)
 			column.Default = fmt.Sprintf("(%s)", unescapedDefault)
 		default:
-			// For non-generated and non CURRENT_XXX default value, preserve quotes for mysqldump compatibility
+			// Static defaults like DEFAULT 'hello' or DEFAULT 42
+			// MySQL evaluates these at DDL time and stores them as literal values
+			// Preserve quotes for mysqldump compatibility (mysqldump expects quoted literals)
 			column.Default = defaultStr.String
 		}
 	} else if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
@@ -1012,6 +1024,9 @@ func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.Nul
 }
 
 // UnescapeExpressionDefault unescapes the default expression for MySQL.
+// This handles the second layer of escaping that MySQL applies when storing
+// expression defaults (like DEFAULT (UUID())) in system catalogs.
+// MySQL stores expressions as escaped strings internally, separate from QUOTE() escaping.
 func UnescapeExpressionDefault(s string) string {
 	s = strings.ReplaceAll(s, `\'`, `'`) // unescape single quote
 	s = strings.ReplaceAll(s, `\\`, `\`) // unescape backslash
