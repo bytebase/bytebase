@@ -6,7 +6,7 @@
     :striped="true"
     :bordered="bordered"
     :loading="loading"
-    :row-key="(release: ComposedRelease) => release.name"
+    :row-key="(release) => release.name"
     :checked-row-keys="Array.from(state.selectedReleaseNameList)"
     :row-props="rowProps"
     @update:checked-row-keys="handleSelectionChange"
@@ -20,8 +20,10 @@ import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
-import { getTimeForPbTimestampProtoEs, type ComposedRelease } from "@/types";
+import { useUserStore } from "@/store";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
+import type { Release } from "@/types/proto-es/v1/release_service_pb";
 import { getReleaseFileStatement, humanizeTs } from "@/utils";
 
 interface LocalState {
@@ -33,7 +35,7 @@ const MAX_SHOW_FILES_COUNT = 3;
 
 const props = withDefaults(
   defineProps<{
-    releaseList: ComposedRelease[];
+    releaseList: Release[];
     bordered?: boolean;
     loading?: boolean;
     showSelection?: boolean;
@@ -59,9 +61,11 @@ const state = reactive<LocalState>({
   selectedReleaseNameList: new Set(props.selectedRowKeys),
 });
 
+const userStore = useUserStore();
+
 const columnList = computed(
-  (): (DataTableColumn<ComposedRelease> & { hide?: boolean })[] => {
-    const columns: (DataTableColumn<ComposedRelease> & { hide?: boolean })[] = [
+  (): (DataTableColumn<Release> & { hide?: boolean })[] => {
+    const columns: (DataTableColumn<Release> & { hide?: boolean })[] = [
       {
         type: "selection",
         hide: !props.showSelection,
@@ -128,12 +132,18 @@ const columnList = computed(
         key: "creator",
         title: t("common.creator"),
         width: 128,
-        render: (release) => (
-          <div class="flex flex-row items-center overflow-hidden gap-x-2">
-            <BBAvatar size="SMALL" username={release.creatorEntity.title} />
-            <span class="truncate">{release.creatorEntity.title}</span>
-          </div>
-        ),
+        render: (release) => {
+          const user = userStore.getUserByIdentifier(release.creator);
+          return (
+            <div class="flex flex-row items-center overflow-hidden gap-x-2">
+              <BBAvatar
+                size="SMALL"
+                username={user?.title || release.creator}
+              />
+              <span class="truncate">{user?.title || release.creator}</span>
+            </div>
+          );
+        },
       },
     ];
     return columns.filter((column) => !column.hide);
@@ -144,7 +154,7 @@ const sortedReleaseList = computed(() => {
   return props.releaseList;
 });
 
-const rowProps = (release: ComposedRelease) => {
+const rowProps = (release: Release) => {
   return {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {

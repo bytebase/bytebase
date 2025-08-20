@@ -35,12 +35,14 @@ import { NDivider } from "naive-ui";
 import { computed } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { CopyButton } from "@/components/v2";
-import { type ComposedRelease } from "@/types";
-import type { Release_File } from "@/types/proto-es/v1/release_service_pb";
+import type {
+  Release,
+  Release_File,
+} from "@/types/proto-es/v1/release_service_pb";
 import { getReleaseFileStatement } from "@/utils";
 
 const props = defineProps<{
-  release: ComposedRelease;
+  release: Release;
   releaseFile: Release_File;
 }>();
 
