@@ -17,7 +17,7 @@ import (
 // TaskRunMessage is message for task run.
 type TaskRunMessage struct {
 	TaskUID     int
-	Environment string // The environment ID (was stage_id)
+	Environment string // Refer to the task's environment.
 	PipelineUID int
 	Status      storepb.TaskRun_Status
 	Code        common.Code

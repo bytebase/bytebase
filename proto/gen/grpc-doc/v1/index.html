@@ -28113,7 +28113,8 @@ Format: projects/{project}/issues/{issue} </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage} </p></td>
+                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+Use &#34;-&#34; for {stage} when the stage has no environment or deleted environment. </p></td>
                 </tr>
               
                 <tr>
@@ -28121,7 +28122,8 @@ Format: projects/{project}/issues/{issue} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>id is the environment id of the stage.
-e.g. &#34;prod&#34;. </p></td>
+e.g. &#34;prod&#34;.
+Use &#34;-&#34; when the stage has no environment or deleted environment. </p></td>
                 </tr>
               
                 <tr>
@@ -28129,7 +28131,7 @@ e.g. &#34;prod&#34;. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>environment is the environment of the stage.
-Format: environments/{environment}. </p></td>
+Format: environments/{environment} for valid environments, or &#34;environments/-&#34; for stages without environment or with deleted environments. </p></td>
                 </tr>
               
                 <tr>

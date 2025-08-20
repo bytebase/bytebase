@@ -13560,18 +13560,21 @@ components:
             properties:
                 name:
                     type: string
-                    description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}'
+                    description: |-
+                        Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+                         Use "-" for {stage} when the stage has no environment or deleted environment.
                 id:
                     readOnly: true
                     type: string
                     description: |-
                         id is the environment id of the stage.
                          e.g. "prod".
+                         Use "-" when the stage has no environment or deleted environment.
                 environment:
                     type: string
                     description: |-
                         environment is the environment of the stage.
-                         Format: environments/{environment}.
+                         Format: environments/{environment} for valid environments, or "environments/-" for stages without environment or with deleted environments.
                 tasks:
                     type: array
                     items:

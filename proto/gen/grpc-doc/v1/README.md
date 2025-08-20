@@ -10177,9 +10177,9 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
-| id | [string](#string) |  | id is the environment id of the stage. e.g. &#34;prod&#34;. |
-| environment | [string](#string) |  | environment is the environment of the stage. Format: environments/{environment}. |
+| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage} Use &#34;-&#34; for {stage} when the stage has no environment or deleted environment. |
+| id | [string](#string) |  | id is the environment id of the stage. e.g. &#34;prod&#34;. Use &#34;-&#34; when the stage has no environment or deleted environment. |
+| environment | [string](#string) |  | environment is the environment of the stage. Format: environments/{environment} for valid environments, or &#34;environments/-&#34; for stages without environment or with deleted environments. |
 | tasks | [Task](#bytebase-v1-Task) | repeated |  |
 
 

@@ -15,6 +15,27 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+const (
+	// emptyStageID is the placeholder used for stages without environment or with deleted environments.
+	emptyStageID = "-"
+)
+
+// formatStageIDFromEnvironment returns the stage ID, using emptyStageID placeholder if environment is empty.
+func formatStageIDFromEnvironment(environment string) string {
+	if environment == "" {
+		return emptyStageID
+	}
+	return environment
+}
+
+// formatEnvironmentFromStageID converts stage ID back to environment, handling the emptyStageID placeholder.
+func formatEnvironmentFromStageID(stageID string) string {
+	if stageID == emptyStageID {
+		return ""
+	}
+	return stageID
+}
+
 func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMessage) ([]*v1pb.Plan, error) {
 	v1Plans := make([]*v1pb.Plan, len(plans))
 	for i := range plans {
@@ -402,8 +423,9 @@ func convertToTaskRuns(ctx context.Context, s *store.Store, stateCfg *state.Stat
 }
 
 func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State, taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
+	stageID := formatStageIDFromEnvironment(taskRun.Environment)
 	t := &v1pb.TaskRun{
-		Name:          common.FormatTaskRun(taskRun.ProjectID, taskRun.PipelineUID, taskRun.Environment, taskRun.TaskUID, taskRun.ID),
+		Name:          common.FormatTaskRun(taskRun.ProjectID, taskRun.PipelineUID, stageID, taskRun.TaskUID, taskRun.ID),
 		Creator:       common.FormatUserEmail(taskRun.Creator.Email),
 		CreateTime:    timestamppb.New(taskRun.CreatedAt),
 		UpdateTime:    timestamppb.New(taskRun.UpdatedAt),
@@ -511,10 +533,11 @@ func convertToSchedulerInfoWaitingCause(ctx context.Context, s *store.Store, c *
 		if issue != nil {
 			issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 		}
+		stageID := formatStageIDFromEnvironment(task.Environment)
 		return &v1pb.TaskRun_SchedulerInfo_WaitingCause{
 			Cause: &v1pb.TaskRun_SchedulerInfo_WaitingCause_Task_{
 				Task: &v1pb.TaskRun_SchedulerInfo_WaitingCause_Task{
-					Task:  common.FormatTask(pipeline.ProjectID, task.PipelineID, task.Environment, task.ID),
+					Task:  common.FormatTask(pipeline.ProjectID, task.PipelineID, stageID, task.ID),
 					Issue: issueName,
 				},
 			},
@@ -635,10 +658,11 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 	for _, environment := range environmentOrder {
 		tasks := tasksByEnv[environment]
 		if len(tasks) > 0 {
+			stageID := formatStageIDFromEnvironment(environment)
 			stages = append(stages, &v1pb.Stage{
-				Name:        common.FormatStage(project.ResourceID, rollout.ID, environment),
-				Id:          environment,
-				Environment: common.FormatEnvironment(environment),
+				Name:        common.FormatStage(project.ResourceID, rollout.ID, stageID),
+				Id:          stageID,
+				Environment: common.FormatEnvironment(stageID),
 				Tasks:       tasks,
 			})
 		}
@@ -647,11 +671,12 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 
 	for environment, tasks := range tasksByEnv {
 		if len(tasks) > 0 {
+			stageID := formatStageIDFromEnvironment(environment)
 			stages = append([]*v1pb.Stage{
 				{
-					Name:        common.FormatStage(project.ResourceID, rollout.ID, environment),
-					Id:          environment,
-					Environment: common.FormatEnvironment(environment),
+					Name:        common.FormatStage(project.ResourceID, rollout.ID, stageID),
+					Id:          stageID,
+					Environment: common.FormatEnvironment(stageID),
 					Tasks:       tasks,
 				},
 			}, stages...)
@@ -687,8 +712,9 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance %s", task.InstanceID)
 	}
+	stageID := formatStageIDFromEnvironment(task.Environment)
 	v1pbTask := &v1pb.Task{
-		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.Environment, task.ID),
+		Name:          common.FormatTask(project.ResourceID, task.PipelineID, stageID, task.ID),
 		SpecId:        task.Payload.GetSpecId(),
 		Type:          convertToTaskType(task.Type),
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
@@ -727,8 +753,9 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		return nil, errors.Errorf("database not found")
 	}
 
+	stageID := formatStageIDFromEnvironment(task.Environment)
 	v1pbTask := &v1pb.Task{
-		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.Environment, task.ID),
+		Name:          common.FormatTask(project.ResourceID, task.PipelineID, stageID, task.ID),
 		SpecId:        task.Payload.GetSpecId(),
 		Type:          convertToTaskType(task.Type),
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
@@ -762,8 +789,9 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 		return nil, errors.Errorf("database not found")
 	}
 
+	stageID := formatStageIDFromEnvironment(task.Environment)
 	v1pbTask := &v1pb.Task{
-		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.Environment, task.ID),
+		Name:          common.FormatTask(project.ResourceID, task.PipelineID, stageID, task.ID),
 		SpecId:        task.Payload.GetSpecId(),
 		Type:          convertToTaskType(task.Type),
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
@@ -809,8 +837,9 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 			Password: &task.Payload.Password,
 		},
 	}
+	stageID := formatStageIDFromEnvironment(task.Environment)
 	v1pbTask := &v1pb.Task{
-		Name:    common.FormatTask(project.ResourceID, task.PipelineID, task.Environment, task.ID),
+		Name:    common.FormatTask(project.ResourceID, task.PipelineID, stageID, task.ID),
 		SpecId:  task.Payload.GetSpecId(),
 		Type:    convertToTaskType(task.Type),
 		Status:  convertToTaskStatus(task.LatestTaskRunStatus, false),
