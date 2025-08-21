@@ -9,8 +9,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -1437,63 +1435,28 @@ func writeIndexKeyList(out io.Writer, index *storepb.IndexMetadata) error {
 		return err
 	}
 
-	nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, index.Definition)
-	if err != nil {
-		return err
-	}
-
-	node, ok := nodes[0].(*ast.CreateIndexStmt)
-	if !ok {
-		return errors.Errorf("failed to parse create index statement")
-	}
-
-	for i, key := range node.Index.KeyList {
+	for i, expression := range index.Expressions {
 		if i > 0 {
 			if _, err := io.WriteString(out, ", "); err != nil {
 				return err
 			}
 		}
-		if key.Type == ast.IndexKeyTypeExpression {
-			if _, err := io.WriteString(out, "("); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, key.Key); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, ")"); err != nil {
-				return err
-			}
-		} else {
-			if _, err := io.WriteString(out, "\""); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, key.Key); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, "\""); err != nil {
-				return err
-			}
+
+		if _, err := io.WriteString(out, expression); err != nil {
+			return err
 		}
-		if key.SortOrder == ast.SortOrderTypeDescending {
+
+		// Add DESC if this column is marked as descending
+		if i < len(index.Descending) && index.Descending[i] {
 			if _, err := io.WriteString(out, " DESC"); err != nil {
 				return err
 			}
 		}
-		switch key.NullOrder {
-		case ast.NullOrderTypeFirst:
-			if _, err := io.WriteString(out, " NULLS FIRST"); err != nil {
-				return err
-			}
-		case ast.NullOrderTypeLast:
-			if _, err := io.WriteString(out, " NULLS LAST"); err != nil {
-				return err
-			}
-		default:
-			// Default null ordering (no explicit NULLS FIRST/LAST)
-		}
+		// Note: NULLS ordering information is not available in IndexMetadata
+		// so we omit it in the generated DDL
 	}
 
-	_, err = io.WriteString(out, ")")
+	_, err := io.WriteString(out, ")")
 	return err
 }
 
