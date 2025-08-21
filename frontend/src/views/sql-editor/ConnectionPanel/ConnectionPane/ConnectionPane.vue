@@ -8,7 +8,7 @@
           <FeatureBadge :feature="PlanFeature.FEATURE_BATCH_QUERY" />
           {{
             $t("sql-editor.batch-query.description", {
-              database: selectedDatabases.size,
+              database: state.selectedDatabases.size,
               group:
                 tabStore.currentTab?.batchQueryContext?.databaseGroups
                   ?.length ?? 0,
@@ -31,7 +31,7 @@
         class="w-full mt-1 flex flex-row justify-start items-start flex-wrap gap-2"
       >
         <NTag
-          v-for="database in selectedDatabases"
+          v-for="database in state.selectedDatabases"
           :key="database"
           :closable="database !== tabStore.currentTab?.connection.database"
           @close="() => handleUncheckDatabase(database)"
@@ -60,7 +60,7 @@
               {{ $t("sql-editor.batch-query.select-data-source.tooltip") }}
             </NTooltip>
           </div>
-          <NRadioGroup v-model:value="batchQueryDataSourceType">
+          <NRadioGroup v-model:value="state.batchQueryDataSourceType">
             <NRadio :value="DataSourceType.ADMIN">
               {{ getDataSourceTypeI18n(DataSourceType.ADMIN) }}
             </NRadio>
@@ -74,7 +74,7 @@
     <NDivider v-if="tabStore.currentTab" class="!my-3" />
     <div class="flex flex-row gap-x-0.5 px-1 items-center">
       <AdvancedSearch
-        v-model:params="searchParams"
+        v-model:params="state.params"
         :autofocus="false"
         :placeholder="$t('database.filter-database')"
         :scope-options="scopeOptions"
@@ -89,7 +89,7 @@
       <template v-if="treeStore.state === 'READY'">
         <NCheckbox
           v-if="existEmptyEnvironment"
-          v-model:checked="showEmptyEnvironment"
+          v-model:checked="state.showEmptyEnvironment"
         >
           {{ $t("sql-editor.show-empty-environments") }}
         </NCheckbox>
@@ -100,7 +100,8 @@
           <div
             v-if="
               !treeIsEmpty(treeState) ||
-              (showEmptyEnvironment && environment !== UNKNOWN_ENVIRONMENT_NAME)
+              (state.showEmptyEnvironment &&
+                environment !== UNKNOWN_ENVIRONMENT_NAME)
             "
             class="flex flex-col space-y-2 pt-2 pb-2"
           >
@@ -168,8 +169,8 @@
 
   <FeatureModal
     :feature="PlanFeature.FEATURE_BATCH_QUERY"
-    :open="showFeatureModal"
-    @cancel="showFeatureModal = false"
+    :open="state.showFeatureModal"
+    @cancel="state.showFeatureModal = false"
   />
 </template>
 
@@ -189,7 +190,7 @@ import {
   NCheckbox,
   type TreeOption,
 } from "naive-ui";
-import { ref, shallowRef, nextTick, watch, h, computed } from "vue";
+import { ref, shallowRef, nextTick, watch, h, computed, reactive } from "vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
@@ -240,7 +241,6 @@ import {
   useDynamicLocalStorage,
 } from "@/utils";
 import type { SearchParams } from "@/utils";
-import type { SearchScope } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import BatchQueryDatabaseGroupSelector from "./BatchQueryDatabaseGroupSelector.vue";
 import DatabaseGroupTag from "./DatabaseGroupTag.vue";
@@ -251,6 +251,14 @@ import {
 import { Label } from "./TreeNode";
 import { setConnection, useDropdown } from "./actions";
 import { useSQLEditorTreeByEnvironment, type TreeByEnvironment } from "./tree";
+
+interface LocalState {
+  selectedDatabases: Set<string>;
+  params: SearchParams;
+  showFeatureModal: boolean;
+  showEmptyEnvironment: boolean;
+  batchQueryDataSourceType?: QueryDataSourceType;
+}
 
 const treeStore = useSQLEditorTreeStore();
 const tabStore = useSQLEditorTabStore();
@@ -274,40 +282,28 @@ const expandedState = useDynamicLocalStorage<{
   }
 );
 
-// Combine expandedKeys watcher with initialization flag
-const handleExpandedKeysChange = () => {
-  expandedState.value.initialized = true;
-};
-
-watch(() => expandedState.value.expandedKeys, handleExpandedKeysChange, {
-  deep: true,
-});
+watch(
+  () => expandedState.value.expandedKeys,
+  () => {
+    expandedState.value.initialized = true;
+  },
+  { deep: true }
+);
 
 const hasBatchQueryFeature = featureToRef(PlanFeature.FEATURE_BATCH_QUERY);
 const hasDatabaseGroupFeature = featureToRef(
   PlanFeature.FEATURE_DATABASE_GROUPS
 );
 
-// Use individual refs instead of reactive for better performance
-const selectedDatabases = ref<Set<string>>(new Set());
-const searchQuery = ref("");
-const searchScopes = ref<SearchScope[]>([]);
-const showFeatureModal = ref(false);
-const showEmptyEnvironment = ref(false);
-const batchQueryDataSourceType = ref<QueryDataSourceType>(
-  DataSourceType.READ_ONLY
-);
-
-// Computed property for search params
-const searchParams = computed({
-  get: () => ({
-    query: searchQuery.value,
-    scopes: searchScopes.value,
-  }),
-  set: (params: SearchParams) => {
-    searchQuery.value = params.query;
-    searchScopes.value = params.scopes;
+const state = reactive<LocalState>({
+  selectedDatabases: new Set(),
+  params: {
+    query: "",
+    scopes: [],
   },
+  showFeatureModal: false,
+  showEmptyEnvironment: false,
+  batchQueryDataSourceType: DataSourceType.READ_ONLY,
 });
 
 const treeByEnvironment = shallowRef<
@@ -334,9 +330,8 @@ const treeIsEmpty = (value: TreeByEnvironment) => {
   return false;
 };
 
-// Watch batchQueryDataSourceType separately
 watch(
-  batchQueryDataSourceType,
+  () => state.batchQueryDataSourceType,
   (dataSourceType) => {
     tabStore.updateBatchQueryContext({
       dataSourceType,
@@ -345,7 +340,6 @@ watch(
   { immediate: true }
 );
 
-// Watch tab changes
 watch(
   () => tabStore.currentTab?.id,
   async () => {
@@ -355,54 +349,42 @@ watch(
     const databases = tabStore.currentTab.batchQueryContext?.databases ?? [];
     databases.push(tabStore.currentTab.connection.database);
     await batchGetOrFetchDatabases(databases);
-    selectedDatabases.value = new Set(databases.filter(isValidDatabaseName));
+    state.selectedDatabases = new Set(databases.filter(isValidDatabaseName));
   },
-  { immediate: true }
+  {
+    immediate: true,
+  }
 );
 
-// Watch batch query databases changes
 watch(
-  () => tabStore.currentTab?.batchQueryContext?.databases,
-  async (databases) => {
-    if (!tabStore.currentTab || !databases) {
-      return;
+  () => [...state.selectedDatabases],
+  (selectedDatabases) => {
+    // If the current tab is not connected to any database, we need to connect it to the first selected database.
+    if (
+      (!tabStore.currentTab ||
+        isEqual(emptySQLEditorConnection(), tabStore.currentTab.connection)) &&
+      selectedDatabases.length > 0
+    ) {
+      const database = databaseStore.getDatabaseByName(selectedDatabases[0]);
+      const coreTab: CoreSQLEditorTab = {
+        connection: {
+          ...emptySQLEditorConnection(),
+          instance: database.instance,
+          database: database.name,
+        },
+        worksheet: "",
+        mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+      };
+      tryConnectToCoreSQLEditorTab(coreTab);
     }
-    const allDatabases = [
-      ...databases,
-      tabStore.currentTab.connection.database,
-    ];
-    await batchGetOrFetchDatabases(allDatabases);
-    selectedDatabases.value = new Set(allDatabases.filter(isValidDatabaseName));
+    tabStore.updateBatchQueryContext({
+      databases: selectedDatabases,
+    });
   }
 );
-
-watch(selectedDatabases, (newSelectedDatabases) => {
-  const selectedDatabasesList = [...newSelectedDatabases];
-  // If the current tab is not connected to any database, we need to connect it to the first selected database.
-  if (
-    (!tabStore.currentTab ||
-      isEqual(emptySQLEditorConnection(), tabStore.currentTab.connection)) &&
-    selectedDatabasesList.length > 0
-  ) {
-    const database = databaseStore.getDatabaseByName(selectedDatabasesList[0]);
-    const coreTab: CoreSQLEditorTab = {
-      connection: {
-        ...emptySQLEditorConnection(),
-        instance: database.instance,
-        database: database.name,
-      },
-      worksheet: "",
-      mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-    };
-    tryConnectToCoreSQLEditorTab(coreTab);
-  }
-  tabStore.updateBatchQueryContext({
-    databases: selectedDatabasesList,
-  });
-});
 
 const handleUncheckDatabase = (database: string) => {
-  selectedDatabases.value.delete(database);
+  state.selectedDatabases.delete(database);
 };
 
 const handleUncheckDatabaseGroup = (databaseGroupName: string) => {
@@ -501,28 +483,24 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
 
   return h(Label, {
     node,
-    checked: selectedDatabases.value.has(databaseName),
-    keyword: searchQuery.value,
+    checked: state.selectedDatabases.has(databaseName),
+    keyword: state.params.query,
     connected: connectedDatabases.value.has(databaseName),
     "onUpdate:checked": (checked: boolean) => {
       if (node.meta.type !== "database") {
         return;
       }
       if (checked) {
-        if (selectedDatabases.value.size === 0) {
+        if (state.selectedDatabases.size === 0) {
           return connect(node);
         }
         if (!hasBatchQueryFeature.value) {
-          showFeatureModal.value = true;
+          state.showFeatureModal = true;
           return;
         }
-        const newSet = new Set(selectedDatabases.value);
-        newSet.add(databaseName);
-        selectedDatabases.value = newSet;
+        state.selectedDatabases.add(databaseName);
       } else {
-        const newSet = new Set(selectedDatabases.value);
-        newSet.delete(databaseName);
-        selectedDatabases.value = newSet;
+        state.selectedDatabases.delete(databaseName);
       }
     },
   });
@@ -558,18 +536,17 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
     },
     onmouseenter(e: MouseEvent) {
       if (node.meta.type === "database") {
-        // Use a small delay even when transitioning between nodes
-        // to prevent excessive re-renders when moving quickly
-        const delay = hoverState.value ? 150 : undefined;
-        updateHoverNode({ node }, "before", delay);
-
+        if (hoverState.value) {
+          updateHoverNode({ node }, "before", 0 /* overrideDelay */);
+        } else {
+          updateHoverNode({ node }, "before");
+        }
         nextTick().then(() => {
           // Find the node element and put the database panel to the right corner
           // of the node
           const wrapper = findAncestor(e.target as HTMLElement, ".n-tree-node");
           if (!wrapper) {
-            // Clear hover state if we can't find the wrapper
-            updateHoverNode(undefined, "after", 150);
+            updateHoverNode(undefined, "after", 0 /* overrideDelay */);
             return;
           }
           const bounding = wrapper.getBoundingClientRect();
@@ -605,13 +582,13 @@ useEmitteryEventListener(editorEvents, "tree-ready", async () => {
 });
 
 const selectedLabels = computed(() => {
-  return searchScopes.value
+  return state.params.scopes
     .filter((scope) => scope.id === "database-label")
     .map((scope) => scope.value);
 });
 
 const selectedInstance = computed(() => {
-  const instanceId = searchScopes.value.find(
+  const instanceId = state.params.scopes.find(
     (scope) => scope.id === "instance"
   )?.value;
   if (!instanceId) {
@@ -621,7 +598,7 @@ const selectedInstance = computed(() => {
 });
 
 const selectedEngines = computed(() => {
-  return searchScopes.value
+  return state.params.scopes
     .filter((scope) => scope.id === "engine")
     .map((scope) => {
       // Convert from string engine name to proto-es enum value
@@ -635,17 +612,16 @@ const selectedEngines = computed(() => {
 const filter = computed(
   (): DatabaseFilter => ({
     instance: selectedInstance.value,
-    query: searchQuery.value,
+    query: state.params.query,
     labels: selectedLabels.value,
     engines: selectedEngines.value,
   })
 );
 
-// Combine project and filter watchers
 watch(
   () => editorStore.project,
   (project) => {
-    searchScopes.value = [
+    state.params.scopes = [
       {
         id: "project",
         readonly: true,
@@ -675,9 +651,12 @@ const prepareDatabases = async () => {
   );
 };
 
-// Combine database preparation watchers for better performance
 watch(
-  [() => editorStore.project, () => editorStore.projectContextReady, filter],
+  [
+    () => editorStore.project,
+    () => editorStore.projectContextReady,
+    () => filter.value,
+  ],
   async ([project, ready, _]) => {
     if (!isValidProjectName(project)) {
       return;
