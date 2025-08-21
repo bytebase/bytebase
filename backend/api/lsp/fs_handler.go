@@ -4,15 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"log/slog"
 	"os"
 
 	lsp "github.com/bytebase/lsp-protocol"
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/jsonrpc2"
-
-	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // GetFS returns the file system.
@@ -82,27 +78,10 @@ func (h *Handler) handleFileSystemRequest(ctx context.Context, conn *jsonrpc2.Co
 			if !found {
 				return &os.PathError{Op: "Open", Path: string(uri), Err: os.ErrNotExist}
 			}
-			diagnostics, err := base.Diagnose(ctx, base.DiagnoseContext{}, h.getEngineType(ctx), string(content))
-			if err != nil {
-				slog.Warn("diagnose error", log.BBError(err))
-			}
-			if err := conn.Notify(ctx, string(LSPMethodPublishDiagnostics), &lsp.PublishDiagnosticsParams{
-				URI:         uri,
-				Diagnostics: diagnostics,
-			}); err != nil {
-				return err
-			}
-			statementRanges, err := base.GetStatementRanges(ctx, base.StatementRangeContext{}, h.getEngineType(ctx), string(content))
-			if err != nil {
-				slog.Warn("get statement ranges error", log.BBError(err))
-			} else if len(statementRanges) != 0 {
-				if err := conn.Notify(ctx, string(LSPCustomMethodSQLStatementRanges), &SQLStatementRangesParams{
-					URI:    uri,
-					Ranges: statementRanges,
-				}); err != nil {
-					return err
-				}
-			}
+
+			// Use debounced diagnostics for better performance
+			// This prevents diagnostics from running on every keystroke
+			h.diagnosticsDebouncer.ScheduleDiagnostics(ctx, conn, uri, string(content), h)
 
 			return nil
 		})
