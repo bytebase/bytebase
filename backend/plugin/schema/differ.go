@@ -1224,7 +1224,6 @@ func comparePartitions(oldPartitions, newPartitions []*storepb.TablePartitionMet
 func compareTriggers(oldTriggers, newTriggers []*storepb.TriggerMetadata) []*TriggerDiff {
 	var changes []*TriggerDiff
 
-
 	oldTriggerMap := make(map[string]*storepb.TriggerMetadata)
 	for _, trigger := range oldTriggers {
 		oldTriggerMap[trigger.Name] = trigger

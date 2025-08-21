@@ -481,10 +481,7 @@ func (c *PostgreSQLViewComparer) extractSemanticStructure(tokens []antlr.Token) 
 			semantic.OrderByItems = c.parseCommaSeparatedList(currentItem)
 		}
 	default:
-		// Handle any unrecognized final state
-		if currentItem != "" {
-			// Add to a general bucket for unhandled content
-		}
+		// Handle any unrecognized final state - no action needed
 	}
 
 	return semantic
