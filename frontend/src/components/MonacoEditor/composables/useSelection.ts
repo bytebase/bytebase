@@ -7,9 +7,11 @@ export const useSelection = (editor: monaco.editor.IStandaloneCodeEditor) => {
     selection.value = getSelection(editor);
   };
 
+  // Only update selection when cursor selection actually changes
   editor.onDidChangeCursorSelection(update);
   editor.onDidChangeModel(update);
-  editor.onDidChangeModelContent(update);
+  // REMOVED: onDidChangeModelContent - selection doesn't change when typing
+  // This was causing unnecessary updates on every keystroke
 
   return selection;
 };

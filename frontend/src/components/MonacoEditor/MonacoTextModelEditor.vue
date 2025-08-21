@@ -52,6 +52,7 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
+import { throttle } from "lodash-es";
 import * as monaco from "monaco-editor";
 import { NPopover } from "naive-ui";
 import {
@@ -231,33 +232,50 @@ onMounted(async () => {
     }
 
     contentRef.value = content.value;
+
+    // Combine content watcher with ref update
     watch(content, () => {
-      emit("update:content", content.value);
       contentRef.value = content.value;
+      emit("update:content", content.value);
     });
-    watch([() => selection.value, () => activeRangeByCursor.value], () => {
-      const hasSelection =
-        selection.value &&
-        (selection.value.startLineNumber !== selection.value.endLineNumber ||
-          selection.value.startColumn !== selection.value.endColumn);
-      const activeRange = hasSelection
-        ? selection.value
-        : activeRangeByCursor.value;
-      activeContent.value = activeRange
-        ? props.model?.getValueInRange(activeRange) || ""
-        : "";
-      emit("update:active-content", activeContent.value);
-    });
+
+    // Throttle the selection/activeRange processing to reduce overhead
+    const throttledSelectionHandler = throttle(
+      ([newSelection, newActiveRangeByCursor]: [
+        monaco.Selection | null,
+        monaco.IRange | undefined,
+      ]) => {
+        // Emit selection update
+        emit("update:selection", newSelection);
+
+        // Calculate active content
+        const hasSelection =
+          newSelection &&
+          (newSelection.startLineNumber !== newSelection.endLineNumber ||
+            newSelection.startColumn !== newSelection.endColumn);
+        const activeRange = hasSelection
+          ? newSelection
+          : newActiveRangeByCursor;
+        activeContent.value = activeRange
+          ? props.model?.getValueInRange(activeRange) || ""
+          : "";
+        emit("update:active-content", activeContent.value);
+      },
+      100, // 100ms throttle for selection updates
+      { leading: true, trailing: true }
+    );
+
+    // Combine selection and activeRange watchers to avoid duplicate processing
+    watch(
+      [() => selection.value, () => activeRangeByCursor.value],
+      throttledSelectionHandler
+    );
+
+    // Keep selectedContent watcher separate as it has different trigger conditions
     watch(
       () => selectedContent.value,
       () => {
         emit("select-content", selectedContent.value);
-      }
-    );
-    watch(
-      () => selection.value,
-      () => {
-        emit("update:selection", selection.value);
       }
     );
   } catch (ex) {
