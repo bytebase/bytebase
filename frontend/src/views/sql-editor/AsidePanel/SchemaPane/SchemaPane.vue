@@ -87,7 +87,7 @@ import {
   type TreeOption,
 } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, h, nextTick, reactive, ref, watch } from "vue";
+import { computed, h, nextTick, ref, watch } from "vue";
 import { watchEffect } from "vue";
 import { BBModal } from "@/bbkit";
 import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
@@ -131,7 +131,7 @@ const { height: treeContainerHeight } = useElementSize(
     box: "content-box",
   }
 );
-const searchPatternByTabId = reactive(new Map<string, string>());
+
 const { viewState: panelViewState } = useCurrentTabViewStateContext();
 const { schemaViewer } = useSQLEditorContext();
 const {
@@ -145,17 +145,18 @@ const {
 const { selectAllFromTableOrView } = useActions();
 const { currentTab } = storeToRefs(useSQLEditorTabStore());
 const { database } = useConnectionOfCurrentSQLEditorTab();
-const searchPattern = computed({
-  get() {
-    const id = currentTab.value?.id ?? "";
-    return searchPatternByTabId.get(id) ?? "";
-  },
-  set(value) {
-    const id = currentTab.value?.id ?? "";
-    searchPatternByTabId.set(id, value);
-  },
-});
+
+// Simple search pattern that resets when tab changes
+const searchPattern = ref("");
 const debouncedSearchPattern = refDebounced(searchPattern, 200);
+
+// Reset search when tab changes
+watch(
+  () => currentTab.value?.id,
+  () => {
+    searchPattern.value = "";
+  }
+);
 const isFetchingMetadata = ref(false);
 const metadata = computedAsync(
   async () => {
@@ -263,17 +264,18 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         const target = node.meta.target as NodeTarget<
           "table" | "external-table" | "column" | "view"
         >;
-        if (hoverState.value) {
-          updateHoverState(target, "before", 0 /* overrideDelay */);
-        } else {
-          updateHoverState(target, "before");
-        }
+        // Use a small delay even when transitioning between nodes
+        // to prevent excessive re-renders when moving quickly
+        const delay = hoverState.value ? 150 : undefined;
+        updateHoverState(target, "before", delay);
+
         nextTick().then(() => {
           // Find the node element and put the database panel to the bottom
           // of the node, near the cursor
           const wrapper = findAncestor(e.target as HTMLElement, ".n-tree-node");
           if (!wrapper) {
-            updateHoverState(undefined, "after", 0 /* overrideDelay */);
+            // Clear hover state if we can't find the wrapper
+            updateHoverState(undefined, "after", 150);
             return;
           }
           const bounding = wrapper.getBoundingClientRect();
