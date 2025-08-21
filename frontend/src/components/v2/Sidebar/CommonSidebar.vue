@@ -1,5 +1,7 @@
 <template>
-  <nav class="flex-1 flex flex-col overflow-y-hidden">
+  <nav
+    class="flex-1 flex flex-col overflow-y-hidden border-r border-block-border"
+  >
     <BytebaseLogo
       v-if="showLogo"
       class="w-full px-4 shrink-0"
