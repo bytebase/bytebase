@@ -580,7 +580,7 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 
 		if col.Comment != "" {
 			_, _ = buf.WriteString(" COMMENT '")
-			_, _ = buf.WriteString(escapeString(col.Comment))
+			_, _ = buf.WriteString(col.Comment)
 			_, _ = buf.WriteString("'")
 		}
 	}
@@ -646,7 +646,7 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 	}
 	if table.Comment != "" {
 		_, _ = buf.WriteString(" COMMENT='")
-		_, _ = buf.WriteString(escapeString(table.Comment))
+		_, _ = buf.WriteString(table.Comment)
 		_, _ = buf.WriteString("'")
 	}
 
@@ -720,7 +720,7 @@ func writeAddColumn(buf *strings.Builder, table string, column *storepb.ColumnMe
 
 	if column.Comment != "" {
 		_, _ = buf.WriteString(" COMMENT '")
-		_, _ = buf.WriteString(escapeString(column.Comment))
+		_, _ = buf.WriteString(column.Comment)
 		_, _ = buf.WriteString("'")
 	}
 
@@ -784,7 +784,7 @@ func writeModifyColumn(buf *strings.Builder, table string, column *storepb.Colum
 
 	if column.Comment != "" {
 		_, _ = buf.WriteString(" COMMENT '")
-		_, _ = buf.WriteString(escapeString(column.Comment))
+		_, _ = buf.WriteString(column.Comment)
 		_, _ = buf.WriteString("'")
 	}
 
@@ -845,7 +845,7 @@ func writeCreateIndex(buf *strings.Builder, table string, index *storepb.IndexMe
 
 	if index.Comment != "" {
 		_, _ = buf.WriteString(" COMMENT '")
-		_, _ = buf.WriteString(escapeString(index.Comment))
+		_, _ = buf.WriteString(index.Comment)
 		_, _ = buf.WriteString("'")
 	}
 
@@ -1016,7 +1016,7 @@ func writeAlterTableComment(buf *strings.Builder, tableName, comment string) err
 	_, _ = buf.WriteString("ALTER TABLE `")
 	_, _ = buf.WriteString(tableName)
 	_, _ = buf.WriteString("` COMMENT = '")
-	_, _ = buf.WriteString(escapeString(comment))
+	_, _ = buf.WriteString(comment)
 	_, _ = buf.WriteString("';\n")
 	return nil
 }
@@ -1082,12 +1082,6 @@ func hasAutoIncrement(column *storepb.ColumnMetadata) bool {
 	}
 	// Check if column has AUTO_INCREMENT in default field
 	return strings.EqualFold(column.GetDefault(), "AUTO_INCREMENT")
-}
-
-func escapeString(s string) string {
-	s = strings.ReplaceAll(s, "\\", "\\\\")
-	s = strings.ReplaceAll(s, "'", "\\'")
-	return s
 }
 
 func writeTemporaryViewForDrop(buf *strings.Builder, viewName string, view *storepb.ViewMetadata) error {
