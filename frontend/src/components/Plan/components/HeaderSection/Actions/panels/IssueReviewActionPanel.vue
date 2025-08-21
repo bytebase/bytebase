@@ -261,7 +261,7 @@ const handleConfirm = async () => {
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
-          title: "Issue approved, waiting for rollout",
+          title: t("issue.approval.approved-and-waiting-for-rollout"),
         });
 
         nextTick(() => {
