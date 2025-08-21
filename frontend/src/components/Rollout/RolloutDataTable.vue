@@ -117,6 +117,7 @@ const columnList = computed(
                             <EnvironmentV1Name
                               environment={environment}
                               link={false}
+                              nullEnvironmentPlaceholder="Null"
                             />
                           </div>
                         ),
