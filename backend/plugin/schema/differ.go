@@ -1224,11 +1224,6 @@ func comparePartitions(oldPartitions, newPartitions []*storepb.TablePartitionMet
 func compareTriggers(oldTriggers, newTriggers []*storepb.TriggerMetadata) []*TriggerDiff {
 	var changes []*TriggerDiff
 
-	// If parser (new) doesn't extract triggers but sync (old) does,
-	// this is expected behavior - don't report as differences
-	if len(newTriggers) == 0 && len(oldTriggers) > 0 {
-		return changes // No differences to report
-	}
 
 	oldTriggerMap := make(map[string]*storepb.TriggerMetadata)
 	for _, trigger := range oldTriggers {

@@ -189,7 +189,7 @@ func TestPostgreSQLExpressionComparer_CompareExpressions(t *testing.T) {
 
 			if test.error {
 				if err == nil {
-					t.Errorf("Expected error but got none")
+					t.Error("Expected error but got none")
 				}
 				return
 			}
@@ -274,7 +274,7 @@ func TestPostgreSQLExpressionComparer_NormalizeExpression(t *testing.T) {
 
 			if test.error {
 				if err == nil {
-					t.Errorf("Expected error but got none")
+					t.Error("Expected error but got none")
 				}
 				return
 			}
@@ -619,7 +619,7 @@ func TestPostgreSQLExpressionComparer_WithConfig(t *testing.T) {
 
 	// With case sensitivity enabled, these should be different
 	if result {
-		t.Errorf("Expected case-sensitive comparison to return false")
+		t.Error("Expected case-sensitive comparison to return false")
 	}
 
 	// Test schema prefix preservation
@@ -632,7 +632,7 @@ func TestPostgreSQLExpressionComparer_WithConfig(t *testing.T) {
 
 	// With schema prefix preservation, these should be different
 	if result {
-		t.Errorf("Expected schema-sensitive comparison to return false")
+		t.Error("Expected schema-sensitive comparison to return false")
 	}
 }
 

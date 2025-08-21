@@ -445,6 +445,8 @@ func (c *PostgreSQLViewComparer) extractSemanticStructure(tokens []antlr.Token) 
 				}
 				currentItem += tokenText
 			}
+		default:
+			// Handle unrecognized state - should not happen in normal parsing
 		}
 	}
 
@@ -477,6 +479,11 @@ func (c *PostgreSQLViewComparer) extractSemanticStructure(tokens []antlr.Token) 
 	case "ORDER_BY":
 		if currentItem != "" {
 			semantic.OrderByItems = c.parseCommaSeparatedList(currentItem)
+		}
+	default:
+		// Handle any unrecognized final state
+		if currentItem != "" {
+			// Add to a general bucket for unhandled content
 		}
 	}
 
@@ -838,6 +845,8 @@ func (*PostgreSQLViewComparer) normalizeJoinCondition(condition string) string {
 			parenLevel++
 		case ")":
 			parenLevel--
+		default:
+			// Other tokens don't affect parentheses level
 		}
 
 		// Skip redundant outer parentheses for semantic equivalence

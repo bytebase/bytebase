@@ -1769,6 +1769,8 @@ func (*metadataExtractor) extractIncludeClause(statement string) string {
 			parenCount++
 		case ')':
 			parenCount--
+		default:
+			// Other characters don't affect parentheses counting
 		}
 		i++
 	}

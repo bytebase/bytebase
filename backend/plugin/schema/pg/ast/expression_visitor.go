@@ -323,6 +323,8 @@ func (v *ExpressionValidatorVisitor) validateLiteral(expr *LiteralExpr) {
 		if strings.ToUpper(expr.Value) != "NULL" {
 			v.errors = append(v.errors, fmt.Sprintf("invalid null literal: %s", expr.Value))
 		}
+	default:
+		// Unknown value type - this is acceptable as the type system may support additional types
 	}
 }
 
