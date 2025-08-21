@@ -85,6 +85,7 @@
     - [ObjectSchema.StructKind.PropertiesEntry](#bytebase-store-ObjectSchema-StructKind-PropertiesEntry)
     - [PackageMetadata](#bytebase-store-PackageMetadata)
     - [ProcedureMetadata](#bytebase-store-ProcedureMetadata)
+    - [RuleMetadata](#bytebase-store-RuleMetadata)
     - [SchemaCatalog](#bytebase-store-SchemaCatalog)
     - [SchemaMetadata](#bytebase-store-SchemaMetadata)
     - [SequenceMetadata](#bytebase-store-SequenceMetadata)
@@ -1614,6 +1615,27 @@ ProcedureMetadata is the metadata for procedures.
 
 
 
+<a name="bytebase-store-RuleMetadata"></a>
+
+### RuleMetadata
+RuleMetadata is the metadata for PostgreSQL rules.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of the rule. |
+| event | [string](#string) |  | The event is the event type of the rule: SELECT, INSERT, UPDATE, or DELETE. |
+| condition | [string](#string) |  | The condition is the WHERE condition of the rule (optional). |
+| action | [string](#string) |  | The action is the command(s) to execute when the rule fires. |
+| is_instead | [bool](#bool) |  | The is_instead indicates whether this is an INSTEAD rule. |
+| is_enabled | [bool](#bool) |  | The is_enabled indicates whether the rule is enabled. |
+| definition | [string](#string) |  | The definition is the full CREATE RULE statement. |
+
+
+
+
+
+
 <a name="bytebase-store-SchemaCatalog"></a>
 
 ### SchemaCatalog
@@ -1821,6 +1843,7 @@ TableMetadata is the metadata for tables.
 | sorting_keys | [string](#string) | repeated | The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field. Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by |
 | triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated |  |
 | skip_dump | [bool](#bool) |  |  |
+| rules | [RuleMetadata](#bytebase-store-RuleMetadata) | repeated | The rules is the list of rules in a table (PostgreSQL specific). |
 | sharding_info | [string](#string) |  | https://docs.pingcap.com/tidb/stable/information-schema-tables/ |
 | primary_key_type | [string](#string) |  | https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes CLUSTERED or NONCLUSTERED. |
 
@@ -1931,6 +1954,7 @@ ViewMetadata is the metadata for views.
 | columns | [ColumnMetadata](#bytebase-store-ColumnMetadata) | repeated | The columns is the ordered list of columns in a table. |
 | triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The triggers is the list of triggers in a view. |
 | skip_dump | [bool](#bool) |  |  |
+| rules | [RuleMetadata](#bytebase-store-RuleMetadata) | repeated | The rules is the list of rules in a view (PostgreSQL specific). |
 
 
 
