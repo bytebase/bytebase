@@ -131,10 +131,6 @@ const { height: treeContainerHeight } = useElementSize(
     box: "content-box",
   }
 );
-// Use a plain Map outside of reactive system for better performance
-// and a separate ref to track changes
-const searchPatternMap = new Map<string, string>();
-const searchPatternVersion = ref(0);
 
 const { viewState: panelViewState } = useCurrentTabViewStateContext();
 const { schemaViewer } = useSQLEditorContext();
@@ -149,21 +145,18 @@ const {
 const { selectAllFromTableOrView } = useActions();
 const { currentTab } = storeToRefs(useSQLEditorTabStore());
 const { database } = useConnectionOfCurrentSQLEditorTab();
-const searchPattern = computed({
-  get() {
-    // Access version to establish reactive dependency
-    const _ = searchPatternVersion.value;
-    const id = currentTab.value?.id ?? "";
-    return searchPatternMap.get(id) ?? "";
-  },
-  set(value) {
-    const id = currentTab.value?.id ?? "";
-    searchPatternMap.set(id, value);
-    // Trigger reactivity by incrementing version
-    searchPatternVersion.value++;
-  },
-});
+
+// Simple search pattern that resets when tab changes
+const searchPattern = ref("");
 const debouncedSearchPattern = refDebounced(searchPattern, 200);
+
+// Reset search when tab changes
+watch(
+  () => currentTab.value?.id,
+  () => {
+    searchPattern.value = "";
+  }
+);
 const isFetchingMetadata = ref(false);
 const metadata = computedAsync(
   async () => {
