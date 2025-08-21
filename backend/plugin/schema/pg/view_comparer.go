@@ -9,6 +9,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/plugin/schema/pg/ast"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -138,10 +139,10 @@ func (*PostgreSQLViewComparer) compareIndexes(oldIndexes, newIndexes []*storepb.
 			return false
 		}
 
-		// Compare index expressions
+		// Compare index expressions using semantic comparison
 		for i, oldExpr := range oldIndex.Expressions {
 			newExpr := newIndex.Expressions[i]
-			if oldExpr != newExpr {
+			if !ast.CompareExpressionsSemantically(oldExpr, newExpr) {
 				return false
 			}
 		}
