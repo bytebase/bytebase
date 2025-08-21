@@ -259,7 +259,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			return nil, err
 		}
 		// Quoted string has a single quote around it and is escaped by QUOTE().
-		column.Comment = unquoteMySQLString(column.Comment)
+		column.Comment = stripSingleQuote(column.Comment)
 
 		nullableBool, err := util.ConvertYesNo(nullable)
 		if err != nil {
@@ -384,7 +384,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			return nil, err
 		}
 		// Quoted string has a single quote around it and is escaped by QUOTE().
-		comment = unquoteMySQLString(comment)
+		comment = stripSingleQuote(comment)
 
 		key := db.TableKey{Schema: "", Table: tableName}
 		switch tableType {
