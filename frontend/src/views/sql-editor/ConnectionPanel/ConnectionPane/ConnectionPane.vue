@@ -334,31 +334,46 @@ const treeIsEmpty = (value: TreeByEnvironment) => {
   return false;
 };
 
-// Combine multiple watchers into one for better performance
+// Watch batchQueryDataSourceType separately
 watch(
-  [
-    batchQueryDataSourceType,
-    () => tabStore.currentTab?.id,
-    () => tabStore.currentTab?.batchQueryContext?.databases,
-  ],
-  async ([dataSourceType, _, batchDatabases]) => {
-    // Handle batchQueryDataSourceType change
-    if (dataSourceType !== undefined) {
-      tabStore.updateBatchQueryContext({
-        dataSourceType: dataSourceType as QueryDataSourceType,
-      });
-    }
-
-    // Handle tab change
-    if (tabStore.currentTab) {
-      const databases = (batchDatabases ?? []).concat(
-        tabStore.currentTab.connection.database
-      );
-      await batchGetOrFetchDatabases(databases);
-      selectedDatabases.value = new Set(databases.filter(isValidDatabaseName));
-    }
+  batchQueryDataSourceType,
+  (dataSourceType) => {
+    tabStore.updateBatchQueryContext({
+      dataSourceType,
+    });
   },
   { immediate: true }
+);
+
+// Watch tab changes
+watch(
+  () => tabStore.currentTab?.id,
+  async () => {
+    if (!tabStore.currentTab) {
+      return;
+    }
+    const databases = tabStore.currentTab.batchQueryContext?.databases ?? [];
+    databases.push(tabStore.currentTab.connection.database);
+    await batchGetOrFetchDatabases(databases);
+    selectedDatabases.value = new Set(databases.filter(isValidDatabaseName));
+  },
+  { immediate: true }
+);
+
+// Watch batch query databases changes
+watch(
+  () => tabStore.currentTab?.batchQueryContext?.databases,
+  async (databases) => {
+    if (!tabStore.currentTab || !databases) {
+      return;
+    }
+    const allDatabases = [
+      ...databases,
+      tabStore.currentTab.connection.database,
+    ];
+    await batchGetOrFetchDatabases(allDatabases);
+    selectedDatabases.value = new Set(allDatabases.filter(isValidDatabaseName));
+  }
 );
 
 watch(selectedDatabases, (newSelectedDatabases) => {
