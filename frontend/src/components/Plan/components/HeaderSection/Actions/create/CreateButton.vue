@@ -17,20 +17,11 @@
       <ErrorList :errors="planCreateErrorList" />
     </template>
   </NTooltip>
-
-  <!-- prevent clicking the page when creating in progress -->
-  <div
-    v-if="loading"
-    v-zindexable="{ enabled: true }"
-    class="fixed inset-0 pointer-events-auto flex flex-col items-center justify-center"
-    @click.stop.prevent
-  />
 </template>
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import { NTooltip, NButton } from "naive-ui";
-import { zindexable as vZindexable } from "vdirs";
 import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
