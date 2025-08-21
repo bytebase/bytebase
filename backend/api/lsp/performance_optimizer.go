@@ -82,7 +82,7 @@ func (d *DiagnosticsDebouncer) ScheduleDiagnostics(
 }
 
 // runDiagnostics performs the actual diagnostics and sends results
-func (d *DiagnosticsDebouncer) runDiagnostics(
+func (_ *DiagnosticsDebouncer) runDiagnostics(
 	ctx context.Context,
 	conn *jsonrpc2.Conn,
 	uri lsp.DocumentURI,
@@ -201,7 +201,6 @@ type ContentCache struct {
 
 type CachedContent struct {
 	Content         string
-	ParsedAST       interface{} // Store parsed AST if available
 	LastModified    time.Time
 	StatementRanges []lsp.Range
 }
