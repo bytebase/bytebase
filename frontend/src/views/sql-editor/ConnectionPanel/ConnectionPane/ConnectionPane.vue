@@ -314,34 +314,6 @@ const treeByEnvironment = shallowRef<
   Map<string /* environment full name */, TreeByEnvironment>
 >(new Map());
 
-// Cache for filtered node keys by environment to avoid repeated filtering
-const nodeKeysByEnvironmentCache = new Map<string, string[]>();
-let lastAllNodeKeysSnapshot: string[] = [];
-
-// Computed property to get filtered node keys by environment with caching
-const getNodeKeysByEnvironment = (environment: string): string[] => {
-  const currentAllNodeKeys = treeStore.allNodeKeys;
-
-  // Check if we need to invalidate cache (allNodeKeys changed)
-  if (currentAllNodeKeys !== lastAllNodeKeysSnapshot) {
-    nodeKeysByEnvironmentCache.clear();
-    lastAllNodeKeysSnapshot = currentAllNodeKeys;
-  }
-
-  // Return cached result if available
-  if (nodeKeysByEnvironmentCache.has(environment)) {
-    return nodeKeysByEnvironmentCache.get(environment)!;
-  }
-
-  // Compute and cache the filtered result
-  const filteredKeys = currentAllNodeKeys.filter((key) =>
-    key.startsWith(environment)
-  );
-  nodeKeysByEnvironmentCache.set(environment, filteredKeys);
-
-  return filteredKeys;
-};
-
 const existEmptyEnvironment = computed(() => {
   for (const [_, value] of treeByEnvironment.value.entries()) {
     if (treeIsEmpty(value)) {
@@ -610,8 +582,9 @@ useEmitteryEventListener(editorEvents, "tree-ready", async () => {
   for (const [environment, treeState] of treeByEnvironment.value.entries()) {
     if (!treeState.expandedState.value.initialized) {
       // default expand all nodes.
-      treeState.expandedState.value.expandedKeys =
-        getNodeKeysByEnvironment(environment);
+      treeState.expandedState.value.expandedKeys = treeStore.allNodeKeys.filter(
+        (key) => key.startsWith(environment)
+      );
     }
   }
 });
