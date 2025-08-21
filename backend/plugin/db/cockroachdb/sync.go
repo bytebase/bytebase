@@ -701,7 +701,9 @@ func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.D
 	  	WHERE 
 	  		dependency_ns.nspname = '%s'
 	  		AND dependency_view.relname = '%s'
-	  		AND pg_attribute.attnum > 0 
+	  		AND pg_attribute.attnum > 0
+	  		-- Only consider SELECT rules (view definitions), not INSERT/UPDATE/DELETE rules
+	  		AND pg_rewrite.ev_type = '1'
 	  	ORDER BY 1,2,3;
 	`, schemaName, viewName)
 
