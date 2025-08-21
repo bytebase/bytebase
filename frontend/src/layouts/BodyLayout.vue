@@ -72,7 +72,7 @@
       </template>
 
       <div
-        class="flex flex-col min-w-0 flex-1 border-x border-block-border"
+        class="flex flex-col min-w-0 flex-1"
         data-label="bb-main-body-wrapper"
       >
         <nav

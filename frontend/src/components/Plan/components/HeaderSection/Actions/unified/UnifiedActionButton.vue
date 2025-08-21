@@ -1,5 +1,5 @@
 <template>
-  <NTooltip :disabled="!disabledTooltip" placement="top">
+  <NTooltip :disabled="!disabledTooltip" placement="bottom-end">
     <template #trigger>
       <NButton
         size="medium"
