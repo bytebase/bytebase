@@ -1,7 +1,7 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
   <div
-    class="relative px-2 py-1"
+    class="px-2 py-1 flex items-center"
     :class="classes"
     @click="handleClick"
     @dblclick="showDetail"

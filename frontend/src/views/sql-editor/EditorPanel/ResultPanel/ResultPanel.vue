@@ -14,7 +14,7 @@
     >
       <NTabPane
         v-for="(context, i) in queryContexts"
-        :key="i"
+        :key="context.id"
         :name="context.id"
         class="flex-1 flex flex-col overflow-hidden"
       >
@@ -34,7 +34,7 @@
                 />
                 <BBSpin v-if="context.status === 'EXECUTING'" :size="10" />
                 <XIcon
-                  v-if="queryContexts.length > 1"
+                  v-if="hasMultipleContexts"
                   class="text-gray-400 w-4 h-auto hover:text-gray-600"
                   @click.stop="handleCloseTab(context.id)"
                 />
@@ -44,7 +44,9 @@
           </NTooltip>
         </template>
         <BBAttention
-          v-if="i === 0 && !isMatchedDataSource(context)"
+          v-if="
+            i === 0 && batchModeDataSourceType && !isMatchedDataSource(context)
+          "
           type="warning"
           class="mb-2"
         >
@@ -87,7 +89,6 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { head } from "lodash-es";
 import { CircleAlertIcon, XIcon } from "lucide-vue-next";
 import type { DropdownOption } from "naive-ui";
 import { NTabs, NTabPane, NTooltip, NDropdown } from "naive-ui";
@@ -195,42 +196,75 @@ const handleContextMenuClose = () => {
   contextMenuState.value = undefined;
 };
 
-const isBatchQuery = computed(
-  () =>
-    Array.from(tabStore.currentTab?.databaseQueryContexts?.keys() || [])
-      .length > 1
-);
+// Cache the batch query state to avoid recreating arrays
+const isBatchQuery = computed(() => {
+  const contexts = tabStore.currentTab?.databaseQueryContexts;
+  if (!contexts) return false;
+  return contexts.size > 1;
+});
 
+// Memoize query contexts to avoid multiple accesses
 const queryContexts = computed(() => {
-  const contexts = tabStore.currentTab?.databaseQueryContexts?.get(
-    selectedDatabase.value?.name ?? ""
+  if (!selectedDatabase.value?.name) return undefined;
+  return tabStore.currentTab?.databaseQueryContexts?.get(
+    selectedDatabase.value.name
   );
-  return contexts;
+});
+
+// Cache whether we have multiple contexts for close button visibility
+const hasMultipleContexts = computed(() => {
+  return (queryContexts.value?.length ?? 0) > 1;
+});
+
+// Memoize tab names to avoid recalculation
+const tabNamesMap = computed(() => {
+  const map = new Map<string, string>();
+  if (!queryContexts.value) return map;
+
+  for (const context of queryContexts.value) {
+    let name: string;
+    switch (context.status) {
+      case "PENDING":
+        name = t("sql-editor.pending-query");
+        break;
+      case "EXECUTING":
+        name = t("sql-editor.executing-query");
+        break;
+      default:
+        name = dayjs(context.beginTimestampMS).format("YYYY-MM-DD HH:mm:ss");
+    }
+    map.set(context.id, name);
+  }
+  return map;
 });
 
 const tabName = (context: SQLEditorDatabaseQueryContext) => {
-  switch (context.status) {
-    case "PENDING":
-      return t("sql-editor.pending-query");
-    case "EXECUTING":
-      return t("sql-editor.executing-query");
-    default:
-      return dayjs(context.beginTimestampMS).format("YYYY-MM-DD HH:mm:ss");
-  }
+  return tabNamesMap.value.get(context.id) ?? "";
 };
+
+// Cache data sources for better performance
+const dataSourcesMap = computed(() => {
+  if (!selectedDatabase.value?.instanceResource.dataSources) {
+    return new Map();
+  }
+  return new Map(
+    selectedDatabase.value.instanceResource.dataSources.map((ds) => [ds.id, ds])
+  );
+});
 
 const dataSourceInContext = (context: SQLEditorDatabaseQueryContext) => {
   const dataSourceId = context.params.connection.dataSourceId;
-  return selectedDatabase.value?.instanceResource.dataSources.find(
-    (ds) => ds.id === dataSourceId
-  );
+  return dataSourcesMap.value.get(dataSourceId);
 };
 
+// Memoize batch mode check
+const batchModeDataSourceType = computed(() => {
+  if (!tabStore.isInBatchMode) return null;
+  return tabStore.currentTab?.batchQueryContext?.dataSourceType ?? null;
+});
+
 const isMatchedDataSource = (context: SQLEditorDatabaseQueryContext) => {
-  if (!tabStore.isInBatchMode) {
-    return true;
-  }
-  const mode = tabStore.currentTab?.batchQueryContext?.dataSourceType;
+  const mode = batchModeDataSourceType.value;
   if (!mode) {
     return true;
   }
@@ -238,12 +272,12 @@ const isMatchedDataSource = (context: SQLEditorDatabaseQueryContext) => {
   if (!dataSource) {
     return true;
   }
-
   return dataSource.type === mode;
 };
 
+// Only watch the first item's ID to minimize reactive dependencies
 watch(
-  () => head(queryContexts.value)?.id,
+  () => queryContexts.value?.[0]?.id,
   (id) => {
     selectedTab.value = id;
   },

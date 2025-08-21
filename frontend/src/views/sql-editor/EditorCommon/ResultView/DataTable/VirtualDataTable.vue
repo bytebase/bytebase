@@ -8,7 +8,7 @@
   >
     <table
       ref="tableRef"
-      class="relative border-collapse w-full table-auto -mx-px"
+      class="relative border-collapse w-full -mx-px table-fixed"
       v-bind="tableResize.getTableProps()"
     >
       <thead
@@ -88,41 +88,98 @@
         </tr>
       </thead>
       <tbody>
-        <tr
-          v-for="(row, rowIndex) of rows"
-          :key="`${setIndex}-${rowIndex}`"
-          class="group"
-          :data-row-index="offset + rowIndex"
-        >
-          <td
-            v-for="(cell, columnIndex) of row.getVisibleCells()"
-            :key="`${setIndex}-${rowIndex}-${columnIndex}`"
-            class="relative max-w-[50vw] p-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-x border-b border-block-border dark:border-zinc-500 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
-            :data-col-index="columnIndex"
-          >
-            <TableCell
-              :table="table"
-              :value="cell.getValue<RowValue>()"
-              :keyword="keyword"
-              :set-index="setIndex"
-              :row-index="offset + rowIndex"
-              :col-index="columnIndex"
-              :allow-select="true"
-              :column-type="getColumnTypeByIndex(columnIndex)"
-              :class="{
-                'ml-3': columnIndex === 0 && !selectionDisabled,
-              }"
-            />
+        <!-- Virtual scrolling container -->
+        <tr>
+          <td :colspan="columns.length" class="!p-0 !border-0">
             <div
-              v-if="columnIndex === 0 && !selectionDisabled"
-              class="absolute inset-y-0 left-0 w-3 cursor-pointer bg-accent/5 dark:bg-white/10 hover:bg-accent/10 dark:hover:bg-accent/40"
-              :class="{
-                '!bg-accent/10 dark:!bg-accent/40':
-                  selectionState.columns.length === 0 &&
-                  selectionState.rows.includes(offset + rowIndex),
+              ref="scrollerRef"
+              class="relative w-full"
+              :style="{
+                height: `${virtualizer.getTotalSize()}px`,
               }"
-              @click.prevent.stop="selectRow(offset + rowIndex)"
-            ></div>
+            >
+              <div
+                class="absolute top-0 left-0 w-full"
+                :style="{
+                  transform: `translateY(${virtualItems[0]?.start ?? 0}px)`,
+                }"
+              >
+                <table
+                  class="w-full border-collapse table-fixed"
+                  :style="{ tableLayout: 'fixed' }"
+                >
+                  <colgroup>
+                    <col
+                      v-for="(_, index) in columns"
+                      :key="`col-${index}`"
+                      v-bind="tableResize.getColumnProps(index)"
+                    />
+                  </colgroup>
+                  <tbody>
+                    <tr
+                      v-for="virtualRow in virtualItems"
+                      :key="`${setIndex}-${virtualRow.index}`"
+                      class="group"
+                      :data-row-index="offset + virtualRow.index"
+                      :style="{
+                        height: `${virtualRow.size}px`,
+                      }"
+                    >
+                      <td
+                        v-for="(cell, columnIndex) of rows[
+                          virtualRow.index
+                        ].getVisibleCells()"
+                        :key="`${setIndex}-${virtualRow.index}-${columnIndex}`"
+                        class="relative max-w-[50vw] !p-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-x border-b border-block-border dark:border-zinc-500 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
+                        :data-col-index="columnIndex"
+                        :style="{
+                          height: `${virtualRow.size}px`,
+                        }"
+                      >
+                        <div
+                          :class="[
+                            'h-full flex items-center',
+                            columnIndex === 0 && !selectionDisabled
+                              ? 'ml-3'
+                              : '',
+                          ]"
+                        >
+                          <TableCell
+                            :table="table"
+                            :value="cell.getValue<RowValue>()"
+                            :keyword="keyword"
+                            :set-index="setIndex"
+                            :row-index="offset + virtualRow.index"
+                            :col-index="columnIndex"
+                            :allow-select="true"
+                            :column-type="getColumnTypeByIndex(columnIndex)"
+                            :class="{
+                              // 'ml-3': columnIndex === 0 && !selectionDisabled,
+                              'h-full': true,
+                              'w-full': true,
+                            }"
+                          />
+                        </div>
+                        <div
+                          v-if="columnIndex === 0 && !selectionDisabled"
+                          class="absolute inset-y-0 left-0 w-3 cursor-pointer bg-accent/5 dark:bg-white/10 hover:bg-accent/10 dark:hover:bg-accent/40"
+                          :class="{
+                            '!bg-accent/10 dark:!bg-accent/40':
+                              selectionState.columns.length === 0 &&
+                              selectionState.rows.includes(
+                                offset + virtualRow.index
+                              ),
+                          }"
+                          @click.prevent.stop="
+                            selectRow(offset + virtualRow.index)
+                          "
+                        ></div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </td>
         </tr>
       </tbody>
@@ -138,6 +195,7 @@
 
 <script lang="ts" setup>
 import type { Table } from "@tanstack/vue-table";
+import { useVirtualizer } from "@tanstack/vue-virtual";
 import { NEmpty } from "naive-ui";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import {
@@ -176,6 +234,7 @@ const {
 } = useSelectionContext();
 const containerRef = ref<HTMLDivElement>();
 const tableRef = ref<HTMLTableElement>();
+const scrollerRef = ref<HTMLDivElement>();
 
 const tableResize = useTableColumnWidthLogic({
   tableRef,
@@ -214,11 +273,33 @@ const existBinaryValue = (columnIndex: number) => {
   return false;
 };
 
+// Virtual scrolling setup
+const virtualizer = useVirtualizer(
+  computed(() => ({
+    count: rows.value.length,
+    getScrollElement: () => containerRef.value ?? null,
+    estimateSize: () => 35, // Estimated row height
+    overscan: 10, // Number of items to render outside visible area
+  }))
+);
+
+const virtualItems = computed(() => virtualizer.value.getVirtualItems());
+
 onMounted(() => {
   nextTick(() => {
     tableResize.reset();
   });
 });
+
+// Re-initialize column widths when data changes
+watch(
+  () => [rows.value.length, columns.value.length],
+  () => {
+    nextTick(() => {
+      tableResize.reset();
+    });
+  }
+);
 
 const scrollTo = (x: number, y: number) => {
   containerRef.value?.scroll(x, y);
@@ -229,6 +310,7 @@ watch(
   () => {
     // When the offset changed, we need to reset the scroll position.
     scrollTo(0, 0);
+    virtualizer.value.scrollToOffset(0);
   }
 );
 </script>
