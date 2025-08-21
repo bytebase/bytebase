@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"strings"
+
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -659,14 +661,10 @@ func indexesEqual(idx1, idx2 *storepb.IndexMetadata) bool {
 		}
 	}
 
-	// Compare descending order
-	if len(idx1.Descending) != len(idx2.Descending) {
+	// Compare descending order - be flexible about empty arrays vs arrays of false
+	// This handles the case where one has [] and the other has [false, false, ...]
+	if !descendingArraysEqual(idx1.Descending, idx2.Descending) {
 		return false
-	}
-	for i, desc := range idx1.Descending {
-		if desc != idx2.Descending[i] {
-			return false
-		}
 	}
 
 	// Compare visibility
@@ -677,6 +675,43 @@ func indexesEqual(idx1, idx2 *storepb.IndexMetadata) bool {
 	// Compare spatial configuration
 	if !spatialConfigsEqual(idx1.SpatialConfig, idx2.SpatialConfig) {
 		return false
+	}
+
+	return true
+}
+
+// descendingArraysEqual compares two descending arrays, considering empty arrays
+// and arrays of all false values as equivalent for constraint-based indexes.
+func descendingArraysEqual(desc1, desc2 []bool) bool {
+	// Helper function to check if an array is effectively "all false"
+	// (either empty or contains only false values)
+	isEffectivelyAllFalse := func(arr []bool) bool {
+		if len(arr) == 0 {
+			return true // Empty array means no descending columns
+		}
+		for _, val := range arr {
+			if val {
+				return false // Found a true value, so not all false
+			}
+		}
+		return true // All values are false
+	}
+
+	// If both arrays are effectively "all false", they are equal
+	if isEffectivelyAllFalse(desc1) && isEffectivelyAllFalse(desc2) {
+		return true
+	}
+
+	// If lengths don't match and neither is empty, do exact comparison
+	if len(desc1) != len(desc2) {
+		return false
+	}
+
+	// Do element-by-element comparison
+	for i, val1 := range desc1 {
+		if i >= len(desc2) || val1 != desc2[i] {
+			return false
+		}
 	}
 
 	return true
@@ -1318,7 +1353,10 @@ func compareFunctions(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 // functionsEqual checks if two functions are equal.
 func functionsEqual(fn1, fn2 *storepb.FunctionMetadata) bool {
 	if fn1.Definition != fn2.Definition {
-		return false
+		// For PostgreSQL functions, try normalized comparison
+		if normalizePostgreSQLFunction(fn1.Definition) != normalizePostgreSQLFunction(fn2.Definition) {
+			return false
+		}
 	}
 	if fn1.CharacterSetClient != fn2.CharacterSetClient {
 		return false
@@ -1592,4 +1630,41 @@ func FilterPostgresArchiveSchema(diff *MetadataDiff) *MetadataDiff {
 	filtered.EventChanges = diff.EventChanges
 
 	return filtered
+}
+
+// normalizePostgreSQLFunction normalizes PostgreSQL function definitions for comparison
+func normalizePostgreSQLFunction(definition string) string {
+	if definition == "" {
+		return ""
+	}
+	
+	normalized := strings.ToLower(definition)
+	
+	// Normalize whitespace
+	normalized = strings.ReplaceAll(normalized, "\n", " ")
+	normalized = strings.ReplaceAll(normalized, "\t", " ")
+	
+	// Remove extra spaces
+	for strings.Contains(normalized, "  ") {
+		normalized = strings.ReplaceAll(normalized, "  ", " ")
+	}
+	
+	// Normalize CREATE vs CREATE OR REPLACE
+	normalized = strings.ReplaceAll(normalized, "create or replace function", "create function")
+	
+	// Normalize parameter types
+	normalized = strings.ReplaceAll(normalized, "character varying", "varchar")
+	normalized = strings.ReplaceAll(normalized, "returns numeric", "returns decimal")
+	
+	// Normalize dollar quoting
+	normalized = strings.ReplaceAll(normalized, "$function$", "$$")
+	
+	// Normalize language position - move to end 
+	if strings.Contains(normalized, "language plpgsql") && !strings.HasSuffix(strings.TrimSpace(normalized), "language plpgsql") {
+		withoutLanguage := strings.ReplaceAll(normalized, " language plpgsql", "")
+		withoutLanguage = strings.ReplaceAll(withoutLanguage, "language plpgsql ", "")
+		normalized = strings.TrimSpace(withoutLanguage) + " language plpgsql"
+	}
+	
+	return strings.TrimSpace(normalized)
 }

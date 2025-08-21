@@ -12,6 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/plugin/schema/pg/ast"
 )
 
 func init() {
@@ -32,8 +33,10 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 		tables:               make(map[tableKey]*storepb.TableMetadata),
 		partitionTables:      make(map[tableKey]bool),
 		partitionExpressions: make(map[tableKey]string),
+		partitionTypes:       make(map[tableKey]storepb.TablePartitionMetadata_Type),
 		sequences:            make(map[string]*storepb.SequenceMetadata),
 		extensions:           make(map[string]*storepb.ExtensionMetadata),
+		expressionComparer:   ast.NewExpressionComparer(),
 	}
 
 	// Always ensure public schema exists
@@ -83,6 +86,21 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 		}
 		schema.Tables = filteredTables
 
+		// Add sequences to the schema (including SERIAL-generated sequences)
+		var sequencesForSchema []*storepb.SequenceMetadata
+		for sequenceKey, sequence := range extractor.sequences {
+			// Parse sequence key format: "schemaname.sequencename"
+			parts := strings.SplitN(sequenceKey, ".", 2)
+			if len(parts) == 2 && parts[0] == schemaName {
+				sequencesForSchema = append(sequencesForSchema, sequence)
+			}
+		}
+		// Sort sequences for consistent output
+		slices.SortFunc(sequencesForSchema, func(a, b *storepb.SequenceMetadata) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+		schema.Sequences = sequencesForSchema
+
 		schemaMetadata.Schemas = append(schemaMetadata.Schemas, schema)
 	}
 
@@ -115,8 +133,10 @@ type metadataExtractor struct {
 	tables               map[tableKey]*storepb.TableMetadata
 	partitionTables      map[tableKey]bool
 	partitionExpressions map[tableKey]string
+	partitionTypes       map[tableKey]storepb.TablePartitionMetadata_Type
 	sequences            map[string]*storepb.SequenceMetadata
 	extensions           map[string]*storepb.ExtensionMetadata
+	expressionComparer   *ast.ExpressionComparer
 	err                  error
 }
 
@@ -240,10 +260,13 @@ func (e *metadataExtractor) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 			partition.Value = e.extractPartitionBoundSpec(ctx.Partitionboundspec())
 		}
 
-		// Get the parent table's partition expression
+		// Get the parent table's partition expression and type
 		parentKey := tableKey{schema: parentSchema, table: parentTable}
 		if expr, ok := e.partitionExpressions[parentKey]; ok {
 			partition.Expression = expr
+		}
+		if partitionType, ok := e.partitionTypes[parentKey]; ok {
+			partition.Type = partitionType
 		}
 
 		if parentTableMetadata.Partitions == nil {
@@ -263,11 +286,12 @@ func (e *metadataExtractor) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 		e.extractTableElements(tableElementList, tableMetadata, schemaName)
 	}
 
-	// Extract partition info and store the expression
+	// Extract partition info and store the expression and type
 	if partitionSpec := ctx.Optpartitionspec(); partitionSpec != nil {
-		// Store the partition expression for this table
+		// Store the partition expression and type for this table
 		key := tableKey{schema: schemaName, table: tableName}
 		e.partitionExpressions[key] = e.extractPartitionExpression(partitionSpec)
+		e.partitionTypes[key] = e.extractPartitionType(partitionSpec)
 	}
 }
 
@@ -277,6 +301,22 @@ func (e *metadataExtractor) extractSchemaAndTableName(ctx parser.IQualified_name
 		return e.currentSchema, ""
 	}
 
+	// Debug: try direct text extraction first, since normalize functions seem problematic
+	rawText := ctx.GetText()
+	if rawText != "" {
+		// Handle schema.table format
+		if strings.Contains(rawText, ".") {
+			parts := strings.Split(rawText, ".")
+			if len(parts) == 2 {
+				return parts[0], parts[1]
+			}
+		} else {
+			// Just a table name, use current schema
+			return e.currentSchema, rawText
+		}
+	}
+
+	// Fallback to normalize function (though it might be problematic)
 	parts := pgparser.NormalizePostgreSQLQualifiedName(ctx)
 	if len(parts) == 1 {
 		return e.currentSchema, parts[0]
@@ -337,13 +377,26 @@ func (e *metadataExtractor) extractColumnDef(ctx parser.IColumnDefContext, table
 		rawTypeName := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Typename())
 		rawTypeName = strings.ToLower(rawTypeName)
 
-		// SERIAL columns are implicitly NOT NULL
-		if rawTypeName == "serial" || rawTypeName == "bigserial" || rawTypeName == "smallserial" ||
-			rawTypeName == "serial4" || rawTypeName == "serial8" || rawTypeName == "serial2" {
+		// Handle SERIAL types completely - PostgreSQL expands SERIAL into integer + sequence + default
+		switch rawTypeName {
+		case "serial", "serial4":
 			column.Nullable = false
+			column.Type = "integer"
+			// Create sequence and set default value
+			e.createSerialSequenceAndDefault(column, table, schemaName)
+		case "bigserial", "serial8":
+			column.Nullable = false
+			column.Type = "bigint"
+			// Create sequence and set default value
+			e.createSerialSequenceAndDefault(column, table, schemaName)
+		case "smallserial", "serial2":
+			column.Nullable = false
+			column.Type = "smallint"
+			// Create sequence and set default value
+			e.createSerialSequenceAndDefault(column, table, schemaName)
+		default:
+			column.Type = e.extractTypeNameWithSchema(ctx.Typename(), schemaName)
 		}
-
-		column.Type = e.extractTypeNameWithSchema(ctx.Typename(), schemaName)
 	}
 
 	// Extract column constraints
@@ -361,6 +414,27 @@ func (e *metadataExtractor) extractColumnDef(ctx parser.IColumnDefContext, table
 	}
 
 	table.Columns = append(table.Columns, column)
+}
+
+// createSerialSequenceAndDefault creates a sequence for SERIAL columns and sets the default value
+func (e *metadataExtractor) createSerialSequenceAndDefault(column *storepb.ColumnMetadata, table *storepb.TableMetadata, schemaName string) {
+	// Generate sequence name following PostgreSQL convention: tablename_columnname_seq
+	sequenceName := fmt.Sprintf("%s_%s_seq", table.Name, column.Name)
+
+	// Create the sequence metadata
+	sequence := &storepb.SequenceMetadata{
+		Name:      sequenceName,
+		Start:     "1",
+		Increment: "1",
+	}
+
+	// Add sequence to the global sequences map using fully qualified name
+	sequenceKey := fmt.Sprintf("%s.%s", schemaName, sequenceName)
+	e.sequences[sequenceKey] = sequence
+
+	// Set the column default value to use nextval()
+	// PostgreSQL stores this as: nextval('schema.sequence_name'::regclass)
+	column.Default = fmt.Sprintf("nextval('%s.%s'::regclass)", schemaName, sequenceName)
 }
 
 // extractTypeName extracts the type name from typename context
@@ -584,7 +658,8 @@ func (e *metadataExtractor) extractColumnConstraint(ctx parser.IColconstraintele
 		column.Nullable = true
 	case ctx.DEFAULT() != nil:
 		if expr := ctx.B_expr(); expr != nil {
-			column.Default = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(expr)
+			rawDefault := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(expr)
+			column.Default = e.normalizeDefaultValue(rawDefault, column, e.currentSchema)
 		}
 	case ctx.PRIMARY() != nil && ctx.KEY() != nil:
 		column.Nullable = false
@@ -594,7 +669,7 @@ func (e *metadataExtractor) extractColumnConstraint(ctx parser.IColconstraintele
 			Unique:       true,
 			IsConstraint: true,
 			Expressions:  []string{column.Name},
-			Descending:   []bool{false},
+			Descending:   []bool{false}, // Single column, ascending by default
 			Type:         "btree",
 			Visible:      false, // Match PostgreSQL database behavior
 			// Don't set KeyLength - PostgreSQL database doesn't return this information
@@ -605,6 +680,8 @@ func (e *metadataExtractor) extractColumnConstraint(ctx parser.IColconstraintele
 		} else {
 			index.Name = fmt.Sprintf("%s_pkey", table.Name)
 		}
+		// Generate definition for primary key index
+		index.Definition = e.generateConstraintIndexDefinition(index, table.Name, schemaName)
 		table.Indexes = append(table.Indexes, index)
 	case ctx.UNIQUE() != nil:
 		// Create unique index
@@ -612,7 +689,7 @@ func (e *metadataExtractor) extractColumnConstraint(ctx parser.IColconstraintele
 			Unique:       true,
 			IsConstraint: true,
 			Expressions:  []string{column.Name},
-			Descending:   []bool{false},
+			Descending:   []bool{false}, // Single column, ascending by default
 			Type:         "btree",
 			Visible:      false, // Match PostgreSQL database behavior
 			// Don't set KeyLength - PostgreSQL database doesn't return this information
@@ -623,6 +700,8 @@ func (e *metadataExtractor) extractColumnConstraint(ctx parser.IColconstraintele
 		} else {
 			index.Name = fmt.Sprintf("%s_%s_key", table.Name, column.Name)
 		}
+		// Generate definition for unique index
+		index.Definition = e.generateConstraintIndexDefinition(index, table.Name, schemaName)
 		table.Indexes = append(table.Indexes, index)
 	case ctx.REFERENCES() != nil:
 		// Foreign key constraint
@@ -654,6 +733,14 @@ func (e *metadataExtractor) extractColumnConstraint(ctx parser.IColconstraintele
 		// Extract MATCH type
 		fk.MatchType = extractMatchType(ctx)
 
+		// Generate constraint name if not provided (PostgreSQL auto-generates names)
+		if fk.Name == "" {
+			// For column-level foreign keys, use {table}_{column}_fkey format
+			fk.Name = fmt.Sprintf("%s_%s_fkey", table.Name, column.Name)
+		}
+		// TODO: Generate definition for foreign key (ForeignKeyMetadata might not have Definition field)
+		// fk.Definition = e.generateForeignKeyDefinition(fk, table.Name, schemaName)
+
 		if table.ForeignKeys == nil {
 			table.ForeignKeys = []*storepb.ForeignKeyMetadata{}
 		}
@@ -676,7 +763,7 @@ func (e *metadataExtractor) extractColumnConstraint(ctx parser.IColconstraintele
 }
 
 // extractTableConstraint extracts table-level constraints
-func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintContext, table *storepb.TableMetadata, _ string) {
+func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintContext, table *storepb.TableMetadata, schemaName string) {
 	if ctx == nil {
 		return
 	}
@@ -714,6 +801,7 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintCo
 		if columnList := constraintElem.Columnlist(); columnList != nil {
 			columns := extractColumnList(columnList)
 			index.Expressions = columns
+			// Fill Descending array with false for all columns (default ascending)
 			for range columns {
 				index.Descending = append(index.Descending, false)
 			}
@@ -721,10 +809,13 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintCo
 			// Fallback to Opt_column_list if direct Columnlist is not available
 			columns := extractColumnList(optColumnList.Columnlist())
 			index.Expressions = columns
+			// Fill Descending array with false for all columns (default ascending)
 			for range columns {
 				index.Descending = append(index.Descending, false)
 			}
 		}
+		// Generate definition for primary key constraint index
+		index.Definition = e.generateConstraintIndexDefinition(index, table.Name, schemaName)
 		table.Indexes = append(table.Indexes, index)
 
 	case constraintElem.UNIQUE() != nil:
@@ -744,6 +835,7 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintCo
 		if columnList := constraintElem.Columnlist(); columnList != nil {
 			columns := extractColumnList(columnList)
 			index.Expressions = columns
+			// Fill Descending array with false for all columns (default ascending)
 			for range columns {
 				index.Descending = append(index.Descending, false)
 			}
@@ -751,10 +843,13 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintCo
 			// Fallback to Opt_column_list if direct Columnlist is not available
 			columns := extractColumnList(optColumnList.Columnlist())
 			index.Expressions = columns
+			// Fill Descending array with false for all columns (default ascending)
 			for range columns {
 				index.Descending = append(index.Descending, false)
 			}
 		}
+		// Generate definition for unique constraint index
+		index.Definition = e.generateConstraintIndexDefinition(index, table.Name, schemaName)
 		table.Indexes = append(table.Indexes, index)
 
 	case constraintElem.CHECK() != nil:
@@ -808,6 +903,21 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintCo
 		}
 		// Extract MATCH type
 		fk.MatchType = extractMatchTypeFromConstraintElem(constraintElem)
+
+		// Generate constraint name if not provided (PostgreSQL auto-generates names)
+		if fk.Name == "" {
+			// PostgreSQL typically uses {table}_{column}_fkey format for single column foreign keys
+			if len(fk.Columns) == 1 {
+				fk.Name = fmt.Sprintf("%s_%s_fkey", table.Name, fk.Columns[0])
+			} else if len(fk.Columns) > 1 {
+				// For multi-column foreign keys, use first column name
+				fk.Name = fmt.Sprintf("%s_%s_fkey", table.Name, fk.Columns[0])
+			} else {
+				// Fallback name
+				fk.Name = fmt.Sprintf("%s_fkey", table.Name)
+			}
+		}
+
 		if table.ForeignKeys == nil {
 			table.ForeignKeys = []*storepb.ForeignKeyMetadata{}
 		}
@@ -866,7 +976,7 @@ func extractKeyActionUpdate(ctx parser.IKey_updateContext) string {
 // extractMatchType extracts the match type from column constraint context
 func extractMatchType(ctx parser.IColconstraintelemContext) string {
 	if ctx == nil || ctx.Key_match() == nil {
-		return "" // Default is empty (MATCH SIMPLE)
+		return "SIMPLE" // PostgreSQL default is MATCH SIMPLE
 	}
 	keyMatch := ctx.Key_match()
 	switch {
@@ -884,7 +994,7 @@ func extractMatchType(ctx parser.IColconstraintelemContext) string {
 // extractMatchTypeFromConstraintElem extracts the match type from table constraint context
 func extractMatchTypeFromConstraintElem(ctx parser.IConstraintelemContext) string {
 	if ctx == nil || ctx.Key_match() == nil {
-		return "" // Default is empty (MATCH SIMPLE)
+		return "SIMPLE" // PostgreSQL default is MATCH SIMPLE
 	}
 	keyMatch := ctx.Key_match()
 	switch {
@@ -928,6 +1038,33 @@ func (*metadataExtractor) extractPartitionExpression(ctx parser.IOptpartitionspe
 	// Extract the full partition expression including the method (e.g., "RANGE (sale_date)")
 	expression := ctx.GetParser().GetTokenStream().GetTextFromTokens(partitionSpec.Colid().GetStart(), partitionSpec.CLOSE_PAREN().GetSymbol())
 	return expression
+}
+
+// extractPartitionType extracts the partition type from the partition specification
+func (*metadataExtractor) extractPartitionType(ctx parser.IOptpartitionspecContext) storepb.TablePartitionMetadata_Type {
+	if ctx == nil {
+		return storepb.TablePartitionMetadata_TYPE_UNSPECIFIED
+	}
+
+	partitionSpec := ctx.Partitionspec()
+	if partitionSpec == nil {
+		return storepb.TablePartitionMetadata_TYPE_UNSPECIFIED
+	}
+
+	// Extract the partition method from the full text
+	fullText := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(partitionSpec)
+	upperText := strings.ToUpper(fullText)
+	
+	// Determine partition type from the method keyword after "PARTITION BY"
+	if strings.Contains(upperText, "PARTITION BY RANGE") {
+		return storepb.TablePartitionMetadata_RANGE
+	} else if strings.Contains(upperText, "PARTITION BY LIST") {
+		return storepb.TablePartitionMetadata_LIST
+	} else if strings.Contains(upperText, "PARTITION BY HASH") {
+		return storepb.TablePartitionMetadata_HASH
+	}
+
+	return storepb.TablePartitionMetadata_TYPE_UNSPECIFIED
 }
 
 // EnterAltertablestmt is called when entering an ALTER TABLE statement
@@ -1152,14 +1289,18 @@ func (e *metadataExtractor) EnterCreatefunctionstmt(ctx *parser.Createfunctionst
 		return
 	}
 
-	parts := pgparser.NormalizePostgreSQLFuncName(funcNameCtx)
+	// Extract function name directly from the text
+	// The normalization function seems to be failing, so we'll extract directly
+	funcName := funcNameCtx.GetText()
 	schemaName := e.currentSchema
-	funcName := ""
-	if len(parts) == 1 {
-		funcName = parts[0]
-	} else if len(parts) == 2 {
-		schemaName = parts[0]
-		funcName = parts[1]
+	
+	// Handle schema.function syntax  
+	if strings.Contains(funcName, ".") {
+		parts := strings.Split(funcName, ".")
+		if len(parts) == 2 {
+			schemaName = parts[0]
+			funcName = parts[1]
+		}
 	}
 
 	if funcName == "" {
@@ -1178,6 +1319,74 @@ func (e *metadataExtractor) EnterCreatefunctionstmt(ctx *parser.Createfunctionst
 		schemaMetadata.Functions = []*storepb.FunctionMetadata{}
 	}
 	schemaMetadata.Functions = append(schemaMetadata.Functions, functionMetadata)
+}
+
+// normalizePostgreSQLFunctionDefinition normalizes a PostgreSQL function definition
+// to match what PostgreSQL stores in its system catalogs
+func (e *metadataExtractor) normalizePostgreSQLFunctionDefinition(ctx *parser.CreatefunctionstmtContext) string {
+	rawDefinition := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+	
+	// Apply PostgreSQL-style normalization
+	normalized := strings.ToLower(rawDefinition)
+	
+	// Normalize whitespace
+	normalized = strings.ReplaceAll(normalized, "\n", " ")
+	normalized = strings.ReplaceAll(normalized, "\t", " ")
+	
+	// Remove extra spaces
+	for strings.Contains(normalized, "  ") {
+		normalized = strings.ReplaceAll(normalized, "  ", " ")
+	}
+	
+	// Change CREATE FUNCTION to CREATE OR REPLACE FUNCTION (PostgreSQL default behavior)
+	if strings.HasPrefix(strings.TrimSpace(normalized), "create function") {
+		normalized = strings.Replace(normalized, "create function", "create or replace function", 1)
+	}
+	
+	// Normalize parameter types to match PostgreSQL's system catalog representation
+	normalized = strings.ReplaceAll(normalized, "varchar", "character varying")
+	
+	// Normalize DECIMAL to NUMERIC (PostgreSQL's canonical representation)
+	// Only normalize return types and parameters, not inside function bodies
+	normalized = strings.ReplaceAll(normalized, "returns decimal", "returns numeric")
+	
+	// Normalize dollar quoting to $function$ style (PostgreSQL's preferred form)
+	normalized = normalizeDollarQuotingToFunction(normalized)
+	
+	// Move LANGUAGE clause to the end if it's not already there
+	normalized = moveLanguageToEnd(normalized)
+	
+	return strings.TrimSpace(normalized)
+}
+
+// normalizeDollarQuotingToFunction converts $$ to $function$ style quoting
+func normalizeDollarQuotingToFunction(s string) string {
+	// Simple replacement - in a production system, you'd want more sophisticated parsing
+	return strings.ReplaceAll(s, "$$", "$function$")
+}
+
+// moveLanguageToEnd moves the LANGUAGE clause to the correct position before AS clause
+func moveLanguageToEnd(definition string) string {
+	// PostgreSQL stores functions with LANGUAGE before AS clause
+	// Pattern: ...returns type language plpgsql as $function$...
+	
+	if !strings.Contains(definition, "language plpgsql") {
+		return definition
+	}
+	
+	// Remove existing language clause
+	withoutLanguage := strings.ReplaceAll(definition, " language plpgsql", "")
+	withoutLanguage = strings.ReplaceAll(withoutLanguage, "language plpgsql ", "")
+	
+	// Find the position to insert LANGUAGE before AS
+	asIndex := strings.Index(withoutLanguage, " as $function$")
+	if asIndex == -1 {
+		// Fallback: add at the end
+		return strings.TrimSpace(withoutLanguage) + " language plpgsql"
+	}
+	
+	// Insert LANGUAGE before AS
+	return withoutLanguage[:asIndex] + " language plpgsql" + withoutLanguage[asIndex:]
 }
 
 // extractFunctionSignature extracts the function signature with parameter types
@@ -1398,8 +1607,8 @@ func (e *metadataExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 						// Simple column reference
 						expression = pgparser.NormalizePostgreSQLColid(colid)
 					} else if funcExpr := indexElem.Func_expr_windowless(); funcExpr != nil {
-						// Function expression
-						expression = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(funcExpr)
+						// Function expression - parse semantically for better compatibility
+						expression = e.extractFunctionExpression(ctx, funcExpr)
 					} else if aExpr := indexElem.A_expr(); aExpr != nil {
 						// General expression (in parentheses)
 						expression = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(aExpr)
@@ -1424,10 +1633,169 @@ func (e *metadataExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 				}
 			}
 
+			// Generate definition for the index
+			index.Definition = e.generateIndexDefinition(ctx, index, schemaName, relationName)
+
 			// Add the index to the table or materialized view
 			*targetIndexes = append(*targetIndexes, index)
 		}
 	}
+}
+
+// generateIndexDefinition generates the CREATE INDEX definition for an index
+func (*metadataExtractor) generateIndexDefinition(ctx *parser.IndexstmtContext, index *storepb.IndexMetadata, schemaName, tableName string) string {
+	var parts []string
+
+	// Start with CREATE [UNIQUE] INDEX
+	if index.Unique {
+		parts = append(parts, "CREATE UNIQUE INDEX")
+	} else {
+		parts = append(parts, "CREATE INDEX")
+	}
+
+	// Add index name
+	parts = append(parts, index.Name)
+
+	// Add ON table
+	parts = append(parts, "ON")
+	if schemaName != "" && schemaName != "public" {
+		parts = append(parts, fmt.Sprintf("%s.%s", schemaName, tableName))
+	} else {
+		parts = append(parts, fmt.Sprintf("public.%s", tableName))
+	}
+
+	// Add USING method (default is btree)
+	if index.Type != "" && index.Type != "btree" {
+		parts = append(parts, "USING", index.Type)
+	} else {
+		parts = append(parts, "USING btree")
+	}
+
+	// Add column list
+	if len(index.Expressions) > 0 {
+		columnList := make([]string, len(index.Expressions))
+		for i, expr := range index.Expressions {
+			// Add DESC if needed
+			if i < len(index.Descending) && index.Descending[i] {
+				columnList[i] = fmt.Sprintf("%s DESC", expr)
+			} else {
+				columnList[i] = expr
+			}
+		}
+		parts = append(parts, fmt.Sprintf("(%s)", strings.Join(columnList, ", ")))
+	}
+
+	// Check for WHERE clause (partial index)
+	if ctx.Where_clause() != nil {
+		whereClause := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Where_clause())
+		// Ensure WHERE clause expression is properly parenthesized to match PostgreSQL output
+		if whereClause != "" && !strings.HasPrefix(whereClause, "WHERE (") {
+			// Extract the condition part after "WHERE "
+			if condition, found := strings.CutPrefix(whereClause, "WHERE "); found {
+				whereClause = fmt.Sprintf("WHERE (%s)", condition)
+			}
+		}
+		parts = append(parts, whereClause)
+	}
+
+	// End with semicolon
+	return strings.Join(parts, " ") + ";"
+}
+
+// generateConstraintIndexDefinition generates the CREATE INDEX definition for constraint-based indexes
+func (*metadataExtractor) generateConstraintIndexDefinition(index *storepb.IndexMetadata, tableName, schemaName string) string {
+	var parts []string
+
+	// Start with CREATE [UNIQUE] INDEX
+	if index.Unique {
+		parts = append(parts, "CREATE UNIQUE INDEX")
+	} else {
+		parts = append(parts, "CREATE INDEX")
+	}
+
+	// Add index name
+	parts = append(parts, index.Name)
+
+	// Add ON table
+	parts = append(parts, "ON")
+	if schemaName != "" && schemaName != "public" {
+		parts = append(parts, fmt.Sprintf("%s.%s", schemaName, tableName))
+	} else {
+		parts = append(parts, fmt.Sprintf("public.%s", tableName))
+	}
+
+	// Add USING method (default is btree)
+	if index.Type != "" && index.Type != "btree" {
+		parts = append(parts, "USING", index.Type)
+	} else {
+		parts = append(parts, "USING btree")
+	}
+
+	// Add column list
+	if len(index.Expressions) > 0 {
+		columnList := make([]string, len(index.Expressions))
+		for i, expr := range index.Expressions {
+			// Add DESC if needed
+			if i < len(index.Descending) && index.Descending[i] {
+				columnList[i] = fmt.Sprintf("%s DESC", expr)
+			} else {
+				columnList[i] = expr
+			}
+		}
+		parts = append(parts, fmt.Sprintf("(%s)", strings.Join(columnList, ", ")))
+	}
+
+	// End with semicolon
+	return strings.Join(parts, " ") + ";"
+}
+
+// generateForeignKeyDefinition generates the ALTER TABLE ADD CONSTRAINT definition for foreign keys
+func (*metadataExtractor) generateForeignKeyDefinition(fk *storepb.ForeignKeyMetadata, tableName, schemaName string) string {
+	var parts []string
+
+	// Start with ALTER TABLE
+	parts = append(parts, "ALTER TABLE ONLY")
+	if schemaName != "" && schemaName != "public" {
+		parts = append(parts, fmt.Sprintf("%s.%s", schemaName, tableName))
+	} else {
+		parts = append(parts, fmt.Sprintf("public.%s", tableName))
+	}
+
+	// Add ADD CONSTRAINT
+	parts = append(parts, "ADD CONSTRAINT")
+	parts = append(parts, fk.Name)
+
+	// Add FOREIGN KEY
+	if len(fk.Columns) > 0 {
+		parts = append(parts, fmt.Sprintf("FOREIGN KEY (%s)", strings.Join(fk.Columns, ", ")))
+	}
+
+	// Add REFERENCES
+	if fk.ReferencedTable != "" {
+		var referencedTable string
+		if fk.ReferencedSchema != "" && fk.ReferencedSchema != "public" {
+			referencedTable = fmt.Sprintf("%s.%s", fk.ReferencedSchema, fk.ReferencedTable)
+		} else {
+			referencedTable = fmt.Sprintf("public.%s", fk.ReferencedTable)
+		}
+
+		if len(fk.ReferencedColumns) > 0 {
+			parts = append(parts, fmt.Sprintf("REFERENCES %s(%s)", referencedTable, strings.Join(fk.ReferencedColumns, ", ")))
+		} else {
+			parts = append(parts, fmt.Sprintf("REFERENCES %s", referencedTable))
+		}
+	}
+
+	// Add ON DELETE/UPDATE actions
+	if fk.OnDelete != "" && fk.OnDelete != "NO ACTION" {
+		parts = append(parts, fmt.Sprintf("ON DELETE %s", fk.OnDelete))
+	}
+	if fk.OnUpdate != "" && fk.OnUpdate != "NO ACTION" {
+		parts = append(parts, fmt.Sprintf("ON UPDATE %s", fk.OnUpdate))
+	}
+
+	// End with semicolon
+	return strings.Join(parts, " ") + ";"
 }
 
 // extractSequenceOption extracts sequence options
@@ -1550,6 +1918,65 @@ func extractStringConstant(ctx parser.ISconstContext) string {
 		return result
 	}
 	return text
+}
+
+// normalizeDefaultValue normalizes default values to match PostgreSQL's stored format
+func (e *metadataExtractor) normalizeDefaultValue(rawDefault string, column *storepb.ColumnMetadata, schemaName string) string {
+	if rawDefault == "" {
+		return ""
+	}
+	
+	// Handle nextval() for sequences - add schema and regclass cast
+	if strings.Contains(rawDefault, "nextval(") {
+		// Pattern: nextval('sequence_name') -> nextval('schema.sequence_name'::regclass)
+		// Extract sequence name from nextval('sequence_name')
+		if start := strings.Index(rawDefault, "nextval('"); start != -1 {
+			start += len("nextval('")
+			if end := strings.Index(rawDefault[start:], "'"); end != -1 {
+				sequenceName := rawDefault[start : start+end]
+				
+				// If sequence name doesn't have schema prefix, add current schema
+				if !strings.Contains(sequenceName, ".") {
+					return fmt.Sprintf("nextval('%s.%s'::regclass)", schemaName, sequenceName)
+				}
+				return fmt.Sprintf("nextval('%s'::regclass)", sequenceName)
+			}
+		}
+	}
+	
+	// Handle ENUM default values - add type cast
+	if column.Type != "" && strings.Contains(column.Type, ".") {
+		// If column type is schema-qualified (e.g., "public.status_enum")
+		// and default is a string literal, add type cast
+		if strings.HasPrefix(rawDefault, "'") && strings.HasSuffix(rawDefault, "'") {
+			return fmt.Sprintf("%s::%s", rawDefault, column.Type)
+		}
+	}
+	
+	return rawDefault
+}
+
+// extractFunctionExpression semantically extracts function expressions using AST-based comparison to match PostgreSQL's internal representation.
+func (e *metadataExtractor) extractFunctionExpression(ctx *parser.IndexstmtContext, funcExpr parser.IFunc_expr_windowlessContext) string {
+	if funcExpr == nil {
+		return ""
+	}
+	
+	// Get the original text
+	originalText := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(funcExpr)
+	
+	// Use AST-based semantic comparison for standardization
+	if e.expressionComparer != nil {
+		standardized, err := e.expressionComparer.StandardizeExpression(originalText)
+		if err == nil {
+			return standardized
+		}
+		// If standardization fails, log the error but continue with original text
+		// In a production system, we might want to log this for debugging
+	}
+	
+	// Fallback to original text if AST standardization fails
+	return originalText
 }
 
 // TODO: Add support for more PostgreSQL constructs if needed
