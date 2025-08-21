@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full py-4 overflow-y-auto">
+  <div class="w-full overflow-y-auto">
     <div class="grid grid-cols-[auto_1fr] gap-y-4 gap-x-8">
       <!-- SQL Checks -->
       <h3 class="text-base text-control">
