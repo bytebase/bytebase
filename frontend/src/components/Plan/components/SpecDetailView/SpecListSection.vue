@@ -15,13 +15,12 @@
             >#{{ index + 1 }}</span
           >
           {{ getSpecTitle(spec) }}
-          <span
-            v-if="isSpecEmpty(spec)"
-            class="text-error"
-            :title="$t('plan.navigator.statement-empty')"
-          >
-            *
-          </span>
+          <NTooltip v-if="isSpecEmpty(spec)">
+            <template #trigger>
+              <span class="text-error">*</span>
+            </template>
+            {{ $t("plan.navigator.statement-empty") }}
+          </NTooltip>
           <NButton
             v-if="canModifySpecs && plan.specs.length > 1"
             quaternary
@@ -63,7 +62,7 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import { PlusIcon, XIcon } from "lucide-vue-next";
-import { NTabs, NTab, NButton, useDialog } from "naive-ui";
+import { NTabs, NTab, NButton, useDialog, NTooltip } from "naive-ui";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
