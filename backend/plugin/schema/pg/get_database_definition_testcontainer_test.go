@@ -505,14 +505,14 @@ func compareMaterializedViewsDef(t *testing.T, viewsA, viewsB []*storepb.Materia
 		require.True(t, exists, "materialized view %s should exist in metadata A", viewB.Name)
 
 		// Compare view definitions using PostgreSQL view comparer
-		definitionsEqual := pgComparer.compareViewDefinitions(viewA.Definition, viewB.Definition)
+		definitionsEqual := pgComparer.compareViewsSemanticaly(viewA.Definition, viewB.Definition)
 
 		// Ensure definitions are equal using PostgreSQL ANTLR parser comparison
 		if !definitionsEqual {
 			// Log normalized definitions for debugging
 			t.Logf("Materialized view %s definition mismatch:", viewB.Name)
-			t.Logf("  A normalized: %q", pgComparer.normalizeViewDefinition(viewA.Definition))
-			t.Logf("  B normalized: %q", pgComparer.normalizeViewDefinition(viewB.Definition))
+			t.Logf("  A normalized: %q", pgComparer.normalizeExpression(viewA.Definition))
+			t.Logf("  B normalized: %q", pgComparer.normalizeExpression(viewB.Definition))
 			t.Logf("  A original: %q", viewA.Definition)
 			t.Logf("  B original: %q", viewB.Definition)
 
@@ -789,7 +789,7 @@ func compareViewsDef(t *testing.T, viewsA, viewsB []*storepb.ViewMetadata) {
 		require.True(t, exists, "view %s should exist in metadata A", viewB.Name)
 
 		// Compare view definitions using PostgreSQL view comparer
-		definitionsEqual := pgComparer.compareViewDefinitions(viewA.Definition, viewB.Definition)
+		definitionsEqual := pgComparer.compareViewsSemanticaly(viewA.Definition, viewB.Definition)
 
 		// Assert that view definitions must be equal after sophisticated PostgreSQL parsing
 		require.True(t, definitionsEqual,

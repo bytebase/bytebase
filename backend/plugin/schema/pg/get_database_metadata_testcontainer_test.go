@@ -18,6 +18,9 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	pgdb "github.com/bytebase/bytebase/backend/plugin/db/pg"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/plugin/schema/pg/ast"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // TestGetDatabaseMetadataWithTestcontainer tests the get_database_metadata function
@@ -59,6 +62,131 @@ func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
 		name string
 		ddl  string
 	}{
+		{
+			name: "bytebase_schema",
+			ddl: `
+			CREATE TABLE employee (
+	emp_no      SERIAL NOT NULL,
+	birth_date  DATE NOT NULL,
+	first_name  TEXT NOT NULL,
+	last_name   TEXT NOT NULL,
+	gender      TEXT NOT NULL CHECK (gender IN('M', 'F')) NOT NULL,
+	hire_date   DATE NOT NULL,
+	PRIMARY KEY (emp_no)
+);
+
+CREATE INDEX idx_employee_hire_date ON employee (hire_date);
+
+CREATE TABLE department (
+	dept_no     TEXT NOT NULL,
+	dept_name   TEXT NOT NULL,
+	PRIMARY KEY (dept_no),
+	UNIQUE      (dept_name)
+);
+
+CREATE TABLE dept_manager (
+	emp_no      INT NOT NULL,
+	dept_no     TEXT NOT NULL,
+	from_date   DATE NOT NULL,
+	to_date     DATE NOT NULL,
+	FOREIGN KEY (emp_no) REFERENCES employee (emp_no) ON DELETE CASCADE,
+	FOREIGN KEY (dept_no) REFERENCES department (dept_no) ON DELETE CASCADE,
+	PRIMARY KEY (emp_no, dept_no)
+);
+
+CREATE TABLE dept_emp (
+	emp_no      INT NOT NULL,
+	dept_no     TEXT NOT NULL,
+	from_date   DATE NOT NULL,
+	to_date     DATE NOT NULL,
+	FOREIGN KEY (emp_no) REFERENCES employee (emp_no) ON DELETE CASCADE,
+	FOREIGN KEY (dept_no) REFERENCES department (dept_no) ON DELETE CASCADE,
+	PRIMARY KEY (emp_no, dept_no)
+);
+
+CREATE TABLE title (
+	emp_no      INT NOT NULL,
+	title       TEXT NOT NULL,
+	from_date   DATE NOT NULL,
+	to_date     DATE,
+	FOREIGN KEY (emp_no) REFERENCES employee (emp_no) ON DELETE CASCADE,
+	PRIMARY KEY (emp_no, title, from_date)
+); 
+
+CREATE TABLE salary (
+	emp_no      INT NOT NULL,
+	amount      INT NOT NULL,
+	from_date   DATE NOT NULL,
+	to_date     DATE NOT NULL,
+	FOREIGN KEY (emp_no) REFERENCES employee (emp_no) ON DELETE CASCADE,
+	PRIMARY KEY (emp_no, from_date)
+);
+
+CREATE INDEX idx_salary_amount ON salary (amount);
+
+CREATE TABLE audit (
+    id SERIAL PRIMARY KEY,
+    operation TEXT NOT NULL,
+    query TEXT,
+    user_name TEXT NOT NULL,
+    changed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_audit_operation ON audit (operation);
+CREATE INDEX idx_audit_username ON audit (user_name);
+CREATE INDEX idx_audit_changed_at ON audit (changed_at);
+
+CREATE OR REPLACE FUNCTION log_dml_operations() RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        INSERT INTO audit (operation, query, user_name)
+        VALUES ('INSERT', current_query(), current_user);
+        RETURN NEW;
+    ELSIF (TG_OP = 'UPDATE') THEN
+        INSERT INTO audit (operation, query, user_name)
+        VALUES ('UPDATE', current_query(), current_user);
+        RETURN NEW;
+    ELSIF (TG_OP = 'DELETE') THEN
+        INSERT INTO audit (operation, query, user_name)
+        VALUES ('DELETE', current_query(), current_user);
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- only log update and delete, otherwise, it will cause too much change.
+CREATE TRIGGER salary_log_trigger
+AFTER UPDATE OR DELETE ON salary
+FOR EACH ROW
+EXECUTE FUNCTION log_dml_operations();
+
+CREATE OR REPLACE VIEW dept_emp_latest_date AS
+SELECT
+	emp_no,
+	MAX(
+		from_date) AS from_date,
+	MAX(
+		to_date) AS to_date
+FROM
+	dept_emp
+GROUP BY
+	emp_no;
+
+-- shows only the current department for each employee
+CREATE OR REPLACE VIEW current_dept_emp AS
+SELECT
+	l.emp_no,
+	dept_no,
+	l.from_date,
+	l.to_date
+FROM
+	dept_emp d
+	INNER JOIN dept_emp_latest_date l ON d.emp_no = l.emp_no
+		AND d.from_date = l.from_date
+		AND l.to_date = d.to_date;
+			`,
+		},
 		{
 			name: "basic_tables_with_constraints",
 			ddl: `
@@ -525,6 +653,9 @@ CREATE UNLOGGED TABLE temp_calculations (
 
 			// Compare the two metadata structures
 			compareMetadata(t, syncMetadata, parseMetadata)
+
+			// Additional validation: use schema differ to ensure no differences detected
+			validateWithSchemaDiffer(t, tc.name, syncMetadata, parseMetadata)
 		})
 	}
 }
@@ -625,13 +756,6 @@ func compareMetadata(t *testing.T, syncMeta, parseMeta *storepb.DatabaseSchemaMe
 	compareAllSchemas(t, syncMeta.Schemas, parseMeta.Schemas)
 }
 
-// normalizeExpression normalizes an expression for comparison using the PostgreSQL view comparer
-func normalizeExpression(expr string) string {
-	// Use the PostgreSQL view comparer's normalization logic for expressions
-	comparer := &PostgreSQLViewComparer{}
-	return comparer.normalizeViewDefinition(expr)
-}
-
 // normalizeSQL normalizes SQL for comparison by:
 // - Converting to lowercase
 // - Removing extra whitespace
@@ -690,6 +814,27 @@ func normalizeSQL(sql string) string {
 				// Remove the parentheses
 				sql = beforeWhere + afterWhere[:closeIndex] + afterCloseParen
 			}
+		}
+	}
+
+	// PostgreSQL function and procedure-specific normalizations
+	if strings.Contains(sql, "function") || strings.Contains(sql, "procedure") {
+		// Normalize CREATE OR REPLACE vs CREATE
+		sql = strings.ReplaceAll(sql, "create or replace function", "create function")
+
+		// Normalize parameter types to consistent forms
+		sql = strings.ReplaceAll(sql, "character varying", "varchar")
+		sql = strings.ReplaceAll(sql, "returns numeric", "returns decimal")
+
+		// Normalize dollar quoting
+		sql = strings.ReplaceAll(sql, "$function$", "$$")
+		sql = strings.ReplaceAll(sql, "$procedure$", "$$")
+
+		// Move LANGUAGE clause to end for consistent comparison
+		if strings.Contains(sql, "language plpgsql") && !strings.HasSuffix(sql, "language plpgsql") {
+			withoutLanguage := strings.ReplaceAll(sql, " language plpgsql", "")
+			withoutLanguage = strings.ReplaceAll(withoutLanguage, "language plpgsql ", "")
+			sql = strings.TrimSpace(withoutLanguage) + " language plpgsql"
 		}
 	}
 
@@ -832,12 +977,13 @@ func compareIndexes(t *testing.T, tableName string, syncIndexes, parseIndexes []
 			require.Equal(t, syncIdx.Type, parseIdx.Type, "table %s, index %s: type should match", tableName, name)
 		}
 
-		// 5. Expressions - compare normalized expressions from PostgreSQL catalog vs raw expressions from parser
+		// 5. Expressions - compare expressions using AST-based semantic comparison
 		if len(syncIdx.Expressions) == len(parseIdx.Expressions) {
 			for i := range syncIdx.Expressions {
-				syncExpr := normalizeExpression(syncIdx.Expressions[i])
-				parseExpr := normalizeExpression(parseIdx.Expressions[i])
-				require.Equal(t, syncExpr, parseExpr, "table %s, index %s: expression[%d] should match", tableName, name, i)
+				// Use AST-based semantic comparison instead of string normalization
+				equal := ast.CompareExpressionsSemantically(syncIdx.Expressions[i], parseIdx.Expressions[i])
+				require.True(t, equal, "table %s, index %s: expression[%d] should be semantically equivalent. sync: %q, parse: %q",
+					tableName, name, i, syncIdx.Expressions[i], parseIdx.Expressions[i])
 			}
 		} else {
 			require.Equal(t, len(syncIdx.Expressions), len(parseIdx.Expressions), "table %s, index %s: expressions count should match", tableName, name)
@@ -923,7 +1069,10 @@ func comparePartitions(t *testing.T, tableName string, syncParts, parseParts []*
 	for _, parsePart := range parseParts {
 		syncPart, exists := syncMap[parsePart.Name]
 		require.True(t, exists, "table %s: partition %s should exist in sync metadata", tableName, parsePart.Name)
-		require.Equal(t, syncPart.Expression, parsePart.Expression, "table %s, partition %s: expression should match", tableName, parsePart.Name)
+		// Use AST-based semantic comparison for partition expressions
+		equal := ast.CompareExpressionsSemantically(syncPart.Expression, parsePart.Expression)
+		require.True(t, equal, "table %s, partition %s: expression should be semantically equivalent. sync: %q, parse: %q",
+			tableName, parsePart.Name, syncPart.Expression, parsePart.Expression)
 		require.Equal(t, syncPart.Value, parsePart.Value, "table %s, partition %s: value should match", tableName, parsePart.Name)
 	}
 }
@@ -943,7 +1092,7 @@ func compareViews(t *testing.T, syncViews, parseViews []*storepb.ViewMetadata) {
 
 		// Compare view definitions using PostgreSQL view comparer for better normalization
 		comparer := &PostgreSQLViewComparer{}
-		definitionsEqual := comparer.compareViewDefinitions(syncView.Definition, parseView.Definition)
+		definitionsEqual := comparer.compareViewsSemanticaly(syncView.Definition, parseView.Definition)
 		require.True(t, definitionsEqual, "view %s: definition should match\nSync: %s\nParse: %s", parseView.Name, syncView.Definition, parseView.Definition)
 
 		// Compare comment if present
@@ -1094,7 +1243,7 @@ func compareMaterializedViews(t *testing.T, syncMViews, parseMViews []*storepb.M
 
 		// Compare definitions using PostgreSQL view comparer for better normalization
 		comparer := &PostgreSQLViewComparer{}
-		definitionsEqual := comparer.compareViewDefinitions(syncMv.Definition, parseMv.Definition)
+		definitionsEqual := comparer.compareViewsSemanticaly(syncMv.Definition, parseMv.Definition)
 		require.True(t, definitionsEqual, "materialized view %s: definition should match\nSync: %s\nParse: %s", parseMv.Name, syncMv.Definition, parseMv.Definition)
 
 		// Compare comment if present
@@ -1209,5 +1358,209 @@ func compareAllSchemas(t *testing.T, syncSchemas, parseSchemas []*storepb.Schema
 
 		// Compare functions in this schema
 		compareFunctions(t, syncSchema.Functions, parseSchema.Functions)
+	}
+}
+
+// validateWithSchemaDiffer validates that the schema differ returns no significant differences between sync and parse metadata
+func validateWithSchemaDiffer(t *testing.T, testName string, syncMeta, parseMeta *storepb.DatabaseSchemaMetadata) {
+	// Convert metadata to model.DatabaseSchema for differ
+	syncSchema := model.NewDatabaseSchema(syncMeta, nil, nil, storepb.Engine_POSTGRES, false)
+	parseSchema := model.NewDatabaseSchema(parseMeta, nil, nil, storepb.Engine_POSTGRES, false)
+
+	// Get schema diff
+	diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, syncSchema, parseSchema)
+	require.NoError(t, err, "test case %s: schema differ should not error", testName)
+
+	if diff == nil {
+		// No diff is expected - this is good
+		return
+	}
+
+	// Check that all diff categories are empty - DDL parser should fully match PostgreSQL behavior
+	var diffMessages []string
+
+	if len(diff.SchemaChanges) > 0 {
+		diffMessages = append(diffMessages, fmt.Sprintf("%d schema changes", len(diff.SchemaChanges)))
+		for _, change := range diff.SchemaChanges {
+			t.Logf("Schema change: %s %s", change.Action, change.SchemaName)
+		}
+	}
+
+	if len(diff.TableChanges) > 0 {
+		diffMessages = append(diffMessages, fmt.Sprintf("%d table changes", len(diff.TableChanges)))
+		for _, change := range diff.TableChanges {
+			t.Logf("Table change: %s %s.%s", change.Action, change.SchemaName, change.TableName)
+			// Log detailed changes within the table
+			if len(change.ColumnChanges) > 0 {
+				t.Logf("  Column changes: %d", len(change.ColumnChanges))
+				for _, colChange := range change.ColumnChanges {
+					if colChange.OldColumn != nil && colChange.NewColumn != nil {
+						t.Logf("    %s column %s: %s -> %s", colChange.Action, colChange.NewColumn.Name, colChange.OldColumn.Type, colChange.NewColumn.Type)
+						if colChange.OldColumn.Default != colChange.NewColumn.Default {
+							t.Logf("      Default changed: '%s' -> '%s'", colChange.OldColumn.Default, colChange.NewColumn.Default)
+						}
+						if colChange.OldColumn.Nullable != colChange.NewColumn.Nullable {
+							t.Logf("      Nullable changed: %t -> %t", colChange.OldColumn.Nullable, colChange.NewColumn.Nullable)
+						}
+					} else if colChange.NewColumn != nil {
+						t.Logf("    %s column %s: %s", colChange.Action, colChange.NewColumn.Name, colChange.NewColumn.Type)
+					} else if colChange.OldColumn != nil {
+						t.Logf("    %s column %s: %s", colChange.Action, colChange.OldColumn.Name, colChange.OldColumn.Type)
+					}
+				}
+			}
+			if len(change.IndexChanges) > 0 {
+				t.Logf("  Index changes: %d", len(change.IndexChanges))
+				for i, idxChange := range change.IndexChanges {
+					// Look for DROP/CREATE pairs that indicate a difference was detected
+					if i+1 < len(change.IndexChanges) && idxChange.Action == "DROP" && change.IndexChanges[i+1].Action == "CREATE" &&
+						idxChange.OldIndex.Name == change.IndexChanges[i+1].NewIndex.Name {
+						// This is a DROP/CREATE pair - log detailed comparison
+						oldIdx := idxChange.OldIndex
+						newIdx := change.IndexChanges[i+1].NewIndex
+						t.Logf("    DETAILED INDEX COMPARISON for %s (DROP/CREATE pair):", oldIdx.Name)
+						t.Logf("      Type: old='%s' vs new='%s' (equal: %v)", oldIdx.Type, newIdx.Type, oldIdx.Type == newIdx.Type)
+						t.Logf("      Unique: old=%v vs new=%v (equal: %v)", oldIdx.Unique, newIdx.Unique, oldIdx.Unique == newIdx.Unique)
+						t.Logf("      Primary: old=%v vs new=%v (equal: %v)", oldIdx.Primary, newIdx.Primary, oldIdx.Primary == newIdx.Primary)
+						t.Logf("      Expressions: old=%v vs new=%v (equal: %v)", oldIdx.Expressions, newIdx.Expressions, fmt.Sprintf("%v", oldIdx.Expressions) == fmt.Sprintf("%v", newIdx.Expressions))
+						t.Logf("      KeyLength: old=%v vs new=%v (equal: %v)", oldIdx.KeyLength, newIdx.KeyLength, fmt.Sprintf("%v", oldIdx.KeyLength) == fmt.Sprintf("%v", newIdx.KeyLength))
+						t.Logf("      Descending: old=%v vs new=%v (equal: %v)", oldIdx.Descending, newIdx.Descending, fmt.Sprintf("%v", oldIdx.Descending) == fmt.Sprintf("%v", newIdx.Descending))
+						t.Logf("      Visible: old=%v vs new=%v (equal: %v)", oldIdx.Visible, newIdx.Visible, oldIdx.Visible == newIdx.Visible)
+						t.Logf("      Definition: old='%s' vs new='%s' (equal: %v)", oldIdx.Definition, newIdx.Definition, oldIdx.Definition == newIdx.Definition)
+						t.Logf("      IsConstraint: old=%v vs new=%v (equal: %v)", oldIdx.IsConstraint, newIdx.IsConstraint, oldIdx.IsConstraint == newIdx.IsConstraint)
+					}
+
+					if idxChange.NewIndex != nil && idxChange.OldIndex != nil {
+						// Log detailed comparison for ALTER cases
+						t.Logf("    DETAILED INDEX COMPARISON for %s:", idxChange.NewIndex.Name)
+						t.Logf("      Type: old='%s' vs new='%s' (equal: %v)", idxChange.OldIndex.Type, idxChange.NewIndex.Type, idxChange.OldIndex.Type == idxChange.NewIndex.Type)
+						t.Logf("      Unique: old=%v vs new=%v (equal: %v)", idxChange.OldIndex.Unique, idxChange.NewIndex.Unique, idxChange.OldIndex.Unique == idxChange.NewIndex.Unique)
+						t.Logf("      Primary: old=%v vs new=%v (equal: %v)", idxChange.OldIndex.Primary, idxChange.NewIndex.Primary, idxChange.OldIndex.Primary == idxChange.NewIndex.Primary)
+						t.Logf("      Expressions: old=%v vs new=%v (equal: %v)", idxChange.OldIndex.Expressions, idxChange.NewIndex.Expressions, fmt.Sprintf("%v", idxChange.OldIndex.Expressions) == fmt.Sprintf("%v", idxChange.NewIndex.Expressions))
+						t.Logf("      KeyLength: old=%v vs new=%v (equal: %v)", idxChange.OldIndex.KeyLength, idxChange.NewIndex.KeyLength, fmt.Sprintf("%v", idxChange.OldIndex.KeyLength) == fmt.Sprintf("%v", idxChange.NewIndex.KeyLength))
+						t.Logf("      Descending: old=%v vs new=%v (equal: %v)", idxChange.OldIndex.Descending, idxChange.NewIndex.Descending, fmt.Sprintf("%v", idxChange.OldIndex.Descending) == fmt.Sprintf("%v", idxChange.NewIndex.Descending))
+						t.Logf("      Visible: old=%v vs new=%v (equal: %v)", idxChange.OldIndex.Visible, idxChange.NewIndex.Visible, idxChange.OldIndex.Visible == idxChange.NewIndex.Visible)
+						t.Logf("      Definition: old='%s' vs new='%s' (equal: %v)", idxChange.OldIndex.Definition, idxChange.NewIndex.Definition, idxChange.OldIndex.Definition == idxChange.NewIndex.Definition)
+					}
+
+					if idxChange.NewIndex != nil {
+						t.Logf("    %s index %s: type=%s, unique=%v, primary=%v, expressions=%v, definition=%s",
+							idxChange.Action, idxChange.NewIndex.Name, idxChange.NewIndex.Type,
+							idxChange.NewIndex.Unique, idxChange.NewIndex.Primary, idxChange.NewIndex.Expressions, idxChange.NewIndex.Definition)
+					} else if idxChange.OldIndex != nil {
+						t.Logf("    %s index %s: type=%s, unique=%v, primary=%v, expressions=%v, definition=%s",
+							idxChange.Action, idxChange.OldIndex.Name, idxChange.OldIndex.Type,
+							idxChange.OldIndex.Unique, idxChange.OldIndex.Primary, idxChange.OldIndex.Expressions, idxChange.OldIndex.Definition)
+					}
+				}
+			}
+			if len(change.ForeignKeyChanges) > 0 {
+				t.Logf("  Foreign key changes: %d", len(change.ForeignKeyChanges))
+				for _, fkChange := range change.ForeignKeyChanges {
+					if fkChange.NewForeignKey != nil {
+						t.Logf("    %s FK %s: columns=%v -> %s.%s(%v), onDelete=%s",
+							fkChange.Action, fkChange.NewForeignKey.Name, fkChange.NewForeignKey.Columns,
+							fkChange.NewForeignKey.ReferencedSchema, fkChange.NewForeignKey.ReferencedTable,
+							fkChange.NewForeignKey.ReferencedColumns, fkChange.NewForeignKey.OnDelete)
+					} else if fkChange.OldForeignKey != nil {
+						t.Logf("    %s FK %s: columns=%v -> %s.%s(%v), onDelete=%s",
+							fkChange.Action, fkChange.OldForeignKey.Name, fkChange.OldForeignKey.Columns,
+							fkChange.OldForeignKey.ReferencedSchema, fkChange.OldForeignKey.ReferencedTable,
+							fkChange.OldForeignKey.ReferencedColumns, fkChange.OldForeignKey.OnDelete)
+					}
+				}
+			}
+			if len(change.CheckConstraintChanges) > 0 {
+				t.Logf("  Check constraint changes: %d", len(change.CheckConstraintChanges))
+				for _, checkChange := range change.CheckConstraintChanges {
+					if checkChange.NewCheckConstraint != nil && checkChange.OldCheckConstraint != nil {
+						t.Logf("    %s CHECK %s: old='%s' -> new='%s'",
+							checkChange.Action, checkChange.NewCheckConstraint.Name,
+							checkChange.OldCheckConstraint.Expression, checkChange.NewCheckConstraint.Expression)
+					} else if checkChange.NewCheckConstraint != nil {
+						t.Logf("    %s CHECK %s: expression='%s'",
+							checkChange.Action, checkChange.NewCheckConstraint.Name, checkChange.NewCheckConstraint.Expression)
+					} else if checkChange.OldCheckConstraint != nil {
+						t.Logf("    %s CHECK %s: expression='%s'",
+							checkChange.Action, checkChange.OldCheckConstraint.Name, checkChange.OldCheckConstraint.Expression)
+					}
+				}
+			}
+			if len(change.TriggerChanges) > 0 {
+				t.Logf("  Trigger changes: %d", len(change.TriggerChanges))
+				for _, triggerChange := range change.TriggerChanges {
+					if triggerChange.NewTrigger != nil && triggerChange.OldTrigger != nil {
+						t.Logf("    %s TRIGGER %s: old='%s' -> new='%s'",
+							triggerChange.Action, triggerChange.NewTrigger.Name,
+							triggerChange.OldTrigger.Body, triggerChange.NewTrigger.Body)
+					} else if triggerChange.NewTrigger != nil {
+						t.Logf("    %s TRIGGER %s: body='%s'",
+							triggerChange.Action, triggerChange.NewTrigger.Name, triggerChange.NewTrigger.Body)
+					} else if triggerChange.OldTrigger != nil {
+						t.Logf("    %s TRIGGER %s: body='%s'",
+							triggerChange.Action, triggerChange.OldTrigger.Name, triggerChange.OldTrigger.Body)
+					}
+				}
+			}
+		}
+	}
+
+	if len(diff.ViewChanges) > 0 {
+		diffMessages = append(diffMessages, fmt.Sprintf("%d view changes", len(diff.ViewChanges)))
+		for _, change := range diff.ViewChanges {
+			t.Logf("View change: %s %s.%s", change.Action, change.SchemaName, change.ViewName)
+		}
+	}
+
+	if len(diff.MaterializedViewChanges) > 0 {
+		diffMessages = append(diffMessages, fmt.Sprintf("%d materialized view changes", len(diff.MaterializedViewChanges)))
+		for _, change := range diff.MaterializedViewChanges {
+			t.Logf("Materialized view change: %s %s.%s", change.Action, change.SchemaName, change.MaterializedViewName)
+		}
+	}
+
+	if len(diff.FunctionChanges) > 0 {
+		diffMessages = append(diffMessages, fmt.Sprintf("%d function changes", len(diff.FunctionChanges)))
+		for _, change := range diff.FunctionChanges {
+			t.Logf("Function change: %s %s.%s", change.Action, change.SchemaName, change.FunctionName)
+		}
+	}
+
+	if len(diff.ProcedureChanges) > 0 {
+		diffMessages = append(diffMessages, fmt.Sprintf("%d procedure changes", len(diff.ProcedureChanges)))
+		for _, change := range diff.ProcedureChanges {
+			t.Logf("Procedure change: %s %s.%s", change.Action, change.SchemaName, change.ProcedureName)
+		}
+	}
+
+	if len(diff.SequenceChanges) > 0 {
+		diffMessages = append(diffMessages, fmt.Sprintf("%d sequence changes", len(diff.SequenceChanges)))
+		for _, change := range diff.SequenceChanges {
+			t.Logf("Sequence change: %s %s.%s", change.Action, change.SchemaName, change.SequenceName)
+			if change.OldSequence != nil && change.NewSequence == nil {
+				t.Logf("  ISSUE: SERIAL sequence %s missing in parsed metadata", change.SequenceName)
+			} else if change.NewSequence != nil && change.OldSequence == nil {
+				t.Logf("  ISSUE: Unexpected sequence %s in parsed metadata", change.SequenceName)
+			}
+		}
+	}
+
+	if len(diff.EnumTypeChanges) > 0 {
+		diffMessages = append(diffMessages, fmt.Sprintf("%d enum type changes", len(diff.EnumTypeChanges)))
+		for _, change := range diff.EnumTypeChanges {
+			t.Logf("Enum type change: %s %s.%s", change.Action, change.SchemaName, change.EnumTypeName)
+		}
+	}
+
+	if len(diff.EventChanges) > 0 {
+		diffMessages = append(diffMessages, fmt.Sprintf("%d event changes", len(diff.EventChanges)))
+		for _, change := range diff.EventChanges {
+			t.Logf("Event change: %s %s", change.Action, change.EventName)
+		}
+	}
+
+	// If we have any differences, fail the test - DDL parser must match PostgreSQL exactly
+	if len(diffMessages) > 0 {
+		require.Fail(t, fmt.Sprintf("test case %s: DDL parser should fully replicate PostgreSQL behavior. Differences found: %s", testName, strings.Join(diffMessages, ", ")))
 	}
 }
