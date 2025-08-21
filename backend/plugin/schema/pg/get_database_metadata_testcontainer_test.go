@@ -1486,6 +1486,22 @@ func validateWithSchemaDiffer(t *testing.T, testName string, syncMeta, parseMeta
 					}
 				}
 			}
+			if len(change.TriggerChanges) > 0 {
+				t.Logf("  Trigger changes: %d", len(change.TriggerChanges))
+				for _, triggerChange := range change.TriggerChanges {
+					if triggerChange.NewTrigger != nil && triggerChange.OldTrigger != nil {
+						t.Logf("    %s TRIGGER %s: old='%s' -> new='%s'",
+							triggerChange.Action, triggerChange.NewTrigger.Name,
+							triggerChange.OldTrigger.Body, triggerChange.NewTrigger.Body)
+					} else if triggerChange.NewTrigger != nil {
+						t.Logf("    %s TRIGGER %s: body='%s'",
+							triggerChange.Action, triggerChange.NewTrigger.Name, triggerChange.NewTrigger.Body)
+					} else if triggerChange.OldTrigger != nil {
+						t.Logf("    %s TRIGGER %s: body='%s'",
+							triggerChange.Action, triggerChange.OldTrigger.Name, triggerChange.OldTrigger.Body)
+					}
+				}
+			}
 		}
 	}
 
