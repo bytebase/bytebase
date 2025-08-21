@@ -82,7 +82,7 @@ func (d *DiagnosticsDebouncer) ScheduleDiagnostics(
 }
 
 // runDiagnostics performs the actual diagnostics and sends results
-func (_ *DiagnosticsDebouncer) runDiagnostics(
+func (*DiagnosticsDebouncer) runDiagnostics(
 	ctx context.Context,
 	conn *jsonrpc2.Conn,
 	uri lsp.DocumentURI,
