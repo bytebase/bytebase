@@ -42,6 +42,14 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 		if raw.Valid {
 			_, scale, _ := columnType.DecimalSize()
 			if typeName == "TIMESTAMP" || typeName == "DATETIME" {
+				// Special case for MySQL zero date which is not a valid Go time
+				if raw.String == "0000-00-00 00:00:00" {
+					return &v1pb.RowValue{
+						Kind: &v1pb.RowValue_StringValue{
+							StringValue: raw.String,
+						},
+					}
+				}
 				t, err := time.Parse(time.DateTime, raw.String)
 				if err != nil {
 					slog.Error("failed to parse time value", log.BBError(err))

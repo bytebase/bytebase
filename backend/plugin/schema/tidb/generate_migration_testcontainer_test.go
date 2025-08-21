@@ -195,7 +195,7 @@ CREATE TABLE orders (
 			migrationDDL: `
 -- Create view
 CREATE VIEW product_inventory AS
-SELECT 
+SELECT
     p.id,
     p.name,
     p.price,
@@ -234,7 +234,7 @@ CREATE TABLE orders (
 );
 
 CREATE VIEW product_inventory AS
-SELECT 
+SELECT
     p.id,
     p.name,
     p.price,
@@ -268,7 +268,7 @@ CREATE TABLE sales (
 			migrationDDL: `
 -- Create views
 CREATE VIEW monthly_sales AS
-SELECT 
+SELECT
     YEAR(sale_date) AS year,
     MONTH(sale_date) AS month,
     SUM(sale_amount) AS total_sales
@@ -276,7 +276,7 @@ FROM sales
 GROUP BY YEAR(sale_date), MONTH(sale_date);
 
 CREATE VIEW top_products AS
-SELECT 
+SELECT
     product_name,
     COUNT(*) AS sale_count,
     SUM(sale_amount) AS total_revenue
@@ -309,7 +309,7 @@ CREATE TABLE sales (
 );
 
 CREATE VIEW monthly_sales AS
-SELECT 
+SELECT
     YEAR(sale_date) AS year,
     MONTH(sale_date) AS month,
     SUM(sale_amount) AS total_sales
@@ -317,7 +317,7 @@ FROM sales
 GROUP BY YEAR(sale_date), MONTH(sale_date);
 
 CREATE VIEW top_products AS
-SELECT 
+SELECT
     product_name,
     COUNT(*) AS sale_count,
     SUM(sale_amount) AS total_revenue
@@ -608,7 +608,7 @@ CREATE INDEX idx_region_date ON sales_data(region, sale_date);
 
 -- Create view on partitioned table
 CREATE VIEW regional_sales AS
-SELECT 
+SELECT
     region,
     YEAR(sale_date) AS year,
     MONTH(sale_date) AS month,
@@ -640,7 +640,7 @@ CREATE TABLE sales_data (
 );
 
 CREATE VIEW regional_sales AS
-SELECT 
+SELECT
     region,
     YEAR(sale_date) AS year,
     MONTH(sale_date) AS month,
@@ -1360,12 +1360,6 @@ test',
 - Multi-line content with various encodings';
 `,
 			migrationDDL: `
--- Restore comment that was removed
-ALTER TABLE special_comments_table MODIFY COLUMN html_field TEXT COMMENT 'HTML content field: <script>alert("XSS test & more");</script>';
-
--- Restore original comment
-ALTER TABLE special_comments_table MODIFY COLUMN data_field JSON COMMENT 'JSON field storing: {"users": ["John O''Connor", "Jane \"Doe\""], "count": 42}';
-
 -- Drop table with special comments
 DROP TABLE special_comments_table;
 

@@ -8,8 +8,7 @@
   >
     <table
       ref="tableRef"
-      class="relative border-collapse w-full -mx-px"
-      style="table-layout: fixed"
+      class="relative border-collapse w-full -mx-px table-fixed"
       v-bind="tableResize.getTableProps()"
     >
       <thead

@@ -342,7 +342,7 @@ func writeAlterTableComment(buf *strings.Builder, tableName, comment string) err
 	_, _ = buf.WriteString("ALTER TABLE `")
 	_, _ = buf.WriteString(tableName)
 	_, _ = buf.WriteString("` COMMENT = '")
-	_, _ = buf.WriteString(escapeString(comment))
+	_, _ = buf.WriteString(comment)
 	_, _ = buf.WriteString("';\n\n")
 	return nil
 }
@@ -475,7 +475,7 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 
 		if col.Comment != "" {
 			_, _ = buf.WriteString(" COMMENT '")
-			_, _ = buf.WriteString(escapeString(col.Comment))
+			_, _ = buf.WriteString(col.Comment)
 			_, _ = buf.WriteString("'")
 		}
 	}
@@ -555,7 +555,7 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 
 	if table.Comment != "" {
 		_, _ = buf.WriteString(" COMMENT='")
-		_, _ = buf.WriteString(escapeString(table.Comment))
+		_, _ = buf.WriteString(table.Comment)
 		_, _ = buf.WriteString("'")
 	}
 
@@ -681,7 +681,7 @@ func writeAddColumn(buf *strings.Builder, table string, column *storepb.ColumnMe
 
 	if column.Comment != "" {
 		_, _ = buf.WriteString(" COMMENT '")
-		_, _ = buf.WriteString(escapeString(column.Comment))
+		_, _ = buf.WriteString(column.Comment)
 		_, _ = buf.WriteString("'")
 	}
 
@@ -730,7 +730,7 @@ func writeModifyColumn(buf *strings.Builder, table string, column *storepb.Colum
 
 	if column.Comment != "" {
 		_, _ = buf.WriteString(" COMMENT '")
-		_, _ = buf.WriteString(escapeString(column.Comment))
+		_, _ = buf.WriteString(column.Comment)
 		_, _ = buf.WriteString("'")
 	}
 
@@ -779,7 +779,7 @@ func writeCreateIndex(buf *strings.Builder, table string, index *storepb.IndexMe
 
 	if index.Comment != "" {
 		_, _ = buf.WriteString(" COMMENT '")
-		_, _ = buf.WriteString(escapeString(index.Comment))
+		_, _ = buf.WriteString(index.Comment)
 		_, _ = buf.WriteString("'")
 	}
 
@@ -1016,12 +1016,6 @@ func hasAutoRandom(column *storepb.ColumnMetadata) bool {
 	return strings.HasPrefix(column.GetDefault(), "AUTO_RANDOM")
 }
 
-func escapeString(s string) string {
-	s = strings.ReplaceAll(s, "\\", "\\\\")
-	s = strings.ReplaceAll(s, "'", "\\'")
-	return s
-}
-
 func writeTemporaryViewForDrop(buf *strings.Builder, viewName string, view *storepb.ViewMetadata) error {
 	// Create a temporary view with SELECT 1 AS column_name structure
 	// to satisfy other views that depend on this view
@@ -1123,7 +1117,7 @@ func writeCreateSequence(buf *strings.Builder, sequence *storepb.SequenceMetadat
 
 	if sequence.Comment != "" {
 		_, _ = buf.WriteString(" COMMENT '")
-		_, _ = buf.WriteString(escapeString(sequence.Comment))
+		_, _ = buf.WriteString(sequence.Comment)
 		_, _ = buf.WriteString("'")
 	}
 
