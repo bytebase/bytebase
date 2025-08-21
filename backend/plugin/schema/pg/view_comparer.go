@@ -297,12 +297,12 @@ func (c *PostgreSQLViewComparer) extractSemanticStructure(tokens []antlr.Token) 
 				}
 				state = "ORDER_BY"
 			} else {
-				// Skip unnecessary parentheses for semantic comparison  
+				// Skip unnecessary parentheses for semantic comparison
 				if tokenText == "(" || tokenText == ")" {
 					// Skip parentheses that don't affect semantics
 					continue
 				}
-				
+
 				// Handle qualified identifiers (table.column) properly
 				if tokenText == "." {
 					currentItem += tokenText // Don't add space before dots
@@ -370,7 +370,7 @@ func (c *PostgreSQLViewComparer) extractSemanticStructure(tokens []antlr.Token) 
 				if tokenText == "(" || tokenText == ")" {
 					continue
 				}
-				
+
 				// Handle qualified identifiers (table.column) properly
 				if tokenText == "." {
 					currentItem += tokenText // Don't add space before dots
@@ -482,10 +482,10 @@ func (c *PostgreSQLViewComparer) extractSemanticStructure(tokens []antlr.Token) 
 // preprocessTokensForSemantics preprocesses tokens to handle schema prefixes and other semantic equivalences.
 func (*PostgreSQLViewComparer) preprocessTokensForSemantics(tokens []antlr.Token) []antlr.Token {
 	var result []antlr.Token
-	
+
 	for i, token := range tokens {
 		tokenText := strings.ToLower(strings.TrimSpace(token.GetText()))
-		
+
 		// Handle schema prefix removal for semantic equivalence
 		if tokenText == "public" && i+1 < len(tokens) {
 			// Look for the next non-whitespace token to see if it's a dot
@@ -493,12 +493,12 @@ func (*PostgreSQLViewComparer) preprocessTokensForSemantics(tokens []antlr.Token
 			for j := i + 1; j < len(tokens); j++ {
 				nextTokenText := strings.TrimSpace(tokens[j].GetText())
 				nextTokenType := tokens[j].GetTokenType()
-				
+
 				// Skip whitespace tokens
 				if isWhitespaceTokenType(nextTokenType) {
 					continue
 				}
-				
+
 				// If next non-whitespace token is ".", skip both "public" and "."
 				if nextTokenText == "." {
 					foundDot = true
@@ -506,39 +506,39 @@ func (*PostgreSQLViewComparer) preprocessTokensForSemantics(tokens []antlr.Token
 				}
 				break // Found non-whitespace token, make decision
 			}
-			
+
 			if foundDot {
 				continue // Skip "public" token
 			}
 		}
-		
+
 		// Skip dots that follow "public" (handled above)
 		if tokenText == "." && i > 0 {
 			prevTokenFound := false
 			for j := i - 1; j >= 0; j-- {
 				prevTokenText := strings.ToLower(strings.TrimSpace(tokens[j].GetText()))
 				prevTokenType := tokens[j].GetTokenType()
-				
+
 				// Skip whitespace tokens
 				if isWhitespaceTokenType(prevTokenType) {
 					continue
 				}
-				
+
 				// If previous non-whitespace token is "public", skip this dot
 				if prevTokenText == "public" {
 					prevTokenFound = true
 				}
 				break // Found non-whitespace token, make decision
 			}
-			
+
 			if prevTokenFound {
 				continue // Skip dot that follows "public"
 			}
 		}
-		
+
 		result = append(result, token)
 	}
-	
+
 	return result
 }
 
@@ -603,17 +603,17 @@ func (c *PostgreSQLViewComparer) compareStringArrays(arr1, arr2 []string) bool {
 	for i, item1 := range arr1 {
 		normalized1 := c.normalizeExpression(item1)
 		normalized2 := c.normalizeExpression(arr2[i])
-		
+
 		// Check if they're exactly equal after normalization
 		if normalized1 == normalized2 {
 			continue // They're equivalent
 		}
-		
+
 		// Special handling for column references that might have different table alias usage
 		if c.areSemanticallySimilarColumns(normalized1, normalized2) {
 			continue // Consider them equivalent
 		}
-		
+
 		// They're different
 		return false
 	}
@@ -626,7 +626,7 @@ func (c *PostgreSQLViewComparer) compareStringArrays(arr1, arr2 []string) bool {
 func (*PostgreSQLViewComparer) areSemanticallySimilarColumns(col1, col2 string) bool {
 	// Handle cases where one column has table alias and the other doesn't
 	// e.g., "d.dept_no" vs "dept_no"
-	
+
 	// Normalize spaces around dots first
 	col1 = strings.ReplaceAll(col1, " . ", ".")
 	col2 = strings.ReplaceAll(col2, " . ", ".")
@@ -634,23 +634,23 @@ func (*PostgreSQLViewComparer) areSemanticallySimilarColumns(col1, col2 string) 
 	col2 = strings.ReplaceAll(col2, " .", ".")
 	col1 = strings.TrimSpace(col1)
 	col2 = strings.TrimSpace(col2)
-	
+
 	// Split on dots to check for table alias patterns
 	parts1 := strings.Split(col1, ".")
 	parts2 := strings.Split(col2, ".")
-	
+
 	// If one has alias and other doesn't, compare the column names
 	if len(parts1) == 2 && len(parts2) == 1 {
 		// col1 has alias (table.column), col2 is just column
 		return strings.TrimSpace(parts1[1]) == strings.TrimSpace(parts2[0])
 	} else if len(parts1) == 1 && len(parts2) == 2 {
-		// col2 has alias (table.column), col1 is just column  
+		// col2 has alias (table.column), col1 is just column
 		return strings.TrimSpace(parts1[0]) == strings.TrimSpace(parts2[1])
 	} else if len(parts1) == 2 && len(parts2) == 2 {
 		// Both have aliases, compare just the column names
 		return strings.TrimSpace(parts1[1]) == strings.TrimSpace(parts2[1])
 	}
-	
+
 	// No special handling needed
 	return false
 }
@@ -731,19 +731,19 @@ func (*PostgreSQLViewComparer) normalizeExpression(expr string) string {
 			for j := i + 1; j < len(tokens); j++ {
 				nextTokenText := strings.TrimSpace(tokens[j].GetText())
 				nextTokenType := tokens[j].GetTokenType()
-				
+
 				// Skip whitespace tokens
 				if isWhitespaceTokenType(nextTokenType) {
 					continue
 				}
-				
+
 				// If next non-whitespace token is "JOIN", skip "INNER"
 				if strings.ToLower(nextTokenText) == "join" {
 					skipInner = true
 				}
 				break // Found non-whitespace token, make decision
 			}
-			
+
 			if skipInner {
 				continue // Skip "INNER" - we'll just use "join"
 			}
@@ -796,10 +796,10 @@ func (c *PostgreSQLViewComparer) normalizeCondition(condition string) string {
 
 	// Use AST-based expression normalization for conditions with additional condition-specific processing
 	normalized := c.normalizeExpression(condition)
-	
+
 	// Further normalize JOIN conditions by handling complex expressions
 	normalized = c.normalizeJoinCondition(normalized)
-	
+
 	return normalized
 }
 
@@ -808,48 +808,48 @@ func (*PostgreSQLViewComparer) normalizeJoinCondition(condition string) string {
 	if condition == "" {
 		return ""
 	}
-	
+
 	// Parse the condition as a boolean expression using ANTLR
 	inputStream := antlr.NewInputStream(condition)
 	lexer := pgparser.NewPostgreSQLLexer(inputStream)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	stream.Fill()
 	tokens := stream.GetAllTokens()
-	
+
 	var normalizedTokens []string
 	var parenLevel int
-	
+
 	for _, token := range tokens {
 		tokenText := strings.TrimSpace(token.GetText())
 		tokenType := token.GetTokenType()
-		
+
 		// Skip whitespace and EOF tokens
 		if isWhitespaceTokenType(tokenType) || tokenText == "<EOF>" || tokenText == ";" {
 			continue
 		}
-		
+
 		// Track parentheses level for expression normalization
 		if tokenText == "(" {
 			parenLevel++
 		} else if tokenText == ")" {
 			parenLevel--
 		}
-		
+
 		// Skip redundant outer parentheses for semantic equivalence
 		// But preserve them if they change precedence
 		if tokenText == "(" || tokenText == ")" {
 			// For now, keep all parentheses to avoid changing semantics
 			// This could be enhanced with more sophisticated precedence analysis
 		}
-		
+
 		// Normalize case and add token
 		if !isQuotedIdentifierText(tokenText) {
 			tokenText = strings.ToLower(tokenText)
 		}
-		
+
 		normalizedTokens = append(normalizedTokens, tokenText)
 	}
-	
+
 	// Join and clean up
 	normalized := strings.Join(normalizedTokens, " ")
 	return strings.TrimSpace(normalized)
