@@ -122,7 +122,7 @@
     </div>
 
     <div class="flex-1 w-full flex flex-col overflow-y-auto">
-      <DataBlock
+      <VirtualDataBlock
         v-if="state.vertical"
         :table="table"
         :set-index="setIndex"
@@ -130,7 +130,7 @@
         :is-sensitive-column="isSensitiveColumn"
         :get-masking-reason="getMaskingReason"
       />
-      <DataTable
+      <VirtualDataTable
         v-else
         :table="table"
         :set-index="setIndex"
@@ -258,12 +258,12 @@ import {
   instanceV1HasStructuredQueryResult,
   isNullOrUndefined,
 } from "@/utils";
-import DataBlock from "./DataBlock.vue";
-import DataTable from "./DataTable";
+import VirtualDataTable from "./DataTable/VirtualDataTable.vue";
 import { provideSelectionContext } from "./DataTable/common/selection-logic";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView";
 import SelectionCopyTooltips from "./SelectionCopyTooltips.vue";
+import VirtualDataBlock from "./VirtualDataBlock.vue";
 import { useSQLResultViewContext } from "./context";
 
 // Using conversion function from common-conversions.ts

@@ -1,3 +1,3 @@
-import DataTable from "./DataTable.vue";
+import VirtualDataTable from "./VirtualDataTable.vue";
 
-export default DataTable;
+export default VirtualDataTable;

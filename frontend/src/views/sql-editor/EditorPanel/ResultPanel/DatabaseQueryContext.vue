@@ -38,9 +38,9 @@
 </template>
 
 <script lang="tsx" setup>
-import { useTimestamp } from "@vueuse/core";
+import { useIntervalFn } from "@vueuse/core";
 import { NButton } from "naive-ui";
-import { computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { useSQLEditorTabStore } from "@/store";
@@ -61,7 +61,26 @@ const tabStore = useSQLEditorTabStore();
 
 const loading = computed(() => props.context.status === "EXECUTING");
 
-const currentTimestampMS = useTimestamp();
+// Update every 1 second instead of every frame
+const currentTimestampMS = ref(Date.now());
+const { pause, resume } = useIntervalFn(() => {
+  currentTimestampMS.value = Date.now();
+}, 1000);
+
+// Start/stop the timer based on loading state
+watch(
+  loading,
+  (isLoading) => {
+    if (isLoading) {
+      currentTimestampMS.value = Date.now();
+      resume();
+    } else {
+      pause();
+    }
+  },
+  { immediate: true }
+);
+
 const queryElapsedTime = computed(() => {
   if (!loading.value) {
     return "";
