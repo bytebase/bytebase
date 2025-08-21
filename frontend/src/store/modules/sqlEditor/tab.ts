@@ -109,7 +109,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       }
     });
 
-    watchTab(tab, false /* !immediate */);
+    // Don't watch the tab here - only watch the current active tab
     tabsById.set(id, tab);
     return tab;
   };
@@ -236,8 +236,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       ...defaultSQLEditorTab(),
       ...payload,
     });
-    watchTab(newTab, true /* immediate */);
-
     const { id } = newTab;
     const position = tabIdList.value.indexOf(currentTabId.value ?? "");
     if (beside && position >= 0) {
@@ -327,10 +325,19 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     if (!tab.databaseQueryContexts.has(database)) {
       return;
     }
+    // Early exit if no contexts to remove
+    if (contextIds.length === 0) {
+      return;
+    }
+
     const target = new Set(contextIds);
     const contexts = tab.databaseQueryContexts.get(database)!;
     const newContexts = contexts.filter((ctx) => !target.has(ctx.id));
-    tab.databaseQueryContexts.set(database, newContexts);
+
+    // Only update if something actually changed
+    if (newContexts.length !== contexts.length) {
+      tab.databaseQueryContexts.set(database, newContexts);
+    }
   };
 
   const deleteDatabaseQueryContext = (database: string) => {
@@ -409,28 +416,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       );
     }
   };
-  // watch the field changes of a tab, store it to localStorage
-  // when needed, but not to frequently (for performance consideration)
-  const watchTab = (tab: SQLEditorTab, immediate: boolean) => {
-    // Use a throttled watcher to reduce the performance overhead when writing.
-    watchThrottled(
-      () => pick(tab, ...PERSISTENT_TAB_FIELDS) as PersistentTab,
-      (persistentTab) => {
-        getStorage().save<PersistentTab>(
-          keyForTab(persistentTab.id),
-          persistentTab
-        );
-      },
-      { deep: true, immediate, throttle: 300, trailing: true } // Increased to 300ms for better performance
-    );
-    watchThrottled(
-      () => pick(tab, EXTENDED_TAB_FIELDS) as ExtendedTab,
-      (extended) => {
-        saveExtendedTab(tab, extended);
-      },
-      { deep: true, immediate, throttle: 300, trailing: true } // Increased to 300ms for better performance
-    );
-  };
   // Load tabs session from localStorage
   // Reset if failed
   const initAll = () => {
@@ -452,13 +437,47 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   });
 
   const isSwitchingTab = ref(false);
+
+  // Track the currently watched tab to clean up old watchers
+  let currentWatchedTabStop: (() => void) | null = null;
+
   watch(
     currentTabId,
-    () => {
+    (_newId, _oldId) => {
       isSwitchingTab.value = true;
       nextTick(() => {
         isSwitchingTab.value = false;
       });
+
+      // Clean up the old tab watcher
+      if (currentWatchedTabStop) {
+        currentWatchedTabStop();
+        currentWatchedTabStop = null;
+      }
+
+      // Watch only the current active tab
+      const activeTab = currentTab.value;
+      if (activeTab) {
+        currentWatchedTabStop = watchThrottled(
+          () => {
+            return {
+              persistent: pick(
+                activeTab,
+                ...PERSISTENT_TAB_FIELDS
+              ) as PersistentTab,
+              extended: pick(activeTab, EXTENDED_TAB_FIELDS) as ExtendedTab,
+            };
+          },
+          ({ persistent, extended }) => {
+            getStorage().save<PersistentTab>(
+              keyForTab(persistent.id),
+              persistent
+            );
+            saveExtendedTab(activeTab, extended);
+          },
+          { deep: true, immediate: true, throttle: 500, trailing: true }
+        );
+      }
     },
     {
       immediate: true,
