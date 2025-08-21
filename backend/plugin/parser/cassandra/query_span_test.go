@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	
+
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -94,22 +94,22 @@ func TestGetQuerySpan(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			gCtx := base.GetQuerySpanContext{}
-			
+
 			got, err := GetQuerySpan(ctx, gCtx, tt.statement, "test_keyspace", "", false)
 			require.NoError(t, err)
 			require.NotNil(t, got)
-			
+
 			// Check Results length
 			require.Equal(t, len(tt.want.Results), len(got.Results), "Result count mismatch")
-			
+
 			// Check each result
 			for i, wantResult := range tt.want.Results {
 				gotResult := got.Results[i]
-				
+
 				require.Equal(t, wantResult.Name, gotResult.Name, "Column name mismatch at index %d", i)
 				require.Equal(t, wantResult.SelectAsterisk, gotResult.SelectAsterisk, "SelectAsterisk mismatch at index %d", i)
 				require.Equal(t, wantResult.IsPlainField, gotResult.IsPlainField, "IsPlainField mismatch at index %d", i)
-				
+
 				// Check source columns if not SELECT *
 				if !wantResult.SelectAsterisk {
 					for col := range wantResult.SourceColumns {
@@ -143,7 +143,7 @@ func TestGetQuerySpanWithErrors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			gCtx := base.GetQuerySpanContext{}
-			
+
 			_, err := GetQuerySpan(ctx, gCtx, tt.statement, "test_keyspace", "", false)
 			if tt.wantErr {
 				require.Error(t, err)

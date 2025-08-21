@@ -6,6 +6,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/cql"
+
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -19,7 +20,7 @@ type querySpanExtractor struct {
 
 	// Results we're building
 	querySpan *base.QuerySpan
-	
+
 	// Error handling
 	err error
 }
@@ -42,17 +43,17 @@ func (e *querySpanExtractor) EnterSelect_(ctx *cql.Select_Context) {
 	if e.err != nil {
 		return
 	}
-	
+
 	// Extract table information from FROM clause
 	keyspace, table := e.extractTableFromFromSpec(ctx.FromSpec())
 	if keyspace == "" {
 		keyspace = e.defaultKeyspace
 	}
-	
+
 	// Extract column information from SELECT clause
 	results := e.extractSelectElements(ctx.SelectElements(), keyspace, table)
 	e.querySpan.Results = results
-	
+
 	// Extract columns from WHERE clause for predicate tracking
 	if whereSpec := ctx.WhereSpec(); whereSpec != nil {
 		e.extractWhereColumns(whereSpec, keyspace, table)
@@ -60,11 +61,11 @@ func (e *querySpanExtractor) EnterSelect_(ctx *cql.Select_Context) {
 }
 
 // extractTableFromFromSpec extracts keyspace and table name from FROM clause
-func (e *querySpanExtractor) extractTableFromFromSpec(fromSpec cql.IFromSpecContext) (keyspace, table string) {
+func (*querySpanExtractor) extractTableFromFromSpec(fromSpec cql.IFromSpecContext) (keyspace, table string) {
 	if fromSpec == nil {
 		return "", ""
 	}
-	
+
 	if from, ok := fromSpec.(*cql.FromSpecContext); ok {
 		if fromElem := from.FromSpecElement(); fromElem != nil {
 			// FromSpecElement can be either "table" or "keyspace.table"
@@ -84,13 +85,13 @@ func (e *querySpanExtractor) extractSelectElements(selectElements cql.ISelectEle
 	if selectElements == nil {
 		return nil
 	}
-	
+
 	if sel, ok := selectElements.(*cql.SelectElementsContext); ok {
 		// Check for SELECT *
 		if sel.GetStar() != nil {
 			return e.expandSelectAsterisk(keyspace, table)
 		}
-		
+
 		// Handle specific column selections
 		var results []base.QuerySpanResult
 		for _, elem := range sel.AllSelectElement() {
@@ -104,7 +105,7 @@ func (e *querySpanExtractor) extractSelectElements(selectElements cql.ISelectEle
 						Table:    table,
 						Column:   columnName,
 					}] = true
-					
+
 					results = append(results, base.QuerySpanResult{
 						Name:          columnName,
 						SourceColumns: sourceColumn,
@@ -115,26 +116,26 @@ func (e *querySpanExtractor) extractSelectElements(selectElements cql.ISelectEle
 		}
 		return results
 	}
-	
+
 	return nil
 }
 
 // extractColumnName extracts the column name from a select element
-func (e *querySpanExtractor) extractColumnName(elem *cql.SelectElementContext) string {
+func (*querySpanExtractor) extractColumnName(elem *cql.SelectElementContext) string {
 	if elem == nil {
 		return ""
 	}
-	
+
 	// Get the text of the select element
 	// This could be a simple column name or table.column
 	text := elem.GetText()
-	
+
 	// Handle table.column notation
 	parts := strings.Split(text, ".")
 	if len(parts) == 2 {
 		return parts[1]
 	}
-	
+
 	// Handle AS alias
 	if elem.GetChildCount() > 2 {
 		// Check if there's an AS keyword
@@ -147,7 +148,7 @@ func (e *querySpanExtractor) extractColumnName(elem *cql.SelectElementContext) s
 			}
 		}
 	}
-	
+
 	return parts[0]
 }
 
@@ -161,13 +162,13 @@ func (e *querySpanExtractor) expandSelectAsterisk(keyspace, table string) []base
 			SelectAsterisk: true,
 		}}
 	}
-	
+
 	ctx := context.Background()
 	_, metadata, err := e.gCtx.GetDatabaseMetadataFunc(ctx, e.gCtx.InstanceID, keyspace)
 	if err != nil || metadata == nil {
 		return []base.QuerySpanResult{}
 	}
-	
+
 	var results []base.QuerySpanResult
 	schemaNames := metadata.ListSchemaNames()
 	for _, schemaName := range schemaNames {
@@ -175,7 +176,7 @@ func (e *querySpanExtractor) expandSelectAsterisk(keyspace, table string) []base
 		if schema == nil {
 			continue
 		}
-		
+
 		tbl := schema.GetTable(table)
 		if tbl != nil {
 			for _, col := range tbl.GetColumns() {
@@ -185,7 +186,7 @@ func (e *querySpanExtractor) expandSelectAsterisk(keyspace, table string) []base
 					Table:    table,
 					Column:   col.GetName(),
 				}] = true
-				
+
 				results = append(results, base.QuerySpanResult{
 					Name:          col.GetName(),
 					SourceColumns: sourceColumn,
@@ -195,20 +196,20 @@ func (e *querySpanExtractor) expandSelectAsterisk(keyspace, table string) []base
 			break
 		}
 	}
-	
+
 	return results
 }
 
 // extractWhereColumns extracts column references from WHERE clause
-func (e *querySpanExtractor) extractWhereColumns(whereSpec cql.IWhereSpecContext, keyspace, table string) {
+func (*querySpanExtractor) extractWhereColumns(whereSpec cql.IWhereSpecContext, _, _ string) {
 	if whereSpec == nil {
 		return
 	}
-	
+
 	// For now, we'll mark that we found columns in WHERE clause
 	// A full implementation would parse the relation elements
 	// to extract all column references
-	
+
 	// This is a simplified implementation - a complete one would
 	// walk through all relation elements and extract column names
 }

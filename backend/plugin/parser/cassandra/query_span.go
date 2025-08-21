@@ -15,8 +15,7 @@ func init() {
 }
 
 // GetQuerySpan extracts the query span from a CQL statement.
-func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statement, database, _ string, _ bool) (*base.QuerySpan, error) {
-	
+func GetQuerySpan(_ context.Context, gCtx base.GetQuerySpanContext, statement, database, _ string, _ bool) (*base.QuerySpan, error) {
 	lexer := cql.NewCqlLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := cql.NewCqlParser(stream)
@@ -46,7 +45,7 @@ func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statement,
 	// Create extractor and walk the tree
 	extractor := newQuerySpanExtractor(database, gCtx)
 	antlr.ParseTreeWalkerDefault.Walk(extractor, tree)
-	
+
 	if extractor.err != nil {
 		return nil, extractor.err
 	}

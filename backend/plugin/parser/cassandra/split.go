@@ -20,7 +20,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 
 	p.BuildParseTrees = true
 	p.RemoveErrorListeners()
-	
+
 	tree := p.Root()
 	if tree == nil {
 		return nil, nil
@@ -31,7 +31,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	// unlike SQL databases
 	return []base.SingleSQL{
 		{
-			Text:     statement,
+			Text:            statement,
 			ByteOffsetStart: 0,
 			ByteOffsetEnd:   len(statement),
 		},
