@@ -415,9 +415,7 @@ watch(selectedDatabases, (newSelectedDatabases) => {
 });
 
 const handleUncheckDatabase = (database: string) => {
-  const newSet = new Set(selectedDatabases.value);
-  newSet.delete(database);
-  selectedDatabases.value = newSet;
+  selectedDatabases.value.delete(database);
 };
 
 const handleUncheckDatabaseGroup = (databaseGroupName: string) => {
