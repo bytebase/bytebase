@@ -1,8 +1,11 @@
 <template>
   <div class="flex-1 flex w-full">
     <!-- Left Panel - Activity -->
-    <div class="flex-1 shrink px-4 divide-y">
+    <div class="flex-1 shrink px-4 py-4 space-y-4">
       <OverviewSection v-if="shouldShowOverview" />
+
+      <DescriptionSection />
+
       <ActivitySection />
     </div>
 
@@ -21,6 +24,7 @@ import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContextWithIssue } from "../..";
 import { ActivitySection } from "./ActivitySection";
+import { DescriptionSection } from "./DescriptionSection";
 import OverviewSection from "./OverviewSection.vue";
 import { Sidebar } from "./Sidebar";
 
@@ -51,7 +55,6 @@ const allowChange = computed(() => {
 const shouldShowOverview = computed(() => {
   return issue.value.type === Issue_Type.DATABASE_CHANGE || rollout?.value;
 });
-
 // TODO(steven): remove ComposedIssue.
 const composedIssue = computed(() => {
   const composedIssue = issue.value as ComposedIssue;
