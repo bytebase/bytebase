@@ -87,7 +87,7 @@ import {
   type TreeOption,
 } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, h, nextTick, reactive, ref, watch } from "vue";
+import { computed, h, nextTick, ref, watch } from "vue";
 import { watchEffect } from "vue";
 import { BBModal } from "@/bbkit";
 import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
@@ -131,7 +131,11 @@ const { height: treeContainerHeight } = useElementSize(
     box: "content-box",
   }
 );
-const searchPatternByTabId = reactive(new Map<string, string>());
+// Use a plain Map outside of reactive system for better performance
+// and a separate ref to track changes
+const searchPatternMap = new Map<string, string>();
+const searchPatternVersion = ref(0);
+
 const { viewState: panelViewState } = useCurrentTabViewStateContext();
 const { schemaViewer } = useSQLEditorContext();
 const {
@@ -147,12 +151,16 @@ const { currentTab } = storeToRefs(useSQLEditorTabStore());
 const { database } = useConnectionOfCurrentSQLEditorTab();
 const searchPattern = computed({
   get() {
+    // Access version to establish reactive dependency
+    const _ = searchPatternVersion.value;
     const id = currentTab.value?.id ?? "";
-    return searchPatternByTabId.get(id) ?? "";
+    return searchPatternMap.get(id) ?? "";
   },
   set(value) {
     const id = currentTab.value?.id ?? "";
-    searchPatternByTabId.set(id, value);
+    searchPatternMap.set(id, value);
+    // Trigger reactivity by incrementing version
+    searchPatternVersion.value++;
   },
 });
 const debouncedSearchPattern = refDebounced(searchPattern, 200);
@@ -263,17 +271,18 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         const target = node.meta.target as NodeTarget<
           "table" | "external-table" | "column" | "view"
         >;
-        if (hoverState.value) {
-          updateHoverState(target, "before", 0 /* overrideDelay */);
-        } else {
-          updateHoverState(target, "before");
-        }
+        // Use a small delay even when transitioning between nodes
+        // to prevent excessive re-renders when moving quickly
+        const delay = hoverState.value ? 150 : undefined;
+        updateHoverState(target, "before", delay);
+
         nextTick().then(() => {
           // Find the node element and put the database panel to the bottom
           // of the node, near the cursor
           const wrapper = findAncestor(e.target as HTMLElement, ".n-tree-node");
           if (!wrapper) {
-            updateHoverState(undefined, "after", 0 /* overrideDelay */);
+            // Clear hover state if we can't find the wrapper
+            updateHoverState(undefined, "after", 150);
             return;
           }
           const bounding = wrapper.getBoundingClientRect();

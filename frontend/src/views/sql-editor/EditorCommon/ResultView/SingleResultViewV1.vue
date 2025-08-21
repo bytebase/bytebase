@@ -30,12 +30,12 @@
           </template>
         </NInput>
         <span class="ml-2 whitespace-nowrap text-sm text-gray-500">{{
-          `${data.length} ${t("sql-editor.rows", data.length)}`
+          resultRowsText
         }}</span>
         <span
           v-if="
             currentTab?.mode !== 'ADMIN' &&
-            data.length === editorStore.resultRowsLimit
+            dataLength === editorStore.resultRowsLimit
           "
           class="ml-2 whitespace-nowrap text-sm text-gray-500"
         >
@@ -333,7 +333,7 @@ const disallowExportQueryData = computed(() => {
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
-  if (result.error && data.value.length === 0) {
+  if (result.error && dataLength.value === 0) {
     return "ERROR";
   }
   const columnNames = result.columnNames;
@@ -407,21 +407,34 @@ const columns = computed(() => {
   );
 });
 
+// Memoize the filtered data to avoid filtering on every render
 const data = computed(() => {
-  let temp = props.result.rows;
   const search = keyword.value.trim().toLowerCase();
-  if (search) {
-    temp = temp.filter((item) => {
-      return item.values.some((col) => {
-        const value = extractSQLRowValuePlain(col);
-        if (isNullOrUndefined(value)) {
-          return false;
-        }
-        return String(value).toLowerCase().includes(search);
-      });
-    });
+
+  // Return original rows if no search
+  if (!search) {
+    return props.result.rows;
   }
-  return temp;
+
+  // Only filter when there's a search term
+  return props.result.rows.filter((item) => {
+    return item.values.some((col) => {
+      const value = extractSQLRowValuePlain(col);
+      if (isNullOrUndefined(value)) {
+        return false;
+      }
+      return String(value).toLowerCase().includes(search);
+    });
+  });
+});
+
+// Cache data length to avoid multiple accesses
+const dataLength = computed(() => data.value.length);
+
+// Computed property for result rows text to avoid accessing data.length twice
+const resultRowsText = computed(() => {
+  const length = dataLength.value;
+  return `${length} ${t("sql-editor.rows", length)}`;
 });
 
 const isSensitiveColumn = (columnIndex: number): boolean => {
