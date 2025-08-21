@@ -100,10 +100,10 @@ const displayPosition = computed(() => {
 });
 
 useEventListener(popoverRef, "mouseenter", () => {
-  // Reset the value immediately to cancel other pending setting values
-  update(state.value, "before", 0 /* overrideDelay */);
+  // Keep the hover panel visible with a small delay to prevent flicker
+  update(state.value, "before", 50);
 });
 useEventListener(popoverRef, "mouseleave", () => {
-  update(undefined, "before");
+  update(undefined, "after");
 });
 </script>
