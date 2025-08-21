@@ -160,7 +160,19 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 		switch path {
 		case "inherit_from_parent":
 			patch.InheritFromParent = &req.Msg.Policy.InheritFromParent
-		case "payload":
+		case
+			"rollout_policy",
+			"disable_copy_data_policy",
+			"masking_rule_policy",
+			"masking_exception_policy",
+			"restrict_issue_creation_for_sql_review_policy",
+			"tag_policy",
+			"data_source_query_policy",
+			"export_data_policy",
+			"query_data_policy":
+			if !pathMatchType(path, policy.Type) {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid path %s for policy type %s", path, policy.Type.String()))
+			}
 			if err := validatePolicyPayload(policy.Type, req.Msg.Policy); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid policy"))
 			}
@@ -172,6 +184,7 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 		case "enforce":
 			patch.Enforce = &req.Msg.Policy.Enforce
 		default:
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected path %s", path))
 		}
 	}
 
@@ -186,6 +199,31 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 	}
 
 	return connect.NewResponse(response), nil
+}
+
+func pathMatchType(path string, policyType storepb.Policy_Type) bool {
+	switch policyType {
+	case storepb.Policy_ROLLOUT:
+		return path == "rollout_policy"
+	case storepb.Policy_DISABLE_COPY_DATA:
+		return path == "disable_copy_data_policy"
+	case storepb.Policy_MASKING_RULE:
+		return path == "masking_rule_policy"
+	case storepb.Policy_MASKING_EXCEPTION:
+		return path == "masking_exception_policy"
+	case storepb.Policy_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW:
+		return path == "restrict_issue_creation_for_sql_review_policy"
+	case storepb.Policy_TAG:
+		return path == "tag_policy"
+	case storepb.Policy_DATA_SOURCE_QUERY:
+		return path == "data_source_query_policy"
+	case storepb.Policy_EXPORT_DATA:
+		return path == "export_data_policy"
+	case storepb.Policy_QUERY_DATA:
+		return path == "query_data_policy"
+	default:
+		return false
+	}
 }
 
 // DeletePolicy deletes a policy for a specific resource.
