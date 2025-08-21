@@ -245,18 +245,19 @@ func (c *PostgreSQLViewComparer) extractSemanticStructure(tokens []antlr.Token) 
 			}
 
 		case "SELECT_LIST":
-			if tokenText == "from" {
+			switch tokenText {
+			case "from":
 				if currentItem != "" {
 					semantic.SelectItems = append(semantic.SelectItems, strings.TrimSpace(currentItem))
 					currentItem = ""
 				}
 				state = "FROM_CLAUSE"
-			} else if tokenText == "," {
+			case ",":
 				if currentItem != "" {
 					semantic.SelectItems = append(semantic.SelectItems, strings.TrimSpace(currentItem))
 					currentItem = ""
 				}
-			} else {
+			default:
 				// Handle qualified identifiers (table.column) properly
 				if tokenText == "." {
 					currentItem += tokenText // Don't add space before dots
@@ -269,13 +270,14 @@ func (c *PostgreSQLViewComparer) extractSemanticStructure(tokens []antlr.Token) 
 			}
 
 		case "FROM_CLAUSE":
-			if tokenText == "where" {
+			switch tokenText {
+			case "where":
 				if currentItem != "" {
 					semantic.TableRefs = append(semantic.TableRefs, strings.TrimSpace(currentItem))
 					currentItem = ""
 				}
 				state = "WHERE_CLAUSE"
-			} else if tokenText == "join" || tokenText == "inner" || tokenText == "left" || tokenText == "right" || tokenText == "full" {
+			case "join", "inner", "left", "right", "full":
 				if currentItem != "" {
 					semantic.TableRefs = append(semantic.TableRefs, strings.TrimSpace(currentItem))
 					currentItem = ""
@@ -284,19 +286,19 @@ func (c *PostgreSQLViewComparer) extractSemanticStructure(tokens []antlr.Token) 
 				if tokenText != "inner" { // inner is often followed by join
 					currentItem = tokenText
 				}
-			} else if tokenText == "group" {
+			case "group":
 				if currentItem != "" {
 					semantic.TableRefs = append(semantic.TableRefs, strings.TrimSpace(currentItem))
 					currentItem = ""
 				}
 				state = "GROUP_BY"
-			} else if tokenText == "order" {
+			case "order":
 				if currentItem != "" {
 					semantic.TableRefs = append(semantic.TableRefs, strings.TrimSpace(currentItem))
 					currentItem = ""
 				}
 				state = "ORDER_BY"
-			} else {
+			default:
 				// Skip unnecessary parentheses for semantic comparison
 				if tokenText == "(" || tokenText == ")" {
 					// Skip parentheses that don't affect semantics
@@ -329,7 +331,8 @@ func (c *PostgreSQLViewComparer) extractSemanticStructure(tokens []antlr.Token) 
 			}
 
 		case "JOIN_CONDITION":
-			if tokenText == "join" || tokenText == "inner" || tokenText == "left" || tokenText == "right" || tokenText == "full" {
+			switch tokenText {
+			case "join", "inner", "left", "right", "full":
 				if currentItem != "" {
 					// This was actually a join condition, add it to join clauses
 					if len(semantic.JoinClauses) > 0 {
@@ -341,7 +344,7 @@ func (c *PostgreSQLViewComparer) extractSemanticStructure(tokens []antlr.Token) 
 				if tokenText != "inner" {
 					currentItem = tokenText
 				}
-			} else if tokenText == "where" {
+			case "where":
 				if currentItem != "" {
 					if len(semantic.JoinClauses) > 0 {
 						semantic.JoinClauses[len(semantic.JoinClauses)-1] += " ON " + strings.TrimSpace(currentItem)
@@ -349,7 +352,7 @@ func (c *PostgreSQLViewComparer) extractSemanticStructure(tokens []antlr.Token) 
 					currentItem = ""
 				}
 				state = "WHERE_CLAUSE"
-			} else if tokenText == "group" {
+			case "group":
 				if currentItem != "" {
 					if len(semantic.JoinClauses) > 0 {
 						semantic.JoinClauses[len(semantic.JoinClauses)-1] += " ON " + strings.TrimSpace(currentItem)
@@ -357,7 +360,7 @@ func (c *PostgreSQLViewComparer) extractSemanticStructure(tokens []antlr.Token) 
 					currentItem = ""
 				}
 				state = "GROUP_BY"
-			} else if tokenText == "order" {
+			case "order":
 				if currentItem != "" {
 					if len(semantic.JoinClauses) > 0 {
 						semantic.JoinClauses[len(semantic.JoinClauses)-1] += " ON " + strings.TrimSpace(currentItem)
@@ -365,7 +368,7 @@ func (c *PostgreSQLViewComparer) extractSemanticStructure(tokens []antlr.Token) 
 					currentItem = ""
 				}
 				state = "ORDER_BY"
-			} else {
+			default:
 				// Skip unnecessary parentheses in JOIN conditions for semantic comparison
 				if tokenText == "(" || tokenText == ")" {
 					continue
@@ -383,19 +386,20 @@ func (c *PostgreSQLViewComparer) extractSemanticStructure(tokens []antlr.Token) 
 			}
 
 		case "WHERE_CLAUSE":
-			if tokenText == "group" {
+			switch tokenText {
+			case "group":
 				if currentItem != "" {
 					semantic.WhereClause = strings.TrimSpace(currentItem)
 					currentItem = ""
 				}
 				state = "GROUP_BY"
-			} else if tokenText == "order" {
+			case "order":
 				if currentItem != "" {
 					semantic.WhereClause = strings.TrimSpace(currentItem)
 					currentItem = ""
 				}
 				state = "ORDER_BY"
-			} else {
+			default:
 				if currentItem != "" {
 					currentItem += " "
 				}
@@ -829,9 +833,10 @@ func (*PostgreSQLViewComparer) normalizeJoinCondition(condition string) string {
 		}
 
 		// Track parentheses level for expression normalization
-		if tokenText == "(" {
+		switch tokenText {
+		case "(":
 			parenLevel++
-		} else if tokenText == ")" {
+		case ")":
 			parenLevel--
 		}
 
@@ -840,6 +845,9 @@ func (*PostgreSQLViewComparer) normalizeJoinCondition(condition string) string {
 		if tokenText == "(" || tokenText == ")" {
 			// For now, keep all parentheses to avoid changing semantics
 			// This could be enhanced with more sophisticated precedence analysis
+			// Add the token as-is to preserve parentheses semantics
+			normalizedTokens = append(normalizedTokens, tokenText)
+			continue
 		}
 
 		// Normalize case and add token

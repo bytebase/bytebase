@@ -580,7 +580,7 @@ func defaultValuesEqual(col1, col2 *storepb.ColumnMetadata) bool {
 	if col1.Default == col2.Default {
 		return true
 	}
-	
+
 	// For PostgreSQL, try normalized comparison to handle schema prefix differences
 	norm1 := normalizePostgreSQLDefaultValue(col1.Default)
 	norm2 := normalizePostgreSQLDefaultValue(col2.Default)
@@ -1006,21 +1006,21 @@ func checkConstraintsEqual(check1, check2 *storepb.CheckConstraintMetadata) bool
 	if ast.CompareExpressionsSemantically(check1.Expression, check2.Expression) {
 		return true
 	}
-	
+
 	// Handle PostgreSQL-specific normalizations
 	// PostgreSQL converts "column IN (values)" to "column = ANY (ARRAY[values])"
 	if isPostgreSQLInAnyEquivalent(check1.Expression, check2.Expression) ||
-	   isPostgreSQLInAnyEquivalent(check2.Expression, check1.Expression) {
+		isPostgreSQLInAnyEquivalent(check2.Expression, check1.Expression) {
 		return true
 	}
-	
+
 	// Handle PostgreSQL interval syntax differences
 	// Sync: (order_date >= (CURRENT_DATE - '1 year'::interval))
 	// Parser: order_date >= CURRENT_DATE - INTERVAL '1 year'
 	if normalizePostgreSQLCheckConstraint(check1.Expression) == normalizePostgreSQLCheckConstraint(check2.Expression) {
 		return true
 	}
-	
+
 	return false
 }
 
@@ -1029,10 +1029,10 @@ func isPostgreSQLInAnyEquivalent(expr1, expr2 string) bool {
 	// Clean up expressions for comparison
 	expr1 = strings.TrimSpace(expr1)
 	expr2 = strings.TrimSpace(expr2)
-	
+
 	// Handle common PostgreSQL transformations:
 	// "column IN ('A', 'B')" -> "(column = ANY (ARRAY['A'::text, 'B'::text]))"
-	
+
 	// Very basic pattern matching for this specific case
 	// Look for patterns like "column IN(...)" in expr1 and "column = ANY (ARRAY[...])" in expr2
 	if strings.Contains(expr1, " IN(") || strings.Contains(expr1, " IN (") {
@@ -1045,7 +1045,7 @@ func isPostgreSQLInAnyEquivalent(expr1, expr2 string) bool {
 				column1 := strings.TrimSpace(inParts[0])
 				// Remove any leading parentheses from column name
 				column1 = strings.TrimPrefix(column1, "(")
-				
+
 				if strings.HasPrefix(expr2, "("+column1+" = ANY") || strings.HasPrefix(expr2, column1+" = ANY") {
 					// Extract values from both expressions and compare
 					return compareInVsAnyValues(expr1, expr2)
@@ -1053,7 +1053,7 @@ func isPostgreSQLInAnyEquivalent(expr1, expr2 string) bool {
 			}
 		}
 	}
-	
+
 	return false
 }
 
@@ -1064,36 +1064,36 @@ func compareInVsAnyValues(inExpr, anyExpr string) bool {
 	if inValues == nil {
 		return false
 	}
-	
+
 	// Extract values from ANY expression: "(column = ANY (ARRAY['A'::text, 'B'::text]))"
 	anyValues := extractAnyValues(anyExpr)
 	if anyValues == nil {
 		return false
 	}
-	
+
 	// Compare the value sets
 	if len(inValues) != len(anyValues) {
 		return false
 	}
-	
+
 	// Convert both to maps for comparison (order doesn't matter)
 	inMap := make(map[string]bool)
 	for _, v := range inValues {
 		inMap[v] = true
 	}
-	
+
 	anyMap := make(map[string]bool)
 	for _, v := range anyValues {
 		anyMap[v] = true
 	}
-	
+
 	// Check if they contain the same values
 	for v := range inMap {
 		if !anyMap[v] {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -1104,23 +1104,23 @@ func extractInValues(expr string) []string {
 	if inIndex == -1 {
 		return nil
 	}
-	
+
 	// Find the opening parenthesis
 	openParen := strings.Index(expr[inIndex:], "(")
 	if openParen == -1 {
 		return nil
 	}
 	openParen += inIndex
-	
+
 	// Find the closing parenthesis
 	closeParen := strings.LastIndex(expr, ")")
 	if closeParen == -1 || closeParen <= openParen {
 		return nil
 	}
-	
+
 	// Extract the values part
 	valuesStr := expr[openParen+1 : closeParen]
-	
+
 	// Split by comma and clean up
 	var values []string
 	parts := strings.Split(valuesStr, ",")
@@ -1128,12 +1128,12 @@ func extractInValues(expr string) []string {
 		part = strings.TrimSpace(part)
 		// Remove quotes
 		if (part[0] == '\'' && part[len(part)-1] == '\'') ||
-		   (part[0] == '"' && part[len(part)-1] == '"') {
+			(part[0] == '"' && part[len(part)-1] == '"') {
 			part = part[1 : len(part)-1]
 		}
 		values = append(values, part)
 	}
-	
+
 	return values
 }
 
@@ -1144,33 +1144,31 @@ func extractAnyValues(expr string) []string {
 	if arrayIndex == -1 {
 		return nil
 	}
-	
+
 	// Find the closing bracket
 	closeBracket := strings.Index(expr[arrayIndex:], "]")
 	if closeBracket == -1 {
 		return nil
 	}
 	closeBracket += arrayIndex
-	
+
 	// Extract the values part
 	valuesStr := expr[arrayIndex+6 : closeBracket] // Skip "ARRAY["
-	
+
 	// Split by comma and clean up
 	var values []string
 	parts := strings.Split(valuesStr, ",")
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
 		// Remove ::text suffix and quotes
-		if strings.HasSuffix(part, "::text") {
-			part = part[:len(part)-6]
-		}
+		part = strings.TrimSuffix(part, "::text")
 		if (part[0] == '\'' && part[len(part)-1] == '\'') ||
-		   (part[0] == '"' && part[len(part)-1] == '"') {
+			(part[0] == '"' && part[len(part)-1] == '"') {
 			part = part[1 : len(part)-1]
 		}
 		values = append(values, part)
 	}
-	
+
 	return values
 }
 
@@ -1226,7 +1224,7 @@ func comparePartitions(oldPartitions, newPartitions []*storepb.TablePartitionMet
 func compareTriggers(oldTriggers, newTriggers []*storepb.TriggerMetadata) []*TriggerDiff {
 	var changes []*TriggerDiff
 
-	// If parser (new) doesn't extract triggers but sync (old) does, 
+	// If parser (new) doesn't extract triggers but sync (old) does,
 	// this is expected behavior - don't report as differences
 	if len(newTriggers) == 0 && len(oldTriggers) > 0 {
 		return changes // No differences to report
@@ -1822,41 +1820,41 @@ func normalizePostgreSQLFunction(definition string) string {
 	if definition == "" {
 		return ""
 	}
-	
+
 	normalized := strings.ToLower(definition)
-	
+
 	// Normalize whitespace
 	normalized = strings.ReplaceAll(normalized, "\n", " ")
 	normalized = strings.ReplaceAll(normalized, "\t", " ")
-	
+
 	// Remove extra spaces
 	for strings.Contains(normalized, "  ") {
 		normalized = strings.ReplaceAll(normalized, "  ", " ")
 	}
-	
+
 	// Normalize CREATE vs CREATE OR REPLACE
 	normalized = strings.ReplaceAll(normalized, "create or replace function", "create function")
 	normalized = strings.ReplaceAll(normalized, "create or replace procedure", "create procedure")
-	
+
 	// Remove public schema prefix from function and procedure names
 	normalized = strings.ReplaceAll(normalized, "function public.", "function ")
 	normalized = strings.ReplaceAll(normalized, "procedure public.", "procedure ")
-	
+
 	// Normalize parameter types
 	normalized = strings.ReplaceAll(normalized, "character varying", "varchar")
 	normalized = strings.ReplaceAll(normalized, "returns numeric", "returns decimal")
-	
+
 	// Normalize dollar quoting - handle various dollar quote formats
 	normalized = strings.ReplaceAll(normalized, "$function$", "$$")
 	normalized = strings.ReplaceAll(normalized, "$procedure$", "$$")
-	
-	// Normalize language position - move to end 
+
+	// Normalize language position - move to end
 	if strings.Contains(normalized, "language plpgsql") && !strings.HasSuffix(strings.TrimSpace(normalized), "language plpgsql") {
 		withoutLanguage := strings.ReplaceAll(normalized, " language plpgsql", "")
 		withoutLanguage = strings.ReplaceAll(withoutLanguage, "language plpgsql ", "")
 		normalized = strings.TrimSpace(withoutLanguage) + " language plpgsql"
 	}
-	
+
 	return strings.TrimSpace(normalized)
 }
 
@@ -1865,26 +1863,26 @@ func normalizePostgreSQLDefaultValue(defaultValue string) string {
 	if defaultValue == "" {
 		return ""
 	}
-	
+
 	normalized := strings.ToLower(defaultValue)
-	
+
 	// Remove quotes around the entire default value if present
 	if len(normalized) >= 2 && normalized[0] == '\'' && normalized[len(normalized)-1] == '\'' {
 		normalized = normalized[1 : len(normalized)-1]
 	}
-	
+
 	// Normalize whitespace
 	normalized = strings.ReplaceAll(normalized, "\n", " ")
 	normalized = strings.ReplaceAll(normalized, "\t", " ")
-	
+
 	// Remove extra spaces
 	for strings.Contains(normalized, "  ") {
 		normalized = strings.ReplaceAll(normalized, "  ", " ")
 	}
-	
+
 	// Remove public schema prefix from function calls
 	normalized = strings.ReplaceAll(normalized, "public.", "")
-	
+
 	return strings.TrimSpace(normalized)
 }
 
@@ -1894,9 +1892,9 @@ func normalizePostgreSQLCheckConstraint(expression string) string {
 	// Sync: (order_date >= (CURRENT_DATE - '1 year'::interval))
 	// Parser: order_date >= CURRENT_DATE - INTERVAL '1 year'
 	// Both should normalize to the same canonical form
-	
+
 	expression = strings.TrimSpace(expression)
-	
+
 	// Step 1: Remove outer parentheses
 	for strings.HasPrefix(expression, "(") && strings.HasSuffix(expression, ")") {
 		// Only remove if they are balanced and wrapping the entire expression
@@ -1920,26 +1918,26 @@ func normalizePostgreSQLCheckConstraint(expression string) string {
 			break
 		}
 	}
-	
+
 	// Step 2: Normalize interval syntax
 	// Convert ::interval to INTERVAL prefix
 	expression = strings.ReplaceAll(expression, "'::interval", "'")
-	
+
 	// Step 3: Standardize to INTERVAL syntax
 	if strings.Contains(expression, "CURRENT_DATE") && strings.Contains(expression, "'") && !strings.Contains(expression, "INTERVAL") {
 		// Add INTERVAL prefix where needed
 		expression = strings.ReplaceAll(expression, "CURRENT_DATE - '", "CURRENT_DATE - INTERVAL '")
 		expression = strings.ReplaceAll(expression, "CURRENT_DATE + '", "CURRENT_DATE + INTERVAL '")
 	}
-	
+
 	// Step 4: Remove extra parentheses around date arithmetic
 	expression = strings.ReplaceAll(expression, "(CURRENT_DATE - INTERVAL", "CURRENT_DATE - INTERVAL")
 	expression = strings.ReplaceAll(expression, "(CURRENT_DATE + INTERVAL", "CURRENT_DATE + INTERVAL")
-	
+
 	// Step 5: Clean up trailing parentheses after year'
 	if strings.Contains(expression, "year'") && strings.Contains(expression, "INTERVAL") {
 		expression = strings.ReplaceAll(expression, "year')", "year'")
 	}
-	
+
 	return strings.TrimSpace(expression)
 }

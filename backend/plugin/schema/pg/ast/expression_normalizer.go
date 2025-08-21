@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"slices"
 	"strings"
 )
 
@@ -314,14 +315,8 @@ func SortStringList(strs []string) []string {
 	sorted := make([]string, len(strs))
 	copy(sorted, strs)
 
-	// Simple bubble sort for small lists, could use sort.Strings for larger lists
-	for i := 0; i < len(sorted); i++ {
-		for j := i + 1; j < len(sorted); j++ {
-			if sorted[i] > sorted[j] {
-				sorted[i], sorted[j] = sorted[j], sorted[i]
-			}
-		}
-	}
+	// Use Go's slices.Sort function (more efficient than sort.Strings)
+	slices.Sort(sorted)
 
 	return sorted
 }
