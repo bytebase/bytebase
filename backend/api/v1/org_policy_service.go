@@ -184,7 +184,7 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 		case "enforce":
 			patch.Enforce = &req.Msg.Policy.Enforce
 		default:
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown path %s", path))
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected path %s", path))
 		}
 	}
 
