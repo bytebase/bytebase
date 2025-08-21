@@ -28,6 +28,7 @@
 </template>
 
 <script lang="ts" setup>
+import { debounce } from "lodash-es";
 import type { editor as Editor, IDisposable } from "monaco-editor";
 import * as monaco from "monaco-editor";
 import { storeToRefs } from "pinia";
@@ -104,6 +105,11 @@ const getLineNumber = (lineNumber: number) => {
   return "->";
 };
 
+// Debounced version for better performance
+const debouncedEmitUpdate = debounce((value: string) => {
+  emit("update:content", value);
+}, 100);
+
 const handleChange = (value: string) => {
   // When we are switching between tabs, the MonacoEditor emits a 'change'
   // event, but we shouldn't update the current tab;
@@ -111,7 +117,8 @@ const handleChange = (value: string) => {
     return;
   }
 
-  emit("update:content", value);
+  // Use debounced emit to reduce excessive updates
+  debouncedEmitUpdate(value);
 };
 
 const execute = (explain = false) => {

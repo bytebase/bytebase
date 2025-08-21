@@ -1,4 +1,4 @@
-import { omit } from "lodash-es";
+import { omit, throttle } from "lodash-es";
 import { MonacoLanguageClient } from "monaco-languageclient";
 import type { ExecuteCommandParams } from "vscode-languageclient";
 import { CloseAction, ErrorAction, State } from "vscode-languageclient";
@@ -128,11 +128,43 @@ const createLanguageClient = async (): Promise<MonacoLanguageClient> => {
   const socket = toSocket(ws);
   const reader = new WebSocketMessageReader(socket);
   const writer = new WebSocketMessageWriter(socket);
-  return new MonacoLanguageClient({
+  // NOTE: We cannot debounce textDocument/didChange as it breaks LSP incremental sync
+  const client = new MonacoLanguageClient({
     name: "Bytebase Language Client",
     clientOptions: {
       // use a language id as a document selector
       documentSelector: ["sql"],
+      // Optimize initialization options
+      initializationOptions: {
+        // Request server to batch/throttle expensive operations
+        performanceMode: true,
+        // Reduce diagnostic frequency
+        diagnosticDelay: 500,
+        // Disable expensive features during typing
+        disableFeaturesWhileTyping: true,
+      },
+      // Configure which capabilities to enable
+      middleware: {
+        // Throttle hover requests
+        provideHover: throttle(async (document, position, token, next) => {
+          return next(document, position, token);
+        }, 300),
+        // Throttle completion requests
+        provideCompletionItem: throttle(
+          async (document, position, context, token, next) => {
+            // Only trigger completion on specific characters
+            const triggerCharacters = [".", ",", "(", " "];
+            if (
+              context.triggerKind === 1 &&
+              !triggerCharacters.includes(context.triggerCharacter || "")
+            ) {
+              return { items: [] }; // Return empty for non-trigger characters
+            }
+            return next(document, position, context, token);
+          },
+          200
+        ),
+      },
       // disable the default error handler
       errorHandler: {
         error: (error, message, count) => {
@@ -163,6 +195,8 @@ const createLanguageClient = async (): Promise<MonacoLanguageClient> => {
       writer,
     },
   });
+
+  return client;
 };
 
 const createWebSocketAndStartClient = (): {
@@ -216,16 +250,6 @@ export const initializeLSPClient = () => {
   const job = initializeRunner();
   state.clientInitialized = job;
   return job;
-};
-
-export const useLSPClient = () => {
-  const { client } = state;
-  if (!client) {
-    throw new Error(
-      "Unexpected `useLSPClient` call before lsp client initialized"
-    );
-  }
-  return client;
 };
 
 export const executeCommand = async (
