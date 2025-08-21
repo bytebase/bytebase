@@ -185,7 +185,7 @@ export const usePolicyV1Store = defineStore("policy_v1", {
       });
       const request = create(UpdatePolicyRequestSchema, {
         policy: fullPolicy,
-        updateMask: { paths: ["payload"] },
+        updateMask: { paths: getUpdateMaskFromPolicyType(policy.type) },
         allowMissing: true,
       });
       const response =
@@ -200,6 +200,33 @@ export const usePolicyV1Store = defineStore("policy_v1", {
     },
   },
 });
+
+const getUpdateMaskFromPolicyType = (policyType: PolicyType) => {
+  switch (policyType) {
+    case PolicyType.ROLLOUT_POLICY:
+      return [PolicySchema.field.rolloutPolicy.name];
+    case PolicyType.MASKING_EXCEPTION:
+      return [PolicySchema.field.maskingExceptionPolicy.name];
+    case PolicyType.MASKING_RULE:
+      return [PolicySchema.field.maskingRulePolicy.name];
+    case PolicyType.DATA_EXPORT:
+      return [PolicySchema.field.exportDataPolicy.name];
+    case PolicyType.DATA_QUERY:
+      return [PolicySchema.field.queryDataPolicy.name];
+    case PolicyType.DATA_SOURCE_QUERY:
+      return [PolicySchema.field.dataSourceQueryPolicy.name];
+    case PolicyType.DISABLE_COPY_DATA:
+      return [PolicySchema.field.disableCopyDataPolicy.name];
+    case PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW:
+      return [PolicySchema.field.restrictIssueCreationForSqlReviewPolicy.name];
+    case PolicyType.TAG:
+      return [PolicySchema.field.tagPolicy.name];
+    case PolicyType.POLICY_TYPE_UNSPECIFIED:
+      throw new Error("unexpected POLICY_TYPE_UNSPECIFIED");
+    default:
+      throw new Error(`unknown policyType ${policyType satisfies never}`);
+  }
+};
 
 export const usePolicyListByResourceTypeAndPolicyType = (
   params: MaybeRef<{
