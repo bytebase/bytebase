@@ -508,6 +508,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.RuleMetadata"><span class="badge">M</span>RuleMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.SchemaCatalog"><span class="badge">M</span>SchemaCatalog</a>
                 </li>
               
@@ -4700,6 +4704,72 @@ function takes. </p></td>
 
         
       
+        <h3 id="bytebase.store.RuleMetadata">RuleMetadata</h3>
+        <p>RuleMetadata is the metadata for PostgreSQL rules.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of the rule. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>event</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The event is the event type of the rule: SELECT, INSERT, UPDATE, or DELETE. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>condition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The condition is the WHERE condition of the rule (optional). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>action</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The action is the command(s) to execute when the rule fires. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>is_instead</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>The is_instead indicates whether this is an INSTEAD rule. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>is_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>The is_enabled indicates whether the rule is enabled. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>definition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The definition is the full CREATE RULE statement. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.SchemaCatalog">SchemaCatalog</h3>
         <p></p>
 
@@ -5444,6 +5514,13 @@ Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family
                 </tr>
               
                 <tr>
+                  <td>rules</td>
+                  <td><a href="#bytebase.store.RuleMetadata">RuleMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The rules is the list of rules in a table (PostgreSQL specific). </p></td>
+                </tr>
+              
+                <tr>
                   <td>sharding_info</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -5829,6 +5906,13 @@ TRUNCATE. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rules</td>
+                  <td><a href="#bytebase.store.RuleMetadata">RuleMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The rules is the list of rules in a view (PostgreSQL specific). </p></td>
                 </tr>
               
             </tbody>
