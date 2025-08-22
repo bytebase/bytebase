@@ -1,7 +1,7 @@
 <template>
   <div
-    class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 py-2"
-    :class="sidebarMode === 'MOBILE' ? 'pl-4 pr-2' : 'px-4'"
+    class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 py-4"
+    :class="sidebarMode === 'MOBILE' ? 'pl-6 pr-4' : 'px-6'"
   >
     <div class="flex-1 flex items-center gap-x-2">
       <IssueStatusIcon

@@ -1,7 +1,7 @@
 <template>
-  <div class="px-4 py-2 flex flex-col gap-y-2">
+  <div class="px-6 py-5 flex flex-col gap-y-4">
     <div class="flex items-center justify-between">
-      <span class="textlabel">
+      <span class="text-base font-semibold text-gray-900">
         {{ title }}
       </span>
 
@@ -32,7 +32,7 @@
       </div>
     </div>
 
-    <div class="text-sm">
+    <div class="">
       <NInput
         v-if="isCreating || state.isEditing"
         ref="inputRef"
@@ -51,7 +51,7 @@
       />
       <div
         v-else
-        class="min-h-[3rem] max-h-[12rem] whitespace-pre-wrap px-[10px] py-[4.5px] text-sm"
+        class="min-h-[3rem] max-h-[16rem] whitespace-pre-wrap px-4 py-3 text-sm bg-white rounded-lg border border-gray-200 overflow-y-auto"
       >
         <template v-if="issue.description">
           <iframe
@@ -61,7 +61,7 @@
             class="rounded-md w-full overflow-hidden"
           />
         </template>
-        <span v-else class="text-control-placeholder">
+        <span v-else class="text-gray-400">
           {{ $t("issue.add-some-description") }}
         </span>
       </div>
