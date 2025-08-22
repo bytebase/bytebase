@@ -1,7 +1,6 @@
 package pg
 
 import (
-	"slices"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -584,8 +583,8 @@ func (c *PostgreSQLViewComparer) compareSemanticTokens(tokens1, tokens2 *Semanti
 		return false
 	}
 
-	// Compare WHERE clause
-	if c.normalizeCondition(tokens1.WhereClause) != c.normalizeCondition(tokens2.WhereClause) {
+	// Compare WHERE clause using AST-based semantic comparison
+	if !ast.CompareExpressionsSemantically(tokens1.WhereClause, tokens2.WhereClause) {
 		return false
 	}
 
@@ -609,6 +608,12 @@ func (c *PostgreSQLViewComparer) compareStringArrays(arr1, arr2 []string) bool {
 	}
 
 	for i, item1 := range arr1 {
+		// Use AST-based semantic comparison for expressions
+		if ast.CompareExpressionsSemantically(item1, arr2[i]) {
+			continue // They're semantically equivalent
+		}
+
+		// Fallback to normalization for cases where AST comparison might not work
 		normalized1 := c.normalizeExpression(item1)
 		normalized2 := c.normalizeExpression(arr2[i])
 
@@ -669,22 +674,34 @@ func (c *PostgreSQLViewComparer) compareStringArraysUnordered(arr1, arr2 []strin
 		return false
 	}
 
-	// Normalize and sort both arrays
-	norm1 := make([]string, len(arr1))
-	norm2 := make([]string, len(arr2))
+	// For each item in arr1, find a semantically matching item in arr2
+	used := make([]bool, len(arr2))
 
-	for i, item := range arr1 {
-		norm1[i] = c.normalizeExpression(item)
-	}
-	for i, item := range arr2 {
-		norm2[i] = c.normalizeExpression(item)
-	}
+	for _, item1 := range arr1 {
+		found := false
+		for j, item2 := range arr2 {
+			if used[j] {
+				continue
+			}
 
-	slices.Sort(norm1)
-	slices.Sort(norm2)
+			// Use AST-based semantic comparison first
+			if ast.CompareExpressionsSemantically(item1, item2) {
+				used[j] = true
+				found = true
+				break
+			}
 
-	for i, item1 := range norm1 {
-		if item1 != norm2[i] {
+			// Fallback to normalization comparison
+			norm1 := c.normalizeExpression(item1)
+			norm2 := c.normalizeExpression(item2)
+			if norm1 == norm2 {
+				used[j] = true
+				found = true
+				break
+			}
+		}
+
+		if !found {
 			return false
 		}
 	}
@@ -794,79 +811,6 @@ func normalizeTokenForSemantics(token string) string {
 	default:
 		return token
 	}
-}
-
-// normalizeCondition normalizes SQL conditions using AST-based semantic analysis.
-func (c *PostgreSQLViewComparer) normalizeCondition(condition string) string {
-	if condition == "" {
-		return ""
-	}
-
-	// Use AST-based expression normalization for conditions with additional condition-specific processing
-	normalized := c.normalizeExpression(condition)
-
-	// Further normalize JOIN conditions by handling complex expressions
-	normalized = c.normalizeJoinCondition(normalized)
-
-	return normalized
-}
-
-// normalizeJoinCondition normalizes JOIN conditions to handle complex boolean expressions.
-func (*PostgreSQLViewComparer) normalizeJoinCondition(condition string) string {
-	if condition == "" {
-		return ""
-	}
-
-	// Parse the condition as a boolean expression using ANTLR
-	inputStream := antlr.NewInputStream(condition)
-	lexer := pgparser.NewPostgreSQLLexer(inputStream)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	stream.Fill()
-	tokens := stream.GetAllTokens()
-
-	var normalizedTokens []string
-	var parenLevel int
-
-	for _, token := range tokens {
-		tokenText := strings.TrimSpace(token.GetText())
-		tokenType := token.GetTokenType()
-
-		// Skip whitespace and EOF tokens
-		if isWhitespaceTokenType(tokenType) || tokenText == "<EOF>" || tokenText == ";" {
-			continue
-		}
-
-		// Track parentheses level for expression normalization
-		switch tokenText {
-		case "(":
-			parenLevel++
-		case ")":
-			parenLevel--
-		default:
-			// Other tokens don't affect parentheses level
-		}
-
-		// Skip redundant outer parentheses for semantic equivalence
-		// But preserve them if they change precedence
-		if tokenText == "(" || tokenText == ")" {
-			// For now, keep all parentheses to avoid changing semantics
-			// This could be enhanced with more sophisticated precedence analysis
-			// Add the token as-is to preserve parentheses semantics
-			normalizedTokens = append(normalizedTokens, tokenText)
-			continue
-		}
-
-		// Normalize case and add token
-		if !isQuotedIdentifierText(tokenText) {
-			tokenText = strings.ToLower(tokenText)
-		}
-
-		normalizedTokens = append(normalizedTokens, tokenText)
-	}
-
-	// Join and clean up
-	normalized := strings.Join(normalizedTokens, " ")
-	return strings.TrimSpace(normalized)
 }
 
 // isWhitespaceTokenType checks if the token type represents whitespace.
