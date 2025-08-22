@@ -35,12 +35,12 @@ import {
   UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
-import { usePlanContextWithIssue } from "../../..";
+import { usePlanContext } from "../../..";
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
-const { plan, readonly, isCreating } = usePlanContextWithIssue();
+const { plan, readonly, isCreating } = usePlanContext();
 const { refreshResources } = useResourcePoller();
 
 const state = reactive({
