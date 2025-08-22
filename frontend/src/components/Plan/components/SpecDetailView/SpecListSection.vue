@@ -10,7 +10,9 @@
     >
       <template #prefix>
         <div class=""></div>
-        <div v-if="!plan.issue" class="pl-4 text-base font-medium">Changes</div>
+        <div v-if="!plan.issue" class="pl-4 text-base font-medium">
+          {{ $t("plan.navigator.changes") }}
+        </div>
       </template>
 
       <NTab v-for="(spec, index) in plan.specs" :key="spec.id" :name="spec.id">
