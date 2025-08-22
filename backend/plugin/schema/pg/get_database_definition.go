@@ -1399,7 +1399,31 @@ func writeForeignKey(out io.Writer, schema string, table string, fk *storepb.For
 			return err
 		}
 	}
-	_, err := io.WriteString(out, ");\n\n")
+	if _, err := io.WriteString(out, ")"); err != nil {
+		return err
+	}
+
+	// Add ON DELETE clause if specified
+	if fk.OnDelete != "" && fk.OnDelete != "NO ACTION" {
+		if _, err := io.WriteString(out, "\n    ON DELETE "); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, fk.OnDelete); err != nil {
+			return err
+		}
+	}
+
+	// Add ON UPDATE clause if specified
+	if fk.OnUpdate != "" && fk.OnUpdate != "NO ACTION" {
+		if _, err := io.WriteString(out, "\n    ON UPDATE "); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, fk.OnUpdate); err != nil {
+			return err
+		}
+	}
+
+	_, err := io.WriteString(out, ";\n\n")
 	return err
 }
 
