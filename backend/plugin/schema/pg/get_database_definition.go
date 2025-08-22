@@ -237,6 +237,33 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 		}
 	}
 
+	// Construct rules.
+	for _, schema := range metadata.Schemas {
+		for _, table := range schema.Tables {
+			if len(table.Rules) > 0 {
+				if err := writeRules(&buf, schema.Name, table.Name, table.Rules); err != nil {
+					return "", err
+				}
+			}
+		}
+
+		for _, view := range schema.Views {
+			// Rules for views are already written in writeView
+			// Only write non-SELECT rules here (they are not part of the view definition)
+			var nonSelectRules []*storepb.RuleMetadata
+			for _, rule := range view.Rules {
+				if rule.Event != "SELECT" {
+					nonSelectRules = append(nonSelectRules, rule)
+				}
+			}
+			if len(nonSelectRules) > 0 {
+				if err := writeRules(&buf, schema.Name, view.Name, nonSelectRules); err != nil {
+					return "", err
+				}
+			}
+		}
+	}
+
 	// Construct foreign keys.
 	for _, schema := range metadata.Schemas {
 		for _, table := range schema.Tables {
@@ -408,6 +435,30 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		}
 	}
 
+	// Construct rules.
+	for _, table := range schema.Tables {
+		if len(table.Rules) > 0 {
+			if err := writeRules(&buf, schema.Name, table.Name, table.Rules); err != nil {
+				return "", err
+			}
+		}
+	}
+
+	for _, view := range schema.Views {
+		// Only write non-SELECT rules here (SELECT rules are part of the view definition)
+		var nonSelectRules []*storepb.RuleMetadata
+		for _, rule := range view.Rules {
+			if rule.Event != "SELECT" {
+				nonSelectRules = append(nonSelectRules, rule)
+			}
+		}
+		if len(nonSelectRules) > 0 {
+			if err := writeRules(&buf, schema.Name, view.Name, nonSelectRules); err != nil {
+				return "", err
+			}
+		}
+	}
+
 	// Construct foreign keys.
 	for _, table := range schema.Tables {
 		if table.SkipDump {
@@ -437,6 +488,12 @@ func GetTableDefinition(schema string, table *storepb.TableMetadata, sequences [
 			return "", err
 		}
 	}
+	// Construct rules.
+	if len(table.Rules) > 0 {
+		if err := writeRules(&buf, schema, table.Name, table.Rules); err != nil {
+			return "", err
+		}
+	}
 	// Construct foreign keys.
 	for _, fk := range table.ForeignKeys {
 		if err := writeForeignKey(&buf, schema, table.Name, fk); err != nil {
@@ -457,6 +514,18 @@ func GetViewDefinition(schema string, view *storepb.ViewMetadata) (string, error
 			continue
 		}
 		if err := writeTrigger(&buf, schema, view.Name, trigger); err != nil {
+			return "", err
+		}
+	}
+	// Construct rules (non-SELECT rules only, as SELECT rules are part of the view definition).
+	var nonSelectRules []*storepb.RuleMetadata
+	for _, rule := range view.Rules {
+		if rule.Event != "SELECT" {
+			nonSelectRules = append(nonSelectRules, rule)
+		}
+	}
+	if len(nonSelectRules) > 0 {
+		if err := writeRules(&buf, schema, view.Name, nonSelectRules); err != nil {
 			return "", err
 		}
 	}
@@ -793,6 +862,19 @@ func writeViewComment(out io.Writer, schema string, view *storepb.ViewMetadata) 
 
 	_, err := io.WriteString(out, "\n\n")
 	return err
+}
+
+func writeRules(out io.Writer, _ string, _ string, rules []*storepb.RuleMetadata) error {
+	for _, rule := range rules {
+		// Write the full rule definition
+		if _, err := io.WriteString(out, rule.Definition); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, "\n\n"); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func getSchemaNameFromID(id string) string {
