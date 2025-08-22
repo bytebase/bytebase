@@ -72,7 +72,7 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
         -   **DML**: Data manipulation files with base filename ending with `dml` (e.g., `v1.0_insert_data_dml.sql`)
         -   **DDL Ghost**: Schema changes using gh-ost with base filename ending with `ghost` (e.g., `v1.0_alter_table_ghost.sql`)
 
--   **`--declarative`**: Use declarative mode for SQL schema management instead of versioned migrations.
+-   **`--declarative`** (experimental): Use declarative mode for SQL schema management instead of versioned migrations.
     -   Treats SQL files as desired state definitions rather than incremental changes
     -   Allows organizing schema across multiple files (e.g., `tables.sql`, `views.sql`)
     -   Versions are auto-generated using timestamp format `YYYYMMDD.HHMMSS`
