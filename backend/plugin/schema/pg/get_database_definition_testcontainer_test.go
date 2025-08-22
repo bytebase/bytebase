@@ -296,6 +296,82 @@ FOR EACH ROW
 EXECUTE FUNCTION log_account_changes();
 `,
 		},
+		{
+			name: "foreign_key_on_delete_cascade",
+			ddl: `
+CREATE TABLE categories (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    category_id INTEGER,
+    CONSTRAINT fk_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+);
+
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER,
+    quantity INTEGER DEFAULT 1,
+    CONSTRAINT fk_product_cascade FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
+);
+`,
+		},
+		{
+			name: "foreign_key_on_update_actions",
+			ddl: `
+CREATE TABLE departments (
+    code VARCHAR(10) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    dept_code VARCHAR(10),
+    manager_id INTEGER,
+    CONSTRAINT fk_dept_restrict FOREIGN KEY (dept_code) REFERENCES departments(code) ON UPDATE RESTRICT ON DELETE SET NULL,
+    CONSTRAINT fk_manager_cascade FOREIGN KEY (manager_id) REFERENCES employees(id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE projects (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    lead_emp_id INTEGER,
+    dept_code VARCHAR(10),
+    CONSTRAINT fk_lead_setnull FOREIGN KEY (lead_emp_id) REFERENCES employees(id) ON DELETE SET NULL ON UPDATE SET NULL,
+    CONSTRAINT fk_proj_dept FOREIGN KEY (dept_code) REFERENCES departments(code) ON DELETE RESTRICT ON UPDATE RESTRICT
+);
+`,
+		},
+		{
+			name: "foreign_key_no_action",
+			ddl: `
+CREATE TABLE countries (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(3) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE states (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    country_id INTEGER,
+    -- Explicit NO ACTION
+    CONSTRAINT fk_country_explicit FOREIGN KEY (country_id) REFERENCES countries(id) ON DELETE NO ACTION ON UPDATE NO ACTION
+);
+
+CREATE TABLE cities (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    state_id INTEGER,
+    -- Implicit NO ACTION (default behavior)
+    CONSTRAINT fk_state_implicit FOREIGN KEY (state_id) REFERENCES states(id)
+);
+`,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -707,6 +783,10 @@ func compareForeignKeysDef(t *testing.T, tableName string, fksA, fksB []*storepb
 		require.ElementsMatch(t, fkA.Columns, fkB.Columns, "table %s, FK %s: columns should match", tableName, fkB.Name)
 		require.Equal(t, fkA.ReferencedTable, fkB.ReferencedTable, "table %s, FK %s: referenced table should match", tableName, fkB.Name)
 		require.ElementsMatch(t, fkA.ReferencedColumns, fkB.ReferencedColumns, "table %s, FK %s: referenced columns should match", tableName, fkB.Name)
+
+		// Compare ON DELETE and ON UPDATE actions
+		require.Equal(t, fkA.OnDelete, fkB.OnDelete, "table %s, FK %s: ON DELETE action should match", tableName, fkB.Name)
+		require.Equal(t, fkA.OnUpdate, fkB.OnUpdate, "table %s, FK %s: ON UPDATE action should match", tableName, fkB.Name)
 	}
 }
 
