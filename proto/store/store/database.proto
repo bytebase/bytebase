@@ -202,6 +202,30 @@ message TriggerMetadata {
   bool skip_dump = 10;
 }
 
+// RuleMetadata is the metadata for PostgreSQL rules.
+message RuleMetadata {
+  // The name is the name of the rule.
+  string name = 1;
+
+  // The event is the event type of the rule: SELECT, INSERT, UPDATE, or DELETE.
+  string event = 2;
+
+  // The condition is the WHERE condition of the rule (optional).
+  string condition = 3;
+
+  // The action is the command(s) to execute when the rule fires.
+  string action = 4;
+
+  // The is_instead indicates whether this is an INSTEAD rule.
+  bool is_instead = 5;
+
+  // The is_enabled indicates whether the rule is enabled.
+  bool is_enabled = 6;
+
+  // The definition is the full CREATE RULE statement.
+  string definition = 7;
+}
+
 message TaskMetadata {
   // The name is the name of a task.
   string name = 1;
@@ -339,6 +363,9 @@ message TableMetadata {
   repeated TriggerMetadata triggers = 20;
 
   bool skip_dump = 21;
+
+  // The rules is the list of rules in a table (PostgreSQL specific).
+  repeated RuleMetadata rules = 24;
 
   // https://docs.pingcap.com/tidb/stable/information-schema-tables/
   string sharding_info = 22;
@@ -551,6 +578,9 @@ message ViewMetadata {
   repeated TriggerMetadata triggers = 6;
 
   bool skip_dump = 7;
+
+  // The rules is the list of rules in a view (PostgreSQL specific).
+  repeated RuleMetadata rules = 8;
 }
 
 // DependencyColumn is the metadata for dependency columns.
