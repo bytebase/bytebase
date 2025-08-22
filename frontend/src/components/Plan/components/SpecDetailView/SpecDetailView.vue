@@ -3,7 +3,7 @@
     class="flex-1 flex flex-col hide-scrollbar gap-3 divide-y overflow-x-hidden"
   >
     <div class="w-full flex flex-col">
-      <SpecListSection v-if="isCreating || plan.specs.length > 1" />
+      <SpecListSection v-if="shouldShowSpecList" />
       <TargetListSection />
       <FailedTaskRunsSection v-if="!isCreating && rollout" />
     </div>
@@ -49,6 +49,12 @@ const specHasRelease = computed(() => {
   return (
     selectedSpec.value.config.case === "changeDatabaseConfig" &&
     isValidReleaseName(selectedSpec.value.config.value.release)
+  );
+});
+
+const shouldShowSpecList = computed(() => {
+  return (
+    isCreating.value || plan.value.specs.length > 1 || plan.value.rollout === ""
   );
 });
 </script>
