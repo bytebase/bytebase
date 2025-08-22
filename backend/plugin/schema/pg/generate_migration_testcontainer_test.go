@@ -67,6 +67,132 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 		description   string
 	}{
 		{
+			name:          "bytebase_schema",
+			initialSchema: ``,
+			migrationDDL: `
+            CREATE TABLE public.employee (
+	emp_no      SERIAL NOT NULL,
+	birth_date  DATE NOT NULL,
+	first_name  TEXT NOT NULL,
+	last_name   TEXT NOT NULL,
+	gender      TEXT NOT NULL CHECK (gender IN('M', 'F')) NOT NULL,
+	hire_date   DATE NOT NULL,
+	PRIMARY KEY (emp_no)
+);
+
+CREATE INDEX idx_employee_hire_date ON public.employee (hire_date);
+
+CREATE TABLE public.department (
+	dept_no     TEXT NOT NULL,
+	dept_name   TEXT NOT NULL,
+	PRIMARY KEY (dept_no),
+	UNIQUE      (dept_name)
+);
+
+CREATE TABLE public.dept_manager (
+	emp_no      INT NOT NULL,
+	dept_no     TEXT NOT NULL,
+	from_date   DATE NOT NULL,
+	to_date     DATE NOT NULL,
+	FOREIGN KEY (emp_no) REFERENCES employee (emp_no) ON DELETE CASCADE,
+	FOREIGN KEY (dept_no) REFERENCES department (dept_no) ON DELETE CASCADE,
+	PRIMARY KEY (emp_no, dept_no)
+);
+
+CREATE TABLE public.dept_emp (
+	emp_no      INT NOT NULL,
+	dept_no     TEXT NOT NULL,
+	from_date   DATE NOT NULL,
+	to_date     DATE NOT NULL,
+	FOREIGN KEY (emp_no) REFERENCES employee (emp_no) ON DELETE CASCADE,
+	FOREIGN KEY (dept_no) REFERENCES department (dept_no) ON DELETE CASCADE,
+	PRIMARY KEY (emp_no, dept_no)
+);
+
+CREATE TABLE public.title (
+	emp_no      INT NOT NULL,
+	title       TEXT NOT NULL,
+	from_date   DATE NOT NULL,
+	to_date     DATE,
+	FOREIGN KEY (emp_no) REFERENCES employee (emp_no) ON DELETE CASCADE,
+	PRIMARY KEY (emp_no, title, from_date)
+); 
+
+CREATE TABLE public.salary (
+	emp_no      INT NOT NULL,
+	amount      INT NOT NULL,
+	from_date   DATE NOT NULL,
+	to_date     DATE NOT NULL,
+	FOREIGN KEY (emp_no) REFERENCES employee (emp_no) ON DELETE CASCADE,
+	PRIMARY KEY (emp_no, from_date)
+);
+
+CREATE INDEX idx_salary_amount ON public.salary (amount);
+
+CREATE TABLE public.audit (
+    id SERIAL PRIMARY KEY,
+    operation TEXT NOT NULL,
+    query TEXT,
+    user_name TEXT NOT NULL,
+    changed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_audit_operation ON public.audit (operation);
+CREATE INDEX idx_audit_username ON public.audit (user_name);
+CREATE INDEX idx_audit_changed_at ON public.audit (changed_at);
+
+CREATE OR REPLACE FUNCTION public.log_dml_operations() RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        INSERT INTO public.audit (operation, query, user_name)
+        VALUES ('INSERT', current_query(), current_user);
+        RETURN NEW;
+    ELSIF (TG_OP = 'UPDATE') THEN
+        INSERT INTO public.audit (operation, query, user_name)
+        VALUES ('UPDATE', current_query(), current_user);
+        RETURN NEW;
+    ELSIF (TG_OP = 'DELETE') THEN
+        INSERT INTO public.audit (operation, query, user_name)
+        VALUES ('DELETE', current_query(), current_user);
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- only log update and delete, otherwise, it will cause too much change.
+CREATE TRIGGER salary_log_trigger
+AFTER UPDATE OR DELETE ON public.salary
+FOR EACH ROW
+EXECUTE FUNCTION public.log_dml_operations();
+
+CREATE OR REPLACE VIEW public.dept_emp_latest_date AS
+SELECT
+	emp_no,
+	MAX(
+		from_date) AS from_date,
+	MAX(
+		to_date) AS to_date
+FROM
+	public.dept_emp
+GROUP BY
+	emp_no;
+
+-- shows only the current department for each employee
+CREATE OR REPLACE VIEW public.current_dept_emp AS
+SELECT
+	l.emp_no,
+	dept_no,
+	l.from_date,
+	l.to_date
+FROM
+	public.dept_emp d
+	INNER JOIN public.dept_emp_latest_date l ON d.emp_no = l.emp_no
+		AND d.from_date = l.from_date
+		AND l.to_date = d.to_date;
+            `,
+		},
+		{
 			name: "basic_table_operations",
 			initialSchema: `
 CREATE TABLE users (
@@ -1752,6 +1878,159 @@ COMMENT ON COLUMN inventory.product_code IS 'Unique product identifier code';
 COMMENT ON TABLE inventory IS 'Initial inventory tracking table';
 `,
 			description: "Reverse of modify_and_drop_comments: Reverse comment changes",
+		},
+		{
+			name: "reverse_bytebase_schema",
+			initialSchema: `
+CREATE TABLE public.employee (
+	emp_no      SERIAL NOT NULL,
+	birth_date  DATE NOT NULL,
+	first_name  TEXT NOT NULL,
+	last_name   TEXT NOT NULL,
+	gender      TEXT NOT NULL CHECK (gender IN('M', 'F')) NOT NULL,
+	hire_date   DATE NOT NULL,
+	PRIMARY KEY (emp_no)
+);
+
+CREATE INDEX idx_employee_hire_date ON public.employee (hire_date);
+
+CREATE TABLE public.department (
+	dept_no     TEXT NOT NULL,
+	dept_name   TEXT NOT NULL,
+	PRIMARY KEY (dept_no),
+	UNIQUE      (dept_name)
+);
+
+CREATE TABLE public.dept_manager (
+	emp_no      INT NOT NULL,
+	dept_no     TEXT NOT NULL,
+	from_date   DATE NOT NULL,
+	to_date     DATE NOT NULL,
+	FOREIGN KEY (emp_no) REFERENCES employee (emp_no) ON DELETE CASCADE,
+	FOREIGN KEY (dept_no) REFERENCES department (dept_no) ON DELETE CASCADE,
+	PRIMARY KEY (emp_no, dept_no)
+);
+
+CREATE TABLE public.dept_emp (
+	emp_no      INT NOT NULL,
+	dept_no     TEXT NOT NULL,
+	from_date   DATE NOT NULL,
+	to_date     DATE NOT NULL,
+	FOREIGN KEY (emp_no) REFERENCES employee (emp_no) ON DELETE CASCADE,
+	FOREIGN KEY (dept_no) REFERENCES department (dept_no) ON DELETE CASCADE,
+	PRIMARY KEY (emp_no, dept_no)
+);
+
+CREATE TABLE public.title (
+	emp_no      INT NOT NULL,
+	title       TEXT NOT NULL,
+	from_date   DATE NOT NULL,
+	to_date     DATE,
+	FOREIGN KEY (emp_no) REFERENCES employee (emp_no) ON DELETE CASCADE,
+	PRIMARY KEY (emp_no, title, from_date)
+); 
+
+CREATE TABLE public.salary (
+	emp_no      INT NOT NULL,
+	amount      INT NOT NULL,
+	from_date   DATE NOT NULL,
+	to_date     DATE NOT NULL,
+	FOREIGN KEY (emp_no) REFERENCES employee (emp_no) ON DELETE CASCADE,
+	PRIMARY KEY (emp_no, from_date)
+);
+
+CREATE INDEX idx_salary_amount ON public.salary (amount);
+
+CREATE TABLE public.audit (
+    id SERIAL PRIMARY KEY,
+    operation TEXT NOT NULL,
+    query TEXT,
+    user_name TEXT NOT NULL,
+    changed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_audit_operation ON public.audit (operation);
+CREATE INDEX idx_audit_username ON public.audit (user_name);
+CREATE INDEX idx_audit_changed_at ON public.audit (changed_at);
+
+CREATE OR REPLACE FUNCTION public.log_dml_operations() RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        INSERT INTO public.audit (operation, query, user_name)
+        VALUES ('INSERT', current_query(), current_user);
+        RETURN NEW;
+    ELSIF (TG_OP = 'UPDATE') THEN
+        INSERT INTO public.audit (operation, query, user_name)
+        VALUES ('UPDATE', current_query(), current_user);
+        RETURN NEW;
+    ELSIF (TG_OP = 'DELETE') THEN
+        INSERT INTO public.audit (operation, query, user_name)
+        VALUES ('DELETE', current_query(), current_user);
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- only log update and delete, otherwise, it will cause too much change.
+CREATE TRIGGER salary_log_trigger
+AFTER UPDATE OR DELETE ON public.salary
+FOR EACH ROW
+EXECUTE FUNCTION public.log_dml_operations();
+
+CREATE OR REPLACE VIEW public.dept_emp_latest_date AS
+SELECT
+	emp_no,
+	MAX(
+		from_date) AS from_date,
+	MAX(
+		to_date) AS to_date
+FROM
+	public.dept_emp
+GROUP BY
+	emp_no;
+
+-- shows only the current department for each employee
+CREATE OR REPLACE VIEW public.current_dept_emp AS
+SELECT
+	l.emp_no,
+	dept_no,
+	l.from_date,
+	l.to_date
+FROM
+	public.dept_emp d
+	INNER JOIN public.dept_emp_latest_date l ON d.emp_no = l.emp_no
+		AND d.from_date = l.from_date
+		AND l.to_date = d.to_date;
+            `,
+			migrationDDL: `
+-- Drop views first (due to dependencies)
+DROP VIEW public.current_dept_emp;
+DROP VIEW public.dept_emp_latest_date;
+
+-- Drop trigger
+DROP TRIGGER salary_log_trigger ON public.salary;
+
+-- Drop function
+DROP FUNCTION public.log_dml_operations();
+
+-- Drop indexes
+DROP INDEX idx_audit_changed_at;
+DROP INDEX idx_audit_username;
+DROP INDEX idx_audit_operation;
+DROP INDEX idx_salary_amount;
+DROP INDEX idx_employee_hire_date;
+
+-- Drop tables (respecting foreign key dependencies)
+DROP TABLE public.audit;
+DROP TABLE public.title;
+DROP TABLE public.salary;
+DROP TABLE public.dept_emp;
+DROP TABLE public.dept_manager;
+DROP TABLE public.department;
+DROP TABLE public.employee;
+`,
+			description: "Reverse of bytebase_schema: DROP entire schema with all objects",
 		},
 		{
 			name: "reverse_comments_with_special_characters",

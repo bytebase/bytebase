@@ -55,8 +55,9 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 	}
 
 	// Drop triggers that might depend on functions being dropped
+	// This includes triggers from tables being dropped AND from tables being altered
 	for _, tableDiff := range diff.TableChanges {
-		if tableDiff.Action != schema.MetadataDiffActionDrop && tableDiff.OldTable != nil {
+		if tableDiff.OldTable != nil {
 			for _, trigger := range tableDiff.OldTable.Triggers {
 				// Check if trigger body references any function being dropped
 				triggerBody := strings.ToLower(trigger.Body)

@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -10,9 +11,11 @@ import (
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/plugin/schema/pg/ast"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
@@ -131,6 +134,9 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 	for _, name := range extensionNames {
 		schemaMetadata.Extensions = append(schemaMetadata.Extensions, extractor.extensions[name])
 	}
+
+	// Extract view dependencies after all metadata is collected
+	extractViewDependencies(schemaMetadata)
 
 	return schemaMetadata, nil
 }
@@ -2375,6 +2381,73 @@ func (*metadataExtractor) normalizePostgreSQLCheckExpression(expression string) 
 	// For now, return the expression as-is since the sync catalog uses the original PostgreSQL format
 	// The differ should handle normalization between sync and parser formats
 	return strings.TrimSpace(expression)
+}
+
+// extractViewDependencies analyzes view definitions to extract dependencies using GetQuerySpan
+func extractViewDependencies(schemaMetadata *storepb.DatabaseSchemaMetadata) {
+	// Extract dependencies for each view
+	for _, schema := range schemaMetadata.Schemas {
+		for _, view := range schema.Views {
+			view.DependencyColumns = getViewDependencies(view.Definition, schema.Name, schemaMetadata)
+		}
+
+		for _, mv := range schema.MaterializedViews {
+			mv.DependencyColumns = getViewDependencies(mv.Definition, schema.Name, schemaMetadata)
+		}
+	}
+}
+
+// getViewDependencies extracts the tables/views that a view depends on using GetQuerySpan
+func getViewDependencies(viewDef string, schemaName string, fullSchemaMetadata *storepb.DatabaseSchemaMetadata) []*storepb.DependencyColumn {
+	// viewDef is already a SELECT statement extracted from the parsed CREATE VIEW statement
+	queryStatement := strings.TrimSpace(viewDef)
+
+	// Use GetQuerySpan with the full schema metadata so it can resolve table/view references
+	span, err := pgparser.GetQuerySpan(
+		context.Background(),
+		base.GetQuerySpanContext{
+			GetDatabaseMetadataFunc: func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
+				// Return the full schema metadata so GetQuerySpan can resolve references
+				dbMetadata := model.NewDatabaseMetadata(fullSchemaMetadata, false, false)
+				return databaseName, dbMetadata, nil
+			},
+			ListDatabaseNamesFunc: func(_ context.Context, _ string) ([]string, error) {
+				// Return empty list - we don't need actual database names for dependency extraction
+				return []string{}, nil
+			},
+		},
+		queryStatement,
+		"", // database
+		schemaName,
+		false, // case sensitive
+	)
+
+	// If error parsing query span, return empty dependencies
+	if err != nil {
+		return []*storepb.DependencyColumn{} // nolint:nilerr
+	}
+
+	// Collect unique dependencies
+	dependencyMap := make(map[string]*storepb.DependencyColumn)
+	for sourceColumn := range span.SourceColumns {
+		// Create dependency key in format: schema.table
+		key := fmt.Sprintf("%s.%s", sourceColumn.Schema, sourceColumn.Table)
+		if _, exists := dependencyMap[key]; !exists {
+			dependencyMap[key] = &storepb.DependencyColumn{
+				Schema: sourceColumn.Schema,
+				Table:  sourceColumn.Table,
+				Column: "*", // Use wildcard since we're tracking table-level dependencies
+			}
+		}
+	}
+
+	// Convert map to slice
+	var dependencies []*storepb.DependencyColumn
+	for _, dep := range dependencyMap {
+		dependencies = append(dependencies, dep)
+	}
+
+	return dependencies
 }
 
 // TODO: Add support for more PostgreSQL constructs if needed
