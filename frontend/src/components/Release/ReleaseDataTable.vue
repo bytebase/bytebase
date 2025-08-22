@@ -14,6 +14,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { uniq } from "lodash-es";
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable, NTag } from "naive-ui";
 import { reactive, computed, watch } from "vue";
@@ -62,6 +63,16 @@ const state = reactive<LocalState>({
 });
 
 const userStore = useUserStore();
+
+// Batch fetch users when releaseList changes
+watch(
+  () => props.releaseList,
+  async (releaseList) => {
+    const creatorList = releaseList.map((release) => release.creator);
+    await userStore.batchGetUsers(uniq(creatorList));
+  },
+  { immediate: true }
+);
 
 const columnList = computed(
   (): (DataTableColumn<Release> & { hide?: boolean })[] => {
@@ -134,13 +145,13 @@ const columnList = computed(
         width: 128,
         render: (release) => {
           const user = userStore.getUserByIdentifier(release.creator);
+          if (!user) {
+            return <span>-</span>;
+          }
           return (
             <div class="flex flex-row items-center overflow-hidden gap-x-2">
-              <BBAvatar
-                size="SMALL"
-                username={user?.title || release.creator}
-              />
-              <span class="truncate">{user?.title || release.creator}</span>
+              <BBAvatar size="SMALL" username={user.title} />
+              <span class="truncate">{user.title}</span>
             </div>
           );
         },

@@ -34,6 +34,7 @@ import { computed, reactive, watch } from "vue";
 import { useRoute } from "vue-router";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { PROJECT_V1_ROUTE_RELEASE_DETAIL } from "@/router/dashboard/projectV1";
+import { useUserStore } from "@/store";
 import type { Release_File } from "@/types/proto-es/v1/release_service_pb";
 import BasicInfo from "./BasicInfo.vue";
 import NavBar from "./NavBar";
@@ -48,7 +49,18 @@ interface LocalState {
 
 const route = useRoute();
 const { release } = provideReleaseDetailContext();
+const userStore = useUserStore();
 const state = reactive<LocalState>({});
+
+watch(
+  () => release.value,
+  async (releaseValue) => {
+    if (releaseValue.creator) {
+      await userStore.batchGetUsers([releaseValue.creator]);
+    }
+  },
+  { immediate: true }
+);
 
 const documentTitle = computed(() => {
   if (route.name !== PROJECT_V1_ROUTE_RELEASE_DETAIL) {
