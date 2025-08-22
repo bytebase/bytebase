@@ -14,14 +14,11 @@
 </template>
 
 <script lang="tsx" setup>
-import { uniq } from "lodash-es";
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable, NTag } from "naive-ui";
 import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBAvatar } from "@/bbkit";
-import { useUserStore } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Release } from "@/types/proto-es/v1/release_service_pb";
@@ -61,18 +58,6 @@ const router = useRouter();
 const state = reactive<LocalState>({
   selectedReleaseNameList: new Set(props.selectedRowKeys),
 });
-
-const userStore = useUserStore();
-
-// Batch fetch users when releaseList changes
-watch(
-  () => props.releaseList,
-  async (releaseList) => {
-    const creatorList = releaseList.map((release) => release.creator);
-    await userStore.batchGetUsers(uniq(creatorList));
-  },
-  { immediate: true }
-);
 
 const columnList = computed(
   (): (DataTableColumn<Release> & { hide?: boolean })[] => {
@@ -138,23 +123,6 @@ const columnList = computed(
           humanizeTs(
             getTimeForPbTimestampProtoEs(release.createTime, 0) / 1000
           ),
-      },
-      {
-        key: "creator",
-        title: t("common.creator"),
-        width: 128,
-        render: (release) => {
-          const user = userStore.getUserByIdentifier(release.creator);
-          if (!user) {
-            return <span>-</span>;
-          }
-          return (
-            <div class="flex flex-row items-center overflow-hidden gap-x-2">
-              <BBAvatar size="SMALL" username={user.title} />
-              <span class="truncate">{user.title}</span>
-            </div>
-          );
-        },
       },
     ];
     return columns.filter((column) => !column.hide);
