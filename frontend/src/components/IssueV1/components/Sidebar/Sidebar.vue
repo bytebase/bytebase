@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-3 py-2 px-3">
+  <div class="flex flex-col gap-y-4 py-4 px-4">
     <ReleaseInfo />
     <TaskCheckSummarySection />
 
@@ -14,7 +14,9 @@
       "
     />
     <div v-else class="flex flex-col gap-y-1">
-      <div class="textlabel flex items-center gap-x-1">
+      <div
+        class="text-sm font-semibold text-gray-700 flex items-center gap-x-1"
+      >
         {{ $t("issue.approval-flow.self") }}
         <FeatureBadge :feature="PlanFeature.FEATURE_APPROVAL_WORKFLOW" />
       </div>
@@ -36,10 +38,10 @@
       "
       class="space-y-2"
     >
-      <div class="border-t -mx-3" />
+      <div class="border-t border-gray-200 -mx-4" />
       <NTooltip v-if="selectedSpec" :showArrow="false">
         <template #trigger>
-          <p class="textinfolabel">
+          <p class="text-sm font-medium text-gray-600">
             {{ $t("plan.options.self") }}
             <span class="opacity-80">
               ({{

@@ -4,7 +4,7 @@
       <BBSpin />
     </div>
     <template v-else>
-      <div class="border-b">
+      <div class="border-b bg-white">
         <BannerSection v-if="!isCreating" />
         <FeatureAttention :feature="PlanFeature.FEATURE_APPROVAL_WORKFLOW" />
 
@@ -12,7 +12,7 @@
       </div>
       <div class="flex-1 flex flex-row">
         <div
-          class="flex-1 flex flex-col hide-scrollbar divide-y overflow-x-hidden"
+          class="flex-1 flex flex-col hide-scrollbar divide-y divide-gray-200 overflow-x-hidden bg-white"
         >
           <StageSection />
 
@@ -32,7 +32,7 @@
 
         <div
           v-if="sidebarMode == 'DESKTOP'"
-          class="hide-scrollbar border-l"
+          class="hide-scrollbar border-l border-gray-200 bg-gray-50"
           :style="{
             width: `${desktopSidebarWidth}px`,
           }"

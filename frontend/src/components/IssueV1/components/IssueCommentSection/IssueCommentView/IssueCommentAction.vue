@@ -1,71 +1,69 @@
 <template>
   <div class="ml-3 min-w-0 flex-1">
-    <h3
-      class="sr-only"
-      :id="`${issueCommentNamePrefix}${getProjectIdIssueIdIssueCommentId(issueComment.name).issueCommentId}`"
-    ></h3>
-    <div class="min-w-0 flex-1 pt-1 flex justify-between">
-      <div class="text-sm text-control-light space-x-1">
-        <ActionCreator
-          v-if="
-            extractUserId(issueComment.creator) !==
-              userStore.systemBotUser?.email ||
-            getIssueCommentType(issueComment) === IssueCommentType.USER_COMMENT
-          "
-          :creator="issueComment.creator"
-        />
+    <div class="rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div class="px-4 py-2.5 bg-gray-50">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-x-2 text-sm min-w-0 flex-wrap">
+            <ActionCreator
+              v-if="
+                extractUserId(issueComment.creator) !==
+                  userStore.systemBotUser?.email ||
+                getIssueCommentType(issueComment) ===
+                  IssueCommentType.USER_COMMENT
+              "
+              :creator="issueComment.creator"
+            />
 
-        <ActionSentence :issue="issue" :issue-comment="issueComment" />
+            <ActionSentence
+              :issue="issue"
+              :issue-comment="issueComment"
+              class="text-gray-600 break-words min-w-0"
+            />
 
-        <HumanizeTs
-          :ts="getTimeForPbTimestampProtoEs(issueComment.createTime, 0) / 1000"
-          class="ml-1 text-gray-400"
-        />
+            <HumanizeTs
+              :ts="
+                getTimeForPbTimestampProtoEs(issueComment.createTime, 0) / 1000
+              "
+              class="text-gray-500"
+            />
 
-        <span
-          v-if="
-            getTimeForPbTimestampProtoEs(issueComment.createTime) !==
-              getTimeForPbTimestampProtoEs(issueComment.updateTime) &&
-            getIssueCommentType(issueComment) === IssueCommentType.USER_COMMENT
-          "
-        >
-          <span class="opacity-80">({{ $t("common.edited") }}</span>
-          <HumanizeTs
-            :ts="
-              getTimeForPbTimestampProtoEs(issueComment.updateTime, 0) / 1000
-            "
-            class="ml-1"
-          />)
-        </span>
+            <span
+              v-if="
+                getTimeForPbTimestampProtoEs(issueComment.createTime) !==
+                  getTimeForPbTimestampProtoEs(issueComment.updateTime) &&
+                getIssueCommentType(issueComment) ===
+                  IssueCommentType.USER_COMMENT
+              "
+              class="text-gray-500 text-xs"
+            >
+              ({{ $t("common.edited") }})
+            </span>
 
-        <span
-          v-if="similar.length > 0"
-          class="text-sm font-normal text-gray-400 ml-1"
-        >
-          {{
-            $t("activity.n-similar-activities", {
-              count: similar.length + 1,
-            })
-          }}
-        </span>
+            <span v-if="similar.length > 0" class="text-xs text-gray-500">
+              {{
+                $t("activity.n-similar-activities", {
+                  count: similar.length + 1,
+                })
+              }}
+            </span>
+          </div>
+
+          <slot name="subject-suffix"></slot>
+        </div>
       </div>
-
-      <slot name="subject-suffix"></slot>
-    </div>
-    <div class="mt-2 text-sm text-control whitespace-pre-wrap">
-      <slot name="comment" />
+      <div
+        v-if="$slots.comment"
+        class="px-4 py-3 border-t border-gray-200 text-sm text-gray-700 whitespace-pre-wrap break-words"
+      >
+        <slot name="comment" />
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import HumanizeTs from "@/components/misc/HumanizeTs.vue";
-import {
-  getProjectIdIssueIdIssueCommentId,
-  issueCommentNamePrefix,
-  IssueCommentType,
-  getIssueCommentType,
-} from "@/store";
+import { IssueCommentType, getIssueCommentType } from "@/store";
 import { useUserStore, extractUserId } from "@/store";
 import { getTimeForPbTimestampProtoEs, type ComposedIssue } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
