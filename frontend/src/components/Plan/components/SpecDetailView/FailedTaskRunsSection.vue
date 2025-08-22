@@ -142,7 +142,7 @@ const taskRunList = computed(() => {
 
 // Determine if the section should be shown at all
 const shouldShowSection = computed(() => {
-  return failedSpecTasks.value.length > 0 || taskRuns.value.length > 0;
+  return failedSpecTasks.value.length > 0 && taskRuns.value.length > 0;
 });
 
 // Helper function to get the task for a task run
