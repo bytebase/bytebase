@@ -3,7 +3,7 @@
     :is="'router-link'"
     v-if="userEmail !== userStore.systemBotUser?.email"
     v-bind="bindings"
-    class="font-medium text-main whitespace-nowrap hover:underline"
+    class="font-semibold text-gray-900 whitespace-nowrap hover:underline"
   >
     {{ user?.title }}
   </component>
