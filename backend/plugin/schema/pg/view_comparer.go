@@ -612,7 +612,7 @@ func (c *PostgreSQLViewComparer) compareStringArrays(arr1, arr2 []string) bool {
 		if ast.CompareExpressionsSemantically(item1, arr2[i]) {
 			continue // They're semantically equivalent
 		}
-		
+
 		// Fallback to normalization for cases where AST comparison might not work
 		normalized1 := c.normalizeExpression(item1)
 		normalized2 := c.normalizeExpression(arr2[i])
@@ -676,21 +676,21 @@ func (c *PostgreSQLViewComparer) compareStringArraysUnordered(arr1, arr2 []strin
 
 	// For each item in arr1, find a semantically matching item in arr2
 	used := make([]bool, len(arr2))
-	
+
 	for _, item1 := range arr1 {
 		found := false
 		for j, item2 := range arr2 {
 			if used[j] {
 				continue
 			}
-			
+
 			// Use AST-based semantic comparison first
 			if ast.CompareExpressionsSemantically(item1, item2) {
 				used[j] = true
 				found = true
 				break
 			}
-			
+
 			// Fallback to normalization comparison
 			norm1 := c.normalizeExpression(item1)
 			norm2 := c.normalizeExpression(item2)
@@ -700,7 +700,7 @@ func (c *PostgreSQLViewComparer) compareStringArraysUnordered(arr1, arr2 []strin
 				break
 			}
 		}
-		
+
 		if !found {
 			return false
 		}
@@ -812,8 +812,6 @@ func normalizeTokenForSemantics(token string) string {
 		return token
 	}
 }
-
-
 
 // isWhitespaceTokenType checks if the token type represents whitespace.
 func isWhitespaceTokenType(tokenType int) bool {
