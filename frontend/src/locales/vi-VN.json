@@ -1172,6 +1172,10 @@
       "description": "Lọc các kế hoạch theo trạng thái của chúng",
       "close-confirm": "Bạn có chắc chắn muốn đóng kế hoạch này không?",
       "reopen-confirm": "Bạn có chắc chắn muốn mở lại kế hoạch này không?"
+    },
+    "description": {
+      "add-a-description": "Thêm mô tả",
+      "placeholder": "Thêm mô tả của bạn vào đây cho kế hoạch này..."
     }
   },
   "rollout": {

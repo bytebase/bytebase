@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-2 pt-2 px-4">
+  <div class="flex flex-col gap-y-2 pt-2">
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-1">
         <h3 class="text-base font-medium">{{ $t("plan.targets.title") }}</h3>

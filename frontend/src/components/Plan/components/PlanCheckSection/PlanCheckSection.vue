@@ -1,8 +1,5 @@
 <template>
-  <div
-    v-if="shouldShow"
-    class="px-4 pt-3 flex flex-col gap-y-1 overflow-hidden"
-  >
+  <div v-if="shouldShow" class="pt-3 flex flex-col gap-y-1 overflow-hidden">
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2">
         <h3 class="text-base font-medium">{{ $t("plan.checks.self") }}</h3>

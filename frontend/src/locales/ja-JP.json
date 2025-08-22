@@ -1172,6 +1172,10 @@
       "description": "州別にプランをフィルタリング",
       "close-confirm": "このプランを閉じてもよろしいですか?",
       "reopen-confirm": "このプランを再開してもよろしいですか?"
+    },
+    "description": {
+      "add-a-description": "説明を追加する",
+      "placeholder": "このプランの説明をここに追加してください..."
     }
   },
   "rollout": {
