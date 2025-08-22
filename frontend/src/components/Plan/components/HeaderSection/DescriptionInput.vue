@@ -1,15 +1,16 @@
 <template>
   <div class="flex-1">
     <NInput
-      v-model:value="state.title"
-      :style="style"
-      :loading="state.isUpdating"
+      v-model:value="state.description"
+      :placeholder="$t('issue.add-some-description')"
       :disabled="!allowEdit || state.isUpdating"
-      size="medium"
-      required
-      @focus="state.isEditing = true"
+      :loading="state.isUpdating"
+      :style="style"
+      size="tiny"
+      type="textarea"
+      :autosize="{ minRows: 1, maxRows: 3 }"
+      @focus="state.isFocused = true"
       @blur="onBlur"
-      @keyup.enter="onEnter"
       @update:value="onUpdateValue"
     />
   </div>
@@ -19,7 +20,7 @@
 import { create } from "@bufbuild/protobuf";
 import { NInput } from "naive-ui";
 import type { CSSProperties } from "vue";
-import { computed, reactive, watch } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { planServiceClientConnect } from "@/grpcweb";
 import {
@@ -33,48 +34,15 @@ import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContext } from "../../logic";
 
-type ViewMode = "EDIT" | "VIEW";
-
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
 const { isCreating, plan, readonly } = usePlanContext();
 
 const state = reactive({
-  isEditing: false,
+  isFocused: false,
   isUpdating: false,
-  title: plan.value.title,
-});
-
-// Watch for changes in issue/plan to update the title
-watch(
-  () => [plan.value],
-  () => {
-    state.title = plan.value.title;
-  },
-  { immediate: true }
-);
-
-const viewMode = computed((): ViewMode => {
-  if (isCreating.value) return "EDIT";
-  return state.isEditing ? "EDIT" : "VIEW";
-});
-
-const style = computed(() => {
-  const style: CSSProperties = {
-    cursor: "default",
-    "--n-color-disabled": "transparent",
-    "--n-font-size": "18px",
-    "font-weight": "bold",
-  };
-  const border =
-    viewMode.value === "EDIT"
-      ? "1px solid rgb(var(--color-control-border))"
-      : "none";
-  style["--n-border"] = border;
-  style["--n-border-disabled"] = border;
-
-  return style;
+  description: plan.value.description,
 });
 
 const allowEdit = computed(() => {
@@ -84,42 +52,47 @@ const allowEdit = computed(() => {
   if (isCreating.value) {
     return true;
   }
-  // Allowed if current user is the creator.
   if (extractUserId(plan.value.creator) === currentUser.value.email) {
     return true;
   }
-  // Allowed if current user has related permission.
   if (hasProjectPermissionV2(project.value, "bb.plans.update")) {
     return true;
   }
   return false;
 });
 
-const onBlur = async () => {
-  const cleanup = () => {
-    state.isEditing = false;
-    state.isUpdating = false;
+const style = computed(() => {
+  const style: CSSProperties = {
+    "--n-color-disabled": "transparent",
   };
+  const border = state.isFocused
+    ? "1px solid rgb(var(--color-control-border))"
+    : "none";
+  style["--n-border"] = border;
+  style["--n-border-disabled"] = border;
 
+  return style;
+});
+
+const onBlur = async () => {
+  state.isFocused = false;
   if (isCreating.value) {
-    cleanup();
     return;
   }
 
-  // Update plan title
-  if (state.title === plan.value.title) {
-    cleanup();
+  if (state.description === plan.value.description) {
     return;
   }
+
   try {
     state.isUpdating = true;
     const planPatch = create(PlanSchema, {
       ...plan.value,
-      title: state.title,
+      description: state.description,
     });
     const request = create(UpdatePlanRequestSchema, {
       plan: planPatch,
-      updateMask: { paths: ["title"] },
+      updateMask: { paths: ["description"] },
     });
     const response = await planServiceClientConnect.updatePlan(request);
     Object.assign(plan.value, response);
@@ -129,20 +102,14 @@ const onBlur = async () => {
       title: t("common.updated"),
     });
   } finally {
-    cleanup();
+    state.isUpdating = false;
   }
-};
-
-const onEnter = (e: Event) => {
-  const input = e.target as HTMLInputElement;
-  input.blur();
 };
 
 const onUpdateValue = (value: string) => {
   if (!isCreating.value) {
     return;
   }
-  // When creating, we only update plan title
-  plan.value.title = value;
+  plan.value.description = value;
 };
 </script>
