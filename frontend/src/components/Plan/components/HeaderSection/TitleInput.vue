@@ -7,6 +7,7 @@
       :disabled="!allowEdit || state.isUpdating"
       size="medium"
       required
+      class="bb-plan-title-input"
       @focus="state.isEditing = true"
       @blur="onBlur"
       @keyup.enter="onEnter"
@@ -146,3 +147,11 @@ const onUpdateValue = (value: string) => {
   plan.value.title = value;
 };
 </script>
+
+<style>
+.bb-plan-title-input input {
+  cursor: text !important;
+  color: var(--n-text-color) !important;
+  text-decoration-color: var(--n-text-color) !important;
+}
+</style>
