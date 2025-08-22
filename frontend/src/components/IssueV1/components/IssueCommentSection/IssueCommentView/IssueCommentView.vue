@@ -15,12 +15,8 @@
           :issue-comment="issueComment"
           :similar="similar"
         >
-          <template #subject-suffix>
-            <slot name="subject-suffix" />
-          </template>
-
-          <template #comment>
-            <slot name="comment" />
+          <template v-for="(_, name) in $slots" :key="name" #[name]>
+            <slot :name="name" />
           </template>
         </IssueCommentAction>
       </div>

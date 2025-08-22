@@ -1,9 +1,9 @@
 <template>
   <div class="ml-3 min-w-0 flex-1">
     <div class="rounded-lg border border-gray-200 bg-white overflow-hidden">
-      <div class="px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+      <div class="px-4 py-2.5 bg-gray-50">
         <div class="flex items-center justify-between">
-          <div class="flex items-center gap-x-2 text-sm">
+          <div class="flex items-center gap-x-2 text-sm min-w-0 flex-wrap">
             <ActionCreator
               v-if="
                 extractUserId(issueComment.creator) !==
@@ -17,7 +17,7 @@
             <ActionSentence
               :issue="issue"
               :issue-comment="issueComment"
-              class="text-gray-600"
+              class="text-gray-600 break-words min-w-0"
             />
 
             <HumanizeTs
@@ -51,7 +51,10 @@
           <slot name="subject-suffix"></slot>
         </div>
       </div>
-      <div class="px-4 py-3 text-sm text-gray-700 whitespace-pre-wrap">
+      <div
+        v-if="$slots.comment"
+        class="px-4 py-3 border-t border-gray-200 text-sm text-gray-700 whitespace-pre-wrap break-words"
+      >
         <slot name="comment" />
       </div>
     </div>

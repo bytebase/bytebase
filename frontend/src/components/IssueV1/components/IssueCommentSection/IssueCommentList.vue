@@ -25,9 +25,8 @@
           </NButton>
         </template>
 
-        <template #comment>
+        <template v-if="item.comment.comment" #comment>
           <MarkdownEditor
-            v-if="item.comment.comment"
             :mode="
               state.editCommentMode &&
               state.activeComment?.name === item.comment.name
