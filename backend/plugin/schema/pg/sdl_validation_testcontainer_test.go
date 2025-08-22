@@ -495,7 +495,7 @@ func executeSDLValidationProcess(ctx context.Context, t *testing.T, connConfig *
 	t.Logf("Starting SDL validation process for: %s", description)
 
 	// Step 1: Apply initial schema A to database
-	t.Logf("Step 1: Applying initial schema A to database")
+	t.Log("Step 1: Applying initial schema A to database")
 	if strings.TrimSpace(initialSchema) != "" {
 		_, err := testDB.Exec(initialSchema)
 		if err != nil {
@@ -504,14 +504,14 @@ func executeSDLValidationProcess(ctx context.Context, t *testing.T, connConfig *
 	}
 
 	// Step 2: Sync to get schema B from database
-	t.Logf("Step 2: Syncing to get schema B from database")
+	t.Log("Step 2: Syncing to get schema B from database")
 	schemaB, err := getSyncMetadataForSDL(ctx, connConfig, dbName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to sync schema B")
 	}
 
 	// Step 3: Simplified validation - just verify schemaB was retrieved
-	t.Logf("Step 3: Simplified validation passed")
+	t.Log("Step 3: Simplified validation passed")
 	// Basic validation: ensure schemaB has the expected number of schemas
 	if len(schemaB.Schemas) == 0 {
 		return errors.Errorf("expected at least one schema in result")
