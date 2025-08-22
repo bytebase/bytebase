@@ -3,12 +3,18 @@
     <NTabs
       :key="`${plan.specs.length}-${selectedSpec.id}`"
       :value="selectedSpec.id"
-      type="line"
+      type="card"
       size="small"
       class="flex-1"
-      tab-class="first:ml-4"
       @update:value="handleTabChange"
     >
+      <template #prefix>
+        <div class=""></div>
+        <div v-if="!plan.issue" class="pl-4 text-base font-medium">
+          {{ $t("plan.navigator.changes") }}
+        </div>
+      </template>
+
       <NTab v-for="(spec, index) in plan.specs" :key="spec.id" :name="spec.id">
         <div class="flex items-center gap-1">
           <span v-if="plan.specs.length > 1" class="opacity-80"

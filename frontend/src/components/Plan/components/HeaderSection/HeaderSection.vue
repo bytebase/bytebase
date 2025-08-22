@@ -1,22 +1,22 @@
 <template>
   <div class="py-2 px-2 sm:px-4">
     <div class="flex flex-row items-center justify-between gap-2">
-      <TitleInput />
-      <div class="flex flex-row items-center justify-end">
-        <Actions />
-      </div>
-    </div>
-    <div
-      v-if="showDraftTag || showDescriptionInput"
-      class="flex flex-row items-start justify-start gap-x-1 mt-0.5"
-    >
-      <NTag v-if="showDraftTag" round size="small">
+      <NTag v-if="showDraftTag" round>
         <template #icon>
           <CircleDotDashedIcon class="w-4 h-4" />
         </template>
         {{ $t("common.draft") }}
       </NTag>
-      <DescriptionInput v-if="showDescriptionInput" />
+      <TitleInput />
+      <div class="flex flex-row items-center justify-end">
+        <Actions />
+      </div>
+    </div>
+    <div v-if="showDescriptionInput" class="flex flex-col mt-2">
+      <label class="block text-sm text-control mb-1">
+        {{ $t("plan.description.add-a-description") }}
+      </label>
+      <DescriptionInput />
     </div>
   </div>
 </template>

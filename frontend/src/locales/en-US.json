@@ -1172,6 +1172,10 @@
       "description": "Filter plans by their state",
       "close-confirm": "Are you sure to close this plan?",
       "reopen-confirm": "Are you sure to reopen this plan?"
+    },
+    "description": {
+      "add-a-description": "Add a description",
+      "placeholder": "Add your description here for this plan..."
     }
   },
   "rollout": {

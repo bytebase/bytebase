@@ -1172,6 +1172,10 @@
       "description": "Filtrar planes por estado",
       "close-confirm": "¿Estás seguro de que deseas cerrar este plan?",
       "reopen-confirm": "¿Estás seguro de que deseas reabrir este plan?"
+    },
+    "description": {
+      "add-a-description": "Añadir una descripción",
+      "placeholder": "Añade tu descripción aquí para este plan..."
     }
   },
   "rollout": {
