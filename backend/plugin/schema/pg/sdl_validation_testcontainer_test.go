@@ -964,12 +964,7 @@ func executeSDLValidationProcess(ctx context.Context, t *testing.T, connConfig *
 
 	// Generate migration DDL from schema B to schema C using the differ
 	migrationDDL, err := generateMigrationDDLFromMetadata(schemaB, schemaCMetadata)
-	if err != nil {
-		t.Logf("Warning: Failed to generate migration DDL: %v", err)
-		t.Logf("This is expected for complex schema transformations in the current implementation")
-		// For now, continue with a simplified approach instead of failing
-		migrationDDL = expectedSchema
-	}
+	require.NoError(t, err, "Failed to generate migration DDL from metadata")
 
 	t.Logf("Generated migration DDL (%d characters)", len(migrationDDL))
 
