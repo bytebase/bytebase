@@ -26,6 +26,26 @@
               "
               class="text-gray-500"
             />
+
+            <span
+              v-if="
+                getTimeForPbTimestampProtoEs(issueComment.createTime) !==
+                  getTimeForPbTimestampProtoEs(issueComment.updateTime) &&
+                getIssueCommentType(issueComment) ===
+                  IssueCommentType.USER_COMMENT
+              "
+              class="text-gray-500 text-xs"
+            >
+              ({{ $t("common.edited") }})
+            </span>
+
+            <span v-if="similar.length > 0" class="text-xs text-gray-500">
+              {{
+                $t("activity.n-similar-activities", {
+                  count: similar.length + 1,
+                })
+              }}
+            </span>
           </div>
 
           <slot name="subject-suffix"></slot>
