@@ -1172,6 +1172,10 @@
       "description": "按状态过滤",
       "close-confirm": "确定关闭该变更计划？",
       "reopen-confirm": "确定重新开启该变更计划？"
+    },
+    "description": {
+      "add-a-description": "添加描述",
+      "placeholder": "在此添加该更变计划的描述..."
     }
   },
   "rollout": {

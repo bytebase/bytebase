@@ -1,5 +1,5 @@
 <template>
-  <div v-show="viewMode !== 'NONE'" class="px-4 flex flex-col gap-y-2">
+  <div v-show="viewMode !== 'NONE'" class="flex flex-col gap-y-2">
     <EditorView v-if="viewMode === 'EDITOR'" :key="selectedSpec.id" />
     <ReleaseView v-else-if="viewMode === 'RELEASE'" />
   </div>

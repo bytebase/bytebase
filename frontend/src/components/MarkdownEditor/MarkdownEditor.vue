@@ -56,7 +56,7 @@
         v-model="state.content"
         rows="4"
         class="block w-full px-4 py-3 resize-none whitespace-pre-wrap rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors text-sm"
-        :placeholder="$t('issue.leave-a-comment')"
+        :placeholder="placeholder || $t('issue.leave-a-comment')"
         @mousedown="clearIssuePanel"
         @input="(e: any) => sizeToFit(e.target)"
         @keyup="adjustIssuePanelWithPosition"
@@ -135,6 +135,7 @@ const props = defineProps<{
   mode: EditorMode;
   project?: ComposedProject;
   issueList: ComposedIssue[];
+  placeholder?: string;
 }>();
 const emit = defineEmits<{
   (event: "change", value: string): void;
