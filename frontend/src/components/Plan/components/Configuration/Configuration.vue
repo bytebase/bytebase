@@ -1,5 +1,5 @@
 <template>
-  <div v-if="shouldShow" class="flex flex-col px-4 gap-2">
+  <div v-if="shouldShow" class="flex flex-col gap-2">
     <p class="text-base font-medium">
       {{ $t("plan.options.self") }}
     </p>
