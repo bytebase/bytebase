@@ -241,27 +241,56 @@ func (*normalizationVisitor) shouldSwapOperands(left, right ExpressionAST) bool 
 // isSignificantParentheses determines if parentheses are semantically significant
 func (*normalizationVisitor) isSignificantParentheses(expr *ParenthesesExpr) bool {
 	// Parentheses are significant if they change operator precedence or grouping
-	// For now, we use a simple heuristic - this could be made more sophisticated
 
 	inner := expr.Inner
 	if inner == nil {
 		return false
 	}
 
-	// Parentheses around binary operations might be significant for precedence
-	if _, isBinaryOp := inner.(*BinaryOpExpr); isBinaryOp {
-		// Could analyze the context to determine if parentheses change precedence
-		// For now, be conservative and keep them
-		return true
-	}
-
-	// Parentheses around simple identifiers or literals are usually not significant
+	// Parentheses around simple identifiers or literals are never significant
 	switch inner.(type) {
 	case *IdentifierExpr, *LiteralExpr:
 		return false
-	default:
-		return true // be conservative
 	}
+
+	// Parentheses around binary operations might be significant for precedence
+	if binaryOp, isBinaryOp := inner.(*BinaryOpExpr); isBinaryOp {
+		// For most practical cases in filter expressions, parentheses around
+		// high-precedence operators (=, <>, <, >, etc.) are not significant
+		// when used with lower-precedence operators (AND, OR)
+		op := strings.ToUpper(binaryOp.Operator)
+
+		// High precedence comparison operators usually don't need parentheses
+		highPrecedenceOps := map[string]bool{
+			"=":           true,
+			"<>":          true,
+			"!=":          true,
+			"<":           true,
+			">":           true,
+			"<=":          true,
+			">=":          true,
+			"LIKE":        true,
+			"ILIKE":       true,
+			"IS NULL":     true,
+			"IS NOT NULL": true,
+		}
+
+		if highPrecedenceOps[op] {
+			return false // These operators have high precedence, parentheses usually not needed
+		}
+
+		// For AND/OR operators, parentheses might be significant for grouping
+		// But in simple cases like (A AND B) vs A AND B, they're not significant
+		if op == "AND" || op == "OR" {
+			return false // Allow AND/OR to be ungrouped for simple cases
+		}
+
+		// Be conservative for other operators
+		return true
+	}
+
+	// Be conservative for other expression types (functions, etc.)
+	return true
 }
 
 // isQuotedIdentifier checks if an identifier is quoted
