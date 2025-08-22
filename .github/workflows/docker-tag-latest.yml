@@ -17,6 +17,8 @@ jobs:
           RELEASE_VERSION=${GITHUB_REF_NAME#release/}
           echo version: ${RELEASE_VERSION}
           docker buildx imagetools create -t bytebase/bytebase:latest bytebase/bytebase:${RELEASE_VERSION}
+          docker buildx imagetools create -t bytebase/bytebase-action:latest bytebase/bytebase-action:${RELEASE_VERSION}
+          docker buildx imagetools create -t bytebase/bytebase-action:latest-debian bytebase/bytebase-action:${RELEASE_VERSION}-debian
       - name: Login to Aliyun Container Registry
         uses: docker/login-action@v3
         with:
@@ -29,3 +31,7 @@ jobs:
           echo version: ${RELEASE_VERSION}
           docker buildx imagetools create -t registry.cn-shanghai.aliyuncs.com/bytebase/bytebase:latest bytebase/bytebase:${RELEASE_VERSION}
           docker buildx imagetools create -t registry.cn-shanghai.aliyuncs.com/bytebase/bytebase:${RELEASE_VERSION} bytebase/bytebase:${RELEASE_VERSION}
+          docker buildx imagetools create -t registry.cn-shanghai.aliyuncs.com/bytebase/bytebase-action:${RELEASE_VERSION} bytebase/bytebase-action:${RELEASE_VERSION}
+          docker buildx imagetools create -t registry.cn-shanghai.aliyuncs.com/bytebase/bytebase-action:${RELEASE_VERSION}-debian bytebase/bytebase-action:${RELEASE_VERSION}-debian
+          docker buildx imagetools create -t registry.cn-shanghai.aliyuncs.com/bytebase/bytebase-action:latest bytebase/bytebase-action:${RELEASE_VERSION}
+          docker buildx imagetools create -t registry.cn-shanghai.aliyuncs.com/bytebase/bytebase-action:latest-debian bytebase/bytebase-action:${RELEASE_VERSION}-debian
