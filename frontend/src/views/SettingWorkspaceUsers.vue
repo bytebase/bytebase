@@ -163,7 +163,7 @@
               :loading="loading"
               :show-roles="false"
               :user-list="list"
-              @update-user="handleUserUpdated"
+              @update-user="handleUserRestore"
             />
           </template>
         </PagedTable>
@@ -447,9 +447,20 @@ const handleUserCreated = (user: User) => {
   });
 };
 
-const handleUserUpdated = (_: User) => {
+const handleUserUpdated = (user: User) => {
+  if (user.state === State.DELETED) {
+    userPagedTable.value?.removeCache(user);
+  } else {
+    userPagedTable.value?.updateCache([user]);
+  }
+};
+
+const handleUserRestore = (user: User) => {
+  if (user.state !== State.ACTIVE) {
+    return;
+  }
+  deletedUserPagedTable.value?.removeCache(user);
   userPagedTable.value?.refresh();
-  deletedUserPagedTable.value?.refresh();
 };
 
 const handleGroupUpdated = (group: Group) => {
