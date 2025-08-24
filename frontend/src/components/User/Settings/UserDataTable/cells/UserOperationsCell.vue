@@ -106,12 +106,13 @@ const allowReactiveUser = computed(() => {
 });
 
 const changeRowStatus = async (state: State) => {
+  let user = props.user;
   if (state === State.ACTIVE) {
-    await userStore.restoreUser(props.user);
+    user = await userStore.restoreUser(props.user);
   } else {
-    await userStore.archiveUser(props.user);
+    user = await userStore.archiveUser(props.user);
   }
-  emit("update-user", props.user);
+  emit("update-user", user);
   pushNotification({
     module: "bytebase",
     style: "INFO",
