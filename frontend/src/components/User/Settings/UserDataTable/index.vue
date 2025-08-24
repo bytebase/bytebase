@@ -170,6 +170,7 @@ const resetServiceKey = () => {
       })
     )
     .then((updatedUser) => {
+      emit("update-user", updatedUser);
       if (updatedUser.serviceKey) {
         toClipboard(updatedUser.serviceKey).then(() => {
           pushNotification({

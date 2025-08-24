@@ -85,7 +85,7 @@ const props = withDefaults(
   {
     instance: undefined,
     clickable: false,
-    showInstanceMissingLicense: false,
+    showInstanceMissingLicense: true,
   }
 );
 
@@ -101,7 +101,7 @@ const hasFeature = computed(() => {
 
 const instanceMissingLicense = computed(() => {
   return (
-    props.showInstanceMissingLicense ||
+    props.showInstanceMissingLicense &&
     subscriptionStore.instanceMissingLicense(props.feature, props.instance)
   );
 });
