@@ -203,11 +203,17 @@ const updateCache = (data: T[]) => {
   }
 };
 
+const removeCache = (data: T) => {
+  const index = dataList.value.findIndex((d) => d.name === data.name);
+  dataList.value.splice(index, 1);
+};
+
 defineExpose({
   refresh: useDebounceFn(async () => {
     await refresh();
   }, props.debounce),
   updateCache,
+  removeCache,
   dataList,
 });
 </script>
