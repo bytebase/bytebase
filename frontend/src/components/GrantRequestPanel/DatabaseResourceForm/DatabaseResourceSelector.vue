@@ -92,28 +92,36 @@ const scopeOptions = useCommonSearchScopeOptions([
   "table",
 ]);
 
-const parseResourceToKey = (resource: DatabaseResource): string => {
-  const data = [
-    resource.databaseFullName,
-    "schemas",
-    resource.schema,
-    "tables",
-    resource.table,
-    "columns",
-    resource.column,
-  ];
-
-  while (data.length > 0) {
-    const item = data.pop();
-    if (!item) {
-      data.pop();
-      continue;
-    }
-    data.push(item);
-    break;
+const parseResourceToKeys = (resource: DatabaseResource): string[] => {
+  const columns = [...(resource.columns ?? [])];
+  if (columns.length === 0) {
+    columns.push("");
   }
 
-  return data.join("/");
+  const keys: string[] = [];
+  for (const column of columns) {
+    const data = [
+      resource.databaseFullName,
+      "schemas",
+      resource.schema,
+      "tables",
+      resource.table,
+      "columns",
+      column,
+    ];
+    while (data.length > 0) {
+      const item = data.pop();
+      if (!item) {
+        data.pop();
+        continue;
+      }
+      data.push(item);
+      break;
+    }
+    keys.push(data.join("/"));
+  }
+
+  return keys;
 };
 
 const getInitParams = (): SearchParams => {
@@ -302,7 +310,11 @@ onMounted(async () => {
     props.databaseResources.map((resource) => resource.databaseFullName)
   );
 
-  const selectedKeys = props.databaseResources.map(parseResourceToKey);
+  const selectedKeys: string[] = [];
+  for (const databaseResource of props.databaseResources) {
+    selectedKeys.push(...parseResourceToKeys(databaseResource));
+  }
+
   const databaseNames = new Set(
     selectedKeys.map((key) => key.split("/schemas/")[0]).filter((key) => key)
   );
@@ -626,11 +638,23 @@ watch(selectedValueList, (selectedValueList) => {
     }
   }
 
-  emit(
-    "update:databaseResources",
-    filteredKeyList
-      .map(parseStringToResource)
-      .filter((data) => data) as DatabaseResource[]
-  );
+  const resources = filteredKeyList.map(parseStringToResource);
+  const resourceMap = new Map<string, DatabaseResource>();
+  for (const resource of resources) {
+    if (!resource) {
+      continue;
+    }
+    const tmp: DatabaseResource = {
+      ...resource,
+      columns: [],
+    };
+    const key = parseResourceToKeys(tmp)[0];
+    if (!resourceMap.has(key)) {
+      resourceMap.set(key, tmp);
+    }
+    resourceMap.get(key)?.columns?.push(...(resource.columns ?? []));
+  }
+
+  emit("update:databaseResources", [...resourceMap.values()]);
 });
 </script>

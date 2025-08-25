@@ -14,7 +14,7 @@ export const convertSensitiveColumnToDatabaseResource = (
   databaseFullName: sensitiveColumn.database.name,
   schema: sensitiveColumn.maskData.schema,
   table: sensitiveColumn.maskData.table,
-  column: sensitiveColumn.maskData.column,
+  columns: [sensitiveColumn.maskData.column].filter((c) => c),
 });
 
 export const isCurrentColumnException = (
@@ -52,8 +52,16 @@ export const getExpressionsForDatabaseResource = (
   if (databaseResource.table) {
     expressions.push(`resource.table_name == "${databaseResource.table}"`);
   }
-  if (databaseResource.column) {
-    expressions.push(`resource.column_name == "${databaseResource.column}"`);
+  if (databaseResource.columns && databaseResource.columns.length > 0) {
+    if (databaseResource.columns.length === 1) {
+      expressions.push(
+        `resource.column_name == "${databaseResource.columns[0]}"`
+      );
+    } else {
+      expressions.push(
+        `resource.column_name in [${databaseResource.columns.map((c) => `"${c}"`)}]`
+      );
+    }
   }
   return expressions;
 };
