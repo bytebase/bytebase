@@ -437,7 +437,8 @@ func (*ExpressionValidatorVisitor) isValidBinaryOperator(operator string) bool {
 		"=", "<>", "!=", "<", ">", "<=", ">=",
 		"+", "-", "*", "/", "%",
 		"AND", "OR", "LIKE", "ILIKE", "IN", "NOT IN",
-		"||", // string concatenation or logical OR
+		"||",                     // string concatenation or logical OR
+		"IS NULL", "IS NOT NULL", // NULL checking operators
 	}
 
 	upper := strings.ToUpper(operator)

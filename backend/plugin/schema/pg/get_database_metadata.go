@@ -796,7 +796,7 @@ func (e *metadataExtractor) extractColumnConstraint(ctx parser.IColconstraintele
 		// Extract the check expression
 		if expr := ctx.A_expr(); expr != nil {
 			rawExpression := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(expr)
-			check.Expression = e.normalizePostgreSQLCheckExpression(rawExpression)
+			check.Expression = strings.TrimSpace(rawExpression)
 		}
 
 		// Add to table's check constraints
@@ -912,7 +912,7 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintCo
 		}
 		if expr := constraintElem.A_expr(); expr != nil {
 			rawExpression := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(expr)
-			check.Expression = e.normalizePostgreSQLCheckExpression(rawExpression)
+			check.Expression = strings.TrimSpace(rawExpression)
 		}
 		if table.CheckConstraints == nil {
 			table.CheckConstraints = []*storepb.CheckConstraintMetadata{}
@@ -1938,13 +1938,11 @@ func (e *metadataExtractor) generateIndexDefinition(ctx *parser.IndexstmtContext
 	if len(index.Expressions) > 0 {
 		columnList := make([]string, len(index.Expressions))
 		for i, expr := range index.Expressions {
-			// Normalize expression to match PostgreSQL system catalog format
-			normalizedExpr := e.normalizePostgreSQLIndexExpression(expr)
 			// Add DESC if needed
 			if i < len(index.Descending) && index.Descending[i] {
-				columnList[i] = fmt.Sprintf("%s DESC", normalizedExpr)
+				columnList[i] = fmt.Sprintf("%s DESC", expr)
 			} else {
-				columnList[i] = normalizedExpr
+				columnList[i] = expr
 			}
 		}
 		parts = append(parts, fmt.Sprintf("(%s)", strings.Join(columnList, ", ")))
@@ -1959,16 +1957,10 @@ func (e *metadataExtractor) generateIndexDefinition(ctx *parser.IndexstmtContext
 	// Check for WHERE clause (partial index)
 	if ctx.Where_clause() != nil {
 		whereClause := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Where_clause())
-		// Normalize WHERE clause to match PostgreSQL system catalog format
+		// Add WHERE clause as-is
 		if whereClause != "" {
-			// Extract the condition part after "WHERE "
-			if condition, found := strings.CutPrefix(whereClause, "WHERE "); found {
-				// Apply PostgreSQL-style normalization with double parentheses
-				normalizedCondition := e.normalizePostgreSQLWhereClause(condition)
-				whereClause = fmt.Sprintf("WHERE (%s)", normalizedCondition)
-			}
+			parts = append(parts, whereClause)
 		}
-		parts = append(parts, whereClause)
 	}
 
 	// End with semicolon
@@ -2016,38 +2008,6 @@ func (*metadataExtractor) extractIncludeClause(statement string) string {
 	// Extract the INCLUDE clause from the original statement (preserving case)
 	includeClause := statement[includeIdx+1 : i] // +1 to skip the leading space
 	return strings.TrimSpace(includeClause)
-}
-
-// normalizePostgreSQLWhereClause normalizes WHERE clause conditions to match PostgreSQL system catalog format
-func (*metadataExtractor) normalizePostgreSQLWhereClause(condition string) string {
-	// PostgreSQL tends to add parentheses around individual conditions in AND/OR expressions
-	// Convert "price > 100.00 AND array_length(category_tags, 1) > 0"
-	// to "(price > 100.00) AND (array_length(category_tags, 1) > 0)"
-
-	condition = strings.TrimSpace(condition)
-
-	// Simple approach: if we have AND/OR operators, add parentheses around each part
-	lowerCondition := strings.ToLower(condition)
-
-	if strings.Contains(lowerCondition, " and ") || strings.Contains(lowerCondition, " or ") {
-		// For this specific case, we can handle the common pattern
-		// This is a simplified implementation - a full parser would be more robust
-		result := condition
-
-		// Replace AND with ) AND ( to separate conditions
-		result = strings.ReplaceAll(result, " AND ", ") AND (")
-		result = strings.ReplaceAll(result, " and ", ") AND (")
-		result = strings.ReplaceAll(result, " OR ", ") OR (")
-		result = strings.ReplaceAll(result, " or ", ") OR (")
-
-		// Add outer parentheses
-		result = "(" + result + ")"
-
-		return result
-	}
-
-	// If no AND/OR operators, return as is
-	return condition
 }
 
 // generateConstraintIndexDefinition generates the CREATE INDEX definition for constraint-based indexes
@@ -2305,82 +2265,15 @@ func (*metadataExtractor) normalizeDefaultValue(rawDefault string, column *store
 	return rawDefault
 }
 
-// extractFunctionExpression semantically extracts function expressions using AST-based comparison to match PostgreSQL's internal representation.
-func (e *metadataExtractor) extractFunctionExpression(ctx *parser.IndexstmtContext, funcExpr parser.IFunc_expr_windowlessContext) string {
+// extractFunctionExpression extracts function expressions preserving the original user input.
+func (*metadataExtractor) extractFunctionExpression(ctx *parser.IndexstmtContext, funcExpr parser.IFunc_expr_windowlessContext) string {
 	if funcExpr == nil {
 		return ""
 	}
 
-	// Get the original text
-	originalText := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(funcExpr)
-
-	// Use AST-based semantic comparison for standardization
-	if e.expressionComparer != nil {
-		standardized, err := e.expressionComparer.NormalizeExpression(originalText)
-		if err == nil {
-			return standardized
-		}
-		// If standardization fails, log the error but continue with original text
-		// In a production system, we might want to log this for debugging
-	}
-
-	// Fallback to original text if AST standardization fails
-	return originalText
-}
-
-// normalizePostgreSQLIndexExpression normalizes index expressions to match PostgreSQL system catalog format
-func (*metadataExtractor) normalizePostgreSQLIndexExpression(expression string) string {
-	// PostgreSQL normalizes expressions in the system catalog:
-	// 1. Removes spaces around :: cast operator
-	// 2. Adds parentheses around column names in function calls
-	// Example: "lower(name :: text)" becomes "lower((name)::text)"
-
-	expression = strings.TrimSpace(expression)
-
-	// Handle cast operators - remove spaces around ::
-	expression = strings.ReplaceAll(expression, " :: ", "::")
-	expression = strings.ReplaceAll(expression, " ::", "::")
-	expression = strings.ReplaceAll(expression, ":: ", "::")
-
-	// Handle parentheses around column names in function calls
-	// Look for patterns like "function(columnname::type)" and convert to "function((columnname)::type)"
-	// This is a simplified implementation for the specific case we're seeing
-	if strings.Contains(expression, "lower(") && strings.Contains(expression, "::") {
-		// Find the content inside lower()
-		lowerIdx := strings.Index(expression, "lower(")
-		if lowerIdx != -1 {
-			start := lowerIdx + 6 // length of "lower("
-			end := strings.LastIndex(expression, ")")
-			if end > start {
-				content := expression[start:end]
-				// If content doesn't already have parentheses around the column name
-				if strings.Contains(content, "::") && !strings.HasPrefix(content, "(") {
-					// Split at :: to identify the column part
-					parts := strings.SplitN(content, "::", 2)
-					if len(parts) == 2 {
-						columnPart := strings.TrimSpace(parts[0])
-						typePart := strings.TrimSpace(parts[1])
-						// Add parentheses around column name
-						newContent := fmt.Sprintf("(%s)::%s", columnPart, typePart)
-						expression = expression[:start] + newContent + expression[end:]
-					}
-				}
-			}
-		}
-	}
-
-	return expression
-}
-
-// normalizePostgreSQLCheckExpression normalizes check constraint expressions to match PostgreSQL system catalog format
-func (*metadataExtractor) normalizePostgreSQLCheckExpression(expression string) string {
-	// Looking at the test output, we need to keep the sync format instead of normalizing to user-friendly format
-	// Sync: (order_date >= (CURRENT_DATE - '1 year'::interval))
-	// Parser should match the sync format, not try to normalize it
-
-	// For now, return the expression as-is since the sync catalog uses the original PostgreSQL format
-	// The differ should handle normalization between sync and parser formats
-	return strings.TrimSpace(expression)
+	// Return the original text without any normalization
+	// This preserves the user's original input format
+	return ctx.GetParser().GetTokenStream().GetTextFromRuleContext(funcExpr)
 }
 
 // extractViewDependencies analyzes view definitions to extract dependencies using GetQuerySpan

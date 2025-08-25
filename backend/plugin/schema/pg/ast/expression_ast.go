@@ -307,15 +307,42 @@ func (*ParenthesesExpr) Type() ExpressionType {
 }
 
 func (e *ParenthesesExpr) String() string {
+	if e.Inner == nil {
+		return "()"
+	}
 	return fmt.Sprintf("(%s)", e.Inner.String())
 }
 
 func (e *ParenthesesExpr) Equals(other ExpressionAST) bool {
-	// parentheses are usually ignored in semantic comparison, compare inner expression directly
+	// Handle nil inner expressions
+	if e.Inner == nil {
+		if other.Type() == ExprTypeParentheses {
+			if otherParen, ok := other.(*ParenthesesExpr); ok {
+				return otherParen.Inner == nil
+			}
+		}
+		return false
+	}
+
+	// If the other expression is also parentheses, compare inner expressions
+	if other.Type() == ExprTypeParentheses {
+		if otherParen, ok := other.(*ParenthesesExpr); ok {
+			if otherParen.Inner == nil {
+				return false
+			}
+			return e.Inner.Equals(otherParen.Inner)
+		}
+	}
+
+	// Otherwise, parentheses are usually ignored in semantic comparison
+	// Compare inner expression directly with the other expression
 	return e.Inner.Equals(other)
 }
 
 func (e *ParenthesesExpr) Children() []ExpressionAST {
+	if e.Inner == nil {
+		return nil
+	}
 	return []ExpressionAST{e.Inner}
 }
 
@@ -332,7 +359,18 @@ func normalizeOperator(op string) string {
 		return "<>"
 	case "&&":
 		return "AND"
-	// || needs context to determine if it's OR or string concatenation, keep as-is for now
+	case "||":
+		// In PostgreSQL, || is primarily string concatenation, but in boolean contexts
+		// it can be used as OR. For expression comparison, we treat || as OR since
+		// this is the most common semantic usage in filter expressions.
+		return "OR"
+	case "IS NULL", "ISNULL":
+		return "IS NULL"
+	case "IS NOT NULL", "ISNOTNULL":
+		return "IS NOT NULL"
+	case "::":
+		// PostgreSQL type cast operator
+		return "::"
 	default:
 		return strings.ToUpper(op)
 	}

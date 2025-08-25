@@ -30,7 +30,7 @@
         <div class="ml-2">
           <NButton size="small" @click="gotoSubscriptionPage">
             {{ $t("subscription.button.upgrade") }}
-            <heroicons-outline:sparkles class="w-4 h-auto text-accent ml-1" />
+            <SparklesIcon class="w-4 h-auto text-accent ml-1" />
           </NButton>
         </div>
       </div>
@@ -72,6 +72,7 @@
 </template>
 
 <script lang="ts" setup>
+import { SparklesIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";

@@ -1109,13 +1109,11 @@ func compareIndexes(t *testing.T, tableName string, syncIndexes, parseIndexes []
 		// 10. IsConstraint - validate if index represents a constraint
 		require.Equal(t, syncIdx.IsConstraint, parseIdx.IsConstraint, "table %s, index %s: IsConstraint should match", tableName, name)
 
-		// 11. Definition - validate full index definition for comprehensive verification
+		// 11. Definition - validate full index definition using AST-based semantic comparison
 		if syncIdx.Definition != "" || parseIdx.Definition != "" {
-			// Normalize definitions for comparison since formatting may differ
-			syncDef := strings.TrimSpace(strings.ToLower(syncIdx.Definition))
-			parseDef := strings.TrimSpace(strings.ToLower(parseIdx.Definition))
-			if syncDef != "" && parseDef != "" {
-				require.Equal(t, syncDef, parseDef, "table %s, index %s: definition should match", tableName, name)
+			if syncIdx.Definition != "" && parseIdx.Definition != "" {
+				definitionsEqual := compareIndexDefinitionsSemanticaly(syncIdx.Definition, parseIdx.Definition)
+				require.True(t, definitionsEqual, "table %s, index %s: definition should match\nSync: %s\nParse: %s", tableName, name, syncIdx.Definition, parseIdx.Definition)
 			}
 		}
 
@@ -1771,4 +1769,199 @@ func validateRoutingRules(t *testing.T, metadata *storepb.DatabaseSchemaMetadata
 	} else {
 		t.Log("No rules in this test case - validation passed")
 	}
+}
+
+// compareIndexDefinitionsSemanticaly compares two PostgreSQL index definitions using AST-based semantic comparison
+func compareIndexDefinitionsSemanticaly(def1, def2 string) bool {
+	if strings.TrimSpace(def1) == strings.TrimSpace(def2) {
+		return true
+	}
+
+	// Parse the index definitions to extract components
+	parts1 := parseIndexDefinition(def1)
+	parts2 := parseIndexDefinition(def2)
+
+	if parts1 == nil || parts2 == nil {
+		// Fallback to case-insensitive string comparison if parsing fails
+		return strings.EqualFold(strings.TrimSpace(def1), strings.TrimSpace(def2))
+	}
+
+	// Compare non-expression parts
+	if !strings.EqualFold(parts1.CreateClause, parts2.CreateClause) ||
+		!strings.EqualFold(parts1.IndexName, parts2.IndexName) ||
+		!strings.EqualFold(parts1.OnClause, parts2.OnClause) ||
+		!strings.EqualFold(parts1.UsingClause, parts2.UsingClause) {
+		return false
+	}
+
+	// Compare expressions using semantic comparison
+	comparer := ast.NewPostgreSQLExpressionComparer()
+	if parts1.ExpressionsClause != "" && parts2.ExpressionsClause != "" {
+		equal, err := comparer.CompareExpressions(parts1.ExpressionsClause, parts2.ExpressionsClause)
+		if err != nil {
+			// Fallback to string comparison if expression comparison fails
+			return strings.EqualFold(strings.TrimSpace(parts1.ExpressionsClause), strings.TrimSpace(parts2.ExpressionsClause))
+		}
+		if !equal {
+			return false
+		}
+	} else if parts1.ExpressionsClause != parts2.ExpressionsClause {
+		return false
+	}
+
+	// Compare WHERE clause using semantic comparison
+	if parts1.WhereClause != "" && parts2.WhereClause != "" {
+		equal, err := comparer.CompareExpressions(parts1.WhereClause, parts2.WhereClause)
+		if err != nil {
+			// Fallback to string comparison if expression comparison fails
+			return strings.EqualFold(strings.TrimSpace(parts1.WhereClause), strings.TrimSpace(parts2.WhereClause))
+		}
+		if !equal {
+			return false
+		}
+	} else if parts1.WhereClause != parts2.WhereClause {
+		return false
+	}
+
+	// Compare optional clauses
+	return strings.EqualFold(parts1.IncludeClause, parts2.IncludeClause) &&
+		strings.EqualFold(parts1.WithClause, parts2.WithClause)
+}
+
+// indexDefinitionParts represents the parsed components of an index definition
+type indexDefinitionParts struct {
+	CreateClause      string // "CREATE [UNIQUE] INDEX"
+	IndexName         string // index name
+	OnClause          string // "ON table_name"
+	UsingClause       string // "USING method"
+	ExpressionsClause string // column list or expressions inside parentheses
+	IncludeClause     string // "INCLUDE (...)" clause
+	WhereClause       string // WHERE condition (without WHERE keyword)
+	WithClause        string // WITH (...) clause
+}
+
+// parseIndexDefinition parses a PostgreSQL index definition into its components
+func parseIndexDefinition(definition string) *indexDefinitionParts {
+	def := strings.TrimSpace(definition)
+	if def == "" {
+		return nil
+	}
+
+	// Remove trailing semicolon
+	def = strings.TrimSuffix(def, ";")
+
+	parts := &indexDefinitionParts{}
+
+	// Split by major keywords to identify parts
+	lowerDef := strings.ToLower(def)
+
+	// Find CREATE clause
+	createEnd := strings.Index(lowerDef, " on ")
+	if createEnd == -1 {
+		return nil
+	}
+
+	// Extract index name from CREATE clause
+	createPart := def[:createEnd]
+	parts.CreateClause = createPart
+
+	// Extract index name (last word before "on")
+	words := strings.Fields(createPart)
+	if len(words) > 0 {
+		parts.IndexName = words[len(words)-1]
+	}
+
+	remaining := def[createEnd:]
+	lowerRemaining := strings.ToLower(remaining)
+
+	// Find ON clause
+	usingPos := strings.Index(lowerRemaining, " using ")
+	if usingPos == -1 {
+		return nil
+	}
+	parts.OnClause = strings.TrimSpace(remaining[:usingPos])
+
+	remaining = remaining[usingPos:]
+
+	// Find USING clause
+	parenPos := strings.Index(remaining, "(")
+	if parenPos == -1 {
+		return nil
+	}
+	parts.UsingClause = strings.TrimSpace(remaining[:parenPos])
+
+	remaining = remaining[parenPos:]
+
+	// Extract expressions (content within first set of parentheses)
+	parenCount := 0
+	exprEnd := -1
+	for i, r := range remaining {
+		if r == '(' {
+			parenCount++
+		} else if r == ')' {
+			parenCount--
+			if parenCount == 0 {
+				exprEnd = i
+				break
+			}
+		}
+	}
+
+	if exprEnd == -1 {
+		return nil
+	}
+
+	// Extract content within parentheses (excluding the parentheses themselves)
+	parts.ExpressionsClause = strings.TrimSpace(remaining[1:exprEnd])
+
+	if len(remaining) > exprEnd+1 {
+		remaining = strings.TrimSpace(remaining[exprEnd+1:])
+		lowerRemaining = strings.ToLower(remaining)
+
+		// Look for optional clauses in order: INCLUDE, WHERE, WITH
+
+		// INCLUDE clause
+		if strings.HasPrefix(lowerRemaining, "include") {
+			includeEnd := strings.Index(remaining, ")")
+			if includeEnd != -1 {
+				parts.IncludeClause = strings.TrimSpace(remaining[:includeEnd+1])
+				if len(remaining) > includeEnd+1 {
+					remaining = strings.TrimSpace(remaining[includeEnd+1:])
+					lowerRemaining = strings.ToLower(remaining)
+				} else {
+					remaining = ""
+					lowerRemaining = ""
+				}
+			}
+		}
+
+		// WHERE clause
+		if strings.HasPrefix(lowerRemaining, "where ") {
+			whereStart := 6 // length of "where "
+			// Find the end of WHERE clause (could be end of string or start of WITH clause)
+			withPos := strings.Index(lowerRemaining, " with ")
+			var whereEnd int
+			if withPos != -1 {
+				whereEnd = withPos
+			} else {
+				whereEnd = len(remaining)
+			}
+			parts.WhereClause = strings.TrimSpace(remaining[whereStart:whereEnd])
+
+			if withPos != -1 {
+				remaining = strings.TrimSpace(remaining[withPos:])
+				lowerRemaining = strings.ToLower(remaining)
+			} else {
+				remaining = ""
+				lowerRemaining = ""
+			}
+		}
+
+		// WITH clause
+		if strings.HasPrefix(lowerRemaining, "with ") {
+			parts.WithClause = strings.TrimSpace(remaining)
+		}
+	}
+
+	return parts
 }
