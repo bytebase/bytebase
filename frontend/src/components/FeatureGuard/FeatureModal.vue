@@ -7,7 +7,7 @@
             v-if="instanceMissingLicense"
             class="text-accent w-6 h-6"
           />
-          <heroicons-solid:sparkles v-else class="h-6 w-6 text-accent" />
+          <SparklesIcon v-else class="h-6 w-6 text-accent" />
         </div>
         <h3
           id="modal-headline"
@@ -97,6 +97,7 @@
 </template>
 
 <script lang="ts" setup>
+import { SparklesIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";

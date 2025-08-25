@@ -11,7 +11,7 @@
         size="small"
       >
         <template #icon>
-          <heroicons-solid:sparkles class="w-5 h-5" />
+          <SparklesIcon class="w-5 h-5 text-accent" />
         </template>
         {{ $t("subscription.plan.try") }}
       </RequireEnterpriseButton>
@@ -58,7 +58,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Volume2Icon } from "lucide-vue-next";
+import { Volume2Icon, SparklesIcon } from "lucide-vue-next";
 import { NTooltip, type TooltipProps } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
