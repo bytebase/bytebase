@@ -241,8 +241,12 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 
 	// Join the user_group table to find groups for each user.
 	// The user will be stored in the user_group.payload.members.member field, the member is in the "users/{id}" format
-	query := with + `
-	WITH user_groups AS (
+	if strings.HasPrefix(with, "WITH") {
+		with += ","
+	} else {
+		with = "WITH"
+	}
+	query := with + ` user_groups AS (
 		SELECT
 			principal.id AS user_id,
 			COALESCE(ARRAY_AGG(user_group.email ORDER BY user_group.email) FILTER (WHERE user_group.email IS NOT NULL), '{}') AS groups
