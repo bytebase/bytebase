@@ -619,6 +619,11 @@ func (p *ExpressionParser) parseQualifiedIdentifier(tokens []antlr.Token, start,
 func (p *ExpressionParser) parseSingleToken(token antlr.Token) (ExpressionAST, error) {
 	tokenText := token.GetText()
 
+	// Check if it's a quoted identifier (PostgreSQL uses double quotes for identifiers)
+	if p.isQuotedIdentifier(tokenText) {
+		return &IdentifierExpr{Name: tokenText}, nil
+	}
+
 	// Check if it's a literal
 	if p.isStringLiteral(tokenText) {
 		return &LiteralExpr{
@@ -758,11 +763,16 @@ func (*ExpressionParser) isIdentifierToken(token antlr.Token) bool {
 	return false
 }
 
-// isStringLiteral checks if token is a string literal
+// isStringLiteral checks if token is a string literal (single quotes in PostgreSQL)
 func (*ExpressionParser) isStringLiteral(tokenText string) bool {
 	return len(tokenText) >= 2 &&
-		((tokenText[0] == '\'' && tokenText[len(tokenText)-1] == '\'') ||
-			(tokenText[0] == '"' && tokenText[len(tokenText)-1] == '"'))
+		tokenText[0] == '\'' && tokenText[len(tokenText)-1] == '\''
+}
+
+// isQuotedIdentifier checks if token is a quoted identifier (double quotes in PostgreSQL)
+func (*ExpressionParser) isQuotedIdentifier(tokenText string) bool {
+	return len(tokenText) >= 2 &&
+		tokenText[0] == '"' && tokenText[len(tokenText)-1] == '"'
 }
 
 // isNumericLiteral checks if token is numeric

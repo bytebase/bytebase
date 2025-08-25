@@ -157,11 +157,91 @@ func TestPostgreSQLExpressionComparer_StrictProductionTests(t *testing.T) {
 func TestPostgreSQLExpressionComparer_EdgeCasesStrictMode(t *testing.T) {
 	comparer := NewPostgreSQLExpressionComparer()
 
-	t.Run("quoted_identifiers_precision", func(t *testing.T) {
-		// CRITICAL: Quoted identifiers preserve case and should be different from unquoted
-		result, err := comparer.CompareExpressions(`"Column_Name"`, `column_name`)
-		require.NoError(t, err, "Should handle quoted identifiers")
-		require.False(t, result, "CRITICAL BUG: Quoted identifiers should preserve case and differ from unquoted")
+	t.Run("quoted_identifiers_case_sensitivity", func(t *testing.T) {
+		testCases := []struct {
+			name        string
+			expr1       string
+			expr2       string
+			shouldEqual bool
+			description string
+		}{
+			{
+				name:        "quoted_vs_unquoted_different",
+				expr1:       `"Column_Name"`,
+				expr2:       `column_name`,
+				shouldEqual: false,
+				description: "Quoted identifiers should preserve case and differ from unquoted",
+			},
+			{
+				name:        "quoted_vs_unquoted_same_case",
+				expr1:       `"column_name"`,
+				expr2:       `column_name`,
+				shouldEqual: true,
+				description: "Quoted lowercase should equal unquoted lowercase",
+			},
+			{
+				name:        "quoted_identifiers_exact_match",
+				expr1:       `"Column_Name"`,
+				expr2:       `"Column_Name"`,
+				shouldEqual: true,
+				description: "Identical quoted identifiers should be equal",
+			},
+			{
+				name:        "quoted_identifiers_case_different",
+				expr1:       `"Column_Name"`,
+				expr2:       `"column_name"`,
+				shouldEqual: false,
+				description: "Quoted identifiers with different cases should not be equal",
+			},
+			{
+				name:        "quoted_identifiers_with_spaces",
+				expr1:       `"Column Name"`,
+				expr2:       `"Column Name"`,
+				shouldEqual: true,
+				description: "Quoted identifiers with spaces should work",
+			},
+			{
+				name:        "quoted_identifiers_mixed_case_complex",
+				expr1:       `"MyTable"."MyColumn"`,
+				expr2:       `"mytable"."mycolumn"`,
+				shouldEqual: false,
+				description: "Complex quoted identifiers should preserve case sensitivity",
+			},
+			{
+				name:        "quoted_table_unquoted_column",
+				expr1:       `"MyTable".column_name`,
+				expr2:       `"MyTable".COLUMN_NAME`,
+				shouldEqual: true,
+				description: "Unquoted parts should be case insensitive even with quoted parts",
+			},
+			{
+				name:        "quoted_in_expressions",
+				expr1:       `"User_ID" = 123`,
+				expr2:       `"user_id" = 123`,
+				shouldEqual: false,
+				description: "Quoted identifiers in expressions should preserve case",
+			},
+			{
+				name:        "quoted_function_names",
+				expr1:       `"UPPER"("Column_Name")`,
+				expr2:       `"upper"("Column_Name")`,
+				shouldEqual: false,
+				description: "Quoted function names should be case sensitive",
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				result, err := comparer.CompareExpressions(tc.expr1, tc.expr2)
+				require.NoError(t, err, "Should handle quoted identifiers: %s", tc.description)
+
+				if tc.shouldEqual {
+					require.True(t, result, "CRITICAL BUG: %s - '%s' vs '%s'", tc.description, tc.expr1, tc.expr2)
+				} else {
+					require.False(t, result, "CRITICAL BUG: %s - '%s' vs '%s'", tc.description, tc.expr1, tc.expr2)
+				}
+			})
+		}
 	})
 
 	t.Run("unicode_identifier_support", func(t *testing.T) {

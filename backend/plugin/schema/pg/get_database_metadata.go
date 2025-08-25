@@ -2333,9 +2333,58 @@ func (*metadataExtractor) normalizePostgreSQLIndexExpression(expression string) 
 	// PostgreSQL normalizes expressions in the system catalog:
 	// 1. Removes spaces around :: cast operator
 	// 2. Adds parentheses around column names in function calls
+	// 3. Uses "FROM" syntax in EXTRACT functions instead of comma syntax
 	// Example: "lower(name :: text)" becomes "lower((name)::text)"
+	// Example: "extract(year, order_date)" becomes "extract(year from order_date)"
 
 	expression = strings.TrimSpace(expression)
+
+	// Handle EXTRACT function syntax normalization
+	// Convert "extract(part, column)" to "extract(part from column)"
+	if strings.Contains(strings.ToLower(expression), "extract(") {
+		// Case-insensitive pattern matching for EXTRACT function
+		lowerExpr := strings.ToLower(expression)
+		extractIdx := strings.Index(lowerExpr, "extract(")
+		if extractIdx != -1 {
+			// Find the opening and closing parentheses
+			start := extractIdx + 8 // length of "extract("
+			parenCount := 1
+			end := start
+
+			// Find matching closing parenthesis
+			for i := start; i < len(expression) && parenCount > 0; i++ {
+				if expression[i] == '(' {
+					parenCount++
+				} else if expression[i] == ')' {
+					parenCount--
+					if parenCount == 0 {
+						end = i
+						break
+					}
+				}
+			}
+
+			if end > start {
+				// Extract the content inside EXTRACT()
+				content := expression[start:end]
+				// Check if it uses comma syntax instead of FROM syntax
+				if strings.Contains(content, ",") && !strings.Contains(strings.ToLower(content), " from ") {
+					// Split at comma to get part and column
+					parts := strings.SplitN(content, ",", 2)
+					if len(parts) == 2 {
+						part := strings.TrimSpace(parts[0])
+						column := strings.TrimSpace(parts[1])
+						// Replace with FROM syntax
+						newContent := fmt.Sprintf("%s from %s", part, column)
+						// Preserve the case of the original EXTRACT
+						extractPrefix := expression[extractIdx:start]
+						extractSuffix := expression[end:]
+						expression = expression[:extractIdx] + extractPrefix + newContent + extractSuffix
+					}
+				}
+			}
+		}
+	}
 
 	// Handle cast operators - remove spaces around ::
 	expression = strings.ReplaceAll(expression, " :: ", "::")

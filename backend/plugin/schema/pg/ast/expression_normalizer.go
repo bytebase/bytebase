@@ -187,11 +187,27 @@ func (v *normalizationVisitor) normalizeIdentifier(identifier string) string {
 		return ""
 	}
 
-	// Handle quoted identifiers - preserve exact case
+	// Handle quoted identifiers
 	if v.isQuotedIdentifier(identifier) {
+		// Remove quotes and get the actual identifier
+		unquoted := identifier[1 : len(identifier)-1]
+
+		// In PostgreSQL, if a quoted identifier is all lowercase,
+		// it's equivalent to the unquoted version
+		if strings.ToLower(unquoted) == unquoted {
+			// If quoted identifier is all lowercase, normalize as unquoted
+			return v.normalizeUnquotedIdentifier(unquoted)
+		}
+
+		// Otherwise, preserve the quoted form for case-sensitive comparison
 		return identifier
 	}
 
+	return v.normalizeUnquotedIdentifier(identifier)
+}
+
+// normalizeUnquotedIdentifier normalizes unquoted identifiers
+func (v *normalizationVisitor) normalizeUnquotedIdentifier(identifier string) string {
 	// For unquoted identifiers, apply case normalization
 	if v.normalizer.CaseSensitive {
 		return identifier
@@ -201,8 +217,13 @@ func (v *normalizationVisitor) normalizeIdentifier(identifier string) string {
 }
 
 // normalizeFunctionName normalizes function names
-func (*normalizationVisitor) normalizeFunctionName(name string) string {
-	// Function names are case-insensitive in PostgreSQL
+func (v *normalizationVisitor) normalizeFunctionName(name string) string {
+	// Handle quoted function names - preserve exact case
+	if v.isQuotedIdentifier(name) {
+		return name
+	}
+
+	// Function names are case-insensitive in PostgreSQL for unquoted names
 	return strings.ToLower(name)
 }
 
