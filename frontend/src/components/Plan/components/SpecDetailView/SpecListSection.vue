@@ -69,7 +69,7 @@
 import { create } from "@bufbuild/protobuf";
 import { PlusIcon, XIcon } from "lucide-vue-next";
 import { NTabs, NTab, NButton, useDialog, NTooltip } from "naive-ui";
-import { ref, computed } from "vue";
+import { ref, computed, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { planServiceClientConnect } from "@/grpcweb";
@@ -78,6 +78,7 @@ import { pushNotification } from "@/store";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { usePlanContext } from "../../logic/context";
+import { useEditorState } from "../../logic/useEditorState";
 import { getSpecTitle } from "../../logic/utils";
 import AddSpecDrawer from "../AddSpecDrawer.vue";
 import { useSpecsValidation } from "../common";
@@ -88,7 +89,8 @@ const dialog = useDialog();
 const { t } = useI18n();
 const { plan, isCreating } = usePlanContext();
 const selectedSpec = useSelectedSpec();
-const { isSpecEmpty } = useSpecsValidation(plan.value.specs);
+const { isSpecEmpty } = useSpecsValidation(computed(() => plan.value.specs));
+const { setEditingState } = useEditorState();
 
 const showAddSpecDrawer = ref(false);
 
@@ -139,19 +141,29 @@ const handleSpecCreated = async (spec: Plan_Spec) => {
     }
   }
 
-  gotoSpec(spec.id);
+  gotoSpec(spec.id, true); // Auto-enable editing for new specs
 };
 
-const gotoSpec = (specId: string) => {
+const gotoSpec = (specId: string, enableEditing = false) => {
   const currentRoute = router.currentRoute.value;
-  router.push({
-    name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-    params: {
-      ...(currentRoute.params || {}),
-      specId,
-    },
-    query: currentRoute.query || {},
-  });
+  router
+    .push({
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+      params: {
+        ...(currentRoute.params || {}),
+        specId,
+      },
+      query: currentRoute.query || {},
+    })
+    .then(() => {
+      // Enable editing mode if requested (for newly created specs)
+      if (enableEditing) {
+        // Use nextTick to ensure the route navigation completes first
+        nextTick(() => {
+          setEditingState(true);
+        });
+      }
+    });
 };
 
 const handleDeleteSpec = (spec: Plan_Spec) => {
