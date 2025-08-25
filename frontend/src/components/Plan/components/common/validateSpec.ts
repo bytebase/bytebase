@@ -1,11 +1,11 @@
-import { ref, watchEffect } from "vue";
+import { ref, watchEffect, type Ref, unref } from "vue";
 import { getLocalSheetByName } from "@/components/Plan";
 import { useSheetV1Store } from "@/store";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { extractSheetUID, getSheetStatement, sheetNameOfSpec } from "@/utils";
 
 // Hook to validate all specs in a plan
-export const useSpecsValidation = (specs: Plan_Spec[]) => {
+export const useSpecsValidation = (specs: Plan_Spec[] | Ref<Plan_Spec[]>) => {
   const sheetStore = useSheetV1Store();
   const validationMap = ref(new Map<string, boolean>());
 
@@ -43,11 +43,12 @@ export const useSpecsValidation = (specs: Plan_Spec[]) => {
   };
 
   watchEffect(async () => {
+    const currentSpecs = unref(specs);
     const newMap = new Map<string, boolean>();
 
     // Check all specs
     await Promise.all(
-      specs.map(async (spec) => {
+      currentSpecs.map(async (spec) => {
         const isEmpty = await checkSpecStatement(spec);
         newMap.set(spec.id, isEmpty);
       })

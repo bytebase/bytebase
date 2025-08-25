@@ -13,7 +13,7 @@
       </div>
     </div>
     <div v-if="showDescriptionInput" class="flex flex-col mt-2">
-      <label class="block text-sm text-control mb-1">
+      <label class="block text-sm text-control-light mb-1">
         {{ $t("plan.description.add-a-description") }}
       </label>
       <DescriptionInput />
