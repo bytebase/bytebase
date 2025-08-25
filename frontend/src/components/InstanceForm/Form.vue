@@ -759,7 +759,6 @@ const changeInstanceActivation = async (on: boolean) => {
 };
 
 const handleSelectEnvironment = (name: string | undefined) => {
-  if (!isValidEnvironmentName(name)) return;
   basicInfo.value.environment = name;
 };
 
