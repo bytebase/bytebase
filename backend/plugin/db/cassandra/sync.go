@@ -68,13 +68,19 @@ type primaryKey struct {
 	position        int
 }
 
+type columnOrderInfo struct {
+	column   *storepb.ColumnMetadata
+	kind     string // "partition_key", "clustering", or "regular"
+	position int    // Position within partition/clustering keys
+}
+
 func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	schemaMetadata := &storepb.SchemaMetadata{
 		Name: "",
 	}
 
 	tablePKMap := map[string][]primaryKey{}
-	columnMap := map[string][]*storepb.ColumnMetadata{}
+	columnOrderMap := map[string][]columnOrderInfo{}
 	columnScanner := d.session.Query(`
 		SELECT
 			table_name,
@@ -85,7 +91,6 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			type
 		FROM system_schema.columns
 		WHERE keyspace_name = ?
-		ORDER BY table_name, column_name
 	`, d.config.ConnectionContext.DatabaseName).WithContext(ctx).Iter().Scanner()
 	for columnScanner.Next() {
 		var tableName, columnName, kind, clusteringOrder, columnType string
@@ -100,10 +105,14 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan column")
 		}
-		columnMap[tableName] = append(columnMap[tableName], &storepb.ColumnMetadata{
-			Name:     columnName,
-			Type:     columnType,
-			Nullable: true,
+		columnOrderMap[tableName] = append(columnOrderMap[tableName], columnOrderInfo{
+			column: &storepb.ColumnMetadata{
+				Name:     columnName,
+				Type:     columnType,
+				Nullable: true,
+			},
+			kind:     kind,
+			position: position,
 		})
 		if kind != "regular" {
 			tablePKMap[tableName] = append(tablePKMap[tableName], primaryKey{
@@ -116,6 +125,52 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 	if err := columnScanner.Err(); err != nil {
 		return nil, errors.Wrapf(err, "column scanner err")
+	}
+
+	// Sort columns to match Cassandra's SELECT * order:
+	// 1. Partition keys (by position)
+	// 2. Clustering keys (by position)
+	// 3. Regular columns (alphabetically)
+	// This ensures masking is applied to the correct columns.
+	for tableName, columns := range columnOrderMap {
+		slices.SortFunc(columns, func(a, b columnOrderInfo) int {
+			// Primary key columns come before regular columns
+			aPrimary := (a.kind == "partition_key" || a.kind == "clustering")
+			bPrimary := (b.kind == "partition_key" || b.kind == "clustering")
+
+			if aPrimary && !bPrimary {
+				return -1
+			}
+			if !aPrimary && bPrimary {
+				return 1
+			}
+
+			// Within primary key columns, sort by type then position
+			if aPrimary && bPrimary {
+				// Partition keys before clustering keys
+				if a.kind == "partition_key" && b.kind == "clustering" {
+					return -1
+				}
+				if a.kind == "clustering" && b.kind == "partition_key" {
+					return 1
+				}
+				// Within same type, sort by position
+				if a.position < b.position {
+					return -1
+				}
+				if a.position > b.position {
+					return 1
+				}
+			}
+
+			// Regular columns are sorted alphabetically
+			if !aPrimary && !bPrimary {
+				return strings.Compare(a.column.Name, b.column.Name)
+			}
+
+			return 0
+		})
+		columnOrderMap[tableName] = columns
 	}
 
 	indexMap := map[string][]*storepb.IndexMetadata{}
@@ -189,10 +244,16 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			Definition:  getPKDefinition(pks),
 		}
 
+		// Extract the sorted column metadata
+		var sortedColumns []*storepb.ColumnMetadata
+		for _, colInfo := range columnOrderMap[tableName] {
+			sortedColumns = append(sortedColumns, colInfo.column)
+		}
+
 		table := &storepb.TableMetadata{
 			Name:    tableName,
 			Comment: comment,
-			Columns: columnMap[tableName],
+			Columns: sortedColumns,
 		}
 		table.Indexes = append(table.Indexes, pk)
 		table.Indexes = append(table.Indexes, indexMap[tableName]...)
