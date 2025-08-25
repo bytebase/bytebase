@@ -55,7 +55,7 @@ const sheetStore = useSheetV1Store();
 const loading = ref(false);
 
 // Use the validation hook for all specs
-const { isSpecEmpty } = useSpecsValidation(plan.value.specs);
+const { isSpecEmpty } = useSpecsValidation(computed(() => plan.value.specs));
 
 const planCreateErrorList = computed(() => {
   const errorList: string[] = [];

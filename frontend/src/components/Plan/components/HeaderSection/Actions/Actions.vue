@@ -91,7 +91,7 @@ const policyV1Store = usePolicyV1Store();
 const editorState = useEditorState();
 
 // Use the validation hook for all specs
-const { isSpecEmpty } = useSpecsValidation(plan.value.specs);
+const { isSpecEmpty } = useSpecsValidation(computed(() => plan.value.specs));
 
 // Use plan check status for issue creation validation
 const {
