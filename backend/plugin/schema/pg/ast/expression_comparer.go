@@ -11,9 +11,6 @@ type ExpressionComparer interface {
 	// CompareExpressions compares two expressions for semantic equivalence
 	CompareExpressions(expr1, expr2 string) (bool, error)
 
-	// NormalizeExpression normalizes expression to canonical form
-	NormalizeExpression(expr string) (string, error)
-
 	// ParseExpressionAST parses expression into AST
 	ParseExpressionAST(expr string) (ExpressionAST, error)
 }
@@ -220,21 +217,6 @@ func (c *PostgreSQLExpressionComparer) CompareExpressionListsUnordered(exprs1, e
 	return true, nil
 }
 
-// NormalizeExpressionList normalizes a list of expressions
-func (c *PostgreSQLExpressionComparer) NormalizeExpressionList(exprs []string) ([]string, error) {
-	var normalized []string
-
-	for _, expr := range exprs {
-		norm, err := c.NormalizeExpression(expr)
-		if err != nil {
-			return nil, err
-		}
-		normalized = append(normalized, norm)
-	}
-
-	return normalized, nil
-}
-
 // ValidateExpression validates an expression for correctness
 func (c *PostgreSQLExpressionComparer) ValidateExpression(expr string) error {
 	if strings.TrimSpace(expr) == "" {
@@ -419,16 +401,6 @@ func CompareExpressionsSemantically(expr1, expr2 string) bool {
 		return false
 	}
 	return result
-}
-
-// NormalizeExpressionForComparison normalizes expression using default configuration
-func NormalizeExpressionForComparison(expr string) string {
-	comparer := NewPostgreSQLExpressionComparer()
-	normalized, err := comparer.NormalizeExpression(expr)
-	if err != nil {
-		return expr // return original if normalization fails
-	}
-	return normalized
 }
 
 // CreatePostgreSQLExpressionComparer creates a PostgreSQL expression comparer with default settings

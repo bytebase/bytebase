@@ -207,91 +207,6 @@ func TestPostgreSQLExpressionComparer_CompareExpressions(t *testing.T) {
 	}
 }
 
-func TestPostgreSQLExpressionComparer_NormalizeExpression(t *testing.T) {
-	comparer := NewPostgreSQLExpressionComparer()
-
-	tests := []struct {
-		name     string
-		expr     string
-		expected string
-		error    bool
-	}{
-		{
-			name:     "simple identifier",
-			expr:     "column_name",
-			expected: "column_name",
-		},
-		{
-			name:     "case normalization",
-			expr:     "Column_Name",
-			expected: "column_name",
-		},
-		{
-			name:     "remove public schema",
-			expr:     "public.table.column",
-			expected: "table.column",
-		},
-		{
-			name:     "preserve non-public schema",
-			expr:     "myschema.table.column",
-			expected: "myschema.table.column",
-		},
-		{
-			name:     "normalize operators",
-			expr:     "a != b",
-			expected: "a <> b",
-		},
-		{
-			name:     "remove irrelevant parentheses",
-			expr:     "(column_name)",
-			expected: "column_name",
-		},
-		{
-			name:     "function call normalization",
-			expr:     "UPPER(Column)",
-			expected: "upper(column)",
-		},
-		{
-			name:     "complex expression",
-			expr:     "public.table.col1 = table2.col2 AND Status = 'ACTIVE'",
-			expected: "'ACTIVE' = status AND table.col1 = table2.col2", // commutative operators may be reordered
-		},
-		{
-			name:     "empty expression",
-			expr:     "",
-			expected: "",
-		},
-		{
-			name:     "whitespace only",
-			expr:     "   ",
-			expected: "",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			result, err := comparer.NormalizeExpression(test.expr)
-
-			if test.error {
-				if err == nil {
-					t.Error("Expected error but got none")
-				}
-				return
-			}
-
-			if err != nil {
-				t.Errorf("Unexpected error: %v", err)
-				return
-			}
-
-			if result != test.expected {
-				t.Errorf("Expected '%s', got '%s' for normalizing '%s'",
-					test.expected, result, test.expr)
-			}
-		})
-	}
-}
-
 func TestPostgreSQLExpressionComparer_CompareExpressionLists(t *testing.T) {
 	comparer := NewPostgreSQLExpressionComparer()
 
@@ -573,41 +488,6 @@ func TestCompareExpressionsSemantically(t *testing.T) {
 	}
 }
 
-func TestNormalizeExpressionForComparison(t *testing.T) {
-	tests := []struct {
-		name     string
-		expr     string
-		expected string
-	}{
-		{
-			name:     "simple identifier",
-			expr:     "Column_Name",
-			expected: "column_name",
-		},
-		{
-			name:     "remove public schema",
-			expr:     "public.table.column",
-			expected: "table.column",
-		},
-		{
-			name:     "normalize operators",
-			expr:     "a != b",
-			expected: "a <> b",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			result := NormalizeExpressionForComparison(test.expr)
-
-			if result != test.expected {
-				t.Errorf("Expected '%s', got '%s' for normalizing '%s'",
-					test.expected, result, test.expr)
-			}
-		})
-	}
-}
-
 func TestPostgreSQLExpressionComparer_WithConfig(t *testing.T) {
 	// Test case-sensitive configuration
 	comparer := NewPostgreSQLExpressionComparer().WithConfig(true, true, true, true)
@@ -643,14 +523,5 @@ func BenchmarkCompareExpressionsSemantically(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		CompareExpressionsSemantically(expr1, expr2)
-	}
-}
-
-func BenchmarkNormalizeExpressionForComparison(b *testing.B) {
-	expr := "public.table1.column1 = table2.column2 AND Status = 'ACTIVE'"
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		NormalizeExpressionForComparison(expr)
 	}
 }
