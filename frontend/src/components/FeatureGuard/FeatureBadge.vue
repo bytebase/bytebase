@@ -30,10 +30,10 @@
           :to="autoSubscriptionRoute($router)"
           exact-active-class=""
         >
-          <heroicons-solid:sparkles class="w-5 h-5" />
+          <SparklesIcon class="w-5 h-5" />
         </router-link>
         <span v-else>
-          <heroicons-solid:sparkles class="w-5 h-5" />
+          <SparklesIcon class="w-5 h-5" />
         </span>
       </template>
       <span class="w-56 text-sm">
@@ -57,6 +57,7 @@
 </template>
 
 <script lang="ts" setup>
+import { SparklesIcon } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useSubscriptionV1Store } from "@/store";
