@@ -68,16 +68,23 @@ func (p *ExpressionParser) parseExpressionTokens(tokens []antlr.Token, start, en
 		return nil, nil
 	}
 
-	// Handle parentheses
+	// Handle parentheses - only if they truly wrap the entire expression
 	if tokens[start].GetText() == "(" && tokens[end-1].GetText() == ")" {
-		// Check if parentheses are balanced and wrap the entire expression
-		if p.isBalancedParentheses(tokens, start, end) {
+		// Check if the opening parenthesis has a matching closing parenthesis at the end
+		// AND there are no other top-level operators outside these parentheses
+		if p.isBalancedParentheses(tokens, start, end) && p.parenthesesWrapEntireExpression(tokens, start, end) {
 			inner, err := p.parseExpressionTokens(tokens, start+1, end-1)
 			if err != nil {
 				return nil, err
 			}
 			return &ParenthesesExpr{Inner: inner}, nil
 		}
+	}
+
+	// Check for expression lists (comma-separated expressions)
+	// Only parse as list if there are actually commas at the top level
+	if listExpr := p.parseExpressionList(tokens, start, end); listExpr != nil {
+		return listExpr, nil
 	}
 
 	// Find binary operators (precedence handling)
@@ -116,15 +123,311 @@ func (p *ExpressionParser) parseExpressionTokens(tokens []antlr.Token, start, en
 	}, nil
 }
 
+// parseMultiKeywordOperators parses multi-keyword operators like IS NULL, BETWEEN...AND, etc.
+func (p *ExpressionParser) parseMultiKeywordOperators(tokens []antlr.Token, start, end int) ExpressionAST {
+	// Look for CASE expressions first (they are most complex)
+	if caseExpr := p.parseCaseExpression(tokens, start, end); caseExpr != nil {
+		return caseExpr
+	}
+
+	// Look for IS NULL / IS NOT NULL patterns
+	if nullExpr := p.parseIsNullOperator(tokens, start, end); nullExpr != nil {
+		return nullExpr
+	}
+
+	// Look for BETWEEN...AND patterns
+	return p.parseBetweenOperator(tokens, start, end)
+}
+
+// parseCaseExpression parses CASE WHEN...THEN...ELSE...END expressions
+func (p *ExpressionParser) parseCaseExpression(tokens []antlr.Token, start, end int) ExpressionAST {
+	// Look for CASE...END pattern
+	if start < end && strings.ToUpper(tokens[start].GetText()) == "CASE" &&
+		strings.ToUpper(tokens[end-1].GetText()) == "END" {
+		// Parse the CASE expression content between CASE and END
+		var caseArgs []ExpressionAST
+
+		// Add a marker to identify this as a CASE expression
+		caseArgs = append(caseArgs, &LiteralExpr{Value: "CASE", ValueType: "keyword"})
+
+		// Parse WHEN...THEN pairs and optional ELSE
+		i := start + 1
+		for i < end-1 {
+			tokenText := strings.ToUpper(tokens[i].GetText())
+
+			if tokenText == "WHEN" {
+				// Find the corresponding THEN
+				thenPos := -1
+				parenLevel := 0
+				for j := i + 1; j < end-1; j++ {
+					if tokens[j].GetText() == "(" {
+						parenLevel++
+					} else if tokens[j].GetText() == ")" {
+						parenLevel--
+					} else if parenLevel == 0 && strings.ToUpper(tokens[j].GetText()) == "THEN" {
+						thenPos = j
+						break
+					}
+				}
+
+				if thenPos != -1 {
+					// Parse condition between WHEN and THEN
+					condition, _ := p.parseExpressionTokens(tokens, i+1, thenPos)
+					if condition != nil {
+						caseArgs = append(caseArgs, condition)
+					}
+
+					// Find the next WHEN, ELSE, or END to determine the THEN value range
+					nextPos := end - 1 // default to END
+					parenLevel = 0
+					for j := thenPos + 1; j < end-1; j++ {
+						if tokens[j].GetText() == "(" {
+							parenLevel++
+						} else if tokens[j].GetText() == ")" {
+							parenLevel--
+						} else if parenLevel == 0 {
+							nextToken := strings.ToUpper(tokens[j].GetText())
+							if nextToken == "WHEN" || nextToken == "ELSE" {
+								nextPos = j
+								break
+							}
+						}
+					}
+
+					// Parse value between THEN and next keyword
+					value, _ := p.parseExpressionTokens(tokens, thenPos+1, nextPos)
+					if value != nil {
+						caseArgs = append(caseArgs, value)
+					}
+
+					i = nextPos
+				} else {
+					i++
+				}
+			} else if tokenText == "ELSE" {
+				// Parse ELSE value (everything from ELSE to END)
+				elseValue, _ := p.parseExpressionTokens(tokens, i+1, end-1)
+				if elseValue != nil {
+					caseArgs = append(caseArgs, elseValue)
+				}
+				break
+			} else {
+				i++
+			}
+		}
+
+		return &FunctionExpr{
+			Name: "CASE",
+			Args: caseArgs,
+		}
+	}
+
+	return nil
+}
+
+// parseIsNullOperator parses IS NULL and IS NOT NULL operators
+func (p *ExpressionParser) parseIsNullOperator(tokens []antlr.Token, start, end int) ExpressionAST {
+	// Look for IS NULL pattern (minimum 3 tokens: operand IS NULL)
+	for i := start + 1; i < end-1; i++ {
+		if p.getParenthesesLevel(tokens, start, i) == 0 {
+			isToken := strings.ToUpper(tokens[i].GetText())
+
+			if isToken == "IS" {
+				// Check for IS NOT NULL (4 tokens after IS)
+				if i+2 < end {
+					notToken := strings.ToUpper(tokens[i+1].GetText())
+					nullToken := strings.ToUpper(tokens[i+2].GetText())
+
+					if notToken == "NOT" && nullToken == "NULL" {
+						// Parse: operand IS NOT NULL
+						left, _ := p.parseExpressionTokens(tokens, start, i)
+						if left != nil {
+							return &BinaryOpExpr{
+								Left:     left,
+								Operator: "IS NOT NULL",
+								Right:    &LiteralExpr{Value: "NULL", ValueType: "null"},
+							}
+						}
+					}
+				}
+
+				// Check for IS NULL (2 tokens after IS)
+				if i+1 < end {
+					nullToken := strings.ToUpper(tokens[i+1].GetText())
+
+					if nullToken == "NULL" {
+						// Parse: operand IS NULL
+						left, _ := p.parseExpressionTokens(tokens, start, i)
+						if left != nil {
+							return &BinaryOpExpr{
+								Left:     left,
+								Operator: "IS NULL",
+								Right:    &LiteralExpr{Value: "NULL", ValueType: "null"},
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// parseBetweenOperator parses BETWEEN...AND operators
+func (p *ExpressionParser) parseBetweenOperator(tokens []antlr.Token, start, end int) ExpressionAST {
+	// Look for BETWEEN pattern (minimum 5 tokens: operand BETWEEN value1 AND value2)
+	for i := start + 1; i < end-3; i++ {
+		if p.getParenthesesLevel(tokens, start, i) == 0 {
+			betweenToken := strings.ToUpper(tokens[i].GetText())
+
+			if betweenToken == "BETWEEN" {
+				// Find the AND keyword
+				for j := i + 2; j < end-1; j++ {
+					if p.getParenthesesLevel(tokens, i+1, j) == 0 {
+						andToken := strings.ToUpper(tokens[j].GetText())
+
+						if andToken == "AND" {
+							// Parse: operand BETWEEN value1 AND value2
+							left, _ := p.parseExpressionTokens(tokens, start, i)
+							value1, _ := p.parseExpressionTokens(tokens, i+1, j)
+							value2, _ := p.parseExpressionTokens(tokens, j+1, end)
+
+							if left != nil && value1 != nil && value2 != nil {
+								// Create a special function-like expression for BETWEEN
+								return &FunctionExpr{
+									Name: "BETWEEN",
+									Args: []ExpressionAST{left, value1, value2},
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// parseExpressionList parses comma-separated expression lists
+func (p *ExpressionParser) parseExpressionList(tokens []antlr.Token, start, end int) ExpressionAST {
+	// Look for comma separators at the top level (not inside parentheses)
+	var commaPositions []int
+	parenLevel := 0
+
+	for i := start; i < end; i++ {
+		tokenText := tokens[i].GetText()
+		if tokenText == "(" {
+			parenLevel++
+		} else if tokenText == ")" {
+			parenLevel--
+		} else if tokenText == "," && parenLevel == 0 {
+			commaPositions = append(commaPositions, i)
+		}
+	}
+
+	// If we found commas at the top level, parse as expression list
+	if len(commaPositions) > 0 {
+		var elements []ExpressionAST
+
+		// Parse elements between commas, but use a non-recursive approach for list elements
+		prevPos := start
+		for _, commaPos := range commaPositions {
+			if commaPos > prevPos {
+				element := p.parseNonListExpression(tokens, prevPos, commaPos)
+				if element != nil {
+					elements = append(elements, element)
+				}
+			}
+			prevPos = commaPos + 1
+		}
+
+		// Parse last element
+		if prevPos < end {
+			element := p.parseNonListExpression(tokens, prevPos, end)
+			if element != nil {
+				elements = append(elements, element)
+			}
+		}
+
+		if len(elements) > 1 {
+			return &ListExpr{Elements: elements}
+		}
+	}
+
+	return nil
+}
+
+// parseNonListExpression parses expressions but excludes list parsing to avoid infinite recursion
+func (p *ExpressionParser) parseNonListExpression(tokens []antlr.Token, start, end int) ExpressionAST {
+	if start >= end {
+		return nil
+	}
+
+	// Handle parentheses
+	if tokens[start].GetText() == "(" && tokens[end-1].GetText() == ")" {
+		// Check if parentheses are balanced and wrap the entire expression
+		if p.isBalancedParentheses(tokens, start, end) {
+			inner := p.parseNonListExpression(tokens, start+1, end-1)
+			if inner != nil {
+				return &ParenthesesExpr{Inner: inner}
+			}
+		}
+	}
+
+	// Find binary operators (precedence handling)
+	if binaryExpr := p.parseBinaryOperation(tokens, start, end); binaryExpr != nil {
+		return binaryExpr
+	}
+
+	// Find unary operators
+	if unaryExpr := p.parseUnaryOperation(tokens, start, end); unaryExpr != nil {
+		return unaryExpr
+	}
+
+	// Parse function calls
+	if funcExpr := p.parseFunctionCall(tokens, start, end); funcExpr != nil {
+		return funcExpr
+	}
+
+	// Parse single token (identifier or literal)
+	if end-start == 1 {
+		result, _ := p.parseSingleToken(tokens[start])
+		return result
+	}
+
+	// Parse qualified identifier (schema.table.column)
+	if qualifiedExpr := p.parseQualifiedIdentifier(tokens, start, end); qualifiedExpr != nil {
+		return qualifiedExpr
+	}
+
+	// Fallback: create a literal expression with the concatenated text
+	var parts []string
+	for i := start; i < end; i++ {
+		parts = append(parts, tokens[i].GetText())
+	}
+	return &LiteralExpr{
+		Value:     strings.Join(parts, " "),
+		ValueType: "unknown",
+	}
+}
+
 // parseBinaryOperation parses binary operations with precedence
 func (p *ExpressionParser) parseBinaryOperation(tokens []antlr.Token, start, end int) ExpressionAST {
+	// Check for multi-keyword operators first
+	if multiKeywordExpr := p.parseMultiKeywordOperators(tokens, start, end); multiKeywordExpr != nil {
+		return multiKeywordExpr
+	}
+
 	// Precedence levels (lowest to highest)
 	precedenceLevels := [][]string{
 		{"OR", "||"}, // lowest precedence
 		{"AND", "&&"},
 		{"=", "<>", "!=", "<", ">", "<=", ">=", "LIKE", "ILIKE"},
 		{"+", "-"},
-		{"*", "/", "%"}, // highest precedence
+		{"*", "/", "%"},
+		{"::"}, // type cast has high precedence
 	}
 
 	// Find operators from lowest to highest precedence
@@ -176,6 +479,11 @@ func (p *ExpressionParser) parseUnaryOperation(tokens []antlr.Token, start, end 
 
 // parseFunctionCall parses function calls
 func (p *ExpressionParser) parseFunctionCall(tokens []antlr.Token, start, end int) ExpressionAST {
+	// Check for special EXTRACT function first
+	if extractExpr := p.parseExtractFunction(tokens, start, end); extractExpr != nil {
+		return extractExpr
+	}
+
 	// Look for pattern: identifier ( args )
 	for i := start; i < end-1; i++ {
 		if tokens[i+1].GetText() == "(" {
@@ -208,6 +516,49 @@ func (p *ExpressionParser) parseFunctionCall(tokens []antlr.Token, start, end in
 					Schema: funcName.Schema,
 					Name:   funcName.Name,
 					Args:   args,
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// parseExtractFunction parses EXTRACT(field FROM source) function calls
+func (p *ExpressionParser) parseExtractFunction(tokens []antlr.Token, start, end int) ExpressionAST {
+	// Look for EXTRACT( pattern
+	if start < end-1 &&
+		strings.ToUpper(tokens[start].GetText()) == "EXTRACT" &&
+		tokens[start+1].GetText() == "(" {
+		// Find matching closing parenthesis
+		parenLevel := 0
+		closeParenPos := -1
+		for j := start + 1; j < end; j++ {
+			if tokens[j].GetText() == "(" {
+				parenLevel++
+			} else if tokens[j].GetText() == ")" {
+				parenLevel--
+				if parenLevel == 0 {
+					closeParenPos = j
+					break
+				}
+			}
+		}
+
+		if closeParenPos == end-1 { // EXTRACT call spans the entire range
+			// Look for FROM keyword inside parentheses
+			for k := start + 2; k < closeParenPos-1; k++ {
+				if strings.ToUpper(tokens[k].GetText()) == "FROM" {
+					// Parse: EXTRACT(field FROM source)
+					field, _ := p.parseExpressionTokens(tokens, start+2, k)
+					source, _ := p.parseExpressionTokens(tokens, k+1, closeParenPos)
+
+					if field != nil && source != nil {
+						return &FunctionExpr{
+							Name: "EXTRACT",
+							Args: []ExpressionAST{field, source},
+						}
+					}
 				}
 			}
 		}
@@ -268,6 +619,11 @@ func (p *ExpressionParser) parseQualifiedIdentifier(tokens []antlr.Token, start,
 // parseSingleToken parses a single token into an expression
 func (p *ExpressionParser) parseSingleToken(token antlr.Token) (ExpressionAST, error) {
 	tokenText := token.GetText()
+
+	// Check if it's a quoted identifier (PostgreSQL uses double quotes for identifiers)
+	if p.isQuotedIdentifier(tokenText) {
+		return &IdentifierExpr{Name: tokenText}, nil
+	}
 
 	// Check if it's a literal
 	if p.isStringLiteral(tokenText) {
@@ -358,6 +714,32 @@ func (*ExpressionParser) isBalancedParentheses(tokens []antlr.Token, start, end 
 	return level == 0
 }
 
+// parenthesesWrapEntireExpression checks if parentheses at start/end truly wrap the entire expression
+func (*ExpressionParser) parenthesesWrapEntireExpression(tokens []antlr.Token, start, end int) bool {
+	if start >= end-1 || tokens[start].GetText() != "(" || tokens[end-1].GetText() != ")" {
+		return false
+	}
+
+	// Find the matching closing parenthesis for the opening parenthesis at start
+	level := 0
+	matchingClosePos := -1
+
+	for i := start; i < end; i++ {
+		if tokens[i].GetText() == "(" {
+			level++
+		} else if tokens[i].GetText() == ")" {
+			level--
+			if level == 0 {
+				matchingClosePos = i
+				break
+			}
+		}
+	}
+
+	// If the matching closing parenthesis is at the end, then parentheses wrap entire expression
+	return matchingClosePos == end-1
+}
+
 // isIdentifierToken checks if token is an identifier
 func (*ExpressionParser) isIdentifierToken(token antlr.Token) bool {
 	tokenText := token.GetText()
@@ -382,11 +764,16 @@ func (*ExpressionParser) isIdentifierToken(token antlr.Token) bool {
 	return false
 }
 
-// isStringLiteral checks if token is a string literal
+// isStringLiteral checks if token is a string literal (single quotes in PostgreSQL)
 func (*ExpressionParser) isStringLiteral(tokenText string) bool {
 	return len(tokenText) >= 2 &&
-		((tokenText[0] == '\'' && tokenText[len(tokenText)-1] == '\'') ||
-			(tokenText[0] == '"' && tokenText[len(tokenText)-1] == '"'))
+		tokenText[0] == '\'' && tokenText[len(tokenText)-1] == '\''
+}
+
+// isQuotedIdentifier checks if token is a quoted identifier (double quotes in PostgreSQL)
+func (*ExpressionParser) isQuotedIdentifier(tokenText string) bool {
+	return len(tokenText) >= 2 &&
+		tokenText[0] == '"' && tokenText[len(tokenText)-1] == '"'
 }
 
 // isNumericLiteral checks if token is numeric
