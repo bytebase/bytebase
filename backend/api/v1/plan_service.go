@@ -447,7 +447,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 							break
 						}
 						if oldConfig.Type != newConfig.Type {
-							// Task type changed.
+							// Spec type changed.
 							planCheckRunsTrigger = true
 							break
 						}
