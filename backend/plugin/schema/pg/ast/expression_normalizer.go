@@ -187,11 +187,27 @@ func (v *normalizationVisitor) normalizeIdentifier(identifier string) string {
 		return ""
 	}
 
-	// Handle quoted identifiers - preserve exact case
+	// Handle quoted identifiers
 	if v.isQuotedIdentifier(identifier) {
+		// Remove quotes and get the actual identifier
+		unquoted := identifier[1 : len(identifier)-1]
+
+		// In PostgreSQL, if a quoted identifier is all lowercase,
+		// it's equivalent to the unquoted version
+		if strings.ToLower(unquoted) == unquoted {
+			// If quoted identifier is all lowercase, normalize as unquoted
+			return v.normalizeUnquotedIdentifier(unquoted)
+		}
+
+		// Otherwise, preserve the quoted form for case-sensitive comparison
 		return identifier
 	}
 
+	return v.normalizeUnquotedIdentifier(identifier)
+}
+
+// normalizeUnquotedIdentifier normalizes unquoted identifiers
+func (v *normalizationVisitor) normalizeUnquotedIdentifier(identifier string) string {
 	// For unquoted identifiers, apply case normalization
 	if v.normalizer.CaseSensitive {
 		return identifier
@@ -201,8 +217,13 @@ func (v *normalizationVisitor) normalizeIdentifier(identifier string) string {
 }
 
 // normalizeFunctionName normalizes function names
-func (*normalizationVisitor) normalizeFunctionName(name string) string {
-	// Function names are case-insensitive in PostgreSQL
+func (v *normalizationVisitor) normalizeFunctionName(name string) string {
+	// Handle quoted function names - preserve exact case
+	if v.isQuotedIdentifier(name) {
+		return name
+	}
+
+	// Function names are case-insensitive in PostgreSQL for unquoted names
 	return strings.ToLower(name)
 }
 
@@ -241,27 +262,58 @@ func (*normalizationVisitor) shouldSwapOperands(left, right ExpressionAST) bool 
 // isSignificantParentheses determines if parentheses are semantically significant
 func (*normalizationVisitor) isSignificantParentheses(expr *ParenthesesExpr) bool {
 	// Parentheses are significant if they change operator precedence or grouping
-	// For now, we use a simple heuristic - this could be made more sophisticated
 
 	inner := expr.Inner
 	if inner == nil {
 		return false
 	}
 
-	// Parentheses around binary operations might be significant for precedence
-	if _, isBinaryOp := inner.(*BinaryOpExpr); isBinaryOp {
-		// Could analyze the context to determine if parentheses change precedence
-		// For now, be conservative and keep them
-		return true
-	}
-
-	// Parentheses around simple identifiers or literals are usually not significant
+	// Parentheses around simple identifiers or literals are never significant
+	// This is the key insight: (name) and name are always semantically equivalent
 	switch inner.(type) {
 	case *IdentifierExpr, *LiteralExpr:
 		return false
-	default:
-		return true // be conservative
 	}
+
+	// Parentheses around binary operations might be significant for precedence
+	if binaryOp, isBinaryOp := inner.(*BinaryOpExpr); isBinaryOp {
+		// For most practical cases in filter expressions, parentheses around
+		// high-precedence operators (=, <>, <, >, etc.) are not significant
+		// when used with lower-precedence operators (AND, OR)
+		op := strings.ToUpper(binaryOp.Operator)
+
+		// High precedence comparison operators usually don't need parentheses
+		highPrecedenceOps := map[string]bool{
+			"=":           true,
+			"<>":          true,
+			"!=":          true,
+			"<":           true,
+			">":           true,
+			"<=":          true,
+			">=":          true,
+			"LIKE":        true,
+			"ILIKE":       true,
+			"IS NULL":     true,
+			"IS NOT NULL": true,
+			"::":          true, // Type cast operator
+		}
+
+		if highPrecedenceOps[op] {
+			return false // These operators have high precedence, parentheses usually not needed
+		}
+
+		// For AND/OR operators, parentheses might be significant for grouping
+		// But in simple cases like (A AND B) vs A AND B, they're not significant
+		if op == "AND" || op == "OR" {
+			return false // Allow AND/OR to be ungrouped for simple cases
+		}
+
+		// Be conservative for other operators
+		return true
+	}
+
+	// Be conservative for other expression types (functions, etc.)
+	return true
 }
 
 // isQuotedIdentifier checks if an identifier is quoted
