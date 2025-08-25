@@ -425,8 +425,8 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to validate plan specs, error: %v", err))
 			}
 
-			// Trigger plan checks if there are any spec additions/removals.
-			if len(added) > 0 || len(removed) > 0 {
+			// Trigger plan checks if there are any spec additions.
+			if len(added) > 0 {
 				planCheckRunsTrigger = true
 			}
 
@@ -436,7 +436,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			}
 
 			// Check for spec option and sheet changes that require plan check re-runs.
-			if !planCheckRunsTrigger {
+			if !planCheckRunsTrigger && len(updated) > 0 {
 				for _, specPatch := range updated {
 					oldSpec := oldSpecsByID[specPatch.Id]
 					if specPatch.GetChangeDatabaseConfig() != nil && oldSpec.GetChangeDatabaseConfig() != nil {
