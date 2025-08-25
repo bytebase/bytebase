@@ -5,7 +5,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/schema/pg/ast"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -390,7 +389,7 @@ func compareSchemaObjects(engine storepb.Engine, diff *MetadataDiff, schemaName 
 			// Compare table details
 			oldTable := oldSchema.GetTable(tableName)
 			if oldTable != nil && !oldTable.GetProto().GetSkipDump() {
-				tableDiff := compareTableDetails(schemaName, tableName, oldTable, newTable)
+				tableDiff := compareTableDetails(engine, schemaName, tableName, oldTable, newTable)
 				if tableDiff != nil {
 					diff.TableChanges = append(diff.TableChanges, tableDiff)
 				}
@@ -421,7 +420,7 @@ func compareSchemaObjects(engine storepb.Engine, diff *MetadataDiff, schemaName 
 }
 
 // compareTableDetails compares the details of two tables.
-func compareTableDetails(schemaName, tableName string, oldTable, newTable *model.TableMetadata) *TableDiff {
+func compareTableDetails(engine storepb.Engine, schemaName, tableName string, oldTable, newTable *model.TableMetadata) *TableDiff {
 	tableDiff := &TableDiff{
 		Action:     MetadataDiffActionAlter,
 		SchemaName: schemaName,
@@ -433,14 +432,14 @@ func compareTableDetails(schemaName, tableName string, oldTable, newTable *model
 	hasChanges := false
 
 	// Compare columns
-	columnChanges := compareColumns(oldTable, newTable)
+	columnChanges := compareColumns(engine, oldTable, newTable)
 	if len(columnChanges) > 0 {
 		tableDiff.ColumnChanges = columnChanges
 		hasChanges = true
 	}
 
 	// Compare indexes
-	indexChanges := compareIndexes(oldTable, newTable)
+	indexChanges := compareIndexes(engine, oldTable, newTable)
 	if len(indexChanges) > 0 {
 		tableDiff.IndexChanges = indexChanges
 		hasChanges = true
@@ -454,14 +453,14 @@ func compareTableDetails(schemaName, tableName string, oldTable, newTable *model
 	}
 
 	// Compare check constraints
-	checkChanges := compareCheckConstraints(oldTable.GetProto().CheckConstraints, newTable.GetProto().CheckConstraints)
+	checkChanges := compareCheckConstraints(engine, oldTable.GetProto().CheckConstraints, newTable.GetProto().CheckConstraints)
 	if len(checkChanges) > 0 {
 		tableDiff.CheckConstraintChanges = checkChanges
 		hasChanges = true
 	}
 
 	// Compare partitions
-	partitionChanges := comparePartitions(oldTable.GetProto().Partitions, newTable.GetProto().Partitions)
+	partitionChanges := comparePartitions(engine, oldTable.GetProto().Partitions, newTable.GetProto().Partitions)
 	if len(partitionChanges) > 0 {
 		tableDiff.PartitionChanges = partitionChanges
 		hasChanges = true
@@ -487,7 +486,7 @@ func compareTableDetails(schemaName, tableName string, oldTable, newTable *model
 }
 
 // compareColumns compares columns between two tables.
-func compareColumns(oldTable, newTable *model.TableMetadata) []*ColumnDiff {
+func compareColumns(engine storepb.Engine, oldTable, newTable *model.TableMetadata) []*ColumnDiff {
 	var changes []*ColumnDiff
 
 	oldColumns := oldTable.GetColumns()
@@ -511,7 +510,7 @@ func compareColumns(oldTable, newTable *model.TableMetadata) []*ColumnDiff {
 				Action:    MetadataDiffActionCreate,
 				NewColumn: newCol,
 			})
-		} else if !columnsEqual(oldCol, newCol) {
+		} else if !columnsEqual(engine, oldCol, newCol) {
 			changes = append(changes, &ColumnDiff{
 				Action:    MetadataDiffActionAlter,
 				OldColumn: oldCol,
@@ -524,7 +523,7 @@ func compareColumns(oldTable, newTable *model.TableMetadata) []*ColumnDiff {
 }
 
 // columnsEqual checks if two columns are equal.
-func columnsEqual(col1, col2 *storepb.ColumnMetadata) bool {
+func columnsEqual(engine storepb.Engine, col1, col2 *storepb.ColumnMetadata) bool {
 	if col1.Type != col2.Type {
 		return false
 	}
@@ -554,7 +553,7 @@ func columnsEqual(col1, col2 *storepb.ColumnMetadata) bool {
 		return false
 	}
 	// Compare generated column metadata
-	if !generationMetadataEqual(col1.Generation, col2.Generation) {
+	if !generationMetadataEqual(engine, col1.Generation, col2.Generation) {
 		return false
 	}
 	// Compare identity column metadata
@@ -588,18 +587,18 @@ func defaultValuesEqual(col1, col2 *storepb.ColumnMetadata) bool {
 }
 
 // generationMetadataEqual compares two generation metadata structs.
-func generationMetadataEqual(gen1, gen2 *storepb.GenerationMetadata) bool {
+func generationMetadataEqual(engine storepb.Engine, gen1, gen2 *storepb.GenerationMetadata) bool {
 	if gen1 == nil && gen2 == nil {
 		return true
 	}
 	if gen1 == nil || gen2 == nil {
 		return false
 	}
-	return gen1.Type == gen2.Type && ast.CompareExpressionsSemantically(gen1.Expression, gen2.Expression)
+	return gen1.Type == gen2.Type && CompareExpressionsSemantically(engine, gen1.Expression, gen2.Expression)
 }
 
 // compareIndexes compares indexes between two tables.
-func compareIndexes(oldTable, newTable *model.TableMetadata) []*IndexDiff {
+func compareIndexes(engine storepb.Engine, oldTable, newTable *model.TableMetadata) []*IndexDiff {
 	var changes []*IndexDiff
 
 	oldIndexes := oldTable.ListIndexes()
@@ -623,7 +622,7 @@ func compareIndexes(oldTable, newTable *model.TableMetadata) []*IndexDiff {
 				Action:   MetadataDiffActionCreate,
 				NewIndex: newIdx.GetProto(),
 			})
-		} else if !indexesEqual(oldIdx.GetProto(), newIdx.GetProto()) {
+		} else if !indexesEqual(engine, oldIdx.GetProto(), newIdx.GetProto()) {
 			// Drop the old index and recreate the new one instead of altering
 			changes = append(changes, &IndexDiff{
 				Action:   MetadataDiffActionDrop,
@@ -640,7 +639,7 @@ func compareIndexes(oldTable, newTable *model.TableMetadata) []*IndexDiff {
 }
 
 // indexesEqual checks if two indexes are equal.
-func indexesEqual(idx1, idx2 *storepb.IndexMetadata) bool {
+func indexesEqual(engine storepb.Engine, idx1, idx2 *storepb.IndexMetadata) bool {
 	if idx1.Type != idx2.Type {
 		return false
 	}
@@ -654,7 +653,7 @@ func indexesEqual(idx1, idx2 *storepb.IndexMetadata) bool {
 		return false
 	}
 	for i, expr := range idx1.Expressions {
-		if !ast.CompareExpressionsSemantically(expr, idx2.Expressions[i]) {
+		if !CompareExpressionsSemantically(engine, expr, idx2.Expressions[i]) {
 			return false
 		}
 	}
@@ -953,7 +952,7 @@ func foreignKeysEqual(fk1, fk2 *storepb.ForeignKeyMetadata) bool {
 }
 
 // compareCheckConstraints compares two lists of check constraints.
-func compareCheckConstraints(oldChecks, newChecks []*storepb.CheckConstraintMetadata) []*CheckConstraintDiff {
+func compareCheckConstraints(engine storepb.Engine, oldChecks, newChecks []*storepb.CheckConstraintMetadata) []*CheckConstraintDiff {
 	var changes []*CheckConstraintDiff
 
 	oldCheckMap := make(map[string]*storepb.CheckConstraintMetadata)
@@ -984,7 +983,7 @@ func compareCheckConstraints(oldChecks, newChecks []*storepb.CheckConstraintMeta
 				Action:             MetadataDiffActionCreate,
 				NewCheckConstraint: newCheck,
 			})
-		} else if !checkConstraintsEqual(oldCheck, newCheck) {
+		} else if !checkConstraintsEqual(engine, oldCheck, newCheck) {
 			// Drop the old constraint and recreate the new one instead of altering
 			changes = append(changes, &CheckConstraintDiff{
 				Action:             MetadataDiffActionDrop,
@@ -1001,9 +1000,9 @@ func compareCheckConstraints(oldChecks, newChecks []*storepb.CheckConstraintMeta
 }
 
 // checkConstraintsEqual checks if two check constraints are equal.
-func checkConstraintsEqual(check1, check2 *storepb.CheckConstraintMetadata) bool {
+func checkConstraintsEqual(engine storepb.Engine, check1, check2 *storepb.CheckConstraintMetadata) bool {
 	// First try semantic comparison
-	if ast.CompareExpressionsSemantically(check1.Expression, check2.Expression) {
+	if CompareExpressionsSemantically(engine, check1.Expression, check2.Expression) {
 		return true
 	}
 
@@ -1173,7 +1172,7 @@ func extractAnyValues(expr string) []string {
 }
 
 // comparePartitions compares two lists of partitions.
-func comparePartitions(oldPartitions, newPartitions []*storepb.TablePartitionMetadata) []*PartitionDiff {
+func comparePartitions(engine storepb.Engine, oldPartitions, newPartitions []*storepb.TablePartitionMetadata) []*PartitionDiff {
 	var changes []*PartitionDiff
 
 	oldPartMap := make(map[string]*storepb.TablePartitionMetadata)
@@ -1204,7 +1203,7 @@ func comparePartitions(oldPartitions, newPartitions []*storepb.TablePartitionMet
 				Action:       MetadataDiffActionCreate,
 				NewPartition: newPart,
 			})
-		} else if !partitionsEqual(oldPart, newPart) {
+		} else if !partitionsEqual(engine, oldPart, newPart) {
 			// Drop the old partition and recreate the new one instead of altering
 			changes = append(changes, &PartitionDiff{
 				Action:       MetadataDiffActionDrop,
@@ -1273,18 +1272,53 @@ func triggersEqual(t1, t2 *storepb.TriggerMetadata) bool {
 	if t1 == nil || t2 == nil {
 		return t1 == t2
 	}
-	return t1.Name == t2.Name &&
+
+	basicEqual := t1.Name == t2.Name &&
 		t1.Event == t2.Event &&
-		t1.Timing == t2.Timing &&
-		t1.Body == t2.Body
+		t1.Timing == t2.Timing
+
+	if !basicEqual {
+		return false
+	}
+
+	// Direct comparison first
+	if t1.Body == t2.Body {
+		return true
+	}
+
+	// Normalize both bodies for comparison
+	norm1 := normalizeTriggerBody(t1.Body)
+	norm2 := normalizeTriggerBody(t2.Body)
+
+	return norm1 == norm2
+}
+
+// normalizeTriggerBody normalizes trigger body for comparison
+func normalizeTriggerBody(body string) string {
+	if body == "" {
+		return ""
+	}
+
+	// Aggressive normalization: remove ALL whitespace for comparison
+	// This handles cases where ANTLR GetText() strips whitespace
+	normalized := strings.ReplaceAll(body, " ", "")
+	normalized = strings.ReplaceAll(normalized, "\r\n", "")
+	normalized = strings.ReplaceAll(normalized, "\r", "")
+	normalized = strings.ReplaceAll(normalized, "\n", "")
+	normalized = strings.ReplaceAll(normalized, "\t", "")
+
+	// Convert to uppercase for case-insensitive comparison
+	normalized = strings.ToUpper(normalized)
+
+	return normalized
 }
 
 // partitionsEqual checks if two partitions are equal.
-func partitionsEqual(part1, part2 *storepb.TablePartitionMetadata) bool {
+func partitionsEqual(engine storepb.Engine, part1, part2 *storepb.TablePartitionMetadata) bool {
 	if part1.Type != part2.Type {
 		return false
 	}
-	if !ast.CompareExpressionsSemantically(part1.Expression, part2.Expression) {
+	if !CompareExpressionsSemantically(engine, part1.Expression, part2.Expression) {
 		return false
 	}
 	if part1.Value != part2.Value {
@@ -1304,7 +1338,7 @@ func partitionsEqual(part1, part2 *storepb.TablePartitionMetadata) bool {
 	}
 	for _, sub2 := range part2.Subpartitions {
 		sub1, exists := subPart1Map[sub2.Name]
-		if !exists || !partitionsEqual(sub1, sub2) {
+		if !exists || !partitionsEqual(engine, sub1, sub2) {
 			return false
 		}
 	}
@@ -1528,7 +1562,7 @@ func compareFunctions(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 // functionsEqual checks if two functions are equal.
 func functionsEqual(fn1, fn2 *storepb.FunctionMetadata) bool {
 	if fn1.Definition != fn2.Definition {
-		// For PostgreSQL functions, try normalized comparison
+		// Try normalized comparison for PostgreSQL functions
 		norm1 := normalizePostgreSQLFunction(fn1.Definition)
 		norm2 := normalizePostgreSQLFunction(fn2.Definition)
 		if norm1 != norm2 {
@@ -1585,7 +1619,7 @@ func compareProcedures(diff *MetadataDiff, schemaName string, oldSchema, newSche
 				ProcedureName: procName,
 				NewProcedure:  newProc.GetProto(),
 			})
-		} else if !oldProc.GetProto().GetSkipDump() && oldProc.Definition != newProc.Definition {
+		} else if !oldProc.GetProto().GetSkipDump() && !procedureDefinitionsEqual(oldProc.Definition, newProc.Definition, procName) {
 			diff.ProcedureChanges = append(diff.ProcedureChanges, &ProcedureDiff{
 				Action:        MetadataDiffActionAlter,
 				SchemaName:    schemaName,
@@ -1934,4 +1968,21 @@ func normalizePostgreSQLCheckConstraint(expression string) string {
 	}
 
 	return strings.TrimSpace(expression)
+}
+
+// procedureDefinitionsEqual compares procedure definitions with normalization
+func procedureDefinitionsEqual(def1, def2, _ string) bool {
+	if def1 == def2 {
+		return true
+	}
+
+	// Try PostgreSQL normalization first
+	norm1 := normalizePostgreSQLFunction(def1)
+	norm2 := normalizePostgreSQLFunction(def2)
+	if norm1 == norm2 {
+		return true
+	}
+
+	// For other engines, fall back to simple comparison
+	return false
 }

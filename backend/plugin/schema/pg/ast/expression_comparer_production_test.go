@@ -709,16 +709,16 @@ func TestPostgreSQLExpressionComparer_BatchProcessing(t *testing.T) {
 			"(price > 0)",
 		}
 
-		normalized, err := comparer.NormalizeExpressionList(expressions)
-		require.NoError(t, err)
-		require.Len(t, normalized, len(expressions))
-
-		// Each normalized expression should be consistent
-		for i, orig := range expressions {
-			renormalized, err := comparer.NormalizeExpression(normalized[i])
+		// Each expression should parse consistently
+		for _, expr := range expressions {
+			ast, err := comparer.ParseExpressionAST(expr)
 			require.NoError(t, err)
-			require.Equal(t, normalized[i], renormalized,
-				"Normalized expression should be idempotent: %s", orig)
+			require.NotNil(t, ast, "AST should not be nil: %s", expr)
+
+			// Test semantic comparison consistency
+			equal, err := comparer.CompareExpressions(expr, expr)
+			require.NoError(t, err)
+			require.True(t, equal, "Expression should be equal to itself: %s", expr)
 		}
 	})
 }
@@ -820,10 +820,10 @@ func BenchmarkPostgreSQLExpressionComparer_ProductionScenarios(b *testing.B) {
 			}
 		})
 
-		b.Run(scenario.name+"_normalization", func(b *testing.B) {
+		b.Run(scenario.name+"_parsing", func(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				_, _ = comparer.NormalizeExpression(scenario.expr1)
+				_, _ = comparer.ParseExpressionAST(scenario.expr1)
 			}
 		})
 	}

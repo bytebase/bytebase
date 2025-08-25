@@ -512,10 +512,10 @@ func TestPostgreSQLExpressionComparer_MemoryAndPerformance(t *testing.T) {
 		require.NoError(t, err, "Should handle large expressions efficiently")
 		require.True(t, result, "Large expressions should be comparable")
 
-		// Normalization should also work
-		normalized, err := comparer.NormalizeExpression(largeExpr)
-		require.NoError(t, err, "Should normalize large expressions efficiently")
-		require.NotEmpty(t, normalized, "Normalized expression should not be empty")
+		// Parsing should also work
+		ast, err := comparer.ParseExpressionAST(largeExpr)
+		require.NoError(t, err, "Should parse large expressions efficiently")
+		require.NotNil(t, ast, "Parsed AST should not be nil")
 	})
 
 	t.Run("performance_consistency", func(t *testing.T) {
