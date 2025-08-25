@@ -6,7 +6,7 @@
     >
       <div
         :class="[
-          'px-3 py-2 cursor-pointer font-medium transition-colors',
+          'px-3 py-2 cursor-pointer transition-colors',
           state.showPreview
             ? 'text-gray-500 hover:text-gray-700'
             : 'text-gray-900 border-b-2 border-gray-900',
@@ -17,7 +17,7 @@
       </div>
       <div
         :class="[
-          'px-3 py-2 cursor-pointer font-medium transition-colors',
+          'px-3 py-2 cursor-pointer transition-colors',
           state.showPreview
             ? 'text-gray-900 border-b-2 border-gray-900'
             : 'text-gray-500 hover:text-gray-700',
