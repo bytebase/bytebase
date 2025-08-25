@@ -565,6 +565,11 @@ const confirmErrors = computed(() => {
     errors.push(t("rollout.message.pervious-stages-incomplete.description"));
   }
 
+  // Include plan check errors if not forcing rollout
+  if (props.action === "RUN" && !forceRollout.value && planCheckError.value) {
+    errors.push(planCheckError.value);
+  }
+
   if (
     props.action === "CANCEL" &&
     runnableTasks.value.some(
@@ -575,11 +580,6 @@ const confirmErrors = computed(() => {
   ) {
     // Check task status.
     errors.push("No active task to cancel");
-  }
-
-  // Include plan check errors if not forcing rollout
-  if (!forceRollout.value && planCheckError.value) {
-    errors.push(planCheckError.value);
   }
 
   return errors;
