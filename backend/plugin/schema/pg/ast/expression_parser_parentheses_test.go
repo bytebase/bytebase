@@ -213,7 +213,6 @@ func TestParenthesesMatchingHelpers(t *testing.T) {
 			start := 0
 			end := len(tokens)
 
-
 			// Test isBalancedParentheses
 			actualBalance := parser.isBalancedParentheses(tokens, start, end)
 			assert.Equal(t, tc.expectedBalance, actualBalance,
@@ -395,12 +394,12 @@ func TestGitHubCommentIssues(t *testing.T) {
 		{
 			name:        "AND_OR_precedence_parentheses_significant",
 			expr1:       "(A AND B) OR C",
-			expr2:       "A AND (B OR C)", 
+			expr2:       "A AND (B OR C)",
 			shouldEqual: false,
 			description: "Parentheses around AND/OR should be significant for precedence: (A AND B) OR C ≠ A AND (B OR C)",
 		},
 		{
-			name:        "AND_OR_same_precedence_equivalent", 
+			name:        "AND_OR_same_precedence_equivalent",
 			expr1:       "(A AND B) AND C",
 			expr2:       "A AND B AND C",
 			shouldEqual: true,
@@ -440,13 +439,12 @@ func TestGitHubCommentIssues(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			result, err := comparer.CompareExpressions(tc.expr1, tc.expr2)
 			require.NoError(t, err, "Comparison should not fail for: %s", tc.description)
-			
-			
+
 			if tc.shouldEqual {
-				assert.True(t, result, "Expected expressions to be equal: %s vs %s (%s)", 
+				assert.True(t, result, "Expected expressions to be equal: %s vs %s (%s)",
 					tc.expr1, tc.expr2, tc.description)
 			} else {
-				assert.False(t, result, "Expected expressions to be different: %s vs %s (%s)", 
+				assert.False(t, result, "Expected expressions to be different: %s vs %s (%s)",
 					tc.expr1, tc.expr2, tc.description)
 			}
 

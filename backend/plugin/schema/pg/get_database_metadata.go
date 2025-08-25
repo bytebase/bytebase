@@ -2266,7 +2266,7 @@ func (*metadataExtractor) normalizeDefaultValue(rawDefault string, column *store
 }
 
 // extractFunctionExpression extracts function expressions preserving the original user input.
-func (e *metadataExtractor) extractFunctionExpression(ctx *parser.IndexstmtContext, funcExpr parser.IFunc_expr_windowlessContext) string {
+func (*metadataExtractor) extractFunctionExpression(ctx *parser.IndexstmtContext, funcExpr parser.IFunc_expr_windowlessContext) string {
 	if funcExpr == nil {
 		return ""
 	}

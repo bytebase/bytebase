@@ -1882,7 +1882,6 @@ func parseIndexDefinition(definition string) *indexDefinitionParts {
 	parts.OnClause = strings.TrimSpace(remaining[:usingPos])
 
 	remaining = remaining[usingPos:]
-	lowerRemaining = strings.ToLower(remaining)
 
 	// Find USING clause
 	parenPos := strings.Index(remaining, "(")
