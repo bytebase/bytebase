@@ -25,6 +25,14 @@ type querySpanExtractor struct {
 	err error
 }
 
+// unquoteIdentifier removes double quotes from Cassandra identifiers if present.
+func unquoteIdentifier(identifier string) string {
+	if len(identifier) >= 2 && identifier[0] == '"' && identifier[len(identifier)-1] == '"' {
+		return identifier[1 : len(identifier)-1]
+	}
+	return identifier
+}
+
 func newQuerySpanExtractor(defaultKeyspace string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
 	return &querySpanExtractor{
 		BaseCqlParserListener: &cql.BaseCqlParserListener{},
@@ -44,17 +52,14 @@ func (e *querySpanExtractor) EnterSelect_(ctx *cql.Select_Context) {
 		return
 	}
 
-	// Extract table information from FROM clause
 	keyspace, table := e.extractTableFromFromSpec(ctx.FromSpec())
 	if keyspace == "" {
 		keyspace = e.defaultKeyspace
 	}
 
-	// Extract column information from SELECT clause
 	results := e.extractSelectElements(ctx.SelectElements(), keyspace, table)
 	e.querySpan.Results = results
 
-	// Extract columns from WHERE clause for predicate tracking
 	if whereSpec := ctx.WhereSpec(); whereSpec != nil {
 		e.extractWhereColumns(whereSpec, keyspace, table)
 	}
@@ -68,13 +73,14 @@ func (*querySpanExtractor) extractTableFromFromSpec(fromSpec cql.IFromSpecContex
 
 	if from, ok := fromSpec.(*cql.FromSpecContext); ok {
 		if fromElem := from.FromSpecElement(); fromElem != nil {
-			// FromSpecElement can be either "table" or "keyspace.table"
 			text := fromElem.GetText()
-			parts := strings.Split(text, ".")
-			if len(parts) == 2 {
-				return parts[0], parts[1]
+			// CQL supports keyspace.table in FROM clause
+			if idx := strings.LastIndex(text, "."); idx > 0 {
+				keyspacePart := text[:idx]
+				tablePart := text[idx+1:]
+				return unquoteIdentifier(keyspacePart), unquoteIdentifier(tablePart)
 			}
-			return "", parts[0]
+			return "", unquoteIdentifier(text)
 		}
 	}
 	return "", ""
@@ -87,27 +93,29 @@ func (e *querySpanExtractor) extractSelectElements(selectElements cql.ISelectEle
 	}
 
 	if sel, ok := selectElements.(*cql.SelectElementsContext); ok {
-		// Check for SELECT *
 		if sel.GetStar() != nil {
 			return e.expandSelectAsterisk(keyspace, table)
 		}
 
-		// Handle specific column selections
 		var results []base.QuerySpanResult
 		for _, elem := range sel.AllSelectElement() {
 			if selElem, ok := elem.(*cql.SelectElementContext); ok {
-				columnName := e.extractColumnName(selElem)
-				if columnName != "" {
-					// Create source column reference
+				aliasName, sourceName := e.extractColumnNameAndAlias(selElem)
+				if aliasName != "" || sourceName != "" {
+					resultName := aliasName
+					if resultName == "" {
+						resultName = sourceName
+					}
+
 					sourceColumn := base.SourceColumnSet{}
 					sourceColumn[base.ColumnResource{
 						Database: keyspace,
 						Table:    table,
-						Column:   columnName,
+						Column:   sourceName,
 					}] = true
 
 					results = append(results, base.QuerySpanResult{
-						Name:          columnName,
+						Name:          resultName,
 						SourceColumns: sourceColumn,
 						IsPlainField:  true,
 					})
@@ -120,42 +128,46 @@ func (e *querySpanExtractor) extractSelectElements(selectElements cql.ISelectEle
 	return nil
 }
 
-// extractColumnName extracts the column name from a select element
-func (*querySpanExtractor) extractColumnName(elem *cql.SelectElementContext) string {
+// extractColumnNameAndAlias extracts both the alias (if present) and the source column name
+func (*querySpanExtractor) extractColumnNameAndAlias(elem *cql.SelectElementContext) (alias string, sourceColumn string) {
 	if elem == nil {
-		return ""
+		return "", ""
 	}
 
-	// Get the text of the select element
-	// This could be a simple column name or table.column
-	text := elem.GetText()
-
-	// Handle table.column notation
-	parts := strings.Split(text, ".")
-	if len(parts) == 2 {
-		return parts[1]
+	// Extract the source column name from the first child
+	if elem.GetChildCount() > 0 {
+		columnRef := elem.GetChild(0).(antlr.ParseTree).GetText()
+		sourceColumn = unquoteIdentifier(columnRef)
 	}
 
-	// Handle AS alias
-	if elem.GetChildCount() > 2 {
-		// Check if there's an AS keyword
-		for i := 0; i < elem.GetChildCount(); i++ {
-			if child := elem.GetChild(i); child != nil {
-				if strings.ToUpper(child.(antlr.ParseTree).GetText()) == "AS" && i+1 < elem.GetChildCount() {
-					// Return the alias
-					return elem.GetChild(i + 1).(antlr.ParseTree).GetText()
-				}
+	// Check for AS alias
+	for i := 0; i < elem.GetChildCount(); i++ {
+		if child := elem.GetChild(i); child != nil {
+			childText := child.(antlr.ParseTree).GetText()
+			if strings.ToUpper(childText) == "AS" && i+1 < elem.GetChildCount() {
+				aliasText := elem.GetChild(i + 1).(antlr.ParseTree).GetText()
+				alias = unquoteIdentifier(aliasText)
+				break
 			}
 		}
 	}
 
-	return parts[0]
+	return alias, sourceColumn
 }
 
 // expandSelectAsterisk expands SELECT * into individual column results
 func (e *querySpanExtractor) expandSelectAsterisk(keyspace, table string) []base.QuerySpanResult {
 	if e.gCtx.GetDatabaseMetadataFunc == nil {
-		// Test environment
+		// Test environment - fallback to SelectAsterisk flag
+		return []base.QuerySpanResult{{
+			Name:           "",
+			SourceColumns:  base.SourceColumnSet{},
+			SelectAsterisk: true,
+		}}
+	}
+
+	if table == "" {
+		// Cannot expand SELECT * without a table name
 		return []base.QuerySpanResult{{
 			Name:           "",
 			SourceColumns:  base.SourceColumnSet{},
@@ -166,9 +178,16 @@ func (e *querySpanExtractor) expandSelectAsterisk(keyspace, table string) []base
 	ctx := context.Background()
 	_, metadata, err := e.gCtx.GetDatabaseMetadataFunc(ctx, e.gCtx.InstanceID, keyspace)
 	if err != nil || metadata == nil {
-		return []base.QuerySpanResult{}
+		// If we can't get metadata, fall back to SelectAsterisk flag
+		// This matches behavior of other engines like TSQL
+		return []base.QuerySpanResult{{
+			Name:           "",
+			SourceColumns:  base.SourceColumnSet{},
+			SelectAsterisk: true,
+		}}
 	}
 
+	// Find table and expand columns
 	var results []base.QuerySpanResult
 	schemaNames := metadata.ListSchemaNames()
 	for _, schemaName := range schemaNames {
@@ -193,11 +212,16 @@ func (e *querySpanExtractor) expandSelectAsterisk(keyspace, table string) []base
 					IsPlainField:  true,
 				})
 			}
-			break
+			return results
 		}
 	}
 
-	return results
+	// Table not found - fall back to SelectAsterisk flag
+	return []base.QuerySpanResult{{
+		Name:           "",
+		SourceColumns:  base.SourceColumnSet{},
+		SelectAsterisk: true,
+	}}
 }
 
 // extractWhereColumns extracts column references from WHERE clause
