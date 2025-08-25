@@ -214,7 +214,9 @@ export const parseStringToResource = (
         resource.table = data;
         break;
       case "columns":
-        resource.column = data;
+        if (data) {
+          resource.columns = [data];
+        }
         break;
       default:
         return;
