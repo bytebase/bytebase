@@ -425,9 +425,44 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to validate plan specs, error: %v", err))
 			}
 
+			// Trigger plan checks if there are any spec additions.
+			if len(added) > 0 {
+				planCheckRunsTrigger = true
+			}
+
 			oldSpecsByID := make(map[string]*v1pb.Plan_Spec)
 			for _, spec := range oldSpecs {
 				oldSpecsByID[spec.Id] = spec
+			}
+
+			// Check for spec option and sheet changes that require plan check re-runs.
+			if !planCheckRunsTrigger && len(updated) > 0 {
+				for _, specPatch := range updated {
+					oldSpec := oldSpecsByID[specPatch.Id]
+					if specPatch.GetChangeDatabaseConfig() != nil && oldSpec.GetChangeDatabaseConfig() != nil {
+						oldConfig, newConfig := oldSpec.GetChangeDatabaseConfig(), specPatch.GetChangeDatabaseConfig()
+						if oldConfig.Sheet != newConfig.Sheet {
+							// Sheet changed.
+							planCheckRunsTrigger = true
+							break
+						}
+						if oldConfig.Type != newConfig.Type {
+							// Spec type changed.
+							planCheckRunsTrigger = true
+							break
+						}
+						if oldConfig.EnablePriorBackup != newConfig.EnablePriorBackup {
+							// Prior backup setting changed.
+							planCheckRunsTrigger = true
+							break
+						}
+						if !cmp.Equal(oldConfig.GhostFlags, newConfig.GhostFlags) {
+							// gh-ost flags changed.
+							planCheckRunsTrigger = true
+							break
+						}
+					}
+				}
 			}
 
 			updatedByID := make(map[string]*v1pb.Plan_Spec)
@@ -641,16 +676,12 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 			var doUpdateSheet bool
 			for _, taskPatch := range taskPatchList {
-				// If backup setting has been updated, we need to rerun the plan check runs.
-				if taskPatch.EnablePriorBackup != nil {
-					planCheckRunsTrigger = true
-				}
 				if taskPatch.SheetID != nil {
 					doUpdateSheet = true
 				}
 			}
 
-			// For the plan without pipeline, we need to check if the sheet is updated in related specs.
+			// For plans without pipeline, check if sheet references changed in specs
 			if oldPlan.PipelineUID == nil {
 				for _, specPatch := range updated {
 					oldSpec := oldSpecsByID[specPatch.Id]
@@ -662,11 +693,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 						}
 					}
 				}
-			}
-
-			// If sheet is updated, we need to rerun the plan check runs.
-			if doUpdateSheet {
-				planCheckRunsTrigger = true
 			}
 
 			// Check project setting for modify statement.
