@@ -4,15 +4,12 @@ import (
 	"strings"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	mysqlast "github.com/bytebase/bytebase/backend/plugin/schema/mysql/ast"
 	pgast "github.com/bytebase/bytebase/backend/plugin/schema/pg/ast"
 )
 
 // CompareExpressionsSemantically compares two expressions semantically based on the engine type.
 func CompareExpressionsSemantically(engine storepb.Engine, expr1, expr2 string) bool {
 	switch engine {
-	case storepb.Engine_MYSQL, storepb.Engine_TIDB:
-		return mysqlast.CompareExpressionsSemantically(expr1, expr2)
 	case storepb.Engine_POSTGRES:
 		return pgast.CompareExpressionsSemantically(expr1, expr2)
 	default:

@@ -1561,20 +1561,12 @@ func compareFunctions(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 
 // functionsEqual checks if two functions are equal.
 func functionsEqual(fn1, fn2 *storepb.FunctionMetadata) bool {
-
 	if fn1.Definition != fn2.Definition {
-		// Try normalized comparison for both PostgreSQL and MySQL functions
+		// Try normalized comparison for PostgreSQL functions
 		norm1 := normalizePostgreSQLFunction(fn1.Definition)
 		norm2 := normalizePostgreSQLFunction(fn2.Definition)
 		if norm1 != norm2 {
-			// Also try MySQL-specific normalization
-			mysqlNorm1 := normalizeMySQLFunction(fn1.Definition)
-			mysqlNorm2 := normalizeMySQLFunction(fn2.Definition)
-
-
-			if mysqlNorm1 != mysqlNorm2 {
-				return false
-			}
+			return false
 		}
 	}
 	if fn1.CharacterSetClient != fn2.CharacterSetClient {
@@ -1978,138 +1970,8 @@ func normalizePostgreSQLCheckConstraint(expression string) string {
 	return strings.TrimSpace(expression)
 }
 
-// normalizeMySQLFunction normalizes MySQL function definitions for comparison
-func normalizeMySQLFunction(definition string) string {
-	if definition == "" {
-		return ""
-	}
-
-	// MySQL function normalization strategy:
-	// 1. Remove backticks around identifiers
-	// 2. Normalize whitespace
-	// 3. Normalize case for keywords while preserving data
-	// 4. Remove charset prefixes from string literals
-
-	normalized := definition
-
-	// Remove backticks around identifiers
-	normalized = strings.ReplaceAll(normalized, "`", "")
-
-	// Normalize whitespace - collapse multiple spaces/newlines to single space
-	normalized = strings.ReplaceAll(normalized, "\n", " ")
-	normalized = strings.ReplaceAll(normalized, "\t", " ")
-	for strings.Contains(normalized, "  ") {
-		normalized = strings.ReplaceAll(normalized, "  ", " ")
-	}
-	normalized = strings.TrimSpace(normalized)
-
-	// Normalize MySQL keywords to uppercase (case-insensitive comparison)
-	// But preserve case in string literals and identifiers
-	keywords := []string{
-		"CREATE", "FUNCTION", "PROCEDURE", "RETURNS", "DETERMINISTIC", "READS", "SQL", "DATA",
-		"BEGIN", "END", "DECLARE", "INT", "VARCHAR", "DECIMAL", "SELECT", "COUNT", "FROM",
-		"WHERE", "UPDATE", "SET", "INTO", "RETURN", "IN", "OUT", "INOUT",
-	}
-
-	// Split into tokens while preserving string literals
-	var result strings.Builder
-	inString := false
-	var stringChar byte
-	word := strings.Builder{}
-
-	for i := 0; i < len(normalized); i++ {
-		char := normalized[i]
-
-		// Handle string literals
-		if !inString && (char == '\'' || char == '"') {
-			inString = true
-			stringChar = char
-			// Flush current word
-			if word.Len() > 0 {
-				wordStr := word.String()
-				// Check if it's a keyword
-				upperWord := strings.ToUpper(wordStr)
-				isKeyword := false
-				for _, keyword := range keywords {
-					if upperWord == keyword {
-						result.WriteString(upperWord)
-						isKeyword = true
-						break
-					}
-				}
-				if !isKeyword {
-					result.WriteString(wordStr)
-				}
-				word.Reset()
-			}
-			result.WriteByte(char)
-		} else if inString && char == stringChar {
-			inString = false
-			result.WriteByte(char)
-		} else if inString {
-			result.WriteByte(char)
-		} else if char == ' ' || char == '\t' || char == '(' || char == ')' || char == ',' || char == ';' {
-			// Word boundary - process accumulated word
-			if word.Len() > 0 {
-				wordStr := word.String()
-				upperWord := strings.ToUpper(wordStr)
-				isKeyword := false
-				for _, keyword := range keywords {
-					if upperWord == keyword {
-						result.WriteString(upperWord)
-						isKeyword = true
-						break
-					}
-				}
-				if !isKeyword {
-					result.WriteString(wordStr)
-				}
-				word.Reset()
-			}
-			result.WriteByte(char)
-		} else {
-			word.WriteByte(char)
-		}
-	}
-
-	// Handle final word
-	if word.Len() > 0 {
-		wordStr := word.String()
-		upperWord := strings.ToUpper(wordStr)
-		isKeyword := false
-		for _, keyword := range keywords {
-			if upperWord == keyword {
-				result.WriteString(upperWord)
-				isKeyword = true
-				break
-			}
-		}
-		if !isKeyword {
-			result.WriteString(wordStr)
-		}
-	}
-
-	finalResult := result.String()
-
-	// Final cleanup: normalize spaces around operators
-	finalResult = strings.ReplaceAll(finalResult, " (", "(")
-	finalResult = strings.ReplaceAll(finalResult, "( ", "(")
-	finalResult = strings.ReplaceAll(finalResult, " )", ")")
-	finalResult = strings.ReplaceAll(finalResult, ") ", ")")
-	finalResult = strings.ReplaceAll(finalResult, " ,", ",")
-	finalResult = strings.ReplaceAll(finalResult, ", ", ",")
-	finalResult = strings.ReplaceAll(finalResult, " ;", ";")
-
-	// Normalize MySQL function attribute order - database always stores in specific order
-	// DETERMINISTIC comes before READS SQL DATA in MySQL canonical form
-	finalResult = strings.ReplaceAll(finalResult, "READS SQL DATA DETERMINISTIC", "DETERMINISTIC READS SQL DATA")
-
-	return strings.TrimSpace(finalResult)
-}
-
 // procedureDefinitionsEqual compares procedure definitions with normalization
-func procedureDefinitionsEqual(def1, def2, procName string) bool {
-
+func procedureDefinitionsEqual(def1, def2, _ string) bool {
 	if def1 == def2 {
 		return true
 	}
@@ -2121,8 +1983,6 @@ func procedureDefinitionsEqual(def1, def2, procName string) bool {
 		return true
 	}
 
-	// Try MySQL normalization
-	mysqlNorm1 := normalizeMySQLFunction(def1)
-	mysqlNorm2 := normalizeMySQLFunction(def2)
-	return mysqlNorm1 == mysqlNorm2
+	// For other engines, fall back to simple comparison
+	return false
 }
