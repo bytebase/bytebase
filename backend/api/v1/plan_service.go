@@ -446,6 +446,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 							planCheckRunsTrigger = true
 							break
 						}
+						if oldConfig.Type != newConfig.Type {
+							// Task type changed.
+							planCheckRunsTrigger = true
+							break
+						}
 						if oldConfig.EnablePriorBackup != newConfig.EnablePriorBackup {
 							// Prior backup setting changed.
 							planCheckRunsTrigger = true
