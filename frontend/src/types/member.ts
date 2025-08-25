@@ -6,5 +6,5 @@ export interface DatabaseResource {
   databaseFullName: string;
   schema?: string;
   table?: string;
-  column?: string;
+  columns?: string[];
 }
