@@ -105,8 +105,7 @@ const createSheets = async () => {
   const configWithSheetList: Plan_ChangeDatabaseConfig[] = [];
   const pendingCreateSheetMap = new Map<string, Sheet>();
 
-  for (let i = 0; i < specs.length; i++) {
-    const spec = specs[i];
+  for (const spec of specs) {
     const config =
       spec.config?.case === "changeDatabaseConfig" ? spec.config.value : null;
     if (!config) continue;
@@ -114,29 +113,17 @@ const createSheets = async () => {
     if (pendingCreateSheetMap.has(config.sheet)) continue;
     const uid = extractSheetUID(config.sheet);
     if (uid.startsWith("-")) {
-      // The sheet is pending create
-      const sheet = getLocalSheetByName(config.sheet);
+      // The sheet is pending create.
+      const sheetToCreate = getLocalSheetByName(config.sheet);
       const engine = await databaseEngineForSpec(spec);
-      sheet.engine = engine;
-      pendingCreateSheetMap.set(sheet.name, sheet);
+      sheetToCreate.engine = engine;
+      sheetToCreate.title = plan.value.title;
+      const createdSheet = await sheetStore.createSheet(
+        project.value.name,
+        sheetToCreate
+      );
+      config.sheet = createdSheet.name;
     }
   }
-  const pendingCreateSheetList = Array.from(pendingCreateSheetMap.values());
-  const sheetNameMap = new Map<string, string>();
-  for (let i = 0; i < pendingCreateSheetList.length; i++) {
-    const sheet = pendingCreateSheetList[i];
-    sheet.title = plan.value.title;
-    const createdSheet = await sheetStore.createSheet(
-      project.value.name,
-      sheet
-    );
-    sheetNameMap.set(sheet.name, createdSheet.name);
-  }
-  configWithSheetList.forEach((config) => {
-    const uid = extractSheetUID(config.sheet);
-    if (uid.startsWith("-")) {
-      config.sheet = sheetNameMap.get(config.sheet) ?? "";
-    }
-  });
 };
 </script>

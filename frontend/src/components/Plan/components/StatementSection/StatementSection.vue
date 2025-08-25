@@ -1,12 +1,13 @@
 <template>
   <div v-show="viewMode !== 'NONE'" class="flex flex-col gap-y-2">
-    <EditorView v-if="viewMode === 'EDITOR'" :key="selectedSpec.id" />
+    <EditorView v-if="viewMode === 'EDITOR'" :key="editorViewKey" />
     <ReleaseView v-else-if="viewMode === 'RELEASE'" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { sheetNameForSpec } from "../../logic";
 import { useSelectedSpec } from "../SpecDetailView/context";
 import EditorView from "./EditorView";
 import ReleaseView from "./ReleaseView";
@@ -27,5 +28,9 @@ const viewMode = computed((): "NONE" | "EDITOR" | "RELEASE" => {
     return "EDITOR";
   }
   return "NONE";
+});
+
+const editorViewKey = computed(() => {
+  return `${selectedSpec.value.id}-${sheetNameForSpec(selectedSpec.value)}`;
 });
 </script>
