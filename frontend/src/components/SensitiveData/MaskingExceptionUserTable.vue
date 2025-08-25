@@ -174,9 +174,10 @@ const getDatabaseAccessResource = (access: AccessUser): VNodeChild => {
       {access.databaseResource.table && (
         <div class="text-sm textinfo">{`${t("common.table")}: ${access.databaseResource.table}`}</div>
       )}
-      {access.databaseResource.column && (
-        <div class="text-sm textinfo">{`${t("database.column")}: ${access.databaseResource.column}`}</div>
-      )}
+      {access.databaseResource.columns &&
+        access.databaseResource.columns.length > 0 && (
+          <div class="text-sm textinfo">{`${t("database.columns")}: ${access.databaseResource.columns.join(", ")}`}</div>
+        )}
     </div>
   );
 };
