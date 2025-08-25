@@ -269,6 +269,7 @@ func (*normalizationVisitor) isSignificantParentheses(expr *ParenthesesExpr) boo
 	}
 
 	// Parentheses around simple identifiers or literals are never significant
+	// This is the key insight: (name) and name are always semantically equivalent
 	switch inner.(type) {
 	case *IdentifierExpr, *LiteralExpr:
 		return false
@@ -294,6 +295,7 @@ func (*normalizationVisitor) isSignificantParentheses(expr *ParenthesesExpr) boo
 			"ILIKE":       true,
 			"IS NULL":     true,
 			"IS NOT NULL": true,
+			"::":          true, // Type cast operator
 		}
 
 		if highPrecedenceOps[op] {

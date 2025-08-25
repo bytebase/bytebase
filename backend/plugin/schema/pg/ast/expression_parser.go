@@ -426,7 +426,8 @@ func (p *ExpressionParser) parseBinaryOperation(tokens []antlr.Token, start, end
 		{"AND", "&&"},
 		{"=", "<>", "!=", "<", ">", "<=", ">=", "LIKE", "ILIKE"},
 		{"+", "-"},
-		{"*", "/", "%"}, // highest precedence
+		{"*", "/", "%"},
+		{"::"}, // type cast has high precedence
 	}
 
 	// Find operators from lowest to highest precedence

@@ -307,13 +307,29 @@ func (*ParenthesesExpr) Type() ExpressionType {
 }
 
 func (e *ParenthesesExpr) String() string {
+	if e.Inner == nil {
+		return "()"
+	}
 	return fmt.Sprintf("(%s)", e.Inner.String())
 }
 
 func (e *ParenthesesExpr) Equals(other ExpressionAST) bool {
+	// Handle nil inner expressions
+	if e.Inner == nil {
+		if other.Type() == ExprTypeParentheses {
+			if otherParen, ok := other.(*ParenthesesExpr); ok {
+				return otherParen.Inner == nil
+			}
+		}
+		return false
+	}
+
 	// If the other expression is also parentheses, compare inner expressions
 	if other.Type() == ExprTypeParentheses {
 		if otherParen, ok := other.(*ParenthesesExpr); ok {
+			if otherParen.Inner == nil {
+				return false
+			}
 			return e.Inner.Equals(otherParen.Inner)
 		}
 	}
@@ -324,6 +340,9 @@ func (e *ParenthesesExpr) Equals(other ExpressionAST) bool {
 }
 
 func (e *ParenthesesExpr) Children() []ExpressionAST {
+	if e.Inner == nil {
+		return nil
+	}
 	return []ExpressionAST{e.Inner}
 }
 
@@ -349,6 +368,9 @@ func normalizeOperator(op string) string {
 		return "IS NULL"
 	case "IS NOT NULL", "ISNOTNULL":
 		return "IS NOT NULL"
+	case "::":
+		// PostgreSQL type cast operator
+		return "::"
 	default:
 		return strings.ToUpper(op)
 	}
