@@ -1,6 +1,6 @@
 <template>
   <template v-if="initialized">
-    <ArchiveBanner v-if="project.state === State.DELETED" class="py-2" />
+    <ArchiveBanner v-if="project.state === State.DELETED" class="py-2 mb-4" />
     <template v-if="isDefaultProject">
       <h1 class="mb-4 text-xl font-bold leading-6 text-main truncate">
         {{ $t("database.unassigned-databases") }}
