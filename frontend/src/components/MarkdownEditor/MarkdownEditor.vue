@@ -103,7 +103,7 @@ import {
   HeadingIcon,
 } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
-import { nextTick, ref, reactive, watch, toRef } from "vue";
+import { nextTick, ref, reactive, watch, toRef, onMounted } from "vue";
 import type { Component } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedIssue, ComposedProject } from "@/types";
@@ -136,7 +136,9 @@ const props = defineProps<{
   project?: ComposedProject;
   issueList: ComposedIssue[];
   placeholder?: string;
+  autofocus?: boolean;
 }>();
+
 const emit = defineEmits<{
   (event: "change", value: string): void;
   (event: "submit"): void;
@@ -194,6 +196,14 @@ watch(
     }
   }
 );
+
+onMounted(() => {
+  if (props.autofocus && !state.showPreview) {
+    nextTick(() => {
+      contentTextArea.value?.focus();
+    });
+  }
+});
 
 const keyboardHandler = (e: KeyboardEvent) => {
   if (!contentTextArea.value) {

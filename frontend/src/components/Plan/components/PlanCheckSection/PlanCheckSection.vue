@@ -2,7 +2,7 @@
   <div v-if="shouldShow" class="pt-3 flex flex-col gap-y-1 overflow-hidden">
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2">
-        <h3 class="text-base font-medium">{{ $t("plan.checks.self") }}</h3>
+        <h3 class="text-base">{{ $t("plan.checks.self") }}</h3>
 
         <NTooltip v-if="checksOfSelectedSpec.length > 0 && affectedRows > 0">
           <template #trigger>
@@ -10,7 +10,7 @@
               <span class="text-sm text-control-light mr-1">{{
                 $t("task.check-type.affected-rows.self")
               }}</span>
-              <span class="text-sm font-medium">
+              <span class="text-sm">
                 {{ affectedRows }}
               </span>
             </NTag>
