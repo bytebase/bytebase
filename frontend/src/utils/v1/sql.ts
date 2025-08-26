@@ -177,7 +177,7 @@ export const generateSimpleSelectAllStatement = (
 
   switch (engine) {
     case Engine.MONGODB:
-      return `db.${table}.find().limit(${limit});`;
+      return `db['${table}'].find().limit(${limit});`;
     case Engine.COSMOSDB:
       return `SELECT * FROM ${table}`;
     case Engine.ELASTICSEARCH:
@@ -206,7 +206,7 @@ export const generateSimpleInsertStatement = (
     const kvPairs = columns
       .map((column, i) => `"${column}": <value${i + 1}>`)
       .join(", ");
-    return `db.${table}.insert({ ${kvPairs} });`;
+    return `db['${table}'].insert({ ${kvPairs} });`;
   }
 
   const schemaAndTable = generateSchemaAndTableNameInSQL(engine, schema, table);
@@ -229,7 +229,7 @@ export const generateSimpleUpdateStatement = (
     const kvPairs = columns
       .map((column, i) => `"${column}": <value${i + 1}>`)
       .join(", ");
-    return `db.${table}.updateOne({ /* <query> */ }, { $set: { /* ${kvPairs} */} });`;
+    return `db['${table}'].updateOne({ /* <query> */ }, { $set: { /* ${kvPairs} */} });`;
   }
 
   const schemaAndTable = generateSchemaAndTableNameInSQL(engine, schema, table);
@@ -247,7 +247,7 @@ export const generateSimpleDeleteStatement = (
   table: string
 ) => {
   if (engine === Engine.MONGODB) {
-    return `db.${table}.deleteOne({ /* query */ });`;
+    return `db['${table}'].deleteOne({ /* query */ });`;
   }
 
   const schemaAndTable = generateSchemaAndTableNameInSQL(engine, schema, table);
