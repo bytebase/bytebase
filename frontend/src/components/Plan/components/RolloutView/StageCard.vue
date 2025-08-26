@@ -22,6 +22,7 @@
                 class="text-base font-medium text-gray-900 whitespace-nowrap truncate"
               >
                 <EnvironmentV1Name
+                  class="inline-block w-24"
                   :environment="environment"
                   :link="false"
                   :null-environment-placeholder="'Null'"
