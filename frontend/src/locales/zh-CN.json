@@ -246,7 +246,8 @@
       "description": "此资源和其他相关资源将被硬删除。@:common.cannot-undo-this-action",
       "double-comfirm": "要确认删除，请输入：{name}",
       "notification": "成功删除资源“{name}”。"
-    }
+    },
+    "collapse": "收起"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -1174,7 +1175,6 @@
       "reopen-confirm": "确定重新开启该变更计划？"
     },
     "description": {
-      "add-a-description": "添加描述",
       "placeholder": "在此添加该更变计划的描述..."
     }
   },

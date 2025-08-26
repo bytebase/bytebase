@@ -246,7 +246,8 @@
       "description": "Tài nguyên này và các tài nguyên liên quan khác sẽ bị xóa cứng. @:common.cannot-undo-this-action",
       "double-comfirm": "Để xác nhận xóa, vui lòng nhập: {name}",
       "notification": "Xóa thành công tài nguyên '{name}'."
-    }
+    },
+    "collapse": "Sụp đổ"
   },
   "error-page": {
     "go-back-home": "Về trang chủ"
@@ -1174,7 +1175,6 @@
       "reopen-confirm": "Bạn có chắc chắn muốn mở lại kế hoạch này không?"
     },
     "description": {
-      "add-a-description": "Thêm mô tả",
       "placeholder": "Thêm mô tả của bạn vào đây cho kế hoạch này..."
     }
   },
