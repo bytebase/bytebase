@@ -546,7 +546,7 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, policyMessage *s
 	case storepb.Policy_TAG:
 		p := &v1pb.TagPolicy{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policyMessage.Payload), p); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal rollout policy payload")
+			return nil, errors.Wrapf(err, "failed to unmarshal tag policy payload")
 		}
 		policy.Policy = &v1pb.Policy_TagPolicy{
 			TagPolicy: p,

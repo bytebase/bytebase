@@ -42,6 +42,7 @@
 </template>
 
 <script lang="ts" setup>
+import { isEqual } from "lodash-es";
 import { useDialog } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
@@ -227,7 +228,9 @@ const tryFinishSetup = async () => {
     const policy = await store.upsertReviewPolicy({
       title: state.name,
       ruleList: convertRuleMapToPolicyRuleList(state.selectedRuleMapByEngine),
-      resources: state.attachedResources,
+      resources: isEqual(props.selectedResources, state.attachedResources)
+        ? undefined
+        : state.attachedResources,
       id: `${reviewConfigNamePrefix}${state.resourceId}`,
       enforce: isUpdate.value ? undefined : true,
     });
