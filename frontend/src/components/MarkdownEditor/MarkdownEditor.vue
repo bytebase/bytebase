@@ -1,37 +1,21 @@
 <template>
   <div>
-    <div
+    <NTabs
       v-if="mode === 'editor'"
-      class="flex gap-x-1 mb-3 text-sm border-b border-gray-200"
+      v-model:value="state.activeTab"
+      type="line"
+      class="mb-3"
+      @update:value="handleTabChange"
     >
-      <div
-        :class="[
-          'px-3 py-2 cursor-pointer transition-colors',
-          state.showPreview
-            ? 'text-gray-500 hover:text-gray-700'
-            : 'text-gray-900 border-b-2 border-gray-900',
-        ]"
-        @click="state.showPreview = false"
-      >
-        {{ $t("issue.comment-editor.write") }}
-      </div>
-      <div
-        :class="[
-          'px-3 py-2 cursor-pointer transition-colors',
-          state.showPreview
-            ? 'text-gray-900 border-b-2 border-gray-900'
-            : 'text-gray-500 hover:text-gray-700',
-        ]"
-        @click="state.showPreview = true"
-      >
-        {{ $t("issue.comment-editor.preview") }}
-      </div>
-      <div
-        v-if="!state.showPreview"
-        class="flex-1 flex items-center justify-end"
-      >
-        <div v-for="(toolbar, i) in toolbarItems" :key="i">
-          <NTooltip :show-arrow="true">
+      <NTab name="write" :tab="$t('issue.comment-editor.write')" />
+      <NTab name="preview" :tab="$t('issue.comment-editor.preview')" />
+      <template v-if="state.activeTab === 'write'" #suffix>
+        <div class="flex items-center justify-end">
+          <NTooltip
+            v-for="(toolbar, i) in toolbarItems"
+            :key="i"
+            :show-arrow="true"
+          >
             <template #trigger>
               <NButton quaternary size="small" @click="toolbar.action">
                 <component :is="toolbar.icon" class="w-4 h-4" />
@@ -42,10 +26,11 @@
             </span>
           </NTooltip>
         </div>
-      </div>
-    </div>
+      </template>
+    </NTabs>
+
     <iframe
-      v-if="state.showPreview"
+      v-if="state.activeTab === 'preview' || state.showPreview"
       ref="contentPreviewArea"
       :srcdoc="renderedContent"
       class="rounded-md w-full overflow-hidden"
@@ -55,7 +40,7 @@
         ref="contentTextArea"
         v-model="state.content"
         rows="4"
-        class="block w-full px-4 py-3 resize-none whitespace-pre-wrap rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors text-sm"
+        class="block w-full px-4 py-3 resize-none whitespace-pre-wrap rounded-lg border border-gray-300 outline-none ring-0 text-sm"
         :placeholder="placeholder || $t('issue.leave-a-comment')"
         @mousedown="clearIssuePanel"
         @input="(e: any) => sizeToFit(e.target)"
@@ -76,7 +61,7 @@
           <li
             v-for="issue in filterIssueList"
             :key="issue.name"
-            class="p-3 rounded hover:bg-blue-500 hover:text-white cursor-pointer flex items-center gap-x-2"
+            class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-x-2"
             @click="onIssueSelect(issue)"
           >
             <IssueStatusIcon
@@ -102,7 +87,7 @@ import {
   BoldIcon,
   HeadingIcon,
 } from "lucide-vue-next";
-import { NButton, NTooltip } from "naive-ui";
+import { NButton, NTooltip, NTabs, NTab } from "naive-ui";
 import { nextTick, ref, reactive, watch, toRef, onMounted } from "vue";
 import type { Component } from "vue";
 import { useI18n } from "vue-i18n";
@@ -120,6 +105,7 @@ import { useRenderMarkdown } from "./useRenderMarkdown";
 interface LocalState {
   showPreview: boolean;
   content: string;
+  activeTab: "write" | "preview";
 }
 
 interface Toolbar {
@@ -148,12 +134,16 @@ const emit = defineEmits<{
 const state = reactive<LocalState>({
   showPreview: props.mode === "preview",
   content: props.content,
+  activeTab: props.mode === "preview" ? "preview" : "write",
 });
 const { t } = useI18n();
 
 watch(
   () => props.mode,
-  (mode) => (state.showPreview = mode === "preview")
+  (mode) => {
+    state.showPreview = mode === "preview";
+    state.activeTab = mode === "preview" ? "preview" : "write";
+  }
 );
 
 const contentTextArea = ref<HTMLTextAreaElement>();
@@ -184,6 +174,11 @@ watch(
     }
   }
 );
+
+const handleTabChange = (value: string) => {
+  state.showPreview = value === "preview";
+  state.activeTab = value as "write" | "preview";
+};
 
 watch(
   () => state.showPreview,

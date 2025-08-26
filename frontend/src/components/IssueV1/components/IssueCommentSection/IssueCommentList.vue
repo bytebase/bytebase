@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-4">
+  <div class="flex flex-col">
     <ul>
       <IssueCreatedComment :issue-comments="issueComments" :issue="issue" />
       <IssueCommentView
@@ -68,9 +68,6 @@
         </div>
         <div class="min-w-0 flex-1">
           <h3 class="sr-only" id="issue-comment-editor"></h3>
-          <label for="comment" class="sr-only">
-            {{ $t("issue.add-a-comment") }}
-          </label>
           <MarkdownEditor
             mode="editor"
             :content="state.newComment"
@@ -79,10 +76,9 @@
             @change="(val: string) => (state.newComment = val)"
             @submit="doCreateComment(state.newComment)"
           />
-          <div class="mt-3 flex items-center justify-start">
+          <div class="mt-3 flex items-center justify-end">
             <NButton
               type="primary"
-              size="small"
               :disabled="state.newComment.length == 0"
               @click.prevent="doCreateComment(state.newComment)"
             >
