@@ -66,8 +66,8 @@ import {
   getDefaultPagination,
 } from "@/utils";
 import {
-  extractWorksheetConnection,
   useSheetContext,
+  extractWorksheetConnection,
 } from "@/views/sql-editor/Sheet";
 import {
   useSQLEditorContext,
@@ -228,9 +228,10 @@ const prepareSheetLegacy = async () => {
     return true;
   }
 
+  const connection = await extractWorksheetConnection(sheet);
   // Open the sheet in a new tab otherwise.
   tabStore.addTab({
-    connection: extractWorksheetConnection(sheet),
+    connection,
     worksheet: sheet.name,
     title: sheet.title,
     statement: getSheetStatement(sheet),
@@ -239,6 +240,7 @@ const prepareSheetLegacy = async () => {
 
   return true;
 };
+
 const prepareSheet = async () => {
   const projectId = route.params.project;
   const sheetId = route.params.sheet;
@@ -285,16 +287,23 @@ const prepareSheet = async () => {
     return false;
   }
 
+  const connection = await extractWorksheetConnection(sheet);
   if (openingSheetTab) {
     // Switch to a sheet tab if it's open already.
     // and don't touch it
     tabStore.setCurrentTabId(openingSheetTab.id);
+    tabStore.updateCurrentTab({
+      connection,
+      worksheet: sheet.name,
+      statement: getSheetStatement(sheet),
+      status: "CLEAN",
+    });
     return true;
   }
 
   // Open the sheet in a new tab otherwise.
   tabStore.addTab({
-    connection: extractWorksheetConnection(sheet),
+    connection,
     worksheet: sheet.name,
     title: sheet.title,
     statement: getSheetStatement(sheet),
