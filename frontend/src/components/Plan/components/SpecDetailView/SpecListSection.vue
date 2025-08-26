@@ -74,9 +74,15 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { planServiceClientConnect } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification } from "@/store";
+import {
+  pushNotification,
+  useCurrentProjectV1,
+  useSheetV1Store,
+} from "@/store";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { extractSheetUID } from "@/utils";
+import { databaseEngineForSpec, getLocalSheetByName } from "../../logic";
 import { usePlanContext } from "../../logic/context";
 import { useEditorState } from "../../logic/useEditorState";
 import { getSpecTitle } from "../../logic/utils";
@@ -88,7 +94,9 @@ const router = useRouter();
 const dialog = useDialog();
 const { t } = useI18n();
 const { plan, isCreating } = usePlanContext();
+const sheetStore = useSheetV1Store();
 const selectedSpec = useSelectedSpec();
+const { project } = useCurrentProjectV1();
 const { isSpecEmpty } = useSpecsValidation(computed(() => plan.value.specs));
 const { setEditingState } = useEditorState();
 
@@ -109,10 +117,30 @@ const handleTabChange = (specId: string) => {
 
 const handleSpecCreated = async (spec: Plan_Spec) => {
   // Add the new spec to the plan.
-  plan.value.specs.push(spec);
 
   // If the plan is not being created (already exists), call UpdatePlan API
   if (!isCreating.value) {
+    // If the spec references a sheet that is pending creation (UID starts with "-"),
+    // we need to create the sheet first.
+    if (
+      spec.config.case === "changeDatabaseConfig" ||
+      spec.config.case === "exportDataConfig"
+    ) {
+      const uid = extractSheetUID(spec.config.value.sheet);
+      if (uid.startsWith("-")) {
+        // The sheet is pending create.
+        const sheetToCreate = getLocalSheetByName(spec.config.value.sheet);
+        const engine = await databaseEngineForSpec(spec);
+        sheetToCreate.engine = engine;
+        sheetToCreate.title = plan.value.title;
+        const createdSheet = await sheetStore.createSheet(
+          project.value.name,
+          sheetToCreate
+        );
+        spec.config.value.sheet = createdSheet.name;
+      }
+    }
+    plan.value.specs.push(spec);
     try {
       const request = create(UpdatePlanRequestSchema, {
         plan: plan.value,
@@ -139,9 +167,12 @@ const handleSpecCreated = async (spec: Plan_Spec) => {
       });
       return;
     }
+  } else {
+    plan.value.specs.push(spec);
   }
 
-  gotoSpec(spec.id, true); // Auto-enable editing for new specs
+  const enableEditing = !isCreating.value;
+  gotoSpec(spec.id, enableEditing);
 };
 
 const gotoSpec = (specId: string, enableEditing = false) => {
