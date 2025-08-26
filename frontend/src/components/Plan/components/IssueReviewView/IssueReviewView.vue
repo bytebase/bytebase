@@ -2,9 +2,9 @@
   <div class="flex-1 flex w-full">
     <!-- Left Panel - Activity -->
     <div class="flex-1 shrink px-4 py-4 space-y-4">
-      <OverviewSection v-if="shouldShowOverview" />
-
       <DescriptionSection />
+
+      <OverviewSection v-if="shouldShowOverview" />
 
       <ActivitySection />
     </div>
