@@ -7,7 +7,9 @@
         aria-hidden="true"
       ></span>
       <div class="relative flex items-start">
-        <ActionIcon :issue-comment="issueComment" />
+        <div class="pt-1.5">
+          <ActionIcon :issue-comment="issueComment" />
+        </div>
 
         <IssueCommentAction
           :issue="issue"
