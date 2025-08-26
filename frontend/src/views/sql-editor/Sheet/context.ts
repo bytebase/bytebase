@@ -122,11 +122,11 @@ export const provideSheetContext = () => {
   return context;
 };
 
-export const extractWorksheetConnection = (worksheet: Worksheet) => {
+export const extractWorksheetConnection = async (worksheet: Worksheet) => {
   const connection = emptySQLEditorConnection();
   if (worksheet.database) {
     try {
-      const database = useDatabaseV1Store().getDatabaseByName(
+      const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
         worksheet.database
       );
       connection.instance = database.instance;
@@ -175,9 +175,10 @@ export const openWorksheetByName = async (
   );
 
   const statement = getSheetStatement(worksheet);
+  const connection = await extractWorksheetConnection(worksheet);
 
   const newTab: Partial<SQLEditorTab> = {
-    connection: extractWorksheetConnection(worksheet),
+    connection,
     worksheet: worksheet.name,
     title: worksheet.title,
     statement,
