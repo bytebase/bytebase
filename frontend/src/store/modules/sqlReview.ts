@@ -94,8 +94,8 @@ interface SQLReviewState {
   reviewPolicyList: SQLReviewPolicy[];
 }
 
-const getTagPolicyName = (environmentPath: string): string => {
-  return `${environmentPath}/${policyNamePrefix}tag`;
+const getTagPolicyName = (resourcePath: string): string => {
+  return `${resourcePath}/${policyNamePrefix}tag`;
 };
 
 export const useSQLReviewStore = defineStore("sqlReview", {
@@ -161,8 +161,6 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         name: targetPolicy.id,
       });
       await reviewConfigServiceClientConnect.deleteReviewConfig(request);
-
-      await removeReviewConfigTag(targetPolicy.resources);
 
       pullAt(this.reviewPolicyList, index);
     },

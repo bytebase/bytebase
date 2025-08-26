@@ -5,6 +5,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -156,6 +157,41 @@ func (s *ReviewConfigService) DeleteReviewConfig(ctx context.Context, req *conne
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to delete review config"))
 	}
 
+	policyType := storepb.Policy_TAG
+	policies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
+		Type: &policyType,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to list tag policy"))
+	}
+	for _, policy := range policies {
+		payload := &storepb.TagPolicy{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), payload); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to unmarshal rollout policy payload"))
+		}
+		reviewConfigName, ok := payload.Tags[common.ReservedTagReviewConfig]
+		if !ok {
+			continue
+		}
+		if reviewConfigName != req.Msg.Name {
+			continue
+		}
+		delete(payload.Tags, common.ReservedTagReviewConfig)
+
+		payloadBytes, err := protojson.Marshal(payload)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to marshal tag policy"))
+		}
+		patch := string(payloadBytes)
+		if _, err := s.store.UpdatePolicyV2(ctx, &store.UpdatePolicyMessage{
+			ResourceType: policy.ResourceType,
+			Resource:     policy.Resource,
+			Payload:      &patch,
+		}); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update tag policy"))
+		}
+	}
+
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
@@ -206,7 +242,7 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to unmarshal tag policy"))
 		}
-		if p.Tags[string(common.ReservedTagReviewConfig)] != config.Name {
+		if p.Tags[common.ReservedTagReviewConfig] != config.Name {
 			continue
 		}
 

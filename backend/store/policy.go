@@ -260,7 +260,7 @@ func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType stor
 		return nil, errors.Wrapf(err, "failed to unmarshal tag policy payload")
 	}
 
-	reviewConfigName, ok := payload.Tags[string(common.ReservedTagReviewConfig)]
+	reviewConfigName, ok := payload.Tags[common.ReservedTagReviewConfig]
 	if !ok {
 		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("review config tag for resource %v/%s not found", resourceType, resource)}
 	}
