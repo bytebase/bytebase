@@ -2,7 +2,7 @@
   <NTooltip v-if="enabled" :disabled="!tooltip" placement="top">
     <template #trigger>
       <heroicons-solid:shield-exclamation
-        class="text-control inline-block"
+        class="text-control inline-block shrink-0"
         :class="tooltip ? 'pointer-events-auto' : 'pointer-events-none'"
         v-bind="$attrs"
       />
