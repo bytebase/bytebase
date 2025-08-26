@@ -322,7 +322,6 @@ func deparseIndexMethod(method ast.IndexMethodType, buf *strings.Builder) (err e
 	case ast.IndexMethodTypeIvfflat:
 		_, err = buf.WriteString("ivfflat")
 	default:
-		return errors.Errorf("unsupported index method type: %v", method)
 	}
 	return err
 }
@@ -348,7 +347,6 @@ func deparseIndexKey(context DeparseContext, in *ast.IndexKeyDef, buf *strings.B
 			return err
 		}
 	default:
-		return errors.Errorf("unsupported index key type: %v", in.Type)
 	}
 
 	if in.SortOrder == ast.SortOrderTypeDescending {
@@ -714,7 +712,6 @@ func deparseConstraintDef(_ DeparseContext, in *ast.ConstraintDef, buf *strings.
 			return err
 		}
 	default:
-		return errors.Errorf("unsupported constraint type: %v", in.Type)
 	}
 	return nil
 }
@@ -751,7 +748,6 @@ func deparseReferentialAction(_ DeparseContext, prefix string, in *ast.Referenti
 			return err
 		}
 	default:
-		return errors.Errorf("unsupported referential action type: %v", in.Type)
 	}
 	return nil
 }
@@ -769,7 +765,6 @@ func deparseForeignMatchType(_ DeparseContext, in ast.ForeignMatchType, buf *str
 			return err
 		}
 	default:
-		return errors.Errorf("unsupported foreign match type: %v", in)
 	}
 	return nil
 }
@@ -968,7 +963,6 @@ func deparsePartitionDef(_ DeparseContext, in *ast.PartitionDef, buf *strings.Bu
 	case pgquery.PartitionStrategy_PARTITION_STRATEGY_HASH:
 		strategy = "HASH"
 	default:
-		return errors.Errorf("unsupported partition strategy: %v", in.Strategy)
 	}
 	if _, err := buf.WriteString(strategy); err != nil {
 		return err
@@ -998,7 +992,6 @@ func deparsePartitionDef(_ DeparseContext, in *ast.PartitionDef, buf *strings.Bu
 				return err
 			}
 		default:
-			return errors.Errorf("unsupported partition key type: %v", key.Type)
 		}
 	}
 	if _, err := buf.WriteString(")"); err != nil {
@@ -1519,7 +1512,6 @@ func deparseAddEnumValue(_ DeparseContext, in *ast.AddEnumLabelStmt, buf *string
 			return err
 		}
 	default:
-		return errors.Errorf("unsupported position type: %v", in.Position)
 	}
 	return writeSurrounding(buf, in.NeighborLabel, "'")
 }
@@ -1840,7 +1832,6 @@ func deparseRoleSpec(_ DeparseContext, in *ast.RoleSpec, buf *strings.Builder) e
 				return err
 			}
 		default:
-			return errors.Errorf("unsupported role spec type: %v", in.Type)
 		}
 	}
 	return nil
