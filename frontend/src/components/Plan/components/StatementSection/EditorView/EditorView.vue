@@ -2,9 +2,9 @@
   <div class="flex flex-col gap-y-2">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-x-4">
-        <div class="flex items-center gap-x-1 text-sm font-medium">
+        <div class="flex items-center gap-x-1 text-sm">
           <span
-            class="text-base font-medium"
+            class="text-base"
             :class="isEmpty(state.statement) ? 'text-red-600' : ''"
           >
             {{ statementTitle }}

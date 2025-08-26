@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-y-2 pt-2">
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-1">
-        <h3 class="text-base font-medium">{{ $t("plan.targets.title") }}</h3>
+        <h3 class="text-base">{{ $t("plan.targets.title") }}</h3>
         <span class="text-control-light" v-if="targets.length > 1"
           >({{ targets.length }})</span
         >
@@ -13,9 +13,6 @@
           size="small"
           @click="showTargetsSelector = true"
         >
-          <template #icon>
-            <EditIcon class="w-4 h-4" />
-          </template>
           {{ $t("common.edit") }}
         </NButton>
       </div>
@@ -99,7 +96,7 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { EditIcon, ExternalLinkIcon } from "lucide-vue-next";
+import { ExternalLinkIcon } from "lucide-vue-next";
 import { NButton, NTag } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";

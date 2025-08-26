@@ -1,11 +1,11 @@
 <template>
   <div class="flex-1">
-    <div v-if="!state.isExpanded" class="py-1 truncate">
+    <div v-if="!state.isExpanded" class="py-1 truncate pr-4">
       <span class="text-sm text-control mr-2"
         >{{ $t("common.description") }}:</span
       >
       <span
-        class="text-sm cursor-pointer hover:opacity-80"
+        class="text-sm cursor-text hover:opacity-80"
         :class="state.description ? 'text-gray-700' : 'italic text-gray-400'"
         @click="toggleExpanded"
       >
@@ -18,8 +18,8 @@
           $t("common.description")
         }}</span>
         <NButton
-          size="small"
-          quaternary
+          size="tiny"
+          type="default"
           @click="toggleExpanded"
           :disabled="state.isUpdating"
         >
@@ -29,6 +29,7 @@
       <MarkdownEditor
         :content="state.description"
         mode="editor"
+        :autofocus="true"
         :project="project"
         :placeholder="$t('plan.description.placeholder')"
         :issue-list="[]"
