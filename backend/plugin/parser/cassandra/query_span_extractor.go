@@ -71,17 +71,15 @@ func (*querySpanExtractor) extractTableFromFromSpec(fromSpec cql.IFromSpecContex
 		return "", ""
 	}
 
-	if from, ok := fromSpec.(*cql.FromSpecContext); ok {
-		if fromElem := from.FromSpecElement(); fromElem != nil {
-			text := fromElem.GetText()
-			// CQL supports keyspace.table in FROM clause
-			if idx := strings.LastIndex(text, "."); idx > 0 {
-				keyspacePart := text[:idx]
-				tablePart := text[idx+1:]
-				return unquoteIdentifier(keyspacePart), unquoteIdentifier(tablePart)
-			}
-			return "", unquoteIdentifier(text)
+	if fromElem := fromSpec.FromSpecElement(); fromElem != nil {
+		text := fromElem.GetText()
+		// CQL supports keyspace.table in FROM clause
+		if idx := strings.LastIndex(text, "."); idx > 0 {
+			keyspacePart := text[:idx]
+			tablePart := text[idx+1:]
+			return unquoteIdentifier(keyspacePart), unquoteIdentifier(tablePart)
 		}
+		return "", unquoteIdentifier(text)
 	}
 	return "", ""
 }
@@ -92,40 +90,36 @@ func (e *querySpanExtractor) extractSelectElements(selectElements cql.ISelectEle
 		return nil
 	}
 
-	if sel, ok := selectElements.(*cql.SelectElementsContext); ok {
-		if sel.GetStar() != nil {
-			return e.expandSelectAsterisk(keyspace, table)
-		}
-
-		var results []base.QuerySpanResult
-		for _, elem := range sel.AllSelectElement() {
-			if selElem, ok := elem.(*cql.SelectElementContext); ok {
-				aliasName, sourceName := e.extractColumnNameAndAlias(selElem)
-				if aliasName != "" || sourceName != "" {
-					resultName := aliasName
-					if resultName == "" {
-						resultName = sourceName
-					}
-
-					sourceColumn := base.SourceColumnSet{}
-					sourceColumn[base.ColumnResource{
-						Database: keyspace,
-						Table:    table,
-						Column:   sourceName,
-					}] = true
-
-					results = append(results, base.QuerySpanResult{
-						Name:          resultName,
-						SourceColumns: sourceColumn,
-						IsPlainField:  true,
-					})
-				}
-			}
-		}
-		return results
+	if selectElements.GetStar() != nil {
+		return e.expandSelectAsterisk(keyspace, table)
 	}
 
-	return nil
+	var results []base.QuerySpanResult
+	for _, elem := range selectElements.AllSelectElement() {
+		if selElem, ok := elem.(*cql.SelectElementContext); ok {
+			aliasName, sourceName := e.extractColumnNameAndAlias(selElem)
+			if aliasName != "" || sourceName != "" {
+				resultName := aliasName
+				if resultName == "" {
+					resultName = sourceName
+				}
+
+				sourceColumn := base.SourceColumnSet{}
+				sourceColumn[base.ColumnResource{
+					Database: keyspace,
+					Table:    table,
+					Column:   sourceName,
+				}] = true
+
+				results = append(results, base.QuerySpanResult{
+					Name:          resultName,
+					SourceColumns: sourceColumn,
+					IsPlainField:  true,
+				})
+			}
+		}
+	}
+	return results
 }
 
 // extractColumnNameAndAlias extracts both the alias (if present) and the source column name
