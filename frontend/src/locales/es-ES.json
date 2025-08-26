@@ -1174,7 +1174,7 @@
       "reopen-confirm": "¿Estás seguro de que deseas reabrir este plan?"
     },
     "description": {
-      "placeholder": "Añade tu descripción aquí para este plan..."
+      "placeholder": "Añadir descripción"
     }
   },
   "rollout": {
