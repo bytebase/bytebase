@@ -9,17 +9,14 @@
         size="small"
         @click="startEditing"
       >
-        <template #icon>
-          <EditIcon class="w-4 h-4" />
-        </template>
         {{ $t("common.edit") }}
       </NButton>
       <div v-if="isEditing" class="flex items-center gap-2">
-        <NButton size="small" @click="cancelEditing">
-          {{ $t("common.cancel") }}
-        </NButton>
-        <NButton size="small" type="primary" @click="saveChanges">
+        <NButton size="small" @click="saveChanges">
           {{ $t("common.save") }}
+        </NButton>
+        <NButton size="small" quaternary @click="cancelEditing">
+          {{ $t("common.cancel") }}
         </NButton>
       </div>
     </div>
@@ -39,6 +36,7 @@
       <MarkdownEditor
         :content="editingDescription"
         mode="editor"
+        autofocus
         :project="project"
         :placeholder="$t('issue.add-some-description')"
         :issue-list="[]"
@@ -50,7 +48,6 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { EditIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
