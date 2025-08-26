@@ -264,7 +264,10 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   const updateTab = (id: string, payload: Partial<SQLEditorTab>) => {
     const tab = tabById(id);
     if (!tab) return;
-    Object.assign(tab, payload);
+    tabsById.set(id, {
+      ...tab,
+      ...payload,
+    });
   };
   const updateCurrentTab = (payload: Partial<SQLEditorTab>) => {
     const id = currentTabId.value;
@@ -377,6 +380,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   const setCurrentTabId = (id: string) => {
     currentTabId.value = id;
   };
+
   const selectOrAddSimilarNewTab = (
     tab: CoreSQLEditorTab,
     beside = false,
