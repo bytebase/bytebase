@@ -246,7 +246,8 @@
       "description": "Este recurso y otros recursos relacionados se eliminarán definitivamente. @:common.cannot-undo-this-action",
       "double-comfirm": "Para confirmar la eliminación, escriba: {name}",
       "notification": "Se eliminó exitosamente el recurso '{name}'."
-    }
+    },
+    "collapse": "Colapsar"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -1174,7 +1175,6 @@
       "reopen-confirm": "¿Estás seguro de que deseas reabrir este plan?"
     },
     "description": {
-      "add-a-description": "Añadir una descripción",
       "placeholder": "Añade tu descripción aquí para este plan..."
     }
   },

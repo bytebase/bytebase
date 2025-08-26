@@ -246,7 +246,8 @@
       "description": "このリソースとその他の関連リソースは物理的に削除されます。@:common.cannot-undo-this-action",
       "double-comfirm": "削除を確認するには、{name} と入力してください。",
       "notification": "リソース '{name}' を正常に削除しました。"
-    }
+    },
+    "collapse": "閉じる"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -1174,7 +1175,6 @@
       "reopen-confirm": "このプランを再開してもよろしいですか?"
     },
     "description": {
-      "add-a-description": "説明を追加する",
       "placeholder": "このプランの説明をここに追加してください..."
     }
   },

@@ -12,12 +12,7 @@
         <Actions />
       </div>
     </div>
-    <div v-if="showDescriptionInput" class="flex flex-col mt-2">
-      <label class="block text-sm text-control-light mb-1">
-        {{ $t("plan.description.add-a-description") }}
-      </label>
-      <DescriptionInput />
-    </div>
+    <DescriptionSection v-if="showDescriptionSection" />
   </div>
 </template>
 
@@ -27,7 +22,7 @@ import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { usePlanContext } from "../../logic";
 import Actions from "./Actions";
-import DescriptionInput from "./DescriptionInput.vue";
+import DescriptionSection from "./DescriptionSection.vue";
 import TitleInput from "./TitleInput.vue";
 
 const { isCreating, plan } = usePlanContext();
@@ -36,7 +31,7 @@ const showDraftTag = computed(() => {
   return !isCreating.value && !plan.value.issue && !plan.value.rollout;
 });
 
-const showDescriptionInput = computed(() => {
+const showDescriptionSection = computed(() => {
   return !plan.value.issue;
 });
 </script>
