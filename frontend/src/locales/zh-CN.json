@@ -1174,7 +1174,7 @@
       "reopen-confirm": "确定重新开启该变更计划？"
     },
     "description": {
-      "placeholder": "在此添加该更变计划的描述..."
+      "placeholder": "添加描述"
     }
   },
   "rollout": {

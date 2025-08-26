@@ -1174,7 +1174,7 @@
       "reopen-confirm": "Bạn có chắc chắn muốn mở lại kế hoạch này không?"
     },
     "description": {
-      "placeholder": "Thêm mô tả của bạn vào đây cho kế hoạch này..."
+      "placeholder": "Thêm mô tả"
     }
   },
   "rollout": {
