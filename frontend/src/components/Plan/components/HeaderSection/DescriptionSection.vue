@@ -1,18 +1,46 @@
 <template>
   <div class="flex-1">
-    <MarkdownEditor
-      :content="state.description"
-      mode="editor"
-      :project="project"
-      :placeholder="$t('plan.description.placeholder')"
-      :issue-list="[]"
-      @change="onUpdateValue"
-    />
+    <div v-if="!state.isExpanded" class="py-1 truncate">
+      <span class="text-sm text-control mr-2"
+        >{{ $t("common.description") }}:</span
+      >
+      <span
+        class="text-sm cursor-pointer hover:opacity-80"
+        :class="state.description ? 'text-gray-700' : 'italic text-gray-400'"
+        @click="toggleExpanded"
+      >
+        {{ state.description || $t("plan.description.placeholder") }}
+      </span>
+    </div>
+    <div v-else>
+      <div class="flex items-center justify-between mt-2">
+        <span class="text-base font-medium">{{
+          $t("common.description")
+        }}</span>
+        <NButton
+          size="small"
+          quaternary
+          @click="toggleExpanded"
+          :disabled="state.isUpdating"
+        >
+          {{ $t("common.collapse") }}
+        </NButton>
+      </div>
+      <MarkdownEditor
+        :content="state.description"
+        mode="editor"
+        :project="project"
+        :placeholder="$t('plan.description.placeholder')"
+        :issue-list="[]"
+        @change="onUpdateValue"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
+import { NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import MarkdownEditor from "@/components/MarkdownEditor";
@@ -36,6 +64,7 @@ const { isCreating, plan, readonly } = usePlanContext();
 const state = reactive({
   isUpdating: false,
   description: plan.value.description,
+  isExpanded: false,
 });
 
 const allowEdit = computed(() => {
@@ -53,6 +82,10 @@ const allowEdit = computed(() => {
   }
   return false;
 });
+
+const toggleExpanded = () => {
+  state.isExpanded = !state.isExpanded;
+};
 
 const onUpdateValue = (value: string) => {
   state.description = value;

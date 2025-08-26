@@ -246,7 +246,8 @@
       "description": "This resource and other related resources will be hard-deleted. @:common.cannot-undo-this-action",
       "double-comfirm": "To confirm deletion, please type: {name}",
       "notification": "Successfully delete the resource '{name}'."
-    }
+    },
+    "collapse": "Collapse"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1174,7 +1175,6 @@
       "reopen-confirm": "Are you sure to reopen this plan?"
     },
     "description": {
-      "add-a-description": "Add a description",
       "placeholder": "Add your description here for this plan..."
     }
   },
