@@ -171,7 +171,8 @@ const handleSpecCreated = async (spec: Plan_Spec) => {
     plan.value.specs.push(spec);
   }
 
-  gotoSpec(spec.id, true); // Auto-enable editing for new specs
+  const enableEditing = !isCreating.value;
+  gotoSpec(spec.id, enableEditing);
 };
 
 const gotoSpec = (specId: string, enableEditing = false) => {
