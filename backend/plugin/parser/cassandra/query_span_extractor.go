@@ -96,27 +96,25 @@ func (e *querySpanExtractor) extractSelectElements(selectElements cql.ISelectEle
 
 	var results []base.QuerySpanResult
 	for _, elem := range selectElements.AllSelectElement() {
-		if selElem, ok := elem.(*cql.SelectElementContext); ok {
-			aliasName, sourceName := e.extractColumnNameAndAlias(selElem)
-			if aliasName != "" || sourceName != "" {
-				resultName := aliasName
-				if resultName == "" {
-					resultName = sourceName
-				}
-
-				sourceColumn := base.SourceColumnSet{}
-				sourceColumn[base.ColumnResource{
-					Database: keyspace,
-					Table:    table,
-					Column:   sourceName,
-				}] = true
-
-				results = append(results, base.QuerySpanResult{
-					Name:          resultName,
-					SourceColumns: sourceColumn,
-					IsPlainField:  true,
-				})
+		aliasName, sourceName := e.extractColumnNameAndAlias(elem)
+		if aliasName != "" || sourceName != "" {
+			resultName := aliasName
+			if resultName == "" {
+				resultName = sourceName
 			}
+
+			sourceColumn := base.SourceColumnSet{}
+			sourceColumn[base.ColumnResource{
+				Database: keyspace,
+				Table:    table,
+				Column:   sourceName,
+			}] = true
+
+			results = append(results, base.QuerySpanResult{
+				Name:          resultName,
+				SourceColumns: sourceColumn,
+				IsPlainField:  true,
+			})
 		}
 	}
 	return results
