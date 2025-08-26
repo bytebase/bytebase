@@ -121,7 +121,7 @@ func (e *querySpanExtractor) extractSelectElements(selectElements cql.ISelectEle
 }
 
 // extractColumnNameAndAlias extracts both the alias (if present) and the source column name
-func (*querySpanExtractor) extractColumnNameAndAlias(elem *cql.SelectElementContext) (alias string, sourceColumn string) {
+func (*querySpanExtractor) extractColumnNameAndAlias(elem cql.ISelectElementContext) (alias string, sourceColumn string) {
 	if elem == nil {
 		return "", ""
 	}
