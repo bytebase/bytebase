@@ -29,7 +29,7 @@
           </NTooltip>
           <NButton
             v-if="canModifySpecs && plan.specs.length > 1"
-            quaternary
+            text
             size="tiny"
             :title="$t('common.delete')"
             @click.stop="handleDeleteSpec(spec)"
@@ -49,9 +49,6 @@
             size="small"
             @click="showAddSpecDrawer = true"
           >
-            <template #icon>
-              <PlusIcon class="w-4 h-4" />
-            </template>
             {{ $t("plan.add-spec") }}
           </NButton>
         </div>
@@ -67,7 +64,7 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { PlusIcon, XIcon } from "lucide-vue-next";
+import { XIcon } from "lucide-vue-next";
 import { NTabs, NTab, NButton, useDialog, NTooltip } from "naive-ui";
 import { ref, computed, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
