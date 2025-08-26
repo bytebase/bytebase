@@ -1174,7 +1174,7 @@
       "reopen-confirm": "このプランを再開してもよろしいですか?"
     },
     "description": {
-      "placeholder": "このプランの説明をここに追加してください..."
+      "placeholder": "説明を追加"
     }
   },
   "rollout": {
