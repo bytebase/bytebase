@@ -212,25 +212,34 @@ const getInitialState = (): LocalState => {
 };
 
 const providerOptions = computed(() =>
-  [AISetting_Provider.OPEN_AI, AISetting_Provider.AZURE_OPENAI].map(
-    (provider) => {
-      let label = "";
-      switch (provider) {
-        case AISetting_Provider.OPEN_AI:
-          label = t("settings.general.workspace.ai-assistant.provider.open_ai");
-          break;
-        case AISetting_Provider.AZURE_OPENAI:
-          label = t(
-            "settings.general.workspace.ai-assistant.provider.azure_open_ai"
-          );
-          break;
-      }
-      return {
-        label,
-        value: provider,
-      };
+  [
+    AISetting_Provider.OPEN_AI,
+    AISetting_Provider.AZURE_OPENAI,
+    AISetting_Provider.GEMINI,
+    AISetting_Provider.CLAUDE,
+  ].map((provider) => {
+    let label = "";
+    switch (provider) {
+      case AISetting_Provider.OPEN_AI:
+        label = t("settings.general.workspace.ai-assistant.provider.open_ai");
+        break;
+      case AISetting_Provider.AZURE_OPENAI:
+        label = t(
+          "settings.general.workspace.ai-assistant.provider.azure_open_ai"
+        );
+        break;
+      case AISetting_Provider.GEMINI:
+        label = t("settings.general.workspace.ai-assistant.provider.gemini");
+        break;
+      case AISetting_Provider.CLAUDE:
+        label = t("settings.general.workspace.ai-assistant.provider.claude");
+        break;
     }
-  )
+    return {
+      label,
+      value: provider,
+    };
+  })
 );
 
 watchEffect(() => {
@@ -267,6 +276,20 @@ const providerDefault = computed(() => {
         endpoint:
           "https://{resource name}.openai.azure.com/openai/deployments/{deployment id}/chat/completions?api-version=2024-06-0",
         model: "gpt-4o",
+      };
+    case AISetting_Provider.GEMINI:
+      return {
+        apiKey: "",
+        apiKeyDoc: "https://ai.google.dev/gemini-api/docs",
+        endpoint: "https://generativelanguage.googleapis.com/v1beta",
+        model: "gemini-2.0-flash",
+      };
+    case AISetting_Provider.CLAUDE:
+      return {
+        apiKey: "",
+        apiKeyDoc: "https://docs.anthropic.com/en/api/getting-started",
+        endpoint: "https://api.anthropic.com/v1/messages",
+        model: "claude-3-opus-20240229",
       };
     default:
       return {
