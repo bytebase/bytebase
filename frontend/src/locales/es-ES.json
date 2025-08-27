@@ -660,7 +660,9 @@
           "provider": {
             "self": "Proveedor de IA",
             "open_ai": "Open AI",
-            "azure_open_ai": "Azure Open AI"
+            "azure_open_ai": "Azure Open AI",
+            "gemini": "Gemini",
+            "claude": "Claude"
           },
           "api-key": {
             "self": "Clave de API",
@@ -2835,8 +2837,8 @@
     },
     "file-type": {
       "versioned": "Versión",
-      "unspecified": "No especificado",
-      "declarative": "Declarativo"
+      "declarative": "Declarativo",
+      "unspecified": "No especificado"
     },
     "vcs-type": {
       "unspecified": "No especificado"

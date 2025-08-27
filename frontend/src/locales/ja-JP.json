@@ -660,7 +660,9 @@
           "provider": {
             "self": "AIプロバイダー",
             "open_ai": "Open AI",
-            "azure_open_ai": "Azure Open AI"
+            "azure_open_ai": "Azure Open AI",
+            "gemini": "Gemini",
+            "claude": "Claude"
           },
           "api-key": {
             "self": "APIキー",
@@ -2835,8 +2837,8 @@
     },
     "file-type": {
       "versioned": "バージョン",
-      "unspecified": "未指定",
-      "declarative": "宣言"
+      "declarative": "宣言",
+      "unspecified": "未指定"
     },
     "vcs-type": {
       "unspecified": "未指定"
