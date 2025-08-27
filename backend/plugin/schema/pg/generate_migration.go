@@ -538,9 +538,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	}
 
 	// Add dependency edges
-	// For tables with foreign keys depending on other tables
+	// For tables with foreign keys depending on other tables (only for CREATE operations)
 	for tableID, tableDiff := range tableMap {
-		if tableDiff.NewTable != nil {
+		if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
 			for _, fk := range tableDiff.NewTable.ForeignKeys {
 				depID := getMigrationObjectID(fk.ReferencedSchema, fk.ReferencedTable)
 				if depID != tableID {
@@ -590,23 +590,36 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 		// If there's a cycle, fall back to a safe order
 		// Create tables first (without foreign keys)
 		for _, tableDiff := range tableMap {
-			createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable, false)
-			if err != nil {
-				return err
-			}
-			_, _ = buf.WriteString(createTableSQL)
-			if createTableSQL != "" {
-				_, _ = buf.WriteString("\n")
-			}
+			if tableDiff.Action == schema.MetadataDiffActionCreate {
+				createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable, false)
+				if err != nil {
+					return err
+				}
+				_, _ = buf.WriteString(createTableSQL)
+				if createTableSQL != "" {
+					_, _ = buf.WriteString("\n")
+				}
 
-			// Add table and column comments for newly created tables
-			if tableDiff.NewTable != nil && tableDiff.NewTable.Comment != "" {
-				writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
+				// Add table and column comments for newly created tables
+				if tableDiff.NewTable != nil && tableDiff.NewTable.Comment != "" {
+					writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
+				}
+				if tableDiff.NewTable != nil {
+					for _, col := range tableDiff.NewTable.Columns {
+						if col.Comment != "" {
+							writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, col.Name, col.Comment)
+						}
+					}
+				}
 			}
-			if tableDiff.NewTable != nil {
-				for _, col := range tableDiff.NewTable.Columns {
-					if col.Comment != "" {
-						writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, col.Name, col.Comment)
+		}
+
+		// Handle column additions for ALTER operations (only columns in topological order)
+		for _, tableDiff := range tableMap {
+			if tableDiff.Action == schema.MetadataDiffActionAlter {
+				for _, colDiff := range tableDiff.ColumnChanges {
+					if colDiff.Action == schema.MetadataDiffActionCreate {
+						writeAddColumn(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn)
 					}
 				}
 			}
@@ -614,8 +627,11 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 
 		// Create views
 		for _, viewDiff := range viewMap {
-			if err := writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView); err != nil {
-				return err
+			switch viewDiff.Action {
+			case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
+				if err := writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView); err != nil {
+					return err
+				}
 			}
 			// Add view comment for newly created views
 			if viewDiff.NewView != nil && viewDiff.NewView.Comment != "" {
@@ -625,8 +641,11 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 
 		// Create materialized views
 		for _, mvDiff := range materializedViewMap {
-			if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
-				return err
+			switch mvDiff.Action {
+			case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
+				if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
+					return err
+				}
 			}
 			// Add materialized view comment for newly created materialized views
 			if mvDiff.NewMaterializedView != nil && mvDiff.NewMaterializedView.Comment != "" {
