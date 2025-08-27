@@ -124,6 +124,7 @@ const columnList = computed((): InstanceDataTableColumn[] => {
           instance.environment || NULL_ENVIRONMENT_NAME
         )}
         link={false}
+        showColor={true}
         nullEnvironmentPlaceholder="Null"
       />
     ),

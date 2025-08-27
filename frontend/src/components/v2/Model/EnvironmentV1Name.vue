@@ -4,6 +4,17 @@
     v-bind="bindings"
     class="inline-flex items-center gap-x-1"
     :class="[isLink && !plain && 'normal-link', isLink && 'hover:underline']"
+    :style="
+      showColor && backgroundColorRgb
+        ? {
+            backgroundColor: `rgba(${backgroundColorRgb}, 0.1)`,
+            borderTopColor: `rgb(${backgroundColorRgb})`,
+            color: `rgb(${backgroundColorRgb})`,
+            padding: '0 6px',
+            borderRadius: '4px',
+          }
+        : {}
+    "
   >
     <span class="select-none inline-block truncate" :class="textClass">
       <span v-if="isUnknown" class="text-gray-400 italic">
@@ -29,7 +40,7 @@ import { useRouter } from "vue-router";
 import { UNKNOWN_ENVIRONMENT_NAME, NULL_ENVIRONMENT_NAME } from "@/types";
 import type { Environment } from "@/types/v1/environment";
 import type { VueClass } from "@/utils";
-import { autoEnvironmentRoute } from "@/utils";
+import { autoEnvironmentRoute, hexToRgb } from "@/utils";
 import HighlightLabelText from "./HighlightLabelText.vue";
 import ProductionEnvironmentV1Icon from "./ProductionEnvironmentV1Icon.vue";
 
@@ -45,6 +56,7 @@ const props = withDefaults(
     showIcon?: boolean;
     textClass?: string;
     keyword?: string;
+    showColor?: boolean;
     nullEnvironmentPlaceholder?: string; // Placeholder for null/unknown environment.
   }>(),
   {
@@ -58,6 +70,7 @@ const props = withDefaults(
     showIcon: true,
     textClass: "",
     keyword: "",
+    showColor: true,
     nullEnvironmentPlaceholder: "NULL ENVIRONMENT",
   }
 );
@@ -86,5 +99,12 @@ const bindings = computed(() => {
     };
   }
   return {};
+});
+
+const backgroundColorRgb = computed(() => {
+  if (!props.environment.color) {
+    return "";
+  }
+  return hexToRgb(props.environment.color).join(", ");
 });
 </script>
