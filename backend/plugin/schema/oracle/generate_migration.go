@@ -581,6 +581,8 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 			switch viewDiff.Action {
 			case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
 				writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView)
+			default:
+				// No action needed
 			}
 		}
 
@@ -589,6 +591,8 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 			switch mvDiff.Action {
 			case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
 				writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView)
+			default:
+				// No action needed
 			}
 		}
 
