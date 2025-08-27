@@ -83,9 +83,7 @@
                 v-if="file.type"
                 :class="[
                   'inline-flex items-center px-1.5 py-0.5 rounded text-xs flex-shrink-0',
-                  file.type === Release_File_Type.VERSIONED
-                    ? 'bg-blue-100 text-blue-800 '
-                    : 'bg-gray-100 text-gray-800 ',
+                  'bg-blue-100 text-blue-800 ',
                 ]"
               >
                 {{ getReleaseFileTypeText(file.type) }}
