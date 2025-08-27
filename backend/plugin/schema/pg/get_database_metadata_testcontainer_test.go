@@ -2316,8 +2316,8 @@ func validateArrayTypes(t *testing.T, syncMetadata, parseMetadata *storepb.Datab
 		parseColumnTypes[col.Name] = col.Type
 	}
 
-	t.Logf("Array type validation results:")
-	t.Logf("Column Name                        | Sync Type                | Parse Type               | Expected     | Status")
+	t.Log("Array type validation results:")
+	t.Log("Column Name                        | Sync Type                | Parse Type               | Expected     | Status")
 	t.Log(strings.Repeat("-", 120))
 
 	allCorrect := true

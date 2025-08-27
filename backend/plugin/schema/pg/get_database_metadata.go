@@ -501,8 +501,8 @@ func getPostgreSQLArrayTypeName(baseType string) string {
 		"text":              "_text",
 		"varchar":           "_varchar",
 		"character varying": "_varchar",
-		"char":              "_bpchar",  // PostgreSQL uses bpchar internally for char
-		"character":         "_bpchar",  // PostgreSQL uses bpchar internally for character
+		"char":              "_bpchar", // PostgreSQL uses bpchar internally for char
+		"character":         "_bpchar", // PostgreSQL uses bpchar internally for character
 		"bpchar":            "_bpchar",
 		"name":              "_name",
 
@@ -626,6 +626,8 @@ func getPostgreSQLArrayTypeName(baseType string) string {
 		return "_int8"
 	case "smallserial", "serial2":
 		return "_int2"
+	default:
+		// For non-serial types, proceed with fallback logic
 	}
 
 	// Return empty string if no mapping found - caller will use fallback logic
