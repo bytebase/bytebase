@@ -4,7 +4,8 @@
       v-if="mode === 'editor'"
       v-model:value="state.activeTab"
       type="line"
-      class="mb-3"
+      :size="'small'"
+      class="mb-2"
       @update:value="handleTabChange"
     >
       <NTab name="write" :tab="$t('issue.comment-editor.write')" />

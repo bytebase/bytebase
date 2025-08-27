@@ -1,67 +1,61 @@
 <template>
-  <div ref="descriptionRef" class="flex-1">
-    <div v-if="!state.isExpanded" class="py-1">
-      <button
+  <div class="flex-1">
+    <template v-if="!state.isExpanded">
+      <NButton
         v-if="!state.description && allowEdit"
-        class="flex items-center gap-1 text-sm italic text-gray-400 hover:text-gray-600 hover:bg-gray-50 px-2 py-0.5 -ml-2 rounded"
+        text
+        size="small"
+        class="italic opacity-60"
         @click="handleExpand($event)"
       >
-        <svg
-          class="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 4v16m8-8H4"
-          />
-        </svg>
+        <template #icon>
+          <PlusIcon class="w-4 h-4" />
+        </template>
         {{ $t("plan.description.placeholder") }}
-      </button>
+      </NButton>
       <div
         v-else
-        class="cursor-pointer hover:bg-gray-50 px-3 py-2 -ml-3 rounded border border-transparent hover:border-gray-200 transition-colors"
+        class="mt-1 cursor-pointer px-2 py-1 rounded-md border border-transparent hover:border-gray-200 transition-all duration-200"
         @click="handleExpand($event)"
       >
-        <div class="description-preview">
-          <MarkdownEditor
-            :content="state.description"
-            mode="preview"
-            :project="project"
-            :issue-list="[]"
-            class="pointer-events-none"
-          />
-        </div>
+        <MarkdownEditor
+          mode="preview"
+          class="pointer-events-none"
+          :content="state.description"
+          :project="project"
+          :issue-list="[]"
+        />
       </div>
-    </div>
+    </template>
     <div v-else class="py-2">
-      <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center justify-between">
         <span class="text-base font-medium">{{
           $t("common.description")
         }}</span>
-        <button
-          class="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 border border-gray-300 rounded-md"
-          :disabled="state.isUpdating"
-          @click="handleCollapse"
-        >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M5 15l7-7 7 7"
-            />
-          </svg>
-          {{ $t("common.collapse") }}
-        </button>
+        <div class="flex items-center gap-2">
+          <template v-if="!isCreating">
+            <NButton
+              size="small"
+              :disabled="
+                state.isUpdating ||
+                !allowEdit ||
+                state.description === plan.description
+              "
+              @click="handleSave"
+            >
+              {{ $t("common.save") }}
+            </NButton>
+            <NButton size="small" quaternary @click="handleCancel">
+              {{ $t("common.cancel") }}
+            </NButton>
+          </template>
+          <NButton v-else size="tiny" @click="handleCancel">
+            <template #icon>
+              <ChevronUpIcon class="w-4 h-4" />
+            </template>
+            {{ $t("common.collapse") }}
+          </NButton>
+        </div>
       </div>
       <MarkdownEditor
         :content="state.description"
@@ -78,27 +72,22 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { computed, reactive, watch, onMounted, onUnmounted, ref } from "vue";
-import { useI18n } from "vue-i18n";
+import { PlusIcon, ChevronUpIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
+import { computed, reactive, watch } from "vue";
 import MarkdownEditor from "@/components/MarkdownEditor";
+import { useResourcePoller } from "@/components/Plan/logic/poller";
 import { planServiceClientConnect } from "@/grpcweb";
-import {
-  pushNotification,
-  useCurrentUserV1,
-  extractUserId,
-  useCurrentProjectV1,
-} from "@/store";
+import { useCurrentUserV1, extractUserId, useCurrentProjectV1 } from "@/store";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContext } from "../../logic";
 
-const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
 const { isCreating, plan, readonly } = usePlanContext();
-
-const descriptionRef = ref<HTMLDivElement>();
+const { refreshResources } = useResourcePoller();
 
 const state = reactive({
   isUpdating: false,
@@ -137,77 +126,48 @@ const handleExpand = (event: MouseEvent) => {
   }, 100);
 };
 
-const handleCollapse = () => {
+const handleCancel = () => {
+  state.description = plan.value.description;
   state.isExpanded = false;
-};
-
-const handleClickOutside = (event: MouseEvent) => {
-  if (!state.isExpanded) return;
-  if (state.justExpanded) return; // Prevent immediate collapse after expanding
-  if (!descriptionRef.value) return;
-
-  const target = event.target as Node;
-  if (!descriptionRef.value.contains(target)) {
-    state.isExpanded = false;
+  if (isCreating.value) {
+    plan.value.description = state.description;
   }
 };
 
-onMounted(() => {
-  document.addEventListener("click", handleClickOutside);
-});
+const handleSave = async () => {
+  if (isCreating.value) {
+    plan.value.description = state.description;
+    state.isExpanded = false;
+    return;
+  }
 
-onUnmounted(() => {
-  document.removeEventListener("click", handleClickOutside);
-});
+  if (!allowEdit.value) return;
+
+  try {
+    state.isUpdating = true;
+    const planPatch = create(PlanSchema, {
+      ...plan.value,
+      description: state.description,
+    });
+    const request = create(UpdatePlanRequestSchema, {
+      plan: planPatch,
+      updateMask: { paths: ["description"] },
+    });
+    const response = await planServiceClientConnect.updatePlan(request);
+    Object.assign(plan.value, response);
+    refreshResources(["plan"], true /** force */);
+    state.isExpanded = false;
+  } finally {
+    state.isUpdating = false;
+  }
+};
 
 const onUpdateValue = (value: string) => {
   state.description = value;
   if (isCreating.value) {
-    plan.value.description = value;
+    plan.value.description = state.description;
   }
 };
-
-let debounceTimer: NodeJS.Timeout | null = null;
-
-watch(
-  () => state.description,
-  (newValue) => {
-    if (isCreating.value || !allowEdit.value) {
-      return;
-    }
-
-    if (newValue === plan.value.description) {
-      return;
-    }
-
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-    }
-
-    debounceTimer = setTimeout(async () => {
-      try {
-        state.isUpdating = true;
-        const planPatch = create(PlanSchema, {
-          ...plan.value,
-          description: state.description,
-        });
-        const request = create(UpdatePlanRequestSchema, {
-          plan: planPatch,
-          updateMask: { paths: ["description"] },
-        });
-        const response = await planServiceClientConnect.updatePlan(request);
-        Object.assign(plan.value, response);
-        pushNotification({
-          module: "bytebase",
-          style: "SUCCESS",
-          title: t("common.updated"),
-        });
-      } finally {
-        state.isUpdating = false;
-      }
-    }, 1000);
-  }
-);
 
 watch(
   () => plan.value.description,
@@ -219,58 +179,3 @@ watch(
   { immediate: true }
 );
 </script>
-
-<style scoped>
-.description-preview {
-  max-height: 150px;
-  overflow: hidden;
-  position: relative;
-}
-
-.description-preview::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 30px;
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0),
-    rgba(255, 255, 255, 1)
-  );
-  pointer-events: none;
-}
-
-/* Make markdown content more compact in preview */
-.description-preview :deep(*) {
-  margin-top: 0 !important;
-  margin-bottom: 0.5rem !important;
-}
-
-.description-preview :deep(p:last-child),
-.description-preview :deep(ul:last-child),
-.description-preview :deep(ol:last-child) {
-  margin-bottom: 0 !important;
-}
-
-.description-preview :deep(h1),
-.description-preview :deep(h2),
-.description-preview :deep(h3) {
-  margin-bottom: 0.75rem !important;
-}
-
-.description-preview :deep(ul),
-.description-preview :deep(ol) {
-  padding-left: 1.5rem !important;
-}
-
-.description-preview :deep(li) {
-  margin-bottom: 0.25rem !important;
-}
-
-.description-preview :deep(pre) {
-  padding: 0.5rem !important;
-  margin-bottom: 0.5rem !important;
-}
-</style>

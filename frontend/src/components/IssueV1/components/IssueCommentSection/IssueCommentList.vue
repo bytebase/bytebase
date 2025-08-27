@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col">
     <ul>
-      <IssueCreatedComment :issue-comments="issueComments" :issue="issue" />
+      <IssueCreatedCommentV1 :issue-comments="issueComments" :issue="issue" />
       <IssueCommentView
         class="group"
         v-for="(item, index) in issueComments"
@@ -45,12 +45,13 @@
               state.editCommentMode &&
               state.activeComment?.name === item.comment.name
             "
-            class="flex space-x-2 mt-4 items-center justify-end"
+            class="flex space-x-2 mt-2 items-center justify-end"
           >
-            <NButton quaternary @click.prevent="cancelEditComment">
+            <NButton quaternary size="small" @click.prevent="cancelEditComment">
               {{ $t("common.cancel") }}
             </NButton>
             <NButton
+              size="small"
               :disabled="!allowUpdateComment"
               @click.prevent="doUpdateComment"
             >
@@ -118,7 +119,7 @@ import {
   isUserEditableComment,
   type DistinctIssueComment,
 } from "./IssueCommentView";
-import IssueCreatedComment from "./IssueCommentView/IssueCreatedComment.vue";
+import IssueCreatedCommentV1 from "./IssueCommentView/IssueCreatedCommentV1.vue";
 
 interface LocalState {
   editCommentMode: boolean;
