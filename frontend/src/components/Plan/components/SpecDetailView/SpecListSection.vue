@@ -3,28 +3,33 @@
     <NTabs
       :key="`${plan.specs.length}-${selectedSpec.id}`"
       :value="selectedSpec.id"
-      type="line"
+      type="card"
       size="small"
       class="flex-1"
-      tab-class="first:ml-4"
       @update:value="handleTabChange"
     >
+      <template #prefix>
+        <div class=""></div>
+        <div v-if="!plan.issue" class="pl-4 text-base font-medium">
+          {{ $t("plan.navigator.changes") }}
+        </div>
+      </template>
+
       <NTab v-for="(spec, index) in plan.specs" :key="spec.id" :name="spec.id">
         <div class="flex items-center gap-1">
           <span v-if="plan.specs.length > 1" class="opacity-80"
             >#{{ index + 1 }}</span
           >
           {{ getSpecTitle(spec) }}
-          <span
-            v-if="isSpecEmpty(spec)"
-            class="text-error"
-            :title="$t('plan.navigator.statement-empty')"
-          >
-            *
-          </span>
+          <NTooltip v-if="isSpecEmpty(spec)">
+            <template #trigger>
+              <span class="text-error">*</span>
+            </template>
+            {{ $t("plan.navigator.statement-empty") }}
+          </NTooltip>
           <NButton
             v-if="canModifySpecs && plan.specs.length > 1"
-            quaternary
+            text
             size="tiny"
             :title="$t('common.delete')"
             @click.stop="handleDeleteSpec(spec)"
@@ -44,9 +49,6 @@
             size="small"
             @click="showAddSpecDrawer = true"
           >
-            <template #icon>
-              <PlusIcon class="w-4 h-4" />
-            </template>
             {{ $t("plan.add-spec") }}
           </NButton>
         </div>
@@ -62,17 +64,24 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { PlusIcon, XIcon } from "lucide-vue-next";
-import { NTabs, NTab, NButton, useDialog } from "naive-ui";
-import { ref, computed } from "vue";
+import { XIcon } from "lucide-vue-next";
+import { NTabs, NTab, NButton, useDialog, NTooltip } from "naive-ui";
+import { ref, computed, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { planServiceClientConnect } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification } from "@/store";
+import {
+  pushNotification,
+  useCurrentProjectV1,
+  useSheetV1Store,
+} from "@/store";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { extractSheetUID } from "@/utils";
+import { databaseEngineForSpec, getLocalSheetByName } from "../../logic";
 import { usePlanContext } from "../../logic/context";
+import { useEditorState } from "../../logic/useEditorState";
 import { getSpecTitle } from "../../logic/utils";
 import AddSpecDrawer from "../AddSpecDrawer.vue";
 import { useSpecsValidation } from "../common";
@@ -82,8 +91,11 @@ const router = useRouter();
 const dialog = useDialog();
 const { t } = useI18n();
 const { plan, isCreating } = usePlanContext();
+const sheetStore = useSheetV1Store();
 const selectedSpec = useSelectedSpec();
-const { isSpecEmpty } = useSpecsValidation(plan.value.specs);
+const { project } = useCurrentProjectV1();
+const { isSpecEmpty } = useSpecsValidation(computed(() => plan.value.specs));
+const { setEditingState } = useEditorState();
 
 const showAddSpecDrawer = ref(false);
 
@@ -102,10 +114,30 @@ const handleTabChange = (specId: string) => {
 
 const handleSpecCreated = async (spec: Plan_Spec) => {
   // Add the new spec to the plan.
-  plan.value.specs.push(spec);
 
   // If the plan is not being created (already exists), call UpdatePlan API
   if (!isCreating.value) {
+    // If the spec references a sheet that is pending creation (UID starts with "-"),
+    // we need to create the sheet first.
+    if (
+      spec.config.case === "changeDatabaseConfig" ||
+      spec.config.case === "exportDataConfig"
+    ) {
+      const uid = extractSheetUID(spec.config.value.sheet);
+      if (uid.startsWith("-")) {
+        // The sheet is pending create.
+        const sheetToCreate = getLocalSheetByName(spec.config.value.sheet);
+        const engine = await databaseEngineForSpec(spec);
+        sheetToCreate.engine = engine;
+        sheetToCreate.title = plan.value.title;
+        const createdSheet = await sheetStore.createSheet(
+          project.value.name,
+          sheetToCreate
+        );
+        spec.config.value.sheet = createdSheet.name;
+      }
+    }
+    plan.value.specs.push(spec);
     try {
       const request = create(UpdatePlanRequestSchema, {
         plan: plan.value,
@@ -132,21 +164,34 @@ const handleSpecCreated = async (spec: Plan_Spec) => {
       });
       return;
     }
+  } else {
+    plan.value.specs.push(spec);
   }
 
-  gotoSpec(spec.id);
+  const enableEditing = !isCreating.value;
+  gotoSpec(spec.id, enableEditing);
 };
 
-const gotoSpec = (specId: string) => {
+const gotoSpec = (specId: string, enableEditing = false) => {
   const currentRoute = router.currentRoute.value;
-  router.push({
-    name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-    params: {
-      ...(currentRoute.params || {}),
-      specId,
-    },
-    query: currentRoute.query || {},
-  });
+  router
+    .push({
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+      params: {
+        ...(currentRoute.params || {}),
+        specId,
+      },
+      query: currentRoute.query || {},
+    })
+    .then(() => {
+      // Enable editing mode if requested (for newly created specs)
+      if (enableEditing) {
+        // Use nextTick to ensure the route navigation completes first
+        nextTick(() => {
+          setEditingState(true);
+        });
+      }
+    });
 };
 
 const handleDeleteSpec = (spec: Plan_Spec) => {

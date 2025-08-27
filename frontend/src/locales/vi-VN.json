@@ -246,7 +246,8 @@
       "description": "Tài nguyên này và các tài nguyên liên quan khác sẽ bị xóa cứng. @:common.cannot-undo-this-action",
       "double-comfirm": "Để xác nhận xóa, vui lòng nhập: {name}",
       "notification": "Xóa thành công tài nguyên '{name}'."
-    }
+    },
+    "collapse": "Sụp đổ"
   },
   "error-page": {
     "go-back-home": "Về trang chủ"
@@ -659,7 +660,9 @@
           "provider": {
             "self": "Nhà cung cấp AI",
             "open_ai": "Open AI",
-            "azure_open_ai": "Azure Open AI"
+            "azure_open_ai": "Azure Open AI",
+            "gemini": "Gemini",
+            "claude": "Claude"
           },
           "api-key": {
             "self": "Khóa API",
@@ -856,7 +859,6 @@
       }
     },
     "add-some-description": "Thêm mô tả...",
-    "add-a-comment": "Thêm bình luận",
     "leave-a-comment": "Để lại bình luận...",
     "comment-editor": {
       "write": "Viết",
@@ -1172,6 +1174,9 @@
       "description": "Lọc các kế hoạch theo trạng thái của chúng",
       "close-confirm": "Bạn có chắc chắn muốn đóng kế hoạch này không?",
       "reopen-confirm": "Bạn có chắc chắn muốn mở lại kế hoạch này không?"
+    },
+    "description": {
+      "placeholder": "Thêm mô tả"
     }
   },
   "rollout": {
@@ -2832,6 +2837,7 @@
     },
     "file-type": {
       "versioned": "Phiên bản",
+      "declarative": "Khai báo",
       "unspecified": "Không xác định"
     },
     "vcs-type": {

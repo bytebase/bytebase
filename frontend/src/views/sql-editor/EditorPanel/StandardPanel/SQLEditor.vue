@@ -123,12 +123,10 @@ const handleUpdateStatement = (value: string) => {
     return;
   }
   const tab = currentTab.value;
-  if (!tab) {
+  if (!tab || value === tab.statement) {
     return;
   }
-  if (value === tab.statement) {
-    return;
-  }
+  // Directly update the reactive tab for immediate UI feedback
   tabStore.updateCurrentTab({
     statement: value,
     status: "DIRTY",

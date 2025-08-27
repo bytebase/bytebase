@@ -140,6 +140,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", d.databaseName)
 	}
+	ruleMap, err := getRules(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get rules from database %q", d.databaseName)
+	}
 	materializedViewMap, materializedViewOidMap, err := getMaterializedViews(txn, indexMap, triggerMap, extensionDepend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get materialized views from database %q", d.databaseName)
@@ -177,12 +181,21 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			if isAtLeastPG10 {
 				table.Partitions = warpTablePartitions(tablePartitionMap, schemaName, table.Name)
 			}
+			// Add rules to table
+			key := db.TableKey{Schema: schemaName, Table: table.Name}
+			table.Rules = ruleMap[key]
+		}
+		// Add rules to views
+		views := viewMap[schemaName]
+		for _, view := range views {
+			key := db.TableKey{Schema: schemaName, Table: view.Name}
+			view.Rules = ruleMap[key]
 		}
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
 			Name:              schemaName,
 			Tables:            tables,
 			ExternalTables:    externalTableMap[schemaName],
-			Views:             viewMap[schemaName],
+			Views:             views,
 			Functions:         functionMap[schemaName],
 			Sequences:         sequenceMap[schemaName],
 			MaterializedViews: materializedViewMap[schemaName],
@@ -926,7 +939,9 @@ func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.D
 	  	WHERE 
 	  		dependency_ns.nspname = '%s'
 	  		AND dependency_view.relname = '%s'
-	  		AND pg_attribute.attnum > 0 
+	  		AND pg_attribute.attnum > 0
+	  		-- Only consider SELECT rules (view definitions), not INSERT/UPDATE/DELETE rules
+	  		AND pg_rewrite.ev_type = '1'
 	  	ORDER BY 1,2,3;
 	`, schemaName, viewName)
 
@@ -946,6 +961,76 @@ func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.D
 		return nil, err
 	}
 	return result, nil
+}
+
+// getRules gets all rules for tables and views in a database.
+func getRules(txn *sql.Tx) (map[db.TableKey][]*storepb.RuleMetadata, error) {
+	ruleMap := make(map[db.TableKey][]*storepb.RuleMetadata)
+
+	query := `
+		SELECT 
+			n.nspname AS schema_name,
+			c.relname AS table_name,
+			r.rulename AS rule_name,
+			CASE r.ev_type
+				WHEN '1' THEN 'SELECT'
+				WHEN '2' THEN 'UPDATE'
+				WHEN '3' THEN 'INSERT'
+				WHEN '4' THEN 'DELETE'
+			END AS event,
+			r.is_instead,
+			r.ev_enabled != 'D' AS is_enabled,
+			pg_get_expr(r.ev_qual, r.ev_class, true) AS condition,
+			pg_get_ruledef(r.oid, true) AS definition
+		FROM pg_rewrite r
+		JOIN pg_class c ON c.oid = r.ev_class
+		JOIN pg_namespace n ON n.oid = c.relnamespace
+		WHERE r.rulename NOT IN ('_RETURN', '_NOTHING')
+			AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+		ORDER BY n.nspname, c.relname, r.rulename;`
+
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		rule := &storepb.RuleMetadata{}
+		var schemaName, tableName string
+		var condition sql.NullString
+
+		if err := rows.Scan(
+			&schemaName,
+			&tableName,
+			&rule.Name,
+			&rule.Event,
+			&rule.IsInstead,
+			&rule.IsEnabled,
+			&condition,
+			&rule.Definition,
+		); err != nil {
+			return nil, err
+		}
+
+		if condition.Valid {
+			rule.Condition = condition.String
+		}
+
+		// Extract the action from the definition
+		// The definition looks like: CREATE RULE rule_name AS ON event TO table WHERE condition DO action
+		// We'll store the full definition and parse the action if needed
+		rule.Action = rule.Definition
+
+		key := db.TableKey{Schema: schemaName, Table: tableName}
+		ruleMap[key] = append(ruleMap[key], rule)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return ruleMap, nil
 }
 
 // getExtensions gets all extensions of a database.

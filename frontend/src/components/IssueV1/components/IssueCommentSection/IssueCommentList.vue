@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-4">
+  <div class="flex flex-col">
     <ul>
       <IssueCreatedComment :issue-comments="issueComments" :issue="issue" />
       <IssueCommentView
@@ -13,28 +13,20 @@
         :similar="item.similar"
       >
         <template v-if="allowEditIssueComment(item.comment)" #subject-suffix>
-          <div
-            class="invisible group-hover:visible space-x-2 flex items-center text-control-light"
+          <!-- Edit Comment Button-->
+          <NButton
+            v-if="!state.editCommentMode"
+            quaternary
+            size="tiny"
+            class="text-gray-500 hover:text-gray-700"
+            @click.prevent="onUpdateComment(item.comment)"
           >
-            <div
-              v-if="!state.editCommentMode"
-              class="mr-2 flex items-center space-x-2"
-            >
-              <!-- Edit Comment Button-->
-              <NButton
-                quaternary
-                size="tiny"
-                @click.prevent="onUpdateComment(item.comment)"
-              >
-                <PencilIcon class="w-4 h-4 text-control-light" />
-              </NButton>
-            </div>
-          </div>
+            <PencilIcon class="w-3.5 h-3.5" />
+          </NButton>
         </template>
 
-        <template #comment>
+        <template v-if="item.comment.comment" #comment>
           <MarkdownEditor
-            v-if="item.comment.comment"
             :mode="
               state.editCommentMode &&
               state.activeComment?.name === item.comment.name
@@ -69,25 +61,13 @@
       </IssueCommentView>
     </ul>
 
-    <div v-if="!state.editCommentMode && allowCreateComment">
-      <div class="flex">
-        <div class="flex-shrink-0">
-          <div class="relative">
-            <UserAvatar :user="currentUser" />
-            <span
-              class="absolute -bottom-0.5 -right-1 bg-white rounded-tl px-0.5 py-px"
-            >
-              <heroicons-solid:chat-alt
-                class="h-3.5 w-3.5 text-control-light"
-              />
-            </span>
-          </div>
+    <div v-if="!state.editCommentMode && allowCreateComment" class="mt-2">
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 pt-1">
+          <UserAvatar :user="currentUser" />
         </div>
-        <div class="ml-3 min-w-0 flex-1">
+        <div class="min-w-0 flex-1">
           <h3 class="sr-only" id="issue-comment-editor"></h3>
-          <label for="comment" class="sr-only">
-            {{ $t("issue.add-a-comment") }}
-          </label>
           <MarkdownEditor
             mode="editor"
             :content="state.newComment"
@@ -96,9 +76,9 @@
             @change="(val: string) => (state.newComment = val)"
             @submit="doCreateComment(state.newComment)"
           />
-          <div class="my-3 flex items-center justify-between">
+          <div class="mt-3 flex items-center justify-end">
             <NButton
-              size="small"
+              type="primary"
               :disabled="state.newComment.length == 0"
               @click.prevent="doCreateComment(state.newComment)"
             >

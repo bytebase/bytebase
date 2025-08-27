@@ -1,19 +1,17 @@
 <template>
-  <div
-    class="flex-1 flex flex-col hide-scrollbar gap-3 divide-y overflow-x-hidden"
-  >
-    <div class="w-full flex flex-col">
-      <SpecListSection v-if="isCreating || plan.specs.length > 1" />
+  <div class="flex-1 flex flex-col">
+    <SpecListSection v-if="shouldShowSpecList" />
+    <div class="w-full flex flex-col gap-3 px-4 divide-y overflow-x-hidden">
       <TargetListSection />
       <FailedTaskRunsSection v-if="!isCreating && rollout" />
-    </div>
-    <template v-if="!specHasRelease">
-      <SQLCheckV1Section v-if="isCreating" />
-      <PlanCheckSection v-else />
-    </template>
-    <div class="w-full space-y-3 pt-3">
-      <StatementSection />
-      <Configuration />
+      <template v-if="!specHasRelease">
+        <SQLCheckV1Section v-if="isCreating" />
+        <PlanCheckSection v-else />
+      </template>
+      <div class="w-full space-y-3 pt-3">
+        <StatementSection />
+        <Configuration />
+      </div>
     </div>
   </div>
 </template>
@@ -49,6 +47,12 @@ const specHasRelease = computed(() => {
   return (
     selectedSpec.value.config.case === "changeDatabaseConfig" &&
     isValidReleaseName(selectedSpec.value.config.value.release)
+  );
+});
+
+const shouldShowSpecList = computed(() => {
+  return (
+    isCreating.value || plan.value.specs.length > 1 || plan.value.rollout === ""
   );
 });
 </script>

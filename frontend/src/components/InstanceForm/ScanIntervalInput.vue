@@ -8,15 +8,19 @@
         {{ $t("instance.scan-interval.self") }}
       </label>
 
-      <span v-if="instance.lastSyncTime" class="textinfolabel"
-        >({{
+      <span v-if="instance.lastSyncTime" class="textinfolabel">
+        ({{
           $t("sql-editor.last-synced", {
             time: dayjs(
               getDateForPbTimestampProtoEs(instance.lastSyncTime)
             ).format("YYYY-MM-DD HH:mm:ss"),
           })
-        }})</span
-      >
+        }})
+      </span>
+      <FeatureBadge
+        :instance="instance"
+        :feature="PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME"
+      />
     </div>
     <div class="textinfolabel">
       {{ $t("instance.scan-interval.description") }}
@@ -73,8 +77,10 @@ import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import { NInputNumber, NRadio } from "naive-ui";
 import { reactive, watch } from "vue";
+import { FeatureBadge } from "@/components/FeatureGuard";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { useInstanceFormContext } from "./context";
 
 type Mode = "DEFAULT" | "CUSTOM";

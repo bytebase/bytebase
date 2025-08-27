@@ -1,4 +1,3 @@
-import { isEqual } from "lodash-es";
 import { IssueCommentType, getIssueCommentType } from "@/store";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import { isNullOrUndefined } from "@/utils";
@@ -25,9 +24,8 @@ export const isSimilarIssueComment = (
     if (!fromTaskUpdate || !toTaskUpdate) {
       return false;
     }
-    if (!isEqual(fromTaskUpdate.tasks, toTaskUpdate.tasks)) {
-      return false;
-    }
+    // Group task updates by status or sheet changes, regardless of specific task IDs
+    // This allows grouping of "completed Task d1", "completed Task d2", etc.
     if (
       fromTaskUpdate.toSheet &&
       fromTaskUpdate.toSheet === toTaskUpdate.toSheet

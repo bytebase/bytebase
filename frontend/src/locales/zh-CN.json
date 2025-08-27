@@ -246,7 +246,8 @@
       "description": "此资源和其他相关资源将被硬删除。@:common.cannot-undo-this-action",
       "double-comfirm": "要确认删除，请输入：{name}",
       "notification": "成功删除资源“{name}”。"
-    }
+    },
+    "collapse": "收起"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -659,7 +660,9 @@
           "provider": {
             "self": "AI 提供方",
             "open_ai": "Open AI",
-            "azure_open_ai": "Azure Open AI"
+            "azure_open_ai": "Azure Open AI",
+            "gemini": "Gemini",
+            "claude": "Claude"
           },
           "api-key": {
             "self": "API Key",
@@ -856,7 +859,6 @@
       }
     },
     "add-some-description": "添加一些描述…",
-    "add-a-comment": "添加评论",
     "leave-a-comment": "发表一条评论…",
     "comment-editor": {
       "write": "编辑",
@@ -1172,6 +1174,9 @@
       "description": "按状态过滤",
       "close-confirm": "确定关闭该变更计划？",
       "reopen-confirm": "确定重新开启该变更计划？"
+    },
+    "description": {
+      "placeholder": "添加描述"
     }
   },
   "rollout": {
@@ -2832,6 +2837,7 @@
     },
     "file-type": {
       "versioned": "版本化",
+      "declarative": "声明式",
       "unspecified": "未指定"
     },
     "vcs-type": {

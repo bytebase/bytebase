@@ -246,7 +246,8 @@
       "description": "Este recurso y otros recursos relacionados se eliminarán definitivamente. @:common.cannot-undo-this-action",
       "double-comfirm": "Para confirmar la eliminación, escriba: {name}",
       "notification": "Se eliminó exitosamente el recurso '{name}'."
-    }
+    },
+    "collapse": "Colapsar"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -659,7 +660,9 @@
           "provider": {
             "self": "Proveedor de IA",
             "open_ai": "Open AI",
-            "azure_open_ai": "Azure Open AI"
+            "azure_open_ai": "Azure Open AI",
+            "gemini": "Gemini",
+            "claude": "Claude"
           },
           "api-key": {
             "self": "Clave de API",
@@ -856,7 +859,6 @@
       }
     },
     "add-some-description": "Agregar alguna descripción...",
-    "add-a-comment": "Agregar un comentario",
     "leave-a-comment": "Dejar un comentario...",
     "comment-editor": {
       "write": "Escribir",
@@ -1172,6 +1174,9 @@
       "description": "Filtrar planes por estado",
       "close-confirm": "¿Estás seguro de que deseas cerrar este plan?",
       "reopen-confirm": "¿Estás seguro de que deseas reabrir este plan?"
+    },
+    "description": {
+      "placeholder": "Añadir descripción"
     }
   },
   "rollout": {
@@ -2832,6 +2837,7 @@
     },
     "file-type": {
       "versioned": "Versión",
+      "declarative": "Declarativo",
       "unspecified": "No especificado"
     },
     "vcs-type": {

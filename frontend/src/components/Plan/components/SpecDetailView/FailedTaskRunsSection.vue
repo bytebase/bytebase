@@ -1,5 +1,5 @@
 <template>
-  <div v-if="shouldShowSection" class="w-full space-y-2 pt-3 px-4">
+  <div v-if="shouldShowSection" class="w-full space-y-2 pt-3">
     <div class="text-sm text-control">
       {{ $t("task-run.failed-runs") }}
     </div>
@@ -142,7 +142,7 @@ const taskRunList = computed(() => {
 
 // Determine if the section should be shown at all
 const shouldShowSection = computed(() => {
-  return failedSpecTasks.value.length > 0 || taskRuns.value.length > 0;
+  return failedSpecTasks.value.length > 0 && taskRuns.value.length > 0;
 });
 
 // Helper function to get the task for a task run

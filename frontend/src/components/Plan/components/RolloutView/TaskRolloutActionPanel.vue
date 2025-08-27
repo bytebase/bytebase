@@ -38,6 +38,9 @@
           {{ $t("rollout.message.pervious-stages-incomplete.description") }}
         </NAlert>
 
+        <!-- Plan Check Error Alert -->
+        <NAlert v-if="planCheckError" type="warning" :title="planCheckError" />
+
         <!-- Plan Check Status -->
         <div v-if="planCheckStatus.total > 0" class="flex items-center gap-3">
           <span class="font-medium text-control shrink-0">{{
@@ -394,6 +397,24 @@ const previousStagesStatus = computed(() => {
 
 const shouldShowComment = computed(() => !isNullOrUndefined(issue?.value));
 
+// Plan check error validation
+const planCheckError = computed(() => {
+  if (props.action === "RUN") {
+    // Get plan check runs from the plan check status
+    if (planCheckStatus.value.error > 0 || planCheckStatus.value.warning > 0) {
+      return t(
+        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
+      );
+    }
+    if (planCheckStatus.value.running > 0) {
+      return t(
+        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
+      );
+    }
+  }
+  return undefined;
+});
+
 const shouldShowForceRollout = computed(() => {
   // Show force rollout checkbox for RUN action when:
   // 1. Issue approval is not complete, OR
@@ -404,7 +425,8 @@ const shouldShowForceRollout = computed(() => {
       hasProjectPermissionV2(project.value, "bb.taskRuns.create")) &&
     ((issueApprovalStatus.value.hasIssue &&
       !issueApprovalStatus.value.isApproved) ||
-      previousStagesStatus.value.hasIncomplete)
+      previousStagesStatus.value.hasIncomplete ||
+      planCheckError.value)
   );
 });
 
@@ -541,6 +563,11 @@ const confirmErrors = computed(() => {
     !forceRollout.value
   ) {
     errors.push(t("rollout.message.pervious-stages-incomplete.description"));
+  }
+
+  // Include plan check errors if not forcing rollout
+  if (props.action === "RUN" && !forceRollout.value && planCheckError.value) {
+    errors.push(planCheckError.value);
   }
 
   if (

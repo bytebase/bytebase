@@ -170,6 +170,13 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 	if instance == nil {
 		return nil, errors.Errorf("instance %q not found", database.InstanceID)
 	}
+	sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
+	}
+	if sheet == nil {
+		return nil, errors.Errorf("sheet %d not found", sheetUID)
+	}
 
 	var planCheckRuns []*store.PlanCheckRunMessage
 	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{

@@ -312,34 +312,59 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
     } else if (expr.operator === "@in") {
       const [property, values] = expr.args;
       if (typeof property === "string" && Array.isArray(values)) {
-        if (property === "resource.database") {
-          for (const value of values) {
-            const databaseResource: DatabaseResource = {
-              databaseFullName: value as string,
-            };
-            conditionExpression.databaseResources!.push(databaseResource);
-          }
-        } else if (property === "resource.schema") {
-          const databaseResource = conditionExpression.databaseResources?.pop();
-          if (databaseResource) {
+        switch (property) {
+          case "resource.database": {
             for (const value of values) {
-              const temp: DatabaseResource = cloneDeep(
-                databaseResource
-              ) as DatabaseResource;
-              temp.schema = value as string;
-              conditionExpression.databaseResources!.push(temp);
+              const databaseResource: DatabaseResource = {
+                databaseFullName: value as string,
+              };
+              conditionExpression.databaseResources!.push(databaseResource);
             }
+            break;
           }
-        } else if (property === "resource.table") {
-          const databaseResource = conditionExpression.databaseResources?.pop();
-          if (databaseResource) {
-            for (const value of values) {
-              const temp: DatabaseResource = cloneDeep(
-                databaseResource
-              ) as DatabaseResource;
-              temp.table = value as string;
-              conditionExpression.databaseResources!.push(temp);
+          case "resource.schema":
+          case "resource.schema_name": {
+            const databaseResource =
+              conditionExpression.databaseResources?.pop();
+            if (databaseResource) {
+              for (const value of values) {
+                const temp: DatabaseResource = cloneDeep(
+                  databaseResource
+                ) as DatabaseResource;
+                temp.schema = value as string;
+                conditionExpression.databaseResources!.push(temp);
+              }
             }
+            break;
+          }
+          case "resource.table":
+          case "resource.table_name": {
+            const databaseResource =
+              conditionExpression.databaseResources?.pop();
+            if (databaseResource) {
+              for (const value of values) {
+                const temp: DatabaseResource = cloneDeep(
+                  databaseResource
+                ) as DatabaseResource;
+                temp.table = value as string;
+                conditionExpression.databaseResources!.push(temp);
+              }
+            }
+            break;
+          }
+          case "resource.column_name": {
+            const databaseResource =
+              conditionExpression.databaseResources?.pop();
+            if (databaseResource) {
+              databaseResource.columns = [];
+              for (const value of values) {
+                if (value) {
+                  databaseResource.columns.push(value as string);
+                }
+              }
+              conditionExpression.databaseResources!.push(databaseResource);
+            }
+            break;
           }
         }
       }
@@ -398,7 +423,9 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
               break;
             }
             case "resource.column_name": {
-              databaseResource.column = right;
+              if (right) {
+                databaseResource.columns = [right];
+              }
               break;
             }
           }

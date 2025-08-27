@@ -29,6 +29,7 @@
     "@markdoc/markdoc": "0.5.2",
     "@soerenmartius/vue3-clipboard": "0.1.2",
     "@tanstack/vue-table": "8.21.3",
+    "@tanstack/vue-virtual": "^3.13.12",
     "@vueuse/core": "12.8.2",
     "bootstrap": "5.3.6",
     "crypto-js": "^4.2.0",

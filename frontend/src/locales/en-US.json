@@ -246,7 +246,8 @@
       "description": "This resource and other related resources will be hard-deleted. @:common.cannot-undo-this-action",
       "double-comfirm": "To confirm deletion, please type: {name}",
       "notification": "Successfully delete the resource '{name}'."
-    }
+    },
+    "collapse": "Collapse"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -659,7 +660,9 @@
           "provider": {
             "self": "AI Provider",
             "open_ai": "Open AI",
-            "azure_open_ai": "Azure Open AI"
+            "azure_open_ai": "Azure Open AI",
+            "gemini": "Gemini",
+            "claude": "Claude"
           },
           "api-key": {
             "self": "API Key",
@@ -856,7 +859,6 @@
       }
     },
     "add-some-description": "Add some description...",
-    "add-a-comment": "Add a comment",
     "leave-a-comment": "Leave a comment...",
     "comment-editor": {
       "write": "Write",
@@ -1172,6 +1174,9 @@
       "description": "Filter plans by their state",
       "close-confirm": "Are you sure to close this plan?",
       "reopen-confirm": "Are you sure to reopen this plan?"
+    },
+    "description": {
+      "placeholder": "Add a description"
     }
   },
   "rollout": {
@@ -2288,7 +2293,7 @@
       "enterprise": {
         "title": "Enterprise"
       },
-      "try": "Try it free."
+      "try": "Try it free"
     }
   },
   "sheet": {
@@ -2832,6 +2837,7 @@
     },
     "file-type": {
       "versioned": "Versioned",
+      "declarative": "Declarative",
       "unspecified": "Unspecified"
     },
     "vcs-type": {

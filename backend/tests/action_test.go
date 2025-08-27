@@ -1365,7 +1365,7 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		err = json.Unmarshal(data1, &output1)
 		a.NoError(err)
 
-		// Execute second declarative rollout with same schema (should fail)
+		// Execute second declarative rollout with same schema (should succeed but create empty rollout)
 		result2, err := executeActionCommand(ctx,
 			"rollout",
 			"--url", ctl.rootURL,
@@ -1379,8 +1379,8 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 			"--output", outputFile2,
 			"--declarative",
 		)
-		// Second rollout should fail due to idempotency check
-		a.Error(err, "Second declarative rollout should fail")
+		// Second rollout should succeed due to new idempotency behavior
+		a.NoError(err, "Second declarative rollout should succeed")
 
 		// Read second output
 		var output2 map[string]string
@@ -1389,11 +1389,11 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		err = json.Unmarshal(data2, &output2)
 		a.NoError(err)
 
-		// Get rollout details to check task run error
+		// Rollout should be created even if it's empty
 		rolloutName := output2["rollout"]
-		a.Empty(rolloutName, "Should not have rollout name in output")
+		a.NotEmpty(rolloutName, "Rollout should be created for second execution")
 
-		// Execute third declarative rollout with same schema (should also fail)
+		// Execute third declarative rollout with same schema (should also succeed but create empty rollout)
 		result3, err := executeActionCommand(ctx,
 			"rollout",
 			"--url", ctl.rootURL,
@@ -1407,8 +1407,8 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 			"--output", outputFile3,
 			"--declarative",
 		)
-		// Third rollout should also fail
-		a.Error(err, "Third declarative rollout should fail")
+		// Third rollout should also succeed due to new idempotency behavior
+		a.NoError(err, "Third declarative rollout should succeed")
 
 		// Read third output
 		var output3 map[string]string
@@ -1445,11 +1445,41 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		}
 		a.Equal(1, tableCount, "Should have exactly one users table (idempotent)")
 
-		// Verify first rollout succeeded
-		a.NotContains(result1.Stderr, "there is an equal or higher versioned declarative revision", "first rollout should complete without errors")
-		// Second and third rollouts should have errors
-		a.Contains(result2.Stderr, "there is an equal or higher versioned declarative revision", "second rollout should have error")
-		a.Contains(result3.Stderr, "there is an equal or higher versioned declarative revision", "third rollout should have error")
+		// Verify all rollouts succeeded
+		a.NotContains(result1.Stderr, "error", "first rollout should complete without errors")
+		a.NotContains(result2.Stderr, "error", "second rollout should complete without errors")
+		a.NotContains(result3.Stderr, "error", "third rollout should complete without errors")
+
+		// Verify that second rollout is created but empty (zero tasks)
+		rollout2, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
+			Name: rolloutName,
+		}))
+		a.NoError(err)
+		// Check that rollout has zero tasks
+		totalTasks := 0
+		for _, stage := range rollout2.Msg.Stages {
+			totalTasks += len(stage.Tasks)
+		}
+		a.Equal(0, totalTasks, "Second rollout should have zero tasks")
+		// Empty rollout should have zero stages
+		a.Len(rollout2.Msg.Stages, 0, "Second rollout should have zero stages")
+
+		// Verify third rollout is also created but empty
+		rolloutName3 := output3["rollout"]
+		a.NotEmpty(rolloutName3, "Rollout should be created for third execution")
+
+		rollout3, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
+			Name: rolloutName3,
+		}))
+		a.NoError(err)
+		// Check that rollout has zero tasks
+		totalTasks = 0
+		for _, stage := range rollout3.Msg.Stages {
+			totalTasks += len(stage.Tasks)
+		}
+		a.Equal(0, totalTasks, "Third rollout should have zero tasks")
+		// Empty rollout should have zero stages
+		a.Len(rollout3.Msg.Stages, 0, "Third rollout should have zero stages")
 	})
 
 	t.Run("DeclarativeMultipleDatabases", func(t *testing.T) {

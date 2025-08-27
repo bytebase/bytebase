@@ -62,7 +62,7 @@ const environment = computed(() => {
 const { allowUpdateDatabase } = useDatabaseDetailContext();
 
 const handleSelectEnvironment = async (name: string | undefined) => {
-  if (!name || name === props.database.effectiveEnvironment) {
+  if (name === props.database.effectiveEnvironment) {
     return;
   }
   const databasePatch = cloneDeep(props.database);

@@ -9,8 +9,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -239,6 +237,33 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 		}
 	}
 
+	// Construct rules.
+	for _, schema := range metadata.Schemas {
+		for _, table := range schema.Tables {
+			if len(table.Rules) > 0 {
+				if err := writeRules(&buf, schema.Name, table.Name, table.Rules); err != nil {
+					return "", err
+				}
+			}
+		}
+
+		for _, view := range schema.Views {
+			// Rules for views are already written in writeView
+			// Only write non-SELECT rules here (they are not part of the view definition)
+			var nonSelectRules []*storepb.RuleMetadata
+			for _, rule := range view.Rules {
+				if rule.Event != "SELECT" {
+					nonSelectRules = append(nonSelectRules, rule)
+				}
+			}
+			if len(nonSelectRules) > 0 {
+				if err := writeRules(&buf, schema.Name, view.Name, nonSelectRules); err != nil {
+					return "", err
+				}
+			}
+		}
+	}
+
 	// Construct foreign keys.
 	for _, schema := range metadata.Schemas {
 		for _, table := range schema.Tables {
@@ -410,6 +435,30 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		}
 	}
 
+	// Construct rules.
+	for _, table := range schema.Tables {
+		if len(table.Rules) > 0 {
+			if err := writeRules(&buf, schema.Name, table.Name, table.Rules); err != nil {
+				return "", err
+			}
+		}
+	}
+
+	for _, view := range schema.Views {
+		// Only write non-SELECT rules here (SELECT rules are part of the view definition)
+		var nonSelectRules []*storepb.RuleMetadata
+		for _, rule := range view.Rules {
+			if rule.Event != "SELECT" {
+				nonSelectRules = append(nonSelectRules, rule)
+			}
+		}
+		if len(nonSelectRules) > 0 {
+			if err := writeRules(&buf, schema.Name, view.Name, nonSelectRules); err != nil {
+				return "", err
+			}
+		}
+	}
+
 	// Construct foreign keys.
 	for _, table := range schema.Tables {
 		if table.SkipDump {
@@ -439,6 +488,12 @@ func GetTableDefinition(schema string, table *storepb.TableMetadata, sequences [
 			return "", err
 		}
 	}
+	// Construct rules.
+	if len(table.Rules) > 0 {
+		if err := writeRules(&buf, schema, table.Name, table.Rules); err != nil {
+			return "", err
+		}
+	}
 	// Construct foreign keys.
 	for _, fk := range table.ForeignKeys {
 		if err := writeForeignKey(&buf, schema, table.Name, fk); err != nil {
@@ -459,6 +514,18 @@ func GetViewDefinition(schema string, view *storepb.ViewMetadata) (string, error
 			continue
 		}
 		if err := writeTrigger(&buf, schema, view.Name, trigger); err != nil {
+			return "", err
+		}
+	}
+	// Construct rules (non-SELECT rules only, as SELECT rules are part of the view definition).
+	var nonSelectRules []*storepb.RuleMetadata
+	for _, rule := range view.Rules {
+		if rule.Event != "SELECT" {
+			nonSelectRules = append(nonSelectRules, rule)
+		}
+	}
+	if len(nonSelectRules) > 0 {
+		if err := writeRules(&buf, schema, view.Name, nonSelectRules); err != nil {
 			return "", err
 		}
 	}
@@ -795,6 +862,19 @@ func writeViewComment(out io.Writer, schema string, view *storepb.ViewMetadata) 
 
 	_, err := io.WriteString(out, "\n\n")
 	return err
+}
+
+func writeRules(out io.Writer, _ string, _ string, rules []*storepb.RuleMetadata) error {
+	for _, rule := range rules {
+		// Write the full rule definition
+		if _, err := io.WriteString(out, rule.Definition); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, "\n\n"); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func getSchemaNameFromID(id string) string {
@@ -1319,7 +1399,31 @@ func writeForeignKey(out io.Writer, schema string, table string, fk *storepb.For
 			return err
 		}
 	}
-	_, err := io.WriteString(out, ");\n\n")
+	if _, err := io.WriteString(out, ")"); err != nil {
+		return err
+	}
+
+	// Add ON DELETE clause if specified
+	if fk.OnDelete != "" && fk.OnDelete != "NO ACTION" {
+		if _, err := io.WriteString(out, "\n    ON DELETE "); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, fk.OnDelete); err != nil {
+			return err
+		}
+	}
+
+	// Add ON UPDATE clause if specified
+	if fk.OnUpdate != "" && fk.OnUpdate != "NO ACTION" {
+		if _, err := io.WriteString(out, "\n    ON UPDATE "); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, fk.OnUpdate); err != nil {
+			return err
+		}
+	}
+
+	_, err := io.WriteString(out, ";\n\n")
 	return err
 }
 
@@ -1437,63 +1541,28 @@ func writeIndexKeyList(out io.Writer, index *storepb.IndexMetadata) error {
 		return err
 	}
 
-	nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, index.Definition)
-	if err != nil {
-		return err
-	}
-
-	node, ok := nodes[0].(*ast.CreateIndexStmt)
-	if !ok {
-		return errors.Errorf("failed to parse create index statement")
-	}
-
-	for i, key := range node.Index.KeyList {
+	for i, expression := range index.Expressions {
 		if i > 0 {
 			if _, err := io.WriteString(out, ", "); err != nil {
 				return err
 			}
 		}
-		if key.Type == ast.IndexKeyTypeExpression {
-			if _, err := io.WriteString(out, "("); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, key.Key); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, ")"); err != nil {
-				return err
-			}
-		} else {
-			if _, err := io.WriteString(out, "\""); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, key.Key); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, "\""); err != nil {
-				return err
-			}
+
+		if _, err := io.WriteString(out, expression); err != nil {
+			return err
 		}
-		if key.SortOrder == ast.SortOrderTypeDescending {
+
+		// Add DESC if this column is marked as descending
+		if i < len(index.Descending) && index.Descending[i] {
 			if _, err := io.WriteString(out, " DESC"); err != nil {
 				return err
 			}
 		}
-		switch key.NullOrder {
-		case ast.NullOrderTypeFirst:
-			if _, err := io.WriteString(out, " NULLS FIRST"); err != nil {
-				return err
-			}
-		case ast.NullOrderTypeLast:
-			if _, err := io.WriteString(out, " NULLS LAST"); err != nil {
-				return err
-			}
-		default:
-			// Default null ordering (no explicit NULLS FIRST/LAST)
-		}
+		// Note: NULLS ordering information is not available in IndexMetadata
+		// so we omit it in the generated DDL
 	}
 
-	_, err = io.WriteString(out, ")")
+	_, err := io.WriteString(out, ")")
 	return err
 }
 

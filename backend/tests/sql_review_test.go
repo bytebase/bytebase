@@ -117,7 +117,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 			Policy: &v1pb.Policy_TagPolicy{
 				TagPolicy: &v1pb.TagPolicy{
 					Tags: map[string]string{
-						string(common.ReservedTagReviewConfig): createdConfig.Msg.Name,
+						common.ReservedTagReviewConfig: createdConfig.Msg.Name,
 					},
 				},
 			},
@@ -286,7 +286,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 			Policy: &v1pb.Policy_TagPolicy{
 				TagPolicy: &v1pb.TagPolicy{
 					Tags: map[string]string{
-						string(common.ReservedTagReviewConfig): createdConfig.Msg.Name,
+						common.ReservedTagReviewConfig: createdConfig.Msg.Name,
 					},
 				},
 			},

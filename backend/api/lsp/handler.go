@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	lsp "github.com/bytebase/lsp-protocol"
 	"github.com/pkg/errors"
@@ -47,7 +48,14 @@ const (
 
 // NewHandler creates a new Language Server Protocol handler.
 func NewHandler(s *store.Store, profile *config.Profile) jsonrpc2.Handler {
-	return lspHandler{Handler: jsonrpc2.HandlerWithError((&Handler{store: s, profile: profile}).handle)}
+	handler := &Handler{
+		store:                s,
+		profile:              profile,
+		diagnosticsDebouncer: NewDiagnosticsDebouncer(500 * time.Millisecond), // 500ms debounce
+		contentCache:         NewContentCache(100),                            // Cache up to 100 documents
+		perfMonitor:          NewPerformanceMonitor(),
+	}
+	return lspHandler{Handler: jsonrpc2.HandlerWithError(handler.handle)}
 }
 
 type lspHandler struct {
@@ -73,6 +81,11 @@ type Handler struct {
 	shutDown bool
 	profile  *config.Profile
 	cancelF  sync.Map // map[jsonrpc2.ID]context.CancelFunc
+
+	// Performance optimizations
+	diagnosticsDebouncer *DiagnosticsDebouncer
+	contentCache         *ContentCache
+	perfMonitor          *PerformanceMonitor
 }
 
 // ShutDown shuts down the handler.
@@ -181,6 +194,10 @@ func (h *Handler) reset(params *lsp.InitializeParams) error {
 	defer h.mu.Unlock()
 	h.init = params
 	h.fs = NewMemFS()
+	// Clear any pending diagnostics on reset
+	if h.diagnosticsDebouncer != nil {
+		h.diagnosticsDebouncer.Clear()
+	}
 	return nil
 }
 

@@ -363,7 +363,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionProjectsGet))
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q in %q", iam.PermissionProjectsGet, req.Msg.Parent))
 		}
 		find.ProjectID = &p
 	case strings.HasPrefix(req.Msg.Parent, common.WorkspacePrefix):

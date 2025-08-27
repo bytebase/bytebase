@@ -246,7 +246,8 @@
       "description": "このリソースとその他の関連リソースは物理的に削除されます。@:common.cannot-undo-this-action",
       "double-comfirm": "削除を確認するには、{name} と入力してください。",
       "notification": "リソース '{name}' を正常に削除しました。"
-    }
+    },
+    "collapse": "閉じる"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -659,7 +660,9 @@
           "provider": {
             "self": "AIプロバイダー",
             "open_ai": "Open AI",
-            "azure_open_ai": "Azure Open AI"
+            "azure_open_ai": "Azure Open AI",
+            "gemini": "Gemini",
+            "claude": "Claude"
           },
           "api-key": {
             "self": "APIキー",
@@ -856,7 +859,6 @@
       }
     },
     "add-some-description": "説明を追加してください…",
-    "add-a-comment": "コメントを追加",
     "leave-a-comment": "コメントを残す…",
     "comment-editor": {
       "write": "編集",
@@ -1172,6 +1174,9 @@
       "description": "州別にプランをフィルタリング",
       "close-confirm": "このプランを閉じてもよろしいですか?",
       "reopen-confirm": "このプランを再開してもよろしいですか?"
+    },
+    "description": {
+      "placeholder": "説明を追加"
     }
   },
   "rollout": {
@@ -2832,6 +2837,7 @@
     },
     "file-type": {
       "versioned": "バージョン",
+      "declarative": "宣言",
       "unspecified": "未指定"
     },
     "vcs-type": {

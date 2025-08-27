@@ -79,6 +79,7 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
+import { head } from "lodash-es";
 import { NButton, NCheckbox, NInput, NTooltip } from "naive-ui";
 import { computed, nextTick, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -88,14 +89,22 @@ import { ErrorList } from "@/components/IssueV1/components/common";
 import { usePlanContextWithIssue } from "@/components/Plan/logic";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { issueServiceClientConnect } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+  PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+} from "@/router/dashboard/projectV1";
+import { pushNotification } from "@/store";
 import {
   ApproveIssueRequestSchema,
   RejectIssueRequestSchema,
   RequestIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanCheckRun_Status } from "@/types/proto-es/v1/plan_service_pb";
-import { extractIssueUID, extractProjectResourceName } from "@/utils";
+import {
+  extractIssueUID,
+  extractProjectResourceName,
+  extractRolloutUID,
+} from "@/utils";
 import type { IssueReviewAction } from "../unified";
 
 type LocalState = {
@@ -114,7 +123,7 @@ const router = useRouter();
 const state = reactive<LocalState>({
   loading: false,
 });
-const { issue, planCheckRuns, events } = usePlanContextWithIssue();
+const { issue, rollout, planCheckRuns, events } = usePlanContextWithIssue();
 const comment = ref("");
 const performActionAnyway = ref(false);
 
@@ -235,7 +244,40 @@ const handleConfirm = async () => {
     events.emit("perform-issue-review-action", { action });
   } finally {
     state.loading = false;
-    // Redirect to issue comment section.
+    emit("close");
+
+    // For ISSUE_REVIEW_APPROVE, check if this is the last approval needed
+    if (action === "ISSUE_REVIEW_APPROVE") {
+      const { approvalTemplates, approvers } = issue.value;
+      const steps = head(approvalTemplates)?.flow?.steps ?? [];
+
+      // Check if this approval will complete the review process
+      const isLastApproval =
+        steps.length > 0 && approvers.length + 1 >= steps.length;
+
+      if (rollout.value && isLastApproval) {
+        // Rollout exists, redirect to rollout page
+        // Show success notification for final approval
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("issue.approval.approved-and-waiting-for-rollout"),
+        });
+
+        nextTick(() => {
+          router.push({
+            name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+            params: {
+              projectId: extractProjectResourceName(issue.value.name),
+              rolloutId: extractRolloutUID(rollout.value!.name),
+            },
+          });
+        });
+        return;
+      }
+    }
+
+    // For other actions, redirect to issue page immediately
     nextTick(() => {
       router.push({
         name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
@@ -246,7 +288,6 @@ const handleConfirm = async () => {
         hash: `#issue-comment-editor`,
       });
     });
-    emit("close");
   }
 };
 

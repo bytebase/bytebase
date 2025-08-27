@@ -240,7 +240,6 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 				NewName: in.RenameStmt.Newname,
 			}, nil
 		default:
-			return nil, NewConvertErrorf("unsupported rename type %v", in.RenameStmt.RenameType)
 		}
 	case *pgquery.Node_IndexStmt:
 		indexDef := &ast.IndexDef{
@@ -473,7 +472,6 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 
 			return dropTypeStmt, nil
 		default:
-			return nil, NewConvertErrorf("unsupported drop type %v", in.DropStmt.RemoveType)
 		}
 	case *pgquery.Node_DropdbStmt:
 		return &ast.DropDatabaseStmt{
