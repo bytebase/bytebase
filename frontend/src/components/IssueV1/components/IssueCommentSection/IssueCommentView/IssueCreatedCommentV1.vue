@@ -52,7 +52,7 @@
             >
               <p v-if="!state.isEditing && !description">
                 <i class="text-gray-400 italic">{{
-                  $t("issue.add-some-description")
+                  $t("issue.no-description-provided")
                 }}</i>
               </p>
               <MarkdownEditor

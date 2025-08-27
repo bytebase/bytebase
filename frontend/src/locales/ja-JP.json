@@ -860,6 +860,7 @@
     },
     "add-some-description": "説明を追加してください…",
     "leave-a-comment": "コメントを残す…",
+    "no-description-provided": "説明なし",
     "comment-editor": {
       "write": "編集",
       "preview": "プレビュー",
