@@ -660,7 +660,9 @@
           "provider": {
             "self": "Nhà cung cấp AI",
             "open_ai": "Open AI",
-            "azure_open_ai": "Azure Open AI"
+            "azure_open_ai": "Azure Open AI",
+            "gemini": "Gemini",
+            "claude": "Claude"
           },
           "api-key": {
             "self": "Khóa API",
@@ -2835,8 +2837,8 @@
     },
     "file-type": {
       "versioned": "Phiên bản",
-      "unspecified": "Không xác định",
-      "declarative": "Khai báo"
+      "declarative": "Khai báo",
+      "unspecified": "Không xác định"
     },
     "vcs-type": {
       "unspecified": "Không xác định"
