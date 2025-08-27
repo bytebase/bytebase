@@ -860,6 +860,7 @@
     },
     "add-some-description": "Thêm mô tả...",
     "leave-a-comment": "Để lại bình luận...",
+    "no-description-provided": "Không có mô tả nào được cung cấp",
     "comment-editor": {
       "write": "Viết",
       "preview": "Xem trước",

@@ -1,7 +1,14 @@
 <template>
-  <div class="ml-3 min-w-0 flex-1">
-    <div class="rounded-lg border border-gray-200 bg-white overflow-hidden">
-      <div class="px-4 py-2.5 bg-gray-50">
+  <div class="min-w-0 flex-1">
+    <div
+      class="rounded-lg border overflow-hidden"
+      :class="
+        $slots.comment
+          ? 'ml-3 border-gray-200 bg-white'
+          : 'ml-1 border-transparent'
+      "
+    >
+      <div class="px-3 py-2" :class="$slots.comment ? 'bg-gray-50' : ''">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-x-2 text-sm min-w-0 flex-wrap">
             <ActionCreator
