@@ -1,7 +1,9 @@
 import { CheckIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
-import { h, type VNode } from "vue";
+import { h } from "vue";
+import type { VNode } from "vue";
 import { type OptionConfig } from "@/components/ExprEditor/context";
+import { EnvironmentV1Name } from "@/components/v2";
 import { SQLTypeList, type Factor } from "@/plugins/cel";
 import { t } from "@/plugins/i18n";
 import {
@@ -126,7 +128,7 @@ export const getFactorList = (source: Risk_Source) => {
 };
 
 export const getRenderOptionFunc = (resource: {
-  title: string;
+  title: string | (() => VNode);
   name: string;
 }): ((info: { node: VNode; selected: boolean }) => VNode) => {
   return (info: { node: VNode; selected: boolean }) => {
@@ -135,11 +137,13 @@ export const getRenderOptionFunc = (resource: {
       { class: "flex items-center justify-between space-x-4" },
       [
         h("div", { class: "flex flex-col px-1 py-1 z-10" }, [
-          h(
-            "div",
-            { class: `textlabel ${info.selected ? "!text-accent" : ""}` },
-            resource.title
-          ),
+          typeof resource.title === "string"
+            ? h(
+                "div",
+                { class: `textlabel ${info.selected ? "!text-accent" : ""}` },
+                resource.title
+              )
+            : resource.title(),
           h("div", { class: "opacity-60 textinfolabel" }, resource.name),
         ]),
         info.selected ? h(CheckIcon, { class: "w-4 z-10" }) : undefined,
@@ -157,7 +161,12 @@ export const getEnvironmentIdOptions = () => {
       value: environmentId,
       render: getRenderOptionFunc({
         name: `${environmentNamePrefix}${env.id}`,
-        title: env.title,
+        title: () =>
+          h(EnvironmentV1Name, {
+            environment: env,
+            link: false,
+            showColor: true,
+          }),
       }),
     };
   });
