@@ -291,6 +291,8 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 				}
 				assert.True(t, tableIndex < funcIndex,
 					"Table should be created before function. Got statements: %v", statements)
+			default:
+				// No specific verification for this test case
 			}
 		})
 	}

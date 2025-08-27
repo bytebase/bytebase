@@ -632,16 +632,22 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 							writeAddColumn(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn)
 						}
 					}
+				default:
+					// No action needed
 				}
 			} else if viewDiff, ok := viewMap[objID]; ok {
 				switch viewDiff.Action {
 				case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
 					writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView)
+				default:
+					// No action needed
 				}
 			} else if mvDiff, ok := materializedViewMap[objID]; ok {
 				switch mvDiff.Action {
 				case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
 					writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView)
+				default:
+					// No action needed
 				}
 			} else if funcDiff, ok := functionMap[objID]; ok {
 				writeFunctionDiff(buf, funcDiff)

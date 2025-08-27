@@ -36,10 +36,10 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 							},
 							ForeignKeys: []*storepb.ForeignKeyMetadata{
 								{
-									Name:             "fk_orders_customer",
-									Columns:          []string{"customer_id"},
-									ReferencedSchema: "public",
-									ReferencedTable:  "customers",
+									Name:              "fk_orders_customer",
+									Columns:           []string{"customer_id"},
+									ReferencedSchema:  "public",
+									ReferencedTable:   "customers",
 									ReferencedColumns: []string{"id"},
 								},
 							},
@@ -187,9 +187,9 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 				},
 				MaterializedViewChanges: []*schema.MaterializedViewDiff{
 					{
-						Action:                 schema.MetadataDiffActionCreate,
-						SchemaName:             "public",
-						MaterializedViewName:   "expensive_products_mv",
+						Action:               schema.MetadataDiffActionCreate,
+						SchemaName:           "public",
+						MaterializedViewName: "expensive_products_mv",
 						NewMaterializedView: &storepb.MaterializedViewMetadata{
 							Name:       "expensive_products_mv",
 							Definition: "SELECT name FROM expensive_products",
@@ -208,22 +208,22 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := generateMigration(tt.diff)
 			require.NoError(t, err, "Generate migration should not error")
-			
+
 			// Verify the SQL is not empty
 			assert.NotEmpty(t, result, "Generated migration should not be empty")
-			
+
 			// Parse the generated SQL to check order
 			statements := parseStatements(result)
-			
+
 			// Verify topological order based on test case
 			switch tt.name {
 			case "table_depends_on_table_via_foreign_key":
 				// customers table should be created before orders table
 				customersIndex := findStatementIndex(statements, "CREATE TABLE", "customers")
 				ordersIndex := findStatementIndex(statements, "CREATE TABLE", "orders")
-				assert.True(t, customersIndex < ordersIndex, 
+				assert.True(t, customersIndex < ordersIndex,
 					"Customers table should be created before orders table. Got statements: %v", statements)
-				
+
 			case "view_depends_on_tables":
 				// Both tables should be created before the view
 				usersIndex := findStatementIndex(statements, "CREATE TABLE", "users")
@@ -231,7 +231,7 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 				viewIndex := findStatementIndex(statements, "CREATE VIEW", "user_orders")
 				assert.True(t, usersIndex < viewIndex && ordersIndex < viewIndex,
 					"Tables should be created before view. Got statements: %v", statements)
-					
+
 			case "column_addition_follows_table_dependency":
 				// Verify column additions are in the right order
 				// This is more complex as we need to check ALTER TABLE statements
@@ -240,7 +240,7 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 				// Both should exist, actual order depends on topological sorting
 				assert.True(t, customersAlterIndex >= 0, "Customers ALTER should exist")
 				assert.True(t, ordersAlterIndex >= 0, "Orders ALTER should exist")
-				
+
 			case "materialized_view_depends_on_view":
 				// Table, then view, then materialized view
 				tableIndex := findStatementIndex(statements, "CREATE TABLE", "products")
@@ -248,6 +248,8 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 				mvIndex := findStatementIndex(statements, "CREATE MATERIALIZED VIEW", "expensive_products_mv")
 				assert.True(t, tableIndex < viewIndex && viewIndex < mvIndex,
 					"Objects should be created in dependency order: table -> view -> materialized view. Got statements: %v", statements)
+			default:
+				// No specific verification for this test case
 			}
 		})
 	}
@@ -306,16 +308,16 @@ func TestTopologicalOrderWithCycles(t *testing.T) {
 	result, err := generateMigration(diff)
 	require.NoError(t, err, "Generate migration should handle cycles gracefully")
 	assert.NotEmpty(t, result, "Generated migration should not be empty even with cycles")
-	
+
 	// With cycles, it should fall back to creating tables without foreign keys first
 	statements := parseStatements(result)
-	
+
 	// Both CREATE TABLE statements should exist
 	tableAIndex := findStatementIndex(statements, "CREATE TABLE", "table_a")
 	tableBIndex := findStatementIndex(statements, "CREATE TABLE", "table_b")
 	assert.True(t, tableAIndex >= 0, "Table A should be created")
 	assert.True(t, tableBIndex >= 0, "Table B should be created")
-	
+
 	// Foreign key constraints should be added later
 	fkCount := 0
 	for _, stmt := range statements {
@@ -330,7 +332,7 @@ func TestTopologicalOrderWithCycles(t *testing.T) {
 func parseStatements(sql string) []string {
 	var statements []string
 	lines := strings.Split(sql, "\n")
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line != "" && !strings.HasPrefix(line, "--") {
@@ -346,7 +348,7 @@ func findStatementIndex(statements []string, stmtType, objectName string) int {
 		upperStmt := strings.ToUpper(stmt)
 		upperType := strings.ToUpper(stmtType)
 		upperName := strings.ToUpper(objectName)
-		
+
 		if strings.Contains(upperStmt, upperType) && strings.Contains(upperStmt, upperName) {
 			return i
 		}

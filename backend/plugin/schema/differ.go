@@ -2094,25 +2094,40 @@ func sortDiffLists(diff *MetadataDiff) {
 
 // sortTableSubObjectChanges sorts the changes within a table diff
 func sortTableSubObjectChanges(tableDiff *TableDiff) {
-	// Sort column changes by column name, then action
+	// Sort column changes by column position (for MySQL/Oracle), then by name (for PostgreSQL/MSSQL), then action
+	// This provides stable sorting across different database engines
 	slices.SortFunc(tableDiff.ColumnChanges, func(a, b *ColumnDiff) int {
+		aPos := int32(0)
 		aName := ""
 		if a.NewColumn != nil {
+			aPos = a.NewColumn.Position
 			aName = a.NewColumn.Name
 		} else if a.OldColumn != nil {
+			aPos = a.OldColumn.Position
 			aName = a.OldColumn.Name
 		}
 
+		bPos := int32(0)
 		bName := ""
 		if b.NewColumn != nil {
+			bPos = b.NewColumn.Position
 			bName = b.NewColumn.Name
 		} else if b.OldColumn != nil {
+			bPos = b.OldColumn.Position
 			bName = b.OldColumn.Name
 		}
 
+		// First, sort by position if both positions are valid (> 0)
+		if aPos > 0 && bPos > 0 && aPos != bPos {
+			return int(aPos - bPos)
+		}
+
+		// If positions are not available or equal, sort by column name
 		if aName != bName {
 			return strings.Compare(aName, bName)
 		}
+
+		// Finally, sort by action for stable sorting
 		return strings.Compare(string(a.Action), string(b.Action))
 	})
 

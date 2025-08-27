@@ -632,6 +632,8 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				if err := writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView); err != nil {
 					return err
 				}
+			default:
+				// No action needed
 			}
 			// Add view comment for newly created views
 			if viewDiff.NewView != nil && viewDiff.NewView.Comment != "" {
@@ -646,6 +648,8 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
 					return err
 				}
+			default:
+				// No action needed
 			}
 			// Add materialized view comment for newly created materialized views
 			if mvDiff.NewMaterializedView != nil && mvDiff.NewMaterializedView.Comment != "" {
