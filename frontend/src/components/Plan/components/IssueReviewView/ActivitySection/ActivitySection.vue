@@ -1,10 +1,8 @@
 <template>
-  <div class="space-y-2">
-    <div class="flex items-center justify-between gap-2">
-      <h3 class="text-base font-medium">
-        {{ $t("common.activity") }}
-      </h3>
-    </div>
+  <div class="space-y-4">
+    <h3 class="text-base font-medium">
+      {{ $t("common.activity") }}
+    </h3>
     <IssueCommentList />
   </div>
 </template>

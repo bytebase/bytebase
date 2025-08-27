@@ -9,11 +9,11 @@
       <div class="relative flex items-start">
         <div class="relative">
           <div class="pt-1.5 bg-white"></div>
-          <UserAvatar :user="creator" />
+          <UserAvatar override-class="w-7 h-7 font-medium" :user="creator" />
           <div
             class="absolute -bottom-1 -right-1 w-4 h-4 bg-control-bg rounded-full ring-2 ring-white flex items-center justify-center"
           >
-            <PlusIcon class="w-3 h-3 text-control" />
+            <PlusIcon class="w-4 h-4 text-control" />
           </div>
         </div>
 
