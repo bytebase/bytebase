@@ -2835,7 +2835,8 @@
     },
     "file-type": {
       "versioned": "Versión",
-      "unspecified": "No especificado"
+      "unspecified": "No especificado",
+      "declarative": "Declarativo"
     },
     "vcs-type": {
       "unspecified": "No especificado"

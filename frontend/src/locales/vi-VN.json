@@ -2835,7 +2835,8 @@
     },
     "file-type": {
       "versioned": "Phiên bản",
-      "unspecified": "Không xác định"
+      "unspecified": "Không xác định",
+      "declarative": "Khai báo"
     },
     "vcs-type": {
       "unspecified": "Không xác định"

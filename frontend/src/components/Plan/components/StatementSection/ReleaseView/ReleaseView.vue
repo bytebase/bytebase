@@ -83,9 +83,7 @@
                 v-if="file.type"
                 :class="[
                   'inline-flex items-center px-1.5 py-0.5 rounded text-xs flex-shrink-0',
-                  file.type === Release_File_Type.VERSIONED
-                    ? 'bg-blue-100 text-blue-800 '
-                    : 'bg-gray-100 text-gray-800 ',
+                  'bg-blue-100 text-blue-800 ',
                 ]"
               >
                 {{ getReleaseFileTypeText(file.type) }}
@@ -203,16 +201,24 @@ const getChangeTypeText = (changeType: Release_File_ChangeType) => {
       return t("release.change-type.ddl-ghost");
     case Release_File_ChangeType.DML:
       return t("release.change-type.dml");
+    case Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED:
+      return t("release.change-type.unspecified");
     default:
+      changeType satisfies never;
       return t("release.change-type.unspecified");
   }
 };
 
-const getReleaseFileTypeText = (type: Release_File_Type) => {
-  switch (type) {
+const getReleaseFileTypeText = (fileType: Release_File_Type) => {
+  switch (fileType) {
     case Release_File_Type.VERSIONED:
       return t("release.file-type.versioned");
+    case Release_File_Type.DECLARATIVE:
+      return t("release.file-type.declarative");
+    case Release_File_Type.TYPE_UNSPECIFIED:
+      return t("release.file-type.unspecified");
     default:
+      fileType satisfies never;
       return t("release.file-type.unspecified");
   }
 };
