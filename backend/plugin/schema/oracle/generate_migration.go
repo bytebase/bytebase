@@ -434,9 +434,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 	// Track all object IDs for dependency resolution
 	allObjects := make(map[string]bool)
 
-	// Add tables to graph
+	// Add tables to graph (both CREATE and ALTER for column additions)
 	for _, tableDiff := range diff.TableChanges {
-		if tableDiff.Action == schema.MetadataDiffActionCreate {
+		if tableDiff.Action == schema.MetadataDiffActionCreate || tableDiff.Action == schema.MetadataDiffActionAlter {
 			tableID := getMigrationObjectID(tableDiff.SchemaName, tableDiff.TableName)
 			graph.AddNode(tableID)
 			tableMap[tableID] = tableDiff
@@ -485,9 +485,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 	}
 
 	// Add dependency edges
-	// For tables with foreign keys depending on other tables
+	// For tables with foreign keys depending on other tables (only for CREATE operations)
 	for tableID, tableDiff := range tableMap {
-		if tableDiff.NewTable != nil {
+		if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
 			for _, fk := range tableDiff.NewTable.ForeignKeys {
 				depID := getMigrationObjectID(fk.ReferencedSchema, fk.ReferencedTable)
 				if depID != tableID {
@@ -553,24 +553,47 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		// If there's a cycle, fall back to a safe order
 		// Create tables first (without foreign keys)
 		for _, tableDiff := range tableMap {
-			createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable, false)
-			if err != nil {
-				return
+			if tableDiff.Action == schema.MetadataDiffActionCreate {
+				createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable, false)
+				if err != nil {
+					return
+				}
+				_, _ = buf.WriteString(createTableSQL)
+				if createTableSQL != "" {
+					_, _ = buf.WriteString("\n")
+				}
 			}
-			_, _ = buf.WriteString(createTableSQL)
-			if createTableSQL != "" {
-				_, _ = buf.WriteString("\n")
+		}
+
+		// Handle column additions for ALTER operations (only columns in topological order)
+		for _, tableDiff := range tableMap {
+			if tableDiff.Action == schema.MetadataDiffActionAlter {
+				for _, colDiff := range tableDiff.ColumnChanges {
+					if colDiff.Action == schema.MetadataDiffActionCreate {
+						writeAddColumn(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn)
+					}
+				}
 			}
 		}
 
 		// Create views
 		for _, viewDiff := range viewMap {
-			writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView)
+			switch viewDiff.Action {
+			case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
+				writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView)
+			default:
+				// No action needed
+			}
 		}
 
 		// Create materialized views
 		for _, mvDiff := range materializedViewMap {
-			writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView)
+			switch mvDiff.Action {
+			case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
+				writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView)
+			default:
+				// No action needed
+			}
 		}
 
 		// Create functions
@@ -583,9 +606,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 			writeProcedureDiff(buf, procDiff)
 		}
 
-		// Add foreign keys
+		// Add foreign keys (only for CREATE operations)
 		for _, tableDiff := range tableMap {
-			if tableDiff.NewTable != nil {
+			if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
 				for _, fk := range tableDiff.NewTable.ForeignKeys {
 					writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk)
 				}
@@ -595,19 +618,41 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		// Create in topological order (dependencies first)
 		for _, objID := range orderedList {
 			if tableDiff, ok := tableMap[objID]; ok {
-				// Create table without foreign keys
-				createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable, false)
-				if err != nil {
-					return
-				}
-				_, _ = buf.WriteString(createTableSQL)
-				if createTableSQL != "" {
-					_, _ = buf.WriteString("\n")
+				switch tableDiff.Action {
+				case schema.MetadataDiffActionCreate:
+					// Create table without foreign keys
+					createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable, false)
+					if err != nil {
+						return
+					}
+					_, _ = buf.WriteString(createTableSQL)
+					if createTableSQL != "" {
+						_, _ = buf.WriteString("\n")
+					}
+				case schema.MetadataDiffActionAlter:
+					// Handle column additions for ALTER operations (only columns in topological order)
+					for _, colDiff := range tableDiff.ColumnChanges {
+						if colDiff.Action == schema.MetadataDiffActionCreate {
+							writeAddColumn(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn)
+						}
+					}
+				default:
+					// No action needed
 				}
 			} else if viewDiff, ok := viewMap[objID]; ok {
-				writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView)
+				switch viewDiff.Action {
+				case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
+					writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView)
+				default:
+					// No action needed
+				}
 			} else if mvDiff, ok := materializedViewMap[objID]; ok {
-				writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView)
+				switch mvDiff.Action {
+				case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
+					writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView)
+				default:
+					// No action needed
+				}
 			} else if funcDiff, ok := functionMap[objID]; ok {
 				writeFunctionDiff(buf, funcDiff)
 			} else if procDiff, ok := procedureMap[objID]; ok {
@@ -615,9 +660,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 			}
 		}
 
-		// Add foreign keys after all tables are created
+		// Add foreign keys after all tables are created (only for CREATE operations)
 		for _, tableDiff := range tableMap {
-			if tableDiff.NewTable != nil {
+			if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
 				for _, fk := range tableDiff.NewTable.ForeignKeys {
 					writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk)
 				}
@@ -625,13 +670,55 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		}
 	}
 
-	// Handle ALTER table operations
+	// Handle remaining ALTER table operations (not columns, which are handled in topological order)
 	for _, tableDiff := range diff.TableChanges {
 		if tableDiff.Action == schema.MetadataDiffActionAlter {
-			alterTableSQL := generateAlterTable(tableDiff)
-			_, _ = buf.WriteString(alterTableSQL)
-			if alterTableSQL != "" {
-				_, _ = buf.WriteString("\n")
+			// Skip column additions (already handled in topological order)
+			// Handle other ALTER operations
+
+			// Alter columns (type changes, nullability, etc.)
+			for _, colDiff := range tableDiff.ColumnChanges {
+				if colDiff.Action == schema.MetadataDiffActionAlter {
+					alterColSQL := generateAlterColumn(tableDiff.SchemaName, tableDiff.TableName, colDiff)
+					_, _ = buf.WriteString(alterColSQL)
+				}
+			}
+
+			// Add indexes
+			for _, indexDiff := range tableDiff.IndexChanges {
+				if indexDiff.Action == schema.MetadataDiffActionCreate {
+					if indexDiff.NewIndex.IsConstraint {
+						// Add constraint (primary key or unique constraint)
+						if indexDiff.NewIndex.Primary {
+							writeMigrationPrimaryKey(buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
+						} else if indexDiff.NewIndex.Unique {
+							writeMigrationUniqueKey(buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
+						}
+					} else {
+						writeMigrationIndex(buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
+					}
+				}
+			}
+
+			// Add check constraints
+			for _, checkDiff := range tableDiff.CheckConstraintChanges {
+				if checkDiff.Action == schema.MetadataDiffActionCreate {
+					writeAddCheckConstraint(buf, tableDiff.SchemaName, tableDiff.TableName, checkDiff.NewCheckConstraint)
+				}
+			}
+
+			// Add foreign keys
+			for _, fkDiff := range tableDiff.ForeignKeyChanges {
+				if fkDiff.Action == schema.MetadataDiffActionCreate {
+					writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fkDiff.NewForeignKey)
+				}
+			}
+
+			// Add triggers
+			for _, triggerDiff := range tableDiff.TriggerChanges {
+				if triggerDiff.Action == schema.MetadataDiffActionCreate {
+					writeMigrationTrigger(buf, triggerDiff.NewTrigger)
+				}
 			}
 
 			// Handle table comment changes
@@ -702,64 +789,6 @@ func generateCreateTable(schemaName, tableName string, table *storepb.TableMetad
 	}
 
 	return buf.String(), nil
-}
-
-func generateAlterTable(tableDiff *schema.TableDiff) string {
-	var buf strings.Builder
-
-	// Add columns first (other operations might depend on them)
-	for _, colDiff := range tableDiff.ColumnChanges {
-		if colDiff.Action == schema.MetadataDiffActionCreate {
-			writeAddColumn(&buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn)
-		}
-	}
-
-	// Alter columns
-	for _, colDiff := range tableDiff.ColumnChanges {
-		if colDiff.Action == schema.MetadataDiffActionAlter {
-			alterColSQL := generateAlterColumn(tableDiff.SchemaName, tableDiff.TableName, colDiff)
-			_, _ = buf.WriteString(alterColSQL)
-		}
-	}
-
-	// Add indexes
-	for _, indexDiff := range tableDiff.IndexChanges {
-		if indexDiff.Action == schema.MetadataDiffActionCreate {
-			if indexDiff.NewIndex.IsConstraint {
-				// Add constraint (primary key or unique constraint)
-				if indexDiff.NewIndex.Primary {
-					writeMigrationPrimaryKey(&buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
-				} else if indexDiff.NewIndex.Unique {
-					writeMigrationUniqueKey(&buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
-				}
-			} else {
-				writeMigrationIndex(&buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
-			}
-		}
-	}
-
-	// Add check constraints
-	for _, checkDiff := range tableDiff.CheckConstraintChanges {
-		if checkDiff.Action == schema.MetadataDiffActionCreate {
-			writeAddCheckConstraint(&buf, tableDiff.SchemaName, tableDiff.TableName, checkDiff.NewCheckConstraint)
-		}
-	}
-
-	// Add foreign keys last (they depend on other tables/columns)
-	for _, fkDiff := range tableDiff.ForeignKeyChanges {
-		if fkDiff.Action == schema.MetadataDiffActionCreate {
-			writeMigrationForeignKey(&buf, tableDiff.SchemaName, tableDiff.TableName, fkDiff.NewForeignKey)
-		}
-	}
-
-	// Add triggers
-	for _, triggerDiff := range tableDiff.TriggerChanges {
-		if triggerDiff.Action == schema.MetadataDiffActionCreate {
-			writeMigrationTrigger(&buf, triggerDiff.NewTrigger)
-		}
-	}
-
-	return buf.String()
 }
 
 func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDiff) string {
