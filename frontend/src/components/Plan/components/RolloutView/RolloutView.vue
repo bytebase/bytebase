@@ -2,8 +2,11 @@
   <div class="w-full h-full flex flex-col">
     <!-- Content area -->
     <div class="w-full flex-1 p-4">
+      <div v-if="!ready" class="flex items-center justify-center py-12">
+        <BBSpin class="w-6 h-6 text-primary" />
+      </div>
       <div
-        v-if="mergedStages.length === 0"
+        v-else-if="mergedStages.length === 0"
         class="flex items-center justify-center py-12"
       >
         <div class="flex flex-col items-center gap-4 max-w-md text-center">
@@ -52,6 +55,7 @@ import { create } from "@bufbuild/protobuf";
 import { LayersIcon } from "lucide-vue-next";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBSpin } from "@/bbkit";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
@@ -65,7 +69,7 @@ import { useRolloutViewContext } from "./context";
 const { t } = useI18n();
 const { project } = useCurrentProjectV1();
 const { events } = usePlanContextWithRollout();
-const { rollout, mergedStages } = useRolloutViewContext();
+const { rollout, mergedStages, ready } = useRolloutViewContext();
 
 const runTasksPanel = ref<{
   show: boolean;
