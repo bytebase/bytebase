@@ -126,13 +126,13 @@ const getDatabaseAccessResource = (access: AccessUser): VNodeChild => {
   return (
     <div class="space-y-1">
       {validDatabase && (
-        <div class="flex items-center gap-x-1 text-sm textinfo">
-          <span>{`${t("common.instance")}:`}</span>
+        <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
+          <span class="font-medium">{`${t("common.instance")}:`}</span>
           <InstanceV1Name instance={database.instanceResource} />
         </div>
       )}
-      <div class="flex items-center gap-x-1 text-sm textinfo">
-        <span>{`${t("common.database")}:`}</span>
+      <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
+        <span class="font-medium">{`${t("common.database")}:`}</span>
         {validDatabase ? (
           <div
             class="normal-link hover:underline cursor-pointer"
@@ -169,14 +169,23 @@ const getDatabaseAccessResource = (access: AccessUser): VNodeChild => {
         )}
       </div>
       {access.databaseResource.schema && (
-        <div class="text-sm textinfo">{`${t("common.schema")}: ${access.databaseResource.schema}`}</div>
+        <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
+          <span class="font-medium">{`${t("common.schema")}:`}</span>
+          <span>{access.databaseResource.schema}</span>
+        </div>
       )}
       {access.databaseResource.table && (
-        <div class="text-sm textinfo">{`${t("common.table")}: ${access.databaseResource.table}`}</div>
+        <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
+          <span class="font-medium">{`${t("common.table")}:`}</span>
+          <span>{access.databaseResource.table}</span>
+        </div>
       )}
       {access.databaseResource.columns &&
         access.databaseResource.columns.length > 0 && (
-          <div class="text-sm textinfo">{`${t("database.columns")}: ${access.databaseResource.columns.join(", ")}`}</div>
+          <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
+            <span class="font-medium">{`${t("database.columns")}:`}</span>
+            <span>{access.databaseResource.columns.join(", ")}</span>
+          </div>
         )}
     </div>
   );
