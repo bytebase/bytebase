@@ -2835,7 +2835,8 @@
     },
     "file-type": {
       "versioned": "版本化",
-      "unspecified": "未指定"
+      "unspecified": "未指定",
+      "declarative": "声明式"
     },
     "vcs-type": {
       "unspecified": "未指定"
