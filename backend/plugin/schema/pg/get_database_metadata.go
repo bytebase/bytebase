@@ -474,10 +474,191 @@ func extractTypeName(ctx parser.ITypenameContext) string {
 	return normalizePostgreSQLType(typeName)
 }
 
+// getPostgreSQLArrayTypeName maps base types to their PostgreSQL internal array type names
+// Based on PostgreSQL system catalog pg_type where array types start with underscore
+func getPostgreSQLArrayTypeName(baseType string) string {
+	// Normalize the base type first to handle aliases
+	normalizedBase := strings.ToLower(strings.TrimSpace(baseType))
+
+	// Map of base types to their PostgreSQL internal array type names
+	arrayTypeMap := map[string]string{
+		// Integer types
+		"int":      "_int4",
+		"int4":     "_int4",
+		"integer":  "_int4",
+		"int2":     "_int2",
+		"smallint": "_int2",
+		"int8":     "_int8",
+		"bigint":   "_int8",
+
+		// Floating point types
+		"real":             "_float4",
+		"float4":           "_float4",
+		"double precision": "_float8",
+		"float8":           "_float8",
+
+		// Character types
+		"text":              "_text",
+		"varchar":           "_varchar",
+		"character varying": "_varchar",
+		"char":              "_bpchar", // PostgreSQL uses bpchar internally for char
+		"character":         "_bpchar", // PostgreSQL uses bpchar internally for character
+		"bpchar":            "_bpchar",
+		"name":              "_name",
+
+		// Boolean type
+		"bool":    "_bool",
+		"boolean": "_bool",
+
+		// Numeric types
+		"numeric": "_numeric",
+		"decimal": "_numeric",
+
+		// Date/time types
+		"date":                        "_date",
+		"time":                        "_time",
+		"time without time zone":      "_time",
+		"time with time zone":         "_timetz",
+		"timetz":                      "_timetz",
+		"timestamp":                   "_timestamp",
+		"timestamp without time zone": "_timestamp",
+		"timestamp with time zone":    "_timestamptz",
+		"timestamptz":                 "_timestamptz",
+		"interval":                    "_interval",
+
+		// Binary and other types
+		"bytea":    "_bytea",
+		"uuid":     "_uuid",
+		"json":     "_json",
+		"jsonb":    "_jsonb",
+		"xml":      "_xml",
+		"money":    "_money",
+		"inet":     "_inet",
+		"cidr":     "_cidr",
+		"macaddr":  "_macaddr",
+		"macaddr8": "_macaddr8",
+
+		// Geometric types
+		"point":   "_point",
+		"line":    "_line",
+		"lseg":    "_lseg",
+		"box":     "_box",
+		"path":    "_path",
+		"polygon": "_polygon",
+		"circle":  "_circle",
+
+		// Full-text search types
+		"tsvector": "_tsvector",
+		"tsquery":  "_tsquery",
+
+		// Range types
+		"int4range": "_int4range",
+		"int8range": "_int8range",
+		"numrange":  "_numrange",
+		"tsrange":   "_tsrange",
+		"tstzrange": "_tstzrange",
+		"daterange": "_daterange",
+
+		// Multi-range types (PostgreSQL 14+)
+		"int4multirange": "_int4multirange",
+		"int8multirange": "_int8multirange",
+		"nummultirange":  "_nummultirange",
+		"tsmultirange":   "_tsmultirange",
+		"tstzmultirange": "_tstzmultirange",
+		"datemultirange": "_datemultirange",
+
+		// Bit string types
+		"bit":         "_bit",
+		"bit varying": "_varbit",
+		"varbit":      "_varbit",
+
+		// Object identifier types
+		"oid":           "_oid",
+		"regproc":       "_regproc",
+		"regprocedure":  "_regprocedure",
+		"regoper":       "_regoper",
+		"regoperator":   "_regoperator",
+		"regclass":      "_regclass",
+		"regtype":       "_regtype",
+		"regconfig":     "_regconfig",
+		"regdictionary": "_regdictionary",
+		"regnamespace":  "_regnamespace",
+		"regrole":       "_regrole",
+		"regcollation":  "_regcollation",
+
+		// Other system types
+		"tid":           "_tid",
+		"xid":           "_xid",
+		"xid8":          "_xid8",
+		"cid":           "_cid",
+		"pg_lsn":        "_pg_lsn",
+		"record":        "_record",
+		"cstring":       "_cstring",
+		"refcursor":     "_refcursor",
+		"jsonpath":      "_jsonpath",
+		"txid_snapshot": "_txid_snapshot",
+		"pg_snapshot":   "_pg_snapshot",
+		"gtsvector":     "_gtsvector",
+		"aclitem":       "_aclitem",
+		"int2vector":    "_int2vector",
+		"oidvector":     "_oidvector",
+	}
+
+	// Handle types with precision/scale (e.g., varchar(255), numeric(10,2), character varying(255))
+	if idx := strings.Index(normalizedBase, "("); idx != -1 {
+		baseTypeWithoutPrecision := normalizedBase[:idx]
+		if arrayType, exists := arrayTypeMap[baseTypeWithoutPrecision]; exists {
+			return arrayType
+		}
+	}
+
+	// Direct lookup
+	if arrayType, exists := arrayTypeMap[normalizedBase]; exists {
+		return arrayType
+	}
+
+	// For serial types, they should not have array equivalents in DDL,
+	// but if they do, map to their underlying integer array types
+	switch normalizedBase {
+	case "serial", "serial4":
+		return "_int4"
+	case "bigserial", "serial8":
+		return "_int8"
+	case "smallserial", "serial2":
+		return "_int2"
+	default:
+		// For non-serial types, proceed with fallback logic
+	}
+
+	// Return empty string if no mapping found - caller will use fallback logic
+	return ""
+}
+
 // normalizePostgreSQLType normalizes PostgreSQL type names to match sync.go output
 func normalizePostgreSQLType(typeName string) string {
 	// Remove extra whitespace
 	typeName = strings.TrimSpace(typeName)
+
+	// Handle array types FIRST before any other conversions
+	// text[] -> _text, int[] -> _int4, varchar(255)[] -> _varchar, etc.
+	// PostgreSQL treats multi-dimensional arrays the same as single dimension
+	if strings.HasSuffix(typeName, "[]") {
+		// Remove all array dimensions (int[][], int[] both become int)
+		baseType := typeName
+		for strings.HasSuffix(baseType, "[]") {
+			baseType = baseType[:len(baseType)-2]
+		}
+
+		// Map base type to PostgreSQL's internal array type name
+		arrayType := getPostgreSQLArrayTypeName(baseType)
+		if arrayType != "" {
+			return arrayType
+		}
+
+		// For unknown types, use the old logic as fallback
+		normalizedBase := normalizePostgreSQLType(baseType)
+		return "_" + normalizedBase
+	}
 
 	// Convert common type variations to match sync.go output
 	// varchar(n) -> character varying(n)
@@ -497,15 +678,6 @@ func normalizePostgreSQLType(typeName string) string {
 	}
 	if typeName == "smallserial" || typeName == "serial2" {
 		return "smallint"
-	}
-
-	// Handle array types: text[] -> _text
-	if strings.HasSuffix(typeName, "[]") {
-		// PostgreSQL internal representation uses underscore prefix
-		baseType := typeName[:len(typeName)-2]
-		// Recursively normalize the base type
-		normalizedBase := normalizePostgreSQLType(baseType)
-		return "_" + normalizedBase
 	}
 
 	// Handle timestamp without explicit timezone
@@ -564,9 +736,10 @@ func (*metadataExtractor) extractTypeNameWithSchema(ctx parser.ITypenameContext,
 	rawTypeName := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 	rawTypeName = strings.ToLower(strings.TrimSpace(rawTypeName))
 
-	// Check if this is a built-in PostgreSQL type before normalization
-	if isBuiltInType(rawTypeName) || isBuiltInType(normalizePostgreSQLType(rawTypeName)) {
-		// For built-in types, return the normalized version
+	// Check if this is a built-in PostgreSQL type or an array type before normalization
+	// Array types should always go through normalization regardless of their base type
+	if isBuiltInType(rawTypeName) || isBuiltInType(normalizePostgreSQLType(rawTypeName)) || strings.HasSuffix(rawTypeName, "[]") {
+		// For built-in types and array types, return the normalized version
 		return normalizePostgreSQLType(rawTypeName)
 	}
 
@@ -582,6 +755,22 @@ func (*metadataExtractor) extractTypeNameWithSchema(ctx parser.ITypenameContext,
 
 // isBuiltInType checks if a type is a built-in PostgreSQL type
 func isBuiltInType(typeName string) bool {
+	// Handle array types first (before removing precision info)
+	if strings.HasSuffix(typeName, "[]") {
+		// Remove all array dimensions (int[][], int[] both should be recognized)
+		arrayBase := typeName
+		for strings.HasSuffix(arrayBase, "[]") {
+			arrayBase = arrayBase[:len(arrayBase)-2]
+		}
+		// Recursively check if the base type is built-in
+		return isBuiltInType(arrayBase)
+	}
+	if strings.HasPrefix(typeName, "_") {
+		// PostgreSQL internal array notation _typename
+		arrayBase := typeName[1:]
+		return isBuiltInType(arrayBase)
+	}
+
 	// Remove any precision/scale information for checking
 	baseType := typeName
 	if idx := strings.Index(typeName, "("); idx != -1 {
@@ -652,18 +841,6 @@ func isBuiltInType(typeName string) bool {
 		"oid":    true, "regclass": true, "regproc": true, "regtype": true, "regoper": true,
 		"regoperator": true, "regconfig": true, "regdictionary": true,
 		"tid": true, "xid": true, "cid": true,
-	}
-
-	// Also check for array types (ending with [] or starting with _)
-	if strings.HasSuffix(baseType, "[]") {
-		arrayBase := baseType[:len(baseType)-2]
-		// Recursively check if the base type is built-in
-		return isBuiltInType(arrayBase)
-	}
-	if strings.HasPrefix(baseType, "_") {
-		// PostgreSQL internal array notation _typename
-		arrayBase := baseType[1:]
-		return isBuiltInType(arrayBase)
 	}
 
 	return builtInTypes[baseType]

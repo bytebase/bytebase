@@ -701,6 +701,171 @@ CREATE UNLOGGED TABLE temp_calculations (
 );
 `,
 		},
+		{
+			name: "array_types_comprehensive",
+			ddl: `
+-- Create custom enum for testing custom type arrays
+CREATE TYPE status_enum AS ENUM ('active', 'inactive', 'pending');
+CREATE TYPE priority_level AS ENUM ('low', 'medium', 'high', 'urgent');
+
+-- Table with comprehensive array type coverage
+CREATE TABLE array_types_test (
+    id SERIAL PRIMARY KEY,
+    
+    -- Integer array types (different aliases)
+    int_array int[],
+    int4_array int4[],
+    integer_array integer[],
+    bigint_array bigint[],
+    int8_array int8[],
+    smallint_array smallint[],
+    int2_array int2[],
+    
+    -- Multi-dimensional arrays (should normalize to same as single dimension)
+    int_multi_array int[][],
+    text_multi_array text[][][],
+    
+    -- Floating point array types
+    real_array real[],
+    float4_array float4[],
+    double_precision_array double precision[],
+    float8_array float8[],
+    
+    -- Character array types with and without precision
+    char_array char[],
+    char_with_length char(10)[],
+    varchar_array varchar[],
+    varchar_with_length varchar(255)[],
+    character_array character[],
+    character_with_length character(50)[],
+    character_varying_array character varying[],
+    character_varying_with_length character varying(100)[],
+    text_array text[],
+    
+    -- Boolean arrays
+    bool_array bool[],
+    boolean_array boolean[],
+    
+    -- Numeric arrays with precision
+    numeric_array numeric[],
+    numeric_with_precision numeric(10,2)[],
+    decimal_array decimal[],
+    decimal_with_precision decimal(15,4)[],
+    money_array money[],
+    
+    -- Date/time arrays
+    date_array date[],
+    time_array time[],
+    time_with_tz time with time zone[],
+    timetz_array timetz[],
+    timestamp_array timestamp[],
+    timestamp_with_tz timestamp with time zone[],
+    timestamptz_array timestamptz[],
+    interval_array interval[],
+    
+    -- Binary and UUID arrays
+    bytea_array bytea[],
+    uuid_array uuid[],
+    
+    -- JSON arrays
+    json_array json[],
+    jsonb_array jsonb[],
+    
+    -- Network address arrays
+    inet_array inet[],
+    cidr_array cidr[],
+    macaddr_array macaddr[],
+    macaddr8_array macaddr8[],
+    
+    -- Geometric type arrays
+    point_array point[],
+    line_array line[],
+    lseg_array lseg[],
+    box_array box[],
+    path_array path[],
+    polygon_array polygon[],
+    circle_array circle[],
+    
+    -- Full-text search arrays
+    tsvector_array tsvector[],
+    tsquery_array tsquery[],
+    
+    -- Range type arrays
+    int4range_array int4range[],
+    int8range_array int8range[],
+    numrange_array numrange[],
+    tsrange_array tsrange[],
+    tstzrange_array tstzrange[],
+    daterange_array daterange[],
+    
+    -- Multi-range type arrays (PostgreSQL 14+)
+    int4multirange_array int4multirange[],
+    int8multirange_array int8multirange[],
+    nummultirange_array nummultirange[],
+    tsmultirange_array tsmultirange[],
+    tstzmultirange_array tstzmultirange[],
+    datemultirange_array datemultirange[],
+    
+    -- Bit string arrays
+    bit_array bit[],
+    bit_with_length bit(8)[],
+    bit_varying_array bit varying[],
+    varbit_array varbit[],
+    varbit_with_length varbit(16)[],
+    
+    -- Object identifier arrays
+    oid_array oid[],
+    regclass_array regclass[],
+    regproc_array regproc[],
+    regprocedure_array regprocedure[],
+    regoper_array regoper[],
+    regoperator_array regoperator[],
+    regtype_array regtype[],
+    regconfig_array regconfig[],
+    regdictionary_array regdictionary[],
+    regnamespace_array regnamespace[],
+    regrole_array regrole[],
+    regcollation_array regcollation[],
+    
+    -- System type arrays
+    tid_array tid[],
+    xid_array xid[],
+    xid8_array xid8[],
+    cid_array cid[],
+    pg_lsn_array pg_lsn[],
+    
+    -- Custom enum arrays (should use fallback logic)
+    status_array status_enum[],
+    priority_array priority_level[],
+    
+    -- XML array
+    xml_array xml[],
+    
+    -- Other special arrays (note: record[] not allowed in table columns)
+    jsonpath_array jsonpath[],
+    
+    -- Additional system types (compatible with PostgreSQL 16)
+    txid_snapshot_array txid_snapshot[],
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Add some sample data to verify the schema works
+INSERT INTO array_types_test (
+    int_array,
+    varchar_with_length,
+    bool_array,
+    status_array,
+    json_array
+) VALUES (
+    ARRAY[1, 2, 3],
+    ARRAY['test1', 'test2'],
+    ARRAY[true, false, true],
+    ARRAY['active'::status_enum, 'pending'::status_enum],
+    ARRAY['{"key": "value1"}'::json, '{"key": "value2"}'::json]
+);
+`,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -739,6 +904,11 @@ CREATE UNLOGGED TABLE temp_calculations (
 
 			// Validate rules are handled correctly (no cycles, proper dumping)
 			validateRoutingRules(t, syncMetadata)
+
+			// Additional validation for array types test case
+			if tc.name == "array_types_comprehensive" {
+				validateArrayTypes(t, syncMetadata, parseMetadata)
+			}
 		})
 	}
 }
@@ -1964,4 +2134,236 @@ func parseIndexDefinition(definition string) *indexDefinitionParts {
 	}
 
 	return parts
+}
+
+// validateArrayTypes validates that array types are correctly mapped to their PostgreSQL internal representations
+func validateArrayTypes(t *testing.T, syncMetadata, parseMetadata *storepb.DatabaseSchemaMetadata) {
+	t.Helper()
+
+	// Expected array type mappings based on our implementation
+	expectedArrayTypes := map[string]string{
+		// Integer arrays (all int variants should map to _int4)
+		"int_array":      "_int4",
+		"int4_array":     "_int4",
+		"integer_array":  "_int4",
+		"bigint_array":   "_int8",
+		"int8_array":     "_int8",
+		"smallint_array": "_int2",
+		"int2_array":     "_int2",
+
+		// Multi-dimensional arrays (should be same as single dimension)
+		"int_multi_array":  "_int4",
+		"text_multi_array": "_text",
+
+		// Floating point arrays
+		"real_array":             "_float4",
+		"float4_array":           "_float4",
+		"double_precision_array": "_float8",
+		"float8_array":           "_float8",
+
+		// Character arrays (all should map to appropriate internal types)
+		"char_array":                    "_bpchar",
+		"char_with_length":              "_bpchar",
+		"varchar_array":                 "_varchar",
+		"varchar_with_length":           "_varchar",
+		"character_array":               "_bpchar",
+		"character_with_length":         "_bpchar",
+		"character_varying_array":       "_varchar",
+		"character_varying_with_length": "_varchar",
+		"text_array":                    "_text",
+
+		// Boolean arrays
+		"bool_array":    "_bool",
+		"boolean_array": "_bool",
+
+		// Numeric arrays
+		"numeric_array":          "_numeric",
+		"numeric_with_precision": "_numeric",
+		"decimal_array":          "_numeric",
+		"decimal_with_precision": "_numeric",
+		"money_array":            "_money",
+
+		// Date/time arrays
+		"date_array":        "_date",
+		"time_array":        "_time",
+		"time_with_tz":      "_timetz",
+		"timetz_array":      "_timetz",
+		"timestamp_array":   "_timestamp",
+		"timestamp_with_tz": "_timestamptz",
+		"timestamptz_array": "_timestamptz",
+		"interval_array":    "_interval",
+
+		// Binary and UUID arrays
+		"bytea_array": "_bytea",
+		"uuid_array":  "_uuid",
+
+		// JSON arrays
+		"json_array":  "_json",
+		"jsonb_array": "_jsonb",
+
+		// Network arrays
+		"inet_array":     "_inet",
+		"cidr_array":     "_cidr",
+		"macaddr_array":  "_macaddr",
+		"macaddr8_array": "_macaddr8",
+
+		// Geometric arrays
+		"point_array":   "_point",
+		"line_array":    "_line",
+		"lseg_array":    "_lseg",
+		"box_array":     "_box",
+		"path_array":    "_path",
+		"polygon_array": "_polygon",
+		"circle_array":  "_circle",
+
+		// Full-text search arrays
+		"tsvector_array": "_tsvector",
+		"tsquery_array":  "_tsquery",
+
+		// Range arrays
+		"int4range_array": "_int4range",
+		"int8range_array": "_int8range",
+		"numrange_array":  "_numrange",
+		"tsrange_array":   "_tsrange",
+		"tstzrange_array": "_tstzrange",
+		"daterange_array": "_daterange",
+
+		// Multi-range arrays (PostgreSQL 14+)
+		"int4multirange_array": "_int4multirange",
+		"int8multirange_array": "_int8multirange",
+		"nummultirange_array":  "_nummultirange",
+		"tsmultirange_array":   "_tsmultirange",
+		"tstzmultirange_array": "_tstzmultirange",
+		"datemultirange_array": "_datemultirange",
+
+		// Bit string arrays
+		"bit_array":          "_bit",
+		"bit_with_length":    "_bit",
+		"bit_varying_array":  "_varbit",
+		"varbit_array":       "_varbit",
+		"varbit_with_length": "_varbit",
+
+		// Object identifier arrays
+		"oid_array":           "_oid",
+		"regclass_array":      "_regclass",
+		"regproc_array":       "_regproc",
+		"regprocedure_array":  "_regprocedure",
+		"regoper_array":       "_regoper",
+		"regoperator_array":   "_regoperator",
+		"regtype_array":       "_regtype",
+		"regconfig_array":     "_regconfig",
+		"regdictionary_array": "_regdictionary",
+		"regnamespace_array":  "_regnamespace",
+		"regrole_array":       "_regrole",
+		"regcollation_array":  "_regcollation",
+
+		// System type arrays
+		"tid_array":    "_tid",
+		"xid_array":    "_xid",
+		"xid8_array":   "_xid8",
+		"cid_array":    "_cid",
+		"pg_lsn_array": "_pg_lsn",
+
+		// Custom enum arrays (should use fallback logic)
+		"status_array":   "_status_enum",
+		"priority_array": "_priority_level",
+
+		// Other arrays
+		"xml_array":           "_xml",
+		"jsonpath_array":      "_jsonpath",
+		"txid_snapshot_array": "_txid_snapshot",
+	}
+
+	// Find the array_types_test table in both metadata structures
+	var syncTable, parseTable *storepb.TableMetadata
+
+	for _, schema := range syncMetadata.Schemas {
+		for _, table := range schema.Tables {
+			if table.Name == "array_types_test" {
+				syncTable = table
+				break
+			}
+		}
+		if syncTable != nil {
+			break
+		}
+	}
+
+	for _, schema := range parseMetadata.Schemas {
+		for _, table := range schema.Tables {
+			if table.Name == "array_types_test" {
+				parseTable = table
+				break
+			}
+		}
+		if parseTable != nil {
+			break
+		}
+	}
+
+	require.NotNil(t, syncTable, "array_types_test table not found in sync metadata")
+	require.NotNil(t, parseTable, "array_types_test table not found in parse metadata")
+
+	// Build maps of column types for easy lookup
+	syncColumnTypes := make(map[string]string)
+	parseColumnTypes := make(map[string]string)
+
+	for _, col := range syncTable.Columns {
+		syncColumnTypes[col.Name] = col.Type
+	}
+
+	for _, col := range parseTable.Columns {
+		parseColumnTypes[col.Name] = col.Type
+	}
+
+	t.Log("Array type validation results:")
+	t.Log("Column Name                        | Sync Type                | Parse Type               | Expected     | Status")
+	t.Log(strings.Repeat("-", 120))
+
+	allCorrect := true
+
+	for columnName, expectedType := range expectedArrayTypes {
+		syncType, syncExists := syncColumnTypes[columnName]
+		parseType, parseExists := parseColumnTypes[columnName]
+
+		if !syncExists {
+			t.Errorf("Column %s not found in sync metadata", columnName)
+			allCorrect = false
+			continue
+		}
+
+		if !parseExists {
+			t.Errorf("Column %s not found in parse metadata", columnName)
+			allCorrect = false
+			continue
+		}
+
+		// The key validation: parse metadata should match expected array type
+		parseCorrect := parseType == expectedType
+		syncParseMatch := syncType == parseType
+
+		status := "✓"
+		if !parseCorrect {
+			status = "✗ Parse incorrect"
+			allCorrect = false
+		} else if !syncParseMatch {
+			status = "⚠ Sync/Parse mismatch"
+			// This might be acceptable since sync gets actual PostgreSQL type names
+			// while parse gets our normalized versions
+		}
+
+		t.Logf("%-30s | %-24s | %-24s | %-12s | %s",
+			columnName, syncType, parseType, expectedType, status)
+
+		// The critical assertion: our parsed metadata should have the correct array types
+		if !parseCorrect {
+			t.Errorf("Array type mismatch for column %s: got %s, expected %s", columnName, parseType, expectedType)
+		}
+	}
+
+	if allCorrect {
+		t.Log("🎉 All array types are correctly mapped!")
+	} else {
+		t.Error("❌ Some array types are not correctly mapped")
+	}
 }
