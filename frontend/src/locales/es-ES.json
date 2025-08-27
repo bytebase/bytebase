@@ -860,6 +860,7 @@
     },
     "add-some-description": "Agregar alguna descripción...",
     "leave-a-comment": "Dejar un comentario...",
+    "no-description-provided": "No se proporcionó ninguna descripción",
     "comment-editor": {
       "write": "Escribir",
       "preview": "Vista previa",
