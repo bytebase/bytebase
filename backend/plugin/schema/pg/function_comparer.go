@@ -171,6 +171,13 @@ func (v *FunctionSignatureVisitor) Visit(tree antlr.ParseTree) any {
 
 // visitCreateFunctionStmt extracts signature information from CREATE FUNCTION statement.
 func (v *FunctionSignatureVisitor) visitCreateFunctionStmt(ctx *pgparser.CreatefunctionstmtContext) any {
+	// In PostgreSQL, CREATE FUNCTION and CREATE PROCEDURE use the same grammar rule
+	// We support both FUNCTION and PROCEDURE
+	if ctx.FUNCTION() == nil && ctx.PROCEDURE() == nil {
+		// This is neither CREATE FUNCTION nor CREATE PROCEDURE - skip it
+		return nil
+	}
+
 	signature := &FunctionSignature{
 		Volatility: "VOLATILE", // Default volatility
 		Security:   "INVOKER",  // Default security
@@ -372,8 +379,8 @@ func (*FunctionSignatureVisitor) normalizeDataType(dataType string) string {
 
 // signatureEqual compares two function signatures for equality.
 func signatureEqual(sig1, sig2 *FunctionSignature) bool {
-	// Compare function name (case-insensitive)
-	if !strings.EqualFold(sig1.Name, sig2.Name) {
+	// Compare function name (case-insensitive, ignoring schema qualification)
+	if !normalizedFunctionNamesEqual(sig1.Name, sig2.Name) {
 		return false
 	}
 
@@ -389,8 +396,8 @@ func signatureEqual(sig1, sig2 *FunctionSignature) bool {
 		}
 	}
 
-	// Compare return type using semantic comparison
-	if !ast.CompareExpressionsSemantically(sig1.ReturnType, sig2.ReturnType) {
+	// Compare return type using PostgreSQL-aware type normalization
+	if !postgreSQLTypeStringsEqual(sig1.ReturnType, sig2.ReturnType) {
 		return false
 	}
 
@@ -409,8 +416,8 @@ func parameterEqual(param1, param2 FunctionParameter) bool {
 		return false
 	}
 
-	// Compare data type using semantic comparison
-	if !ast.CompareExpressionsSemantically(param1.DataType, param2.DataType) {
+	// Compare data type using PostgreSQL-aware type normalization
+	if !postgreSQLTypeStringsEqual(param1.DataType, param2.DataType) {
 		return false
 	}
 
@@ -441,11 +448,12 @@ func compareFunctionAttributes(oldFunc, newFunc *storepb.FunctionMetadata) (bool
 // compareFunctionBody compares function bodies using strict string comparison.
 func compareFunctionBody(oldDef, newDef string) bool {
 	// Extract the function body from the complete definition
+	// Dollar quotes are already removed during extraction
 	oldBody := extractFunctionBody(oldDef)
 	newBody := extractFunctionBody(newDef)
 
-	// Use strict string comparison for the body
-	return oldBody != newBody
+	// Use strict string comparison for the extracted body content
+	return strings.TrimSpace(oldBody) != strings.TrimSpace(newBody)
 }
 
 // extractFunctionBody extracts the function body from a complete function definition using ANTLR.
@@ -498,8 +506,17 @@ func (v *FunctionBodyVisitor) Visit(tree antlr.ParseTree) any {
 	return nil
 }
 
-// visitCreateFunctionStmt extracts the function body from CREATE FUNCTION statement.
+// visitCreateFunctionStmt extracts the function body from CREATE FUNCTION/PROCEDURE statement.
+// Note: In PostgreSQL, CREATE FUNCTION and CREATE PROCEDURE use the same grammar rule.
+// We support both FUNCTION and PROCEDURE as they have similar body extraction logic.
 func (v *FunctionBodyVisitor) visitCreateFunctionStmt(ctx *pgparser.CreatefunctionstmtContext) any {
+	// In PostgreSQL, CREATE FUNCTION and CREATE PROCEDURE use the same grammar rule
+	// We support both FUNCTION and PROCEDURE
+	if ctx.FUNCTION() == nil && ctx.PROCEDURE() == nil {
+		// This is neither CREATE FUNCTION nor CREATE PROCEDURE - skip it
+		return nil
+	}
+
 	if ctx.Createfunc_opt_list() == nil {
 		return nil
 	}
@@ -515,26 +532,20 @@ func (v *FunctionBodyVisitor) visitCreateFunctionStmt(ctx *pgparser.Createfuncti
 	return nil
 }
 
-// extractBodyFromFuncAs extracts the actual function body from func_as context.
+// extractBodyFromFuncAs extracts the actual function body from func_as context using ANTLR-based parsing.
 func (*FunctionBodyVisitor) extractBodyFromFuncAs(ctx pgparser.IFunc_asContext) string {
 	if ctx == nil {
 		return ""
 	}
 
-	// Get all string constants from func_as
+	// Use ANTLR parser to properly handle all types of string constants including dollar quotes
 	sconstList := ctx.AllSconst()
 	if len(sconstList) > 0 {
-		// The first sconst is usually the function body
-		bodyText := sconstList[0].GetText()
-
-		// Remove surrounding quotes and handle escaped quotes
-		if len(bodyText) >= 2 && bodyText[0] == '\'' && bodyText[len(bodyText)-1] == '\'' {
-			bodyText = bodyText[1 : len(bodyText)-1]
-			// Unescape single quotes
-			bodyText = strings.ReplaceAll(bodyText, "''", "'")
+		// Use the postgresql parser's standard function to extract routine body
+		// This properly handles dollar quotes, regular quotes, and escape sequences
+		if sconstCtx, ok := sconstList[0].(*pgparser.SconstContext); ok {
+			return pgparser.GetRoutineBodyString(sconstCtx)
 		}
-
-		return bodyText
 	}
 
 	return ""
@@ -618,3 +629,102 @@ func (c *PostgreSQLFunctionComparer) Equal(oldFunc, newFunc *model.FunctionMetad
 	// Functions are not equal if there are any changes
 	return false
 }
+
+// postgreSQLTypeStringsEqual compares two PostgreSQL type strings, handling type aliases and format differences.
+func postgreSQLTypeStringsEqual(type1, type2 string) bool {
+	// Normalize both types and compare
+	normalized1 := normalizePostgreSQLTypeAlias(type1)
+	normalized2 := normalizePostgreSQLTypeAlias(type2)
+
+	return strings.EqualFold(normalized1, normalized2)
+}
+
+// normalizePostgreSQLTypeAlias normalizes PostgreSQL type names to handle aliases and format differences.
+func normalizePostgreSQLTypeAlias(typeName string) string {
+	// Trim leading/trailing whitespace and convert to lowercase for comparison
+	typeName = strings.TrimSpace(strings.ToLower(typeName))
+
+	// Handle PostgreSQL type aliases
+	typeAliases := map[string]string{
+		"varchar":                   "character varying",
+		"charactervarying":          "character varying", // Handle space-removed version
+		"char":                      "character",
+		"int":                       "integer",
+		"int4":                      "integer",
+		"int8":                      "bigint",
+		"int2":                      "smallint",
+		"float4":                    "real",
+		"float8":                    "double precision",
+		"doubleprecision":           "double precision", // Handle space-removed version
+		"bool":                      "boolean",
+		"decimal":                   "numeric",
+		"text":                      "text",
+		"bytea":                     "bytea",
+		"timestamp":                 "timestamp without time zone",
+		"timestampwithouttime zone": "timestamp without time zone", // Handle space-removed version
+		"timestampwithtimezone":     "timestamp with time zone",    // Handle space-removed version
+		"timestamptz":               "timestamp with time zone",
+		"time":                      "time without time zone",
+		"timewithouttime zone":      "time without time zone", // Handle space-removed version
+		"timewithtimezone":          "time with time zone",    // Handle space-removed version
+		"timetz":                    "time with time zone",
+		"date":                      "date",
+		"interval":                  "interval",
+		"uuid":                      "uuid",
+		"json":                      "json",
+		"jsonb":                     "jsonb",
+		"xml":                       "xml",
+		"money":                     "money",
+	}
+
+	// Check if it's an alias
+	if canonical, exists := typeAliases[typeName]; exists {
+		return canonical
+	}
+
+	// Handle parameterized types like VARCHAR(255) -> character varying
+	if strings.HasPrefix(typeName, "varchar(") {
+		return "character varying"
+	}
+	if strings.HasPrefix(typeName, "char(") {
+		return "character"
+	}
+	if strings.HasPrefix(typeName, "decimal(") || strings.HasPrefix(typeName, "numeric(") {
+		return "numeric"
+	}
+	if strings.HasPrefix(typeName, "timestamp(") {
+		if strings.Contains(typeName, "time zone") {
+			return "timestamp with time zone"
+		}
+		return "timestamp without time zone"
+	}
+	if strings.HasPrefix(typeName, "time(") {
+		if strings.Contains(typeName, "time zone") {
+			return "time with time zone"
+		}
+		return "time without time zone"
+	}
+
+	return typeName
+}
+
+// normalizedFunctionNamesEqual compares function names ignoring schema qualification.
+func normalizedFunctionNamesEqual(name1, name2 string) bool {
+	// Extract unqualified names (remove schema prefix)
+	unqualified1 := extractUnqualifiedName(name1)
+	unqualified2 := extractUnqualifiedName(name2)
+
+	// Compare case-insensitively
+	return strings.EqualFold(unqualified1, unqualified2)
+}
+
+// extractUnqualifiedName removes schema qualification from a function name.
+func extractUnqualifiedName(qualifiedName string) string {
+	// Handle schema.function_name -> function_name
+	parts := strings.Split(qualifiedName, ".")
+	if len(parts) > 1 {
+		return parts[len(parts)-1] // Return the last part (function name)
+	}
+	return qualifiedName
+}
+
