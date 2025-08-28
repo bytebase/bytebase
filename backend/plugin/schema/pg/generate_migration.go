@@ -5,6 +5,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
+	pgparser "github.com/bytebase/parser/postgresql"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -1299,20 +1302,30 @@ func writeAddCheckConstraint(out *strings.Builder, schema, table string, check *
 func writeFunctionDiff(out *strings.Builder, funcDiff *schema.FunctionDiff) error {
 	switch funcDiff.Action {
 	case schema.MetadataDiffActionCreate:
+		// CREATE new function
 		_, _ = out.WriteString(funcDiff.NewFunction.Definition)
 		if !strings.HasSuffix(strings.TrimSpace(funcDiff.NewFunction.Definition), ";") {
 			_, _ = out.WriteString(";")
 		}
 		_, _ = out.WriteString("\n\n")
+
 	case schema.MetadataDiffActionAlter:
-		// PostgreSQL requires CREATE OR REPLACE for functions
-		_, _ = out.WriteString(funcDiff.NewFunction.Definition)
-		if !strings.HasSuffix(strings.TrimSpace(funcDiff.NewFunction.Definition), ";") {
-			_, _ = out.WriteString(";")
+		// ALTER function using CREATE OR REPLACE
+		// The decision to use ALTER vs DROP/CREATE was already made in differ.go
+		// If we reach here, it means we can safely use CREATE OR REPLACE
+		if funcDiff.NewFunction != nil {
+			// Use ANTLR parser to safely convert CREATE FUNCTION to CREATE OR REPLACE FUNCTION
+			definition := convertToCreateOrReplace(funcDiff.NewFunction.Definition)
+
+			_, _ = out.WriteString(definition)
+			if !strings.HasSuffix(strings.TrimSpace(definition), ";") {
+				_, _ = out.WriteString(";")
+			}
+			_, _ = out.WriteString("\n\n")
 		}
-		_, _ = out.WriteString("\n\n")
+
 	default:
-		// Ignore other actions
+		// Ignore other actions like DROP (handled elsewhere)
 	}
 	return nil
 }
@@ -2036,4 +2049,151 @@ func writeCommentOnType(out *strings.Builder, schema, typeName, comment string) 
 	}
 	_, _ = out.WriteString(`;`)
 	_, _ = out.WriteString("\n")
+}
+
+// convertToCreateOrReplace uses ANTLR parser to safely convert CREATE FUNCTION to CREATE OR REPLACE FUNCTION
+func convertToCreateOrReplace(definition string) string {
+	// Parse the SQL statement using ANTLR
+	inputStream := antlr.NewInputStream(definition)
+	lexer := pgparser.NewPostgreSQLLexer(inputStream)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := pgparser.NewPostgreSQLParser(stream)
+
+	// Parse the root
+	tree := parser.Root()
+	if tree == nil {
+		// If parsing fails, return original definition
+		return definition
+	}
+
+	// Create a visitor to find and modify CREATE FUNCTION statements
+	visitor := &CreateOrReplaceVisitor{
+		tokens:     stream,
+		rewriter:   antlr.NewTokenStreamRewriter(stream),
+		definition: definition,
+	}
+
+	// Visit the tree
+	visitor.Visit(tree)
+
+	// Get the modified text
+	interval := antlr.NewInterval(0, len(definition)-1)
+	result := visitor.rewriter.GetText("", interval)
+	if result == "" {
+		// If rewriting fails, return original definition
+		return definition
+	}
+
+	return result
+}
+
+// CreateOrReplaceVisitor visits the parse tree and modifies CREATE FUNCTION to CREATE OR REPLACE FUNCTION
+type CreateOrReplaceVisitor struct {
+	*pgparser.BasePostgreSQLParserVisitor
+	tokens     *antlr.CommonTokenStream
+	rewriter   *antlr.TokenStreamRewriter
+	definition string
+}
+
+// Visit implements the visitor pattern
+func (v *CreateOrReplaceVisitor) Visit(tree antlr.ParseTree) any {
+	switch t := tree.(type) {
+	case *pgparser.CreatefunctionstmtContext:
+		return v.visitCreateFunctionStmt(t)
+	default:
+		// Continue visiting children
+		return v.visitChildren(tree)
+	}
+}
+
+// visitChildren visits all children of a node
+func (v *CreateOrReplaceVisitor) visitChildren(node antlr.ParseTree) any {
+	for i := 0; i < node.GetChildCount(); i++ {
+		child := node.GetChild(i)
+		if parseTree, ok := child.(antlr.ParseTree); ok {
+			v.Visit(parseTree)
+		}
+	}
+	return nil
+}
+
+// visitCreateFunctionStmt handles CREATE FUNCTION statements
+func (v *CreateOrReplaceVisitor) visitCreateFunctionStmt(ctx *pgparser.CreatefunctionstmtContext) any {
+	if ctx == nil {
+		return nil
+	}
+
+	// Check if "OR REPLACE" already exists
+	if v.hasOrReplace(ctx) {
+		// Already has "OR REPLACE", no need to modify
+		return nil
+	}
+
+	// Find the CREATE token
+	createToken := ctx.GetStart()
+	if createToken == nil {
+		return nil
+	}
+
+	// Look for the FUNCTION keyword after CREATE
+	functionToken := v.findFunctionToken(ctx)
+	if functionToken == nil {
+		return nil
+	}
+
+	// Insert "OR REPLACE" between CREATE and FUNCTION
+	// We insert it right before the FUNCTION token
+	v.rewriter.InsertBefore("", functionToken.GetTokenIndex(), "OR REPLACE ")
+
+	return nil
+}
+
+// findFunctionToken finds the FUNCTION token in the CREATE FUNCTION statement
+func (v *CreateOrReplaceVisitor) findFunctionToken(ctx *pgparser.CreatefunctionstmtContext) antlr.Token {
+	// Get all tokens in the context range
+	start := ctx.GetStart().GetTokenIndex()
+	stop := ctx.GetStop().GetTokenIndex()
+
+	for i := start; i <= stop; i++ {
+		token := v.tokens.Get(i)
+		if token.GetTokenType() == pgparser.PostgreSQLParserFUNCTION {
+			return token
+		}
+	}
+
+	return nil
+}
+
+// hasOrReplace checks if the CREATE FUNCTION statement already contains "OR REPLACE"
+func (v *CreateOrReplaceVisitor) hasOrReplace(ctx *pgparser.CreatefunctionstmtContext) bool {
+	// Get all tokens in the context range between CREATE and FUNCTION
+	start := ctx.GetStart().GetTokenIndex()
+	functionToken := v.findFunctionToken(ctx)
+	if functionToken == nil {
+		return false
+	}
+	stop := functionToken.GetTokenIndex()
+
+	// Look for "OR" followed by "REPLACE" tokens, skipping whitespace
+	for i := start; i < stop; i++ {
+		token := v.tokens.Get(i)
+		if token.GetTokenType() == pgparser.PostgreSQLParserOR {
+			// Found OR, now look for REPLACE after it (skipping whitespace)
+			for j := i + 1; j < stop; j++ {
+				nextToken := v.tokens.Get(j)
+				// Skip whitespace tokens (channel 1 is hidden channel based on debug output)
+				if nextToken.GetChannel() == 1 {
+					continue
+				}
+				// Check if the next non-whitespace token is REPLACE
+				if nextToken.GetTokenType() == pgparser.PostgreSQLParserREPLACE {
+					return true
+				}
+				// If it's not REPLACE, this OR is not our OR REPLACE pattern
+				break
+			}
+		}
+	}
+
+	return false
 }
