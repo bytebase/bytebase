@@ -375,7 +375,12 @@ func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext,
 		return false, nil, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
-	detail := fmt.Sprintf("Applied migration version %s to database %q.", mc.version, database.DatabaseName)
+	var detail string
+	if mc.version == "" {
+		detail = fmt.Sprintf("Applied migration to database %q.", database.DatabaseName)
+	} else {
+		detail = fmt.Sprintf("Applied migration version %s to database %q.", mc.version, database.DatabaseName)
+	}
 
 	return true, &storepb.TaskRunResult{
 		Detail:    detail,
