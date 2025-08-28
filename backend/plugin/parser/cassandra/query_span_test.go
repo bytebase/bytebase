@@ -384,11 +384,13 @@ func TestQueryTypeDetection(t *testing.T) {
 		statement    string
 		expectedType base.QueryType
 	}{
+		// DQL (Data Query Language)
 		{
 			name:         "SELECT statement",
 			statement:    "SELECT * FROM users",
 			expectedType: base.Select,
 		},
+		// DML (Data Manipulation Language)
 		{
 			name:         "INSERT statement",
 			statement:    "INSERT INTO users (id, name) VALUES (1, 'John')",
@@ -403,6 +405,49 @@ func TestQueryTypeDetection(t *testing.T) {
 			name:         "DELETE statement",
 			statement:    "DELETE FROM users WHERE id = 1",
 			expectedType: base.DML,
+		},
+		// DDL (Data Definition Language) - Table operations
+		{
+			name:         "CREATE TABLE statement",
+			statement:    "CREATE TABLE users (id uuid PRIMARY KEY, name text)",
+			expectedType: base.DDL,
+		},
+		{
+			name:         "ALTER TABLE statement",
+			statement:    "ALTER TABLE users ADD email text",
+			expectedType: base.DDL,
+		},
+		{
+			name:         "DROP TABLE statement",
+			statement:    "DROP TABLE users",
+			expectedType: base.DDL,
+		},
+		// DDL - Keyspace operations
+		{
+			name:         "CREATE KEYSPACE statement",
+			statement:    "CREATE KEYSPACE myapp WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}",
+			expectedType: base.DDL,
+		},
+		{
+			name:         "ALTER KEYSPACE statement",
+			statement:    "ALTER KEYSPACE myapp WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 3}",
+			expectedType: base.DDL,
+		},
+		{
+			name:         "DROP KEYSPACE statement",
+			statement:    "DROP KEYSPACE myapp",
+			expectedType: base.DDL,
+		},
+		// DDL - Index operations
+		{
+			name:         "CREATE INDEX statement",
+			statement:    "CREATE INDEX user_email_idx ON users (email)",
+			expectedType: base.DDL,
+		},
+		{
+			name:         "DROP INDEX statement",
+			statement:    "DROP INDEX user_email_idx",
+			expectedType: base.DDL,
 		},
 	}
 

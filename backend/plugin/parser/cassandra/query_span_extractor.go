@@ -296,3 +296,69 @@ func (e *querySpanExtractor) EnterDelete_(_ *cql.Delete_Context) {
 	// Set query type to DML for DELETE
 	e.querySpan.Type = base.DML
 }
+
+// DDL Statement Handlers
+
+// EnterCreateTable is called when we enter a CREATE TABLE statement
+func (e *querySpanExtractor) EnterCreateTable(_ *cql.CreateTableContext) {
+	if e.err != nil {
+		return
+	}
+	e.querySpan.Type = base.DDL
+}
+
+// EnterAlterTable is called when we enter an ALTER TABLE statement
+func (e *querySpanExtractor) EnterAlterTable(_ *cql.AlterTableContext) {
+	if e.err != nil {
+		return
+	}
+	e.querySpan.Type = base.DDL
+}
+
+// EnterDropTable is called when we enter a DROP TABLE statement
+func (e *querySpanExtractor) EnterDropTable(_ *cql.DropTableContext) {
+	if e.err != nil {
+		return
+	}
+	e.querySpan.Type = base.DDL
+}
+
+// EnterCreateKeyspace is called when we enter a CREATE KEYSPACE statement
+func (e *querySpanExtractor) EnterCreateKeyspace(_ *cql.CreateKeyspaceContext) {
+	if e.err != nil {
+		return
+	}
+	e.querySpan.Type = base.DDL
+}
+
+// EnterAlterKeyspace is called when we enter an ALTER KEYSPACE statement
+func (e *querySpanExtractor) EnterAlterKeyspace(_ *cql.AlterKeyspaceContext) {
+	if e.err != nil {
+		return
+	}
+	e.querySpan.Type = base.DDL
+}
+
+// EnterDropKeyspace is called when we enter a DROP KEYSPACE statement
+func (e *querySpanExtractor) EnterDropKeyspace(_ *cql.DropKeyspaceContext) {
+	if e.err != nil {
+		return
+	}
+	e.querySpan.Type = base.DDL
+}
+
+// EnterCreateIndex is called when we enter a CREATE INDEX statement
+func (e *querySpanExtractor) EnterCreateIndex(_ *cql.CreateIndexContext) {
+	if e.err != nil {
+		return
+	}
+	e.querySpan.Type = base.DDL
+}
+
+// EnterDropIndex is called when we enter a DROP INDEX statement
+func (e *querySpanExtractor) EnterDropIndex(_ *cql.DropIndexContext) {
+	if e.err != nil {
+		return
+	}
+	e.querySpan.Type = base.DDL
+}
