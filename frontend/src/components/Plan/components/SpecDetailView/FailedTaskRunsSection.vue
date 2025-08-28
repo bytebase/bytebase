@@ -50,7 +50,6 @@
 </template>
 
 <script lang="tsx" setup>
-import { create } from "@bufbuild/protobuf";
 import { ExternalLinkIcon } from "lucide-vue-next";
 import { NButton, type DataTableColumn, NDataTable } from "naive-ui";
 import { computed, reactive, ref, watchEffect } from "vue";
@@ -60,14 +59,14 @@ import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRu
 import TaskRunStatusIcon from "@/components/IssueV1/components/TaskRunSection/TaskRunStatusIcon.vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { rolloutServiceClientConnect } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useDatabaseV1Store } from "@/store";
-import { getDateForPbTimestampProtoEs, type ComposedTaskRun } from "@/types";
+import { useTaskRunLogStore } from "@/store/modules/v1/taskRunLog";
+import { getDateForPbTimestampProtoEs } from "@/types";
 import {
   TaskRun_Status,
-  GetTaskRunLogRequestSchema,
   Task_Status,
+  type TaskRun,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractTaskUID,
@@ -87,13 +86,14 @@ const { project } = useCurrentProjectV1();
 const { rollout, taskRuns } = usePlanContextWithRollout();
 const selectedSpec = useSelectedSpec();
 const databaseStore = useDatabaseV1Store();
+const taskRunLogStore = useTaskRunLogStore();
 
 // Pagination state
 const currentPage = ref(1);
 
 const taskRunDetailContext = reactive<{
   show: boolean;
-  taskRun?: ComposedTaskRun;
+  taskRun?: TaskRun;
 }>({
   show: false,
 });
@@ -112,7 +112,7 @@ const taskRunList = computed(() => {
     return [];
   }
 
-  const latestFailedTaskRuns: ComposedTaskRun[] = [];
+  const latestFailedTaskRuns: TaskRun[] = [];
 
   // For each failed task, find its latest task run
   for (const failedTask of failedSpecTasks.value) {
@@ -121,7 +121,7 @@ const taskRunList = computed(() => {
     // Get all task runs for this failed task
     const taskRunsForTask = taskRuns.value.filter(
       (taskRun) => extractTaskUID(taskRun.name) === taskUID
-    ) as ComposedTaskRun[];
+    ) as TaskRun[];
 
     if (taskRunsForTask.length > 0) {
       // Sort by creation time to get the latest first
@@ -146,7 +146,7 @@ const shouldShowSection = computed(() => {
 });
 
 // Helper function to get the task for a task run
-const getTaskForTaskRun = (taskRun: ComposedTaskRun) => {
+const getTaskForTaskRun = (taskRun: TaskRun) => {
   const taskUID = extractTaskUID(taskRun.name);
   return failedSpecTasks.value.find(
     (task) => extractTaskUID(task.name) === taskUID
@@ -165,20 +165,16 @@ const isLoading = computed(() => {
 watchEffect(async () => {
   for (const taskRun of taskRunList.value) {
     if (taskRun.status === TaskRun_Status.RUNNING) {
-      const request = create(GetTaskRunLogRequestSchema, {
-        parent: taskRun.name,
-      });
-      const response = await rolloutServiceClientConnect.getTaskRunLog(request);
-      taskRun.taskRunLog = response;
+      await taskRunLogStore.fetchTaskRunLog(taskRun.name);
     }
   }
 });
 
-const rowKey = (taskRun: ComposedTaskRun) => {
+const rowKey = (taskRun: TaskRun) => {
   return taskRun.name;
 };
 
-const rowProps = (taskRun: ComposedTaskRun) => {
+const rowProps = (taskRun: TaskRun) => {
   return {
     style: "cursor: pointer;",
     onClick: () => {
@@ -189,13 +185,13 @@ const rowProps = (taskRun: ComposedTaskRun) => {
   };
 };
 
-const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
+const columnList = computed((): DataTableColumn<TaskRun>[] => {
   return [
     {
       key: "status",
       title: "",
       width: "30px",
-      render: (taskRun: ComposedTaskRun) => (
+      render: (taskRun: TaskRun) => (
         <TaskRunStatusIcon status={taskRun.status} />
       ),
     },
@@ -204,7 +200,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       title: t("common.database"),
       width: "256px",
       resizable: true,
-      render: (taskRun: ComposedTaskRun) => {
+      render: (taskRun: TaskRun) => {
         const task = getTaskForTaskRun(taskRun);
         return task?.target ? (
           <DatabaseDisplay showEnvironment database={task.target} />
@@ -217,7 +213,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       key: "comment",
       title: t("task.comment"),
       resizable: true,
-      render: (taskRun: ComposedTaskRun) => (
+      render: (taskRun: TaskRun) => (
         <div class="flex flex-row justify-start items-center">
           <TaskRunComment
             taskRun={taskRun}
@@ -231,7 +227,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       key: "startTime",
       title: t("task.started"),
       width: "100px",
-      render: (taskRun: ComposedTaskRun) => (
+      render: (taskRun: TaskRun) => (
         <HumanizeDate date={getDateForPbTimestampProtoEs(taskRun.startTime)} />
       ),
     },
@@ -239,7 +235,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       key: "actions",
       title: "",
       width: "100px",
-      render: (taskRun: ComposedTaskRun) =>
+      render: (taskRun: TaskRun) =>
         shouldShowDetailButton(taskRun) ? (
           <NButton
             size="tiny"
@@ -256,7 +252,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
   ];
 });
 
-const shouldShowDetailButton = (taskRun: ComposedTaskRun) => {
+const shouldShowDetailButton = (taskRun: TaskRun) => {
   return [
     TaskRun_Status.RUNNING,
     TaskRun_Status.DONE,
@@ -266,7 +262,7 @@ const shouldShowDetailButton = (taskRun: ComposedTaskRun) => {
 };
 
 // Helper function to get route params for a task run
-const getTaskRouteParams = (taskRun: ComposedTaskRun) => {
+const getTaskRouteParams = (taskRun: TaskRun) => {
   const task = getTaskForTaskRun(taskRun);
   if (!task) return null;
 
@@ -293,7 +289,7 @@ const selectedDatabase = computed(() => {
 });
 
 // Navigate to task detail page
-const navigateToTaskDetail = (taskRun: ComposedTaskRun) => {
+const navigateToTaskDetail = (taskRun: TaskRun) => {
   const params = getTaskRouteParams(taskRun);
   if (params) {
     router.push({
@@ -309,7 +305,7 @@ const navigateToTaskDetail = (taskRun: ComposedTaskRun) => {
 };
 
 // Show task run detail in drawer
-const showDetail = (taskRun: ComposedTaskRun) => {
+const showDetail = (taskRun: TaskRun) => {
   taskRunDetailContext.taskRun = taskRun;
   taskRunDetailContext.show = true;
 };

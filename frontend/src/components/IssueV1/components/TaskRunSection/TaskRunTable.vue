@@ -32,12 +32,15 @@ import { useI18n } from "vue-i18n";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useCurrentProjectV1, useSheetV1Store } from "@/store";
+import { useTaskRunLogStore } from "@/store/modules/v1/taskRunLog";
 import {
   getDateForPbTimestampProtoEs,
   getTimeForPbTimestampProtoEs,
-  type ComposedTaskRun,
 } from "@/types";
-import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  TaskRun_Status,
+  type TaskRun,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
 import { humanizeDurationV1, sheetNameOfTaskV1 } from "@/utils";
 import { useIssueContext } from "../../logic";
@@ -52,11 +55,12 @@ defineOptions({
 });
 
 defineProps<{
-  taskRunList: ComposedTaskRun[];
+  taskRunList: TaskRun[];
 }>();
 
 const { t } = useI18n();
 const { project } = useCurrentProjectV1();
+const taskRunLogStore = useTaskRunLogStore();
 const { selectedTask } = useIssueContext();
 
 const sheet = computedAsync(async () => {
@@ -68,22 +72,22 @@ const sheet = computedAsync(async () => {
 
 const taskRunDetailContext = ref<{
   show: boolean;
-  taskRun?: ComposedTaskRun;
+  taskRun?: TaskRun;
 }>({
   show: false,
 });
 
-const rowKey = (taskRun: ComposedTaskRun) => {
+const rowKey = (taskRun: TaskRun) => {
   return taskRun.name;
 };
 
-const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
+const columnList = computed((): DataTableColumn<TaskRun>[] => {
   return [
     {
       key: "status",
       title: "",
       width: 30,
-      render: (taskRun: ComposedTaskRun) => (
+      render: (taskRun: TaskRun) => (
         <TaskRunStatusIcon status={taskRun.status} />
       ),
     },
@@ -94,7 +98,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       className: "",
       minWidth: 140,
       resizable: true,
-      render: (taskRun: ComposedTaskRun) => (
+      render: (taskRun: TaskRun) => (
         <div class="flex flex-row justify-start items-center">
           <TaskRunComment taskRun={taskRun} />
         </div>
@@ -122,7 +126,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       key: "createTime",
       title: t("task.created"),
       width: 100,
-      render: (taskRun: ComposedTaskRun) => (
+      render: (taskRun: TaskRun) => (
         <HumanizeDate date={getDateForPbTimestampProtoEs(taskRun.createTime)} />
       ),
     },
@@ -130,7 +134,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       key: "startTime",
       title: t("task.started"),
       width: 100,
-      render: (taskRun: ComposedTaskRun) => (
+      render: (taskRun: TaskRun) => (
         <HumanizeDate date={getDateForPbTimestampProtoEs(taskRun.startTime)} />
       ),
     },
@@ -138,7 +142,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       key: "executionDuration",
       title: t("task.execution-time"),
       width: 120,
-      render: (taskRun: ComposedTaskRun) => {
+      render: (taskRun: TaskRun) => {
         return humanizeDurationV1(executionDurationOfTaskRun(taskRun));
       },
     },
@@ -146,7 +150,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       key: "actions",
       title: "",
       width: 60,
-      render: (taskRun: ComposedTaskRun) =>
+      render: (taskRun: TaskRun) =>
         shouldShowDetailButton(taskRun) ? (
           <NButton size="tiny" onClick={() => showDetail(taskRun)}>
             {t("common.detail")}
@@ -156,9 +160,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
   ];
 });
 
-const executionDurationOfTaskRun = (
-  taskRun: ComposedTaskRun
-): Duration | undefined => {
+const executionDurationOfTaskRun = (taskRun: TaskRun): Duration | undefined => {
   const { startTime, updateTime } = taskRun;
   if (!startTime || !updateTime) {
     return undefined;
@@ -182,7 +184,7 @@ const executionDurationOfTaskRun = (
   });
 };
 
-const shouldShowDetailButton = (taskRun: ComposedTaskRun) => {
+const shouldShowDetailButton = (taskRun: TaskRun) => {
   return [
     TaskRun_Status.RUNNING,
     TaskRun_Status.DONE,
@@ -191,15 +193,16 @@ const shouldShowDetailButton = (taskRun: ComposedTaskRun) => {
   ].includes(taskRun.status);
 };
 
-const showDetail = (taskRun: ComposedTaskRun) => {
+const showDetail = (taskRun: TaskRun) => {
   taskRunDetailContext.value = {
     show: true,
     taskRun,
   };
 };
 
-const getFlattenLogEntry = (taskRun: ComposedTaskRun) => {
-  const entry = last(taskRun.taskRunLog.entries);
+const getFlattenLogEntry = (taskRun: TaskRun) => {
+  const taskRunLog = taskRunLogStore.getTaskRunLog(taskRun.name);
+  const entry = last(taskRunLog.entries);
   if (!entry) {
     return undefined;
   }
