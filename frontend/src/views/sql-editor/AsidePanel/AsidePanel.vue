@@ -14,10 +14,7 @@
       <ActionBar />
     </div>
     <div class="h-full flex-1 flex flex-col overflow-hidden">
-      <div
-        v-if="!strictProject"
-        class="flex flex-row items-center gap-x-1 px-1 py-1 border-b"
-      >
+      <div class="flex flex-row items-center gap-x-1 px-1 py-1 border-b">
         <ProjectSelect
           style="width: 100%"
           class="project-select"
@@ -83,8 +80,7 @@ const editorStore = useSQLEditorStore();
 const { asidePanelTab } = useSQLEditorContext();
 const { isDisconnected } = storeToRefs(useSQLEditorTabStore());
 
-const { project, projectContextReady, strictProject } =
-  storeToRefs(editorStore);
+const { project, projectContextReady } = storeToRefs(editorStore);
 const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 
