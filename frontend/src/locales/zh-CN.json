@@ -1088,10 +1088,6 @@
       "under-review": "等待审批"
     },
     "approval": {
-      "rejected-title": "工单被退回",
-      "pending-title": "工单待审批",
-      "rejected-description": "此工单已被审批者退回。确认并勾选强制运行才能继续。",
-      "pending-description": "此工单正在等待审批。确认并勾选强制运行才能继续。",
       "rejected-error": "此工单已被退回。请确认并勾选强制运行才能继续。",
       "pending-error": "此工单正在等待审批。请确认并勾选强制运行才能继续。",
       "approved-and-waiting-for-rollout": "该工单已批准，等待发布。"
@@ -1183,6 +1179,11 @@
   "rollout": {
     "rollouts": "发布任务",
     "force-rollout": "强制运行",
+    "task-execution-notices": "任务执行提醒",
+    "no-active-task-to-cancel": "没有要取消的任务。",
+    "automatic-rollout": {
+      "description": "此环境已启用自动部署。当所有条件满足时，任务将自动执行。"
+    },
     "stage": {
       "self": "阶段 | 阶段",
       "start-stage": "开始该阶段",
@@ -1193,7 +1194,6 @@
     },
     "message": {
       "pervious-stages-incomplete": {
-        "title": "前置阶段尚未完成",
         "description": "存在未完成的前置阶段。请确认并勾选强制运行才能继续。"
       }
     }
@@ -2620,8 +2620,8 @@
       "generating-approval-flow": "正在生成审批流",
       "approved-issue": "批准工单",
       "disallow-approve-reason": {
-        "some-task-checks-didnt-pass": "尚有未通过的任务检查项",
-        "some-task-checks-are-still-running": "尚有运行中的任务检查项",
+        "some-task-checks-didnt-pass": "尚有未通过的任务检查项。",
+        "some-task-checks-are-still-running": "尚有运行中的任务检查项。",
         "x-field-is-required": "{field}为必填项"
       },
       "send-back": "退回",

@@ -1088,10 +1088,6 @@
       "under-review": "審査中"
     },
     "approval": {
-      "rejected-title": "問題の承認が拒否されました",
-      "pending-title": "問題の承認が保留中",
-      "rejected-description": "この問題は承認者によって拒否されました。続行するには強制ロールアウトが必要です。",
-      "pending-description": "この問題は承認待ちです。続行するには強制ロールアウトが必要です。",
       "rejected-error": "問題の承認が拒否されました。続行するには強制ロールアウトを有効にしてください。",
       "pending-error": "問題の承認が保留中です。続行するには強制ロールアウトを有効にしてください。",
       "approved-and-waiting-for-rollout": "この問題は承認されており、展開する準備ができています。"
@@ -1183,6 +1179,11 @@
   "rollout": {
     "rollouts": "ロールアウト",
     "force-rollout": "強制実行",
+    "task-execution-notices": "タスク実行通知",
+    "no-active-task-to-cancel": "キャンセルするアクティブなタスクはありません。",
+    "automatic-rollout": {
+      "description": "この環境では自動ロールアウトが有効になっています。すべての条件が満たされると、タスクは自動的に実行されます。"
+    },
     "stage": {
       "self": "ステージ | ステージ",
       "start-stage": "スタートステージ",
@@ -1193,7 +1194,6 @@
     },
     "message": {
       "pervious-stages-incomplete": {
-        "title": "前の段階は未完了です",
         "description": "前のステージの一部が完了していません。続行するには強制実行を有効にしてください。"
       }
     }
