@@ -1088,10 +1088,6 @@
       "under-review": "Bajo revisión"
     },
     "approval": {
-      "rejected-title": "Aprobación de emisión rechazada",
-      "pending-title": "Aprobación de emisión pendiente",
-      "rejected-description": "Este problema ha sido rechazado por los aprobadores. Se requiere una implementación forzada para continuar.",
-      "pending-description": "Este problema está pendiente de aprobación. Se requiere una implementación forzada para continuar.",
       "rejected-error": "Se ha rechazado la aprobación del problema. Habilite la implementación forzada para continuar.",
       "pending-error": "La aprobación del problema está pendiente. Habilite la implementación forzada para continuar.",
       "approved-and-waiting-for-rollout": "Este problema ha sido aprobado y está listo para implementarse."
@@ -1183,6 +1179,11 @@
   "rollout": {
     "rollouts": "Despliegues",
     "force-rollout": "Ejecución forzada",
+    "task-execution-notices": "Avisos de ejecución de tareas",
+    "no-active-task-to-cancel": "No hay ninguna tarea activa para cancelar.",
+    "automatic-rollout": {
+      "description": "Este entorno tiene habilitada la implementación automática. Las tareas se ejecutarán automáticamente cuando se cumplan todas las condiciones."
+    },
     "stage": {
       "self": "Escenario | Escenarios",
       "start-stage": "Etapa de inicio",
@@ -1193,7 +1194,6 @@
     },
     "message": {
       "pervious-stages-incomplete": {
-        "title": "Las etapas anteriores están incompletas",
         "description": "Algunas etapas anteriores no se han completado. Activa la ejecución forzada para continuar."
       }
     }

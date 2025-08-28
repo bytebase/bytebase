@@ -1088,12 +1088,8 @@
       "under-review": "Under review"
     },
     "approval": {
-      "rejected-title": "Issue Approval Rejected",
-      "pending-title": "Issue Approval Pending",
-      "rejected-description": "This issue has been rejected by approvers. Please enable force run to proceed.",
-      "pending-description": "This issue is waiting for approval. Please enable force run to proceed.",
-      "rejected-error": "Issue approval has been rejected. Please enable force run to proceed.",
-      "pending-error": "Issue approval is pending. Please enable force run to proceed.",
+      "rejected-error": "Issue approval has been rejected.",
+      "pending-error": "Issue approval is pending.",
       "approved-and-waiting-for-rollout": "This issue has been approved and is ready to rollout."
     },
     "new-layout": "New CI/CD Layout"
@@ -1183,6 +1179,11 @@
   "rollout": {
     "rollouts": "Rollouts",
     "force-rollout": "Force run",
+    "task-execution-notices": "Task execution notices",
+    "no-active-task-to-cancel": "No active task to cancel.",
+    "automatic-rollout": {
+      "description": "This environment has automatic rollout enabled. Tasks will execute automatically when all conditions are met."
+    },
     "stage": {
       "self": "Stage | Stages",
       "start-stage": "Start stage",
@@ -1193,8 +1194,7 @@
     },
     "message": {
       "pervious-stages-incomplete": {
-        "title": "Previous stages are incomplete",
-        "description": "Some previous stages are not completed. Please enable force run to proceed."
+        "description": "Some previous stages are not completed."
       }
     }
   },
@@ -2620,8 +2620,8 @@
       "generating-approval-flow": "Generating approval flow",
       "approved-issue": "approved issue",
       "disallow-approve-reason": {
-        "some-task-checks-didnt-pass": "Some task checks didn't pass",
-        "some-task-checks-are-still-running": "Some task checks are still running",
+        "some-task-checks-didnt-pass": "Some task checks didn't pass.",
+        "some-task-checks-are-still-running": "Some task checks are still running.",
         "x-field-is-required": "{field} is required"
       },
       "send-back": "Send back",
