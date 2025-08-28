@@ -228,16 +228,46 @@ func (e *querySpanExtractor) expandSelectAsterisk(keyspace, table string) []base
 }
 
 // extractWhereColumns extracts column references from WHERE clause
-func (*querySpanExtractor) extractWhereColumns(whereSpec cql.IWhereSpecContext, _, _ string) {
+func (e *querySpanExtractor) extractWhereColumns(whereSpec cql.IWhereSpecContext, keyspace, table string) {
 	if whereSpec == nil {
 		return
 	}
 
-	// TODO: This is a simplified implementation
-	// Future enhancements should handle:
-	// - Complex expressions (AND, OR, nested conditions)
-	// - Functions (UPPER(column), etc.)
-	// - Subqueries
+	// Extract relation elements from WHERE clause
+	if relationElements := whereSpec.RelationElements(); relationElements != nil {
+		// Process all relation elements (conditions connected by AND)
+		for _, relationElement := range relationElements.AllRelationElement() {
+			e.extractColumnsFromRelation(relationElement, keyspace, table)
+		}
+	}
+}
+
+// extractColumnsFromRelation extracts column references from a single relation element
+func (e *querySpanExtractor) extractColumnsFromRelation(relation cql.IRelationElementContext, keyspace, table string) {
+	if relation == nil {
+		return
+	}
+
+	// Extract column names from OBJECT_NAME tokens
+	// In CQL, columns are referenced as OBJECT_NAME in WHERE conditions
+	for _, objName := range relation.AllOBJECT_NAME() {
+		columnName := unquoteIdentifier(objName.GetText())
+
+		colResource := base.ColumnResource{
+			Database: keyspace,
+			Table:    table,
+			Column:   columnName,
+		}
+
+		// Add to both SourceColumns and PredicateColumns
+		e.querySpan.SourceColumns[colResource] = true
+		e.querySpan.PredicateColumns[colResource] = true
+	}
+
+	// TODO: Handle more complex cases:
+	// - Functions containing columns (e.g., token(column))
+	// - Collection operations (e.g., collection CONTAINS value)
+	// - Nested expressions
 }
 
 // EnterInsert is called when we enter an INSERT statement

@@ -312,6 +312,72 @@ func TestGetQuerySpanWithErrors(t *testing.T) {
 	}
 }
 
+func TestWhereColumnExtraction(t *testing.T) {
+	tests := []struct {
+		name                     string
+		statement                string
+		expectedPredicateColumns []base.ColumnResource
+	}{
+		{
+			name:      "Simple equality WHERE clause",
+			statement: "SELECT * FROM users WHERE id = 123",
+			expectedPredicateColumns: []base.ColumnResource{
+				{Database: "test_keyspace", Table: "users", Column: "id"},
+			},
+		},
+		{
+			name:      "Multiple AND conditions",
+			statement: "SELECT name FROM users WHERE id = 123 AND status = 'active'",
+			expectedPredicateColumns: []base.ColumnResource{
+				{Database: "test_keyspace", Table: "users", Column: "id"},
+				{Database: "test_keyspace", Table: "users", Column: "status"},
+			},
+		},
+		{
+			name:      "WHERE with comparison operators",
+			statement: "SELECT * FROM users WHERE age > 18 AND age < 65",
+			expectedPredicateColumns: []base.ColumnResource{
+				{Database: "test_keyspace", Table: "users", Column: "age"},
+			},
+		},
+		{
+			name:      "WHERE with IN clause",
+			statement: "SELECT * FROM users WHERE status IN ('active', 'pending')",
+			expectedPredicateColumns: []base.ColumnResource{
+				{Database: "test_keyspace", Table: "users", Column: "status"},
+			},
+		},
+		{
+			name:      "WHERE with double-quoted columns",
+			statement: `SELECT * FROM users WHERE "UserId" = 123 AND "UserStatus" = 'active'`,
+			expectedPredicateColumns: []base.ColumnResource{
+				{Database: "test_keyspace", Table: "users", Column: "UserId"},
+				{Database: "test_keyspace", Table: "users", Column: "UserStatus"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			gCtx := base.GetQuerySpanContext{}
+
+			got, err := GetQuerySpan(ctx, gCtx, tt.statement, "test_keyspace", "", false)
+			require.NoError(t, err)
+			require.NotNil(t, got)
+
+			// Check that all expected columns are in PredicateColumns
+			for _, expectedCol := range tt.expectedPredicateColumns {
+				require.Contains(t, got.PredicateColumns, expectedCol,
+					"Missing predicate column: %+v", expectedCol)
+				// Also verify they're in SourceColumns
+				require.Contains(t, got.SourceColumns, expectedCol,
+					"Missing source column: %+v", expectedCol)
+			}
+		})
+	}
+}
+
 func TestQueryTypeDetection(t *testing.T) {
 	tests := []struct {
 		name         string
