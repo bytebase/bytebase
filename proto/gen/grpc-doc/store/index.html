@@ -1209,6 +1209,10 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.store.AIProvider"><span class="badge">M</span>AIProvider</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.AISetting"><span class="badge">M</span>AISetting</a>
                 </li>
               
@@ -1346,7 +1350,7 @@
               
               
                 <li>
-                  <a href="#bytebase.store.AISetting.Provider"><span class="badge">E</span>AISetting.Provider</a>
+                  <a href="#bytebase.store.AIProvider.Type"><span class="badge">E</span>AIProvider.Type</a>
                 </li>
               
                 <li>
@@ -10822,7 +10826,7 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRu
       <p></p>
 
       
-        <h3 id="bytebase.store.AISetting">AISetting</h3>
+        <h3 id="bytebase.store.AIProvider">AIProvider</h3>
         <p></p>
 
         
@@ -10833,15 +10837,8 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRu
             <tbody>
               
                 <tr>
-                  <td>enabled</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>provider</td>
-                  <td><a href="#bytebase.store.AISetting.Provider">AISetting.Provider</a></td>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.AIProvider.Type">AIProvider.Type</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -10871,6 +10868,30 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRu
                   <td>version</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.AISetting">AISetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>providers</td>
+                  <td><a href="#bytebase.store.AIProvider">AIProvider</a></td>
+                  <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
               
@@ -12204,7 +12225,7 @@ The default value is -1, means no limit. </p></td>
       
 
       
-        <h3 id="bytebase.store.AISetting.Provider">AISetting.Provider</h3>
+        <h3 id="bytebase.store.AIProvider.Type">AIProvider.Type</h3>
         <p></p>
         <table class="enum-table">
           <thead>
@@ -12213,7 +12234,7 @@ The default value is -1, means no limit. </p></td>
           <tbody>
             
               <tr>
-                <td>PROVIDER_UNSPECIFIED</td>
+                <td>TYPE_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>

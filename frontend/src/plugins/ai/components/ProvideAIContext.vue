@@ -6,7 +6,7 @@
 import { create } from "@bufbuild/protobuf";
 import Emittery from "emittery";
 import { storeToRefs } from "pinia";
-import { computed, reactive, ref, toRef } from "vue";
+import { computed, reactive, ref, toRef, watch } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useConnectionOfCurrentSQLEditorTab,
@@ -56,8 +56,12 @@ const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const schema = computed(() => tab.value?.connection.schema);
 const store = useConversationStore();
 
+// Initialize provider with the first available one, and update when settings change
+const provider = ref(aiSetting.value.providers[0]);
+
 const context: AIContext = {
   aiSetting: aiSetting,
+  provider: provider,
   engine: computed(() => instance.value.engine),
   databaseMetadata,
   schema,
@@ -68,6 +72,24 @@ const context: AIContext = {
   events,
 };
 provideAIContext(context);
+
+// Watch for aiSetting changes and update provider if necessary
+watch(
+  aiSetting,
+  (newSetting) => {
+    if (newSetting.providers && newSetting.providers.length > 0) {
+      // If the current provider is no longer in the list, switch to the first available
+      const currentType = provider.value?.type;
+      const stillExists = newSetting.providers.some(
+        (p) => p.type === currentType
+      );
+      if (!stillExists || !provider.value) {
+        provider.value = newSetting.providers[0];
+      }
+    }
+  },
+  { deep: true }
+);
 
 const { ready, selected: selectedConversation } = useCurrentChat(context);
 

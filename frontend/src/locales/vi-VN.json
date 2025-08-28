@@ -655,8 +655,13 @@
         "failed-to-update-setting": "Không cập nhật được cài đặt \"{title}\"",
         "ai-assistant": {
           "self": "Trợ lý AI",
-          "enable-ai-assistant": "Bật Trợ lý AI",
           "description": "Sử dụng AI để hỗ trợ các tác vụ phát triển cơ sở dữ liệu.",
+          "providers": "Nhà cung cấp AI",
+          "add-provider": "Thêm nhà cung cấp",
+          "add-first-provider": "Thêm nhà cung cấp đầu tiên",
+          "remove-provider": "Xóa nhà cung cấp",
+          "no-providers": "Không có nhà cung cấp AI nào được cấu hình",
+          "no-providers-description": "Bắt đầu bằng cách thêm nhà cung cấp AI đầu tiên của bạn.",
           "provider": {
             "self": "Nhà cung cấp AI",
             "open_ai": "Open AI",
@@ -677,6 +682,10 @@
           "model": {
             "self": "Tên mô hình",
             "description": "Cung cấp triển khai riêng của tên mô hình."
+          },
+          "version": {
+            "self": "Phiên bản API",
+            "description": "Phiên bản API dành cho Claude (ví dụ: 2023-06-01)."
           }
         },
         "announcement": {

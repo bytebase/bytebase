@@ -105,25 +105,38 @@ func (s *SQLService) AICompletion(ctx context.Context, req *connect.Request[v1pb
 	if err != nil {
 		return nil, err
 	}
-	if !aiSetting.Enabled {
+	if len(aiSetting.Providers) == 0 {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("AI is not enabled"))
 	}
 
-	switch aiSetting.Provider {
-	case storepb.AISetting_OPEN_AI, storepb.AISetting_AZURE_OPENAI:
-		return callOpenAI(ctx, aiSetting, request)
-	case storepb.AISetting_GEMINI:
-		return callGemini(ctx, aiSetting, request)
-	case storepb.AISetting_CLAUDE:
-		return callClaude(ctx, aiSetting, request)
+	// Find the provider based on the request
+	var provider *storepb.AIProvider
+	// Use the specific provider requested
+	for _, p := range aiSetting.Providers {
+		if p.Type == storepb.AIProvider_Type(request.Provider) {
+			provider = p
+			break
+		}
+	}
+	if provider == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("requested AI provider %s is not configured", request.Provider))
+	}
+
+	switch provider.Type {
+	case storepb.AIProvider_OPEN_AI, storepb.AIProvider_AZURE_OPENAI:
+		return callOpenAI(ctx, provider, request)
+	case storepb.AIProvider_GEMINI:
+		return callGemini(ctx, provider, request)
+	case storepb.AIProvider_CLAUDE:
+		return callClaude(ctx, provider, request)
 	default:
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported AI provider %s", aiSetting.Provider))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported AI provider %s", provider.Type))
 	}
 }
 
-func callOpenAI(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AICompletionRequest) (*connect.Response[v1pb.AICompletionResponse], error) {
+func callOpenAI(ctx context.Context, provider *storepb.AIProvider, request *v1pb.AICompletionRequest) (*connect.Response[v1pb.AICompletionResponse], error) {
 	payload := openAIRequest{
-		Model: aiSetting.Model,
+		Model: provider.Model,
 		TopP:  1.0,
 		Stop:  []string{"#", ";"},
 	}
@@ -138,16 +151,16 @@ func callOpenAI(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 		return nil, errors.Errorf("failed to marshal OpenAI request payload: %s", err)
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", aiSetting.Endpoint, bytes.NewBuffer(payloadBytes))
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", provider.Endpoint, bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		return nil, errors.Errorf("failed to create HTTP request: %s", err)
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	if aiSetting.Provider == storepb.AISetting_AZURE_OPENAI {
-		httpReq.Header.Set("api-key", aiSetting.ApiKey)
+	if provider.Type == storepb.AIProvider_AZURE_OPENAI {
+		httpReq.Header.Set("api-key", provider.ApiKey)
 	} else {
-		httpReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", aiSetting.ApiKey))
+		httpReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", provider.ApiKey))
 	}
 
 	client := &http.Client{}
@@ -188,7 +201,7 @@ func callOpenAI(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 }
 
 // Gemini API docs: https://ai.google.dev/gemini-api/docs
-func callGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AICompletionRequest) (*connect.Response[v1pb.AICompletionResponse], error) {
+func callGemini(ctx context.Context, provider *storepb.AIProvider, request *v1pb.AICompletionRequest) (*connect.Response[v1pb.AICompletionResponse], error) {
 	// Convert messages to Gemini format
 	var contents []geminiContent
 	for _, m := range request.Messages {
@@ -224,7 +237,7 @@ func callGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 	}
 
 	// Gemini API endpoint format: https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}
-	url := fmt.Sprintf("%s/models/%s:generateContent?key=%s", aiSetting.Endpoint, aiSetting.Model, aiSetting.ApiKey)
+	url := fmt.Sprintf("%s/models/%s:generateContent?key=%s", provider.Endpoint, provider.Model, provider.ApiKey)
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(payloadBytes))
 	if err != nil {
@@ -289,7 +302,7 @@ func callGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 }
 
 // Claude API docs: https://docs.anthropic.com/en/api/getting-started
-func callClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AICompletionRequest) (*connect.Response[v1pb.AICompletionResponse], error) {
+func callClaude(ctx context.Context, provider *storepb.AIProvider, request *v1pb.AICompletionRequest) (*connect.Response[v1pb.AICompletionResponse], error) {
 	// Convert messages to Claude format
 	var messages []claudeMessage
 	for _, m := range request.Messages {
@@ -300,7 +313,7 @@ func callClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 	}
 
 	payload := claudeRequest{
-		Model:         aiSetting.Model,
+		Model:         provider.Model,
 		Messages:      messages,
 		MaxTokens:     4096,
 		Temperature:   0.7,
@@ -314,16 +327,16 @@ func callClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 		return nil, errors.Errorf("failed to marshal Claude request payload: %s", err)
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", aiSetting.Endpoint, bytes.NewBuffer(payloadBytes))
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", provider.Endpoint, bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		return nil, errors.Errorf("failed to create HTTP request: %s", err)
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("x-api-key", aiSetting.ApiKey)
+	httpReq.Header.Set("x-api-key", provider.ApiKey)
 	// Claude API requires anthropic-version header
-	if aiSetting.Version != "" {
-		httpReq.Header.Set("anthropic-version", aiSetting.Version)
+	if provider.Version != "" {
+		httpReq.Header.Set("anthropic-version", provider.Version)
 	} else {
 		httpReq.Header.Set("anthropic-version", "2023-06-01")
 	}

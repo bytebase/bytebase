@@ -467,21 +467,41 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_AI:
 		aiSetting := convertAISetting(request.Msg.Setting.Value.GetAiSetting())
-		if aiSetting.Enabled {
-			if aiSetting.Endpoint == "" || aiSetting.Model == "" {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("API endpoint and model are required"))
+
+		// Check for duplicate provider types and validate type
+		providerTypes := make(map[storepb.AIProvider_Type]bool)
+		for _, provider := range aiSetting.Providers {
+			// Check for invalid provider type
+			if provider.Type == storepb.AIProvider_TYPE_UNSPECIFIED {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("provider type must be specified"))
 			}
-			if existedSetting != nil {
-				existedAISetting, err := convertToSettingMessage(existedSetting, s.profile)
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal existed ai setting with error: %v", err))
-				}
-				if aiSetting.ApiKey == "" {
-					aiSetting.ApiKey = existedAISetting.Value.GetAiSetting().GetApiKey()
+			// Check for duplicate provider types
+			if providerTypes[provider.Type] {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("duplicate AI provider type: %s", provider.Type.String()))
+			}
+			providerTypes[provider.Type] = true
+		}
+
+		existedAISetting, err := s.store.GetAISetting(ctx)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find existed AI setting"))
+		}
+
+		// Validate each provider
+		for _, provider := range aiSetting.Providers {
+			if provider.Endpoint == "" || provider.Model == "" {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("API endpoint and model are required for provider %v", provider.Type))
+			}
+			if provider.ApiKey == "" {
+				for _, existedProvider := range existedAISetting.Providers {
+					if existedProvider.Type == provider.Type && existedProvider.ApiKey != "" {
+						provider.ApiKey = existedProvider.ApiKey
+						break
+					}
 				}
 			}
-			if aiSetting.ApiKey == "" {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("API key is required"))
+			if provider.ApiKey == "" {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("API key is required for provider %v", provider.Type))
 			}
 		}
 
@@ -722,7 +742,9 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
 		}
 		// DO NOT expose the api key.
-		storeValue.ApiKey = ""
+		for _, provider := range storeValue.Providers {
+			provider.ApiKey = ""
+		}
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
@@ -1653,14 +1675,18 @@ func convertAISetting(v1Setting *v1pb.AISetting) *storepb.AISetting {
 		return nil
 	}
 
-	return &storepb.AISetting{
-		Enabled:  v1Setting.Enabled,
-		Provider: storepb.AISetting_Provider(v1Setting.Provider),
-		Endpoint: v1Setting.Endpoint,
-		ApiKey:   v1Setting.ApiKey,
-		Model:    v1Setting.Model,
-		Version:  v1Setting.Version,
+	storeSetting := &storepb.AISetting{}
+	for _, provider := range v1Setting.Providers {
+		storeSetting.Providers = append(storeSetting.Providers, &storepb.AIProvider{
+			Type:     storepb.AIProvider_Type(provider.Type),
+			Endpoint: provider.Endpoint,
+			ApiKey:   provider.ApiKey,
+			Model:    provider.Model,
+			Version:  provider.Version,
+		})
 	}
+
+	return storeSetting
 }
 
 func convertToAISetting(storeSetting *storepb.AISetting) *v1pb.AISetting {
@@ -1668,14 +1694,18 @@ func convertToAISetting(storeSetting *storepb.AISetting) *v1pb.AISetting {
 		return nil
 	}
 
-	return &v1pb.AISetting{
-		Enabled:  storeSetting.Enabled,
-		Provider: v1pb.AISetting_Provider(storeSetting.Provider),
-		Endpoint: storeSetting.Endpoint,
-		ApiKey:   storeSetting.ApiKey,
-		Model:    storeSetting.Model,
-		Version:  storeSetting.Version,
+	v1Setting := &v1pb.AISetting{}
+	for _, provider := range storeSetting.Providers {
+		v1Setting.Providers = append(v1Setting.Providers, &v1pb.AIProvider{
+			Type:     v1pb.AIProvider_Type(provider.Type),
+			Endpoint: provider.Endpoint,
+			ApiKey:   provider.ApiKey,
+			Model:    provider.Model,
+			Version:  provider.Version,
+		})
 	}
+
+	return v1Setting
 }
 
 func convertToSCIMSetting(storeSetting *storepb.SCIMSetting) *v1pb.SCIMSetting {

@@ -980,6 +980,10 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.v1.AIProvider"><span class="badge">M</span>AIProvider</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.AISetting"><span class="badge">M</span>AISetting</a>
                 </li>
               
@@ -1145,7 +1149,7 @@
               
               
                 <li>
-                  <a href="#bytebase.v1.AISetting.Provider"><span class="badge">E</span>AISetting.Provider</a>
+                  <a href="#bytebase.v1.AIProvider.Type"><span class="badge">E</span>AIProvider.Type</a>
                 </li>
               
                 <li>
@@ -12070,7 +12074,7 @@ Permissions required: None</p></td>
       <p></p>
 
       
-        <h3 id="bytebase.v1.AISetting">AISetting</h3>
+        <h3 id="bytebase.v1.AIProvider">AIProvider</h3>
         <p></p>
 
         
@@ -12081,15 +12085,8 @@ Permissions required: None</p></td>
             <tbody>
               
                 <tr>
-                  <td>enabled</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>provider</td>
-                  <td><a href="#bytebase.v1.AISetting.Provider">AISetting.Provider</a></td>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.AIProvider.Type">AIProvider.Type</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -12119,6 +12116,30 @@ Permissions required: None</p></td>
                   <td>version</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.AISetting">AISetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>providers</td>
+                  <td><a href="#bytebase.v1.AIProvider">AIProvider</a></td>
+                  <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
               
@@ -13762,7 +13783,7 @@ For examples:
       
 
       
-        <h3 id="bytebase.v1.AISetting.Provider">AISetting.Provider</h3>
+        <h3 id="bytebase.v1.AIProvider.Type">AIProvider.Type</h3>
         <p></p>
         <table class="enum-table">
           <thead>
@@ -13771,7 +13792,7 @@ For examples:
           <tbody>
             
               <tr>
-                <td>PROVIDER_UNSPECIFIED</td>
+                <td>TYPE_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>
@@ -22956,6 +22977,13 @@ Permissions required: bb.projects.getIamPolicy</p></td>
                   <td>messages</td>
                   <td><a href="#bytebase.v1.AICompletionRequest.Message">AICompletionRequest.Message</a></td>
                   <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>provider</td>
+                  <td><a href="#bytebase.v1.AIProvider.Type">AIProvider.Type</a></td>
+                  <td></td>
                   <td><p> </p></td>
                 </tr>
               

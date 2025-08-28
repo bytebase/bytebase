@@ -655,8 +655,13 @@
         "failed-to-update-setting": "No se pudo actualizar la configuración \"{title}\"",
         "ai-assistant": {
           "self": "Asistente de AI",
-          "enable-ai-assistant": "Habilitar el Asistente de IA",
           "description": "Utilice AI para ayudar en las tareas de desarrollo de bases de datos.",
+          "providers": "Proveedores de IA",
+          "add-provider": "Agregar proveedor",
+          "add-first-provider": "Agregar primer proveedor",
+          "remove-provider": "Eliminar proveedor",
+          "no-providers": "No hay proveedores de IA configurados",
+          "no-providers-description": "Comience agregando su primer proveedor de IA.",
           "provider": {
             "self": "Proveedor de IA",
             "open_ai": "Open AI",
@@ -677,6 +682,10 @@
           "model": {
             "self": "Nombre del modelo",
             "description": "Suministro de implementación privada del nombre del modelo."
+          },
+          "version": {
+            "self": "Versión de API",
+            "description": "Versión de API para Claude (por ejemplo, 2023-06-01)."
           }
         },
         "announcement": {

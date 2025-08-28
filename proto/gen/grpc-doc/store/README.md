@@ -257,6 +257,7 @@
     - [RolePermissions](#bytebase-store-RolePermissions)
   
 - [store/setting.proto](#store_setting-proto)
+    - [AIProvider](#bytebase-store-AIProvider)
     - [AISetting](#bytebase-store-AISetting)
     - [Algorithm](#bytebase-store-Algorithm)
     - [Algorithm.FullMask](#bytebase-store-Algorithm-FullMask)
@@ -292,7 +293,7 @@
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
   
-    - [AISetting.Provider](#bytebase-store-AISetting-Provider)
+    - [AIProvider.Type](#bytebase-store-AIProvider-Type)
     - [Algorithm.InnerOuterMask.MaskType](#bytebase-store-Algorithm-InnerOuterMask-MaskType)
     - [Announcement.AlertLevel](#bytebase-store-Announcement-AlertLevel)
     - [DatabaseChangeMode](#bytebase-store-DatabaseChangeMode)
@@ -4086,6 +4087,25 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 
 
 
+<a name="bytebase-store-AIProvider"></a>
+
+### AIProvider
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [AIProvider.Type](#bytebase-store-AIProvider-Type) |  |  |
+| endpoint | [string](#string) |  |  |
+| api_key | [string](#string) |  |  |
+| model | [string](#string) |  |  |
+| version | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-AISetting"></a>
 
 ### AISetting
@@ -4094,12 +4114,7 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| enabled | [bool](#bool) |  |  |
-| provider | [AISetting.Provider](#bytebase-store-AISetting-Provider) |  |  |
-| endpoint | [string](#string) |  |  |
-| api_key | [string](#string) |  |  |
-| model | [string](#string) |  |  |
-| version | [string](#string) |  |  |
+| providers | [AIProvider](#bytebase-store-AIProvider) | repeated |  |
 
 
 
@@ -4677,14 +4692,14 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
  
 
 
-<a name="bytebase-store-AISetting-Provider"></a>
+<a name="bytebase-store-AIProvider-Type"></a>
 
-### AISetting.Provider
+### AIProvider.Type
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| PROVIDER_UNSPECIFIED | 0 |  |
+| TYPE_UNSPECIFIED | 0 |  |
 | OPEN_AI | 1 |  |
 | CLAUDE | 2 |  |
 | GEMINI | 3 |  |

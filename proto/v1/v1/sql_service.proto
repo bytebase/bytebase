@@ -12,6 +12,7 @@ import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/database_catalog_service.proto";
 import "v1/database_service.proto";
+import "v1/setting_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
@@ -566,6 +567,7 @@ message AICompletionRequest {
     string content = 2;
   }
   repeated Message messages = 1;
+  AIProvider.Type provider = 2;
 }
 
 message AICompletionResponse {

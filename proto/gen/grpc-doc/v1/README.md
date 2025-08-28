@@ -210,6 +210,7 @@
     - [IssueService](#bytebase-v1-IssueService)
   
 - [v1/setting_service.proto](#v1_setting_service-proto)
+    - [AIProvider](#bytebase-v1-AIProvider)
     - [AISetting](#bytebase-v1-AISetting)
     - [Algorithm](#bytebase-v1-Algorithm)
     - [Algorithm.FullMask](#bytebase-v1-Algorithm-FullMask)
@@ -252,7 +253,7 @@
     - [WorkspaceApprovalSetting.Rule](#bytebase-v1-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting)
   
-    - [AISetting.Provider](#bytebase-v1-AISetting-Provider)
+    - [AIProvider.Type](#bytebase-v1-AIProvider-Type)
     - [Algorithm.InnerOuterMask.MaskType](#bytebase-v1-Algorithm-InnerOuterMask-MaskType)
     - [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel)
     - [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode)
@@ -4018,6 +4019,25 @@ ANY means approving any node will proceed.
 
 
 
+<a name="bytebase-v1-AIProvider"></a>
+
+### AIProvider
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [AIProvider.Type](#bytebase-v1-AIProvider-Type) |  |  |
+| endpoint | [string](#string) |  |  |
+| api_key | [string](#string) |  |  |
+| model | [string](#string) |  |  |
+| version | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-AISetting"></a>
 
 ### AISetting
@@ -4026,12 +4046,7 @@ ANY means approving any node will proceed.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| enabled | [bool](#bool) |  |  |
-| provider | [AISetting.Provider](#bytebase-v1-AISetting-Provider) |  |  |
-| endpoint | [string](#string) |  |  |
-| api_key | [string](#string) |  |  |
-| model | [string](#string) |  |  |
-| version | [string](#string) |  |  |
+| providers | [AIProvider](#bytebase-v1-AIProvider) | repeated |  |
 
 
 
@@ -4739,14 +4754,14 @@ For examples: (source == &#34;DML&#34; &amp;&amp; level == 200) || (source == &#
  
 
 
-<a name="bytebase-v1-AISetting-Provider"></a>
+<a name="bytebase-v1-AIProvider-Type"></a>
 
-### AISetting.Provider
+### AIProvider.Type
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| PROVIDER_UNSPECIFIED | 0 |  |
+| TYPE_UNSPECIFIED | 0 |  |
 | OPEN_AI | 1 |  |
 | CLAUDE | 2 |  |
 | GEMINI | 3 |  |
@@ -8198,6 +8213,7 @@ ISSUE_CREATE represents creating an issue. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | messages | [AICompletionRequest.Message](#bytebase-v1-AICompletionRequest-Message) | repeated |  |
+| provider | [AIProvider.Type](#bytebase-v1-AIProvider-Type) |  |  |
 
 
 

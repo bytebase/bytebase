@@ -56,7 +56,8 @@ export const useAIActions = async (
     });
     actions.value = [];
 
-    if (!context.aiSetting.value.enabled) {
+    // Check if AI is enabled (has at least one provider configured)
+    if (!context.provider.value) {
       return;
     }
 

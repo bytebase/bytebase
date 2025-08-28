@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="aiSetting.enabled"
+    v-if="!!provider"
     class="w-full h-full flex-1 flex flex-col overflow-hidden"
   >
     <ActionBar />
@@ -62,7 +62,7 @@ const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const store = useConversationStore();
 
 const context = useAIContext();
-const { aiSetting, showHistoryDialog, pendingSendChat } = context;
+const { provider, showHistoryDialog, pendingSendChat } = context;
 const {
   list: conversationList,
   ready,
@@ -127,7 +127,10 @@ const requestAI = async (query: string) => {
   });
   state.loading = true;
   try {
-    const request = createProto(AICompletionRequestSchema, { messages });
+    const request = createProto(AICompletionRequestSchema, {
+      messages,
+      provider: provider.value?.type,
+    });
     const response = await sqlServiceClientConnect.aICompletion(request);
     const text = head(head(response.candidates)?.content?.parts)?.text?.trim();
     console.debug("[AI Assistant] answer:", text);

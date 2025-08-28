@@ -1343,54 +1343,49 @@ export declare type PasswordRestrictionSetting = Message<"bytebase.v1.PasswordRe
 export declare const PasswordRestrictionSettingSchema: GenMessage<PasswordRestrictionSetting>;
 
 /**
- * @generated from message bytebase.v1.AISetting
+ * @generated from message bytebase.v1.AIProvider
  */
-export declare type AISetting = Message<"bytebase.v1.AISetting"> & {
+export declare type AIProvider = Message<"bytebase.v1.AIProvider"> & {
   /**
-   * @generated from field: bool enabled = 1;
+   * @generated from field: bytebase.v1.AIProvider.Type type = 1;
    */
-  enabled: boolean;
+  type: AIProvider_Type;
 
   /**
-   * @generated from field: bytebase.v1.AISetting.Provider provider = 2;
-   */
-  provider: AISetting_Provider;
-
-  /**
-   * @generated from field: string endpoint = 3;
+   * @generated from field: string endpoint = 2;
    */
   endpoint: string;
 
   /**
-   * @generated from field: string api_key = 4;
+   * @generated from field: string api_key = 3;
    */
   apiKey: string;
 
   /**
-   * @generated from field: string model = 5;
+   * @generated from field: string model = 4;
    */
   model: string;
 
   /**
-   * @generated from field: string version = 6;
+   * @generated from field: string version = 5;
    */
   version: string;
 };
 
 /**
- * Describes the message bytebase.v1.AISetting.
- * Use `create(AISettingSchema)` to create a new message.
+ * Describes the message bytebase.v1.AIProvider.
+ * Use `create(AIProviderSchema)` to create a new message.
  */
-export declare const AISettingSchema: GenMessage<AISetting>;
+export declare const AIProviderSchema: GenMessage<AIProvider>;
 
 /**
- * @generated from enum bytebase.v1.AISetting.Provider
+ * @generated from enum bytebase.v1.AIProvider.Type
  */
-export enum AISetting_Provider {
+export enum AIProvider_Type {
   /**
-   * @generated from enum value: PROVIDER_UNSPECIFIED = 0;
+   * @generated from enum value: TYPE_UNSPECIFIED = 0;
    */
-  PROVIDER_UNSPECIFIED = 0,
+  TYPE_UNSPECIFIED = 0,
 
   /**
    * @generated from enum value: OPEN_AI = 1;
@@ -1414,9 +1409,25 @@ export enum AISetting_Provider {
 }
 
 /**
- * Describes the enum bytebase.v1.AISetting.Provider.
+ * Describes the enum bytebase.v1.AIProvider.Type.
  */
-export declare const AISetting_ProviderSchema: GenEnum<AISetting_Provider>;
+export declare const AIProvider_TypeSchema: GenEnum<AIProvider_Type>;
+
+/**
+ * @generated from message bytebase.v1.AISetting
+ */
+export declare type AISetting = Message<"bytebase.v1.AISetting"> & {
+  /**
+   * @generated from field: repeated bytebase.v1.AIProvider providers = 1;
+   */
+  providers: AIProvider[];
+};
+
+/**
+ * Describes the message bytebase.v1.AISetting.
+ * Use `create(AISettingSchema)` to create a new message.
+ */
+export declare const AISettingSchema: GenMessage<AISetting>;
 
 /**
  * @generated from message bytebase.v1.EnvironmentSetting
