@@ -1391,10 +1391,24 @@ func compareFunctions(t *testing.T, syncFuncs, parseFuncs []*storepb.FunctionMet
 
 		require.NotNil(t, syncFn, "function with signature %s should exist in sync metadata", parseFn.Signature)
 
-		// Compare function definitions
-		syncDef := normalizeSQL(syncFn.Definition)
-		parseDef := normalizeSQL(parseFn.Definition)
-		require.Equal(t, syncDef, parseDef, "function %s: definition should match", parseFn.Name)
+		// Compare function definitions using PostgreSQL function comparer
+		comparer := &PostgreSQLFunctionComparer{}
+		syncFunc := &model.FunctionMetadata{Definition: syncFn.Definition}
+		parseFunc := &model.FunctionMetadata{Definition: parseFn.Definition}
+
+		// Use function comparer to check if they are equal
+		if !comparer.Equal(syncFunc, parseFunc) {
+			// Get detailed comparison for better error message
+			result, err := comparer.CompareDetailed(syncFunc, parseFunc)
+			if err != nil {
+				t.Errorf("function %s: error comparing functions: %v", parseFn.Name, err)
+			} else if result != nil {
+				t.Errorf("function %s: definitions differ - SignatureChanged: %v, BodyChanged: %v, AttributesChanged: %v",
+					parseFn.Name, result.SignatureChanged, result.BodyChanged, result.AttributesChanged)
+				t.Logf("  Sync definition: %s", syncFn.Definition)
+				t.Logf("  Parse definition: %s", parseFn.Definition)
+			}
+		}
 
 		// Compare comment if present
 		if syncFn.Comment != "" || parseFn.Comment != "" {
@@ -1816,6 +1830,15 @@ func validateWithSchemaDiffer(t *testing.T, testName string, syncMeta, parseMeta
 		diffMessages = append(diffMessages, fmt.Sprintf("%d function changes", len(diff.FunctionChanges)))
 		for _, change := range diff.FunctionChanges {
 			t.Logf("Function change: %s %s.%s", change.Action, change.SchemaName, change.FunctionName)
+			// Log detailed function comparison for debugging
+			if change.OldFunction != nil && change.NewFunction != nil {
+				t.Logf("  Old function signature: %s", change.OldFunction.Signature)
+				t.Logf("  New function signature: %s", change.NewFunction.Signature)
+				t.Logf("  Old function definition: %s", change.OldFunction.Definition)
+				t.Logf("  New function definition: %s", change.NewFunction.Definition)
+				t.Logf("  Definitions equal: %v", change.OldFunction.Definition == change.NewFunction.Definition)
+				t.Logf("  Signatures equal: %v", change.OldFunction.Signature == change.NewFunction.Signature)
+			}
 		}
 	}
 

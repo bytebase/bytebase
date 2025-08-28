@@ -1542,7 +1542,7 @@ func (e *metadataExtractor) EnterCreatefunctionstmt(ctx *parser.Createfunctionst
 
 	functionMetadata := &storepb.FunctionMetadata{
 		Name:       funcName,
-		Definition: e.normalizePostgreSQLFunctionDefinition(ctx),
+		Definition: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
 		Signature:  e.extractFunctionSignature(ctx, funcName),
 	}
 
@@ -1550,74 +1550,6 @@ func (e *metadataExtractor) EnterCreatefunctionstmt(ctx *parser.Createfunctionst
 		schemaMetadata.Functions = []*storepb.FunctionMetadata{}
 	}
 	schemaMetadata.Functions = append(schemaMetadata.Functions, functionMetadata)
-}
-
-// normalizePostgreSQLFunctionDefinition normalizes a PostgreSQL function definition
-// to match what PostgreSQL stores in its system catalogs
-func (*metadataExtractor) normalizePostgreSQLFunctionDefinition(ctx *parser.CreatefunctionstmtContext) string {
-	rawDefinition := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-
-	// Apply PostgreSQL-style normalization
-	normalized := strings.ToLower(rawDefinition)
-
-	// Normalize whitespace
-	normalized = strings.ReplaceAll(normalized, "\n", " ")
-	normalized = strings.ReplaceAll(normalized, "\t", " ")
-
-	// Remove extra spaces
-	for strings.Contains(normalized, "  ") {
-		normalized = strings.ReplaceAll(normalized, "  ", " ")
-	}
-
-	// Change CREATE FUNCTION to CREATE OR REPLACE FUNCTION (PostgreSQL default behavior)
-	if strings.HasPrefix(strings.TrimSpace(normalized), "create function") {
-		normalized = strings.Replace(normalized, "create function", "create or replace function", 1)
-	}
-
-	// Normalize parameter types to match PostgreSQL's system catalog representation
-	normalized = strings.ReplaceAll(normalized, "varchar", "character varying")
-
-	// Normalize DECIMAL to NUMERIC (PostgreSQL's canonical representation)
-	// Only normalize return types and parameters, not inside function bodies
-	normalized = strings.ReplaceAll(normalized, "returns decimal", "returns numeric")
-
-	// Normalize dollar quoting to $function$ style (PostgreSQL's preferred form)
-	normalized = normalizeDollarQuotingToFunction(normalized)
-
-	// Move LANGUAGE clause to the end if it's not already there
-	normalized = moveLanguageToEnd(normalized)
-
-	return strings.TrimSpace(normalized)
-}
-
-// normalizeDollarQuotingToFunction converts $$ to $function$ style quoting
-func normalizeDollarQuotingToFunction(s string) string {
-	// Simple replacement - in a production system, you'd want more sophisticated parsing
-	return strings.ReplaceAll(s, "$$", "$function$")
-}
-
-// moveLanguageToEnd moves the LANGUAGE clause to the correct position before AS clause
-func moveLanguageToEnd(definition string) string {
-	// PostgreSQL stores functions with LANGUAGE before AS clause
-	// Pattern: ...returns type language plpgsql as $function$...
-
-	if !strings.Contains(definition, "language plpgsql") {
-		return definition
-	}
-
-	// Remove existing language clause
-	withoutLanguage := strings.ReplaceAll(definition, " language plpgsql", "")
-	withoutLanguage = strings.ReplaceAll(withoutLanguage, "language plpgsql ", "")
-
-	// Find the position to insert LANGUAGE before AS
-	asIndex := strings.Index(withoutLanguage, " as $function$")
-	if asIndex == -1 {
-		// Fallback: add at the end
-		return strings.TrimSpace(withoutLanguage) + " language plpgsql"
-	}
-
-	// Insert LANGUAGE before AS
-	return withoutLanguage[:asIndex] + " language plpgsql" + withoutLanguage[asIndex:]
 }
 
 // extractFunctionSignature extracts the function signature with parameter types
