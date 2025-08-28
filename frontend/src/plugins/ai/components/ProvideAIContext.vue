@@ -68,7 +68,9 @@ const selectedProvider = useDynamicLocalStorage<AIProvider>(
 watch(
   () => aiSetting.value.providers[0],
   (provider) => {
-    selectedProvider.value = provider;
+    if (!selectedProvider.value && provider) {
+      selectedProvider.value = provider;
+    }
   },
   {
     immediate: true,
