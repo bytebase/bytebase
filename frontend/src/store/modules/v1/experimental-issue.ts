@@ -6,7 +6,7 @@ import {
   rolloutServiceClientConnect,
 } from "@/grpcweb";
 import { useProjectV1Store } from "@/store";
-import type { ComposedIssue, ComposedProject, ComposedTaskRun } from "@/types";
+import type { ComposedIssue, ComposedProject } from "@/types";
 import {
   emptyIssue,
   emptyRollout,
@@ -30,7 +30,6 @@ import {
   ListTaskRunsRequestSchema,
   CreateRolloutRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { TaskRunLogSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
 import { DEFAULT_PAGE_SIZE } from "../common";
 
@@ -93,15 +92,7 @@ export const composeIssue = async (
       });
       const response = await rolloutServiceClientConnect.listTaskRuns(request);
       const taskRuns = response.taskRuns;
-      const composedTaskRuns: ComposedTaskRun[] = [];
-      for (const taskRun of taskRuns) {
-        const composed: ComposedTaskRun = {
-          ...taskRun,
-          taskRunLog: create(TaskRunLogSchema, {}),
-        };
-        composedTaskRuns.push(composed);
-      }
-      issue.rolloutTaskRunList = composedTaskRuns;
+      issue.rolloutTaskRunList = taskRuns;
     }
   }
 

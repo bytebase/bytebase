@@ -31,9 +31,9 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useCurrentProjectV1 } from "@/store";
 import { getProjectIdRolloutUidStageUidTaskUid } from "@/store/modules/v1/common";
+import { useTaskRunLogStore } from "@/store/modules/v1/taskRunLog";
 import {
   unknownTask,
-  type ComposedTaskRun,
   getTimeForPbTimestampProtoEs,
   getDateForPbTimestampProtoEs,
 } from "@/types";
@@ -41,6 +41,7 @@ import {
   TaskRun_Status,
   Task_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
+import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { isPostgresFamily } from "@/types/v1/instance";
 import { databaseForTask } from "@/utils";
 import { databaseV1Url, extractTaskUID, flattenTaskV1List } from "@/utils";
@@ -54,12 +55,13 @@ export type CommentLink = {
 };
 
 const props = defineProps<{
-  taskRun: ComposedTaskRun;
+  taskRun: TaskRun;
 }>();
 
 const { issue } = useIssueContext();
 const { project } = useCurrentProjectV1();
 const { t } = useI18n();
+const taskRunLogStore = useTaskRunLogStore();
 
 const earliestAllowedTime = computed(() => {
   return props.taskRun.runTime
@@ -112,7 +114,8 @@ const comment = computed(() => {
       }
     }
 
-    const lastLogEntry = last(taskRun.taskRunLog.entries);
+    const taskRunLog = taskRunLogStore.getTaskRunLog(taskRun.name);
+    const lastLogEntry = last(taskRunLog.entries);
     if (lastLogEntry) {
       return displayTaskRunLogEntryType(lastLogEntry.type);
     }
