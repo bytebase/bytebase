@@ -5,6 +5,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
+	pgparser "github.com/bytebase/parser/postgresql"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -497,9 +500,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	// Track all object IDs for dependency resolution
 	allObjects := make(map[string]bool)
 
-	// Add tables to graph
+	// Add tables to graph (both CREATE and ALTER for column additions)
 	for _, tableDiff := range diff.TableChanges {
-		if tableDiff.Action == schema.MetadataDiffActionCreate {
+		if tableDiff.Action == schema.MetadataDiffActionCreate || tableDiff.Action == schema.MetadataDiffActionAlter {
 			tableID := getMigrationObjectID(tableDiff.SchemaName, tableDiff.TableName)
 			graph.AddNode(tableID)
 			tableMap[tableID] = tableDiff
@@ -538,9 +541,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	}
 
 	// Add dependency edges
-	// For tables with foreign keys depending on other tables
+	// For tables with foreign keys depending on other tables (only for CREATE operations)
 	for tableID, tableDiff := range tableMap {
-		if tableDiff.NewTable != nil {
+		if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
 			for _, fk := range tableDiff.NewTable.ForeignKeys {
 				depID := getMigrationObjectID(fk.ReferencedSchema, fk.ReferencedTable)
 				if depID != tableID {
@@ -590,23 +593,36 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 		// If there's a cycle, fall back to a safe order
 		// Create tables first (without foreign keys)
 		for _, tableDiff := range tableMap {
-			createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable, false)
-			if err != nil {
-				return err
-			}
-			_, _ = buf.WriteString(createTableSQL)
-			if createTableSQL != "" {
-				_, _ = buf.WriteString("\n")
-			}
+			if tableDiff.Action == schema.MetadataDiffActionCreate {
+				createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable, false)
+				if err != nil {
+					return err
+				}
+				_, _ = buf.WriteString(createTableSQL)
+				if createTableSQL != "" {
+					_, _ = buf.WriteString("\n")
+				}
 
-			// Add table and column comments for newly created tables
-			if tableDiff.NewTable != nil && tableDiff.NewTable.Comment != "" {
-				writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
+				// Add table and column comments for newly created tables
+				if tableDiff.NewTable != nil && tableDiff.NewTable.Comment != "" {
+					writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
+				}
+				if tableDiff.NewTable != nil {
+					for _, col := range tableDiff.NewTable.Columns {
+						if col.Comment != "" {
+							writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, col.Name, col.Comment)
+						}
+					}
+				}
 			}
-			if tableDiff.NewTable != nil {
-				for _, col := range tableDiff.NewTable.Columns {
-					if col.Comment != "" {
-						writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, col.Name, col.Comment)
+		}
+
+		// Handle column additions for ALTER operations (only columns in topological order)
+		for _, tableDiff := range tableMap {
+			if tableDiff.Action == schema.MetadataDiffActionAlter {
+				for _, colDiff := range tableDiff.ColumnChanges {
+					if colDiff.Action == schema.MetadataDiffActionCreate {
+						writeAddColumn(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn)
 					}
 				}
 			}
@@ -614,8 +630,13 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 
 		// Create views
 		for _, viewDiff := range viewMap {
-			if err := writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView); err != nil {
-				return err
+			switch viewDiff.Action {
+			case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
+				if err := writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView); err != nil {
+					return err
+				}
+			default:
+				// No action needed
 			}
 			// Add view comment for newly created views
 			if viewDiff.NewView != nil && viewDiff.NewView.Comment != "" {
@@ -625,8 +646,13 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 
 		// Create materialized views
 		for _, mvDiff := range materializedViewMap {
-			if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
-				return err
+			switch mvDiff.Action {
+			case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
+				if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
+					return err
+				}
+			default:
+				// No action needed
 			}
 			// Add materialized view comment for newly created materialized views
 			if mvDiff.NewMaterializedView != nil && mvDiff.NewMaterializedView.Comment != "" {
@@ -654,9 +680,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			}
 		}
 
-		// Add foreign keys
+		// Add foreign keys (only for CREATE table operations)
 		for _, tableDiff := range tableMap {
-			if tableDiff.NewTable != nil {
+			if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
 				for _, fk := range tableDiff.NewTable.ForeignKeys {
 					if err := writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk); err != nil {
 						return err
@@ -665,70 +691,82 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			}
 		}
 	} else {
-		// First pass: Create tables and functions only
+		// Follow topological order completely - create objects in dependency order
 		for _, objID := range orderedList {
 			if tableDiff, ok := tableMap[objID]; ok {
-				// Create table without foreign keys
-				createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable, false)
-				if err != nil {
-					return err
-				}
-				_, _ = buf.WriteString(createTableSQL)
-				if createTableSQL != "" {
-					_, _ = buf.WriteString("\n")
-				}
+				switch tableDiff.Action {
+				case schema.MetadataDiffActionCreate:
+					// Create table without foreign keys
+					createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable, false)
+					if err != nil {
+						return err
+					}
+					_, _ = buf.WriteString(createTableSQL)
+					if createTableSQL != "" {
+						_, _ = buf.WriteString("\n")
+					}
 
-				// Add table and column comments for newly created tables
-				if tableDiff.NewTable != nil && tableDiff.NewTable.Comment != "" {
-					writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
-				}
-				if tableDiff.NewTable != nil {
-					for _, col := range tableDiff.NewTable.Columns {
-						if col.Comment != "" {
-							writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, col.Name, col.Comment)
+					// Add table and column comments for newly created tables
+					if tableDiff.NewTable != nil && tableDiff.NewTable.Comment != "" {
+						writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
+					}
+					if tableDiff.NewTable != nil {
+						for _, col := range tableDiff.NewTable.Columns {
+							if col.Comment != "" {
+								writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, col.Name, col.Comment)
+							}
 						}
 					}
+				case schema.MetadataDiffActionAlter:
+					// Handle column additions for ALTER operations
+					for _, colDiff := range tableDiff.ColumnChanges {
+						if colDiff.Action == schema.MetadataDiffActionCreate {
+							writeAddColumn(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn)
+						}
+					}
+				default:
+					// No action needed for other operations
+				}
+			} else if viewDiff, ok := viewMap[objID]; ok {
+				switch viewDiff.Action {
+				case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
+					if err := writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView); err != nil {
+						return err
+					}
+				default:
+					// No action needed for other operations
+				}
+				// Add view comment for newly created or altered views
+				if viewDiff.NewView != nil && viewDiff.NewView.Comment != "" {
+					writeCommentOnView(buf, viewDiff.SchemaName, viewDiff.ViewName, viewDiff.NewView.Comment)
+				}
+			} else if mvDiff, ok := materializedViewMap[objID]; ok {
+				switch mvDiff.Action {
+				case schema.MetadataDiffActionCreate:
+					if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
+						return err
+					}
+				case schema.MetadataDiffActionAlter:
+					// For PostgreSQL materialized views, we need to drop and recreate
+					// since ALTER MATERIALIZED VIEW doesn't support changing the definition
+					writeDropMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName)
+					if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
+						return err
+					}
+				default:
+					// No action needed for other operations
+				}
+				// Add materialized view comment for newly created or altered materialized views
+				if mvDiff.NewMaterializedView != nil && mvDiff.NewMaterializedView.Comment != "" {
+					writeCommentOnMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName, mvDiff.NewMaterializedView.Comment)
 				}
 			} else if funcDiff, ok := functionMap[objID]; ok {
 				if err := writeFunctionDiff(buf, funcDiff); err != nil {
 					return err
 				}
-				// Add function comment for newly created functions
-				if funcDiff.Action == schema.MetadataDiffActionCreate && funcDiff.NewFunction != nil && funcDiff.NewFunction.Comment != "" {
+				// Add function comment for newly created or altered functions
+				if (funcDiff.Action == schema.MetadataDiffActionCreate || funcDiff.Action == schema.MetadataDiffActionAlter) && funcDiff.NewFunction != nil && funcDiff.NewFunction.Comment != "" {
 					writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, funcDiff.NewFunction.Comment)
-				}
-			}
-		}
-
-		// Handle ALTER table operations that add columns (views might depend on these)
-		for _, tableDiff := range diff.TableChanges {
-			if tableDiff.Action == schema.MetadataDiffActionAlter {
-				// Only process column additions here
-				for _, colDiff := range tableDiff.ColumnChanges {
-					if colDiff.Action == schema.MetadataDiffActionCreate {
-						writeAddColumn(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn)
-					}
-				}
-			}
-		}
-
-		// Second pass: Create views and materialized views (after columns are added)
-		for _, objID := range orderedList {
-			if viewDiff, ok := viewMap[objID]; ok {
-				if err := writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView); err != nil {
-					return err
-				}
-				// Add view comment for newly created views
-				if viewDiff.NewView != nil && viewDiff.NewView.Comment != "" {
-					writeCommentOnView(buf, viewDiff.SchemaName, viewDiff.ViewName, viewDiff.NewView.Comment)
-				}
-			} else if mvDiff, ok := materializedViewMap[objID]; ok {
-				if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
-					return err
-				}
-				// Add materialized view comment for newly created materialized views
-				if mvDiff.NewMaterializedView != nil && mvDiff.NewMaterializedView.Comment != "" {
-					writeCommentOnMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName, mvDiff.NewMaterializedView.Comment)
 				}
 			}
 		}
@@ -742,9 +780,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			}
 		}
 
-		// Add foreign keys after all tables are created
+		// Add foreign keys after all tables are created (only for CREATE table operations)
 		for _, tableDiff := range tableMap {
-			if tableDiff.NewTable != nil {
+			if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
 				for _, fk := range tableDiff.NewTable.ForeignKeys {
 					if err := writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk); err != nil {
 						return err
@@ -753,9 +791,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			}
 		}
 
-		// Create triggers after foreign keys
+		// Create triggers after foreign keys (only for CREATE table operations)
 		for _, tableDiff := range tableMap {
-			if tableDiff.NewTable != nil {
+			if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
 				for _, trigger := range tableDiff.NewTable.Triggers {
 					writeMigrationTrigger(buf, trigger)
 				}
@@ -1264,20 +1302,30 @@ func writeAddCheckConstraint(out *strings.Builder, schema, table string, check *
 func writeFunctionDiff(out *strings.Builder, funcDiff *schema.FunctionDiff) error {
 	switch funcDiff.Action {
 	case schema.MetadataDiffActionCreate:
+		// CREATE new function
 		_, _ = out.WriteString(funcDiff.NewFunction.Definition)
 		if !strings.HasSuffix(strings.TrimSpace(funcDiff.NewFunction.Definition), ";") {
 			_, _ = out.WriteString(";")
 		}
 		_, _ = out.WriteString("\n\n")
+
 	case schema.MetadataDiffActionAlter:
-		// PostgreSQL requires CREATE OR REPLACE for functions
-		_, _ = out.WriteString(funcDiff.NewFunction.Definition)
-		if !strings.HasSuffix(strings.TrimSpace(funcDiff.NewFunction.Definition), ";") {
-			_, _ = out.WriteString(";")
+		// ALTER function using CREATE OR REPLACE
+		// The decision to use ALTER vs DROP/CREATE was already made in differ.go
+		// If we reach here, it means we can safely use CREATE OR REPLACE
+		if funcDiff.NewFunction != nil {
+			// Use ANTLR parser to safely convert CREATE FUNCTION to CREATE OR REPLACE FUNCTION
+			definition := convertToCreateOrReplace(funcDiff.NewFunction.Definition)
+
+			_, _ = out.WriteString(definition)
+			if !strings.HasSuffix(strings.TrimSpace(definition), ";") {
+				_, _ = out.WriteString(";")
+			}
+			_, _ = out.WriteString("\n\n")
 		}
-		_, _ = out.WriteString("\n\n")
+
 	default:
-		// Ignore other actions
+		// Ignore other actions like DROP (handled elsewhere)
 	}
 	return nil
 }
@@ -2001,4 +2049,151 @@ func writeCommentOnType(out *strings.Builder, schema, typeName, comment string) 
 	}
 	_, _ = out.WriteString(`;`)
 	_, _ = out.WriteString("\n")
+}
+
+// convertToCreateOrReplace uses ANTLR parser to safely convert CREATE FUNCTION to CREATE OR REPLACE FUNCTION
+func convertToCreateOrReplace(definition string) string {
+	// Parse the SQL statement using ANTLR
+	inputStream := antlr.NewInputStream(definition)
+	lexer := pgparser.NewPostgreSQLLexer(inputStream)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := pgparser.NewPostgreSQLParser(stream)
+
+	// Parse the root
+	tree := parser.Root()
+	if tree == nil {
+		// If parsing fails, return original definition
+		return definition
+	}
+
+	// Create a visitor to find and modify CREATE FUNCTION statements
+	visitor := &CreateOrReplaceVisitor{
+		tokens:     stream,
+		rewriter:   antlr.NewTokenStreamRewriter(stream),
+		definition: definition,
+	}
+
+	// Visit the tree
+	visitor.Visit(tree)
+
+	// Get the modified text
+	interval := antlr.NewInterval(0, len(definition)-1)
+	result := visitor.rewriter.GetText("", interval)
+	if result == "" {
+		// If rewriting fails, return original definition
+		return definition
+	}
+
+	return result
+}
+
+// CreateOrReplaceVisitor visits the parse tree and modifies CREATE FUNCTION to CREATE OR REPLACE FUNCTION
+type CreateOrReplaceVisitor struct {
+	*pgparser.BasePostgreSQLParserVisitor
+	tokens     *antlr.CommonTokenStream
+	rewriter   *antlr.TokenStreamRewriter
+	definition string
+}
+
+// Visit implements the visitor pattern
+func (v *CreateOrReplaceVisitor) Visit(tree antlr.ParseTree) any {
+	switch t := tree.(type) {
+	case *pgparser.CreatefunctionstmtContext:
+		return v.visitCreateFunctionStmt(t)
+	default:
+		// Continue visiting children
+		return v.visitChildren(tree)
+	}
+}
+
+// visitChildren visits all children of a node
+func (v *CreateOrReplaceVisitor) visitChildren(node antlr.ParseTree) any {
+	for i := 0; i < node.GetChildCount(); i++ {
+		child := node.GetChild(i)
+		if parseTree, ok := child.(antlr.ParseTree); ok {
+			v.Visit(parseTree)
+		}
+	}
+	return nil
+}
+
+// visitCreateFunctionStmt handles CREATE FUNCTION statements
+func (v *CreateOrReplaceVisitor) visitCreateFunctionStmt(ctx *pgparser.CreatefunctionstmtContext) any {
+	if ctx == nil {
+		return nil
+	}
+
+	// Check if "OR REPLACE" already exists
+	if v.hasOrReplace(ctx) {
+		// Already has "OR REPLACE", no need to modify
+		return nil
+	}
+
+	// Find the CREATE token
+	createToken := ctx.GetStart()
+	if createToken == nil {
+		return nil
+	}
+
+	// Look for the FUNCTION keyword after CREATE
+	functionToken := v.findFunctionToken(ctx)
+	if functionToken == nil {
+		return nil
+	}
+
+	// Insert "OR REPLACE" between CREATE and FUNCTION
+	// We insert it right before the FUNCTION token
+	v.rewriter.InsertBefore("", functionToken.GetTokenIndex(), "OR REPLACE ")
+
+	return nil
+}
+
+// findFunctionToken finds the FUNCTION token in the CREATE FUNCTION statement
+func (v *CreateOrReplaceVisitor) findFunctionToken(ctx *pgparser.CreatefunctionstmtContext) antlr.Token {
+	// Get all tokens in the context range
+	start := ctx.GetStart().GetTokenIndex()
+	stop := ctx.GetStop().GetTokenIndex()
+
+	for i := start; i <= stop; i++ {
+		token := v.tokens.Get(i)
+		if token.GetTokenType() == pgparser.PostgreSQLParserFUNCTION {
+			return token
+		}
+	}
+
+	return nil
+}
+
+// hasOrReplace checks if the CREATE FUNCTION statement already contains "OR REPLACE"
+func (v *CreateOrReplaceVisitor) hasOrReplace(ctx *pgparser.CreatefunctionstmtContext) bool {
+	// Get all tokens in the context range between CREATE and FUNCTION
+	start := ctx.GetStart().GetTokenIndex()
+	functionToken := v.findFunctionToken(ctx)
+	if functionToken == nil {
+		return false
+	}
+	stop := functionToken.GetTokenIndex()
+
+	// Look for "OR" followed by "REPLACE" tokens, skipping whitespace
+	for i := start; i < stop; i++ {
+		token := v.tokens.Get(i)
+		if token.GetTokenType() == pgparser.PostgreSQLParserOR {
+			// Found OR, now look for REPLACE after it (skipping whitespace)
+			for j := i + 1; j < stop; j++ {
+				nextToken := v.tokens.Get(j)
+				// Skip whitespace tokens (channel 1 is hidden channel based on debug output)
+				if nextToken.GetChannel() == 1 {
+					continue
+				}
+				// Check if the next non-whitespace token is REPLACE
+				if nextToken.GetTokenType() == pgparser.PostgreSQLParserREPLACE {
+					return true
+				}
+				// If it's not REPLACE, this OR is not our OR REPLACE pattern
+				break
+			}
+		}
+	}
+
+	return false
 }

@@ -108,6 +108,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
       <EnvironmentV1Name
         environment={data.effectiveEnvironmentEntity}
         link={false}
+        showColor={true}
         keyword={props.keyword}
         nullEnvironmentPlaceholder="Null"
       />

@@ -1,9 +1,5 @@
 import { create } from "@bufbuild/protobuf";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types/const";
-import type {
-  TaskRun,
-  TaskRunLog,
-} from "@/types/proto-es/v1/rollout_service_pb";
 import {
   StageSchema,
   TaskSchema,
@@ -53,7 +49,3 @@ export const TaskTypeListWithStatement: Task_Type[] = [
   Task_Type.DATABASE_SCHEMA_UPDATE_GHOST,
   Task_Type.DATABASE_EXPORT,
 ];
-
-export interface ComposedTaskRun extends TaskRun {
-  taskRunLog: TaskRunLog;
-}

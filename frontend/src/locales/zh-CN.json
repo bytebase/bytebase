@@ -860,6 +860,7 @@
     },
     "add-some-description": "添加一些描述…",
     "leave-a-comment": "发表一条评论…",
+    "no-description-provided": "未提供描述",
     "comment-editor": {
       "write": "编辑",
       "preview": "预览",

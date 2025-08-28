@@ -45,7 +45,7 @@ jobs:
           tags: |
             ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
           build-args: |
-            VERSION="Cloud Version"
+            VERSION=demo
             GIT_COMMIT=${{ env.GIT_COMMIT }}
             RELEASE=dev
       

@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -153,6 +154,13 @@ type FunctionDiff struct {
 	FunctionName string
 	OldFunction  *storepb.FunctionMetadata
 	NewFunction  *storepb.FunctionMetadata
+
+	// Detailed change information for advanced engines
+	SignatureChanged    bool
+	BodyChanged         bool
+	AttributesChanged   bool
+	ChangedAttributes   []string
+	CanUseAlterFunction bool
 }
 
 // ProcedureDiff represents changes to a procedure.
@@ -246,6 +254,9 @@ func GetDatabaseSchemaDiff(engine storepb.Engine, oldSchema, newSchema *model.Da
 			}
 		}
 	}
+
+	// Sort all diff lists to ensure stable output order
+	sortDiffLists(diff)
 
 	return diff, nil
 }
@@ -404,7 +415,7 @@ func compareSchemaObjects(engine storepb.Engine, diff *MetadataDiff, schemaName 
 	compareMaterializedViews(engine, diff, schemaName, oldSchema, newSchema)
 
 	// Compare functions
-	compareFunctions(diff, schemaName, oldSchema, newSchema)
+	compareFunctions(engine, diff, schemaName, oldSchema, newSchema)
 
 	// Compare procedures
 	compareProcedures(diff, schemaName, oldSchema, newSchema)
@@ -1492,7 +1503,10 @@ func compareMaterializedViews(engine storepb.Engine, diff *MetadataDiff, schemaN
 }
 
 // compareFunctions compares functions between two schemas.
-func compareFunctions(diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
+func compareFunctions(engine storepb.Engine, diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
+	// Get the engine-specific function comparer
+	comparer := GetFunctionComparer(engine)
+
 	// Functions can have overloading, so we need to handle them carefully
 	// Group functions by signature to properly match overloaded functions
 	// Build map of old functions by signature
@@ -1541,20 +1555,54 @@ func compareFunctions(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 				FunctionName: newFunc.GetProto().Name,
 				NewFunction:  newFunc.GetProto(),
 			})
-		} else if !functionsEqual(oldFunc.GetProto(), newFunc.GetProto()) {
-			// Drop and recreate if definition changed
-			diff.FunctionChanges = append(diff.FunctionChanges, &FunctionDiff{
-				Action:       MetadataDiffActionDrop,
-				SchemaName:   schemaName,
-				FunctionName: oldFunc.GetProto().Name,
-				OldFunction:  oldFunc.GetProto(),
-			})
-			diff.FunctionChanges = append(diff.FunctionChanges, &FunctionDiff{
-				Action:       MetadataDiffActionCreate,
-				SchemaName:   schemaName,
-				FunctionName: newFunc.GetProto().Name,
-				NewFunction:  newFunc.GetProto(),
-			})
+		} else {
+			// Use detailed comparison to determine migration strategy
+			comparison, err := comparer.CompareDetailed(oldFunc, newFunc)
+			if err != nil || comparison == nil {
+				// Skip if no changes or error
+				continue
+			}
+
+			// Determine the action based on the comparison result
+			if comparison.CanUseAlterFunction {
+				// Use ALTER FUNCTION for body-only changes
+				diff.FunctionChanges = append(diff.FunctionChanges, &FunctionDiff{
+					Action:              MetadataDiffActionAlter,
+					SchemaName:          schemaName,
+					FunctionName:        oldFunc.GetProto().Name,
+					OldFunction:         oldFunc.GetProto(),
+					NewFunction:         newFunc.GetProto(),
+					SignatureChanged:    comparison.SignatureChanged,
+					BodyChanged:         comparison.BodyChanged,
+					AttributesChanged:   comparison.AttributesChanged,
+					ChangedAttributes:   comparison.ChangedAttributes,
+					CanUseAlterFunction: true,
+				})
+			} else {
+				// Use DROP and CREATE for signature changes
+				diff.FunctionChanges = append(diff.FunctionChanges, &FunctionDiff{
+					Action:              MetadataDiffActionDrop,
+					SchemaName:          schemaName,
+					FunctionName:        oldFunc.GetProto().Name,
+					OldFunction:         oldFunc.GetProto(),
+					SignatureChanged:    comparison.SignatureChanged,
+					BodyChanged:         comparison.BodyChanged,
+					AttributesChanged:   comparison.AttributesChanged,
+					ChangedAttributes:   comparison.ChangedAttributes,
+					CanUseAlterFunction: false,
+				})
+				diff.FunctionChanges = append(diff.FunctionChanges, &FunctionDiff{
+					Action:              MetadataDiffActionCreate,
+					SchemaName:          schemaName,
+					FunctionName:        newFunc.GetProto().Name,
+					NewFunction:         newFunc.GetProto(),
+					SignatureChanged:    comparison.SignatureChanged,
+					BodyChanged:         comparison.BodyChanged,
+					AttributesChanged:   comparison.AttributesChanged,
+					ChangedAttributes:   comparison.ChangedAttributes,
+					CanUseAlterFunction: false,
+				})
+			}
 		}
 	}
 }
@@ -1985,4 +2033,255 @@ func procedureDefinitionsEqual(def1, def2, _ string) bool {
 
 	// For other engines, fall back to simple comparison
 	return false
+}
+
+// sortDiffLists sorts all diff lists to ensure stable output order
+func sortDiffLists(diff *MetadataDiff) {
+	// Sort schema changes by schema name
+	slices.SortFunc(diff.SchemaChanges, func(a, b *SchemaDiff) int {
+		if a.SchemaName != b.SchemaName {
+			return strings.Compare(a.SchemaName, b.SchemaName)
+		}
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
+
+	// Sort table changes by schema name, then table name, then action
+	slices.SortFunc(diff.TableChanges, func(a, b *TableDiff) int {
+		if a.SchemaName != b.SchemaName {
+			return strings.Compare(a.SchemaName, b.SchemaName)
+		}
+		if a.TableName != b.TableName {
+			return strings.Compare(a.TableName, b.TableName)
+		}
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
+
+	// Sort view changes by schema name, then view name, then action
+	slices.SortFunc(diff.ViewChanges, func(a, b *ViewDiff) int {
+		if a.SchemaName != b.SchemaName {
+			return strings.Compare(a.SchemaName, b.SchemaName)
+		}
+		if a.ViewName != b.ViewName {
+			return strings.Compare(a.ViewName, b.ViewName)
+		}
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
+
+	// Sort materialized view changes by schema name, then view name, then action
+	slices.SortFunc(diff.MaterializedViewChanges, func(a, b *MaterializedViewDiff) int {
+		if a.SchemaName != b.SchemaName {
+			return strings.Compare(a.SchemaName, b.SchemaName)
+		}
+		if a.MaterializedViewName != b.MaterializedViewName {
+			return strings.Compare(a.MaterializedViewName, b.MaterializedViewName)
+		}
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
+
+	// Sort function changes by schema name, then function name, then action
+	slices.SortFunc(diff.FunctionChanges, func(a, b *FunctionDiff) int {
+		if a.SchemaName != b.SchemaName {
+			return strings.Compare(a.SchemaName, b.SchemaName)
+		}
+		if a.FunctionName != b.FunctionName {
+			return strings.Compare(a.FunctionName, b.FunctionName)
+		}
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
+
+	// Sort procedure changes by schema name, then procedure name, then action
+	slices.SortFunc(diff.ProcedureChanges, func(a, b *ProcedureDiff) int {
+		if a.SchemaName != b.SchemaName {
+			return strings.Compare(a.SchemaName, b.SchemaName)
+		}
+		if a.ProcedureName != b.ProcedureName {
+			return strings.Compare(a.ProcedureName, b.ProcedureName)
+		}
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
+
+	// Sort sequence changes by schema name, then sequence name, then action
+	slices.SortFunc(diff.SequenceChanges, func(a, b *SequenceDiff) int {
+		if a.SchemaName != b.SchemaName {
+			return strings.Compare(a.SchemaName, b.SchemaName)
+		}
+		if a.SequenceName != b.SequenceName {
+			return strings.Compare(a.SequenceName, b.SequenceName)
+		}
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
+
+	// Sort enum type changes by schema name, then enum name, then action
+	slices.SortFunc(diff.EnumTypeChanges, func(a, b *EnumTypeDiff) int {
+		if a.SchemaName != b.SchemaName {
+			return strings.Compare(a.SchemaName, b.SchemaName)
+		}
+		if a.EnumTypeName != b.EnumTypeName {
+			return strings.Compare(a.EnumTypeName, b.EnumTypeName)
+		}
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
+
+	// Sort event changes by event name, then action
+	slices.SortFunc(diff.EventChanges, func(a, b *EventDiff) int {
+		if a.EventName != b.EventName {
+			return strings.Compare(a.EventName, b.EventName)
+		}
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
+
+	// Sort sub-object changes within table diffs
+	for _, tableDiff := range diff.TableChanges {
+		sortTableSubObjectChanges(tableDiff)
+	}
+}
+
+// sortTableSubObjectChanges sorts the changes within a table diff
+func sortTableSubObjectChanges(tableDiff *TableDiff) {
+	// Sort column changes by column position (for MySQL/Oracle), then by name (for PostgreSQL/MSSQL), then action
+	// This provides stable sorting across different database engines
+	slices.SortFunc(tableDiff.ColumnChanges, func(a, b *ColumnDiff) int {
+		aPos := int32(0)
+		aName := ""
+		if a.NewColumn != nil {
+			aPos = a.NewColumn.Position
+			aName = a.NewColumn.Name
+		} else if a.OldColumn != nil {
+			aPos = a.OldColumn.Position
+			aName = a.OldColumn.Name
+		}
+
+		bPos := int32(0)
+		bName := ""
+		if b.NewColumn != nil {
+			bPos = b.NewColumn.Position
+			bName = b.NewColumn.Name
+		} else if b.OldColumn != nil {
+			bPos = b.OldColumn.Position
+			bName = b.OldColumn.Name
+		}
+
+		// First, sort by position if both positions are valid (> 0)
+		if aPos > 0 && bPos > 0 && aPos != bPos {
+			return int(aPos - bPos)
+		}
+
+		// If positions are not available or equal, sort by column name
+		if aName != bName {
+			return strings.Compare(aName, bName)
+		}
+
+		// Finally, sort by action for stable sorting
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
+
+	// Sort index changes by index name, then action
+	slices.SortFunc(tableDiff.IndexChanges, func(a, b *IndexDiff) int {
+		aName := ""
+		if a.NewIndex != nil {
+			aName = a.NewIndex.Name
+		} else if a.OldIndex != nil {
+			aName = a.OldIndex.Name
+		}
+
+		bName := ""
+		if b.NewIndex != nil {
+			bName = b.NewIndex.Name
+		} else if b.OldIndex != nil {
+			bName = b.OldIndex.Name
+		}
+
+		if aName != bName {
+			return strings.Compare(aName, bName)
+		}
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
+
+	// Sort foreign key changes by foreign key name, then action
+	slices.SortFunc(tableDiff.ForeignKeyChanges, func(a, b *ForeignKeyDiff) int {
+		aName := ""
+		if a.NewForeignKey != nil {
+			aName = a.NewForeignKey.Name
+		} else if a.OldForeignKey != nil {
+			aName = a.OldForeignKey.Name
+		}
+
+		bName := ""
+		if b.NewForeignKey != nil {
+			bName = b.NewForeignKey.Name
+		} else if b.OldForeignKey != nil {
+			bName = b.OldForeignKey.Name
+		}
+
+		if aName != bName {
+			return strings.Compare(aName, bName)
+		}
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
+
+	// Sort check constraint changes by constraint name, then action
+	slices.SortFunc(tableDiff.CheckConstraintChanges, func(a, b *CheckConstraintDiff) int {
+		aName := ""
+		if a.NewCheckConstraint != nil {
+			aName = a.NewCheckConstraint.Name
+		} else if a.OldCheckConstraint != nil {
+			aName = a.OldCheckConstraint.Name
+		}
+
+		bName := ""
+		if b.NewCheckConstraint != nil {
+			bName = b.NewCheckConstraint.Name
+		} else if b.OldCheckConstraint != nil {
+			bName = b.OldCheckConstraint.Name
+		}
+
+		if aName != bName {
+			return strings.Compare(aName, bName)
+		}
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
+
+	// Sort partition changes by partition name, then action
+	slices.SortFunc(tableDiff.PartitionChanges, func(a, b *PartitionDiff) int {
+		aName := ""
+		if a.NewPartition != nil {
+			aName = a.NewPartition.Name
+		} else if a.OldPartition != nil {
+			aName = a.OldPartition.Name
+		}
+
+		bName := ""
+		if b.NewPartition != nil {
+			bName = b.NewPartition.Name
+		} else if b.OldPartition != nil {
+			bName = b.OldPartition.Name
+		}
+
+		if aName != bName {
+			return strings.Compare(aName, bName)
+		}
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
+
+	// Sort trigger changes by trigger name, then action
+	slices.SortFunc(tableDiff.TriggerChanges, func(a, b *TriggerDiff) int {
+		aName := ""
+		if a.NewTrigger != nil {
+			aName = a.NewTrigger.Name
+		} else if a.OldTrigger != nil {
+			aName = a.OldTrigger.Name
+		}
+
+		bName := ""
+		if b.NewTrigger != nil {
+			bName = b.NewTrigger.Name
+		} else if b.OldTrigger != nil {
+			bName = b.OldTrigger.Name
+		}
+
+		if aName != bName {
+			return strings.Compare(aName, bName)
+		}
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
 }

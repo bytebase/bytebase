@@ -68,7 +68,6 @@
 import { useResizeObserver } from "@vueuse/core";
 import { PlusIcon } from "lucide-vue-next";
 import { NScrollbar, useDialog } from "naive-ui";
-import { storeToRefs } from "pinia";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { ref, reactive, nextTick, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -77,7 +76,6 @@ import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useAppFeature,
-  useSQLEditorStore,
   useSQLEditorTabStore,
   useTabViewStateStore,
 } from "@/store";
@@ -110,7 +108,6 @@ const enableSetting = useAppFeature("bb.feature.sql-editor.enable-setting");
 const { events: sheetEvents } = useSheetContext();
 const scrollbarRef = ref<InstanceType<typeof NScrollbar>>();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
-const { strictProject } = storeToRefs(useSQLEditorStore());
 const { removeViewState } = useTabViewStateStore();
 const context = provideTabListContext();
 const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
@@ -122,9 +119,6 @@ const scrollState = reactive({
 
 const hideSettingButton = computed(() => {
   if (!enableSetting.value) {
-    return true;
-  }
-  if (strictProject.value) {
     return true;
   }
 

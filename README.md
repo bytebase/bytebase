@@ -128,7 +128,7 @@ PostgreSQL, MySQL, MariaDB, TiDB, Snowflake, ClickHouse, MongoDB, Redis, Oracle,
 
 - 💬 [Discord Community](https://discord.gg/huyw7gRsyA)
 - 🐦 [Twitter](https://twitter.com/Bytebase)
-- 📧 [Email Support](mailto:support-3fc2156a2150@intake.linear.app)
+- 📧 [Email Support](mailto:support@bytebase.com)
 - 🐛 [Issue Tracker](https://github.com/bytebase/bytebase/issues)
 
 ## Contributing

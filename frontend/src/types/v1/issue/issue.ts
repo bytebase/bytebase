@@ -1,5 +1,4 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import type { ComposedTaskRun } from "@/types";
 import {
   EMPTY_PROJECT_NAME,
   EMPTY_ROLLOUT_NAME,
@@ -13,6 +12,7 @@ import {
   Issue_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
+import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { EMPTY_ID, UNKNOWN_ID } from "../../const";
 
@@ -22,7 +22,7 @@ export interface ComposedIssue extends Issue {
   planEntity: Plan | undefined;
   planCheckRunList: PlanCheckRun[];
   rolloutEntity: Rollout | undefined;
-  rolloutTaskRunList: ComposedTaskRun[];
+  rolloutTaskRunList: TaskRun[];
   project: string;
 }
 

@@ -2076,6 +2076,140 @@ COMMENT ON TABLE test_table IS NULL;
 `,
 			description: "Reverse of comments_with_special_characters: DROP comments with special chars",
 		},
+		{
+			name: "trigger_function_body_change",
+			initialSchema: `
+CREATE TABLE user_activity_log (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    details TEXT,
+    logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    last_login TIMESTAMP,
+    login_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Function that will be used by trigger
+CREATE OR REPLACE FUNCTION log_user_login() RETURNS TRIGGER AS $$
+BEGIN
+    -- Original implementation: simple logging
+    INSERT INTO user_activity_log (user_id, action, details)
+    VALUES (NEW.id, 'login', 'User logged in at ' || NEW.last_login);
+    
+    UPDATE users SET login_count = COALESCE(login_count, 0) + 1 WHERE id = NEW.id;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger depending on the function
+CREATE TRIGGER user_login_trigger
+    AFTER UPDATE OF last_login ON users
+    FOR EACH ROW
+    WHEN (OLD.last_login IS DISTINCT FROM NEW.last_login AND NEW.last_login IS NOT NULL)
+    EXECUTE FUNCTION log_user_login();
+`,
+			migrationDDL: `
+-- Modify only the function body (keeping signature identical)
+CREATE OR REPLACE FUNCTION log_user_login() RETURNS TRIGGER AS $$
+BEGIN
+    -- Enhanced implementation: more detailed logging with additional checks
+    IF NEW.last_login IS NOT NULL THEN
+        INSERT INTO user_activity_log (user_id, action, details)
+        VALUES (NEW.id, 'login', 'User ' || NEW.username || ' logged in at ' || NEW.last_login || ' (previous: ' || COALESCE(OLD.last_login::text, 'never') || ')');
+        
+        -- Update login count with better handling
+        UPDATE users 
+        SET login_count = COALESCE(login_count, 0) + 1 
+        WHERE id = NEW.id;
+        
+        -- Log additional info for frequent users
+        IF NEW.login_count > 100 THEN
+            INSERT INTO user_activity_log (user_id, action, details)
+            VALUES (NEW.id, 'frequent_user', 'User has logged in more than 100 times');
+        END IF;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+`,
+			description: "Trigger depending on function with body-only change (should use CREATE OR REPLACE)",
+		},
+		{
+			name: "reverse_trigger_function_body_change",
+			initialSchema: `
+CREATE TABLE user_activity_log (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    details TEXT,
+    logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    last_login TIMESTAMP,
+    login_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Enhanced function implementation (this is the "after" state)
+CREATE OR REPLACE FUNCTION log_user_login() RETURNS TRIGGER AS $$
+BEGIN
+    -- Enhanced implementation: more detailed logging with additional checks
+    IF NEW.last_login IS NOT NULL THEN
+        INSERT INTO user_activity_log (user_id, action, details)
+        VALUES (NEW.id, 'login', 'User ' || NEW.username || ' logged in at ' || NEW.last_login || ' (previous: ' || COALESCE(OLD.last_login::text, 'never') || ')');
+        
+        -- Update login count with better handling
+        UPDATE users 
+        SET login_count = COALESCE(login_count, 0) + 1 
+        WHERE id = NEW.id;
+        
+        -- Log additional info for frequent users
+        IF NEW.login_count > 100 THEN
+            INSERT INTO user_activity_log (user_id, action, details)
+            VALUES (NEW.id, 'frequent_user', 'User has logged in more than 100 times');
+        END IF;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger depending on the function
+CREATE TRIGGER user_login_trigger
+    AFTER UPDATE OF last_login ON users
+    FOR EACH ROW
+    WHEN (OLD.last_login IS DISTINCT FROM NEW.last_login AND NEW.last_login IS NOT NULL)
+    EXECUTE FUNCTION log_user_login();
+`,
+			migrationDDL: `
+-- Revert function to original simpler implementation
+CREATE OR REPLACE FUNCTION log_user_login() RETURNS TRIGGER AS $$
+BEGIN
+    -- Original implementation: simple logging
+    INSERT INTO user_activity_log (user_id, action, details)
+    VALUES (NEW.id, 'login', 'User logged in at ' || NEW.last_login);
+    
+    UPDATE users SET login_count = COALESCE(login_count, 0) + 1 WHERE id = NEW.id;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+`,
+			description: "Reverse of trigger_function_body_change: revert function body to original",
+		},
 	}
 
 	for _, tc := range testCases {
