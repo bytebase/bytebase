@@ -36,8 +36,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
 
   // empty to "ALL" projects for high-privileged users
   const project = ref<string>("");
-  // if `true`, won't show project selector and not allowed to switch to other projects
-  const strictProject = ref<boolean>(false);
   // `false` if we are preparing project-scoped resources
   // we should render a skeleton layout with spinner placeholders
   const projectContextReady = ref<boolean>(false);
@@ -62,7 +60,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
   return {
     resultRowsLimit,
     project,
-    strictProject,
     projectContextReady,
     storedLastViewedProject,
     allowViewALLProjects,
