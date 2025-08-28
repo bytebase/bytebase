@@ -5,18 +5,17 @@
 </template>
 
 <script lang="ts" setup>
-import { create } from "@bufbuild/protobuf";
 import { computed, watchEffect } from "vue";
 import {
   useIssueContext,
   taskRunListForTask,
 } from "@/components/IssueV1/logic";
-import { rolloutServiceClientConnect } from "@/grpcweb";
-import { GetTaskRunLogRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import { useTaskRunLogStore } from "@/store/modules/v1/taskRunLog";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import TaskRunTable from "./TaskRunTable.vue";
 
 const { issue, selectedTask } = useIssueContext();
+const taskRunLogStore = useTaskRunLogStore();
 
 const flattenTaskRunList = computed(() => {
   return taskRunListForTask(issue.value, selectedTask.value);
@@ -26,11 +25,7 @@ watchEffect(async () => {
   // Fetching the latest task run log for running task runs of selected task.
   for (const taskRun of flattenTaskRunList.value) {
     if (taskRun.status === TaskRun_Status.RUNNING) {
-      const request = create(GetTaskRunLogRequestSchema, {
-        parent: taskRun.name,
-      });
-      const response = await rolloutServiceClientConnect.getTaskRunLog(request);
-      taskRun.taskRunLog = response;
+      await taskRunLogStore.fetchTaskRunLog(taskRun.name);
     }
   }
 });
