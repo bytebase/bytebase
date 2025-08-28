@@ -1088,10 +1088,6 @@
       "under-review": "Đang xem xét"
     },
     "approval": {
-      "rejected-title": "Vấn đề phê duyệt bị từ chối",
-      "pending-title": "Đang chờ phê duyệt vấn đề",
-      "rejected-description": "Vấn đề này đã bị người phê duyệt từ chối. Cần phải triển khai bắt buộc để tiếp tục.",
-      "pending-description": "Sự cố này đang chờ phê duyệt. Cần phải triển khai bắt buộc để tiếp tục.",
       "rejected-error": "Đã từ chối phê duyệt vấn đề. Vui lòng bật triển khai bắt buộc để tiếp tục.",
       "pending-error": "Đang chờ phê duyệt vấn đề. Vui lòng bật triển khai bắt buộc để tiếp tục.",
       "approved-and-waiting-for-rollout": "Phiên bản này đã được chấp thuận và sẵn sàng triển khai."
@@ -1183,6 +1179,11 @@
   "rollout": {
     "rollouts": "Triển khai",
     "force-rollout": "Chạy bắt buộc",
+    "task-execution-notices": "Thông báo thực hiện nhiệm vụ",
+    "no-active-task-to-cancel": "Không có tác vụ nào đang hoạt động để hủy.",
+    "automatic-rollout": {
+      "description": "Môi trường này đã bật tính năng triển khai tự động. Các tác vụ sẽ tự động thực thi khi đáp ứng tất cả các điều kiện."
+    },
     "stage": {
       "self": "Giai đoạn | Các giai đoạn",
       "start-stage": "Giai đoạn bắt đầu",
@@ -1193,7 +1194,6 @@
     },
     "message": {
       "pervious-stages-incomplete": {
-        "title": "Các giai đoạn trước chưa hoàn thành",
         "description": "Một số giai đoạn trước chưa hoàn tất. Vui lòng bật chế độ chạy bắt buộc để tiếp tục."
       }
     }

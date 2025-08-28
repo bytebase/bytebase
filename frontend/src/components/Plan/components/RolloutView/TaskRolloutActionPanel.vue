@@ -8,38 +8,22 @@
   >
     <template #default>
       <div class="flex flex-col gap-y-4 h-full overflow-y-hidden px-1">
-        <!-- Issue Approval Alert -->
+        <!-- Consolidated Alert -->
         <NAlert
-          v-if="
-            props.action === 'RUN' &&
-            issueApprovalStatus.hasIssue &&
-            !issueApprovalStatus.isApproved
-          "
+          v-if="validationMessages.length > 0"
           type="warning"
-          :title="
-            issueApprovalStatus.status === 'rejected'
-              ? $t('issue.approval.rejected-title')
-              : $t('issue.approval.pending-title')
-          "
+          :title="$t('rollout.task-execution-notices')"
         >
-          {{
-            issueApprovalStatus.status === "rejected"
-              ? $t("issue.approval.rejected-description")
-              : $t("issue.approval.pending-description")
-          }}
+          <ul class="list-disc list-inside space-y-1">
+            <li
+              v-for="(message, index) in validationMessages"
+              :key="index"
+              class="text-sm"
+            >
+              {{ message }}
+            </li>
+          </ul>
         </NAlert>
-
-        <!-- Previous Stages Incomplete Alert -->
-        <NAlert
-          v-if="props.action === 'RUN' && previousStagesStatus.hasIncomplete"
-          type="warning"
-          :title="$t('rollout.message.pervious-stages-incomplete.title')"
-        >
-          {{ $t("rollout.message.pervious-stages-incomplete.description") }}
-        </NAlert>
-
-        <!-- Plan Check Error Alert -->
-        <NAlert v-if="planCheckError" type="warning" :title="planCheckError" />
 
         <!-- Plan Check Status -->
         <div v-if="planCheckStatus.total > 0" class="flex items-center gap-3">
@@ -216,10 +200,10 @@
             {{ $t("common.close") }}
           </NButton>
 
-          <NTooltip :disabled="confirmErrors.length === 0" placement="top">
+          <NTooltip :disabled="validationMessages.length === 0" placement="top">
             <template #trigger>
               <NButton
-                :disabled="confirmErrors.length > 0"
+                :disabled="validationMessages.length > 0 && !forceRollout"
                 type="primary"
                 @click="handleConfirm"
               >
@@ -235,7 +219,7 @@
               </NButton>
             </template>
             <template #default>
-              <ErrorList :errors="confirmErrors" />
+              <ErrorList :errors="validationMessages" />
             </template>
           </NTooltip>
         </div>
@@ -273,8 +257,10 @@ import {
   pushNotification,
   useCurrentProjectV1,
   useEnvironmentV1Store,
+  usePolicyByParentAndType,
 } from "@/store";
 import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   BatchRunTasksRequestSchema,
   BatchSkipTasksRequestSchema,
@@ -415,10 +401,82 @@ const planCheckError = computed(() => {
   return undefined;
 });
 
+// Collect all validation messages for both display and error checking
+const validationMessages = computed(() => {
+  const messages: string[] = [];
+
+  // Basic validation errors
+  if (runnableTasks.value.length === 0) {
+    messages.push(t("common.no-data"));
+  }
+
+  if (
+    !canPerformTaskAction(
+      runnableTasks.value,
+      rollout.value,
+      project.value,
+      issue?.value
+    )
+  ) {
+    messages.push(t("task.no-permission"));
+  }
+
+  if (props.action === "RUN") {
+    // Validate scheduled time if not running immediately
+    if (runTimeInMS.value !== undefined && runTimeInMS.value <= Date.now()) {
+      messages.push(t("task.error.scheduled-time-must-be-in-the-future"));
+    }
+
+    // Issue approval messages (only if not forcing rollout)
+    if (
+      issueApprovalStatus.value.hasIssue &&
+      !issueApprovalStatus.value.isApproved
+    ) {
+      const isRejected = issueApprovalStatus.value.status === "rejected";
+      messages.push(
+        isRejected
+          ? t("issue.approval.rejected-error")
+          : t("issue.approval.pending-error")
+      );
+    }
+
+    // Previous stages incomplete (only if not forcing rollout)
+    if (previousStagesStatus.value.hasIncomplete) {
+      messages.push(
+        t("rollout.message.pervious-stages-incomplete.description")
+      );
+    }
+
+    // Plan check errors (only if not forcing rollout)
+    if (planCheckError.value) {
+      messages.push(planCheckError.value);
+    }
+
+    // Automatic rollout info (always show as informational)
+    if (isAutomaticRollout.value) {
+      messages.push(t("rollout.automatic-rollout.description"));
+    }
+  }
+
+  if (
+    props.action === "CANCEL" &&
+    runnableTasks.value.some(
+      (task) =>
+        task.status !== Task_Status.PENDING &&
+        task.status !== Task_Status.RUNNING
+    )
+  ) {
+    messages.push(t("rollout.no-active-task-to-cancel"));
+  }
+
+  return messages;
+});
+
 const shouldShowForceRollout = computed(() => {
   // Show force rollout checkbox for RUN action when:
   // 1. Issue approval is not complete, OR
-  // 2. Previous stages are not complete
+  // 2. Previous stages are not complete, OR
+  // 3. Environment has automatic rollout enabled
   return (
     props.action === "RUN" &&
     (hasWorkspacePermissionV2("bb.taskRuns.create") ||
@@ -426,13 +484,31 @@ const shouldShowForceRollout = computed(() => {
     ((issueApprovalStatus.value.hasIssue &&
       !issueApprovalStatus.value.isApproved) ||
       previousStagesStatus.value.hasIncomplete ||
-      planCheckError.value)
+      planCheckError.value ||
+      isAutomaticRollout.value)
   );
 });
 
 // Extract stage from target
 const targetStage = computed(() => {
   return props.target.stage;
+});
+
+// Get rollout policy for target stage environment
+const { policy: rolloutPolicy } = usePolicyByParentAndType(
+  computed(() => ({
+    parentPath: targetStage.value?.environment || "",
+    policyType: PolicyType.ROLLOUT_POLICY,
+  }))
+);
+
+// Check if target stage has automatic rollout policy
+const isAutomaticRollout = computed(() => {
+  return (
+    rolloutPolicy.value?.enforce &&
+    rolloutPolicy.value.policy?.case === "rolloutPolicy" &&
+    rolloutPolicy.value.policy.value.automatic
+  );
 });
 
 // Extract tasks if provided directly
@@ -516,74 +592,6 @@ const handleExecutionModeChange = (value: string) => {
     runTimeInMS.value = Date.now() + DEFAULT_RUN_DELAY_MS;
   }
 };
-
-const confirmErrors = computed(() => {
-  const errors: string[] = [];
-
-  if (runnableTasks.value.length === 0) {
-    errors.push(t("common.no-data"));
-  }
-
-  if (
-    !canPerformTaskAction(
-      runnableTasks.value,
-      rollout.value,
-      project.value,
-      issue?.value
-    )
-  ) {
-    errors.push(t("task.no-permission"));
-  }
-
-  // Validate scheduled time if not running immediately (only for RUN)
-  if (props.action === "RUN" && runTimeInMS.value !== undefined) {
-    if (runTimeInMS.value <= Date.now()) {
-      errors.push(t("task.error.scheduled-time-must-be-in-the-future"));
-    }
-  }
-
-  // Check issue approval for RUN action
-  if (
-    props.action === "RUN" &&
-    !issueApprovalStatus.value.isApproved &&
-    issueApprovalStatus.value.hasIssue &&
-    !forceRollout.value
-  ) {
-    if (issueApprovalStatus.value.status === "rejected") {
-      errors.push(t("issue.approval.rejected-error"));
-    } else {
-      errors.push(t("issue.approval.pending-error"));
-    }
-  }
-
-  // Check previous stages completion for RUN action
-  if (
-    props.action === "RUN" &&
-    previousStagesStatus.value.hasIncomplete &&
-    !forceRollout.value
-  ) {
-    errors.push(t("rollout.message.pervious-stages-incomplete.description"));
-  }
-
-  // Include plan check errors if not forcing rollout
-  if (props.action === "RUN" && !forceRollout.value && planCheckError.value) {
-    errors.push(planCheckError.value);
-  }
-
-  if (
-    props.action === "CANCEL" &&
-    runnableTasks.value.some(
-      (task) =>
-        task.status !== Task_Status.PENDING &&
-        task.status !== Task_Status.RUNNING
-    )
-  ) {
-    // Check task status.
-    errors.push("No active task to cancel");
-  }
-
-  return errors;
-});
 
 const handleConfirm = async () => {
   state.loading = true;
