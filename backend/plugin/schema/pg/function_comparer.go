@@ -727,4 +727,3 @@ func extractUnqualifiedName(qualifiedName string) string {
 	}
 	return qualifiedName
 }
-
