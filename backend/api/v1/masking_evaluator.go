@@ -252,7 +252,7 @@ func evaluateMaskingExceptionPolicyCondition(expression *expr.Expr, attributes m
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to eval CEL program for masking exception policy")
 	}
-	val, err := out.ConvertToNative(reflect.TypeOf(false))
+	val, err := out.ConvertToNative(reflect.TypeFor[bool]())
 	if err != nil {
 		return false, errors.Wrap(err, "expect bool result for masking exception policy")
 	}
@@ -302,7 +302,7 @@ func evaluateMaskingRulePolicyCondition(expression string, attributes map[string
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to eval CEL program for masking rule")
 	}
-	val, err := out.ConvertToNative(reflect.TypeOf(false))
+	val, err := out.ConvertToNative(reflect.TypeFor[bool]())
 	if err != nil {
 		return false, errors.Wrap(err, "expect bool result for masking rule")
 	}
@@ -335,7 +335,7 @@ func evaluateQueryExportPolicyCondition(expression string, attributes map[string
 	if err != nil {
 		return false, err
 	}
-	val, err := out.ConvertToNative(reflect.TypeOf(false))
+	val, err := out.ConvertToNative(reflect.TypeFor[bool]())
 	if err != nil {
 		return false, errors.Wrap(err, "expect bool result")
 	}
