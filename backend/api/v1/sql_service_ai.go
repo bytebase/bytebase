@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"connectrpc.com/connect"
 
@@ -191,9 +192,12 @@ func callGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 	// Convert messages to Gemini format
 	var contents []geminiContent
 	for _, m := range request.Messages {
+		if m.Content == "" {
+			continue
+		}
 		// Gemini uses "user" and "model" as roles
 		role := m.Role
-		if role == "assistant" {
+		if role != "user" {
 			role = "model"
 		}
 		contents = append(contents, geminiContent{
@@ -211,7 +215,6 @@ func callGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 			TopP:            0.95,
 			TopK:            40,
 			MaxOutputTokens: 2048,
-			StopSequences:   []string{"#", ";"},
 		},
 	}
 
@@ -253,10 +256,25 @@ func callGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 
 	resp := &v1pb.AICompletionResponse{}
 	for _, candidate := range geminiResp.Candidates {
-		var textContent string
+		var sb strings.Builder
 		for _, part := range candidate.Content.Parts {
-			textContent += part.Text
+			sb.WriteString(part.Text)
 		}
+		textContent := sb.String()
+
+		// Strip code block markers (```language or ```)
+		if strings.HasPrefix(textContent, "```") {
+			// Find the end of the first line (after ```language)
+			firstNewline := strings.Index(textContent, "\n")
+			if firstNewline != -1 {
+				textContent = textContent[firstNewline+1:]
+			} else {
+				textContent = strings.TrimPrefix(textContent, "```")
+			}
+		}
+		textContent = strings.TrimSuffix(textContent, "```")
+		textContent = strings.TrimSpace(textContent)
+
 		resp.Candidates = append(resp.Candidates, &v1pb.AICompletionResponse_Candidate{
 			Content: &v1pb.AICompletionResponse_Candidate_Content{
 				Parts: []*v1pb.AICompletionResponse_Candidate_Content_Part{
@@ -332,13 +350,14 @@ func callClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 	}
 
 	resp := &v1pb.AICompletionResponse{}
-	var textContent string
+	var sb strings.Builder
 	for _, content := range claudeResp.Content {
 		if content.Type == "text" {
-			textContent += content.Text
+			sb.WriteString(content.Text)
 		}
 	}
 
+	textContent := sb.String()
 	if textContent != "" {
 		resp.Candidates = append(resp.Candidates, &v1pb.AICompletionResponse_Candidate{
 			Content: &v1pb.AICompletionResponse_Candidate_Content{
