@@ -61,15 +61,17 @@ func (e *querySpanExtractor) EnterSelect_(ctx *cql.Select_Context) {
 		keyspace = e.defaultKeyspace
 	}
 
+	// Add accessed table to SourceColumns (table-level resource)
+	if table != "" {
+		e.querySpan.SourceColumns[base.ColumnResource{
+			Database: keyspace,
+			Table:    table,
+			Column:   "", // Empty column means table-level access
+		}] = true
+	}
+
 	results := e.extractSelectElements(ctx.SelectElements(), keyspace, table)
 	e.querySpan.Results = results
-
-	// Add all result columns to SourceColumns (simplified implementation)
-	for _, result := range results {
-		for col := range result.SourceColumns {
-			e.querySpan.SourceColumns[col] = true
-		}
-	}
 
 	if whereSpec := ctx.WhereSpec(); whereSpec != nil {
 		e.extractWhereColumns(whereSpec, keyspace, table)
@@ -259,8 +261,7 @@ func (e *querySpanExtractor) extractColumnsFromRelation(relation cql.IRelationEl
 			Column:   columnName,
 		}
 
-		// Add to both SourceColumns and PredicateColumns
-		e.querySpan.SourceColumns[colResource] = true
+		// Add to PredicateColumns only (SourceColumns tracks tables, not columns)
 		e.querySpan.PredicateColumns[colResource] = true
 	}
 
@@ -271,30 +272,97 @@ func (e *querySpanExtractor) extractColumnsFromRelation(relation cql.IRelationEl
 }
 
 // EnterInsert is called when we enter an INSERT statement
-func (e *querySpanExtractor) EnterInsert(_ *cql.InsertContext) {
+func (e *querySpanExtractor) EnterInsert(ctx *cql.InsertContext) {
 	if e.err != nil {
 		return
 	}
 	// Set query type to DML for INSERT
 	e.querySpan.Type = base.DML
+
+	// Extract table from INSERT INTO clause
+	keyspace := e.defaultKeyspace
+	table := ""
+
+	if ctx.Keyspace() != nil {
+		keyspace = unquoteIdentifier(ctx.Keyspace().GetText())
+	}
+	if ctx.Table() != nil {
+		table = unquoteIdentifier(ctx.Table().GetText())
+	}
+
+	if table != "" {
+		e.querySpan.SourceColumns[base.ColumnResource{
+			Database: keyspace,
+			Table:    table,
+			Column:   "",
+		}] = true
+	}
 }
 
 // EnterUpdate is called when we enter an UPDATE statement
-func (e *querySpanExtractor) EnterUpdate(_ *cql.UpdateContext) {
+func (e *querySpanExtractor) EnterUpdate(ctx *cql.UpdateContext) {
 	if e.err != nil {
 		return
 	}
 	// Set query type to DML for UPDATE
 	e.querySpan.Type = base.DML
+
+	// Extract table from UPDATE clause
+	keyspace := e.defaultKeyspace
+	table := ""
+
+	if ctx.Keyspace() != nil {
+		keyspace = unquoteIdentifier(ctx.Keyspace().GetText())
+	}
+	if ctx.Table() != nil {
+		table = unquoteIdentifier(ctx.Table().GetText())
+	}
+
+	if table != "" {
+		e.querySpan.SourceColumns[base.ColumnResource{
+			Database: keyspace,
+			Table:    table,
+			Column:   "",
+		}] = true
+	}
+
+	// Extract WHERE clause columns for UPDATE
+	if ctx.WhereSpec() != nil {
+		e.extractWhereColumns(ctx.WhereSpec(), keyspace, table)
+	}
 }
 
 // EnterDelete_ is called when we enter a DELETE statement
-func (e *querySpanExtractor) EnterDelete_(_ *cql.Delete_Context) {
+func (e *querySpanExtractor) EnterDelete_(ctx *cql.Delete_Context) {
 	if e.err != nil {
 		return
 	}
 	// Set query type to DML for DELETE
 	e.querySpan.Type = base.DML
+
+	// Extract table from DELETE FROM clause
+	keyspace := e.defaultKeyspace
+	table := ""
+	if ctx.FromSpec() != nil {
+		ks, t := e.extractTableFromFromSpec(ctx.FromSpec())
+		if ks != "" {
+			keyspace = ks
+		}
+		table = t
+	}
+
+	if table != "" {
+		e.querySpan.SourceColumns[base.ColumnResource{
+			Database: keyspace,
+			Table:    table,
+			Column:   "",
+		}] = true
+	}
+
+	// Extract WHERE clause columns for DELETE
+	if ctx.WhereSpec() != nil {
+		e.extractWhereColumns(ctx.WhereSpec(), keyspace, table)
+	}
 }
 
 // DDL Statement Handlers
@@ -357,6 +425,86 @@ func (e *querySpanExtractor) EnterCreateIndex(_ *cql.CreateIndexContext) {
 
 // EnterDropIndex is called when we enter a DROP INDEX statement
 func (e *querySpanExtractor) EnterDropIndex(_ *cql.DropIndexContext) {
+	if e.err != nil {
+		return
+	}
+	e.querySpan.Type = base.DDL
+}
+
+// EnterCreateMaterializedView is called when we enter a CREATE MATERIALIZED VIEW statement
+func (e *querySpanExtractor) EnterCreateMaterializedView(_ *cql.CreateMaterializedViewContext) {
+	if e.err != nil {
+		return
+	}
+	e.querySpan.Type = base.DDL
+}
+
+// EnterAlterMaterializedView is called when we enter an ALTER MATERIALIZED VIEW statement
+func (e *querySpanExtractor) EnterAlterMaterializedView(_ *cql.AlterMaterializedViewContext) {
+	if e.err != nil {
+		return
+	}
+	e.querySpan.Type = base.DDL
+}
+
+// EnterDropMaterializedView is called when we enter a DROP MATERIALIZED VIEW statement
+func (e *querySpanExtractor) EnterDropMaterializedView(_ *cql.DropMaterializedViewContext) {
+	if e.err != nil {
+		return
+	}
+	e.querySpan.Type = base.DDL
+}
+
+// EnterCreateType is called when we enter a CREATE TYPE statement
+func (e *querySpanExtractor) EnterCreateType(_ *cql.CreateTypeContext) {
+	if e.err != nil {
+		return
+	}
+	e.querySpan.Type = base.DDL
+}
+
+// EnterAlterType is called when we enter an ALTER TYPE statement
+func (e *querySpanExtractor) EnterAlterType(_ *cql.AlterTypeContext) {
+	if e.err != nil {
+		return
+	}
+	e.querySpan.Type = base.DDL
+}
+
+// EnterDropType is called when we enter a DROP TYPE statement
+func (e *querySpanExtractor) EnterDropType(_ *cql.DropTypeContext) {
+	if e.err != nil {
+		return
+	}
+	e.querySpan.Type = base.DDL
+}
+
+// EnterCreateFunction is called when we enter a CREATE FUNCTION statement
+func (e *querySpanExtractor) EnterCreateFunction(_ *cql.CreateFunctionContext) {
+	if e.err != nil {
+		return
+	}
+	e.querySpan.Type = base.DDL
+}
+
+// EnterDropFunction is called when we enter a DROP FUNCTION statement
+func (e *querySpanExtractor) EnterDropFunction(_ *cql.DropFunctionContext) {
+	if e.err != nil {
+		return
+	}
+	e.querySpan.Type = base.DDL
+}
+
+// EnterCreateTrigger is called when we enter a CREATE TRIGGER statement
+func (e *querySpanExtractor) EnterCreateTrigger(_ *cql.CreateTriggerContext) {
+	if e.err != nil {
+		return
+	}
+	e.querySpan.Type = base.DDL
+}
+
+// EnterDropTrigger is called when we enter a DROP TRIGGER statement
+func (e *querySpanExtractor) EnterDropTrigger(_ *cql.DropTriggerContext) {
 	if e.err != nil {
 		return
 	}

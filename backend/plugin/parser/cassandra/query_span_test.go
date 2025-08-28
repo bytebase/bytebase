@@ -257,13 +257,17 @@ func TestGetQuerySpan(t *testing.T) {
 				}
 			}
 
-			// Check that SourceColumns at QuerySpan level contains all columns from Results
-			if !got.Results[0].SelectAsterisk {
-				for _, result := range got.Results {
-					for col := range result.SourceColumns {
-						require.Contains(t, got.SourceColumns, col, "Missing column in QuerySpan.SourceColumns: %+v", col)
+			// Check that SourceColumns at QuerySpan level contains table resources (not column resources)
+			// SourceColumns should contain table-level access indicators (Column field is empty)
+			if len(got.Results) > 0 && !got.Results[0].SelectAsterisk {
+				foundTable := false
+				for resource := range got.SourceColumns {
+					if resource.Column == "" && resource.Table != "" {
+						foundTable = true
+						break
 					}
 				}
+				require.True(t, foundTable, "SourceColumns should contain at least one table resource")
 			}
 		})
 	}
@@ -317,6 +321,7 @@ func TestWhereColumnExtraction(t *testing.T) {
 		name                     string
 		statement                string
 		expectedPredicateColumns []base.ColumnResource
+		expectedTable            string // Table that should be in SourceColumns
 	}{
 		{
 			name:      "Simple equality WHERE clause",
@@ -324,6 +329,7 @@ func TestWhereColumnExtraction(t *testing.T) {
 			expectedPredicateColumns: []base.ColumnResource{
 				{Database: "test_keyspace", Table: "users", Column: "id"},
 			},
+			expectedTable: "users",
 		},
 		{
 			name:      "Multiple AND conditions",
@@ -332,6 +338,7 @@ func TestWhereColumnExtraction(t *testing.T) {
 				{Database: "test_keyspace", Table: "users", Column: "id"},
 				{Database: "test_keyspace", Table: "users", Column: "status"},
 			},
+			expectedTable: "users",
 		},
 		{
 			name:      "WHERE with comparison operators",
@@ -339,6 +346,7 @@ func TestWhereColumnExtraction(t *testing.T) {
 			expectedPredicateColumns: []base.ColumnResource{
 				{Database: "test_keyspace", Table: "users", Column: "age"},
 			},
+			expectedTable: "users",
 		},
 		{
 			name:      "WHERE with IN clause",
@@ -346,6 +354,7 @@ func TestWhereColumnExtraction(t *testing.T) {
 			expectedPredicateColumns: []base.ColumnResource{
 				{Database: "test_keyspace", Table: "users", Column: "status"},
 			},
+			expectedTable: "users",
 		},
 		{
 			name:      "WHERE with double-quoted columns",
@@ -354,6 +363,33 @@ func TestWhereColumnExtraction(t *testing.T) {
 				{Database: "test_keyspace", Table: "users", Column: "UserId"},
 				{Database: "test_keyspace", Table: "users", Column: "UserStatus"},
 			},
+			expectedTable: "users",
+		},
+		{
+			name:      "UPDATE with WHERE clause",
+			statement: "UPDATE users SET status = 'inactive' WHERE id = 123 AND age > 65",
+			expectedPredicateColumns: []base.ColumnResource{
+				{Database: "test_keyspace", Table: "users", Column: "id"},
+				{Database: "test_keyspace", Table: "users", Column: "age"},
+			},
+			expectedTable: "users",
+		},
+		{
+			name:      "DELETE with WHERE clause",
+			statement: "DELETE FROM users WHERE status = 'deleted' AND created_at < 1000000",
+			expectedPredicateColumns: []base.ColumnResource{
+				{Database: "test_keyspace", Table: "users", Column: "status"},
+				{Database: "test_keyspace", Table: "users", Column: "created_at"},
+			},
+			expectedTable: "users",
+		},
+		{
+			name:      "UPDATE with IN clause",
+			statement: "UPDATE products SET category = 'archived' WHERE id IN (1, 2, 3)",
+			expectedPredicateColumns: []base.ColumnResource{
+				{Database: "test_keyspace", Table: "products", Column: "id"},
+			},
+			expectedTable: "products",
 		},
 	}
 
@@ -370,9 +406,90 @@ func TestWhereColumnExtraction(t *testing.T) {
 			for _, expectedCol := range tt.expectedPredicateColumns {
 				require.Contains(t, got.PredicateColumns, expectedCol,
 					"Missing predicate column: %+v", expectedCol)
-				// Also verify they're in SourceColumns
-				require.Contains(t, got.SourceColumns, expectedCol,
-					"Missing source column: %+v", expectedCol)
+			}
+
+			// Verify SourceColumns contains table resource (not individual columns)
+			tableResource := base.ColumnResource{
+				Database: "test_keyspace",
+				Table:    tt.expectedTable,
+				Column:   "", // Empty column means table-level access
+			}
+			require.Contains(t, got.SourceColumns, tableResource,
+				"SourceColumns should contain table resource")
+		})
+	}
+}
+
+func TestSourceColumnsTableResources(t *testing.T) {
+	tests := []struct {
+		name             string
+		statement        string
+		expectedResource base.ColumnResource
+	}{
+		{
+			name:      "SELECT from single table",
+			statement: "SELECT * FROM users",
+			expectedResource: base.ColumnResource{
+				Database: "test_keyspace",
+				Table:    "users",
+				Column:   "",
+			},
+		},
+		{
+			name:      "SELECT with keyspace.table",
+			statement: "SELECT * FROM myapp.customers",
+			expectedResource: base.ColumnResource{
+				Database: "myapp",
+				Table:    "customers",
+				Column:   "",
+			},
+		},
+		{
+			name:      "INSERT statement",
+			statement: "INSERT INTO products (id, name) VALUES (1, 'Widget')",
+			expectedResource: base.ColumnResource{
+				Database: "test_keyspace",
+				Table:    "products",
+				Column:   "",
+			},
+		},
+		{
+			name:      "UPDATE statement",
+			statement: "UPDATE inventory SET quantity = 10 WHERE id = 1",
+			expectedResource: base.ColumnResource{
+				Database: "test_keyspace",
+				Table:    "inventory",
+				Column:   "",
+			},
+		},
+		{
+			name:      "DELETE statement",
+			statement: "DELETE FROM orders WHERE id = 1",
+			expectedResource: base.ColumnResource{
+				Database: "test_keyspace",
+				Table:    "orders",
+				Column:   "",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			gCtx := base.GetQuerySpanContext{}
+
+			got, err := GetQuerySpan(ctx, gCtx, tt.statement, "test_keyspace", "", false)
+			require.NoError(t, err)
+			require.NotNil(t, got)
+
+			// Verify SourceColumns contains exactly the expected table resource
+			require.Contains(t, got.SourceColumns, tt.expectedResource,
+				"SourceColumns should contain table resource: %+v", tt.expectedResource)
+
+			// Ensure no column-level resources are in SourceColumns
+			for resource := range got.SourceColumns {
+				require.Empty(t, resource.Column,
+					"SourceColumns should only contain table resources (Column should be empty)")
 			}
 		})
 	}
@@ -447,6 +564,60 @@ func TestQueryTypeDetection(t *testing.T) {
 		{
 			name:         "DROP INDEX statement",
 			statement:    "DROP INDEX user_email_idx",
+			expectedType: base.DDL,
+		},
+		// DDL - Materialized View operations
+		{
+			name:         "CREATE MATERIALIZED VIEW statement",
+			statement:    "CREATE MATERIALIZED VIEW user_summary AS SELECT id, name FROM users WHERE id IS NOT NULL PRIMARY KEY (id)",
+			expectedType: base.DDL,
+		},
+		{
+			name:         "ALTER MATERIALIZED VIEW statement",
+			statement:    "ALTER MATERIALIZED VIEW user_summary WITH compression = {'sstable_compression': 'LZ4Compressor'}",
+			expectedType: base.DDL,
+		},
+		{
+			name:         "DROP MATERIALIZED VIEW statement",
+			statement:    "DROP MATERIALIZED VIEW user_summary",
+			expectedType: base.DDL,
+		},
+		// DDL - Type operations
+		{
+			name:         "CREATE TYPE statement",
+			statement:    "CREATE TYPE address (street text, city text, zip text)",
+			expectedType: base.DDL,
+		},
+		{
+			name:         "ALTER TYPE statement",
+			statement:    "ALTER TYPE address ADD country text",
+			expectedType: base.DDL,
+		},
+		{
+			name:         "DROP TYPE statement",
+			statement:    "DROP TYPE address",
+			expectedType: base.DDL,
+		},
+		// DDL - Function operations
+		{
+			name:         "CREATE FUNCTION statement",
+			statement:    "CREATE FUNCTION myfunction(val int) RETURNS NULL ON NULL INPUT RETURNS int LANGUAGE java AS 'return val * 2;'",
+			expectedType: base.DDL,
+		},
+		{
+			name:         "DROP FUNCTION statement",
+			statement:    "DROP FUNCTION myfunction",
+			expectedType: base.DDL,
+		},
+		// DDL - Trigger operations
+		{
+			name:         "CREATE TRIGGER statement",
+			statement:    "CREATE TRIGGER mytrigger USING 'org.apache.cassandra.triggers.AuditTrigger'",
+			expectedType: base.DDL,
+		},
+		{
+			name:         "DROP TRIGGER statement",
+			statement:    "DROP TRIGGER mytrigger ON users",
 			expectedType: base.DDL,
 		},
 	}
