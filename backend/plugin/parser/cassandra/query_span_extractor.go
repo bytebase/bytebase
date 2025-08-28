@@ -39,6 +39,7 @@ func newQuerySpanExtractor(defaultKeyspace string, gCtx base.GetQuerySpanContext
 		defaultKeyspace:       defaultKeyspace,
 		gCtx:                  gCtx,
 		querySpan: &base.QuerySpan{
+			Type:             base.QueryTypeUnknown,
 			Results:          []base.QuerySpanResult{},
 			SourceColumns:    base.SourceColumnSet{},
 			PredicateColumns: base.SourceColumnSet{},
@@ -52,6 +53,9 @@ func (e *querySpanExtractor) EnterSelect_(ctx *cql.Select_Context) {
 		return
 	}
 
+	// Set query type to SELECT
+	e.querySpan.Type = base.Select
+
 	keyspace, table := e.extractTableFromFromSpec(ctx.FromSpec())
 	if keyspace == "" {
 		keyspace = e.defaultKeyspace
@@ -59,6 +63,13 @@ func (e *querySpanExtractor) EnterSelect_(ctx *cql.Select_Context) {
 
 	results := e.extractSelectElements(ctx.SelectElements(), keyspace, table)
 	e.querySpan.Results = results
+
+	// Add all result columns to SourceColumns (simplified implementation)
+	for _, result := range results {
+		for col := range result.SourceColumns {
+			e.querySpan.SourceColumns[col] = true
+		}
+	}
 
 	if whereSpec := ctx.WhereSpec(); whereSpec != nil {
 		e.extractWhereColumns(whereSpec, keyspace, table)
@@ -222,10 +233,36 @@ func (*querySpanExtractor) extractWhereColumns(whereSpec cql.IWhereSpecContext, 
 		return
 	}
 
-	// For now, we'll mark that we found columns in WHERE clause
-	// A full implementation would parse the relation elements
-	// to extract all column references
+	// TODO: This is a simplified implementation
+	// Future enhancements should handle:
+	// - Complex expressions (AND, OR, nested conditions)
+	// - Functions (UPPER(column), etc.)
+	// - Subqueries
+}
 
-	// This is a simplified implementation - a complete one would
-	// walk through all relation elements and extract column names
+// EnterInsert is called when we enter an INSERT statement
+func (e *querySpanExtractor) EnterInsert(_ *cql.InsertContext) {
+	if e.err != nil {
+		return
+	}
+	// Set query type to DML for INSERT
+	e.querySpan.Type = base.DML
+}
+
+// EnterUpdate is called when we enter an UPDATE statement
+func (e *querySpanExtractor) EnterUpdate(_ *cql.UpdateContext) {
+	if e.err != nil {
+		return
+	}
+	// Set query type to DML for UPDATE
+	e.querySpan.Type = base.DML
+}
+
+// EnterDelete_ is called when we enter a DELETE statement
+func (e *querySpanExtractor) EnterDelete_(_ *cql.Delete_Context) {
+	if e.err != nil {
+		return
+	}
+	// Set query type to DML for DELETE
+	e.querySpan.Type = base.DML
 }

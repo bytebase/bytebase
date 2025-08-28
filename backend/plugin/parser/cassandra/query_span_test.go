@@ -19,6 +19,7 @@ func TestGetQuerySpan(t *testing.T) {
 			name:      "SELECT with specific columns",
 			statement: "SELECT name, email FROM users WHERE id = 123",
 			want: base.QuerySpan{
+				Type: base.Select,
 				Results: []base.QuerySpanResult{
 					{
 						Name: "name",
@@ -49,6 +50,7 @@ func TestGetQuerySpan(t *testing.T) {
 			name:      "SELECT * (asterisk) - falls back without metadata",
 			statement: "SELECT * FROM products",
 			want: base.QuerySpan{
+				Type: base.Select,
 				Results: []base.QuerySpanResult{
 					{
 						Name:           "",
@@ -62,6 +64,7 @@ func TestGetQuerySpan(t *testing.T) {
 			name:      "SELECT with keyspace.table notation",
 			statement: "SELECT id, name FROM myapp.customers",
 			want: base.QuerySpan{
+				Type: base.Select,
 				Results: []base.QuerySpanResult{
 					{
 						Name: "id",
@@ -92,6 +95,7 @@ func TestGetQuerySpan(t *testing.T) {
 			name:      "SELECT with double-quoted table name",
 			statement: `SELECT id FROM "MyTable"`,
 			want: base.QuerySpan{
+				Type: base.Select,
 				Results: []base.QuerySpanResult{
 					{
 						Name: "id",
@@ -111,6 +115,7 @@ func TestGetQuerySpan(t *testing.T) {
 			name:      "SELECT with double-quoted column names",
 			statement: `SELECT "FirstName", "LastName" FROM users`,
 			want: base.QuerySpan{
+				Type: base.Select,
 				Results: []base.QuerySpanResult{
 					{
 						Name: "FirstName",
@@ -141,6 +146,7 @@ func TestGetQuerySpan(t *testing.T) {
 			name:      "SELECT with double-quoted keyspace and table",
 			statement: `SELECT id FROM "MyKeyspace"."MyTable"`,
 			want: base.QuerySpan{
+				Type: base.Select,
 				Results: []base.QuerySpanResult{
 					{
 						Name: "id",
@@ -160,6 +166,7 @@ func TestGetQuerySpan(t *testing.T) {
 			name:      "SELECT with alias using AS",
 			statement: `SELECT name AS user_name, email AS user_email FROM users`,
 			want: base.QuerySpan{
+				Type: base.Select,
 				Results: []base.QuerySpanResult{
 					{
 						Name: "user_name",
@@ -190,6 +197,7 @@ func TestGetQuerySpan(t *testing.T) {
 			name:      "SELECT with double-quoted alias",
 			statement: `SELECT name AS "User Name", email AS "User Email" FROM users`,
 			want: base.QuerySpan{
+				Type: base.Select,
 				Results: []base.QuerySpanResult{
 					{
 						Name: "User Name",
@@ -227,6 +235,9 @@ func TestGetQuerySpan(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, got)
 
+			// Check Type field
+			require.Equal(t, tt.want.Type, got.Type, "Query type mismatch")
+
 			// Check Results length
 			require.Equal(t, len(tt.want.Results), len(got.Results), "Result count mismatch")
 
@@ -242,6 +253,15 @@ func TestGetQuerySpan(t *testing.T) {
 				if !wantResult.SelectAsterisk {
 					for col := range wantResult.SourceColumns {
 						require.Contains(t, gotResult.SourceColumns, col, "Missing source column %+v", col)
+					}
+				}
+			}
+
+			// Check that SourceColumns at QuerySpan level contains all columns from Results
+			if !got.Results[0].SelectAsterisk {
+				for _, result := range got.Results {
+					for col := range result.SourceColumns {
+						require.Contains(t, got.SourceColumns, col, "Missing column in QuerySpan.SourceColumns: %+v", col)
 					}
 				}
 			}
@@ -288,6 +308,47 @@ func TestGetQuerySpanWithErrors(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestQueryTypeDetection(t *testing.T) {
+	tests := []struct {
+		name         string
+		statement    string
+		expectedType base.QueryType
+	}{
+		{
+			name:         "SELECT statement",
+			statement:    "SELECT * FROM users",
+			expectedType: base.Select,
+		},
+		{
+			name:         "INSERT statement",
+			statement:    "INSERT INTO users (id, name) VALUES (1, 'John')",
+			expectedType: base.DML,
+		},
+		{
+			name:         "UPDATE statement",
+			statement:    "UPDATE users SET name = 'Jane' WHERE id = 1",
+			expectedType: base.DML,
+		},
+		{
+			name:         "DELETE statement",
+			statement:    "DELETE FROM users WHERE id = 1",
+			expectedType: base.DML,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			gCtx := base.GetQuerySpanContext{}
+
+			got, err := GetQuerySpan(ctx, gCtx, tt.statement, "test_keyspace", "", false)
+			require.NoError(t, err)
+			require.NotNil(t, got)
+			require.Equal(t, tt.expectedType, got.Type, "Query type mismatch for %s", tt.statement)
 		})
 	}
 }
