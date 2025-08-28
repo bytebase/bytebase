@@ -154,6 +154,13 @@ type FunctionDiff struct {
 	FunctionName string
 	OldFunction  *storepb.FunctionMetadata
 	NewFunction  *storepb.FunctionMetadata
+
+	// Detailed change information for advanced engines
+	SignatureChanged    bool
+	BodyChanged         bool
+	AttributesChanged   bool
+	ChangedAttributes   []string
+	CanUseAlterFunction bool
 }
 
 // ProcedureDiff represents changes to a procedure.
@@ -408,7 +415,7 @@ func compareSchemaObjects(engine storepb.Engine, diff *MetadataDiff, schemaName 
 	compareMaterializedViews(engine, diff, schemaName, oldSchema, newSchema)
 
 	// Compare functions
-	compareFunctions(diff, schemaName, oldSchema, newSchema)
+	compareFunctions(engine, diff, schemaName, oldSchema, newSchema)
 
 	// Compare procedures
 	compareProcedures(diff, schemaName, oldSchema, newSchema)
@@ -1496,7 +1503,10 @@ func compareMaterializedViews(engine storepb.Engine, diff *MetadataDiff, schemaN
 }
 
 // compareFunctions compares functions between two schemas.
-func compareFunctions(diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
+func compareFunctions(engine storepb.Engine, diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
+	// Get the engine-specific function comparer
+	comparer := GetFunctionComparer(engine)
+
 	// Functions can have overloading, so we need to handle them carefully
 	// Group functions by signature to properly match overloaded functions
 	// Build map of old functions by signature
@@ -1545,20 +1555,54 @@ func compareFunctions(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 				FunctionName: newFunc.GetProto().Name,
 				NewFunction:  newFunc.GetProto(),
 			})
-		} else if !functionsEqual(oldFunc.GetProto(), newFunc.GetProto()) {
-			// Drop and recreate if definition changed
-			diff.FunctionChanges = append(diff.FunctionChanges, &FunctionDiff{
-				Action:       MetadataDiffActionDrop,
-				SchemaName:   schemaName,
-				FunctionName: oldFunc.GetProto().Name,
-				OldFunction:  oldFunc.GetProto(),
-			})
-			diff.FunctionChanges = append(diff.FunctionChanges, &FunctionDiff{
-				Action:       MetadataDiffActionCreate,
-				SchemaName:   schemaName,
-				FunctionName: newFunc.GetProto().Name,
-				NewFunction:  newFunc.GetProto(),
-			})
+		} else {
+			// Use detailed comparison to determine migration strategy
+			comparison, err := comparer.CompareDetailed(oldFunc, newFunc)
+			if err != nil || comparison == nil {
+				// Skip if no changes or error
+				continue
+			}
+
+			// Determine the action based on the comparison result
+			if comparison.CanUseAlterFunction {
+				// Use ALTER FUNCTION for body-only changes
+				diff.FunctionChanges = append(diff.FunctionChanges, &FunctionDiff{
+					Action:              MetadataDiffActionAlter,
+					SchemaName:          schemaName,
+					FunctionName:        oldFunc.GetProto().Name,
+					OldFunction:         oldFunc.GetProto(),
+					NewFunction:         newFunc.GetProto(),
+					SignatureChanged:    comparison.SignatureChanged,
+					BodyChanged:         comparison.BodyChanged,
+					AttributesChanged:   comparison.AttributesChanged,
+					ChangedAttributes:   comparison.ChangedAttributes,
+					CanUseAlterFunction: true,
+				})
+			} else {
+				// Use DROP and CREATE for signature changes
+				diff.FunctionChanges = append(diff.FunctionChanges, &FunctionDiff{
+					Action:              MetadataDiffActionDrop,
+					SchemaName:          schemaName,
+					FunctionName:        oldFunc.GetProto().Name,
+					OldFunction:         oldFunc.GetProto(),
+					SignatureChanged:    comparison.SignatureChanged,
+					BodyChanged:         comparison.BodyChanged,
+					AttributesChanged:   comparison.AttributesChanged,
+					ChangedAttributes:   comparison.ChangedAttributes,
+					CanUseAlterFunction: false,
+				})
+				diff.FunctionChanges = append(diff.FunctionChanges, &FunctionDiff{
+					Action:              MetadataDiffActionCreate,
+					SchemaName:          schemaName,
+					FunctionName:        newFunc.GetProto().Name,
+					NewFunction:         newFunc.GetProto(),
+					SignatureChanged:    comparison.SignatureChanged,
+					BodyChanged:         comparison.BodyChanged,
+					AttributesChanged:   comparison.AttributesChanged,
+					ChangedAttributes:   comparison.ChangedAttributes,
+					CanUseAlterFunction: false,
+				})
+			}
 		}
 	}
 }
