@@ -6,19 +6,21 @@
 import { create } from "@bufbuild/protobuf";
 import Emittery from "emittery";
 import { storeToRefs } from "pinia";
-import { computed, reactive, ref, toRef } from "vue";
+import { computed, reactive, ref, toRef, watch } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useMetadata,
   useSettingV1Store,
   useSQLEditorTabStore,
+  useCurrentUserV1,
 } from "@/store";
 import {
   AISettingSchema,
   Setting_SettingName,
+  type AIProvider,
 } from "@/types/proto-es/v1/setting_service_pb";
-import { wrapRefAsPromise } from "@/utils";
+import { wrapRefAsPromise, useDynamicLocalStorage } from "@/utils";
 import { provideAIContext, useChatByTab, useCurrentChat } from "../logic";
 import { useConversationStore } from "../store";
 import type { AIContext, AIContextEvents } from "../types";
@@ -51,14 +53,32 @@ const chat = useChatByTab();
 const showHistoryDialog = toRef(state, "showHistoryDialog");
 const pendingSendChat = ref<{ content: string }>();
 const pendingPreInput = ref<string>();
+const currentUser = useCurrentUserV1();
 
 const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const schema = computed(() => tab.value?.connection.schema);
 const store = useConversationStore();
+const selectedProvider = useDynamicLocalStorage<AIProvider>(
+  computed(
+    () => `bb.sql-editor.ai-suggestion.provider.${currentUser.value.name}`
+  ),
+  aiSetting.value.providers[0]
+);
+
+watch(
+  () => aiSetting.value.providers[0],
+  (provider) => {
+    selectedProvider.value = provider;
+  },
+  {
+    immediate: true,
+    deep: true,
+  }
+);
 
 const context: AIContext = {
   aiSetting: aiSetting,
-  provider: ref(aiSetting.value.providers[0]),
+  provider: selectedProvider,
   engine: computed(() => instance.value.engine),
   databaseMetadata,
   schema,
