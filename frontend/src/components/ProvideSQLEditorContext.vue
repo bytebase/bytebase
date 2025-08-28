@@ -1,7 +1,6 @@
 <template>
   <teleport to="#sql-editor-debug">
     <li>[ProvideContext]project: {{ editorStore.project }}</li>
-    <li>[ProvideContext]strictProject: {{ editorStore.strictProject }}</li>
     <li>
       [ProvideContext]projectContextReady:
       {{ editorStore.projectContextReady }}
@@ -119,15 +118,12 @@ const initializeProjects = async () => {
   if (typeof projectInQuery === "string" && projectInQuery) {
     // Legacy "?project={project}"
     project = `projects/${projectInQuery}`;
-    editorStore.strictProject = true;
   } else if (typeof projectInParams === "string" && projectInParams) {
     // "/sql-editor/projects/{project}"
     project = `projects/${projectInParams}`;
-    editorStore.strictProject = "strict" in route.query;
   } else {
     // plain "/sql-editor"
     project = editorStore.storedLastViewedProject;
-    editorStore.strictProject = false;
   }
 
   if (isValidProjectName(project)) {
@@ -409,13 +405,6 @@ const syncURLWithConnection = () => {
         "database"
       );
 
-      if (editorStore.strictProject) {
-        // The API is weird
-        // `query.strict = null` will generate "&strict" in the query string
-        // while `query.strict = ""` will generate "&strict=" in the query string
-        // and we prefer the shorter one
-        query.strict = null;
-      }
       if (sheetName) {
         const sheet = worksheetStore.getWorksheetByName(sheetName);
         if (sheet) {
