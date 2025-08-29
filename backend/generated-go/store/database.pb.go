@@ -3050,8 +3050,13 @@ type IndexMetadata struct {
 	IsConstraint bool `protobuf:"varint,14,opt,name=is_constraint,json=isConstraint,proto3" json:"is_constraint,omitempty"`
 	// Spatial index specific configuration
 	SpatialConfig *SpatialIndexConfig `protobuf:"bytes,15,opt,name=spatial_config,json=spatialConfig,proto3" json:"spatial_config,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// https://www.postgresql.org/docs/current/catalog-pg-opclass.html
+	// Name of the operator class for each column. (PostgreSQL specific).
+	OpclassNames []string `protobuf:"bytes,16,rep,name=opclass_names,json=opclassNames,proto3" json:"opclass_names,omitempty"`
+	// True if the operator class is the default. (PostgreSQL specific).
+	OpclassDefaults []bool `protobuf:"varint,17,rep,packed,name=opclass_defaults,json=opclassDefaults,proto3" json:"opclass_defaults,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *IndexMetadata) Reset() {
@@ -3185,6 +3190,20 @@ func (x *IndexMetadata) GetIsConstraint() bool {
 func (x *IndexMetadata) GetSpatialConfig() *SpatialIndexConfig {
 	if x != nil {
 		return x.SpatialConfig
+	}
+	return nil
+}
+
+func (x *IndexMetadata) GetOpclassNames() []string {
+	if x != nil {
+		return x.OpclassNames
+	}
+	return nil
+}
+
+func (x *IndexMetadata) GetOpclassDefaults() []bool {
+	if x != nil {
+		return x.OpclassDefaults
 	}
 	return nil
 }
@@ -4724,7 +4743,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\n" +
 	"definition\x18\x02 \x01(\tR\n" +
-	"definition\"\x8c\x04\n" +
+	"definition\"\xdc\x04\n" +
 	"\rIndexMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vexpressions\x18\x02 \x03(\tR\vexpressions\x12\x1d\n" +
@@ -4746,7 +4765,9 @@ const file_store_database_proto_rawDesc = "" +
 	"\x11parent_index_name\x18\f \x01(\tR\x0fparentIndexName\x12 \n" +
 	"\vgranularity\x18\r \x01(\x03R\vgranularity\x12#\n" +
 	"\ris_constraint\x18\x0e \x01(\bR\fisConstraint\x12I\n" +
-	"\x0espatial_config\x18\x0f \x01(\v2\".bytebase.store.SpatialIndexConfigR\rspatialConfig\"\x96\x03\n" +
+	"\x0espatial_config\x18\x0f \x01(\v2\".bytebase.store.SpatialIndexConfigR\rspatialConfig\x12#\n" +
+	"\ropclass_names\x18\x10 \x03(\tR\fopclassNames\x12)\n" +
+	"\x10opclass_defaults\x18\x11 \x03(\bR\x0fopclassDefaults\"\x96\x03\n" +
 	"\x12SpatialIndexConfig\x12\x16\n" +
 	"\x06method\x18\x01 \x01(\tR\x06method\x12F\n" +
 	"\ftessellation\x18\x02 \x01(\v2\".bytebase.store.TessellationConfigR\ftessellation\x127\n" +

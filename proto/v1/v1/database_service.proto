@@ -1207,6 +1207,12 @@ message IndexMetadata {
 
   // Spatial index configuration for spatial databases like SQL Server, PostgreSQL with PostGIS, etc.
   SpatialIndexConfig spatial_config = 15;
+
+  // https://www.postgresql.org/docs/current/catalog-pg-opclass.html
+  // Name of the operator class for each column. (PostgreSQL specific).
+  repeated string opclass_names = 16;
+  // True if the operator class is the default. (PostgreSQL specific).
+  repeated bool opclass_defaults = 17;
 }
 
 // ExtensionMetadata is the metadata for extensions.

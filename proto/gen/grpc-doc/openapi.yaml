@@ -10619,6 +10619,18 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/SpatialIndexConfig'
                     description: Spatial index configuration for spatial databases like SQL Server, PostgreSQL with PostGIS, etc.
+                opclassNames:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        https://www.postgresql.org/docs/current/catalog-pg-opclass.html
+                         Name of the operator class for each column. (PostgreSQL specific).
+                opclassDefaults:
+                    type: array
+                    items:
+                        type: boolean
+                    description: True if the operator class is the default. (PostgreSQL specific).
             description: IndexMetadata is the metadata for indexes.
         Instance:
             type: object
