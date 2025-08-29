@@ -297,6 +297,8 @@ func convertStoreIndexMetadata(index *storepb.IndexMetadata) *v1pb.IndexMetadata
 		Granularity:       index.Granularity,
 		IsConstraint:      index.IsConstraint,
 		SpatialConfig:     convertStoreSpatialIndexConfig(index.SpatialConfig),
+		OpclassNames:      index.OpclassNames,
+		OpclassDefaults:   index.OpclassDefaults,
 	}
 }
 

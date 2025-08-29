@@ -2618,6 +2618,21 @@ export declare type IndexMetadata = Message<"bytebase.v1.IndexMetadata"> & {
    * @generated from field: bytebase.v1.SpatialIndexConfig spatial_config = 15;
    */
   spatialConfig?: SpatialIndexConfig;
+
+  /**
+   * https://www.postgresql.org/docs/current/catalog-pg-opclass.html
+   * Name of the operator class for each column. (PostgreSQL specific).
+   *
+   * @generated from field: repeated string opclass_names = 16;
+   */
+  opclassNames: string[];
+
+  /**
+   * True if the operator class is the default. (PostgreSQL specific).
+   *
+   * @generated from field: repeated bool opclass_defaults = 17;
+   */
+  opclassDefaults: boolean[];
 };
 
 /**

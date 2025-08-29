@@ -4325,6 +4325,21 @@ The unique constraint and unique index are not the same thing in PostgreSQL. </p
                   <td><p>Spatial index specific configuration </p></td>
                 </tr>
               
+                <tr>
+                  <td>opclass_names</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>https://www.postgresql.org/docs/current/catalog-pg-opclass.html
+Name of the operator class for each column. (PostgreSQL specific). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>opclass_defaults</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td>repeated</td>
+                  <td><p>True if the operator class is the default. (PostgreSQL specific). </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
