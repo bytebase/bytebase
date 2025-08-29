@@ -1452,6 +1452,8 @@ IndexMetadata is the metadata for indexes.
 | granularity | [int64](#int64) |  | The number of granules in the block. It&#39;s a ClickHouse specific field. |
 | is_constraint | [bool](#bool) |  | It&#39;s a PostgreSQL specific field. The unique constraint and unique index are not the same thing in PostgreSQL. |
 | spatial_config | [SpatialIndexConfig](#bytebase-store-SpatialIndexConfig) |  | Spatial index specific configuration |
+| opclass_names | [string](#string) | repeated | https://www.postgresql.org/docs/current/catalog-pg-opclass.html Name of the operator class for each column. (PostgreSQL specific). |
+| opclass_defaults | [bool](#bool) | repeated | True if the operator class is the default. (PostgreSQL specific). |
 
 
 
