@@ -215,7 +215,7 @@ func CheckDatabaseGroupMatch(ctx context.Context, expression string, database *s
 		return false, connect.NewError(connect.CodeInternal, err)
 	}
 
-	val, err := res.ConvertToNative(reflect.TypeOf(false))
+	val, err := res.ConvertToNative(reflect.TypeFor[bool]())
 	if err != nil {
 		return false, connect.NewError(connect.CodeInternal, errors.New("expect bool result"))
 	}
