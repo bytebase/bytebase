@@ -32,7 +32,7 @@
 
         <div
           v-if="sidebarMode == 'DESKTOP'"
-          class="hide-scrollbar border-l border-gray-200 bg-gray-50"
+          class="hide-scrollbar border-l border-gray-200"
           :style="{
             width: `${desktopSidebarWidth}px`,
           }"

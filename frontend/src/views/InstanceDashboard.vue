@@ -24,7 +24,7 @@
         {{ $t("quick-action.add-instance") }}
       </NButton>
     </div>
-    <div class="space-y-2">
+    <div>
       <InstanceOperations
         :instance-list="selectedInstanceList"
         @update="(instances) => pagedInstanceTableRef?.updateCache(instances)"
