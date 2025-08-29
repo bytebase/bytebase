@@ -4576,8 +4576,13 @@ type IndexMetadata struct {
 	IsConstraint bool `protobuf:"varint,14,opt,name=is_constraint,json=isConstraint,proto3" json:"is_constraint,omitempty"`
 	// Spatial index configuration for spatial databases like SQL Server, PostgreSQL with PostGIS, etc.
 	SpatialConfig *SpatialIndexConfig `protobuf:"bytes,15,opt,name=spatial_config,json=spatialConfig,proto3" json:"spatial_config,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// https://www.postgresql.org/docs/current/catalog-pg-opclass.html
+	// Name of the operator class for each column. (PostgreSQL specific).
+	OpclassNames []string `protobuf:"bytes,16,rep,name=opclass_names,json=opclassNames,proto3" json:"opclass_names,omitempty"`
+	// True if the operator class is the default. (PostgreSQL specific).
+	OpclassDefaults []bool `protobuf:"varint,17,rep,packed,name=opclass_defaults,json=opclassDefaults,proto3" json:"opclass_defaults,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *IndexMetadata) Reset() {
@@ -4711,6 +4716,20 @@ func (x *IndexMetadata) GetIsConstraint() bool {
 func (x *IndexMetadata) GetSpatialConfig() *SpatialIndexConfig {
 	if x != nil {
 		return x.SpatialConfig
+	}
+	return nil
+}
+
+func (x *IndexMetadata) GetOpclassNames() []string {
+	if x != nil {
+		return x.OpclassNames
+	}
+	return nil
+}
+
+func (x *IndexMetadata) GetOpclassDefaults() []bool {
+	if x != nil {
+		return x.OpclassDefaults
 	}
 	return nil
 }
@@ -6273,7 +6292,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\tdimension\x18\x01 \x01(\tR\tdimension\x12\x1b\n" +
 	"\tmin_value\x18\x02 \x01(\x01R\bminValue\x12\x1b\n" +
 	"\tmax_value\x18\x03 \x01(\x01R\bmaxValue\x12\x1c\n" +
-	"\ttolerance\x18\x04 \x01(\x01R\ttolerance\"\x89\x04\n" +
+	"\ttolerance\x18\x04 \x01(\x01R\ttolerance\"\xd9\x04\n" +
 	"\rIndexMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vexpressions\x18\x02 \x03(\tR\vexpressions\x12\x1d\n" +
@@ -6295,7 +6314,9 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x11parent_index_name\x18\f \x01(\tR\x0fparentIndexName\x12 \n" +
 	"\vgranularity\x18\r \x01(\x03R\vgranularity\x12#\n" +
 	"\ris_constraint\x18\x0e \x01(\bR\fisConstraint\x12F\n" +
-	"\x0espatial_config\x18\x0f \x01(\v2\x1f.bytebase.v1.SpatialIndexConfigR\rspatialConfig\"{\n" +
+	"\x0espatial_config\x18\x0f \x01(\v2\x1f.bytebase.v1.SpatialIndexConfigR\rspatialConfig\x12#\n" +
+	"\ropclass_names\x18\x10 \x03(\tR\fopclassNames\x12)\n" +
+	"\x10opclass_defaults\x18\x11 \x03(\bR\x0fopclassDefaults\"{\n" +
 	"\x11ExtensionMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
 	"\x06schema\x18\x02 \x01(\tR\x06schema\x12\x18\n" +

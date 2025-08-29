@@ -740,6 +740,12 @@ message IndexMetadata {
 
   // Spatial index specific configuration
   SpatialIndexConfig spatial_config = 15;
+
+  // https://www.postgresql.org/docs/current/catalog-pg-opclass.html
+  // Name of the operator class for each column. (PostgreSQL specific).
+  repeated string opclass_names = 16;
+  // True if the operator class is the default. (PostgreSQL specific).
+  repeated bool opclass_defaults = 17;
 }
 
 // SpatialIndexConfig is the configuration for spatial indexes across different database engines.

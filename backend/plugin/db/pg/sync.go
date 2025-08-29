@@ -1319,6 +1319,16 @@ SELECT
      FROM generate_subscripts(ix.indkey, 1) as k
      WHERE k < ix.indnkeyatts  -- Only key columns, not included columns
     ) as key_expressions,
+    (SELECT array_agg(op.opcname ORDER BY k)
+     FROM generate_subscripts(ix.indkey, 1) as k
+     JOIN pg_opclass op ON ix.indclass[k] = op.oid
+     WHERE k < ix.indnkeyatts  -- Only key columns, not included columns
+    ) as key_opclass_names,
+    (SELECT array_agg(op.opcdefault ORDER BY k)
+     FROM generate_subscripts(ix.indkey, 1) as k
+     JOIN pg_opclass op ON ix.indclass[k] = op.oid
+     WHERE k < ix.indnkeyatts  -- Only key columns, not included columns
+    ) as key_opclass_defaults,
     -- Check if it's a constraint (primary key or unique constraint)
     CASE 
         WHEN ix.indisprimary THEN true
@@ -1383,6 +1393,8 @@ func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (
 		var schemaName, tableName, indexMethod, indexDefinition string
 		var isUnique, isPrimary, isConstraint bool
 		var keyExpressions pq.StringArray
+		var opclassNames pq.StringArray
+		var opclassDefaults pq.BoolArray
 		var indexOptions string // indoption as string (int2vector)
 		var comment sql.NullString
 
@@ -1395,6 +1407,8 @@ func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (
 			&isPrimary,
 			&indexDefinition,
 			&keyExpressions,
+			&opclassNames,
+			&opclassDefaults,
 			&isConstraint,
 			&comment,
 			&indexOptions, // scan indoption string
@@ -1408,6 +1422,8 @@ func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (
 		index.Primary = isPrimary
 		index.IsConstraint = isConstraint
 		index.Expressions = []string(keyExpressions)
+		index.OpclassNames = opclassNames
+		index.OpclassDefaults = opclassDefaults
 
 		// Parse sort order information from indoption string
 		keyCount := len(keyExpressions)
