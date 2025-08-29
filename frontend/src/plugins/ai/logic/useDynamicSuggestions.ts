@@ -48,7 +48,10 @@ export const useDynamicSuggestions = () => {
   const requestAI = async (messages: AICompletionRequest_Message[]) => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     try {
-      const request = createProto(AICompletionRequestSchema, { messages });
+      const request = createProto(AICompletionRequestSchema, {
+        messages,
+        provider: context.provider.value?.type,
+      });
       const response = await sqlServiceClientConnect.aICompletion(request);
       const text =
         head(head(response.candidates)?.content?.parts)?.text?.trim() ?? "";

@@ -11,24 +11,27 @@
       </span>
     </div>
     <div class="flex-1 lg:px-4">
-      <div class="mt-4 lg:mt-0 space-y-4">
+      <div class="mt-4 lg:mt-0 space-y-6">
+        <!-- AI Providers Section -->
         <div>
-          <div class="flex items-center gap-x-2">
-            <Switch
-              v-model:value="state.enabled"
-              :text="true"
-              :disabled="!allowEdit"
-              @update:value="toggleAIEnabled"
-            />
-            <span class="font-medium">
-              {{
-                $t(
-                  "settings.general.workspace.ai-assistant.enable-ai-assistant"
-                )
-              }}
-            </span>
+          <div class="flex items-center justify-between mb-1">
+            <h2 class="text-lg font-medium">
+              {{ $t("settings.general.workspace.ai-assistant.providers") }}
+            </h2>
+            <NButton
+              v-if="allowEdit"
+              type="primary"
+              size="small"
+              @click="addProvider"
+              :disabled="!canAddProvider"
+            >
+              <template #icon>
+                <heroicons:plus-20-solid class="w-4 h-4" />
+              </template>
+              {{ $t("settings.general.workspace.ai-assistant.add-provider") }}
+            </NButton>
           </div>
-          <div class="mt-1 mb-3 text-sm text-gray-400">
+          <div class="mb-3 text-sm text-gray-400">
             {{ $t("settings.general.workspace.ai-assistant.description") }}
             <LearnMoreLink
               url="https://docs.bytebase.com/ai-assistant?source=console"
@@ -36,116 +39,219 @@
             />
           </div>
         </div>
-        <template v-if="state.enabled">
-          <div>
-            <label class="flex items-center gap-x-2 mb-2">
-              <span class="font-medium">{{
-                $t("settings.general.workspace.ai-assistant.provider.self")
-              }}</span>
-            </label>
-            <NSelect
-              style="width: 12rem"
-              v-model:value="state.provider"
-              :options="providerOptions"
-              :disabled="!allowEdit"
-              :consistent-menu-width="true"
-            />
+
+        <!-- No Providers Message -->
+        <div
+          v-if="state.providers.length === 0"
+          class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center"
+        >
+          <heroicons:cpu-chip-20-solid
+            class="mx-auto h-12 w-12 text-gray-400"
+          />
+          <h3 class="mt-2 text-sm font-medium text-gray-900">
+            {{ $t("settings.general.workspace.ai-assistant.no-providers") }}
+          </h3>
+          <p class="mt-1 text-sm text-gray-500">
+            {{
+              $t(
+                "settings.general.workspace.ai-assistant.no-providers-description"
+              )
+            }}
+          </p>
+          <div class="mt-4">
+            <NButton
+              v-if="allowEdit && canAddProvider"
+              type="primary"
+              @click="addProvider"
+            >
+              <template #icon>
+                <heroicons:plus-20-solid class="w-4 h-4" />
+              </template>
+              {{
+                $t("settings.general.workspace.ai-assistant.add-first-provider")
+              }}
+            </NButton>
           </div>
-          <div>
-            <label class="flex items-center gap-x-2">
-              <span class="font-medium">{{
-                $t("settings.general.workspace.ai-assistant.api-key.self")
-              }}</span>
-            </label>
-            <div class="mb-3 text-sm text-gray-400">
-              <i18n-t
-                keypath="settings.general.workspace.ai-assistant.api-key.description"
-              >
-                <template #viewDoc>
-                  <a
-                    :href="providerDefault.apiKeyDoc"
-                    class="normal-link"
-                    target="_blank"
-                    >{{
-                      $t(
-                        "settings.general.workspace.ai-assistant.api-key.find-my-key"
-                      )
-                    }}
-                  </a>
+        </div>
+
+        <!-- Provider Cards -->
+        <div v-else class="space-y-4">
+          <div
+            v-for="(provider, index) in state.providers"
+            :key="index"
+            class="border rounded-lg p-4 relative"
+          >
+            <!-- Delete Button in top-right corner -->
+            <div v-if="allowEdit" class="absolute top-2 right-2">
+              <NTooltip>
+                <template #trigger>
+                  <NButton
+                    type="error"
+                    size="small"
+                    quaternary
+                    circle
+                    @click="removeProvider(index)"
+                  >
+                    <template #icon>
+                      <heroicons:trash-20-solid class="w-4 h-4" />
+                    </template>
+                  </NButton>
                 </template>
-              </i18n-t>
+                {{
+                  $t("settings.general.workspace.ai-assistant.remove-provider")
+                }}
+              </NTooltip>
             </div>
-            <NTooltip placement="top-start" :disabled="allowEdit">
-              <template #trigger>
-                <BBTextField
-                  v-model:value="state.apiKey"
+
+            <div class="space-y-4">
+              <!-- Provider Type -->
+              <div>
+                <label class="flex items-center gap-x-2 mb-2">
+                  <span class="font-medium">{{
+                    $t("settings.general.workspace.ai-assistant.provider.self")
+                  }}</span>
+                </label>
+                <NSelect
+                  style="width: 12rem"
+                  v-model:value="provider.type"
+                  :options="getProviderOptionsForIndex(index)"
                   :disabled="!allowEdit"
-                  :placeholder="
+                  :consistent-menu-width="true"
+                  @update:value="(value) => onProviderTypeChange(index, value)"
+                />
+              </div>
+
+              <!-- API Key -->
+              <div>
+                <label class="flex items-center gap-x-2">
+                  <span class="font-medium">{{
+                    $t("settings.general.workspace.ai-assistant.api-key.self")
+                  }}</span>
+                </label>
+                <div class="mb-3 text-sm text-gray-400">
+                  <i18n-t
+                    keypath="settings.general.workspace.ai-assistant.api-key.description"
+                  >
+                    <template #viewDoc>
+                      <a
+                        :href="getProviderDefault(provider.type).apiKeyDoc"
+                        class="normal-link"
+                        target="_blank"
+                        >{{
+                          $t(
+                            "settings.general.workspace.ai-assistant.api-key.find-my-key"
+                          )
+                        }}
+                      </a>
+                    </template>
+                  </i18n-t>
+                </div>
+                <NTooltip placement="top-start" :disabled="allowEdit">
+                  <template #trigger>
+                    <BBTextField
+                      v-model:value="provider.apiKey"
+                      :disabled="!allowEdit"
+                      :placeholder="
+                        $t(
+                          'settings.general.workspace.ai-assistant.api-key.placeholder'
+                        )
+                      "
+                    />
+                  </template>
+                  <span class="text-sm text-gray-400 -translate-y-2">
+                    {{ $t("settings.general.workspace.only-admin-can-edit") }}
+                  </span>
+                </NTooltip>
+              </div>
+
+              <!-- Endpoint -->
+              <div>
+                <label class="flex items-center gap-x-2">
+                  <span class="font-medium">{{
+                    $t("settings.general.workspace.ai-assistant.endpoint.self")
+                  }}</span>
+                </label>
+                <div class="mb-3 text-sm text-gray-400">
+                  {{
                     $t(
-                      'settings.general.workspace.ai-assistant.api-key.placeholder'
+                      "settings.general.workspace.ai-assistant.endpoint.description"
                     )
-                  "
-                />
-              </template>
-              <span class="text-sm text-gray-400 -translate-y-2">
-                {{ $t("settings.general.workspace.only-admin-can-edit") }}
-              </span>
-            </NTooltip>
-          </div>
+                  }}
+                </div>
+                <NTooltip placement="top-start" :disabled="allowEdit">
+                  <template #trigger>
+                    <BBTextField
+                      v-model:value="provider.endpoint"
+                      :required="true"
+                      :disabled="!allowEdit"
+                      :placeholder="getProviderDefault(provider.type).endpoint"
+                    />
+                  </template>
+                  <span class="text-sm text-gray-400 -translate-y-2">
+                    {{ $t("settings.general.workspace.only-admin-can-edit") }}
+                  </span>
+                </NTooltip>
+              </div>
 
-          <div>
-            <label class="flex items-center gap-x-2">
-              <span class="font-medium">{{
-                $t("settings.general.workspace.ai-assistant.endpoint.self")
-              }}</span>
-            </label>
-            <div class="mb-3 text-sm text-gray-400">
-              {{
-                $t(
-                  "settings.general.workspace.ai-assistant.endpoint.description"
-                )
-              }}
-            </div>
-            <NTooltip placement="top-start" :disabled="allowEdit">
-              <template #trigger>
-                <BBTextField
-                  v-model:value="state.endpoint"
-                  :required="true"
-                  :disabled="!allowEdit"
-                  :placeholder="providerDefault.endpoint"
-                />
-              </template>
-              <span class="text-sm text-gray-400 -translate-y-2">
-                {{ $t("settings.general.workspace.only-admin-can-edit") }}
-              </span>
-            </NTooltip>
-          </div>
+              <!-- Model -->
+              <div>
+                <label class="flex items-center gap-x-2">
+                  <span class="font-medium">{{
+                    $t("settings.general.workspace.ai-assistant.model.self")
+                  }}</span>
+                </label>
+                <div class="mb-3 text-sm text-gray-400">
+                  {{
+                    $t(
+                      "settings.general.workspace.ai-assistant.model.description"
+                    )
+                  }}
+                </div>
+                <NTooltip placement="top-start" :disabled="allowEdit">
+                  <template #trigger>
+                    <BBTextField
+                      v-model:value="provider.model"
+                      :required="true"
+                      :disabled="!allowEdit"
+                      :placeholder="getProviderDefault(provider.type).model"
+                    />
+                  </template>
+                  <span class="text-sm text-gray-400 -translate-y-2">
+                    {{ $t("settings.general.workspace.only-admin-can-edit") }}
+                  </span>
+                </NTooltip>
+              </div>
 
-          <div>
-            <label class="flex items-center gap-x-2">
-              <span class="font-medium">{{
-                $t("settings.general.workspace.ai-assistant.model.self")
-              }}</span>
-            </label>
-            <div class="mb-3 text-sm text-gray-400">
-              {{
-                $t("settings.general.workspace.ai-assistant.model.description")
-              }}
+              <!-- Version (for Claude) -->
+              <div v-if="provider.type === AIProvider_Type.CLAUDE">
+                <label class="flex items-center gap-x-2">
+                  <span class="font-medium">{{
+                    $t("settings.general.workspace.ai-assistant.version.self")
+                  }}</span>
+                </label>
+                <div class="mb-3 text-sm text-gray-400">
+                  {{
+                    $t(
+                      "settings.general.workspace.ai-assistant.version.description"
+                    )
+                  }}
+                </div>
+                <NTooltip placement="top-start" :disabled="allowEdit">
+                  <template #trigger>
+                    <BBTextField
+                      v-model:value="provider.version"
+                      :disabled="!allowEdit"
+                      placeholder="2023-06-01"
+                    />
+                  </template>
+                  <span class="text-sm text-gray-400 -translate-y-2">
+                    {{ $t("settings.general.workspace.only-admin-can-edit") }}
+                  </span>
+                </NTooltip>
+              </div>
             </div>
-            <NTooltip placement="top-start" :disabled="allowEdit">
-              <template #trigger>
-                <BBTextField
-                  v-model:value="state.model"
-                  :required="true"
-                  :disabled="!allowEdit"
-                />
-              </template>
-              <span class="text-sm text-gray-400 -translate-y-2">
-                {{ $t("settings.general.workspace.only-admin-can-edit") }}
-              </span>
-            </NTooltip>
           </div>
-        </template>
+        </div>
       </div>
     </div>
   </div>
@@ -153,27 +259,32 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { NSelect, NTooltip } from "naive-ui";
+import { NButton, NSelect, NTooltip } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
+import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBTextField } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import { Switch } from "@/components/v2";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import {
   AISettingSchema,
-  AISetting_Provider,
+  AIProviderSchema,
+  AIProvider_Type,
   Setting_SettingName,
   ValueSchema as SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
+import type { AIProvider } from "@/types/proto-es/v1/setting_service_pb";
+
+interface LocalProvider {
+  type: AIProvider_Type;
+  endpoint: string;
+  apiKey: string;
+  model: string;
+  version: string;
+}
 
 interface LocalState {
-  enabled: boolean;
-  apiKey: string;
-  endpoint: string;
-  model: string;
-  provider: AISetting_Provider;
+  providers: LocalProvider[];
 }
 
 const props = defineProps<{
@@ -186,11 +297,7 @@ const containerRef = ref<HTMLDivElement>();
 const { t } = useI18n();
 
 const state = reactive<LocalState>({
-  enabled: false,
-  apiKey: "",
-  endpoint: "",
-  model: "",
-  provider: AISetting_Provider.OPEN_AI,
+  providers: [],
 });
 
 const aiSetting = computed(() => {
@@ -202,45 +309,70 @@ const aiSetting = computed(() => {
 });
 
 const getInitialState = (): LocalState => {
-  return {
-    enabled: aiSetting.value?.enabled ?? false,
-    apiKey: "",
-    endpoint: aiSetting.value?.endpoint ?? "",
-    model: aiSetting.value?.model ?? "",
-    provider: aiSetting.value?.provider ?? AISetting_Provider.OPEN_AI,
-  };
+  const providers: LocalProvider[] = [];
+  if (aiSetting.value?.providers) {
+    for (const provider of aiSetting.value.providers) {
+      providers.push({
+        type: provider.type ?? AIProvider_Type.OPEN_AI,
+        endpoint: provider.endpoint ?? "",
+        apiKey: "", // Never expose API key
+        model: provider.model ?? "",
+        version: provider.version ?? "",
+      });
+    }
+  }
+  return { providers };
 };
 
-const providerOptions = computed(() =>
-  [
-    AISetting_Provider.OPEN_AI,
-    AISetting_Provider.AZURE_OPENAI,
-    AISetting_Provider.GEMINI,
-    AISetting_Provider.CLAUDE,
-  ].map((provider) => {
-    let label = "";
-    switch (provider) {
-      case AISetting_Provider.OPEN_AI:
-        label = t("settings.general.workspace.ai-assistant.provider.open_ai");
-        break;
-      case AISetting_Provider.AZURE_OPENAI:
-        label = t(
-          "settings.general.workspace.ai-assistant.provider.azure_open_ai"
-        );
-        break;
-      case AISetting_Provider.GEMINI:
-        label = t("settings.general.workspace.ai-assistant.provider.gemini");
-        break;
-      case AISetting_Provider.CLAUDE:
-        label = t("settings.general.workspace.ai-assistant.provider.claude");
-        break;
-    }
-    return {
-      label,
+const allProviderTypes = [
+  AIProvider_Type.OPEN_AI,
+  AIProvider_Type.AZURE_OPENAI,
+  AIProvider_Type.GEMINI,
+  AIProvider_Type.CLAUDE,
+];
+
+const getProviderLabel = (provider: AIProvider_Type): string => {
+  switch (provider) {
+    case AIProvider_Type.OPEN_AI:
+      return t("settings.general.workspace.ai-assistant.provider.open_ai");
+    case AIProvider_Type.AZURE_OPENAI:
+      return t(
+        "settings.general.workspace.ai-assistant.provider.azure_open_ai"
+      );
+    case AIProvider_Type.GEMINI:
+      return t("settings.general.workspace.ai-assistant.provider.gemini");
+    case AIProvider_Type.CLAUDE:
+      return t("settings.general.workspace.ai-assistant.provider.claude");
+    default:
+      return "";
+  }
+};
+
+// Options for the provider dropdown for a specific provider at index
+const getProviderOptionsForIndex = (index: number) => {
+  const currentProvider = state.providers[index];
+  const usedTypes = new Set(
+    state.providers.filter((_, i) => i !== index).map((p) => p.type)
+  );
+
+  return allProviderTypes
+    .filter((type) => type === currentProvider?.type || !usedTypes.has(type))
+    .map((provider) => ({
+      label: getProviderLabel(provider),
       value: provider,
-    };
-  })
-);
+    }));
+};
+
+// Available provider types that haven't been used yet
+const availableProviderTypes = computed(() => {
+  const usedTypes = new Set(state.providers.map((p) => p.type));
+  return allProviderTypes.filter((type) => !usedTypes.has(type));
+});
+
+// Can we add more providers?
+const canAddProvider = computed(() => {
+  return availableProviderTypes.value.length > 0 && state.providers.length < 4;
+});
 
 watchEffect(() => {
   Object.assign(state, getInitialState());
@@ -248,48 +380,59 @@ watchEffect(() => {
 
 const allowSave = computed((): boolean => {
   const initValue = getInitialState();
-  const enabledUpdated = state.enabled !== initValue.enabled;
-  const openAIKeyUpdated = !!state.apiKey;
-  const openAIEndpointUpdated = state.endpoint !== initValue.endpoint;
-  const openAIModelUpdated = state.model !== initValue.model;
-  return (
-    enabledUpdated ||
-    openAIKeyUpdated ||
-    openAIEndpointUpdated ||
-    openAIModelUpdated
-  );
+
+  // Check if providers count changed
+  if (state.providers.length !== initValue.providers.length) {
+    return true;
+  }
+
+  // Check if any provider was modified
+  for (let i = 0; i < state.providers.length; i++) {
+    const current = state.providers[i];
+    const initial = initValue.providers[i];
+
+    if (!initial) return true;
+
+    if (current.type !== initial.type) return true;
+    if (current.endpoint !== initial.endpoint) return true;
+    if (current.model !== initial.model) return true;
+    if (current.version !== initial.version) return true;
+    if (current.apiKey !== "") return true; // API key was entered
+  }
+
+  return false;
 });
 
-const providerDefault = computed(() => {
-  switch (state.provider) {
-    case AISetting_Provider.OPEN_AI:
+const getProviderDefault = (type: AIProvider_Type) => {
+  switch (type) {
+    case AIProvider_Type.OPEN_AI:
       return {
         apiKey: "",
         apiKeyDoc: "https://platform.openai.com/account/api-keys",
         endpoint: "https://api.openai.com/v1/chat/completions",
         model: "gpt-3.5-turbo",
       };
-    case AISetting_Provider.AZURE_OPENAI:
+    case AIProvider_Type.AZURE_OPENAI:
       return {
         apiKey: "",
         apiKeyDoc: "https://ai.azure.com/",
         endpoint:
-          "https://{resource name}.openai.azure.com/openai/deployments/{deployment id}/chat/completions?api-version=2024-06-0",
+          "https://{resource name}.openai.azure.com/openai/deployments/{deployment id}/chat/completions?api-version=2024-06-01",
         model: "gpt-4o",
       };
-    case AISetting_Provider.GEMINI:
+    case AIProvider_Type.GEMINI:
       return {
         apiKey: "",
         apiKeyDoc: "https://ai.google.dev/gemini-api/docs",
         endpoint: "https://generativelanguage.googleapis.com/v1beta",
-        model: "gemini-2.0-flash",
+        model: "gemini-2.0-flash-exp",
       };
-    case AISetting_Provider.CLAUDE:
+    case AIProvider_Type.CLAUDE:
       return {
         apiKey: "",
         apiKeyDoc: "https://docs.anthropic.com/en/api/getting-started",
         endpoint: "https://api.anthropic.com/v1/messages",
-        model: "claude-3-opus-20240229",
+        model: "claude-3-5-sonnet-20241022",
       };
     default:
       return {
@@ -299,38 +442,68 @@ const providerDefault = computed(() => {
         model: "",
       };
   }
-});
+};
 
-watch(
-  () => state.provider,
-  () => {
-    Object.assign(state, providerDefault.value);
-  }
-);
+const addProvider = () => {
+  // Use the first available provider type
+  const availableType = availableProviderTypes.value[0];
+  if (!availableType) return;
 
-const toggleAIEnabled = (on: boolean) => {
-  if (!on) {
-    return;
-  }
-  Object.assign(state, {
-    endpoint: state.endpoint || providerDefault.value.endpoint,
-    model: state.model || providerDefault.value.model,
+  const defaults = getProviderDefault(availableType);
+  state.providers.push({
+    type: availableType,
+    endpoint: defaults.endpoint,
+    apiKey: "",
+    model: defaults.model,
+    version: availableType === AIProvider_Type.CLAUDE ? "2023-06-01" : "",
   });
 };
 
+const removeProvider = (index: number) => {
+  state.providers.splice(index, 1);
+};
+
+const onProviderTypeChange = (index: number, type: AIProvider_Type) => {
+  const defaults = getProviderDefault(type);
+  const provider = state.providers[index];
+  provider.endpoint = defaults.endpoint;
+  provider.model = defaults.model;
+  provider.version = type === AIProvider_Type.CLAUDE ? "2023-06-01" : "";
+};
+
 const updateAISetting = async () => {
+  // Build providers list for the API
+  const providers: AIProvider[] = [];
+  for (const provider of state.providers) {
+    // Get the existing provider to preserve API key if not changed
+    let apiKey = provider.apiKey;
+    if (!apiKey && aiSetting.value?.providers) {
+      const existing = aiSetting.value.providers.find(
+        (p) => p.type === provider.type
+      );
+      if (existing) {
+        apiKey = existing.apiKey;
+      }
+    }
+
+    providers.push(
+      create(AIProviderSchema, {
+        type: provider.type,
+        endpoint: provider.endpoint,
+        apiKey: apiKey,
+        model: provider.model,
+        version: provider.version,
+      })
+    );
+  }
+
   await settingV1Store.upsertSetting({
     name: Setting_SettingName.AI,
     value: create(SettingValueSchema, {
       value: {
         case: "aiSetting",
         value: create(AISettingSchema, {
-          enabled: state.enabled,
-          apiKey: state.apiKey,
-          endpoint: state.endpoint,
-          model: state.model,
-          provider: state.provider,
-          version: aiSetting.value?.version ?? "",
+          providers: providers,
         }),
       },
     }),

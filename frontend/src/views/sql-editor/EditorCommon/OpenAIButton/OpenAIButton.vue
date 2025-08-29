@@ -1,6 +1,6 @@
 <template>
   <template v-if="showButton">
-    <template v-if="openAIEnabled">
+    <template v-if="!!provider">
       <NPopselect
         v-if="options.length > 0"
         placement="bottom-end"
@@ -14,7 +14,7 @@
       </NPopselect>
       <Button v-else v-bind="$attrs" @click="handleClickButton" />
     </template>
-    <NPopover v-if="!openAIEnabled" placement="bottom-end">
+    <NPopover v-if="!provider" placement="bottom-end">
       <template #trigger>
         <Button v-bind="$attrs" :disabled="true" />
       </template>
@@ -62,13 +62,9 @@ import { SQL_EDITOR_SETTING_GENERAL_MODULE } from "@/router/sqlEditor";
 import {
   useAppFeature,
   useConnectionOfCurrentSQLEditorTab,
-  useSettingV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import {
-  DatabaseChangeMode,
-  Setting_SettingName,
-} from "@/types/proto-es/v1/setting_service_pb";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2, nextAnimationFrame } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import Button from "./Button.vue";
@@ -85,19 +81,12 @@ const props = defineProps<{
 const { t } = useI18n();
 const router = useRouter();
 const tabStore = useSQLEditorTabStore();
-const settingV1Store = useSettingV1Store();
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
-const openAIEnabled = computed(() => {
-  const setting = settingV1Store.getSettingByName(Setting_SettingName.AI);
-  return setting?.value?.value?.case === "aiSetting"
-    ? setting.value.value.value.enabled
-    : false;
-});
+const { events, provider } = useAIContext();
 
 const { showAIPanel } = useSQLEditorContext();
 const { instance } = useConnectionOfCurrentSQLEditorTab();
-const { events } = useAIContext();
 
 const options = computed(() => {
   const { statement } = props;

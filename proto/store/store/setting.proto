@@ -313,20 +313,23 @@ message PasswordRestrictionSetting {
   google.protobuf.Duration password_rotation = 7;
 }
 
-message AISetting {
-  bool enabled = 1;
-  enum Provider {
-    PROVIDER_UNSPECIFIED = 0;
+message AIProvider {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
     OPEN_AI = 1;
     CLAUDE = 2;
     GEMINI = 3;
     AZURE_OPENAI = 4;
   }
-  Provider provider = 2;
-  string endpoint = 3;
-  string api_key = 4;
-  string model = 5;
-  string version = 6;
+  Type type = 1;
+  string endpoint = 2;
+  string api_key = 3;
+  string model = 4;
+  string version = 5;
+}
+
+message AISetting {
+  repeated AIProvider providers = 1;
 }
 
 message EnvironmentSetting {

@@ -655,8 +655,13 @@
         "failed-to-update-setting": "Failed to update setting \"{title}\"",
         "ai-assistant": {
           "self": "AI Assistant",
-          "enable-ai-assistant": "Enable AI Assistant",
           "description": "Use AI to assist the database development tasks.",
+          "providers": "AI Providers",
+          "add-provider": "Add Provider",
+          "add-first-provider": "Add First Provider",
+          "remove-provider": "Remove Provider",
+          "no-providers": "No AI providers configured",
+          "no-providers-description": "Get started by adding your first AI provider.",
           "provider": {
             "self": "AI Provider",
             "open_ai": "Open AI",
@@ -677,6 +682,10 @@
           "model": {
             "self": "Model Name",
             "description": "Supply private deployment of model name."
+          },
+          "version": {
+            "self": "API Version",
+            "description": "API version for Claude (e.g., 2023-06-01)."
           }
         },
         "announcement": {

@@ -8,6 +8,7 @@ import type { Duration, NullValue, Timestamp, Value } from "@bufbuild/protobuf/w
 import type { Engine, ExportFormat, Position } from "./common_pb";
 import type { DatabaseMetadata } from "./database_service_pb";
 import type { DatabaseCatalog } from "./database_catalog_service_pb";
+import type { AIProvider_Type } from "./setting_service_pb";
 
 /**
  * Describes the file v1/sql_service.proto.
@@ -1276,6 +1277,11 @@ export declare type AICompletionRequest = Message<"bytebase.v1.AICompletionReque
    * @generated from field: repeated bytebase.v1.AICompletionRequest.Message messages = 1;
    */
   messages: AICompletionRequest_Message[];
+
+  /**
+   * @generated from field: bytebase.v1.AIProvider.Type provider = 2;
+   */
+  provider: AIProvider_Type;
 };
 
 /**

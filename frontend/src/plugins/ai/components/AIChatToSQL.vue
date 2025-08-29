@@ -1,10 +1,10 @@
 <template>
-  <ChatPanel v-if="aiSetting.enabled" />
+  <ChatPanel v-if="!!provider" />
 </template>
 
 <script lang="ts" setup>
 import { useAIContext } from "../logic";
 
 const [{ default: ChatPanel }] = await Promise.all([import("./ChatPanel.vue")]);
-const { aiSetting } = useAIContext();
+const { provider } = useAIContext();
 </script>

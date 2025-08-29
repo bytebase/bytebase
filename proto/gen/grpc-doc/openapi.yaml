@@ -8030,6 +8030,15 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/AICompletionRequest_Message'
+                provider:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - OPEN_AI
+                        - CLAUDE
+                        - GEMINI
+                        - AZURE_OPENAI
+                    type: string
+                    format: enum
         AICompletionRequest_Message:
             type: object
             properties:
@@ -8052,14 +8061,12 @@ components:
             properties:
                 content:
                     $ref: '#/components/schemas/Candidate_Content'
-        AISetting:
+        AIProvider:
             type: object
             properties:
-                enabled:
-                    type: boolean
-                provider:
+                type:
                     enum:
-                        - PROVIDER_UNSPECIFIED
+                        - TYPE_UNSPECIFIED
                         - OPEN_AI
                         - CLAUDE
                         - GEMINI
@@ -8074,6 +8081,13 @@ components:
                     type: string
                 version:
                     type: string
+        AISetting:
+            type: object
+            properties:
+                providers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AIProvider'
         ActuatorInfo:
             type: object
             properties:

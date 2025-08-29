@@ -655,8 +655,13 @@
         "failed-to-update-setting": "无法更新设置“{title}”",
         "ai-assistant": {
           "self": "AI 助手",
-          "enable-ai-assistant": "启用 AI 助手",
           "description": "使用 AI 来辅助数据库开发任务。",
+          "providers": "AI 提供方",
+          "add-provider": "添加 AI 提供方",
+          "add-first-provider": "添加 AI 提供方",
+          "remove-provider": "移除 AI 提供方",
+          "no-providers": "未配置 AI 提供方",
+          "no-providers-description": "添加您的第一个 AI 提供方",
           "provider": {
             "self": "AI 提供方",
             "open_ai": "Open AI",
@@ -677,6 +682,10 @@
           "model": {
             "self": "Model Name",
             "description": "提供私有化部署的模型名称。"
+          },
+          "version": {
+            "self": "API 版本",
+            "description": "Claude 的 API 版本（例如 2023-06-01）。"
           }
         },
         "announcement": {
