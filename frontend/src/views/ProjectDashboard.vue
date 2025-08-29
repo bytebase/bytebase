@@ -17,7 +17,7 @@
         {{ $t("quick-action.new-project") }}
       </NButton>
     </div>
-    <div class="space-y-2">
+    <div>
       <ProjectOperations
         v-if="hasWorkspacePermissionV2('bb.projects.delete')"
         :project-list="selectedProjectList"

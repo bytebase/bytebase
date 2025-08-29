@@ -23,7 +23,7 @@
       </NButton>
     </div>
 
-    <div class="space-y-2">
+    <div>
       <DatabaseOperations
         :databases="selectedDatabases"
         @refresh="() => pagedDatabaseTableRef?.refresh()"
