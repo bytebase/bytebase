@@ -42,10 +42,7 @@
     :show="state.showCreateDrawer"
     @close="state.showCreateDrawer = false"
   >
-    <CreateDatabasePrepPanel
-      :project-name="project.name"
-      @dismiss="state.showCreateDrawer = false"
-    />
+    <CreateDatabasePrepPanel @dismiss="state.showCreateDrawer = false" />
   </Drawer>
 </template>
 

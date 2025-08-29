@@ -4,6 +4,7 @@
       <div class="w-full flex justify-end items-center gap-x-3">
         <NButton
           v-if="allowCancel"
+          quaternary
           :disabled="state.isRequesting || state.isTestingConnection"
           @click.prevent="cancel"
         >
