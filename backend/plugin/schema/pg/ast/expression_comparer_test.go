@@ -136,6 +136,50 @@ func TestPostgreSQLExpressionComparer_CompareExpressions(t *testing.T) {
 			expected: true,
 		},
 
+		// PostgreSQL type cast tests
+		{
+			name:     "JSONB implicit cast",
+			expr1:    "'{}'",
+			expr2:    "'{}'::jsonb",
+			expected: true,
+		},
+		{
+			name:     "JSONB explicit cast both ways",
+			expr1:    "'{\"key\": \"value\"}'::jsonb",
+			expr2:    "'{\"key\": \"value\"}'::jsonb",
+			expected: true,
+		},
+		{
+			name:     "Array type cast case insensitive",
+			expr1:    "ARRAY[]::TEXT[]",
+			expr2:    "ARRAY[]::text[]",
+			expected: true,
+		},
+		{
+			name:     "BIT literal formats",
+			expr1:    "B'1010'",
+			expr2:    "'1010'::\"bit\"",
+			expected: true,
+		},
+		{
+			name:     "BIT literal formats reverse",
+			expr1:    "'0000'::\"bit\"",
+			expr2:    "B'0000'",
+			expected: true,
+		},
+		{
+			name:     "VARBIT schema qualification",
+			expr1:    "varbit(16)",
+			expr2:    "public.varbit(16)",
+			expected: true,
+		},
+		{
+			name:     "BIT schema qualification",
+			expr1:    "bit(32)",
+			expr2:    "public.bit(32)",
+			expected: true,
+		},
+
 		// Literal tests
 		{
 			name:     "string literals",

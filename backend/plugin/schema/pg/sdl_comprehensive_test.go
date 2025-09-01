@@ -2,14 +2,14 @@ package pg
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
-
-	"database/sql"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -160,13 +160,13 @@ func loadTestScenario(scenarioDir string) (TestScenario, error) {
 	}
 
 	// Load expected diff (optional)
-	diffPath := filepath.Join(scenarioDir, "expected_diff.txt")
+	diffPath := filepath.Join(scenarioDir, "diff.json")
 	if diffData, err := os.ReadFile(diffPath); err == nil {
 		scenario.ExpectedDiff = string(diffData)
 	}
 
 	// Load expected migration (optional)
-	migrationPath := filepath.Join(scenarioDir, "expected_migration.sql")
+	migrationPath := filepath.Join(scenarioDir, "ddl.sql")
 	if migrationData, err := os.ReadFile(migrationPath); err == nil {
 		scenario.ExpectedMigration = string(migrationData)
 	}
@@ -233,8 +233,19 @@ func executeEnhancedSDLValidation(ctx context.Context, t *testing.T, connConfig 
 	t.Logf("✓ Parsed expected schema metadata")
 
 	// Generate migration DDL from schema B to schema C using the existing function
-	migrationDDL, _, err := generateMigrationDDLFromMetadata(schemaB, schemaCMetadata)
+	migrationDDL, schemaDiff, err := generateMigrationDDLFromMetadata(schemaB, schemaCMetadata)
 	require.NoError(t, err, "Failed to generate migration DDL from metadata")
+	
+	// Compare with expected diff if provided
+	if scenario.ExpectedDiff != "" {
+		err := validateSchemaDiff(t, schemaDiff, scenario.ExpectedDiff)
+		if err != nil {
+			t.Logf("WARNING: Schema diff validation failed: %v", err)
+			// Note: This is a warning for now, can be made stricter later
+		} else {
+			t.Logf("✓ Generated schema diff matches expected")
+		}
+	}
 	
 	t.Logf("✓ Generated migration DDL (%d characters)", len(migrationDDL))
 	if migrationDDL != "" {
@@ -247,10 +258,17 @@ func executeEnhancedSDLValidation(ctx context.Context, t *testing.T, connConfig 
 		normalizedGenerated := normalizeSQLString(migrationDDL)
 		normalizedExpected := normalizeSQLString(scenario.ExpectedMigration)
 		if normalizedGenerated != normalizedExpected {
-			t.Logf("WARNING: Generated migration DDL differs from expected")
-			t.Logf("Expected migration DDL:\n%s", scenario.ExpectedMigration)
-			t.Logf("Generated migration DDL:\n%s", migrationDDL)
-			// Note: This is a warning, not a failure, as DDL generation can vary
+			t.Logf("Generated migration DDL differs from expected:")
+			t.Logf("Expected:\n%s", scenario.ExpectedMigration)
+			t.Logf("Generated:\n%s", migrationDDL)
+			
+			// For comprehensive testing, we can make this a hard requirement
+			if strings.TrimSpace(normalizedExpected) != "" {
+				require.Equal(t, normalizedExpected, normalizedGenerated, 
+					"Generated migration DDL does not match expected DDL")
+			}
+		} else {
+			t.Logf("✓ Generated migration DDL matches expected")
 		}
 	}
 
@@ -440,4 +458,52 @@ func truncateString(s string, maxLength int) string {
 		return s
 	}
 	return s[:maxLength] + "..."
+}
+
+// validateSchemaDiff validates that the generated schema diff matches the expected diff
+func validateSchemaDiff(t *testing.T, actualDiff interface{}, expectedDiffJSON string) error {
+	// For now, we'll do basic validation by comparing the string representations
+	// In the future, this could be enhanced to do structured JSON comparison
+	
+	actualJSON, err := marshalDiffToJSON(actualDiff)
+	if err != nil {
+		return fmt.Errorf("failed to marshal actual diff to JSON: %w", err)
+	}
+	
+	// Normalize both JSON strings for comparison
+	actualNormalized := normalizeJSONString(actualJSON)
+	expectedNormalized := normalizeJSONString(expectedDiffJSON)
+	
+	if actualNormalized != expectedNormalized {
+		t.Logf("Schema diff comparison:")
+		t.Logf("Expected diff:\n%s", expectedDiffJSON)
+		t.Logf("Actual diff:\n%s", actualJSON)
+		return fmt.Errorf("schema diff does not match expected")
+	}
+	
+	return nil
+}
+
+// marshalDiffToJSON marshals a schema diff object to JSON string
+func marshalDiffToJSON(diff interface{}) (string, error) {
+	// Convert the diff object to JSON
+	jsonBytes, err := json.MarshalIndent(diff, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal diff to JSON: %w", err)
+	}
+	return string(jsonBytes), nil
+}
+
+// normalizeJSONString normalizes JSON for comparison
+func normalizeJSONString(jsonStr string) string {
+	// Remove extra whitespace and normalize formatting
+	lines := strings.Split(jsonStr, "\n")
+	var normalizedLines []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			normalizedLines = append(normalizedLines, trimmed)
+		}
+	}
+	return strings.Join(normalizedLines, "\n")
 }

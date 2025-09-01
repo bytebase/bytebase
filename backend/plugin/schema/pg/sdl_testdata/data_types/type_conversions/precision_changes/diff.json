@@ -1,0 +1,233 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 3, Sequence changes: 1",
+  "tableChanges": 3,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 1,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "data_samples",
+        "columnChanges": 7,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "ALTER",
+            "name": "bit_flags",
+            "oldColumn": {
+              "name": "bit_flags",
+              "type": "bit(16)",
+              "nullable": true,
+              "defaultValue": "'0000000000000000'::\"bit\""
+            },
+            "newColumn": {
+              "name": "bit_flags",
+              "type": "bit(32)",
+              "nullable": true,
+              "defaultValue": "B'00000000000000000000000000000000'"
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "fixed_char",
+            "oldColumn": {
+              "name": "fixed_char",
+              "type": "character(10)",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "fixed_char",
+              "type": "character(20)",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "long_text",
+            "oldColumn": {
+              "name": "long_text",
+              "type": "character varying(200)",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "long_text",
+              "type": "character varying(150)",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "precise_decimal",
+            "oldColumn": {
+              "name": "precise_decimal",
+              "type": "numeric(12,4)",
+              "nullable": true,
+              "defaultValue": "0.0000"
+            },
+            "newColumn": {
+              "name": "precise_decimal",
+              "type": "numeric(16,6)",
+              "nullable": true,
+              "defaultValue": "0.000000"
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "short_text",
+            "oldColumn": {
+              "name": "short_text",
+              "type": "character varying(50)",
+              "nullable": false
+            },
+            "newColumn": {
+              "name": "short_text",
+              "type": "character varying(100)",
+              "nullable": false
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "simple_decimal",
+            "oldColumn": {
+              "name": "simple_decimal",
+              "type": "numeric(6,2)",
+              "nullable": true,
+              "defaultValue": "0.00"
+            },
+            "newColumn": {
+              "name": "simple_decimal",
+              "type": "numeric(5,1)",
+              "nullable": true,
+              "defaultValue": "0.0"
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "var_bits",
+            "oldColumn": {
+              "name": "var_bits",
+              "type": "bit varying(32)",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "var_bits",
+              "type": "bit varying(16)",
+              "nullable": true
+            }
+          }
+        ]
+      },
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "measurements",
+        "columnChanges": 6,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "ALTER",
+            "name": "device_name",
+            "oldColumn": {
+              "name": "device_name",
+              "type": "character varying(100)",
+              "nullable": false
+            },
+            "newColumn": {
+              "name": "device_name",
+              "type": "character varying(150)",
+              "nullable": false
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "location_code",
+            "oldColumn": {
+              "name": "location_code",
+              "type": "character(20)",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "location_code",
+              "type": "character(15)",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "metadata_bits",
+            "oldColumn": {
+              "name": "metadata_bits",
+              "type": "bit varying(64)",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "metadata_bits",
+              "type": "bit varying(32)",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "status_bits",
+            "oldColumn": {
+              "name": "status_bits",
+              "type": "bit(32)",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "status_bits",
+              "type": "bit(64)",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "value_high_precision",
+            "oldColumn": {
+              "name": "value_high_precision",
+              "type": "numeric(15,8)",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "value_high_precision",
+              "type": "numeric(20,12)",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "value_low_precision",
+            "oldColumn": {
+              "name": "value_low_precision",
+              "type": "numeric(8,3)",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "value_low_precision",
+              "type": "numeric(6,2)",
+              "nullable": true
+            }
+          }
+        ]
+      },
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "tableName": "precision_test",
+        "columnChanges": 0,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0
+      }
+    ]
+  }
+}

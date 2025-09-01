@@ -1095,56 +1095,6 @@ func validateSchemaConsistency(schemaD, schemaC *storepb.DatabaseSchemaMetadata)
 		}
 		if len(diff.TableChanges) > 0 {
 			diffDetails = append(diffDetails, fmt.Sprintf("TableChanges: %d", len(diff.TableChanges)))
-			// Log detailed table changes for debugging
-			for i, tableChange := range diff.TableChanges {
-				if i < 3 { // Limit to first 3 table changes to avoid spam
-					fmt.Printf("  Table change %d: Action=%s, Schema=%s, Table=%s\n", 
-						i+1, tableChange.Action, tableChange.SchemaName, tableChange.TableName)
-					
-					// Log column changes
-					if len(tableChange.ColumnChanges) > 0 {
-						fmt.Printf("    Column changes: %d\n", len(tableChange.ColumnChanges))
-						for j, colChange := range tableChange.ColumnChanges {
-							if j < 2 { // Limit to first 2 column changes
-								fmt.Printf("      Col %d: Action=%s", j+1, colChange.Action)
-								if colChange.NewColumn != nil {
-									fmt.Printf(", NewCol=%s(%s)", colChange.NewColumn.Name, colChange.NewColumn.Type)
-									if colChange.NewColumn.Default != "" {
-										fmt.Printf(" DEFAULT='%s'", colChange.NewColumn.Default)
-									}
-									fmt.Printf(" Nullable=%t", colChange.NewColumn.Nullable)
-								}
-								if colChange.OldColumn != nil {
-									fmt.Printf(", OldCol=%s(%s)", colChange.OldColumn.Name, colChange.OldColumn.Type)
-									if colChange.OldColumn.Default != "" {
-										fmt.Printf(" DEFAULT='%s'", colChange.OldColumn.Default)
-									}
-									fmt.Printf(" Nullable=%t", colChange.OldColumn.Nullable)
-								}
-								fmt.Printf("\n")
-							}
-						}
-					}
-					
-					// Log constraint changes
-					if len(tableChange.CheckConstraintChanges) > 0 {
-						fmt.Printf("    Check constraint changes: %d\n", len(tableChange.CheckConstraintChanges))
-						for j, checkChange := range tableChange.CheckConstraintChanges {
-							if j < 2 { // Limit to first 2 check changes
-								fmt.Printf("      Check %d: Action=%s", j+1, checkChange.Action)
-								if checkChange.NewCheckConstraint != nil {
-									fmt.Printf(", NewCheck=%s(%s)", checkChange.NewCheckConstraint.Name, checkChange.NewCheckConstraint.Expression)
-								}
-								if checkChange.OldCheckConstraint != nil {
-									fmt.Printf(", OldCheck=%s(%s)", checkChange.OldCheckConstraint.Name, checkChange.OldCheckConstraint.Expression)
-								}
-								fmt.Printf("\n")
-							}
-						}
-					}
-
-				}
-			}
 		}
 		if len(diff.ViewChanges) > 0 {
 			diffDetails = append(diffDetails, fmt.Sprintf("ViewChanges: %d", len(diff.ViewChanges)))
@@ -1670,6 +1620,14 @@ func getTestDataDirectory(testName string) string {
 		// data_types_basic_types_datetime_types -> data_types/basic_types/datetime_types
 		suffix := strings.TrimPrefix(pathPart, "data_types_basic_types_")
 		testDataPath = filepath.Join("data_types", "basic_types", suffix)
+	case strings.HasPrefix(pathPart, "data_types_advanced_types_"):
+		// data_types_advanced_types_binary_json_uuid -> data_types/advanced_types/binary_json_uuid
+		suffix := strings.TrimPrefix(pathPart, "data_types_advanced_types_")
+		testDataPath = filepath.Join("data_types", "advanced_types", suffix)
+	case strings.HasPrefix(pathPart, "data_types_type_conversions_"):
+		// data_types_type_conversions_compatible_conversions -> data_types/type_conversions/compatible_conversions
+		suffix := strings.TrimPrefix(pathPart, "data_types_type_conversions_")
+		testDataPath = filepath.Join("data_types", "type_conversions", suffix)
 	case strings.HasPrefix(pathPart, "schema_objects_views_"):
 		// schema_objects_views_complex_views -> schema_objects/views/complex_views
 		suffix := strings.TrimPrefix(pathPart, "schema_objects_views_")
@@ -1683,9 +1641,9 @@ func getTestDataDirectory(testName string) string {
 		parts := strings.Split(pathPart, "_")
 		if len(parts) >= 3 {
 			// Take first 2 parts as category, rest as test name
-			testDataPath = filepath.Join(strings.Join(parts[:2], "_"), strings.Join(parts[2:], "_"))
+			testDataPath = filepath.Join(strings.Join(parts[:2], "/"), strings.Join(parts[2:], "_"))
 		} else {
-			testDataPath = pathPart
+			testDataPath = strings.ReplaceAll(pathPart, "_", "/")
 		}
 	}
 	

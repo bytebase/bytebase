@@ -325,7 +325,7 @@ func (e *metadataExtractor) extractSchemaAndTableName(ctx parser.IQualified_name
 		return e.currentSchema, ""
 	}
 
-	// Debug: try direct text extraction first, since normalize functions seem problematic
+	// Try direct text extraction for reliable parsing
 	rawText := ctx.GetText()
 	if rawText != "" {
 		// Handle schema.table format
@@ -471,7 +471,7 @@ func extractTypeName(ctx parser.ITypenameContext) string {
 	// Convert to lowercase to match sync.go output
 	typeName = strings.ToLower(typeName)
 
-	return normalizePostgreSQLType(typeName)
+	return NormalizePostgreSQLType(typeName)
 }
 
 // getPostgreSQLArrayTypeName maps base types to their PostgreSQL internal array type names
@@ -635,7 +635,7 @@ func getPostgreSQLArrayTypeName(baseType string) string {
 }
 
 // normalizePostgreSQLType normalizes PostgreSQL type names to match sync.go output
-func normalizePostgreSQLType(typeName string) string {
+func NormalizePostgreSQLType(typeName string) string {
 	// Remove extra whitespace
 	typeName = strings.TrimSpace(typeName)
 
@@ -656,7 +656,7 @@ func normalizePostgreSQLType(typeName string) string {
 		}
 
 		// For unknown types, use the old logic as fallback
-		normalizedBase := normalizePostgreSQLType(baseType)
+		normalizedBase := NormalizePostgreSQLType(baseType)
 		return "_" + normalizedBase
 	}
 
@@ -738,6 +738,8 @@ func normalizePostgreSQLType(typeName string) string {
 		return "timestamp(6) with time zone" // PostgreSQL default precision is 6
 	case "timetz":
 		return "time(6) with time zone" // PostgreSQL default precision is 6
+	case "varbit":
+		return "bit varying"
 	default:
 		// Return type as-is for unrecognized types
 	}
@@ -745,6 +747,11 @@ func normalizePostgreSQLType(typeName string) string {
 	// Handle specific length specifications for character types
 	if strings.HasPrefix(typeName, "char(") {
 		return "character" + typeName[4:]
+	}
+
+	// Handle varbit with precision: varbit(n) -> bit varying(n)
+	if strings.HasPrefix(typeName, "varbit(") {
+		return "bit varying" + typeName[6:] // Replace "varbit" with "bit varying"
 	}
 
 	return typeName
@@ -762,15 +769,15 @@ func (*metadataExtractor) extractTypeNameWithSchema(ctx parser.ITypenameContext,
 
 	// Check if this is a built-in PostgreSQL type or an array type before normalization
 	// Array types should always go through normalization regardless of their base type
-	if isBuiltInType(rawTypeName) || isBuiltInType(normalizePostgreSQLType(rawTypeName)) || strings.HasSuffix(rawTypeName, "[]") {
+	if isBuiltInType(rawTypeName) || isBuiltInType(NormalizePostgreSQLType(rawTypeName)) || strings.HasSuffix(rawTypeName, "[]") {
 		// For built-in types and array types, return the normalized version
-		return normalizePostgreSQLType(rawTypeName)
+		return NormalizePostgreSQLType(rawTypeName)
 	}
 
 	// Check if the type already has a schema prefix
 	if strings.Contains(rawTypeName, ".") {
 		// It's already schema-qualified, just normalize it
-		return normalizePostgreSQLType(rawTypeName)
+		return NormalizePostgreSQLType(rawTypeName)
 	}
 
 	// For custom types (like enums), add the schema prefix to the raw type name
@@ -844,7 +851,7 @@ func isBuiltInType(typeName string) bool {
 		"bytea": true,
 
 		// Bit string types
-		"bit": true, "bit varying": true,
+		"bit": true, "bit varying": true, "varbit": true,
 
 		// Network address types
 		"inet": true, "cidr": true, "macaddr": true, "macaddr8": true,

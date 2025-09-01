@@ -91,8 +91,21 @@ func (v *normalizationVisitor) VisitLiteral(expr *LiteralExpr) any {
 // VisitBinaryOp normalizes binary operation expressions
 func (v *normalizationVisitor) VisitBinaryOp(expr *BinaryOpExpr) any {
 	left := v.normalizeChild(expr.Left)
-	right := v.normalizeChild(expr.Right)
 	operator := v.normalizeOperator(expr.Operator)
+
+	// Special handling for type cast operator
+	var right ExpressionAST
+	if operator == "::" {
+		// For type cast, the right operand should be normalized as a type name
+		right = v.normalizeChildAsType(expr.Right)
+		
+		// Check if this is a redundant type cast that can be removed
+		if v.isRedundantTypeCast(left, right) {
+			return left // Return the left operand without the cast
+		}
+	} else {
+		right = v.normalizeChild(expr.Right)
+	}
 
 	// For commutative operators, ensure consistent ordering
 	if isCommutativeOperator(operator) && v.shouldSwapOperands(left, right) {
@@ -167,6 +180,25 @@ func (v *normalizationVisitor) normalizeChild(expr ExpressionAST) ExpressionAST 
 	return expr
 }
 
+// normalizeChildAsType normalizes a child expression as a type name
+func (v *normalizationVisitor) normalizeChildAsType(expr ExpressionAST) ExpressionAST {
+	if expr == nil {
+		return nil
+	}
+
+	// If it's a literal, treat it as a type name
+	if literal, ok := expr.(*LiteralExpr); ok {
+		normalizedValue := v.normalizeTypeName(literal.Value)
+		return &LiteralExpr{
+			Value:     normalizedValue,
+			ValueType: literal.ValueType,
+		}
+	}
+
+	// Otherwise, normalize normally
+	return v.normalizeChild(expr)
+}
+
 // normalizeSchema normalizes schema names
 func (v *normalizationVisitor) normalizeSchema(schema string) string {
 	if schema == "" {
@@ -218,24 +250,34 @@ func (v *normalizationVisitor) normalizeUnquotedIdentifier(identifier string) st
 
 // normalizeFunctionName normalizes function names using PostgreSQL standard rules
 func (v *normalizationVisitor) normalizeFunctionName(name string) string {
-	// Use the standard PostgreSQL identifier normalization logic
-	if v.isQuotedIdentifier(name) {
-		// For quoted identifiers, use the same normalization as PostgreSQL parser
-		// Remove quotes and unescape double quotes, then convert to lowercase for functions
-		if len(name) >= 2 && strings.HasPrefix(name, "\"") && strings.HasSuffix(name, "\"") {
-			// This follows the same logic as normalizePostgreSQLQuotedIdentifier in the parser
-			unquoted := strings.ReplaceAll(name[1:len(name)-1], `""`, `"`)
-			// PostgreSQL function names are case-insensitive, so normalize to lowercase
-			return strings.ToLower(unquoted)
-		}
+	// Handle quoted identifiers
+	var unquoted string
+	isQuoted := false
+	if v.isQuotedIdentifier(name) && len(name) >= 2 && 
+		strings.HasPrefix(name, "\"") && strings.HasSuffix(name, "\"") {
+		unquoted = strings.ReplaceAll(name[1:len(name)-1], `""`, `"`)
+		isQuoted = true
+	} else {
+		unquoted = name
 	}
-
-	// For unquoted function names, PostgreSQL converts them to lowercase
+	
+	// Check if this is a built-in PostgreSQL function
+	// For built-in functions, both quoted and unquoted forms should normalize to the same canonical lowercase form
+	if v.isBuiltinPostgreSQLFunction(unquoted) {
+		return strings.ToLower(unquoted)
+	}
+	
+	// For user-defined functions:
+	// - Quoted identifiers preserve case sensitivity
+	// - Unquoted identifiers are converted to lowercase (PostgreSQL standard)
+	if isQuoted {
+		return "\"" + unquoted + "\""
+	}
 	return strings.ToLower(name)
 }
 
 // normalizeLiteral normalizes literal values
-func (*normalizationVisitor) normalizeLiteral(value, valueType string) string {
+func (v *normalizationVisitor) normalizeLiteral(value, valueType string) string {
 	switch strings.ToLower(valueType) {
 	case "boolean":
 		return strings.ToUpper(value) // TRUE/FALSE
@@ -247,9 +289,20 @@ func (*normalizationVisitor) normalizeLiteral(value, valueType string) string {
 	case "number":
 		// Normalize numeric literals - could handle leading zeros, etc.
 		return value
+	case "type":
+		// Type names in cast expressions should be case-insensitive
+		return v.normalizeTypeName(value)
 	default:
 		return value
 	}
+}
+
+// normalizeTypeName normalizes type names for case-insensitive comparison
+func (v *normalizationVisitor) normalizeTypeName(typeName string) string {
+	if v.normalizer.CaseSensitive {
+		return typeName
+	}
+	return strings.ToLower(typeName)
 }
 
 // normalizeOperator normalizes operators
@@ -378,4 +431,126 @@ func SortStringList(strs []string) []string {
 	slices.Sort(sorted)
 
 	return sorted
+}
+
+// isRedundantTypeCast checks if a type cast can be safely removed
+// This handles cases where PostgreSQL implicit casting makes explicit casts unnecessary
+func (v *normalizationVisitor) isRedundantTypeCast(leftExpr, typeExpr ExpressionAST) bool {
+	// Check if left is a string literal and right is a JSON/JSONB type
+	if literalExpr, ok := leftExpr.(*LiteralExpr); ok {
+		if typeIdent, ok := typeExpr.(*IdentifierExpr); ok {
+			typeName := strings.ToLower(typeIdent.Name)
+			
+			// For JSON-like literals cast to jsonb/json, the cast is redundant
+			// because PostgreSQL will implicitly cast string literals to JSON types
+			if (typeName == "jsonb" || typeName == "json") && 
+			   literalExpr.ValueType == "string" &&
+			   v.isJSONLiteral(literalExpr.Value) {
+				return true
+			}
+		}
+	}
+	
+	return false
+}
+
+// isJSONLiteral checks if a string value looks like JSON
+func (v *normalizationVisitor) isJSONLiteral(value string) bool {
+	// Remove quotes if present
+	if len(value) >= 2 && value[0] == '\'' && value[len(value)-1] == '\'' {
+		value = value[1 : len(value)-1]
+	}
+	
+	// Check for simple JSON patterns
+	trimmed := strings.TrimSpace(value)
+	return (strings.HasPrefix(trimmed, "{") && strings.HasSuffix(trimmed, "}")) ||
+		   (strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]")) ||
+		   trimmed == "null" ||
+		   trimmed == "true" ||
+		   trimmed == "false" ||
+		   (len(trimmed) > 0 && (trimmed[0] == '"' || 
+		   	(trimmed[0] >= '0' && trimmed[0] <= '9') || 
+		   	trimmed[0] == '-'))
+}
+
+// isBuiltinPostgreSQLFunction checks if a function name is a built-in PostgreSQL function
+// For built-in functions, both quoted and unquoted forms should normalize to the same canonical form
+func (v *normalizationVisitor) isBuiltinPostgreSQLFunction(name string) bool {
+	// Convert to lowercase for case-insensitive comparison
+	funcName := strings.ToLower(name)
+	
+	// Common string functions
+	builtinFunctions := map[string]bool{
+		// String functions
+		"left":        true,
+		"right":       true,  
+		"substr":      true,
+		"substring":   true,
+		"length":      true,
+		"char_length": true,
+		"upper":       true,
+		"lower":       true,
+		"trim":        true,
+		"ltrim":       true,
+		"rtrim":       true,
+		"replace":     true,
+		"concat":      true,
+		"split_part":  true,
+		"position":    true,
+		"strpos":      true,
+		
+		// Numeric functions
+		"abs":         true,
+		"ceil":        true,
+		"ceiling":     true,
+		"floor":       true,
+		"round":       true,
+		"trunc":       true,
+		"mod":         true,
+		"power":       true,
+		"sqrt":        true,
+		"exp":         true,
+		"ln":          true,
+		"log":         true,
+		
+		// Date/time functions  
+		"now":         true,
+		"current_date": true,
+		"current_time": true,
+		"current_timestamp": true,
+		"extract":     true,
+		"date_part":   true,
+		"age":         true,
+		"date_trunc":  true,
+		
+		// Aggregate functions
+		"count":       true,
+		"sum":         true,
+		"avg":         true,
+		"min":         true,
+		"max":         true,
+		"array_agg":   true,
+		"string_agg":  true,
+		
+		// Type conversion functions
+		"cast":        true,
+		"to_char":     true,
+		"to_date":     true,
+		"to_number":   true,
+		"to_timestamp": true,
+		
+		// System information functions
+		"current_user": true,
+		"session_user": true,
+		"version":     true,
+		"pg_version":  true,
+		
+		// Other common functions
+		"coalesce":    true,
+		"nullif":      true,
+		"greatest":    true,
+		"least":       true,
+	}
+	
+	return builtinFunctions[funcName]
 }
