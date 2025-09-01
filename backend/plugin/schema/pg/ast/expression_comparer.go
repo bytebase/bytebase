@@ -105,13 +105,13 @@ func (c *PostgreSQLExpressionComparer) CompareExpressions(expr1, expr2 string) (
 
 	// Compare normalized ASTs
 	result := normalized1.Equals(normalized2)
-	
+
 	// If AST comparison fails, try fallback string comparison for special cases
 	if !result {
 		fallbackResult := c.compareExpressionsAsStrings(expr1, expr2)
 		return fallbackResult, nil
 	}
-	
+
 	return result, nil
 }
 
@@ -186,24 +186,24 @@ func (c *PostgreSQLExpressionComparer) handleImplicitTypeCasts(expr1, expr2 stri
 	if c.isJSONBImplicitCast(expr1, expr2) {
 		return true
 	}
-	
+
 	// Handle BIT literal format differences
 	// B'1010' should be equivalent to '1010'::"bit"
 	if c.isBitLiteralEquivalent(expr1, expr2) {
 		return true
 	}
-	
+
 	// Handle array type implicit casts (already covered by AST comparison)
-	// 'ARRAY[]::TEXT[]' vs 'ARRAY[]::text[]' 
+	// 'ARRAY[]::TEXT[]' vs 'ARRAY[]::text[]'
 	if c.isArrayTypeImplicitCast(expr1, expr2) {
 		return true
 	}
-	
+
 	return false
 }
 
 // isJSONBImplicitCast checks if two expressions represent the same JSONB value with/without explicit cast
-func (c *PostgreSQLExpressionComparer) isJSONBImplicitCast(expr1, expr2 string) bool {
+func (*PostgreSQLExpressionComparer) isJSONBImplicitCast(expr1, expr2 string) bool {
 	// Check if one has ::jsonb suffix and the other doesn't, but otherwise identical
 	if strings.HasSuffix(expr1, "::jsonb") && !strings.HasSuffix(expr2, "::jsonb") {
 		baseExpr1 := strings.TrimSuffix(expr1, "::jsonb")
@@ -215,7 +215,7 @@ func (c *PostgreSQLExpressionComparer) isJSONBImplicitCast(expr1, expr2 string) 
 		baseExpr2 = strings.TrimSpace(baseExpr2)
 		return baseExpr2 == expr1
 	}
-	
+
 	// Also handle JSON type casts (json vs jsonb)
 	if strings.HasSuffix(expr1, "::json") && !strings.HasSuffix(expr2, "::json") && !strings.HasSuffix(expr2, "::jsonb") {
 		baseExpr1 := strings.TrimSuffix(expr1, "::json")
@@ -227,50 +227,50 @@ func (c *PostgreSQLExpressionComparer) isJSONBImplicitCast(expr1, expr2 string) 
 		baseExpr2 = strings.TrimSpace(baseExpr2)
 		return baseExpr2 == expr1
 	}
-	
+
 	return false
 }
 
 // isBitLiteralEquivalent checks if two expressions represent the same BIT value in different formats
-func (c *PostgreSQLExpressionComparer) isBitLiteralEquivalent(expr1, expr2 string) bool {
+func (*PostgreSQLExpressionComparer) isBitLiteralEquivalent(expr1, expr2 string) bool {
 	// Check for b'...' vs '...'::"bit" patterns (lowercase b due to AST normalization)
 	if strings.HasPrefix(expr1, "b'") && strings.HasSuffix(expr1, "'") &&
 		strings.Contains(expr2, ":") && strings.Contains(expr2, "bit") {
 		// Extract bit value from b'...' format
 		bitValue1 := expr1[2 : len(expr1)-1] // Remove b'...'
-		
+
 		// Extract bit value from '...'::"bit" format
 		var bitValue2 string
 		if strings.HasPrefix(expr2, "'") && strings.Contains(expr2, "':") {
 			// Find the closing quote before the type cast
 			endQuotePos := strings.Index(expr2[1:], "'")
 			if endQuotePos > 0 {
-				bitValue2 = expr2[1:endQuotePos+1] // Extract between first ' and second '
+				bitValue2 = expr2[1 : endQuotePos+1] // Extract between first ' and second '
 			}
 		}
-		
+
 		return bitValue1 == bitValue2 && bitValue2 != ""
 	}
-	
+
 	// Check the reverse case: '...'::"bit" vs b'...'
 	if strings.HasPrefix(expr2, "b'") && strings.HasSuffix(expr2, "'") &&
 		strings.Contains(expr1, ":") && strings.Contains(expr1, "bit") {
 		// Extract bit value from b'...' format
 		bitValue2 := expr2[2 : len(expr2)-1] // Remove b'...'
-		
+
 		// Extract bit value from '...'::"bit" format
 		var bitValue1 string
 		if strings.HasPrefix(expr1, "'") && strings.Contains(expr1, "':") {
 			// Find the closing quote before the type cast
 			endQuotePos := strings.Index(expr1[1:], "'")
 			if endQuotePos > 0 {
-				bitValue1 = expr1[1:endQuotePos+1] // Extract between first ' and second '
+				bitValue1 = expr1[1 : endQuotePos+1] // Extract between first ' and second '
 			}
 		}
-		
+
 		return bitValue1 == bitValue2 && bitValue1 != ""
 	}
-	
+
 	return false
 }
 
@@ -280,17 +280,17 @@ func (c *PostgreSQLExpressionComparer) isArrayTypeImplicitCast(expr1, expr2 stri
 	if c.CaseSensitive {
 		return false
 	}
-	
+
 	// Check for array type patterns like ARRAY[]::TYPE[] vs ARRAY[]::type[]
 	if strings.Contains(expr1, "ARRAY[]::") && strings.Contains(expr2, "ARRAY[]::") {
-		return strings.ToLower(expr1) == strings.ToLower(expr2)
+		return strings.EqualFold(expr1, expr2)
 	}
-	
+
 	return false
 }
 
 // normalizeBuiltinTypes removes public schema qualification from built-in PostgreSQL types
-func (c *PostgreSQLExpressionComparer) normalizeBuiltinTypes(expr string) string {
+func (*PostgreSQLExpressionComparer) normalizeBuiltinTypes(expr string) string {
 	// List of PostgreSQL built-in types that should not be schema-qualified
 	builtinTypes := []string{
 		"varbit", "bit", "bit varying",
@@ -302,24 +302,23 @@ func (c *PostgreSQLExpressionComparer) normalizeBuiltinTypes(expr string) string
 		"point", "line", "lseg", "box", "path", "polygon", "circle",
 		"int4range", "int8range", "numrange", "tsrange", "tstzrange", "daterange",
 	}
-	
+
 	for _, builtinType := range builtinTypes {
 		// Replace public.typename with typename
 		publicQualified := "public." + builtinType
 		if strings.Contains(expr, publicQualified) {
 			expr = strings.ReplaceAll(expr, publicQualified, builtinType)
 		}
-		
+
 		// Also handle quoted versions
 		quotedPublicQualified := "\"public\"." + builtinType
 		if strings.Contains(expr, quotedPublicQualified) {
 			expr = strings.ReplaceAll(expr, quotedPublicQualified, builtinType)
 		}
 	}
-	
+
 	return expr
 }
-
 
 // CompareExpressionLists compares two lists of expressions
 func (c *PostgreSQLExpressionComparer) CompareExpressionLists(exprs1, exprs2 []string) (bool, error) {

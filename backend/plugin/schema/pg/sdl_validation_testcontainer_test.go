@@ -970,7 +970,7 @@ func executeSDLValidationProcess(ctx context.Context, t *testing.T, connConfig *
 	require.NoError(t, err, "Failed to generate migration DDL from metadata")
 
 	t.Logf("Generated migration DDL (%d characters)", len(migrationDDL))
-	
+
 	// Save or validate the actual diff (B to C) and DDL files
 	testName := strings.ReplaceAll(t.Name(), "/", "_")
 	err = validateOrSaveTestFiles(t, actualDiff, testName, migrationDDL)
@@ -1126,18 +1126,17 @@ func validateSchemaConsistency(schemaD, schemaC *storepb.DatabaseSchemaMetadata)
 	return nil
 }
 
-
 // DiffSummary represents the structure for JSON serialization of schema differences
 type DiffSummary struct {
-	HasDifferences bool        `json:"hasDifferences"`
-	Summary        string      `json:"summary"`
-	TableChanges   int         `json:"tableChanges"`
-	ViewChanges    int         `json:"viewChanges"`
-	FunctionChanges int        `json:"functionChanges"`
-	SchemaChanges  int         `json:"schemaChanges"`
-	SequenceChanges int        `json:"sequenceChanges"`
-	EnumTypeChanges int        `json:"enumTypeChanges"`
-	Details        *DiffDetails `json:"details,omitempty"`
+	HasDifferences  bool         `json:"hasDifferences"`
+	Summary         string       `json:"summary"`
+	TableChanges    int          `json:"tableChanges"`
+	ViewChanges     int          `json:"viewChanges"`
+	FunctionChanges int          `json:"functionChanges"`
+	SchemaChanges   int          `json:"schemaChanges"`
+	SequenceChanges int          `json:"sequenceChanges"`
+	EnumTypeChanges int          `json:"enumTypeChanges"`
+	Details         *DiffDetails `json:"details,omitempty"`
 }
 
 // DiffDetails provides detailed information about the differences
@@ -1150,18 +1149,18 @@ type DiffDetails struct {
 
 // TableChangeSummary summarizes table changes with detailed information
 type TableChangeSummary struct {
-	Action     string `json:"action"`
-	SchemaName string `json:"schemaName"`
-	TableName  string `json:"tableName"`
-	ColumnChanges int   `json:"columnChanges"`
-	IndexChanges  int   `json:"indexChanges"`
-	ConstraintChanges int `json:"constraintChanges"`
-	ForeignKeyChanges int `json:"foreignKeyChanges"`
+	Action            string `json:"action"`
+	SchemaName        string `json:"schemaName"`
+	TableName         string `json:"tableName"`
+	ColumnChanges     int    `json:"columnChanges"`
+	IndexChanges      int    `json:"indexChanges"`
+	ConstraintChanges int    `json:"constraintChanges"`
+	ForeignKeyChanges int    `json:"foreignKeyChanges"`
 	// Detailed changes
-	Columns      []ColumnChangeDetail      `json:"columns,omitempty"`
-	Indexes      []IndexChangeDetail       `json:"indexes,omitempty"`
-	Constraints  []ConstraintChangeDetail  `json:"constraints,omitempty"`
-	ForeignKeys  []ForeignKeyChangeDetail  `json:"foreignKeys,omitempty"`
+	Columns     []ColumnChangeDetail     `json:"columns,omitempty"`
+	Indexes     []IndexChangeDetail      `json:"indexes,omitempty"`
+	Constraints []ConstraintChangeDetail `json:"constraints,omitempty"`
+	ForeignKeys []ForeignKeyChangeDetail `json:"foreignKeys,omitempty"`
 }
 
 // ViewChangeSummary summarizes view changes
@@ -1186,10 +1185,10 @@ type SchemaChangeSummary struct {
 
 // ColumnChangeDetail provides detailed information about column changes
 type ColumnChangeDetail struct {
-	Action    string        `json:"action"`
-	Name      string        `json:"name"`
-	OldColumn *ColumnInfo   `json:"oldColumn,omitempty"`
-	NewColumn *ColumnInfo   `json:"newColumn,omitempty"`
+	Action    string      `json:"action"`
+	Name      string      `json:"name"`
+	OldColumn *ColumnInfo `json:"oldColumn,omitempty"`
+	NewColumn *ColumnInfo `json:"newColumn,omitempty"`
 }
 
 // ColumnInfo represents column metadata
@@ -1236,22 +1235,22 @@ type ConstraintInfo struct {
 
 // ForeignKeyChangeDetail provides detailed information about foreign key changes
 type ForeignKeyChangeDetail struct {
-	Action         string           `json:"action"`
-	Name           string           `json:"name"`
-	OldForeignKey  *ForeignKeyInfo  `json:"oldForeignKey,omitempty"`
-	NewForeignKey  *ForeignKeyInfo  `json:"newForeignKey,omitempty"`
+	Action        string          `json:"action"`
+	Name          string          `json:"name"`
+	OldForeignKey *ForeignKeyInfo `json:"oldForeignKey,omitempty"`
+	NewForeignKey *ForeignKeyInfo `json:"newForeignKey,omitempty"`
 }
 
 // ForeignKeyInfo represents foreign key metadata
 type ForeignKeyInfo struct {
-	Name                string   `json:"name"`
-	Columns             []string `json:"columns"`
-	ReferencedSchema    string   `json:"referencedSchema"`
-	ReferencedTable     string   `json:"referencedTable"`
-	ReferencedColumns   []string `json:"referencedColumns"`
-	OnUpdate            string   `json:"onUpdate,omitempty"`
-	OnDelete            string   `json:"onDelete,omitempty"`
-	MatchType           string   `json:"matchType,omitempty"`
+	Name              string   `json:"name"`
+	Columns           []string `json:"columns"`
+	ReferencedSchema  string   `json:"referencedSchema"`
+	ReferencedTable   string   `json:"referencedTable"`
+	ReferencedColumns []string `json:"referencedColumns"`
+	OnUpdate          string   `json:"onUpdate,omitempty"`
+	OnDelete          string   `json:"onDelete,omitempty"`
+	MatchType         string   `json:"matchType,omitempty"`
 }
 
 // createDiffSummary creates a structured summary from MetadataDiff
@@ -1264,9 +1263,9 @@ func createDiffSummary(diff *schema.MetadataDiff) *DiffSummary {
 	}
 
 	// Check if there are actually any differences
-	hasDifferences := len(diff.TableChanges) > 0 || len(diff.ViewChanges) > 0 || 
-					 len(diff.FunctionChanges) > 0 || len(diff.SchemaChanges) > 0 ||
-					 len(diff.SequenceChanges) > 0 || len(diff.EnumTypeChanges) > 0
+	hasDifferences := len(diff.TableChanges) > 0 || len(diff.ViewChanges) > 0 ||
+		len(diff.FunctionChanges) > 0 || len(diff.SchemaChanges) > 0 ||
+		len(diff.SequenceChanges) > 0 || len(diff.EnumTypeChanges) > 0
 
 	summary := &DiffSummary{
 		HasDifferences:  hasDifferences,
@@ -1303,12 +1302,12 @@ func createDiffSummary(diff *schema.MetadataDiff) *DiffSummary {
 	if summary.EnumTypeChanges > 0 {
 		summaryParts = append(summaryParts, fmt.Sprintf("Enum type changes: %d", summary.EnumTypeChanges))
 	}
-	
+
 	summary.Summary = strings.Join(summaryParts, ", ")
 
 	// Add detailed information
 	details := &DiffDetails{}
-	
+
 	// Add table changes details
 	for _, tableChange := range diff.TableChanges {
 		tableSummary := TableChangeSummary{
@@ -1320,7 +1319,7 @@ func createDiffSummary(diff *schema.MetadataDiff) *DiffSummary {
 			ConstraintChanges: len(tableChange.CheckConstraintChanges),
 			ForeignKeyChanges: len(tableChange.ForeignKeyChanges),
 		}
-		
+
 		// Add detailed column changes
 		for _, colChange := range tableChange.ColumnChanges {
 			columnDetail := ColumnChangeDetail{
@@ -1347,7 +1346,7 @@ func createDiffSummary(diff *schema.MetadataDiff) *DiffSummary {
 			}
 			tableSummary.Columns = append(tableSummary.Columns, columnDetail)
 		}
-		
+
 		// Add detailed index changes
 		for _, indexChange := range tableChange.IndexChanges {
 			indexDetail := IndexChangeDetail{
@@ -1376,7 +1375,7 @@ func createDiffSummary(diff *schema.MetadataDiff) *DiffSummary {
 			}
 			tableSummary.Indexes = append(tableSummary.Indexes, indexDetail)
 		}
-		
+
 		// Add detailed constraint changes
 		for _, constraintChange := range tableChange.CheckConstraintChanges {
 			constraintDetail := ConstraintChangeDetail{
@@ -1399,7 +1398,7 @@ func createDiffSummary(diff *schema.MetadataDiff) *DiffSummary {
 			}
 			tableSummary.Constraints = append(tableSummary.Constraints, constraintDetail)
 		}
-		
+
 		// Add detailed foreign key changes
 		for _, fkChange := range tableChange.ForeignKeyChanges {
 			fkDetail := ForeignKeyChangeDetail{
@@ -1432,7 +1431,7 @@ func createDiffSummary(diff *schema.MetadataDiff) *DiffSummary {
 			}
 			tableSummary.ForeignKeys = append(tableSummary.ForeignKeys, fkDetail)
 		}
-		
+
 		details.Tables = append(details.Tables, tableSummary)
 	}
 
@@ -1514,52 +1513,52 @@ func getForeignKeyName(fkChange *schema.ForeignKeyDiff) string {
 func validateOrSaveTestFiles(t *testing.T, diff *schema.MetadataDiff, testName string, ddlContent string) error {
 	// Check if we should update test files
 	updateFiles := os.Getenv("UPDATE_TEST_FILES") == "true"
-	
+
 	testDir := getTestDataDirectory(testName)
 	if testDir == "" {
 		return errors.Errorf("could not determine test data directory for test %s", testName)
 	}
-	
+
 	diffFilename := filepath.Join(testDir, "diff.json")
 	ddlFilename := filepath.Join(testDir, "ddl.sql")
-	
+
 	// Generate current content
 	currentDiffJSON, err := generateDiffJSON(diff)
 	if err != nil {
 		return errors.Wrapf(err, "failed to generate diff JSON")
 	}
-	
+
 	if updateFiles {
 		// Update mode: create/overwrite files
 		t.Logf("Updating test files in %s", testDir)
-		
+
 		// Save diff JSON file
 		if err := os.WriteFile(diffFilename, []byte(currentDiffJSON), 0644); err != nil {
 			return errors.Wrapf(err, "failed to write diff.json file")
 		}
-		
+
 		// Save DDL file
 		if err := os.WriteFile(ddlFilename, []byte(ddlContent), 0644); err != nil {
 			return errors.Wrapf(err, "failed to write ddl.sql file")
 		}
-		
+
 		t.Logf("Test files updated: %s (diff.json, ddl.sql)", testDir)
 		return nil
 	}
-	
+
 	// Validation mode: check if existing files match current content
 	t.Logf("Validating test files in %s", testDir)
-	
+
 	// Validate diff.json
 	if err := validateFileContent(diffFilename, currentDiffJSON, "diff.json"); err != nil {
 		return err
 	}
-	
+
 	// Validate ddl.sql
 	if err := validateFileContent(ddlFilename, ddlContent, "ddl.sql"); err != nil {
 		return err
 	}
-	
+
 	t.Logf("✓ Test files validated successfully: %s", testDir)
 	return nil
 }
@@ -1579,20 +1578,20 @@ func validateFileContent(filename, expectedContent, fileType string) error {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		return errors.Errorf("%s file does not exist: %s. Run with UPDATE_TEST_FILES=true to create it", fileType, filename)
 	}
-	
+
 	actualContent, err := os.ReadFile(filename)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read %s file: %s", fileType, filename)
 	}
-	
+
 	actualStr := strings.TrimSpace(string(actualContent))
 	expectedStr := strings.TrimSpace(expectedContent)
-	
+
 	if actualStr != expectedStr {
-		return errors.Errorf("%s content mismatch in %s.\nExpected:\n%s\n\nActual:\n%s\n\nRun with UPDATE_TEST_FILES=true to update the file", 
+		return errors.Errorf("%s content mismatch in %s.\nExpected:\n%s\n\nActual:\n%s\n\nRun with UPDATE_TEST_FILES=true to update the file",
 			fileType, filename, expectedStr, actualStr)
 	}
-	
+
 	return nil
 }
 
@@ -1602,18 +1601,18 @@ func getTestDataDirectory(testName string) string {
 	if !strings.HasPrefix(testName, "TestSDLValidationFromTestData_") {
 		return ""
 	}
-	
+
 	// Extract the path part after the prefix
 	pathPart := strings.TrimPrefix(testName, "TestSDLValidationFromTestData_")
-	
+
 	// Convert from test name format to directory format
 	// TestSDLValidationFromTestData_data_types_basic_types_datetime_types -> data_types/basic_types/datetime_types
-	
+
 	// Based on the known test structure, parse the path correctly:
 	// data_types_basic_types_datetime_types
 	// schema_objects_views_complex_views
 	// constraints_indexes_foreign_keys_cascade_actions
-	
+
 	var testDataPath string
 	switch {
 	case strings.HasPrefix(pathPart, "data_types_basic_types_"):
@@ -1646,6 +1645,6 @@ func getTestDataDirectory(testName string) string {
 			testDataPath = strings.ReplaceAll(pathPart, "_", "/")
 		}
 	}
-	
+
 	return filepath.Join("sdl_testdata", testDataPath)
 }

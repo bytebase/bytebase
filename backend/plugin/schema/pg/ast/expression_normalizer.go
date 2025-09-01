@@ -98,7 +98,7 @@ func (v *normalizationVisitor) VisitBinaryOp(expr *BinaryOpExpr) any {
 	if operator == "::" {
 		// For type cast, the right operand should be normalized as a type name
 		right = v.normalizeChildAsType(expr.Right)
-		
+
 		// Check if this is a redundant type cast that can be removed
 		if v.isRedundantTypeCast(left, right) {
 			return left // Return the left operand without the cast
@@ -253,20 +253,20 @@ func (v *normalizationVisitor) normalizeFunctionName(name string) string {
 	// Handle quoted identifiers
 	var unquoted string
 	isQuoted := false
-	if v.isQuotedIdentifier(name) && len(name) >= 2 && 
+	if v.isQuotedIdentifier(name) && len(name) >= 2 &&
 		strings.HasPrefix(name, "\"") && strings.HasSuffix(name, "\"") {
 		unquoted = strings.ReplaceAll(name[1:len(name)-1], `""`, `"`)
 		isQuoted = true
 	} else {
 		unquoted = name
 	}
-	
+
 	// Check if this is a built-in PostgreSQL function
 	// For built-in functions, both quoted and unquoted forms should normalize to the same canonical lowercase form
 	if v.isBuiltinPostgreSQLFunction(unquoted) {
 		return strings.ToLower(unquoted)
 	}
-	
+
 	// For user-defined functions:
 	// - Quoted identifiers preserve case sensitivity
 	// - Unquoted identifiers are converted to lowercase (PostgreSQL standard)
@@ -440,50 +440,50 @@ func (v *normalizationVisitor) isRedundantTypeCast(leftExpr, typeExpr Expression
 	if literalExpr, ok := leftExpr.(*LiteralExpr); ok {
 		if typeIdent, ok := typeExpr.(*IdentifierExpr); ok {
 			typeName := strings.ToLower(typeIdent.Name)
-			
+
 			// For JSON-like literals cast to jsonb/json, the cast is redundant
 			// because PostgreSQL will implicitly cast string literals to JSON types
-			if (typeName == "jsonb" || typeName == "json") && 
-			   literalExpr.ValueType == "string" &&
-			   v.isJSONLiteral(literalExpr.Value) {
+			if (typeName == "jsonb" || typeName == "json") &&
+				literalExpr.ValueType == "string" &&
+				v.isJSONLiteral(literalExpr.Value) {
 				return true
 			}
 		}
 	}
-	
+
 	return false
 }
 
 // isJSONLiteral checks if a string value looks like JSON
-func (v *normalizationVisitor) isJSONLiteral(value string) bool {
+func (*normalizationVisitor) isJSONLiteral(value string) bool {
 	// Remove quotes if present
 	if len(value) >= 2 && value[0] == '\'' && value[len(value)-1] == '\'' {
 		value = value[1 : len(value)-1]
 	}
-	
+
 	// Check for simple JSON patterns
 	trimmed := strings.TrimSpace(value)
 	return (strings.HasPrefix(trimmed, "{") && strings.HasSuffix(trimmed, "}")) ||
-		   (strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]")) ||
-		   trimmed == "null" ||
-		   trimmed == "true" ||
-		   trimmed == "false" ||
-		   (len(trimmed) > 0 && (trimmed[0] == '"' || 
-		   	(trimmed[0] >= '0' && trimmed[0] <= '9') || 
-		   	trimmed[0] == '-'))
+		(strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]")) ||
+		trimmed == "null" ||
+		trimmed == "true" ||
+		trimmed == "false" ||
+		(len(trimmed) > 0 && (trimmed[0] == '"' ||
+			(trimmed[0] >= '0' && trimmed[0] <= '9') ||
+			trimmed[0] == '-'))
 }
 
 // isBuiltinPostgreSQLFunction checks if a function name is a built-in PostgreSQL function
 // For built-in functions, both quoted and unquoted forms should normalize to the same canonical form
-func (v *normalizationVisitor) isBuiltinPostgreSQLFunction(name string) bool {
+func (*normalizationVisitor) isBuiltinPostgreSQLFunction(name string) bool {
 	// Convert to lowercase for case-insensitive comparison
 	funcName := strings.ToLower(name)
-	
+
 	// Common string functions
 	builtinFunctions := map[string]bool{
 		// String functions
 		"left":        true,
-		"right":       true,  
+		"right":       true,
 		"substr":      true,
 		"substring":   true,
 		"length":      true,
@@ -498,59 +498,59 @@ func (v *normalizationVisitor) isBuiltinPostgreSQLFunction(name string) bool {
 		"split_part":  true,
 		"position":    true,
 		"strpos":      true,
-		
+
 		// Numeric functions
-		"abs":         true,
-		"ceil":        true,
-		"ceiling":     true,
-		"floor":       true,
-		"round":       true,
-		"trunc":       true,
-		"mod":         true,
-		"power":       true,
-		"sqrt":        true,
-		"exp":         true,
-		"ln":          true,
-		"log":         true,
-		
-		// Date/time functions  
-		"now":         true,
-		"current_date": true,
-		"current_time": true,
+		"abs":     true,
+		"ceil":    true,
+		"ceiling": true,
+		"floor":   true,
+		"round":   true,
+		"trunc":   true,
+		"mod":     true,
+		"power":   true,
+		"sqrt":    true,
+		"exp":     true,
+		"ln":      true,
+		"log":     true,
+
+		// Date/time functions
+		"now":               true,
+		"current_date":      true,
+		"current_time":      true,
 		"current_timestamp": true,
-		"extract":     true,
-		"date_part":   true,
-		"age":         true,
-		"date_trunc":  true,
-		
+		"extract":           true,
+		"date_part":         true,
+		"age":               true,
+		"date_trunc":        true,
+
 		// Aggregate functions
-		"count":       true,
-		"sum":         true,
-		"avg":         true,
-		"min":         true,
-		"max":         true,
-		"array_agg":   true,
-		"string_agg":  true,
-		
+		"count":      true,
+		"sum":        true,
+		"avg":        true,
+		"min":        true,
+		"max":        true,
+		"array_agg":  true,
+		"string_agg": true,
+
 		// Type conversion functions
-		"cast":        true,
-		"to_char":     true,
-		"to_date":     true,
-		"to_number":   true,
+		"cast":         true,
+		"to_char":      true,
+		"to_date":      true,
+		"to_number":    true,
 		"to_timestamp": true,
-		
+
 		// System information functions
 		"current_user": true,
 		"session_user": true,
-		"version":     true,
-		"pg_version":  true,
-		
+		"version":      true,
+		"pg_version":   true,
+
 		// Other common functions
-		"coalesce":    true,
-		"nullif":      true,
-		"greatest":    true,
-		"least":       true,
+		"coalesce": true,
+		"nullif":   true,
+		"greatest": true,
+		"least":    true,
 	}
-	
+
 	return builtinFunctions[funcName]
 }

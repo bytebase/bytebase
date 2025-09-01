@@ -90,7 +90,7 @@ func TestSDLComprehensiveValidation(t *testing.T) {
 // loadTestScenarios loads all test scenarios from the sdl_testdata directory
 func loadTestScenarios() ([]TestScenario, error) {
 	var scenarios []TestScenario
-	
+
 	testDataDir := "sdl_testdata"
 	if _, err := os.Stat(testDataDir); os.IsNotExist(err) {
 		// Return some built-in scenarios for initial testing
@@ -106,7 +106,7 @@ func loadTestScenarios() ([]TestScenario, error) {
 		if info.Name() == "test_description.md" {
 			scenario, err := loadTestScenario(filepath.Dir(path))
 			if err != nil {
-				return fmt.Errorf("failed to load scenario from %s: %w", path, err)
+				return errors.Wrapf(err, "failed to load scenario from %s", path)
 			}
 			scenarios = append(scenarios, scenario)
 		}
@@ -128,13 +128,13 @@ func loadTestScenarios() ([]TestScenario, error) {
 // loadTestScenario loads a single test scenario from a directory
 func loadTestScenario(scenarioDir string) (TestScenario, error) {
 	var scenario TestScenario
-	
+
 	// Extract category and name from path
 	relativePath, err := filepath.Rel("sdl_testdata", scenarioDir)
 	if err != nil {
 		return scenario, err
 	}
-	
+
 	pathParts := strings.Split(relativePath, string(filepath.Separator))
 	scenario.Category = pathParts[0]
 	scenario.Name = strings.Join(pathParts[1:], "_")
@@ -156,7 +156,7 @@ func loadTestScenario(scenarioDir string) (TestScenario, error) {
 	if expectedData, err := os.ReadFile(expectedPath); err == nil {
 		scenario.ExpectedSchema = string(expectedData)
 	} else {
-		return scenario, fmt.Errorf("expected_schema.sql is required")
+		return scenario, errors.New("expected_schema.sql is required")
 	}
 
 	// Load expected diff (optional)
@@ -182,8 +182,8 @@ func runSDLTestScenario(ctx context.Context, t *testing.T, connConfig *pgx.ConnC
 	}
 
 	// Create a unique database for this test
-	dbName := fmt.Sprintf("sdl_test_%s_%s", 
-		strings.ReplaceAll(scenario.Category, "/", "_"), 
+	dbName := fmt.Sprintf("sdl_test_%s_%s",
+		strings.ReplaceAll(scenario.Category, "/", "_"),
 		strings.ReplaceAll(scenario.Name, "/", "_"))
 	dbName = strings.ReplaceAll(dbName, "-", "_") // Replace hyphens with underscores
 	dbName = strings.ToLower(dbName)
@@ -207,7 +207,7 @@ func runSDLTestScenario(ctx context.Context, t *testing.T, connConfig *pgx.ConnC
 
 // executeEnhancedSDLValidation implements the enhanced 5-step SDL validation with diff comparison
 func executeEnhancedSDLValidation(ctx context.Context, t *testing.T, connConfig *pgx.ConnConfig, testDB *sql.DB, dbName string, scenario TestScenario) error {
-	t.Logf("=== Step 1: Apply initial schema to database ===")
+	t.Log("=== Step 1: Apply initial schema to database ===")
 	if strings.TrimSpace(scenario.InitialSchema) != "" {
 		_, err := testDB.Exec(scenario.InitialSchema)
 		if err != nil {
@@ -215,27 +215,27 @@ func executeEnhancedSDLValidation(ctx context.Context, t *testing.T, connConfig 
 		}
 		t.Logf("✓ Applied initial schema (%d characters)", len(scenario.InitialSchema))
 	} else {
-		t.Logf("✓ Starting with empty database")
+		t.Log("✓ Starting with empty database")
 	}
 
-	t.Logf("=== Step 2: Sync to get current schema metadata (Schema B) ===")
+	t.Log("=== Step 2: Sync to get current schema metadata (Schema B) ===")
 	schemaB, err := getSyncMetadataForSDL(ctx, connConfig, dbName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to sync schema B")
 	}
-	t.Logf("✓ Synced current schema metadata")
+	t.Log("✓ Synced current schema metadata")
 
-	t.Logf("=== Step 3: Get expected schema metadata and generate migration DDL ===")
+	t.Log("=== Step 3: Get expected schema metadata and generate migration DDL ===")
 	schemaCMetadata, err := GetDatabaseMetadata(scenario.ExpectedSchema)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get expected schema C metadata")
 	}
-	t.Logf("✓ Parsed expected schema metadata")
+	t.Log("✓ Parsed expected schema metadata")
 
 	// Generate migration DDL from schema B to schema C using the existing function
 	migrationDDL, schemaDiff, err := generateMigrationDDLFromMetadata(schemaB, schemaCMetadata)
 	require.NoError(t, err, "Failed to generate migration DDL from metadata")
-	
+
 	// Compare with expected diff if provided
 	if scenario.ExpectedDiff != "" {
 		err := validateSchemaDiff(t, schemaDiff, scenario.ExpectedDiff)
@@ -243,13 +243,13 @@ func executeEnhancedSDLValidation(ctx context.Context, t *testing.T, connConfig 
 			t.Logf("WARNING: Schema diff validation failed: %v", err)
 			// Note: This is a warning for now, can be made stricter later
 		} else {
-			t.Logf("✓ Generated schema diff matches expected")
+			t.Log("✓ Generated schema diff matches expected")
 		}
 	}
-	
+
 	t.Logf("✓ Generated migration DDL (%d characters)", len(migrationDDL))
 	if migrationDDL != "" {
-		t.Logf("Migration DDL preview (first 200 chars):\n%s", 
+		t.Logf("Migration DDL preview (first 200 chars):\n%s",
 			truncateString(migrationDDL, 200))
 	}
 
@@ -258,29 +258,29 @@ func executeEnhancedSDLValidation(ctx context.Context, t *testing.T, connConfig 
 		normalizedGenerated := normalizeSQLString(migrationDDL)
 		normalizedExpected := normalizeSQLString(scenario.ExpectedMigration)
 		if normalizedGenerated != normalizedExpected {
-			t.Logf("Generated migration DDL differs from expected:")
+			t.Log("Generated migration DDL differs from expected:")
 			t.Logf("Expected:\n%s", scenario.ExpectedMigration)
 			t.Logf("Generated:\n%s", migrationDDL)
-			
+
 			// For comprehensive testing, we can make this a hard requirement
 			if strings.TrimSpace(normalizedExpected) != "" {
-				require.Equal(t, normalizedExpected, normalizedGenerated, 
+				require.Equal(t, normalizedExpected, normalizedGenerated,
 					"Generated migration DDL does not match expected DDL")
 			}
 		} else {
-			t.Logf("✓ Generated migration DDL matches expected")
+			t.Log("✓ Generated migration DDL matches expected")
 		}
 	}
 
-	t.Logf("=== Step 4: Apply migration DDL and sync final schema ===")
+	t.Log("=== Step 4: Apply migration DDL and sync final schema ===")
 	if strings.TrimSpace(migrationDDL) != "" {
 		_, err := testDB.Exec(migrationDDL)
 		if err != nil {
 			return errors.Wrapf(err, "failed to apply migration DDL: %s", migrationDDL)
 		}
-		t.Logf("✓ Applied migration DDL")
+		t.Log("✓ Applied migration DDL")
 	} else {
-		t.Logf("✓ No migration DDL needed (schemas already match)")
+		t.Log("✓ No migration DDL needed (schemas already match)")
 	}
 
 	// Sync to get final schema D
@@ -288,14 +288,14 @@ func executeEnhancedSDLValidation(ctx context.Context, t *testing.T, connConfig 
 	if err != nil {
 		return errors.Wrapf(err, "failed to sync schema D after migration")
 	}
-	t.Logf("✓ Synced final schema metadata")
+	t.Log("✓ Synced final schema metadata")
 
-	t.Logf("=== Step 5: Validate schema consistency ===")
+	t.Log("=== Step 5: Validate schema consistency ===")
 	err = validateSchemaConsistency(schemaD, schemaCMetadata)
 	if err != nil {
 		return errors.Wrapf(err, "schema validation failed")
 	}
-	t.Logf("✓ Final schema matches expected schema perfectly")
+	t.Log("✓ Final schema matches expected schema perfectly")
 
 	return nil
 }
@@ -304,9 +304,9 @@ func executeEnhancedSDLValidation(ctx context.Context, t *testing.T, connConfig 
 func getBuiltinTestScenarios() []TestScenario {
 	return []TestScenario{
 		{
-			Name:     "basic_table_creation",
-			Category: "data_types/basic_types",
-			Description: "Test basic table creation with various data types",
+			Name:          "basic_table_creation",
+			Category:      "data_types/basic_types",
+			Description:   "Test basic table creation with various data types",
 			InitialSchema: ``,
 			ExpectedSchema: `
 CREATE TABLE public.users (
@@ -326,8 +326,8 @@ CREATE INDEX idx_users_created_at ON public.users(created_at);
 `,
 		},
 		{
-			Name:     "add_foreign_key_table",
-			Category: "constraints_indexes/foreign_keys",
+			Name:        "add_foreign_key_table",
+			Category:    "constraints_indexes/foreign_keys",
 			Description: "Test adding table with foreign key constraint",
 			InitialSchema: `
 CREATE TABLE public.users (
@@ -358,9 +358,9 @@ CREATE INDEX idx_posts_published ON public.posts(published) WHERE published = tr
 `,
 		},
 		{
-			Name:     "enum_and_custom_types",
-			Category: "schema_objects/custom_types",
-			Description: "Test enum and custom type creation",
+			Name:          "enum_and_custom_types",
+			Category:      "schema_objects/custom_types",
+			Description:   "Test enum and custom type creation",
 			InitialSchema: ``,
 			ExpectedSchema: `
 CREATE TYPE public.status_enum AS ENUM ('pending', 'active', 'inactive');
@@ -379,8 +379,8 @@ CREATE INDEX idx_accounts_role ON public.accounts(role);
 `,
 		},
 		{
-			Name:     "view_and_function",
-			Category: "schema_objects/views",
+			Name:        "view_and_function",
+			Category:    "schema_objects/views",
 			Description: "Test view and function creation",
 			InitialSchema: `
 CREATE TABLE public.employees (
@@ -414,8 +414,8 @@ $$ LANGUAGE plpgsql;
 `,
 		},
 		{
-			Name:     "drop_objects",
-			Category: "edge_cases/complex_scenarios",
+			Name:        "drop_objects",
+			Category:    "edge_cases/complex_scenarios",
 			Description: "Test dropping all objects from database",
 			InitialSchema: `
 CREATE TABLE public.users (
@@ -461,35 +461,35 @@ func truncateString(s string, maxLength int) string {
 }
 
 // validateSchemaDiff validates that the generated schema diff matches the expected diff
-func validateSchemaDiff(t *testing.T, actualDiff interface{}, expectedDiffJSON string) error {
+func validateSchemaDiff(t *testing.T, actualDiff any, expectedDiffJSON string) error {
 	// For now, we'll do basic validation by comparing the string representations
 	// In the future, this could be enhanced to do structured JSON comparison
-	
+
 	actualJSON, err := marshalDiffToJSON(actualDiff)
 	if err != nil {
-		return fmt.Errorf("failed to marshal actual diff to JSON: %w", err)
+		return errors.Wrap(err, "failed to marshal actual diff to JSON")
 	}
-	
+
 	// Normalize both JSON strings for comparison
 	actualNormalized := normalizeJSONString(actualJSON)
 	expectedNormalized := normalizeJSONString(expectedDiffJSON)
-	
+
 	if actualNormalized != expectedNormalized {
-		t.Logf("Schema diff comparison:")
+		t.Log("Schema diff comparison:")
 		t.Logf("Expected diff:\n%s", expectedDiffJSON)
 		t.Logf("Actual diff:\n%s", actualJSON)
-		return fmt.Errorf("schema diff does not match expected")
+		return errors.New("schema diff does not match expected")
 	}
-	
+
 	return nil
 }
 
 // marshalDiffToJSON marshals a schema diff object to JSON string
-func marshalDiffToJSON(diff interface{}) (string, error) {
+func marshalDiffToJSON(diff any) (string, error) {
 	// Convert the diff object to JSON
 	jsonBytes, err := json.MarshalIndent(diff, "", "  ")
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal diff to JSON: %w", err)
+		return "", errors.Wrap(err, "failed to marshal diff to JSON")
 	}
 	return string(jsonBytes), nil
 }

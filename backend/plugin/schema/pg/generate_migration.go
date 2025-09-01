@@ -1248,7 +1248,6 @@ func writeAddColumn(out *strings.Builder, schema, table string, column *storepb.
 	_, _ = out.WriteString("\n")
 }
 
-
 // requiresExplicitCasting determines if a PostgreSQL type conversion requires a USING clause
 func requiresExplicitCasting(oldType, newType string) bool {
 	// Types are already normalized by get_database_metadata.go, no need to normalize again
@@ -1343,7 +1342,7 @@ func writeAlterColumnType(out *strings.Builder, schema, table, column, oldType, 
 	_, _ = out.WriteString(column)
 	_, _ = out.WriteString(`" TYPE `)
 	_, _ = out.WriteString(newType)
-	
+
 	// Add USING clause for incompatible type conversions
 	if requiresExplicitCasting(oldType, newType) {
 		_, _ = out.WriteString(` USING "`)
@@ -1351,7 +1350,7 @@ func writeAlterColumnType(out *strings.Builder, schema, table, column, oldType, 
 		_, _ = out.WriteString(`"::`)
 		_, _ = out.WriteString(newType)
 	}
-	
+
 	_, _ = out.WriteString(`;`)
 	_, _ = out.WriteString("\n")
 }

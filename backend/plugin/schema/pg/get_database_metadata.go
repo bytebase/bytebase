@@ -691,10 +691,10 @@ func NormalizePostgreSQLType(typeName string) string {
 	// Handle timestamp with precision (preserve precision but add timezone info)
 	if strings.HasPrefix(typeName, "timestamp(") && strings.HasSuffix(typeName, ")") {
 		// Extract precision part: timestamp(3) -> (3)
-		precision := typeName[9:] // Get "(3)" part  
+		precision := typeName[9:] // Get "(3)" part
 		return "timestamp" + precision + " without time zone"
 	}
-	// Handle time without explicit timezone (PostgreSQL default)  
+	// Handle time without explicit timezone (PostgreSQL default)
 	if typeName == "time" {
 		return "time(6) without time zone" // PostgreSQL default precision is 6
 	}

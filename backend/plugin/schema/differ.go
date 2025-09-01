@@ -590,16 +590,16 @@ func defaultValuesEqual(col1, col2 *storepb.ColumnMetadata) bool {
 	if col1.Default == col2.Default {
 		return true
 	}
-	
+
 	// Handle PostgreSQL type cast normalization for common cases before expression comparison
 	// This is needed because the expression comparer may not parse complex type casts correctly
 	normalized1 := normalizePostgreSQLTypecastInDefault(col1.Default)
 	normalized2 := normalizePostgreSQLTypecastInDefault(col2.Default)
-	
+
 	if normalized1 == normalized2 {
 		return true
 	}
-	
+
 	// Use semantic expression comparison for PostgreSQL default values
 	// This handles schema prefixes and other semantic equivalences
 	return CompareExpressionsSemantically(storepb.Engine_POSTGRES, col1.Default, col2.Default)
@@ -612,23 +612,23 @@ func normalizePostgreSQLTypecastInDefault(defaultValue string) string {
 	}
 
 	normalized := strings.TrimSpace(defaultValue)
-	
+
 	// Remove PostgreSQL type casts from default values
 	// Handle patterns like '1 day'::interval -> '1 day'
 	normalized = strings.ReplaceAll(normalized, "'::interval", "'")
-	normalized = strings.ReplaceAll(normalized, "'::timestamp", "'") 
+	normalized = strings.ReplaceAll(normalized, "'::timestamp", "'")
 	normalized = strings.ReplaceAll(normalized, "'::date", "'")
 	normalized = strings.ReplaceAll(normalized, "'::time", "'")
 	normalized = strings.ReplaceAll(normalized, "'::numeric", "'")
-	
+
 	// Handle string type casts
 	// Handle character varying first (longest match first to avoid partial replacement)
 	normalized = strings.ReplaceAll(normalized, "'::character varying", "'") // CHARACTER VARYING type (full form of VARCHAR)
-	normalized = strings.ReplaceAll(normalized, "'::bpchar", "'")  // CHAR type
-	normalized = strings.ReplaceAll(normalized, "'::text", "'")   // TEXT type
-	normalized = strings.ReplaceAll(normalized, "'::varchar", "'") // VARCHAR type
-	normalized = strings.ReplaceAll(normalized, "'::character", "'") // CHARACTER type
-	
+	normalized = strings.ReplaceAll(normalized, "'::bpchar", "'")            // CHAR type
+	normalized = strings.ReplaceAll(normalized, "'::text", "'")              // TEXT type
+	normalized = strings.ReplaceAll(normalized, "'::varchar", "'")           // VARCHAR type
+	normalized = strings.ReplaceAll(normalized, "'::character", "'")         // CHARACTER type
+
 	return normalized
 }
 
@@ -1969,7 +1969,6 @@ func normalizePostgreSQLFunction(definition string) string {
 	return strings.TrimSpace(normalized)
 }
 
-
 // normalizePostgreSQLCheckConstraint normalizes PostgreSQL check constraint expressions for comparison
 func normalizePostgreSQLCheckConstraint(expression string) string {
 	// Based on the test output, we need to normalize:
@@ -2026,9 +2025,9 @@ func normalizePostgreSQLCheckConstraint(expression string) string {
 	// Step 6: Normalize timestamp literals and type casts
 	// '2020-01-01 00:00:00'::timestamp without time zone -> '2020-01-01'::timestamp
 	expression = strings.ReplaceAll(expression, " 00:00:00'::timestamp without time zone", "'::timestamp")
-	
+
 	// Step 7: Normalize numeric type casts
-	// >= 0::numeric -> >= 0 
+	// >= 0::numeric -> >= 0
 	expression = strings.ReplaceAll(expression, "::numeric", "")
 
 	return strings.TrimSpace(expression)
