@@ -24,18 +24,17 @@ func NewRolloutCommand(w *world.World) *cobra.Command {
 		Use:               "rollout",
 		Short:             "Rollout the migrate files",
 		Args:              cobra.NoArgs,
-		PersistentPreRunE: validateRolloutFlags(w),
+		PersistentPreRunE: rolloutPreRun(w),
 		RunE:              runRollout(w),
 	}
-	defaultTitle := w.CurrentTime.Format(time.RFC3339)
-	cmdRollout.Flags().StringVar(&w.ReleaseTitle, "release-title", defaultTitle, "The title of the release")
+	cmdRollout.Flags().StringVar(&w.ReleaseTitle, "release-title", "", "The title of the release. Generated from project and current timestamp if not provided.")
 	cmdRollout.Flags().StringVar(&w.CheckPlan, "check-plan", "SKIP", "Whether to check the plan and fail on warning/error. Valid values: SKIP, FAIL_ON_WARNING, FAIL_ON_ERROR")
 	cmdRollout.Flags().StringVar(&w.TargetStage, "target-stage", "", "Rollout up to the target stage. Format: environments/{environment}.")
 	cmdRollout.Flags().StringVar(&w.Plan, "plan", "", "The plan to rollout. Format: projects/{project}/plans/{plan}. Shadows file-pattern and targets.")
 	return cmdRollout
 }
 
-func validateRolloutFlags(w *world.World) func(*cobra.Command, []string) error {
+func rolloutPreRun(w *world.World) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		if p := cmd.Parent(); p != nil {
 			if p.PersistentPreRunE != nil {
@@ -48,6 +47,9 @@ func validateRolloutFlags(w *world.World) func(*cobra.Command, []string) error {
 		case "SKIP", "FAIL_ON_WARNING", "FAIL_ON_ERROR":
 		default:
 			return errors.Errorf("invalid check-plan value: %s. Valid values: SKIP, FAIL_ON_WARNING, FAIL_ON_ERROR", w.CheckPlan)
+		}
+		if w.ReleaseTitle == "" {
+			w.ReleaseTitle = fmt.Sprintf("[%s] %s", strings.TrimPrefix(w.Project, "projects/"), time.Now().UTC().Format(time.RFC3339))
 		}
 		return nil
 	}
@@ -106,7 +108,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 			w.OutputMap["release"] = release
 
 			planCreated, err := client.CreatePlan(ctx, w.Project, &v1pb.Plan{
-				Title: w.ReleaseTitle,
+				Title: "Release " + w.ReleaseTitle,
 				Specs: []*v1pb.Plan_Spec{
 					{
 						Id: uuid.New().String(),
