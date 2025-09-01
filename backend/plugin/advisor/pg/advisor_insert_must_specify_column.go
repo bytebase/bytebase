@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLInsertMustSpecifyColumn, &InsertMustSpecifyColumnAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementInsertMustSpecifyColumn, &InsertMustSpecifyColumnAdvisor{})
 }
 
 // InsertMustSpecifyColumnAdvisor is the advisor checking for to enforce column specified.

@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLWhereRequirementForUpdateDelete, &WhereRequirementForUpdateDeleteAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleStatementRequireWhereForUpdateDelete, &WhereRequirementForUpdateDeleteAdvisor{})
 }
 
 // WhereRequirementForUpdateDeleteAdvisor is the advisor checking for the WHERE clause requirement for UPDATE and DELETE statements.

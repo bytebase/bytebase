@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLColumnDisallowChangingType, &ColumnDisallowChangingTypeAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleColumnDisallowChangeType, &ColumnDisallowChangingTypeAdvisor{})
 }
 
 // ColumnDisallowChangingTypeAdvisor is the advisor checking for disallow changing column type.

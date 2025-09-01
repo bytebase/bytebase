@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLNamingPKConvention, &NamingPKConventionAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRulePKNaming, &NamingPKConventionAdvisor{})
 }
 
 // NamingPKConventionAdvisor is the advisor checking for primary key naming convention.

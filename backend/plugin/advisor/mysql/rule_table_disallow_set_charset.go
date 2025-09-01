@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableDisallowSetCharset, &TableDisallowSetCharsetAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableDisallowSetCharset, &TableDisallowSetCharsetAdvisor{})
 }
 
 type TableDisallowSetCharsetAdvisor struct {

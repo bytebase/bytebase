@@ -18,9 +18,9 @@ import (
 var _ advisor.Advisor = (*NamingColumnConventionAdvisor)(nil)
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleColumnNaming, &NamingColumnConventionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleColumnNaming, &NamingColumnConventionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleColumnNaming, &NamingColumnConventionAdvisor{})
 }
 
 // NamingColumnConventionAdvisor is the advisor checking for column naming convention.

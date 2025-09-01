@@ -18,7 +18,7 @@ import (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLNamingFullyQualifiedObjectName, &FullyQualifiedObjectNameAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleFullyQualifiedObjectName, &FullyQualifiedObjectNameAdvisor{})
 }
 
 type FullyQualifiedObjectNameAdvisor struct{}

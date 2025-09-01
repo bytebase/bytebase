@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SnowflakeTableNamingNoKeyword, &NamingTableNoKeywordAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleTableNameNoKeyword, &NamingTableNoKeywordAdvisor{})
 }
 
 // NamingTableNoKeywordAdvisor is the advisor checking for table naming convention without keyword.

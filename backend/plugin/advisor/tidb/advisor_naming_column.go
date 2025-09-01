@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleColumnNaming, &NamingColumnConventionAdvisor{})
 }
 
 // NamingColumnConventionAdvisor is the advisor checking for column naming convention.

@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLWhereRequirementForSelect, &WhereRequirementForSelectAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleStatementRequireWhereForSelect, &WhereRequirementForSelectAdvisor{})
 }
 
 // WhereRequirementForSelectAdvisor is the advisor checking for the WHERE clause requirement for SELECT statements.

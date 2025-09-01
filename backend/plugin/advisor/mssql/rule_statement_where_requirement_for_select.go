@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLWhereRequirementForSelect, &WhereRequirementForSelectAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleStatementRequireWhereForSelect, &WhereRequirementForSelectAdvisor{})
 }
 
 // WhereRequirementForSelectAdvisor is the advisor checking for WHERE clause requirement for SELECT statements.

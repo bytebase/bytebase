@@ -20,9 +20,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleSchemaBackwardCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleSchemaBackwardCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleSchemaBackwardCompatibility, &CompatibilityAdvisor{})
 }
 
 // CompatibilityAdvisor is the advisor checking for schema backward compatibility.

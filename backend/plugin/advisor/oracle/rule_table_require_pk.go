@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.OracleTableRequirePK, &TableRequirePKAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleTableRequirePK, &TableRequirePKAdvisor{})
 }
 
 // TableRequirePKAdvisor is the advisor checking table requires PK.

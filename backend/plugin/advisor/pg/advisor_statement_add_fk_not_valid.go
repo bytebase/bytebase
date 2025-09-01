@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLAddFKNotValid, &StatementAddFKNotValidAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementAddFKNotValid, &StatementAddFKNotValidAdvisor{})
 }
 
 // StatementAddFKNotValidAdvisor is the advisor checking for to add check not valid.

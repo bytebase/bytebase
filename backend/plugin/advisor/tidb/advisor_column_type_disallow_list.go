@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
 }
 
 // ColumnTypeDisallowListAdvisor is the advisor checking for column type restriction.

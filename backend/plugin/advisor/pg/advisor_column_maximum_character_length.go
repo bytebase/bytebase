@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLColumnMaximumCharacterLength, &ColumnMaximumCharacterLengthAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleColumnMaximumCharacterLength, &ColumnMaximumCharacterLengthAdvisor{})
 }
 
 // ColumnMaximumCharacterLengthAdvisor is the advisor checking for maximum character length.

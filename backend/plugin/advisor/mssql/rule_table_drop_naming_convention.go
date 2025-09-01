@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
 }
 
 // TableDropNamingConventionAdvisor is the advisor checking for table drop with naming convention.

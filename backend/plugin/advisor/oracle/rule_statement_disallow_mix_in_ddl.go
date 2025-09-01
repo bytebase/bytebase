@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.OracleStatementDisallowMixInDDL, &StatementDisallowMixInDDLAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleStatementDisallowMixInDDL, &StatementDisallowMixInDDLAdvisor{})
 }
 
 type StatementDisallowMixInDDLAdvisor struct {

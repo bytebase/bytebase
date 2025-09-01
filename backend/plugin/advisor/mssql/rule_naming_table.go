@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLNamingTableConvention, &NamingTableAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleTableNaming, &NamingTableAdvisor{})
 }
 
 // NamingTableAdvisor is the advisor checking for table naming convention..

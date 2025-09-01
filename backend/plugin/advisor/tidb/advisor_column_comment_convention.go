@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleColumnCommentConvention, &ColumnCommentConventionAdvisor{})
 }
 
 // ColumnCommentConventionAdvisor is the advisor checking for column comment convention.

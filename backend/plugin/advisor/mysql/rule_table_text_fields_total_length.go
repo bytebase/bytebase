@@ -24,7 +24,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableTextFieldsTotalLength, &TableMaximumVarcharLengthAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableTextFieldsTotalLength, &TableMaximumVarcharLengthAdvisor{})
 }
 
 type TableMaximumVarcharLengthAdvisor struct {

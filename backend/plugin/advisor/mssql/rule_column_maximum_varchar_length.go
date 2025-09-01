@@ -23,7 +23,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLColumnMaximumVarcharLength, &ColumnMaximumVarcharLengthAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleColumnMaximumVarcharLength, &ColumnMaximumVarcharLengthAdvisor{})
 }
 
 // ColumnMaximumVarcharLengthAdvisor is the advisor checking for maximum varchar length..

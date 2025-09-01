@@ -21,8 +21,8 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLPrimaryKeyTypeAllowlist, &IndexPrimaryKeyTypeAllowlistAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLPrimaryKeyTypeAllowlist, &IndexPrimaryKeyTypeAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist, &IndexPrimaryKeyTypeAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist, &IndexPrimaryKeyTypeAllowlistAdvisor{})
 }
 
 // IndexPrimaryKeyTypeAllowlistAdvisor is the advisor checking for primary key type allowlist.

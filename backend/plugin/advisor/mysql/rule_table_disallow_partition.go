@@ -19,9 +19,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableDisallowPartition, &TableDisallowPartitionAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLTableDisallowPartition, &TableDisallowPartitionAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLTableDisallowPartition, &TableDisallowPartitionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableDisallowPartition, &TableDisallowPartitionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleTableDisallowPartition, &TableDisallowPartitionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleTableDisallowPartition, &TableDisallowPartitionAdvisor{})
 }
 
 // TableDisallowPartitionAdvisor is the advisor checking for disallow table partition.

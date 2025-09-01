@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SnowflakeIdentifierNamingNoKeyword, &NamingIdentifierNoKeywordAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleIdentifierNoKeyword, &NamingIdentifierNoKeywordAdvisor{})
 }
 
 // NamingIdentifierNoKeywordAdvisor is the advisor checking for identifier naming convention without keyword.

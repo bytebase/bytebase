@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleIDXNaming, &NamingIndexConventionAdvisor{})
 }
 
 // NamingIndexConventionAdvisor is the advisor checking for index naming convention.

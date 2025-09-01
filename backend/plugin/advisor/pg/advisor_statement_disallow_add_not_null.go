@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLDisallowAddNotNull, &StatementDisallowAddNotNullAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementDisallowAddNotNull, &StatementDisallowAddNotNullAdvisor{})
 }
 
 // StatementDisallowAddNotNullAdvisor is the advisor checking for to disallow add not null.

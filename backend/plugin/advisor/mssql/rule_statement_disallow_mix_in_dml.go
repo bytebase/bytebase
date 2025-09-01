@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLStatementDisallowMixInDML, &StatementDisallowMixInDMLAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleStatementDisallowMixInDML, &StatementDisallowMixInDMLAdvisor{})
 }
 
 type StatementDisallowMixInDMLAdvisor struct {

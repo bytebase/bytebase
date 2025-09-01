@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleColumnDisallowChange, &ColumnDisallowChangingAdvisor{})
 }
 
 // ColumnDisallowChangingAdvisor is the advisor checking for disallow CHANGE COLUMN statement.

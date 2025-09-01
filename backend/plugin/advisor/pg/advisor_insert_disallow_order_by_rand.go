@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLInsertDisallowOrderByRand, &InsertDisallowOrderByRandAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementInsertDisallowOrderByRand, &InsertDisallowOrderByRandAdvisor{})
 }
 
 // InsertDisallowOrderByRandAdvisor is the advisor checking for to disallow order by rand in INSERT statements.

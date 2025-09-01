@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementMaximumJoinTableCount, &StatementMaximumJoinTableCountAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementMaximumJoinTableCount, &StatementMaximumJoinTableCountAdvisor{})
 }
 
 type StatementMaximumJoinTableCountAdvisor struct {

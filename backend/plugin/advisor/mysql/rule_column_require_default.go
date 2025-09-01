@@ -19,9 +19,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLRequireColumnDefault, &ColumnRequireDefaultAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLRequireColumnDefault, &ColumnRequireDefaultAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLRequireColumnDefault, &ColumnRequireDefaultAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleColumnRequireDefault, &ColumnRequireDefaultAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleColumnRequireDefault, &ColumnRequireDefaultAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleColumnRequireDefault, &ColumnRequireDefaultAdvisor{})
 }
 
 // ColumnRequireDefaultAdvisor is the advisor checking for column default requirement.

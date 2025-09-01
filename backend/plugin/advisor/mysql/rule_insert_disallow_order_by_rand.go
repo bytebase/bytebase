@@ -22,9 +22,9 @@ var (
 const RandFn = "rand()"
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLInsertDisallowOrderByRand, &InsertDisallowOrderByRandAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLInsertDisallowOrderByRand, &InsertDisallowOrderByRandAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLInsertDisallowOrderByRand, &InsertDisallowOrderByRandAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementInsertDisallowOrderByRand, &InsertDisallowOrderByRandAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementInsertDisallowOrderByRand, &InsertDisallowOrderByRandAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleStatementInsertDisallowOrderByRand, &InsertDisallowOrderByRandAdvisor{})
 }
 
 // InsertDisallowOrderByRandAdvisor is the advisor checking for to disallow order by rand in INSERT statements.

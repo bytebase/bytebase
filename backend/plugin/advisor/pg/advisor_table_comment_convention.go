@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLTableCommentConvention, &TableCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleTableCommentConvention, &TableCommentConventionAdvisor{})
 }
 
 // TableCommentConventionAdvisor is the advisor checking for table comment convention.

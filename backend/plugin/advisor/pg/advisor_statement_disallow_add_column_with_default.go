@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLDisallowAddColumnWithDefault, &StatementDisallowAddColumnWithDefaultAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementDisallowAddColumnWithDefault, &StatementDisallowAddColumnWithDefaultAdvisor{})
 }
 
 // StatementDisallowAddColumnWithDefaultAdvisor is the advisor checking for to disallow add column with default.

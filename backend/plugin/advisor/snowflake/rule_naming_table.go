@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SnowflakeNamingTableConvention, &NamingTableAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleTableNaming, &NamingTableAdvisor{})
 }
 
 // NamingTableAdvisor is the advisor checking for table naming convention.

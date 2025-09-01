@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
 }
 
 // ColumnSetDefaultForNotNullAdvisor is the advisor checking for set default value for not null column.

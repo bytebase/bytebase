@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLNoSelectAll, &SelectNoSelectAllAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleStatementNoSelectAll, &SelectNoSelectAllAdvisor{})
 }
 
 // SelectNoSelectAllAdvisor is the advisor checking for no select all.

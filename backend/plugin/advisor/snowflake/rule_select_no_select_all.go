@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SnowflakeNoSelectAll, &SelectNoSelectAllAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleStatementNoSelectAll, &SelectNoSelectAllAdvisor{})
 }
 
 // SelectNoSelectAllAdvisor is the advisor checking for no select all.

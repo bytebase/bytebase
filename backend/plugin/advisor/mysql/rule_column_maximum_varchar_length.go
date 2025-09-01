@@ -20,9 +20,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnMaximumVarcharLength, &ColumnMaximumVarcharLengthAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnMaximumVarcharLength, &ColumnMaximumVarcharLengthAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnMaximumVarcharLength, &ColumnMaximumVarcharLengthAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleColumnMaximumVarcharLength, &ColumnMaximumVarcharLengthAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleColumnMaximumVarcharLength, &ColumnMaximumVarcharLengthAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleColumnMaximumVarcharLength, &ColumnMaximumVarcharLengthAdvisor{})
 }
 
 // ColumnMaximumVarcharLengthAdvisor is the advisor checking for max varchar length.

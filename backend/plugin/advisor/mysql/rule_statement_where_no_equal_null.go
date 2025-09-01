@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementWhereNoEqualNull, &StatementWhereNoEqualNullAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementWhereNoEqualNull, &StatementWhereNoEqualNullAdvisor{})
 }
 
 type StatementWhereNoEqualNullAdvisor struct {

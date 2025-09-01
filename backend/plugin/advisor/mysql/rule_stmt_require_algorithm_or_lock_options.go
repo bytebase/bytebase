@@ -18,11 +18,11 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementRequireAlgorithmOption, &RequireAlgorithmOrLockOptionAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLStatementRequireAlgorithmOption, &RequireAlgorithmOrLockOptionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementRequireAlgorithmOption, &RequireAlgorithmOrLockOptionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementRequireAlgorithmOption, &RequireAlgorithmOrLockOptionAdvisor{})
 
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementRequireLockOption, &RequireAlgorithmOrLockOptionAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLStatementRequireLockOption, &RequireAlgorithmOrLockOptionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementRequireLockOption, &RequireAlgorithmOrLockOptionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementRequireLockOption, &RequireAlgorithmOrLockOptionAdvisor{})
 }
 
 // RequireAlgorithmOrLockOptionAdvisor is the advisor checking for the max execution time.

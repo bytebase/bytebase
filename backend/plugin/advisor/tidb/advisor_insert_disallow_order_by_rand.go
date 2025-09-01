@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLInsertDisallowOrderByRand, &InsertDisallowOrderByRandAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleStatementInsertDisallowOrderByRand, &InsertDisallowOrderByRandAdvisor{})
 }
 
 // InsertDisallowOrderByRandAdvisor is the advisor checking for to disallow order by rand in INSERT statements.

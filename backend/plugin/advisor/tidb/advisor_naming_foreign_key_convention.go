@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleFKNaming, &NamingFKConventionAdvisor{})
 }
 
 // NamingFKConventionAdvisor is the advisor checking for foreign key naming convention.

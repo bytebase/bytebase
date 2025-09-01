@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLNoSelectAll, &NoSelectAllAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementNoSelectAll, &NoSelectAllAdvisor{})
 }
 
 // NoSelectAllAdvisor is the advisor checking for no "select *".

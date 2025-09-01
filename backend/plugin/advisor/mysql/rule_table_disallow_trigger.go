@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableDisallowTrigger, &TableDisallowTriggerAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableDisallowTrigger, &TableDisallowTriggerAdvisor{})
 }
 
 // TableDisallowTriggerAdvisor is the advisor checking for disallow table trigger.

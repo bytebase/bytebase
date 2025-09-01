@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementDisallowUsingFilesort, &StatementDisallowUsingFilesortAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementDisallowUsingFilesort, &StatementDisallowUsingFilesortAdvisor{})
 }
 
 // StatementDisallowUsingFilesortAdvisor is the advisor checking for using filesort.

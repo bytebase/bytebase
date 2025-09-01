@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLMergeAlterTable, &StatementMergeAlterTableAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleStatementMergeAlterTable, &StatementMergeAlterTableAdvisor{})
 }
 
 // StatementMergeAlterTableAdvisor is the advisor checking for merging ALTER TABLE statements.

@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SnowflakeTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
 }
 
 // TableDropNamingConventionAdvisor is the advisor checking for table drop with naming convention.

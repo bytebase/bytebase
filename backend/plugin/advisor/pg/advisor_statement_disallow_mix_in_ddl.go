@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLStatementDisallowMixInDDL, &StatementDisallowMixInDDLAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementDisallowMixInDDL, &StatementDisallowMixInDDLAdvisor{})
 }
 
 // StatementDisallowMixInDDLAdvisor is the advisor checking for disallow mix DDL and DML.
