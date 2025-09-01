@@ -588,11 +588,6 @@ func prodTemplateReviewConfigForPostgreSQL() (*v1pb.ReviewConfig, error) {
 				Engine: v1pb.Engine_POSTGRES,
 			},
 			{
-				Type:   string(advisor.SchemaRuleStatementDisallowOrderBy),
-				Level:  v1pb.SQLReviewRuleLevel_WARNING,
-				Engine: v1pb.Engine_POSTGRES,
-			},
-			{
 				Type:   string(advisor.SchemaRuleStatementMergeAlterTable),
 				Level:  v1pb.SQLReviewRuleLevel_WARNING,
 				Engine: v1pb.Engine_POSTGRES,
