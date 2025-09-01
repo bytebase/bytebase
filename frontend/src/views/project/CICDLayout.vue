@@ -142,7 +142,13 @@ const ready = computed(() => {
 });
 
 const shouldShowNavigation = computed(() => {
-  return !isCreating.value && (plan.value.issue || plan.value.rollout);
+  return (
+    !isCreating.value &&
+    plan.value.specs.some(
+      (spec) => spec.config.case === "changeDatabaseConfig"
+    ) &&
+    (plan.value.issue || plan.value.rollout)
+  );
 });
 
 const route = useRoute();
@@ -169,11 +175,13 @@ watch(
     }
 
     // Redirect all non-changeDatabaseConfig plans to the legacy issue page.
-    // Including create database and export data plans.
+    // Including export data plans.
     if (
       plan.value.issue &&
       plan.value.specs.some(
-        (spec) => spec.config.case !== "changeDatabaseConfig"
+        (spec) =>
+          spec.config.case !== "changeDatabaseConfig" &&
+          spec.config.case !== "createDatabaseConfig"
       )
     ) {
       router.replace({

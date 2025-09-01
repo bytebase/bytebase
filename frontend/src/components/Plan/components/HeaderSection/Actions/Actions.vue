@@ -11,7 +11,6 @@
     />
 
     <!-- Panels -->
-
     <template v-if="issue">
       <IssueReviewActionPanel
         :action="pendingReviewAction"
@@ -20,6 +19,23 @@
       <IssueStatusActionPanel
         :action="pendingStatusAction"
         @close="pendingStatusAction = undefined"
+      />
+    </template>
+
+    <!-- Rollout Action Panel -->
+    <template v-if="rollout && rolloutStage">
+      <TaskRolloutActionPanel
+        :show="Boolean(pendingRolloutAction)"
+        :action="
+          pendingRolloutAction === 'ROLLOUT_START'
+            ? 'RUN'
+            : pendingRolloutAction === 'ROLLOUT_CANCEL'
+              ? 'CANCEL'
+              : 'RUN'
+        "
+        :target="{ type: 'tasks', stage: rolloutStage }"
+        @close="pendingRolloutAction = undefined"
+        @confirm="handleRolloutActionConfirm"
       />
     </template>
   </template>
@@ -60,14 +76,17 @@ import {
   Issue_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
+import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { PlanCheckRun_Result_Status } from "@/types/proto-es/v1/plan_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Type, Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   isUserIncludedInList,
   hasProjectPermissionV2,
   extractProjectResourceName,
   extractIssueUID,
 } from "@/utils";
+import TaskRolloutActionPanel from "../../RolloutView/TaskRolloutActionPanel.vue";
 import { CreateButton } from "./create";
 import { IssueReviewActionPanel, IssueStatusActionPanel } from "./panels";
 import {
@@ -76,6 +95,7 @@ import {
   type IssueReviewAction,
   type IssueStatusAction,
   type PlanAction,
+  type RolloutAction,
   type UnifiedAction,
 } from "./unified";
 
@@ -83,7 +103,7 @@ const { t } = useI18n();
 const router = useRouter();
 const dialog = useDialog();
 const resourcePoller = useResourcePoller();
-const { isCreating, plan, issue, events } = usePlanContext();
+const { isCreating, plan, issue, rollout, events } = usePlanContext();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
 const planStore = usePlanStore();
@@ -121,6 +141,17 @@ const disabledTooltip = computed(() => {
 // Panel visibility state
 const pendingReviewAction = ref<IssueReviewAction | undefined>(undefined);
 const pendingStatusAction = ref<IssueStatusAction | undefined>(undefined);
+const pendingRolloutAction = ref<RolloutAction | undefined>(undefined);
+
+// Get the stage that contains database creation tasks
+const rolloutStage = computed(() => {
+  if (!rollout.value) return undefined;
+
+  // Find the first stage with database creation tasks
+  return rollout.value.stages.find((stage) =>
+    stage.tasks.some((task) => task.type === Task_Type.DATABASE_CREATE)
+  );
+});
 
 // Watch for policy changes to determine if issue creation is restricted
 watchEffect(async () => {
@@ -221,8 +252,18 @@ const availableActions = computed(() => {
     return actions;
   }
 
-  // If issue is done, no actions available
-  if (isDone) return actions;
+  // If issue is done, check for reopen action
+  if (isDone) {
+    const issueCreator = extractUserId(issueValue.creator);
+    const canReopen =
+      currentUserEmail === issueCreator &&
+      hasProjectPermissionV2(project.value, "bb.issues.update");
+
+    if (canReopen) {
+      actions.push("ISSUE_STATUS_REOPEN");
+    }
+    return actions;
+  }
 
   // Check for review actions
   if (issueValue.approvalFindingDone && !reviewContext.done.value) {
@@ -265,14 +306,66 @@ const availableActions = computed(() => {
     }
   }
 
-  // Check for close action
-  const issueCreator = extractUserId(issueValue.creator);
-  const canClose =
-    currentUserEmail === issueCreator &&
+  // Check for resolve and close actions
+  const canUpdateIssue =
+    currentUserEmail === extractUserId(issueValue.creator) &&
     hasProjectPermissionV2(project.value, "bb.issues.update");
 
-  if (canClose) {
+  if (canUpdateIssue) {
+    // Check if issue can be resolved (all tasks must be finished)
+    if (rollout.value) {
+      const allTasksFinished = rollout.value.stages
+        .flatMap((stage) => stage.tasks)
+        .every((task) =>
+          [Task_Status.DONE, Task_Status.SKIPPED].includes(task.status)
+        );
+
+      if (allTasksFinished && reviewContext.done.value) {
+        actions.push("ISSUE_STATUS_RESOLVE");
+      }
+    }
+
     actions.push("ISSUE_STATUS_CLOSE");
+  }
+
+  // Check for rollout actions when rollout exists and has database creation tasks
+  if (
+    rollout.value &&
+    hasProjectPermissionV2(project.value, "bb.taskRuns.create") &&
+    issueValue.approvalFindingDone
+  ) {
+    const hasDatabaseCreateTasks = rollout.value.stages.some((stage) =>
+      stage.tasks.some((task) => task.type === Task_Type.DATABASE_CREATE)
+    );
+
+    if (hasDatabaseCreateTasks) {
+      // Show ROLLOUT_START if there are actionable database creation tasks
+      // This includes both normal rollout and force rollout scenarios
+      const hasStartableTasks = rollout.value.stages
+        .flatMap((stage) => stage.tasks)
+        .some((task) =>
+          [
+            Task_Status.NOT_STARTED,
+            Task_Status.FAILED,
+            Task_Status.CANCELED,
+          ].includes(task.status)
+        );
+
+      if (hasStartableTasks) {
+        actions.push("ROLLOUT_START");
+      }
+
+      // Check for cancel action on running/pending tasks
+      const runningTask = rollout.value.stages
+        .flatMap((stage) => stage.tasks)
+        .find((task) =>
+          [Task_Status.PENDING, Task_Status.RUNNING].includes(task.status)
+        );
+
+      if (runningTask) {
+        actions.push("ROLLOUT_CANCEL");
+      }
+    }
   }
 
   return actions;
@@ -332,7 +425,7 @@ const primaryAction = computed((): ActionConfig | undefined => {
     return { action: "PLAN_REOPEN" };
   }
 
-  // ISSUE_STATUS_REOPEN is primary when issue is closed
+  // ISSUE_STATUS_REOPEN is primary when issue is closed or done
   if (actions.includes("ISSUE_STATUS_REOPEN")) {
     return { action: "ISSUE_STATUS_REOPEN" };
   }
@@ -345,6 +438,16 @@ const primaryAction = computed((): ActionConfig | undefined => {
     return { action: "ISSUE_REVIEW_RE_REQUEST" };
   }
 
+  // ISSUE_STATUS_RESOLVE is primary when issue can be resolved
+  if (actions.includes("ISSUE_STATUS_RESOLVE")) {
+    return { action: "ISSUE_STATUS_RESOLVE" };
+  }
+
+  // Rollout actions as primary actions (high priority for force rollout scenarios)
+  if (actions.includes("ROLLOUT_START")) {
+    return { action: "ROLLOUT_START" };
+  }
+
   return undefined;
 });
 
@@ -352,10 +455,21 @@ const secondaryActions = computed((): ActionConfig[] => {
   const actions = availableActions.value;
   const secondary: ActionConfig[] = [];
 
-  // ISSUE_REVIEW_REJECT, ISSUE_STATUS_CLOSE, and PLAN_CLOSE go in the dropdown
   if (actions.includes("ISSUE_REVIEW_REJECT")) {
     secondary.push({ action: "ISSUE_REVIEW_REJECT" });
   }
+
+  // Rollout actions in dropdown
+  if (
+    primaryAction.value?.action !== "ROLLOUT_START" &&
+    actions.includes("ROLLOUT_START")
+  ) {
+    secondary.push({ action: "ROLLOUT_START" });
+  }
+  if (actions.includes("ROLLOUT_CANCEL")) {
+    secondary.push({ action: "ROLLOUT_CANCEL" });
+  }
+
   if (actions.includes("ISSUE_STATUS_CLOSE")) {
     secondary.push({ action: "ISSUE_STATUS_CLOSE" });
   }
@@ -375,6 +489,7 @@ const handlePerformAction = async (action: UnifiedAction) => {
       break;
     case "ISSUE_STATUS_CLOSE":
     case "ISSUE_STATUS_REOPEN":
+    case "ISSUE_STATUS_RESOLVE":
       pendingStatusAction.value = action as IssueStatusAction;
       break;
     case "ISSUE_CREATE":
@@ -385,6 +500,10 @@ const handlePerformAction = async (action: UnifiedAction) => {
       break;
     case "PLAN_REOPEN":
       await handlePlanStateChange("PLAN_REOPEN");
+      break;
+    case "ROLLOUT_START":
+    case "ROLLOUT_CANCEL":
+      pendingRolloutAction.value = action as RolloutAction;
       break;
   }
 };
@@ -405,7 +524,24 @@ const handleIssueCreate = async () => {
   }
 };
 
+// Helper function to determine issue type from plan specs
+const getIssueTypeFromPlan = (planValue: Plan): Issue_Type => {
+  // Check if any spec is for data export
+  const hasExportDataSpec = planValue.specs.some(
+    (spec: Plan_Spec) => spec.config?.case === "exportDataConfig"
+  );
+
+  if (hasExportDataSpec) {
+    return Issue_Type.DATABASE_EXPORT;
+  }
+
+  // For both database creation and changes, use DATABASE_CHANGE
+  return Issue_Type.DATABASE_CHANGE;
+};
+
 const doCreateIssue = async () => {
+  const issueType = getIssueTypeFromPlan(plan.value);
+
   const request = create(CreateIssueRequestSchema, {
     parent: project.value.name,
     issue: create(IssueSchema, {
@@ -413,7 +549,7 @@ const doCreateIssue = async () => {
       labels: [], // No labels for direct creation
       plan: plan.value.name,
       status: IssueStatus.OPEN,
-      type: Issue_Type.DATABASE_CHANGE,
+      type: issueType,
       rollout: "",
     }),
   });
@@ -480,5 +616,12 @@ const handlePlanStateChange = async (action: PlanAction) => {
       }
     },
   });
+};
+
+const handleRolloutActionConfirm = () => {
+  // The TaskRolloutActionPanel handles the actual execution
+  // We just need to emit status change to refresh the UI
+  events.emit("status-changed", { eager: true });
+  pendingRolloutAction.value = undefined;
 };
 </script>
