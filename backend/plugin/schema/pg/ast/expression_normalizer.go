@@ -216,14 +216,21 @@ func (v *normalizationVisitor) normalizeUnquotedIdentifier(identifier string) st
 	return strings.ToLower(identifier)
 }
 
-// normalizeFunctionName normalizes function names
+// normalizeFunctionName normalizes function names using PostgreSQL standard rules
 func (v *normalizationVisitor) normalizeFunctionName(name string) string {
-	// Handle quoted function names - preserve exact case
+	// Use the standard PostgreSQL identifier normalization logic
 	if v.isQuotedIdentifier(name) {
-		return name
+		// For quoted identifiers, use the same normalization as PostgreSQL parser
+		// Remove quotes and unescape double quotes, then convert to lowercase for functions
+		if len(name) >= 2 && strings.HasPrefix(name, "\"") && strings.HasSuffix(name, "\"") {
+			// This follows the same logic as normalizePostgreSQLQuotedIdentifier in the parser
+			unquoted := strings.ReplaceAll(name[1:len(name)-1], `""`, `"`)
+			// PostgreSQL function names are case-insensitive, so normalize to lowercase
+			return strings.ToLower(unquoted)
+		}
 	}
 
-	// Function names are case-insensitive in PostgreSQL for unquoted names
+	// For unquoted function names, PostgreSQL converts them to lowercase
 	return strings.ToLower(name)
 }
 

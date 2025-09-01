@@ -682,13 +682,37 @@ func normalizePostgreSQLType(typeName string) string {
 
 	// Handle timestamp without explicit timezone
 	if typeName == "timestamp" {
-		return "timestamp without time zone"
+		return "timestamp(6) without time zone" // PostgreSQL default precision is 6
+	}
+	// Handle timestamp with time zone (no precision specified)
+	if typeName == "timestamp with time zone" {
+		return "timestamp(6) with time zone" // PostgreSQL default precision is 6
+	}
+	// Handle timestamp with precision (preserve precision but add timezone info)
+	if strings.HasPrefix(typeName, "timestamp(") && strings.HasSuffix(typeName, ")") {
+		// Extract precision part: timestamp(3) -> (3)
+		precision := typeName[9:] // Get "(3)" part  
+		return "timestamp" + precision + " without time zone"
+	}
+	// Handle time without explicit timezone (PostgreSQL default)  
+	if typeName == "time" {
+		return "time(6) without time zone" // PostgreSQL default precision is 6
+	}
+	// Handle time with time zone (no precision specified)
+	if typeName == "time with time zone" {
+		return "time(6) with time zone" // PostgreSQL default precision is 6
+	}
+	// Handle time with precision (preserve precision but add timezone info)
+	if strings.HasPrefix(typeName, "time(") && strings.HasSuffix(typeName, ")") {
+		// Extract precision part: time(6) -> (6)
+		precision := typeName[4:] // Get "(6)" part
+		return "time" + precision + " without time zone"
 	}
 
-	// Handle decimal -> numeric (sync.go reports decimal as numeric without precision)
+	// Handle decimal -> numeric (preserve precision information)
 	if strings.HasPrefix(typeName, "decimal(") {
-		// sync.go returns just "numeric" without precision for decimal types
-		return "numeric"
+		// Convert decimal(p,s) to numeric(p,s) while preserving precision
+		return "numeric" + typeName[7:] // Replace "decimal" with "numeric"
 	}
 	if typeName == "decimal" {
 		return "numeric"
@@ -711,9 +735,9 @@ func normalizePostgreSQLType(typeName string) string {
 	case "char":
 		return "character"
 	case "timestamptz":
-		return "timestamp with time zone"
+		return "timestamp(6) with time zone" // PostgreSQL default precision is 6
 	case "timetz":
-		return "time with time zone"
+		return "time(6) with time zone" // PostgreSQL default precision is 6
 	default:
 		// Return type as-is for unrecognized types
 	}
@@ -1084,8 +1108,14 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintCo
 
 	case constraintElem.CHECK() != nil:
 		// Check constraint
-		check := &storepb.CheckConstraintMetadata{
-			Name: constraintName,
+		check := &storepb.CheckConstraintMetadata{}
+		// Generate constraint name if not provided (PostgreSQL auto-generates names)
+		if constraintName != "" {
+			check.Name = constraintName
+		} else {
+			// For table-level check constraints, use {table}_check_{index} format
+			checkIndex := len(table.CheckConstraints) + 1
+			check.Name = fmt.Sprintf("%s_check_%d", table.Name, checkIndex)
 		}
 		if expr := constraintElem.A_expr(); expr != nil {
 			rawExpression := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(expr)
