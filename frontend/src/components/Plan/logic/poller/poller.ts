@@ -106,6 +106,21 @@ export const provideResourcePoller = () => {
     },
   };
 
+  const planType = computed(() => {
+    if (
+      plan.value.specs.every(
+        (spec) => spec.config.case === "createDatabaseConfig"
+      )
+    ) {
+      return "CREATE_DATABASE";
+    } else if (
+      plan.value.specs.every((spec) => spec.config.case === "exportDataConfig")
+    ) {
+      return "EXPORT_DATA";
+    }
+    return "CHANGE_DATABASE";
+  });
+
   const resourcesFromRoute = computed<ResourceType[]>(() => {
     if (isCreating.value) return [];
 
@@ -122,8 +137,14 @@ export const provideResourcePoller = () => {
     ];
 
     if (includes(planRoutes, routeName)) return ["plan"];
-    if (includes([PROJECT_V1_ROUTE_ISSUE_DETAIL_V1], routeName))
-      return ["issue"];
+    if (includes([PROJECT_V1_ROUTE_ISSUE_DETAIL_V1], routeName)) {
+      if (planType.value === "CHANGE_DATABASE") {
+        return ["issue"];
+      } else {
+        // For CREATE_DATABASE and EXPORT_DATA plans, we use the issue page to show the rollout and task runs.
+        return ["plan", "issue", "rollout", "taskRuns"];
+      }
+    }
     if (includes(rolloutRoutes, routeName)) return ["rollout", "taskRuns"];
 
     return ["plan", "planCheckRuns", "issue", "rollout", "taskRuns"];

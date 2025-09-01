@@ -94,6 +94,8 @@ const title = computed(() => {
       return t("issue.batch-transition.close");
     case "ISSUE_STATUS_REOPEN":
       return t("issue.batch-transition.reopen");
+    case "ISSUE_STATUS_RESOLVE":
+      return t("issue.batch-transition.resolve");
   }
   return "";
 });
@@ -111,6 +113,9 @@ const handleConfirm = async () => {
       case "ISSUE_STATUS_REOPEN":
         issueStatus = IssueStatus.OPEN;
         break;
+      case "ISSUE_STATUS_RESOLVE":
+        issueStatus = IssueStatus.DONE;
+        break;
       default:
         throw new Error(`Unsupported action: ${action}`);
     }
@@ -118,7 +123,9 @@ const handleConfirm = async () => {
     const newStatus =
       issueStatus === IssueStatus.OPEN
         ? NewIssueStatus.OPEN
-        : NewIssueStatus.CANCELED;
+        : issueStatus === IssueStatus.DONE
+          ? NewIssueStatus.DONE
+          : NewIssueStatus.CANCELED;
 
     const request = create(BatchUpdateIssuesStatusRequestSchema, {
       parent: project.value.name,
