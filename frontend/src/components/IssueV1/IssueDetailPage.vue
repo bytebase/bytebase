@@ -176,15 +176,29 @@ const {
 } = provideSidebarContext(containerRef);
 
 onMounted(() => {
+  // Always redirect creating database issue to new issue layout.
+  if (
+    issue.value.planEntity?.specs.every(
+      (spec) => spec.config.case === "createDatabaseConfig"
+    )
+  ) {
+    router.replace({
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+      params: {
+        projectId: extractProjectResourceName(project.value.name),
+        issueId: extractIssueUID(issue.value.name),
+      },
+      query: route.query,
+    });
+    return;
+  }
+
   if (
     enabledNewLayout.value &&
     issue.value.type === Issue_Type.DATABASE_CHANGE &&
-    (issue.value.planEntity?.specs.every(
+    issue.value.planEntity?.specs.every(
       (spec) => spec.config.case === "changeDatabaseConfig"
-    ) ||
-      issue.value.planEntity?.specs.every(
-        (spec) => spec.config.case === "createDatabaseConfig"
-      ))
+    )
   ) {
     if (isCreating.value) {
       // Redirect to plans creation page with original query parameters
