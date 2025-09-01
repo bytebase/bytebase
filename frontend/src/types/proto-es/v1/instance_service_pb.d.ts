@@ -842,6 +842,16 @@ export declare type DataSource = Message<"bytebase.v1.DataSource"> & {
   sslKey: string;
 
   /**
+   * skip_tls_verify skips TLS certificate verification for SSL connections.
+   * This is insecure and should only be used for development or when certificates
+   * cannot be properly validated (e.g., self-signed certs, VPN environments).
+   * Default is false (verification enabled) for security.
+   *
+   * @generated from field: bool skip_tls_verify = 39;
+   */
+  skipTlsVerify: boolean;
+
+  /**
    * @generated from field: string host = 8;
    */
   host: string;

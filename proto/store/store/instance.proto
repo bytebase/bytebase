@@ -69,6 +69,11 @@ message DataSource {
   string obfuscated_ssl_cert = 6;
   string ssl_key = 40;
   string obfuscated_ssl_key = 7;
+  // skip_tls_verify skips TLS certificate verification for SSL connections.
+  // This is insecure and should only be used for development or when certificates
+  // cannot be properly validated (e.g., self-signed certs, VPN environments).
+  // Default is false (verification enabled) for security.
+  bool skip_tls_verify = 47;
   string host = 8;
   string port = 9;
   string database = 10;

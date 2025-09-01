@@ -4331,6 +4331,16 @@ are /[a-z][0-9]-/. </p></td>
                 </tr>
               
                 <tr>
+                  <td>skip_tls_verify</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>skip_tls_verify skips TLS certificate verification for SSL connections.
+This is insecure and should only be used for development or when certificates
+cannot be properly validated (e.g., self-signed certs, VPN environments).
+Default is false (verification enabled) for security. </p></td>
+                </tr>
+              
+                <tr>
                   <td>host</td>
                   <td><a href="#string">string</a></td>
                   <td></td>

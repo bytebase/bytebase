@@ -9491,6 +9491,13 @@ components:
                     type: string
                 obfuscatedSslKey:
                     type: string
+                skipTlsVerify:
+                    type: boolean
+                    description: |-
+                        skip_tls_verify skips TLS certificate verification for SSL connections.
+                         This is insecure and should only be used for development or when certificates
+                         cannot be properly validated (e.g., self-signed certs, VPN environments).
+                         Default is false (verification enabled) for security.
                 host:
                     type: string
                 port:

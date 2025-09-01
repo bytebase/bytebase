@@ -564,9 +564,14 @@ type DataSource struct {
 	ObfuscatedSslCert string `protobuf:"bytes,6,opt,name=obfuscated_ssl_cert,json=obfuscatedSslCert,proto3" json:"obfuscated_ssl_cert,omitempty"`
 	SslKey            string `protobuf:"bytes,40,opt,name=ssl_key,json=sslKey,proto3" json:"ssl_key,omitempty"`
 	ObfuscatedSslKey  string `protobuf:"bytes,7,opt,name=obfuscated_ssl_key,json=obfuscatedSslKey,proto3" json:"obfuscated_ssl_key,omitempty"`
-	Host              string `protobuf:"bytes,8,opt,name=host,proto3" json:"host,omitempty"`
-	Port              string `protobuf:"bytes,9,opt,name=port,proto3" json:"port,omitempty"`
-	Database          string `protobuf:"bytes,10,opt,name=database,proto3" json:"database,omitempty"`
+	// skip_tls_verify skips TLS certificate verification for SSL connections.
+	// This is insecure and should only be used for development or when certificates
+	// cannot be properly validated (e.g., self-signed certs, VPN environments).
+	// Default is false (verification enabled) for security.
+	SkipTlsVerify bool   `protobuf:"varint,47,opt,name=skip_tls_verify,json=skipTlsVerify,proto3" json:"skip_tls_verify,omitempty"`
+	Host          string `protobuf:"bytes,8,opt,name=host,proto3" json:"host,omitempty"`
+	Port          string `protobuf:"bytes,9,opt,name=port,proto3" json:"port,omitempty"`
+	Database      string `protobuf:"bytes,10,opt,name=database,proto3" json:"database,omitempty"`
 	// srv, authentication_database and replica_set are used for MongoDB.
 	// srv is a boolean flag that indicates whether the host is a DNS SRV record.
 	Srv bool `protobuf:"varint,11,opt,name=srv,proto3" json:"srv,omitempty"`
@@ -739,6 +744,13 @@ func (x *DataSource) GetObfuscatedSslKey() string {
 		return x.ObfuscatedSslKey
 	}
 	return ""
+}
+
+func (x *DataSource) GetSkipTlsVerify() bool {
+	if x != nil {
+		return x.SkipTlsVerify
+	}
+	return false
 }
 
 func (x *DataSource) GetHost() string {
@@ -1661,7 +1673,7 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x11_connection_limitB\x0e\n" +
 	"\f_valid_untilB\f\n" +
 	"\n" +
-	"_attribute\"\x8d\x18\n" +
+	"_attribute\"\xb5\x18\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x122\n" +
@@ -1675,7 +1687,8 @@ const file_store_instance_proto_rawDesc = "" +
 	"\bssl_cert\x18' \x01(\tR\asslCert\x12.\n" +
 	"\x13obfuscated_ssl_cert\x18\x06 \x01(\tR\x11obfuscatedSslCert\x12\x17\n" +
 	"\assl_key\x18( \x01(\tR\x06sslKey\x12,\n" +
-	"\x12obfuscated_ssl_key\x18\a \x01(\tR\x10obfuscatedSslKey\x12\x12\n" +
+	"\x12obfuscated_ssl_key\x18\a \x01(\tR\x10obfuscatedSslKey\x12&\n" +
+	"\x0fskip_tls_verify\x18/ \x01(\bR\rskipTlsVerify\x12\x12\n" +
 	"\x04host\x18\b \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\t \x01(\tR\x04port\x12\x1a\n" +
 	"\bdatabase\x18\n" +

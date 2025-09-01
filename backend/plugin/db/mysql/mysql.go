@@ -170,7 +170,7 @@ func registerRDSMysqlCerts(ctx context.Context) error {
 		return err
 	}
 
-	return mysql.RegisterTLSConfig("rds", &tls.Config{RootCAs: rootCertPool, InsecureSkipVerify: true})
+	return mysql.RegisterTLSConfig("rds", &tls.Config{RootCAs: rootCertPool})
 }
 
 // getRDSConnection returns the connection string with IAM for AWS RDS.

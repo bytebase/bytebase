@@ -1,5 +1,23 @@
 <template>
-  <NTabs :default-value="'CA'" class="mt-2" pane-style="padding-top: 0.25rem">
+  <div class="mt-2 space-y-3">
+    <div class="flex flex-row items-center gap-2">
+      <NSwitch
+        v-model:value="state.value.skipTlsVerify"
+        size="small"
+        :disabled="disabled"
+      />
+      <label for="skipTlsVerify" class="textlabel block">
+        {{ $t("data-source.ssl.skip-verify") }}
+      </label>
+      <NTooltip>
+        <template #trigger>
+          <Info class="w-4 h-4 text-yellow-600" />
+        </template>
+        {{ $t("data-source.ssl.skip-verify-tooltip") }}
+      </NTooltip>
+    </div>
+    
+  <NTabs :default-value="'CA'" pane-style="padding-top: 0.25rem">
     <NTabPane
       name="CA"
       :tab="$t('data-source.ssl.ca-cert')"
@@ -42,17 +60,19 @@
       />
     </NTabPane>
   </NTabs>
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
-import { NTabs, NTabPane } from "naive-ui";
+import { NTabs, NTabPane, NSwitch, NTooltip } from "naive-ui";
 import { computed, reactive, watch } from "vue";
+import { Info } from "lucide-vue-next";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 
-type WithSslOptions = Partial<Pick<DataSource, "sslCa" | "sslCert" | "sslKey">>;
+type WithSslOptions = Partial<Pick<DataSource, "sslCa" | "sslCert" | "sslKey" | "skipTlsVerify">>;
 
 type LocalState = {
   value: WithSslOptions;
@@ -73,6 +93,7 @@ const state = reactive<LocalState>({
     sslCa: props.value.sslCa,
     sslCert: props.value.sslCert,
     sslKey: props.value.sslKey,
+    skipTlsVerify: props.value.skipTlsVerify ?? false,
   },
 });
 
@@ -92,6 +113,7 @@ watch(
       sslCa: newValue.sslCa,
       sslCert: newValue.sslCert,
       sslKey: newValue.sslKey,
+      skipTlsVerify: newValue.skipTlsVerify ?? false,
     };
   }
 );
