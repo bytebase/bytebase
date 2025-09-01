@@ -49,7 +49,7 @@ const actionDisplayName = (action: UnifiedAction): string => {
     case "ISSUE_STATUS_RESOLVE":
       return t("issue.batch-transition.resolve");
     case "ISSUE_CREATE":
-      t("plan.ready-for-review");
+      return t("plan.ready-for-review");
     case "PLAN_CLOSE":
       return t("common.close");
     case "PLAN_REOPEN":

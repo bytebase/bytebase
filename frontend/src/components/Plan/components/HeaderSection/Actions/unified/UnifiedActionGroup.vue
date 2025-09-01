@@ -76,9 +76,9 @@ const actionDisplayName = (action: UnifiedAction): string => {
     case "PLAN_REOPEN":
       return t("common.reopen");
     case "ROLLOUT_START":
-      return "Rollout";
+      return t("common.rollout");
     case "ROLLOUT_CANCEL":
-      return "Cancel";
+      return t("common.cancel");
   }
 };
 
