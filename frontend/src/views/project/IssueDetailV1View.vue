@@ -60,8 +60,11 @@ const planType = computed(() => {
 });
 
 onMounted(() => {
-  // Redirect to legacy layout if new layout is disabled
-  if (!enabledNewLayout.value) {
+  const isCreatingDatabasePlan = plan.value.specs.every(
+    (spec) => spec.config.case === "createDatabaseConfig"
+  );
+  // Redirect to legacy layout if new layout is disabled and the plan is not a database creation plan.
+  if (!enabledNewLayout.value && !isCreatingDatabasePlan) {
     const legacyIssueSlug = issueV1Slug(
       `projects/${props.projectId}/issues/${props.issueId}`,
       "issue"
@@ -74,9 +77,8 @@ onMounted(() => {
       },
       query: route.query,
     });
-  } else {
-    // New layout enabled, set loading to false
-    isLoading.value = false;
+    return;
   }
+  isLoading.value = false;
 });
 </script>
