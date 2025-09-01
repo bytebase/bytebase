@@ -801,5 +801,3 @@ func convertWalkThroughErrorToAdvice(err error) ([]*storepb.Advice, error) {
 
 	return res, nil
 }
-
-// getAdvisorTypeByRule has been removed - advisors now use SQLReviewRuleType directly
