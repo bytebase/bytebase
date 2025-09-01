@@ -69,8 +69,9 @@ const columnList = computed(
       },
       {
         key: "title",
-        width: 160,
+        width: 300,
         title: t("common.title"),
+        resizable: true,
         render: (release) => {
           return (
             <p class="inline-flex w-full">
@@ -93,6 +94,7 @@ const columnList = computed(
       {
         key: "files",
         title: t("release.files"),
+        resizable: true,
         ellipsis: true,
         render: (release) => {
           const showFiles = release.files.slice(0, MAX_SHOW_FILES_COUNT);
@@ -119,6 +121,7 @@ const columnList = computed(
         key: "createTime",
         title: t("common.created-at"),
         width: 128,
+        resizable: true,
         render: (release) =>
           humanizeTs(
             getTimeForPbTimestampProtoEs(release.createTime, 0) / 1000
