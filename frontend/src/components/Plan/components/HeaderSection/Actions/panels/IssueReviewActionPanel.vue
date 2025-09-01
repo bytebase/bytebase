@@ -100,10 +100,12 @@ import {
   RequestIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanCheckRun_Status } from "@/types/proto-es/v1/plan_service_pb";
+import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractIssueUID,
   extractProjectResourceName,
   extractRolloutUID,
+  flattenTaskV1List,
 } from "@/utils";
 import type { IssueReviewAction } from "../unified";
 
@@ -245,6 +247,15 @@ const handleConfirm = async () => {
   } finally {
     state.loading = false;
     emit("close");
+
+    const shouldRedirect = flattenTaskV1List(rollout.value).every(
+      (task) =>
+        task.type !== Task_Type.DATABASE_CREATE &&
+        task.type !== Task_Type.DATABASE_EXPORT
+    );
+    if (!shouldRedirect) {
+      return;
+    }
 
     // For ISSUE_REVIEW_APPROVE, check if this is the last approval needed
     if (action === "ISSUE_REVIEW_APPROVE") {

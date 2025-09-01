@@ -46,12 +46,18 @@ const actionDisplayName = (action: UnifiedAction): string => {
       return t("issue.batch-transition.close");
     case "ISSUE_STATUS_REOPEN":
       return t("issue.batch-transition.reopen");
+    case "ISSUE_STATUS_RESOLVE":
+      return t("issue.batch-transition.resolve");
     case "ISSUE_CREATE":
       return t("plan.ready-for-review");
     case "PLAN_CLOSE":
       return t("common.close");
     case "PLAN_REOPEN":
       return t("common.reopen");
+    case "ROLLOUT_START":
+      return t("common.rollout");
+    case "ROLLOUT_CANCEL":
+      return t("common.cancel");
   }
 };
 
@@ -59,8 +65,13 @@ const actionButtonProps = (action: UnifiedAction) => {
   switch (action) {
     case "ISSUE_REVIEW_APPROVE":
     case "ISSUE_CREATE":
+    case "ROLLOUT_START":
       return {
         type: "primary" as const,
+      };
+    case "ISSUE_STATUS_RESOLVE":
+      return {
+        type: "success" as const,
       };
     case "ISSUE_REVIEW_RE_REQUEST":
     case "ISSUE_STATUS_REOPEN":

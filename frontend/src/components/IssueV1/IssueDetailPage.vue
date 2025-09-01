@@ -179,9 +179,12 @@ onMounted(() => {
   if (
     enabledNewLayout.value &&
     issue.value.type === Issue_Type.DATABASE_CHANGE &&
-    issue.value.planEntity?.specs.every(
+    (issue.value.planEntity?.specs.every(
       (spec) => spec.config.case === "changeDatabaseConfig"
-    )
+    ) ||
+      issue.value.planEntity?.specs.every(
+        (spec) => spec.config.case === "createDatabaseConfig"
+      ))
   ) {
     if (isCreating.value) {
       // Redirect to plans creation page with original query parameters
