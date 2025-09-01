@@ -1,8 +1,8 @@
 <template>
-  <div class="flex-1 flex w-full">
+  <div class="flex-1 flex w-full border-t -mt-px">
     <!-- Left Panel - Activity -->
     <div class="flex-1 shrink p-4 space-y-4">
-      <OverviewSection v-if="shouldShowOverview" />
+      <slot />
       <ActivitySection />
     </div>
 
@@ -17,11 +17,10 @@ import { computed, unref } from "vue";
 import { provideIssueContext, useBaseIssueContext } from "@/components/IssueV1";
 import { extractUserId, useCurrentProjectV1, useCurrentUserV1 } from "@/store";
 import type { ComposedIssue } from "@/types";
-import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContextWithIssue } from "../..";
 import { ActivitySection } from "./ActivitySection";
-import OverviewSection from "./OverviewSection.vue";
 import { Sidebar } from "./Sidebar";
 
 const { project, ready } = useCurrentProjectV1();
@@ -46,10 +45,6 @@ const allowChange = computed(() => {
     extractUserId(issue.value.creator) === currentUser.value.email ||
     hasProjectPermissionV2(unref(project), "bb.issues.update")
   );
-});
-
-const shouldShowOverview = computed(() => {
-  return issue.value.type === Issue_Type.DATABASE_CHANGE || rollout?.value;
 });
 
 // TODO(steven): remove ComposedIssue.

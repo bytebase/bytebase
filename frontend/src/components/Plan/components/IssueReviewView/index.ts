@@ -1,1 +1,1 @@
-export { default as IssueReviewView } from "./IssueReviewView.vue";
+export { default as IssueReviewView } from "./IssueBaseLayout.vue";

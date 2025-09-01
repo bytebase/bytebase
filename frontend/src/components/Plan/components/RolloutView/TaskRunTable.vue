@@ -28,10 +28,11 @@ import { create } from "@bufbuild/protobuf";
 import type { Duration } from "@bufbuild/protobuf/wkt";
 import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import type { DataTableColumn } from "naive-ui";
-import { NButton, NDataTable, NTag } from "naive-ui";
+import { NButton, NDataTable } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRunDetail.vue";
+import TaskRunStatusIcon from "@/components/IssueV1/components/TaskRunSection/TaskRunStatusIcon.vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useCurrentProjectV1 } from "@/store";
@@ -72,15 +73,12 @@ const columnList = computed((): DataTableColumn<TaskRun>[] => {
   return [
     {
       key: "status",
-      title: t("common.status"),
-      width: 100,
+      width: 48,
       render: (taskRun: TaskRun) => {
-        const statusType = getStatusType(taskRun.status);
-        const statusText = getStatusText(taskRun.status);
         return (
-          <NTag type={statusType} size="small">
-            {statusText}
-          </NTag>
+          <div class="flex items-center gap-1">
+            <TaskRunStatusIcon status={taskRun.status} />
+          </div>
         );
       },
     },
@@ -134,26 +132,6 @@ const columnList = computed((): DataTableColumn<TaskRun>[] => {
     },
   ];
 });
-
-const getStatusType = (status: TaskRun_Status) => {
-  switch (status) {
-    case TaskRun_Status.DONE:
-      return "success";
-    case TaskRun_Status.FAILED:
-    case TaskRun_Status.CANCELED:
-      return "error";
-    case TaskRun_Status.RUNNING:
-      return "info";
-    case TaskRun_Status.PENDING:
-      return "warning";
-    default:
-      return "default";
-  }
-};
-
-const getStatusText = (status: TaskRun_Status) => {
-  return TaskRun_Status[status].replace("_", " ");
-};
 
 const executionDurationOfTaskRun = (taskRun: TaskRun): Duration | undefined => {
   const { startTime, updateTime } = taskRun;

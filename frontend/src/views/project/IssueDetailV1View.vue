@@ -2,17 +2,36 @@
   <div v-if="isLoading" class="flex items-center justify-center h-full">
     <BBSpin />
   </div>
-  <IssueReviewView v-else />
+  <IssueBaseLayout v-else>
+    <!-- Database Create View -->
+    <DatabaseCreateView v-if="planType === PlanType.CREATE_DATABASE" />
+
+    <!-- Database Export View -->
+    <DatabaseExportView v-else-if="planType === PlanType.EXPORT_DATA" />
+
+    <!-- CI/CD View (default) -->
+    <DatabaseChangeView v-else />
+  </IssueBaseLayout>
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
-import { IssueReviewView } from "@/components/Plan/components/IssueReviewView";
+import { usePlanContextWithIssue } from "@/components/Plan";
+import DatabaseChangeView from "@/components/Plan/components/IssueReviewView/DatabaseChangeView.vue";
+import DatabaseCreateView from "@/components/Plan/components/IssueReviewView/DatabaseCreateView.vue";
+import DatabaseExportView from "@/components/Plan/components/IssueReviewView/DatabaseExportView.vue";
+import IssueBaseLayout from "@/components/Plan/components/IssueReviewView/IssueBaseLayout.vue";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { issueV1Slug } from "@/utils";
+
+enum PlanType {
+  CREATE_DATABASE = "CREATE_DATABASE",
+  CHANGE_DATABASE = "CHANGE_DATABASE",
+  EXPORT_DATA = "EXPORT_DATA",
+}
 
 const props = defineProps<{
   projectId: string;
@@ -21,8 +40,24 @@ const props = defineProps<{
 
 const router = useRouter();
 const route = useRoute();
+const { plan } = usePlanContextWithIssue();
 const { enabledNewLayout } = useIssueLayoutVersion();
 const isLoading = ref(true);
+
+const planType = computed(() => {
+  if (
+    plan.value.specs.every(
+      (spec) => spec.config.case === "createDatabaseConfig"
+    )
+  ) {
+    return PlanType.CREATE_DATABASE;
+  } else if (
+    plan.value.specs.every((spec) => spec.config.case === "exportDataConfig")
+  ) {
+    return PlanType.EXPORT_DATA;
+  }
+  return PlanType.CHANGE_DATABASE;
+});
 
 onMounted(() => {
   // Redirect to legacy layout if new layout is disabled

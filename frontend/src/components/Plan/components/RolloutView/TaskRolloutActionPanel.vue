@@ -33,89 +33,92 @@
           <PlanCheckStatusCount :plan="plan" />
         </div>
 
-        <div
-          class="flex flex-row gap-x-2 shrink-0 overflow-y-hidden justify-start items-center"
-        >
-          <label class="font-medium text-control">
-            {{ $t("common.stage") }}
-          </label>
-          <EnvironmentV1Name
-            :environment="
-              environmentStore.getEnvironmentByName(targetStage.environment)
-            "
-            :link="false"
-          />
-        </div>
-
-        <div
-          class="flex flex-col gap-y-1 shrink overflow-y-hidden justify-start"
-        >
-          <div class="flex items-center justify-between">
-            <label class="text-control">
-              <span class="font-medium">{{
-                $t("common.task", eligibleTasks.length)
-              }}</span>
-              <span class="opacity-80" v-if="eligibleTasks.length > 1">
-                ({{
-                  eligibleTasks.length === target.stage.tasks.length
-                    ? eligibleTasks.length
-                    : `${eligibleTasks.length} / ${target.stage.tasks.length}`
-                }})
-              </span>
+        <!-- Stage/Task information - hidden for database creation tasks -->
+        <template v-if="shouldShowStageTaskInfo">
+          <div
+            class="flex flex-row gap-x-2 shrink-0 overflow-y-hidden justify-start items-center"
+          >
+            <label class="font-medium text-control">
+              {{ $t("common.stage") }}
             </label>
+            <EnvironmentV1Name
+              :environment="
+                environmentStore.getEnvironmentByName(targetStage.environment)
+              "
+              :link="false"
+            />
           </div>
-          <div class="flex-1 overflow-y-auto">
-            <template v-if="useVirtualScroll">
-              <NVirtualList
-                :items="eligibleTasks"
-                :item-size="itemHeight"
-                class="max-h-64"
-                item-resizable
-              >
-                <template #default="{ item: task }">
-                  <div
-                    :key="task.name"
-                    class="flex items-center text-sm"
-                    :style="{ height: `${itemHeight}px` }"
-                  >
-                    <NTag
-                      v-if="semanticTaskType(task.type)"
-                      class="mr-2"
-                      size="small"
+
+          <div
+            class="flex flex-col gap-y-1 shrink overflow-y-hidden justify-start"
+          >
+            <div class="flex items-center justify-between">
+              <label class="text-control">
+                <span class="font-medium">{{
+                  $t("common.task", eligibleTasks.length)
+                }}</span>
+                <span class="opacity-80" v-if="eligibleTasks.length > 1">
+                  ({{
+                    eligibleTasks.length === target.stage.tasks.length
+                      ? eligibleTasks.length
+                      : `${eligibleTasks.length} / ${target.stage.tasks.length}`
+                  }})
+                </span>
+              </label>
+            </div>
+            <div class="flex-1 overflow-y-auto">
+              <template v-if="useVirtualScroll">
+                <NVirtualList
+                  :items="eligibleTasks"
+                  :item-size="itemHeight"
+                  class="max-h-64"
+                  item-resizable
+                >
+                  <template #default="{ item: task }">
+                    <div
+                      :key="task.name"
+                      class="flex items-center text-sm"
+                      :style="{ height: `${itemHeight}px` }"
                     >
-                      <span class="inline-block text-center">
-                        {{ semanticTaskType(task.type) }}
-                      </span>
-                    </NTag>
-                    <TaskDatabaseName :task="task" />
-                  </div>
-                </template>
-              </NVirtualList>
-            </template>
-            <template v-else>
-              <NScrollbar class="max-h-64">
-                <ul class="text-sm space-y-2">
-                  <li
-                    v-for="task in eligibleTasks"
-                    :key="task.name"
-                    class="flex items-center"
-                  >
-                    <NTag
-                      v-if="semanticTaskType(task.type)"
-                      class="mr-2"
-                      size="small"
+                      <NTag
+                        v-if="semanticTaskType(task.type)"
+                        class="mr-2"
+                        size="small"
+                      >
+                        <span class="inline-block text-center">
+                          {{ semanticTaskType(task.type) }}
+                        </span>
+                      </NTag>
+                      <TaskDatabaseName :task="task" />
+                    </div>
+                  </template>
+                </NVirtualList>
+              </template>
+              <template v-else>
+                <NScrollbar class="max-h-64">
+                  <ul class="text-sm space-y-2">
+                    <li
+                      v-for="task in eligibleTasks"
+                      :key="task.name"
+                      class="flex items-center"
                     >
-                      <span class="inline-block text-center">
-                        {{ semanticTaskType(task.type) }}
-                      </span>
-                    </NTag>
-                    <TaskDatabaseName :task="task" />
-                  </li>
-                </ul>
-              </NScrollbar>
-            </template>
+                      <NTag
+                        v-if="semanticTaskType(task.type)"
+                        class="mr-2"
+                        size="small"
+                      >
+                        <span class="inline-block text-center">
+                          {{ semanticTaskType(task.type) }}
+                        </span>
+                      </NTag>
+                      <TaskDatabaseName :task="task" />
+                    </li>
+                  </ul>
+                </NScrollbar>
+              </template>
+            </div>
           </div>
-        </div>
+        </template>
 
         <div v-if="showScheduledTimePicker" class="flex flex-col">
           <h3 class="font-medium text-control mb-1">
@@ -269,7 +272,7 @@ import {
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
@@ -583,6 +586,15 @@ const itemHeight = computed(() => 32); // Height of each task item in pixels
 const showScheduledTimePicker = computed(() => {
   return props.action === "RUN";
 });
+
+// Check if any of the eligible tasks are database creation tasks
+const isDatabaseCreationTask = computed(() => {
+  return eligibleTasks.value.every(
+    (task) => task.type === Task_Type.DATABASE_CREATE
+  );
+});
+
+const shouldShowStageTaskInfo = computed(() => !isDatabaseCreationTask.value);
 
 // Handle execution mode change (immediate vs scheduled)
 const handleExecutionModeChange = (value: string) => {

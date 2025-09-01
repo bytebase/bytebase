@@ -21,6 +21,7 @@ import {
 } from "@/types";
 import {
   Task_Type,
+  TaskRun_Status,
   type Rollout,
   type Stage,
   type Task,
@@ -221,7 +222,9 @@ export const buildIssueV1LinkWithTask = (
   return url;
 };
 
-export const stringifyTaskStatus = (status: Task_Status): string => {
+export const stringifyTaskStatus = (
+  status: Task_Status | TaskRun_Status
+): string => {
   const { t } = useI18n();
   switch (status) {
     case Task_Status.NOT_STARTED:
