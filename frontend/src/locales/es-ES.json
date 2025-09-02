@@ -655,6 +655,7 @@
         "failed-to-update-setting": "No se pudo actualizar la configuración \"{title}\"",
         "ai-assistant": {
           "self": "Asistente de AI",
+          "enabled-in-saas": "Gemini AI se habilita automáticamente en el modo SaaS",
           "enable-ai-assistant": "Habilitar el Asistente de IA",
           "description": "Utilice AI para ayudar en las tareas de desarrollo de bases de datos.",
           "provider": {

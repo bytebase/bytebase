@@ -655,6 +655,7 @@
         "failed-to-update-setting": "Không cập nhật được cài đặt \"{title}\"",
         "ai-assistant": {
           "self": "Trợ lý AI",
+          "enabled-in-saas": "Gemini AI được kích hoạt tự động ở chế độ SaaS",
           "enable-ai-assistant": "Bật Trợ lý AI",
           "description": "Sử dụng AI để hỗ trợ các tác vụ phát triển cơ sở dữ liệu.",
           "provider": {

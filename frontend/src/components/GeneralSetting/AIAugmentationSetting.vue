@@ -11,7 +11,15 @@
       </span>
     </div>
     <div class="flex-1 lg:px-4">
-      <div class="mt-4 lg:mt-0 space-y-4">
+      <div v-if="actuatorStore.isSaaSMode">
+        <BBAttention
+          :type="'info'"
+          :description="
+            t('settings.general.workspace.ai-assistant.enabled-in-saas')
+          "
+        />
+      </div>
+      <div v-else class="mt-4 lg:mt-0 space-y-4">
         <div>
           <div class="flex items-center gap-x-2">
             <Switch
@@ -158,9 +166,10 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBTextField } from "@/bbkit";
+import { BBAttention } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { Switch } from "@/components/v2";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { useSettingV1Store, useActuatorV1Store } from "@/store/modules";
 import {
   AISettingSchema,
   AISetting_Provider,
@@ -182,6 +191,7 @@ const props = defineProps<{
 }>();
 
 const settingV1Store = useSettingV1Store();
+const actuatorStore = useActuatorV1Store();
 const containerRef = ref<HTMLDivElement>();
 const { t } = useI18n();
 
