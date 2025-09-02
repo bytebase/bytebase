@@ -1,0 +1,275 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 2",
+  "tableChanges": 2,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "orders",
+        "columnChanges": 8,
+        "indexChanges": 1,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "ALTER",
+            "name": "customer_email",
+            "oldColumn": {
+              "name": "customer_email",
+              "type": "character varying(100)",
+              "nullable": false
+            },
+            "newColumn": {
+              "name": "customer_email",
+              "type": "character varying(150)",
+              "nullable": false
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "customer_phone",
+            "newColumn": {
+              "name": "customer_phone",
+              "type": "character varying(20)",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "notes",
+            "newColumn": {
+              "name": "notes",
+              "type": "text",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "order_date",
+            "oldColumn": {
+              "name": "order_date",
+              "type": "date",
+              "nullable": false,
+              "defaultValue": "CURRENT_DATE"
+            },
+            "newColumn": {
+              "name": "order_date",
+              "type": "timestamp(6) with time zone",
+              "nullable": false,
+              "defaultValue": "CURRENT_TIMESTAMP"
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "shipping_address",
+            "newColumn": {
+              "name": "shipping_address",
+              "type": "jsonb",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "status",
+            "oldColumn": {
+              "name": "status",
+              "type": "character varying(20)",
+              "nullable": true,
+              "defaultValue": "'pending'::character varying"
+            },
+            "newColumn": {
+              "name": "status",
+              "type": "character varying(30)",
+              "nullable": true,
+              "defaultValue": "'pending'"
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "tax_amount",
+            "newColumn": {
+              "name": "tax_amount",
+              "type": "numeric(15,4)",
+              "nullable": true,
+              "defaultValue": "0.0000"
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "total_amount",
+            "oldColumn": {
+              "name": "total_amount",
+              "type": "numeric(10,2)",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "total_amount",
+              "type": "numeric(15,4)",
+              "nullable": true
+            }
+          }
+        ],
+        "indexes": [
+          {
+            "action": "CREATE",
+            "name": "idx_orders_status",
+            "newIndex": {
+              "name": "idx_orders_status",
+              "type": "btree",
+              "unique": false,
+              "expressions": [
+                "status"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "products",
+        "columnChanges": 8,
+        "indexChanges": 2,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "ALTER",
+            "name": "category_ids",
+            "oldColumn": {
+              "name": "category_ids",
+              "type": "_int4",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "category_ids",
+              "type": "_int8",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "created_at",
+            "oldColumn": {
+              "name": "created_at",
+              "type": "timestamp(6) without time zone",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "created_at",
+              "type": "timestamp(6) with time zone",
+              "nullable": true,
+              "defaultValue": "CURRENT_TIMESTAMP"
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "dimensions",
+            "newColumn": {
+              "name": "dimensions",
+              "type": "jsonb",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "name",
+            "oldColumn": {
+              "name": "name",
+              "type": "character varying(100)",
+              "nullable": false
+            },
+            "newColumn": {
+              "name": "name",
+              "type": "character varying(200)",
+              "nullable": false
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "price",
+            "oldColumn": {
+              "name": "price",
+              "type": "numeric(8,2)",
+              "nullable": false
+            },
+            "newColumn": {
+              "name": "price",
+              "type": "numeric(12,4)",
+              "nullable": false
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "tags",
+            "newColumn": {
+              "name": "tags",
+              "type": "_text",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "updated_at",
+            "newColumn": {
+              "name": "updated_at",
+              "type": "timestamp(6) with time zone",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "weight",
+            "newColumn": {
+              "name": "weight",
+              "type": "numeric(6,3)",
+              "nullable": true
+            }
+          }
+        ],
+        "indexes": [
+          {
+            "action": "CREATE",
+            "name": "idx_products_tags",
+            "newIndex": {
+              "name": "idx_products_tags",
+              "type": "gin",
+              "unique": false,
+              "expressions": [
+                "tags"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "idx_products_weight",
+            "newIndex": {
+              "name": "idx_products_weight",
+              "type": "btree",
+              "unique": false,
+              "expressions": [
+                "weight"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

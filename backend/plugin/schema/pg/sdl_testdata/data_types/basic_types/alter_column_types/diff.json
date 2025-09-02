@@ -1,0 +1,101 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 1",
+  "tableChanges": 1,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "users",
+        "columnChanges": 6,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "ALTER",
+            "name": "age",
+            "oldColumn": {
+              "name": "age",
+              "type": "integer",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "age",
+              "type": "bigint",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "balance",
+            "oldColumn": {
+              "name": "balance",
+              "type": "numeric(10,2)",
+              "nullable": true,
+              "defaultValue": "0.00"
+            },
+            "newColumn": {
+              "name": "balance",
+              "type": "numeric(12,4)",
+              "nullable": true,
+              "defaultValue": "0.0000"
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "email",
+            "oldColumn": {
+              "name": "email",
+              "type": "character varying(100)",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "email",
+              "type": "character varying(100)",
+              "nullable": false
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "last_login",
+            "newColumn": {
+              "name": "last_login",
+              "type": "timestamp(6) without time zone",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "middle_name",
+            "newColumn": {
+              "name": "middle_name",
+              "type": "character varying(50)",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "username",
+            "oldColumn": {
+              "name": "username",
+              "type": "character varying(50)",
+              "nullable": false
+            },
+            "newColumn": {
+              "name": "username",
+              "type": "character varying(100)",
+              "nullable": false
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

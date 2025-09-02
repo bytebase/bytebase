@@ -3,6 +3,7 @@ package pg
 import (
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -11,6 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/plugin/schema/pg/ast"
 )
 
 func init() {
@@ -980,7 +982,7 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 
 	// If type changed, alter the column type
 	if colDiff.OldColumn.Type != colDiff.NewColumn.Type {
-		writeAlterColumnType(&buf, schemaName, tableName, colDiff.NewColumn.Name, colDiff.NewColumn.Type)
+		writeAlterColumnType(&buf, schemaName, tableName, colDiff.NewColumn.Name, colDiff.OldColumn.Type, colDiff.NewColumn.Type)
 	}
 
 	// If nullability changed
@@ -1030,6 +1032,25 @@ func defaultValuesEqual(col1, col2 *storepb.ColumnMetadata) bool {
 	// Check default value
 	def1 := col1.GetDefault()
 	def2 := col2.GetDefault()
+
+	// Use semantic comparison for default values
+	// This handles cases like 'ARRAY[]::TEXT[]' vs 'ARRAY[]::text[]'
+	if def1 == def2 {
+		return true
+	}
+
+	// If they're not identical strings, try semantic comparison
+	if def1 != "" || def2 != "" {
+		// Use the expression comparer from the ast package
+		comparer := ast.NewPostgreSQLExpressionComparer()
+		equal, err := comparer.CompareExpressions(def1, def2)
+		if err != nil {
+			// If comparison fails, fall back to string comparison
+			return def1 == def2
+		}
+		return equal
+	}
+
 	return def1 == def2
 }
 
@@ -1227,7 +1248,92 @@ func writeAddColumn(out *strings.Builder, schema, table string, column *storepb.
 	_, _ = out.WriteString("\n")
 }
 
-func writeAlterColumnType(out *strings.Builder, schema, table, column, newType string) {
+// requiresExplicitCasting determines if a PostgreSQL type conversion requires a USING clause
+func requiresExplicitCasting(oldType, newType string) bool {
+	// Types are already normalized by get_database_metadata.go, no need to normalize again
+
+	// Extract base types without parameters
+	oldBaseType := extractBaseType(oldType)
+	newBaseType := extractBaseType(newType)
+
+	// If same base type, usually no USING clause needed (except for precision reductions)
+	if oldBaseType == newBaseType {
+		return requiresUsingForSameType(oldType, newType)
+	}
+
+	// Define incompatible type conversions that require USING clause
+	incompatibleConversions := map[string][]string{
+		"text":                        {"integer", "numeric", "real", "double precision", "smallint", "bigint", "boolean"},
+		"character varying":           {"integer", "numeric", "real", "double precision", "smallint", "bigint", "boolean"},
+		"character":                   {"integer", "numeric", "real", "double precision", "smallint", "bigint", "boolean"},
+		"jsonb":                       {"text", "character varying", "character"},
+		"json":                        {"text", "character varying", "character"},
+		"integer[]":                   {"text", "character varying", "character"},
+		"text[]":                      {"text", "character varying", "character"},
+		"bigint":                      {"smallint", "integer"},                                       // Potential overflow
+		"double precision":            {"real"},                                                      // Precision loss
+		"timestamp with time zone":    {"date"},                                                      // Time component loss
+		"timestamp without time zone": {"date"},                                                      // Time component loss
+		"numeric":                     {"integer", "smallint", "bigint", "real", "double precision"}, // When precision specified
+	}
+
+	if targets, exists := incompatibleConversions[oldBaseType]; exists {
+		for _, target := range targets {
+			if target == newBaseType {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// extractBaseType removes precision/scale parameters from PostgreSQL types
+func extractBaseType(typeName string) string {
+	// Handle common patterns: numeric(10,2) -> numeric, varchar(100) -> character varying
+	if idx := strings.Index(typeName, "("); idx != -1 {
+		return strings.TrimSpace(typeName[:idx])
+	}
+	return typeName
+}
+
+// requiresUsingForSameType checks if same base type requires USING (e.g., precision reductions)
+func requiresUsingForSameType(oldType, newType string) bool {
+	oldBase := extractBaseType(oldType)
+	newBase := extractBaseType(newType)
+
+	if oldBase != newBase {
+		return false
+	}
+
+	// For character varying, check if reducing length significantly
+	if strings.Contains(oldType, "character varying") {
+		oldLen := extractLength(oldType)
+		newLen := extractLength(newType)
+		if oldLen > 0 && newLen > 0 && oldLen > newLen*2 {
+			return true // Significant reduction might truncate data
+		}
+	}
+
+	return false
+}
+
+// extractLength extracts length parameter from varchar(n) or char(n)
+func extractLength(typeName string) int {
+	start := strings.Index(typeName, "(")
+	end := strings.Index(typeName, ")")
+	if start == -1 || end == -1 || end <= start {
+		return 0
+	}
+
+	lengthStr := strings.TrimSpace(typeName[start+1 : end])
+	if length, err := strconv.Atoi(lengthStr); err == nil {
+		return length
+	}
+	return 0
+}
+
+func writeAlterColumnType(out *strings.Builder, schema, table, column, oldType, newType string) {
 	_, _ = out.WriteString(`ALTER TABLE "`)
 	_, _ = out.WriteString(schema)
 	_, _ = out.WriteString(`"."`)
@@ -1236,6 +1342,15 @@ func writeAlterColumnType(out *strings.Builder, schema, table, column, newType s
 	_, _ = out.WriteString(column)
 	_, _ = out.WriteString(`" TYPE `)
 	_, _ = out.WriteString(newType)
+
+	// Add USING clause for incompatible type conversions
+	if requiresExplicitCasting(oldType, newType) {
+		_, _ = out.WriteString(` USING "`)
+		_, _ = out.WriteString(column)
+		_, _ = out.WriteString(`"::`)
+		_, _ = out.WriteString(newType)
+	}
+
 	_, _ = out.WriteString(`;`)
 	_, _ = out.WriteString("\n")
 }

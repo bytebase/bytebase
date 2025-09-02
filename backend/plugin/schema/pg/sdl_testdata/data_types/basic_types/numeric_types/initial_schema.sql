@@ -1,0 +1,1 @@
+-- Empty initial schema - start from scratch

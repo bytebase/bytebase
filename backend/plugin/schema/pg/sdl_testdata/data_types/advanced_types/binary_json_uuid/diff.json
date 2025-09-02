@@ -1,0 +1,171 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 3",
+  "tableChanges": 3,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "documents",
+        "columnChanges": 4,
+        "indexChanges": 1,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "CREATE",
+            "name": "checksum",
+            "newColumn": {
+              "name": "checksum",
+              "type": "bytea",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "file_info",
+            "newColumn": {
+              "name": "file_info",
+              "type": "jsonb",
+              "nullable": true,
+              "defaultValue": "'{}'"
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "metadata",
+            "oldColumn": {
+              "name": "metadata",
+              "type": "json",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "metadata",
+              "type": "jsonb",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "updated_at",
+            "newColumn": {
+              "name": "updated_at",
+              "type": "timestamp(6) without time zone",
+              "nullable": true
+            }
+          }
+        ],
+        "indexes": [
+          {
+            "action": "CREATE",
+            "name": "idx_documents_metadata",
+            "newIndex": {
+              "name": "idx_documents_metadata",
+              "type": "gin",
+              "unique": false,
+              "expressions": [
+                "metadata"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "tableName": "files",
+        "columnChanges": 0,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0
+      },
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "sessions",
+        "columnChanges": 3,
+        "indexChanges": 2,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "CREATE",
+            "name": "last_accessed",
+            "newColumn": {
+              "name": "last_accessed",
+              "type": "timestamp(6) without time zone",
+              "nullable": true,
+              "defaultValue": "CURRENT_TIMESTAMP"
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "session_id",
+            "oldColumn": {
+              "name": "session_id",
+              "type": "uuid",
+              "nullable": false
+            },
+            "newColumn": {
+              "name": "session_id",
+              "type": "uuid",
+              "nullable": false,
+              "defaultValue": "gen_random_uuid()"
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "settings",
+            "newColumn": {
+              "name": "settings",
+              "type": "jsonb",
+              "nullable": true,
+              "defaultValue": "'{\"theme\": \"default\"}'::jsonb"
+            }
+          }
+        ],
+        "indexes": [
+          {
+            "action": "CREATE",
+            "name": "idx_sessions_data",
+            "newIndex": {
+              "name": "idx_sessions_data",
+              "type": "gin",
+              "unique": false,
+              "expressions": [
+                "data"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "idx_sessions_settings",
+            "newIndex": {
+              "name": "idx_sessions_settings",
+              "type": "gin",
+              "unique": false,
+              "expressions": [
+                "settings"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

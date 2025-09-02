@@ -2,7 +2,10 @@ package pg
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -963,10 +966,17 @@ func executeSDLValidationProcess(ctx context.Context, t *testing.T, connConfig *
 	}
 
 	// Generate migration DDL from schema B to schema C using the differ
-	migrationDDL, err := generateMigrationDDLFromMetadata(schemaB, schemaCMetadata)
+	migrationDDL, actualDiff, err := generateMigrationDDLFromMetadata(schemaB, schemaCMetadata)
 	require.NoError(t, err, "Failed to generate migration DDL from metadata")
 
-	t.Logf("Generated migration DDL (%d characters)", len(migrationDDL))
+	t.Logf("Generated migration DDL (%d characters):\n%s", len(migrationDDL), migrationDDL)
+
+	// Save or validate the actual diff (B to C) and DDL files
+	testName := strings.ReplaceAll(t.Name(), "/", "_")
+	err = validateOrSaveTestFiles(t, actualDiff, testName, migrationDDL)
+	if err != nil {
+		return errors.Wrapf(err, "test file validation/creation failed")
+	}
 
 	// Step 4: Apply generated DDL to database, then sync to get schema D
 	t.Log("Step 4: Apply generated DDL to database, then sync to get schema D")
@@ -1039,7 +1049,7 @@ func getSyncMetadataForSDL(ctx context.Context, connConfig *pgx.ConnConfig, dbNa
 }
 
 // generateMigrationDDLFromMetadata generates migration DDL from schema B to schema C using schema.differ
-func generateMigrationDDLFromMetadata(schemaB, schemaC *storepb.DatabaseSchemaMetadata) (string, error) {
+func generateMigrationDDLFromMetadata(schemaB, schemaC *storepb.DatabaseSchemaMetadata) (string, *schema.MetadataDiff, error) {
 	// Create model.DatabaseSchema objects for comparison
 	modelSchemaB := model.NewDatabaseSchema(schemaB, nil, nil, storepb.Engine_POSTGRES, true)
 	modelSchemaC := model.NewDatabaseSchema(schemaC, nil, nil, storepb.Engine_POSTGRES, true)
@@ -1047,17 +1057,17 @@ func generateMigrationDDLFromMetadata(schemaB, schemaC *storepb.DatabaseSchemaMe
 	// Use the schema differ to compute differences
 	diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, modelSchemaB, modelSchemaC)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to compute schema difference")
+		return "", nil, errors.Wrapf(err, "failed to compute schema difference")
 	}
 
 	// Convert the metadata diff to DDL using schema.GenerateMigration
 	// This generates the actual migration DDL from the computed differences
 	migrationDDL, err := schema.GenerateMigration(storepb.Engine_POSTGRES, diff)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to generate migration DDL from schema diff")
+		return "", nil, errors.Wrapf(err, "failed to generate migration DDL from schema diff")
 	}
 
-	return migrationDDL, nil
+	return migrationDDL, diff, nil
 }
 
 // validateSchemaConsistency compares two schema metadata objects to ensure they are equivalent
@@ -1073,6 +1083,8 @@ func validateSchemaConsistency(schemaD, schemaC *storepb.DatabaseSchemaMetadata)
 		return errors.Wrapf(err, "failed to compute schema difference")
 	}
 
+	// Note: diff files are saved earlier in the process with the actual B to C differences
+
 	// Check if there are any differences
 	if diff != nil {
 		var diffDetails []string
@@ -1083,6 +1095,64 @@ func validateSchemaConsistency(schemaD, schemaC *storepb.DatabaseSchemaMetadata)
 		}
 		if len(diff.TableChanges) > 0 {
 			diffDetails = append(diffDetails, fmt.Sprintf("TableChanges: %d", len(diff.TableChanges)))
+			// Add detailed table changes for debugging
+			for i, tableDiff := range diff.TableChanges {
+				diffDetails = append(diffDetails, fmt.Sprintf("  Table[%d]: %s table %s.%s (columns: %d, indexes: %d, checkConstraints: %d, foreignKeys: %d, triggers: %d)",
+					i, tableDiff.Action, tableDiff.SchemaName, tableDiff.TableName,
+					len(tableDiff.ColumnChanges), len(tableDiff.IndexChanges), len(tableDiff.CheckConstraintChanges), len(tableDiff.ForeignKeyChanges), len(tableDiff.TriggerChanges)))
+
+				// Add column change details
+				for j, columnDiff := range tableDiff.ColumnChanges {
+					columnName := ""
+					if columnDiff.OldColumn != nil {
+						columnName = columnDiff.OldColumn.Name
+					} else if columnDiff.NewColumn != nil {
+						columnName = columnDiff.NewColumn.Name
+					}
+					diffDetails = append(diffDetails, fmt.Sprintf("    Column[%d]: %s column %s", j, columnDiff.Action, columnName))
+				}
+
+				// Add index change details
+				for j, indexDiff := range tableDiff.IndexChanges {
+					indexName := ""
+					if indexDiff.OldIndex != nil {
+						indexName = indexDiff.OldIndex.Name
+					} else if indexDiff.NewIndex != nil {
+						indexName = indexDiff.NewIndex.Name
+					}
+					diffDetails = append(diffDetails, fmt.Sprintf("    Index[%d]: %s index %s", j, indexDiff.Action, indexName))
+
+					// Show more details for debugging
+					if indexDiff.OldIndex != nil && indexDiff.NewIndex != nil {
+						oldExpr := ""
+						newExpr := ""
+						if len(indexDiff.OldIndex.Expressions) > 0 {
+							oldExpr = strings.Join(indexDiff.OldIndex.Expressions, ", ")
+						}
+						if len(indexDiff.NewIndex.Expressions) > 0 {
+							newExpr = strings.Join(indexDiff.NewIndex.Expressions, ", ")
+						}
+						diffDetails = append(diffDetails, fmt.Sprintf("      Old: expr=%s type=%s unique=%v primary=%v", oldExpr, indexDiff.OldIndex.Type, indexDiff.OldIndex.Unique, indexDiff.OldIndex.Primary))
+						diffDetails = append(diffDetails, fmt.Sprintf("      Old def: %s", indexDiff.OldIndex.Definition))
+						diffDetails = append(diffDetails, fmt.Sprintf("      New: expr=%s type=%s unique=%v primary=%v", newExpr, indexDiff.NewIndex.Type, indexDiff.NewIndex.Unique, indexDiff.NewIndex.Primary))
+						diffDetails = append(diffDetails, fmt.Sprintf("      New def: %s", indexDiff.NewIndex.Definition))
+					} else if indexDiff.OldIndex != nil {
+						oldExpr := ""
+						if len(indexDiff.OldIndex.Expressions) > 0 {
+							oldExpr = strings.Join(indexDiff.OldIndex.Expressions, ", ")
+						}
+						diffDetails = append(diffDetails, fmt.Sprintf("      Old: expr=%s type=%s unique=%v primary=%v", oldExpr, indexDiff.OldIndex.Type, indexDiff.OldIndex.Unique, indexDiff.OldIndex.Primary))
+						diffDetails = append(diffDetails, fmt.Sprintf("      Old def: %s", indexDiff.OldIndex.Definition))
+					} else if indexDiff.NewIndex != nil {
+						newExpr := ""
+						if len(indexDiff.NewIndex.Expressions) > 0 {
+							newExpr = strings.Join(indexDiff.NewIndex.Expressions, ", ")
+						}
+						diffDetails = append(diffDetails, fmt.Sprintf("      New: expr=%s type=%s unique=%v primary=%v", newExpr, indexDiff.NewIndex.Type, indexDiff.NewIndex.Unique, indexDiff.NewIndex.Primary))
+						diffDetails = append(diffDetails, fmt.Sprintf("      New def: %s", indexDiff.NewIndex.Definition))
+					}
+				}
+			}
 		}
 		if len(diff.ViewChanges) > 0 {
 			diffDetails = append(diffDetails, fmt.Sprintf("ViewChanges: %d", len(diff.ViewChanges)))
@@ -1112,4 +1182,533 @@ func validateSchemaConsistency(schemaD, schemaC *storepb.DatabaseSchemaMetadata)
 	}
 
 	return nil
+}
+
+// DiffSummary represents the structure for JSON serialization of schema differences
+type DiffSummary struct {
+	HasDifferences  bool         `json:"hasDifferences"`
+	Summary         string       `json:"summary"`
+	TableChanges    int          `json:"tableChanges"`
+	ViewChanges     int          `json:"viewChanges"`
+	FunctionChanges int          `json:"functionChanges"`
+	SchemaChanges   int          `json:"schemaChanges"`
+	SequenceChanges int          `json:"sequenceChanges"`
+	EnumTypeChanges int          `json:"enumTypeChanges"`
+	Details         *DiffDetails `json:"details,omitempty"`
+}
+
+// DiffDetails provides detailed information about the differences
+type DiffDetails struct {
+	Tables    []TableChangeSummary    `json:"tables,omitempty"`
+	Views     []ViewChangeSummary     `json:"views,omitempty"`
+	Functions []FunctionChangeSummary `json:"functions,omitempty"`
+	Schemas   []SchemaChangeSummary   `json:"schemas,omitempty"`
+}
+
+// TableChangeSummary summarizes table changes with detailed information
+type TableChangeSummary struct {
+	Action            string `json:"action"`
+	SchemaName        string `json:"schemaName"`
+	TableName         string `json:"tableName"`
+	ColumnChanges     int    `json:"columnChanges"`
+	IndexChanges      int    `json:"indexChanges"`
+	ConstraintChanges int    `json:"constraintChanges"`
+	ForeignKeyChanges int    `json:"foreignKeyChanges"`
+	// Detailed changes
+	Columns     []ColumnChangeDetail     `json:"columns,omitempty"`
+	Indexes     []IndexChangeDetail      `json:"indexes,omitempty"`
+	Constraints []ConstraintChangeDetail `json:"constraints,omitempty"`
+	ForeignKeys []ForeignKeyChangeDetail `json:"foreignKeys,omitempty"`
+}
+
+// ViewChangeSummary summarizes view changes
+type ViewChangeSummary struct {
+	Action     string `json:"action"`
+	SchemaName string `json:"schemaName"`
+	ViewName   string `json:"viewName"`
+}
+
+// FunctionChangeSummary summarizes function changes
+type FunctionChangeSummary struct {
+	Action       string `json:"action"`
+	SchemaName   string `json:"schemaName"`
+	FunctionName string `json:"functionName"`
+}
+
+// SchemaChangeSummary summarizes schema changes
+type SchemaChangeSummary struct {
+	Action     string `json:"action"`
+	SchemaName string `json:"schemaName"`
+}
+
+// ColumnChangeDetail provides detailed information about column changes
+type ColumnChangeDetail struct {
+	Action    string      `json:"action"`
+	Name      string      `json:"name"`
+	OldColumn *ColumnInfo `json:"oldColumn,omitempty"`
+	NewColumn *ColumnInfo `json:"newColumn,omitempty"`
+}
+
+// ColumnInfo represents column metadata
+type ColumnInfo struct {
+	Name         string `json:"name"`
+	Type         string `json:"type"`
+	Nullable     bool   `json:"nullable"`
+	DefaultValue string `json:"defaultValue,omitempty"`
+	Comment      string `json:"comment,omitempty"`
+}
+
+// IndexChangeDetail provides detailed information about index changes
+type IndexChangeDetail struct {
+	Action   string     `json:"action"`
+	Name     string     `json:"name"`
+	OldIndex *IndexInfo `json:"oldIndex,omitempty"`
+	NewIndex *IndexInfo `json:"newIndex,omitempty"`
+}
+
+// IndexInfo represents index metadata
+type IndexInfo struct {
+	Name        string   `json:"name"`
+	Type        string   `json:"type,omitempty"`
+	Unique      bool     `json:"unique"`
+	Expressions []string `json:"expressions"`
+	KeyLength   []int64  `json:"keyLength,omitempty"`
+	Descending  []bool   `json:"descending,omitempty"`
+}
+
+// ConstraintChangeDetail provides detailed information about constraint changes
+type ConstraintChangeDetail struct {
+	Action        string          `json:"action"`
+	Name          string          `json:"name"`
+	OldConstraint *ConstraintInfo `json:"oldConstraint,omitempty"`
+	NewConstraint *ConstraintInfo `json:"newConstraint,omitempty"`
+}
+
+// ConstraintInfo represents constraint metadata
+type ConstraintInfo struct {
+	Name       string `json:"name"`
+	Type       string `json:"type"`
+	Expression string `json:"expression,omitempty"`
+}
+
+// ForeignKeyChangeDetail provides detailed information about foreign key changes
+type ForeignKeyChangeDetail struct {
+	Action        string          `json:"action"`
+	Name          string          `json:"name"`
+	OldForeignKey *ForeignKeyInfo `json:"oldForeignKey,omitempty"`
+	NewForeignKey *ForeignKeyInfo `json:"newForeignKey,omitempty"`
+}
+
+// ForeignKeyInfo represents foreign key metadata
+type ForeignKeyInfo struct {
+	Name              string   `json:"name"`
+	Columns           []string `json:"columns"`
+	ReferencedSchema  string   `json:"referencedSchema"`
+	ReferencedTable   string   `json:"referencedTable"`
+	ReferencedColumns []string `json:"referencedColumns"`
+	OnUpdate          string   `json:"onUpdate,omitempty"`
+	OnDelete          string   `json:"onDelete,omitempty"`
+	MatchType         string   `json:"matchType,omitempty"`
+}
+
+// createDiffSummary creates a structured summary from MetadataDiff
+func createDiffSummary(diff *schema.MetadataDiff) *DiffSummary {
+	if diff == nil {
+		return &DiffSummary{
+			HasDifferences: false,
+			Summary:        "No schema differences found - schemas match perfectly!",
+		}
+	}
+
+	// Check if there are actually any differences
+	hasDifferences := len(diff.TableChanges) > 0 || len(diff.ViewChanges) > 0 ||
+		len(diff.FunctionChanges) > 0 || len(diff.SchemaChanges) > 0 ||
+		len(diff.SequenceChanges) > 0 || len(diff.EnumTypeChanges) > 0
+
+	summary := &DiffSummary{
+		HasDifferences:  hasDifferences,
+		TableChanges:    len(diff.TableChanges),
+		ViewChanges:     len(diff.ViewChanges),
+		FunctionChanges: len(diff.FunctionChanges),
+		SchemaChanges:   len(diff.SchemaChanges),
+		SequenceChanges: len(diff.SequenceChanges),
+		EnumTypeChanges: len(diff.EnumTypeChanges),
+	}
+
+	if !hasDifferences {
+		summary.Summary = "No schema differences found - schemas match perfectly!"
+		return summary
+	}
+
+	// Create summary text
+	var summaryParts []string
+	if summary.TableChanges > 0 {
+		summaryParts = append(summaryParts, fmt.Sprintf("Table changes: %d", summary.TableChanges))
+	}
+	if summary.ViewChanges > 0 {
+		summaryParts = append(summaryParts, fmt.Sprintf("View changes: %d", summary.ViewChanges))
+	}
+	if summary.FunctionChanges > 0 {
+		summaryParts = append(summaryParts, fmt.Sprintf("Function changes: %d", summary.FunctionChanges))
+	}
+	if summary.SchemaChanges > 0 {
+		summaryParts = append(summaryParts, fmt.Sprintf("Schema changes: %d", summary.SchemaChanges))
+	}
+	if summary.SequenceChanges > 0 {
+		summaryParts = append(summaryParts, fmt.Sprintf("Sequence changes: %d", summary.SequenceChanges))
+	}
+	if summary.EnumTypeChanges > 0 {
+		summaryParts = append(summaryParts, fmt.Sprintf("Enum type changes: %d", summary.EnumTypeChanges))
+	}
+
+	summary.Summary = strings.Join(summaryParts, ", ")
+
+	// Add detailed information
+	details := &DiffDetails{}
+
+	// Add table changes details
+	for _, tableChange := range diff.TableChanges {
+		tableSummary := TableChangeSummary{
+			Action:            string(tableChange.Action),
+			SchemaName:        tableChange.SchemaName,
+			TableName:         tableChange.TableName,
+			ColumnChanges:     len(tableChange.ColumnChanges),
+			IndexChanges:      len(tableChange.IndexChanges),
+			ConstraintChanges: len(tableChange.CheckConstraintChanges),
+			ForeignKeyChanges: len(tableChange.ForeignKeyChanges),
+		}
+
+		// Add detailed column changes
+		for _, colChange := range tableChange.ColumnChanges {
+			columnDetail := ColumnChangeDetail{
+				Action: string(colChange.Action),
+				Name:   getColumnName(colChange),
+			}
+			if colChange.OldColumn != nil {
+				columnDetail.OldColumn = &ColumnInfo{
+					Name:         colChange.OldColumn.Name,
+					Type:         colChange.OldColumn.Type,
+					Nullable:     colChange.OldColumn.Nullable,
+					DefaultValue: colChange.OldColumn.Default,
+					Comment:      colChange.OldColumn.Comment,
+				}
+			}
+			if colChange.NewColumn != nil {
+				columnDetail.NewColumn = &ColumnInfo{
+					Name:         colChange.NewColumn.Name,
+					Type:         colChange.NewColumn.Type,
+					Nullable:     colChange.NewColumn.Nullable,
+					DefaultValue: colChange.NewColumn.Default,
+					Comment:      colChange.NewColumn.Comment,
+				}
+			}
+			tableSummary.Columns = append(tableSummary.Columns, columnDetail)
+		}
+
+		// Add detailed index changes
+		for _, indexChange := range tableChange.IndexChanges {
+			indexDetail := IndexChangeDetail{
+				Action: string(indexChange.Action),
+				Name:   getIndexName(indexChange),
+			}
+			if indexChange.OldIndex != nil {
+				indexDetail.OldIndex = &IndexInfo{
+					Name:        indexChange.OldIndex.Name,
+					Type:        indexChange.OldIndex.Type,
+					Unique:      indexChange.OldIndex.Unique,
+					Expressions: indexChange.OldIndex.Expressions,
+					KeyLength:   indexChange.OldIndex.KeyLength,
+					Descending:  indexChange.OldIndex.Descending,
+				}
+			}
+			if indexChange.NewIndex != nil {
+				indexDetail.NewIndex = &IndexInfo{
+					Name:        indexChange.NewIndex.Name,
+					Type:        indexChange.NewIndex.Type,
+					Unique:      indexChange.NewIndex.Unique,
+					Expressions: indexChange.NewIndex.Expressions,
+					KeyLength:   indexChange.NewIndex.KeyLength,
+					Descending:  indexChange.NewIndex.Descending,
+				}
+			}
+			tableSummary.Indexes = append(tableSummary.Indexes, indexDetail)
+		}
+
+		// Add detailed constraint changes
+		for _, constraintChange := range tableChange.CheckConstraintChanges {
+			constraintDetail := ConstraintChangeDetail{
+				Action: string(constraintChange.Action),
+				Name:   getConstraintName(constraintChange),
+			}
+			if constraintChange.OldCheckConstraint != nil {
+				constraintDetail.OldConstraint = &ConstraintInfo{
+					Name:       constraintChange.OldCheckConstraint.Name,
+					Type:       "CHECK",
+					Expression: constraintChange.OldCheckConstraint.Expression,
+				}
+			}
+			if constraintChange.NewCheckConstraint != nil {
+				constraintDetail.NewConstraint = &ConstraintInfo{
+					Name:       constraintChange.NewCheckConstraint.Name,
+					Type:       "CHECK",
+					Expression: constraintChange.NewCheckConstraint.Expression,
+				}
+			}
+			tableSummary.Constraints = append(tableSummary.Constraints, constraintDetail)
+		}
+
+		// Add detailed foreign key changes
+		for _, fkChange := range tableChange.ForeignKeyChanges {
+			fkDetail := ForeignKeyChangeDetail{
+				Action: string(fkChange.Action),
+				Name:   getForeignKeyName(fkChange),
+			}
+			if fkChange.OldForeignKey != nil {
+				fkDetail.OldForeignKey = &ForeignKeyInfo{
+					Name:              fkChange.OldForeignKey.Name,
+					Columns:           fkChange.OldForeignKey.Columns,
+					ReferencedSchema:  fkChange.OldForeignKey.ReferencedSchema,
+					ReferencedTable:   fkChange.OldForeignKey.ReferencedTable,
+					ReferencedColumns: fkChange.OldForeignKey.ReferencedColumns,
+					OnUpdate:          fkChange.OldForeignKey.OnUpdate,
+					OnDelete:          fkChange.OldForeignKey.OnDelete,
+					MatchType:         fkChange.OldForeignKey.MatchType,
+				}
+			}
+			if fkChange.NewForeignKey != nil {
+				fkDetail.NewForeignKey = &ForeignKeyInfo{
+					Name:              fkChange.NewForeignKey.Name,
+					Columns:           fkChange.NewForeignKey.Columns,
+					ReferencedSchema:  fkChange.NewForeignKey.ReferencedSchema,
+					ReferencedTable:   fkChange.NewForeignKey.ReferencedTable,
+					ReferencedColumns: fkChange.NewForeignKey.ReferencedColumns,
+					OnUpdate:          fkChange.NewForeignKey.OnUpdate,
+					OnDelete:          fkChange.NewForeignKey.OnDelete,
+					MatchType:         fkChange.NewForeignKey.MatchType,
+				}
+			}
+			tableSummary.ForeignKeys = append(tableSummary.ForeignKeys, fkDetail)
+		}
+
+		details.Tables = append(details.Tables, tableSummary)
+	}
+
+	// Add view changes details
+	for _, viewChange := range diff.ViewChanges {
+		details.Views = append(details.Views, ViewChangeSummary{
+			Action:     string(viewChange.Action),
+			SchemaName: viewChange.SchemaName,
+			ViewName:   viewChange.ViewName,
+		})
+	}
+
+	// Add function changes details
+	for _, funcChange := range diff.FunctionChanges {
+		details.Functions = append(details.Functions, FunctionChangeSummary{
+			Action:       string(funcChange.Action),
+			SchemaName:   funcChange.SchemaName,
+			FunctionName: funcChange.FunctionName,
+		})
+	}
+
+	// Add schema changes details
+	for _, schemaChange := range diff.SchemaChanges {
+		details.Schemas = append(details.Schemas, SchemaChangeSummary{
+			Action:     string(schemaChange.Action),
+			SchemaName: schemaChange.SchemaName,
+		})
+	}
+
+	if len(details.Tables) > 0 || len(details.Views) > 0 || len(details.Functions) > 0 || len(details.Schemas) > 0 {
+		summary.Details = details
+	}
+
+	return summary
+}
+
+// Helper functions to extract names from diff structures
+func getColumnName(colChange *schema.ColumnDiff) string {
+	if colChange.NewColumn != nil {
+		return colChange.NewColumn.Name
+	}
+	if colChange.OldColumn != nil {
+		return colChange.OldColumn.Name
+	}
+	return ""
+}
+
+func getIndexName(indexChange *schema.IndexDiff) string {
+	if indexChange.NewIndex != nil {
+		return indexChange.NewIndex.Name
+	}
+	if indexChange.OldIndex != nil {
+		return indexChange.OldIndex.Name
+	}
+	return ""
+}
+
+func getConstraintName(constraintChange *schema.CheckConstraintDiff) string {
+	if constraintChange.NewCheckConstraint != nil {
+		return constraintChange.NewCheckConstraint.Name
+	}
+	if constraintChange.OldCheckConstraint != nil {
+		return constraintChange.OldCheckConstraint.Name
+	}
+	return ""
+}
+
+func getForeignKeyName(fkChange *schema.ForeignKeyDiff) string {
+	if fkChange.NewForeignKey != nil {
+		return fkChange.NewForeignKey.Name
+	}
+	if fkChange.OldForeignKey != nil {
+		return fkChange.OldForeignKey.Name
+	}
+	return ""
+}
+
+// validateOrSaveTestFiles validates existing test files or creates new ones based on UPDATE_TEST_FILES environment variable
+func validateOrSaveTestFiles(t *testing.T, diff *schema.MetadataDiff, testName string, ddlContent string) error {
+	// Check if we should update test files
+	updateFiles := os.Getenv("UPDATE_TEST_FILES") == "true"
+
+	testDir := getTestDataDirectory(testName)
+	if testDir == "" {
+		// For hardcoded tests (TestSDLValidationWithTestcontainer), skip file validation
+		// Only TestSDLValidationFromTestData tests should have corresponding test data files
+		if strings.Contains(testName, "TestSDLValidationWithTestcontainer") {
+			t.Logf("Skipping file validation for hardcoded test: %s", testName)
+			return nil
+		}
+		return errors.Errorf("could not determine test data directory for test %s", testName)
+	}
+
+	diffFilename := filepath.Join(testDir, "diff.json")
+	ddlFilename := filepath.Join(testDir, "ddl.sql")
+
+	// Generate current content
+	currentDiffJSON, err := generateDiffJSON(diff)
+	if err != nil {
+		return errors.Wrapf(err, "failed to generate diff JSON")
+	}
+
+	if updateFiles {
+		// Update mode: create/overwrite files
+		t.Logf("Updating test files in %s", testDir)
+
+		// Save diff JSON file
+		if err := os.WriteFile(diffFilename, []byte(currentDiffJSON), 0644); err != nil {
+			return errors.Wrapf(err, "failed to write diff.json file")
+		}
+
+		// Save DDL file
+		if err := os.WriteFile(ddlFilename, []byte(ddlContent), 0644); err != nil {
+			return errors.Wrapf(err, "failed to write ddl.sql file")
+		}
+
+		t.Logf("Test files updated: %s (diff.json, ddl.sql)", testDir)
+		return nil
+	}
+
+	// Validation mode: check if existing files match current content
+	t.Logf("Validating test files in %s", testDir)
+
+	// Validate diff.json
+	if err := validateFileContent(diffFilename, currentDiffJSON, "diff.json"); err != nil {
+		return err
+	}
+
+	// Validate ddl.sql
+	if err := validateFileContent(ddlFilename, ddlContent, "ddl.sql"); err != nil {
+		return err
+	}
+
+	t.Logf("✓ Test files validated successfully: %s", testDir)
+	return nil
+}
+
+// generateDiffJSON generates JSON content from MetadataDiff
+func generateDiffJSON(diff *schema.MetadataDiff) (string, error) {
+	diffSummary := createDiffSummary(diff)
+	jsonData, err := json.MarshalIndent(diffSummary, "", "  ")
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to marshal diff to JSON")
+	}
+	return string(jsonData), nil
+}
+
+// validateFileContent validates that the file content matches expected content
+func validateFileContent(filename, expectedContent, fileType string) error {
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		return errors.Errorf("%s file does not exist: %s. Run with UPDATE_TEST_FILES=true to create it", fileType, filename)
+	}
+
+	actualContent, err := os.ReadFile(filename)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read %s file: %s", fileType, filename)
+	}
+
+	actualStr := strings.TrimSpace(string(actualContent))
+	expectedStr := strings.TrimSpace(expectedContent)
+
+	if actualStr != expectedStr {
+		return errors.Errorf("%s content mismatch in %s.\nExpected:\n%s\n\nActual:\n%s\n\nRun with UPDATE_TEST_FILES=true to update the file",
+			fileType, filename, expectedStr, actualStr)
+	}
+
+	return nil
+}
+
+// getTestDataDirectory converts a test name to the corresponding test data directory path
+func getTestDataDirectory(testName string) string {
+	// Remove "TestSDLValidationFromTestData_" prefix
+	if !strings.HasPrefix(testName, "TestSDLValidationFromTestData_") {
+		return ""
+	}
+
+	// Extract the path part after the prefix
+	pathPart := strings.TrimPrefix(testName, "TestSDLValidationFromTestData_")
+
+	// Convert from test name format to directory format
+	// TestSDLValidationFromTestData_data_types_basic_types_datetime_types -> data_types/basic_types/datetime_types
+
+	// Based on the known test structure, parse the path correctly:
+	// data_types_basic_types_datetime_types
+	// schema_objects_views_complex_views
+	// constraints_indexes_foreign_keys_cascade_actions
+
+	var testDataPath string
+	switch {
+	case strings.HasPrefix(pathPart, "data_types_basic_types_"):
+		// data_types_basic_types_datetime_types -> data_types/basic_types/datetime_types
+		suffix := strings.TrimPrefix(pathPart, "data_types_basic_types_")
+		testDataPath = filepath.Join("data_types", "basic_types", suffix)
+	case strings.HasPrefix(pathPart, "data_types_advanced_types_"):
+		// data_types_advanced_types_binary_json_uuid -> data_types/advanced_types/binary_json_uuid
+		suffix := strings.TrimPrefix(pathPart, "data_types_advanced_types_")
+		testDataPath = filepath.Join("data_types", "advanced_types", suffix)
+	case strings.HasPrefix(pathPart, "data_types_type_conversions_"):
+		// data_types_type_conversions_compatible_conversions -> data_types/type_conversions/compatible_conversions
+		suffix := strings.TrimPrefix(pathPart, "data_types_type_conversions_")
+		testDataPath = filepath.Join("data_types", "type_conversions", suffix)
+	case strings.HasPrefix(pathPart, "schema_objects_views_"):
+		// schema_objects_views_complex_views -> schema_objects/views/complex_views
+		suffix := strings.TrimPrefix(pathPart, "schema_objects_views_")
+		testDataPath = filepath.Join("schema_objects", "views", suffix)
+	case strings.HasPrefix(pathPart, "constraints_indexes_foreign_keys_"):
+		// constraints_indexes_foreign_keys_cascade_actions -> constraints_indexes/foreign_keys/cascade_actions
+		suffix := strings.TrimPrefix(pathPart, "constraints_indexes_foreign_keys_")
+		testDataPath = filepath.Join("constraints_indexes", "foreign_keys", suffix)
+	default:
+		// Fallback: try to split intelligently
+		parts := strings.Split(pathPart, "_")
+		if len(parts) >= 3 {
+			// Take first 2 parts as category, rest as test name
+			testDataPath = filepath.Join(strings.Join(parts[:2], "/"), strings.Join(parts[2:], "_"))
+		} else {
+			testDataPath = strings.ReplaceAll(pathPart, "_", "/")
+		}
+	}
+
+	return filepath.Join("sdl_testdata", testDataPath)
 }

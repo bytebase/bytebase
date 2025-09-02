@@ -1,0 +1,209 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 2",
+  "tableChanges": 2,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "data_conflicts",
+        "columnChanges": 4,
+        "indexChanges": 1,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "ALTER",
+            "name": "default_change",
+            "oldColumn": {
+              "name": "default_change",
+              "type": "integer",
+              "nullable": true,
+              "defaultValue": "100"
+            },
+            "newColumn": {
+              "name": "default_change",
+              "type": "integer",
+              "nullable": true,
+              "defaultValue": "999"
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "nullable_required",
+            "oldColumn": {
+              "name": "nullable_required",
+              "type": "character varying(100)",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "nullable_required",
+              "type": "character varying(100)",
+              "nullable": false
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "type_change",
+            "oldColumn": {
+              "name": "type_change",
+              "type": "text",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "type_change",
+              "type": "integer",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "wide_varchar",
+            "oldColumn": {
+              "name": "wide_varchar",
+              "type": "character varying(500)",
+              "nullable": false
+            },
+            "newColumn": {
+              "name": "wide_varchar",
+              "type": "character varying(10)",
+              "nullable": false
+            }
+          }
+        ],
+        "indexes": [
+          {
+            "action": "CREATE",
+            "name": "data_conflicts_unique_field_key",
+            "newIndex": {
+              "name": "data_conflicts_unique_field_key",
+              "type": "btree",
+              "unique": true,
+              "expressions": [
+                "unique_field"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "risky_conversions",
+        "columnChanges": 7,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "ALTER",
+            "name": "array_field",
+            "oldColumn": {
+              "name": "array_field",
+              "type": "_int4",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "array_field",
+              "type": "text",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "high_precision",
+            "oldColumn": {
+              "name": "high_precision",
+              "type": "double precision",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "high_precision",
+              "type": "real",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "json_field",
+            "oldColumn": {
+              "name": "json_field",
+              "type": "jsonb",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "json_field",
+              "type": "text",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "large_int",
+            "oldColumn": {
+              "name": "large_int",
+              "type": "bigint",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "large_int",
+              "type": "smallint",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "numeric_text",
+            "oldColumn": {
+              "name": "numeric_text",
+              "type": "text",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "numeric_text",
+              "type": "integer",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "text_to_numeric",
+            "oldColumn": {
+              "name": "text_to_numeric",
+              "type": "character varying(100)",
+              "nullable": false
+            },
+            "newColumn": {
+              "name": "text_to_numeric",
+              "type": "numeric(10,2)",
+              "nullable": false
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "timestamp_field",
+            "oldColumn": {
+              "name": "timestamp_field",
+              "type": "timestamp(6) with time zone",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "timestamp_field",
+              "type": "date",
+              "nullable": true
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

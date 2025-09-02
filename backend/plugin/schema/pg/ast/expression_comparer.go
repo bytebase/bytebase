@@ -104,7 +104,15 @@ func (c *PostgreSQLExpressionComparer) CompareExpressions(expr1, expr2 string) (
 	normalized2 := c.normalizer.NormalizeExpression(ast2)
 
 	// Compare normalized ASTs
-	return normalized1.Equals(normalized2), nil
+	result := normalized1.Equals(normalized2)
+
+	// If AST comparison fails, try fallback string comparison for special cases
+	if !result {
+		fallbackResult := c.compareExpressionsAsStrings(expr1, expr2)
+		return fallbackResult, nil
+	}
+
+	return result, nil
 }
 
 // NormalizeExpression normalizes expression to canonical form
@@ -141,7 +149,12 @@ func (c *PostgreSQLExpressionComparer) compareExpressionsAsStrings(expr1, expr2 
 	norm1 := c.normalizeStringExpression(expr1)
 	norm2 := c.normalizeStringExpression(expr2)
 
-	return norm1 == norm2
+	if norm1 == norm2 {
+		return true
+	}
+
+	// Handle PostgreSQL implicit type casts
+	return c.handleImplicitTypeCasts(norm1, norm2)
 }
 
 // normalizeStringExpression applies basic string normalization
@@ -154,12 +167,157 @@ func (c *PostgreSQLExpressionComparer) normalizeStringExpression(expr string) st
 		expr = strings.ReplaceAll(expr, "public.", "")
 	}
 
-	// Apply case normalization
+	// Always normalize built-in types regardless of IgnoreSchemaPrefix setting
+	// This is necessary because built-in types should never be schema-qualified
+	expr = c.normalizeBuiltinTypes(expr)
+
+	// Apply case normalization - but preserve string literal case
 	if !c.CaseSensitive {
-		expr = strings.ToLower(expr)
+		expr = c.normalizeCasePreservingStringLiterals(expr)
 	}
 
 	return strings.TrimSpace(expr)
+}
+
+// handleImplicitTypeCasts handles PostgreSQL implicit type casting scenarios
+func (c *PostgreSQLExpressionComparer) handleImplicitTypeCasts(expr1, expr2 string) bool {
+	// Handle JSONB implicit casts
+	// '{}' should be equivalent to '{}'::jsonb
+	if c.isJSONBImplicitCast(expr1, expr2) {
+		return true
+	}
+
+	// Handle BIT literal format differences
+	// B'1010' should be equivalent to '1010'::"bit"
+	if c.isBitLiteralEquivalent(expr1, expr2) {
+		return true
+	}
+
+	// Handle array type implicit casts (already covered by AST comparison)
+	// 'ARRAY[]::TEXT[]' vs 'ARRAY[]::text[]'
+	if c.isArrayTypeImplicitCast(expr1, expr2) {
+		return true
+	}
+
+	return false
+}
+
+// isJSONBImplicitCast checks if two expressions represent the same JSONB value with/without explicit cast
+func (*PostgreSQLExpressionComparer) isJSONBImplicitCast(expr1, expr2 string) bool {
+	// Check if one has ::jsonb suffix and the other doesn't, but otherwise identical
+	if strings.HasSuffix(expr1, "::jsonb") && !strings.HasSuffix(expr2, "::jsonb") {
+		baseExpr1 := strings.TrimSuffix(expr1, "::jsonb")
+		baseExpr1 = strings.TrimSpace(baseExpr1)
+		return baseExpr1 == expr2
+	}
+	if strings.HasSuffix(expr2, "::jsonb") && !strings.HasSuffix(expr1, "::jsonb") {
+		baseExpr2 := strings.TrimSuffix(expr2, "::jsonb")
+		baseExpr2 = strings.TrimSpace(baseExpr2)
+		return baseExpr2 == expr1
+	}
+
+	// Also handle JSON type casts (json vs jsonb)
+	if strings.HasSuffix(expr1, "::json") && !strings.HasSuffix(expr2, "::json") && !strings.HasSuffix(expr2, "::jsonb") {
+		baseExpr1 := strings.TrimSuffix(expr1, "::json")
+		baseExpr1 = strings.TrimSpace(baseExpr1)
+		return baseExpr1 == expr2
+	}
+	if strings.HasSuffix(expr2, "::json") && !strings.HasSuffix(expr1, "::json") && !strings.HasSuffix(expr1, "::jsonb") {
+		baseExpr2 := strings.TrimSuffix(expr2, "::json")
+		baseExpr2 = strings.TrimSpace(baseExpr2)
+		return baseExpr2 == expr1
+	}
+
+	return false
+}
+
+// isBitLiteralEquivalent checks if two expressions represent the same BIT value in different formats
+func (*PostgreSQLExpressionComparer) isBitLiteralEquivalent(expr1, expr2 string) bool {
+	// Check for b'...' vs '...'::"bit" patterns (lowercase b due to AST normalization)
+	if strings.HasPrefix(expr1, "b'") && strings.HasSuffix(expr1, "'") &&
+		strings.Contains(expr2, ":") && strings.Contains(expr2, "bit") {
+		// Extract bit value from b'...' format
+		bitValue1 := expr1[2 : len(expr1)-1] // Remove b'...'
+
+		// Extract bit value from '...'::"bit" format
+		var bitValue2 string
+		if strings.HasPrefix(expr2, "'") && strings.Contains(expr2, "':") {
+			// Find the closing quote before the type cast
+			endQuotePos := strings.Index(expr2[1:], "'")
+			if endQuotePos > 0 {
+				bitValue2 = expr2[1 : endQuotePos+1] // Extract between first ' and second '
+			}
+		}
+
+		return bitValue1 == bitValue2 && bitValue2 != ""
+	}
+
+	// Check the reverse case: '...'::"bit" vs b'...'
+	if strings.HasPrefix(expr2, "b'") && strings.HasSuffix(expr2, "'") &&
+		strings.Contains(expr1, ":") && strings.Contains(expr1, "bit") {
+		// Extract bit value from b'...' format
+		bitValue2 := expr2[2 : len(expr2)-1] // Remove b'...'
+
+		// Extract bit value from '...'::"bit" format
+		var bitValue1 string
+		if strings.HasPrefix(expr1, "'") && strings.Contains(expr1, "':") {
+			// Find the closing quote before the type cast
+			endQuotePos := strings.Index(expr1[1:], "'")
+			if endQuotePos > 0 {
+				bitValue1 = expr1[1 : endQuotePos+1] // Extract between first ' and second '
+			}
+		}
+
+		return bitValue1 == bitValue2 && bitValue1 != ""
+	}
+
+	return false
+}
+
+// isArrayTypeImplicitCast checks if two expressions represent array types with different case
+func (c *PostgreSQLExpressionComparer) isArrayTypeImplicitCast(expr1, expr2 string) bool {
+	// This is primarily handled by the AST parser, but we can add string-level fallback
+	if c.CaseSensitive {
+		return false
+	}
+
+	// Check for array type patterns like ARRAY[]::TYPE[] vs ARRAY[]::type[]
+	if strings.Contains(expr1, "ARRAY[]::") && strings.Contains(expr2, "ARRAY[]::") {
+		return strings.EqualFold(expr1, expr2)
+	}
+
+	return false
+}
+
+// normalizeBuiltinTypes removes public schema qualification from built-in PostgreSQL types
+func (*PostgreSQLExpressionComparer) normalizeBuiltinTypes(expr string) string {
+	// List of PostgreSQL built-in types that should not be schema-qualified
+	builtinTypes := []string{
+		"varbit", "bit", "bit varying",
+		"varchar", "character varying", "char", "character",
+		"text", "numeric", "decimal", "int", "integer", "bigint", "smallint",
+		"float", "real", "double precision", "boolean", "bool",
+		"date", "time", "timestamp", "timestamptz", "interval",
+		"uuid", "json", "jsonb", "bytea", "inet", "cidr",
+		"point", "line", "lseg", "box", "path", "polygon", "circle",
+		"int4range", "int8range", "numrange", "tsrange", "tstzrange", "daterange",
+	}
+
+	for _, builtinType := range builtinTypes {
+		// Replace public.typename with typename
+		publicQualified := "public." + builtinType
+		if strings.Contains(expr, publicQualified) {
+			expr = strings.ReplaceAll(expr, publicQualified, builtinType)
+		}
+
+		// Also handle quoted versions
+		quotedPublicQualified := "\"public\"." + builtinType
+		if strings.Contains(expr, quotedPublicQualified) {
+			expr = strings.ReplaceAll(expr, quotedPublicQualified, builtinType)
+		}
+	}
+
+	return expr
 }
 
 // CompareExpressionLists compares two lists of expressions
@@ -401,6 +559,100 @@ func CompareExpressionsSemantically(expr1, expr2 string) bool {
 		return false
 	}
 	return result
+}
+
+// normalizeCasePreservingStringLiterals normalizes case while preserving string literal content
+func (*PostgreSQLExpressionComparer) normalizeCasePreservingStringLiterals(expr string) string {
+	// This is a production-grade implementation that preserves:
+	// 1. Single-quoted string literal case ('...')
+	// 2. Double-quoted identifier case ("...")
+	// while normalizing unquoted identifiers, keywords, and function names
+
+	result := make([]rune, 0, len(expr))
+	runes := []rune(expr)
+	i := 0
+
+	for i < len(runes) {
+		char := runes[i]
+
+		// Handle single-quoted string literals
+		if char == '\'' {
+			// Preserve the entire string literal including quotes
+			result = append(result, char) // opening quote
+			i++
+
+			// Copy content until closing quote, handling escaped quotes
+			for i < len(runes) {
+				char = runes[i]
+				result = append(result, char)
+
+				if char == '\'' {
+					// Check if this is an escaped quote ''
+					if i+1 < len(runes) && runes[i+1] == '\'' {
+						// Escaped quote, copy both quotes
+						i++
+						result = append(result, runes[i])
+					} else {
+						// End of string literal
+						break
+					}
+				}
+				i++
+			}
+		} else if char == '"' {
+			// Handle double-quoted identifiers (case-sensitive)
+			// Preserve the entire quoted identifier including quotes
+			result = append(result, char) // opening quote
+			i++
+
+			// Copy content until closing quote, handling escaped quotes
+			for i < len(runes) {
+				char = runes[i]
+				result = append(result, char)
+
+				if char == '"' {
+					// Check if this is an escaped quote ""
+					if i+1 < len(runes) && runes[i+1] == '"' {
+						// Escaped quote, copy both quotes
+						i++
+						result = append(result, runes[i])
+					} else {
+						// End of quoted identifier
+						break
+					}
+				}
+				i++
+			}
+		} else {
+			// For non-quoted parts, apply case normalization
+			result = append(result, char)
+		}
+		i++
+	}
+
+	// Apply case normalization to the parts outside quoted literals/identifiers
+	finalResult := string(result)
+
+	// Process both single and double quotes to preserve their content
+	// First handle single quotes (string literals)
+	singleQuoteParts := strings.Split(finalResult, "'")
+	for i := 0; i < len(singleQuoteParts); i++ {
+		if i%2 == 0 {
+			// Outside single quotes - now check for double quotes
+			doubleQuoteParts := strings.Split(singleQuoteParts[i], `"`)
+			for j := 0; j < len(doubleQuoteParts); j++ {
+				if j%2 == 0 {
+					// Outside both single and double quotes - apply case normalization
+					doubleQuoteParts[j] = strings.ToLower(doubleQuoteParts[j])
+				}
+				// Inside double quotes - preserve case
+			}
+			singleQuoteParts[i] = strings.Join(doubleQuoteParts, `"`)
+		}
+		// Inside single quotes - preserve case
+	}
+
+	return strings.Join(singleQuoteParts, "'")
 }
 
 // CreatePostgreSQLExpressionComparer creates a PostgreSQL expression comparer with default settings

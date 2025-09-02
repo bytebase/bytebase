@@ -1,0 +1,218 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 3, Sequence changes: 1",
+  "tableChanges": 3,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 1,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "tableName": "analytics",
+        "columnChanges": 0,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0
+      },
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "events",
+        "columnChanges": 5,
+        "indexChanges": 2,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "CREATE",
+            "name": "capacities",
+            "newColumn": {
+              "name": "capacities",
+              "type": "_int4",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "event_dates",
+            "oldColumn": {
+              "name": "event_dates",
+              "type": "_timestamp",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "event_dates",
+              "type": "_timestamptz",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "locations",
+            "newColumn": {
+              "name": "locations",
+              "type": "_text",
+              "nullable": false,
+              "defaultValue": "ARRAY[]::TEXT[]"
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "metadata",
+            "newColumn": {
+              "name": "metadata",
+              "type": "_jsonb",
+              "nullable": true,
+              "defaultValue": "ARRAY[]::JSONB[]"
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "schedules",
+            "newColumn": {
+              "name": "schedules",
+              "type": "_timestamp",
+              "nullable": true
+            }
+          }
+        ],
+        "indexes": [
+          {
+            "action": "CREATE",
+            "name": "idx_events_locations",
+            "newIndex": {
+              "name": "idx_events_locations",
+              "type": "gin",
+              "unique": false,
+              "expressions": [
+                "locations"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "idx_events_participants",
+            "newIndex": {
+              "name": "idx_events_participants",
+              "type": "gin",
+              "unique": false,
+              "expressions": [
+                "participant_ids"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "products",
+        "columnChanges": 5,
+        "indexChanges": 2,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "ALTER",
+            "name": "category_ids",
+            "oldColumn": {
+              "name": "category_ids",
+              "type": "_int4",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "category_ids",
+              "type": "_int8",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "features",
+            "newColumn": {
+              "name": "features",
+              "type": "_jsonb",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "ratings",
+            "newColumn": {
+              "name": "ratings",
+              "type": "_int4",
+              "nullable": true,
+              "defaultValue": "ARRAY[0,0,0,0,0]"
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "tags",
+            "oldColumn": {
+              "name": "tags",
+              "type": "_text",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "tags",
+              "type": "_text",
+              "nullable": true,
+              "defaultValue": "ARRAY[]::TEXT[]"
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "variants",
+            "newColumn": {
+              "name": "variants",
+              "type": "_text",
+              "nullable": true
+            }
+          }
+        ],
+        "indexes": [
+          {
+            "action": "CREATE",
+            "name": "idx_products_categories",
+            "newIndex": {
+              "name": "idx_products_categories",
+              "type": "gin",
+              "unique": false,
+              "expressions": [
+                "category_ids"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "idx_products_tags",
+            "newIndex": {
+              "name": "idx_products_tags",
+              "type": "gin",
+              "unique": false,
+              "expressions": [
+                "tags"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
