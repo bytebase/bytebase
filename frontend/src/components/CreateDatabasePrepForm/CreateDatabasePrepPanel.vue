@@ -1,7 +1,7 @@
 <template>
   <DrawerContent :title="$t('quick-action.create-db')">
     <div class="w-72 mx-auto space-y-4">
-      <div v-if="!isValidProjectName(project.name)" class="w-full">
+      <div v-if="!isValidProjectName(currentProject.name)" class="w-full">
         <label for="project" class="textlabel">
           {{ $t("common.project") }}
           <RequiredStar />
@@ -9,28 +9,23 @@
         <ProjectSelect
           class="mt-1 !w-full"
           required
-          :project-name="state.projectName"
-          @update:project-name="selectProject"
+          v-model:project-name="state.projectName"
         />
       </div>
 
       <div class="w-full">
-        <div class="flex flex-row items-center space-x-1">
-          <label for="instance" class="textlabel">
-            {{ $t("common.instance") }} <RequiredStar />
-          </label>
-        </div>
-        <div class="flex flex-row space-x-2 items-center">
-          <InstanceSelect
-            class="mt-1"
-            name="instance"
-            required
-            :disabled="!allowEditInstance"
-            :instance-name="state.instanceName"
-            :allowed-engine-list="supportedEngines"
-            @update:instance-name="selectInstance"
-          />
-        </div>
+        <label for="instance" class="textlabel">
+          {{ $t("common.instance") }} <RequiredStar />
+        </label>
+        <InstanceSelect
+          class="mt-1"
+          name="instance"
+          required
+          :disabled="!allowEditInstance"
+          :instance-name="state.instanceName"
+          :allowed-engine-list="supportedEngines"
+          @update:instance-name="selectInstance"
+        />
       </div>
 
       <div class="w-full">
@@ -184,12 +179,13 @@ import {
   InstanceSelect,
   ProjectSelect,
 } from "@/components/v2";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
 import {
   experimentalCreateIssueByPlan,
   useCurrentProjectV1,
   useCurrentUserV1,
   useInstanceResourceByName,
+  useProjectV1Store,
 } from "@/store";
 import {
   defaultCharsetOfEngineV1,
@@ -206,12 +202,11 @@ import {
   Plan_SpecSchema,
   Plan_CreateDatabaseConfigSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
   enginesSupportCreateDatabase,
+  extractIssueUID,
   extractProjectResourceName,
   instanceV1HasCollationAndCharacterSet,
-  issueV1Slug,
 } from "@/utils";
 
 const INTERNAL_RDS_INSTANCE_USER_LIST = ["rds_ad", "rdsadmin", "rds_iam"];
@@ -241,13 +236,13 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
-
-const { project } = useCurrentProjectV1();
+const projectStore = useProjectV1Store();
+const { project: currentProject } = useCurrentProjectV1();
 
 const state = reactive<LocalState>({
   databaseName: "",
-  projectName: isValidProjectName(project.value.name)
-    ? project.value.name
+  projectName: isValidProjectName(currentProject.value.name)
+    ? currentProject.value.name
     : undefined,
   environmentName: props.environmentName,
   instanceName: props.instanceName,
@@ -259,56 +254,45 @@ const state = reactive<LocalState>({
 });
 
 const isReservedName = computed(() => {
-  return state.databaseName.toLowerCase() == "bytebase";
+  return state.databaseName.toLowerCase() === "bytebase";
 });
 
 const supportedEngines = computed(() => enginesSupportCreateDatabase());
 
 const allowCreate = computed(() => {
   return (
+    isValidProjectName(state.projectName) &&
+    isValidInstanceName(state.instanceName) &&
     !isEmpty(state.databaseName) &&
     validDatabaseOwnerName.value &&
-    !isReservedName.value &&
-    isValidProjectName(state.projectName) &&
-    isValidInstanceName(state.instanceName)
+    !isReservedName.value
   );
 });
 
 // If instance has been specified, then we disallow changing it.
-const allowEditInstance = computed(() => {
-  return !props.instanceName;
-});
+const allowEditInstance = computed(() => !props.instanceName);
 
 const selectedInstance = computed(
   () => useInstanceResourceByName(state.instanceName ?? "").instance.value
 );
 
-const showCollationAndCharacterSet = computed((): boolean => {
-  const instance = selectedInstance.value;
-  return instanceV1HasCollationAndCharacterSet(instance);
-});
+const showCollationAndCharacterSet = computed(() =>
+  instanceV1HasCollationAndCharacterSet(selectedInstance.value)
+);
 
-const requireDatabaseOwnerName = computed((): boolean => {
+const requireDatabaseOwnerName = computed(() => {
   const instance = selectedInstance.value;
-  if (!isValidInstanceName(instance.name)) {
-    return false;
-  }
-  return [Engine.POSTGRES, Engine.REDSHIFT, Engine.COCKROACHDB].includes(
-    instance.engine
+  return (
+    isValidInstanceName(instance.name) &&
+    [Engine.POSTGRES, Engine.REDSHIFT, Engine.COCKROACHDB].includes(
+      instance.engine
+    )
   );
 });
 
-const validDatabaseOwnerName = computed((): boolean => {
-  if (!requireDatabaseOwnerName.value) {
-    return true;
-  }
-
-  return state.instanceRole !== undefined;
-});
-
-const selectProject = (name: string | undefined) => {
-  state.projectName = name;
-};
+const validDatabaseOwnerName = computed(
+  () => !requireDatabaseOwnerName.value || state.instanceRole !== undefined
+);
 
 const selectInstance = (instanceName: string | undefined) => {
   state.instanceName = instanceName;
@@ -319,12 +303,8 @@ const selectInstanceRole = (role?: InstanceRole) => {
   state.instanceRole = role;
 };
 
-const filterInstanceRole = (user: InstanceRole) => {
-  if (INTERNAL_RDS_INSTANCE_USER_LIST.includes(user.roleName)) {
-    return false;
-  }
-  return true;
-};
+const filterInstanceRole = (user: InstanceRole) =>
+  !INTERNAL_RDS_INSTANCE_USER_LIST.includes(user.roleName);
 
 const cancel = () => {
   emit("dismiss");
@@ -334,19 +314,13 @@ const create = async () => {
   if (!allowCreate.value) {
     return;
   }
-  if (!state.environmentName || !state.instanceName) {
-    return;
-  }
 
-  const databaseName = state.databaseName;
-  const tableName = state.tableName;
+  const { databaseName, tableName } = state;
+  const owner =
+    requireDatabaseOwnerName.value && state.instanceRole
+      ? state.instanceRole.roleName
+      : "";
 
-  let owner = "";
-  if (requireDatabaseOwnerName.value && state.instanceRole) {
-    owner = state.instanceRole.roleName;
-  }
-
-  const specs: Plan_Spec[] = [];
   const createDatabaseConfig: Plan_CreateDatabaseConfig = createProto(
     Plan_CreateDatabaseConfigSchema,
     {
@@ -367,37 +341,37 @@ const create = async () => {
   );
   const spec = createProto(Plan_SpecSchema, {
     id: uuidv4(),
+    config: {
+      case: "createDatabaseConfig",
+      value: createDatabaseConfig,
+    },
   });
-  specs.push(spec);
-
-  const issueCreate = createProto(IssueSchema, {
-    type: Issue_Type.DATABASE_CHANGE,
-    creator: `users/${currentUserV1.value.email}`,
-  });
-
-  spec.config = {
-    case: "createDatabaseConfig",
-    value: createDatabaseConfig,
-  };
 
   const title = `${t("issue.title.create-database")} '${databaseName}'`;
   state.creating = true;
   try {
     const planCreate = createProto(PlanSchema, {
-      title: title,
+      title,
       specs: [spec],
       creator: currentUserV1.value.name,
     });
+    const issueCreate = createProto(IssueSchema, {
+      type: Issue_Type.DATABASE_CHANGE,
+      creator: `users/${currentUserV1.value.email}`,
+    });
+    const project = await projectStore.getOrFetchProjectByName(
+      state.projectName!
+    );
     const { createdIssue } = await experimentalCreateIssueByPlan(
-      project.value,
+      project,
       issueCreate,
       planCreate
     );
     router.push({
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
       params: {
         projectId: extractProjectResourceName(createdIssue.name),
-        issueSlug: issueV1Slug(createdIssue.name, createdIssue.title),
+        issueId: extractIssueUID(createdIssue.name),
       },
     });
   } finally {
