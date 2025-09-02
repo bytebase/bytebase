@@ -1121,7 +1121,7 @@ func validateSchemaConsistency(schemaD, schemaC *storepb.DatabaseSchemaMetadata)
 						indexName = indexDiff.NewIndex.Name
 					}
 					diffDetails = append(diffDetails, fmt.Sprintf("    Index[%d]: %s index %s", j, indexDiff.Action, indexName))
-					
+
 					// Show more details for debugging
 					if indexDiff.OldIndex != nil && indexDiff.NewIndex != nil {
 						oldExpr := ""

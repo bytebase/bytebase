@@ -41,7 +41,7 @@ func (c *PostgreSQLIndexComparer) CompareIndexWhereConditions(def1, def2 string)
 }
 
 // ExtractWhereClauseFromIndexDef extracts the WHERE clause from a CREATE INDEX statement using ANTLR AST parsing.
-func (c *PostgreSQLIndexComparer) ExtractWhereClauseFromIndexDef(definition string) string {
+func (*PostgreSQLIndexComparer) ExtractWhereClauseFromIndexDef(definition string) string {
 	if definition == "" {
 		return ""
 	}
@@ -114,7 +114,7 @@ func (e *indexWhereExtractor) visitIndexStmt(ctx *pgparser.IndexstmtContext) {
 }
 
 // getTextFromContext extracts the original source text from a parse tree context.
-func (e *indexWhereExtractor) getTextFromContext(ctx antlr.ParserRuleContext) string {
+func (*indexWhereExtractor) getTextFromContext(ctx antlr.ParserRuleContext) string {
 	if ctx == nil {
 		return ""
 	}

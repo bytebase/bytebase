@@ -8,34 +8,34 @@ func TestPostgreSQLIndexComparer_ExtractWhereClauseFromIndexDef(t *testing.T) {
 	comparer := &PostgreSQLIndexComparer{}
 
 	tests := []struct {
-		name           string
-		indexDef       string
-		expectedWhere  string
+		name          string
+		indexDef      string
+		expectedWhere string
 	}{
 		{
-			name:           "Index with simple WHERE clause",
-			indexDef:       "CREATE INDEX idx_users_active ON users (email) WHERE active = true",
-			expectedWhere:  "active = true",
+			name:          "Index with simple WHERE clause",
+			indexDef:      "CREATE INDEX idx_users_active ON users (email) WHERE active = true",
+			expectedWhere: "active = true",
 		},
 		{
-			name:           "Index with complex WHERE clause",
-			indexDef:       "CREATE INDEX idx_orders_status ON orders (customer_id) WHERE status IN ('pending', 'processing')",
-			expectedWhere:  "status IN ('pending', 'processing')",
+			name:          "Index with complex WHERE clause",
+			indexDef:      "CREATE INDEX idx_orders_status ON orders (customer_id) WHERE status IN ('pending', 'processing')",
+			expectedWhere: "status IN ('pending', 'processing')",
 		},
 		{
-			name:           "Index with function in WHERE clause",
-			indexDef:       `CREATE INDEX idx_text_search ON articles (title) WHERE "length"(content) > 100`,
-			expectedWhere:  `"length"(content) > 100`,
+			name:          "Index with function in WHERE clause",
+			indexDef:      `CREATE INDEX idx_text_search ON articles (title) WHERE "length"(content) > 100`,
+			expectedWhere: `"length"(content) > 100`,
 		},
 		{
-			name:           "Index without WHERE clause",
-			indexDef:       "CREATE INDEX idx_users_email ON users (email)",
-			expectedWhere:  "",
+			name:          "Index without WHERE clause",
+			indexDef:      "CREATE INDEX idx_users_email ON users (email)",
+			expectedWhere: "",
 		},
 		{
-			name:           "UNIQUE index with WHERE clause",
-			indexDef:       "CREATE UNIQUE INDEX idx_users_email_active ON users (email) WHERE active = true",
-			expectedWhere:  "active = true",
+			name:          "UNIQUE index with WHERE clause",
+			indexDef:      "CREATE UNIQUE INDEX idx_users_email_active ON users (email) WHERE active = true",
+			expectedWhere: "active = true",
 		},
 	}
 
@@ -136,9 +136,9 @@ func TestPostgreSQLIndexComparer_ParseIndexDefinition(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := comparer.ParseIndexDefinition(tt.indexDef)
-			
+
 			if tt.expectError && err == nil {
-				t.Errorf("ParseIndexDefinition() expected error, but got none")
+				t.Error("ParseIndexDefinition() expected error, but got none")
 				return
 			}
 			if !tt.expectError && err != nil {
