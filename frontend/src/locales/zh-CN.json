@@ -2846,7 +2846,7 @@
     },
     "actions": {},
     "messages": {},
-    "usage-description": "发布包仅用于自定义的 GitOps 与 Bytebase API 集成。"
+    "usage-description": "发布包是版本化的应用制品。GitOps 工作流将发布包部署到环境。"
   },
   "export-data": {
     "export-rows": "导出行数",
