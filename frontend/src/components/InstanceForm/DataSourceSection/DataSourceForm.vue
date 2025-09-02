@@ -568,7 +568,7 @@
             </NRadio>
           </NRadioGroup>
           <LearnMoreLink
-            url="http://docs.bytebase.com/get-started/instance/#use-external-secret-manager"
+            url="https://docs.bytebase.com/get-started/connect/overview#secret-manager-integration"
             class="text-sm"
           />
         </div>
@@ -586,7 +586,7 @@
               {{ $t("instance.password-type.password-tip") }}
             </div>
             <LearnMoreLink
-              url="https://docs.bytebase.com/get-started/instance/#use-secret-manager?source=console"
+              url="https://docs.bytebase.com/get-started/connect/overview/#use-secret-manager?source=console"
               class="ml-1 text-sm"
             />
             <FeatureBadge

@@ -435,7 +435,7 @@
         type="info"
       >
         <a
-          href="https://docs.bytebase.com/get-started/instance#connect-to-the-instance-from-bytebase-cloud"
+          href="https://docs.bytebase.com/get-started/cloud#prerequisites"
           target="_blank"
           rel="noopener noreferrer"
           class="normal-link"

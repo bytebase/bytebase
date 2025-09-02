@@ -178,7 +178,7 @@ func buildCommentMessage(resp *v1pb.CheckReleaseResponse) string {
 
 func writeAnnotations(resp *v1pb.CheckReleaseResponse) error {
 	// annotation template
-	// `::${advice.status} file=${file},line=${advice.line},col=${advice.column},title=${advice.title} (${advice.code})::${advice.content}. Targets: ${targets.join(', ')} https://docs.bytebase.com/reference/error-code/advisor#${advice.code}`
+	// `::${advice.status} file=${file},line=${advice.line},col=${advice.column},title=${advice.title} (${advice.code})::${advice.content}. Targets: ${targets.join(', ')} https://docs.bytebase.com/sql-review/error-codes#${advice.code}`
 	for _, result := range resp.Results {
 		for _, advice := range result.Advices {
 			var sb strings.Builder
@@ -205,7 +205,7 @@ func writeAnnotations(resp *v1pb.CheckReleaseResponse) error {
 			_, _ = sb.WriteString(". Targets: ")
 			_, _ = sb.WriteString(result.Target)
 			_, _ = sb.WriteString(" ")
-			_, _ = sb.WriteString(" https://docs.bytebase.com/reference/error-code/advisor#")
+			_, _ = sb.WriteString(" https://docs.bytebase.com/sql-review/error-codes#")
 			_, _ = sb.WriteString(strconv.Itoa(int(advice.Code)))
 			fmt.Println(sb.String())
 		}
