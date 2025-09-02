@@ -1916,7 +1916,9 @@
     "ssl": {
       "ca-cert": "Certificado de CA",
       "client-key": "Clave del cliente",
-      "client-cert": "Certificado del cliente"
+      "client-cert": "Certificado del cliente",
+      "skip-verify": "Omitir verificación de certificado",
+      "skip-verify-tooltip": "Omitir la verificación del certificado TLS. Advertencia: Esto es inseguro y solo debe usarse para desarrollo o cuando los certificados no se pueden validar correctamente (por ejemplo, certificados autofirmados, entornos VPN)"
     },
     "ssh-type": {
       "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}",

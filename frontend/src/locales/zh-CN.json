@@ -1916,7 +1916,9 @@
     "ssl": {
       "ca-cert": "CA 证书",
       "client-key": "客户端密钥",
-      "client-cert": "客户端证书"
+      "client-cert": "客户端证书",
+      "skip-verify": "跳过证书验证",
+      "skip-verify-tooltip": "跳过 TLS 证书验证。警告：这是不安全的，仅应在开发环境或证书无法正确验证的情况下使用（例如自签名证书、VPN 环境）"
     },
     "ssh-type": {
       "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}",

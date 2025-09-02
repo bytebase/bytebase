@@ -15,9 +15,8 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 	if !ds.GetUseSsl() {
 		return nil, nil
 	}
-	
+
 	cfg := &tls.Config{}
-	
 	// Handle skip verification option early
 	if ds.GetSkipTlsVerify() {
 		// User explicitly chose to skip ALL verification
@@ -33,7 +32,7 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 		}
 		return cfg, nil
 	}
-	
+
 	// Normal secure path: set up certificate verification
 	var rootCertPool *x509.CertPool
 	if ds.GetSslCa() == "" {
@@ -50,7 +49,7 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 	}
 
 	cfg.RootCAs = rootCertPool
-	
+
 	if (ds.GetSslCert() == "" && ds.GetSslKey() != "") || (ds.GetSslCert() != "" && ds.GetSslKey() == "") {
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
@@ -64,7 +63,7 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 
 		cfg.Certificates = clientCert
 	}
-	
+
 	// Use custom verification for proper certificate chain handling
 	cfg.InsecureSkipVerify = true // Only to use our custom verification below
 	cfg.VerifyPeerCertificate = func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
