@@ -18,9 +18,8 @@ import (
 
 // How to add a SQL review rule:
 //   1. Implement an advisor.(plugin/advisor/mysql or plugin/advisor/pg)
-//   2. Register this advisor in map[storepb.Engine][AdvisorType].(plugin/advisor.go)
+//   2. Register this advisor in map[storepb.Engine][SQLReviewRuleType].(plugin/advisor.go)
 //   3. Add advisor error code if needed(plugin/advisor/code.go).
-//   4. Map SQLReviewRuleType to advisor.Type in getAdvisorTypeByRule(current file).
 
 // SQLReviewRuleType is the type of schema rule.
 type SQLReviewRuleType string
@@ -83,61 +82,61 @@ const (
 	// SchemaRuleStatementDMLDryRun dry run the dml.
 	SchemaRuleStatementDMLDryRun SQLReviewRuleType = "statement.dml-dry-run"
 	// SchemaRuleStatementDisallowAddColumnWithDefault disallow to add column with DEFAULT.
-	SchemaRuleStatementDisallowAddColumnWithDefault = "statement.disallow-add-column-with-default"
+	SchemaRuleStatementDisallowAddColumnWithDefault SQLReviewRuleType = "statement.disallow-add-column-with-default"
 	// SchemaRuleStatementAddCheckNotValid require add check constraints not valid.
-	SchemaRuleStatementAddCheckNotValid = "statement.add-check-not-valid"
+	SchemaRuleStatementAddCheckNotValid SQLReviewRuleType = "statement.add-check-not-valid"
 	// SchemaRuleStatementAddFKNotValid require add foreign key not valid.
-	SchemaRuleStatementAddFKNotValid = "statement.add-foreign-key-not-valid"
+	SchemaRuleStatementAddFKNotValid SQLReviewRuleType = "statement.add-foreign-key-not-valid"
 	// SchemaRuleStatementDisallowAddNotNull disallow to add NOT NULL.
-	SchemaRuleStatementDisallowAddNotNull = "statement.disallow-add-not-null"
-	// SchemaRuleStatementDisallowAddColumn disallow to add column.
-	SchemaRuleStatementSelectFullTableScan = "statement.select-full-table-scan"
+	SchemaRuleStatementDisallowAddNotNull SQLReviewRuleType = "statement.disallow-add-not-null"
+	// SchemaRuleStatementSelectFullTableScan disallow full table scan.
+	SchemaRuleStatementSelectFullTableScan SQLReviewRuleType = "statement.select-full-table-scan"
 	// SchemaRuleStatementCreateSpecifySchema disallow to create table without specifying schema.
-	SchemaRuleStatementCreateSpecifySchema = "statement.create-specify-schema"
+	SchemaRuleStatementCreateSpecifySchema SQLReviewRuleType = "statement.create-specify-schema"
 	// SchemaRuleStatementCheckSetRoleVariable require add a check for SET ROLE variable.
-	SchemaRuleStatementCheckSetRoleVariable = "statement.check-set-role-variable"
+	SchemaRuleStatementCheckSetRoleVariable SQLReviewRuleType = "statement.check-set-role-variable"
 	// SchemaRuleStatementDisallowUsingFilesort disallow using filesort in execution plan.
-	SchemaRuleStatementDisallowUsingFilesort = "statement.disallow-using-filesort"
+	SchemaRuleStatementDisallowUsingFilesort SQLReviewRuleType = "statement.disallow-using-filesort"
 	// SchemaRuleStatementDisallowUsingTemporary disallow using temporary in execution plan.
-	SchemaRuleStatementDisallowUsingTemporary = "statement.disallow-using-temporary"
+	SchemaRuleStatementDisallowUsingTemporary SQLReviewRuleType = "statement.disallow-using-temporary"
 	// SchemaRuleStatementWhereNoEqualNull check the WHERE clause no equal null.
-	SchemaRuleStatementWhereNoEqualNull = "statement.where.no-equal-null"
+	SchemaRuleStatementWhereNoEqualNull SQLReviewRuleType = "statement.where.no-equal-null"
 	// SchemaRuleStatementWhereDisallowFunctionsAndCalculations disallow using function in WHERE clause.
-	SchemaRuleStatementWhereDisallowFunctionsAndCalculations = "statement.where.disallow-functions-and-calculations"
+	SchemaRuleStatementWhereDisallowFunctionsAndCalculations SQLReviewRuleType = "statement.where.disallow-functions-and-calculations"
 	// SchemaRuleStatementQueryMinumumPlanLevel enforce the minimum plan level.
-	SchemaRuleStatementQueryMinumumPlanLevel = "statement.query.minimum-plan-level"
+	SchemaRuleStatementQueryMinumumPlanLevel SQLReviewRuleType = "statement.query.minimum-plan-level"
 	// SchemaRuleStatementWhereMaximumLogicalOperatorCount enforce the maximum logical operator count in WHERE clause.
-	SchemaRuleStatementWhereMaximumLogicalOperatorCount = "statement.where.maximum-logical-operator-count"
+	SchemaRuleStatementWhereMaximumLogicalOperatorCount SQLReviewRuleType = "statement.where.maximum-logical-operator-count"
 	// SchemaRuleStatementMaximumLimitValue enforce the maximum limit value.
-	SchemaRuleStatementMaximumLimitValue = "statement.maximum-limit-value"
+	SchemaRuleStatementMaximumLimitValue SQLReviewRuleType = "statement.maximum-limit-value"
 	// SchemaRuleStatementMaximumJoinTableCount enforce the maximum join table count in the statement.
-	SchemaRuleStatementMaximumJoinTableCount = "statement.maximum-join-table-count"
+	SchemaRuleStatementMaximumJoinTableCount SQLReviewRuleType = "statement.maximum-join-table-count"
 	// SchemaRuleStatementMaximumStatementsInTransaction enforce the maximum statements in transaction.
-	SchemaRuleStatementMaximumStatementsInTransaction = "statement.maximum-statements-in-transaction"
+	SchemaRuleStatementMaximumStatementsInTransaction SQLReviewRuleType = "statement.maximum-statements-in-transaction"
 	// SchemaRuleStatementJoinStrictColumnAttrs enforce the join strict column attributes.
-	SchemaRuleStatementJoinStrictColumnAttrs = "statement.join-strict-column-attrs"
+	SchemaRuleStatementJoinStrictColumnAttrs SQLReviewRuleType = "statement.join-strict-column-attrs"
 	// SchemaRuleStatementDisallowMixInDDL disallows DML statements in DDL statements.
 	SchemaRuleStatementDisallowMixInDDL SQLReviewRuleType = "statement.disallow-mix-in-ddl"
 	// SchemaRuleStatementDisallowMixInDML disallows DDL statements in DML statements.
 	SchemaRuleStatementDisallowMixInDML SQLReviewRuleType = "statement.disallow-mix-in-dml"
 	// SchemaRuleStatementPriorBackupCheck checks for prior backup.
-	SchemaRuleStatementPriorBackupCheck = "statement.prior-backup-check"
+	SchemaRuleStatementPriorBackupCheck SQLReviewRuleType = "statement.prior-backup-check"
 	// SchemaRuleStatementNonTransactional checks for non-transactional statements.
-	SchemaRuleStatementNonTransactional = "statement.non-transactional"
+	SchemaRuleStatementNonTransactional SQLReviewRuleType = "statement.non-transactional"
 	// SchemaRuleStatementAddColumnWithoutPosition check no position in ADD COLUMN clause.
-	SchemaRuleStatementAddColumnWithoutPosition = "statement.add-column-without-position"
+	SchemaRuleStatementAddColumnWithoutPosition SQLReviewRuleType = "statement.add-column-without-position"
 	// SchemaRuleStatementDisallowOfflineDDL disallow offline ddl.
-	SchemaRuleStatementDisallowOfflineDDL = "statement.disallow-offline-ddl"
+	SchemaRuleStatementDisallowOfflineDDL SQLReviewRuleType = "statement.disallow-offline-ddl"
 	// SchemaRuleStatementDisallowCrossDBQueries disallow cross database queries.
 	SchemaRuleStatementDisallowCrossDBQueries SQLReviewRuleType = "statement.disallow-cross-db-queries"
 	// SchemaRuleStatementMaxExecutionTime enforce the maximum execution time.
-	SchemaRuleStatementMaxExecutionTime = "statement.max-execution-time"
+	SchemaRuleStatementMaxExecutionTime SQLReviewRuleType = "statement.max-execution-time"
 	// SchemaRuleStatementRequireAlgorithmOption require set ALGORITHM option in ALTER TABLE statement.
-	SchemaRuleStatementRequireAlgorithmOption = "statement.require-algorithm-option"
+	SchemaRuleStatementRequireAlgorithmOption SQLReviewRuleType = "statement.require-algorithm-option"
 	// SchemaRuleStatementRequireLockOption require set LOCK option in ALTER TABLE statement.
-	SchemaRuleStatementRequireLockOption = "statement.require-lock-option"
+	SchemaRuleStatementRequireLockOption SQLReviewRuleType = "statement.require-lock-option"
 	// SchemaRuleStatementObjectOwnerCheck checks the object owner for the statement.
-	SchemaRuleStatementObjectOwnerCheck = "statement.object-owner-check"
+	SchemaRuleStatementObjectOwnerCheck SQLReviewRuleType = "statement.object-owner-check"
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
 	// SchemaRuleTableNoFK require the table disallow the foreign key.
