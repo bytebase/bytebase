@@ -111,3 +111,60 @@ These flags are specific to the `rollout` subcommand (`bytebase-action rollout`)
 -   **`--plan`**: The specific plan to rollout.
     -   Format: `projects/{project}/plans/{plan}`
     -   If specified, this shadows the `--file-pattern` and `--targets` flags, meaning they will be ignored.
+
+## Using Declarative Mode (Experimental)
+
+Declarative mode is an experimental feature currently in development that allows you to manage database schemas as desired state definitions rather than versioned migrations.
+
+### How to Use
+
+To enable declarative mode, add the `--declarative` flag to your command:
+
+```bash
+bytebase-action rollout --declarative --file-pattern="schema/*.sql" [other flags]
+```
+
+In declarative mode, your SQL files represent the complete desired state of your database schema. The system will automatically:
+- Compare the desired state with the current database state
+- Generate the necessary changes to transform the current state into the desired state
+
+### Important Limitations
+
+1. **Database Support**: Currently only MySQL and PostgreSQL are supported.
+
+2. **Supported SQL Statements**: Only the following CREATE statements are supported:
+   - `CREATE TABLE`
+   - `CREATE INDEX`
+   - `CREATE FUNCTION`
+   - `CREATE PROCEDURE`
+   - `CREATE VIEW`
+   - `CREATE SEQUENCE`
+
+3. **PostgreSQL Specific Requirements**: When using PostgreSQL, you must use fully qualified names for all database objects in your schema files:
+   ```sql
+   -- Correct: fully qualified name
+   CREATE TABLE myschema.users (
+       id SERIAL PRIMARY KEY,
+       name VARCHAR(100)
+   );
+   
+   -- Incorrect: unqualified name
+   CREATE TABLE users (
+       id SERIAL PRIMARY KEY,
+       name VARCHAR(100)
+   );
+   ```
+
+### Example File Organization
+
+With declarative mode, you can organize your schema across multiple files:
+
+```
+schema/
+├── tables.sql      # All table definitions
+├── indexes.sql     # All index definitions
+├── views.sql       # All view definitions
+└── functions.sql   # All function/procedure definitions
+```
+
+Each file should contain the complete desired state for its respective database objects.
