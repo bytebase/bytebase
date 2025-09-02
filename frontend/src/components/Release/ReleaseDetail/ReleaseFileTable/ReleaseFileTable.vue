@@ -15,7 +15,11 @@
 import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import type { Release_File } from "@/types/proto-es/v1/release_service_pb";
+import {
+  type Release_File,
+  Release_File_ChangeType,
+  Release_File_Type,
+} from "@/types/proto-es/v1/release_service_pb";
 import { bytesToString, getReleaseFileStatement } from "@/utils";
 
 const props = withDefaults(
@@ -66,6 +70,13 @@ const columnList = computed(() => {
       render: (file) => file.version,
     },
     {
+      key: "type",
+      title: t("common.type"),
+      width: 64,
+      resizable: true,
+      render: (file) => getReleaseFileTypeText(file),
+    },
+    {
       key: "filename",
       title: t("database.revision.filename"),
       width: 128,
@@ -88,6 +99,32 @@ const columnList = computed(() => {
   ];
   return columns.filter((column) => !column.hide);
 });
+
+const getReleaseFileTypeText = (file: Release_File) => {
+  switch (file.type) {
+    case Release_File_Type.DECLARATIVE:
+      return "SDL";
+    case Release_File_Type.VERSIONED:
+      switch (file.changeType) {
+        case Release_File_ChangeType.DDL:
+          return "DDL";
+        case Release_File_ChangeType.DDL_GHOST:
+          return "DDL (gh-ost)";
+        case Release_File_ChangeType.DML:
+          return "DML";
+        case Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED:
+          return "";
+        default:
+          file.changeType satisfies never;
+          return "";
+      }
+    case Release_File_Type.TYPE_UNSPECIFIED:
+      return "";
+    default:
+      file.type satisfies never;
+      return "";
+  }
+};
 
 const rowProps = (file: Release_File) => {
   return {
