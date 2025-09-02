@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLMergeAlterTable, &StatementMergeAlterTableAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementMergeAlterTable, &StatementMergeAlterTableAdvisor{})
 }
 
 // StatementMergeAlterTableAdvisor is the advisor checking for no redundant ALTER TABLE statements.

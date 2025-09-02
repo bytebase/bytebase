@@ -24,7 +24,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleTableRequirePK, &TableRequirePKAdvisor{})
 }
 
 // TableRequirePKAdvisor is the advisor checking table requires PK.

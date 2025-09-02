@@ -24,7 +24,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
 }
 
 // IndexTypeNoBlobAdvisor is the advisor checking for index type no blob.

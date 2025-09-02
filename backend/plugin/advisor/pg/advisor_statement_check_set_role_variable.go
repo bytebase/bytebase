@@ -16,7 +16,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLStatementCheckSetRoleVariable, &StatementCheckSetRoleVariable{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementCheckSetRoleVariable, &StatementCheckSetRoleVariable{})
 }
 
 type StatementCheckSetRoleVariable struct {

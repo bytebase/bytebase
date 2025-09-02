@@ -517,7 +517,7 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 }
 
 func equalReviewResultProtos(a *require.Assertions, want, got []*v1pb.PlanCheckRun_Result, message string) {
-	a.Equal(len(want), len(got))
+	a.Equal(len(want), len(got), message)
 	for i := 0; i < len(want); i++ {
 		diff := cmp.Diff(want[i], got[i], protocmp.Transform())
 		a.Empty(diff, message)
@@ -588,11 +588,6 @@ func prodTemplateReviewConfigForPostgreSQL() (*v1pb.ReviewConfig, error) {
 				Engine: v1pb.Engine_POSTGRES,
 			},
 			{
-				Type:   string(advisor.SchemaRuleStatementDisallowOrderBy),
-				Level:  v1pb.SQLReviewRuleLevel_WARNING,
-				Engine: v1pb.Engine_POSTGRES,
-			},
-			{
 				Type:   string(advisor.SchemaRuleStatementMergeAlterTable),
 				Level:  v1pb.SQLReviewRuleLevel_WARNING,
 				Engine: v1pb.Engine_POSTGRES,
@@ -645,28 +640,8 @@ func prodTemplateReviewConfigForPostgreSQL() (*v1pb.ReviewConfig, error) {
 				Engine: v1pb.Engine_POSTGRES,
 			},
 			{
-				Type:   string(advisor.SchemaRuleColumnDisallowChange),
-				Level:  v1pb.SQLReviewRuleLevel_WARNING,
-				Engine: v1pb.Engine_POSTGRES,
-			},
-			{
-				Type:   string(advisor.SchemaRuleColumnDisallowChangingOrder),
-				Level:  v1pb.SQLReviewRuleLevel_WARNING,
-				Engine: v1pb.Engine_POSTGRES,
-			},
-			{
-				Type:   string(advisor.SchemaRuleColumnAutoIncrementMustInteger),
-				Level:  v1pb.SQLReviewRuleLevel_ERROR,
-				Engine: v1pb.Engine_POSTGRES,
-			},
-			{
 				Type:   string(advisor.SchemaRuleColumnTypeDisallowList),
 				Level:  v1pb.SQLReviewRuleLevel_ERROR,
-				Engine: v1pb.Engine_POSTGRES,
-			},
-			{
-				Type:   string(advisor.SchemaRuleColumnDisallowSetCharset),
-				Level:  v1pb.SQLReviewRuleLevel_WARNING,
 				Engine: v1pb.Engine_POSTGRES,
 			},
 			{
@@ -674,31 +649,10 @@ func prodTemplateReviewConfigForPostgreSQL() (*v1pb.ReviewConfig, error) {
 				Level:  v1pb.SQLReviewRuleLevel_WARNING,
 				Engine: v1pb.Engine_POSTGRES,
 			},
-			{
-				Type:   string(advisor.SchemaRuleColumnAutoIncrementInitialValue),
-				Level:  v1pb.SQLReviewRuleLevel_WARNING,
-				Engine: v1pb.Engine_POSTGRES,
-			},
-			{
-				Type:   string(advisor.SchemaRuleColumnAutoIncrementMustUnsigned),
-				Level:  v1pb.SQLReviewRuleLevel_WARNING,
-				Engine: v1pb.Engine_POSTGRES,
-			},
-			{
-				Type:   string(advisor.SchemaRuleCurrentTimeColumnCountLimit),
-				Level:  v1pb.SQLReviewRuleLevel_WARNING,
-				Engine: v1pb.Engine_POSTGRES,
-			},
 			// SCHEMA
 			{
 				Type:   string(advisor.SchemaRuleSchemaBackwardCompatibility),
 				Level:  v1pb.SQLReviewRuleLevel_WARNING,
-				Engine: v1pb.Engine_POSTGRES,
-			},
-			// DATABASE
-			{
-				Type:   string(advisor.SchemaRuleDropEmptyDatabase),
-				Level:  v1pb.SQLReviewRuleLevel_ERROR,
 				Engine: v1pb.Engine_POSTGRES,
 			},
 			// INDEX
@@ -709,16 +663,6 @@ func prodTemplateReviewConfigForPostgreSQL() (*v1pb.ReviewConfig, error) {
 			},
 			{
 				Type:   string(advisor.SchemaRuleIndexKeyNumberLimit),
-				Level:  v1pb.SQLReviewRuleLevel_WARNING,
-				Engine: v1pb.Engine_POSTGRES,
-			},
-			{
-				Type:   string(advisor.SchemaRuleIndexPKTypeLimit),
-				Level:  v1pb.SQLReviewRuleLevel_WARNING,
-				Engine: v1pb.Engine_POSTGRES,
-			},
-			{
-				Type:   string(advisor.SchemaRuleIndexTypeNoBlob),
 				Level:  v1pb.SQLReviewRuleLevel_WARNING,
 				Engine: v1pb.Engine_POSTGRES,
 			},
@@ -776,11 +720,6 @@ func prodTemplateReviewConfigForMySQL() (*v1pb.ReviewConfig, error) {
 			},
 			{
 				Type:   string(advisor.SchemaRuleIDXNaming),
-				Level:  v1pb.SQLReviewRuleLevel_WARNING,
-				Engine: v1pb.Engine_MYSQL,
-			},
-			{
-				Type:   string(advisor.SchemaRulePKNaming),
 				Level:  v1pb.SQLReviewRuleLevel_WARNING,
 				Engine: v1pb.Engine_MYSQL,
 			},

@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementJoinStrictColumnAttrs, &StatementJoinStrictColumnAttrsAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementJoinStrictColumnAttrs, &StatementJoinStrictColumnAttrsAdvisor{})
 }
 
 type StatementJoinStrictColumnAttrsAdvisor struct {

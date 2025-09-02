@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLIndexTotalNumberLimit, &IndexTotalNumberLimitAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleIndexTotalNumberLimit, &IndexTotalNumberLimitAdvisor{})
 }
 
 // IndexTotalNumberLimitAdvisor is the advisor checking for index total number limit.

@@ -19,9 +19,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementNoSelectAll, &NoSelectAllAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementNoSelectAll, &NoSelectAllAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleStatementNoSelectAll, &NoSelectAllAdvisor{})
 }
 
 // NoSelectAllAdvisor is the advisor checking for no "select *".

@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLColumnNoNull, &ColumnNoNullAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleColumnNotNull, &ColumnNoNullAdvisor{})
 }
 
 // ColumnNoNullAdvisor is the advisor checking for column no NULL value..

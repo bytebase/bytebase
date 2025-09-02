@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleRequiredColumn, &ColumnRequirementAdvisor{})
 }
 
 // ColumnRequirementAdvisor is the advisor checking for column requirement.

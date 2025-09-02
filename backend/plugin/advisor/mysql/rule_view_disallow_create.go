@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLViewDisallowCreate, &ViewDisallowCreateAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleViewDisallowCreate, &ViewDisallowCreateAdvisor{})
 }
 
 // ViewDisallowCreateAdvisor is the advisor checking for disallow creating view.

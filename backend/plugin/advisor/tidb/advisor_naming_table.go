@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleTableNaming, &NamingTableConventionAdvisor{})
 }
 
 // NamingTableConventionAdvisor is the advisor checking for table naming convention.

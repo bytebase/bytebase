@@ -20,9 +20,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleColumnDisallowChange, &ColumnDisallowChangingAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleColumnDisallowChange, &ColumnDisallowChangingAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleColumnDisallowChange, &ColumnDisallowChangingAdvisor{})
 }
 
 // ColumnDisallowChangingAdvisor is the advisor checking for disallow CHANGE COLUMN statement.

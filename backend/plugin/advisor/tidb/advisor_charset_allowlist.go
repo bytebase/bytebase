@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLCharsetAllowlist, &CharsetAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleCharsetAllowlist, &CharsetAllowlistAdvisor{})
 }
 
 // CharsetAllowlistAdvisor is the advisor checking for charset allowlist.

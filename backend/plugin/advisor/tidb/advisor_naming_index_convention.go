@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleIDXNaming, &NamingIndexConventionAdvisor{})
 }
 
 // NamingIndexConventionAdvisor is the advisor checking for index naming convention.

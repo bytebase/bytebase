@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLStatementMaximumLimitValue, &StatementMaximumLimitValueAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementMaximumLimitValue, &StatementMaximumLimitValueAdvisor{})
 }
 
 // StatementAddCheckNotValidAdvisor is the advisor checking for to add check not valid.

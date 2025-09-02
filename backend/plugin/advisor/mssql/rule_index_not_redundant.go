@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLIndexNotRedundant, &IndexNotRedundantAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleIndexNotRedundant, &IndexNotRedundantAdvisor{})
 }
 
 var dftMSSQLSchemaName = "dbo"

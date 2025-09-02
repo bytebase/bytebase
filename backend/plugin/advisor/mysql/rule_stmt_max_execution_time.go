@@ -20,8 +20,8 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementMaxExecutionTime, &MaxExecutionTimeAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLStatementMaxExecutionTime, &MaxExecutionTimeAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementMaxExecutionTime, &MaxExecutionTimeAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementMaxExecutionTime, &MaxExecutionTimeAdvisor{})
 }
 
 // MaxExecutionTimeAdvisor is the advisor checking for the max execution time.

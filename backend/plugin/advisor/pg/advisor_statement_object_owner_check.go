@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLStatementObjectOwnerCheck, &StatementObjectOwnerCheckAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementObjectOwnerCheck, &StatementObjectOwnerCheckAdvisor{})
 }
 
 const (

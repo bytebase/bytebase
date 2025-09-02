@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.OracleColumnNoNull, &ColumnNoNullAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleColumnNotNull, &ColumnNoNullAdvisor{})
 }
 
 type columnMap map[string]int

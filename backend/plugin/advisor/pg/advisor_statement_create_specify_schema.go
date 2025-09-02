@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLStatementCreateSpecifySchema, &StatementCreateSpecifySchema{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementCreateSpecifySchema, &StatementCreateSpecifySchema{})
 }
 
 type StatementCreateSpecifySchema struct {

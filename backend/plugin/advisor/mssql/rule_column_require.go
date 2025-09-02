@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLColumnRequirement, &ColumnRequireAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleRequiredColumn, &ColumnRequireAdvisor{})
 }
 
 // ColumnRequireAdvisor is the advisor checking for column requirement..

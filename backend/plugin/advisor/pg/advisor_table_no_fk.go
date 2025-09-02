@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLTableNoFK, &TableNoFKAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleTableNoFK, &TableNoFKAdvisor{})
 }
 
 // TableNoFKAdvisor is the advisor checking table disallow foreign key.

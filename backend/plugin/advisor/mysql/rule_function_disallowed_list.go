@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLFunctionDisallowedList, &FunctionDisallowedListAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleFunctionDisallowList, &FunctionDisallowedListAdvisor{})
 }
 
 // FunctionDisallowedListAdvisor is the advisor checking for disallowed function list.

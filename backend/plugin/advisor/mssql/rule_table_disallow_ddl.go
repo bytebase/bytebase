@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLTableDisallowDDL, &TableDisallowDDLAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleTableDisallowDDL, &TableDisallowDDLAdvisor{})
 }
 
 // TableDisallowDDLAdvisor is the advisor checking for disallow DDL on specific tables.

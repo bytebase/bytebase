@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLStatementDisallowLimit, &StatementDisallowLimitAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleStatementDisallowLimit, &StatementDisallowLimitAdvisor{})
 }
 
 // StatementDisallowLimitAdvisor is the advisor checking for no LIMIT clause in INSERT/UPDATE statement.

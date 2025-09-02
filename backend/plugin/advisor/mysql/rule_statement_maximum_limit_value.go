@@ -20,9 +20,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementMaximumLimitValue, &StatementMaximumLimitValueAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLStatementMaximumLimitValue, &StatementMaximumLimitValueAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLStatementMaximumLimitValue, &StatementMaximumLimitValueAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementMaximumLimitValue, &StatementMaximumLimitValueAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleStatementMaximumLimitValue, &StatementMaximumLimitValueAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementMaximumLimitValue, &StatementMaximumLimitValueAdvisor{})
 }
 
 type StatementMaximumLimitValueAdvisor struct {

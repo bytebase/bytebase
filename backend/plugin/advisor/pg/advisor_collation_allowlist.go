@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLCollationAllowlist, &CollationAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleCollationAllowlist, &CollationAllowlistAdvisor{})
 }
 
 // CollationAllowlistAdvisor is the advisor checking for collation allowlist.

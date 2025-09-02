@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleColumnNotNull, &ColumnNoNullAdvisor{})
 }
 
 // ColumnNoNullAdvisor is the advisor checking for column no NULL value.

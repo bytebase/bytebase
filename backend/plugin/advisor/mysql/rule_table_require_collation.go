@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableRequireCollation, &TableRequireCollationAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableRequireCollation, &TableRequireCollationAdvisor{})
 }
 
 // TableRequireCollationAdvisor is the advisor checking for require collation.
