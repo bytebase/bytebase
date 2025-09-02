@@ -8,7 +8,7 @@
     >
       <template
         v-if="
-          formatEnvironmentName(instanceEnvironment.id) !==
+          database.instanceResource.environment !==
           database.effectiveEnvironment
         "
         #prefix
@@ -19,6 +19,7 @@
           :show-icon="false"
           :link="link"
           :text-class="`text-control-light ${link ? 'hover:underline' : ''}`"
+          :null-environment-placeholder="'Null'"
         />
       </template>
     </InstanceV1Name>
@@ -35,6 +36,7 @@
           :show-icon="false"
           :link="link"
           :text-class="`text-control-light ${link ? 'hover:underline' : ''}`"
+          :null-environment-placeholder="'Null'"
         />
 
         <DatabaseV1Name
@@ -56,7 +58,7 @@ import {
   InstanceV1Name,
 } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
-import { formatEnvironmentName, type ComposedDatabase } from "@/types";
+import { type ComposedDatabase } from "@/types";
 
 const props = withDefaults(
   defineProps<{

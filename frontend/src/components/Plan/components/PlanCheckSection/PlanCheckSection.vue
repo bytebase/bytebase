@@ -163,7 +163,7 @@ const openChecksDrawer = (status: PlanCheckRun_Result_Status) => {
 
 // Prepare plan check runs.
 watch(
-  [selectedSpec.value.id, statusCountString],
+  [() => selectedSpec.value.id, statusCountString],
   async () => {
     if (planSpecHasPlanChecks(selectedSpec.value)) {
       await refreshResources(["planCheckRuns"], true /** force */);
