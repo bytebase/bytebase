@@ -1178,19 +1178,15 @@ func (s *RolloutService) canUserRunEnvironmentTasks(ctx context.Context, user *s
 	}
 
 	if user.ID == creatorUID {
-		for _, issueRole := range p.IssueRoles {
-			if issueRole == "roles/CREATOR" {
-				return true, nil
-			}
+		if slices.Contains(p.IssueRoles, "roles/CREATOR") {
+			return true, nil
 		}
 	}
 
 	if issue != nil {
 		if lastApproverUID := getLastApproverUID(issue.Payload.GetApproval()); lastApproverUID != nil && *lastApproverUID == user.ID {
-			for _, issueRole := range p.IssueRoles {
-				if issueRole == "roles/LAST_APPROVER" {
-					return true, nil
-				}
+			if slices.Contains(p.IssueRoles, "roles/LAST_APPROVER") {
+				return true, nil
 			}
 		}
 	}
