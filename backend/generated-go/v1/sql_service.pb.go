@@ -1283,9 +1283,11 @@ func (x *Advice) GetEndPosition() *Position {
 
 type ExportRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the instance name to execute the query against.
-	// Format: instances/{instance}/databases/{databaseName}
-	// Format: projects/{project}/issues/{issue} for data export issue.
+	// The name is the resource name to execute the export against.
+	// Format: instances/{instance}/databases/{database}
+	// Format: instances/{instance}
+	// Format: projects/{project}/rollouts/{rollout}
+	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The SQL statement to execute.
 	Statement string `protobuf:"bytes,3,opt,name=statement,proto3" json:"statement,omitempty"`
@@ -2822,10 +2824,9 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aSUCCESS\x10\x01\x12\v\n" +
 	"\aWARNING\x10\x02\x12\t\n" +
-	"\x05ERROR\x10\x03J\x04\b\a\x10\bJ\x04\b\x05\x10\x06J\x04\b\x06\x10\a\"\xaf\x02\n" +
-	"\rExportRequest\x121\n" +
-	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
-	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
+	"\x05ERROR\x10\x03J\x04\b\a\x10\bJ\x04\b\x05\x10\x06J\x04\b\x06\x10\a\"\x95\x02\n" +
+	"\rExportRequest\x12\x17\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\x12\x1c\n" +
 	"\tstatement\x18\x03 \x01(\tR\tstatement\x12\x14\n" +
 	"\x05limit\x18\x04 \x01(\x05R\x05limit\x121\n" +
 	"\x06format\x18\x05 \x01(\x0e2\x19.bytebase.v1.ExportFormatR\x06format\x12\x14\n" +

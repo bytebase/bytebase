@@ -806,9 +806,11 @@ export declare const Advice_StatusSchema: GenEnum<Advice_Status>;
  */
 export declare type ExportRequest = Message<"bytebase.v1.ExportRequest"> & {
   /**
-   * The name is the instance name to execute the query against.
-   * Format: instances/{instance}/databases/{databaseName}
-   * Format: projects/{project}/issues/{issue} for data export issue.
+   * The name is the resource name to execute the export against.
+   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}
+   * Format: projects/{project}/rollouts/{rollout}
+   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}
    *
    * @generated from field: string name = 1;
    */
