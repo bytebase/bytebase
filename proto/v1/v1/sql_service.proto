@@ -378,13 +378,12 @@ message Advice {
 message ExportRequest {
   reserved 2;
 
-  // The name is the instance name to execute the query against.
-  // Format: instances/{instance}/databases/{databaseName}
-  // Format: projects/{project}/issues/{issue} for data export issue.
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Database"}
-  ];
+  // The name is the resource name to execute the export against.
+  // Format: instances/{instance}/databases/{database}
+  // Format: instances/{instance}
+  // Format: projects/{project}/rollouts/{rollout}
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The SQL statement to execute.
   string statement = 3;
