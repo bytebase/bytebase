@@ -778,8 +778,8 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 			} else if numericPrecision.Valid {
 				column.Type = fmt.Sprintf("%s(%s)", column.Type, numericPrecision.String)
 			}
-		case "time", "time without time zone", "time with time zone", 
-			 "timestamp", "timestamp without time zone", "timestamp with time zone":
+		case "time", "time without time zone", "time with time zone",
+			"timestamp", "timestamp without time zone", "timestamp with time zone":
 			// Handle time/timestamp precision
 			if datetimePrecision.Valid {
 				// For time types, add precision before "without time zone" part
@@ -787,10 +787,10 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 					baseType := strings.Replace(column.Type, " without time zone", "", 1)
 					column.Type = fmt.Sprintf("%s(%s) without time zone", baseType, datetimePrecision.String)
 				} else if strings.Contains(column.Type, "with time zone") {
-					baseType := strings.Replace(column.Type, " with time zone", "", 1) 
+					baseType := strings.Replace(column.Type, " with time zone", "", 1)
 					column.Type = fmt.Sprintf("%s(%s) with time zone", baseType, datetimePrecision.String)
 				} else {
-					// For plain "time" or "timestamp" 
+					// For plain "time" or "timestamp"
 					column.Type = fmt.Sprintf("%s(%s)", column.Type, datetimePrecision.String)
 				}
 			}

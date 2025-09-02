@@ -730,7 +730,9 @@ func indexesEqual(engine storepb.Engine, idx1, idx2 *storepb.IndexMetadata) bool
 		return false
 	}
 
-	return true
+	// Compare WHERE conditions for partial indexes using engine-specific comparer
+	comparer := GetIndexComparer(engine)
+	return comparer.CompareIndexWhereConditions(idx1.Definition, idx2.Definition)
 }
 
 // descendingArraysEqual compares two descending arrays, considering empty arrays

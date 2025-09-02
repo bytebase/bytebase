@@ -1111,6 +1111,47 @@ func validateSchemaConsistency(schemaD, schemaC *storepb.DatabaseSchemaMetadata)
 					}
 					diffDetails = append(diffDetails, fmt.Sprintf("    Column[%d]: %s column %s", j, columnDiff.Action, columnName))
 				}
+
+				// Add index change details
+				for j, indexDiff := range tableDiff.IndexChanges {
+					indexName := ""
+					if indexDiff.OldIndex != nil {
+						indexName = indexDiff.OldIndex.Name
+					} else if indexDiff.NewIndex != nil {
+						indexName = indexDiff.NewIndex.Name
+					}
+					diffDetails = append(diffDetails, fmt.Sprintf("    Index[%d]: %s index %s", j, indexDiff.Action, indexName))
+					
+					// Show more details for debugging
+					if indexDiff.OldIndex != nil && indexDiff.NewIndex != nil {
+						oldExpr := ""
+						newExpr := ""
+						if len(indexDiff.OldIndex.Expressions) > 0 {
+							oldExpr = strings.Join(indexDiff.OldIndex.Expressions, ", ")
+						}
+						if len(indexDiff.NewIndex.Expressions) > 0 {
+							newExpr = strings.Join(indexDiff.NewIndex.Expressions, ", ")
+						}
+						diffDetails = append(diffDetails, fmt.Sprintf("      Old: expr=%s type=%s unique=%v primary=%v", oldExpr, indexDiff.OldIndex.Type, indexDiff.OldIndex.Unique, indexDiff.OldIndex.Primary))
+						diffDetails = append(diffDetails, fmt.Sprintf("      Old def: %s", indexDiff.OldIndex.Definition))
+						diffDetails = append(diffDetails, fmt.Sprintf("      New: expr=%s type=%s unique=%v primary=%v", newExpr, indexDiff.NewIndex.Type, indexDiff.NewIndex.Unique, indexDiff.NewIndex.Primary))
+						diffDetails = append(diffDetails, fmt.Sprintf("      New def: %s", indexDiff.NewIndex.Definition))
+					} else if indexDiff.OldIndex != nil {
+						oldExpr := ""
+						if len(indexDiff.OldIndex.Expressions) > 0 {
+							oldExpr = strings.Join(indexDiff.OldIndex.Expressions, ", ")
+						}
+						diffDetails = append(diffDetails, fmt.Sprintf("      Old: expr=%s type=%s unique=%v primary=%v", oldExpr, indexDiff.OldIndex.Type, indexDiff.OldIndex.Unique, indexDiff.OldIndex.Primary))
+						diffDetails = append(diffDetails, fmt.Sprintf("      Old def: %s", indexDiff.OldIndex.Definition))
+					} else if indexDiff.NewIndex != nil {
+						newExpr := ""
+						if len(indexDiff.NewIndex.Expressions) > 0 {
+							newExpr = strings.Join(indexDiff.NewIndex.Expressions, ", ")
+						}
+						diffDetails = append(diffDetails, fmt.Sprintf("      New: expr=%s type=%s unique=%v primary=%v", newExpr, indexDiff.NewIndex.Type, indexDiff.NewIndex.Unique, indexDiff.NewIndex.Primary))
+						diffDetails = append(diffDetails, fmt.Sprintf("      New def: %s", indexDiff.NewIndex.Definition))
+					}
+				}
 			}
 		}
 		if len(diff.ViewChanges) > 0 {

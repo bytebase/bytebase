@@ -213,7 +213,9 @@ func (v *normalizationVisitor) normalizeSchema(schema string) string {
 	return v.normalizeIdentifier(schema)
 }
 
-// normalizeIdentifier normalizes identifier names
+// normalizeIdentifier normalizes identifier names according to PostgreSQL rules:
+// - Unquoted identifiers are case-insensitive and folded to lowercase
+// - Quoted identifiers preserve their original case but without quotes in the IR
 func (v *normalizationVisitor) normalizeIdentifier(identifier string) string {
 	if identifier == "" {
 		return ""
@@ -221,20 +223,14 @@ func (v *normalizationVisitor) normalizeIdentifier(identifier string) string {
 
 	// Handle quoted identifiers
 	if v.isQuotedIdentifier(identifier) {
-		// Remove quotes and get the actual identifier
+		// Remove quotes and preserve the original case content
 		unquoted := identifier[1 : len(identifier)-1]
-
-		// In PostgreSQL, if a quoted identifier is all lowercase,
-		// it's equivalent to the unquoted version
-		if strings.ToLower(unquoted) == unquoted {
-			// If quoted identifier is all lowercase, normalize as unquoted
-			return v.normalizeUnquotedIdentifier(unquoted)
-		}
-
-		// Otherwise, preserve the quoted form for case-sensitive comparison
-		return identifier
+		// Handle escaped quotes within the identifier
+		unquoted = strings.ReplaceAll(unquoted, `""`, `"`)
+		return unquoted
 	}
 
+	// For unquoted identifiers, apply PostgreSQL case folding (to lowercase)
 	return v.normalizeUnquotedIdentifier(identifier)
 }
 
@@ -249,27 +245,10 @@ func (v *normalizationVisitor) normalizeUnquotedIdentifier(identifier string) st
 }
 
 // normalizeFunctionName normalizes function names using PostgreSQL standard rules
+// Same logic as normalizeIdentifier - function names are identifiers
 func (v *normalizationVisitor) normalizeFunctionName(name string) string {
-	// Handle quoted identifiers
-	var unquoted string
-	isQuoted := false
-	if v.isQuotedIdentifier(name) && len(name) >= 2 &&
-		strings.HasPrefix(name, "\"") && strings.HasSuffix(name, "\"") {
-		unquoted = strings.ReplaceAll(name[1:len(name)-1], `""`, `"`)
-		isQuoted = true
-	} else {
-		unquoted = name
-	}
-
-	// For ALL functions (built-in and user-defined):
-	// - Quoted identifiers ALWAYS preserve case sensitivity (PostgreSQL standard)
-	// - Unquoted identifiers are converted to lowercase (PostgreSQL standard)
-	if isQuoted {
-		return "\"" + unquoted + "\""
-	}
-
-	// For unquoted identifiers, normalize to lowercase
-	return strings.ToLower(name)
+	// Function names follow the same identifier normalization rules
+	return v.normalizeIdentifier(name)
 }
 
 // normalizeLiteral normalizes literal values
