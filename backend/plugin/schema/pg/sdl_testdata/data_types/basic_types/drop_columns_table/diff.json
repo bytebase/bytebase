@@ -1,0 +1,95 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 2, Sequence changes: 1",
+  "tableChanges": 2,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 1,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "DROP",
+        "schemaName": "public",
+        "tableName": "temp_data",
+        "columnChanges": 0,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0
+      },
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "users",
+        "columnChanges": 3,
+        "indexChanges": 2,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "DROP",
+            "name": "first_name",
+            "oldColumn": {
+              "name": "first_name",
+              "type": "character varying(50)",
+              "nullable": true
+            }
+          },
+          {
+            "action": "DROP",
+            "name": "last_name",
+            "oldColumn": {
+              "name": "last_name",
+              "type": "character varying(50)",
+              "nullable": true
+            }
+          },
+          {
+            "action": "DROP",
+            "name": "metadata",
+            "oldColumn": {
+              "name": "metadata",
+              "type": "jsonb",
+              "nullable": true
+            }
+          }
+        ],
+        "indexes": [
+          {
+            "action": "DROP",
+            "name": "idx_users_first_last",
+            "oldIndex": {
+              "name": "idx_users_first_last",
+              "type": "btree",
+              "unique": false,
+              "expressions": [
+                "first_name",
+                "last_name"
+              ],
+              "descending": [
+                false,
+                false
+              ]
+            }
+          },
+          {
+            "action": "DROP",
+            "name": "idx_users_metadata",
+            "oldIndex": {
+              "name": "idx_users_metadata",
+              "type": "gin",
+              "unique": false,
+              "expressions": [
+                "metadata"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

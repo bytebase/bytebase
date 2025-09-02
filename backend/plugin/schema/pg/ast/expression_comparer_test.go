@@ -101,10 +101,22 @@ func TestPostgreSQLExpressionComparer_CompareExpressions(t *testing.T) {
 			expr2:    "column_name",
 			expected: true,
 		},
-
-		// Function call tests
 		{
-			name:     "function calls",
+			name:     "where condition with parentheses",
+			expr1:    "text_col IS NOT NULL",
+			expr2:    "(text_col IS NOT NULL)",
+			expected: true,
+		},
+		{
+			name:     "complex where condition with parentheses",
+			expr1:    "column > 0 AND status = 'active'",
+			expr2:    "(column > 0 AND status = 'active')",
+			expected: true,
+		},
+
+		// Function call tests - basic cases
+		{
+			name:     "function calls case insensitive",
 			expr1:    "UPPER(column)",
 			expr2:    "upper(column)",
 			expected: true,
@@ -122,6 +134,58 @@ func TestPostgreSQLExpressionComparer_CompareExpressions(t *testing.T) {
 			expected: false,
 		},
 
+		// Quoted vs unquoted function names - PostgreSQL identifier normalization
+		{
+			name:     "unquoted LEFT vs quoted lowercase left - EQUAL",
+			expr1:    "LEFT(text_col, 50)",
+			expr2:    "\"left\"(text_col, 50)",
+			expected: true,
+		},
+		{
+			name:     "unquoted left vs quoted lowercase left - EQUAL",
+			expr1:    "left(text_col, 50)",
+			expr2:    "\"left\"(text_col, 50)",
+			expected: true,
+		},
+		{
+			name:     "unquoted LEFT vs quoted uppercase LEFT - NOT EQUAL",
+			expr1:    "LEFT(text_col, 50)",
+			expr2:    "\"LEFT\"(text_col, 50)",
+			expected: false,
+		},
+		{
+			name:     "unquoted left vs quoted uppercase LEFT - NOT EQUAL",
+			expr1:    "left(text_col, 50)",
+			expr2:    "\"LEFT\"(text_col, 50)",
+			expected: false,
+		},
+		{
+			name:     "unquoted LEFT vs quoted mixed case Left - NOT EQUAL",
+			expr1:    "LEFT(text_col, 50)",
+			expr2:    "\"Left\"(text_col, 50)",
+			expected: false,
+		},
+		{
+			name:     "quoted function with complex expression",
+			expr1:    "SUBSTRING(column FROM 1 FOR 10)",
+			expr2:    "\"substring\"(column FROM 1 FOR 10)",
+			expected: true,
+		},
+
+		// Additional identifier normalization tests
+		{
+			name:     "unquoted Column_Name vs quoted lowercase column_name - EQUAL",
+			expr1:    "Column_Name",
+			expr2:    "\"column_name\"",
+			expected: true,
+		},
+		{
+			name:     "unquoted Column_Name vs quoted original Column_Name - NOT EQUAL",
+			expr1:    "Column_Name",
+			expr2:    "\"Column_Name\"",
+			expected: false,
+		},
+
 		// Complex expression tests
 		{
 			name:     "complex equality expression",
@@ -133,6 +197,50 @@ func TestPostgreSQLExpressionComparer_CompareExpressions(t *testing.T) {
 			name:     "complex expression with whitespace differences",
 			expr1:    "table1.col1=table2.col2 AND status='active'",
 			expr2:    "table1.col1 = table2.col2 AND status = 'active'",
+			expected: true,
+		},
+
+		// PostgreSQL type cast tests
+		{
+			name:     "JSONB implicit cast",
+			expr1:    "'{}'",
+			expr2:    "'{}'::jsonb",
+			expected: true,
+		},
+		{
+			name:     "JSONB explicit cast both ways",
+			expr1:    "'{\"key\": \"value\"}'::jsonb",
+			expr2:    "'{\"key\": \"value\"}'::jsonb",
+			expected: true,
+		},
+		{
+			name:     "Array type cast case insensitive",
+			expr1:    "ARRAY[]::TEXT[]",
+			expr2:    "ARRAY[]::text[]",
+			expected: true,
+		},
+		{
+			name:     "BIT literal formats",
+			expr1:    "B'1010'",
+			expr2:    "'1010'::\"bit\"",
+			expected: true,
+		},
+		{
+			name:     "BIT literal formats reverse",
+			expr1:    "'0000'::\"bit\"",
+			expr2:    "B'0000'",
+			expected: true,
+		},
+		{
+			name:     "VARBIT schema qualification",
+			expr1:    "varbit(16)",
+			expr2:    "public.varbit(16)",
+			expected: true,
+		},
+		{
+			name:     "BIT schema qualification",
+			expr1:    "bit(32)",
+			expr2:    "public.bit(32)",
 			expected: true,
 		},
 

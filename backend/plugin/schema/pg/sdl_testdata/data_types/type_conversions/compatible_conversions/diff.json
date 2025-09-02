@@ -1,0 +1,249 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 3, Sequence changes: 1",
+  "tableChanges": 3,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 1,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "tableName": "analytics",
+        "columnChanges": 0,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0
+      },
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "customers",
+        "columnChanges": 6,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "ALTER",
+            "name": "credit_limit",
+            "oldColumn": {
+              "name": "credit_limit",
+              "type": "numeric(8,2)",
+              "nullable": true,
+              "defaultValue": "1000.00"
+            },
+            "newColumn": {
+              "name": "credit_limit",
+              "type": "numeric(12,4)",
+              "nullable": true,
+              "defaultValue": "1000.0000"
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "customer_id",
+            "oldColumn": {
+              "name": "customer_id",
+              "type": "integer",
+              "nullable": false
+            },
+            "newColumn": {
+              "name": "customer_id",
+              "type": "bigint",
+              "nullable": false
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "email",
+            "oldColumn": {
+              "name": "email",
+              "type": "character varying(100)",
+              "nullable": false
+            },
+            "newColumn": {
+              "name": "email",
+              "type": "text",
+              "nullable": false
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "last_login",
+            "oldColumn": {
+              "name": "last_login",
+              "type": "timestamp(6) without time zone",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "last_login",
+              "type": "timestamp(6) with time zone",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "signup_date",
+            "oldColumn": {
+              "name": "signup_date",
+              "type": "date",
+              "nullable": false
+            },
+            "newColumn": {
+              "name": "signup_date",
+              "type": "timestamp(6) with time zone",
+              "nullable": false
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "username",
+            "oldColumn": {
+              "name": "username",
+              "type": "character varying(30)",
+              "nullable": false
+            },
+            "newColumn": {
+              "name": "username",
+              "type": "character varying(50)",
+              "nullable": false
+            }
+          }
+        ]
+      },
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "products",
+        "columnChanges": 8,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "ALTER",
+            "name": "created_date",
+            "oldColumn": {
+              "name": "created_date",
+              "type": "date",
+              "nullable": true,
+              "defaultValue": "CURRENT_DATE"
+            },
+            "newColumn": {
+              "name": "created_date",
+              "type": "timestamp(6) without time zone",
+              "nullable": true,
+              "defaultValue": "CURRENT_TIMESTAMP"
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "description",
+            "oldColumn": {
+              "name": "description",
+              "type": "character varying(200)",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "description",
+              "type": "text",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "name",
+            "oldColumn": {
+              "name": "name",
+              "type": "character(50)",
+              "nullable": false
+            },
+            "newColumn": {
+              "name": "name",
+              "type": "character varying(100)",
+              "nullable": false
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "price",
+            "oldColumn": {
+              "name": "price",
+              "type": "real",
+              "nullable": false
+            },
+            "newColumn": {
+              "name": "price",
+              "type": "double precision",
+              "nullable": false
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "product_id",
+            "oldColumn": {
+              "name": "product_id",
+              "type": "smallint",
+              "nullable": false
+            },
+            "newColumn": {
+              "name": "product_id",
+              "type": "bigint",
+              "nullable": false
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "quantity",
+            "oldColumn": {
+              "name": "quantity",
+              "type": "integer",
+              "nullable": true,
+              "defaultValue": "0"
+            },
+            "newColumn": {
+              "name": "quantity",
+              "type": "bigint",
+              "nullable": true,
+              "defaultValue": "0"
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "rating",
+            "oldColumn": {
+              "name": "rating",
+              "type": "numeric(3,1)",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "rating",
+              "type": "numeric(5,2)",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "updated_time",
+            "oldColumn": {
+              "name": "updated_time",
+              "type": "time(6) without time zone",
+              "nullable": true,
+              "defaultValue": "CURRENT_TIME"
+            },
+            "newColumn": {
+              "name": "updated_time",
+              "type": "time(6) with time zone",
+              "nullable": true,
+              "defaultValue": "CURRENT_TIME"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

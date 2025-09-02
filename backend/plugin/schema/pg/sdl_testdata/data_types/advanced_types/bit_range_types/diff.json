@@ -1,0 +1,219 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 4, Sequence changes: 2",
+  "tableChanges": 4,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 2,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "bookings",
+        "columnChanges": 6,
+        "indexChanges": 3,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "CREATE",
+            "name": "age_range",
+            "newColumn": {
+              "name": "age_range",
+              "type": "int4range",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "booking_dates",
+            "newColumn": {
+              "name": "booking_dates",
+              "type": "daterange",
+              "nullable": false
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "booking_period",
+            "oldColumn": {
+              "name": "booking_period",
+              "type": "tsrange",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "booking_period",
+              "type": "tsrange",
+              "nullable": false
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "discount_range",
+            "newColumn": {
+              "name": "discount_range",
+              "type": "numrange",
+              "nullable": true,
+              "defaultValue": "'[0,100)'::NUMRANGE"
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "duration_range",
+            "newColumn": {
+              "name": "duration_range",
+              "type": "int8range",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "valid_periods",
+            "newColumn": {
+              "name": "valid_periods",
+              "type": "_tstzrange",
+              "nullable": true
+            }
+          }
+        ],
+        "indexes": [
+          {
+            "action": "CREATE",
+            "name": "idx_bookings_dates",
+            "newIndex": {
+              "name": "idx_bookings_dates",
+              "type": "gist",
+              "unique": false,
+              "expressions": [
+                "booking_dates"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "idx_bookings_period",
+            "newIndex": {
+              "name": "idx_bookings_period",
+              "type": "gist",
+              "unique": false,
+              "expressions": [
+                "booking_period"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "idx_bookings_price",
+            "newIndex": {
+              "name": "idx_bookings_price",
+              "type": "gist",
+              "unique": false,
+              "expressions": [
+                "price_range"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "tableName": "permissions_matrix",
+        "columnChanges": 0,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0
+      },
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "tableName": "scheduling",
+        "columnChanges": 0,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0
+      },
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "system_flags",
+        "columnChanges": 5,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "CREATE",
+            "name": "access_mask",
+            "newColumn": {
+              "name": "access_mask",
+              "type": "bit(64)",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "bit_flags",
+            "oldColumn": {
+              "name": "bit_flags",
+              "type": "bit(8)",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "bit_flags",
+              "type": "bit(16)",
+              "nullable": false,
+              "defaultValue": "B'0000000000000000'"
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "feature_flags",
+            "newColumn": {
+              "name": "feature_flags",
+              "type": "bit(32)",
+              "nullable": true,
+              "defaultValue": "B'00000000000000000000000000000000'"
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "permissions",
+            "oldColumn": {
+              "name": "permissions",
+              "type": "bit(16)",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "permissions",
+              "type": "bit(32)",
+              "nullable": true,
+              "defaultValue": "B'00000000000000000000000000000000'"
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "system_state",
+            "newColumn": {
+              "name": "system_state",
+              "type": "bit(128)",
+              "nullable": true
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

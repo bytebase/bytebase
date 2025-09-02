@@ -1,0 +1,212 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 4, Sequence changes: 2",
+  "tableChanges": 4,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 2,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "tableName": "geographic_features",
+        "columnChanges": 0,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0
+      },
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "locations",
+        "columnChanges": 6,
+        "indexChanges": 2,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "CREATE",
+            "name": "boundary_box",
+            "newColumn": {
+              "name": "boundary_box",
+              "type": "box",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "center_point",
+            "newColumn": {
+              "name": "center_point",
+              "type": "point",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "coordinates",
+            "oldColumn": {
+              "name": "coordinates",
+              "type": "point",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "coordinates",
+              "type": "point",
+              "nullable": false
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "coverage_polygon",
+            "newColumn": {
+              "name": "coverage_polygon",
+              "type": "polygon",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "route_path",
+            "newColumn": {
+              "name": "route_path",
+              "type": "path",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "service_area",
+            "newColumn": {
+              "name": "service_area",
+              "type": "circle",
+              "nullable": true
+            }
+          }
+        ],
+        "indexes": [
+          {
+            "action": "CREATE",
+            "name": "idx_locations_boundary",
+            "newIndex": {
+              "name": "idx_locations_boundary",
+              "type": "gist",
+              "unique": false,
+              "expressions": [
+                "boundary_box"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "idx_locations_coordinates",
+            "newIndex": {
+              "name": "idx_locations_coordinates",
+              "type": "gist",
+              "unique": false,
+              "expressions": [
+                "coordinates"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "network_devices",
+        "columnChanges": 5,
+        "indexChanges": 1,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "CREATE",
+            "name": "backup_mac",
+            "newColumn": {
+              "name": "backup_mac",
+              "type": "macaddr",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "gateway",
+            "newColumn": {
+              "name": "gateway",
+              "type": "inet",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "ip_address",
+            "oldColumn": {
+              "name": "ip_address",
+              "type": "inet",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "ip_address",
+              "type": "inet",
+              "nullable": false
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "network_range",
+            "newColumn": {
+              "name": "network_range",
+              "type": "cidr",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "subnet_mask",
+            "newColumn": {
+              "name": "subnet_mask",
+              "type": "inet",
+              "nullable": true
+            }
+          }
+        ],
+        "indexes": [
+          {
+            "action": "CREATE",
+            "name": "network_devices_mac_address_key",
+            "newIndex": {
+              "name": "network_devices_mac_address_key",
+              "type": "btree",
+              "unique": true,
+              "expressions": [
+                "mac_address"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "tableName": "network_topology",
+        "columnChanges": 0,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0
+      }
+    ]
+  }
+}

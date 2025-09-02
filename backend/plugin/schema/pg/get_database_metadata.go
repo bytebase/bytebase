@@ -325,7 +325,7 @@ func (e *metadataExtractor) extractSchemaAndTableName(ctx parser.IQualified_name
 		return e.currentSchema, ""
 	}
 
-	// Debug: try direct text extraction first, since normalize functions seem problematic
+	// Try direct text extraction for reliable parsing
 	rawText := ctx.GetText()
 	if rawText != "" {
 		// Handle schema.table format
@@ -471,7 +471,7 @@ func extractTypeName(ctx parser.ITypenameContext) string {
 	// Convert to lowercase to match sync.go output
 	typeName = strings.ToLower(typeName)
 
-	return normalizePostgreSQLType(typeName)
+	return NormalizePostgreSQLType(typeName)
 }
 
 // getPostgreSQLArrayTypeName maps base types to their PostgreSQL internal array type names
@@ -635,7 +635,7 @@ func getPostgreSQLArrayTypeName(baseType string) string {
 }
 
 // normalizePostgreSQLType normalizes PostgreSQL type names to match sync.go output
-func normalizePostgreSQLType(typeName string) string {
+func NormalizePostgreSQLType(typeName string) string {
 	// Remove extra whitespace
 	typeName = strings.TrimSpace(typeName)
 
@@ -656,7 +656,7 @@ func normalizePostgreSQLType(typeName string) string {
 		}
 
 		// For unknown types, use the old logic as fallback
-		normalizedBase := normalizePostgreSQLType(baseType)
+		normalizedBase := NormalizePostgreSQLType(baseType)
 		return "_" + normalizedBase
 	}
 
@@ -682,13 +682,40 @@ func normalizePostgreSQLType(typeName string) string {
 
 	// Handle timestamp without explicit timezone
 	if typeName == "timestamp" {
-		return "timestamp without time zone"
+		return "timestamp(6) without time zone" // PostgreSQL default precision is 6
+	}
+	// Handle timestamp with time zone (no precision specified)
+	if typeName == "timestamp with time zone" {
+		return "timestamp(6) with time zone" // PostgreSQL default precision is 6
+	}
+	// Handle timestamp with precision (preserve precision but add timezone info)
+	if strings.HasPrefix(typeName, "timestamp(") && strings.HasSuffix(typeName, ")") {
+		// Extract precision part: timestamp(3) -> (3)
+		precision := typeName[9:] // Get "(3)" part
+		return "timestamp" + precision + " without time zone"
+	}
+	// Handle time without explicit timezone (PostgreSQL default)
+	if typeName == "time" {
+		return "time(6) without time zone" // PostgreSQL default precision is 6
+	}
+	// Handle time with time zone (no precision specified)
+	if typeName == "time with time zone" {
+		return "time(6) with time zone" // PostgreSQL default precision is 6
+	}
+	// Handle time with precision (preserve precision but add timezone info)
+	if strings.HasPrefix(typeName, "time(") && strings.HasSuffix(typeName, ")") {
+		// Extract precision part: time(6) -> (6)
+		precision := typeName[4:] // Get "(6)" part
+		return "time" + precision + " without time zone"
 	}
 
-	// Handle decimal -> numeric (sync.go reports decimal as numeric without precision)
+	// Handle decimal -> numeric (preserve precision information)
 	if strings.HasPrefix(typeName, "decimal(") {
-		// sync.go returns just "numeric" without precision for decimal types
-		return "numeric"
+		// Convert decimal(p,s) to numeric(p,s) while preserving precision
+		// Also normalize spacing to match sync.go format (remove spaces around commas)
+		precisionPart := typeName[7:]                              // Get "(p, s)" or "(p,s)" part
+		precisionPart = strings.ReplaceAll(precisionPart, " ", "") // Remove all spaces to match sync.go format
+		return "numeric" + precisionPart
 	}
 	if typeName == "decimal" {
 		return "numeric"
@@ -711,9 +738,11 @@ func normalizePostgreSQLType(typeName string) string {
 	case "char":
 		return "character"
 	case "timestamptz":
-		return "timestamp with time zone"
+		return "timestamp(6) with time zone" // PostgreSQL default precision is 6
 	case "timetz":
-		return "time with time zone"
+		return "time(6) with time zone" // PostgreSQL default precision is 6
+	case "varbit":
+		return "bit varying"
 	default:
 		// Return type as-is for unrecognized types
 	}
@@ -721,6 +750,19 @@ func normalizePostgreSQLType(typeName string) string {
 	// Handle specific length specifications for character types
 	if strings.HasPrefix(typeName, "char(") {
 		return "character" + typeName[4:]
+	}
+
+	// Handle varbit with precision: varbit(n) -> bit varying(n)
+	if strings.HasPrefix(typeName, "varbit(") {
+		return "bit varying" + typeName[6:] // Replace "varbit" with "bit varying"
+	}
+
+	// For all remaining types with precision/scale parameters, normalize spacing to match sync.go format
+	// This handles cases like "numeric(10, 2)" -> "numeric(10,2)" to match database sync output
+	if strings.Contains(typeName, "(") && strings.Contains(typeName, ")") {
+		// Remove spaces around commas in type specifications to match sync.go format
+		typeName = strings.ReplaceAll(typeName, ", ", ",")
+		typeName = strings.ReplaceAll(typeName, " ,", ",")
 	}
 
 	return typeName
@@ -738,15 +780,15 @@ func (*metadataExtractor) extractTypeNameWithSchema(ctx parser.ITypenameContext,
 
 	// Check if this is a built-in PostgreSQL type or an array type before normalization
 	// Array types should always go through normalization regardless of their base type
-	if isBuiltInType(rawTypeName) || isBuiltInType(normalizePostgreSQLType(rawTypeName)) || strings.HasSuffix(rawTypeName, "[]") {
+	if isBuiltInType(rawTypeName) || isBuiltInType(NormalizePostgreSQLType(rawTypeName)) || strings.HasSuffix(rawTypeName, "[]") {
 		// For built-in types and array types, return the normalized version
-		return normalizePostgreSQLType(rawTypeName)
+		return NormalizePostgreSQLType(rawTypeName)
 	}
 
 	// Check if the type already has a schema prefix
 	if strings.Contains(rawTypeName, ".") {
 		// It's already schema-qualified, just normalize it
-		return normalizePostgreSQLType(rawTypeName)
+		return NormalizePostgreSQLType(rawTypeName)
 	}
 
 	// For custom types (like enums), add the schema prefix to the raw type name
@@ -820,7 +862,7 @@ func isBuiltInType(typeName string) bool {
 		"bytea": true,
 
 		// Bit string types
-		"bit": true, "bit varying": true,
+		"bit": true, "bit varying": true, "varbit": true,
 
 		// Network address types
 		"inet": true, "cidr": true, "macaddr": true, "macaddr8": true,
@@ -1084,8 +1126,14 @@ func (e *metadataExtractor) extractTableConstraint(ctx parser.ITableconstraintCo
 
 	case constraintElem.CHECK() != nil:
 		// Check constraint
-		check := &storepb.CheckConstraintMetadata{
-			Name: constraintName,
+		check := &storepb.CheckConstraintMetadata{}
+		// Generate constraint name if not provided (PostgreSQL auto-generates names)
+		if constraintName != "" {
+			check.Name = constraintName
+		} else {
+			// For table-level check constraints, use {table}_check_{index} format
+			checkIndex := len(table.CheckConstraints) + 1
+			check.Name = fmt.Sprintf("%s_check_%d", table.Name, checkIndex)
 		}
 		if expr := constraintElem.A_expr(); expr != nil {
 			rawExpression := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(expr)

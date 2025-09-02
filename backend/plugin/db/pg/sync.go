@@ -712,6 +712,9 @@ SELECT
 	cols.column_name,
 	cols.data_type,
 	cols.character_maximum_length,
+	cols.numeric_precision,
+	cols.numeric_scale,
+	cols.datetime_precision,
 	cols.ordinal_position,
 	cols.column_default,
 	cols.is_nullable,
@@ -735,8 +738,8 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 	for rows.Next() {
 		column := &storepb.ColumnMetadata{}
 		var schemaName, tableName, nullable string
-		var characterMaxLength, defaultStr, collation, udtSchema, udtName, identityGeneration, comment sql.NullString
-		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &characterMaxLength, &column.Position, &defaultStr, &nullable, &collation, &udtSchema, &udtName, &identityGeneration, &comment); err != nil {
+		var characterMaxLength, numericPrecision, numericScale, datetimePrecision, defaultStr, collation, udtSchema, udtName, identityGeneration, comment sql.NullString
+		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &characterMaxLength, &numericPrecision, &numericScale, &datetimePrecision, &column.Position, &defaultStr, &nullable, &collation, &udtSchema, &udtName, &identityGeneration, &comment); err != nil {
 			return nil, err
 		}
 		// Store schema-qualified default in the Default field for Step 4 of column default migration
@@ -762,6 +765,34 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 				// we don't need to append the length.
 				// https://www.postgresql.org/docs/current/infoschema-columns.html.
 				column.Type = fmt.Sprintf("%s(%s)", column.Type, characterMaxLength.String)
+			}
+		case "numeric", "decimal":
+			// Handle numeric/decimal precision and scale
+			if numericPrecision.Valid && numericScale.Valid {
+				// If scale is 0, only show precision (NUMERIC(8) not NUMERIC(8,0))
+				if numericScale.String == "0" {
+					column.Type = fmt.Sprintf("%s(%s)", column.Type, numericPrecision.String)
+				} else {
+					column.Type = fmt.Sprintf("%s(%s,%s)", column.Type, numericPrecision.String, numericScale.String)
+				}
+			} else if numericPrecision.Valid {
+				column.Type = fmt.Sprintf("%s(%s)", column.Type, numericPrecision.String)
+			}
+		case "time", "time without time zone", "time with time zone",
+			"timestamp", "timestamp without time zone", "timestamp with time zone":
+			// Handle time/timestamp precision
+			if datetimePrecision.Valid {
+				// For time types, add precision before "without time zone" part
+				if strings.Contains(column.Type, "without time zone") {
+					baseType := strings.Replace(column.Type, " without time zone", "", 1)
+					column.Type = fmt.Sprintf("%s(%s) without time zone", baseType, datetimePrecision.String)
+				} else if strings.Contains(column.Type, "with time zone") {
+					baseType := strings.Replace(column.Type, " with time zone", "", 1)
+					column.Type = fmt.Sprintf("%s(%s) with time zone", baseType, datetimePrecision.String)
+				} else {
+					// For plain "time" or "timestamp"
+					column.Type = fmt.Sprintf("%s(%s)", column.Type, datetimePrecision.String)
+				}
 			}
 		default:
 			// Keep the type as is
