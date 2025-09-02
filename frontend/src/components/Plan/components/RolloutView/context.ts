@@ -50,6 +50,12 @@ export const provideRolloutViewContext = () => {
 
   const fetchRolloutPreview = async () => {
     try {
+      // Validate that rollout has required fields before making the request
+      if (!rollout.value?.plan || !project.value?.name) {
+        rolloutPreview.value = create(RolloutSchema, {});
+        return;
+      }
+
       const rolloutPreviewNew = await rolloutServiceClientConnect.createRollout(
         create(CreateRolloutRequestSchema, {
           parent: project.value.name,
