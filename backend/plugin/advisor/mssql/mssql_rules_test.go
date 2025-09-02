@@ -29,7 +29,7 @@ func TestMSSQLRules(t *testing.T) {
 		advisor.SchemaRuleFunctionDisallowCreate,
 		advisor.SchemaRuleProcedureDisallowCreate,
 		advisor.SchemaRuleStatementDisallowCrossDBQueries,
-		advisor.SchemaRuleStatementWhereDisallowFunctionsAndCaculations,
+		advisor.SchemaRuleStatementWhereDisallowFunctionsAndCalculations,
 		advisor.SchemaRuleIndexNotRedundant,
 		advisor.SchemaRuleStatementDisallowMixInDDL,
 		advisor.SchemaRuleStatementDisallowMixInDML,

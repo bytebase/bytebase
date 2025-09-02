@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLStatementDisallowRemoveTblCascade, &StatementDisallowRemoveTblCascadeAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementDisallowRemoveTblCascade, &StatementDisallowRemoveTblCascadeAdvisor{})
 }
 
 // StatementDisallowRemoveTblCascadeAdvisor is the advisor checking the disallow cascade.

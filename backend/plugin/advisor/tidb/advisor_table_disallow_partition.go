@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLTableDisallowPartition, &TableDisallowPartitionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleTableDisallowPartition, &TableDisallowPartitionAdvisor{})
 }
 
 // TableDisallowPartitionAdvisor is the advisor checking for disallow table partition.

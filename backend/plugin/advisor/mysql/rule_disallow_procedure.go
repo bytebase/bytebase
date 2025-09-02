@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLProcedureDisallowCreate, &ProcedureDisallowCreateAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleProcedureDisallowCreate, &ProcedureDisallowCreateAdvisor{})
 }
 
 // ProcedureDisallowCreateAdvisor is the advisor checking for disallow create procedure.

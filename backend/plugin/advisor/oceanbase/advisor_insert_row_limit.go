@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLInsertRowLimit, &InsertRowLimitAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleStatementInsertRowLimit, &InsertRowLimitAdvisor{})
 }
 
 // InsertRowLimitAdvisor is the advisor checking for insert row limit.

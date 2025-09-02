@@ -23,7 +23,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableNoDuplicateIndex, &TableNoDuplicateIndexAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableNoDuplicateIndex, &TableNoDuplicateIndexAdvisor{})
 }
 
 // TableNoDuplicateIndexAdvisor is the advisor checking for no duplicate index in table.

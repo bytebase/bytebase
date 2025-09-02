@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnRequireCharset, &ColumnRequireCharsetAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleColumnRequireCharset, &ColumnRequireCharsetAdvisor{})
 }
 
 // ColumnRequireCharsetAdvisor is the advisor checking for require charset.

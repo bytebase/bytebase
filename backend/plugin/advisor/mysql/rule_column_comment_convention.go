@@ -19,9 +19,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleColumnCommentConvention, &ColumnCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleColumnCommentConvention, &ColumnCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleColumnCommentConvention, &ColumnCommentConventionAdvisor{})
 }
 
 // ColumnCommentConventionAdvisor is the advisor checking for column comment convention.

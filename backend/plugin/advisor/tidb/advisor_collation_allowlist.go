@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleCollationAllowlist, &CollationAllowlistAdvisor{})
 }
 
 // CollationAllowlistAdvisor is the advisor checking for collation allowlist.

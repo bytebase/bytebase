@@ -21,9 +21,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableNoFK, &TableNoFKAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleTableNoFK, &TableNoFKAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleTableNoFK, &TableNoFKAdvisor{})
 }
 
 // TableNoFKAdvisor is the advisor checking table disallow foreign key.

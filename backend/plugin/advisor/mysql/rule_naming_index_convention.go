@@ -21,9 +21,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleIDXNaming, &NamingIndexConventionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleIDXNaming, &NamingIndexConventionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleIDXNaming, &NamingIndexConventionAdvisor{})
 }
 
 // indexMetaData is the metadata for index.

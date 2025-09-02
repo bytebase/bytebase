@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLWhereRequirementForSelect, &WhereRequirementForSelectAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementRequireWhereForSelect, &WhereRequirementForSelectAdvisor{})
 }
 
 // WhereRequirementForSelectAdvisor is the advisor checking for the WHERE clause requirement for SELECT statements.

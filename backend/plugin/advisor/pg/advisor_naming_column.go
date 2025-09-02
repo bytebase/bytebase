@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleColumnNaming, &NamingColumnConventionAdvisor{})
 }
 
 // NamingColumnConventionAdvisor is the advisor checking for column convention.

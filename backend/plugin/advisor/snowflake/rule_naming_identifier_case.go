@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SnowflakeIdentifierCase, &NamingIdentifierCaseAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleIdentifierCase, &NamingIdentifierCaseAdvisor{})
 }
 
 // NamingIdentifierCaseAdvisor is the advisor checking for identifier case.

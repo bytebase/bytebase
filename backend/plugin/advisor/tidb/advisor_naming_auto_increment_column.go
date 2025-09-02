@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingAutoIncrementColumnConvention, &NamingAutoIncrementColumnAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleAutoIncrementColumnNaming, &NamingAutoIncrementColumnAdvisor{})
 }
 
 // NamingAutoIncrementColumnAdvisor is the advisor checking for auto-increment naming convention.

@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLMigrationCompatibility, &MigrationCompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleSchemaBackwardCompatibility, &MigrationCompatibilityAdvisor{})
 }
 
 // MigrationCompatibilityAdvisor is the advisor checking for migration compatibility.

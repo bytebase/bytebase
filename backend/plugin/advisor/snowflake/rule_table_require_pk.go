@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SnowflakeTableRequirePK, &TableRequirePkAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleTableRequirePK, &TableRequirePkAdvisor{})
 }
 
 // TableRequirePkAdvisor is the advisor checking for table require primary key.

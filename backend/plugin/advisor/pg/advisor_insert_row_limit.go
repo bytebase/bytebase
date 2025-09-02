@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLInsertRowLimit, &InsertRowLimitAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementInsertRowLimit, &InsertRowLimitAdvisor{})
 }
 
 // InsertRowLimitAdvisor is the advisor checking for to limit INSERT rows.

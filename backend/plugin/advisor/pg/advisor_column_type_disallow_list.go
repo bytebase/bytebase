@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
 }
 
 // ColumnTypeDisallowListAdvisor is the advisor checking for column type restriction.

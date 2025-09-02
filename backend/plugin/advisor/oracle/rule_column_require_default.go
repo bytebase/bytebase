@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.OracleRequireColumnDefault, &ColumnRequireDefaultAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleColumnRequireDefault, &ColumnRequireDefaultAdvisor{})
 }
 
 // ColumnRequireDefaultAdvisor is the advisor checking for column default requirement.

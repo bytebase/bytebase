@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLIdentifierNamingNoKeyword, &NamingIdentifierNoKeywordAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleIdentifierNoKeyword, &NamingIdentifierNoKeywordAdvisor{})
 }
 
 // NamingIdentifierNoKeywordAdvisor is the advisor checking for identifier naming convention without keyword.

@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.OracleColumnRequirement, &ColumnRequireAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleRequiredColumn, &ColumnRequireAdvisor{})
 }
 
 // ColumnRequireAdvisor is the advisor checking for column requirement.

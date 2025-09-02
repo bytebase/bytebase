@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLAutoIncrementColumnMustUnsigned, &ColumnAutoIncrementMustUnsignedAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleColumnAutoIncrementMustUnsigned, &ColumnAutoIncrementMustUnsignedAdvisor{})
 }
 
 // ColumnAutoIncrementMustUnsignedAdvisor is the advisor checking for unsigned auto-increment column.

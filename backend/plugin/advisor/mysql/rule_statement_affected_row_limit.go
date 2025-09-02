@@ -21,8 +21,8 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementAffectedRowLimit, &StatementAffectedRowLimitAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLStatementAffectedRowLimit, &StatementAffectedRowLimitAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementAffectedRowLimit, &StatementAffectedRowLimitAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementAffectedRowLimit, &StatementAffectedRowLimitAdvisor{})
 }
 
 // StatementAffectedRowLimitAdvisor is the advisor checking for UPDATE/DELETE affected row limit.

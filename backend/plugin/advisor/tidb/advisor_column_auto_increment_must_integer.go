@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLAutoIncrementColumnMustInteger, &ColumnAutoIncrementMustIntegerAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleColumnAutoIncrementMustInteger, &ColumnAutoIncrementMustIntegerAdvisor{})
 }
 
 // ColumnAutoIncrementMustIntegerAdvisor is the advisor checking for auto-increment column type.

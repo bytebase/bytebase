@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLDisallowSetColumnCharset, &ColumnDisallowSetCharsetAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleColumnDisallowSetCharset, &ColumnDisallowSetCharsetAdvisor{})
 }
 
 // ColumnDisallowSetCharsetAdvisor is the advisor checking for disallow set column charset.

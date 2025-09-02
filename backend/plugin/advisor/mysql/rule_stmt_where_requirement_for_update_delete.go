@@ -19,9 +19,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLWhereRequirementForUpdateDelete, &WhereRequirementForUpdateDeleteAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLWhereRequirementForUpdateDelete, &WhereRequirementForUpdateDeleteAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLWhereRequirementForUpdateDelete, &WhereRequirementForUpdateDeleteAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementRequireWhereForUpdateDelete, &WhereRequirementForUpdateDeleteAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementRequireWhereForUpdateDelete, &WhereRequirementForUpdateDeleteAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleStatementRequireWhereForUpdateDelete, &WhereRequirementForUpdateDeleteAdvisor{})
 }
 
 // WhereRequirementForUpdateDeleteAdvisor is the advisor checking for the WHERE clause requirement for SELECT statements.

@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.OracleIdentifierCase, &NamingIdentifierCaseAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleIdentifierCase, &NamingIdentifierCaseAdvisor{})
 }
 
 // NamingIdentifierCaseAdvisor is the advisor checking for identifier case.

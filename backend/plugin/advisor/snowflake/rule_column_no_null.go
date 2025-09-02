@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SnowflakeColumnNoNull, &ColumnNoNullAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleColumnNotNull, &ColumnNoNullAdvisor{})
 }
 
 // ColumnNoNullAdvisor is the advisor checking for column no NULL value.

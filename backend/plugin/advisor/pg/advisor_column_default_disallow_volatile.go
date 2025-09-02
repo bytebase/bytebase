@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLColumnDefaultDisallowVolatile, &ColumnDefaultDisallowVolatileAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleColumnDefaultDisallowVolatile, &ColumnDefaultDisallowVolatileAdvisor{})
 }
 
 // ColumnRequireDefaultAdvisor is the advisor checking for column default requirement.

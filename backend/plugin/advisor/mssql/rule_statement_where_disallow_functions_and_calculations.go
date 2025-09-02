@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLStatementWhereDisallowFunctionsAndCalculations, &DisallowFuncAndCalculationsAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleStatementWhereDisallowFunctionsAndCalculations, &DisallowFuncAndCalculationsAdvisor{})
 }
 
 type DisallowFuncAndCalculationsAdvisor struct{}

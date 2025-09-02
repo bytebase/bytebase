@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleUKNaming, &NamingUKConventionAdvisor{})
 }
 
 // NamingUKConventionAdvisor is the advisor checking for unique key naming convention.

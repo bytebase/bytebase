@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLIndexTypeAllowList, &IndexTypeAllowListAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleIndexTypeAllowList, &IndexTypeAllowListAdvisor{})
 }
 
 // IndexTypeAllowListAdvisor is the advisor checking for index types.

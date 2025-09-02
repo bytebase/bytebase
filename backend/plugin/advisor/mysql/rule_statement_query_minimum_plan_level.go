@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementQueryMinumumPlanLevel, &StatementQueryMinumumPlanLevelAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementQueryMinumumPlanLevel, &StatementQueryMinumumPlanLevelAdvisor{})
 }
 
 type StatementQueryMinumumPlanLevelAdvisor struct {

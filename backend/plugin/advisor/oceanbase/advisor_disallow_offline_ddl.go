@@ -24,7 +24,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLDisallowOfflineDDL, &DisallowOfflineDdlAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleStatementDisallowOfflineDDL, &DisallowOfflineDdlAdvisor{})
 }
 
 // DisallowOfflineDdlAdvisor is the advisor checking for disallow Offline DDL.

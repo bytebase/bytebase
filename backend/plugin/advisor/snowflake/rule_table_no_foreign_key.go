@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SnowflakeTableNoFK, &TableNoForeignKeyAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleTableNoFK, &TableNoForeignKeyAdvisor{})
 }
 
 // TableNoForeignKeyAdvisor is the advisor checking for table disallow foreign key.

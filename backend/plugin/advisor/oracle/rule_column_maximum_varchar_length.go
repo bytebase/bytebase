@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.OracleColumnMaximumVarcharLength, &ColumnMaximumVarcharLengthAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleColumnMaximumVarcharLength, &ColumnMaximumVarcharLengthAdvisor{})
 }
 
 // ColumnMaximumVarcharLengthAdvisor is the advisor checking for maximum varchar length.

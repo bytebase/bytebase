@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SnowflakeWhereRequirementForUpdateDelete, &WhereRequireForUpdateDeleteAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleStatementRequireWhereForUpdateDelete, &WhereRequireForUpdateDeleteAdvisor{})
 }
 
 // WhereRequireForUpdateDeleteAdvisor is the advisor checking for WHERE clause requirement for UPDATE and DELETE statement.

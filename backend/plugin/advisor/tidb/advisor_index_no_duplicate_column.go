@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
 }
 
 // IndexNoDuplicateColumnAdvisor is the advisor checking for no duplicate columns in index.

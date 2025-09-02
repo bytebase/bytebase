@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLTableCommentConvention, &TableCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleTableCommentConvention, &TableCommentConventionAdvisor{})
 }
 
 // TableCommentConventionAdvisor is the advisor checking for table comment convention.

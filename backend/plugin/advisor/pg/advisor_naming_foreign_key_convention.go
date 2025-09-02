@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLNamingFKConvention, &NamingFKConventionAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleFKNaming, &NamingFKConventionAdvisor{})
 }
 
 // NamingFKConventionAdvisor is the advisor checking for foreign key naming convention.

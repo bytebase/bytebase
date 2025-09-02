@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLDatabaseAllowDropIfEmpty, &DatabaseAllowDropIfEmptyAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleDropEmptyDatabase, &DatabaseAllowDropIfEmptyAdvisor{})
 }
 
 // DatabaseAllowDropIfEmptyAdvisor is the advisor checking the MySQLDatabaseAllowDropIfEmpty rule.
