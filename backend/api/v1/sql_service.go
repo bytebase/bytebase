@@ -889,7 +889,7 @@ func DoExport(
 		storepb.MaskingExceptionPolicy_MaskingException_EXPORT,
 	)
 	if queryErr != nil {
-		return nil, duration, err
+		return nil, duration, queryErr
 	}
 	// only return the last result
 	if len(results) > 1 {
