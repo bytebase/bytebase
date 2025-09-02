@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLStatementAffectedRowLimit, &StatementAffectedRowLimitAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementAffectedRowLimit, &StatementAffectedRowLimitAdvisor{})
 }
 
 // StatementAffectedRowLimitAdvisor is the advisor checking for UPDATE/DELETE affected row limit.

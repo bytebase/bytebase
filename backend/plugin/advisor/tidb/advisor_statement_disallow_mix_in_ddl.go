@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLStatementDisallowMixInDDL, &StatementDisallowMixInDDLAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleStatementDisallowMixInDDL, &StatementDisallowMixInDDLAdvisor{})
 }
 
 // StatementDisallowMixInDDLAdvisor is the advisor checking for no mixed DDL and DML.

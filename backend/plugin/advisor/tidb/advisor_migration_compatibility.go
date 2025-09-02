@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleSchemaBackwardCompatibility, &CompatibilityAdvisor{})
 }
 
 // CompatibilityAdvisor is the advisor checking for schema backward compatibility.

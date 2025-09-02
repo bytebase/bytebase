@@ -28,7 +28,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLCurrentTimeColumnCountLimit, &ColumnCurrentTimeCountLimitAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleCurrentTimeColumnCountLimit, &ColumnCurrentTimeCountLimitAdvisor{})
 }
 
 // ColumnCurrentTimeCountLimitAdvisor is the advisor checking for current time column count limit.

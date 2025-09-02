@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SnowflakeWhereRequirementForSelect, &WhereRequireForSelectAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleStatementRequireWhereForSelect, &WhereRequireForSelectAdvisor{})
 }
 
 // WhereRequireForSelectAdvisor is the advisor checking for WHERE clause requirement for SELECT statement.

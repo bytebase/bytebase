@@ -19,9 +19,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
 }
 
 // StatementDisallowCommitAdvisor is the advisor checking for disallowing commit.

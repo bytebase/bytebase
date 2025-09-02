@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.OracleNamingTableConvention, &NamingTableAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleTableNaming, &NamingTableAdvisor{})
 }
 
 // NamingTableAdvisor is the advisor checking for table naming convention.

@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLIndexConcurrently, &IndexConcurrentlyAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleCreateIndexConcurrently, &IndexConcurrentlyAdvisor{})
 }
 
 // IndexConcurrentlyAdvisor is the advisor checking for to create index concurrently.

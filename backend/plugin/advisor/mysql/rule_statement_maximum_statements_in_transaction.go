@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementMaximumStatementsInTransaction, &StatementMaximumStatementsInTransactionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementMaximumStatementsInTransaction, &StatementMaximumStatementsInTransactionAdvisor{})
 }
 
 type StatementMaximumStatementsInTransactionAdvisor struct {

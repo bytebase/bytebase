@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.OracleAddNotNullColumnRequireDefault, &ColumnAddNotNullColumnRequireDefaultAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleAddNotNullColumnRequireDefault, &ColumnAddNotNullColumnRequireDefaultAdvisor{})
 }
 
 // ColumnAddNotNullColumnRequireDefaultAdvisor is the advisor checking for adding not null column requires default.

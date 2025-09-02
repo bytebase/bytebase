@@ -26,7 +26,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLBuiltinPriorBackupCheck, &StatementPriorBackupCheckAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.BuiltinRulePriorBackupCheck, &StatementPriorBackupCheckAdvisor{})
 }
 
 type StatementPriorBackupCheckAdvisor struct {

@@ -21,9 +21,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
 }
 
 // IndexTypeNoBlobAdvisor is the advisor checking for index type no blob.

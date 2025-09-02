@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnDisallowDrop, &ColumnDisallowDropAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleColumnDisallowDrop, &ColumnDisallowDropAdvisor{})
 }
 
 // ColumnDisallowDropAdvisor is the advisor checking for disallow DROP COLUMN statement.

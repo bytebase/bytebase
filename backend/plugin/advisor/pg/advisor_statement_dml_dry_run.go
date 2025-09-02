@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
 }
 
 // StatementDmlDryRunAdvisor is the advisor checking for DML dry run.

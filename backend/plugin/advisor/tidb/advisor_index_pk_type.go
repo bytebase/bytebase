@@ -23,7 +23,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleIndexPKTypeLimit, &IndexPkTypeAdvisor{})
 }
 
 // IndexPkTypeAdvisor is the advisor checking for correct type of PK.

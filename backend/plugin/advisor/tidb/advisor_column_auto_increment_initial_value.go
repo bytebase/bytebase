@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLAutoIncrementColumnInitialValue, &ColumnAutoIncrementInitialValueAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleColumnAutoIncrementInitialValue, &ColumnAutoIncrementInitialValueAdvisor{})
 }
 
 // ColumnAutoIncrementInitialValueAdvisor is the advisor checking for auto-increment column initial value.

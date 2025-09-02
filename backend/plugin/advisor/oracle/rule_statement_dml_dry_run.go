@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.OracleStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
 }
 
 type StatementDmlDryRunAdvisor struct {

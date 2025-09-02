@@ -19,9 +19,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLWhereRequirementForSelect, &WhereRequirementForSelectAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLWhereRequirementForSelect, &WhereRequirementForSelectAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLWhereRequirementForSelect, &WhereRequirementForSelectAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementRequireWhereForSelect, &WhereRequirementForSelectAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementRequireWhereForSelect, &WhereRequirementForSelectAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleStatementRequireWhereForSelect, &WhereRequirementForSelectAdvisor{})
 }
 
 // WhereRequirementForSelectAdvisor is the advisor checking for the WHERE clause requirement for SELECT statements.

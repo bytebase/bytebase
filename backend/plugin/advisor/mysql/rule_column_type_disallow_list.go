@@ -21,9 +21,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
 }
 
 // ColumnTypeDisallowListAdvisor is the advisor checking for column type restriction.

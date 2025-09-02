@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableDisallowDML, &TableDisallowDMLAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableDisallowDML, &TableDisallowDMLAdvisor{})
 }
 
 // TableDisallowDMLAdvisor is the advisor checking for disallow DML on specific tables.

@@ -29,7 +29,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLBuiltinPriorBackupCheck, &BuiltinPriorBackupCheckAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.BuiltinRulePriorBackupCheck, &BuiltinPriorBackupCheckAdvisor{})
 }
 
 // BuiltinPriorBackupCheckAdvisor is the advisor checking for disallow mix DDL and DML.

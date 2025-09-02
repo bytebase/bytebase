@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleTableNoFK, &TableNoFKAdvisor{})
 }
 
 // TableNoFKAdvisor is the advisor checking table disallow foreign key.

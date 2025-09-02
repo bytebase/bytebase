@@ -20,9 +20,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
 }
 
 // ColumnDisallowChangingOrderAdvisor is the advisor checking for disallow changing column order.

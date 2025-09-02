@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLTableNoFK, &TableNoForeignKeyAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleTableNoFK, &TableNoForeignKeyAdvisor{})
 }
 
 // TableNoForeignKeyAdvisor is the advisor checking for table disallow foreign key..

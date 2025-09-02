@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLTableNamingNoKeyword, &NamingTableNoKeywordAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleTableNameNoKeyword, &NamingTableNoKeywordAdvisor{})
 }
 
 // NamingTableNoKeywordAdvisor is the advisor checking for table naming convention without keyword.

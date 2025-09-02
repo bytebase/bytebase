@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLStatementDisallowCrossDBQueries, &DisallowCrossDBQueriesAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleStatementDisallowCrossDBQueries, &DisallowCrossDBQueriesAdvisor{})
 }
 
 type DisallowCrossDBQueriesAdvisor struct{}

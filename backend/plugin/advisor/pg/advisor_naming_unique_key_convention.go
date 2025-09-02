@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLNamingUKConvention, &NamingUKConventionAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleUKNaming, &NamingUKConventionAdvisor{})
 }
 
 // NamingUKConventionAdvisor is the advisor checking for unique key naming convention.

@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.OracleBuiltinPriorBackupCheck, &StatementPriorBackupCheckAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, advisor.BuiltinRulePriorBackupCheck, &StatementPriorBackupCheckAdvisor{})
 }
 
 type StatementPriorBackupCheckAdvisor struct {

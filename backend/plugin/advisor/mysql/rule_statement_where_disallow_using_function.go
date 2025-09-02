@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementWhereDisallowUsingFunction, &StatementWhereDisallowUsingFunctionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementWhereDisallowFunctionsAndCalculations, &StatementWhereDisallowUsingFunctionAdvisor{})
 }
 
 type StatementWhereDisallowUsingFunctionAdvisor struct {

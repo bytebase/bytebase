@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
 }
 
 // StatementDmlDryRunAdvisor is the advisor checking for DML dry run.

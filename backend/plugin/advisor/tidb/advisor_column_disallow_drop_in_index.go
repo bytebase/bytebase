@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
 }
 
 // ColumnDisallowDropInIndexAdvisor is the advisor checking for disallow DROP COLUMN in index.

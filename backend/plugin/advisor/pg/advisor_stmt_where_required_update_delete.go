@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLWhereRequirementForUpdateDelete, &WhereRequirementForUpdateDeleteAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementRequireWhereForUpdateDelete, &WhereRequirementForUpdateDeleteAdvisor{})
 }
 
 // WhereRequirementForUpdateDeleteAdvisor is the advisor checking for the WHERE clause requirement.

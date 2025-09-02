@@ -19,9 +19,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementDisallowLimit, &StatementDisallowLimitAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLStatementDisallowLimit, &StatementDisallowLimitAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLStatementDisallowLimit, &StatementDisallowLimitAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementDisallowLimit, &StatementDisallowLimitAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementDisallowLimit, &StatementDisallowLimitAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleStatementDisallowLimit, &StatementDisallowLimitAdvisor{})
 }
 
 // StatementDisallowLimitAdvisor is the advisor checking for no LIMIT clause in INSERT/UPDATE statement.

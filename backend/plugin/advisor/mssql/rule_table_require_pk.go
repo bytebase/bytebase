@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.MSSQLTableRequirePK, &TableRequirePkAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleTableRequirePK, &TableRequirePkAdvisor{})
 }
 
 // TableRequirePkAdvisor is the advisor checking for table require primary key..

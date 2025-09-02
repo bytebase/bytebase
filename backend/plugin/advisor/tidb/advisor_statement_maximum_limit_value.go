@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLStatementMaximumLimitValue, &StatementMaximumLimitValueAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleStatementMaximumLimitValue, &StatementMaximumLimitValueAdvisor{})
 }
 
 // StatementMaximumLimitValueAdvisor is the advisor checking for LIMIT maximum value.

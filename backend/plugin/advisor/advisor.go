@@ -66,13 +66,13 @@ type Advisor interface {
 
 var (
 	advisorMu sync.RWMutex
-	advisors  = make(map[storepb.Engine]map[Type]Advisor)
+	advisors  = make(map[storepb.Engine]map[SQLReviewRuleType]Advisor)
 )
 
 // Register makes a advisor available by the provided id.
 // If Register is called twice with the same name or if advisor is nil,
 // it panics.
-func Register(dbType storepb.Engine, advType Type, f Advisor) {
+func Register(dbType storepb.Engine, ruleType SQLReviewRuleType, f Advisor) {
 	advisorMu.Lock()
 	defer advisorMu.Unlock()
 	if f == nil {
@@ -80,26 +80,26 @@ func Register(dbType storepb.Engine, advType Type, f Advisor) {
 	}
 	dbAdvisors, ok := advisors[dbType]
 	if !ok {
-		advisors[dbType] = map[Type]Advisor{
-			advType: f,
+		advisors[dbType] = map[SQLReviewRuleType]Advisor{
+			ruleType: f,
 		}
 	} else {
-		if _, dup := dbAdvisors[advType]; dup {
-			panic(fmt.Sprintf("advisor: Register called twice for advisor %v for %v", advType, dbType))
+		if _, dup := dbAdvisors[ruleType]; dup {
+			panic(fmt.Sprintf("advisor: Register called twice for advisor %v for %v", ruleType, dbType))
 		}
-		dbAdvisors[advType] = f
+		dbAdvisors[ruleType] = f
 	}
 }
 
 // Check runs the advisor and returns the advices.
-func Check(ctx context.Context, dbType storepb.Engine, advType Type, checkCtx Context) (adviceList []*storepb.Advice, err error) {
+func Check(ctx context.Context, dbType storepb.Engine, ruleType SQLReviewRuleType, checkCtx Context) (adviceList []*storepb.Advice, err error) {
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
 			panicErr, ok := panicErr.(error)
 			if !ok {
 				panicErr = errors.Errorf("%v", panicErr)
 			}
-			err = errors.Errorf("advisor check PANIC RECOVER, type: %v, err: %v", advType, panicErr)
+			err = errors.Errorf("advisor check PANIC RECOVER, type: %v, err: %v", ruleType, panicErr)
 
 			slog.Error("advisor check PANIC RECOVER", log.BBError(panicErr), log.BBStack("panic-stack"))
 		}
@@ -112,9 +112,9 @@ func Check(ctx context.Context, dbType storepb.Engine, advType Type, checkCtx Co
 		return nil, errors.Errorf("advisor: unknown db advisor type %v", dbType)
 	}
 
-	f, ok := dbAdvisors[advType]
+	f, ok := dbAdvisors[ruleType]
 	if !ok {
-		return nil, errors.Errorf("advisor: unknown advisor %v for %v", advType, dbType)
+		return nil, errors.Errorf("advisor: unknown advisor %v for %v", ruleType, dbType)
 	}
 
 	return f.Check(ctx, checkCtx)

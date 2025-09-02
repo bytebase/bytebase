@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLEncodingAllowlist, &EncodingAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleCharsetAllowlist, &EncodingAllowlistAdvisor{})
 }
 
 // EncodingAllowlistAdvisor is the advisor checking for encoding allowlist.

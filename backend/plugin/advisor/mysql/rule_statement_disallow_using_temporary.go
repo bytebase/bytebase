@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementDisallowUsingTemporary, &StatementDisallowUsingTemporaryAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementDisallowUsingTemporary, &StatementDisallowUsingTemporaryAdvisor{})
 }
 
 // StatementDisallowUsingTemporaryAdvisor is the advisor checking for using temporary.

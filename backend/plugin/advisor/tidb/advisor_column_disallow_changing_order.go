@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
 }
 
 // ColumnDisallowChangingOrderAdvisor is the advisor checking for disallow changing column order.

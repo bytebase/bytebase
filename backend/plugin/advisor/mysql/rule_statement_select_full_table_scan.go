@@ -22,9 +22,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementSelectFullTableScan, &StatementSelectFullTableScanAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLStatementSelectFullTableScan, &StatementSelectFullTableScanAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLStatementSelectFullTableScan, &StatementSelectFullTableScanAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementSelectFullTableScan, &StatementSelectFullTableScanAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementSelectFullTableScan, &StatementSelectFullTableScanAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleStatementSelectFullTableScan, &StatementSelectFullTableScanAdvisor{})
 }
 
 type StatementSelectFullTableScanAdvisor struct {

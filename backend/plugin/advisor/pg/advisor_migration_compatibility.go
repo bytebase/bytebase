@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLMigrationCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleSchemaBackwardCompatibility, &CompatibilityAdvisor{})
 }
 
 // CompatibilityAdvisor is the advisor checking for schema backward compatibility.

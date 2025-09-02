@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableLimitSize, &MaximumTableSizeAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableLimitSize, &MaximumTableSizeAdvisor{})
 }
 
 type MaximumTableSizeAdvisor struct {

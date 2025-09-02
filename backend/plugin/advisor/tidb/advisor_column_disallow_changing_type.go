@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnDisallowChangingType, &ColumnDisallowChangingTypeAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleColumnDisallowChangeType, &ColumnDisallowChangingTypeAdvisor{})
 }
 
 // ColumnDisallowChangingTypeAdvisor is the advisor checking for disallow changing column type..

@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.OracleTableNamingNoKeyword, &NamingTableNoKeywordAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleTableNameNoKeyword, &NamingTableNoKeywordAdvisor{})
 }
 
 // NamingTableNoKeywordAdvisor is the advisor checking for table naming convention without keyword.

@@ -25,7 +25,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLBuiltinPriorBackupCheck, &StatementPriorBackupCheckAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.BuiltinRulePriorBackupCheck, &StatementPriorBackupCheckAdvisor{})
 }
 
 // StatementPriorBackupCheckAdvisor is the advisor checking for no mixed DDL and DML.

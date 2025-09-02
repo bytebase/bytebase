@@ -26,9 +26,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableRequirePK, &TableRequirePKAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleTableRequirePK, &TableRequirePKAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleTableRequirePK, &TableRequirePKAdvisor{})
 }
 
 // TableRequirePKAdvisor is the advisor checking table requires PK.
