@@ -2846,7 +2846,7 @@
     },
     "actions": {},
     "messages": {},
-    "usage-description": "El lanzamiento solo se utiliza en GitOps personalizado con integración de API."
+    "usage-description": "Un lanzamiento es un artefacto de aplicación versionado cuyo despliegue a un entorno es activado por un flujo de trabajo GitOps."
   },
   "export-data": {
     "export-rows": "Exportar filas",

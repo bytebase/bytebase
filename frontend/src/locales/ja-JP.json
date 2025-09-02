@@ -2846,7 +2846,7 @@
     },
     "actions": {},
     "messages": {},
-    "usage-description": "このリリースは、API統合を使用したカスタムGitOpsでのみ使用されます。"
+    "usage-description": "リリースは、GitOpsワークフローによって環境へのデプロイがトリガーされるバージョン管理されたアプリケーションアーティファクトです。"
   },
   "export-data": {
     "export-rows": "エクスポート行数",
