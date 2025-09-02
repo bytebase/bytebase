@@ -2846,7 +2846,7 @@
     },
     "actions": {},
     "messages": {},
-    "usage-description": "The release is only used in custom GitOps with API integration."
+    "usage-description": "A release is a versioned application artifact whose deployment to an environment is triggered by a GitOps workflow."
   },
   "export-data": {
     "export-rows": "Export rows",
