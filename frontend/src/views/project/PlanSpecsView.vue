@@ -1,3 +1,6 @@
+<!-- eslint-disable vue/valid-template-root -->
+<template></template>
+
 <script lang="ts" setup>
 import { head } from "lodash-es";
 import { useRoute, useRouter } from "vue-router";
