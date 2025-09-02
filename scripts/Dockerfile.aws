@@ -10,7 +10,7 @@ COPY . .
 RUN pnpm --dir ./frontend i
 RUN pnpm --dir ./frontend release-aws
 
-FROM golang:1.24.5-alpine3.21 AS backend
+FROM golang:1.25.0-alpine3.21 AS backend
 ARG VERSION
 ARG GIT_COMMIT
 ARG RELEASE="release"
