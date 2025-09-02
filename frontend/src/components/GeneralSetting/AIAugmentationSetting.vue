@@ -11,7 +11,7 @@
       </span>
     </div>
     <div class="flex-1 lg:px-4">
-      <div v-if="actuatorStore.profile?.saas">
+      <div v-if="actuatorStore.isSaaSMode">
         <BBAttention
           :type="'info'"
           :description="
