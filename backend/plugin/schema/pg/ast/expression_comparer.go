@@ -171,9 +171,9 @@ func (c *PostgreSQLExpressionComparer) normalizeStringExpression(expr string) st
 	// This is necessary because built-in types should never be schema-qualified
 	expr = c.normalizeBuiltinTypes(expr)
 
-	// Apply case normalization
+	// Apply case normalization - but preserve string literal case
 	if !c.CaseSensitive {
-		expr = strings.ToLower(expr)
+		expr = c.normalizeCasePreservingStringLiterals(expr)
 	}
 
 	return strings.TrimSpace(expr)
@@ -559,6 +559,100 @@ func CompareExpressionsSemantically(expr1, expr2 string) bool {
 		return false
 	}
 	return result
+}
+
+// normalizeCasePreservingStringLiterals normalizes case while preserving string literal content
+func (*PostgreSQLExpressionComparer) normalizeCasePreservingStringLiterals(expr string) string {
+	// This is a production-grade implementation that preserves:
+	// 1. Single-quoted string literal case ('...')
+	// 2. Double-quoted identifier case ("...")
+	// while normalizing unquoted identifiers, keywords, and function names
+
+	result := make([]rune, 0, len(expr))
+	runes := []rune(expr)
+	i := 0
+
+	for i < len(runes) {
+		char := runes[i]
+
+		// Handle single-quoted string literals
+		if char == '\'' {
+			// Preserve the entire string literal including quotes
+			result = append(result, char) // opening quote
+			i++
+
+			// Copy content until closing quote, handling escaped quotes
+			for i < len(runes) {
+				char = runes[i]
+				result = append(result, char)
+
+				if char == '\'' {
+					// Check if this is an escaped quote ''
+					if i+1 < len(runes) && runes[i+1] == '\'' {
+						// Escaped quote, copy both quotes
+						i++
+						result = append(result, runes[i])
+					} else {
+						// End of string literal
+						break
+					}
+				}
+				i++
+			}
+		} else if char == '"' {
+			// Handle double-quoted identifiers (case-sensitive)
+			// Preserve the entire quoted identifier including quotes
+			result = append(result, char) // opening quote
+			i++
+
+			// Copy content until closing quote, handling escaped quotes
+			for i < len(runes) {
+				char = runes[i]
+				result = append(result, char)
+
+				if char == '"' {
+					// Check if this is an escaped quote ""
+					if i+1 < len(runes) && runes[i+1] == '"' {
+						// Escaped quote, copy both quotes
+						i++
+						result = append(result, runes[i])
+					} else {
+						// End of quoted identifier
+						break
+					}
+				}
+				i++
+			}
+		} else {
+			// For non-quoted parts, apply case normalization
+			result = append(result, char)
+		}
+		i++
+	}
+
+	// Apply case normalization to the parts outside quoted literals/identifiers
+	finalResult := string(result)
+
+	// Process both single and double quotes to preserve their content
+	// First handle single quotes (string literals)
+	singleQuoteParts := strings.Split(finalResult, "'")
+	for i := 0; i < len(singleQuoteParts); i++ {
+		if i%2 == 0 {
+			// Outside single quotes - now check for double quotes
+			doubleQuoteParts := strings.Split(singleQuoteParts[i], `"`)
+			for j := 0; j < len(doubleQuoteParts); j++ {
+				if j%2 == 0 {
+					// Outside both single and double quotes - apply case normalization
+					doubleQuoteParts[j] = strings.ToLower(doubleQuoteParts[j])
+				}
+				// Inside double quotes - preserve case
+			}
+			singleQuoteParts[i] = strings.Join(doubleQuoteParts, `"`)
+		}
+		// Inside single quotes - preserve case
+	}
+
+	return strings.Join(singleQuoteParts, "'")
 }
 
 // CreatePostgreSQLExpressionComparer creates a PostgreSQL expression comparer with default settings

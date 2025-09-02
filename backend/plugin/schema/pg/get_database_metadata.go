@@ -712,7 +712,10 @@ func NormalizePostgreSQLType(typeName string) string {
 	// Handle decimal -> numeric (preserve precision information)
 	if strings.HasPrefix(typeName, "decimal(") {
 		// Convert decimal(p,s) to numeric(p,s) while preserving precision
-		return "numeric" + typeName[7:] // Replace "decimal" with "numeric"
+		// Also normalize spacing to match sync.go format (remove spaces around commas)
+		precisionPart := typeName[7:]                              // Get "(p, s)" or "(p,s)" part
+		precisionPart = strings.ReplaceAll(precisionPart, " ", "") // Remove all spaces to match sync.go format
+		return "numeric" + precisionPart
 	}
 	if typeName == "decimal" {
 		return "numeric"
@@ -752,6 +755,14 @@ func NormalizePostgreSQLType(typeName string) string {
 	// Handle varbit with precision: varbit(n) -> bit varying(n)
 	if strings.HasPrefix(typeName, "varbit(") {
 		return "bit varying" + typeName[6:] // Replace "varbit" with "bit varying"
+	}
+
+	// For all remaining types with precision/scale parameters, normalize spacing to match sync.go format
+	// This handles cases like "numeric(10, 2)" -> "numeric(10,2)" to match database sync output
+	if strings.Contains(typeName, "(") && strings.Contains(typeName, ")") {
+		// Remove spaces around commas in type specifications to match sync.go format
+		typeName = strings.ReplaceAll(typeName, ", ", ",")
+		typeName = strings.ReplaceAll(typeName, " ,", ",")
 	}
 
 	return typeName

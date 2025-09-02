@@ -261,18 +261,14 @@ func (v *normalizationVisitor) normalizeFunctionName(name string) string {
 		unquoted = name
 	}
 
-	// Check if this is a built-in PostgreSQL function
-	// For built-in functions, both quoted and unquoted forms should normalize to the same canonical lowercase form
-	if v.isBuiltinPostgreSQLFunction(unquoted) {
-		return strings.ToLower(unquoted)
-	}
-
-	// For user-defined functions:
-	// - Quoted identifiers preserve case sensitivity
+	// For ALL functions (built-in and user-defined):
+	// - Quoted identifiers ALWAYS preserve case sensitivity (PostgreSQL standard)
 	// - Unquoted identifiers are converted to lowercase (PostgreSQL standard)
 	if isQuoted {
 		return "\"" + unquoted + "\""
 	}
+
+	// For unquoted identifiers, normalize to lowercase
 	return strings.ToLower(name)
 }
 
@@ -471,86 +467,4 @@ func (*normalizationVisitor) isJSONLiteral(value string) bool {
 		(len(trimmed) > 0 && (trimmed[0] == '"' ||
 			(trimmed[0] >= '0' && trimmed[0] <= '9') ||
 			trimmed[0] == '-'))
-}
-
-// isBuiltinPostgreSQLFunction checks if a function name is a built-in PostgreSQL function
-// For built-in functions, both quoted and unquoted forms should normalize to the same canonical form
-func (*normalizationVisitor) isBuiltinPostgreSQLFunction(name string) bool {
-	// Convert to lowercase for case-insensitive comparison
-	funcName := strings.ToLower(name)
-
-	// Common string functions
-	builtinFunctions := map[string]bool{
-		// String functions
-		"left":        true,
-		"right":       true,
-		"substr":      true,
-		"substring":   true,
-		"length":      true,
-		"char_length": true,
-		"upper":       true,
-		"lower":       true,
-		"trim":        true,
-		"ltrim":       true,
-		"rtrim":       true,
-		"replace":     true,
-		"concat":      true,
-		"split_part":  true,
-		"position":    true,
-		"strpos":      true,
-
-		// Numeric functions
-		"abs":     true,
-		"ceil":    true,
-		"ceiling": true,
-		"floor":   true,
-		"round":   true,
-		"trunc":   true,
-		"mod":     true,
-		"power":   true,
-		"sqrt":    true,
-		"exp":     true,
-		"ln":      true,
-		"log":     true,
-
-		// Date/time functions
-		"now":               true,
-		"current_date":      true,
-		"current_time":      true,
-		"current_timestamp": true,
-		"extract":           true,
-		"date_part":         true,
-		"age":               true,
-		"date_trunc":        true,
-
-		// Aggregate functions
-		"count":      true,
-		"sum":        true,
-		"avg":        true,
-		"min":        true,
-		"max":        true,
-		"array_agg":  true,
-		"string_agg": true,
-
-		// Type conversion functions
-		"cast":         true,
-		"to_char":      true,
-		"to_date":      true,
-		"to_number":    true,
-		"to_timestamp": true,
-
-		// System information functions
-		"current_user": true,
-		"session_user": true,
-		"version":      true,
-		"pg_version":   true,
-
-		// Other common functions
-		"coalesce": true,
-		"nullif":   true,
-		"greatest": true,
-		"least":    true,
-	}
-
-	return builtinFunctions[funcName]
 }

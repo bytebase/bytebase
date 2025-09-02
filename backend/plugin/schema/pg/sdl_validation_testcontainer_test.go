@@ -969,7 +969,7 @@ func executeSDLValidationProcess(ctx context.Context, t *testing.T, connConfig *
 	migrationDDL, actualDiff, err := generateMigrationDDLFromMetadata(schemaB, schemaCMetadata)
 	require.NoError(t, err, "Failed to generate migration DDL from metadata")
 
-	t.Logf("Generated migration DDL (%d characters)", len(migrationDDL))
+	t.Logf("Generated migration DDL (%d characters):\n%s", len(migrationDDL), migrationDDL)
 
 	// Save or validate the actual diff (B to C) and DDL files
 	testName := strings.ReplaceAll(t.Name(), "/", "_")
@@ -1095,6 +1095,23 @@ func validateSchemaConsistency(schemaD, schemaC *storepb.DatabaseSchemaMetadata)
 		}
 		if len(diff.TableChanges) > 0 {
 			diffDetails = append(diffDetails, fmt.Sprintf("TableChanges: %d", len(diff.TableChanges)))
+			// Add detailed table changes for debugging
+			for i, tableDiff := range diff.TableChanges {
+				diffDetails = append(diffDetails, fmt.Sprintf("  Table[%d]: %s table %s.%s (columns: %d, indexes: %d, checkConstraints: %d, foreignKeys: %d, triggers: %d)",
+					i, tableDiff.Action, tableDiff.SchemaName, tableDiff.TableName,
+					len(tableDiff.ColumnChanges), len(tableDiff.IndexChanges), len(tableDiff.CheckConstraintChanges), len(tableDiff.ForeignKeyChanges), len(tableDiff.TriggerChanges)))
+
+				// Add column change details
+				for j, columnDiff := range tableDiff.ColumnChanges {
+					columnName := ""
+					if columnDiff.OldColumn != nil {
+						columnName = columnDiff.OldColumn.Name
+					} else if columnDiff.NewColumn != nil {
+						columnName = columnDiff.NewColumn.Name
+					}
+					diffDetails = append(diffDetails, fmt.Sprintf("    Column[%d]: %s column %s", j, columnDiff.Action, columnName))
+				}
+			}
 		}
 		if len(diff.ViewChanges) > 0 {
 			diffDetails = append(diffDetails, fmt.Sprintf("ViewChanges: %d", len(diff.ViewChanges)))
@@ -1516,6 +1533,12 @@ func validateOrSaveTestFiles(t *testing.T, diff *schema.MetadataDiff, testName s
 
 	testDir := getTestDataDirectory(testName)
 	if testDir == "" {
+		// For hardcoded tests (TestSDLValidationWithTestcontainer), skip file validation
+		// Only TestSDLValidationFromTestData tests should have corresponding test data files
+		if strings.Contains(testName, "TestSDLValidationWithTestcontainer") {
+			t.Logf("Skipping file validation for hardcoded test: %s", testName)
+			return nil
+		}
 		return errors.Errorf("could not determine test data directory for test %s", testName)
 	}
 
