@@ -655,6 +655,7 @@
         "failed-to-update-setting": "設定「{title}」の更新に失敗しました",
         "ai-assistant": {
           "self": "AI アシスタント",
+          "enabled-in-saas": "Gemini AIはSaaSモードで自動的に有効化されます",
           "enable-ai-assistant": "AIアシスタントを有効にする",
           "description": "AI を使用してデータベース開発タスクを支援します。",
           "provider": {

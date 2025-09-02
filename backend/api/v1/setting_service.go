@@ -466,6 +466,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_AI:
+		if s.profile.SaaS {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot change ai setting in the saas mode"))
+		}
 		aiSetting := convertAISetting(request.Msg.Setting.Value.GetAiSetting())
 		if aiSetting.Enabled {
 			if aiSetting.Endpoint == "" || aiSetting.Model == "" {
