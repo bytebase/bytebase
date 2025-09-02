@@ -32,7 +32,7 @@
     <p class="col-span-2 textinfolabel">
       {{ $t("instance.find-gcp-project-id-and-instance-id") }}
       <a
-        href="https://docs.bytebase.com/get-started/instance/#specify-google-cloud-project-id-and-spanner-instance-id?source=console"
+        href="https://docs.bytebase.com/get-started/connect/gcp?source=console"
         target="_blank"
         class="normal-link inline-flex items-center"
       >
