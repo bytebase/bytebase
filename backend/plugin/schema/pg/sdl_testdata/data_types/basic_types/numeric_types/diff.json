@@ -1,0 +1,23 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 1, Sequence changes: 2",
+  "tableChanges": 1,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 2,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "tableName": "numeric_types_test",
+        "columnChanges": 0,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0
+      }
+    ]
+  }
+}

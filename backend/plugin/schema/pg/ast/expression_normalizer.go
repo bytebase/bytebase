@@ -91,8 +91,21 @@ func (v *normalizationVisitor) VisitLiteral(expr *LiteralExpr) any {
 // VisitBinaryOp normalizes binary operation expressions
 func (v *normalizationVisitor) VisitBinaryOp(expr *BinaryOpExpr) any {
 	left := v.normalizeChild(expr.Left)
-	right := v.normalizeChild(expr.Right)
 	operator := v.normalizeOperator(expr.Operator)
+
+	// Special handling for type cast operator
+	var right ExpressionAST
+	if operator == "::" {
+		// For type cast, the right operand should be normalized as a type name
+		right = v.normalizeChildAsType(expr.Right)
+
+		// Check if this is a redundant type cast that can be removed
+		if v.isRedundantTypeCast(left, right) {
+			return left // Return the left operand without the cast
+		}
+	} else {
+		right = v.normalizeChild(expr.Right)
+	}
 
 	// For commutative operators, ensure consistent ordering
 	if isCommutativeOperator(operator) && v.shouldSwapOperands(left, right) {
@@ -167,6 +180,25 @@ func (v *normalizationVisitor) normalizeChild(expr ExpressionAST) ExpressionAST 
 	return expr
 }
 
+// normalizeChildAsType normalizes a child expression as a type name
+func (v *normalizationVisitor) normalizeChildAsType(expr ExpressionAST) ExpressionAST {
+	if expr == nil {
+		return nil
+	}
+
+	// If it's a literal, treat it as a type name
+	if literal, ok := expr.(*LiteralExpr); ok {
+		normalizedValue := v.normalizeTypeName(literal.Value)
+		return &LiteralExpr{
+			Value:     normalizedValue,
+			ValueType: literal.ValueType,
+		}
+	}
+
+	// Otherwise, normalize normally
+	return v.normalizeChild(expr)
+}
+
 // normalizeSchema normalizes schema names
 func (v *normalizationVisitor) normalizeSchema(schema string) string {
 	if schema == "" {
@@ -181,7 +213,9 @@ func (v *normalizationVisitor) normalizeSchema(schema string) string {
 	return v.normalizeIdentifier(schema)
 }
 
-// normalizeIdentifier normalizes identifier names
+// normalizeIdentifier normalizes identifier names according to PostgreSQL rules:
+// - Unquoted identifiers are case-insensitive and folded to lowercase
+// - Quoted identifiers preserve their original case but without quotes in the IR
 func (v *normalizationVisitor) normalizeIdentifier(identifier string) string {
 	if identifier == "" {
 		return ""
@@ -189,20 +223,14 @@ func (v *normalizationVisitor) normalizeIdentifier(identifier string) string {
 
 	// Handle quoted identifiers
 	if v.isQuotedIdentifier(identifier) {
-		// Remove quotes and get the actual identifier
+		// Remove quotes and preserve the original case content
 		unquoted := identifier[1 : len(identifier)-1]
-
-		// In PostgreSQL, if a quoted identifier is all lowercase,
-		// it's equivalent to the unquoted version
-		if strings.ToLower(unquoted) == unquoted {
-			// If quoted identifier is all lowercase, normalize as unquoted
-			return v.normalizeUnquotedIdentifier(unquoted)
-		}
-
-		// Otherwise, preserve the quoted form for case-sensitive comparison
-		return identifier
+		// Handle escaped quotes within the identifier
+		unquoted = strings.ReplaceAll(unquoted, `""`, `"`)
+		return unquoted
 	}
 
+	// For unquoted identifiers, apply PostgreSQL case folding (to lowercase)
 	return v.normalizeUnquotedIdentifier(identifier)
 }
 
@@ -216,19 +244,15 @@ func (v *normalizationVisitor) normalizeUnquotedIdentifier(identifier string) st
 	return strings.ToLower(identifier)
 }
 
-// normalizeFunctionName normalizes function names
+// normalizeFunctionName normalizes function names using PostgreSQL standard rules
+// Same logic as normalizeIdentifier - function names are identifiers
 func (v *normalizationVisitor) normalizeFunctionName(name string) string {
-	// Handle quoted function names - preserve exact case
-	if v.isQuotedIdentifier(name) {
-		return name
-	}
-
-	// Function names are case-insensitive in PostgreSQL for unquoted names
-	return strings.ToLower(name)
+	// Function names follow the same identifier normalization rules
+	return v.normalizeIdentifier(name)
 }
 
 // normalizeLiteral normalizes literal values
-func (*normalizationVisitor) normalizeLiteral(value, valueType string) string {
+func (v *normalizationVisitor) normalizeLiteral(value, valueType string) string {
 	switch strings.ToLower(valueType) {
 	case "boolean":
 		return strings.ToUpper(value) // TRUE/FALSE
@@ -240,9 +264,20 @@ func (*normalizationVisitor) normalizeLiteral(value, valueType string) string {
 	case "number":
 		// Normalize numeric literals - could handle leading zeros, etc.
 		return value
+	case "type":
+		// Type names in cast expressions should be case-insensitive
+		return v.normalizeTypeName(value)
 	default:
 		return value
 	}
+}
+
+// normalizeTypeName normalizes type names for case-insensitive comparison
+func (v *normalizationVisitor) normalizeTypeName(typeName string) string {
+	if v.normalizer.CaseSensitive {
+		return typeName
+	}
+	return strings.ToLower(typeName)
 }
 
 // normalizeOperator normalizes operators
@@ -371,4 +406,44 @@ func SortStringList(strs []string) []string {
 	slices.Sort(sorted)
 
 	return sorted
+}
+
+// isRedundantTypeCast checks if a type cast can be safely removed
+// This handles cases where PostgreSQL implicit casting makes explicit casts unnecessary
+func (v *normalizationVisitor) isRedundantTypeCast(leftExpr, typeExpr ExpressionAST) bool {
+	// Check if left is a string literal and right is a JSON/JSONB type
+	if literalExpr, ok := leftExpr.(*LiteralExpr); ok {
+		if typeIdent, ok := typeExpr.(*IdentifierExpr); ok {
+			typeName := strings.ToLower(typeIdent.Name)
+
+			// For JSON-like literals cast to jsonb/json, the cast is redundant
+			// because PostgreSQL will implicitly cast string literals to JSON types
+			if (typeName == "jsonb" || typeName == "json") &&
+				literalExpr.ValueType == "string" &&
+				v.isJSONLiteral(literalExpr.Value) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// isJSONLiteral checks if a string value looks like JSON
+func (*normalizationVisitor) isJSONLiteral(value string) bool {
+	// Remove quotes if present
+	if len(value) >= 2 && value[0] == '\'' && value[len(value)-1] == '\'' {
+		value = value[1 : len(value)-1]
+	}
+
+	// Check for simple JSON patterns
+	trimmed := strings.TrimSpace(value)
+	return (strings.HasPrefix(trimmed, "{") && strings.HasSuffix(trimmed, "}")) ||
+		(strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]")) ||
+		trimmed == "null" ||
+		trimmed == "true" ||
+		trimmed == "false" ||
+		(len(trimmed) > 0 && (trimmed[0] == '"' ||
+			(trimmed[0] >= '0' && trimmed[0] <= '9') ||
+			trimmed[0] == '-'))
 }
