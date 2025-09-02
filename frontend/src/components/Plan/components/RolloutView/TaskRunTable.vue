@@ -75,11 +75,7 @@ const columnList = computed((): DataTableColumn<TaskRun>[] => {
       key: "status",
       width: 48,
       render: (taskRun: TaskRun) => {
-        return (
-          <div class="flex items-center gap-1">
-            <TaskRunStatusIcon status={taskRun.status} />
-          </div>
-        );
+        return <TaskRunStatusIcon status={taskRun.status} />;
       },
     },
     {
