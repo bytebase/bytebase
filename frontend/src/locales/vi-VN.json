@@ -2846,7 +2846,7 @@
     },
     "actions": {},
     "messages": {},
-    "usage-description": "Bản phát hành chỉ được sử dụng trong GitOps tùy chỉnh với tích hợp API."
+    "usage-description": "Bản phát hành là một artifact ứng dụng có phiên bản mà việc triển khai vào môi trường được kích hoạt bởi quy trình GitOps."
   },
   "export-data": {
     "export-rows": "Xuất số dòng",
