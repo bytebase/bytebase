@@ -15,11 +15,15 @@
         </div>
 
         <!-- Instance -->
-        <div v-if="instance" class="flex items-center gap-2">
+        <div class="flex items-center gap-2">
           <span class="text-sm font-medium text-gray-600"
             >{{ $t("common.instance") }}:</span
           >
-          <InstanceV1Name :instance="instance" />
+          <InstanceV1Name
+            v-if="isValidInstanceName(instance.name)"
+            :instance="instance"
+          />
+          <span v-else class="text-gray-900">{{ displayInstanceName }}</span>
         </div>
 
         <!-- Database Name -->
@@ -82,7 +86,9 @@ import {
 import { useCurrentProjectV1 } from "@/store";
 import type { Plan_CreateDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { isValidInstanceName } from "@/types/v1/instance";
 import { getSheetStatement } from "@/utils";
+import { extractInstanceResourceName } from "@/utils/v1/instance";
 import { usePlanContextWithRollout } from "../..";
 import TaskRunTable from "../RolloutView/TaskRunTable.vue";
 
@@ -112,6 +118,11 @@ const environment = computed(() => {
 
 const instance = computed(() => {
   return instanceStore.getInstanceByName(createDatabaseConfig.value.target);
+});
+
+// The instance resource name from the target, in case the instance is not found or no permission to view.
+const displayInstanceName = computed(() => {
+  return extractInstanceResourceName(createDatabaseConfig.value.target);
 });
 
 const databaseName = computed(() => {
