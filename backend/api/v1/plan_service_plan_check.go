@@ -191,18 +191,21 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		},
 	})
 
-	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
-		PlanUID: plan.UID,
-		Status:  store.PlanCheckRunStatusRunning,
-		Type:    store.PlanCheckDatabaseStatementAdvise,
-		Config: &storepb.PlanCheckRunConfig{
-			SheetUid:           int32(sheetUID),
-			ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
-			InstanceId:         instance.ResourceID,
-			DatabaseName:       database.DatabaseName,
-			EnablePriorBackup:  config.EnablePriorBackup,
-		},
-	})
+	// Only create SQL Review check if there's a review policy configured
+	if hasSQLReviewPolicy(ctx, s, database) {
+		planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
+			PlanUID: plan.UID,
+			Status:  store.PlanCheckRunStatusRunning,
+			Type:    store.PlanCheckDatabaseStatementAdvise,
+			Config: &storepb.PlanCheckRunConfig{
+				SheetUid:           int32(sheetUID),
+				ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
+				InstanceId:         instance.ResourceID,
+				DatabaseName:       database.DatabaseName,
+				EnablePriorBackup:  config.EnablePriorBackup,
+			},
+		})
+	}
 	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
 		PlanUID: plan.UID,
 		Status:  store.PlanCheckRunStatusRunning,
@@ -257,4 +260,17 @@ func getSheetUIDsFromChangeDatabaseConfig(config *storepb.PlanConfig_ChangeDatab
 		sheetUIDs = append(sheetUIDs, sheetUID)
 	}
 	return sheetUIDs, nil
+}
+
+// hasSQLReviewPolicy checks if there's a SQL Review policy configured for the database.
+func hasSQLReviewPolicy(ctx context.Context, s *store.Store, database *store.DatabaseMessage) bool {
+	_, err := s.GetReviewConfigForDatabase(ctx, database)
+	if err != nil {
+		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
+			return false
+		}
+		// If there's any other error, we assume there might be a policy to be safe
+		return true
+	}
+	return true
 }
