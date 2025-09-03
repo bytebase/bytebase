@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center flex-wrap gap-1" @click.stop.prevent>
+  <div class="flex items-center flex-wrap gap-1">
     <InstanceV1Name
       :instance="database.instanceResource"
       :plain="true"
