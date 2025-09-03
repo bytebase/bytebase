@@ -104,16 +104,17 @@ type larkReceiver struct {
 
 func (*larkReceiver) Post(context webhook.Context) error {
 	if context.DirectMessage && len(context.MentionEndUsers) > 0 {
-		postDirectMessage(context)
-		return nil
+		if postDirectMessage(context) {
+			return nil
+		}
 	}
 	return postMessage(context)
 }
 
-func postDirectMessage(webhookCtx webhook.Context) {
+func postDirectMessage(webhookCtx webhook.Context) bool {
 	lark := webhookCtx.IMSetting.GetLark()
 	if lark == nil {
-		return
+		return false
 	}
 	p := newProvider(lark.AppId, lark.AppSecret)
 
@@ -155,7 +156,10 @@ func postDirectMessage(webhookCtx webhook.Context) {
 		return errs
 	}); err != nil {
 		slog.Warn("failed to send direct message to lark user", log.BBError(err))
+		return false
 	}
+
+	return true
 }
 
 func postMessage(context webhook.Context) error {

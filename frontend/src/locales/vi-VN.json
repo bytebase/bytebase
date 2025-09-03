@@ -1759,8 +1759,9 @@
         "confirm-title": "Xóa webhook '{title}' và tất cả lịch sử thực thi của nó?"
       },
       "direct-messages": "Tin nhắn trực tiếp",
+      "direct-messages-tip": "Bytebase sẽ quay lại đăng tin nhắn webhook nếu không có người dùng nào khớp hoặc việc gửi tin nhắn không thành công.",
       "enable-direct-messages": "Bật tin nhắn trực tiếp",
-      "direct-messages-tip": "Khi được bật, Bytebase sẽ gửi tin nhắn trực tiếp đến người dùng liên quan (được khớp bằng email). Chỉ hỗ trợ: {events}",
+      "direct-messages-description": "Khi được bật, Bytebase sẽ gửi tin nhắn trực tiếp đến người dùng liên quan (được khớp bằng email). Chỉ hỗ trợ: {events}",
       "direct-messages-warning": "Bạn cần định cấu hình {im} để làm cho nó hoạt động.",
       "activity-support-direct-message": "Hỗ trợ gửi tin nhắn trực tiếp đến người dùng liên quan",
       "activity-item": {

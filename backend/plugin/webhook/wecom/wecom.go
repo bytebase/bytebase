@@ -191,7 +191,8 @@ func (*Receiver) sendDirectMessage(webhookCtx webhook.Context) bool {
 
 	if err := common.Retry(ctx, fn); err != nil {
 		slog.Warn("failed to send direct message to wecom users", log.BBError(err))
+		return false
 	}
 
-	return len(sent) == len(webhookCtx.MentionEndUsers)
+	return true
 }
