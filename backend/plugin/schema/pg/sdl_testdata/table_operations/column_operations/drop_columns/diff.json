@@ -1,0 +1,93 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 1",
+  "tableChanges": 1,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "products",
+        "columnChanges": 4,
+        "indexChanges": 2,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "DROP",
+            "name": "old_price",
+            "oldColumn": {
+              "name": "old_price",
+              "type": "numeric(10,2)",
+              "nullable": true
+            }
+          },
+          {
+            "action": "DROP",
+            "name": "deprecated_field1",
+            "oldColumn": {
+              "name": "deprecated_field1",
+              "type": "text",
+              "nullable": true
+            }
+          },
+          {
+            "action": "DROP",
+            "name": "deprecated_field2",
+            "oldColumn": {
+              "name": "deprecated_field2",
+              "type": "integer",
+              "nullable": true
+            }
+          },
+          {
+            "action": "DROP",
+            "name": "legacy_data",
+            "oldColumn": {
+              "name": "legacy_data",
+              "type": "jsonb",
+              "nullable": true
+            }
+          }
+        ],
+        "indexes": [
+          {
+            "action": "DROP",
+            "name": "idx_products_legacy_data",
+            "oldIndex": {
+              "name": "idx_products_legacy_data",
+              "type": "gin",
+              "unique": false,
+              "expressions": [
+                "legacy_data"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          },
+          {
+            "action": "DROP",
+            "name": "idx_products_old_price",
+            "oldIndex": {
+              "name": "idx_products_old_price",
+              "type": "btree",
+              "unique": false,
+              "expressions": [
+                "old_price"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

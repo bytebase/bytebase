@@ -1,0 +1,64 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 1",
+  "tableChanges": 1,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "products",
+        "columnChanges": 4,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "CREATE",
+            "name": "category",
+            "newColumn": {
+              "name": "category",
+              "type": "character varying(50)",
+              "nullable": true,
+              "defaultValue": "'general'"
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "created_at",
+            "newColumn": {
+              "name": "created_at",
+              "type": "timestamp(6) without time zone",
+              "nullable": true,
+              "defaultValue": "CURRENT_TIMESTAMP"
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "description",
+            "newColumn": {
+              "name": "description",
+              "type": "text",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "is_featured",
+            "newColumn": {
+              "name": "is_featured",
+              "type": "boolean",
+              "nullable": true,
+              "defaultValue": "false"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

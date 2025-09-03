@@ -1,0 +1,246 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 1",
+  "tableChanges": 1,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "products",
+        "columnChanges": 10,
+        "indexChanges": 6,
+        "constraintChanges": 1,
+        "foreignKeyChanges": 1,
+        "columns": [
+          {
+            "action": "CREATE",
+            "name": "category_id",
+            "newColumn": {
+              "name": "category_id",
+              "type": "integer",
+              "nullable": false
+            }
+          },
+          {
+            "action": "DROP",
+            "name": "old_name",
+            "oldColumn": {
+              "name": "old_name",
+              "type": "character varying(50)",
+              "nullable": true
+            }
+          },
+          {
+            "action": "DROP",
+            "name": "temp_field",
+            "oldColumn": {
+              "name": "temp_field",
+              "type": "text",
+              "nullable": true
+            }
+          },
+          {
+            "action": "DROP",
+            "name": "category_name",
+            "oldColumn": {
+              "name": "category_name",
+              "type": "character varying(30)",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "created_at",
+            "newColumn": {
+              "name": "created_at",
+              "type": "timestamp(6) without time zone",
+              "nullable": true,
+              "defaultValue": "CURRENT_TIMESTAMP"
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "description",
+            "newColumn": {
+              "name": "description",
+              "type": "text",
+              "nullable": true
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "is_active",
+            "newColumn": {
+              "name": "is_active",
+              "type": "boolean",
+              "nullable": true,
+              "defaultValue": "true"
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "name",
+            "newColumn": {
+              "name": "name",
+              "type": "character varying(200)",
+              "nullable": false
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "price",
+            "oldColumn": {
+              "name": "price",
+              "type": "integer",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "price",
+              "type": "numeric(10,2)",
+              "nullable": false
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "updated_at",
+            "newColumn": {
+              "name": "updated_at",
+              "type": "timestamp(6) without time zone",
+              "nullable": true,
+              "defaultValue": "CURRENT_TIMESTAMP"
+            }
+          }
+        ],
+        "indexes": [
+          {
+            "action": "CREATE",
+            "name": "idx_products_active",
+            "newIndex": {
+              "name": "idx_products_active",
+              "type": "btree",
+              "unique": false,
+              "expressions": [
+                "is_active"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "idx_products_category_id",
+            "newIndex": {
+              "name": "idx_products_category_id",
+              "type": "btree",
+              "unique": false,
+              "expressions": [
+                "category_id"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          },
+          {
+            "action": "DROP",
+            "name": "idx_products_category_name",
+            "oldIndex": {
+              "name": "idx_products_category_name",
+              "type": "btree",
+              "unique": false,
+              "expressions": [
+                "category_name"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "idx_products_name",
+            "newIndex": {
+              "name": "idx_products_name",
+              "type": "btree",
+              "unique": false,
+              "expressions": [
+                "name"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "idx_products_price",
+            "newIndex": {
+              "name": "idx_products_price",
+              "type": "btree",
+              "unique": false,
+              "expressions": [
+                "price"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          },
+          {
+            "action": "DROP",
+            "name": "idx_products_temp",
+            "oldIndex": {
+              "name": "idx_products_temp",
+              "type": "btree",
+              "unique": false,
+              "expressions": [
+                "temp_field"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          }
+        ],
+        "constraints": [
+          {
+            "action": "CREATE",
+            "name": "products_price_check",
+            "newConstraint": {
+              "name": "products_price_check",
+              "type": "CHECK",
+              "expression": "price \u003e 0"
+            }
+          }
+        ],
+        "foreignKeys": [
+          {
+            "action": "CREATE",
+            "name": "fk_products_category",
+            "newForeignKey": {
+              "name": "fk_products_category",
+              "columns": [
+                "category_id"
+              ],
+              "referencedSchema": "public",
+              "referencedTable": "categories",
+              "referencedColumns": [
+                "id"
+              ],
+              "onUpdate": "NO ACTION",
+              "onDelete": "RESTRICT",
+              "matchType": "SIMPLE"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
