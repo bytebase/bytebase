@@ -126,8 +126,9 @@ func GetBlocks(context webhook.Context) []Block {
 
 func (*Receiver) Post(context webhook.Context) error {
 	if context.DirectMessage && len(context.MentionEndUsers) > 0 {
-		postDirectMessage(context)
-		return nil
+		if postDirectMessage(context) {
+			return nil
+		}
 	}
 	return postMessage(context)
 }
@@ -175,11 +176,11 @@ func postMessage(context webhook.Context) error {
 	return nil
 }
 
-func postDirectMessage(webhookCtx webhook.Context) {
+func postDirectMessage(webhookCtx webhook.Context) bool {
 	ctx := context.Background()
 	t := webhookCtx.IMSetting.GetSlack().GetToken()
 	if t == "" {
-		return
+		return false
 	}
 	p := newProvider(t)
 	sent := map[string]bool{}
@@ -212,5 +213,8 @@ func postDirectMessage(webhookCtx webhook.Context) {
 		return errs
 	}); err != nil {
 		slog.Warn("failed to send direct message to slack user", log.BBError(err))
+		return false
 	}
+
+	return true
 }

@@ -54,17 +54,18 @@ type Receiver struct {
 
 func (*Receiver) Post(context webhook.Context) error {
 	if context.DirectMessage && len(context.MentionEndUsers) > 0 {
-		sendDirectMessage(context)
-		return nil
+		if sendDirectMessage(context) {
+			return nil
+		}
 	}
 	return sendMessage(context)
 }
 
 // returns true if the message is sent successfully.
-func sendDirectMessage(webhookCtx webhook.Context) {
+func sendDirectMessage(webhookCtx webhook.Context) bool {
 	dingtalk := webhookCtx.IMSetting.GetDingtalk()
 	if dingtalk == nil {
-		return
+		return false
 	}
 	p := newProvider(dingtalk.ClientId, dingtalk.ClientSecret, dingtalk.RobotCode)
 	ctx := context.Background()
@@ -111,7 +112,10 @@ func sendDirectMessage(webhookCtx webhook.Context) {
 		return errs
 	}); err != nil {
 		slog.Warn("failed to send direct message to dingtalk users", log.BBError(err))
+		return false
 	}
+
+	return true
 }
 
 func sendMessage(context webhook.Context) error {

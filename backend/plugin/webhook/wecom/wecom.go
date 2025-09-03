@@ -145,32 +145,18 @@ func (*Receiver) sendDirectMessage(webhookCtx webhook.Context) bool {
 
 	ctx := context.Background()
 
-	sent := map[string]bool{}
-	notFound := map[string]bool{}
-
 	fn := func() error {
 		var errs error
-		var users, userEmails []string
+		var users []string
 
 		for _, u := range webhookCtx.MentionEndUsers {
-			if sent[u.Email] || notFound[u.Email] {
-				continue
-			}
-
 			userID, err := p.getUserIDByEmail(ctx, u.Email)
 			if err != nil {
-				// errcode 46004 means user not found.
-				// we consider the error to be permanent and won't retry
-				// for the email.
-				if strings.Contains(err.Error(), "errcode 46004") {
-					notFound[u.Email] = true
-				}
 				err = errors.Wrapf(err, "failed to get user id by email %v", u.Email)
 				multierr.AppendInto(&errs, err)
 				continue
 			}
 			users = append(users, userID)
-			userEmails = append(userEmails, u.Email)
 		}
 		if len(users) == 0 {
 			err := errors.Errorf("wecom dm: got 0 user id, errs: %v", errs)
@@ -180,10 +166,6 @@ func (*Receiver) sendDirectMessage(webhookCtx webhook.Context) bool {
 		if err := p.sendMessage(ctx, users, getMessageCard(webhookCtx)); err != nil {
 			err = errors.Wrapf(err, "failed to send message")
 			multierr.AppendInto(&errs, err)
-		} else {
-			for _, email := range userEmails {
-				sent[email] = true
-			}
 		}
 
 		return errs
@@ -191,7 +173,8 @@ func (*Receiver) sendDirectMessage(webhookCtx webhook.Context) bool {
 
 	if err := common.Retry(ctx, fn); err != nil {
 		slog.Warn("failed to send direct message to wecom users", log.BBError(err))
+		return false
 	}
 
-	return len(sent) == len(webhookCtx.MentionEndUsers)
+	return true
 }
