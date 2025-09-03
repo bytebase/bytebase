@@ -1,12 +1,12 @@
 import dayjs from "dayjs";
 import type { LocationQueryRaw } from "vue-router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import type { ComposedDatabaseGroup } from "@/types";
+import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 import { extractProjectResourceName } from "../v1";
 
 export const generateDatabaseGroupIssueRoute = (
   type: "bb.issue.database.schema.update" | "bb.issue.database.data.update",
-  databaseGroup: ComposedDatabaseGroup,
+  databaseGroup: DatabaseGroup,
   sql = ""
 ) => {
   const issueNameParts: string[] = [];

@@ -75,6 +75,7 @@ import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
   buildCELExpr,
   emptySimpleExpr,
+  resolveCELExpr,
   validateSimpleExpr,
   wrapAsGroup,
 } from "@/plugins/cel";
@@ -94,7 +95,10 @@ import {
   DatabaseGroupSchema,
   type DatabaseGroup,
 } from "@/types/proto-es/v1/database_group_service_pb";
-import { batchConvertParsedExprToCELString } from "@/utils";
+import {
+  batchConvertCELStringToParsedExpr,
+  batchConvertParsedExprToCELString,
+} from "@/utils";
 import { ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
 import {
@@ -146,12 +150,18 @@ onMounted(async () => {
   );
   state.resourceId = databaseGroupName;
   state.placeholder = databaseGroupEntity.title;
-  const composedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
+  const fetchedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
     databaseGroup.name,
     { silent: true }
   );
-  if (composedDatabaseGroup.simpleExpr) {
-    state.expr = cloneDeep(composedDatabaseGroup.simpleExpr);
+  if (fetchedDatabaseGroup?.databaseExpr?.expression) {
+    // Convert CEL expression to simple expression
+    const expressions = [fetchedDatabaseGroup.databaseExpr.expression];
+    const exprList = await batchConvertCELStringToParsedExpr(expressions);
+    if (exprList.length > 0) {
+      const simpleExpr = resolveCELExpr(exprList[0]);
+      state.expr = cloneDeep(wrapAsGroup(simpleExpr));
+    }
   }
 });
 
