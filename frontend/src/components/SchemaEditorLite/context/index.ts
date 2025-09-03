@@ -3,8 +3,8 @@ import type { Ref } from "vue";
 import { inject, provide, computed } from "vue";
 import { supportSetClassificationFromComment } from "@/components/ColumnDataTable/utils";
 import { useSettingV1Store } from "@/store";
-import type { ComposedProject } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { RebuildMetadataEditReset } from "../algorithm/rebuild";
 import type { EditTarget, RolloutObject } from "../types";
 import { useEditCatalogs } from "./config";
@@ -32,7 +32,7 @@ export type SchemaEditorOptions = {
 
 export const provideSchemaEditorContext = (params: {
   readonly: Ref<boolean>;
-  project: Ref<ComposedProject>;
+  project: Ref<Project>;
   classificationConfigId: Ref<string | undefined>;
   targets: Ref<EditTarget[]>;
   selectedRolloutObjects: Ref<RolloutObject[] | undefined>;

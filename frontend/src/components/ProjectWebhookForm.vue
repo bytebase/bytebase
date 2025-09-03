@@ -263,13 +263,13 @@ import {
   useSettingV1Store,
 } from "@/store";
 import {
-  type ComposedProject,
   projectWebhookV1ActivityItemList,
   projectWebhookV1TypeItemList,
 } from "@/types";
 import {
   Webhook_Type,
   type Activity_Type,
+  type Project,
   type Webhook,
 } from "@/types/proto-es/v1/project_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
@@ -284,7 +284,7 @@ const props = withDefaults(
   defineProps<{
     allowEdit?: boolean;
     create: boolean;
-    project: ComposedProject;
+    project: Project;
     webhook: Webhook;
   }>(),
   {

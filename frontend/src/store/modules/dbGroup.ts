@@ -9,7 +9,7 @@ import { databaseGroupServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { buildCELExpr } from "@/plugins/cel";
-import type { ComposedDatabase, ComposedProject } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type {
   DatabaseGroup,
@@ -24,6 +24,7 @@ import {
   DatabaseGroupView as DatabaseGroupViewEnum,
   DatabaseGroupSchema,
 } from "@/types/proto-es/v1/database_group_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { batchConvertParsedExprToCELString } from "@/utils";
 import { useCache } from "../cache";
 import { databaseGroupNamePrefix } from "./v1/common";
@@ -238,7 +239,7 @@ export const useDBGroupListByProject = (project: MaybeRef<string>) => {
 };
 
 export const useDatabaseInGroupFilter = (
-  project: MaybeRef<ComposedProject>,
+  project: MaybeRef<Project>,
   referenceDatabase: MaybeRef<ComposedDatabase | undefined>
 ) => {
   const isPreparingDatabaseGroups = ref(false);

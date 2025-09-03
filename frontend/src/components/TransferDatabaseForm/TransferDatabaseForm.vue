@@ -87,12 +87,12 @@ import {
   useDatabaseV1Store,
   useProjectByName,
 } from "@/store";
-import type { ComposedDatabase, ComposedProject } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
   defaultProject,
   formatEnvironmentName,
   isValidProjectName,
+  type ComposedDatabase,
 } from "@/types";
 import {
   DatabaseSchema$,
@@ -100,6 +100,7 @@ import {
   BatchUpdateDatabasesRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Environment } from "@/types/v1/environment";
 import { hasProjectPermissionV2 } from "@/utils";
 import { DrawerContent, ProjectSelect } from "../v2";
@@ -173,7 +174,7 @@ const selectedDatabaseList = computed(() =>
   )
 );
 
-const hasTransferDatabasePermission = (project: ComposedProject): boolean => {
+const hasTransferDatabasePermission = (project: Project): boolean => {
   return (
     hasProjectPermissionV2(project, "bb.databases.list") &&
     hasProjectPermissionV2(project, "bb.projects.update")
@@ -198,7 +199,7 @@ const changeProjectFilter = (name: string | undefined) => {
   }
 };
 
-const filterSourceProject = (project: ComposedProject) => {
+const filterSourceProject = (project: Project) => {
   return (
     hasTransferDatabasePermission(project) && project.name !== props.projectName
   );

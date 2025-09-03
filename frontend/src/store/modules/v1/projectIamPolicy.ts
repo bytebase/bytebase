@@ -7,7 +7,6 @@ import {
   ALL_USERS_USER_EMAIL,
   QueryPermissionQueryAny,
   type ComposedDatabase,
-  type ComposedProject,
   type MaybeRef,
   type QueryPermission,
 } from "@/types";
@@ -19,6 +18,7 @@ import {
 } from "@/types/proto-es/v1/iam_policy_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
 import { BatchGetIamPolicyRequestSchema } from "@/types/proto-es/v1/project_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { getUserEmailListInBinding } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
@@ -165,13 +165,15 @@ export const useProjectIamPolicy = (project: MaybeRef<string>) => {
 
 const checkProjectIAMPolicyWithExpr = (
   user: User,
-  project: ComposedProject,
+  project: Project,
   requiredPermissions: QueryPermission[],
   bindingExprCheck: (expr?: Expr) => boolean
 ): boolean => {
   const roleStore = useRoleStore();
+  const projectIamPolicyStore = useProjectIamPolicyStore();
+  const policy = projectIamPolicyStore.getProjectIamPolicy(project.name);
   // Check if the user has the permission.
-  for (const binding of project.iamPolicy.bindings) {
+  for (const binding of policy.bindings) {
     // If the user is not in the binding, then skip.
     const userEmailList = getUserEmailListInBinding({
       binding,

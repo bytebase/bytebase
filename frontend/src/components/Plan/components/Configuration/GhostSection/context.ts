@@ -3,10 +3,11 @@ import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, unref } from "vue";
 import { targetsForSpec } from "@/components/Plan/logic";
 import { useCurrentUserV1, extractUserId, useDatabaseV1Store } from "@/store";
-import { isValidDatabaseName, type ComposedProject } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Task, Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -30,7 +31,7 @@ export const useGhostSettingContext = () => {
 
 export const provideGhostSettingContext = (refs: {
   isCreating: Ref<boolean>;
-  project: Ref<ComposedProject>;
+  project: Ref<Project>;
   plan: Ref<Plan>;
   selectedSpec: Ref<Plan_Spec | undefined>;
   selectedTask?: Ref<Task | undefined>;

@@ -10,7 +10,7 @@ import {
   PlayCircle,
   Workflow,
 } from "lucide-vue-next";
-import { computed, h, unref } from "vue";
+import { computed, h, unref, type MaybeRef } from "vue";
 import { useRoute } from "vue-router";
 import type { SidebarItem } from "@/components/v2/Sidebar/type";
 import { getFlattenRoutes } from "@/components/v2/Sidebar/utils.ts";
@@ -33,8 +33,8 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_ROLLOUTS,
 } from "@/router/dashboard/projectV1";
 import { useAppFeature } from "@/store";
-import type { ComposedProject, MaybeRef } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 
@@ -45,7 +45,7 @@ interface ProjectSidebarItem extends SidebarItem {
   children?: ProjectSidebarItem[];
 }
 
-export const useProjectSidebar = (project: MaybeRef<ComposedProject>) => {
+export const useProjectSidebar = (project: MaybeRef<Project>) => {
   const route = useRoute();
   const { enabledNewLayout } = useIssueLayoutVersion();
   const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");

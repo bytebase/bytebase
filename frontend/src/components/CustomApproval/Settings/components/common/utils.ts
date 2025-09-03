@@ -17,9 +17,9 @@ import {
   PRESET_WORKSPACE_ROLES,
   PresetRiskLevelList,
   useSupportedSourceList,
-  type ComposedProject,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Risk } from "@/types/proto-es/v1/risk_service_pb";
 import { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import {
@@ -172,7 +172,7 @@ export const getEnvironmentIdOptions = () => {
   });
 };
 
-export const getProjectIdOptions = (projects: ComposedProject[]) => {
+export const getProjectIdOptions = (projects: Project[]) => {
   return projects
     .filter((proj) => proj.name != DEFAULT_PROJECT_NAME)
     .map<SelectOption>((proj) => {

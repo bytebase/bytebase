@@ -80,8 +80,8 @@ import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
 import { useCurrentProjectV1 } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
-import type { ComposedProject } from "@/types";
-import { isValidProjectName, DEFAULT_PROJECT_NAME } from "@/types";
+import { DEFAULT_PROJECT_NAME, isValidProjectName } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   filterProjectV1ListByKeyword,
   hasWorkspacePermissionV2,
@@ -123,9 +123,7 @@ onMounted(() => {
   state.selectedTab = recentViewProjects.value.length < 1 ? "all" : "recent";
 });
 
-const getFilteredProjectList = (
-  projectList: ComposedProject[]
-): ComposedProject[] => {
+const getFilteredProjectList = (projectList: Project[]): Project[] => {
   const list = projectList.filter(
     (project) => project.name !== DEFAULT_PROJECT_NAME
   );
@@ -141,7 +139,7 @@ const allowToCreateProject = computed(() =>
 );
 
 const tabList = computed(
-  (): { title: string; id: LocalTabType; list: ComposedProject[] }[] => [
+  (): { title: string; id: LocalTabType; list: Project[] }[] => [
     {
       title: t("common.recent"),
       id: "recent",
@@ -166,7 +164,7 @@ const actualSelectedTab = computed((): LocalState["selectedTab"] => {
   return state.selectedTab;
 });
 
-const onProjectSelect = (project: ComposedProject) => {
+const onProjectSelect = (project: Project) => {
   const route = router.resolve({
     name: PROJECT_V1_ROUTE_DETAIL,
     params: {

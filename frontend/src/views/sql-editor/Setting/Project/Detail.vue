@@ -74,8 +74,9 @@ import ProjectSettingPanel from "@/components/ProjectSettingPanel.vue";
 import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { PagedDatabaseTable } from "@/components/v2/Model/DatabaseV1Table";
-import { DEFAULT_PROJECT_NAME, type ComposedProject } from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 
 type LocalState = {
@@ -91,7 +92,7 @@ type LocalState = {
 };
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
 }>();
 
 const state = reactive<LocalState>({

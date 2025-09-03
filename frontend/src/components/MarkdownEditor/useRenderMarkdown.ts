@@ -1,9 +1,9 @@
 import { useEventListener } from "@vueuse/core";
 import { v1 as uuidv1 } from "uuid";
-import type { Ref } from "vue";
+import type { MaybeRef, Ref } from "vue";
 import { computed, ref, unref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import type { ComposedProject, MaybeRef } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { ExtractPromiseType } from "@/utils";
 import { extractProjectResourceName, minmax } from "@/utils";
 
@@ -22,7 +22,7 @@ const defaultOptions = (): UseRenderMarkdownOptions => ({
 export const useRenderMarkdown = (
   markdown: MaybeRef<string>,
   iframeRef: Ref<HTMLIFrameElement | undefined>,
-  projectRef: MaybeRef<ComposedProject | undefined> = ref(),
+  projectRef: MaybeRef<Project | undefined> = ref(),
   options: Partial<UseRenderMarkdownOptions> | undefined = undefined
 ) => {
   const windowName = uuidv1();

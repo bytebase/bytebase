@@ -92,7 +92,8 @@ import { NButton, NTooltip, NTabs, NTab } from "naive-ui";
 import { nextTick, ref, reactive, watch, toRef, onMounted } from "vue";
 import type { Component } from "vue";
 import { useI18n } from "vue-i18n";
-import type { ComposedIssue, ComposedProject } from "@/types";
+import { type ComposedIssue } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   activeTaskInRollout,
@@ -120,7 +121,7 @@ type EditorMode = "editor" | "preview";
 const props = defineProps<{
   content: string;
   mode: EditorMode;
-  project?: ComposedProject;
+  project?: Project;
   issueList: ComposedIssue[];
   placeholder?: string;
   autofocus?: boolean;

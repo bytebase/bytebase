@@ -84,7 +84,8 @@ import { TabFilter, type TabFilterItem } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { useCurrentUserV1 } from "@/store";
 import { useIssueV1Store, useRefreshIssueList } from "@/store";
-import type { ComposedProject, ComposedIssue } from "@/types";
+import type { ComposedIssue } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type {
   SearchParams,
   SearchScope,
@@ -119,7 +120,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
 }>();
 
 const me = useCurrentUserV1();

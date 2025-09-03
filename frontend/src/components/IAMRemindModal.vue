@@ -41,7 +41,12 @@ import { NButton, NCheckbox } from "naive-ui";
 import { computed, watch, reactive } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { BBModal } from "@/bbkit";
-import { useCurrentUserV1, useProjectV1Store, useRoleStore } from "@/store";
+import {
+  useCurrentUserV1,
+  useProjectV1Store,
+  useRoleStore,
+  useProjectIamPolicyStore,
+} from "@/store";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import {
   useDynamicLocalStorage,
@@ -74,6 +79,7 @@ const iamRemindState = useDynamicLocalStorage<
 );
 const projectStore = useProjectV1Store();
 const roleStore = useRoleStore();
+const projectIamPolicyStore = useProjectIamPolicyStore();
 
 const project = computed(() =>
   projectStore.getProjectByName(props.projectName)
@@ -88,8 +94,9 @@ const pendingExpireRoles = computed(
     role: Role;
     expiration: dayjs.Dayjs;
   }[] => {
+    const policy = projectIamPolicyStore.getProjectIamPolicy(props.projectName);
     const bindings = bindingListInIAM({
-      policy: project.value.iamPolicy,
+      policy,
       email: me.value.email,
       ignoreGroup: true,
     });

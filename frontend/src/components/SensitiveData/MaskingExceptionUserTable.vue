@@ -47,13 +47,13 @@ import {
   getGroupEmailInBinding,
   groupBindingPrefix,
   isValidDatabaseName,
-  type ComposedProject,
 } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import { MaskingExceptionPolicy_MaskingException_Action } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { MaskingExceptionPolicy_MaskingException } from "@/types/proto-es/v1/org_policy_service_pb";
 import { MaskingExceptionPolicySchema } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { autoDatabaseRoute, hasProjectPermissionV2 } from "@/utils";
 import {
   type ConditionExpression,
@@ -71,7 +71,7 @@ interface LocalState {
 const props = defineProps<{
   size: "small" | "medium";
   disabled: boolean;
-  project: ComposedProject;
+  project: Project;
   showDatabaseColumn: boolean;
   filterAccessUser: (accessUser: AccessUser) => boolean;
 }>();

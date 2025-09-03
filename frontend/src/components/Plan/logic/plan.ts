@@ -5,12 +5,12 @@ import {
   isValidDatabaseGroupName,
   isValidDatabaseName,
   unknownDatabase,
-  type ComposedProject,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
-export const databaseForSpec = (project: ComposedProject, spec: Plan_Spec) => {
+export const databaseForSpec = (project: Project, spec: Plan_Spec) => {
   const targets = targetsForSpec(spec);
   if (targets.length === 0) {
     return unknownDatabase();

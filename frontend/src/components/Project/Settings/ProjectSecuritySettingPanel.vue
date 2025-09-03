@@ -26,11 +26,11 @@ import AccessControlConfigure from "@/components/EnvironmentForm/AccessControlCo
 import RestrictIssueCreationConfigure from "@/components/GeneralSetting/RestrictIssueCreationConfigure.vue";
 import { SQLReviewForResource } from "@/components/SQLReview";
 import { useAppFeature } from "@/store";
-import type { ComposedProject } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 
 defineProps<{
-  project: ComposedProject;
+  project: Project;
   allowEdit: boolean;
 }>();
 
