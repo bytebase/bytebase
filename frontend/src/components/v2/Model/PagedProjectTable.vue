@@ -23,7 +23,7 @@ import { ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { useProjectV1Store, type ProjectFilter } from "@/store";
-import { type ComposedProject } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import ProjectV1Table from "./ProjectV1Table.vue";
 
 const props = withDefaults(
@@ -45,8 +45,7 @@ const emit = defineEmits<{
 
 const projectStore = useProjectV1Store();
 
-const projectPagedTable =
-  ref<ComponentExposed<typeof PagedTable<ComposedProject>>>();
+const projectPagedTable = ref<ComponentExposed<typeof PagedTable<Project>>>();
 
 const updateSelectedProjectNames = (projectNames: string[]) => {
   emit("update:selected-project-names", projectNames);

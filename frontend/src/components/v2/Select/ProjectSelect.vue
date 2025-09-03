@@ -28,7 +28,6 @@ import { computed, watchEffect, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { useProjectV1Store, usePermissionStore } from "@/store";
-import type { ComposedProject } from "@/types";
 import {
   unknownProject,
   defaultProject,
@@ -51,7 +50,7 @@ const props = withDefaults(
     includeDefaultProject?: boolean;
     multiple?: boolean;
     renderSuffix?: (project: string) => string;
-    filter?: (project: ComposedProject, index: number) => boolean;
+    filter?: (project: Project, index: number) => boolean;
     defaultSelectFirst?: boolean;
   }>(),
   {
@@ -75,7 +74,7 @@ const emit = defineEmits<{
 
 interface LocalState {
   loading: boolean;
-  rawProjectList: ComposedProject[];
+  rawProjectList: Project[];
 }
 
 const { t } = useI18n();
@@ -175,7 +174,7 @@ onMounted(async () => {
 
 const options = computed(
   (): {
-    resource: ComposedProject;
+    resource: Project;
     value: string;
     label: string;
   }[] => {

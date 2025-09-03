@@ -138,7 +138,7 @@ import {
   batchGetOrFetchDatabases,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { dialectOfEngineV1, isValidProjectName, unknownProject } from "@/types";
+import { unknownProject, isValidProjectName, dialectOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";

@@ -58,9 +58,9 @@ import {
   instanceNamePrefix,
   environmentNamePrefix,
 } from "@/store/modules/v1/common";
-import type { ComposedDatabase, ComposedProject } from "@/types";
-import { isValidDatabaseName } from "@/types";
+import { isValidDatabaseName, type ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { SearchParams, SearchScope } from "@/utils";
 import {
   CommonFilterScopeIdList,
@@ -79,7 +79,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
 }>();
 
 const readonlyScopes = computed((): SearchScope[] => [

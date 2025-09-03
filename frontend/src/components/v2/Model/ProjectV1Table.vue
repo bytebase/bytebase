@@ -8,7 +8,7 @@
     :striped="true"
     :bordered="bordered"
     :loading="loading"
-    :row-key="(data: ComposedProject) => data.name"
+    :row-key="(data: Project) => data.name"
     :checked-row-keys="shouldShowSelection ? selectedProjectNames : undefined"
     :row-props="rowProps"
     :paginate-single-page="false"
@@ -26,18 +26,18 @@ import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { getProjectName } from "@/store/modules/v1/common";
-import type { ComposedProject } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import HighlightLabelText from "./HighlightLabelText.vue";
 
-type ProjectDataTableColumn = DataTableColumn<ComposedProject> & {
+type ProjectDataTableColumn = DataTableColumn<Project> & {
   hide?: boolean;
 };
 
 const props = withDefaults(
   defineProps<{
-    projectList: ComposedProject[];
-    currentProject?: ComposedProject;
+    projectList: Project[];
+    currentProject?: Project;
     bordered?: boolean;
     loading?: boolean;
     keyword?: string;
@@ -58,7 +58,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "row-click", project: ComposedProject): void;
+  (event: "row-click", project: Project): void;
   (event: "update:selected-project-names", projectNames: string[]): void;
 }>();
 
@@ -86,7 +86,7 @@ const columnList = computed((): ProjectDataTableColumn[] => {
         width: !shouldShowSelection.value ? 32 : undefined,
         hide: !shouldShowSelection.value && !props.currentProject,
         disabled: shouldShowSelection.value
-          ? (project: ComposedProject) => {
+          ? (project: Project) => {
               // Disable selection for default project
               return extractProjectResourceName(project.name) === "default";
             }
@@ -140,7 +140,7 @@ const columnList = computed((): ProjectDataTableColumn[] => {
   ).filter((column) => !column.hide);
 });
 
-const rowProps = (project: ComposedProject) => {
+const rowProps = (project: Project) => {
   return {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {

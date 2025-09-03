@@ -12,7 +12,7 @@ import {
 import { isDatabaseChangeSpec, targetsForSpec } from "@/components/Plan/logic";
 import { planServiceClientConnect } from "@/grpcweb";
 import { useCurrentUserV1, extractUserId, useDatabaseV1Store } from "@/store";
-import { isValidDatabaseName, type ComposedProject } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { IssueStatus, type Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
@@ -21,6 +21,7 @@ import {
   type Plan,
   type Plan_Spec,
 } from "@/types/proto-es/v1/plan_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Task, Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { flattenTaskV1List, hasProjectPermissionV2 } from "@/utils";
@@ -44,7 +45,7 @@ export const usePreBackupSettingContext = () => {
 
 export const providePreBackupSettingContext = (refs: {
   isCreating: Ref<boolean>;
-  project: Ref<ComposedProject>;
+  project: Ref<Project>;
   plan: Ref<Plan>;
   selectedSpec: Ref<Plan_Spec | undefined>;
   selectedTask?: Ref<Task | undefined>;

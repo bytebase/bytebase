@@ -5,15 +5,15 @@ import { State } from "../proto-es/v1/common_pb";
 import type { Database } from "../proto-es/v1/database_service_pb";
 import { DatabaseSchema$ } from "../proto-es/v1/database_service_pb";
 import type { InstanceResource } from "../proto-es/v1/instance_service_pb";
+import type { Project } from "../proto-es/v1/project_service_pb";
 import type { Environment } from "../v1/environment";
 import { formatEnvironmentName, unknownEnvironment } from "./environment";
 import { unknownInstance, unknownInstanceResource } from "./instance";
-import type { ComposedProject } from "./project";
 import { unknownProject } from "./project";
 
 export interface ComposedDatabase extends Database {
   /** related project entity */
-  projectEntity: ComposedProject;
+  projectEntity: Project;
   /** extracted database name */
   databaseName: string;
   /** instance name. Format: instances/{instance} */

@@ -68,13 +68,13 @@ import {
   UNKNOWN_ID,
   getDateForPbTimestampProtoEs,
   isValidDatabaseName,
-  type ComposedProject,
 } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
   Changelog_Status,
   Changelog_Type,
 } from "@/types/proto-es/v1/database_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   extractChangelogUID,
   isValidChangelogName,
@@ -89,7 +89,7 @@ const ALLOWED_CHANGELOG_TYPES: Changelog_Type[] = [
 ];
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
   sourceSchema?: ChangelogSourceSchema;
 }>();
 

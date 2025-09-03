@@ -89,10 +89,10 @@ import {
   useDatabaseV1Store,
   useStorageStore,
 } from "@/store";
-import type { ComposedProject } from "@/types";
 import { isValidDatabaseName, isValidEnvironmentName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { ChangelogView } from "@/types/proto-es/v1/database_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { extractProjectResourceName, generateIssueTitle } from "@/utils";
 import {
   extractDatabaseNameAndChangelogUID,
@@ -120,7 +120,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
 }>();
 
 const { t } = useI18n();

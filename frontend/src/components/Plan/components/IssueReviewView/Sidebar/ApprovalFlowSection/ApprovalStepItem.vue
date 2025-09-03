@@ -80,6 +80,7 @@ import {
   useUserStore,
   useCurrentProjectV1,
   useGroupStore,
+  useProjectIamPolicyStore,
 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import { SYSTEM_BOT_EMAIL, groupBindingPrefix } from "@/types";
@@ -108,6 +109,7 @@ const { project } = useCurrentProjectV1();
 const groupStore = useGroupStore();
 const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
+const projectIamPolicyStore = useProjectIamPolicyStore();
 const currentUserEmail = computed(() => currentUser.value.email);
 
 // Get the approver for this specific step
@@ -200,7 +202,10 @@ watchEffect(async () => {
   const groupNames = new Set<string>();
 
   for (const role of stepRoles.value) {
-    for (const binding of project.value.iamPolicy.bindings) {
+    const policy = projectIamPolicyStore.getProjectIamPolicy(
+      project.value.name
+    );
+    for (const binding of policy.bindings) {
       if (binding.role !== role || isBindingPolicyExpired(binding)) {
         continue;
       }
@@ -224,10 +229,10 @@ const candidateEmails = computed(() => {
 
   for (const role of stepRoles.value) {
     // Get users with this role from project IAM policy
-    const memberMap = memberMapToRolesInProjectIAM(
-      project.value.iamPolicy,
-      role
+    const policy = projectIamPolicyStore.getProjectIamPolicy(
+      project.value.name
     );
+    const memberMap = memberMapToRolesInProjectIAM(policy, role);
     candidates.push(...memberMap.keys());
   }
 

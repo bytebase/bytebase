@@ -56,7 +56,7 @@ import {
   instanceNamePrefix,
   environmentNamePrefix,
 } from "@/store/modules/v1/common";
-import type { ComposedProject } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   CommonFilterScopeIdList,
   extractProjectResourceName,
@@ -67,7 +67,7 @@ import { useCommonSearchScopeOptions } from "../AdvancedSearch/useCommonSearchSc
 import type { DatabaseSelectState } from "./types";
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
   value?: DatabaseSelectState;
 }>();
 

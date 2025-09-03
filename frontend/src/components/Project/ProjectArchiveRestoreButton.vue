@@ -50,12 +50,12 @@ import ResourceHardDeleteButton from "@/components/v2/Button/ResourceHardDeleteB
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_ARCHIVE } from "@/router/dashboard/workspaceSetting";
 import { useProjectV1Store } from "@/store";
-import type { ComposedProject } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
 }>();
 
 const projectV1Store = useProjectV1Store();

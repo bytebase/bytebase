@@ -13,12 +13,10 @@ import {
   unknownStage,
   EMPTY_ID,
   UNKNOWN_ID,
-} from "@/types";
-import {
   isValidDatabaseName,
   unknownDatabase,
-  type ComposedProject,
 } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   Task_Type,
   TaskRun_Status,
@@ -293,7 +291,7 @@ export const getStageStatus = (stage: Stage): Task_Status => {
   return Task_Status.NOT_STARTED;
 };
 
-export const databaseForTask = (project: ComposedProject, task: Task) => {
+export const databaseForTask = (project: Project, task: Task) => {
   switch (task.type) {
     case Task_Type.DATABASE_CREATE:
       // The database is not created yet.
