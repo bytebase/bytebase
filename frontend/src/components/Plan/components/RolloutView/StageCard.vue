@@ -12,17 +12,18 @@
       "
       @click="isCreated && handleClickStageTitle()"
     >
-      <div class="flex items-start justify-between gap-4">
-        <!-- Left side: Stage title and status counts -->
-        <div class="flex-1 flex items-start gap-2">
+      <div
+        class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4"
+      >
+        <!-- Top/Left section: Stage info -->
+        <div class="flex items-start justify-between gap-2">
+          <!-- Stage title and status -->
           <div class="flex items-start gap-2">
             <TaskStatus :status="stageStatus" size="medium" />
             <div class="flex flex-col gap-1">
-              <h3
-                class="text-base font-medium text-gray-900 whitespace-nowrap truncate"
-              >
+              <h3 class="text-base font-medium text-gray-900 truncate">
                 <EnvironmentV1Name
-                  class="inline-block w-24"
+                  class="inline-block sm:w-24"
                   :environment="environment"
                   :link="false"
                   :null-environment-placeholder="'Null'"
@@ -35,152 +36,137 @@
             </div>
           </div>
 
-          <!-- Tasks and task status counts -->
-          <div v-if="isCreated" class="flex-1 flex flex-col">
-            <!-- Task status counts -->
-            <div class="flex items-center gap-2 flex-wrap">
-              <template v-for="status in TASK_STATUS_FILTERS" :key="status">
-                <NTag
-                  v-if="getTaskCount(status) > 0"
-                  round
-                  size="medium"
-                  :type="
-                    status === Task_Status.RUNNING
-                      ? 'info'
-                      : status === Task_Status.FAILED
-                        ? 'error'
-                        : 'default'
-                  "
-                  class="cursor-pointer hover:opacity-80 transition-opacity"
-                  @click.stop="handleTaskStatusClick(status)"
-                >
-                  <template #avatar>
-                    <TaskStatus :status="status" size="small" disabled />
-                  </template>
-                  <div class="flex flex-row items-center gap-2">
-                    <span class="select-none text-base">{{
-                      stringifyTaskStatus(status)
-                    }}</span>
-                    <span class="select-none text-base font-medium">{{
-                      getTaskCount(status)
-                    }}</span>
-                  </div>
-                </NTag>
-              </template>
-              <!-- Toggle button for tasks -->
-              <NButton
-                v-if="filteredTasks.length > 0"
-                quaternary
-                round
-                size="small"
-                class="!px-2"
-                @click.stop="showTasks = !showTasks"
-              >
-                <template #icon>
-                  <ChevronDownIcon v-if="!showTasks" class="text-gray-500" />
-                  <ChevronUpIcon v-else class="text-gray-500" />
-                </template>
-              </NButton>
-            </div>
-            <!-- Tasks -->
-            <div
-              v-if="filteredTasks.length > 0 && showTasks"
-              class="mt-2 flex flex-row gap-2 flex-wrap"
-            >
-              <NTag
-                v-for="task in displayedTasks"
-                :key="task.name"
-                round
-                size="small"
-                :bordered="false"
-                @click.stop="handleTaskClick(task)"
-              >
-                <template #avatar>
-                  <TaskStatus :status="task.status" size="tiny" disabled />
-                </template>
-                <div class="flex items-center flex-nowrap gap-2">
-                  <DatabaseDisplay :database="task.target" />
-                  <template v-if="task.runTime">
-                    <span class="font-mono text-control-light opacity-80"
-                      >/</span
-                    >
-                    <NTooltip>
-                      <template #trigger>
-                        <div class="flex items-center gap-1">
-                          <CalendarClockIcon
-                            :size="14"
-                            class="text-control-light"
-                          />
-                          <span class="text-control">{{
-                            humanizeTs(
-                              getTimeForPbTimestampProtoEs(task.runTime, 0) /
-                                1000
-                            )
-                          }}</span>
-                        </div>
-                      </template>
-                      <div class="space-y-1">
-                        <div class="text-sm opacity-80">
-                          {{ $t("task.scheduled-time") }}
-                        </div>
-                        <div class="text-sm whitespace-nowrap">
-                          {{ formatFullDateTime(task.runTime) }}
-                        </div>
-                      </div>
-                    </NTooltip>
-                  </template>
-                </div>
-              </NTag>
-              <NTag
-                v-if="remainingTaskCount > 0"
-                round
-                size="small"
-                type="default"
-                :bordered="false"
-                class="opacity-80"
-                :class="isCreated && 'cursor-pointer hover:opacity-100'"
-                @click.stop="handleClickStageTitle()"
-              >
-                +{{ remainingTaskCount }} more
-              </NTag>
-            </div>
+          <!-- Mobile action buttons -->
+          <div class="sm:hidden flex items-center">
+            <StageActions
+              :is-created="isCreated"
+              :runable-tasks="runableTasks"
+              :can-run-tasks="canRunTasks"
+              :can-create-rollout="canCreateRollout"
+              @run-tasks="handleRunAllTasks"
+              @create-rollout="createRolloutToStage"
+            />
           </div>
         </div>
 
-        <!-- Right side: Actions -->
-        <div class="flex justify-end items-center">
-          <NButton
-            v-if="isCreated && runableTasks.length > 0"
-            size="small"
-            :disabled="!canRunTasks"
-            @click.stop="handleRunAllTasks"
-          >
-            <template #icon>
-              <PlayIcon />
-            </template>
-            {{ $t("common.run") }}
-          </NButton>
-          <NPopconfirm
-            v-else-if="!isCreated && canCreateRollout"
-            :negative-text="null"
-            :positive-text="$t('common.confirm')"
-            @positive-click="createRolloutToStage"
-          >
-            <template #trigger>
-              <NTooltip>
-                <template #trigger>
-                  <NButton :size="'small'">
-                    <template #icon>
-                      <CircleFadingPlusIcon class="w-5 h-5" />
-                    </template>
-                    {{ $t("common.start") }}
-                  </NButton>
+        <!-- Bottom/Center section: Tasks -->
+        <div v-if="isCreated" class="flex flex-col sm:flex-1">
+          <!-- Task status counts -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <template v-for="status in TASK_STATUS_FILTERS" :key="status">
+              <NTag
+                v-if="getTaskCount(status) > 0"
+                round
+                size="medium"
+                :type="
+                  status === Task_Status.RUNNING
+                    ? 'info'
+                    : status === Task_Status.FAILED
+                      ? 'error'
+                      : 'default'
+                "
+                class="cursor-pointer hover:opacity-80 transition-opacity"
+                @click.stop="handleTaskStatusClick(status)"
+              >
+                <template #avatar>
+                  <TaskStatus :status="status" size="small" disabled />
                 </template>
-                {{ $t("rollout.stage.start-stage") }}
-              </NTooltip>
+                <div class="flex flex-row items-center gap-2">
+                  <span class="select-none text-base">{{
+                    stringifyTaskStatus(status)
+                  }}</span>
+                  <span class="select-none text-base font-medium">{{
+                    getTaskCount(status)
+                  }}</span>
+                </div>
+              </NTag>
             </template>
-            {{ $t("common.confirm-and-add") }}
-          </NPopconfirm>
+            <!-- Toggle button for tasks -->
+            <NButton
+              v-if="filteredTasks.length > 0"
+              quaternary
+              round
+              size="small"
+              class="!px-2"
+              @click.stop="showTasks = !showTasks"
+            >
+              <template #icon>
+                <ChevronDownIcon v-if="!showTasks" class="text-gray-500" />
+                <ChevronUpIcon v-else class="text-gray-500" />
+              </template>
+            </NButton>
+          </div>
+          <!-- Tasks -->
+          <div
+            v-if="filteredTasks.length > 0 && showTasks"
+            class="mt-2 flex flex-row gap-2 flex-wrap"
+          >
+            <NTag
+              v-for="task in displayedTasks"
+              :key="task.name"
+              round
+              size="small"
+              :bordered="false"
+              @click.stop="handleTaskClick(task)"
+            >
+              <template #avatar>
+                <TaskStatus :status="task.status" size="tiny" disabled />
+              </template>
+              <div class="flex items-center flex-nowrap gap-2">
+                <DatabaseDisplay :database="task.target" />
+                <template v-if="task.runTime">
+                  <span class="font-mono text-control-light opacity-80">/</span>
+                  <NTooltip>
+                    <template #trigger>
+                      <div class="flex items-center gap-1">
+                        <CalendarClockIcon
+                          :size="14"
+                          class="text-control-light"
+                        />
+                        <span class="text-control">{{
+                          humanizeTs(
+                            getTimeForPbTimestampProtoEs(task.runTime, 0) / 1000
+                          )
+                        }}</span>
+                      </div>
+                    </template>
+                    <div class="space-y-1">
+                      <div class="text-sm opacity-80">
+                        {{ $t("task.scheduled-time") }}
+                      </div>
+                      <div class="text-sm whitespace-nowrap">
+                        {{ formatFullDateTime(task.runTime) }}
+                      </div>
+                    </div>
+                  </NTooltip>
+                </template>
+              </div>
+            </NTag>
+            <NTag
+              v-if="remainingTaskCount > 0"
+              round
+              size="small"
+              type="default"
+              :bordered="false"
+              class="opacity-80"
+              :class="isCreated && 'cursor-pointer hover:opacity-100'"
+              @click.stop="handleClickStageTitle()"
+            >
+              +{{ remainingTaskCount }} more
+            </NTag>
+          </div>
+        </div>
+
+        <!-- Desktop action buttons -->
+        <div class="hidden sm:flex justify-end items-start">
+          <StageActions
+            :is-created="isCreated"
+            :runable-tasks="runableTasks"
+            :can-run-tasks="canRunTasks"
+            :can-create-rollout="canCreateRollout"
+            @run-tasks="handleRunAllTasks"
+            @create-rollout="createRolloutToStage"
+          />
         </div>
       </div>
     </div>
@@ -191,13 +177,11 @@
 import type { Timestamp as TimestampPb } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import {
-  CircleFadingPlusIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   CalendarClockIcon,
-  PlayIcon,
 } from "lucide-vue-next";
-import { NTooltip, NButton, NPopconfirm, NTag } from "naive-ui";
+import { NTooltip, NButton, NTag } from "naive-ui";
 import { twMerge } from "tailwind-merge";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
@@ -229,6 +213,7 @@ import {
   humanizeTs,
 } from "@/utils";
 import { usePlanContextWithRollout } from "../../logic";
+import StageActions from "./StageActions.vue";
 import { useTaskActionPermissions } from "./taskPermissions";
 
 const props = defineProps<{

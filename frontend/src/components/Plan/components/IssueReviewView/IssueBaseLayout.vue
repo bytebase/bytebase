@@ -1,31 +1,63 @@
 <template>
-  <div class="flex-1 flex w-full border-t -mt-px">
+  <div ref="containerRef" class="flex-1 flex w-full border-t -mt-px">
     <!-- Left Panel - Activity -->
     <div class="flex-1 shrink p-4 space-y-4">
       <slot />
       <ActivitySection />
     </div>
 
-    <div class="w-80 shrink-0 flex flex-col border-l">
+    <!-- Desktop Sidebar -->
+    <div
+      v-if="sidebarMode === 'DESKTOP'"
+      class="shrink-0 flex flex-col border-l"
+      :style="{
+        width: `${desktopSidebarWidth}px`,
+      }"
+    >
       <Sidebar />
     </div>
+
+    <!-- Mobile Sidebar -->
+    <template v-if="sidebarMode === 'MOBILE'">
+      <Drawer :show="mobileSidebarOpen" @close="mobileSidebarOpen = false">
+        <div
+          style="
+            min-width: 240px;
+            width: 80vw;
+            max-width: 320px;
+            padding: 0.5rem;
+          "
+        >
+          <Sidebar />
+        </div>
+      </Drawer>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, unref } from "vue";
+import { computed, ref, unref } from "vue";
 import { provideIssueContext, useBaseIssueContext } from "@/components/IssueV1";
+import { Drawer } from "@/components/v2";
 import { extractUserId, useCurrentProjectV1, useCurrentUserV1 } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContextWithIssue } from "../..";
+import { useSidebarContext } from "../../logic/sidebar";
 import { ActivitySection } from "./ActivitySection";
 import { Sidebar } from "./Sidebar";
 
 const { project, ready } = useCurrentProjectV1();
 const { plan, issue, rollout } = usePlanContextWithIssue();
 const currentUser = useCurrentUserV1();
+const containerRef = ref<HTMLElement>();
+
+const {
+  mode: sidebarMode,
+  desktopSidebarWidth,
+  mobileSidebarOpen,
+} = useSidebarContext();
 
 const issueBaseContext = useBaseIssueContext({
   // Always set to false.

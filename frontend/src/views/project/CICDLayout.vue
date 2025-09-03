@@ -1,5 +1,5 @@
 <template>
-  <div class="relative overflow-x-hidden h-full">
+  <div ref="containerRef" class="relative overflow-x-hidden h-full">
     <template v-if="ready">
       <PollerProvider>
         <div class="h-full flex flex-col">
@@ -78,6 +78,7 @@ import PollerProvider from "@/components/Plan/PollerProvider.vue";
 import { HeaderSection } from "@/components/Plan/components";
 import RefreshIndicator from "@/components/Plan/components/RefreshIndicator.vue";
 import { provideIssueReviewContext } from "@/components/Plan/logic/issue-review";
+import { provideSidebarContext } from "@/components/Plan/logic/sidebar";
 import { useNavigationGuard } from "@/components/Plan/logic/useNavigationGuard";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { useBodyLayoutContext } from "@/layouts/common";
@@ -136,6 +137,7 @@ const planBaseContext = useBasePlanContext({
 });
 const { enabledNewLayout } = useIssueLayoutVersion();
 const isLoading = ref(true);
+const containerRef = ref<HTMLElement>();
 
 const ready = computed(() => {
   return !isInitializing.value && !!plan.value && !isLoading.value;
@@ -166,6 +168,8 @@ providePlanContext({
 });
 
 provideIssueReviewContext(computed(() => issue.value));
+
+provideSidebarContext(containerRef);
 
 watch(
   () => isInitializing.value,
