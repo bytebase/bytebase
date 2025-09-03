@@ -249,7 +249,7 @@ func (s *Store) UpdateTaskRunStartAt(ctx context.Context, taskRunID int) error {
 }
 
 // CreatePendingTaskRuns creates pending task runs.
-func (s *Store) CreatePendingTaskRuns(ctx context.Context, creates ...*TaskRunMessage) error {
+func (s *Store) CreatePendingTaskRuns(ctx context.Context, creatorID int, creates ...*TaskRunMessage) error {
 	if len(creates) == 0 {
 		return nil
 	}
@@ -282,7 +282,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creates ...*TaskRunMe
 		return errors.Errorf("cannot create pending task runs because there are pending/running/done task runs")
 	}
 
-	if err := s.createPendingTaskRunsTx(ctx, tx, attempts, creates); err != nil {
+	if err := s.createPendingTaskRunsTx(ctx, tx, creatorID, attempts, creates); err != nil {
 		return errors.Wrapf(err, "failed to create pending task runs")
 	}
 
@@ -324,16 +324,44 @@ func (*Store) getTaskNextAttempt(ctx context.Context, txn *sql.Tx, taskIDs []int
 	return attempts, nil
 }
 
-func (s *Store) createPendingTaskRunsTx(ctx context.Context, txn *sql.Tx, attempts []int, creates []*TaskRunMessage) error {
+func (*Store) createPendingTaskRunsTx(ctx context.Context, txn *sql.Tx, creatorID int, attempts []int, creates []*TaskRunMessage) error {
 	if len(attempts) != len(creates) {
 		return errors.Errorf("length of attempts and creates are different")
 	}
+	var taskUIDs []int
+	var sheetUIDs []*int
+	var runAts []*time.Time
+	for _, create := range creates {
+		taskUIDs = append(taskUIDs, create.TaskUID)
+		sheetUIDs = append(sheetUIDs, create.SheetUID)
+		runAts = append(runAts, create.RunAt)
+	}
 
-	// TODO(p0ny): batch create.
-	for i, create := range creates {
-		if err := s.createTaskRunImpl(ctx, txn, create, attempts[i], storepb.TaskRun_PENDING, create.CreatorID); err != nil {
-			return err
-		}
+	query := `
+		INSERT INTO task_run (
+			creator_id,
+			task_id,
+			sheet_id,
+			run_at,
+			attempt,
+			status
+		) SELECT
+			$1,
+			unnest(CAST($2 AS INTEGER[])),
+			unnest(CAST($3 AS INTEGER[])),
+			unnest(CAST($4 AS TIMESTAMPTZ[])),
+			unnest(CAST($5 AS INTEGER[])),
+			$6
+	`
+	if _, err := txn.ExecContext(ctx, query,
+		creatorID,
+		taskUIDs,
+		sheetUIDs,
+		runAts,
+		attempts,
+		storepb.TaskRun_PENDING.String(),
+	); err != nil {
+		return errors.Wrapf(err, "failed to create pending task runs")
 	}
 	return nil
 }
@@ -356,31 +384,6 @@ func (*Store) checkTaskRunsExist(ctx context.Context, txn *sql.Tx, taskIDs []int
 	}
 
 	return exist, nil
-}
-
-// createTaskRunImpl creates a new taskRun.
-func (*Store) createTaskRunImpl(ctx context.Context, txn *sql.Tx, create *TaskRunMessage, attempt int, status storepb.TaskRun_Status, creatorID int) error {
-	query := `
-		INSERT INTO task_run (
-			creator_id,
-			task_id,
-			sheet_id,
-			run_at,
-			attempt,
-			status
-		) VALUES ($1, $2, $3, $4, $5, $6)
-	`
-	if _, err := txn.ExecContext(ctx, query,
-		creatorID,
-		create.TaskUID,
-		create.SheetUID,
-		create.RunAt,
-		attempt,
-		status.String(),
-	); err != nil {
-		return err
-	}
-	return nil
 }
 
 // patchTaskRunStatusImpl updates a taskRun status. Returns the new state of the taskRun after update.
