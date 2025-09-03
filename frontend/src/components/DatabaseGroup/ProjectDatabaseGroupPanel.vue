@@ -14,7 +14,8 @@ import DatabaseGroupDataTable from "@/components/DatabaseGroup/DatabaseGroupData
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { useDBGroupListByProject } from "@/store";
 import { getProjectNameAndDatabaseGroupName } from "@/store/modules/v1/common";
-import type { ComposedDatabaseGroup, ComposedProject } from "@/types";
+import type { ComposedProject } from "@/types";
+import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -41,7 +42,7 @@ const filteredDbGroupList = computed(() => {
 
 const handleDatabaseGroupClick = (
   event: MouseEvent,
-  databaseGroup: ComposedDatabaseGroup
+  databaseGroup: DatabaseGroup
 ) => {
   const [projectId, databaseGroupName] = getProjectNameAndDatabaseGroupName(
     databaseGroup.name
