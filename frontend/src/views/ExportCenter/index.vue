@@ -37,7 +37,7 @@
         :fetch-list="fetchIssueList"
       >
         <template #table="{ list, loading }">
-          <DataExportIssueDataTable
+          <IssueTableV1
             :loading="loading"
             :issue-list="list"
             :highlight-text="state.params.query"
@@ -66,6 +66,7 @@ import { computed, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import DataExportPrepForm from "@/components/DataExportPrepForm";
 import IssueSearch from "@/components/IssueV1/components/IssueSearch/IssueSearch.vue";
+import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import { Drawer } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import {
@@ -85,7 +86,6 @@ import {
   type SearchScope,
   type SearchScopeId,
 } from "@/utils";
-import DataExportIssueDataTable from "./DataExportIssueDataTable";
 
 const props = defineProps<{
   projectId: string;
@@ -179,14 +179,11 @@ const fetchIssueList = async ({
   pageToken: string;
   pageSize: number;
 }) => {
-  const { nextPageToken, issues } = await issueStore.listIssues(
-    {
-      find: mergedIssueFilter.value,
-      pageSize,
-      pageToken,
-    },
-    { withRollout: true }
-  );
+  const { nextPageToken, issues } = await issueStore.listIssues({
+    find: mergedIssueFilter.value,
+    pageSize,
+    pageToken,
+  });
   return {
     nextPageToken,
     list: issues,
