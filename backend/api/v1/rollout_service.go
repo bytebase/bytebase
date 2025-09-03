@@ -704,8 +704,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		}
 
 		create := &store.TaskRunMessage{
-			TaskUID:   task.ID,
-			CreatorID: user.ID,
+			TaskUID: task.ID,
 		}
 		if task.Payload.GetSheetId() != 0 {
 			sheetUID := int(task.Payload.GetSheetId())
@@ -721,7 +720,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		return a.TaskUID - b.TaskUID
 	})
 
-	if err := s.store.CreatePendingTaskRuns(ctx, taskRunCreates...); err != nil {
+	if err := s.store.CreatePendingTaskRuns(ctx, user.ID, taskRunCreates...); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create pending task runs, error %v", err))
 	}
 
