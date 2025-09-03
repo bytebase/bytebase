@@ -165,13 +165,10 @@ import { useRoute } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
-import {
-  isValidDatabaseName,
-  type ComposedDatabase,
-  type ComposedProject,
-} from "@/types";
+import { isValidDatabaseName, type ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DiffSchemaRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import DiffViewPanel from "./DiffViewPanel.vue";
 import SourceSchemaInfo from "./SourceSchemaInfo.vue";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
@@ -187,7 +184,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
   sourceSchemaString: string;
   sourceEngine: Engine;
   changelogSourceSchema?: ChangelogSourceSchema;

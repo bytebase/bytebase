@@ -1,8 +1,6 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto-es/v1/common_pb";
-import type { IamPolicy } from "../proto-es/v1/iam_policy_pb";
-import { IamPolicySchema } from "../proto-es/v1/iam_policy_pb";
 import type { Project } from "../proto-es/v1/project_service_pb";
 import { ProjectSchema } from "../proto-es/v1/project_service_pb";
 
@@ -11,22 +9,15 @@ export const EMPTY_PROJECT_NAME = `projects/${EMPTY_ID}`;
 export const UNKNOWN_PROJECT_NAME = `projects/${UNKNOWN_ID}`;
 export const DEFAULT_PROJECT_NAME = "projects/default";
 
-export interface ComposedProject extends Project {
-  iamPolicy: IamPolicy;
-}
-
-export const emptyProject = (): ComposedProject => {
-  return {
-    ...createProto(ProjectSchema, {
-      name: EMPTY_PROJECT_NAME,
-      title: "",
-      state: State.ACTIVE,
-    }),
-    iamPolicy: createProto(IamPolicySchema, {}),
-  };
+export const emptyProject = (): Project => {
+  return createProto(ProjectSchema, {
+    name: EMPTY_PROJECT_NAME,
+    title: "",
+    state: State.ACTIVE,
+  });
 };
 
-export const unknownProject = (): ComposedProject => {
+export const unknownProject = (): Project => {
   return {
     ...emptyProject(),
     name: UNKNOWN_PROJECT_NAME,
@@ -34,7 +25,7 @@ export const unknownProject = (): ComposedProject => {
   };
 };
 
-export const defaultProject = (): ComposedProject => {
+export const defaultProject = (): Project => {
   return {
     ...unknownProject(),
     name: DEFAULT_PROJECT_NAME,

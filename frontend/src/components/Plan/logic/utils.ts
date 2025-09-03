@@ -1,11 +1,11 @@
 import { t } from "@/plugins/i18n";
 import { useProjectV1Store } from "@/store";
-import type { ComposedProject } from "@/types";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { extractProjectResourceName } from "@/utils";
 
-export const projectOfPlan = (plan: Plan): ComposedProject => {
+export const projectOfPlan = (plan: Plan): Project => {
   const project = `projects/${extractProjectResourceName(plan.name)}`;
   return useProjectV1Store().getProjectByName(project);
 };

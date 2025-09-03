@@ -157,11 +157,11 @@ import {
   pushNotification,
   batchGetOrFetchDatabases,
 } from "@/store";
-import type { ComposedProject, DatabaseResource } from "@/types";
-import { PresetRoleType, PRESET_ROLES } from "@/types";
+import { PresetRoleType, PRESET_ROLES, type DatabaseResource } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   displayRoleTitle,
   hasProjectPermissionV2,
@@ -187,7 +187,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
   binding: MemberBinding;
 }>();
 

@@ -14,11 +14,7 @@ import {
   resolveCELExpr,
   wrapAsGroup,
 } from "@/plugins/cel";
-import type {
-  ComposedDatabase,
-  ComposedDatabaseGroup,
-  ComposedProject,
-} from "@/types";
+import type { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type {
   DatabaseGroup,
@@ -33,6 +29,7 @@ import {
   DatabaseGroupView as DatabaseGroupViewEnum,
   DatabaseGroupSchema,
 } from "@/types/proto-es/v1/database_group_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
@@ -318,7 +315,7 @@ export const useDBGroupListByProject = (project: MaybeRef<string>) => {
 };
 
 export const useDatabaseInGroupFilter = (
-  project: MaybeRef<ComposedProject>,
+  project: MaybeRef<Project>,
   referenceDatabase: MaybeRef<ComposedDatabase | undefined>
 ) => {
   const isPreparingDatabaseGroups = ref(false);

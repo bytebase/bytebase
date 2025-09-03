@@ -14,10 +14,11 @@ import DatabaseGroupDataTable from "@/components/DatabaseGroup/DatabaseGroupData
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { useDBGroupListByProject } from "@/store";
 import { getProjectNameAndDatabaseGroupName } from "@/store/modules/v1/common";
-import type { ComposedDatabaseGroup, ComposedProject } from "@/types";
+import type { ComposedDatabaseGroup } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
   filter: string;
 }>();
 

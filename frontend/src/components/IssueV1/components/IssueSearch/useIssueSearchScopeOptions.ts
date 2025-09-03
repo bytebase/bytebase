@@ -17,7 +17,7 @@ import {
   useProjectV1Store,
   useUserStore,
 } from "@/store";
-import { SYSTEM_BOT_USER_NAME, UNKNOWN_ID, isValidProjectName } from "@/types";
+import { isValidProjectName, SYSTEM_BOT_USER_NAME, UNKNOWN_ID } from "@/types";
 import { type Label } from "@/types/proto-es/v1/project_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import type { SearchParams, SearchScopeId } from "@/utils";

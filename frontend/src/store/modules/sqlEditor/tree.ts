@@ -3,7 +3,6 @@ import { defineStore } from "pinia";
 import { computed, reactive, ref } from "vue";
 import type {
   ComposedDatabase,
-  ComposedProject,
   SQLEditorTreeFactor as Factor,
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeNodeTarget as NodeTarget,
@@ -17,6 +16,7 @@ import {
   formatEnvironmentName,
 } from "@/types";
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Environment } from "@/types/v1/environment";
 import { getSemanticLabelValue, groupBy } from "@/utils";
 import { useEnvironmentV1Store, useInstanceResourceByName } from "../v1";
@@ -77,8 +77,7 @@ export const idForSQLEditorTreeNodeTarget = <T extends NodeType>(
   target: NodeTarget<T>
 ) => {
   if (type === "instance" || type === "database") {
-    return (target as ComposedProject | InstanceResource | ComposedDatabase)
-      .name;
+    return (target as Project | InstanceResource | ComposedDatabase).name;
   }
   if (type === "environment") {
     return formatEnvironmentName((target as Environment).id);

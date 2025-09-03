@@ -62,7 +62,7 @@ import { PagedProjectTable } from "@/components/v2";
 import { Drawer } from "@/components/v2";
 import ProjectOperations from "@/components/v2/Model/Project/ProjectOperations.vue";
 import { useProjectV1Store, useUIStateStore } from "@/store";
-import type { ComposedProject } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { hasWorkspacePermissionV2, type SearchParams } from "@/utils";
 
 interface LocalState {
@@ -72,7 +72,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  onRowClick?: (project: ComposedProject) => void;
+  onRowClick?: (project: Project) => void;
 }>();
 
 const state = reactive<LocalState>({
@@ -104,7 +104,7 @@ const selectedProjectList = computed(() => {
   }
   return Array.from(state.selectedProjects)
     .map((name) => projectStore.getProjectByName(name))
-    .filter((p): p is ComposedProject => p !== undefined);
+    .filter((p): p is Project => p !== undefined);
 });
 
 const updateSelectedProjects = (projectNames: string[]) => {
@@ -126,7 +126,7 @@ onMounted(() => {
   }
 });
 
-const handleCreated = async (project: ComposedProject) => {
+const handleCreated = async (project: Project) => {
   if (props.onRowClick) {
     return props.onRowClick(project);
   }

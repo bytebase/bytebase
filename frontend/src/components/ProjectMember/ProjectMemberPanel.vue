@@ -125,12 +125,12 @@ import {
   useProjectIamPolicyStore,
   useWorkspaceV1Store,
 } from "@/store";
-import type { ComposedProject } from "@/types";
 import {
   PRESET_WORKSPACE_ROLES,
   PresetRoleType,
   groupBindingPrefix,
 } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { hasProjectPermissionV2, isBindingPolicyExpired } from "@/utils";
 import GrantRequestPanel from "../GrantRequestPanel";
 import { SearchBox } from "../v2";
@@ -149,7 +149,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
   allowEdit: boolean;
 }>();
 

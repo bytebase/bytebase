@@ -4,13 +4,14 @@ import { shallowReactive, computed } from "vue";
 import {
   PresetRoleType,
   PRESET_WORKSPACE_ROLES,
-  type ComposedProject,
   type Permission,
 } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { type User } from "@/types/proto-es/v1/user_service_pb";
 import { bindingListInIAM } from "@/utils";
 import { useRoleStore } from "../role";
 import { useCurrentUserV1 } from "./auth";
+import { useProjectIamPolicyStore } from "./projectIamPolicy";
 import { useWorkspaceV1Store } from "./workspace";
 
 export const usePermissionStore = defineStore("permission", () => {
@@ -21,6 +22,7 @@ export const usePermissionStore = defineStore("permission", () => {
   const roleStore = useRoleStore();
   const currentUser = useCurrentUserV1();
   const workspaceStore = useWorkspaceV1Store();
+  const projectIamPolicyStore = useProjectIamPolicyStore();
 
   const currentRolesInWorkspace = computed(() => {
     return workspaceStore.getWorkspaceRolesByEmail(currentUser.value.email);
@@ -41,7 +43,7 @@ export const usePermissionStore = defineStore("permission", () => {
     );
   });
 
-  const currentRoleListInProjectV1 = (project: ComposedProject) => {
+  const currentRoleListInProjectV1 = (project: Project) => {
     const key = `${currentUser.value.name}@@${project.name}`;
     const cached = projectRoleListCache.get(key);
     if (cached) {
@@ -52,7 +54,7 @@ export const usePermissionStore = defineStore("permission", () => {
       ...currentRolesInWorkspace.value,
     ].filter((role) => !PRESET_WORKSPACE_ROLES.includes(role));
 
-    const { iamPolicy } = project;
+    const iamPolicy = projectIamPolicyStore.getProjectIamPolicy(project.name);
     const projectBindings = bindingListInIAM({
       policy: iamPolicy,
       email: currentUser.value.email,
@@ -67,9 +69,7 @@ export const usePermissionStore = defineStore("permission", () => {
     return result;
   };
 
-  const currentPermissionsInProjectV1 = (
-    project: ComposedProject
-  ): Set<Permission> => {
+  const currentPermissionsInProjectV1 = (project: Project): Set<Permission> => {
     const key = `${currentUser.value.name}@@${project.name}`;
     const cached = projectPermissionsCache.get(key);
     if (cached) {

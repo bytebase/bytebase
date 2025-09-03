@@ -2,12 +2,13 @@ import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { projectServiceClientConnect } from "@/grpcweb";
 import type { IdType } from "@/types";
-import type { Project, Webhook } from "@/types/proto-es/v1/project_service_pb";
 import {
   AddWebhookRequestSchema,
   UpdateWebhookRequestSchema,
   RemoveWebhookRequestSchema,
   TestWebhookRequestSchema,
+  type Project,
+  type Webhook,
 } from "@/types/proto-es/v1/project_service_pb";
 import { extractProjectWebhookID } from "@/utils";
 

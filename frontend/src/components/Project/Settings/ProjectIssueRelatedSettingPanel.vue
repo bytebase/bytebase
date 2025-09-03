@@ -279,9 +279,9 @@ import {
 import { computed, reactive, ref } from "vue";
 import { Switch } from "@/components/v2";
 import { useProjectV1Store } from "@/store";
-import type { ComposedProject } from "@/types";
 import type {
   Label,
+  Project,
   Project_ExecutionRetryPolicy,
 } from "@/types/proto-es/v1/project_service_pb";
 import {
@@ -325,7 +325,7 @@ const getInitialLocalState = (): LocalState => {
 const defaultColor = "#4f46e5";
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
   allowEdit: boolean;
 }>();
 

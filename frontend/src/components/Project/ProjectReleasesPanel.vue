@@ -28,11 +28,11 @@ import { NAlert } from "naive-ui";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { useReleaseStore } from "@/store";
-import type { ComposedProject } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import ReleaseDataTable from "../Release/ReleaseDataTable.vue";
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
 }>();
 
 const releaseStore = useReleaseStore();
