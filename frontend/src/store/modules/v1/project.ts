@@ -30,6 +30,7 @@ import {
 } from "@/types/proto-es/v1/project_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { projectNamePrefix } from "./common";
+import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
 export interface ProjectFilter {
   query?: string;
@@ -76,6 +77,9 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     projectMapByName.set(project.name, project);
   };
   const upsertProjectMap = async (projectList: Project[]) => {
+    await useProjectIamPolicyStore().batchGetOrFetchProjectIamPolicy(
+      projectList.map((project) => project.name)
+    );
     projectList.forEach((project) => {
       updateProjectCache(project);
     });
