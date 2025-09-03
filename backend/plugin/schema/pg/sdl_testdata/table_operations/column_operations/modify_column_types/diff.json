@@ -1,0 +1,82 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 1",
+  "tableChanges": 1,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "customers",
+        "columnChanges": 4,
+        "indexChanges": 0,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "ALTER",
+            "name": "age",
+            "oldColumn": {
+              "name": "age",
+              "type": "smallint",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "age",
+              "type": "integer",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "balance",
+            "oldColumn": {
+              "name": "balance",
+              "type": "integer",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "balance",
+              "type": "bigint",
+              "nullable": true
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "is_active",
+            "oldColumn": {
+              "name": "is_active",
+              "type": "boolean",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "is_active",
+              "type": "boolean",
+              "nullable": true,
+              "defaultValue": "true"
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "name",
+            "oldColumn": {
+              "name": "name",
+              "type": "character varying(50)",
+              "nullable": false
+            },
+            "newColumn": {
+              "name": "name",
+              "type": "character varying(200)",
+              "nullable": false
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

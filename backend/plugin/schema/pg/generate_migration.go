@@ -1408,9 +1408,9 @@ func writeAddCheckConstraint(out *strings.Builder, schema, table string, check *
 	_, _ = out.WriteString(table)
 	_, _ = out.WriteString(`" ADD CONSTRAINT "`)
 	_, _ = out.WriteString(check.Name)
-	_, _ = out.WriteString(`" CHECK `)
+	_, _ = out.WriteString(`" CHECK (`)
 	_, _ = out.WriteString(check.Expression)
-	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString(`);`)
 	_, _ = out.WriteString("\n")
 }
 
