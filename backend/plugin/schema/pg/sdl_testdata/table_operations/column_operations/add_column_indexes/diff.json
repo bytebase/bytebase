@@ -1,0 +1,132 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 1",
+  "tableChanges": 1,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "posts",
+        "columnChanges": 0,
+        "indexChanges": 7,
+        "constraintChanges": 0,
+        "foreignKeyChanges": 0,
+        "indexes": [
+          {
+            "action": "CREATE",
+            "name": "idx_posts_author_id",
+            "newIndex": {
+              "name": "idx_posts_author_id",
+              "type": "btree",
+              "unique": false,
+              "expressions": [
+                "author_id"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "idx_posts_author_status",
+            "newIndex": {
+              "name": "idx_posts_author_status",
+              "type": "btree",
+              "unique": false,
+              "expressions": [
+                "author_id",
+                "status"
+              ],
+              "descending": [
+                false,
+                false
+              ]
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "idx_posts_category",
+            "newIndex": {
+              "name": "idx_posts_category",
+              "type": "btree",
+              "unique": false,
+              "expressions": [
+                "category"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "idx_posts_created_at",
+            "newIndex": {
+              "name": "idx_posts_created_at",
+              "type": "btree",
+              "unique": false,
+              "expressions": [
+                "created_at"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "idx_posts_published",
+            "newIndex": {
+              "name": "idx_posts_published",
+              "type": "btree",
+              "unique": false,
+              "expressions": [
+                "created_at"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "idx_posts_status",
+            "newIndex": {
+              "name": "idx_posts_status",
+              "type": "btree",
+              "unique": false,
+              "expressions": [
+                "status"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "idx_posts_tags",
+            "newIndex": {
+              "name": "idx_posts_tags",
+              "type": "gin",
+              "unique": false,
+              "expressions": [
+                "tags"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
