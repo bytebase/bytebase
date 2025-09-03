@@ -90,9 +90,13 @@
           <div class="text-md leading-6 font-medium text-main">
             {{ $t("project.webhook.direct-messages") }}
           </div>
-          <BBAttention v-if="!imApp?.enabled" class="my-2" type="warning">
+          <BBAttention class="my-2" :type="imApp?.enabled ? 'info' : 'warning'">
             <template #default>
+              <span v-if="imApp?.enabled">
+                {{ $t("project.webhook.direct-messages-tip") }}
+              </span>
               <i18n-t
+                v-else
                 class="textinfolabel"
                 tag="div"
                 keypath="project.webhook.direct-messages-warning"
@@ -110,7 +114,10 @@
             </template>
           </BBAttention>
           <span class="mt-1 textinfolabel">
-            <i18n-t keypath="project.webhook.direct-messages-tip" tag="span">
+            <i18n-t
+              keypath="project.webhook.direct-messages-description"
+              tag="span"
+            >
               <template #events>
                 <ul class="list-disc pl-4">
                   <li

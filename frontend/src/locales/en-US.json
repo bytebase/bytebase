@@ -1759,8 +1759,9 @@
         "confirm-title": "Delete webhook '{title}' and all its execution history?"
       },
       "direct-messages": "Direct messages",
+      "direct-messages-tip": "Bytebase will fall back to posting webhook messages if no users are matched or the delivery of the message fails.",
       "enable-direct-messages": "Enable direct messages",
-      "direct-messages-tip": "Once enabled, Bytebase will send direct messages to the related users (matched by email). Only support: {events}",
+      "direct-messages-description": "Once enabled, Bytebase will send following events as direct messages to the related users (matched by email) {events}",
       "direct-messages-warning": "You need to configure {im} to make it work.",
       "activity-support-direct-message": "Support send direct messages to related users",
       "activity-item": {

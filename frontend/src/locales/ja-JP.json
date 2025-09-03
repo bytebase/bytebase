@@ -1759,8 +1759,9 @@
         "confirm-title": "Webhook '{title}' とすべての実行履歴を削除しますか?"
       },
       "direct-messages": "プライベートメッセージ通知",
+      "direct-messages-tip": "一致するユーザーがいない場合、またはメッセージの配信が失敗した場合、Bytebase は webhook メッセージの投稿にフォールバックします。",
       "enable-direct-messages": "プライベートメッセージ通知を有効にする",
-      "direct-messages-tip": "有効にすると、Bytebase は関連ユーザー (電子メールで一致) にダイレクト メッセージを送信します。サポートのみ: {events}",
+      "direct-messages-description": "有効にすると、Bytebase は関連ユーザー (電子メールで一致) にダイレクト メッセージを送信します。サポートのみ: {events}",
       "direct-messages-warning": "これを機能させるには、{im} を設定する必要があります。",
       "activity-support-direct-message": "関連するユーザーへのプライベート メッセージ通知の送信のサポート",
       "activity-item": {
