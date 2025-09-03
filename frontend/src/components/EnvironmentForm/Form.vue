@@ -44,7 +44,7 @@
           </i18n-t>
           <a
             class="inline-flex items-center text-blue-600 ml-1 hover:underline"
-            href="https://docs.bytebase.com/administration/environment-policy/overview/?source=console#environment-tier"
+            href="https://docs.bytebase.com/change-database/environment-policy/overview/?source=console#environment-tier"
             target="_blank"
             >{{ $t("common.learn-more")
             }}<heroicons-outline:external-link class="w-4 h-4"
@@ -84,7 +84,7 @@
           {{ $t("policy.rollout.info", { permission: "bb.taskRuns.create" }) }}
           <a
             class="inline-flex items-center text-blue-600 ml-1 hover:underline"
-            href="https://docs.bytebase.com/administration/environment-policy/rollout-policy"
+            href="https://docs.bytebase.com/change-database/environment-policy/rollout-policy/?source=console"
             target="_blank"
           >
             {{ $t("common.learn-more") }}
