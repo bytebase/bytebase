@@ -237,7 +237,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 		create.SheetUID = &sheetUID
 	}
 
-	if err := s.store.CreatePendingTaskRuns(ctx, create); err != nil {
+	if err := s.store.CreatePendingTaskRuns(ctx, common.SystemBotID, create); err != nil {
 		return errors.Wrapf(err, "failed to create pending task runs")
 	}
 
