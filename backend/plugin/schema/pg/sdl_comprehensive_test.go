@@ -93,8 +93,7 @@ func loadTestScenarios() ([]TestScenario, error) {
 
 	testDataDir := "sdl_testdata"
 	if _, err := os.Stat(testDataDir); os.IsNotExist(err) {
-		// Return some built-in scenarios for initial testing
-		return getBuiltinTestScenarios(), nil
+		return nil, errors.Errorf("test data directory %s does not exist", testDataDir)
 	}
 
 	err := filepath.Walk(testDataDir, func(path string, info os.FileInfo, err error) error {
@@ -117,9 +116,9 @@ func loadTestScenarios() ([]TestScenario, error) {
 		return nil, err
 	}
 
-	// If no scenarios found in files, return built-in scenarios
+	// If no scenarios found in files, return error
 	if len(scenarios) == 0 {
-		return getBuiltinTestScenarios(), nil
+		return nil, errors.New("no test scenarios found in test data directory")
 	}
 
 	return scenarios, nil
@@ -181,12 +180,26 @@ func runSDLTestScenario(ctx context.Context, t *testing.T, connConfig *pgx.ConnC
 		t.Logf("Description: %s", strings.TrimSpace(scenario.Description))
 	}
 
-	// Create a unique database for this test
-	dbName := fmt.Sprintf("sdl_test_%s_%s",
-		strings.ReplaceAll(scenario.Category, "/", "_"),
-		strings.ReplaceAll(scenario.Name, "/", "_"))
+	// Create a unique database for this test (PostgreSQL limit is 63 chars)
+	category := strings.ReplaceAll(scenario.Category, "/", "_")
+	name := strings.ReplaceAll(scenario.Name, "/", "_")
+
+	// Shorten common prefixes to avoid length issues
+	category = strings.ReplaceAll(category, "table_operations", "tbl_ops")
+	name = strings.ReplaceAll(name, "column_operations_", "col_")
+	name = strings.ReplaceAll(name, "add_column_", "add_")
+	name = strings.ReplaceAll(name, "constraints", "cons")
+	name = strings.ReplaceAll(name, "foreign_keys", "fk")
+	name = strings.ReplaceAll(name, "indexes", "idx")
+
+	dbName := fmt.Sprintf("sdl_test_%s_%s", category, name)
 	dbName = strings.ReplaceAll(dbName, "-", "_") // Replace hyphens with underscores
 	dbName = strings.ToLower(dbName)
+
+	// Ensure length doesn't exceed PostgreSQL's 63 character limit
+	if len(dbName) > 63 {
+		dbName = dbName[:63]
+	}
 
 	_, err := mainDB.Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
 	require.NoError(t, err)
@@ -235,6 +248,13 @@ func executeEnhancedSDLValidation(ctx context.Context, t *testing.T, connConfig 
 	// Generate migration DDL from schema B to schema C using the existing function
 	migrationDDL, schemaDiff, err := generateMigrationDDLFromMetadata(schemaB, schemaCMetadata)
 	require.NoError(t, err, "Failed to generate migration DDL from metadata")
+
+	// Use validateOrSaveTestFiles to generate/validate diff.json and ddl.sql files
+	testName := strings.ReplaceAll(t.Name(), "/", "_")
+	err = validateOrSaveTestFiles(t, schemaDiff, testName, migrationDDL)
+	if err != nil {
+		return errors.Wrapf(err, "test file validation/creation failed")
+	}
 
 	// Compare with expected diff if provided
 	if scenario.ExpectedDiff != "" {
@@ -298,144 +318,6 @@ func executeEnhancedSDLValidation(ctx context.Context, t *testing.T, connConfig 
 	t.Log("✓ Final schema matches expected schema perfectly")
 
 	return nil
-}
-
-// getBuiltinTestScenarios returns built-in test scenarios for immediate testing
-func getBuiltinTestScenarios() []TestScenario {
-	return []TestScenario{
-		{
-			Name:          "basic_table_creation",
-			Category:      "data_types/basic_types",
-			Description:   "Test basic table creation with various data types",
-			InitialSchema: ``,
-			ExpectedSchema: `
-CREATE TABLE public.users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    email VARCHAR(100) NOT NULL,
-    age INTEGER,
-    salary DECIMAL(10,2),
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    profile JSONB,
-    tags TEXT[]
-);
-
-CREATE INDEX idx_users_email ON public.users(email);
-CREATE INDEX idx_users_created_at ON public.users(created_at);
-`,
-		},
-		{
-			Name:        "add_foreign_key_table",
-			Category:    "constraints_indexes/foreign_keys",
-			Description: "Test adding table with foreign key constraint",
-			InitialSchema: `
-CREATE TABLE public.users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    email VARCHAR(100) NOT NULL
-);
-`,
-			ExpectedSchema: `
-CREATE TABLE public.users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    email VARCHAR(100) NOT NULL
-);
-
-CREATE TABLE public.posts (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
-    title VARCHAR(200) NOT NULL,
-    content TEXT,
-    published BOOLEAN DEFAULT false,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_posts_user_id ON public.posts(user_id);
-CREATE INDEX idx_posts_published ON public.posts(published) WHERE published = true;
-`,
-		},
-		{
-			Name:          "enum_and_custom_types",
-			Category:      "schema_objects/custom_types",
-			Description:   "Test enum and custom type creation",
-			InitialSchema: ``,
-			ExpectedSchema: `
-CREATE TYPE public.status_enum AS ENUM ('pending', 'active', 'inactive');
-CREATE TYPE public.user_role AS ENUM ('admin', 'user', 'guest');
-
-CREATE TABLE public.accounts (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(50) NOT NULL,
-    status status_enum DEFAULT 'pending',
-    role user_role DEFAULT 'user',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_accounts_status ON public.accounts(status);
-CREATE INDEX idx_accounts_role ON public.accounts(role);
-`,
-		},
-		{
-			Name:        "view_and_function",
-			Category:    "schema_objects/views",
-			Description: "Test view and function creation",
-			InitialSchema: `
-CREATE TABLE public.employees (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    department VARCHAR(50),
-    salary DECIMAL(10, 2),
-    hire_date DATE DEFAULT CURRENT_DATE
-);
-`,
-			ExpectedSchema: `
-CREATE TABLE public.employees (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    department VARCHAR(50),
-    salary DECIMAL(10, 2),
-    hire_date DATE DEFAULT CURRENT_DATE
-);
-
-CREATE OR REPLACE VIEW public.active_employees AS
-SELECT id, name, department, salary
-FROM employees
-WHERE department IS NOT NULL;
-
-CREATE OR REPLACE FUNCTION public.get_employee_count(dept VARCHAR) 
-RETURNS INTEGER AS $$
-BEGIN
-    RETURN (SELECT COUNT(*) FROM employees WHERE department = dept);
-END;
-$$ LANGUAGE plpgsql;
-`,
-		},
-		{
-			Name:        "drop_objects",
-			Category:    "edge_cases/complex_scenarios",
-			Description: "Test dropping all objects from database",
-			InitialSchema: `
-CREATE TABLE public.users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    email VARCHAR(100) NOT NULL
-);
-
-CREATE TABLE public.posts (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
-    title VARCHAR(200) NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
-CREATE INDEX idx_posts_user_id ON public.posts(user_id);
-`,
-			ExpectedSchema: ``, // Empty - expect all objects to be dropped
-		},
-	}
 }
 
 // normalizeSQLString normalizes SQL for comparison by removing extra whitespace and standardizing formatting

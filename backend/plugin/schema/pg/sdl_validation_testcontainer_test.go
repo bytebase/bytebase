@@ -1661,13 +1661,15 @@ func validateFileContent(filename, expectedContent, fileType string) error {
 
 // getTestDataDirectory converts a test name to the corresponding test data directory path
 func getTestDataDirectory(testName string) string {
-	// Remove "TestSDLValidationFromTestData_" prefix
-	if !strings.HasPrefix(testName, "TestSDLValidationFromTestData_") {
+	// Handle both TestSDLValidationFromTestData_ and TestSDLComprehensiveValidation_ prefixes
+	var pathPart string
+	if strings.HasPrefix(testName, "TestSDLValidationFromTestData_") {
+		pathPart = strings.TrimPrefix(testName, "TestSDLValidationFromTestData_")
+	} else if strings.HasPrefix(testName, "TestSDLComprehensiveValidation_") {
+		pathPart = strings.TrimPrefix(testName, "TestSDLComprehensiveValidation_")
+	} else {
 		return ""
 	}
-
-	// Extract the path part after the prefix
-	pathPart := strings.TrimPrefix(testName, "TestSDLValidationFromTestData_")
 
 	// Convert from test name format to directory format
 	// TestSDLValidationFromTestData_data_types_basic_types_datetime_types -> data_types/basic_types/datetime_types
@@ -1699,6 +1701,10 @@ func getTestDataDirectory(testName string) string {
 		// constraints_indexes_foreign_keys_cascade_actions -> constraints_indexes/foreign_keys/cascade_actions
 		suffix := strings.TrimPrefix(pathPart, "constraints_indexes_foreign_keys_")
 		testDataPath = filepath.Join("constraints_indexes", "foreign_keys", suffix)
+	case strings.HasPrefix(pathPart, "table_operations_column_operations_"):
+		// table_operations_column_operations_add_simple_columns -> table_operations/column_operations/add_simple_columns
+		suffix := strings.TrimPrefix(pathPart, "table_operations_column_operations_")
+		testDataPath = filepath.Join("table_operations", "column_operations", suffix)
 	default:
 		// Fallback: try to split intelligently
 		parts := strings.Split(pathPart, "_")

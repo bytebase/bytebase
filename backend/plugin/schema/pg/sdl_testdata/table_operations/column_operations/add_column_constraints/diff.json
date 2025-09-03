@@ -1,0 +1,104 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 1",
+  "tableChanges": 1,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "ALTER",
+        "schemaName": "public",
+        "tableName": "employees",
+        "columnChanges": 3,
+        "indexChanges": 1,
+        "constraintChanges": 2,
+        "foreignKeyChanges": 0,
+        "columns": [
+          {
+            "action": "ALTER",
+            "name": "department",
+            "oldColumn": {
+              "name": "department",
+              "type": "character varying(50)",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "department",
+              "type": "character varying(50)",
+              "nullable": false
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "email",
+            "oldColumn": {
+              "name": "email",
+              "type": "character varying(150)",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "email",
+              "type": "character varying(150)",
+              "nullable": false
+            }
+          },
+          {
+            "action": "ALTER",
+            "name": "name",
+            "oldColumn": {
+              "name": "name",
+              "type": "character varying(100)",
+              "nullable": true
+            },
+            "newColumn": {
+              "name": "name",
+              "type": "character varying(100)",
+              "nullable": false
+            }
+          }
+        ],
+        "indexes": [
+          {
+            "action": "CREATE",
+            "name": "employees_email_key",
+            "newIndex": {
+              "name": "employees_email_key",
+              "type": "btree",
+              "unique": true,
+              "expressions": [
+                "email"
+              ],
+              "descending": [
+                false
+              ]
+            }
+          }
+        ],
+        "constraints": [
+          {
+            "action": "CREATE",
+            "name": "employees_age_check",
+            "newConstraint": {
+              "name": "employees_age_check",
+              "type": "CHECK",
+              "expression": "age \u003e= 18 AND age \u003c= 100"
+            }
+          },
+          {
+            "action": "CREATE",
+            "name": "employees_salary_check",
+            "newConstraint": {
+              "name": "employees_salary_check",
+              "type": "CHECK",
+              "expression": "salary \u003e 0"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
