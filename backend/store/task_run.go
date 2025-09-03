@@ -324,7 +324,7 @@ func (*Store) getTaskNextAttempt(ctx context.Context, txn *sql.Tx, taskIDs []int
 	return attempts, nil
 }
 
-func (s *Store) createPendingTaskRunsTx(ctx context.Context, txn *sql.Tx, creatorID int, attempts []int, creates []*TaskRunMessage) error {
+func (*Store) createPendingTaskRunsTx(ctx context.Context, txn *sql.Tx, creatorID int, attempts []int, creates []*TaskRunMessage) error {
 	if len(attempts) != len(creates) {
 		return errors.Errorf("length of attempts and creates are different")
 	}
