@@ -9,17 +9,19 @@ import {
   useInstanceResourceByName,
   useProjectV1Store,
 } from "@/store";
-import type { ComposedDatabase, ComposedIssue, ComposedProject } from "@/types";
 import {
   isValidDatabaseName,
   isValidInstanceName,
   unknownDatabase,
   unknownInstance,
+  type ComposedDatabase,
+  type ComposedIssue,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { IssueStatus, type Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -31,7 +33,7 @@ import {
 } from "@/utils";
 import type { IssueContext } from "./context";
 
-export const projectOfIssue = (issue: Issue): ComposedProject => {
+export const projectOfIssue = (issue: Issue): Project => {
   return useProjectV1Store().getProjectByName(
     `${projectNamePrefix}${extractProjectResourceName(issue.name)}`
   );
@@ -66,10 +68,7 @@ export const useInstanceForTask = (task: Task) => {
   return useInstanceResourceByName(instanceName);
 };
 
-export const mockDatabase = (
-  projectEntity: ComposedProject,
-  database: string
-) => {
+export const mockDatabase = (projectEntity: Project, database: string) => {
   // Database not found, it's probably NOT_FOUND (maybe dropped actually)
   // Mock a database using all known resources
   const db = unknownDatabase();
@@ -101,7 +100,7 @@ export const mockDatabase = (
 };
 
 export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
-  project: ComposedProject,
+  project: Project,
   task: Task
 ) => {
   const coreDatabaseInfo = (

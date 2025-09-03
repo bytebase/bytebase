@@ -8,7 +8,7 @@ import {
   useSheetV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import type { ComposedProject, IssueType } from "@/types";
+import type { IssueType } from "@/types";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
   PlanSchema,
@@ -17,6 +17,7 @@ import {
   Plan_ExportDataConfigSchema,
   Plan_SpecSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   extractSheetUID,
   generateSQLForChangeToDatabase,
@@ -33,7 +34,7 @@ export type InitialSQL = {
 };
 
 export type CreatePlanParams = {
-  project: ComposedProject;
+  project: Project;
   template: IssueType;
   query: Record<string, string>;
   initialSQL: InitialSQL;

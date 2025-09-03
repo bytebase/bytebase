@@ -88,13 +88,13 @@ import {
   databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,
 } from "@/store/modules/v1/common";
-import type { ComposedProject } from "@/types";
 import type { Expr as CELExpr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import {
   DatabaseGroupSchema,
   type DatabaseGroup,
 } from "@/types/proto-es/v1/database_group_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
@@ -109,7 +109,7 @@ import {
 
 const props = defineProps<{
   readonly: boolean;
-  project: ComposedProject;
+  project: Project;
   databaseGroup?: DatabaseGroup;
 }>();
 

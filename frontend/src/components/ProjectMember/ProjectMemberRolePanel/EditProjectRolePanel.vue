@@ -137,17 +137,17 @@ import {
   pushNotification,
   useSettingV1Store,
 } from "@/store";
-import type { ComposedProject, DatabaseResource } from "@/types";
-import { PresetRoleType } from "@/types";
+import { PresetRoleType, type DatabaseResource } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { displayRoleTitle, checkRoleContainsAnyPermission } from "@/utils";
 import { convertFromExpr, buildConditionExpr } from "@/utils/issue/cel";
 import { getBindingIdentifier } from "../utils";
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
   binding: Binding;
 }>();
 

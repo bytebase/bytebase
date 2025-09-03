@@ -32,6 +32,7 @@ import {
   useCurrentUserV1,
   useGroupStore,
   useProjectV1Store,
+  useProjectIamPolicyStore,
   pushNotification,
   extractGroupEmail,
   usePolicyV1Store,
@@ -57,6 +58,7 @@ const { t } = useI18n();
 const groupStore = useGroupStore();
 const currentUserV1 = useCurrentUserV1();
 const projectStore = useProjectV1Store();
+const projectIamPolicyStore = useProjectIamPolicyStore();
 const policyStore = usePolicyV1Store();
 const resourceOccupiedModalRef =
   ref<InstanceType<typeof ResourceOccupiedModal>>();
@@ -80,7 +82,8 @@ const resourcesOccupied = computedAsync(async () => {
 
   // Don't need to be so strict, it's okay to keep this way.
   for (const project of projectStore.getProjectList()) {
-    for (const binding of project.iamPolicy.bindings) {
+    const iamPolicy = projectIamPolicyStore.getProjectIamPolicy(project.name);
+    for (const binding of iamPolicy.bindings) {
       if (binding.members.includes(member)) {
         resources.add(project.name);
         break;

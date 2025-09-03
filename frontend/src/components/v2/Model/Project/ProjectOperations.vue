@@ -95,7 +95,7 @@ import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAlert } from "@/bbkit";
 import { pushNotification, useProjectV1Store } from "@/store";
-import type { ComposedProject } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { hasWorkspacePermissionV2, extractProjectResourceName } from "@/utils";
 
 interface Action {
@@ -113,7 +113,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  projectList: ComposedProject[];
+  projectList: Project[];
 }>();
 
 const emit = defineEmits<{
@@ -130,7 +130,7 @@ const state = reactive<LocalState>({
 
 // For now, we'll assume no projects have resources - this would need to be enhanced
 // to actually check for databases and open issues
-const projectsWithResources = computed((): ComposedProject[] => {
+const projectsWithResources = computed((): Project[] => {
   // TODO: Implement actual resource checking
   return [];
 });

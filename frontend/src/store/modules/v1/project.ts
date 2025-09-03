@@ -6,7 +6,7 @@ import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 import { projectServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
-import type { ComposedProject, MaybeRef, ResourceId } from "@/types";
+import type { MaybeRef, ResourceId } from "@/types";
 import {
   emptyProject,
   EMPTY_PROJECT_NAME,
@@ -17,7 +17,6 @@ import {
   isValidProjectName,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   GetProjectRequestSchema,
   ListProjectsRequestSchema,
@@ -27,6 +26,7 @@ import {
   DeleteProjectRequestSchema,
   BatchDeleteProjectsRequestSchema,
   UndeleteProjectRequestSchema,
+  type Project,
 } from "@/types/proto-es/v1/project_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { projectNamePrefix } from "./common";
@@ -56,8 +56,8 @@ const getListProjectFilter = (params: ProjectFilter) => {
 };
 
 export const useProjectV1Store = defineStore("project_v1", () => {
-  const projectMapByName = reactive(new Map<ResourceId, ComposedProject>());
-  const projectRequestCache = new Map<string, Promise<ComposedProject>>();
+  const projectMapByName = reactive(new Map<ResourceId, Project>());
+  const projectRequestCache = new Map<string, Promise<Project>>();
 
   const reset = () => {
     projectMapByName.clear();
@@ -73,15 +73,17 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   });
 
   // Actions
-  const updateProjectCache = (project: ComposedProject) => {
+  const updateProjectCache = (project: Project) => {
     projectMapByName.set(project.name, project);
   };
   const upsertProjectMap = async (projectList: Project[]) => {
-    const composedProjectList = await batchComposeProjectIamPolicy(projectList);
-    composedProjectList.forEach((project) => {
+    await useProjectIamPolicyStore().batchGetOrFetchProjectIamPolicy(
+      projectList.map((project) => project.name)
+    );
+    projectList.forEach((project) => {
       updateProjectCache(project);
     });
-    return composedProjectList;
+    return projectList;
   };
   const getProjectList = (showDeleted = false) => {
     if (showDeleted) {
@@ -103,7 +105,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       contextValues: createContextValues().set(silentContextKey, silent),
     });
     await upsertProjectMap([response]);
-    return response as ComposedProject;
+    return response;
   };
 
   const fetchProjectList = async (params: {
@@ -112,7 +114,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     silent?: boolean;
     filter?: ProjectFilter;
   }): Promise<{
-    projects: ComposedProject[];
+    projects: Project[];
     nextPageToken?: string;
   }> => {
     const contextValues = createContextValues().set(
@@ -232,9 +234,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       .map((name) => {
         const project = getProjectByName(name);
         if (project && project.name !== UNKNOWN_PROJECT_NAME) {
-          // Extract Project properties (excluding iamPolicy)
-          const { iamPolicy: _iamPolicy, ...projectData } = project;
-          return { ...projectData, state: State.DELETED };
+          return { ...project, state: State.DELETED };
         }
         return null;
       })
@@ -292,19 +292,6 @@ export const useCurrentProjectV1 = () => {
       : unknownProject().name
   );
   return useProjectByName(projectName);
-};
-
-const batchComposeProjectIamPolicy = async (projectList: Project[]) => {
-  const projectIamPolicyStore = useProjectIamPolicyStore();
-  await projectIamPolicyStore.batchGetOrFetchProjectIamPolicy(
-    projectList.map((project) => project.name)
-  );
-  return projectList.map((project) => {
-    const policy = projectIamPolicyStore.getProjectIamPolicy(project.name);
-    const composedProject = project as ComposedProject;
-    composedProject.iamPolicy = policy;
-    return composedProject;
-  });
 };
 
 export const batchGetOrFetchProjects = async (projectNames: string[]) => {

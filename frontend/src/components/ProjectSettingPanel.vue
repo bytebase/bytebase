@@ -84,7 +84,7 @@ import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { onBeforeRouteLeave } from "vue-router";
 import { useAppFeature, pushNotification } from "@/store";
-import type { ComposedProject } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import ProjectArchiveRestoreButton from "./Project/ProjectArchiveRestoreButton.vue";
 import {
@@ -94,7 +94,7 @@ import {
 } from "./Project/Settings/";
 
 defineProps<{
-  project: ComposedProject;
+  project: Project;
   allowEdit: boolean;
 }>();
 

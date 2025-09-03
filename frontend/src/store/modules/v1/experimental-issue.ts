@@ -6,13 +6,13 @@ import {
   rolloutServiceClientConnect,
 } from "@/grpcweb";
 import { useProjectV1Store } from "@/store";
-import type { ComposedIssue, ComposedProject } from "@/types";
 import {
   emptyIssue,
   emptyRollout,
   EMPTY_ID,
   unknownIssue,
   UNKNOWN_ID,
+  type ComposedIssue,
 } from "@/types";
 import {
   CreateIssueRequestSchema,
@@ -25,6 +25,7 @@ import {
   CreatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   GetRolloutRequestSchema,
   ListTaskRunsRequestSchema,
@@ -131,7 +132,7 @@ export const experimentalFetchIssueByUID = async (
 };
 
 export const experimentalCreateIssueByPlan = async (
-  project: ComposedProject,
+  project: Project,
   issueCreate: Issue,
   planCreate: Plan
 ) => {

@@ -12,7 +12,7 @@ import { computed } from "vue";
 import ProjectWebhookForm from "@/components/ProjectWebhookForm.vue";
 import { useProjectByName, useProjectWebhookV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { emptyProjectWebhook } from "@/types";
+import { emptyProjectWebhook } from "@/types/v1/projectWebhook";
 import { idFromSlug } from "@/utils";
 
 const props = defineProps<{
