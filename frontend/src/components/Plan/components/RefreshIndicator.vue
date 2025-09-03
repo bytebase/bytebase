@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-2">
+  <div class="hidden sm:flex items-center gap-2">
     <span v-if="lastRefreshDisplay" class="text-xs text-gray-400">
       {{
         $t("plan.refresh-indicator.last-refresh", { time: lastRefreshDisplay })

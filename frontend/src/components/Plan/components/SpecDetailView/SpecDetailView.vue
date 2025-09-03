@@ -8,7 +8,7 @@
         <SQLCheckV1Section v-if="isCreating" />
         <PlanCheckSection v-else />
       </template>
-      <div class="w-full space-y-3 pt-3">
+      <div class="w-full space-y-3 pt-3 overflow-x-hidden">
         <StatementSection />
         <Configuration />
       </div>
