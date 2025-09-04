@@ -110,6 +110,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		var resourceNotFound *parsererror.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
 			return &base.QuerySpan{
+				Type:          queryTypeListener.result,
 				SourceColumns: accessTables,
 				Results:       []base.QuerySpanResult{},
 				NotFoundError: resourceNotFound,
