@@ -78,6 +78,7 @@
         <RequiredStar />
       </div>
       <ExpirationSelector
+        ref="expirationSelectorRef"
         :role="state.role"
         v-model:timestamp-in-ms="state.expirationTimestampInMS"
         class="grid-cols-3 sm:grid-cols-4"
@@ -90,7 +91,7 @@
 /* eslint-disable vue/no-mutating-props */
 import { isUndefined } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, watch, ref } from "vue";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
 import MaxRowCountSelect from "@/components/GrantRequestPanel/MaxRowCountSelect.vue";
@@ -153,6 +154,7 @@ const getInitialState = (): LocalState => {
 };
 
 const state = reactive<LocalState>(getInitialState());
+const expirationSelectorRef = ref<InstanceType<typeof ExpirationSelector>>();
 
 watch(
   () => state.role,
@@ -209,10 +211,7 @@ defineExpose({
     if (state.memberList.length <= 0) {
       return false;
     }
-    if (
-      state.expirationTimestampInMS != undefined &&
-      state.expirationTimestampInMS <= new Date().getTime()
-    ) {
+    if (!expirationSelectorRef.value?.isValid) {
       return false;
     }
     // undefined databaseResources means all databases
