@@ -49,9 +49,9 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 	var version string
-	for _, line := range strings.Split(val, "\n") {
-		if strings.HasPrefix(line, "redis_version:") {
-			version = strings.TrimPrefix(line, "redis_version:")
+	for line := range strings.SplitSeq(val, "\n") {
+		if after, ok := strings.CutPrefix(line, "redis_version:"); ok {
+			version = after
 			version = strings.Trim(version, " \n\t\r")
 			break
 		}
