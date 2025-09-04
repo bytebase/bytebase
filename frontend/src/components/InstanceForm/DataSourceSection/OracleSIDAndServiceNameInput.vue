@@ -1,5 +1,5 @@
 <template>
-  <div class="mt-2 sm:col-span-3 sm:col-start-1">
+  <div class="sm:col-span-3 sm:col-start-1">
     <div class="flex items-center gap-x-4">
       <NRadio
         :checked="state.mode === 'ServiceName'"
@@ -14,7 +14,7 @@
         <span class="textlabel">SID</span>
       </NRadio>
     </div>
-    <div class="mt-1">
+    <div class="mt-2">
       <NInput
         v-if="state.mode === 'ServiceName'"
         :value="state.serviceName"

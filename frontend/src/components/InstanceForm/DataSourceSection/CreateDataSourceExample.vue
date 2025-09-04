@@ -4,7 +4,7 @@
     class="w-full flex flex-col justify-start"
     :class="props.className"
   >
-    <p class="w-full mt-1 text-sm text-gray-500">
+    <p class="w-full text-sm text-gray-500">
       <template v-if="isEngineUsingSQL">
         {{
           props.dataSourceType === DataSourceType.ADMIN
@@ -28,10 +28,7 @@
       </span>
     </p>
     <!-- Specify the fixed width so the create instance dialog width won't shift when switching engine types-->
-    <div
-      v-if="state.showCreateUserExample"
-      class="mt-2 text-sm text-main w-208"
-    >
+    <div v-if="state.showCreateUserExample" class="text-sm text-main w-208">
       <template
         v-if="
           props.engine === Engine.MYSQL ||
@@ -108,7 +105,7 @@
         </i18n-t>
       </template>
       <template v-else-if="props.engine === Engine.POSTGRES">
-        <BBAttention class="my-3" type="warning">
+        <BBAttention class="my-2" type="warning">
           {{ $t("instance.sentence.create-user-example.postgresql.warn") }}
         </BBAttention>
         <i18n-t

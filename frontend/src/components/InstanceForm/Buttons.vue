@@ -152,6 +152,18 @@ const allowUpdate = computed((): boolean => {
         return false;
       }
     }
+    return !!basicInfo.value.title.trim();
+  }
+  if (basicInfo.value.engine === Engine.BIGQUERY) {
+    if (!adminDataSource.value.host) {
+      return false;
+    }
+    if (readonlyDataSourceList.value.length > 0) {
+      if (readonlyDataSourceList.value.some((ds) => !ds.host)) {
+        return false;
+      }
+    }
+    return !!basicInfo.value.title.trim();
   }
   return checkDataSource([
     adminDataSource.value,

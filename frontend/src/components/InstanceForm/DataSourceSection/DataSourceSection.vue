@@ -3,9 +3,9 @@
     @add-readonly-datasource="handleCreateRODataSource"
   />
 
-  <div class="mt-2 grid grid-cols-1 gap-y-2 gap-x-4 border-none sm:grid-cols-3">
+  <div class="mt-2 gap-y-2 gap-x-4 border-none">
     <DataSourceTabs
-      class="sm:col-span-3"
+      class="sm:col-span-3 mb-4"
       @add-readonly-datasource="handleCreateRODataSource"
     />
 

@@ -1,9 +1,5 @@
 <template>
   <div class="space-y-1 w-full">
-    <div>
-      <span>{{ $t("common.credentials") }}</span>
-      <span class="text-red-600">*</span>
-    </div>
     <p class="textinfolabel">
       <span>{{ $t("instance.create-gcp-credentials") }}</span>
       <a
@@ -18,37 +14,21 @@
     <DroppableTextarea
       :value="value"
       :resizable="false"
-      :placeholder="placeholder"
-      class="w-full h-24 mt-2 whitespace-pre-wrap"
+      :placeholder="$t('instance.type-or-paste-credentials-write-only')"
+      class="w-full h-24 whitespace-pre-wrap"
       @update:value="$emit('update:value', $event ?? '')"
     />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { useI18n } from "vue-i18n";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 
-const props = withDefaults(
-  defineProps<{
-    value: string;
-    writeOnly?: boolean;
-  }>(),
-  {
-    writeOnly: false,
-  }
-);
+defineProps<{
+  value: string | undefined;
+}>();
 
 defineEmits<{
   (name: "update:value", value: string): void;
 }>();
-
-const { t } = useI18n();
-
-const placeholder = computed(() => {
-  return props.writeOnly
-    ? t("instance.type-or-paste-credentials-write-only")
-    : t("instance.type-or-paste-credentials");
-});
 </script>

@@ -22,7 +22,7 @@
             {{ $t("resource-id.cannot-be-changed-later") }}
           </span>
           <span
-            class="text-accent font-medium cursor-pointer hover:opacity-80"
+            class="text-accent font-medium cursor-pointer hover:opacity-80 ml-1"
             @click="state.manualEdit = true"
           >
             {{ $t("common.edit") }}

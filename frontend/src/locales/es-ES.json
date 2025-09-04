@@ -21,7 +21,6 @@
     "sign-up": "Registrarse",
     "email": "Correo electrónico",
     "username": "Nombre de usuario",
-    "credentials": "Credenciales",
     "password": "Contraseña",
     "save": "Guardar",
     "cancel": "Cancelar",
@@ -1319,7 +1318,7 @@
       "create-readonly-user-non-sql": "Esta es la conexión utilizada por Bytebase para realizar operaciones de solo lectura.",
       "google-cloud-sql": {
         "instance-name": "Nombre de conexión de instancia",
-        "instance-name-tips": "El nombre de la conexión de la instancia debería ser project-id:region:instance-name.",
+        "instance-name-tips": "El nombre de la conexión de la instancia debería ser {instance}.",
         "mysql": {
           "template": "Cree una cuenta de servicio llamada {user} y luego agréguela en su Google Cloud SQL como usuario de IAM {user}{'@'}'%'. Otorgue a este usuario los privilegios necesarios."
         },
@@ -1357,7 +1356,6 @@
       "firewall-info": "Si usa reglas de firewall entrante para su instancia de base de datos, consulte la instrucción de conexión de Bytebase Cloud."
     },
     "no-password": "Sin contraseña",
-    "type-or-paste-credentials": "Escriba o pegue las CREDENCIALES",
     "type-or-paste-credentials-write-only": "Escriba o pegue las CREDENCIALES - solo escritura",
     "password-write-only": "SU_DB_PWD - solo escritura",
     "password-type": {
