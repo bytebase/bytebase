@@ -503,8 +503,10 @@ func executeActionCommand(ctx context.Context, args ...string) (*ActionResult, e
 
 	// Get output from world.OutputMap
 	outputJSON := make(map[string]any)
-	for k, v := range w.OutputMap {
-		outputJSON[k] = v
+	if j, err := json.Marshal(w.OutputMap); err == nil {
+		if err := json.Unmarshal(j, &outputJSON); err != nil {
+			return nil, err
+		}
 	}
 
 	// Also parse output file if specified
