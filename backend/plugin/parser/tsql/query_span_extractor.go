@@ -724,7 +724,7 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 					continue
 				}
 				view := schemaSchema.GetView(viewName)
-				columns, err := q.getColumnsForView(view.Definition)
+				columns, err := q.getColumnsFromCreateView(view.Definition)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to get columns for view %s.%s.%s", databaseName, schemaName, viewName)
 				}
@@ -746,9 +746,18 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 	}
 }
 
-func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) getColumnsFromCreateView(definition string) ([]base.QuerySpanResult, error) {
+	// Extract the SELECT body from CREATE VIEW statement
+	selectBody, err := getSelectBodyFromCreateView(definition)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract SELECT body from CREATE VIEW")
+	}
+	if selectBody == "" {
+		return nil, errors.Errorf("no SELECT body found in CREATE VIEW statement")
+	}
+
 	newQ := newQuerySpanExtractor(q.defaultDatabase, q.defaultSchema, q.gCtx, q.ignoreCaseSensitive)
-	span, err := newQ.getQuerySpan(q.ctx, definition)
+	span, err := newQ.getQuerySpan(q.ctx, selectBody)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for view definition")
 	}
@@ -3626,4 +3635,44 @@ func unquote(name string) string {
 		return name[2 : len(name)-1]
 	}
 	return name
+}
+
+func getSelectBodyFromCreateView(createView string) (string, error) {
+	parseResult, err := ParseTSQL(createView)
+	if err != nil {
+		return "", err
+	}
+	if parseResult == nil {
+		return "", errors.Errorf("failed to parse CREATE VIEW statement")
+	}
+	tree := parseResult.Tree
+	if tree == nil {
+		return "", errors.Errorf("parse tree is nil")
+	}
+
+	extractor := &selectBodyExtractor{}
+	antlr.ParseTreeWalkerDefault.Walk(extractor, tree)
+
+	if extractor.selectBody == "" {
+		return "", errors.Errorf("no SELECT statement found in CREATE VIEW")
+	}
+
+	return extractor.selectBody, nil
+}
+
+type selectBodyExtractor struct {
+	*parser.BaseTSqlParserListener
+	selectBody string
+}
+
+func (e *selectBodyExtractor) EnterCreate_view(ctx *parser.Create_viewContext) {
+	// Get the SELECT statement part from CREATE VIEW
+	if selectStatement := ctx.Select_statement_standalone(); selectStatement != nil {
+		// Extract the text of the SELECT statement using GetTextFromInterval to preserve spaces
+		start := selectStatement.GetStart().GetStart()
+		stop := selectStatement.GetStop().GetStop()
+		input := selectStatement.GetStart().GetInputStream()
+		interval := antlr.NewInterval(start, stop)
+		e.selectBody = input.GetTextFromInterval(interval)
+	}
 }
