@@ -167,10 +167,9 @@ export const provideInstanceFormContext = (baseContext: {
 
       switch (ds.externalSecret.secretType) {
         case DataSourceExternalSecret_SecretType.VAULT_KV_V2:
-          if (!ds.externalSecret.url || !ds.externalSecret.engineName) {
-            return false;
-          }
           if (
+            !ds.externalSecret.url ||
+            !ds.externalSecret.engineName ||
             !ds.externalSecret.secretName ||
             !ds.externalSecret.passwordKeyName
           ) {
@@ -201,7 +200,7 @@ export const provideInstanceFormContext = (baseContext: {
         case DataSourceExternalSecret_AuthType.VAULT_APP_ROLE:
           return !!(
             ds.externalSecret.authOption?.case === "appRole" &&
-            ds.externalSecret.authOption.value?.roleId &&
+            ds.externalSecret.authOption.value.roleId &&
             ds.externalSecret.authOption.value.secretId
           );
       }
@@ -216,9 +215,13 @@ export const provideInstanceFormContext = (baseContext: {
     }
     if (basicInfo.value.engine === Engine.SPANNER) {
       return (
-        basicInfo.value.title.trim() &&
-        isValidSpannerHost(adminDataSource.value.host) &&
-        adminDataSource.value.updatedPassword
+        !!basicInfo.value.title.trim() &&
+        isValidSpannerHost(adminDataSource.value.host)
+      );
+    }
+    if (basicInfo.value.engine === Engine.BIGQUERY) {
+      return (
+        !!basicInfo.value.title.trim() && adminDataSource.value.host !== ""
       );
     }
 
@@ -240,8 +243,7 @@ export const provideInstanceFormContext = (baseContext: {
     }
 
     return (
-      basicInfo.value.title.trim() &&
-      resourceIdField.value?.resourceId &&
+      !!basicInfo.value.title.trim() &&
       resourceIdField.value?.isValidated &&
       checkDataSource([adminDataSource.value])
     );

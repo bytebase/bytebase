@@ -21,7 +21,6 @@
     "sign-up": "登録する",
     "email": "メールアドレス",
     "username": "ユーザー名",
-    "credentials": "資格",
     "password": "パスワード",
     "save": "保存",
     "cancel": "キャンセル",
@@ -1319,7 +1318,7 @@
       "create-readonly-user-non-sql": "これは、データベースに接続して読み取り専用操作を実行するために Bytebase によって使用されるユーザーです。",
       "google-cloud-sql": {
         "instance-name": "インスタンス接続名",
-        "instance-name-tips": "インスタンス接続名は project-id:region:instance-name である必要があります。",
+        "instance-name-tips": "インスタンス接続名は {instance} である必要があります。",
         "mysql": {
           "template": "{user} という名前のサービス アカウントを作成し、IAM ユーザー {user}{'@'}'%' として Google Cloud SQL に追加します。このユーザーに必要な権限を付与します。"
         },
@@ -1357,7 +1356,6 @@
       "firewall-info": "データベースインスタンスにインバウンドファイアウォールルールを使用する場合は、ByteBase Cloud Connection命令を参照してください。"
     },
     "no-password": "パスワードがありません",
-    "type-or-paste-credentials": "資格情報を入力または貼り付けます",
     "type-or-paste-credentials-write-only": "資格情報を入力または貼り付けます - 書き込みのみ",
     "password-write-only": "YOUR_DB_PWD - 書き込み専用",
     "password-type": {
