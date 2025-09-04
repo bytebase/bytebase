@@ -137,7 +137,7 @@
 import { create } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
 import { cloneDeep, isEqual } from "lodash-es";
-import { Building2Icon, PenIcon, TrashIcon } from "lucide-vue-next";
+import { Building2Icon, PencilIcon, TrashIcon } from "lucide-vue-next";
 import { NButton, NTag, NTooltip, NDataTable, useDialog } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
@@ -323,7 +323,6 @@ const getDataTableColumns = (
         <div class="flex justify-end pr-2 space-x-2">
           <NButton
             text
-            class="cursor-pointer opacity-60 hover:opacity-100"
             onClick={() => {
               editingBinding.value = create(BindingSchema, {
                 role: role,
@@ -333,7 +332,7 @@ const getDataTableColumns = (
               });
             }}
           >
-            <PenIcon class="w-4 h-4" />
+            <PencilIcon class="w-4 h-4" />
           </NButton>
           {roleList.value.filter((r) => r.role === role)[0]?.singleBindingList
             .length > 1 && (

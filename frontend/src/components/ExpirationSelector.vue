@@ -29,14 +29,17 @@
     </template>
 
     <div
-      v-if="state.expirationTimestampInMS && state.selected !== -1"
-      class="p-3 bg-gray-50 rounded-md"
+      v-if="state.selected !== -1"
+      class="p-3 bg-gray-50 rounded-md text-sm text-gray-600"
     >
-      <div class="text-sm text-gray-600">
+      <div v-if="state.expirationTimestampInMS">
         {{ $t("common.access-expires") }}:
         <span class="font-medium text-gray-900">
           {{ formatExpirationDisplay(state.expirationTimestampInMS) }}
         </span>
+      </div>
+      <div v-else>
+        {{ $t("project.members.role-never-expires") }}
       </div>
     </div>
   </div>
@@ -46,7 +49,7 @@
 import { useLocalStorage } from "@vueuse/core";
 import dayjs from "dayjs";
 import { NSelect, NDatePicker } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useSettingV1Store } from "@/store";
 import { PresetRoleType } from "@/types";
@@ -241,4 +244,13 @@ watch(
     emit("update:timestampInMs", state.expirationTimestampInMS);
   }
 );
+
+defineExpose({
+  isValid: computed(() => {
+    if (state.expirationTimestampInMS === undefined) {
+      return !maximumRoleExpiration.value;
+    }
+    return state.expirationTimestampInMS > new Date().getTime();
+  }),
+});
 </script>
