@@ -69,8 +69,7 @@
           </div>
         </div>
 
-        <DescriptionSection />
-
+        <DescriptionSection v-if="isCreating" />
         <IssueCommentSection v-if="!isCreating" />
       </div>
 

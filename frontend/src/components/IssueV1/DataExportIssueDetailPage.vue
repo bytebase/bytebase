@@ -13,7 +13,7 @@
         <TaskRunSection v-if="!isCreating" />
         <SQLCheckSection v-if="isCreating" />
         <StatementSection />
-        <DescriptionSection />
+        <DescriptionSection v-if="isCreating" />
         <IssueCommentSection v-if="!isCreating" />
       </div>
 
