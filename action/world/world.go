@@ -46,13 +46,16 @@ type World struct {
 	TargetStage string
 	Plan        string
 
-	OutputMap map[string]string
+	OutputMap struct {
+		Release string `json:"release,omitempty"`
+		Plan    string `json:"plan,omitempty"`
+		Rollout string `json:"rollout,omitempty"`
+	}
 }
 
 func NewWorld() *World {
 	return &World{
 		CurrentTime: time.Now(),
 		Logger:      slog.Default(),
-		OutputMap:   make(map[string]string),
 	}
 }
