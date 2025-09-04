@@ -1549,8 +1549,11 @@ func validateBindings(bindings []*v1pb.Binding, roles []*store.RoleMessage, maxi
 //
 // Other expressions will be ignored.
 func validateExpirationInExpression(expr string, maximumRoleExpiration *durationpb.Duration) error {
-	if expr == "" {
+	if maximumRoleExpiration == nil {
 		return nil
+	}
+	if !strings.Contains(expr, "request.time") {
+		return errors.Errorf("request.time is required")
 	}
 	e, err := cel.NewEnv()
 	if err != nil {
@@ -1586,10 +1589,6 @@ func validateExpirationInExpression(expr string, maximumRoleExpiration *duration
 				return nil
 			// Only handle "request.time < timestamp("2021-01-01T00:00:00Z").
 			case "_<_":
-				if maximumRoleExpiration == nil {
-					return nil
-				}
-
 				var value string
 				for _, arg := range expr.AsCall().Args() {
 					switch arg.Kind() {

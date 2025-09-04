@@ -72,16 +72,13 @@
 
         <div class="w-full">
           <p class="mb-2">{{ $t("common.expiration") }}</p>
-          <NDatePicker
-            v-model:value="state.expirationTimestamp"
-            style="width: 100%"
-            type="datetime"
-            :is-date-disabled="isDateDisabled"
-            clearable
+          <ExpirationSelector
+            v-if="!state.isLoading"
+            ref="expirationSelectorRef"
+            :role="binding.role"
+            v-model:timestamp-in-ms="state.expirationTimestamp"
+            class="grid-cols-3 sm:grid-cols-4"
           />
-          <span v-if="!state.expirationTimestamp" class="textinfolabel">
-            {{ $t("project.members.role-never-expires") }}
-          </span>
         </div>
 
         <MembersBindingSelect
@@ -121,12 +118,12 @@
 </template>
 
 <script lang="ts" setup>
-import dayjs from "dayjs";
 import { cloneDeep, isEqual } from "lodash-es";
-import { NButton, NDatePicker, NInput } from "naive-ui";
-import { computed, reactive, onMounted } from "vue";
+import { NButton, NInput } from "naive-ui";
+import { computed, reactive, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
+import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
 import MaxRowCountSelect from "@/components/GrantRequestPanel/MaxRowCountSelect.vue";
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
@@ -135,7 +132,6 @@ import {
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   pushNotification,
-  useSettingV1Store,
 } from "@/store";
 import { PresetRoleType, type DatabaseResource } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -174,37 +170,14 @@ const state = reactive<LocalState>({
   maxRowCount: undefined,
   isLoading: true,
 });
-const settingStore = useSettingV1Store();
+const expirationSelectorRef = ref<InstanceType<typeof ExpirationSelector>>();
+
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
 const panelTitle = computed(() => {
   return displayRoleTitle(props.binding.role);
 });
-
-const maximumRoleExpiration = computed(() => {
-  const seconds = settingStore.workspaceProfileSetting?.maximumRoleExpiration
-    ?.seconds
-    ? Number(settingStore.workspaceProfileSetting.maximumRoleExpiration.seconds)
-    : undefined;
-  if (!seconds) {
-    return undefined;
-  }
-  return Math.floor(seconds / (60 * 60 * 24));
-});
-
-const isDateDisabled = (date: number) => {
-  if (date < dayjs().startOf("day").valueOf()) {
-    return true;
-  }
-  if (
-    !maximumRoleExpiration.value ||
-    props.binding.role === PresetRoleType.PROJECT_OWNER
-  ) {
-    return false;
-  }
-  return date > dayjs().add(maximumRoleExpiration.value, "days").valueOf();
-};
 
 const allowRemoveRole = () => {
   if (props.project.state === State.DELETED) {
@@ -235,6 +208,7 @@ const allowConfirm = computed(() => {
   // only allow update current single user.
   return (
     props.binding.members.length === 1 &&
+    expirationSelectorRef.value?.isValid &&
     !isEqual(bindingCondition.value, props.binding.condition)
   );
 });
