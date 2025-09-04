@@ -21,7 +21,6 @@
     "sign-up": "Registrarse",
     "email": "Correo electrónico",
     "username": "Nombre de usuario",
-    "credentials": "Credenciales",
     "password": "Contraseña",
     "save": "Guardar",
     "cancel": "Cancelar",
@@ -1357,7 +1356,6 @@
       "firewall-info": "Si usa reglas de firewall entrante para su instancia de base de datos, consulte la instrucción de conexión de Bytebase Cloud."
     },
     "no-password": "Sin contraseña",
-    "type-or-paste-credentials": "Escriba o pegue las CREDENCIALES",
     "type-or-paste-credentials-write-only": "Escriba o pegue las CREDENCIALES - solo escritura",
     "password-write-only": "SU_DB_PWD - solo escritura",
     "password-type": {

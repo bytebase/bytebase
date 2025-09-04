@@ -21,7 +21,6 @@
     "sign-up": "Sign up",
     "email": "Email",
     "username": "Username",
-    "credentials": "Credentials",
     "password": "Password",
     "save": "Save",
     "cancel": "Cancel",
@@ -1357,7 +1356,6 @@
       "firewall-info": "If you use inbound firewall rules for your database instance, please refer to Bytebase Cloud connection instruction."
     },
     "no-password": "No password",
-    "type-or-paste-credentials": "Type or paste CREDENTIALS",
     "type-or-paste-credentials-write-only": "Type or paste CREDENTIALS - write only",
     "password-write-only": "YOUR_DB_PWD - write only",
     "password-type": {

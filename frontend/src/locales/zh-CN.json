@@ -21,7 +21,6 @@
     "sign-up": "注册",
     "email": "邮箱",
     "username": "用户名",
-    "credentials": "凭据",
     "password": "密码",
     "save": "保存",
     "cancel": "取消",
@@ -1357,7 +1356,6 @@
       "firewall-info": "如果您为数据库实例使用入站防火墙规则，请参阅 ByteBase Cloud Connection 文档。"
     },
     "no-password": "无密码",
-    "type-or-paste-credentials": "输入或粘贴 CREDENTIALS",
     "type-or-paste-credentials-write-only": "输入或粘贴 CREDENTIALS - 仅写入",
     "password-write-only": "YOUR_DB_PWD - 仅写入",
     "password-type": {

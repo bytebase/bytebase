@@ -1010,7 +1010,6 @@ MIIEvQ...
 </template>
 
 <script setup lang="ts">
-/* eslint-disable vue/no-mutating-props */
 import { create } from "@bufbuild/protobuf";
 import {
   NButton,

@@ -21,7 +21,6 @@
     "sign-up": "登録する",
     "email": "メールアドレス",
     "username": "ユーザー名",
-    "credentials": "資格",
     "password": "パスワード",
     "save": "保存",
     "cancel": "キャンセル",
@@ -1357,7 +1356,6 @@
       "firewall-info": "データベースインスタンスにインバウンドファイアウォールルールを使用する場合は、ByteBase Cloud Connection命令を参照してください。"
     },
     "no-password": "パスワードがありません",
-    "type-or-paste-credentials": "資格情報を入力または貼り付けます",
     "type-or-paste-credentials-write-only": "資格情報を入力または貼り付けます - 書き込みのみ",
     "password-write-only": "YOUR_DB_PWD - 書き込み専用",
     "password-type": {

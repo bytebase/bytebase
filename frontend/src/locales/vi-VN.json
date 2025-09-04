@@ -21,7 +21,6 @@
     "sign-up": "Đăng ký",
     "email": "Email",
     "username": "Tên người dùng",
-    "credentials": "Thông tin xác thực",
     "password": "Mật khẩu",
     "save": "Lưu",
     "cancel": "Hủy",
@@ -1357,7 +1356,6 @@
       "firewall-info": "Nếu bạn sử dụng các quy tắc tường lửa gửi đến cho thể hiện cơ sở dữ liệu của mình, vui lòng tham khảo Hướng dẫn kết nối đám mây Bytebase."
     },
     "no-password": "Không có mật khẩu",
-    "type-or-paste-credentials": "Nhập hoặc dán THÔNG TIN XÁC THỰC",
     "type-or-paste-credentials-write-only": "Nhập hoặc dán THÔNG TIN XÁC THỰC - chỉ ghi",
     "password-write-only": "YOUR_DB_PWD - chỉ ghi",
     "password-type": {
