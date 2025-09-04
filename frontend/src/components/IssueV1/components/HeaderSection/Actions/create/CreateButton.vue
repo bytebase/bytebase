@@ -165,7 +165,10 @@ const doCreateIssue = async () => {
 
   try {
     await createSheets();
-    const createdPlan = await createPlan(issue.value.title);
+    const createdPlan = await createPlan(
+      issue.value.title,
+      issue.value.description
+    );
     if (!createdPlan) return;
 
     issue.value.plan = createdPlan.name;
@@ -249,14 +252,15 @@ const createSheets = async () => {
   });
 };
 
-const createPlan = async (planTitle: string) => {
+const createPlan = async (title: string, description: string) => {
   const plan = issue.value.planEntity;
   if (!plan) return;
   const request = create(CreatePlanRequestSchema, {
     parent: issue.value.project,
     plan: {
       ...plan,
-      title: planTitle,
+      title,
+      description,
     },
   });
   const response = await planServiceClientConnect.createPlan(request);
