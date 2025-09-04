@@ -724,7 +724,7 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 					continue
 				}
 				view := schemaSchema.GetView(viewName)
-				columns, err := q.getColumnsFromCreateView(view.Definition)
+				columns, err := q.getColumnsFromCreateView(view.Definition, databaseName, schemaName)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to get columns for view %s.%s.%s", databaseName, schemaName, viewName)
 				}
@@ -746,7 +746,7 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 	}
 }
 
-func (q *querySpanExtractor) getColumnsFromCreateView(definition string) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) getColumnsFromCreateView(definition string, viewDatabaseName string, viewSchemaName string) ([]base.QuerySpanResult, error) {
 	// Extract the SELECT body from CREATE VIEW statement
 	selectBody, err := getSelectBodyFromCreateView(definition)
 	if err != nil {
@@ -756,7 +756,9 @@ func (q *querySpanExtractor) getColumnsFromCreateView(definition string) ([]base
 		return nil, errors.Errorf("no SELECT body found in CREATE VIEW statement")
 	}
 
-	newQ := newQuerySpanExtractor(q.defaultDatabase, q.defaultSchema, q.gCtx, q.ignoreCaseSensitive)
+	// Use the view's database and schema as the default context for parsing the SELECT statement
+	// This ensures that cross-database references in the view definition are resolved correctly
+	newQ := newQuerySpanExtractor(viewDatabaseName, viewSchemaName, q.gCtx, q.ignoreCaseSensitive)
 	span, err := newQ.getQuerySpan(q.ctx, selectBody)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for view definition")
