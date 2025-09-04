@@ -1,42 +1,43 @@
 - statement: SELECT * FROM t WHERE a in (SELECT c FROM t1 WHERE CONTAINS(b, 'foo'))
   defaultDatabase: db
   ignoreCaseSensitive: true
-  metadata: |-
-    {
-      "name":  "db",
-      "schemas":  [
-        {
-          "name": "dbo",
-          "tables":  [
-            {
-              "name":  "t",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                }
-              ]
-            },
-            {
-              "name":  "t1",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                },
-                {
-                  "name":  "c"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  metadata:
+    - |-
+      {
+        "name":  "db",
+        "schemas":  [
+          {
+            "name": "dbo",
+            "tables":  [
+              {
+                "name":  "t",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  }
+                ]
+              },
+              {
+                "name":  "t1",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  },
+                  {
+                    "name":  "c"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
   querySpan:
     type: 1
     results:
@@ -90,28 +91,29 @@
 - statement: SELECT * FROM t WHERE a = 1
   defaultDatabase: db
   ignoreCaseSensitive: true
-  metadata: |-
-    {
-      "name":  "db",
-      "schemas":  [
-        {
-          "name": "dbo",
-          "tables":  [
-            {
-              "name":  "t",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  metadata:
+    - |-
+      {
+        "name":  "db",
+        "schemas":  [
+          {
+            "name": "dbo",
+            "tables":  [
+              {
+                "name":  "t",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
   querySpan:
     type: 1
     results:

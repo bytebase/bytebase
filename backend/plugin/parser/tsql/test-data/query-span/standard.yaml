@@ -5,34 +5,35 @@
     select * from @temp where 1=1;
   defaultDatabase: db
   ignoreCaseSensitive: true
-  metadata: |-
-    {
-      "name":  "db",
-      "schemas":  [
-        {
-          "name": "dbo",
-          "tables":  [
-            {
-              "name":  "MyTable1",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                }
-              ]
-            }
-          ],
-          "views":  [
-            {
-              "name":  "MyView1",
-              "definition":  "SELECT * FROM MyTable1"
-            }
-          ]
-        }
-      ]
-    }
+  metadata:
+    - |-
+      {
+        "name":  "db",
+        "schemas":  [
+          {
+            "name": "dbo",
+            "tables":  [
+              {
+                "name":  "MyTable1",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  }
+                ]
+              }
+            ],
+            "views":  [
+              {
+                "name":  "MyView1",
+                "definition":  "CREATE VIEW [dbo].[MyView1] AS SELECT * FROM MyTable1"
+              }
+            ]
+          }
+        ]
+      }
   querySpan:
     type: 1
     results:
@@ -52,34 +53,35 @@
   statement: SELECT NEWID() as uuid;
   defaultDatabase: db
   ignoreCaseSensitive: true
-  metadata: |-
-    {
-      "name":  "db",
-      "schemas":  [
-        {
-          "name": "dbo",
-          "tables":  [
-            {
-              "name":  "MyTable1",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                }
-              ]
-            }
-          ],
-          "views":  [
-            {
-              "name":  "MyView1",
-              "definition":  "SELECT * FROM MyTable1"
-            }
-          ]
-        }
-      ]
-    }
+  metadata:
+    - |-
+      {
+        "name":  "db",
+        "schemas":  [
+          {
+            "name": "dbo",
+            "tables":  [
+              {
+                "name":  "MyTable1",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  }
+                ]
+              }
+            ],
+            "views":  [
+              {
+                "name":  "MyView1",
+                "definition":  "CREATE VIEW [dbo].[MyView1] AS SELECT * FROM MyTable1"
+              }
+            ]
+          }
+        ]
+      }
   querySpan:
     type: 1
     results:
@@ -94,34 +96,35 @@
   statement: SELECT * FROM MyView1;
   defaultDatabase: db
   ignoreCaseSensitive: true
-  metadata: |-
-    {
-      "name":  "db",
-      "schemas":  [
-        {
-          "name": "dbo",
-          "tables":  [
-            {
-              "name":  "MyTable1",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                }
-              ]
-            }
-          ],
-          "views":  [
-            {
-              "name":  "MyView1",
-              "definition":  "SELECT * FROM MyTable1"
-            }
-          ]
-        }
-      ]
-    }
+  metadata:
+    - |-
+      {
+        "name":  "db",
+        "schemas":  [
+          {
+            "name": "dbo",
+            "tables":  [
+              {
+                "name":  "MyTable1",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  }
+                ]
+              }
+            ],
+            "views":  [
+              {
+                "name":  "MyView1",
+                "definition":  "CREATE VIEW [dbo].[MyView1] AS SELECT * FROM MyTable1"
+              }
+            ]
+          }
+        ]
+      }
   querySpan:
     type: 1
     results:
@@ -156,28 +159,29 @@
   statement: SELECT * FROM MyTable1;
   defaultDatabase: db
   ignoreCaseSensitive: true
-  metadata: |-
-    {
-      "name":  "db",
-      "schemas":  [
-        {
-          "name": "dbo",
-          "tables":  [
-            {
-              "name":  "MyTable1",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  metadata:
+    - |-
+      {
+        "name":  "db",
+        "schemas":  [
+          {
+            "name": "dbo",
+            "tables":  [
+              {
+                "name":  "MyTable1",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
   querySpan:
     type: 1
     results:
@@ -212,28 +216,29 @@
   statement: SELECT T1.* FROM MyTable1 AS T1;
   defaultDatabase: db
   ignoreCaseSensitive: true
-  metadata: |-
-    {
-      "name":  "db",
-      "schemas":  [
-        {
-          "name": "dbo",
-          "tables":  [
-            {
-              "name":  "MyTable1",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  metadata:
+    - |-
+      {
+        "name":  "db",
+        "schemas":  [
+          {
+            "name": "dbo",
+            "tables":  [
+              {
+                "name":  "MyTable1",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
   querySpan:
     type: 1
     results:
@@ -268,39 +273,40 @@
   statement: SELECT (SELECT MAX(d) FROM MyTable2) FROM MyTable1;
   defaultDatabase: db
   ignoreCaseSensitive: true
-  metadata: |-
-    {
-      "name":  "db",
-      "schemas":  [
-        {
-          "name": "dbo",
-          "tables":  [
-            {
-              "name":  "MyTable1",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                }
-              ]
-            },
-            {
-              "name":  "MyTable2",
-              "columns":  [
-                {
-                  "name":  "c"
-                },
-                {
-                  "name":  "d"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  metadata:
+    - |-
+      {
+        "name":  "db",
+        "schemas":  [
+          {
+            "name": "dbo",
+            "tables":  [
+              {
+                "name":  "MyTable1",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  }
+                ]
+              },
+              {
+                "name":  "MyTable2",
+                "columns":  [
+                  {
+                    "name":  "c"
+                  },
+                  {
+                    "name":  "d"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
   querySpan:
     type: 1
     results:
@@ -330,39 +336,40 @@
   statement: SELECT a FROM MyTable1 UNION SELECT c FROM MyTable2;
   defaultDatabase: db
   ignoreCaseSensitive: true
-  metadata: |-
-    {
-      "name":  "db",
-      "schemas":  [
-        {
-          "name": "dbo",
-          "tables":  [
-            {
-              "name":  "MyTable1",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                }
-              ]
-            },
-            {
-              "name":  "MyTable2",
-              "columns":  [
-                {
-                  "name":  "c"
-                },
-                {
-                  "name":  "d"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  metadata:
+    - |-
+      {
+        "name":  "db",
+        "schemas":  [
+          {
+            "name": "dbo",
+            "tables":  [
+              {
+                "name":  "MyTable1",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  }
+                ]
+              },
+              {
+                "name":  "MyTable2",
+                "columns":  [
+                  {
+                    "name":  "c"
+                  },
+                  {
+                    "name":  "d"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
   querySpan:
     type: 1
     results:
@@ -397,39 +404,40 @@
   statement: SELECT a, b, c, d FROM MyTable1 JOIN MyTable2 ON MyTable1.a = MyTable2.d;
   defaultDatabase: db
   ignoreCaseSensitive: true
-  metadata: |-
-    {
-      "name":  "db",
-      "schemas":  [
-        {
-          "name": "dbo",
-          "tables":  [
-            {
-              "name":  "MyTable1",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                }
-              ]
-            },
-            {
-              "name":  "MyTable2",
-              "columns":  [
-                {
-                  "name":  "c"
-                },
-                {
-                  "name":  "d"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  metadata:
+    - |-
+      {
+        "name":  "db",
+        "schemas":  [
+          {
+            "name": "dbo",
+            "tables":  [
+              {
+                "name":  "MyTable1",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  }
+                ]
+              },
+              {
+                "name":  "MyTable2",
+                "columns":  [
+                  {
+                    "name":  "c"
+                  },
+                  {
+                    "name":  "d"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
   querySpan:
     type: 1
     results:
@@ -489,39 +497,40 @@
   statement: SELECT a, b, c, d FROM MyTable1, MyTable2;
   defaultDatabase: db
   ignoreCaseSensitive: true
-  metadata: |-
-    {
-      "name":  "db",
-      "schemas":  [
-        {
-          "name": "dbo",
-          "tables":  [
-            {
-              "name":  "MyTable1",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                }
-              ]
-            },
-            {
-              "name":  "MyTable2",
-              "columns":  [
-                {
-                  "name":  "c"
-                },
-                {
-                  "name":  "d"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  metadata:
+    - |-
+      {
+        "name":  "db",
+        "schemas":  [
+          {
+            "name": "dbo",
+            "tables":  [
+              {
+                "name":  "MyTable1",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  }
+                ]
+              },
+              {
+                "name":  "MyTable2",
+                "columns":  [
+                  {
+                    "name":  "c"
+                  },
+                  {
+                    "name":  "d"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
   querySpan:
     type: 1
     results:
@@ -581,39 +590,40 @@
   statement: SELECT tt.a, b FROM (SELECT * FROM MyTable1) AS tt;
   defaultDatabase: db
   ignoreCaseSensitive: true
-  metadata: |-
-    {
-      "name":  "db",
-      "schemas":  [
-        {
-          "name": "dbo",
-          "tables":  [
-            {
-              "name":  "MyTable1",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                }
-              ]
-            },
-            {
-              "name":  "MyTable2",
-              "columns":  [
-                {
-                  "name":  "c"
-                },
-                {
-                  "name":  "d"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  metadata:
+    - |-
+      {
+        "name":  "db",
+        "schemas":  [
+          {
+            "name": "dbo",
+            "tables":  [
+              {
+                "name":  "MyTable1",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  }
+                ]
+              },
+              {
+                "name":  "MyTable2",
+                "columns":  [
+                  {
+                    "name":  "c"
+                  },
+                  {
+                    "name":  "d"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
   querySpan:
     type: 1
     results:
@@ -648,39 +658,40 @@
   statement: WITH tt1(aa, bb) AS ( SELECT a, b FROM MyTable1 ) SELECT tt1.aa, bb FROM tt1;
   defaultDatabase: db
   ignoreCaseSensitive: true
-  metadata: |-
-    {
-      "name":  "db",
-      "schemas":  [
-        {
-          "name": "dbo",
-          "tables":  [
-            {
-              "name":  "MyTable1",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                }
-              ]
-            },
-            {
-              "name":  "MyTable2",
-              "columns":  [
-                {
-                  "name":  "c"
-                },
-                {
-                  "name":  "d"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  metadata:
+    - |-
+      {
+        "name":  "db",
+        "schemas":  [
+          {
+            "name": "dbo",
+            "tables":  [
+              {
+                "name":  "MyTable1",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  }
+                ]
+              },
+              {
+                "name":  "MyTable2",
+                "columns":  [
+                  {
+                    "name":  "c"
+                  },
+                  {
+                    "name":  "d"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
   querySpan:
     type: 1
     results:
@@ -727,39 +738,40 @@
     SELECT * FROM tt1 JOIN tt2 ON tt1.aa = tt2.cc;
   defaultDatabase: db
   ignoreCaseSensitive: true
-  metadata: |-
-    {
-      "name":  "db",
-      "schemas":  [
-        {
-          "name": "dbo",
-          "tables":  [
-            {
-              "name":  "MyTable1",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                }
-              ]
-            },
-            {
-              "name":  "MyTable2",
-              "columns":  [
-                {
-                  "name":  "c"
-                },
-                {
-                  "name":  "d"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  metadata:
+    - |-
+      {
+        "name":  "db",
+        "schemas":  [
+          {
+            "name": "dbo",
+            "tables":  [
+              {
+                "name":  "MyTable1",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  }
+                ]
+              },
+              {
+                "name":  "MyTable2",
+                "columns":  [
+                  {
+                    "name":  "c"
+                  },
+                  {
+                    "name":  "d"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
   querySpan:
     type: 1
     results:
@@ -825,31 +837,32 @@
     SELECT * FROM cte_01;
   defaultDatabase: db
   ignoreCaseSensitive: true
-  metadata: |-
-    {
-      "name":  "db",
-      "schemas":  [
-        {
-          "name": "dbo",
-          "tables":  [
-            {
-              "name":  "MyTable1",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                },
-                {
-                  "name":  "c"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  metadata:
+    - |-
+      {
+        "name":  "db",
+        "schemas":  [
+          {
+            "name": "dbo",
+            "tables":  [
+              {
+                "name":  "MyTable1",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  },
+                  {
+                    "name":  "c"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
   querySpan:
     type: 1
     results:
