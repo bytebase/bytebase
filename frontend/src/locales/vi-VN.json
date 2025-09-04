@@ -264,7 +264,10 @@
     "check-type": {
       "fake": "Giả",
       "connection": "Kết nối",
-      "sql-review": "Đánh giá SQL",
+      "sql-review": {
+        "self": "Đánh giá SQL",
+        "description": "Phân tích câu lệnh SQL để tìm ra các vấn đề tiềm ẩn và đưa ra khuyến nghị. Bao gồm các quy tắc tích hợp sẵn và quy tắc tùy chỉnh của bạn."
+      },
       "ghost-sync": "Đồng bộ gh-ost",
       "affected-rows": {
         "self": "Số dòng bị ảnh hưởng",
