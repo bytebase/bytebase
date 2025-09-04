@@ -105,7 +105,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 				w.Logger.Info("release created", "url", fmt.Sprintf("%s/%s", client.url, createReleaseResponse.Name))
 				release = createReleaseResponse.Name
 			}
-			w.OutputMap["release"] = release
+			w.OutputMap.Release = release
 
 			planCreated, err := client.CreatePlan(ctx, w.Project, &v1pb.Plan{
 				Title: "Release " + w.ReleaseTitle,
@@ -127,7 +127,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 			plan = planCreated
 			w.Logger.Info("plan created", "url", fmt.Sprintf("%s/%s", client.url, plan.Name))
 		}
-		w.OutputMap["plan"] = plan.Name
+		w.OutputMap.Plan = plan.Name
 
 		if err := runAndWaitForPlanChecks(ctx, w, client, plan.Name); err != nil {
 			return errors.Wrapf(err, "failed to run and wait for plan checks")
@@ -242,7 +242,7 @@ func runAndWaitForRollout(ctx context.Context, w *world.World, client *Client, p
 	if err != nil {
 		return errors.Wrapf(err, "failed to preview rollout")
 	}
-	w.OutputMap["rollout"] = rolloutEmpty.Name
+	w.OutputMap.Rollout = rolloutEmpty.Name
 
 	w.Logger.Info("rollout created", "url", fmt.Sprintf("%s/%s", client.url, rolloutEmpty.Name))
 
