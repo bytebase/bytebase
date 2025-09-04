@@ -264,7 +264,10 @@
     "check-type": {
       "fake": "Fake",
       "connection": "Connection",
-      "sql-review": "SQL review",
+      "sql-review": {
+        "self": "SQL review",
+        "description": "Analyze the SQL statement for potential issues and provide recommendations. Includes built-in rules and your custom rules."
+      },
       "ghost-sync": "gh-ost sync",
       "affected-rows": {
         "self": "Affected rows",

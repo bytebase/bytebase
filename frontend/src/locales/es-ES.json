@@ -264,7 +264,10 @@
     "check-type": {
       "fake": "Falso",
       "connection": "Conexión",
-      "sql-review": "Revisión de SQL",
+      "sql-review": {
+        "self": "Revisión de SQL",
+        "description": "Analice la sentencia SQL para detectar posibles problemas y proporcione recomendaciones. Incluye reglas integradas y sus reglas personalizadas."
+      },
       "ghost-sync": "Sincronización gh-ost",
       "affected-rows": {
         "self": "Filas afectadas",

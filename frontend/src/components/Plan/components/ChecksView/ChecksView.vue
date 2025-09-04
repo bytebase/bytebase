@@ -53,14 +53,22 @@
                 <span class="text-sm font-medium">
                   {{ getCheckTypeLabel(checkRun.type) }}
                 </span>
-                <DatabaseDisplay :database="checkRun.target" />
+                <NTooltip v-if="getCheckTypeDescription(checkRun.type)">
+                  <template #trigger>
+                    <CircleQuestionMarkIcon
+                      class="w-4 h-4 text-control-light"
+                    />
+                  </template>
+                  {{ getCheckTypeDescription(checkRun.type) }}
+                </NTooltip>
+                <span class="text-sm text-control-light">
+                  {{ formatTime(checkRun.createTime) }}
+                </span>
               </div>
             </div>
 
             <div class="flex items-center gap-2">
-              <span class="text-sm text-control">
-                {{ formatTime(checkRun.createTime) }}
-              </span>
+              <DatabaseDisplay :database="checkRun.target" />
             </div>
           </div>
 
@@ -101,7 +109,9 @@ import {
   DatabaseIcon,
   ShieldIcon,
   SearchCodeIcon,
+  CircleQuestionMarkIcon,
 } from "lucide-vue-next";
+import { NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
@@ -195,7 +205,7 @@ const getCheckTypeIcon = (type: PlanCheckRun_Type) => {
 const getCheckTypeLabel = (type: PlanCheckRun_Type) => {
   switch (type) {
     case PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE:
-      return t("task.check-type.sql-review");
+      return t("task.check-type.sql-review.self");
     case PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT:
       return t("task.check-type.summary-report");
     case PlanCheckRun_Type.DATABASE_CONNECT:
@@ -204,6 +214,15 @@ const getCheckTypeLabel = (type: PlanCheckRun_Type) => {
       return t("task.check-type.ghost-sync");
     default:
       return type.toString();
+  }
+};
+
+const getCheckTypeDescription = (type: PlanCheckRun_Type) => {
+  switch (type) {
+    case PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE:
+      return t("task.check-type.sql-review.description");
+    default:
+      return undefined;
   }
 };
 
