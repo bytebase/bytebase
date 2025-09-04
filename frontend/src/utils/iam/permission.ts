@@ -1,5 +1,6 @@
 import { usePermissionStore } from "@/store";
-import type { ComposedProject, Permission } from "@/types";
+import type { Permission } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 export const hasWorkspacePermissionV2 = (permission: Permission): boolean => {
   return usePermissionStore().currentPermissions.has(permission);
@@ -7,7 +8,7 @@ export const hasWorkspacePermissionV2 = (permission: Permission): boolean => {
 
 // hasProjectPermissionV2 checks if the user has the given permission on the project.
 export const hasProjectPermissionV2 = (
-  project: ComposedProject,
+  project: Project,
   permission: Permission
 ): boolean => {
   const permissionStore = usePermissionStore();

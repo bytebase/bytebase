@@ -27,7 +27,7 @@ import { reactive, computed, onMounted, toRef, ref, watch } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useSettingV1Store } from "@/store";
-import type { ComposedProject } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import Aside from "./Aside";
 import Editor from "./Editor.vue";
@@ -36,7 +36,7 @@ import { provideSchemaEditorContext } from "./context";
 import type { EditTarget, RolloutObject } from "./types";
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
   readonly?: boolean;
   selectedRolloutObjects?: RolloutObject[];
   targets?: EditTarget[];

@@ -1,4 +1,5 @@
-import type { ComposedDatabase, ComposedProject } from "@/types";
+import { type ComposedDatabase } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { hasProjectPermissionV2 } from "./permission";
 
 export const hasPermissionToCreateRequestGrantIssue = (
@@ -8,7 +9,7 @@ export const hasPermissionToCreateRequestGrantIssue = (
 };
 
 export const hasPermissionToCreateChangeDatabaseIssueInProject = (
-  project: ComposedProject
+  project: Project
 ) => {
   return (
     hasProjectPermissionV2(project, "bb.issues.create") &&
@@ -26,7 +27,7 @@ export const hasPermissionToCreateChangeDatabaseIssue = (
 };
 
 export const hasPermissionToCreateDataExportIssueInProject = (
-  project: ComposedProject
+  project: Project
 ) => {
   return (
     hasProjectPermissionV2(project, "bb.issues.create") &&
@@ -41,8 +42,6 @@ export const hasPermissionToCreateDataExportIssue = (
   return hasPermissionToCreateDataExportIssueInProject(database.projectEntity);
 };
 
-export const hasPermissionToCreatePlanInProject = (
-  project: ComposedProject
-) => {
+export const hasPermissionToCreatePlanInProject = (project: Project) => {
   return hasProjectPermissionV2(project, "bb.plans.create");
 };

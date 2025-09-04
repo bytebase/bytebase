@@ -34,8 +34,9 @@ import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useDatabaseV1Store } from "@/store";
-import { isValidDatabaseName, type ComposedProject } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   databaseV1Url,
   engineNameV1,
@@ -46,7 +47,7 @@ import { EngineIcon } from "../Icon";
 import { type ChangelogSourceSchema } from "./types";
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
   schemaString: string;
   engine: Engine;
   changelogSourceSchema?: ChangelogSourceSchema;

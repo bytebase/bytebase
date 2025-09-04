@@ -51,8 +51,7 @@ import type { SelectBaseOption } from "naive-ui/lib/select/src/interface";
 import { computed, h } from "vue";
 import { PROJECT_V1_ROUTE_SETTINGS } from "@/router/dashboard/projectV1";
 import { getProjectName } from "@/store/modules/v1/common";
-import type { ComposedProject } from "@/types";
-import type { Label } from "@/types/proto-es/v1/project_service_pb";
+import type { Label, Project } from "@/types/proto-es/v1/project_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 
 type IssueLabelOption = SelectOption & {
@@ -64,7 +63,7 @@ const props = withDefaults(
   defineProps<{
     disabled: boolean;
     selected: string[];
-    project: ComposedProject;
+    project: Project;
     size?: "small" | "medium" | "large";
     maxTagCount?: number | "responsive";
   }>(),

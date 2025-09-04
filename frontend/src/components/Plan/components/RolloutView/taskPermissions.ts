@@ -1,8 +1,12 @@
 import { uniq } from "lodash-es";
-import { useCurrentUserV1, useCurrentProjectV1 } from "@/store";
+import {
+  useCurrentUserV1,
+  useCurrentProjectV1,
+  useProjectIamPolicyStore,
+} from "@/store";
 import { userNamePrefix, roleNamePrefix } from "@/store/modules/v1/common";
-import type { ComposedProject } from "@/types";
 import { Issue_Type, type Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -17,15 +21,17 @@ import {
 export const useTaskActionPermissions = () => {
   const currentUser = useCurrentUserV1();
   const { project } = useCurrentProjectV1();
+  const projectIamPolicyStore = useProjectIamPolicyStore();
   const formatedCurrentUser = `${userNamePrefix}${currentUser.value.email}`;
 
   /**
    * Get releaser candidates for an issue (similar to releaserCandidatesForIssue)
    */
   const getReleaserCandidatesForIssue = (issue: Issue): string[] => {
-    const projectMembersMap = memberMapToRolesInProjectIAM(
-      project.value.iamPolicy
+    const policy = projectIamPolicyStore.getProjectIamPolicy(
+      project.value.name
     );
+    const projectMembersMap = memberMapToRolesInProjectIAM(policy);
     const users: string[] = [];
 
     for (let i = 0; i < issue.releasers.length; i++) {
@@ -64,7 +70,7 @@ export const useTaskActionPermissions = () => {
   const canPerformTaskAction = (
     tasks: Task[],
     rollout: Rollout,
-    project: ComposedProject,
+    project: Project,
     issue?: Issue
   ): boolean => {
     if (tasks.length === 0) {

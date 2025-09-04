@@ -7,9 +7,9 @@ import {
   useCurrentUserV1,
   extractUserId,
 } from "@/store";
-import type { ComposedIssue, ComposedProject } from "@/types";
-import { emptyIssue, EMPTY_ID, UNKNOWN_ID } from "@/types";
+import { emptyIssue, EMPTY_ID, UNKNOWN_ID, type ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { uidFromSlug, hasProjectPermissionV2 } from "@/utils";
 import { createIssueSkeleton } from "./create";
 
@@ -17,7 +17,7 @@ export * from "./create";
 
 export function useInitializeIssue(
   issueSlug: MaybeRef<string>,
-  project: MaybeRef<ComposedProject>,
+  project: MaybeRef<Project>,
   redirectNotFound: boolean = true
 ) {
   const isCreating = computed(() => {

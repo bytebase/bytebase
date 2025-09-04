@@ -75,6 +75,7 @@ import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
   buildCELExpr,
   emptySimpleExpr,
+  resolveCELExpr,
   validateSimpleExpr,
   wrapAsGroup,
 } from "@/plugins/cel";
@@ -87,14 +88,17 @@ import {
   databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,
 } from "@/store/modules/v1/common";
-import type { ComposedProject } from "@/types";
 import type { Expr as CELExpr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import {
   DatabaseGroupSchema,
   type DatabaseGroup,
 } from "@/types/proto-es/v1/database_group_service_pb";
-import { batchConvertParsedExprToCELString } from "@/utils";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import {
+  batchConvertCELStringToParsedExpr,
+  batchConvertParsedExprToCELString,
+} from "@/utils";
 import { ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
 import {
@@ -105,7 +109,7 @@ import {
 
 const props = defineProps<{
   readonly: boolean;
-  project: ComposedProject;
+  project: Project;
   databaseGroup?: DatabaseGroup;
 }>();
 
@@ -146,12 +150,18 @@ onMounted(async () => {
   );
   state.resourceId = databaseGroupName;
   state.placeholder = databaseGroupEntity.title;
-  const composedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
+  const fetchedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
     databaseGroup.name,
     { silent: true }
   );
-  if (composedDatabaseGroup.simpleExpr) {
-    state.expr = cloneDeep(composedDatabaseGroup.simpleExpr);
+  if (fetchedDatabaseGroup?.databaseExpr?.expression) {
+    // Convert CEL expression to simple expression
+    const expressions = [fetchedDatabaseGroup.databaseExpr.expression];
+    const exprList = await batchConvertCELStringToParsedExpr(expressions);
+    if (exprList.length > 0) {
+      const simpleExpr = resolveCELExpr(exprList[0]);
+      state.expr = cloneDeep(wrapAsGroup(simpleExpr));
+    }
   }
 });
 

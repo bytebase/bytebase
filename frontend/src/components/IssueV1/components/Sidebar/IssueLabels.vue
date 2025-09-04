@@ -17,12 +17,12 @@
 <script setup lang="ts">
 import IssueLabelSelector from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
-import type { ComposedProject } from "@/types";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 withDefaults(
   defineProps<{
     value: string[];
-    project: ComposedProject;
+    project: Project;
     disabled?: boolean;
   }>(),
   {

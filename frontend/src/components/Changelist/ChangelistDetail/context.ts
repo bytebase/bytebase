@@ -10,12 +10,13 @@ import {
   extractUserId,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import type { ComposedProject, Permission } from "@/types";
-import { unknownChangelist, unknownProject, isValidProjectName } from "@/types";
+import { unknownProject, unknownChangelist, isValidProjectName } from "@/types";
+import type { Permission } from "@/types";
 import type {
   Changelist,
   Changelist_Change as Change,
 } from "@/types/proto-es/v1/changelist_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   hasPermissionToCreateChangeDatabaseIssueInProject,
   hasProjectPermissionV2,
@@ -28,7 +29,7 @@ export type ChangelistDetailEvents = Emittery<{
 
 export type ChangelistDetailContext = {
   changelist: Ref<Changelist>;
-  project: Ref<ComposedProject>;
+  project: Ref<Project>;
   allowEdit: Ref<boolean>;
   allowDelete: Ref<boolean>;
   allowApply: Ref<boolean>;

@@ -7,7 +7,7 @@
     :striped="true"
     :bordered="bordered"
     :loading="loading"
-    :row-key="(data: ComposedDatabaseGroup) => data.name"
+    :row-key="(data: DatabaseGroup) => data.name"
     :checked-row-keys="selectedDatabaseGroupNames"
     :row-props="rowProps"
     :pagination="{ pageSize: 20 }"
@@ -26,15 +26,15 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { getProjectNameAndDatabaseGroupName } from "@/store";
-import type { ComposedDatabaseGroup } from "@/types";
+import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 
-type DatabaseGroupDataTableColumn = DataTableColumn<ComposedDatabaseGroup> & {
+type DatabaseGroupDataTableColumn = DataTableColumn<DatabaseGroup> & {
   hide?: boolean;
 };
 
 const props = withDefaults(
   defineProps<{
-    databaseGroupList: ComposedDatabaseGroup[];
+    databaseGroupList: DatabaseGroup[];
     bordered?: boolean;
     loading?: boolean;
     customClick?: boolean;
@@ -50,11 +50,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (
-    event: "row-click",
-    e: MouseEvent,
-    databaseGroup: ComposedDatabaseGroup
-  ): void;
+  (event: "row-click", e: MouseEvent, databaseGroup: DatabaseGroup): void;
   (event: "update:selected-database-group-names", val: string[]): void;
 }>();
 
@@ -139,7 +135,7 @@ const data = computed(() => {
   return [...props.databaseGroupList];
 });
 
-const rowProps = (databaseGroup: ComposedDatabaseGroup) => {
+const rowProps = (databaseGroup: DatabaseGroup) => {
   return {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {

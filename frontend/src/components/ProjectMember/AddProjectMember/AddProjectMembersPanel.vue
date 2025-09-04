@@ -54,14 +54,15 @@ import {
   useProjectIamPolicy,
   useProjectIamPolicyStore,
 } from "@/store";
-import { PresetRoleType, type ComposedProject } from "@/types";
+import { PresetRoleType } from "@/types";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { getBindingIdentifier } from "../utils";
 import AddProjectMemberForm from "./AddProjectMemberForm.vue";
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
   bindings?: Binding[];
 }>();
 

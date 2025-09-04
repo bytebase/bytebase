@@ -35,8 +35,9 @@ import { NSelect } from "naive-ui";
 import { computed, nextTick, reactive } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
-import { dialectOfEngineV1, type ComposedProject } from "@/types";
+import { dialectOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { engineNameV1 } from "@/utils";
 import { ALLOWED_ENGINES, type RawSQLState } from "./types";
 
@@ -46,7 +47,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
   engine: Engine;
   statement?: string;
 }>();

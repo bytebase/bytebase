@@ -165,13 +165,13 @@ import {
 } from "@/components/v2";
 import { pushNotification, useChangelistStore, useSheetV1Store } from "@/store";
 import type { ResourceId } from "@/types";
-import type { ComposedProject } from "@/types";
 import {
   ChangelistSchema,
   Changelist_ChangeSchema as ChangeSchema,
   CreateChangelistRequestSchema,
 } from "@/types/proto-es/v1/changelist_service_pb";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   ENCODINGS,
@@ -187,7 +187,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  project: ComposedProject;
+  project: Project;
   disableProjectSelect?: boolean;
 }>();
 

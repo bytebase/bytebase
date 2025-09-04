@@ -31,6 +31,7 @@ import {
   type ComposeIssueConfig,
 } from "./experimental-issue";
 import { useProjectV1Store } from "./project";
+import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
 export type ListIssueParams = {
   find: IssueFilter;
@@ -150,7 +151,9 @@ export const candidatesOfApprovalStepV1 = (
     if (type !== ApprovalNode_Type.ANY_IN_GROUP) return [];
 
     const candidatesForRoles = (role: string) => {
-      const memberMap = memberMapToRolesInProjectIAM(project.iamPolicy, role);
+      const projectIamPolicyStore = useProjectIamPolicyStore();
+      const iamPolicy = projectIamPolicyStore.getProjectIamPolicy(project.name);
+      const memberMap = memberMapToRolesInProjectIAM(iamPolicy, role);
       return [...memberMap.keys()];
     };
     if (role) {
