@@ -33,7 +33,7 @@ type querySpanExtractor struct {
 
 	// outerTableSources is used to record the outer table sources in the query.
 	// It's used to resolve the column name in the correlated subquery.
-	// outerTableSources []base.TableSource
+	outerTableSources []base.TableSource
 
 	// tableSourcesFrom is the list of table sources from the FROM clause.
 	tableSourcesFrom []base.TableSource
@@ -886,6 +886,25 @@ func (q *querySpanExtractor) tsqlIsFieldSensitive(normalizedDatabaseName string,
 			return column, nil
 		}
 	}
+
+	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
+		tableSource := q.outerTableSources[i]
+		if mask&maskDatabaseName != 0 && !q.isIdentifierEqual(normalizedDatabaseName, tableSource.GetDatabaseName()) {
+			continue
+		}
+		if mask&maskSchemaName != 0 && !q.isIdentifierEqual(normalizedSchemaName, tableSource.GetSchemaName()) {
+			continue
+		}
+		if mask&maskTableName != 0 && !q.isIdentifierEqual(normalizedTableName, tableSource.GetTableName()) {
+			continue
+		}
+		for _, column := range tableSource.GetQuerySpanResult() {
+			if mask&maskColumnName != 0 && !q.isIdentifierEqual(normalizedColumnName, column.Name) {
+				continue
+			}
+			return column, nil
+		}
+	}
 	return base.QuerySpanResult{}, errors.Errorf(`no matching column %q.%q.%q.%q`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 }
 
@@ -1152,11 +1171,11 @@ func (q *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleContext) (
 	case *parser.SubqueryContext:
 		// For subquery, we clone the current extractor, reset the from list, but keep the cte, and then extract the sensitive fields from the subquery
 		cloneExtractor := &querySpanExtractor{
-			defaultDatabase: q.defaultDatabase,
-			defaultSchema:   q.defaultSchema,
-			gCtx:            q.gCtx,
-			ctx:             q.ctx,
-			// outerTableSources: extractor.outerTableSources,
+			defaultDatabase:     q.defaultDatabase,
+			defaultSchema:       q.defaultSchema,
+			gCtx:                q.gCtx,
+			ctx:                 q.ctx,
+			outerTableSources:   append(q.outerTableSources, q.tableSourcesFrom...),
 			ctes:                q.ctes,
 			ignoreCaseSensitive: q.ignoreCaseSensitive,
 		}
