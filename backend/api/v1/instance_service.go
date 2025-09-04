@@ -857,7 +857,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 			dataSource.MasterPassword = req.Msg.DataSource.MasterPassword
 		case "extra_connection_parameters":
 			dataSource.ExtraConnectionParameters = req.Msg.DataSource.ExtraConnectionParameters
-		case "azure_credential", "aws_credential", "gcp_credential":
+		case "iam_extension":
 			switch req.Msg.DataSource.AuthenticationType {
 			case v1pb.DataSource_AZURE_IAM:
 				if azureCredential := req.Msg.DataSource.GetAzureCredential(); azureCredential != nil {

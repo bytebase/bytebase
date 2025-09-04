@@ -1319,7 +1319,7 @@
       "create-readonly-user-non-sql": "これは、データベースに接続して読み取り専用操作を実行するために Bytebase によって使用されるユーザーです。",
       "google-cloud-sql": {
         "instance-name": "インスタンス接続名",
-        "instance-name-tips": "インスタンス接続名は project-id:region:instance-name である必要があります。",
+        "instance-name-tips": "インスタンス接続名は {instance} である必要があります。",
         "mysql": {
           "template": "{user} という名前のサービス アカウントを作成し、IAM ユーザー {user}{'@'}'%' として Google Cloud SQL に追加します。このユーザーに必要な権限を付与します。"
         },
