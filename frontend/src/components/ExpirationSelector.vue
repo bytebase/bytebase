@@ -49,7 +49,7 @@
 import { useLocalStorage } from "@vueuse/core";
 import dayjs from "dayjs";
 import { NSelect, NDatePicker } from "naive-ui";
-import { computed, reactive, watch, watchEffect } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useSettingV1Store } from "@/store";
 import { PresetRoleType } from "@/types";
