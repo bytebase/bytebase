@@ -33,7 +33,7 @@ type querySpanExtractor struct {
 
 	// outerTableSources is used to record the outer table sources in the query.
 	// It's used to resolve the column name in the correlated subquery.
-	// outerTableSources []base.TableSource
+	outerTableSources []base.TableSource
 
 	// tableSourcesFrom is the list of table sources from the FROM clause.
 	tableSourcesFrom []base.TableSource
@@ -110,6 +110,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		var resourceNotFound *parsererror.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
 			return &base.QuerySpan{
+				Type:          queryTypeListener.result,
 				SourceColumns: accessTables,
 				Results:       []base.QuerySpanResult{},
 				NotFoundError: resourceNotFound,
@@ -723,7 +724,7 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 					continue
 				}
 				view := schemaSchema.GetView(viewName)
-				columns, err := q.getColumnsForView(view.Definition)
+				columns, err := q.getColumnsFromCreateView(view.Definition, databaseName, schemaName)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to get columns for view %s.%s.%s", databaseName, schemaName, viewName)
 				}
@@ -745,9 +746,20 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 	}
 }
 
-func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.defaultDatabase, q.defaultSchema, q.gCtx, q.ignoreCaseSensitive)
-	span, err := newQ.getQuerySpan(q.ctx, definition)
+func (q *querySpanExtractor) getColumnsFromCreateView(definition string, viewDatabaseName string, viewSchemaName string) ([]base.QuerySpanResult, error) {
+	// Extract the SELECT body from CREATE VIEW statement
+	selectBody, err := getSelectBodyFromCreateView(definition)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract SELECT body from CREATE VIEW")
+	}
+	if selectBody == "" {
+		return nil, errors.Errorf("no SELECT body found in CREATE VIEW statement")
+	}
+
+	// Use the view's database and schema as the default context for parsing the SELECT statement
+	// This ensures that cross-database references in the view definition are resolved correctly
+	newQ := newQuerySpanExtractor(viewDatabaseName, viewSchemaName, q.gCtx, q.ignoreCaseSensitive)
+	span, err := newQ.getQuerySpan(q.ctx, selectBody)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for view definition")
 	}
@@ -858,6 +870,25 @@ func (q *querySpanExtractor) tsqlIsFieldSensitive(normalizedDatabaseName string,
 	// Further more, users can not use the original table name if they specify the alias name:
 	// SELECT T1.C1 FROM T1 AS T3, T2; -- invalid identifier 'ADDRESS.ID'
 	for _, tableSource := range q.tableSourcesFrom {
+		if mask&maskDatabaseName != 0 && !q.isIdentifierEqual(normalizedDatabaseName, tableSource.GetDatabaseName()) {
+			continue
+		}
+		if mask&maskSchemaName != 0 && !q.isIdentifierEqual(normalizedSchemaName, tableSource.GetSchemaName()) {
+			continue
+		}
+		if mask&maskTableName != 0 && !q.isIdentifierEqual(normalizedTableName, tableSource.GetTableName()) {
+			continue
+		}
+		for _, column := range tableSource.GetQuerySpanResult() {
+			if mask&maskColumnName != 0 && !q.isIdentifierEqual(normalizedColumnName, column.Name) {
+				continue
+			}
+			return column, nil
+		}
+	}
+
+	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
+		tableSource := q.outerTableSources[i]
 		if mask&maskDatabaseName != 0 && !q.isIdentifierEqual(normalizedDatabaseName, tableSource.GetDatabaseName()) {
 			continue
 		}
@@ -1140,11 +1171,11 @@ func (q *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleContext) (
 	case *parser.SubqueryContext:
 		// For subquery, we clone the current extractor, reset the from list, but keep the cte, and then extract the sensitive fields from the subquery
 		cloneExtractor := &querySpanExtractor{
-			defaultDatabase: q.defaultDatabase,
-			defaultSchema:   q.defaultSchema,
-			gCtx:            q.gCtx,
-			ctx:             q.ctx,
-			// outerTableSources: extractor.outerTableSources,
+			defaultDatabase:     q.defaultDatabase,
+			defaultSchema:       q.defaultSchema,
+			gCtx:                q.gCtx,
+			ctx:                 q.ctx,
+			outerTableSources:   append(q.outerTableSources, q.tableSourcesFrom...),
 			ctes:                q.ctes,
 			ignoreCaseSensitive: q.ignoreCaseSensitive,
 		}
@@ -3625,4 +3656,44 @@ func unquote(name string) string {
 		return name[2 : len(name)-1]
 	}
 	return name
+}
+
+func getSelectBodyFromCreateView(createView string) (string, error) {
+	parseResult, err := ParseTSQL(createView)
+	if err != nil {
+		return "", err
+	}
+	if parseResult == nil {
+		return "", errors.Errorf("failed to parse CREATE VIEW statement")
+	}
+	tree := parseResult.Tree
+	if tree == nil {
+		return "", errors.Errorf("parse tree is nil")
+	}
+
+	extractor := &selectBodyExtractor{}
+	antlr.ParseTreeWalkerDefault.Walk(extractor, tree)
+
+	if extractor.selectBody == "" {
+		return "", errors.Errorf("no SELECT statement found in CREATE VIEW")
+	}
+
+	return extractor.selectBody, nil
+}
+
+type selectBodyExtractor struct {
+	*parser.BaseTSqlParserListener
+	selectBody string
+}
+
+func (e *selectBodyExtractor) EnterCreate_view(ctx *parser.Create_viewContext) {
+	// Get the SELECT statement part from CREATE VIEW
+	if selectStatement := ctx.Select_statement_standalone(); selectStatement != nil {
+		// Extract the text of the SELECT statement using GetTextFromInterval to preserve spaces
+		start := selectStatement.GetStart().GetStart()
+		stop := selectStatement.GetStop().GetStop()
+		input := selectStatement.GetStart().GetInputStream()
+		interval := antlr.NewInterval(start, stop)
+		e.selectBody = input.GetTextFromInterval(interval)
+	}
 }

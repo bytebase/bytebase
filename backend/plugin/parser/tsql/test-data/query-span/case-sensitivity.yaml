@@ -2,28 +2,29 @@
   statement: SELECT dbo.mytable1.a FROM dbo.[mytable1] ;
   defaultDatabase: db
   ignoreCaseSensitive: true
-  metadata: |-
-    {
-      "name":  "db",
-      "schemas":  [
-        {
-          "name": "dbo",
-          "tables":  [
-            {
-              "name":  "MyTable1",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  metadata:
+    - |-
+      {
+        "name":  "db",
+        "schemas":  [
+          {
+            "name": "dbo",
+            "tables":  [
+              {
+                "name":  "MyTable1",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
   querySpan:
     type: 1
     results:

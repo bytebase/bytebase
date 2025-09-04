@@ -2,39 +2,40 @@
   statement: SELECT t.* FROM MyTable1 t JOIN MyTable2 u ON t.a = u.id;
   defaultDatabase: db
   ignoreCaseSensitive: true
-  metadata: |-
-    {
-      "name":  "db",
-      "schemas":  [
-        {
-          "name": "dbo",
-          "tables":  [
-            {
-              "name":  "MyTable1",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                }
-              ]
-            },
-            {
-              "name":  "MyTable2",
-              "columns":  [
-                {
-                  "name":  "c"
-                },
-                {
-                  "name":  "d"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  metadata:
+    - |-
+      {
+        "name":  "db",
+        "schemas":  [
+          {
+            "name": "dbo",
+            "tables":  [
+              {
+                "name":  "MyTable1",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  }
+                ]
+              },
+              {
+                "name":  "MyTable2",
+                "columns":  [
+                  {
+                    "name":  "c"
+                  },
+                  {
+                    "name":  "d"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
   querySpan:
     type: 1
     results:
@@ -74,39 +75,40 @@
   statement: SELECT t.a, t.b FROM MyTable1 t JOIN MyTable2 u ON t.a = u.id;
   defaultDatabase: db
   ignoreCaseSensitive: true
-  metadata: |-
-    {
-      "name":  "db",
-      "schemas":  [
-        {
-          "name": "dbo",
-          "tables":  [
-            {
-              "name":  "MyTable1",
-              "columns":  [
-                {
-                  "name":  "a"
-                },
-                {
-                  "name":  "b"
-                }
-              ]
-            },
-            {
-              "name":  "MyTable2",
-              "columns":  [
-                {
-                  "name":  "c"
-                },
-                {
-                  "name":  "d"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
+  metadata:
+    - |-
+      {
+        "name":  "db",
+        "schemas":  [
+          {
+            "name": "dbo",
+            "tables":  [
+              {
+                "name":  "MyTable1",
+                "columns":  [
+                  {
+                    "name":  "a"
+                  },
+                  {
+                    "name":  "b"
+                  }
+                ]
+              },
+              {
+                "name":  "MyTable2",
+                "columns":  [
+                  {
+                    "name":  "c"
+                  },
+                  {
+                    "name":  "d"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
   querySpan:
     type: 1
     results:

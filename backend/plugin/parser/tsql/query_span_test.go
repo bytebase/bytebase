@@ -24,7 +24,7 @@ func TestGetQuerySpan(t *testing.T) {
 		IgnoreCaseSensitve bool   `yaml:"ignoreCaseSensitive,omitempty"`
 		// Metadata is the protojson encoded storepb.DatabaseSchemaMetadata,
 		// if it's empty, we will use the defaultDatabaseMetadata.
-		Metadata  string              `yaml:"metadata,omitempty"`
+		Metadata  []string            `yaml:"metadata,omitempty"`
 		QuerySpan *base.YamlQuerySpan `yaml:"querySpan,omitempty"`
 	}
 
@@ -36,13 +36,12 @@ func TestGetQuerySpan(t *testing.T) {
 			"test-data/query-span/case-sensitivity.yaml",
 			"test-data/query-span/query_type.yaml",
 			"test-data/query-span/predicate.yaml",
+			"test-data/query-span/regression.yaml",
 		}
 	)
 
 	a := require.New(t)
 	for _, testDataPath := range testDataPaths {
-		testDataPath := testDataPath
-
 		yamlFile, err := os.Open(testDataPath)
 		a.NoError(err)
 
@@ -53,9 +52,13 @@ func TestGetQuerySpan(t *testing.T) {
 		a.NoError(yaml.Unmarshal(byteValue, &testCases))
 
 		for i, tc := range testCases {
-			metadata := &storepb.DatabaseSchemaMetadata{}
-			a.NoErrorf(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), metadata), "cases %d", i+1)
-			databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+			var ms []*storepb.DatabaseSchemaMetadata
+			for _, metadata := range tc.Metadata {
+				storepbMetadata := &storepb.DatabaseSchemaMetadata{}
+				a.NoErrorf(common.ProtojsonUnmarshaler.Unmarshal([]byte(metadata), storepbMetadata), "cases %d", i+1)
+				ms = append(ms, storepbMetadata)
+			}
+			databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter(ms)
 			result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
 				GetDatabaseMetadataFunc: databaseMetadataGetter,
 				ListDatabaseNamesFunc:   databaseNameLister,
