@@ -1,0 +1,209 @@
+# Regression tests for T-SQL query span extraction fixes
+# These tests ensure that fixes for specific user-reported issues continue to work
+
+- description: Test VIEW with table alias - fix for BYT-7974 column resolution issue
+  statement: |-
+    SELECT a.ProductID FROM v_CMS_HMNUM_FUll a WHERE a.ProductID = 1
+  defaultDatabase: byt7974
+  ignoreCaseSensitive: true
+  metadata:
+    - |-
+      {
+        "name": "byt7974",
+        "schemas": [
+          {
+            "name": "dbo",
+            "views": [
+              {
+                "name": "v_CMS_HMNUM_FUll",
+                "definition": "CREATE VIEW [dbo].[v_CMS_HMNUM_FUll] AS SELECT ProductID, HMNUM FROM CMS_HMNUM"
+              }
+            ],
+            "tables": [
+              {
+                "name": "CMS_HMNUM",
+                "columns": [
+                  {
+                    "name": "ProductID"
+                  },
+                  {
+                    "name": "HMNUM"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+  querySpan:
+    type: 1
+    results:
+      - name: ProductID
+        sourcecolumns:
+          - server: ""
+            database: byt7974
+            schema: dbo
+            table: CMS_HMNUM
+            column: ProductID
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: byt7974
+        schema: dbo
+        table: v_CMS_HMNUM_FUll
+        column: ""
+    predicatecolumns:
+      - server: ""
+        database: byt7974
+        schema: dbo
+        table: CMS_HMNUM
+        column: ProductID
+
+- description: Test VIEW with cross-database references - fix for database context switching
+  statement: |-
+    SELECT * FROM SecondDB..v_CrossDB_View JOIN TableA ON 1=1 WHERE IDA=IDB;
+  defaultDatabase: MainDB
+  ignoreCaseSensitive: true
+  metadata:
+    - |-
+      {
+        "name": "MainDB",
+        "schemas": [
+          {
+            "name": "dbo", 
+            "tables": [
+              {
+                "name": "TableA",
+                "columns": [
+                  {
+                    "name": "IDA"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    - |-
+      {
+        "name": "SecondDB",
+        "schemas": [
+          {
+            "name": "dbo", 
+            "views": [
+              {
+                "name": "v_CrossDB_View",
+                "definition": "CREATE VIEW [dbo].[v_CrossDB_View] AS SELECT IDB FROM TableB"
+              }
+            ],
+            "tables": [
+              {
+                "name": "TableB",
+                "columns": [
+                  {
+                    "name": "IDB"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+  querySpan:
+    type: 1
+    results:
+      - name: IDB
+        sourcecolumns:
+          - server: ""
+            database: SecondDB
+            schema: dbo
+            table: TableB
+            column: IDB
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: IDA
+        sourcecolumns:
+          - server: ""
+            database: MainDB
+            schema: dbo
+            table: TableA
+            column: IDA
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: MainDB
+        schema: dbo
+        table: TableA
+        column: ""
+      - server: ""
+        database: SecondDB
+        schema: dbo
+        table: v_CrossDB_View
+        column: ""
+    predicatecolumns:
+      - server: ""
+        database: MainDB
+        schema: dbo
+        table: TableA
+        column: IDA
+      - server: ""
+        database: SecondDB
+        schema: dbo
+        table: TableB
+        column: IDB
+
+- description: Test simple correlated subquery - fix for outer table sources
+  statement: |-
+    SELECT HMNum FROM TableA WHERE HMNum = 'test'
+  defaultDatabase: WebPO
+  ignoreCaseSensitive: true
+  metadata:
+    - |-
+      {
+        "name": "WebPO",
+        "schemas": [
+          {
+            "name": "dbo",
+            "tables": [
+              {
+                "name": "TableA", 
+                "columns": [
+                  {
+                    "name": "HMNum"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+  querySpan:
+    type: 1
+    results:
+      - name: HMNum
+        sourcecolumns:
+          - server: ""
+            database: WebPO
+            schema: dbo
+            table: TableA
+            column: HMNum
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: WebPO
+        schema: dbo
+        table: TableA
+        column: ""
+    predicatecolumns:
+      - server: ""
+        database: WebPO
+        schema: dbo
+        table: TableA
+        column: HMNum
