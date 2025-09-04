@@ -113,7 +113,7 @@ const title = computed(() => {
     case PlanCheckRun_Type.DATABASE_STATEMENT_FAKE_ADVISE:
       return t("task.check-type.fake");
     case PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE:
-      return t("task.check-type.sql-review");
+      return t("task.check-type.sql-review.self");
     case PlanCheckRun_Type.DATABASE_CONNECT:
       return t("task.check-type.connection");
     case PlanCheckRun_Type.DATABASE_GHOST_SYNC:
