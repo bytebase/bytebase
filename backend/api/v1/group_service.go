@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -14,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -64,7 +66,8 @@ func (s *GroupService) BatchGetGroups(ctx context.Context, request *connect.Requ
 	for _, name := range request.Msg.Names {
 		group, err := s.GetGroup(ctx, connect.NewRequest(&v1pb.GetGroupRequest{Name: name}))
 		if err != nil {
-			return nil, err
+			slog.Error("failed to find group", slog.String("name", name), log.BBError(err))
+			continue
 		}
 		response.Groups = append(response.Groups, group.Msg)
 	}
