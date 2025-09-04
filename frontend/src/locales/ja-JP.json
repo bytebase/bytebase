@@ -264,7 +264,10 @@
     "check-type": {
       "fake": "偽物",
       "connection": "接続する",
-      "sql-review": "SQL監査",
+      "sql-review": {
+        "self": "SQLレビュー",
+        "description": "SQL文を分析し、潜在的な問題点を特定し、推奨事項を提示します。組み込みルールとカスタムルールが含まれます。"
+      },
       "ghost-sync": "gh-ost同期",
       "affected-rows": {
         "self": "影響を受ける行",

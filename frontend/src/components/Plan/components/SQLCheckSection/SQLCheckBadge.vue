@@ -19,7 +19,7 @@
         <CircleAlertIcon :size="16" />
       </template>
     </template>
-    <span>{{ $t("task.check-type.sql-review") }}</span>
+    <span>{{ $t("task.check-type.sql-review.self") }}</span>
   </NTag>
 
   <SQLCheckPanel
