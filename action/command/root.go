@@ -105,7 +105,7 @@ func rootPreRun(w *world.World) func(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func writeOutputJSON(w *world.World) {
+func postRun(w *world.World) {
 	if err := func() error {
 		if w.Output == "" {
 			return nil
@@ -133,6 +133,29 @@ func writeOutputJSON(w *world.World) {
 
 		if _, err := f.Write(j); err != nil {
 			return errors.Wrapf(err, "failed to write output file: %s", w.Output)
+		}
+		return nil
+	}(); err != nil {
+		w.Logger.Error("failed to write output JSON", "error", err)
+	}
+	if err := func() error {
+		if w.Platform == world.GitHub && w.IsRollout {
+			filename := os.Getenv("GITHUB_STEP_SUMMARY")
+			f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				return errors.Wrapf(err, "failed to open GitHub step summary file: %s", filename)
+			}
+			defer f.Close()
+
+			var sb strings.Builder
+			_, _ = sb.WriteString("Release: " + w.URL + "/" + w.OutputMap.Release + "\n")
+			_, _ = sb.WriteString("Plan: " + w.URL + "/" + w.OutputMap.Plan + "\n")
+			_, _ = sb.WriteString("Rollout: " + w.URL + "/" + w.OutputMap.Rollout + "\n")
+
+			if _, err := f.Write([]byte(sb.String())); err != nil {
+				return errors.Wrapf(err, "failed to write output file: %s", filename)
+			}
+			return nil
 		}
 		return nil
 	}(); err != nil {
