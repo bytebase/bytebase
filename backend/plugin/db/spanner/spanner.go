@@ -63,8 +63,8 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	d.connCtx = config.ConnectionContext
 
 	var o []option.ClientOption
-	if config.DataSource.GetAuthenticationType() != storepb.DataSource_GOOGLE_CLOUD_SQL_IAM {
-		o = append(o, option.WithCredentialsJSON([]byte(config.Password)))
+	if gcpCredential := config.DataSource.GetGcpCredential(); gcpCredential != nil {
+		o = append(o, option.WithCredentialsJSON([]byte(gcpCredential.Content)))
 	}
 	if config.ConnectionContext.DatabaseName != "" {
 		d.databaseName = config.ConnectionContext.DatabaseName

@@ -21,7 +21,6 @@
     "sign-up": "注册",
     "email": "邮箱",
     "username": "用户名",
-    "credentials": "凭据",
     "password": "密码",
     "save": "保存",
     "cancel": "取消",
@@ -1319,7 +1318,7 @@
       "create-readonly-user-non-sql": "这是 Bytebase 用于连接数据库，执行只读操作的用户。",
       "google-cloud-sql": {
         "instance-name": "实例连接名称",
-        "instance-name-tips": "实例连接名称应为 project-id:region:instance-name。",
+        "instance-name-tips": "实例连接名称应为 {instance}。",
         "mysql": {
           "template": "创建一个名为 {user} 的服务帐户，然后将其作为 IAM 用户 {user}{'@'}'%' 添加到您的 Google Cloud SQL 中。授予此用户所需的权限。"
         },
@@ -1357,7 +1356,6 @@
       "firewall-info": "如果您为数据库实例使用入站防火墙规则，请参阅 ByteBase Cloud Connection 文档。"
     },
     "no-password": "无密码",
-    "type-or-paste-credentials": "输入或粘贴 CREDENTIALS",
     "type-or-paste-credentials-write-only": "输入或粘贴 CREDENTIALS - 仅写入",
     "password-write-only": "YOUR_DB_PWD - 仅写入",
     "password-type": {

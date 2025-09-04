@@ -7,7 +7,10 @@ import type {
   DataSource,
   Instance,
 } from "@/types/proto-es/v1/instance_service_pb";
-import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
+import {
+  DataSourceType,
+  DataSource_AuthenticationType,
+} from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { calcUpdateMask } from "@/utils";
 
@@ -143,6 +146,21 @@ export const calcDataSourceUpdateMask = (
   }
   if (updateAuthenticationPrivateKey) {
     updateMask.add("authentication_private_key");
+  }
+
+  if (updateMask.has("iam_extension")) {
+    updateMask.delete("iam_extension");
+    switch (editing.authenticationType) {
+      case DataSource_AuthenticationType.AWS_RDS_IAM:
+        updateMask.add("aws_credential");
+        break;
+      case DataSource_AuthenticationType.AZURE_IAM:
+        updateMask.add("azure_credential");
+        break;
+      case DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM:
+        updateMask.add("gcp_credential");
+        break;
+    }
   }
 
   return Array.from(updateMask);

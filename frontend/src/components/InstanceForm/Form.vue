@@ -109,7 +109,7 @@
               :allow-edit="allowEdit"
             />
           </template>
-          <template v-if="basicInfo.engine === Engine.BIGQUERY">
+          <template v-else-if="basicInfo.engine === Engine.BIGQUERY">
             <BigQueryHostInput
               v-model:host="adminDataSource.host"
               :allow-edit="allowEdit"
@@ -127,7 +127,7 @@
               </template>
               <template v-else-if="basicInfo.engine === Engine.COSMOSDB">
                 {{ $t("instance.endpoint") }}
-                <RequiredStar class="mr-2" />
+                <RequiredStar />
               </template>
               <div
                 v-else-if="
@@ -137,20 +137,23 @@
               >
                 <span>
                   {{ $t("instance.sentence.google-cloud-sql.instance-name") }}
-                  <RequiredStar class="mr-2" />
+                  <RequiredStar />
                 </span>
-                <div class="textinfolabel mb-1">
-                  {{
-                    $t("instance.sentence.google-cloud-sql.instance-name-tips")
-                  }}
-                </div>
+                <i18n-t
+                  tag="div"
+                  class="textinfolabel mb-1"
+                  keypath="instance.sentence.google-cloud-sql.instance-name-tips"
+                >
+                  <template #instance>
+                    <span class="font-bold">
+                      {project-id}:{region}:{instance-name}
+                    </span>
+                  </template>
+                </i18n-t>
               </div>
               <template v-else>
                 {{ $t("instance.host-or-socket") }}
-                <RequiredStar
-                  v-if="basicInfo.engine !== Engine.DYNAMODB"
-                  class="mr-2"
-                />
+                <RequiredStar v-if="basicInfo.engine !== Engine.DYNAMODB" />
               </template>
             </label>
             <NInput
@@ -390,8 +393,8 @@
               }}
             </span>
             <button
+              v-if="instanceLink.trim().length > 0"
               class="ml-1 btn-icon"
-              :disabled="instanceLink.trim().length === 0"
               @click.prevent="window.open(urlfy(instanceLink), '_blank')"
             >
               <heroicons-outline:external-link class="w-4 h-4" />
@@ -447,6 +450,8 @@
       <div class="mt-6 pt-0 border-none">
         <div class="flex flex-row space-x-2">
           <NButton
+            tertiary
+            type="primary"
             class="whitespace-nowrap flex items-center"
             :loading="state.isTestingConnection"
             :disabled="!allowCreate || state.isRequesting || !allowEdit"
@@ -640,27 +645,42 @@ const showAdditionalAddresses = computed(() => {
 // the host name between 127.0.0.1/host.docker.internal and "" if user hasn't changed default yet.
 const changeInstanceEngine = (engine: Engine) => {
   context.resetDataSource();
-  if (
-    engine === Engine.SNOWFLAKE ||
-    engine === Engine.SPANNER ||
-    engine === Engine.BIGQUERY ||
-    engine === Engine.DYNAMODB
-  ) {
-    if (
-      adminDataSource.value.host === "127.0.0.1" ||
-      adminDataSource.value.host === "host.docker.internal"
-    ) {
-      adminDataSource.value.host = "";
+  switch (engine) {
+    case Engine.SNOWFLAKE:
+    case Engine.DYNAMODB: {
+      if (
+        adminDataSource.value.host === "127.0.0.1" ||
+        adminDataSource.value.host === "host.docker.internal"
+      ) {
+        adminDataSource.value.host = "";
+      }
+      break;
     }
-  } else if (engine === Engine.COSMOSDB) {
-    // Cosmos DB supports Azure IAM only.
-    adminDataSource.value.authenticationType =
-      DataSource_AuthenticationType.AZURE_IAM;
-  } else {
-    if (!adminDataSource.value.host) {
-      adminDataSource.value.host = isDev()
-        ? "127.0.0.1"
-        : "host.docker.internal";
+    case Engine.SPANNER:
+    case Engine.BIGQUERY: {
+      adminDataSource.value.authenticationType =
+        DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM;
+      if (
+        adminDataSource.value.host === "127.0.0.1" ||
+        adminDataSource.value.host === "host.docker.internal"
+      ) {
+        adminDataSource.value.host = "";
+      }
+      break;
+    }
+    case Engine.COSMOSDB: {
+      // Cosmos DB supports Azure IAM only.
+      adminDataSource.value.authenticationType =
+        DataSource_AuthenticationType.AZURE_IAM;
+      break;
+    }
+    default: {
+      if (!adminDataSource.value.host) {
+        adminDataSource.value.host = isDev()
+          ? "127.0.0.1"
+          : "host.docker.internal";
+      }
+      break;
     }
   }
   basicInfo.value.engine = engine;

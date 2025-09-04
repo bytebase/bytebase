@@ -21,7 +21,6 @@
     "sign-up": "Đăng ký",
     "email": "Email",
     "username": "Tên người dùng",
-    "credentials": "Thông tin xác thực",
     "password": "Mật khẩu",
     "save": "Lưu",
     "cancel": "Hủy",
@@ -1319,7 +1318,7 @@
       "create-readonly-user-non-sql": "Đây là kết nối được Bytebase sử dụng để thực hiện các hoạt động chỉ đọc.",
       "google-cloud-sql": {
         "instance-name": "Tên kết nối phiên bản",
-        "instance-name-tips": "Tên kết nối phiên bản phải giống như project-id:region:instance-name.",
+        "instance-name-tips": "Tên kết nối phiên bản phải giống như {instance}.",
         "mysql": {
           "template": "Tạo một tài khoản dịch vụ có tên {user}, sau đó thêm nó vào Google Cloud SQL của bạn với tư cách là người dùng IAM {user}{'@'}'%'. Cấp cho người dùng này các đặc quyền cần thiết."
         },
@@ -1357,7 +1356,6 @@
       "firewall-info": "Nếu bạn sử dụng các quy tắc tường lửa gửi đến cho thể hiện cơ sở dữ liệu của mình, vui lòng tham khảo Hướng dẫn kết nối đám mây Bytebase."
     },
     "no-password": "Không có mật khẩu",
-    "type-or-paste-credentials": "Nhập hoặc dán THÔNG TIN XÁC THỰC",
     "type-or-paste-credentials-write-only": "Nhập hoặc dán THÔNG TIN XÁC THỰC - chỉ ghi",
     "password-write-only": "YOUR_DB_PWD - chỉ ghi",
     "password-type": {
