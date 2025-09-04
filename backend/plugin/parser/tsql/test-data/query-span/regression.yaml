@@ -63,7 +63,7 @@
 
 - description: Test VIEW with cross-database references - fix for database context switching
   statement: |-
-    SELECT * FROM SecondDB..v_CrossDB_View JOIN TableA WHERE TableA.ID = TableB.ID;
+    SELECT * FROM SecondDB..v_CrossDB_View JOIN TableA ON 1=1 WHERE IDA=IDB;
   defaultDatabase: MainDB
   ignoreCaseSensitive: true
   metadata:
@@ -78,7 +78,7 @@
                 "name": "TableA",
                 "columns": [
                   {
-                    "name": "ID"
+                    "name": "IDA"
                   }
                 ]
               }
@@ -95,7 +95,7 @@
             "views": [
               {
                 "name": "v_CrossDB_View",
-                "definition": "CREATE VIEW [dbo].[v_CrossDB_View] AS SELECT ID FROM TableB"
+                "definition": "CREATE VIEW [dbo].[v_CrossDB_View] AS SELECT IDB FROM TableB"
               }
             ],
             "tables": [
@@ -103,7 +103,7 @@
                 "name": "TableB",
                 "columns": [
                   {
-                    "name": "ID"
+                    "name": "IDB"
                   }
                 ]
               }
@@ -114,38 +114,48 @@
   querySpan:
     type: 1
     results:
-      - name: ID
+      - name: IDB
         sourcecolumns:
           - server: ""
             database: SecondDB
             schema: dbo
             table: TableB
-            column: ID
+            column: IDB
         isplainfield: true
         sourcefieldpaths: []
         selectasterisk: false
-      - name: ID
+      - name: IDA
         sourcecolumns:
           - server: ""
             database: MainDB
             schema: dbo
             table: TableA
-            column: ID
+            column: IDA
         isplainfield: true
         sourcefieldpaths: []
         selectasterisk: false
     sourcecolumns:
       - server: ""
-        database: SecondDB
+        database: MainDB
         schema: dbo
-        table: v_CrossDB_View
+        table: TableA
         column: ""
       - server: ""
         database: SecondDB
         schema: dbo
+        table: v_CrossDB_View
+        column: ""
+    predicatecolumns:
+      - server: ""
+        database: MainDB
+        schema: dbo
+        table: TableA
+        column: IDA
+      - server: ""
+        database: SecondDB
+        schema: dbo
         table: TableB
-        column: ID
-    predicatecolumns: []
+        column: IDB
 
 - description: Test simple correlated subquery - fix for outer table sources
   statement: |-
