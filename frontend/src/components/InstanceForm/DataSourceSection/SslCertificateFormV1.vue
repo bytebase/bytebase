@@ -2,18 +2,18 @@
   <div class="mt-2 space-y-3">
     <div class="flex flex-row items-center gap-2">
       <NSwitch
-        v-model:value="state.value.skipTlsVerify"
+        v-model:value="state.value.verifyTlsCertificate"
         size="small"
         :disabled="disabled"
       />
-      <label for="skipTlsVerify" class="textlabel block">
-        {{ $t("data-source.ssl.skip-verify") }}
+      <label for="verifyTlsCertificate" class="textlabel block">
+        {{ $t("data-source.ssl.verify-certificate") }}
       </label>
       <NTooltip>
         <template #trigger>
           <Info class="w-4 h-4 text-yellow-600" />
         </template>
-        {{ $t("data-source.ssl.skip-verify-tooltip") }}
+        {{ $t("data-source.ssl.verify-certificate-tooltip") }}
       </NTooltip>
     </div>
     
@@ -72,7 +72,7 @@ import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 
-type WithSslOptions = Partial<Pick<DataSource, "sslCa" | "sslCert" | "sslKey" | "skipTlsVerify">>;
+type WithSslOptions = Partial<Pick<DataSource, "sslCa" | "sslCert" | "sslKey" | "verifyTlsCertificate">>;
 
 type LocalState = {
   value: WithSslOptions;
@@ -93,7 +93,7 @@ const state = reactive<LocalState>({
     sslCa: props.value.sslCa,
     sslCert: props.value.sslCert,
     sslKey: props.value.sslKey,
-    skipTlsVerify: props.value.skipTlsVerify ?? false,
+    verifyTlsCertificate: props.value.verifyTlsCertificate ?? false,
   },
 });
 
@@ -113,7 +113,7 @@ watch(
       sslCa: newValue.sslCa,
       sslCert: newValue.sslCert,
       sslKey: newValue.sslKey,
-      skipTlsVerify: newValue.skipTlsVerify ?? false,
+      verifyTlsCertificate: newValue.verifyTlsCertificate ?? false,
     };
   }
 );

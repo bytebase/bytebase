@@ -1917,8 +1917,8 @@
       "ca-cert": "CA Certificate",
       "client-key": "Client Key",
       "client-cert": "Client Certificate",
-      "skip-verify": "Skip certificate verification",
-      "skip-verify-tooltip": "Skip TLS certificate verification. Warning: This is insecure and should only be used for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments)"
+      "verify-certificate": "Verify TLS certificate",
+      "verify-certificate-tooltip": "Enable TLS certificate verification for secure connections. Disable only for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments). Warning: Disabling verification is insecure"
     },
     "ssh-type": {
       "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}",

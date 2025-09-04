@@ -170,7 +170,24 @@ func registerRDSMysqlCerts(ctx context.Context) error {
 		return err
 	}
 
-	return mysql.RegisterTLSConfig("rds", &tls.Config{RootCAs: rootCertPool})
+	// Register both secure and insecure configs for backward compatibility
+	// "rds" - maintains backward compatibility (no verification)
+	if err := mysql.RegisterTLSConfig("rds", &tls.Config{
+		RootCAs:            rootCertPool,
+		InsecureSkipVerify: true, // Backward compatible - doesn't verify
+	}); err != nil {
+		return errors.Wrap(err, "failed to register rds TLS config")
+	}
+
+	// "rds-verify" - new secure config that verifies certificates
+	if err := mysql.RegisterTLSConfig("rds-verify", &tls.Config{
+		RootCAs:            rootCertPool,
+		InsecureSkipVerify: false, // Secure - verifies certificates
+	}); err != nil {
+		return errors.Wrap(err, "failed to register rds-verify TLS config")
+	}
+
+	return nil
 }
 
 // getRDSConnection returns the connection string with IAM for AWS RDS.
@@ -196,8 +213,15 @@ func getRDSConnection(ctx context.Context, connCfg db.ConnectionConfig) (string,
 		return "", errors.Wrap(err, "failed to register rds certs")
 	}
 
-	return fmt.Sprintf("%s:%s@tcp(%s)/%s?tls=rds&allowCleartextPasswords=true",
-		connCfg.DataSource.Username, authenticationToken, dbEndpoint, connCfg.ConnectionContext.DatabaseName,
+	// Choose the appropriate TLS config based on verify_tls_certificate setting
+	// Default to "rds" (no verification) for backward compatibility
+	tlsConfig := "rds"
+	if connCfg.DataSource.GetVerifyTlsCertificate() {
+		tlsConfig = "rds-verify"
+	}
+
+	return fmt.Sprintf("%s:%s@tcp(%s)/%s?tls=%s&allowCleartextPasswords=true",
+		connCfg.DataSource.Username, authenticationToken, dbEndpoint, connCfg.ConnectionContext.DatabaseName, tlsConfig,
 	), nil
 }
 

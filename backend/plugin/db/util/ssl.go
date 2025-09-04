@@ -17,9 +17,9 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 	}
 
 	cfg := &tls.Config{}
-	// Handle skip verification option early
-	if ds.GetSkipTlsVerify() {
-		// User explicitly chose to skip ALL verification
+	// Handle verification option - default false for backward compatibility
+	if !ds.GetVerifyTlsCertificate() {
+		// Certificate verification is disabled (default for backward compatibility)
 		// This accepts any certificate but still uses encryption
 		cfg.InsecureSkipVerify = true
 		// Still handle client certificates if provided (for authentication, not verification)
