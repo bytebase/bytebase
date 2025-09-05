@@ -228,6 +228,7 @@ func runAndWaitForRollout(ctx context.Context, w *world.World, client *Client, p
 	for _, stage := range rolloutPreview.Stages {
 		pendingStages = append(pendingStages, stage.Environment)
 	}
+	w.PendingStages = pendingStages
 
 	// create rollout with no stages to obtain the rollout name
 	emptyTarget := ""
@@ -243,6 +244,7 @@ func runAndWaitForRollout(ctx context.Context, w *world.World, client *Client, p
 		return errors.Wrapf(err, "failed to preview rollout")
 	}
 	w.OutputMap.Rollout = rolloutEmpty.Name
+	w.Rollout = rolloutEmpty
 
 	w.Logger.Info("rollout created", "url", fmt.Sprintf("%s/%s", client.url, rolloutEmpty.Name))
 
@@ -379,6 +381,7 @@ func waitForRollout(ctx context.Context, w *world.World, client *Client, pending
 			}
 			rollout = rolloutAdvanced
 		}
+		w.Rollout = rollout
 		if i >= len(rollout.GetStages()) {
 			return errors.Errorf("rollout has no more stages")
 		}
