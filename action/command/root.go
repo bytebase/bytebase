@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/bytebase/bytebase/action/command/cloud"
@@ -40,12 +41,12 @@ func rootPreRun(w *world.World) func(cmd *cobra.Command, args []string) error {
 
 		// Validate all flags and environment variables
 		if err := validation.ValidateFlags(w); err != nil {
-			return err
+			return errors.Wrapf(err, "failed to validate flags")
 		}
 
 		// Special handling for Bytebase cloud URLs (*.us-central1.bytebase.com)
 		if err := cloud.EnsureWorkspaceAwake(w); err != nil {
-			return err
+			return errors.Wrapf(err, "failed to ensure workspace awake")
 		}
 
 		return nil
