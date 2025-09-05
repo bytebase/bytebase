@@ -257,11 +257,6 @@ export enum Setting_SettingName {
   SEMANTIC_TYPES = 15,
 
   /**
-   * @generated from enum value: SQL_RESULT_SIZE_LIMIT = 16;
-   */
-  SQL_RESULT_SIZE_LIMIT = 16,
-
-  /**
    * @generated from enum value: SCIM = 17;
    */
   SCIM = 17,
@@ -363,12 +358,6 @@ export declare type Value = Message<"bytebase.v1.Value"> & {
      */
     value: EnvironmentSetting;
     case: "environmentSetting";
-  } | {
-    /**
-     * @generated from field: bytebase.v1.SQLQueryRestrictionSetting sql_query_restriction_setting = 18;
-     */
-    value: SQLQueryRestrictionSetting;
-    case: "sqlQueryRestrictionSetting";
   } | { case: undefined; value?: undefined };
 };
 
@@ -1238,33 +1227,6 @@ export enum Algorithm_InnerOuterMask_MaskType {
  * Describes the enum bytebase.v1.Algorithm.InnerOuterMask.MaskType.
  */
 export declare const Algorithm_InnerOuterMask_MaskTypeSchema: GenEnum<Algorithm_InnerOuterMask_MaskType>;
-
-/**
- * @generated from message bytebase.v1.SQLQueryRestrictionSetting
- */
-export declare type SQLQueryRestrictionSetting = Message<"bytebase.v1.SQLQueryRestrictionSetting"> & {
-  /**
-   * The size limit in bytes.
-   * The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
-   *
-   * @generated from field: int64 maximum_result_size = 1;
-   */
-  maximumResultSize: bigint;
-
-  /**
-   * The return rows limit. If the value <= 0, will be treated as no limit.
-   * The default value is -1.
-   *
-   * @generated from field: int32 maximum_result_rows = 2;
-   */
-  maximumResultRows: number;
-};
-
-/**
- * Describes the message bytebase.v1.SQLQueryRestrictionSetting.
- * Use `create(SQLQueryRestrictionSettingSchema)` to create a new message.
- */
-export declare const SQLQueryRestrictionSettingSchema: GenMessage<SQLQueryRestrictionSetting>;
 
 /**
  * @generated from message bytebase.v1.SCIMSetting

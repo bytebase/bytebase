@@ -616,20 +616,21 @@
         "maximum-sql-result": {
           "size": {
             "self": "最大 SQL 结果大小",
-            "description": "限制输出 SQL 查询结果的大小。"
+            "description": "限制输出 SQL 查询结果的大小。",
+            "default": "默认限制 {limit} MB"
           },
           "rows": {
             "self": "SQL结果行数上限",
             "rows": "行",
             "description": "限制SQL查询结果的输出行数，值 <=0 表示不限制。",
+            "limit": "当值 <= 0 时无限制",
             "limit-warning": "由于查询限制，最多可导出 {count} 行"
           }
         },
         "query-data-policy": {
           "timeout": {
             "self": "最大查询时间",
-            "description": "SQL 编辑器中允许运行查询的最长时间。",
-            "no-time-limit": "设置为 0 时，查询将没有时间限制。"
+            "description": "SQL 编辑器中允许运行查询的最长时间。"
           },
           "seconds": "秒"
         },
@@ -2248,7 +2249,7 @@
         "title": "用户数量限制",
         "remaining": "当前总用户额度为 {total}，目前仅剩 {count} 个份额可用。",
         "runoutof": "已用尽全部 {total} 个用户额度。",
-        "upgrade": "@:{'subscription.upgrade'}来获取无限的用户额度。"
+        "upgrade": "@:{'subscription.upgrade'}来获取更多用户额度。"
       }
     },
     "instance-assignment": {

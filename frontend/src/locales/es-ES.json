@@ -616,20 +616,21 @@
         "maximum-sql-result": {
           "size": {
             "self": "Tamaño máximo del resultado de SQL",
-            "description": "Limite el tamaño del resultado de la consulta SQL de salida."
+            "description": "Limite el tamaño del resultado de la consulta SQL de salida.",
+            "default": "Límite predeterminado {limit} MB"
           },
           "rows": {
             "self": "Máximo de filas de resultados de SQL",
             "rows": "Filas",
             "description": "Limite las filas de salida en el resultado de la consulta SQL, el valor <= 0 significa que no hay límite.",
+            "limit": "No hay límite cuando el valor <= 0",
             "limit-warning": "Exportación máxima de {count} filas debido a la restricción de la consulta"
           }
         },
         "query-data-policy": {
           "timeout": {
             "self": "Tiempo máximo de consulta",
-            "description": "El tiempo máximo permitido para ejecutar una consulta en el Editor SQL.",
-            "no-time-limit": "No hay límite de tiempo para las consultas cuando se establece en 0."
+            "description": "El tiempo máximo permitido para ejecutar una consulta en el Editor SQL."
           },
           "seconds": "Artículos de segunda clase"
         },
@@ -2248,7 +2249,7 @@
         "title": "Límite de conteo de usuarios",
         "remaining": "Su cuota total de usuarios es {total}, solo quedan {count} usuarios.",
         "runoutof": "Se ha quedado sin su cuota de usuario {total}.",
-        "upgrade": "@:{'subscription.upgrade'} para obtener una cuota de usuario ilimitada."
+        "upgrade": "@:{'subscription.upgrade'} para obtener más cuota de usuario."
       }
     },
     "instance-assignment": {

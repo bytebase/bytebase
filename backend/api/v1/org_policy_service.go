@@ -25,7 +25,6 @@ var (
 		storepb.Policy_ROLLOUT:                                {storepb.Policy_ENVIRONMENT},
 		storepb.Policy_TAG:                                    {storepb.Policy_ENVIRONMENT, storepb.Policy_PROJECT},
 		storepb.Policy_DISABLE_COPY_DATA:                      {storepb.Policy_ENVIRONMENT, storepb.Policy_PROJECT},
-		storepb.Policy_EXPORT_DATA:                            {storepb.Policy_WORKSPACE},
 		storepb.Policy_QUERY_DATA:                             {storepb.Policy_WORKSPACE},
 		storepb.Policy_MASKING_RULE:                           {storepb.Policy_WORKSPACE},
 		storepb.Policy_MASKING_EXCEPTION:                      {storepb.Policy_PROJECT},
@@ -217,8 +216,6 @@ func pathMatchType(path string, policyType storepb.Policy_Type) bool {
 		return path == "tag_policy"
 	case storepb.Policy_DATA_SOURCE_QUERY:
 		return path == "data_source_query_policy"
-	case storepb.Policy_EXPORT_DATA:
-		return path == "export_data_policy"
 	case storepb.Policy_QUERY_DATA:
 		return path == "query_data_policy"
 	default:
@@ -455,16 +452,6 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 			return "", errors.Wrap(err, "failed to marshal policy")
 		}
 		return string(payloadBytes), nil
-	case v1pb.PolicyType_DATA_EXPORT:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
-			return "", connect.NewError(connect.CodePermissionDenied, err)
-		}
-		payload := convertToExportDataPolicyPayload(policy.GetExportDataPolicy())
-		payloadBytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal policy")
-		}
-		return string(payloadBytes), nil
 	case v1pb.PolicyType_DATA_QUERY:
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
 			return "", connect.NewError(connect.CodePermissionDenied, err)
@@ -553,12 +540,6 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, policyMessage *s
 		}
 	case storepb.Policy_DISABLE_COPY_DATA:
 		payload, err := convertToV1PBDisableCopyDataPolicy(policyMessage.Payload)
-		if err != nil {
-			return nil, err
-		}
-		policy.Policy = payload
-	case storepb.Policy_EXPORT_DATA:
-		payload, err := convertToV1PBExportDataPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
@@ -718,18 +699,6 @@ func convertToV1PBDisableCopyDataPolicy(payloadStr string) (*v1pb.Policy_Disable
 	}, nil
 }
 
-func convertToV1PBExportDataPolicy(payloadStr string) (*v1pb.Policy_ExportDataPolicy, error) {
-	payload := &storepb.ExportDataPolicy{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal export data policy payload")
-	}
-	return &v1pb.Policy_ExportDataPolicy{
-		ExportDataPolicy: &v1pb.ExportDataPolicy{
-			Disable: payload.Disable,
-		},
-	}, nil
-}
-
 func convertToV1PBQueryDataPolicy(payloadStr string) (*v1pb.Policy_QueryDataPolicy, error) {
 	payload := &storepb.QueryDataPolicy{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
@@ -737,7 +706,10 @@ func convertToV1PBQueryDataPolicy(payloadStr string) (*v1pb.Policy_QueryDataPoli
 	}
 	return &v1pb.Policy_QueryDataPolicy{
 		QueryDataPolicy: &v1pb.QueryDataPolicy{
-			Timeout: payload.Timeout,
+			Timeout:           payload.Timeout,
+			DisableExport:     payload.DisableExport,
+			MaximumResultSize: payload.MaximumResultSize,
+			MaximumResultRows: payload.MaximumResultRows,
 		},
 	}, nil
 }
@@ -748,15 +720,12 @@ func convertToDisableCopyDataPolicyPayload(policy *v1pb.DisableCopyDataPolicy) *
 	}
 }
 
-func convertToExportDataPolicyPayload(policy *v1pb.ExportDataPolicy) *storepb.ExportDataPolicy {
-	return &storepb.ExportDataPolicy{
-		Disable: policy.Disable,
-	}
-}
-
 func convertToQueryDataPolicyPayload(policy *v1pb.QueryDataPolicy) *storepb.QueryDataPolicy {
 	return &storepb.QueryDataPolicy{
-		Timeout: policy.Timeout,
+		Timeout:           policy.Timeout,
+		DisableExport:     policy.DisableExport,
+		MaximumResultSize: policy.MaximumResultSize,
+		MaximumResultRows: policy.MaximumResultRows,
 	}
 }
 
@@ -902,8 +871,6 @@ func convertV1PBToStorePBPolicyType(pType v1pb.PolicyType) (storepb.Policy_Type,
 		return storepb.Policy_MASKING_EXCEPTION, nil
 	case v1pb.PolicyType_DISABLE_COPY_DATA:
 		return storepb.Policy_DISABLE_COPY_DATA, nil
-	case v1pb.PolicyType_DATA_EXPORT:
-		return storepb.Policy_EXPORT_DATA, nil
 	case v1pb.PolicyType_DATA_QUERY:
 		return storepb.Policy_QUERY_DATA, nil
 	case v1pb.PolicyType_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW:
@@ -927,8 +894,6 @@ func convertStorePBToV1PBPolicyType(pType storepb.Policy_Type) v1pb.PolicyType {
 		return v1pb.PolicyType_MASKING_EXCEPTION
 	case storepb.Policy_DISABLE_COPY_DATA:
 		return v1pb.PolicyType_DISABLE_COPY_DATA
-	case storepb.Policy_EXPORT_DATA:
-		return v1pb.PolicyType_DATA_EXPORT
 	case storepb.Policy_QUERY_DATA:
 		return v1pb.PolicyType_DATA_QUERY
 	case storepb.Policy_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW:

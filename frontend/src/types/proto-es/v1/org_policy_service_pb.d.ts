@@ -282,12 +282,6 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
     case: "dataSourceQueryPolicy";
   } | {
     /**
-     * @generated from field: bytebase.v1.ExportDataPolicy export_data_policy = 23;
-     */
-    value: ExportDataPolicy;
-    case: "exportDataPolicy";
-  } | {
-    /**
      * @generated from field: bytebase.v1.QueryDataPolicy query_data_policy = 24;
      */
     value: QueryDataPolicy;
@@ -359,22 +353,6 @@ export declare type DisableCopyDataPolicy = Message<"bytebase.v1.DisableCopyData
 export declare const DisableCopyDataPolicySchema: GenMessage<DisableCopyDataPolicy>;
 
 /**
- * @generated from message bytebase.v1.ExportDataPolicy
- */
-export declare type ExportDataPolicy = Message<"bytebase.v1.ExportDataPolicy"> & {
-  /**
-   * @generated from field: bool disable = 1;
-   */
-  disable: boolean;
-};
-
-/**
- * Describes the message bytebase.v1.ExportDataPolicy.
- * Use `create(ExportDataPolicySchema)` to create a new message.
- */
-export declare const ExportDataPolicySchema: GenMessage<ExportDataPolicy>;
-
-/**
  * QueryDataPolicy is the policy configuration for querying data.
  *
  * @generated from message bytebase.v1.QueryDataPolicy
@@ -386,6 +364,29 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
    * @generated from field: google.protobuf.Duration timeout = 1;
    */
   timeout?: Duration;
+
+  /**
+   * Disable export data in the SQL editor
+   *
+   * @generated from field: bool disable_export = 2;
+   */
+  disableExport: boolean;
+
+  /**
+   * The size limit in bytes.
+   * The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
+   *
+   * @generated from field: int64 maximum_result_size = 3;
+   */
+  maximumResultSize: bigint;
+
+  /**
+   * The return rows limit.
+   * The default value is -1, means no limit.
+   *
+   * @generated from field: int32 maximum_result_rows = 4;
+   */
+  maximumResultRows: number;
 };
 
 /**
@@ -734,11 +735,6 @@ export enum PolicyType {
    * @generated from enum value: DATA_SOURCE_QUERY = 14;
    */
   DATA_SOURCE_QUERY = 14,
-
-  /**
-   * @generated from enum value: DATA_EXPORT = 15;
-   */
-  DATA_EXPORT = 15,
 
   /**
    * @generated from enum value: DATA_QUERY = 16;

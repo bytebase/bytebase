@@ -616,20 +616,21 @@
         "maximum-sql-result": {
           "size": {
             "self": "Kích thước kết quả SQL tối đa",
-            "description": "Giới hạn kích thước kết quả truy vấn SQL đầu ra."
+            "description": "Giới hạn kích thước kết quả truy vấn SQL đầu ra.",
+            "default": "Giới hạn mặc định {limit} MB"
           },
           "rows": {
             "self": "Số lượng hàng kết quả SQL tối đa",
             "rows": "Hàng",
             "description": "Giới hạn số hàng đầu ra trong kết quả truy vấn SQL, giá trị <= 0 nghĩa là không giới hạn.",
+            "limit": "Không giới hạn khi giá trị <= 0",
             "limit-warning": "Xuất tối đa {count} hàng do hạn chế truy vấn"
           }
         },
         "query-data-policy": {
           "timeout": {
             "self": "Thời gian truy vấn tối đa",
-            "description": "Thời gian tối đa được phép chạy truy vấn trong SQL Editor.",
-            "no-time-limit": "Không giới hạn thời gian cho truy vấn khi đặt thành 0."
+            "description": "Thời gian tối đa được phép chạy truy vấn trong SQL Editor."
           },
           "seconds": "Giây"
         },
@@ -2248,7 +2249,7 @@
         "title": "Giới hạn số lượng người dùng",
         "remaining": "Tổng hạn ngạch người dùng của bạn là {total}, chỉ còn lại {count} người dùng.",
         "runoutof": "Bạn đã hết hạn ngạch {total} người dùng của mình.",
-        "upgrade": "@:{'subscription.upgrade'} để có hạn ngạch người dùng không giới hạn."
+        "upgrade": "@:{'subscription.upgrade'} để có thêm hạn ngạch người dùng."
       }
     },
     "instance-assignment": {

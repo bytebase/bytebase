@@ -35,7 +35,7 @@ import { first, last } from "lodash-es";
 import { NButton, NInputNumber, NPopselect, type SelectOption } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useSettingV1Store } from "@/store";
+import { usePolicyV1Store } from "@/store";
 import { minmax } from "@/utils";
 
 defineProps<{
@@ -47,17 +47,17 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const settingV1Store = useSettingV1Store();
+const policyStore = usePolicyV1Store();
 
 const rowCountOptions = computed(() => {
   const list = [1, 100, 500, 1000, 5000, 10000, 100000].filter(
-    (num) => num <= settingV1Store.maximumResultRows
+    (num) => num <= policyStore.maximumResultRows
   );
   if (
-    settingV1Store.maximumResultRows !== Number.MAX_VALUE &&
-    !list.includes(settingV1Store.maximumResultRows)
+    policyStore.maximumResultRows !== Number.MAX_VALUE &&
+    !list.includes(policyStore.maximumResultRows)
   ) {
-    list.push(settingV1Store.maximumResultRows);
+    list.push(policyStore.maximumResultRows);
   }
   return list;
 });
