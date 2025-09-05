@@ -12,9 +12,10 @@
     @close="$emit('remove-scope', scope.id, scope.value)"
     @click.stop.prevent="handleClick(scope)"
   >
-    <span>{{ scope.id }}</span>
-    <span>:</span>
-    <component :is="() => renderValue(scope, i)" />
+    <div class="flex items-center gap-1">
+      <span class="text-control">{{ scope.id }}:</span>
+      <component :is="() => renderValue(scope, i)" />
+    </div>
   </NTag>
 </template>
 
