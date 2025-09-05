@@ -203,6 +203,13 @@ func buildOutputStagesMarkdown(w *world.World, sb *strings.Builder) {
 			}
 		}
 
+		// Check if there are any stages to display
+		if len(allStages) == 0 {
+			sb.WriteString("\n### Rollout Stages\n\n")
+			sb.WriteString("_No stages to display. The rollout may not have any stages._\n\n")
+			return
+		}
+
 		// Create a map of stage environment to Stage object for quick lookup
 		stageMap := make(map[string]*v1pb.Stage)
 		for _, stage := range rollout.Stages {
