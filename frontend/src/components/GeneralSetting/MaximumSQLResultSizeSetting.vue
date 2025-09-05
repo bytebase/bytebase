@@ -11,6 +11,13 @@
         {{
           $t("settings.general.workspace.maximum-sql-result.size.description")
         }}
+        <span class="!font-semibold textinfolabel">
+          {{
+            $t("settings.general.workspace.maximum-sql-result.size.default", {
+              limit: defaultMaximumResultSizeInMB,
+            })
+          }}
+        </span>
       </p>
       <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
         <NInputNumber
@@ -41,6 +48,9 @@
         {{
           $t("settings.general.workspace.maximum-sql-result.rows.description")
         }}
+        <span class="!font-semibold textinfolabel">
+          {{ $t("settings.general.workspace.maximum-sql-result.rows.limit") }}
+        </span>
       </p>
       <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
         <NInputNumber
@@ -70,12 +80,16 @@ import { create } from "@bufbuild/protobuf";
 import { isEqual } from "lodash-es";
 import { NInputNumber } from "naive-ui";
 import { ref, computed } from "vue";
-import { useSettingV1Store, featureToRef } from "@/store";
 import {
-  Setting_SettingName,
-  SQLQueryRestrictionSettingSchema,
-  ValueSchema as SettingValueSchema,
-} from "@/types/proto-es/v1/setting_service_pb";
+  usePolicyByParentAndType,
+  usePolicyV1Store,
+  featureToRef,
+} from "@/store";
+import {
+  QueryDataPolicySchema,
+  PolicyResourceType,
+  PolicyType,
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge } from "../FeatureGuard";
 
@@ -83,27 +97,35 @@ defineProps<{
   allowEdit: boolean;
 }>();
 
-const settingV1Store = useSettingV1Store();
+const policyV1Store = usePolicyV1Store();
 const timing = ref<ReturnType<typeof setTimeout>>();
 const hasQueryPolicyFeature = featureToRef(PlanFeature.FEATURE_QUERY_POLICY);
+const defaultMaximumResultSizeInMB = 100;
+
+const { policy: queryDataPolicy } = usePolicyByParentAndType(
+  computed(() => ({
+    parentPath: "",
+    policyType: PolicyType.DATA_QUERY,
+  }))
+);
+
+const policyPayload = computed(() => {
+  return queryDataPolicy.value?.policy?.case === "queryDataPolicy"
+    ? queryDataPolicy.value.policy.value
+    : create(QueryDataPolicySchema);
+});
 
 const initialState = () => {
-  const setting = settingV1Store.getSettingByName(
-    Setting_SettingName.SQL_RESULT_SIZE_LIMIT
-  );
-  let maximumResultSize = BigInt(100 * 1024 * 1024); // default 100
-  let maximumResultRows = -1; // default -1
-
-  if (setting?.value?.value?.case === "sqlQueryRestrictionSetting") {
-    maximumResultSize =
-      setting.value.value.value.maximumResultSize ?? maximumResultSize;
-    maximumResultRows =
-      setting.value.value.value.maximumResultRows ?? maximumResultRows;
-  }
-
   return {
-    maximumResultSize: Math.round(Number(maximumResultSize) / 1024 / 1024),
-    maximumResultRows: Number(maximumResultRows),
+    maximumResultSize: Math.round(
+      Number(
+        policyPayload.value.maximumResultSize ??
+          BigInt(defaultMaximumResultSizeInMB * 1024 * 1024)
+      ) /
+        1024 /
+        1024
+    ),
+    maximumResultRows: Number(policyPayload.value.maximumResultRows ?? -1),
   };
 };
 
@@ -118,19 +140,22 @@ const allowUpdate = computed(() => {
 
 const updateChange = async () => {
   clearTimeout(timing.value);
-  await settingV1Store.upsertSetting({
-    name: Setting_SettingName.SQL_RESULT_SIZE_LIMIT,
-    value: create(SettingValueSchema, {
-      value: {
-        case: "sqlQueryRestrictionSetting",
-        value: create(SQLQueryRestrictionSettingSchema, {
+  await policyV1Store.upsertPolicy({
+    parentPath: "",
+    policy: {
+      type: PolicyType.DATA_QUERY,
+      resourceType: PolicyResourceType.WORKSPACE,
+      policy: {
+        case: "queryDataPolicy",
+        value: create(QueryDataPolicySchema, {
+          ...policyPayload.value,
           maximumResultSize: BigInt(
             queryRestriction.value.maximumResultSize * 1024 * 1024
           ),
           maximumResultRows: queryRestriction.value.maximumResultRows,
         }),
       },
-    }),
+    },
   });
 };
 

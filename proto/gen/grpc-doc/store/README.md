@@ -205,7 +205,6 @@
     - [DataSourceQueryPolicy](#bytebase-store-DataSourceQueryPolicy)
     - [DisableCopyDataPolicy](#bytebase-store-DisableCopyDataPolicy)
     - [EnvironmentTierPolicy](#bytebase-store-EnvironmentTierPolicy)
-    - [ExportDataPolicy](#bytebase-store-ExportDataPolicy)
     - [IamPolicy](#bytebase-store-IamPolicy)
     - [MaskingExceptionPolicy](#bytebase-store-MaskingExceptionPolicy)
     - [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException)
@@ -281,7 +280,6 @@
     - [EnvironmentSetting.Environment.TagsEntry](#bytebase-store-EnvironmentSetting-Environment-TagsEntry)
     - [PasswordRestrictionSetting](#bytebase-store-PasswordRestrictionSetting)
     - [SCIMSetting](#bytebase-store-SCIMSetting)
-    - [SQLQueryRestrictionSetting](#bytebase-store-SQLQueryRestrictionSetting)
     - [SchemaTemplateSetting](#bytebase-store-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-store-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate)
@@ -3436,21 +3434,6 @@ EnvironmentTierPolicy is the tier of an environment.
 
 
 
-<a name="bytebase-store-ExportDataPolicy"></a>
-
-### ExportDataPolicy
-ExportDataPolicy is the policy configuration for export data.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| disable | [bool](#bool) |  |  |
-
-
-
-
-
-
 <a name="bytebase-store-IamPolicy"></a>
 
 ### IamPolicy
@@ -3551,6 +3534,9 @@ QueryDataPolicy is the policy configuration for querying data.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query timeout duration. |
+| disable_export | [bool](#bool) |  | Disable export data in the SQL editor |
+| maximum_result_size | [int64](#int64) |  | The size limit in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
+| maximum_result_rows | [int32](#int32) |  | The return rows limit. The default value is -1, means no limit. |
 
 
 
@@ -3705,7 +3691,6 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | ROLLOUT | 1 |  |
 | MASKING_EXCEPTION | 2 |  |
 | DISABLE_COPY_DATA | 3 |  |
-| EXPORT_DATA | 4 |  |
 | QUERY_DATA | 5 |  |
 | MASKING_RULE | 6 |  |
 | RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW | 7 |  |
@@ -4498,22 +4483,6 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 
 
 
-<a name="bytebase-store-SQLQueryRestrictionSetting"></a>
-
-### SQLQueryRestrictionSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| maximum_result_size | [int64](#int64) |  | The size limit in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
-| maximum_result_rows | [int32](#int32) |  | The return rows limit. The default value is -1, means no limit. |
-
-
-
-
-
-
 <a name="bytebase-store-SchemaTemplateSetting"></a>
 
 ### SchemaTemplateSetting
@@ -4755,7 +4724,6 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | SCHEMA_TEMPLATE | 13 |  |
 | DATA_CLASSIFICATION | 14 |  |
 | SEMANTIC_TYPES | 15 |  |
-| SQL_RESULT_SIZE_LIMIT | 16 |  |
 | SCIM | 17 |  |
 | PASSWORD_RESTRICTION | 18 |  |
 | ENVIRONMENT | 19 |  |

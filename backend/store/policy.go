@@ -152,32 +152,6 @@ func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*stor
 	return p, nil
 }
 
-func (s *Store) GetExportDataPolicy(ctx context.Context) (*storepb.ExportDataPolicy, error) {
-	resourceType := storepb.Policy_WORKSPACE
-	resource := ""
-	pType := storepb.Policy_EXPORT_DATA
-	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
-		ResourceType: &resourceType,
-		Resource:     &resource,
-		Type:         &pType,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get policy")
-	}
-	if policy == nil {
-		return &storepb.ExportDataPolicy{
-			Disable: false,
-		}, nil
-	}
-
-	p := &storepb.ExportDataPolicy{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal export data policy")
-	}
-
-	return p, nil
-}
-
 func (s *Store) GetQueryDataPolicy(ctx context.Context) (*storepb.QueryDataPolicy, error) {
 	resourceType := storepb.Policy_WORKSPACE
 	resource := ""
@@ -192,13 +166,19 @@ func (s *Store) GetQueryDataPolicy(ctx context.Context) (*storepb.QueryDataPolic
 	}
 	if policy == nil {
 		return &storepb.QueryDataPolicy{
-			Timeout: &durationpb.Duration{},
+			Timeout:           &durationpb.Duration{},
+			DisableExport:     false,
+			MaximumResultSize: common.DefaultMaximumSQLResultSize,
+			MaximumResultRows: -1,
 		}, nil
 	}
 
 	p := &storepb.QueryDataPolicy{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal query data policy")
+	}
+	if p.MaximumResultSize <= 0 {
+		p.MaximumResultSize = common.DefaultMaximumSQLResultSize
 	}
 	return p, nil
 }

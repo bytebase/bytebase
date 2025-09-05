@@ -12,6 +12,8 @@ import "store/database.proto";
 option go_package = "generated-go/store";
 
 enum SettingName {
+  reserved 16;
+
   SETTING_NAME_UNSPECIFIED = 0;
   AUTH_SECRET = 1;
   BRANDING_LOGO = 2;
@@ -26,7 +28,6 @@ enum SettingName {
   SCHEMA_TEMPLATE = 13;
   DATA_CLASSIFICATION = 14;
   SEMANTIC_TYPES = 15;
-  SQL_RESULT_SIZE_LIMIT = 16;
   SCIM = 17;
   PASSWORD_RESTRICTION = 18;
   ENVIRONMENT = 19;
@@ -281,15 +282,6 @@ enum DatabaseChangeMode {
   PIPELINE = 1;
   // A simple database change process in SQL editor. Users can execute SQL directly.
   EDITOR = 2;
-}
-
-message SQLQueryRestrictionSetting {
-  // The size limit in bytes.
-  // The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
-  int64 maximum_result_size = 1;
-  // The return rows limit.
-  // The default value is -1, means no limit.
-  int32 maximum_result_rows = 2;
 }
 
 message SCIMSetting {
