@@ -157,10 +157,11 @@ const selectedEngines = computed(() => {
     .filter((scope) => scope.id === "engine")
     .map((scope) => {
       // Convert string scope value to Engine enum
-      const engineValue = Object.values(Engine).find(
-        (engine) => engine === scope.value
-      ) as Engine | undefined;
-      return engineValue ?? Engine.MYSQL; // Default fallback
+      const engineKey = scope.value.toUpperCase();
+      const engineValue = Engine[engineKey as keyof typeof Engine];
+      return typeof engineValue === "number"
+        ? engineValue
+        : Engine.ENGINE_UNSPECIFIED;
     });
 });
 
