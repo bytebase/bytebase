@@ -109,7 +109,7 @@ const hasDatabaseCatalogPermission = computed(() => {
 const databaseCatalog = useDatabaseCatalog(props.database.name, false);
 
 const getColumnKey = (column: ColumnMetadata) => {
-  return `${props.database}.${props.schema}.${props.table.name}.${column.name}`;
+  return `${props.database.name}.${props.schema}.${props.table.name}.${column.name}`;
 };
 
 const columns = computed(() => {
