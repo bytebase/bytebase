@@ -3,6 +3,8 @@ package world
 import (
 	"log/slog"
 	"time"
+
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 // World is the world environment for bytebase-action.
@@ -46,11 +48,14 @@ type World struct {
 	TargetStage string
 	Plan        string
 
+	// Outputs
 	OutputMap struct {
 		Release string `json:"release,omitempty"`
 		Plan    string `json:"plan,omitempty"`
 		Rollout string `json:"rollout,omitempty"`
 	}
+	PendingStages []string
+	Rollout       *v1pb.Rollout
 }
 
 func NewWorld() *World {
