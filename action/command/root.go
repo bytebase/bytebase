@@ -148,15 +148,8 @@ func postRun(w *world.World) {
 			}
 			defer f.Close()
 
-			var sb strings.Builder
-			_, _ = sb.WriteString("Release: " + w.URL + "/" + w.OutputMap.Release + "\n")
-			_, _ = sb.WriteString("Plan: " + w.URL + "/" + w.OutputMap.Plan + "\n")
-			_, _ = sb.WriteString("Rollout: " + w.URL + "/" + w.OutputMap.Rollout + "\n")
-
-			// Add stage status table
-			buildOutputStagesMarkdown(w, &sb)
-
-			if _, err := f.WriteString(sb.String()); err != nil {
+			summary := buildSummaryMarkdown(w)
+			if _, err := f.WriteString(summary); err != nil {
 				return errors.Wrapf(err, "failed to write GitHub step summary: %s", filename)
 			}
 			return nil
@@ -165,6 +158,18 @@ func postRun(w *world.World) {
 	}(); err != nil {
 		w.Logger.Error("failed to write GitHub step summary", "error", err)
 	}
+}
+
+func buildSummaryMarkdown(w *world.World) string {
+	var sb strings.Builder
+	_, _ = sb.WriteString("Release: " + w.URL + "/" + w.OutputMap.Release + "\n")
+	_, _ = sb.WriteString("Plan: " + w.URL + "/" + w.OutputMap.Plan + "\n")
+	_, _ = sb.WriteString("Rollout: " + w.URL + "/" + w.OutputMap.Rollout + "\n")
+
+	// Add stage status table
+	buildOutputStagesMarkdown(w, &sb)
+
+	return sb.String()
 }
 
 func buildOutputStagesMarkdown(w *world.World, sb *strings.Builder) {
