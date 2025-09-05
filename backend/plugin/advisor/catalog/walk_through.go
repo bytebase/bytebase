@@ -713,10 +713,7 @@ func (t *TableState) renameColumn(ctx *FinderContext, oldName string, newName st
 	column, exists := t.columnSet[strings.ToLower(oldName)]
 	if !exists {
 		if ctx.CheckIntegrity {
-			return &WalkThroughError{
-				Type:    ErrorTypeColumnNotExists,
-				Content: fmt.Sprintf("Column `%s` does not exist in table `%s`", oldName, t.name),
-			}
+			return NewColumnNotExistsError(t.name, oldName)
 		}
 		column = t.createIncompleteColumn(oldName)
 	}
