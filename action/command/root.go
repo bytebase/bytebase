@@ -162,9 +162,15 @@ func postRun(w *world.World) {
 
 func buildSummaryMarkdown(w *world.World) string {
 	var sb strings.Builder
-	_, _ = sb.WriteString("Release: " + w.URL + "/" + w.OutputMap.Release + "\n")
-	_, _ = sb.WriteString("Plan: " + w.URL + "/" + w.OutputMap.Plan + "\n")
-	_, _ = sb.WriteString("Rollout: " + w.URL + "/" + w.OutputMap.Rollout + "\n")
+	if w.OutputMap.Release != "" {
+		_, _ = sb.WriteString("Release: " + w.URL + "/" + w.OutputMap.Release + "\n")
+	}
+	if w.OutputMap.Plan != "" {
+		_, _ = sb.WriteString("Plan: " + w.URL + "/" + w.OutputMap.Plan + "\n")
+	}
+	if w.OutputMap.Rollout != "" {
+		_, _ = sb.WriteString("Rollout: " + w.URL + "/" + w.OutputMap.Rollout + "\n")
+	}
 
 	// Add stage status table
 	buildOutputStagesMarkdown(w, &sb)
