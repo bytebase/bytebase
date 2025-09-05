@@ -185,9 +185,8 @@ func getSheetCommandsForMSSQL(statement string) []*storepb.SheetCommand {
 			batch.Reset(nil)
 		default:
 		}
-		if len(sheetCommands) > common.MaximumCommands {
-			return nil
-		}
+		// No command count limit for MSSQL to ensure consistency between sheet payload
+		// and actual execution in mssql.go which splits and executes all batches
 	}
 	return sheetCommands
 }
