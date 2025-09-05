@@ -285,15 +285,19 @@ func getMaximumSQLResultLimit(
 	stores *store.Store,
 	licenseService *enterprise.LicenseService,
 	limit int32,
-) *storepb.SQLQueryRestrictionSetting {
-	value := &storepb.SQLQueryRestrictionSetting{
+) *storepb.QueryDataPolicy {
+	value := &storepb.QueryDataPolicy{
 		MaximumResultSize: common.DefaultMaximumSQLResultSize,
 		MaximumResultRows: -1,
 	}
 	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err == nil {
-		value = stores.GetSQLQueryRestriction(ctx)
+		policy, err := stores.GetQueryDataPolicy(ctx)
+		if err != nil {
+			slog.Error("failed to get the query data policy", log.BBError(err))
+			return value
+		}
+		value = policy
 	}
-
 	if limit > 0 && (value.GetMaximumResultRows() < 0 || limit < value.GetMaximumResultRows()) {
 		value.MaximumResultRows = limit
 	}
@@ -715,11 +719,11 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	}
 
 	// Check if data export is allowed.
-	exportDataPolicy, err := s.store.GetExportDataPolicy(ctx)
+	queryDataPolicy, err := s.store.GetQueryDataPolicy(ctx)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get data export policy: %v", err))
 	}
-	if exportDataPolicy.Disable {
+	if queryDataPolicy.DisableExport {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("data export is not allowed"))
 	}
 

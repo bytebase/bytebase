@@ -989,10 +989,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.ExportDataPolicy"><span class="badge">M</span>ExportDataPolicy</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.IamPolicy"><span class="badge">M</span>IamPolicy</a>
                 </li>
               
@@ -1302,10 +1298,6 @@
               
                 <li>
                   <a href="#bytebase.store.SCIMSetting"><span class="badge">M</span>SCIMSetting</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.SQLQueryRestrictionSetting"><span class="badge">M</span>SQLQueryRestrictionSetting</a>
                 </li>
               
                 <li>
@@ -9551,30 +9543,6 @@ If the condition evaluates to false, then this binding does not apply to the cur
 
         
       
-        <h3 id="bytebase.store.ExportDataPolicy">ExportDataPolicy</h3>
-        <p>ExportDataPolicy is the policy configuration for export data.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>disable</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.IamPolicy">IamPolicy</h3>
         <p></p>
 
@@ -9748,6 +9716,29 @@ Format: users/{userUID} or groups/{group email} </p></td>
                   <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
                   <td></td>
                   <td><p>The query timeout duration. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>disable_export</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Disable export data in the SQL editor </p></td>
+                </tr>
+              
+                <tr>
+                  <td>maximum_result_size</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The size limit in bytes.
+The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>maximum_result_rows</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The return rows limit.
+The default value is -1, means no limit. </p></td>
                 </tr>
               
             </tbody>
@@ -10081,12 +10072,6 @@ for example, the environment resource can have the sql review config tag, like &
               <tr>
                 <td>DISABLE_COPY_DATA</td>
                 <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>EXPORT_DATA</td>
-                <td>4</td>
                 <td><p></p></td>
               </tr>
             
@@ -11772,39 +11757,6 @@ are /[a-z][0-9]-/. </p></td>
 
         
       
-        <h3 id="bytebase.store.SQLQueryRestrictionSetting">SQLQueryRestrictionSetting</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>maximum_result_size</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The size limit in bytes.
-The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>maximum_result_rows</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The return rows limit.
-The default value is -1, means no limit. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.SchemaTemplateSetting">SchemaTemplateSetting</h3>
         <p></p>
 
@@ -12443,12 +12395,6 @@ Default to this mode.</p></td>
               <tr>
                 <td>SEMANTIC_TYPES</td>
                 <td>15</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SQL_RESULT_SIZE_LIMIT</td>
-                <td>16</td>
                 <td><p></p></td>
               </tr>
             

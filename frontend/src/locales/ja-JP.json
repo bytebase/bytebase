@@ -616,20 +616,21 @@
         "maximum-sql-result": {
           "size": {
             "self": "最大SQL結果サイズ",
-            "description": "出力される SQL クエリ結果のサイズを制限します。"
+            "description": "出力される SQL クエリ結果のサイズを制限します。",
+            "default": "デフォルトの制限 {limit} MB"
           },
           "rows": {
             "self": "最大SQL結果行数",
             "rows": "行",
             "description": "SQL クエリ結果の出力行を制限します。値 <= 0 は制限がないことを意味します。",
+            "limit": "値が0以下の場合、制限なし",
             "limit-warning": "クエリ制限により、最大エクスポート行数は {count} 行です"
           }
         },
         "query-data-policy": {
           "timeout": {
             "self": "最大クエリ時間",
-            "description": "SQL エディターでクエリを実行するために許可される最大時間。",
-            "no-time-limit": "0 に設定すると、クエリに時間制限はありません。"
+            "description": "SQL エディターでクエリを実行するために許可される最大時間。"
           },
           "seconds": "秒"
         },
@@ -2248,7 +2249,7 @@
         "title": "ユーザー制限",
         "remaining": "現在の合計ユーザー割り当ては {total} で、使用できる共有は {count} 個のみです。",
         "runoutof": "{total} 個のユーザー クレジットがすべて使用されました。",
-        "upgrade": "@:{'subscription.upgrade'} を使用すると、無制限のユーザー割り当てを取得できます。"
+        "upgrade": "@:{'subscription.upgrade'} でユーザークォータをさらに取得します。"
       }
     },
     "instance-assignment": {

@@ -218,7 +218,7 @@ message ListPoliciesResponse {
 }
 
 message Policy {
-  reserved 2;
+  reserved 2, 23;
 
   option (google.api.resource) = {
     type: "bytebase.com/Policy"
@@ -249,7 +249,6 @@ message Policy {
     RestrictIssueCreationForSQLReviewPolicy restrict_issue_creation_for_sql_review_policy = 20;
     TagPolicy tag_policy = 21;
     DataSourceQueryPolicy data_source_query_policy = 22;
-    ExportDataPolicy export_data_policy = 23;
     QueryDataPolicy query_data_policy = 24;
   }
 
@@ -260,7 +259,7 @@ message Policy {
 }
 
 enum PolicyType {
-  reserved 2, 4, 6, 5, 7;
+  reserved 2, 4, 6, 5, 7, 15;
 
   POLICY_TYPE_UNSPECIFIED = 0;
   ROLLOUT_POLICY = 11;
@@ -270,7 +269,6 @@ enum PolicyType {
   RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 12;
   TAG = 13;
   DATA_SOURCE_QUERY = 14;
-  DATA_EXPORT = 15;
   DATA_QUERY = 16;
 }
 
@@ -293,14 +291,21 @@ message DisableCopyDataPolicy {
   bool active = 1;
 }
 
-message ExportDataPolicy {
-  bool disable = 1;
-}
-
 // QueryDataPolicy is the policy configuration for querying data.
 message QueryDataPolicy {
   // The query timeout duration.
   google.protobuf.Duration timeout = 1;
+
+  // Disable export data in the SQL editor
+  bool disable_export = 2;
+
+  // The size limit in bytes.
+  // The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
+  int64 maximum_result_size = 3;
+
+  // The return rows limit.
+  // The default value is -1, means no limit.
+  int32 maximum_result_rows = 4;
 }
 
 // The SQL review rules. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.

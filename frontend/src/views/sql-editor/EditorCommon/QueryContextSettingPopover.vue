@@ -88,7 +88,7 @@
           <ResultLimitSelect
             placement="right-start"
             trigger="hover"
-            :maximum="maximumResultRows"
+            :maximum="policyStore.maximumResultRows"
           >
             <template
               #default="{ resultRowsLimit }: { resultRowsLimit: number }"
@@ -126,7 +126,6 @@ import {
   usePolicyV1Store,
   useSQLEditorTabStore,
   useSQLEditorStore,
-  useSettingV1Store,
 } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -152,7 +151,6 @@ const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const { connection, database } = useConnectionOfCurrentSQLEditorTab();
 const policyStore = usePolicyV1Store();
-const settingV1Store = useSettingV1Store();
 
 const { redisCommandOption, resultRowsLimit } =
   storeToRefs(useSQLEditorStore());
@@ -273,13 +271,9 @@ watch(
   }
 );
 
-const maximumResultRows = computed(() => {
-  return settingV1Store.maximumResultRows;
-});
-
 watchEffect(() => {
-  if (resultRowsLimit.value > maximumResultRows.value) {
-    resultRowsLimit.value = maximumResultRows.value;
+  if (resultRowsLimit.value > policyStore.maximumResultRows) {
+    resultRowsLimit.value = policyStore.maximumResultRows;
   }
 });
 </script>

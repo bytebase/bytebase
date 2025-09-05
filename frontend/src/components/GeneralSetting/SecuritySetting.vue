@@ -78,7 +78,7 @@ import {
   useSettingV1Store,
 } from "@/store";
 import {
-  ExportDataPolicySchema,
+  QueryDataPolicySchema,
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
@@ -127,12 +127,18 @@ const settingRefList = computed(() => [
   queryDataPolicySettingRef,
 ]);
 
-const { policy: exportDataPolicy } = usePolicyByParentAndType(
+const { policy: queryDataPolicy } = usePolicyByParentAndType(
   computed(() => ({
     parentPath: "",
-    policyType: PolicyType.DATA_EXPORT,
+    policyType: PolicyType.DATA_QUERY,
   }))
 );
+
+const policyPayload = computed(() => {
+  return queryDataPolicy.value?.policy?.case === "queryDataPolicy"
+    ? queryDataPolicy.value.policy.value
+    : create(QueryDataPolicySchema);
+});
 
 const getInitialState = (): LocalState => {
   const watermarkSetting = settingV1Store.getSettingByName(
@@ -144,10 +150,7 @@ const getInitialState = (): LocalState => {
   }
   return {
     enableWatermark,
-    enableDataExport:
-      exportDataPolicy.value?.policy?.case === "exportDataPolicy"
-        ? !exportDataPolicy.value.policy.value.disable
-        : true,
+    enableDataExport: !policyPayload.value.disableExport,
   };
 };
 
@@ -166,12 +169,13 @@ const handleDataExportToggle = async () => {
   await policyV1Store.upsertPolicy({
     parentPath: "",
     policy: {
-      type: PolicyType.DATA_EXPORT,
+      type: PolicyType.DATA_QUERY,
       resourceType: PolicyResourceType.WORKSPACE,
       policy: {
-        case: "exportDataPolicy",
-        value: create(ExportDataPolicySchema, {
-          disable: !state.enableDataExport,
+        case: "queryDataPolicy",
+        value: create(QueryDataPolicySchema, {
+          ...policyPayload.value,
+          disableExport: !state.enableDataExport,
         }),
       },
     },

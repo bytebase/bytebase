@@ -616,20 +616,21 @@
         "maximum-sql-result": {
           "size": {
             "self": "Maximum SQL result size",
-            "description": "Limit the output SQL query result size."
+            "description": "Limit the output SQL query result size.",
+            "default": "Default limit {limit} MB"
           },
           "rows": {
             "self": "Maximum SQL result rows",
             "rows": "Rows",
-            "description": "Limit the output rows in SQL query result, the value <= 0 means no limit.",
+            "description": "Limit the output rows in SQL query result.",
+            "limit": "No limit when the value <= 0",
             "limit-warning": "Maximum export {count} rows due to the query restriction"
           }
         },
         "query-data-policy": {
           "timeout": {
             "self": "Maximum query time",
-            "description": "The maximum time allowed for a query to run in SQL Editor.",
-            "no-time-limit": "No time limit for queries when set to 0."
+            "description": "The maximum time allowed for a query to run in SQL Editor."
           },
           "seconds": "Seconds"
         },
@@ -2248,7 +2249,7 @@
         "title": "User count limit",
         "remaining": "Your total user quota is {total}, with only {count} users remaining.",
         "runoutof": "You have run out of your {total} user quota.",
-        "upgrade": "@:{'subscription.upgrade'} to get unlimited user quota."
+        "upgrade": "@:{'subscription.upgrade'} to get more user quota."
       }
     },
     "instance-assignment": {

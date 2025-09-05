@@ -68,7 +68,6 @@ var whitelistSettings = []storepb.SettingName{
 	storepb.SettingName_SCHEMA_TEMPLATE,
 	storepb.SettingName_DATA_CLASSIFICATION,
 	storepb.SettingName_SEMANTIC_TYPES,
-	storepb.SettingName_SQL_RESULT_SIZE_LIMIT,
 	storepb.SettingName_SCIM,
 	storepb.SettingName_PASSWORD_RESTRICTION,
 	storepb.SettingName_ENVIRONMENT,
@@ -433,13 +432,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			return nil, connect.NewError(connect.CodePermissionDenied, err)
 		}
 		storeSettingValue = request.Msg.Setting.Value.GetStringValue()
-	case storepb.SettingName_SQL_RESULT_SIZE_LIMIT:
-		sqlQueryRestrictionSetting := convertSQLQueryRestrictionSetting(request.Msg.Setting.Value.GetSqlQueryRestrictionSetting())
-		bytes, err := protojson.Marshal(sqlQueryRestrictionSetting)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
-		}
-		storeSettingValue = string(bytes)
 	case storepb.SettingName_SCIM:
 		scimToken, err := common.RandomString(32)
 		if err != nil {
@@ -677,22 +669,6 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 				},
 			},
 		}, nil
-	case storepb.SettingName_SQL_RESULT_SIZE_LIMIT:
-		storeValue := new(storepb.SQLQueryRestrictionSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
-		}
-		if storeValue.MaximumResultSize <= 0 {
-			storeValue.MaximumResultSize = common.DefaultMaximumSQLResultSize
-		}
-		return &v1pb.Setting{
-			Name: settingName,
-			Value: &v1pb.Value{
-				Value: &v1pb.Value_SqlQueryRestrictionSetting{
-					SqlQueryRestrictionSetting: convertToSQLQueryRestrictionSetting(storeValue),
-				},
-			},
-		}, nil
 	case storepb.SettingName_SCIM:
 		storeValue := new(storepb.SCIMSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
@@ -889,8 +865,6 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 		return v1pb.Setting_DATA_CLASSIFICATION
 	case storepb.SettingName_SEMANTIC_TYPES:
 		return v1pb.Setting_SEMANTIC_TYPES
-	case storepb.SettingName_SQL_RESULT_SIZE_LIMIT:
-		return v1pb.Setting_SQL_RESULT_SIZE_LIMIT
 	case storepb.SettingName_SCIM:
 		return v1pb.Setting_SCIM
 	case storepb.SettingName_PASSWORD_RESTRICTION:
@@ -934,8 +908,6 @@ func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.Settin
 		return storepb.SettingName_DATA_CLASSIFICATION
 	case v1pb.Setting_SEMANTIC_TYPES:
 		return storepb.SettingName_SEMANTIC_TYPES
-	case v1pb.Setting_SQL_RESULT_SIZE_LIMIT:
-		return storepb.SettingName_SQL_RESULT_SIZE_LIMIT
 	case v1pb.Setting_SCIM:
 		return storepb.SettingName_SCIM
 	case v1pb.Setting_PASSWORD_RESTRICTION:
@@ -1595,28 +1567,6 @@ func convertToAlgorithmRangeMaskSlices(storeSlices []*storepb.Algorithm_RangeMas
 		v1Slices = append(v1Slices, v1Slice)
 	}
 	return v1Slices
-}
-
-func convertSQLQueryRestrictionSetting(v1Setting *v1pb.SQLQueryRestrictionSetting) *storepb.SQLQueryRestrictionSetting {
-	if v1Setting == nil {
-		return nil
-	}
-
-	return &storepb.SQLQueryRestrictionSetting{
-		MaximumResultSize: v1Setting.MaximumResultSize,
-		MaximumResultRows: v1Setting.MaximumResultRows,
-	}
-}
-
-func convertToSQLQueryRestrictionSetting(storeSetting *storepb.SQLQueryRestrictionSetting) *v1pb.SQLQueryRestrictionSetting {
-	if storeSetting == nil {
-		return nil
-	}
-
-	return &v1pb.SQLQueryRestrictionSetting{
-		MaximumResultSize: storeSetting.MaximumResultSize,
-		MaximumResultRows: storeSetting.MaximumResultRows,
-	}
 }
 
 func convertPasswordRestrictionSetting(v1Setting *v1pb.PasswordRestrictionSetting) *storepb.PasswordRestrictionSetting {
