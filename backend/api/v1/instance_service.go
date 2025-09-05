@@ -847,6 +847,8 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 			dataSource.WarehouseId = req.Msg.DataSource.WarehouseId
 		case "use_ssl":
 			dataSource.UseSsl = req.Msg.DataSource.UseSsl
+		case "verify_tls_certificate":
+			dataSource.VerifyTlsCertificate = req.Msg.DataSource.VerifyTlsCertificate
 		case "redis_type":
 			dataSource.RedisType = convertV1RedisType(req.Msg.DataSource.RedisType)
 		case "master_name":
