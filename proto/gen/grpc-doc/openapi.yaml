@@ -313,7 +313,6 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
-                        - DATA_EXPORT
                         - DATA_QUERY
                     type: string
                     format: enum
@@ -381,7 +380,6 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
-                        - DATA_EXPORT
                         - DATA_QUERY
                     type: string
                     format: enum
@@ -1652,7 +1650,6 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
-                        - DATA_EXPORT
                         - DATA_QUERY
                     type: string
                     format: enum
@@ -1726,7 +1723,6 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
-                        - DATA_EXPORT
                         - DATA_QUERY
                     type: string
                     format: enum
@@ -2474,7 +2470,6 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
-                        - DATA_EXPORT
                         - DATA_QUERY
                     type: string
                     format: enum
@@ -2542,7 +2537,6 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
-                        - DATA_EXPORT
                         - DATA_QUERY
                     type: string
                     format: enum
@@ -3103,7 +3097,6 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
-                        - DATA_EXPORT
                         - DATA_QUERY
                     type: string
                     format: enum
@@ -3175,7 +3168,6 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
-                        - DATA_EXPORT
                         - DATA_QUERY
                     type: string
                     format: enum
@@ -4951,7 +4943,6 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
-                        - DATA_EXPORT
                         - DATA_QUERY
                     type: string
                     format: enum
@@ -5019,7 +5010,6 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
-                        - DATA_EXPORT
                         - DATA_QUERY
                     type: string
                     format: enum
@@ -12845,20 +12835,6 @@ components:
             properties:
                 token:
                     type: string
-        SQLQueryRestrictionSetting:
-            type: object
-            properties:
-                maximumResultSize:
-                    type: string
-                    description: |-
-                        The size limit in bytes.
-                         The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
-                maximumResultRows:
-                    type: integer
-                    description: |-
-                        The return rows limit. If the value <= 0, will be treated as no limit.
-                         The default value is -1.
-                    format: int32
         SQLReviewRule:
             type: object
             properties:
@@ -14462,8 +14438,6 @@ components:
                     $ref: '#/components/schemas/AISetting'
                 environmentSetting:
                     $ref: '#/components/schemas/EnvironmentSetting'
-                sqlQueryRestrictionSetting:
-                    $ref: '#/components/schemas/SQLQueryRestrictionSetting'
             description: The data in setting value.
         Webhook:
             required:

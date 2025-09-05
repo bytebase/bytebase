@@ -4,13 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log/slog"
 	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -47,31 +45,6 @@ func (s *Store) GetPasswordRestrictionSetting(ctx context.Context) (*storepb.Pas
 		return nil, err
 	}
 	return passwordRestriction, nil
-}
-
-func (s *Store) GetSQLQueryRestriction(ctx context.Context) *storepb.SQLQueryRestrictionSetting {
-	defaultValue := &storepb.SQLQueryRestrictionSetting{
-		MaximumResultSize: common.DefaultMaximumSQLResultSize,
-		MaximumResultRows: -1,
-	}
-	setting, err := s.GetSettingV2(ctx, storepb.SettingName_SQL_RESULT_SIZE_LIMIT)
-	if err != nil {
-		slog.Error("failed to get setting", slog.String("setting", string(storepb.SettingName_SQL_RESULT_SIZE_LIMIT)), log.BBError(err))
-		return defaultValue
-	}
-	if setting == nil {
-		return defaultValue
-	}
-
-	payload := new(storepb.SQLQueryRestrictionSetting)
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), payload); err != nil {
-		slog.Error("failed to unmarshaler setting", slog.String("setting", string(storepb.SettingName_SQL_RESULT_SIZE_LIMIT)), log.BBError(err))
-		return defaultValue
-	}
-	if payload.MaximumResultSize <= 0 {
-		return defaultValue
-	}
-	return payload
 }
 
 // GetWorkspaceGeneralSetting gets the workspace general setting payload.

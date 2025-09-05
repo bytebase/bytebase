@@ -10,6 +10,9 @@
       {{
         $t("settings.general.workspace.query-data-policy.timeout.description")
       }}
+      <span class="!font-semibold textinfolabel">
+        {{ $t("settings.general.workspace.maximum-sql-result.rows.limit") }}
+      </span>
     </p>
     <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
       <NInputNumber
@@ -25,11 +28,6 @@
         }}</template>
       </NInputNumber>
     </div>
-    <p class="text-sm textinfolabel mt-1" v-if="seconds <= 0">
-      {{
-        $t("settings.general.workspace.query-data-policy.timeout.no-time-limit")
-      }}
-    </p>
   </div>
 </template>
 

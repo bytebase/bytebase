@@ -238,7 +238,6 @@
     - [ListSettingsResponse](#bytebase-v1-ListSettingsResponse)
     - [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting)
     - [SCIMSetting](#bytebase-v1-SCIMSetting)
-    - [SQLQueryRestrictionSetting](#bytebase-v1-SQLQueryRestrictionSetting)
     - [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-v1-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate)
@@ -402,7 +401,6 @@
     - [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy)
     - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
     - [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy)
-    - [ExportDataPolicy](#bytebase-v1-ExportDataPolicy)
     - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
     - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
     - [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse)
@@ -4495,22 +4493,6 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 
 
 
-<a name="bytebase-v1-SQLQueryRestrictionSetting"></a>
-
-### SQLQueryRestrictionSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| maximum_result_size | [int64](#int64) |  | The size limit in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
-| maximum_result_rows | [int32](#int32) |  | The return rows limit. If the value &lt;= 0, will be treated as no limit. The default value is -1. |
-
-
-
-
-
-
 <a name="bytebase-v1-SchemaTemplateSetting"></a>
 
 ### SchemaTemplateSetting
@@ -4672,7 +4654,6 @@ The data in setting value.
 | password_restriction_setting | [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting) |  |  |
 | ai_setting | [AISetting](#bytebase-v1-AISetting) |  |  |
 | environment_setting | [EnvironmentSetting](#bytebase-v1-EnvironmentSetting) |  |  |
-| sql_query_restriction_setting | [SQLQueryRestrictionSetting](#bytebase-v1-SQLQueryRestrictionSetting) |  |  |
 
 
 
@@ -4817,7 +4798,6 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | SCHEMA_TEMPLATE | 13 |  |
 | DATA_CLASSIFICATION | 14 |  |
 | SEMANTIC_TYPES | 15 |  |
-| SQL_RESULT_SIZE_LIMIT | 16 |  |
 | SCIM | 17 |  |
 | PASSWORD_RESTRICTION | 18 |  |
 | ENVIRONMENT | 19 |  |
@@ -6770,21 +6750,6 @@ DataSourceQueryPolicy is the policy configuration for running statements in the 
 
 
 
-<a name="bytebase-v1-ExportDataPolicy"></a>
-
-### ExportDataPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| disable | [bool](#bool) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-GetPolicyRequest"></a>
 
 ### GetPolicyRequest
@@ -6931,7 +6896,6 @@ For example: environment_id == &#34;test&#34; &amp;&amp; project_id == &#34;samp
 | restrict_issue_creation_for_sql_review_policy | [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy) |  |  |
 | tag_policy | [TagPolicy](#bytebase-v1-TagPolicy) |  |  |
 | data_source_query_policy | [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy) |  |  |
-| export_data_policy | [ExportDataPolicy](#bytebase-v1-ExportDataPolicy) |  |  |
 | query_data_policy | [QueryDataPolicy](#bytebase-v1-QueryDataPolicy) |  |  |
 | enforce | [bool](#bool) |  |  |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
@@ -6950,6 +6914,9 @@ QueryDataPolicy is the policy configuration for querying data.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query timeout duration. |
+| disable_export | [bool](#bool) |  | Disable export data in the SQL editor |
+| maximum_result_size | [int64](#int64) |  | The size limit in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
+| maximum_result_rows | [int32](#int32) |  | The return rows limit. The default value is -1, means no limit. |
 
 
 
@@ -7114,7 +7081,6 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW | 12 |  |
 | TAG | 13 |  |
 | DATA_SOURCE_QUERY | 14 |  |
-| DATA_EXPORT | 15 |  |
 | DATA_QUERY | 16 |  |
 
 

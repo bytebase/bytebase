@@ -102,6 +102,8 @@ message UpdateSettingRequest {
 
 // The schema of setting.
 message Setting {
+  reserved 16;
+
   option (google.api.resource) = {
     type: "bytebase.com/Setting"
     pattern: "settings/{setting}"
@@ -122,7 +124,6 @@ message Setting {
     SCHEMA_TEMPLATE = 13;
     DATA_CLASSIFICATION = 14;
     SEMANTIC_TYPES = 15;
-    SQL_RESULT_SIZE_LIMIT = 16;
     SCIM = 17;
     PASSWORD_RESTRICTION = 18;
     ENVIRONMENT = 19;
@@ -140,6 +141,8 @@ message Setting {
 
 // The data in setting value.
 message Value {
+  reserved 18;
+
   // Value is a oneof field for setting value.
   oneof value {
     // Defines this value as being a string value.
@@ -155,7 +158,6 @@ message Value {
     PasswordRestrictionSetting password_restriction_setting = 15;
     AISetting ai_setting = 16;
     EnvironmentSetting environment_setting = 17;
-    SQLQueryRestrictionSetting sql_query_restriction_setting = 18;
   }
 }
 
@@ -416,15 +418,6 @@ enum DatabaseChangeMode {
   PIPELINE = 1;
   // A simple database change process in SQL editor. Users can execute SQL directly.
   EDITOR = 2;
-}
-
-message SQLQueryRestrictionSetting {
-  // The size limit in bytes.
-  // The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
-  int64 maximum_result_size = 1;
-  // The return rows limit. If the value <= 0, will be treated as no limit.
-  // The default value is -1.
-  int32 maximum_result_rows = 2;
 }
 
 message SCIMSetting {

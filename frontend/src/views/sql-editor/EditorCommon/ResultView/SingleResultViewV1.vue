@@ -318,16 +318,16 @@ const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 const currentTab = computed(() => tabStore.currentTab);
 const { instance: connectedInstance } = useConnectionOfCurrentSQLEditorTab();
 
-const { policy: exportDataPolicy } = usePolicyByParentAndType(
+const { policy: queryDataPolicy } = usePolicyByParentAndType(
   computed(() => ({
     parentPath: "",
-    policyType: PolicyType.DATA_EXPORT,
+    policyType: PolicyType.DATA_QUERY,
   }))
 );
 
 const disallowExportQueryData = computed(() => {
-  return exportDataPolicy.value?.policy?.case === "exportDataPolicy"
-    ? exportDataPolicy.value.policy.value.disable
+  return queryDataPolicy.value?.policy?.case === "queryDataPolicy"
+    ? queryDataPolicy.value.policy.value.disableExport
     : false;
 });
 
