@@ -14,6 +14,7 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/bytebase/bytebase/action/args"
+	"github.com/bytebase/bytebase/action/command/output"
 	"github.com/bytebase/bytebase/action/world"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -58,7 +59,7 @@ func rolloutPreRun(w *world.World) func(*cobra.Command, []string) error {
 func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 	return func(command *cobra.Command, _ []string) error {
 		defer func() {
-			postRun(w)
+			output.WriteOutput(w)
 		}()
 		w.IsRollout = true
 		ctx := command.Context()
@@ -68,7 +69,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 		}
 
 		// Check version compatibility
-		checkVersionCompatibility(w, client, args.Version)
+		CheckVersionCompatibility(w, client, args.Version)
 
 		var plan *v1pb.Plan
 		if w.Plan != "" {

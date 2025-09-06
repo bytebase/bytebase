@@ -1,4 +1,4 @@
-package command
+package gitlab
 
 import (
 	"encoding/json"
@@ -31,7 +31,7 @@ type Finding struct {
 	Location    Location `json:"location"`
 }
 
-func writeReleaseCheckToCodeQualityJSON(resp *v1pb.CheckReleaseResponse) error {
+func WriteReleaseCheckToCodeQualityJSON(resp *v1pb.CheckReleaseResponse) error {
 	var data []Finding
 	var warningCount, errorCount int
 	for _, result := range resp.Results {

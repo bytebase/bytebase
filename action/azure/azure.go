@@ -1,4 +1,4 @@
-package command
+package azure
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-func loggingReleaseChecks(resp *v1pb.CheckReleaseResponse) error {
+func LoggingReleaseChecks(resp *v1pb.CheckReleaseResponse) error {
 	if resp == nil || len(resp.Results) == 0 {
 		fmt.Println("No check results found.")
 		return nil
