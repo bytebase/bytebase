@@ -1330,6 +1330,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | ssl_ca | [string](#string) |  |  |
 | ssl_cert | [string](#string) |  |  |
 | ssl_key | [string](#string) |  |  |
+| verify_tls_certificate | [bool](#bool) |  | verify_tls_certificate enables TLS certificate verification for SSL connections. Default is false (no verification) for backward compatibility. Set to true for secure connections (recommended for production). Only set to false for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments). |
 | host | [string](#string) |  |  |
 | port | [string](#string) |  |  |
 | database | [string](#string) |  |  |

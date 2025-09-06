@@ -564,9 +564,15 @@ type DataSource struct {
 	ObfuscatedSslCert string `protobuf:"bytes,6,opt,name=obfuscated_ssl_cert,json=obfuscatedSslCert,proto3" json:"obfuscated_ssl_cert,omitempty"`
 	SslKey            string `protobuf:"bytes,40,opt,name=ssl_key,json=sslKey,proto3" json:"ssl_key,omitempty"`
 	ObfuscatedSslKey  string `protobuf:"bytes,7,opt,name=obfuscated_ssl_key,json=obfuscatedSslKey,proto3" json:"obfuscated_ssl_key,omitempty"`
-	Host              string `protobuf:"bytes,8,opt,name=host,proto3" json:"host,omitempty"`
-	Port              string `protobuf:"bytes,9,opt,name=port,proto3" json:"port,omitempty"`
-	Database          string `protobuf:"bytes,10,opt,name=database,proto3" json:"database,omitempty"`
+	// verify_tls_certificate enables TLS certificate verification for SSL connections.
+	// Default is false (no verification) for backward compatibility.
+	// Set to true for secure connections (recommended for production).
+	// Only set to false for development or when certificates cannot be properly
+	// validated (e.g., self-signed certs, VPN environments).
+	VerifyTlsCertificate bool   `protobuf:"varint,47,opt,name=verify_tls_certificate,json=verifyTlsCertificate,proto3" json:"verify_tls_certificate,omitempty"`
+	Host                 string `protobuf:"bytes,8,opt,name=host,proto3" json:"host,omitempty"`
+	Port                 string `protobuf:"bytes,9,opt,name=port,proto3" json:"port,omitempty"`
+	Database             string `protobuf:"bytes,10,opt,name=database,proto3" json:"database,omitempty"`
 	// srv, authentication_database and replica_set are used for MongoDB.
 	// srv is a boolean flag that indicates whether the host is a DNS SRV record.
 	Srv bool `protobuf:"varint,11,opt,name=srv,proto3" json:"srv,omitempty"`
@@ -739,6 +745,13 @@ func (x *DataSource) GetObfuscatedSslKey() string {
 		return x.ObfuscatedSslKey
 	}
 	return ""
+}
+
+func (x *DataSource) GetVerifyTlsCertificate() bool {
+	if x != nil {
+		return x.VerifyTlsCertificate
+	}
+	return false
 }
 
 func (x *DataSource) GetHost() string {
@@ -1661,7 +1674,7 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x11_connection_limitB\x0e\n" +
 	"\f_valid_untilB\f\n" +
 	"\n" +
-	"_attribute\"\x8d\x18\n" +
+	"_attribute\"\xc3\x18\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x122\n" +
@@ -1675,7 +1688,8 @@ const file_store_instance_proto_rawDesc = "" +
 	"\bssl_cert\x18' \x01(\tR\asslCert\x12.\n" +
 	"\x13obfuscated_ssl_cert\x18\x06 \x01(\tR\x11obfuscatedSslCert\x12\x17\n" +
 	"\assl_key\x18( \x01(\tR\x06sslKey\x12,\n" +
-	"\x12obfuscated_ssl_key\x18\a \x01(\tR\x10obfuscatedSslKey\x12\x12\n" +
+	"\x12obfuscated_ssl_key\x18\a \x01(\tR\x10obfuscatedSslKey\x124\n" +
+	"\x16verify_tls_certificate\x18/ \x01(\bR\x14verifyTlsCertificate\x12\x12\n" +
 	"\x04host\x18\b \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\t \x01(\tR\x04port\x12\x1a\n" +
 	"\bdatabase\x18\n" +

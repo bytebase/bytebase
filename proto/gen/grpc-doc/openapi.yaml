@@ -9481,6 +9481,14 @@ components:
                     type: string
                 obfuscatedSslKey:
                     type: string
+                verifyTlsCertificate:
+                    type: boolean
+                    description: |-
+                        verify_tls_certificate enables TLS certificate verification for SSL connections.
+                         Default is false (no verification) for backward compatibility.
+                         Set to true for secure connections (recommended for production).
+                         Only set to false for development or when certificates cannot be properly
+                         validated (e.g., self-signed certs, VPN environments).
                 host:
                     type: string
                 port:

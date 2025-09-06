@@ -15,6 +15,25 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 	if !ds.GetUseSsl() {
 		return nil, nil
 	}
+
+	cfg := &tls.Config{}
+	// Handle verification option - default false for backward compatibility
+	if !ds.GetVerifyTlsCertificate() {
+		// Certificate verification is disabled (default for backward compatibility)
+		// This accepts any certificate but still uses encryption
+		cfg.InsecureSkipVerify = true
+		// Still handle client certificates if provided (for authentication, not verification)
+		if ds.GetSslCert() != "" && ds.GetSslKey() != "" {
+			certs, err := tls.X509KeyPair([]byte(ds.GetSslCert()), []byte(ds.GetSslKey()))
+			if err != nil {
+				return nil, err
+			}
+			cfg.Certificates = []tls.Certificate{certs}
+		}
+		return cfg, nil
+	}
+
+	// Normal secure path: set up certificate verification
 	var rootCertPool *x509.CertPool
 	if ds.GetSslCa() == "" {
 		p, err := x509.SystemCertPool()
@@ -29,9 +48,8 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 		}
 	}
 
-	cfg := &tls.Config{
-		RootCAs: rootCertPool,
-	}
+	cfg.RootCAs = rootCertPool
+
 	if (ds.GetSslCert() == "" && ds.GetSslKey() != "") || (ds.GetSslCert() != "" && ds.GetSslKey() == "") {
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
@@ -46,7 +64,8 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 		cfg.Certificates = clientCert
 	}
 
-	cfg.InsecureSkipVerify = true
+	// Use custom verification for proper certificate chain handling
+	cfg.InsecureSkipVerify = true // Only to use our custom verification below
 	cfg.VerifyPeerCertificate = func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
 		if len(rawCerts) == 0 {
 			return errors.Errorf("empty certificate to verify")

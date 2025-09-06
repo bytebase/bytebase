@@ -1920,7 +1920,9 @@
     "ssl": {
       "ca-cert": "CA証明書",
       "client-key": "クライアントキー",
-      "client-cert": "クライアント証明書"
+      "client-cert": "クライアント証明書",
+      "verify-certificate": "TLS証明書を検証",
+      "verify-certificate-tooltip": "安全な接続のためにTLS証明書の検証を有効にします。開発環境や証明書が適切に検証できない場合（自己署名証明書、VPN環境など）にのみ無効にしてください。警告：検証を無効にすることは安全ではありません"
     },
     "ssh-type": {
       "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}",
