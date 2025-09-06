@@ -5,7 +5,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/bytebase/bytebase/action/args"
+	"github.com/bytebase/bytebase/action/azure"
+	"github.com/bytebase/bytebase/action/bitbucket"
 	"github.com/bytebase/bytebase/action/github"
+	"github.com/bytebase/bytebase/action/gitlab"
 	"github.com/bytebase/bytebase/action/world"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -51,7 +54,7 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 		}
 
 		// Check version compatibility
-		checkVersionCompatibility(w, client, args.Version)
+		CheckVersionCompatibility(w, client, args.Version)
 
 		releaseFiles, _, err := getReleaseFiles(w)
 		if err != nil {
@@ -75,15 +78,15 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 				return err
 			}
 		case world.GitLab:
-			if err := writeReleaseCheckToCodeQualityJSON(checkReleaseResponse); err != nil {
+			if err := gitlab.WriteReleaseCheckToCodeQualityJSON(checkReleaseResponse); err != nil {
 				return err
 			}
 		case world.AzureDevOps:
-			if err := loggingReleaseChecks(checkReleaseResponse); err != nil {
+			if err := azure.LoggingReleaseChecks(checkReleaseResponse); err != nil {
 				return err
 			}
 		case world.Bitbucket:
-			if err := createBitbucketReport(checkReleaseResponse); err != nil {
+			if err := bitbucket.CreateBitbucketReport(checkReleaseResponse); err != nil {
 				return err
 			}
 		default:

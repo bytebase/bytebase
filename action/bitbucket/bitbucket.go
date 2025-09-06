@@ -1,4 +1,4 @@
-package command
+package bitbucket
 
 import (
 	"bytes"
@@ -37,7 +37,7 @@ type Annotation struct {
 	Line           int    `json:"line,omitempty"`
 }
 
-func createBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
+func CreateBitbucketReport(checkResponse *v1pb.CheckReleaseResponse) error {
 	repoOwner := os.Getenv("BITBUCKET_REPO_OWNER")
 	repoSlug := os.Getenv("BITBUCKET_REPO_SLUG")
 	commit := os.Getenv("BITBUCKET_COMMIT")

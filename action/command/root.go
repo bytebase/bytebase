@@ -1,26 +1,15 @@
 package command
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
-	"io"
 	"log/slog"
-	"net/http"
-	"net/url"
-	"os"
-	"path/filepath"
-	"regexp"
-	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/bytebase/bytebase/action/common"
+	"github.com/bytebase/bytebase/action/command/cloud"
+	"github.com/bytebase/bytebase/action/command/validation"
 	"github.com/bytebase/bytebase/action/world"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 func NewRootCommand(w *world.World) *cobra.Command {
@@ -49,286 +38,22 @@ func NewRootCommand(w *world.World) *cobra.Command {
 func rootPreRun(w *world.World) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		w.Logger = slog.New(slog.NewTextHandler(cmd.ErrOrStderr(), nil))
-		if w.ServiceAccountSecret == "" {
-			w.ServiceAccountSecret = os.Getenv("BYTEBASE_SERVICE_ACCOUNT_SECRET")
-		}
 
-		if w.Platform == world.UnspecifiedPlatform {
-			w.Platform = world.GetJobPlatform()
+		// Validate all flags and environment variables
+		if err := validation.ValidateFlags(w); err != nil {
+			return errors.Wrapf(err, "failed to validate flags")
 		}
-
-		if w.ServiceAccount == "" {
-			return errors.Errorf("service-account is required and cannot be empty")
-		}
-		if w.ServiceAccountSecret == "" {
-			return errors.Errorf("service-account-secret is required and cannot be empty")
-		}
-
-		// Validate URL format
-		u, err := url.Parse(w.URL)
-		if err != nil {
-			return errors.Wrapf(err, "invalid URL format: %s", w.URL)
-		}
-		w.URL = strings.TrimSuffix(u.String(), "/") // update the URL to the canonical form
 
 		// Special handling for Bytebase cloud URLs (*.us-central1.bytebase.com)
-		cloudURLPattern := regexp.MustCompile(`^[a-z0-9]+\.us-central1\.bytebase\.com$`)
-		if cloudURLPattern.MatchString(u.Host) {
-			if err := ensureWorkspaceAwake(w, u.Host); err != nil {
-				return errors.Wrapf(err, "failed to wake up workspace")
-			}
-		}
-
-		// Validate project format
-		if !strings.HasPrefix(w.Project, "projects/") {
-			return errors.Errorf("invalid project format, must be projects/{project}")
-		}
-
-		// Validate targets format
-		var databaseTarget, databaseGroupTarget int
-		for _, target := range w.Targets {
-			if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
-				databaseTarget++
-			} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
-				databaseGroupTarget++
-			} else {
-				return errors.Errorf("invalid target format, must be instances/{instance}/databases/{database} or projects/{project}/databaseGroups/{databaseGroup}")
-			}
-		}
-		if databaseTarget > 0 && databaseGroupTarget > 0 {
-			return errors.Errorf("targets must be either databases or databaseGroups")
-		}
-		if databaseGroupTarget > 1 {
-			return errors.Errorf("targets must be a single databaseGroup")
+		if err := cloud.EnsureWorkspaceAwake(w); err != nil {
+			return errors.Wrapf(err, "failed to ensure workspace awake")
 		}
 
 		return nil
 	}
 }
 
-func postRun(w *world.World) {
-	if err := func() error {
-		if w.Output == "" {
-			return nil
-		}
-
-		w.Logger.Info("writing output to file", "file", w.Output)
-
-		// Create parent directory if not exists
-		if dir := filepath.Dir(w.Output); dir != "" {
-			if err := os.MkdirAll(dir, 0755); err != nil {
-				return errors.Wrapf(err, "failed to create output directory: %s", dir)
-			}
-		}
-
-		f, err := os.Create(w.Output)
-		if err != nil {
-			return errors.Wrapf(err, "failed to create output file: %s", w.Output)
-		}
-		defer f.Close()
-
-		j, err := json.Marshal(w.OutputMap)
-		if err != nil {
-			return errors.Wrapf(err, "failed to marshal output map")
-		}
-
-		if _, err := f.Write(j); err != nil {
-			return errors.Wrapf(err, "failed to write output file: %s", w.Output)
-		}
-		return nil
-	}(); err != nil {
-		w.Logger.Error("failed to write output JSON", "error", err)
-	}
-	if err := func() error {
-		if w.Platform == world.GitHub && w.IsRollout {
-			filename := os.Getenv("GITHUB_STEP_SUMMARY")
-			f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-			if err != nil {
-				return errors.Wrapf(err, "failed to open GitHub step summary file: %s", filename)
-			}
-			defer f.Close()
-
-			summary := buildSummaryMarkdown(w)
-			if _, err := f.WriteString(summary); err != nil {
-				return errors.Wrapf(err, "failed to write GitHub step summary: %s", filename)
-			}
-			return nil
-		}
-		return nil
-	}(); err != nil {
-		w.Logger.Error("failed to write GitHub step summary", "error", err)
-	}
-}
-
-func buildSummaryMarkdown(w *world.World) string {
-	var sb strings.Builder
-	if w.OutputMap.Release != "" {
-		_, _ = sb.WriteString("Release: " + w.URL + "/" + w.OutputMap.Release + "\n")
-	}
-	if w.OutputMap.Plan != "" {
-		_, _ = sb.WriteString("Plan: " + w.URL + "/" + w.OutputMap.Plan + "\n")
-	}
-	if w.OutputMap.Rollout != "" {
-		_, _ = sb.WriteString("Rollout: " + w.URL + "/" + w.OutputMap.Rollout + "\n")
-	}
-
-	// Add stage status table
-	buildOutputStagesMarkdown(w, &sb)
-
-	return sb.String()
-}
-
-func buildOutputStagesMarkdown(w *world.World, sb *strings.Builder) {
-	if w.IsRollout && w.Rollout != nil {
-		pendingStages := w.PendingStages
-		rollout := w.Rollout
-		// build a table of stage and status in GitHub flavored markdown.
-		// The stages come from the aggregated result of pendingStages and rollout.Stages.
-		// pendingStages are the stages to be rolled out at the beginning of the execution,
-		// they may or may not have been executed (depending on the targetStage input).
-		// rollout.Stages are the stages that have been executed, and the stage status is
-		// an aggregated status from stage tasks.
-
-		// Combine stages from rollout.Stages and pendingStages, deduplicating
-		allStages := []string{}
-		seenStages := make(map[string]bool)
-
-		// First add all stages from rollout.Stages
-		for _, stage := range rollout.Stages {
-			if !seenStages[stage.Environment] {
-				allStages = append(allStages, stage.Environment)
-				seenStages[stage.Environment] = true
-			}
-		}
-
-		// Then append pendingStages that aren't already in the list
-		for _, stage := range pendingStages {
-			if !seenStages[stage] {
-				allStages = append(allStages, stage)
-				seenStages[stage] = true
-			}
-		}
-
-		// Check if there are any stages to display
-		if len(allStages) == 0 {
-			sb.WriteString("\n### Rollout Stages\n\n")
-			sb.WriteString("_No stages to display. The rollout may not have any stages._\n\n")
-			return
-		}
-
-		// Create a map of stage environment to Stage object for quick lookup
-		stageMap := make(map[string]*v1pb.Stage)
-		for _, stage := range rollout.Stages {
-			stageMap[stage.Environment] = stage
-		}
-
-		// Build the markdown table
-		sb.WriteString("\n### Rollout Stages\n\n")
-		sb.WriteString("| Stage | Status |\n")
-		sb.WriteString("|-------|--------|\n")
-
-		// Output all stages with their status
-		for _, stageEnv := range allStages {
-			stageName := extractStageName(stageEnv)
-
-			// Determine status
-			var status string
-			if stage, exists := stageMap[stageEnv]; exists {
-				// Stage exists in rollout, get its aggregated status
-				status = getAggregatedStageStatus(stage)
-			} else {
-				// Stage is only in pendingStages, mark as pending
-				status = "⏳ Pending"
-			}
-
-			sb.WriteString("| ")
-			sb.WriteString(stageName)
-			sb.WriteString(" | ")
-			sb.WriteString(status)
-			sb.WriteString(" |\n")
-		}
-
-		sb.WriteString("\n")
-	}
-}
-
-// getAggregatedStageStatus determines the overall status of a stage based on its tasks
-func getAggregatedStageStatus(stage *v1pb.Stage) string {
-	if stage == nil || len(stage.Tasks) == 0 {
-		return "⏳ Pending"
-	}
-
-	hasRunning := false
-	hasFailed := false
-	hasCanceled := false
-	hasSkipped := false
-	hasPending := false
-	hasNotStarted := false
-	allDone := true
-
-	for _, task := range stage.Tasks {
-		switch task.Status {
-		case v1pb.Task_RUNNING:
-			hasRunning = true
-			allDone = false
-		case v1pb.Task_FAILED:
-			hasFailed = true
-			allDone = false
-		case v1pb.Task_CANCELED:
-			hasCanceled = true
-			allDone = false
-		case v1pb.Task_SKIPPED:
-			hasSkipped = true
-		case v1pb.Task_PENDING:
-			hasPending = true
-			allDone = false
-		case v1pb.Task_NOT_STARTED, v1pb.Task_STATUS_UNSPECIFIED:
-			hasNotStarted = true
-			allDone = false
-		case v1pb.Task_DONE:
-			// Task is done
-		default:
-			allDone = false
-		}
-	}
-
-	// Determine overall stage status based on task statuses
-	if hasFailed {
-		return "❌ Failed"
-	}
-	if hasCanceled {
-		return "⛔ Canceled"
-	}
-	if hasRunning {
-		return "🔄 Running"
-	}
-	if hasPending {
-		return "⏳ Pending"
-	}
-	if hasNotStarted {
-		return "⏸️ Not Started"
-	}
-	if allDone && !hasSkipped {
-		return "✅ Done"
-	}
-	if allDone && hasSkipped {
-		return "⏭️ Skipped"
-	}
-
-	return "⏳ Pending"
-}
-
-// extractStageName extracts the stage name from the environment path
-func extractStageName(environment string) string {
-	// Format: environments/{environment}
-	parts := strings.Split(environment, "/")
-	if len(parts) >= 2 {
-		return parts[len(parts)-1]
-	}
-	return environment
-}
-
-func checkVersionCompatibility(w *world.World, client *Client, cliVersion string) {
+func CheckVersionCompatibility(w *world.World, client *Client, cliVersion string) {
 	if cliVersion == "unknown" {
 		w.Logger.Warn("CLI version unknown, unable to check compatibility")
 		return
@@ -356,105 +81,4 @@ func checkVersionCompatibility(w *world.World, client *Client, cliVersion string
 	} else {
 		w.Logger.Info("CLI version matches server version", "version", cliVersion)
 	}
-}
-
-// ensureWorkspaceAwake checks if a Bytebase cloud workspace is healthy and wakes it up if needed.
-func ensureWorkspaceAwake(w *world.World, host string) error {
-	healthzURL := fmt.Sprintf("https://%s/healthz", host)
-
-	// Check if the workspace is already healthy
-	if isHealthy(healthzURL) {
-		w.Logger.Info("Workspace is already healthy", "host", host)
-		return nil
-	}
-
-	// Wake up the workspace
-	w.Logger.Info("Workspace needs to be awakened", "host", host)
-	if err := wakeUpWorkspace(w.Logger, host); err != nil {
-		return errors.Wrapf(err, "failed to wake up workspace")
-	}
-
-	// Wait 15 seconds before checking healthz.
-	time.Sleep(15 * time.Second)
-
-	// Wait for the workspace to become healthy (3 consecutive successful health checks)
-	w.Logger.Info("Waiting for workspace to become healthy...")
-	consecutiveSuccess := 0
-	maxAttempts := 60 // Maximum 5 minutes (60 * 5 seconds)
-
-	for attempt := range maxAttempts {
-		if isHealthy(healthzURL) {
-			consecutiveSuccess++
-			w.Logger.Info("Health check succeeded", "consecutive", consecutiveSuccess)
-			if consecutiveSuccess >= 3 {
-				w.Logger.Info("Workspace is now healthy", "host", host)
-				return nil
-			}
-		} else {
-			consecutiveSuccess = 0
-			w.Logger.Info("Health check failed, retrying...", "attempt", attempt+1)
-			time.Sleep(5 * time.Second)
-		}
-	}
-
-	return errors.Errorf("workspace did not become healthy after %d attempts", maxAttempts)
-}
-
-// isHealthy checks if the workspace health endpoint returns OK.
-func isHealthy(healthzURL string) bool {
-	// Add cache-busting parameter to ensure fresh response
-	urlWithCacheBust := fmt.Sprintf("%s?_=%d", healthzURL, time.Now().UnixNano())
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	req, err := http.NewRequest("GET", urlWithCacheBust, nil)
-	if err != nil {
-		return false
-	}
-
-	// Add no-cache headers
-	req.Header.Set("Cache-Control", "no-cache")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return false
-	}
-	defer resp.Body.Close()
-	return resp.StatusCode == http.StatusOK
-}
-
-// wakeUpWorkspace calls the API to wake up a Bytebase cloud workspace.
-func wakeUpWorkspace(logger *slog.Logger, domain string) error {
-	wakeUpURL := "https://hub.bytebase.com/v1/workspaces:wakeUp"
-
-	payload := map[string]string{
-		"domain": domain,
-	}
-
-	jsonData, err := json.Marshal(payload)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal wake up request")
-	}
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	req, err := http.NewRequest("POST", wakeUpURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return errors.Wrapf(err, "failed to create wake up request")
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return errors.Wrapf(err, "failed to send wake up request")
-	}
-	defer resp.Body.Close()
-
-	// Read response body for logging
-	bodyBytes, _ := io.ReadAll(resp.Body)
-	bodyString := string(bodyBytes)
-
-	// Log response status and body
-	logger.Info("Wake up workspace response", "status", resp.StatusCode, "body", bodyString)
-
-	return nil
 }
