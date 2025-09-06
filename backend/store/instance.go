@@ -591,13 +591,6 @@ func (s *Store) DeleteInstance(ctx context.Context, resourceID string) error {
 		return errors.Wrapf(err, "failed to delete databases for instance %s", resourceID)
 	}
 
-	// Delete data_source entries associated with this instance
-	if _, err := tx.ExecContext(ctx, `
-		DELETE FROM data_source WHERE instance = $1
-	`, resourceID); err != nil {
-		return errors.Wrapf(err, "failed to delete data_source for instance %s", resourceID)
-	}
-
 	// Finally, delete the instance itself (only if it's marked as deleted)
 	result, err := tx.ExecContext(ctx, `
 		DELETE FROM instance
