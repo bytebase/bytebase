@@ -204,6 +204,11 @@ func matchMySQLTableConstraint(text string, cons *tidbast.Constraint) bool {
 
 // SetLineForPGCreateTableStmt sets the line for columns and table constraints in CREATE TABLE statements.
 func (t *Tokenizer) SetLineForPGCreateTableStmt(node *ast.CreateTableStmt, firstLine int) error {
+	// Some statement are recognized as create table statement, but without columns and constraints like:
+	// CREATE TABLE t AS SELECT * FROM old_t;
+	if len(node.ColumnList) == 0 && len(node.ConstraintList) == 0 {
+		return nil
+	}
 	// We assume that the parser will parse the columns and table constraints according to the order of the raw SQL statements
 	// and the identifiers don't equal any keywords in CREATE TABLE statements.
 	// If it breaks our assumption, we set the line for columns and table constraints to the first line of the CREATE TABLE statement.
