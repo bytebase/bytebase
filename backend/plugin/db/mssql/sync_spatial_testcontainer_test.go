@@ -18,7 +18,8 @@ import (
 )
 
 // syncDBSchemaWithRetry attempts to sync the database schema with retry logic for transient errors
-func syncDBSchemaWithRetry(ctx context.Context, driver *Driver, maxRetries int) (*storepb.DatabaseSchemaMetadata, error) {
+func syncDBSchemaWithRetry(ctx context.Context, driver *Driver) (*storepb.DatabaseSchemaMetadata, error) {
+	const maxRetries = 3
 	var lastErr error
 	for i := 0; i < maxRetries; i++ {
 		metadata, err := driver.SyncDBSchema(ctx)
@@ -120,7 +121,7 @@ GO
 				time.Sleep(1 * time.Second)
 
 				// Sync database schema with retry logic
-				metadata, err := syncDBSchemaWithRetry(ctx, driver, 3)
+				metadata, err := syncDBSchemaWithRetry(ctx, driver)
 				require.NoError(t, err)
 				require.NotNil(t, metadata)
 
@@ -330,7 +331,7 @@ GO
 				time.Sleep(1 * time.Second)
 
 				// First sync to capture initial state with retry logic
-				metadata1, err := syncDBSchemaWithRetry(ctx, driver, 3)
+				metadata1, err := syncDBSchemaWithRetry(ctx, driver)
 				require.NoError(t, err)
 				require.NotNil(t, metadata1)
 
@@ -423,7 +424,7 @@ GO
 				}
 
 				// Perform second sync to test consistency with retry logic
-				metadata2, err := syncDBSchemaWithRetry(ctx, driver, 3)
+				metadata2, err := syncDBSchemaWithRetry(ctx, driver)
 				require.NoError(t, err)
 				require.NotNil(t, metadata2)
 
@@ -490,7 +491,7 @@ GO
 				time.Sleep(1 * time.Second)
 
 				// Sync database schema with retry logic
-				metadata, err := syncDBSchemaWithRetry(ctx, driver, 3)
+				metadata, err := syncDBSchemaWithRetry(ctx, driver)
 				require.NoError(t, err)
 				require.NotNil(t, metadata)
 
@@ -644,7 +645,7 @@ GO
 `,
 			validate: func(t *testing.T, driver *Driver, _ string) {
 				// Sync database schema with retry logic for transient errors
-				metadata, err := syncDBSchemaWithRetry(ctx, driver, 3)
+				metadata, err := syncDBSchemaWithRetry(ctx, driver)
 				require.NoError(t, err)
 				require.NotNil(t, metadata)
 
