@@ -18,7 +18,8 @@ import (
 )
 
 // syncDBSchemaWithRetry attempts to sync the database schema with retry logic for transient errors
-func syncDBSchemaWithRetry(ctx context.Context, driver *Driver, maxRetries int) (*storepb.DatabaseSchemaMetadata, error) {
+func syncDBSchemaWithRetry(ctx context.Context, driver *Driver) (*storepb.DatabaseSchemaMetadata, error) {
+	const maxRetries = 3
 	var lastErr error
 	for i := 0; i < maxRetries; i++ {
 		metadata, err := driver.SyncDBSchema(ctx)
@@ -26,8 +27,16 @@ func syncDBSchemaWithRetry(ctx context.Context, driver *Driver, maxRetries int) 
 			return metadata, nil
 		}
 
-		// Check if it's a connection error (EOF or timeout)
-		if strings.Contains(err.Error(), "EOF") || strings.Contains(err.Error(), "i/o timeout") {
+		// Check if it's a transient error that should be retried
+		errorStr := strings.ToLower(err.Error())
+		isTransientError := strings.Contains(errorStr, "eof") ||
+			strings.Contains(errorStr, "i/o timeout") ||
+			strings.Contains(errorStr, "connection") ||
+			strings.Contains(errorStr, "broken pipe") ||
+			strings.Contains(errorStr, "network") ||
+			strings.Contains(errorStr, "timeout")
+
+		if isTransientError {
 			lastErr = err
 			if i < maxRetries-1 {
 				// Wait before retry with exponential backoff
@@ -108,8 +117,11 @@ WITH (
 GO
 `,
 			validate: func(t *testing.T, driver *Driver, _ string) {
-				// Sync database schema
-				metadata, err := driver.SyncDBSchema(ctx)
+				// Add delay to allow metadata propagation
+				time.Sleep(1 * time.Second)
+
+				// Sync database schema with retry logic
+				metadata, err := syncDBSchemaWithRetry(ctx, driver)
 				require.NoError(t, err)
 				require.NotNil(t, metadata)
 
@@ -315,8 +327,11 @@ WITH (
 GO
 `,
 			validate: func(t *testing.T, driver *Driver, _ string) {
-				// First sync to capture initial state
-				metadata1, err := driver.SyncDBSchema(ctx)
+				// Add delay to allow metadata propagation
+				time.Sleep(1 * time.Second)
+
+				// First sync to capture initial state with retry logic
+				metadata1, err := syncDBSchemaWithRetry(ctx, driver)
 				require.NoError(t, err)
 				require.NotNil(t, metadata1)
 
@@ -408,8 +423,8 @@ GO
 					}
 				}
 
-				// Perform second sync to test consistency
-				metadata2, err := driver.SyncDBSchema(ctx)
+				// Perform second sync to test consistency with retry logic
+				metadata2, err := syncDBSchemaWithRetry(ctx, driver)
 				require.NoError(t, err)
 				require.NotNil(t, metadata2)
 
@@ -472,8 +487,11 @@ WITH (
 GO
 `,
 			validate: func(t *testing.T, driver *Driver, _ string) {
-				// Sync database schema
-				metadata, err := driver.SyncDBSchema(ctx)
+				// Add delay to allow metadata propagation
+				time.Sleep(1 * time.Second)
+
+				// Sync database schema with retry logic
+				metadata, err := syncDBSchemaWithRetry(ctx, driver)
 				require.NoError(t, err)
 				require.NotNil(t, metadata)
 
@@ -627,7 +645,7 @@ GO
 `,
 			validate: func(t *testing.T, driver *Driver, _ string) {
 				// Sync database schema with retry logic for transient errors
-				metadata, err := syncDBSchemaWithRetry(ctx, driver, 3)
+				metadata, err := syncDBSchemaWithRetry(ctx, driver)
 				require.NoError(t, err)
 				require.NotNil(t, metadata)
 
@@ -757,14 +775,30 @@ GO
 
 			// Clean up database after test
 			defer func() {
-				// Reconnect to master to drop the test database
+				// Close current connection first
 				driver.Close(ctx)
+
+				// Reconnect to master to drop the test database
 				config.DataSource.Database = "master"
 				config.ConnectionContext.DatabaseName = "master"
 				cleanupDriver, err := driverInstance.Open(ctx, storepb.Engine_MSSQL, config)
 				if err == nil {
-					_, _ = cleanupDriver.Execute(ctx, fmt.Sprintf("ALTER DATABASE [%s] SET SINGLE_USER WITH ROLLBACK IMMEDIATE", databaseName), db.ExecuteOptions{CreateDatabase: true})
-					_, _ = cleanupDriver.Execute(ctx, fmt.Sprintf("DROP DATABASE [%s]", databaseName), db.ExecuteOptions{CreateDatabase: true})
+					// Add retry logic for database cleanup
+					for i := 0; i < 3; i++ {
+						// First, force close all connections to the test database
+						_, _ = cleanupDriver.Execute(ctx, fmt.Sprintf("ALTER DATABASE [%s] SET SINGLE_USER WITH ROLLBACK IMMEDIATE", databaseName), db.ExecuteOptions{CreateDatabase: true})
+
+						// Then drop the database
+						_, err := cleanupDriver.Execute(ctx, fmt.Sprintf("DROP DATABASE [%s]", databaseName), db.ExecuteOptions{CreateDatabase: true})
+						if err == nil {
+							break
+						}
+
+						// Wait before retry
+						if i < 2 {
+							time.Sleep(500 * time.Millisecond)
+						}
+					}
 					cleanupDriver.Close(ctx)
 				}
 			}()
@@ -776,25 +810,44 @@ GO
 			driver, err = driverInstance.Open(ctx, storepb.Engine_MSSQL, config)
 			require.NoError(t, err)
 
-			// Execute setup SQL
+			// Execute setup SQL with retry logic for transient errors
 			statements := splitSQLStatements(tc.setupSQL)
 			for _, stmt := range statements {
 				stmt = strings.TrimSpace(stmt)
 				if stmt == "" {
 					continue
 				}
-				_, err = driver.Execute(ctx, stmt, db.ExecuteOptions{})
-				require.NoError(t, err)
+
+				// Retry statement execution for transient errors
+				var lastErr error
+				for retry := 0; retry < 3; retry++ {
+					_, err = driver.Execute(ctx, stmt, db.ExecuteOptions{})
+					if err == nil {
+						break
+					}
+
+					// Check if it's a transient error
+					if strings.Contains(err.Error(), "EOF") || strings.Contains(err.Error(), "i/o timeout") || strings.Contains(err.Error(), "connection") {
+						lastErr = err
+						if retry < 2 {
+							time.Sleep(time.Duration(retry+1) * 500 * time.Millisecond)
+							continue
+						}
+					}
+					// For non-transient errors, fail immediately
+					require.NoError(t, err)
+				}
+				if lastErr != nil {
+					require.NoError(t, lastErr)
+				}
 			}
 
 			// Cast to *Driver to access SyncDBSchema
 			mssqlDriver, ok := driver.(*Driver)
 			require.True(t, ok)
 
-			// For the problematic test case, add a delay to allow metadata propagation
-			if tc.name == "sync_spatial_indexes_with_regular_indexes" {
-				time.Sleep(1 * time.Second)
-			}
+			// Add delay to allow metadata propagation for all test cases
+			time.Sleep(1 * time.Second)
 
 			// Run validation
 			tc.validate(t, mssqlDriver, databaseName)
