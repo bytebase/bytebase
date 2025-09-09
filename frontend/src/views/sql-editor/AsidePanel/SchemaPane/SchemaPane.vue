@@ -23,20 +23,37 @@
       :data-height="treeContainerHeight"
     >
       <MaskSpinner v-if="isFetchingMetadata" />
-      <NTree
-        v-else-if="tree"
-        ref="treeRef"
-        v-model:expanded-keys="expandedKeys"
-        :selected-keys="selectedKeys"
-        :block-line="true"
-        :data="tree"
-        :show-irrelevant-nodes="false"
-        :pattern="mounted ? debouncedSearchPattern : ''"
-        :virtual-scroll="true"
-        :node-props="nodeProps"
-        :theme-overrides="{ nodeHeight: '21px' }"
-        :render-label="renderLabel"
-      />
+
+      <!-- Adaptive UI: Use tree for small DBs, flat list for large DBs -->
+      <template v-else-if="metadata">
+        <!-- For large databases (>1000 tables): Use flat list -->
+        <FlatTableList
+          v-if="totalTableCount > 1000"
+          :metadata="metadata"
+          :search="searchPattern"
+          :database="database.name"
+          @select="handleFlatListSelect"
+          @select-all="handleFlatListSelectAll"
+          @contextmenu="handleFlatListContextMenu"
+        />
+
+        <!-- For small databases: Use tree view -->
+        <NTree
+          v-else-if="tree"
+          ref="treeRef"
+          v-model:expanded-keys="expandedKeys"
+          :selected-keys="selectedKeys"
+          :block-line="true"
+          :data="tree"
+          :show-irrelevant-nodes="false"
+          :pattern="mounted ? debouncedSearchPattern : ''"
+          :virtual-scroll="true"
+          :node-props="nodeProps"
+          :theme-overrides="{ nodeHeight: '21px' }"
+          :render-label="renderLabel"
+        />
+        <NEmpty v-else class="mt-[4rem]" />
+      </template>
       <NEmpty v-else class="mt-[4rem]" />
     </div>
 
@@ -100,6 +117,7 @@ import {
   useSQLEditorTabStore,
 } from "@/store";
 import { isValidDatabaseName } from "@/types";
+import type { TableMetadata } from "@/types/proto-es/v1/database_service_pb";
 import {
   allEqual,
   extractDatabaseResourceName,
@@ -108,6 +126,7 @@ import {
 } from "@/utils";
 import { useCurrentTabViewStateContext } from "../../EditorPanel";
 import { useSQLEditorContext } from "../../context";
+import FlatTableList from "./FlatTableList.vue";
 import HoverPanel, { provideHoverStateContext } from "./HoverPanel";
 import SyncSchemaButton from "./SyncSchemaButton.vue";
 import { Label } from "./TreeNode";
@@ -158,6 +177,7 @@ watch(
   }
 );
 const isFetchingMetadata = ref(false);
+const totalTableCount = ref(0);
 const metadata = computedAsync(
   async () => {
     const db = database.value;
@@ -165,6 +185,10 @@ const metadata = computedAsync(
     const metadata = await useDBSchemaV1Store().getOrFetchDatabaseMetadata({
       database: db.name,
     });
+    totalTableCount.value = metadata.schemas.reduce(
+      (sum, schema) => sum + (schema.tables?.length || 0),
+      0
+    );
     return metadata;
   },
   /* default */ null,
@@ -414,37 +438,108 @@ useEmitteryEventListener(nodeClickEvents, "double-click", ({ node }) => {
   }
 });
 
+// Watch only the properties we actually need, not the entire tab object
+// This prevents re-renders on every keystroke in the editor
 watch(
-  [isFetchingMetadata, metadata, currentTab],
-  ([isFetchingMetadata, metadata, tab]) => {
+  [
+    isFetchingMetadata,
+    metadata,
+    () => currentTab.value?.id,
+    () => currentTab.value?.connection.database,
+    () => currentTab.value?.treeState.database,
+  ],
+  ([isFetchingMetadata, metadata, _, connectionDb, treeStateDb]) => {
     const cleanup = () => {
       tree.value = undefined;
     };
+
+    const tab = currentTab.value;
     if (isFetchingMetadata || !metadata || !tab) {
       return cleanup();
     }
     if (
       !allEqual(
         extractDatabaseResourceName(metadata.name).database,
-        tab.connection.database,
+        connectionDb,
         database.value.name
       )
     ) {
       return cleanup();
     }
 
-    tree.value = buildDatabaseSchemaTree(database.value, metadata);
-    if (tab.treeState.database !== tab.connection.database) {
-      // Set initial tree state for the tab when it firstly opens or its
-      // connection has been changed
-      tab.treeState.database = tab.connection.database;
-      tab.treeState.keys = defaultExpandedKeys();
+    if (totalTableCount.value <= 1000) {
+      requestAnimationFrame(() => {
+        tree.value = buildDatabaseSchemaTree(database.value, metadata);
+        if (treeStateDb !== connectionDb && connectionDb) {
+          // Set initial tree state for the tab when it firstly opens or its
+          // connection has been changed
+          tab.treeState.database = connectionDb;
+          tab.treeState.keys = defaultExpandedKeys();
+        }
+      });
     }
   },
   {
     immediate: true,
   }
 );
+
+// Handlers for flat list events
+const handleFlatListSelect = (table: any) => {
+  // Update connection schema if needed
+  const tab = currentTab.value;
+  if (tab && table.schema) {
+    tab.connection.schema = table.schema;
+  }
+};
+
+const handleFlatListSelectAll = (table: {
+  key: string;
+  schema: string;
+  metadata: TableMetadata;
+}) => {
+  // Execute SELECT * for the table
+  if (table.metadata) {
+    selectAllFromTableOrView({
+      key: table.key,
+      meta: {
+        type: "table",
+        target: {
+          database: database.value.name,
+          schema: table.schema,
+          table: table.metadata.name,
+        },
+      },
+    });
+  }
+};
+
+const handleFlatListContextMenu = (
+  event: MouseEvent,
+  table: {
+    key: string;
+    schema: string;
+    metadata: TableMetadata;
+  }
+) => {
+  dropdownContext.value = {
+    key: table.key,
+    meta: {
+      type: "table",
+      target: {
+        database: database.value.name,
+        schema: table.schema,
+        table: table.metadata.name,
+      },
+    },
+  };
+
+  nextTick().then(() => {
+    showDropdown.value = true;
+    dropdownPosition.value.x = event.clientX;
+    dropdownPosition.value.y = event.clientY;
+  });
+};
 
 useEventListener(treeContainerElRef, "keydown", () => {
   searchBoxRef.value?.inputRef?.focus();
