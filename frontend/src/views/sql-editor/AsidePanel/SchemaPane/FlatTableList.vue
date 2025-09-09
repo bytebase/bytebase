@@ -8,7 +8,7 @@
       :item-resizable="false"
       :items-style="{ paddingTop: '4px', paddingBottom: '4px' }"
     >
-      <template #default="{ item }">
+      <template #default="{ item }: { item: FlatTableItem }">
         <div>
           <div
             class="table-item px-2 py-1 hover:bg-control-bg-hover cursor-pointer flex items-center justify-between text-sm"
@@ -27,15 +27,15 @@
                 <span v-if="item.schema" class="text-gray-500">
                   {{ item.schema }}.
                 </span>
-                <span>{{ item.table }}</span>
+                <span>{{ item.metadata.name }}</span>
               </span>
             </div>
             <div
               class="flex items-center gap-2 text-xs text-gray-500 shrink-0 ml-2"
             >
-              <span> {{ item.columns.length }} cols </span>
+              <span> {{ item.metadata.columns.length }} cols </span>
               <NButton
-                v-if="item.columns.length > 0"
+                v-if="item.metadata.columns.length > 0"
                 size="tiny"
                 quaternary
                 circle
@@ -57,7 +57,7 @@
             class="pl-6 pr-2 py-1 bg-gray-50 border-l-2 border-gray-200"
           >
             <div
-              v-for="column in item.columns"
+              v-for="column in item.metadata.columns"
               :key="column.name"
               class="flex flex-wrap items-center justify-between gap-1 py-0.5 text-xs"
             >
@@ -95,11 +95,6 @@ import type {
 interface FlatTableItem {
   key: string;
   schema: string;
-  table: string;
-  columns: Array<{
-    name: string;
-    type: string;
-  }>;
   metadata: TableMetadata;
 }
 
@@ -129,11 +124,6 @@ const allTables = computed(() => {
       tables.push({
         key: `${schema.name}/${table.name}`,
         schema: schema.name,
-        table: table.name,
-        columns: (table.columns || []).map((col) => ({
-          name: col.name,
-          type: col.type,
-        })),
         metadata: table,
       });
     }
@@ -152,7 +142,7 @@ const filteredTables = computed(() => {
 
   return allTables.value.filter((item) => {
     // Search in both schema and table names
-    const fullName = `${item.schema}.${item.table}`.toLowerCase();
+    const fullName = `${item.schema}.${item.metadata.name}`.toLowerCase();
     return fullName.includes(pattern);
   });
 });

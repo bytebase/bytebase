@@ -468,7 +468,7 @@ watch(
     if (totalTableCount.value <= 1000) {
       requestAnimationFrame(() => {
         tree.value = buildDatabaseSchemaTree(database.value, metadata);
-        if (treeStateDb !== connectionDb) {
+        if (treeStateDb !== connectionDb && connectionDb) {
           // Set initial tree state for the tab when it firstly opens or its
           // connection has been changed
           tab.treeState.database = connectionDb;
