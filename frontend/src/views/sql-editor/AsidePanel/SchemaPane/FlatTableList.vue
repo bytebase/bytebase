@@ -56,20 +56,48 @@
           <!-- Expanded Details -->
           <div
             v-if="expandedTables.has(item.key)"
-            class="pl-6 pr-2 py-1 bg-gray-50 border-l-2 border-gray-200"
+            class="pl-4 pr-2 bg-gray-50 border-l-2 border-gray-200"
           >
-            <div
-              v-for="column in item.metadata.columns"
-              :key="column.name"
-              class="flex flex-wrap items-center justify-between gap-1 py-0.5 text-xs"
-            >
-              <div class="flex items-center gap-1">
-                <NIcon size="12" class="text-gray-400">
-                  <ColumnIcon />
-                </NIcon>
-                <span>{{ column.name }}</span>
+            <!-- Columns Section -->
+            <div v-if="item.metadata.columns.length > 0" class="py-1">
+              <div class="text-xs font-medium text-gray-600 mb-1">Columns</div>
+              <div
+                v-for="column in item.metadata.columns"
+                :key="column.name"
+                class="flex flex-wrap items-center justify-between gap-1 py-0.5 text-xs pl-2"
+              >
+                <div class="flex items-center gap-1">
+                  <NIcon size="12" class="text-gray-400">
+                    <ColumnIcon />
+                  </NIcon>
+                  <span>{{ column.name }}</span>
+                </div>
+                <span class="text-gray-500">{{ column.type }}</span>
               </div>
-              <span class="text-gray-500">{{ column.type }}</span>
+            </div>
+
+            <!-- Indexes Section -->
+            <div
+              v-if="item.metadata.indexes && item.metadata.indexes.length > 0"
+              class="py-1 border-t border-gray-200"
+            >
+              <div class="text-xs font-medium text-gray-600 mb-1">Indexes</div>
+              <div
+                v-for="index in item.metadata.indexes"
+                :key="index.name"
+                class="flex flex-wrap items-center justify-between gap-1 py-0.5 text-xs pl-2"
+              >
+                <div class="flex items-center gap-1">
+                  <NIcon size="12" class="text-gray-400">
+                    <IndexIcon />
+                  </NIcon>
+                  <span>{{ index.name }}</span>
+                </div>
+                <span class="text-gray-500">
+                  {{ index.unique ? "UNIQUE" : "" }}
+                  {{ index.primary ? "PRIMARY" : "" }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -88,7 +116,7 @@
 import { ChevronRightIcon, ChevronDownIcon } from "lucide-vue-next";
 import { NVirtualList, NIcon, NButton, NEmpty } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
-import { TableIcon, ColumnIcon } from "@/components/Icon";
+import { TableIcon, ColumnIcon, IndexIcon } from "@/components/Icon";
 import type {
   DatabaseMetadata,
   TableMetadata,
