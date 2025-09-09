@@ -389,8 +389,8 @@ const shouldShowComment = computed(() => !isNullOrUndefined(issue?.value));
 // Plan check error validation
 const planCheckError = computed(() => {
   if (props.action === "RUN") {
-    // Get plan check runs from the plan check status
-    if (planCheckStatus.value.error > 0 || planCheckStatus.value.warning > 0) {
+    // Only consider plan check errors for RUN action.
+    if (planCheckStatus.value.error > 0) {
       return t(
         "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
       );
