@@ -93,7 +93,7 @@ func TestSetLineForPGCreateTableStmt(t *testing.T) {
 				}
 				// Add created_at for multiline case
 				if len(tc.statement) > 100 {
-					createTableStmt.ColumnList = append(createTableStmt.ColumnList, 
+					createTableStmt.ColumnList = append(createTableStmt.ColumnList,
 						&ast.ColumnDef{ColumnName: "created_at"})
 				}
 			}
@@ -115,7 +115,7 @@ func TestSetLineForPGCreateTableStmt(t *testing.T) {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err, "SetLineForPGCreateTableStmt should handle: %s", tc.name)
-				
+
 				// For tables with columns, verify that columns have their lines set
 				if tc.hasColumns {
 					for _, col := range createTableStmt.ColumnList {
