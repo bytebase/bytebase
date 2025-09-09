@@ -117,6 +117,7 @@ import {
   useSQLEditorTabStore,
 } from "@/store";
 import { isValidDatabaseName } from "@/types";
+import type { TableMetadata } from "@/types/proto-es/v1/database_service_pb";
 import {
   allEqual,
   extractDatabaseResourceName,
@@ -492,33 +493,46 @@ const handleFlatListSelect = (table: any) => {
   }
 };
 
-const handleFlatListSelectAll = (table: any) => {
+const handleFlatListSelectAll = (table: {
+  key: string;
+  schema: string;
+  metadata: TableMetadata;
+}) => {
   // Execute SELECT * for the table
   if (table.metadata) {
     selectAllFromTableOrView({
+      key: table.key,
       meta: {
         type: "table",
         target: {
           database: database.value.name,
           schema: table.schema,
-          table: table.table,
+          table: table.metadata.name,
         },
       },
-    } as any);
+    });
   }
 };
 
-const handleFlatListContextMenu = (event: MouseEvent, table: any) => {
+const handleFlatListContextMenu = (
+  event: MouseEvent,
+  table: {
+    key: string;
+    schema: string;
+    metadata: TableMetadata;
+  }
+) => {
   dropdownContext.value = {
+    key: table.key,
     meta: {
       type: "table",
       target: {
         database: database.value.name,
         schema: table.schema,
-        table: table.table,
+        table: table.metadata.name,
       },
     },
-  } as any;
+  };
 
   nextTick().then(() => {
     showDropdown.value = true;
