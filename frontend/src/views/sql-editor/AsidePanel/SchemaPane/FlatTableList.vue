@@ -60,7 +60,9 @@
           >
             <!-- Columns Section -->
             <div v-if="item.metadata.columns.length > 0" class="py-1">
-              <div class="text-xs font-medium text-gray-600 mb-1">Columns</div>
+              <div class="text-xs font-medium text-gray-600 mb-1">
+                {{ $t("database.columns") }}
+              </div>
               <div
                 v-for="column in item.metadata.columns"
                 :key="column.name"
@@ -81,7 +83,9 @@
               v-if="item.metadata.indexes && item.metadata.indexes.length > 0"
               class="py-1 border-t border-gray-200"
             >
-              <div class="text-xs font-medium text-gray-600 mb-1">Indexes</div>
+              <div class="text-xs font-medium text-gray-600 mb-1">
+                {{ $t("database.indexes") }}
+              </div>
               <div
                 v-for="index in item.metadata.indexes"
                 :key="index.name"
