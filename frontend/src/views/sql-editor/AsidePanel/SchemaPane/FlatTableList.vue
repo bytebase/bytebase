@@ -18,6 +18,8 @@
             @click="handleTableClick(item)"
             @dblclick="handleTableDoubleClick(item)"
             @contextmenu="handleContextMenu($event, item)"
+            @mouseenter="handleMouseEnter($event, item)"
+            @mouseleave="handleMouseLeave()"
           >
             <div class="flex items-center gap-1 truncate flex-1 min-w-0">
               <NIcon size="14" class="shrink-0">
@@ -85,12 +87,14 @@
 <script setup lang="ts">
 import { ChevronRightIcon, ChevronDownIcon } from "lucide-vue-next";
 import { NVirtualList, NIcon, NButton, NEmpty } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { TableIcon, ColumnIcon } from "@/components/Icon";
 import type {
   DatabaseMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
+import { findAncestor } from "@/utils";
+import { useHoverStateContext } from "./HoverPanel";
 
 interface FlatTableItem {
   key: string;
@@ -101,6 +105,7 @@ interface FlatTableItem {
 const props = defineProps<{
   metadata: DatabaseMetadata;
   search?: string;
+  database: string;
 }>();
 
 const emit = defineEmits<{
@@ -108,6 +113,13 @@ const emit = defineEmits<{
   "select-all": [table: FlatTableItem];
   contextmenu: [event: MouseEvent, table: FlatTableItem];
 }>();
+
+// Use the existing hover state context
+const {
+  state: hoverState,
+  position: hoverPosition,
+  update: updateHoverState,
+} = useHoverStateContext();
 
 const expandedTables = ref(new Set<string>());
 // Track selected table for flat list
@@ -173,6 +185,36 @@ const toggleTableExpansion = (item: FlatTableItem) => {
   } else {
     expandedTables.value.add(item.key);
   }
+};
+
+const handleMouseEnter = (event: MouseEvent, item: FlatTableItem) => {
+  const target = {
+    database: props.database,
+    schema: item.schema,
+    table: item.metadata.name,
+  };
+
+  // Use a small delay even when transitioning between nodes
+  // to prevent excessive re-renders when moving quickly
+  const delay = hoverState.value ? 150 : undefined;
+  updateHoverState(target, "before", delay);
+
+  nextTick().then(() => {
+    // Find the table item element and position hover panel
+    const wrapper = findAncestor(event.target as HTMLElement, ".table-item");
+    if (!wrapper) {
+      // Clear hover state if we can't find the wrapper
+      updateHoverState(undefined, "after", 150);
+      return;
+    }
+    const bounding = wrapper.getBoundingClientRect();
+    hoverPosition.value.x = event.clientX;
+    hoverPosition.value.y = bounding.bottom;
+  });
+};
+
+const handleMouseLeave = () => {
+  updateHoverState(undefined, "after");
 };
 
 // Focus search box on mount

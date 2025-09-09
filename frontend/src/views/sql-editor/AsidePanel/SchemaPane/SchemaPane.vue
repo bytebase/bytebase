@@ -31,6 +31,7 @@
           v-if="totalTableCount > 1000"
           :metadata="metadata"
           :search="searchPattern"
+          :database="database.name"
           @select="handleFlatListSelect"
           @select-all="handleFlatListSelectAll"
           @contextmenu="handleFlatListContextMenu"
