@@ -6,18 +6,22 @@ This is the demo data for https://demo.bytebase.com.
 
 # How to update demo data
 
-1. Build and start Bytebase backend with `--demo` on a release branch (current demo data is based on release/3.7.0).
+1. We need to use initdb and pg_dump. Please visit https://github.com/bytebase/bytebase/tree/release/3.5.3/backend/resources/postgres and download the relevant pacakge (e.g for Mac, you will download `postgres-darwin-arm64.txz`). Then extract and move it to `$PWD/bytebase-build/postgres`.
+
+1. Build and start Bytebase backend with `--demo` on a release branch (current demo data is based on release/3.10.0).
 
    ```bash
    # Make sure to use the local pg binary
-   go build -p=16 -ldflags "-w -s" -o ./bytebase-build/bytebase ./backend/bin/server/main.go && PATH="$PWD/bytebase-build/resources/postgres-darwin-arm64-16/bin:$PATH" ./bytebase-build/bytebase --port 8080 --data . --debug --demo
+   go build -p=16 -ldflags "-w -s" -o ./bytebase-build/bytebase ./backend/bin/server/main.go && PATH="$PWD/bytebase-build/postgres/bin:$PATH" ./bytebase-build/bytebase --port 8080 --data . --debug --demo
    ```
+
+1. Start frontend and make changes.
 
 1. Dump with the following command.
 
    ```bash
    # Make sure to use the local pg binary
-   PATH="$PWD/bytebase-build/resources/postgres-darwin-arm64-16/bin:$PATH" pg_dump -h /tmp -p 8082 -U bb --disable-triggers --no-owner --column-inserts --on-conflict-do-nothing > ~/dump.sql
+   PATH="$PWD/bytebase-build/postgres/bin:$PATH" pg_dump -h /tmp -p 8082 -U bb --disable-triggers --no-owner --column-inserts --on-conflict-do-nothing > ~/dump.sql
    ```
 
    On the top of the dump.sql, the version should be consistent
