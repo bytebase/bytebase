@@ -394,7 +394,10 @@ onMounted(async () => {
 });
 
 const activeUserCount = computed(() => {
-  return actuatorStore.getActiveUserCount({ includeBot: true });
+  return actuatorStore.getActiveUserCount({
+    includeBot: true,
+    includeServiceAccount: true,
+  });
 });
 
 const inactiveUserCount = computed(() => {
@@ -405,7 +408,10 @@ const remainingUserCount = computed((): number => {
   return Math.max(
     0,
     subscriptionV1Store.userCountLimit -
-      actuatorStore.getActiveUserCount({ includeBot: false })
+      actuatorStore.getActiveUserCount({
+        includeBot: false,
+        includeServiceAccount: false,
+      })
   );
 });
 
