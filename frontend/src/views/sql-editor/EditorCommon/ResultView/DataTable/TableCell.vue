@@ -9,7 +9,7 @@
   >
     <div
       ref="wrapperRef"
-      class="whitespace-nowrap font-mono text-start line-clamp-1"
+      class="font-mono text-start break-words line-clamp-3"
       v-html="html"
     ></div>
     <div
@@ -135,9 +135,11 @@ watchEffect(() => {
 
 useResizeObserver(wrapperRef, (entries) => {
   const div = entries[0].target as HTMLDivElement;
-  const contentWidth = div.scrollWidth;
-  const visibleWidth = div.offsetWidth;
-  if (contentWidth > visibleWidth) {
+  const contentHeight = div.scrollHeight;
+  const visibleHeight = div.offsetHeight;
+  // Check if content is truncated vertically (due to line-clamp)
+  if (contentHeight > visibleHeight + 2) {
+    // +2 for minor pixel differences
     truncated.value = true;
   } else {
     truncated.value = false;
@@ -224,9 +226,17 @@ const formattedValue = computed(() => {
   };
 });
 
+const plainValue = computed(() => {
+  const value = extractSQLRowValuePlain(formattedValue.value);
+  if (value === undefined || value === null) {
+    return value;
+  }
+  return String(value);
+});
+
 const html = computed(() => {
   // Extract the display value
-  const value = extractSQLRowValuePlain(formattedValue.value);
+  const value = plainValue.value;
 
   if (value === undefined) {
     return `<span class="text-gray-400 italic">UNSET</span>`;
@@ -234,18 +244,17 @@ const html = computed(() => {
   if (value === null) {
     return `<span class="text-gray-400 italic">NULL</span>`;
   }
-  const str = String(value);
-  if (str.length === 0) {
+  if (value.length === 0) {
     return `<br style="min-width: 1rem; display: inline-flex;" />`;
   }
 
   const kw = keyword.value.trim();
   if (!kw) {
-    return escape(str);
+    return escape(value);
   }
 
   return getHighlightHTMLByRegExp(
-    escape(str),
+    escape(value),
     escape(kw),
     false /* !caseSensitive */
   );
@@ -272,4 +281,8 @@ const showDetail = () => {
     table: props.table,
   };
 };
+
+defineExpose({
+  plainValue,
+});
 </script>
