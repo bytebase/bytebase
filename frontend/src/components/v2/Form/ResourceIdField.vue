@@ -11,7 +11,7 @@
             class="text-gray-600 font-medium mr-1 flex items-center gap-x-1"
           >
             {{ state.resourceId }}
-            <CopyButton v-if="readonly" :content="value" />
+            <CopyButton v-if="readonly && value" :content="value" />
           </div>
           <span v-else class="text-control-placeholder italic">
             &lt;EMPTY&gt;

@@ -1,6 +1,6 @@
 <template>
   <NButton
-    v-if="isSupported && content"
+    v-if="isSupported && !isEmpty"
     v-bind="$attrs"
     :text="text"
     :size="size"
@@ -18,12 +18,13 @@
 import { useClipboard } from "@vueuse/core";
 import { CopyIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 
 const props = withDefaults(
   defineProps<{
-    content: string;
+    content: string | (() => string);
     text?: boolean;
     disabled?: boolean;
     size?: "tiny" | "small" | "medium" | "large";
@@ -40,11 +41,24 @@ const { copy: copyTextToClipboard, isSupported } = useClipboard({
 });
 const { t } = useI18n();
 
+const isEmpty = computed(() => {
+  if (typeof props.content === "function") {
+    return false;
+  }
+  return !props.content;
+});
+
 const handleCopy = () => {
   if (!isSupported.value) {
     return;
   }
-  copyTextToClipboard(props.content).then(() => {
+  let value = "";
+  if (typeof props.content === "function") {
+    value = props.content();
+  } else {
+    value = props.content;
+  }
+  copyTextToClipboard(value).then(() => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
