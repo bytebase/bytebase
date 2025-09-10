@@ -1,7 +1,7 @@
 <template>
   <NPopover
     v-model:show="state.showPopover"
-    class="max-h-[80vh] w-[24rem] max-w-full"
+    class="max-h-[80vh] w-[24rem] max-w-[90vw]"
     placement="bottom-start"
     scrollable
     trigger="click"
