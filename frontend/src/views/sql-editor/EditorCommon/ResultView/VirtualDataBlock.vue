@@ -154,7 +154,7 @@ const getContent = (index: number): string => {
         return obj;
       }
       obj[`${header.column.columnDef.header}`] =
-        cellRefs.value[index + header.index]?.plainValue;
+        cellRefs.value[index * columnHeaders.value.length + header.index]?.plainValue;
       return obj;
     },
     {} as Record<string, any>
