@@ -3154,6 +3154,13 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td><p>The expression is the expression of a check constraint. </p></td>
                 </tr>
               
+                <tr>
+                  <td>fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The fingerprint is the hash value for the entire check constraint. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -3429,6 +3436,20 @@ To modify the default, you must first drop the existing constraint by name:
 
 This field is populated when syncing from the database. When empty (e.g., when parsing
 from SQL files), the system cannot automatically drop the constraint. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The fingerprint is the hash value for the entire column. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>default_fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The default_fingerprint is the hash value for the default value of a column. </p></td>
                 </tr>
               
             </tbody>
@@ -3808,6 +3829,13 @@ Examples: POINT, LINE, POLYGON, COLLECTION </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The fingerprint is the hash value for the entire enum type. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -4041,6 +4069,13 @@ The match_type is the PostgreSQL specific field.
 It&#39;s empty string for other databases. </p></td>
                 </tr>
               
+                <tr>
+                  <td>fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The fingerprint is the hash value for the entire foreign key. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -4130,6 +4165,13 @@ For PostgreSQL, it&#39;s the list of tables that the function depends on the ret
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The fingerprint is the hash value for the entire function. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -4156,6 +4198,13 @@ For PostgreSQL, it&#39;s the list of tables that the function depends on the ret
               
                 <tr>
                   <td>expression</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>fingerprint</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -4332,6 +4381,13 @@ Name of the operator class for each column. (PostgreSQL specific). </p></td>
                   <td><p>True if the operator class is the default. (PostgreSQL specific). </p></td>
                 </tr>
               
+                <tr>
+                  <td>fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The fingerprint is the hash value for the entire index. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -4466,6 +4522,13 @@ engine. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The fingerprint is the hash value for the entire materialized view. </p></td>
                 </tr>
               
             </tbody>
@@ -4704,6 +4767,13 @@ function takes. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The fingerprint is the hash value for the entire procedure. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -4768,6 +4838,13 @@ function takes. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The definition is the full CREATE RULE statement. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The fingerprint is the hash value for the entire rule. </p></td>
                 </tr>
               
             </tbody>
@@ -5040,6 +5117,13 @@ Snowflake. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The fingerprint is the hash value for the entire sequence. </p></td>
                 </tr>
               
             </tbody>
@@ -5542,6 +5626,13 @@ Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family
 CLUSTERED or NONCLUSTERED. </p></td>
                 </tr>
               
+                <tr>
+                  <td>fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The fingerprint is the hash value for the entire table. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5632,6 +5723,13 @@ in syntax [SUB]PARTITION {number}. </p></td>
                   <td><a href="#bytebase.store.CheckConstraintMetadata">CheckConstraintMetadata</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The fingerprint is the hash value for the entire table partition. </p></td>
                 </tr>
               
             </tbody>
@@ -5849,6 +5947,13 @@ TRUNCATE. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The fingerprint is the hash value for the entire trigger. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5920,6 +6025,13 @@ TRUNCATE. </p></td>
                   <td><a href="#bytebase.store.RuleMetadata">RuleMetadata</a></td>
                   <td>repeated</td>
                   <td><p>The rules is the list of rules in a view (PostgreSQL specific). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The fingerprint is the hash value for the entire view. </p></td>
                 </tr>
               
             </tbody>

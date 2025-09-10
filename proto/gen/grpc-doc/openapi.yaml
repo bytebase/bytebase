@@ -14274,6 +14274,9 @@ components:
                     type: string
                 skipDump:
                     type: boolean
+                fingerprint:
+                    type: string
+                    description: The fingerprint is the hash value for the entire trigger.
         UndeleteInstanceRequest:
             required:
                 - name

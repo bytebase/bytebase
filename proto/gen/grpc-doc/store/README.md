@@ -1061,6 +1061,7 @@ BoundingBox defines the bounding box for spatial indexes.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a check constraint. |
 | expression | [string](#string) |  | The expression is the expression of a check constraint. |
+| fingerprint | [string](#string) |  | The fingerprint is the hash value for the entire check constraint. |
 
 
 
@@ -1140,6 +1141,8 @@ Will create a constraint with an auto-generated name like &#39;DF__employees__st
 To modify the default, you must first drop the existing constraint by name: ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760 ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT &#39;inactive&#39; FOR status
 
 This field is populated when syncing from the database. When empty (e.g., when parsing from SQL files), the system cannot automatically drop the constraint. |
+| fingerprint | [string](#string) |  | The fingerprint is the hash value for the entire column. |
+| default_fingerprint | [string](#string) |  | The default_fingerprint is the hash value for the default value of a column. |
 
 
 
@@ -1286,6 +1289,7 @@ DimensionalConfig defines dimensional and constraint parameters for spatial inde
 | values | [string](#string) | repeated | The enum values of a type. |
 | comment | [string](#string) |  |  |
 | skip_dump | [bool](#bool) |  |  |
+| fingerprint | [string](#string) |  | The fingerprint is the hash value for the entire enum type. |
 
 
 
@@ -1365,6 +1369,7 @@ ForeignKeyMetadata is the metadata for foreign keys.
 | on_delete | [string](#string) |  | The on_delete is the on delete action of a foreign key. |
 | on_update | [string](#string) |  | The on_update is the on update action of a foreign key. |
 | match_type | [string](#string) |  | The match_type is the match type of a foreign key. The match_type is the PostgreSQL specific field. It&#39;s empty string for other databases. |
+| fingerprint | [string](#string) |  | The fingerprint is the hash value for the entire foreign key. |
 
 
 
@@ -1389,6 +1394,7 @@ FunctionMetadata is the metadata for functions.
 | comment | [string](#string) |  |  |
 | dependency_tables | [DependencyTable](#bytebase-store-DependencyTable) | repeated | The dependency_tables is the list of dependency tables of a function. For PostgreSQL, it&#39;s the list of tables that the function depends on the return type definition. |
 | skip_dump | [bool](#bool) |  |  |
+| fingerprint | [string](#string) |  | The fingerprint is the hash value for the entire function. |
 
 
 
@@ -1405,6 +1411,7 @@ FunctionMetadata is the metadata for functions.
 | ----- | ---- | ----- | ----------- |
 | type | [GenerationMetadata.Type](#bytebase-store-GenerationMetadata-Type) |  |  |
 | expression | [string](#string) |  |  |
+| fingerprint | [string](#string) |  |  |
 
 
 
@@ -1452,6 +1459,7 @@ IndexMetadata is the metadata for indexes.
 | spatial_config | [SpatialIndexConfig](#bytebase-store-SpatialIndexConfig) |  | Spatial index specific configuration |
 | opclass_names | [string](#string) | repeated | https://www.postgresql.org/docs/current/catalog-pg-opclass.html Name of the operator class for each column. (PostgreSQL specific). |
 | opclass_defaults | [bool](#bool) | repeated | True if the operator class is the default. (PostgreSQL specific). |
+| fingerprint | [string](#string) |  | The fingerprint is the hash value for the entire index. |
 
 
 
@@ -1506,6 +1514,7 @@ MaterializedViewMetadata is the metadata for materialized views.
 | triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The columns is the ordered list of columns in a table. |
 | indexes | [IndexMetadata](#bytebase-store-IndexMetadata) | repeated | The indexes is the list of indexes in a table. |
 | skip_dump | [bool](#bool) |  |  |
+| fingerprint | [string](#string) |  | The fingerprint is the hash value for the entire materialized view. |
 
 
 
@@ -1609,6 +1618,7 @@ ProcedureMetadata is the metadata for procedures.
 | sql_mode | [string](#string) |  |  |
 | comment | [string](#string) |  |  |
 | skip_dump | [bool](#bool) |  |  |
+| fingerprint | [string](#string) |  | The fingerprint is the hash value for the entire procedure. |
 
 
 
@@ -1630,6 +1640,7 @@ RuleMetadata is the metadata for PostgreSQL rules.
 | is_instead | [bool](#bool) |  | The is_instead indicates whether this is an INSTEAD rule. |
 | is_enabled | [bool](#bool) |  | The is_enabled indicates whether the rule is enabled. |
 | definition | [string](#string) |  | The definition is the full CREATE RULE statement. |
+| fingerprint | [string](#string) |  | The fingerprint is the hash value for the entire rule. |
 
 
 
@@ -1704,6 +1715,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | owner_column | [string](#string) |  | The owner column of the sequence. |
 | comment | [string](#string) |  |  |
 | skip_dump | [bool](#bool) |  |  |
+| fingerprint | [string](#string) |  | The fingerprint is the hash value for the entire sequence. |
 
 
 
@@ -1846,6 +1858,7 @@ TableMetadata is the metadata for tables.
 | rules | [RuleMetadata](#bytebase-store-RuleMetadata) | repeated | The rules is the list of rules in a table (PostgreSQL specific). |
 | sharding_info | [string](#string) |  | https://docs.pingcap.com/tidb/stable/information-schema-tables/ |
 | primary_key_type | [string](#string) |  | https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes CLUSTERED or NONCLUSTERED. |
+| fingerprint | [string](#string) |  | The fingerprint is the hash value for the entire table. |
 
 
 
@@ -1868,6 +1881,7 @@ TablePartitionMetadata is the metadata for table partitions.
 | subpartitions | [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata) | repeated | The subpartitions is the list of subpartitions in a table partition. |
 | indexes | [IndexMetadata](#bytebase-store-IndexMetadata) | repeated |  |
 | check_constraints | [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata) | repeated |  |
+| fingerprint | [string](#string) |  | The fingerprint is the hash value for the entire table partition. |
 
 
 
@@ -1933,6 +1947,7 @@ TessellationConfig defines tessellation parameters for spatial indexes.
 | collation_connection | [string](#string) |  |  |
 | comment | [string](#string) |  |  |
 | skip_dump | [bool](#bool) |  |  |
+| fingerprint | [string](#string) |  | The fingerprint is the hash value for the entire trigger. |
 
 
 
@@ -1955,6 +1970,7 @@ ViewMetadata is the metadata for views.
 | triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The triggers is the list of triggers in a view. |
 | skip_dump | [bool](#bool) |  |  |
 | rules | [RuleMetadata](#bytebase-store-RuleMetadata) | repeated | The rules is the list of rules in a view (PostgreSQL specific). |
+| fingerprint | [string](#string) |  | The fingerprint is the hash value for the entire view. |
 
 
 

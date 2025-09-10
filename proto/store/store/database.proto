@@ -117,6 +117,9 @@ message EnumTypeMetadata {
   string comment = 3;
 
   bool skip_dump = 4;
+
+  // The fingerprint is the hash value for the entire enum type.
+  string fingerprint = 5;
 }
 
 message EventMetadata {
@@ -175,6 +178,9 @@ message SequenceMetadata {
   string comment = 12;
 
   bool skip_dump = 13;
+
+  // The fingerprint is the hash value for the entire sequence.
+  string fingerprint = 14;
 }
 
 message TriggerMetadata {
@@ -200,6 +206,9 @@ message TriggerMetadata {
   string comment = 9;
 
   bool skip_dump = 10;
+
+  // The fingerprint is the hash value for the entire trigger.
+  string fingerprint = 11;
 }
 
 // RuleMetadata is the metadata for PostgreSQL rules.
@@ -224,6 +233,9 @@ message RuleMetadata {
 
   // The definition is the full CREATE RULE statement.
   string definition = 7;
+
+  // The fingerprint is the hash value for the entire rule.
+  string fingerprint = 8;
 }
 
 message TaskMetadata {
@@ -373,6 +385,9 @@ message TableMetadata {
   // https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes
   // CLUSTERED or NONCLUSTERED.
   string primary_key_type = 23;
+
+  // The fingerprint is the hash value for the entire table.
+  string fingerprint = 25;
 }
 
 message CheckConstraintMetadata {
@@ -381,6 +396,9 @@ message CheckConstraintMetadata {
 
   // The expression is the expression of a check constraint.
   string expression = 2;
+
+  // The fingerprint is the hash value for the entire check constraint.
+  string fingerprint = 3;
 }
 
 message ExternalTableMetadata {
@@ -458,6 +476,9 @@ message TablePartitionMetadata {
   repeated IndexMetadata indexes = 7;
 
   repeated CheckConstraintMetadata check_constraints = 8;
+
+  // The fingerprint is the hash value for the entire table partition.
+  string fingerprint = 9;
 }
 
 // ColumnMetadata is the metadata for columns.
@@ -544,6 +565,12 @@ message ColumnMetadata {
   // This field is populated when syncing from the database. When empty (e.g., when parsing
   // from SQL files), the system cannot automatically drop the constraint.
   string default_constraint_name = 20;
+
+  // The fingerprint is the hash value for the entire column.
+  string fingerprint = 21;
+
+  // The default_fingerprint is the hash value for the default value of a column.
+  string default_fingerprint = 22;
 }
 
 message GenerationMetadata {
@@ -555,6 +582,7 @@ message GenerationMetadata {
 
   Type type = 1;
   string expression = 2;
+  string fingerprint = 3;
 }
 
 // ViewMetadata is the metadata for views.
@@ -581,6 +609,9 @@ message ViewMetadata {
 
   // The rules is the list of rules in a view (PostgreSQL specific).
   repeated RuleMetadata rules = 8;
+
+  // The fingerprint is the hash value for the entire view.
+  string fingerprint = 9;
 }
 
 // DependencyColumn is the metadata for dependency columns.
@@ -616,6 +647,9 @@ message MaterializedViewMetadata {
   repeated IndexMetadata indexes = 6;
 
   bool skip_dump = 7;
+
+  // The fingerprint is the hash value for the entire materialized view.
+  string fingerprint = 8;
 }
 
 message DependencyTable {
@@ -654,6 +688,9 @@ message FunctionMetadata {
   repeated DependencyTable dependency_tables = 9;
 
   bool skip_dump = 10;
+
+  // The fingerprint is the hash value for the entire function.
+  string fingerprint = 11;
 }
 
 // ProcedureMetadata is the metadata for procedures.
@@ -680,6 +717,9 @@ message ProcedureMetadata {
   string comment = 9;
 
   bool skip_dump = 8;
+
+  // The fingerprint is the hash value for the entire procedure.
+  string fingerprint = 10;
 }
 
 // PackageMetadata is the metadata for packages.
@@ -746,6 +786,9 @@ message IndexMetadata {
   repeated string opclass_names = 16;
   // True if the operator class is the default. (PostgreSQL specific).
   repeated bool opclass_defaults = 17;
+
+  // The fingerprint is the hash value for the entire index.
+  string fingerprint = 18;
 }
 
 // SpatialIndexConfig is the configuration for spatial indexes across different database engines.
@@ -885,6 +928,9 @@ message ForeignKeyMetadata {
   // The match_type is the PostgreSQL specific field.
   // It's empty string for other databases.
   string match_type = 8;
+
+  // The fingerprint is the hash value for the entire foreign key.
+  string fingerprint = 9;
 }
 
 // InstanceRoleMetadata is the message for instance role.
