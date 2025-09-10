@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex-1 flex flex-col min-h-0 h-full">
+  <div class="w-full flex-1 flex flex-col">
     <SpecListSection v-if="shouldShowSpecList" />
     <div
       class="w-full flex-1 flex flex-col gap-3 px-4 divide-y overflow-x-auto"
