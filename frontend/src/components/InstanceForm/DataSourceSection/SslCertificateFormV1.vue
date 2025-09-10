@@ -16,63 +16,65 @@
         {{ $t("data-source.ssl.verify-certificate-tooltip") }}
       </NTooltip>
     </div>
-    
-  <NTabs :default-value="'CA'" pane-style="padding-top: 0.25rem">
-    <NTabPane
-      name="CA"
-      :tab="$t('data-source.ssl.ca-cert')"
-      display-directive="show"
-    >
-      <DroppableTextarea
-        v-model:value="state.value.sslCa"
-        :resizable="false"
-        :disabled="disabled"
-        class="w-full h-24 whitespace-pre-wrap"
-        placeholder="Input or drag and drop YOUR_CA_CERTIFICATE"
-      />
-    </NTabPane>
-    <NTabPane
-      v-if="hasSSLKeyField"
-      name="KEY"
-      :tab="$t('data-source.ssl.client-key')"
-      display-directive="show"
-    >
-      <DroppableTextarea
-        v-model:value="state.value.sslKey"
-        :resizable="false"
-        :disabled="disabled"
-        class="w-full h-24 whitespace-pre-wrap"
-        placeholder="Input or drag and drop YOUR_CLIENT_KEY"
-      />
-    </NTabPane>
-    <NTabPane
-      v-if="hasSSLCertField"
-      name="CERT"
-      :tab="$t('data-source.ssl.client-cert')"
-      display-directive="show"
-    >
-      <DroppableTextarea
-        v-model:value="state.value.sslCert"
-        :resizable="false"
-        :disabled="disabled"
-        class="w-full h-24 whitespace-pre-wrap"
-        placeholder="Input or drag and drop YOUR_CLIENT_CERT"
-      />
-    </NTabPane>
-  </NTabs>
+
+    <NTabs :default-value="'CA'" pane-style="padding-top: 0.25rem">
+      <NTabPane
+        name="CA"
+        :tab="$t('data-source.ssl.ca-cert')"
+        display-directive="show"
+      >
+        <DroppableTextarea
+          v-model:value="state.value.sslCa"
+          :resizable="false"
+          :disabled="disabled"
+          class="w-full h-24 whitespace-pre-wrap"
+          placeholder="Input or drag and drop YOUR_CA_CERTIFICATE"
+        />
+      </NTabPane>
+      <NTabPane
+        v-if="hasSSLKeyField"
+        name="KEY"
+        :tab="$t('data-source.ssl.client-key')"
+        display-directive="show"
+      >
+        <DroppableTextarea
+          v-model:value="state.value.sslKey"
+          :resizable="false"
+          :disabled="disabled"
+          class="w-full h-24 whitespace-pre-wrap"
+          placeholder="Input or drag and drop YOUR_CLIENT_KEY"
+        />
+      </NTabPane>
+      <NTabPane
+        v-if="hasSSLCertField"
+        name="CERT"
+        :tab="$t('data-source.ssl.client-cert')"
+        display-directive="show"
+      >
+        <DroppableTextarea
+          v-model:value="state.value.sslCert"
+          :resizable="false"
+          :disabled="disabled"
+          class="w-full h-24 whitespace-pre-wrap"
+          placeholder="Input or drag and drop YOUR_CLIENT_CERT"
+        />
+      </NTabPane>
+    </NTabs>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
+import { Info } from "lucide-vue-next";
 import { NTabs, NTabPane, NSwitch, NTooltip } from "naive-ui";
 import { computed, reactive, watch } from "vue";
-import { Info } from "lucide-vue-next";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 
-type WithSslOptions = Partial<Pick<DataSource, "sslCa" | "sslCert" | "sslKey" | "verifyTlsCertificate">>;
+type WithSslOptions = Partial<
+  Pick<DataSource, "sslCa" | "sslCert" | "sslKey" | "verifyTlsCertificate">
+>;
 
 type LocalState = {
   value: WithSslOptions;
