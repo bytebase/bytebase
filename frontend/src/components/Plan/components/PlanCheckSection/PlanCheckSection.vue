@@ -7,12 +7,17 @@
         <NTooltip v-if="checksOfSelectedSpec.length > 0 && affectedRows > 0">
           <template #trigger>
             <NTag round :bordered="false">
-              <span class="text-sm text-control-light mr-1">{{
-                $t("task.check-type.affected-rows.self")
-              }}</span>
-              <span class="text-sm">
-                {{ affectedRows }}
-              </span>
+              <div class="flex items-center gap-1">
+                <span class="text-sm text-control-light">{{
+                  $t("task.check-type.affected-rows.self")
+                }}</span>
+                <span class="text-sm">
+                  {{ affectedRows }}
+                </span>
+                <CircleQuestionMarkIcon
+                  class="size-[14px] text-control-light opacity-80"
+                />
+              </div>
             </NTag>
           </template>
           {{ $t("task.check-type.affected-rows.description") }}
@@ -52,7 +57,7 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import type { ConnectError } from "@connectrpc/connect";
-import { PlayIcon } from "lucide-vue-next";
+import { PlayIcon, CircleQuestionMarkIcon } from "lucide-vue-next";
 import { NButton, NTooltip, NTag } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { planServiceClientConnect } from "@/grpcweb";
