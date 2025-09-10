@@ -55,8 +55,7 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.Connection
 		return nil, errors.Wrap(err, "failed to get SSL config")
 	}
 	if tlscfg != nil {
-		// TODO(zp): User uses ssh tunnel?
-		tlscfg.InsecureSkipVerify = true
+		// Use the TLS config from util.GetTLSConfig which respects verify_tls_certificate setting
 		opts.SetTLSConfig(tlscfg)
 	}
 	client, err := mongo.Connect(opts)
@@ -110,7 +109,12 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 
 	if d.connCfg.DataSource.GetUseSsl() {
 		mongoshArgs = append(mongoshArgs, "--tls")
-		mongoshArgs = append(mongoshArgs, "--tlsAllowInvalidHostnames")
+
+		// Only allow invalid hostnames/certificates if certificate verification is disabled
+		if !d.connCfg.DataSource.GetVerifyTlsCertificate() {
+			mongoshArgs = append(mongoshArgs, "--tlsAllowInvalidHostnames")
+			mongoshArgs = append(mongoshArgs, "--tlsAllowInvalidCertificates")
+		}
 
 		uuid := uuid.New().String()
 		if d.connCfg.DataSource.GetSslCa() == "" {
@@ -279,7 +283,12 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 
 	if d.connCfg.DataSource.GetUseSsl() {
 		mongoshArgs = append(mongoshArgs, "--tls")
-		mongoshArgs = append(mongoshArgs, "--tlsAllowInvalidHostnames")
+
+		// Only allow invalid hostnames/certificates if certificate verification is disabled
+		if !d.connCfg.DataSource.GetVerifyTlsCertificate() {
+			mongoshArgs = append(mongoshArgs, "--tlsAllowInvalidHostnames")
+			mongoshArgs = append(mongoshArgs, "--tlsAllowInvalidCertificates")
+		}
 
 		uuid := uuid.New().String()
 		if d.connCfg.DataSource.GetSslCa() == "" {

@@ -1649,13 +1649,19 @@ type DataSource struct {
 	Username string                 `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
 	Password string                 `protobuf:"bytes,4,opt,name=password,proto3" json:"password,omitempty"`
 	// Use SSL to connect to the data source. By default, we use system default SSL configuration.
-	UseSsl   bool   `protobuf:"varint,30,opt,name=use_ssl,json=useSsl,proto3" json:"use_ssl,omitempty"`
-	SslCa    string `protobuf:"bytes,5,opt,name=ssl_ca,json=sslCa,proto3" json:"ssl_ca,omitempty"`
-	SslCert  string `protobuf:"bytes,6,opt,name=ssl_cert,json=sslCert,proto3" json:"ssl_cert,omitempty"`
-	SslKey   string `protobuf:"bytes,7,opt,name=ssl_key,json=sslKey,proto3" json:"ssl_key,omitempty"`
-	Host     string `protobuf:"bytes,8,opt,name=host,proto3" json:"host,omitempty"`
-	Port     string `protobuf:"bytes,9,opt,name=port,proto3" json:"port,omitempty"`
-	Database string `protobuf:"bytes,10,opt,name=database,proto3" json:"database,omitempty"`
+	UseSsl  bool   `protobuf:"varint,30,opt,name=use_ssl,json=useSsl,proto3" json:"use_ssl,omitempty"`
+	SslCa   string `protobuf:"bytes,5,opt,name=ssl_ca,json=sslCa,proto3" json:"ssl_ca,omitempty"`
+	SslCert string `protobuf:"bytes,6,opt,name=ssl_cert,json=sslCert,proto3" json:"ssl_cert,omitempty"`
+	SslKey  string `protobuf:"bytes,7,opt,name=ssl_key,json=sslKey,proto3" json:"ssl_key,omitempty"`
+	// verify_tls_certificate enables TLS certificate verification for SSL connections.
+	// Default is false (no verification) for backward compatibility.
+	// Set to true for secure connections (recommended for production).
+	// Only set to false for development or when certificates cannot be properly
+	// validated (e.g., self-signed certs, VPN environments).
+	VerifyTlsCertificate bool   `protobuf:"varint,39,opt,name=verify_tls_certificate,json=verifyTlsCertificate,proto3" json:"verify_tls_certificate,omitempty"`
+	Host                 string `protobuf:"bytes,8,opt,name=host,proto3" json:"host,omitempty"`
+	Port                 string `protobuf:"bytes,9,opt,name=port,proto3" json:"port,omitempty"`
+	Database             string `protobuf:"bytes,10,opt,name=database,proto3" json:"database,omitempty"`
 	// srv, authentication_database and replica_set are used for MongoDB.
 	// srv is a boolean flag that indicates whether the host is a DNS SRV record.
 	Srv bool `protobuf:"varint,11,opt,name=srv,proto3" json:"srv,omitempty"`
@@ -1799,6 +1805,13 @@ func (x *DataSource) GetSslKey() string {
 		return x.SslKey
 	}
 	return ""
+}
+
+func (x *DataSource) GetVerifyTlsCertificate() bool {
+	if x != nil {
+		return x.VerifyTlsCertificate
+	}
+	return false
 }
 
 func (x *DataSource) GetHost() string {
@@ -2712,7 +2725,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x15AUTH_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05TOKEN\x10\x01\x12\x12\n" +
 	"\x0eVAULT_APP_ROLE\x10\x02B\r\n" +
-	"\vauth_option\"\xd1\x12\n" +
+	"\vauth_option\"\x87\x13\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
@@ -2722,7 +2735,8 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\ause_ssl\x18\x1e \x01(\bR\x06useSsl\x12\x1a\n" +
 	"\x06ssl_ca\x18\x05 \x01(\tB\x03\xe0A\x04R\x05sslCa\x12\x1e\n" +
 	"\bssl_cert\x18\x06 \x01(\tB\x03\xe0A\x04R\asslCert\x12\x1c\n" +
-	"\assl_key\x18\a \x01(\tB\x03\xe0A\x04R\x06sslKey\x12\x12\n" +
+	"\assl_key\x18\a \x01(\tB\x03\xe0A\x04R\x06sslKey\x124\n" +
+	"\x16verify_tls_certificate\x18' \x01(\bR\x14verifyTlsCertificate\x12\x12\n" +
 	"\x04host\x18\b \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\t \x01(\tR\x04port\x12\x1a\n" +
 	"\bdatabase\x18\n" +

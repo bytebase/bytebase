@@ -2402,6 +2402,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | obfuscated_ssl_cert | [string](#string) |  |  |
 | ssl_key | [string](#string) |  |  |
 | obfuscated_ssl_key | [string](#string) |  |  |
+| verify_tls_certificate | [bool](#bool) |  | verify_tls_certificate enables TLS certificate verification for SSL connections. Default is false (no verification) for backward compatibility. Set to true for secure connections (recommended for production). Only set to false for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments). |
 | host | [string](#string) |  |  |
 | port | [string](#string) |  |  |
 | database | [string](#string) |  |  |

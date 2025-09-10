@@ -76,7 +76,7 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
 		dsn, err = getCloudSQLConnection(ctx, connCfg)
 	case storepb.DataSource_AWS_RDS_IAM:
-		dsn, err = getRDSConnection(ctx, connCfg)
+		dsn, err = d.getRDSConnection(ctx, connCfg)
 	default:
 		dsn, err = d.getMySQLConnection(connCfg)
 	}
@@ -138,39 +138,40 @@ func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error)
 	return fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.DataSource.Username, connCfg.Password, protocol, connCfg.DataSource.Host, connCfg.DataSource.Port, connCfg.ConnectionContext.DatabaseName, strings.Join(params, "&")), nil
 }
 
+// getRDSCertPool downloads and returns the RDS CA certificate pool.
 // AWS RDS connection with IAM require TLS connection.
 //
 // refs:
 // https://github.com/aws/aws-sdk-go/issues/1248
 // https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/mysql-ssl-connections.html
-func registerRDSMysqlCerts(ctx context.Context) error {
+func getRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem", nil)
 	if err != nil {
-		return errors.Wrapf(err, "failed to build request for rds cert")
+		return nil, errors.Wrapf(err, "failed to build request for rds cert")
 	}
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	pem, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := resp.Body.Close(); err != nil {
-		return errors.Wrapf(err, "failed to close response")
+		return nil, errors.Wrapf(err, "failed to close response")
 	}
 
 	rootCertPool := x509.NewCertPool()
 	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
-		return err
+		return nil, errors.Errorf("failed to parse RDS CA certificates")
 	}
 
-	return mysql.RegisterTLSConfig("rds", &tls.Config{RootCAs: rootCertPool, InsecureSkipVerify: true})
+	return rootCertPool, nil
 }
 
 // getRDSConnection returns the connection string with IAM for AWS RDS.
@@ -178,7 +179,7 @@ func registerRDSMysqlCerts(ctx context.Context) error {
 // refs:
 // https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.Connecting.Go.html
 // https://repost.aws/knowledge-center/rds-mysql-access-denied
-func getRDSConnection(ctx context.Context, connCfg db.ConnectionConfig) (string, error) {
+func (d *Driver) getRDSConnection(ctx context.Context, connCfg db.ConnectionConfig) (string, error) {
 	dbEndpoint := fmt.Sprintf("%s:%s", connCfg.DataSource.Host, connCfg.DataSource.Port)
 	cfg, err := util.GetAWSConnectionConfig(ctx, connCfg)
 	if err != nil {
@@ -191,13 +192,41 @@ func getRDSConnection(ctx context.Context, connCfg db.ConnectionConfig) (string,
 		return "", errors.Wrap(err, "failed to create authentication token")
 	}
 
-	err = registerRDSMysqlCerts(ctx)
+	// Get RDS CA certificate pool
+	rootCertPool, err := getRDSCertPool(ctx)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to register rds certs")
+		return "", errors.Wrap(err, "failed to get RDS cert pool")
 	}
 
-	return fmt.Sprintf("%s:%s@tcp(%s)/%s?tls=rds&allowCleartextPasswords=true",
-		connCfg.DataSource.Username, authenticationToken, dbEndpoint, connCfg.ConnectionContext.DatabaseName,
+	// Create TLS config with unique name for this connection
+	tlsKey := uuid.NewString()
+
+	var tlsConfig *tls.Config
+	if connCfg.DataSource.GetVerifyTlsCertificate() {
+		// Secure config with certificate verification
+		tlsConfig = &tls.Config{
+			RootCAs:            rootCertPool,
+			InsecureSkipVerify: true, // We use custom verification
+		}
+		tlsConfig.VerifyPeerCertificate = util.CreateCertificateVerifier(rootCertPool)
+	} else {
+		// Backward compatible config without verification
+		tlsConfig = &tls.Config{
+			RootCAs:            rootCertPool,
+			InsecureSkipVerify: true,
+		}
+	}
+
+	// Register the TLS config with unique name
+	if err := mysql.RegisterTLSConfig(tlsKey, tlsConfig); err != nil {
+		return "", errors.Wrap(err, "failed to register RDS TLS config")
+	}
+
+	// Clean up the TLS config after connection
+	d.openCleanUp = append(d.openCleanUp, func() { mysql.DeregisterTLSConfig(tlsKey) })
+
+	return fmt.Sprintf("%s:%s@tcp(%s)/%s?tls=%s&allowCleartextPasswords=true",
+		connCfg.DataSource.Username, authenticationToken, dbEndpoint, connCfg.ConnectionContext.DatabaseName, tlsKey,
 	), nil
 }
 

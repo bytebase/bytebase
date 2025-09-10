@@ -847,6 +847,8 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 			dataSource.WarehouseId = req.Msg.DataSource.WarehouseId
 		case "use_ssl":
 			dataSource.UseSsl = req.Msg.DataSource.UseSsl
+		case "verify_tls_certificate":
+			dataSource.VerifyTlsCertificate = req.Msg.DataSource.VerifyTlsCertificate
 		case "redis_type":
 			dataSource.RedisType = convertV1RedisType(req.Msg.DataSource.RedisType)
 		case "master_name":
@@ -1227,6 +1229,7 @@ func convertDataSources(dataSources []*storepb.DataSource) []*v1pb.DataSource {
 			Region:                    ds.GetRegion(),
 			WarehouseId:               ds.GetWarehouseId(),
 			UseSsl:                    ds.GetUseSsl(),
+			VerifyTlsCertificate:      ds.GetVerifyTlsCertificate(),
 			RedisType:                 convertRedisType(ds.GetRedisType()),
 			MasterName:                ds.GetMasterName(),
 			MasterUsername:            ds.GetMasterUsername(),
@@ -1488,6 +1491,7 @@ func convertV1DataSource(dataSource *v1pb.DataSource) (*storepb.DataSource, erro
 		Region:                    dataSource.Region,
 		WarehouseId:               dataSource.WarehouseId,
 		UseSsl:                    dataSource.UseSsl,
+		VerifyTlsCertificate:      dataSource.VerifyTlsCertificate,
 		RedisType:                 convertV1RedisType(dataSource.RedisType),
 		MasterName:                dataSource.MasterName,
 		MasterUsername:            dataSource.MasterUsername,

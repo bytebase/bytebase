@@ -6939,6 +6939,17 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
                 </tr>
               
                 <tr>
+                  <td>verify_tls_certificate</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>verify_tls_certificate enables TLS certificate verification for SSL connections.
+Default is false (no verification) for backward compatibility.
+Set to true for secure connections (recommended for production).
+Only set to false for development or when certificates cannot be properly
+validated (e.g., self-signed certs, VPN environments). </p></td>
+                </tr>
+              
+                <tr>
                   <td>host</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
