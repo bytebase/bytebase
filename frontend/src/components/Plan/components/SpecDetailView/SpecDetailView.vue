@@ -1,14 +1,16 @@
 <template>
-  <div class="flex-1 flex flex-col">
+  <div class="w-full flex-1 flex flex-col">
     <SpecListSection v-if="shouldShowSpecList" />
-    <div class="w-full flex flex-col gap-3 px-4 divide-y overflow-x-hidden">
+    <div
+      class="w-full flex-1 flex flex-col gap-3 px-4 divide-y overflow-x-auto"
+    >
       <TargetListSection />
       <FailedTaskRunsSection v-if="!isCreating && rollout" />
       <template v-if="!specHasRelease">
         <SQLCheckV1Section v-if="isCreating" />
         <PlanCheckSection v-else />
       </template>
-      <div class="w-full space-y-3 pt-3 overflow-x-hidden">
+      <div class="w-full flex-1 space-y-3 pt-3 overflow-x-auto flex flex-col">
         <StatementSection />
         <Configuration />
       </div>

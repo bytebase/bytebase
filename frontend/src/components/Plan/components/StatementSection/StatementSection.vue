@@ -1,5 +1,8 @@
 <template>
-  <div v-show="viewMode !== 'NONE'" class="flex flex-col gap-y-2">
+  <div
+    v-show="viewMode !== 'NONE'"
+    class="flex-1 max-h-[50vh] flex flex-col gap-y-2"
+  >
     <EditorView v-if="viewMode === 'EDITOR'" :key="editorViewKey" />
     <ReleaseView v-else-if="viewMode === 'RELEASE'" />
   </div>

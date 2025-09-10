@@ -46,7 +46,6 @@ const (
 	scimAPIPrefix    = "/scim"
 	// lspAPI is the API for Bytebase Language Server Protocol.
 	lspAPI                 = "/lsp"
-	maxStacksize           = 1024 * 10240
 	gracefulShutdownPeriod = 10 * time.Second
 )
 
