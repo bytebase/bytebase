@@ -98,7 +98,7 @@ import MarkdownEditor from "@/components/MarkdownEditor";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import HumanizeTs from "@/components/misc/HumanizeTs.vue";
 import { planServiceClientConnect, issueServiceClientConnect } from "@/grpcweb";
-import { useUserStore } from "@/store";
+import { useCurrentUserV1, useUserStore } from "@/store";
 import { useCurrentProjectV1 } from "@/store";
 import { getTimeForPbTimestampProtoEs, type ComposedIssue } from "@/types";
 import { UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
@@ -115,6 +115,7 @@ const props = defineProps<{
   issueComments: DistinctIssueComment[];
 }>();
 
+const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
 const { project } = useCurrentProjectV1();
 
@@ -140,6 +141,10 @@ const description = computed(() => {
 });
 
 const allowEdit = computed(() => {
+  // Always allow if the current user is the creator.
+  if (currentUser.value.name === creator.value?.name) {
+    return true;
+  }
   // Check for plan update permission if we have a plan, otherwise issue update.
   if (props.issue.plan) {
     return hasProjectPermissionV2(project.value, "bb.plans.update");
