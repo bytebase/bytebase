@@ -13,7 +13,7 @@
         }"
       >
         <div
-          v-for="virtualRow in virtualItems"
+          v-for="(virtualRow, i) in virtualItems"
           :key="`row-${offset + virtualRow.index}`"
           class="font-mono mb-5 mx-2"
           :style="{
@@ -33,10 +33,7 @@
             <div
               class="absolute right-2 top-2 z-50 opacity-70 hover:opacity-100"
             >
-              <CopyButton
-                size="small"
-                :content="() => getContent(virtualRow.index)"
-              />
+              <CopyButton size="small" :content="() => getContent(i)" />
             </div>
             <div
               v-for="header in columnHeaders"
@@ -91,7 +88,7 @@
 
 <script setup lang="ts">
 import type { Table } from "@tanstack/vue-table";
-import { useVirtualizer, type VirtualItem } from "@tanstack/vue-virtual";
+import { useVirtualizer } from "@tanstack/vue-virtual";
 import { computed, ref, watch } from "vue";
 import { CopyButton } from "@/components/v2";
 import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
@@ -149,12 +146,12 @@ watch(
 
 const getContent = (index: number): string => {
   const object = columnHeaders.value.reduce(
-    (obj, header) => {
+    (obj, header, j) => {
       if (!header.column.columnDef.header) {
         return obj;
       }
       obj[`${header.column.columnDef.header}`] =
-        cellRefs.value[index * columnHeaders.value.length + header.index]?.plainValue;
+        cellRefs.value[index * columnHeaders.value.length + j]?.plainValue;
       return obj;
     },
     {} as Record<string, any>
