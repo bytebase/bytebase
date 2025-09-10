@@ -184,24 +184,24 @@ func registerRDSMysqlCerts(ctx context.Context) error {
 		RootCAs:            rootCertPool,
 		InsecureSkipVerify: false, // Secure - verifies certificates
 	}
-	
+
 	// Add custom verification function to properly handle intermediate certificates
-	rdVerifyConfig.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+	rdVerifyConfig.VerifyPeerCertificate = func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
 		if len(rawCerts) == 0 {
 			return errors.Errorf("no certificates presented")
 		}
-		
+
 		cert, err := x509.ParseCertificate(rawCerts[0])
 		if err != nil {
 			return err
 		}
-		
+
 		// Verify the certificate chain
 		opts := x509.VerifyOptions{
 			Roots:         rootCertPool,
 			Intermediates: x509.NewCertPool(),
 		}
-		
+
 		// Add any intermediate certificates
 		for i := 1; i < len(rawCerts); i++ {
 			intermediateCert, err := x509.ParseCertificate(rawCerts[i])
@@ -210,11 +210,11 @@ func registerRDSMysqlCerts(ctx context.Context) error {
 			}
 			opts.Intermediates.AddCert(intermediateCert)
 		}
-		
+
 		_, err = cert.Verify(opts)
 		return err
 	}
-	
+
 	if err := mysql.RegisterTLSConfig("rds-verify", rdVerifyConfig); err != nil {
 		return errors.Wrap(err, "failed to register rds-verify TLS config")
 	}

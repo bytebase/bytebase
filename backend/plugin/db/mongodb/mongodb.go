@@ -109,7 +109,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 
 	if d.connCfg.DataSource.GetUseSsl() {
 		mongoshArgs = append(mongoshArgs, "--tls")
-		
+
 		// Only allow invalid hostnames/certificates if certificate verification is disabled
 		if !d.connCfg.DataSource.GetVerifyTlsCertificate() {
 			mongoshArgs = append(mongoshArgs, "--tlsAllowInvalidHostnames")
@@ -283,7 +283,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 
 	if d.connCfg.DataSource.GetUseSsl() {
 		mongoshArgs = append(mongoshArgs, "--tls")
-		
+
 		// Only allow invalid hostnames/certificates if certificate verification is disabled
 		if !d.connCfg.DataSource.GetVerifyTlsCertificate() {
 			mongoshArgs = append(mongoshArgs, "--tlsAllowInvalidHostnames")

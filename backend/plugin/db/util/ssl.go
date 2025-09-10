@@ -17,7 +17,7 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 	}
 
 	cfg := &tls.Config{}
-	
+
 	// Handle client certificates for mutual TLS authentication
 	// Client certificates can be used with or without server verification
 	if err := configureClientCertificates(ds, cfg); err != nil {
@@ -94,7 +94,7 @@ func configureClientCertificates(ds *storepb.DataSource, cfg *tls.Config) error 
 	if (ds.GetSslCert() == "" && ds.GetSslKey() != "") || (ds.GetSslCert() != "" && ds.GetSslKey() == "") {
 		return errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
-	
+
 	// Configure client certificate if both cert and key are provided
 	if ds.GetSslCert() != "" && ds.GetSslKey() != "" {
 		certs, err := tls.X509KeyPair([]byte(ds.GetSslCert()), []byte(ds.GetSslKey()))
@@ -103,7 +103,7 @@ func configureClientCertificates(ds *storepb.DataSource, cfg *tls.Config) error 
 		}
 		cfg.Certificates = []tls.Certificate{certs}
 	}
-	
+
 	return nil
 }
 

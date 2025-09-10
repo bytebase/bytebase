@@ -130,7 +130,7 @@ func openWithBasicAuth(_ context.Context, config db.ConnectionConfig, address st
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get TLS config")
 	}
-	
+
 	// Default to insecure if no SSL is configured
 	if tlsConfig == nil {
 		tlsConfig = &tls.Config{
@@ -141,7 +141,7 @@ func openWithBasicAuth(_ context.Context, config db.ConnectionConfig, address st
 		// Ensure minimum TLS version
 		tlsConfig.MinVersion = tls.VersionTLS12
 	}
-	
+
 	esConfig := elasticsearch.Config{
 		Username:  config.DataSource.Username,
 		Password:  config.Password,
@@ -198,7 +198,7 @@ func openWithOpenSearchClient(ctx context.Context, config db.ConnectionConfig, a
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get TLS config")
 	}
-	
+
 	// Default to insecure if no SSL is configured
 	if tlsConfig == nil {
 		tlsConfig = &tls.Config{
