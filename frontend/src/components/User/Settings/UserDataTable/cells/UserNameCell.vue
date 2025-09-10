@@ -49,6 +49,7 @@
         class="ml-3 text-xs"
       >
         <CopyButton
+          v-if="user.serviceKey"
           quaternary
           size="small"
           :text="false"
@@ -58,7 +59,7 @@
           {{ $t("settings.members.copy-service-key") }}
         </CopyButton>
         <NButton
-          v-if="!user.serviceKey"
+          v-else
           tertiary
           size="small"
           @click.prevent="$emit('reset-service-key', user)"
