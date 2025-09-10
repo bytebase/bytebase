@@ -13,7 +13,7 @@
         }"
       >
         <div
-          v-for="virtualRow in virtualItems"
+          v-for="(virtualRow, i) in virtualItems"
           :key="`row-${offset + virtualRow.index}`"
           class="font-mono mb-5 mx-2"
           :style="{
@@ -27,13 +27,22 @@
             {{ offset + virtualRow.index + 1 }}. row
             ********************************
           </p>
-          <div class="py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-sm">
+          <div
+            class="py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-sm relative"
+          >
+            <div
+              class="absolute right-2 top-2 z-50 opacity-70 hover:opacity-100"
+            >
+              <CopyButton size="small" :content="() => getContent(i)" />
+            </div>
             <div
               v-for="header in columnHeaders"
               :key="`${virtualRow.index}-${header.index}`"
-              class="flex items-center text-gray-500 dark:text-gray-300 text-sm"
+              class="flex items-start text-gray-500 dark:text-gray-300 text-sm"
             >
-              <div class="min-w-[7rem] text-left flex items-center font-medium">
+              <div
+                class="min-w-[7rem] text-left flex items-start font-medium pt-1"
+              >
                 {{ header.column.columnDef.header }}
                 <MaskingReasonPopover
                   v-if="getMaskingReason && getMaskingReason(header.index)"
@@ -48,6 +57,7 @@
               </div>
               <div class="flex-1">
                 <TableCell
+                  ref="cellRefs"
                   :table="table"
                   :value="
                     rows[virtualRow.index]
@@ -59,6 +69,7 @@
                   :row-index="offset + virtualRow.index"
                   :col-index="header.index"
                   :column-type="getColumnType(header)"
+                  :allow-select="true"
                 />
               </div>
             </div>
@@ -79,6 +90,7 @@
 import type { Table } from "@tanstack/vue-table";
 import { useVirtualizer } from "@tanstack/vue-virtual";
 import { computed, ref, watch } from "vue";
+import { CopyButton } from "@/components/v2";
 import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import TableCell from "./DataTable/TableCell.vue";
 import MaskingReasonPopover from "./DataTable/common/MaskingReasonPopover.vue";
@@ -96,6 +108,7 @@ const props = defineProps<{
 
 const { keyword } = useSQLResultViewContext();
 const containerRef = ref<HTMLDivElement>();
+const cellRefs = ref<InstanceType<typeof TableCell>[]>([]);
 
 const rows = computed(() => props.table.getRowModel().rows);
 
@@ -130,4 +143,20 @@ watch(
     virtualizer.value.scrollToOffset(0);
   }
 );
+
+const getContent = (index: number): string => {
+  const object = columnHeaders.value.reduce(
+    (obj, header, j) => {
+      if (!header.column.columnDef.header) {
+        return obj;
+      }
+      obj[`${header.column.columnDef.header}`] =
+        cellRefs.value[index * columnHeaders.value.length + j]?.plainValue;
+      return obj;
+    },
+    {} as Record<string, any>
+  );
+
+  return JSON.stringify(object, null, 4);
+};
 </script>
