@@ -170,7 +170,11 @@ func registerRDSMysqlCerts(ctx context.Context) error {
 		return errors.Errorf("failed to parse RDS CA certificates")
 	}
 
-	// Register both secure and insecure configs for backward compatibility
+	// We register both configs upfront for simplicity and performance:
+	// - Registering TLS configs is a one-time operation with minimal overhead
+	// - This avoids conditional logic in getRDSConnection()
+	// - Both configs use the same CA bundle, just different verification settings
+	//
 	// "rds" - maintains backward compatibility (no verification)
 	if err := mysql.RegisterTLSConfig("rds", &tls.Config{
 		RootCAs:            rootCertPool,
@@ -185,35 +189,9 @@ func registerRDSMysqlCerts(ctx context.Context) error {
 		InsecureSkipVerify: false, // Secure - verifies certificates
 	}
 
-	// Add custom verification function to properly handle intermediate certificates
-	rdVerifyConfig.VerifyPeerCertificate = func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
-		if len(rawCerts) == 0 {
-			return errors.Errorf("no certificates presented")
-		}
-
-		cert, err := x509.ParseCertificate(rawCerts[0])
-		if err != nil {
-			return err
-		}
-
-		// Verify the certificate chain
-		opts := x509.VerifyOptions{
-			Roots:         rootCertPool,
-			Intermediates: x509.NewCertPool(),
-		}
-
-		// Add any intermediate certificates
-		for i := 1; i < len(rawCerts); i++ {
-			intermediateCert, err := x509.ParseCertificate(rawCerts[i])
-			if err != nil {
-				continue
-			}
-			opts.Intermediates.AddCert(intermediateCert)
-		}
-
-		_, err = cert.Verify(opts)
-		return err
-	}
+	// Use the same verification logic as regular SSL connections
+	rdVerifyConfig.InsecureSkipVerify = true
+	rdVerifyConfig.VerifyPeerCertificate = util.CreateCertificateVerifier(rootCertPool)
 
 	if err := mysql.RegisterTLSConfig("rds-verify", rdVerifyConfig); err != nil {
 		return errors.Wrap(err, "failed to register rds-verify TLS config")

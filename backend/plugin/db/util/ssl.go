@@ -52,11 +52,19 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 
 	cfg.RootCAs = rootCertPool
 
-	// Use custom verification to properly handle intermediate certificates
-	// This is necessary because some servers don't send intermediate certificates
-	// in the correct order, which can cause standard Go TLS verification to fail
-	cfg.InsecureSkipVerify = true // Bypass default verification to use our custom logic
-	cfg.VerifyPeerCertificate = func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
+	// Expected behavior:
+	// - InsecureSkipVerify = true disables Go's default verification
+	// - VerifyPeerCertificate implements custom verification that handles intermediate certificates
+	// - This pattern allows proper verification even when servers send certificates out of order
+	cfg.InsecureSkipVerify = true
+	cfg.VerifyPeerCertificate = CreateCertificateVerifier(rootCertPool)
+	return cfg, nil
+}
+
+// CreateCertificateVerifier returns a verification function that properly handles intermediate certificates.
+// This is exported for use by database drivers that need custom certificate verification.
+func CreateCertificateVerifier(rootCertPool *x509.CertPool) func([][]byte, [][]*x509.Certificate) error {
+	return func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
 		if len(rawCerts) == 0 {
 			return errors.Errorf("empty certificate to verify")
 		}
@@ -85,7 +93,6 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 		}
 		return nil
 	}
-	return cfg, nil
 }
 
 // configureClientCertificates sets up client certificates for mutual TLS authentication
