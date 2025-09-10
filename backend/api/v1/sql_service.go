@@ -1031,7 +1031,12 @@ func (s *SQLService) createQueryHistory(ctx context.Context, database *store.Dat
 	}
 
 	if _, err := s.store.CreateQueryHistory(ctx, qh); err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Errorf("Failed to create export history with error: %v", err))
+		slog.Error(
+			"failed to create query history",
+			log.BBError(err),
+			slog.String("instance", database.InstanceID),
+			slog.String("database", database.DatabaseName),
+			slog.String("project", database.ProjectID))
 	}
 	return nil
 }
