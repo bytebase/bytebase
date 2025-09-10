@@ -267,7 +267,7 @@ const isFirstUser = computed(() => {
   return (
     actuatorStore.getActiveUserCount({
       includeBot: false,
-      includeServieAccount: false,
+      includeServiceAccount: false,
     }) === 1
   );
 });
