@@ -196,7 +196,7 @@ func postDirectMessage(webhookCtx webhook.Context) bool {
 					return errors.Wrapf(err, "failed to lookup user")
 				}
 				if userID == "" {
-					return nil
+					return errors.Errorf("failed to find user id for %v", u.Email)
 				}
 				channelID, err := p.openConversation(ctx, userID)
 				if err != nil {
