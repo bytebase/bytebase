@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-2">
+  <div class="flex-1 flex flex-col gap-y-2">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-x-4">
         <div class="flex items-center gap-x-1 text-sm">
@@ -93,10 +93,10 @@
       </template>
     </BBAttention>
 
-    <div class="relative">
+    <div class="relative flex-1">
       <MonacoEditor
         ref="monacoEditorRef"
-        class="w-full h-auto max-h-[240px] min-h-[120px] border rounded-[3px]"
+        class="w-full h-full min-h-[200px] border rounded-[3px]"
         :filename="filename"
         :content="state.statement"
         :language="language"
@@ -104,7 +104,7 @@
         :readonly="isEditorReadonly"
         :dialect="dialect"
         :advices="isEditorReadonly || isCreating ? markers : []"
-        :auto-height="{ min: 160, max: 240 }"
+        :auto-height="false"
         :auto-complete-context="{
           instance: database.instance,
           database: database.name,
