@@ -138,10 +138,7 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 		}
 		result, duration, queryErr := executeWithTimeout(ctx, s.store, s.licenseService, driver, conn, request.Statement, queryContext)
 
-		if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, request.Statement, user.ID, duration, queryErr); err != nil {
-			slog.Error("failed to post admin execute activity", log.BBError(err))
-		}
-
+		s.createQueryHistory(database, store.QueryHistoryTypeQuery, request.Statement, user.ID, duration, queryErr)
 		response := &v1pb.AdminExecuteResponse{}
 		if queryErr != nil {
 			response.Results = []*v1pb.QueryResult{
@@ -209,6 +206,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		defer conn.Close()
 	}
 
+	startTime := time.Now()
 	queryRestriction := getMaximumSQLResultLimit(ctx, s.store, s.licenseService, request.Limit)
 	queryContext := db.QueryContext{
 		Explain:              request.Explain,
@@ -236,11 +234,15 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		s.schemaSyncer,
 		storepb.MaskingExceptionPolicy_MaskingException_QUERY,
 	)
+	slog.Debug("query finished",
+		log.BBError(queryErr),
+		slog.Duration("duration", time.Since(startTime)),
+		slog.String("instance", instance.ResourceID),
+		slog.String("database", database.DatabaseName),
+	)
 
 	// Update activity.
-	if err = s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, statement, user.ID, duration, queryErr); err != nil {
-		return nil, err
-	}
+	s.createQueryHistory(database, store.QueryHistoryTypeQuery, statement, user.ID, duration, queryErr)
 	if queryErr != nil {
 		code := connect.CodeInternal
 		// If queryErr is already a connect.Error, preserve its code
@@ -272,6 +274,12 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		checkErr := s.accessCheck(ctx, instance, database, user, spans, int(result.RowsCount), request.Explain, true /* isExport */)
 		result.AllowExport = checkErr == nil
 	}
+
+	slog.Debug("request finished",
+		slog.Duration("duration", time.Since(startTime)),
+		slog.String("instance", instance.ResourceID),
+		slog.String("database", database.DatabaseName),
+	)
 
 	response := &v1pb.QueryResponse{
 		Results: results,
@@ -471,6 +479,7 @@ func queryRetry(
 			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Limit, queryContext.Explain, false); err != nil {
 				return nil, nil, time.Duration(0), err
 			}
+			slog.Debug("optional access check", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 		}
 		if licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
 			masker := NewQueryResultMasker(stores)
@@ -478,13 +487,16 @@ func queryRetry(
 			if err != nil {
 				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 			}
+			slog.Debug("extract sensitive predicate columns", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 		}
 	}
 
+	slog.Debug("start execute with timeout", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName), slog.String("statement", statement))
 	results, duration, queryErr := executeWithTimeout(ctx, stores, licenseService, driver, conn, statement, queryContext)
 	if queryErr != nil {
 		return nil, nil, duration, queryErr
 	}
+	slog.Debug("execute success", slog.String("instance", instance.ResourceID), slog.String("statement", statement), slog.Duration("duration", duration))
 	if queryContext.Explain {
 		return results, nil, duration, nil
 	}
@@ -503,6 +515,7 @@ func queryRetry(
 
 	// Sync database metadata.
 	for accessDatabaseName := range syncDatabaseMap {
+		slog.Debug("sync database metadata", slog.String("instance", instance.ResourceID), slog.String("database", accessDatabaseName))
 		d, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &accessDatabaseName})
 		if err != nil {
 			return nil, nil, duration, err
@@ -514,6 +527,7 @@ func queryRetry(
 
 	// Retry getting query span.
 	if len(syncDatabaseMap) > 0 {
+		slog.Debug("retry query after sync metadata", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 		spans, err = parserbase.GetQuerySpan(
 			ctx,
 			parserbase.GetQuerySpanContext{
@@ -557,6 +571,7 @@ func queryRetry(
 	}
 
 	if licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil && !queryContext.Explain {
+		slog.Debug("mask query results", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 		// TODO(zp): Refactor Document Database and RDBMS to use the same masking logic.
 		if instance.Metadata.GetEngine() == storepb.Engine_COSMOSDB {
 			if len(spans) != 1 {
@@ -688,6 +703,7 @@ func executeWithTimeout(ctx context.Context, stores *store.Store, licenseService
 		// Override the timeout if the query data policy has a smaller timeout.
 		if queryDataPolicy.Timeout.GetSeconds() > 0 || queryDataPolicy.Timeout.GetNanos() > 0 {
 			timeout = queryDataPolicy.Timeout.AsDuration()
+			slog.Debug("create query context with timeout", slog.Duration("timeout", timeout))
 			newCtx, cancelCtx := context.WithTimeout(ctx, timeout)
 			defer cancelCtx()
 			queryCtx = newCtx
@@ -753,9 +769,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	}
 	bytes, duration, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, s.accessCheck, s.schemaSyncer, dataSource)
 
-	if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeExport, statement, user.ID, duration, exportErr); err != nil {
-		return nil, err
-	}
+	s.createQueryHistory(database, store.QueryHistoryTypeExport, statement, user.ID, duration, exportErr)
 
 	if exportErr != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.New(exportErr.Error()))
@@ -1013,7 +1027,7 @@ func timeToMsDosTime(t time.Time) (uint16, uint16) {
 	return fDate, fTime
 }
 
-func (s *SQLService) createQueryHistory(ctx context.Context, database *store.DatabaseMessage, queryType store.QueryHistoryType, statement string, userUID int, duration time.Duration, queryErr error) error {
+func (s *SQLService) createQueryHistory(database *store.DatabaseMessage, queryType store.QueryHistoryType, statement string, userUID int, duration time.Duration, queryErr error) {
 	qh := &store.QueryHistoryMessage{
 		CreatorUID: userUID,
 		ProjectID:  database.ProjectID,
@@ -1030,10 +1044,24 @@ func (s *SQLService) createQueryHistory(ctx context.Context, database *store.Dat
 		qh.Payload.Error = &queryErrString
 	}
 
-	if _, err := s.store.CreateQueryHistory(ctx, qh); err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Errorf("Failed to create export history with error: %v", err))
+	// Use a fresh context with timeout for creating query history
+	// to avoid being affected by request cancellation
+	historyCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if _, err := s.store.CreateQueryHistory(historyCtx, qh); err != nil {
+		queryErr := ""
+		if v := qh.Payload.Error; v != nil {
+			queryErr = *v
+		}
+		slog.Error(
+			"failed to create query history",
+			log.BBError(err),
+			slog.String("instance", database.InstanceID),
+			slog.String("database", database.DatabaseName),
+			slog.String("project", database.ProjectID),
+			slog.String("query_error", queryErr),
+		)
 	}
-	return nil
 }
 
 func getListQueryHistoryFilter(filter string) (*store.ListResourceFilter, error) {
