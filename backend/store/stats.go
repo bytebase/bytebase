@@ -83,9 +83,9 @@ func (s *Store) CountActiveUsers(ctx context.Context) (int, error) {
 		SELECT
 			count(DISTINCT principal.id)
 		FROM principal
-		WHERE principal.deleted = $1 AND (principal.type = $2 OR principal.type = $3)`
+		WHERE principal.deleted = $1 AND principal.type = $2`
 	var count int
-	if err := tx.QueryRowContext(ctx, query, false, storepb.PrincipalType_END_USER.String(), storepb.PrincipalType_SERVICE_ACCOUNT.String()).Scan(&count); err != nil {
+	if err := tx.QueryRowContext(ctx, query, false, storepb.PrincipalType_END_USER.String()).Scan(&count); err != nil {
 		if err == sql.ErrNoRows {
 			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
 		}

@@ -54,7 +54,12 @@ const hideQuickstart = computed(() => {
     return true;
   }
   // Hide quickstart if there are more than 1 active users.
-  return actuatorStore.getActiveUserCount({ includeBot: false }) > 1;
+  return (
+    actuatorStore.getActiveUserCount({
+      includeBot: false,
+      includeServiceAccount: false,
+    }) > 1
+  );
 });
 const hideHelp = useAppFeature("bb.feature.hide-help");
 
