@@ -91,8 +91,6 @@ const databasesNotMeetingRequirements = computed(() => {
   return databases.value.filter((db) => {
     // Check if database doesn't have backup available or doesn't allow ghost
     if (!db.backupAvailable || !allowGhostForDatabase(db)) return true;
-    // Check if instance doesn't have activation
-    if (!db.instanceResource.activation) return true;
     return false;
   });
 });
