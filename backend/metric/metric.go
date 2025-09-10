@@ -15,6 +15,8 @@ const (
 	ProjectCountMetricName metric.Name = "bb.project.count"
 	// UserCountMetricName is the metric name for user count.
 	UserCountMetricName metric.Name = "bb.user.count"
+	// ServiceAccountCountMetricName is the metric name for service account count.
+	ServiceAccountCountMetricName metric.Name = "bb.service-account.count"
 	// OpenAPIMetricName is the metric name for OpenAPI.
 	OpenAPIMetricName metric.Name = "bb.api.call"
 	// PrincipalRegistrationMetricName is the metric name for the principal registration event.
