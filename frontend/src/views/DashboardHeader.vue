@@ -22,7 +22,7 @@
 
       <router-link
         :to="sqlEditorLink"
-        class="flex flex-row justify-center items-center"
+        class="flex"
         exact-active-class=""
         target="_blank"
       >
@@ -30,23 +30,20 @@
           <template #icon>
             <SquareTerminalIcon class="w-4 h-auto" />
           </template>
-          <span class="whitespace-nowrap">{{ $t("sql-editor.self") }}</span>
+          <span v-if="windowWidth >= 640" class="whitespace-nowrap">{{
+            $t("sql-editor.self")
+          }}</span>
         </NButton>
       </router-link>
 
-      <NTooltip :disabled="windowWidth >= 640">
-        <template #trigger>
-          <router-link :to="myIssueLink" class="flex">
-            <NButton size="small" @click="goToMyIssues">
-              <template #icon>
-                <CircleDotIcon class="w-4" />
-              </template>
-              <span class="hidden sm:block">{{ $t("issue.my-issues") }}</span>
-            </NButton>
-          </router-link>
-        </template>
-        {{ $t("issue.my-issues") }}
-      </NTooltip>
+      <router-link :to="myIssueLink" class="flex">
+        <NButton size="small" @click="goToMyIssues">
+          <template #icon>
+            <CircleDotIcon class="w-4" />
+          </template>
+          <span v-if="windowWidth >= 640">{{ $t("issue.my-issues") }}</span>
+        </NButton>
+      </router-link>
 
       <ProfileBrandingLogo>
         <ProfileDropdown :link="true" />
@@ -68,7 +65,7 @@ import {
   SquareTerminalIcon,
   MessagesSquareIcon,
 } from "lucide-vue-next";
-import { NButton, NTooltip } from "naive-ui";
+import { NButton } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive } from "vue";
