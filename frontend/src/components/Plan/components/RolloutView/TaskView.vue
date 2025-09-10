@@ -2,13 +2,15 @@
   <div v-if="task" class="w-full h-full flex flex-col gap-y-4 p-4">
     <!-- Task Basic Info -->
     <div class="w-full flex flex-col gap-y-3">
-      <div class="flex flex-row items-center justify-between">
-        <div class="flex flex-row items-center gap-x-3">
+      <div
+        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+      >
+        <div class="flex flex-row items-center gap-x-3 flex-wrap">
           <TaskStatus :size="'large'" :status="task.status" />
-          <div class="flex flex-row items-center text-xl">
+          <div class="flex flex-row items-center text-xl min-w-0">
             <DatabaseDisplay :database="database.name" :size="'large'" />
           </div>
-          <div class="flex flex-row gap-x-2">
+          <div class="flex flex-row gap-x-2 flex-wrap">
             <NTag round>
               {{ semanticTaskType(task.type) }}
             </NTag>
@@ -43,7 +45,7 @@
           </div>
         </div>
 
-        <div class="flex justify-end">
+        <div class="flex justify-start sm:justify-end">
           <!-- Task Status Actions -->
           <TaskStatusActions
             :task="task"
