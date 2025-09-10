@@ -153,10 +153,10 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
   actions: {
     getActiveUserCount({
       includeBot,
-      includeServieAccount,
+      includeServiceAccount,
     }: {
       includeBot: boolean;
-      includeServieAccount: boolean;
+      includeServiceAccount: boolean;
     }) {
       return (this.serverInfo?.userStats ?? []).reduce((count, stat) => {
         if (stat.state !== State.ACTIVE) {
@@ -166,7 +166,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
           return count;
         }
         if (
-          !includeServieAccount &&
+          !includeServiceAccount &&
           stat.userType === UserType.SERVICE_ACCOUNT
         ) {
           return count;
