@@ -447,7 +447,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
 
   watch(
     currentTabId,
-    (_newId, _oldId) => {
+    (tabId) => {
       isSwitchingTab.value = true;
       nextTick(() => {
         isSwitchingTab.value = false;
@@ -460,26 +460,33 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       }
 
       // Watch only the current active tab
-      const activeTab = currentTab.value;
-      if (activeTab) {
+      if (tabId) {
         currentWatchedTabStop = watchThrottled(
           () => {
+            // Get the tab from the reactive map each time
+            const activeTab = tabsById.get(tabId);
+            if (!activeTab) return null;
             return {
               persistent: pick(
                 activeTab,
                 ...PERSISTENT_TAB_FIELDS
               ) as PersistentTab,
-              extended: pick(activeTab, EXTENDED_TAB_FIELDS) as ExtendedTab,
+              extended: pick(activeTab, ...EXTENDED_TAB_FIELDS) as ExtendedTab,
             };
           },
-          ({ persistent, extended }) => {
+          (value) => {
+            if (!value) return;
+            const { persistent, extended } = value;
             getStorage().save<PersistentTab>(
               keyForTab(persistent.id),
               persistent
             );
-            saveExtendedTab(activeTab, extended);
+            const activeTab = tabsById.get(tabId);
+            if (activeTab) {
+              saveExtendedTab(activeTab, extended);
+            }
           },
-          { deep: true, immediate: true, throttle: 500, trailing: true }
+          { deep: true, immediate: true, throttle: 300, trailing: true }
         );
       }
     },

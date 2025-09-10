@@ -2,13 +2,15 @@
   <div class="flat-table-list h-full flex flex-col">
     <!-- Virtual List -->
     <NVirtualList
-      v-if="filteredTables.length > 0"
-      :items="filteredTables"
+      v-if="pagedTables.length > 0"
+      :items="pagedTables"
       :item-size="28"
       :item-resizable="false"
       :items-style="{ paddingTop: '4px', paddingBottom: '4px' }"
     >
-      <template #default="{ item }: { item: FlatTableItem }">
+      <template
+        #default="{ item, index }: { item: FlatTableItem; index: number }"
+      >
         <div>
           <div
             class="table-item px-2 py-1 hover:bg-control-bg-hover cursor-pointer flex items-center justify-between text-sm"
@@ -104,12 +106,25 @@
               </div>
             </div>
           </div>
+
+          <NButton
+            v-if="
+              index === pagedTables.length - 1 &&
+              (pageIndex + 1) * PAGE_SIZE < filteredTables.length
+            "
+            size="tiny"
+            quaternary
+            class="!w-full"
+            @click="() => pageIndex++"
+          >
+            {{ $t("common.load-more") }}
+          </NButton>
         </div>
       </template>
     </NVirtualList>
 
     <NEmpty
-      v-else
+      v-if="filteredTables.length === 0"
       class="mt-16"
       :description="search ? 'No tables found' : 'No tables in this database'"
     />
@@ -134,6 +149,8 @@ interface FlatTableItem {
   metadata: TableMetadata;
 }
 
+const PAGE_SIZE = 500;
+
 const props = defineProps<{
   metadata: DatabaseMetadata;
   search?: string;
@@ -156,40 +173,34 @@ const {
 const expandedTables = ref(new Set<string>());
 // Track selected table for flat list
 const selectedTableKey = ref<string>();
+const pageIndex = ref(0);
 
-// Flatten all tables into a single array
-const allTables = computed(() => {
+// Flatten and filter all tables into a single array
+const filteredTables = computed(() => {
   const tables: FlatTableItem[] = [];
+  const pattern = props.search?.trim().toLowerCase();
 
   if (!props.metadata?.schemas) return tables;
 
   for (const schema of props.metadata.schemas) {
     for (const table of schema.tables || []) {
-      tables.push({
+      const item = {
         key: `${schema.name}/${table.name}`,
         schema: schema.name,
         metadata: table,
-      });
+      };
+      if (!pattern || item.key.toLowerCase().includes(pattern)) {
+        tables.push(item);
+      }
     }
   }
 
   return tables;
 });
 
-// Filter tables based on search
-const filteredTables = computed(() => {
-  const pattern = props.search?.toLowerCase();
-
-  if (!pattern) {
-    return allTables.value;
-  }
-
-  return allTables.value.filter((item) => {
-    // Search in both schema and table names
-    const fullName = `${item.schema}.${item.metadata.name}`.toLowerCase();
-    return fullName.includes(pattern);
-  });
-});
+const pagedTables = computed(() =>
+  filteredTables.value.slice(0, (pageIndex.value + 1) * PAGE_SIZE)
+);
 
 const isSelected = (item: FlatTableItem) => {
   return selectedTableKey.value === item.key;
@@ -251,11 +262,13 @@ const handleMouseLeave = () => {
 
 // Focus search box on mount
 watch(
-  () => props.metadata,
+  [() => props.metadata, () => props.search],
   () => {
     // Reset search when metadata changes
+    pageIndex.value = 0;
     expandedTables.value.clear();
-  }
+  },
+  { immediate: true }
 );
 </script>
 
