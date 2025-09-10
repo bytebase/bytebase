@@ -17,31 +17,33 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 	}
 
 	cfg := &tls.Config{}
-	// Handle verification option - default false for backward compatibility
+	
+	// Handle client certificates for mutual TLS authentication
+	// Client certificates can be used with or without server verification
+	if err := configureClientCertificates(ds, cfg); err != nil {
+		return nil, err
+	}
+
+	// Handle server certificate verification
 	if !ds.GetVerifyTlsCertificate() {
 		// Certificate verification is disabled (default for backward compatibility)
-		// This accepts any certificate but still uses encryption
+		// This accepts any certificate presented by the server but still uses encryption
 		cfg.InsecureSkipVerify = true
-		// Still handle client certificates if provided (for authentication, not verification)
-		if ds.GetSslCert() != "" && ds.GetSslKey() != "" {
-			certs, err := tls.X509KeyPair([]byte(ds.GetSslCert()), []byte(ds.GetSslKey()))
-			if err != nil {
-				return nil, err
-			}
-			cfg.Certificates = []tls.Certificate{certs}
-		}
 		return cfg, nil
 	}
 
-	// Normal secure path: set up certificate verification
+	// Server certificate verification is enabled
+	// Set up the root CA pool for verifying the server's certificate
 	var rootCertPool *x509.CertPool
 	if ds.GetSslCa() == "" {
+		// No custom CA provided, use system's default trusted CAs
 		p, err := x509.SystemCertPool()
 		if err != nil {
 			return nil, err
 		}
 		rootCertPool = p
 	} else {
+		// Use the provided CA certificate
 		rootCertPool = x509.NewCertPool()
 		if ok := rootCertPool.AppendCertsFromPEM([]byte(ds.GetSslCa())); !ok {
 			return nil, errors.Errorf("rootCertPool.AppendCertsFromPEM() failed to append server CA pem")
@@ -50,22 +52,10 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 
 	cfg.RootCAs = rootCertPool
 
-	if (ds.GetSslCert() == "" && ds.GetSslKey() != "") || (ds.GetSslCert() != "" && ds.GetSslKey() == "") {
-		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
-	}
-	if ds.GetSslCert() != "" && ds.GetSslKey() != "" {
-		var clientCert []tls.Certificate
-		certs, err := tls.X509KeyPair([]byte(ds.GetSslCert()), []byte(ds.GetSslKey()))
-		if err != nil {
-			return nil, err
-		}
-		clientCert = append(clientCert, certs)
-
-		cfg.Certificates = clientCert
-	}
-
-	// Use custom verification for proper certificate chain handling
-	cfg.InsecureSkipVerify = true // Only to use our custom verification below
+	// Use custom verification to properly handle intermediate certificates
+	// This is necessary because some servers don't send intermediate certificates
+	// in the correct order, which can cause standard Go TLS verification to fail
+	cfg.InsecureSkipVerify = true // Bypass default verification to use our custom logic
 	cfg.VerifyPeerCertificate = func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
 		if len(rawCerts) == 0 {
 			return errors.Errorf("empty certificate to verify")
@@ -75,7 +65,7 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 			return err
 		}
 
-		// Add the intermediates.
+		// Build intermediate certificate pool from the certificate chain
 		intermediatePool := x509.NewCertPool()
 		for _, intermediate := range rawCerts[1:] {
 			cert, err := x509.ParseCertificate(intermediate)
@@ -85,6 +75,7 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 			intermediatePool.AddCert(cert)
 		}
 
+		// Verify the certificate chain
 		opts := x509.VerifyOptions{
 			Roots:         rootCertPool,
 			Intermediates: intermediatePool,
@@ -95,6 +86,25 @@ func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
 		return nil
 	}
 	return cfg, nil
+}
+
+// configureClientCertificates sets up client certificates for mutual TLS authentication
+func configureClientCertificates(ds *storepb.DataSource, cfg *tls.Config) error {
+	// Validate that both cert and key are provided together
+	if (ds.GetSslCert() == "" && ds.GetSslKey() != "") || (ds.GetSslCert() != "" && ds.GetSslKey() == "") {
+		return errors.Errorf("ssl-cert and ssl-key must be both set or unset")
+	}
+	
+	// Configure client certificate if both cert and key are provided
+	if ds.GetSslCert() != "" && ds.GetSslKey() != "" {
+		certs, err := tls.X509KeyPair([]byte(ds.GetSslCert()), []byte(ds.GetSslKey()))
+		if err != nil {
+			return err
+		}
+		cfg.Certificates = []tls.Certificate{certs}
+	}
+	
+	return nil
 }
 
 // SSLMode is the PGSSLMode type.

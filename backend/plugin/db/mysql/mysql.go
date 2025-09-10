@@ -64,13 +64,6 @@ func newDriver() db.Driver {
 
 // Open opens a MySQL driver.
 func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
-	slog.Debug("MySQL: Opening connection",
-		slog.String("host", connCfg.DataSource.Host),
-		slog.String("port", connCfg.DataSource.Port),
-		slog.String("authType", connCfg.DataSource.GetAuthenticationType().String()),
-		slog.Bool("useSSL", connCfg.DataSource.GetUseSsl()),
-		slog.Bool("verifyTlsCertificate", connCfg.DataSource.GetVerifyTlsCertificate()))
-	
 	defer func() {
 		for _, f := range d.openCleanUp {
 			f()
@@ -135,10 +128,6 @@ func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error)
 	}
 	tlsKey := uuid.NewString()
 	if tlscfg != nil {
-		slog.Debug("MySQL: Registering TLS config",
-			slog.Bool("useSSL", connCfg.DataSource.GetUseSsl()),
-			slog.Bool("verifyTlsCertificate", connCfg.DataSource.GetVerifyTlsCertificate()),
-			slog.Bool("insecureSkipVerify", tlscfg.InsecureSkipVerify))
 		if err := mysql.RegisterTLSConfig(tlsKey, tlscfg); err != nil {
 			return "", errors.Wrap(err, "sql: failed to register tls config")
 		}
@@ -155,7 +144,6 @@ func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error)
 // https://github.com/aws/aws-sdk-go/issues/1248
 // https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/mysql-ssl-connections.html
 func registerRDSMysqlCerts(ctx context.Context) error {
-	slog.Debug("RDS MySQL: Downloading RDS CA bundle")
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem", nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to build request for rds cert")
@@ -172,7 +160,6 @@ func registerRDSMysqlCerts(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	slog.Debug("RDS MySQL: Downloaded RDS CA bundle", slog.Int("size", len(pem)))
 
 	if err := resp.Body.Close(); err != nil {
 		return errors.Wrapf(err, "failed to close response")
@@ -180,12 +167,8 @@ func registerRDSMysqlCerts(ctx context.Context) error {
 
 	rootCertPool := x509.NewCertPool()
 	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
-		slog.Error("RDS MySQL: Failed to parse RDS CA certificates")
 		return errors.Errorf("failed to parse RDS CA certificates")
 	}
-	
-	// Count how many certificates were added
-	slog.Debug("RDS MySQL: Successfully parsed RDS CA certificates")
 
 	// Register both secure and insecure configs for backward compatibility
 	// "rds" - maintains backward compatibility (no verification)
@@ -195,7 +178,6 @@ func registerRDSMysqlCerts(ctx context.Context) error {
 	}); err != nil {
 		return errors.Wrap(err, "failed to register rds TLS config")
 	}
-	slog.Debug("RDS MySQL: Registered 'rds' TLS config (insecure, backward compatible)")
 
 	// "rds-verify" - new secure config that verifies certificates
 	rdVerifyConfig := &tls.Config{
@@ -203,24 +185,16 @@ func registerRDSMysqlCerts(ctx context.Context) error {
 		InsecureSkipVerify: false, // Secure - verifies certificates
 	}
 	
-	// Add custom verification function to log what's happening
+	// Add custom verification function to properly handle intermediate certificates
 	rdVerifyConfig.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 		if len(rawCerts) == 0 {
-			slog.Error("RDS MySQL: No certificates presented by server")
 			return errors.Errorf("no certificates presented")
 		}
 		
 		cert, err := x509.ParseCertificate(rawCerts[0])
 		if err != nil {
-			slog.Error("RDS MySQL: Failed to parse server certificate", slog.String("error", err.Error()))
 			return err
 		}
-		
-		slog.Debug("RDS MySQL: Server certificate details",
-			slog.String("subject", cert.Subject.String()),
-			slog.String("issuer", cert.Issuer.String()),
-			slog.Any("dnsNames", cert.DNSNames),
-			slog.Any("ipAddresses", cert.IPAddresses))
 		
 		// Verify the certificate chain
 		opts := x509.VerifyOptions{
@@ -232,35 +206,18 @@ func registerRDSMysqlCerts(ctx context.Context) error {
 		for i := 1; i < len(rawCerts); i++ {
 			intermediateCert, err := x509.ParseCertificate(rawCerts[i])
 			if err != nil {
-				slog.Warn("RDS MySQL: Failed to parse intermediate certificate", 
-					slog.Int("index", i),
-					slog.String("error", err.Error()))
 				continue
 			}
 			opts.Intermediates.AddCert(intermediateCert)
-			slog.Debug("RDS MySQL: Added intermediate certificate",
-				slog.String("subject", intermediateCert.Subject.String()))
 		}
 		
-		chains, err := cert.Verify(opts)
-		if err != nil {
-			slog.Error("RDS MySQL: Certificate verification failed",
-				slog.String("error", err.Error()),
-				slog.String("subject", cert.Subject.String()),
-				slog.String("issuer", cert.Issuer.String()))
-			return err
-		}
-		
-		slog.Debug("RDS MySQL: Certificate verified successfully",
-			slog.Int("chainCount", len(chains)))
-		
-		return nil
+		_, err = cert.Verify(opts)
+		return err
 	}
 	
 	if err := mysql.RegisterTLSConfig("rds-verify", rdVerifyConfig); err != nil {
 		return errors.Wrap(err, "failed to register rds-verify TLS config")
 	}
-	slog.Debug("RDS MySQL: Registered 'rds-verify' TLS config (secure with verification)")
 
 	return nil
 }
@@ -293,13 +250,6 @@ func getRDSConnection(ctx context.Context, connCfg db.ConnectionConfig) (string,
 	tlsConfig := "rds"
 	if connCfg.DataSource.GetVerifyTlsCertificate() {
 		tlsConfig = "rds-verify"
-		slog.Debug("RDS MySQL: Using secure TLS config with certificate verification", 
-			slog.String("endpoint", dbEndpoint),
-			slog.String("tlsConfig", tlsConfig))
-	} else {
-		slog.Debug("RDS MySQL: Using insecure TLS config (backward compatible)", 
-			slog.String("endpoint", dbEndpoint),
-			slog.String("tlsConfig", tlsConfig))
 	}
 
 	return fmt.Sprintf("%s:%s@tcp(%s)/%s?tls=%s&allowCleartextPasswords=true",
