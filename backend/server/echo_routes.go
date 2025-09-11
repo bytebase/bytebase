@@ -13,6 +13,7 @@ import (
 
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/lsp"
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 )
@@ -25,15 +26,17 @@ func configureEchoRouters(
 ) {
 	e.Use(recoverMiddleware)
 
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOriginFunc: func(string) (bool, error) {
-			return true, nil
-		},
-		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch, http.MethodOptions},
-		AllowHeaders:     connectcors.AllowedHeaders(),
-		ExposeHeaders:    connectcors.ExposedHeaders(),
-		AllowCredentials: true,
-	}))
+	if profile.Mode == common.ReleaseModeDev {
+		e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+			AllowOriginFunc: func(string) (bool, error) {
+				return true, nil
+			},
+			AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch, http.MethodOptions},
+			AllowHeaders:     connectcors.AllowedHeaders(),
+			ExposeHeaders:    connectcors.ExposedHeaders(),
+			AllowCredentials: true,
+		}))
+	}
 
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
