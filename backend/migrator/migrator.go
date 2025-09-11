@@ -156,7 +156,7 @@ func getVersionFromPath(path string) (*semver.Version, error) {
 func executeMigration(ctx context.Context, conn *sql.Conn, statement string, version string) error {
 	// Get current database context for error reporting
 	var currentUser, currentDatabase string
-	conn.QueryRowContext(ctx, "SELECT current_user, current_database()").Scan(&currentUser, &currentDatabase)
+	_ = conn.QueryRowContext(ctx, "SELECT current_user, current_database()").Scan(&currentUser, &currentDatabase)
 
 	txn, err := conn.BeginTx(ctx, nil)
 	if err != nil {
