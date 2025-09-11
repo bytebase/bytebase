@@ -716,7 +716,8 @@
           },
           "can-be-changed-later": "この設定は後でいつでも変更できます。",
           "default-view-changed-to-sql-editor": "ワークスペースのデフォルトのビューが SQL エディターに変更されました。",
-          "go-to-sql-editor": "SQLエディターに移動します"
+          "go-to-sql-editor": "SQLエディターに移動します",
+          "go-to-workspace": "ワークスペースに移動"
         }
       }
     },
