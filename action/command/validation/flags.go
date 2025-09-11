@@ -14,7 +14,10 @@ import (
 
 // ValidateFlags validates all the command line flags and environment variables.
 func ValidateFlags(w *world.World) error {
-	// Set service account secret from environment if not provided
+	// Set service account and secret from environment if not provided
+	if w.ServiceAccount == "" {
+		w.ServiceAccount = os.Getenv("BYTEBASE_SERVICE_ACCOUNT")
+	}
 	if w.ServiceAccountSecret == "" {
 		w.ServiceAccountSecret = os.Getenv("BYTEBASE_SERVICE_ACCOUNT_SECRET")
 	}
