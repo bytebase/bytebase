@@ -8,7 +8,7 @@
           </div>
           <span for="name" class="font-medium">
             {{ $t("common.environment-name") }}
-            <span class="text-red-600">*</span>
+            <RequiredStar />
           </span>
         </div>
         <NInput
@@ -155,6 +155,7 @@ import { NCheckbox, NInput, NColorPicker } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
+import RequiredStar from "@/components/RequiredStar.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useEnvironmentV1List,

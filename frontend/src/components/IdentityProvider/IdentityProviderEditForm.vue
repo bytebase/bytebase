@@ -30,7 +30,7 @@
           <div>
             <p class="text-base font-semibold text-gray-800 mb-2">
               {{ $t("settings.sso.form.name") }}
-              <span class="text-red-600">*</span>
+              <RequiredStar />
             </p>
             <BBTextField
               v-model:value="localIdentityProvider.title"
@@ -125,7 +125,7 @@
                 class="flex flex-row justify-start items-center font-semibold text-gray-800"
               >
                 {{ $t("settings.sso.form.identifier") }}
-                <span class="text-red-600">*</span>
+                <RequiredStar />
                 <NTooltip>
                   <template #trigger>
                     <InfoIcon class="ml-1 w-4 h-auto text-blue-500" />
@@ -253,6 +253,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBTextField, BBButtonConfirm } from "@/bbkit";
+import RequiredStar from "@/components/RequiredStar.vue";
 import { ResourceIdField } from "@/components/v2";
 import { WORKSPACE_ROUTE_IDENTITY_PROVIDERS } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification } from "@/store";

@@ -7,7 +7,7 @@
             <span class="text-main">
               {{ $t("common.resources") }}
             </span>
-            <span class="text-red-600">*</span>
+            <RequiredStar />
           </div>
           <DatabaseResourceForm
             v-model:database-resources="state.databaseResources"
@@ -22,7 +22,7 @@
             <span class="text-main">
               {{ $t("settings.sensitive-data.action.self") }}
             </span>
-            <span class="text-red-600">*</span>
+            <RequiredStar />
           </div>
           <div class="flex space-x-4">
             <NCheckbox
@@ -104,6 +104,7 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import DatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
 import FormLayout from "@/components/v2/Form/FormLayout.vue";
 import { usePolicyV1Store, pushNotification } from "@/store";
 import type { DatabaseResource } from "@/types";

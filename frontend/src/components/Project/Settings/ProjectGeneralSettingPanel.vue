@@ -2,7 +2,8 @@
   <form class="w-full space-y-4">
     <div>
       <div class="font-medium">
-        {{ $t("common.name") }} <span class="text-red-600">*</span>
+        {{ $t("common.name") }}
+        <RequiredStar />
       </div>
       <NInput
         id="projectName"
@@ -26,6 +27,7 @@
 import { cloneDeep, isEmpty } from "lodash-es";
 import { NInput } from "naive-ui";
 import { computed, reactive } from "vue";
+import RequiredStar from "@/components/RequiredStar.vue";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { useProjectV1Store } from "@/store";
 import { DEFAULT_PROJECT_NAME } from "@/types";

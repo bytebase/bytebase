@@ -40,7 +40,7 @@
           <div class="sm:col-span-2 sm:col-start-1">
             <label for="column-name" class="textlabel">
               {{ $t("schema-template.form.column-name") }}
-              <span class="text-red-600 mr-2">*</span>
+              <RequiredStar />
             </label>
             <NInput
               v-model:value="state.column!.name"
@@ -102,7 +102,7 @@
           <div class="sm:col-span-2 sm:col-start-1">
             <label for="column-type" class="textlabel">
               {{ $t("schema-template.form.column-type") }}
-              <span class="text-red-600 mr-2">*</span>
+              <RequiredStar />
             </label>
             <div
               class="relative flex flex-row justify-between items-center mt-1"
@@ -246,6 +246,7 @@ import { NButton, NInput, NSwitch } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { LabelListEditor } from "@/components/Label";
+import RequiredStar from "@/components/RequiredStar.vue";
 import {
   getColumnDefaultDisplayString,
   getColumnDefaultValuePlaceholder,

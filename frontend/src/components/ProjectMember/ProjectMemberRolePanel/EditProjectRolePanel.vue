@@ -35,7 +35,7 @@
           >
             <div class="flex items-center gap-x-1 mb-2">
               <span>{{ $t("common.databases") }}</span>
-              <span class="text-red-600">*</span>
+              <RequiredStar />
             </div>
             <QuerierDatabaseResourceForm
               v-model:database-resources="state.databaseResources"
@@ -127,6 +127,7 @@ import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
 import MaxRowCountSelect from "@/components/GrantRequestPanel/MaxRowCountSelect.vue";
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
   useProjectIamPolicy,
