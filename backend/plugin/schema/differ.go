@@ -4,6 +4,8 @@ import (
 	"slices"
 	"strings"
 
+	parser "github.com/bytebase/parser/postgresql"
+
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -67,6 +69,10 @@ type TableDiff struct {
 	TableName  string
 	OldTable   *storepb.TableMetadata
 	NewTable   *storepb.TableMetadata
+
+	// AST nodes for DDL analysis and generation
+	OldASTNode *parser.CreatestmtContext // Previous user CREATE TABLE AST node
+	NewASTNode *parser.CreatestmtContext // Current user CREATE TABLE AST node
 
 	// Column changes
 	ColumnChanges []*ColumnDiff
