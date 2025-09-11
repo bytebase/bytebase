@@ -185,6 +185,8 @@ $$ LANGUAGE plpgsql`,
 				case strings.HasPrefix(expectedKey, "VIEW:"):
 					_, ok := chunk.ASTNode.(*parser.ViewstmtContext)
 					assert.True(t, ok, "VIEW chunk should have ViewstmtContext AST node")
+				default:
+					assert.Fail(t, "Unknown chunk type: %s", expectedKey)
 				}
 			}
 		})

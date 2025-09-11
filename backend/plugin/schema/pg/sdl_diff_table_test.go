@@ -123,6 +123,8 @@ func TestTableDiffScenarios(t *testing.T) {
 					alterCount++
 				case schema.MetadataDiffActionDrop:
 					dropCount++
+				default:
+					// Should not reach here with valid actions
 				}
 			}
 
@@ -156,6 +158,8 @@ func TestTableDiffScenarios(t *testing.T) {
 				case schema.MetadataDiffActionDrop:
 					assert.NotNil(t, change.OldASTNode, "DROP action should have OldASTNode")
 					assert.Nil(t, change.NewASTNode, "DROP action should have nil NewASTNode")
+				default:
+					// Should not reach here with valid actions
 				}
 			}
 		})

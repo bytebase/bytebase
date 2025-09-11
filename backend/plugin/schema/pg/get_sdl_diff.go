@@ -188,6 +188,7 @@ func (l *sdlChunkExtractor) EnterViewstmt(ctx *parser.ViewstmtContext) {
 }
 
 // processTableChanges processes changes to tables by comparing SDL chunks
+// nolint:unparam
 func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema, diff *schema.MetadataDiff) error {
 	// TODO: currentSchema and previousSchema will be used later for SDL drift detection
 	_ = currentSchema
