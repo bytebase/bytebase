@@ -5,6 +5,7 @@ import Emittery from "emittery";
 import { head, isEmpty, cloneDeep } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { markRaw, reactive } from "vue";
+import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import { sqlServiceClientConnect } from "@/grpcweb";
 import { ignoredCodesContextKey } from "@/grpcweb/context-key";
 import { t } from "@/plugins/i18n";
@@ -52,8 +53,6 @@ import {
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 import { flattenNoSQLResult } from "./utils";
 
-// SKIP_CHECK_THRESHOLD is the MaxSheetCheckSize in the backend.
-const SKIP_CHECK_THRESHOLD = 2 * 1024 * 1024;
 // QUERY_INTERVAL_LIMIT is the minimal gap between two queries
 const QUERY_INTERVAL_LIMIT = 1000;
 
@@ -127,7 +126,7 @@ const useExecuteSQL = () => {
     if (!params) {
       return { passed: false };
     }
-    if (new Blob([params.statement]).size > SKIP_CHECK_THRESHOLD) {
+    if (new Blob([params.statement]).size > STATEMENT_SKIP_CHECK_THRESHOLD) {
       return { passed: true };
     }
     const request = create(CheckRequestSchema, {
