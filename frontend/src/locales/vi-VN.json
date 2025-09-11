@@ -716,7 +716,8 @@
           },
           "can-be-changed-later": "Cài đặt này có thể được thay đổi bất cứ lúc nào sau này.",
           "default-view-changed-to-sql-editor": "Chế độ xem mặc định của không gian làm việc đã được thay đổi thành Trình soạn thảo SQL.",
-          "go-to-sql-editor": "Đi tới Trình soạn thảo SQL"
+          "go-to-sql-editor": "Đi tới Trình soạn thảo SQL",
+          "go-to-workspace": "Đi đến không gian làm việc"
         }
       }
     },

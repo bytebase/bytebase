@@ -20,8 +20,11 @@ import { storeToRefs } from "pinia";
 import { twMerge } from "tailwind-merge";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { useLanguage } from "@/composables/useLanguage";
+import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
+import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import {
   useActuatorV1Store,
   useAppFeature,
@@ -31,7 +34,7 @@ import {
   useUIStateStore,
 } from "@/store";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2, isDev } from "@/utils";
+import { hasWorkspacePermissionV2, isDev, isSQLEditorRoute } from "@/utils";
 import ProfilePreview from "./ProfilePreview.vue";
 import UserAvatar from "./User/UserAvatar.vue";
 import Version from "./misc/Version.vue";
@@ -42,6 +45,7 @@ const props = defineProps<{
   link?: boolean;
 }>();
 
+const router = useRouter();
 const actuatorStore = useActuatorV1Store();
 const authStore = useAuthStore();
 const subscriptionStore = useSubscriptionV1Store();
@@ -294,6 +298,33 @@ const options = computed((): DropdownOption[] => [
           href="https://docs.bytebase.com/introduction/what-is-bytebase/?source=console"
         >
           {t("common.help")}
+        </a>
+      );
+    },
+  },
+  {
+    key: "sql-editor",
+    type: "render",
+    render() {
+      const link = router.resolve({
+        name: isSQLEditorRoute(router)
+          ? WORKSPACE_ROUTE_LANDING
+          : SQL_EDITOR_HOME_MODULE,
+      });
+      return (
+        <a
+          class="menu-item"
+          href={link.fullPath}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {isSQLEditorRoute(router)
+            ? t(
+                "settings.general.workspace.database-change-mode.go-to-workspace"
+              )
+            : t(
+                "settings.general.workspace.database-change-mode.go-to-sql-editor"
+              )}
         </a>
       );
     },
