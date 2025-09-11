@@ -20,7 +20,6 @@ import { storeToRefs } from "pinia";
 import { twMerge } from "tailwind-merge";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { RouterLink } from "vue-router";
 import { useRouter } from "vue-router";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { useLanguage } from "@/composables/useLanguage";
@@ -307,16 +306,13 @@ const options = computed((): DropdownOption[] => [
     key: "sql-editor",
     type: "render",
     render() {
+      const link = router.resolve({
+        name: isSQLEditorRoute(router)
+          ? WORKSPACE_ROUTE_LANDING
+          : SQL_EDITOR_HOME_MODULE,
+      });
       return (
-        <RouterLink
-          class="menu-item"
-          to={{
-            name: isSQLEditorRoute(router)
-              ? WORKSPACE_ROUTE_LANDING
-              : SQL_EDITOR_HOME_MODULE,
-          }}
-          target="_blank"
-        >
+        <a class="menu-item" href={link.fullPath} target="_blank">
           {isSQLEditorRoute(router)
             ? t(
                 "settings.general.workspace.database-change-mode.go-to-workspace"
@@ -324,7 +320,7 @@ const options = computed((): DropdownOption[] => [
             : t(
                 "settings.general.workspace.database-change-mode.go-to-sql-editor"
               )}
-        </RouterLink>
+        </a>
       );
     },
   },
