@@ -33,7 +33,6 @@ RUN CC=clang go build \
   -ldflags="-extldflags '-Wl,-z,stack-size=0x1000000' -w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
   -o bytebase ./backend/bin/server/main.go
 
-# Use debian because mysql requires glibc.
 FROM alpine:3.22 AS monolithic
 ARG VERSION
 ARG GIT_COMMIT
