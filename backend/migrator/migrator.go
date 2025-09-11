@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/blang/semver/v4"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
@@ -153,6 +154,10 @@ func getVersionFromPath(path string) (*semver.Version, error) {
 }
 
 func executeMigration(ctx context.Context, conn *sql.Conn, statement string, version string) error {
+	// Get current database context for error reporting
+	var currentUser, currentDatabase string
+	_ = conn.QueryRowContext(ctx, "SELECT current_user, current_database()").Scan(&currentUser, &currentDatabase)
+
 	txn, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -160,7 +165,25 @@ func executeMigration(ctx context.Context, conn *sql.Conn, statement string, ver
 	defer txn.Rollback()
 
 	if _, err := txn.ExecContext(ctx, statement); err != nil {
-		return err
+		// Extract SQLSTATE and provide contextual information
+		var sqlState string
+		if pqErr, ok := err.(*pq.Error); ok {
+			sqlState = string(pqErr.Code)
+		}
+
+		// Truncate statement for readability in error message
+		stmtPreview := statement
+		if len(stmtPreview) > 100 {
+			stmtPreview = stmtPreview[:100] + "..."
+		}
+
+		return errors.Errorf("migration %s failed\n"+
+			"Statement: %s\n"+
+			"User: %s\n"+
+			"Database: %s\n"+
+			"Error: %v\n"+
+			"SQLSTATE: %s",
+			version, stmtPreview, currentUser, currentDatabase, err, sqlState)
 	}
 	if _, err := txn.ExecContext(ctx,
 		`INSERT INTO instance_change_history (version) VALUES ($1)`,
