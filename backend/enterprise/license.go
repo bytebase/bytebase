@@ -177,9 +177,15 @@ func (s *LicenseService) StoreLicense(ctx context.Context, license string) error
 	}
 
 	// refresh the cached subscription after storing the license.
+	s.RefreshCache(ctx)
+	return nil
+}
+
+// RefreshCache refresh the cache for subscription.
+func (s *LicenseService) RefreshCache(ctx context.Context) {
+	// refresh the cached subscription after storing the license.
 	s.mu.Lock()
 	s.cachedSubscription = nil
 	s.mu.Unlock()
 	s.LoadSubscription(ctx)
-	return nil
 }
