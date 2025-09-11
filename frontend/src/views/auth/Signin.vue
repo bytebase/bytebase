@@ -7,7 +7,7 @@
         <NCard v-if="showSignInForm">
           <NTabs
             class="card-tabs"
-            default-value="standard"
+            :default-value="defaultTabValue"
             size="small"
             animated
             pane-style="padding: 12px 0 0 0"
@@ -250,6 +250,16 @@ const showSignInForm = computed(() => {
     !disallowPasswordSignin.value ||
     groupedIdentityProviderList.value.length > 0
   );
+});
+
+const defaultTabValue = computed(() => {
+  if (!disallowPasswordSignin.value) {
+    return "standard";
+  }
+  if (groupedIdentityProviderList.value.length > 0) {
+    return groupedIdentityProviderList.value[0].name;
+  }
+  return "standard";
 });
 
 watchEffect(() => {
