@@ -91,10 +91,11 @@ func (s *ActuatorService) UpdateActuatorInfo(
 
 // DeleteCache deletes the cache.
 func (s *ActuatorService) DeleteCache(
-	_ context.Context,
+	ctx context.Context,
 	_ *connect.Request[v1pb.DeleteCacheRequest],
 ) (*connect.Response[emptypb.Empty], error) {
 	s.store.DeleteCache()
+	s.licenseService.RefreshCache(ctx)
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
