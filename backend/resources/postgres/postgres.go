@@ -24,7 +24,7 @@ func start(port int, dataDir string, serverLog bool) (err error) {
 	// We also set max_connections to 500 for tests.
 	p := exec.Command("pg_ctl", "start", "-w",
 		"-D", dataDir,
-		"-o", fmt.Sprintf(`-p %d -k %s -N 500 -h ""`, port, common.GetPostgresSocketDir()))
+		"-o", fmt.Sprintf(`-p %d -k %s -N 500 -h "" -c log_checkpoints=off`, port, common.GetPostgresSocketDir()))
 
 	uid, _, sameUser, err := shouldSwitchUser()
 	if err != nil {
