@@ -6,7 +6,7 @@
         <div>
           <label class="block text-base font-semibold text-gray-800 mb-2">
             Client ID
-            <span class="text-red-600">*</span>
+            <RequiredStar />
           </label>
           <BBTextField
             :value="oauth2Config.clientId || ''"
@@ -21,7 +21,7 @@
         <div>
           <label class="block text-base font-semibold text-gray-800 mb-2">
             Client Secret
-            <span v-if="!isEditMode" class="text-red-600">*</span>
+            <RequiredStar v-if="!isEditMode" />
           </label>
           <BBTextField
             :value="oauth2Config.clientSecret || ''"
@@ -42,7 +42,7 @@
       <div>
         <label class="block text-base font-semibold text-gray-800 mb-2">
           {{ $t("settings.sso.form.auth-url") }}
-          <span class="text-red-600">*</span>
+          <RequiredStar />
         </label>
         <BBTextField
           :value="oauth2Config.authUrl || ''"
@@ -60,7 +60,7 @@
       <div>
         <label class="block text-base font-semibold text-gray-800 mb-2">
           {{ $t("settings.sso.form.token-url") }}
-          <span class="text-red-600">*</span>
+          <RequiredStar />
         </label>
         <BBTextField
           :value="oauth2Config.tokenUrl || ''"
@@ -78,7 +78,7 @@
       <div>
         <label class="block text-base font-semibold text-gray-800 mb-2">
           {{ $t("settings.sso.form.user-info-url") }}
-          <span class="text-red-600">*</span>
+          <RequiredStar />
         </label>
         <BBTextField
           :value="oauth2Config.userInfoUrl || ''"
@@ -96,7 +96,7 @@
       <div>
         <label class="block text-base font-semibold text-gray-800 mb-2">
           {{ $t("settings.sso.form.scopes") }}
-          <span class="text-red-600">*</span>
+          <RequiredStar />
         </label>
         <BBTextField
           :value="scopesString || ''"
@@ -114,7 +114,7 @@
       <div>
         <label class="block text-base font-semibold text-gray-800 mb-3">
           {{ $t("settings.sso.form.authentication-style") }}
-          <span class="text-red-600">*</span>
+          <RequiredStar />
         </label>
         <NRadioGroup
           :value="oauth2Config.authStyle"
@@ -177,7 +177,7 @@
       <div>
         <label class="block text-base font-semibold text-gray-800 mb-2">
           Issuer URL
-          <span class="text-red-600">*</span>
+          <RequiredStar />
         </label>
         <BBTextField
           :value="oidcConfig.issuer || ''"
@@ -196,7 +196,7 @@
         <div>
           <label class="block text-base font-semibold text-gray-800 mb-2">
             Client ID
-            <span class="text-red-600">*</span>
+            <RequiredStar />
           </label>
           <BBTextField
             :value="oidcConfig.clientId || ''"
@@ -211,7 +211,7 @@
         <div>
           <label class="block text-base font-semibold text-gray-800 mb-2">
             Client Secret
-            <span v-if="!isEditMode" class="text-red-600">*</span>
+            <RequiredStar v-if="!isEditMode" />
           </label>
           <BBTextField
             :value="oidcConfig.clientSecret || ''"
@@ -232,7 +232,7 @@
       <div>
         <label class="block text-base font-semibold text-gray-800 mb-2">
           {{ $t("settings.sso.form.scopes") }}
-          <span class="text-red-600">*</span>
+          <RequiredStar />
         </label>
         <BBTextField
           :value="scopesString"
@@ -250,7 +250,7 @@
       <div>
         <label class="block text-base font-semibold text-gray-800 mb-3">
           {{ $t("settings.sso.form.authentication-style") }}
-          <span class="text-red-600">*</span>
+          <RequiredStar />
         </label>
         <NRadioGroup
           :value="oidcConfig.authStyle"
@@ -314,7 +314,7 @@
         <div class="md:col-span-2">
           <label class="block text-base font-semibold text-gray-800 mb-2">
             Host
-            <span class="text-red-600">*</span>
+            <RequiredStar />
           </label>
           <BBTextField
             :value="ldapConfig.host || ''"
@@ -329,7 +329,7 @@
         <div>
           <label class="block text-base font-semibold text-gray-800 mb-2">
             Port
-            <span class="text-red-600">*</span>
+            <RequiredStar />
           </label>
           <NInputNumber
             :value="ldapConfig.port"
@@ -346,7 +346,7 @@
       <div>
         <label class="block text-base font-semibold text-gray-800 mb-2">
           {{ $t("settings.sso.form.bind-dn") }}
-          <span class="text-red-600">*</span>
+          <RequiredStar />
         </label>
         <BBTextField
           :value="ldapConfig.bindDn || ''"
@@ -364,7 +364,7 @@
       <div>
         <label class="block text-base font-semibold text-gray-800 mb-2">
           {{ $t("settings.sso.form.bind-password") }}
-          <span class="text-red-600">*</span>
+          <RequiredStar />
         </label>
         <BBTextField
           :value="ldapConfig.bindPassword || ''"
@@ -380,7 +380,7 @@
       <div>
         <label class="block text-base font-semibold text-gray-800 mb-2">
           {{ $t("settings.sso.form.base-dn") }}
-          <span class="text-red-600">*</span>
+          <RequiredStar />
         </label>
         <BBTextField
           :value="ldapConfig.baseDn || ''"
@@ -398,7 +398,7 @@
       <div>
         <label class="block text-base font-semibold text-gray-800 mb-2">
           {{ $t("settings.sso.form.user-filter") }}
-          <span class="text-red-600">*</span>
+          <RequiredStar />
         </label>
         <BBTextField
           :value="ldapConfig.userFilter || ''"
@@ -416,7 +416,7 @@
       <div>
         <label class="block text-base font-semibold text-gray-800 mb-3">
           {{ $t("settings.sso.form.security-protocol") }}
-          <span class="text-red-600">*</span>
+          <RequiredStar />
         </label>
         <NRadioGroup
           :value="ldapConfig.securityProtocol"
@@ -488,6 +488,7 @@
 import { NRadioGroup, NRadio, NCheckbox, NInputNumber } from "naive-ui";
 import { computed, watch } from "vue";
 import { BBTextField } from "@/bbkit";
+import RequiredStar from "@/components/RequiredStar.vue";
 import {
   IdentityProviderType,
   OAuth2AuthStyle,

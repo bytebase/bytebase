@@ -39,7 +39,7 @@
           <div class="space-y-2">
             <label class="block text-sm font-medium leading-5 text-control">
               {{ $t("common.email") }}
-              <span class="text-red-600 ml-0.5">*</span>
+              <RequiredStar class="ml-0.5" />
             </label>
             <EmailInput
               v-model:value="state.user.email"
@@ -119,6 +119,7 @@ import { NButton, NInput, NRadioGroup, NRadio } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import EmailInput from "@/components/EmailInput.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
 import {

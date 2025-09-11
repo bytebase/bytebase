@@ -9,7 +9,7 @@
           >
             {{ statementTitle }}
           </span>
-          <span v-if="isEmpty(state.statement)" class="text-red-600">*</span>
+          <RequiredStar v-if="isEmpty(state.statement)" />
         </div>
       </div>
       <div class="flex items-center justify-end gap-x-2">
@@ -184,6 +184,7 @@ import {
   planCheckRunListForSpec,
 } from "@/components/Plan/logic";
 import { useEditorState } from "@/components/Plan/logic/useEditorState";
+import RequiredStar from "@/components/RequiredStar.vue";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { planServiceClientConnect } from "@/grpcweb";

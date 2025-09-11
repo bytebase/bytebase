@@ -17,7 +17,7 @@
           <div v-else class="w-full space-y-2">
             <div class="flex items-center gap-x-1">
               {{ $t("common.email") }}
-              <span class="text-red-600">*</span>
+              <RequiredStar />
             </div>
             <EmailInput :readonly="true" :value="email" />
           </div>
@@ -25,7 +25,7 @@
           <div class="w-full space-y-2">
             <div class="flex items-center gap-x-1 text-main">
               {{ $t("settings.members.assign-role", 2 /* multiply*/) }}
-              <span class="text-red-600">*</span>
+              <RequiredStar />
             </div>
             <RoleSelect v-model:value="state.roles" :multiple="true" />
           </div>
@@ -73,6 +73,7 @@ import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
 import EmailInput from "@/components/EmailInput.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
 import {

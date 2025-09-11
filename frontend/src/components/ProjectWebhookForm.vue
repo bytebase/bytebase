@@ -15,7 +15,7 @@
           <div>
             <label for="name" class="font-medium text-main">
               {{ $t("project.webhook.destination") }}
-              <span class="text-red-600">*</span>
+              <RequiredStar />
             </label>
           </div>
           <NRadioGroup class="w-full mt-1" :value="state.webhook.type">
@@ -44,7 +44,8 @@
         </div>
         <div>
           <label for="name" class="font-medium text-main">
-            {{ $t("common.name") }} <span class="text-red-600">*</span>
+            {{ $t("common.name") }}
+            <RequiredStar />
           </label>
           <NInput
             id="name"
@@ -58,7 +59,7 @@
         <div>
           <label for="url" class="font-medium text-main">
             {{ $t("project.webhook.webhook-url") }}
-            <span class="text-red-600">*</span>
+            <RequiredStar />
           </label>
           <div class="mt-1 textinfolabel">
             {{
@@ -143,7 +144,7 @@
         <div>
           <div class="text-md leading-6 font-medium text-main">
             {{ $t("project.webhook.triggering-activity") }}
-            <span class="text-red-600">*</span>
+            <RequiredStar />
           </div>
           <div class="flex flex-col space-y-4 mt-2">
             <div v-for="(item, index) in webhookActivityItemList" :key="index">
@@ -249,6 +250,7 @@ import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAttention, BBButtonConfirm } from "@/bbkit";
+import RequiredStar from "@/components/RequiredStar.vue";
 import FormLayout from "@/components/v2/Form/FormLayout.vue";
 import {
   PROJECT_V1_ROUTE_WEBHOOKS,

@@ -67,7 +67,7 @@
                       class="block text-sm font-medium leading-5 text-control"
                     >
                       {{ $t("common.username") }}
-                      <span class="text-red-600">*</span>
+                      <RequiredStar />
                     </label>
                     <div class="mt-1 rounded-md shadow-sm">
                       <BBTextField
@@ -86,7 +86,7 @@
                     >
                       <div>
                         {{ $t("common.password") }}
-                        <span class="text-red-600">*</span>
+                        <RequiredStar />
                       </div>
                     </label>
                     <div
@@ -184,6 +184,7 @@ import { useRoute, useRouter } from "vue-router";
 import { BBSpin, BBTextField } from "@/bbkit";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import PasswordSigninForm from "@/components/PasswordSigninForm.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
 import { AUTH_SIGNUP_MODULE } from "@/router/auth";
 import {
   pushNotification,
