@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -21,6 +22,7 @@ var (
 	getSequenceDefinitions         = make(map[storepb.Engine]getSequenceDefinition)
 	getDatabaseMetadataMap         = make(map[storepb.Engine]getDatabaseMetadata)
 	generateMigrations             = make(map[storepb.Engine]generateMigration)
+	getSDLDiffs                    = make(map[storepb.Engine]getSDLDiff)
 )
 
 type getDatabaseDefinition func(GetDefinitionContext, *storepb.DatabaseSchemaMetadata) (string, error)
@@ -33,6 +35,7 @@ type getProcedureDefinition func(string, *storepb.ProcedureMetadata) (string, er
 type getSequenceDefinition func(string, *storepb.SequenceMetadata) (string, error)
 type getDatabaseMetadata func(string) (*storepb.DatabaseSchemaMetadata, error)
 type generateMigration func(*MetadataDiff) (string, error)
+type getSDLDiff func(currentSDLText, previousUserSDLText string, currentSchema, previousSchema *model.DatabaseSchema) (*MetadataDiff, error)
 
 type GetDefinitionContext struct {
 	SkipBackupSchema bool
@@ -207,4 +210,21 @@ func GenerateMigration(engine storepb.Engine, diff *MetadataDiff) (string, error
 		return "", errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(diff)
+}
+
+func RegisterGetSDLDiff(engine storepb.Engine, f getSDLDiff) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := getSDLDiffs[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	getSDLDiffs[engine] = f
+}
+
+func GetSDLDiff(engine storepb.Engine, currentSDLText, previousUserSDLText string, currentSchema, previousSchema *model.DatabaseSchema) (*MetadataDiff, error) {
+	f, ok := getSDLDiffs[engine]
+	if !ok {
+		return nil, errors.Errorf("engine %s is not supported", engine)
+	}
+	return f(currentSDLText, previousUserSDLText, currentSchema, previousSchema)
 }
