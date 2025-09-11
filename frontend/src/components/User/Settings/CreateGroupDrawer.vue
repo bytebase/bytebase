@@ -14,7 +14,7 @@
             <div>
               <label class="textlabel block">
                 {{ $t("settings.members.groups.form.email") }}
-                <span class="text-red-600">*</span>
+                <RequiredStar />
               </label>
               <span class="textinfolabel">
                 {{ $t("settings.members.groups.form.email-tips") }}
@@ -29,7 +29,7 @@
           <div class="flex flex-col gap-y-2">
             <label class="textlabel block">
               {{ $t("settings.members.groups.form.title") }}
-              <span class="text-red-600">*</span>
+              <RequiredStar />
             </label>
             <NInput v-model:value="state.group.title" :disabled="!allowEdit" />
           </div>
@@ -145,6 +145,7 @@ import { NButton, NInput, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import EmailInput from "@/components/EmailInput.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent, UserSelect } from "@/components/v2";
 import {
   extractGroupEmail,

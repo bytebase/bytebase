@@ -58,7 +58,7 @@
         <div class="sm:col-span-3 sm:col-start-1">
           <label class="textlabel block">
             Principal
-            <span class="text-red-600">*</span>
+            <RequiredStar />
           </label>
           <div class="mt-2 flex items-center space-x-2">
             <NInput
@@ -116,7 +116,7 @@
         <div class="sm:col-span-3 sm:col-start-1">
           <label class="textlabel block">
             KDC
-            <span class="text-red-600">*</span>
+            <RequiredStar />
           </label>
           <div class="flex items-center space-x-2">
             <div class="w-fit">
@@ -182,7 +182,7 @@
         <div class="sm:col-span-3 sm:col-start-1">
           <label class="textlabel block">
             Keytab File
-            <span class="text-red-600">*</span>
+            <RequiredStar />
           </label>
           <NUpload :max="1" @change="handleKeytabUpload">
             <NUploadDragger class="mt-3">
@@ -237,7 +237,7 @@
         >
           <label for="username" class="textlabel block">
             {{ $t("instance.database-region") }}
-            <span class="text-red-600">*</span>
+            <RequiredStar />
           </label>
           <NInput
             v-model:value="dataSource.region"
@@ -361,7 +361,7 @@
               <div class="sm:col-span-2 sm:col-start-1">
                 <label class="textlabel block">
                   {{ $t("instance.external-secret-vault.vault-url") }}
-                  <span class="text-red-600">*</span>
+                  <RequiredStar />
                 </label>
                 <BBTextField
                   v-model:value="dataSource.externalSecret.url"
@@ -413,7 +413,7 @@
                       "instance.external-secret-vault.vault-auth-type.token.self"
                     )
                   }}
-                  <span class="text-red-600">*</span>
+                  <RequiredStar />
                 </label>
                 <div class="flex space-x-2 text-sm">
                   <div class="textinfolabel">
@@ -464,7 +464,7 @@
                         "instance.external-secret-vault.vault-auth-type.approle.role-id"
                       )
                     }}
-                    <span class="text-red-600">*</span>
+                    <RequiredStar />
                   </label>
                   <BBTextField
                     :value="
@@ -495,7 +495,7 @@
                         "instance.external-secret-vault.vault-auth-type.approle.secret-id"
                       )
                     }}
-                    <span class="text-red-600">*</span>
+                    <RequiredStar />
                   </label>
                   <i18n-t
                     tag="div"
@@ -578,7 +578,7 @@
                       "instance.external-secret-vault.vault-secret-engine-name"
                     )
                   }}
-                  <span class="text-red-600">*</span>
+                  <RequiredStar />
                 </label>
                 <div class="flex space-x-2 text-sm textinfolabel">
                   {{
@@ -603,7 +603,7 @@
             <div class="sm:col-span-2 sm:col-start-1">
               <label class="textlabel block">
                 {{ secretNameLabel }}
-                <span class="text-red-600">*</span>
+                <RequiredStar />
               </label>
               <div
                 v-if="
@@ -631,7 +631,7 @@
             >
               <label class="textlabel block">
                 {{ secretKeyLabel }}
-                <span class="text-red-600">*</span>
+                <RequiredStar />
               </label>
               <BBTextField
                 v-model:value="dataSource.externalSecret.passwordKeyName"
@@ -650,8 +650,7 @@
             "
           >
             <div class="mt-2">
-              <label class="textlabel"> Master Name </label>
-              <span class="text-red-600 mr-2">*</span>
+              <label class="textlabel"> Master Name <RequiredStar /></label>
               <NInput
                 v-model:value="dataSource.masterName"
                 class="mt-1 w-full"
@@ -767,7 +766,7 @@ MIIEvQ...
       <div>
         <div class="textlabel black mt-2">
           Warehouse ID
-          <span class="text-red-600">*</span>
+          <RequiredStar />
         </div>
         <NInput
           v-model:value="dataSource.warehouseId"
@@ -779,7 +778,7 @@ MIIEvQ...
       <div>
         <div class="textlabel black mt-2">
           Token
-          <span class="text-red-600">*</span>
+          <RequiredStar />
         </div>
         <NInput
           v-model:value="dataSource.authenticationPrivateKey"
@@ -1026,6 +1025,7 @@ import { useI18n } from "vue-i18n";
 import { BBTextField } from "@/bbkit";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import RequiredStar from "@/components/RequiredStar.vue";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
 import { Switch } from "@/components/v2";
 import type { DataSourceOptions } from "@/types/dataSource";

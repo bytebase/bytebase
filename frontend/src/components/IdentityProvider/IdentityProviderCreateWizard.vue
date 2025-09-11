@@ -185,7 +185,7 @@
               <div>
                 <label class="block text-base font-semibold text-gray-800 mb-2">
                   {{ $t("settings.sso.form.name") }}
-                  <span class="text-red-600">*</span>
+                  <RequiredStar />
                 </label>
                 <BBTextField
                   v-model:value="identityProvider.title"
@@ -311,7 +311,7 @@
                     class="flex flex-row justify-start items-center font-semibold text-gray-800"
                   >
                     {{ $t("settings.sso.form.identifier") }}
-                    <span class="text-red-600">*</span>
+                    <RequiredStar />
                     <NTooltip>
                       <template #trigger>
                         <InfoIcon class="ml-1 w-4 h-auto text-blue-500" />
@@ -455,6 +455,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAttention, BBTextField } from "@/bbkit";
 import { FeatureBadge } from "@/components/FeatureGuard";
+import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
