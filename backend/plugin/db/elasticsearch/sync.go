@@ -83,13 +83,24 @@ func (d *Driver) getVersion() (string, error) {
 
 	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "failed to read response body")
+	}
+
+	// Check HTTP status code
+	if resp.StatusCode != http.StatusOK {
+		// Include response body for debugging
+		return "", errors.Errorf("unexpected status code %d: %s", resp.StatusCode, string(bytes))
 	}
 
 	var result VersionResult
 	err = json.Unmarshal(bytes, &result)
 	if err != nil {
-		return "", err
+		// Include response body to help debug parsing issues
+		bodyPreview := string(bytes)
+		if len(bodyPreview) > 500 {
+			bodyPreview = bodyPreview[:500] + "..."
+		}
+		return "", errors.Wrapf(err, "failed to parse version response: %s", bodyPreview)
 	}
 
 	return result.Version.Number, nil
@@ -141,12 +152,17 @@ func (d *Driver) getIndices() ([]*storepb.TableMetadata, error) {
 
 		bytes, err := readBytesAndClose(res)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to list Elasticsearch indices")
 		}
 
 		var results []IndicesResult
 		if err := json.Unmarshal(bytes, &results); err != nil {
-			return nil, err
+			// Include response body to help debug parsing issues
+			bodyPreview := string(bytes)
+			if len(bodyPreview) > 500 {
+				bodyPreview = bodyPreview[:500] + "..."
+			}
+			return nil, errors.Wrapf(err, "failed to parse Elasticsearch indices response: %s", bodyPreview)
 		}
 
 		for _, m := range results {
@@ -180,12 +196,23 @@ func (d *Driver) getIndices() ([]*storepb.TableMetadata, error) {
 
 	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to read indices response body")
+	}
+
+	// Check HTTP status code
+	if resp.StatusCode != http.StatusOK {
+		// Include response body for debugging
+		return nil, errors.Errorf("failed to list indices: unexpected status code %d: %s", resp.StatusCode, string(bytes))
 	}
 
 	var results []IndicesResult
 	if err := json.Unmarshal(bytes, &results); err != nil {
-		return nil, err
+		// Include response body to help debug parsing issues
+		bodyPreview := string(bytes)
+		if len(bodyPreview) > 500 {
+			bodyPreview = bodyPreview[:500] + "..."
+		}
+		return nil, errors.Wrapf(err, "failed to parse indices response: %s", bodyPreview)
 	}
 
 	for _, m := range results {
@@ -238,13 +265,20 @@ func unitConversion(sizeWithUnit string) (int64, error) {
 
 func readBytesAndClose(anyResp any) ([]byte, error) {
 	var body io.ReadCloser
-	// get body closer.
+	var statusCode int
+	var isError bool
+
+	// get body closer and status code.
 	switch resp := anyResp.(type) {
 	case *http.Response:
 		body = resp.Body
+		statusCode = resp.StatusCode
+		isError = resp.StatusCode >= 400
 
 	case *esapi.Response:
 		body = resp.Body
+		statusCode = resp.StatusCode
+		isError = resp.IsError()
 
 	default:
 		return nil, errors.New("not supported response type")
@@ -253,10 +287,15 @@ func readBytesAndClose(anyResp any) ([]byte, error) {
 	// read bytes.
 	bytes, err := io.ReadAll(body)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to read response body")
 	}
 	if err := body.Close(); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to close response body")
+	}
+
+	// Check for error status codes
+	if isError {
+		return bytes, errors.Errorf("request failed with status code %d: %s", statusCode, string(bytes))
 	}
 
 	return bytes, nil
