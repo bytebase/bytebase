@@ -716,7 +716,8 @@
           },
           "can-be-changed-later": "Utilice el Editor SQL para ejecutar cambios en la base de datos directamente. Adecuado para particulares.",
           "default-view-changed-to-sql-editor": "La vista predeterminada del espacio de trabajo se ha cambiado al Editor SQL.",
-          "go-to-sql-editor": "Ir al editor SQL"
+          "go-to-sql-editor": "Ir al editor SQL",
+          "go-to-workspace": "Ir al espacio de trabajo"
         }
       }
     },

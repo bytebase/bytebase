@@ -716,7 +716,8 @@
           },
           "can-be-changed-later": "此设置以后可以随时更改。",
           "default-view-changed-to-sql-editor": "工作空间的默认视图已更改为 SQL 编辑器。",
-          "go-to-sql-editor": "前往 SQL 编辑器"
+          "go-to-sql-editor": "前往 SQL 编辑器",
+          "go-to-workspace": "前往工作区"
         }
       }
     },
@@ -1012,7 +1013,7 @@
         "selected-stage": "选中的阶段",
         "all-tasks": "所有任务"
       },
-      "current-change-will-apply-to-all-tasks-in-batch-mode": "在批量模式下，当前更改将应用​​于所有任务。"
+      "current-change-will-apply-to-all-tasks-in-batch-mode": "在批量模式下，当前更改将应用于所有任务。"
     },
     "action-anyway": "仍要{action}",
     "sql-check": {

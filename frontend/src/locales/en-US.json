@@ -716,7 +716,8 @@
           },
           "can-be-changed-later": "This setting can be changed anytime later.",
           "default-view-changed-to-sql-editor": "The workspace's default view has been changed to SQL Editor.",
-          "go-to-sql-editor": "Go to SQL Editor"
+          "go-to-sql-editor": "Go to SQL Editor",
+          "go-to-workspace": "Go to workspace"
         }
       }
     },
