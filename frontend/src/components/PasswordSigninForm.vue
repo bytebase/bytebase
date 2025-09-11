@@ -6,7 +6,7 @@
         class="block text-sm font-medium leading-5 text-control"
       >
         {{ $t("common.email") }}
-        <span class="text-red-600">*</span>
+        <RequiredStar />
       </label>
       <div class="mt-1 rounded-md shadow-sm">
         <BBTextField
@@ -29,7 +29,7 @@
       >
         <div>
           {{ $t("common.password") }}
-          <span class="text-red-600">*</span>
+          <RequiredStar />
         </div>
         <router-link
           v-if="props.showForgotPassword"
@@ -91,6 +91,7 @@ import { storeToRefs } from "pinia";
 import { computed, reactive, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { BBTextField } from "@/bbkit";
+import RequiredStar from "@/components/RequiredStar.vue";
 import { useAuthStore, useActuatorV1Store } from "@/store";
 import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
 

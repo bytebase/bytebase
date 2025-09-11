@@ -37,10 +37,10 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
     -   Default: `https://demo.bytebase.com`
 
 -   **`--service-account`**: The service account email.
-    -   Default: `api@service.bytebase.com`
+    -   Default: `api@service.bytebase.com`. If not provided via flag, reads from the `BYTEBASE_SERVICE_ACCOUNT` environment variable.
 
 -   **`--service-account-secret`**: The service account password.
-    -   Default: Reads from the `BYTEBASE_SERVICE_ACCOUNT_SECRET` environment variable. You can override this by providing the flag directly.
+    -   Default: `""` (empty string). If not provided via flag, reads from the `BYTEBASE_SERVICE_ACCOUNT_SECRET` environment variable.
     -   *Note: Setting the environment variable `BYTEBASE_SERVICE_ACCOUNT_SECRET` is the recommended way to handle the secret.*
 
 -   **`--project`**: The target Bytebase project name.

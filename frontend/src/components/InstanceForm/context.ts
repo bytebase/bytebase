@@ -144,7 +144,7 @@ export const provideInstanceFormContext = (baseContext: {
           return false;
         }
       } else if (basicInfo.value.engine === Engine.DATABRICKS) {
-        if (!ds.warehouseId) {
+        if (!ds.warehouseId || !ds.authenticationPrivateKey) {
           return false;
         }
       }

@@ -65,7 +65,7 @@
           <div class="sm:col-span-2 sm:col-start-1">
             <label for="table-name" class="textlabel">
               {{ $t("schema-template.form.table-name") }}
-              <span class="text-red-600 mr-2">*</span>
+              <RequiredStar />
             </label>
             <NInput
               :value="editing.tableMetadata.name"
@@ -184,6 +184,7 @@ import type { SelectOption } from "naive-ui";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
+import RequiredStar from "@/components/RequiredStar.vue";
 import {
   TableColumnEditor,
   provideSchemaEditorContext,

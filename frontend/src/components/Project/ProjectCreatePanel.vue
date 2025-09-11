@@ -11,7 +11,7 @@
             class="text-base leading-6 font-medium text-control"
           >
             {{ $t("project.create-modal.project-name") }}
-            <span class="text-red-600">*</span>
+            <RequiredStar />
           </label>
           <BBTextField
             v-model:value="state.project.title"
@@ -69,6 +69,7 @@ import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBSpin, BBTextField } from "@/bbkit";
+import RequiredStar from "@/components/RequiredStar.vue";
 import { DrawerContent } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { pushNotification, useUIStateStore } from "@/store";

@@ -419,7 +419,12 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 
 			respBytes, err := io.ReadAll(resp.Body)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "failed to read response body")
+			}
+
+			// Check HTTP status code for errors (4xx, 5xx)
+			if resp.StatusCode >= 400 {
+				return errors.Errorf("request failed with status code %d: %s", resp.StatusCode, string(respBytes))
 			}
 
 			// structure results.

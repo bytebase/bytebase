@@ -14,7 +14,7 @@
           <div class="w-full mb-6 space-y-1">
             <label for="masking-type" class="textlabel">
               {{ $t("settings.sensitive-data.algorithms.table.masking-type") }}
-              <span class="text-red-600 mr-2">*</span>
+              <RequiredStar />
             </label>
             <RadioGrid
               :value="state.maskingType"
@@ -38,7 +38,7 @@
                     "settings.sensitive-data.algorithms.full-mask.substitution"
                   )
                 }}
-                <span class="text-red-600 mr-2">*</span>
+                <RequiredStar />
               </label>
               <p class="textinfolabel">
                 {{
@@ -73,7 +73,7 @@
                       "settings.sensitive-data.algorithms.range-mask.slice-start"
                     )
                   }}
-                  <span class="text-red-600 mr-2">*</span>
+                  <RequiredStar />
                 </label>
                 <NInputNumber
                   :value="slice.start"
@@ -94,7 +94,7 @@
                       "settings.sensitive-data.algorithms.range-mask.slice-end"
                     )
                   }}
-                  <span class="text-red-600 mr-2">*</span>
+                  <RequiredStar />
                 </label>
                 <NInputNumber
                   :value="slice.end"
@@ -113,7 +113,7 @@
                       "settings.sensitive-data.algorithms.range-mask.substitution"
                     )
                   }}
-                  <span class="text-red-600 mr-2">*</span>
+                  <RequiredStar />
                 </label>
                 <NInput
                   v-model:value="slice.substitution"
@@ -149,7 +149,7 @@
             <div class="sm:col-span-2 sm:col-start-1">
               <label for="salt" class="textlabel">
                 {{ $t("settings.sensitive-data.algorithms.md5-mask.salt") }}
-                <span class="text-red-600 mr-2">*</span>
+                <RequiredStar />
               </label>
               <p class="textinfolabel">
                 {{
@@ -171,7 +171,7 @@
               {{
                 $t("settings.sensitive-data.algorithms.inner-outer-mask.type")
               }}
-              <span class="text-red-600 mr-2">*</span>
+              <RequiredStar />
               <p class="textinfolabel">
                 {{
                   state.innerOuterMask.type ==
@@ -212,7 +212,7 @@
                       "settings.sensitive-data.algorithms.inner-outer-mask.prefix-length"
                     )
                   }}
-                  <span class="text-red-600 mr-2">*</span>
+                  <RequiredStar />
                 </label>
                 <NInputNumber
                   :value="state.innerOuterMask.prefixLen"
@@ -233,7 +233,7 @@
                       "settings.sensitive-data.algorithms.inner-outer-mask.suffix-length"
                     )
                   }}
-                  <span class="text-red-600 mr-2">*</span>
+                  <RequiredStar />
                 </label>
                 <NInputNumber
                   :value="state.innerOuterMask.suffixLen"
@@ -254,7 +254,7 @@
                       "settings.sensitive-data.algorithms.range-mask.substitution"
                     )
                   }}
-                  <span class="text-red-600 mr-2">*</span>
+                  <RequiredStar />
                 </label>
                 <NInput
                   v-model:value="state.innerOuterMask.substitution"
@@ -309,6 +309,7 @@ import {
 } from "naive-ui";
 import { computed, watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import RequiredStar from "@/components/RequiredStar.vue";
 import type { RadioGridOption, RadioGridItem } from "@/components/v2";
 import {
   Drawer,
