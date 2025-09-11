@@ -8,7 +8,7 @@
           >
             {{ statementTitle }}
           </span>
-          <span v-if="isCreating" class="text-red-600">*</span>
+          <RequiredStar v-if="isCreating" />
         </div>
       </div>
 
@@ -195,6 +195,7 @@ import {
   createEmptyLocalSheet,
   databaseEngineForSpec,
 } from "@/components/Plan";
+import RequiredStar from "@/components/RequiredStar.vue";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { planServiceClientConnect } from "@/grpcweb";

@@ -1,46 +1,36 @@
 <template>
   <div class="sm:col-span-3 sm:col-start-1">
-    <div class="flex items-center gap-x-4">
-      <NRadio
-        :checked="state.mode === 'ServiceName'"
-        @update:checked="toggleMode('ServiceName', $event)"
-      >
-        <span class="textlabel">ServiceName</span>
-      </NRadio>
-      <NRadio
-        :checked="state.mode === 'SID'"
-        @update:checked="toggleMode('SID', $event)"
-      >
-        <span class="textlabel">SID</span>
-      </NRadio>
+    <div class="flex items-center">
+      <NRadioGroup v-model:value="state.mode">
+        <NRadio value="ServiceName">
+          <span class="textlabel">ServiceName</span>
+        </NRadio>
+        <NRadio value="SID">
+          <span class="textlabel">SID</span>
+        </NRadio>
+      </NRadioGroup>
+      <RequiredStar />
     </div>
     <div class="mt-2">
       <NInput
-        v-if="state.mode === 'ServiceName'"
-        :value="state.serviceName"
-        placeholder="ServiceName"
-        @update:value="update($event, 'ServiceName')"
-      />
-      <NInput
-        v-if="state.mode === 'SID'"
-        :value="state.sid"
-        placeholder="SID"
-        @update:value="update($event, 'SID')"
+        :value="state.value"
+        :placeholder="state.mode"
+        @update:value="onUpdate"
       />
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { NInput, NRadio } from "naive-ui";
+import { NInput, NRadio, NRadioGroup } from "naive-ui";
 import { reactive, watch } from "vue";
+import RequiredStar from "@/components/RequiredStar.vue";
 
 type Mode = "ServiceName" | "SID";
 
 type LocalState = {
   mode: Mode;
-  sid: string;
-  serviceName: string;
+  value: string;
 };
 
 const props = defineProps<{
@@ -60,41 +50,25 @@ const guessModeFromProps = (): Mode => {
 };
 
 const state = reactive<LocalState>({
-  sid: props.sid,
-  serviceName: props.serviceName,
+  value: props.serviceName || props.sid,
   mode: guessModeFromProps(),
 });
 
-const update = (value: string, mode: Mode) => {
-  if (mode === "SID") {
+const onUpdate = (value: string) => {
+  if (state.mode === "SID") {
     emit("update:sid", value);
     emit("update:serviceName", "");
   } else {
     emit("update:serviceName", value);
     emit("update:sid", "");
   }
+  state.value = value;
 };
-
-const toggleMode = (mode: Mode, checked: boolean) => {
-  if (!checked) return;
-  state.mode = mode;
-};
-
-watch(
-  [() => props.sid, () => props.serviceName],
-  ([sid, serviceName]) => {
-    state.sid = sid;
-    state.serviceName = serviceName;
-  },
-  { immediate: true }
-);
 
 watch(
   () => state.mode,
-  (newMode, oldMode) => {
-    // carry the input value when switching mode
-    const oldValue = oldMode === "SID" ? state.sid : state.serviceName;
-    update(oldValue, newMode);
+  () => {
+    onUpdate("");
   }
 );
 </script>
