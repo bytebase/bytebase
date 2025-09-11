@@ -69,6 +69,12 @@ message DataSource {
   string obfuscated_ssl_cert = 6;
   string ssl_key = 40;
   string obfuscated_ssl_key = 7;
+  // verify_tls_certificate enables TLS certificate verification for SSL connections.
+  // Default is false (no verification) for backward compatibility.
+  // Set to true for secure connections (recommended for production).
+  // Only set to false for development or when certificates cannot be properly
+  // validated (e.g., self-signed certs, VPN environments).
+  bool verify_tls_certificate = 47;
   string host = 8;
   string port = 9;
   string database = 10;

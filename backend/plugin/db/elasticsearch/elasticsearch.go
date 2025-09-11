@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
@@ -26,6 +25,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	parser "github.com/bytebase/bytebase/backend/plugin/parser/elasticsearch"
 )
 
@@ -125,6 +125,23 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 }
 
 func openWithBasicAuth(_ context.Context, config db.ConnectionConfig, address string) (db.Driver, error) {
+	// Get TLS config that respects verify_tls_certificate setting
+	tlsConfig, err := util.GetTLSConfig(config.DataSource)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get TLS config")
+	}
+
+	// Default to insecure if no SSL is configured
+	if tlsConfig == nil {
+		tlsConfig = &tls.Config{
+			MinVersion:         tls.VersionTLS12,
+			InsecureSkipVerify: true,
+		}
+	} else {
+		// Ensure minimum TLS version
+		tlsConfig.MinVersion = tls.VersionTLS12
+	}
+
 	esConfig := elasticsearch.Config{
 		Username:  config.DataSource.Username,
 		Password:  config.Password,
@@ -132,36 +149,20 @@ func openWithBasicAuth(_ context.Context, config db.ConnectionConfig, address st
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost:   10,
 			ResponseHeaderTimeout: 5 * time.Second,
-			TLSClientConfig: &tls.Config{
-				MinVersion:         tls.VersionTLS12,
-				InsecureSkipVerify: true,
-			},
+			TLSClientConfig:       tlsConfig,
 		},
 	}
 	// default http client.
 	httpClient := &http.Client{
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				MinVersion:         tls.VersionTLS12,
-				InsecureSkipVerify: true,
-			},
+			TLSClientConfig: tlsConfig,
 		},
 	}
 
+	// If CA cert is provided, update the config
+	// Note: util.GetTLSConfig already handles CA cert configuration
 	if config.DataSource.GetSslCert() != "" {
-		certPool := x509.NewCertPool()
-		if ok := certPool.AppendCertsFromPEM([]byte(config.DataSource.GetSslCert())); !ok {
-			return nil, errors.New("cannot add CA cert to pool")
-		}
 		esConfig.CACert = []byte(config.DataSource.GetSslCert())
-		esConfig.Transport = &http.Transport{
-			MaxIdleConnsPerHost:   10,
-			ResponseHeaderTimeout: time.Second,
-			TLSClientConfig: &tls.Config{
-				MinVersion: tls.VersionTLS12,
-			},
-		}
-		httpClient.Transport = esConfig.Transport
 	}
 
 	// typed elasticsearch client.
@@ -192,13 +193,27 @@ func openWithOpenSearchClient(ctx context.Context, config db.ConnectionConfig, a
 	// Keep debugInfo for error messages
 	debugInfo := fmt.Sprintf("OpenSearch config - address: %s, authType: %v", address, config.DataSource.GetAuthenticationType())
 
+	// Get TLS config that respects verify_tls_certificate setting
+	tlsConfig, err := util.GetTLSConfig(config.DataSource)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get TLS config")
+	}
+
+	// Default to insecure if no SSL is configured
+	if tlsConfig == nil {
+		tlsConfig = &tls.Config{
+			MinVersion:         tls.VersionTLS12,
+			InsecureSkipVerify: true,
+		}
+	} else {
+		// Ensure minimum TLS version
+		tlsConfig.MinVersion = tls.VersionTLS12
+	}
+
 	baseTransport := &http.Transport{
 		MaxIdleConnsPerHost:   10,
 		ResponseHeaderTimeout: 5 * time.Second, // Increase timeout for AWS
-		TLSClientConfig: &tls.Config{
-			MinVersion:         tls.VersionTLS12,
-			InsecureSkipVerify: true,
-		},
+		TLSClientConfig:       tlsConfig,
 	}
 
 	osConfig := opensearch.Config{
@@ -242,16 +257,8 @@ func openWithOpenSearchClient(ctx context.Context, config db.ConnectionConfig, a
 		osConfig.Password = config.Password
 	}
 
-	// Add custom CA if provided
-	if config.DataSource.GetSslCert() != "" {
-		certPool := x509.NewCertPool()
-		if ok := certPool.AppendCertsFromPEM([]byte(config.DataSource.GetSslCert())); !ok {
-			return nil, errors.New("cannot add CA cert to pool")
-		}
-		// Update the base transport, not the debug transport
-		baseTransport.TLSClientConfig.RootCAs = certPool
-		baseTransport.TLSClientConfig.InsecureSkipVerify = false
-	}
+	// Note: util.GetTLSConfig already handles CA cert configuration,
+	// so we don't need to manually handle it here anymore
 
 	// Create OpenSearch client
 	osClient, err := opensearch.NewClient(osConfig)

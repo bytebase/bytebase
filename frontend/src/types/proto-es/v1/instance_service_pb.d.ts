@@ -842,6 +842,17 @@ export declare type DataSource = Message<"bytebase.v1.DataSource"> & {
   sslKey: string;
 
   /**
+   * verify_tls_certificate enables TLS certificate verification for SSL connections.
+   * Default is false (no verification) for backward compatibility.
+   * Set to true for secure connections (recommended for production).
+   * Only set to false for development or when certificates cannot be properly
+   * validated (e.g., self-signed certs, VPN environments).
+   *
+   * @generated from field: bool verify_tls_certificate = 39;
+   */
+  verifyTlsCertificate: boolean;
+
+  /**
    * @generated from field: string host = 8;
    */
   host: string;
