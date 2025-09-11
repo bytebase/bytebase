@@ -7,6 +7,7 @@
       <div class="flex flex-col justify-center items-center pb-1">
         <router-link
           target="_blank"
+          rel="noopener noreferrer"
           :to="{
             name: WORKSPACE_ROUTE_LANDING,
           }"
