@@ -508,6 +508,7 @@ func queryRetry(
 		}
 		if i < len(spans) && spans[i].NotFoundError != nil {
 			for k := range spans[i].SourceColumns {
+				slog.Debug("database metadata need to sync", slog.String("instance", instance.ResourceID), slog.String("database", k.Database), slog.String("schema", k.Schema), slog.String("table", k.Table), slog.String("column", k.Column))
 				syncDatabaseMap[k.Database] = true
 			}
 		}
