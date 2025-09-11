@@ -608,11 +608,13 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				// Add table and column comments for newly created tables
 				if tableDiff.NewTable != nil && tableDiff.NewTable.Comment != "" {
 					writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
+					_, _ = buf.WriteString("\n")
 				}
 				if tableDiff.NewTable != nil {
 					for _, col := range tableDiff.NewTable.Columns {
 						if col.Comment != "" {
 							writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, col.Name, col.Comment)
+							_, _ = buf.WriteString("\n")
 						}
 					}
 				}
@@ -625,6 +627,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				for _, colDiff := range tableDiff.ColumnChanges {
 					if colDiff.Action == schema.MetadataDiffActionCreate {
 						writeAddColumn(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn)
+						_, _ = buf.WriteString("\n")
 					}
 				}
 			}
@@ -637,12 +640,14 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				if err := writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView); err != nil {
 					return err
 				}
+				_, _ = buf.WriteString("\n")
 			default:
 				// No action needed
 			}
 			// Add view comment for newly created views
 			if viewDiff.NewView != nil && viewDiff.NewView.Comment != "" {
 				writeCommentOnView(buf, viewDiff.SchemaName, viewDiff.ViewName, viewDiff.NewView.Comment)
+				_, _ = buf.WriteString("\n")
 			}
 		}
 
@@ -653,12 +658,14 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
 					return err
 				}
+				_, _ = buf.WriteString("\n")
 			default:
 				// No action needed
 			}
 			// Add materialized view comment for newly created materialized views
 			if mvDiff.NewMaterializedView != nil && mvDiff.NewMaterializedView.Comment != "" {
 				writeCommentOnMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName, mvDiff.NewMaterializedView.Comment)
+				_, _ = buf.WriteString("\n")
 			}
 		}
 
@@ -667,9 +674,11 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			if err := writeFunctionDiff(buf, funcDiff); err != nil {
 				return err
 			}
+			_, _ = buf.WriteString("\n")
 			// Add function comment for newly created functions
 			if funcDiff.Action == schema.MetadataDiffActionCreate && funcDiff.NewFunction != nil && funcDiff.NewFunction.Comment != "" {
 				writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, funcDiff.NewFunction.Comment)
+				_, _ = buf.WriteString("\n")
 			}
 		}
 
@@ -679,6 +688,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				if err := writeMigrationSequenceOwnership(buf, seqDiff.SchemaName, seqDiff.NewSequence); err != nil {
 					return err
 				}
+				_, _ = buf.WriteString("\n")
 			}
 		}
 
@@ -689,6 +699,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 					if err := writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk); err != nil {
 						return err
 					}
+					_, _ = buf.WriteString("\n")
 				}
 			}
 		}
@@ -711,11 +722,13 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 					// Add table and column comments for newly created tables
 					if tableDiff.NewTable != nil && tableDiff.NewTable.Comment != "" {
 						writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
+						_, _ = buf.WriteString("\n")
 					}
 					if tableDiff.NewTable != nil {
 						for _, col := range tableDiff.NewTable.Columns {
 							if col.Comment != "" {
 								writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, col.Name, col.Comment)
+								_, _ = buf.WriteString("\n")
 							}
 						}
 					}
@@ -724,6 +737,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 					for _, colDiff := range tableDiff.ColumnChanges {
 						if colDiff.Action == schema.MetadataDiffActionCreate {
 							writeAddColumn(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn)
+							_, _ = buf.WriteString("\n")
 						}
 					}
 				default:
@@ -735,12 +749,14 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 					if err := writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView); err != nil {
 						return err
 					}
+					_, _ = buf.WriteString("\n")
 				default:
 					// No action needed for other operations
 				}
 				// Add view comment for newly created or altered views
 				if viewDiff.NewView != nil && viewDiff.NewView.Comment != "" {
 					writeCommentOnView(buf, viewDiff.SchemaName, viewDiff.ViewName, viewDiff.NewView.Comment)
+					_, _ = buf.WriteString("\n")
 				}
 			} else if mvDiff, ok := materializedViewMap[objID]; ok {
 				switch mvDiff.Action {
@@ -748,28 +764,34 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 					if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
 						return err
 					}
+					_, _ = buf.WriteString("\n")
 				case schema.MetadataDiffActionAlter:
 					// For PostgreSQL materialized views, we need to drop and recreate
 					// since ALTER MATERIALIZED VIEW doesn't support changing the definition
 					writeDropMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName)
+					_, _ = buf.WriteString("\n")
 					if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
 						return err
 					}
+					_, _ = buf.WriteString("\n")
 				default:
 					// No action needed for other operations
 				}
 				// Add materialized view comment for newly created or altered materialized views
 				if mvDiff.NewMaterializedView != nil && mvDiff.NewMaterializedView.Comment != "" {
 					writeCommentOnMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName, mvDiff.NewMaterializedView.Comment)
+					_, _ = buf.WriteString("\n")
 				}
 			} else if funcDiff, ok := functionMap[objID]; ok {
 				if err := writeFunctionDiff(buf, funcDiff); err != nil {
 					return err
 				}
+				_, _ = buf.WriteString("\n")
 				// Add function comment for newly created or altered functions
 				if (funcDiff.Action == schema.MetadataDiffActionCreate || funcDiff.Action == schema.MetadataDiffActionAlter) && funcDiff.NewFunction != nil && funcDiff.NewFunction.Comment != "" {
 					writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, funcDiff.NewFunction.Comment)
 				}
+				_, _ = buf.WriteString("\n")
 			}
 		}
 
@@ -779,6 +801,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 				if err := writeMigrationSequenceOwnership(buf, seqDiff.SchemaName, seqDiff.NewSequence); err != nil {
 					return err
 				}
+				_, _ = buf.WriteString("\n")
 			}
 		}
 
@@ -789,6 +812,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 					if err := writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk); err != nil {
 						return err
 					}
+					_, _ = buf.WriteString("\n")
 				}
 			}
 		}
@@ -798,6 +822,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
 				for _, trigger := range tableDiff.NewTable.Triggers {
 					writeMigrationTrigger(buf, trigger)
+					_, _ = buf.WriteString("\n")
 				}
 			}
 		}
@@ -807,6 +832,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			if mvDiff.Action == schema.MetadataDiffActionCreate && mvDiff.NewMaterializedView != nil {
 				for _, index := range mvDiff.NewMaterializedView.Indexes {
 					writeMigrationMaterializedViewIndex(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView.Name, index)
+					_, _ = buf.WriteString("\n")
 				}
 			}
 		}
@@ -1802,6 +1828,7 @@ func generateTableCommentChanges(buf *strings.Builder, tableDiff *schema.TableDi
 	// If comments are different, generate COMMENT ON TABLE statement
 	if oldComment != newComment {
 		writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, newComment)
+		_, _ = buf.WriteString("\n")
 	}
 
 	return nil
@@ -1830,11 +1857,13 @@ func generateColumnCommentChanges(buf *strings.Builder, tableDiff *schema.TableD
 			// Column exists in both old and new - check if comment changed
 			if oldCol.Comment != newCol.Comment {
 				writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, newCol.Name, newCol.Comment)
+				_, _ = buf.WriteString("\n")
 			}
 		} else {
 			// New column - if it has a comment, add it
 			if newCol.Comment != "" {
 				writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, newCol.Name, newCol.Comment)
+				_, _ = buf.WriteString("\n")
 			}
 		}
 	}
@@ -1900,6 +1929,7 @@ func generateSchemaCommentChanges(buf *strings.Builder, diff *schema.MetadataDif
 			// If comments are different, generate COMMENT ON SCHEMA statement
 			if oldComment != newComment {
 				writeCommentOnSchema(buf, schemaDiff.SchemaName, newComment)
+				_, _ = buf.WriteString("\n")
 			}
 		}
 	}
@@ -1920,6 +1950,7 @@ func generateViewCommentChanges(buf *strings.Builder, diff *schema.MetadataDiff)
 			// If comments are different, generate COMMENT ON VIEW statement
 			if oldComment != newComment {
 				writeCommentOnView(buf, viewDiff.SchemaName, viewDiff.ViewName, newComment)
+				_, _ = buf.WriteString("\n")
 			}
 		}
 	}
@@ -1940,6 +1971,7 @@ func generateMaterializedViewCommentChanges(buf *strings.Builder, diff *schema.M
 			// If comments are different, generate COMMENT ON MATERIALIZED VIEW statement
 			if oldComment != newComment {
 				writeCommentOnMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName, newComment)
+				_, _ = buf.WriteString("\n")
 			}
 		}
 	}
@@ -1960,6 +1992,7 @@ func generateFunctionCommentChanges(buf *strings.Builder, diff *schema.MetadataD
 			// If comments are different, generate COMMENT ON FUNCTION statement
 			if oldComment != newComment {
 				writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, newComment)
+				_, _ = buf.WriteString("\n")
 			}
 		}
 	}
@@ -1980,6 +2013,7 @@ func generateSequenceCommentChanges(buf *strings.Builder, diff *schema.MetadataD
 			// If comments are different, generate COMMENT ON SEQUENCE statement
 			if oldComment != newComment {
 				writeCommentOnSequence(buf, seqDiff.SchemaName, seqDiff.SequenceName, newComment)
+				_, _ = buf.WriteString("\n")
 			}
 		}
 	}
@@ -2000,6 +2034,7 @@ func generateIndexCommentChanges(buf *strings.Builder, tableDiff *schema.TableDi
 			// If comments are different, generate COMMENT ON INDEX statement
 			if oldComment != newComment {
 				writeCommentOnIndex(buf, tableDiff.SchemaName, indexDiff.NewIndex.Name, newComment)
+				_, _ = buf.WriteString("\n")
 			}
 		}
 	}
@@ -2140,6 +2175,7 @@ func generateEnumTypeCommentChanges(buf *strings.Builder, diff *schema.MetadataD
 			// If comments are different, generate COMMENT ON TYPE statement
 			if oldComment != newComment {
 				writeCommentOnType(buf, enumDiff.SchemaName, enumDiff.EnumTypeName, newComment)
+				_, _ = buf.WriteString("\n")
 			}
 		}
 	}
