@@ -312,7 +312,12 @@ const options = computed((): DropdownOption[] => [
           : SQL_EDITOR_HOME_MODULE,
       });
       return (
-        <a class="menu-item" href={link.fullPath} target="_blank" rel="noopener noreferrer">
+        <a
+          class="menu-item"
+          href={link.fullPath}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           {isSQLEditorRoute(router)
             ? t(
                 "settings.general.workspace.database-change-mode.go-to-workspace"
