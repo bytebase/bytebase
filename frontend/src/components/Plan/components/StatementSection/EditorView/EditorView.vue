@@ -14,6 +14,7 @@
       </div>
       <div class="flex items-center justify-end gap-x-2">
         <template v-if="isCreating">
+          <FormatOnSaveCheckbox />
           <SQLUploadButton
             size="small"
             :loading="state.isUploadingFile"
@@ -55,6 +56,7 @@
             </template>
           </template>
           <template v-else>
+            <FormatOnSaveCheckbox />
             <SQLUploadButton
               size="small"
               :loading="state.isUploadingFile"
@@ -187,6 +189,7 @@ import { useEditorState } from "@/components/Plan/logic/useEditorState";
 import RequiredStar from "@/components/RequiredStar.vue";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
+import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
 import { planServiceClientConnect } from "@/grpcweb";
 import {
   pushNotification,
