@@ -83,7 +83,7 @@ type TableDiff struct {
 	// Primary key changes
 	PrimaryKeyChanges []*PrimaryKeyDiff
 
-	// Unique constraint changes  
+	// Unique constraint changes
 	UniqueConstraintChanges []*UniqueConstraintDiff
 
 	// Foreign key changes
