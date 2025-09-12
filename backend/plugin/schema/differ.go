@@ -106,9 +106,11 @@ type ColumnDiff struct {
 
 // IndexDiff represents changes to an index.
 type IndexDiff struct {
-	Action   MetadataDiffAction
-	OldIndex *storepb.IndexMetadata
-	NewIndex *storepb.IndexMetadata
+	Action     MetadataDiffAction
+	OldIndex   *storepb.IndexMetadata
+	NewIndex   *storepb.IndexMetadata
+	OldASTNode any // AST node for old index constraint
+	NewASTNode any // AST node for new index constraint
 }
 
 // ForeignKeyDiff represents changes to a foreign key.
@@ -116,6 +118,8 @@ type ForeignKeyDiff struct {
 	Action        MetadataDiffAction
 	OldForeignKey *storepb.ForeignKeyMetadata
 	NewForeignKey *storepb.ForeignKeyMetadata
+	OldASTNode    any // AST node for old foreign key constraint
+	NewASTNode    any // AST node for new foreign key constraint
 }
 
 // CheckConstraintDiff represents changes to a check constraint.
@@ -123,6 +127,8 @@ type CheckConstraintDiff struct {
 	Action             MetadataDiffAction
 	OldCheckConstraint *storepb.CheckConstraintMetadata
 	NewCheckConstraint *storepb.CheckConstraintMetadata
+	OldASTNode         any // AST node for old check constraint
+	NewASTNode         any // AST node for new check constraint
 }
 
 // TriggerDiff represents changes to a trigger.
