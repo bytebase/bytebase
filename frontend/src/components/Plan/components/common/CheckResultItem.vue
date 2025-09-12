@@ -105,20 +105,12 @@ const displayTitle = computed(() => {
 
   // Only apply SQL review localization if this is a SQL review report
   if (props.reportType === "sqlReviewReport") {
-    // Convert dots to hyphens in the rule key to match the expected format
-    const normalizedKey = title.replace(/\./g, "-");
     // Try to get rule template and localization
     const rule = getRuleTemplateByType(props.title);
     if (rule) {
       const ruleLocalization = getRuleLocalization(rule.type, rule.engine);
       if (ruleLocalization.title) {
         title = ruleLocalization.title;
-      }
-    } else {
-      // Fallback to direct localization lookup
-      const localization = getRuleLocalization(normalizedKey);
-      if (localization.title) {
-        title = localization.title;
       }
     }
   }
