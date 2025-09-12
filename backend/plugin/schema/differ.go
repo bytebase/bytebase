@@ -98,6 +98,10 @@ type ColumnDiff struct {
 	Action    MetadataDiffAction
 	OldColumn *storepb.ColumnMetadata
 	NewColumn *storepb.ColumnMetadata
+
+	// AST nodes for DDL analysis and generation
+	OldASTNode parser.IColumnDefContext // Previous column definition AST node
+	NewASTNode parser.IColumnDefContext // Current column definition AST node
 }
 
 // IndexDiff represents changes to an index.
