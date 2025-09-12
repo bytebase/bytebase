@@ -23,6 +23,7 @@ func TestColumnSDLDiff(t *testing.T) {
 		expectedAlterColumns  []string
 		expectedDropColumns   []string
 		validateColumnDiffs   func(t *testing.T, columnDiffs []*schema.ColumnDiff)
+		validateTableDiffs    func(t *testing.T, tableDiffs []*schema.TableDiff)
 	}{
 		{
 			name: "No column changes - identical tables",
@@ -308,6 +309,78 @@ func TestColumnSDLDiff(t *testing.T) {
 				assert.NotEqual(t, oldText, newText, "AST text should be different due to whitespace")
 			},
 		},
+		{
+			name: "Add foreign key constraint",
+			currentSDL: `CREATE TABLE orders (
+				id INTEGER PRIMARY KEY,
+				customer_id INTEGER,
+				CONSTRAINT fk_orders_customer FOREIGN KEY (customer_id) REFERENCES customers(id)
+			);`,
+			previousSDL: `CREATE TABLE orders (
+				id INTEGER PRIMARY KEY,
+				customer_id INTEGER
+			);`,
+			expectedTableChanges: 1,
+			validateTableDiffs: func(t *testing.T, tableDiffs []*schema.TableDiff) {
+				assert.Len(t, tableDiffs, 1, "Should have 1 table diff")
+				tableDiff := tableDiffs[0]
+				assert.Equal(t, schema.MetadataDiffActionAlter, tableDiff.Action)
+				assert.Len(t, tableDiff.ForeignKeyChanges, 1, "Should have 1 FK change")
+				fkChange := tableDiff.ForeignKeyChanges[0]
+				assert.Equal(t, schema.MetadataDiffActionCreate, fkChange.Action)
+				// AST node should be present for created FK
+				assert.NotNil(t, fkChange.NewASTNode)
+				assert.Nil(t, fkChange.OldASTNode)
+			},
+		},
+		{
+			name: "Add check constraint",
+			currentSDL: `CREATE TABLE products (
+				id INTEGER PRIMARY KEY,
+				price DECIMAL(10,2),
+				CONSTRAINT chk_positive_price CHECK (price > 0)
+			);`,
+			previousSDL: `CREATE TABLE products (
+				id INTEGER PRIMARY KEY,
+				price DECIMAL(10,2)
+			);`,
+			expectedTableChanges: 1,
+			validateTableDiffs: func(t *testing.T, tableDiffs []*schema.TableDiff) {
+				assert.Len(t, tableDiffs, 1, "Should have 1 table diff")
+				tableDiff := tableDiffs[0]
+				assert.Equal(t, schema.MetadataDiffActionAlter, tableDiff.Action)
+				assert.Len(t, tableDiff.CheckConstraintChanges, 1, "Should have 1 check constraint change")
+				checkChange := tableDiff.CheckConstraintChanges[0]
+				assert.Equal(t, schema.MetadataDiffActionCreate, checkChange.Action)
+				// AST node should be present for created check constraint
+				assert.NotNil(t, checkChange.NewASTNode)
+				assert.Nil(t, checkChange.OldASTNode)
+			},
+		},
+		{
+			name: "Add unique constraint",
+			currentSDL: `CREATE TABLE users (
+				id INTEGER PRIMARY KEY,
+				email VARCHAR(255),
+				CONSTRAINT uk_users_email UNIQUE (email)
+			);`,
+			previousSDL: `CREATE TABLE users (
+				id INTEGER PRIMARY KEY,
+				email VARCHAR(255)
+			);`,
+			expectedTableChanges: 1,
+			validateTableDiffs: func(t *testing.T, tableDiffs []*schema.TableDiff) {
+				assert.Len(t, tableDiffs, 1, "Should have 1 table diff")
+				tableDiff := tableDiffs[0]
+				assert.Equal(t, schema.MetadataDiffActionAlter, tableDiff.Action)
+				assert.Len(t, tableDiff.IndexChanges, 1, "Should have 1 index change for UNIQUE constraint")
+				indexChange := tableDiff.IndexChanges[0]
+				assert.Equal(t, schema.MetadataDiffActionCreate, indexChange.Action)
+				// AST node should be present for created unique constraint
+				assert.NotNil(t, indexChange.NewASTNode)
+				assert.Nil(t, indexChange.OldASTNode)
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -360,6 +433,11 @@ func TestColumnSDLDiff(t *testing.T) {
 				if tc.validateColumnDiffs != nil {
 					tc.validateColumnDiffs(t, tableDiff.ColumnChanges)
 				}
+			}
+
+			// Run table-level validation
+			if tc.validateTableDiffs != nil {
+				tc.validateTableDiffs(t, diff.TableChanges)
 			}
 		})
 	}
