@@ -219,7 +219,9 @@ const getAccessUsers = async (
 
   if (exception.member.startsWith(groupBindingPrefix)) {
     access.type = "group";
-    access.group = groupStore.getGroupByIdentifier(exception.member);
+    access.group = await groupStore.getOrFetchGroupByIdentifier(
+      exception.member
+    );
   } else {
     access.type = "user";
     access.user = await userStore.getOrFetchUserByIdentifier(exception.member);
