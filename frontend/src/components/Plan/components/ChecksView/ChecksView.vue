@@ -1,17 +1,40 @@
 <template>
-  <div class="flex-1 flex flex-col pt-2 pb-4">
-    <!-- Header with filters -->
-    <div class="flex items-center justify-between px-4">
+  <div class="flex-1 flex flex-col">
+    <!-- Header with status counts -->
+    <div class="flex items-center justify-between">
       <div class="flex items-center gap-4">
-        <PlanCheckStatusCount
-          :plan="plan"
-          :show-label="true"
-          :clickable="true"
-          :selected-status="selectedStatus"
-          size="normal"
-          class="text-lg"
-          @click="toggleSelectedStatus($event)"
-        />
+        <div class="flex items-center gap-3" v-if="hasAnyStatus">
+          <div
+            v-if="statusSummary.error > 0"
+            class="flex items-center gap-1 text-error cursor-pointer"
+            :class="getItemClass(PlanCheckRun_Result_Status.ERROR)"
+            @click="toggleSelectedStatus(PlanCheckRun_Result_Status.ERROR)"
+          >
+            <XCircleIcon class="w-5 h-5" />
+            <span>{{ $t("common.error") }}</span>
+            <span>{{ statusSummary.error }}</span>
+          </div>
+          <div
+            v-if="statusSummary.warning > 0"
+            class="flex items-center gap-1 text-warning cursor-pointer"
+            :class="getItemClass(PlanCheckRun_Result_Status.WARNING)"
+            @click="toggleSelectedStatus(PlanCheckRun_Result_Status.WARNING)"
+          >
+            <AlertCircleIcon class="w-5 h-5" />
+            <span>{{ $t("common.warning") }}</span>
+            <span>{{ statusSummary.warning }}</span>
+          </div>
+          <div
+            v-if="statusSummary.success > 0"
+            class="flex items-center gap-1 text-success cursor-pointer"
+            :class="getItemClass(PlanCheckRun_Result_Status.SUCCESS)"
+            @click="toggleSelectedStatus(PlanCheckRun_Result_Status.SUCCESS)"
+          >
+            <CheckCircleIcon class="w-5 h-5" />
+            <span>{{ $t("common.success") }}</span>
+            <span>{{ statusSummary.success }}</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -40,7 +63,7 @@
         <div
           v-for="checkRun in filteredCheckRuns"
           :key="checkRun.name"
-          class="px-6 py-4"
+          class="px-2 py-4"
         >
           <!-- Check Run Header -->
           <div class="flex items-start justify-between mb-2">
@@ -110,9 +133,11 @@ import {
   ShieldIcon,
   SearchCodeIcon,
   CircleQuestionMarkIcon,
+  XCircleIcon,
+  AlertCircleIcon,
 } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import {
@@ -121,21 +146,16 @@ import {
   type PlanCheckRun,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { humanizeTs } from "@/utils";
-import { usePlanContext } from "../../logic";
-import { useResourcePoller } from "../../logic/poller";
-import PlanCheckStatusCount from "../PlanCheckStatusCount.vue";
 import CheckResultItem from "../common/CheckResultItem.vue";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
 const props = defineProps<{
   defaultStatus?: PlanCheckRun_Result_Status;
+  planCheckRuns: PlanCheckRun[];
+  isLoading?: boolean;
 }>();
 
 const { t } = useI18n();
-const { plan, planCheckRuns } = usePlanContext();
-const { refreshResources } = useResourcePoller();
-
-const isLoading = ref(true);
 
 const selectedStatus = ref<PlanCheckRun_Result_Status | undefined>(
   props.defaultStatus
@@ -145,8 +165,56 @@ const hasFilters = computed(() => {
   return selectedStatus.value !== undefined;
 });
 
+// Calculate status summary from plan check runs
+const statusSummary = computed(() => {
+  const summary = { error: 0, warning: 0, success: 0 };
+
+  for (const checkRun of props.planCheckRuns) {
+    for (const result of checkRun.results) {
+      if (result.status === PlanCheckRun_Result_Status.ERROR) {
+        summary.error++;
+      } else if (result.status === PlanCheckRun_Result_Status.WARNING) {
+        summary.warning++;
+      } else if (result.status === PlanCheckRun_Result_Status.SUCCESS) {
+        summary.success++;
+      }
+    }
+  }
+
+  return summary;
+});
+
+const hasAnyStatus = computed(() => {
+  return (
+    statusSummary.value.error > 0 ||
+    statusSummary.value.warning > 0 ||
+    statusSummary.value.success > 0
+  );
+});
+
+const toggleSelectedStatus = (status: PlanCheckRun_Result_Status) => {
+  if (selectedStatus.value === status) {
+    selectedStatus.value = undefined; // Deselect if already selected
+  } else {
+    selectedStatus.value = status; // Select the new status
+  }
+};
+
+const getItemClass = (status: PlanCheckRun_Result_Status) => {
+  const classes: string[] = [];
+
+  if (selectedStatus.value === status) {
+    classes.push("bg-gray-100 rounded-lg px-2 py-1");
+  } else {
+    // Add some padding to align with selected items
+    classes.push("px-2 py-1");
+  }
+
+  return classes;
+};
+
 const filteredCheckRuns = computed(() => {
-  return planCheckRuns.value.filter((checkRun) => {
+  return props.planCheckRuns.filter((checkRun) => {
     // Filter by status - check if any result matches the selected status
     if (selectedStatus.value !== undefined) {
       const hasMatchingResult = checkRun.results.some(
@@ -159,24 +227,6 @@ const filteredCheckRuns = computed(() => {
     return true;
   });
 });
-
-watch(
-  () => props.defaultStatus,
-  async () => {
-    isLoading.value = true;
-    await refreshResources(["planCheckRuns"], true /** force */);
-    isLoading.value = false;
-  },
-  { immediate: true }
-);
-
-const toggleSelectedStatus = (status: PlanCheckRun_Result_Status) => {
-  if (selectedStatus.value === status) {
-    selectedStatus.value = undefined; // Deselect if already selected
-  } else {
-    selectedStatus.value = status; // Select the new status
-  }
-};
 
 const getFilteredResults = (checkRun: PlanCheckRun) => {
   return checkRun.results.filter((result) => {
