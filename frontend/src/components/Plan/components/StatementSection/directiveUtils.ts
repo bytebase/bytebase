@@ -12,8 +12,9 @@
 const TXN_MODE_REGEX = /^\s*--\s*txn-mode\s*=\s*(on|off)\s*$/i;
 
 // PostgreSQL role setter pattern
+// Matches PostgreSQL identifier rules: starts with letter/underscore, up to 63 chars
 const ROLE_SETTER_REGEX =
-  /\/\*\s*=== Bytebase Role Setter\. DO NOT EDIT\. === \*\/\s*SET ROLE (\w+);/;
+  /\/\*\s*=== Bytebase Role Setter\. DO NOT EDIT\. === \*\/\s*SET ROLE ([a-zA-Z_][a-zA-Z0-9_]{0,62});/;
 
 export interface ParsedStatement {
   // Line 1 directive (currently only transaction mode)

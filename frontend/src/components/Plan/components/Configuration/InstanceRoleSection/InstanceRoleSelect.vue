@@ -95,7 +95,9 @@ const initializeFromStatement = () => {
   const parsed = parseStatement(sheetStatement.value);
   if (parsed.roleSetterBlock) {
     // Extract role name from the role setter block
-    const match = parsed.roleSetterBlock.match(/SET ROLE (\w+);/);
+    const match = parsed.roleSetterBlock.match(
+      /SET ROLE ([a-zA-Z_][a-zA-Z0-9_]{0,62});/
+    );
     if (match) {
       contextSelectedRole.value = match[1];
     } else {
