@@ -15,8 +15,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 )
 
 // SyncInstance syncs the instance.
@@ -552,89 +550,105 @@ ORDER BY pgv.schemaname, pgv.viewname;`
 func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	indexMap := make(map[db.TableKey][]*storepb.IndexMetadata)
 
+	// Use generate_series to mimic PostgreSQL's generate_subscripts for getting column expressions
+	// Combined with pg_get_indexdef to get accurate column expressions
 	query := `
+	WITH index_positions AS (
+		SELECT generate_series(0, 31) as pos
+	)
 	SELECT 
-		pgidx.schemaname, 
+		pgidx.schemaname,
 		pgidx.tablename, 
-		pgidx.indexname, 
-		pgidx.indexdef, 
-		(
-		SELECT 1
-			FROM information_schema.table_constraints
-			WHERE 	constraint_schema = pgidx.schemaname
-					AND constraint_name = pgidx.indexname
-					AND table_schema = pgidx.schemaname
-					AND table_name = pgidx.tablename
-					AND constraint_type = 'PRIMARY KEY'
-		) AS primary,
+		pgidx.indexname,
+		pgidx.indexdef,
+		ix.indisunique,
+		ix.indisprimary,
+		p.pos + 1 as position,
+		pg_get_indexdef(pc.oid, p.pos + 1, true) as column_expression,
 		obj_description(pc.oid) AS comment
 	FROM
 		pg_indexes AS pgidx 
 		JOIN pg_namespace AS pns ON pns.nspname = pgidx.schemaname
 		JOIN pg_class AS pc ON pc.relname = pgidx.indexname AND pns.oid = pc.relnamespace
+		JOIN pg_index AS ix ON ix.indexrelid = pc.oid
+		CROSS JOIN index_positions p
 	WHERE 
 		pgidx.schemaname NOT IN ('pg_catalog', 'information_schema')
+		AND ix.indkey[p.pos] > 0  -- Only process positions that have actual columns
 	ORDER BY
-		pgidx.schemaname, pgidx.tablename, pgidx.indexname;`
+		pgidx.schemaname, pgidx.tablename, pgidx.indexname, p.pos;`
+
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
+	// Track index data as we process rows
+	type indexKey struct {
+		schema string
+		table  string
+		index  string
+	}
+	indexData := make(map[indexKey]*storepb.IndexMetadata)
+	indexColumns := make(map[indexKey][]string)
+
 	for rows.Next() {
-		index := &storepb.IndexMetadata{}
-		var schemaName, tableName, statement string
-		var primary sql.NullInt32
+		var schemaName, tableName, indexName, indexDef string
+		var isUnique, isPrimary bool
+		var position int
+		var columnExpression sql.NullString
 		var comment sql.NullString
-		if err := rows.Scan(&schemaName, &tableName, &index.Name, &statement, &primary, &comment); err != nil {
+
+		if err := rows.Scan(&schemaName, &tableName, &indexName, &indexDef,
+			&isUnique, &isPrimary, &position, &columnExpression, &comment); err != nil {
 			return nil, err
 		}
 
-		nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
-		if err != nil {
-			return nil, err
-		}
-		if len(nodes) != 1 {
-			return nil, errors.Errorf("invalid number of statements %v, expecting one", len(nodes))
-		}
-		node, ok := nodes[0].(*ast.CreateIndexStmt)
-		if !ok {
-			return nil, errors.Errorf("statement %q is not index statement", statement)
-		}
-		deparsed, err := pgrawparser.Deparse(pgrawparser.DeparseContext{}, node)
-		if err != nil {
-			return nil, err
-		}
-		// Instead of using indexdef, we use deparsed format so that the definition has quoted identifiers.
-		index.Definition = deparsed
+		key := indexKey{schema: schemaName, table: tableName, index: indexName}
 
-		index.Type = getIndexMethodType(statement)
-		index.Unique = node.Index.Unique
-		index.Expressions = node.Index.GetKeyNameList()
-		if primary.Valid && primary.Int32 == 1 {
-			index.Primary = true
-		}
-		if comment.Valid {
-			index.Comment = comment.String
+		// Create index metadata on first encounter
+		if _, exists := indexData[key]; !exists {
+			indexData[key] = &storepb.IndexMetadata{
+				Name:       indexName,
+				Definition: indexDef,
+				Type:       getIndexMethodType(indexDef),
+				Unique:     isUnique,
+				Primary:    isPrimary,
+			}
+			if comment.Valid {
+				indexData[key].Comment = comment.String
+			}
 		}
 
-		key := db.TableKey{Schema: schemaName, Table: tableName}
-		indexMap[key] = append(indexMap[key], index)
+		// Collect column expressions
+		if columnExpression.Valid {
+			indexColumns[key] = append(indexColumns[key], columnExpression.String)
+		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
+	}
+
+	// Build final index map with expressions
+	for key, index := range indexData {
+		if columns, ok := indexColumns[key]; ok {
+			index.Expressions = columns
+		}
+		tableKey := db.TableKey{Schema: key.schema, Table: key.table}
+		indexMap[tableKey] = append(indexMap[tableKey], index)
 	}
 
 	return indexMap, nil
 }
 
 func getIndexMethodType(stmt string) string {
-	re := regexp.MustCompile(`USING (\w+) `)
+	re := regexp.MustCompile(`USING (\w+)`)
 	matches := re.FindStringSubmatch(stmt)
-	if len(matches) == 0 {
-		return ""
+	if len(matches) > 1 {
+		return matches[1]
 	}
-	return matches[1]
+	return "btree" // Default for Redshift
 }
 
 func (d *Driver) getVersion(ctx context.Context) (string, error) {
