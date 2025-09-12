@@ -49,6 +49,9 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 		return nil, errors.Wrap(err, "failed to process table changes")
 	}
 
+	// Process index changes (standalone CREATE INDEX statements)
+	processStandaloneIndexChanges(currentChunks, previousChunks, diff)
+
 	return diff, nil
 }
 
@@ -216,20 +219,22 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 				columnChanges := processColumnChanges(oldASTNode, newASTNode)
 				foreignKeyChanges := processForeignKeyChanges(oldASTNode, newASTNode)
 				checkConstraintChanges := processCheckConstraintChanges(oldASTNode, newASTNode)
-				indexChanges := processIndexChanges(oldASTNode, newASTNode)
+				primaryKeyChanges := processPrimaryKeyChanges(oldASTNode, newASTNode)
+				uniqueConstraintChanges := processUniqueConstraintChanges(oldASTNode, newASTNode)
 
 				tableDiff := &schema.TableDiff{
-					Action:                 schema.MetadataDiffActionAlter,
-					SchemaName:             schemaName,
-					TableName:              tableName,
-					OldTable:               nil, // Will be populated when SDL drift detection is implemented
-					NewTable:               nil, // Will be populated when SDL drift detection is implemented
-					OldASTNode:             oldASTNode,
-					NewASTNode:             newASTNode,
-					ColumnChanges:          columnChanges,
-					ForeignKeyChanges:      foreignKeyChanges,
-					CheckConstraintChanges: checkConstraintChanges,
-					IndexChanges:           indexChanges,
+					Action:                  schema.MetadataDiffActionAlter,
+					SchemaName:              schemaName,
+					TableName:               tableName,
+					OldTable:                nil, // Will be populated when SDL drift detection is implemented
+					NewTable:                nil, // Will be populated when SDL drift detection is implemented
+					OldASTNode:              oldASTNode,
+					NewASTNode:              newASTNode,
+					ColumnChanges:           columnChanges,
+					ForeignKeyChanges:       foreignKeyChanges,
+					CheckConstraintChanges:  checkConstraintChanges,
+					PrimaryKeyChanges:       primaryKeyChanges,
+					UniqueConstraintChanges: uniqueConstraintChanges,
 				}
 				diff.TableChanges = append(diff.TableChanges, tableDiff)
 			}
@@ -676,59 +681,108 @@ func processCheckConstraintChanges(oldTable, newTable *parser.CreatestmtContext)
 	return checkDiffs
 }
 
-// processIndexChanges analyzes index changes (including PK and UK) between old and new table definitions
-// Following the text-first comparison pattern for performance optimization
-func processIndexChanges(oldTable, newTable *parser.CreatestmtContext) []*schema.IndexDiff {
+// processPrimaryKeyChanges analyzes primary key constraint changes between old and new table definitions
+func processPrimaryKeyChanges(oldTable, newTable *parser.CreatestmtContext) []*schema.PrimaryKeyDiff {
 	if oldTable == nil || newTable == nil {
-		return []*schema.IndexDiff{}
+		return []*schema.PrimaryKeyDiff{}
 	}
 
-	// Step 1: Extract all index/unique constraint definitions with their AST nodes for text comparison
-	oldIndexMap := extractIndexDefinitionsWithAST(oldTable)
-	newIndexMap := extractIndexDefinitionsWithAST(newTable)
+	// Step 1: Extract all primary key constraint definitions with their AST nodes for text comparison
+	oldPKMap := extractPrimaryKeyDefinitionsWithAST(oldTable)
+	newPKMap := extractPrimaryKeyDefinitionsWithAST(newTable)
 
-	var indexDiffs []*schema.IndexDiff
+	var pkDiffs []*schema.PrimaryKeyDiff
 
-	// Step 2: Process current indexes to find created and modified indexes
-	for indexName, newIndexDef := range newIndexMap {
-		if oldIndexDef, exists := oldIndexMap[indexName]; exists {
-			// Index exists in both - check if modified by comparing text first
-			currentText := getIndexText(newIndexDef.ASTNode)
-			previousText := getIndexText(oldIndexDef.ASTNode)
+	// Step 2: Process current primary keys to find created and modified primary keys
+	for pkName, newPKDef := range newPKMap {
+		if oldPKDef, exists := oldPKMap[pkName]; exists {
+			// PK exists in both - check if modified by comparing text first
+			currentText := getIndexText(newPKDef.ASTNode)
+			previousText := getIndexText(oldPKDef.ASTNode)
 			if currentText != previousText {
-				// Index was modified - store AST nodes only
-				// Drop and recreate for modifications (PostgreSQL pattern)
-				indexDiffs = append(indexDiffs, &schema.IndexDiff{
+				// PK was modified - store AST nodes only
+				pkDiffs = append(pkDiffs, &schema.PrimaryKeyDiff{
 					Action:     schema.MetadataDiffActionDrop,
-					OldASTNode: oldIndexDef.ASTNode,
+					OldASTNode: oldPKDef.ASTNode,
 				})
-				indexDiffs = append(indexDiffs, &schema.IndexDiff{
+				pkDiffs = append(pkDiffs, &schema.PrimaryKeyDiff{
 					Action:     schema.MetadataDiffActionCreate,
-					NewASTNode: newIndexDef.ASTNode,
+					NewASTNode: newPKDef.ASTNode,
 				})
 			}
-			// If text is identical, skip - no changes detected
 		} else {
-			// New index - store AST node only
-			indexDiffs = append(indexDiffs, &schema.IndexDiff{
+			// New PK - store AST node only
+			pkDiffs = append(pkDiffs, &schema.PrimaryKeyDiff{
 				Action:     schema.MetadataDiffActionCreate,
-				NewASTNode: newIndexDef.ASTNode,
+				NewASTNode: newPKDef.ASTNode,
 			})
 		}
 	}
 
-	// Step 3: Process old indexes to find dropped ones
-	for indexName, oldIndexDef := range oldIndexMap {
-		if _, exists := newIndexMap[indexName]; !exists {
-			// Index was dropped - store AST node only
-			indexDiffs = append(indexDiffs, &schema.IndexDiff{
+	// Step 3: Process old primary keys to find dropped ones
+	for pkName, oldPKDef := range oldPKMap {
+		if _, exists := newPKMap[pkName]; !exists {
+			// PK was dropped - store AST node only
+			pkDiffs = append(pkDiffs, &schema.PrimaryKeyDiff{
 				Action:     schema.MetadataDiffActionDrop,
-				OldASTNode: oldIndexDef.ASTNode,
+				OldASTNode: oldPKDef.ASTNode,
 			})
 		}
 	}
 
-	return indexDiffs
+	return pkDiffs
+}
+
+// processUniqueConstraintChanges analyzes unique constraint changes between old and new table definitions
+func processUniqueConstraintChanges(oldTable, newTable *parser.CreatestmtContext) []*schema.UniqueConstraintDiff {
+	if oldTable == nil || newTable == nil {
+		return []*schema.UniqueConstraintDiff{}
+	}
+
+	// Step 1: Extract all unique constraint definitions with their AST nodes for text comparison
+	oldUKMap := extractUniqueConstraintDefinitionsWithAST(oldTable)
+	newUKMap := extractUniqueConstraintDefinitionsWithAST(newTable)
+
+	var ukDiffs []*schema.UniqueConstraintDiff
+
+	// Step 2: Process current unique constraints to find created and modified unique constraints
+	for ukName, newUKDef := range newUKMap {
+		if oldUKDef, exists := oldUKMap[ukName]; exists {
+			// UK exists in both - check if modified by comparing text first
+			currentText := getIndexText(newUKDef.ASTNode)
+			previousText := getIndexText(oldUKDef.ASTNode)
+			if currentText != previousText {
+				// UK was modified - store AST nodes only
+				ukDiffs = append(ukDiffs, &schema.UniqueConstraintDiff{
+					Action:     schema.MetadataDiffActionDrop,
+					OldASTNode: oldUKDef.ASTNode,
+				})
+				ukDiffs = append(ukDiffs, &schema.UniqueConstraintDiff{
+					Action:     schema.MetadataDiffActionCreate,
+					NewASTNode: newUKDef.ASTNode,
+				})
+			}
+		} else {
+			// New UK - store AST node only
+			ukDiffs = append(ukDiffs, &schema.UniqueConstraintDiff{
+				Action:     schema.MetadataDiffActionCreate,
+				NewASTNode: newUKDef.ASTNode,
+			})
+		}
+	}
+
+	// Step 3: Process old unique constraints to find dropped ones
+	for ukName, oldUKDef := range oldUKMap {
+		if _, exists := newUKMap[ukName]; !exists {
+			// UK was dropped - store AST node only
+			ukDiffs = append(ukDiffs, &schema.UniqueConstraintDiff{
+				Action:     schema.MetadataDiffActionDrop,
+				OldASTNode: oldUKDef.ASTNode,
+			})
+		}
+	}
+
+	return ukDiffs
 }
 
 // extractForeignKeyDefinitionsWithAST extracts foreign key constraints with their AST nodes for text comparison
@@ -827,17 +881,17 @@ func extractCheckConstraintDefinitionsWithAST(createStmt *parser.CreatestmtConte
 	return checkMap
 }
 
-// extractIndexDefinitionsWithAST extracts index/unique constraints with their AST nodes for text comparison
-func extractIndexDefinitionsWithAST(createStmt *parser.CreatestmtContext) map[string]*IndexDefWithAST {
-	indexMap := make(map[string]*IndexDefWithAST)
+// extractPrimaryKeyDefinitionsWithAST extracts primary key constraints with their AST nodes
+func extractPrimaryKeyDefinitionsWithAST(createStmt *parser.CreatestmtContext) map[string]*IndexDefWithAST {
+	pkMap := make(map[string]*IndexDefWithAST)
 
 	if createStmt == nil || createStmt.Opttableelementlist() == nil {
-		return indexMap
+		return pkMap
 	}
 
 	tableElementList := createStmt.Opttableelementlist().Tableelementlist()
 	if tableElementList == nil {
-		return indexMap
+		return pkMap
 	}
 
 	for _, element := range tableElementList.AllTableelement() {
@@ -845,12 +899,11 @@ func extractIndexDefinitionsWithAST(createStmt *parser.CreatestmtContext) map[st
 			constraint := element.Tableconstraint()
 			if constraint.Constraintelem() != nil {
 				elem := constraint.Constraintelem()
-				// Check for PRIMARY KEY or UNIQUE constraints
+				// Check for PRIMARY KEY constraints
 				isPrimary := elem.PRIMARY() != nil && elem.KEY() != nil
-				isUnique := elem.UNIQUE() != nil
 
-				if isPrimary || isUnique {
-					// This is a primary key or unique constraint
+				if isPrimary {
+					// This is a primary key constraint
 					name := ""
 					if constraint.Name() != nil {
 						name = pgparser.NormalizePostgreSQLName(constraint.Name())
@@ -867,7 +920,7 @@ func extractIndexDefinitionsWithAST(createStmt *parser.CreatestmtContext) map[st
 							name = constraint.GetText() // Final fallback
 						}
 					}
-					indexMap[name] = &IndexDefWithAST{
+					pkMap[name] = &IndexDefWithAST{
 						Name:    name,
 						ASTNode: constraint,
 					}
@@ -876,7 +929,58 @@ func extractIndexDefinitionsWithAST(createStmt *parser.CreatestmtContext) map[st
 		}
 	}
 
-	return indexMap
+	return pkMap
+}
+
+// extractUniqueConstraintDefinitionsWithAST extracts unique constraints with their AST nodes
+func extractUniqueConstraintDefinitionsWithAST(createStmt *parser.CreatestmtContext) map[string]*IndexDefWithAST {
+	ukMap := make(map[string]*IndexDefWithAST)
+
+	if createStmt == nil || createStmt.Opttableelementlist() == nil {
+		return ukMap
+	}
+
+	tableElementList := createStmt.Opttableelementlist().Tableelementlist()
+	if tableElementList == nil {
+		return ukMap
+	}
+
+	for _, element := range tableElementList.AllTableelement() {
+		if element.Tableconstraint() != nil {
+			constraint := element.Tableconstraint()
+			if constraint.Constraintelem() != nil {
+				elem := constraint.Constraintelem()
+				// Check for UNIQUE constraints (but not PRIMARY KEY)
+				isUnique := elem.UNIQUE() != nil && (elem.PRIMARY() == nil || elem.KEY() == nil)
+
+				if isUnique {
+					// This is a unique constraint
+					name := ""
+					if constraint.Name() != nil {
+						name = pgparser.NormalizePostgreSQLName(constraint.Name())
+					}
+					// Use constraint definition text as fallback key if name is empty
+					if name == "" {
+						// Get the full original text from tokens
+						if parser := constraint.GetParser(); parser != nil {
+							if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+								name = tokenStream.GetTextFromRuleContext(constraint)
+							}
+						}
+						if name == "" {
+							name = constraint.GetText() // Final fallback
+						}
+					}
+					ukMap[name] = &IndexDefWithAST{
+						Name:    name,
+						ASTNode: constraint,
+					}
+				}
+			}
+		}
+	}
+
+	return ukMap
 }
 
 // getForeignKeyText returns the text representation of a foreign key constraint for comparison
@@ -940,4 +1044,142 @@ func getIndexText(constraintAST parser.ITableconstraintContext) string {
 
 	// Fallback to GetText() if tokens are not available
 	return constraintAST.GetText()
+}
+
+// processStandaloneIndexChanges analyzes standalone CREATE INDEX statement changes
+// and adds them to the appropriate table's IndexChanges
+func processStandaloneIndexChanges(currentChunks, previousChunks *schema.SDLChunks, diff *schema.MetadataDiff) {
+	if currentChunks == nil || previousChunks == nil {
+		return
+	}
+
+	// Initialize map with all existing table diffs for efficient lookups
+	affectedTables := make(map[string]*schema.TableDiff, len(diff.TableChanges))
+	for _, tableDiff := range diff.TableChanges {
+		affectedTables[tableDiff.TableName] = tableDiff
+	}
+
+	// Step 1: Process current indexes to find created and modified indexes
+	for indexName, currentChunk := range currentChunks.Indexes {
+		tableName := extractTableNameFromIndex(currentChunk.ASTNode)
+		if tableName == "" {
+			continue // Skip if we can't determine the table name
+		}
+
+		if previousChunk, exists := previousChunks.Indexes[indexName]; exists {
+			// Index exists in both - check if modified by comparing text first
+			currentText := getStandaloneIndexText(currentChunk.ASTNode)
+			previousText := getStandaloneIndexText(previousChunk.ASTNode)
+			if currentText != previousText {
+				// Index was modified - use drop and recreate pattern (PostgreSQL standard)
+				tableDiff := getOrCreateTableDiff(diff, tableName, affectedTables)
+				tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
+					Action:     schema.MetadataDiffActionDrop,
+					OldASTNode: previousChunk.ASTNode,
+				})
+				tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
+					Action:     schema.MetadataDiffActionCreate,
+					NewASTNode: currentChunk.ASTNode,
+				})
+			}
+			// If text is identical, skip - no changes detected
+		} else {
+			// New index - store AST node only
+			tableDiff := getOrCreateTableDiff(diff, tableName, affectedTables)
+			tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
+				Action:     schema.MetadataDiffActionCreate,
+				NewASTNode: currentChunk.ASTNode,
+			})
+		}
+	}
+
+	// Step 2: Process previous indexes to find dropped ones
+	for indexName, previousChunk := range previousChunks.Indexes {
+		if _, exists := currentChunks.Indexes[indexName]; !exists {
+			// Index was dropped - store AST node only
+			tableName := extractTableNameFromIndex(previousChunk.ASTNode)
+			if tableName == "" {
+				continue // Skip if we can't determine the table name
+			}
+
+			tableDiff := getOrCreateTableDiff(diff, tableName, affectedTables)
+			tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
+				Action:     schema.MetadataDiffActionDrop,
+				OldASTNode: previousChunk.ASTNode,
+			})
+		}
+	}
+}
+
+// getStandaloneIndexText returns the text representation of a standalone CREATE INDEX statement for comparison
+func getStandaloneIndexText(astNode any) string {
+	indexStmt, ok := astNode.(*parser.IndexstmtContext)
+	if !ok || indexStmt == nil {
+		return ""
+	}
+
+	// Get tokens from the parser for precise text extraction with original spacing
+	if parser := indexStmt.GetParser(); parser != nil {
+		if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+			start := indexStmt.GetStart()
+			stop := indexStmt.GetStop()
+			if start != nil && stop != nil {
+				return tokenStream.GetTextFromTokens(start, stop)
+			}
+		}
+	}
+
+	// Fallback to GetText() if tokens are not available
+	return indexStmt.GetText()
+}
+
+// extractTableNameFromIndex extracts the table name from a CREATE INDEX statement
+func extractTableNameFromIndex(astNode any) string {
+	indexStmt, ok := astNode.(*parser.IndexstmtContext)
+	if !ok || indexStmt == nil {
+		return ""
+	}
+
+	// Extract table name from relation_expr in CREATE INDEX ... ON table_name
+	if relationExpr := indexStmt.Relation_expr(); relationExpr != nil {
+		if qualifiedName := relationExpr.Qualified_name(); qualifiedName != nil {
+			// Extract qualified name and return the table name (without schema)
+			qualifiedNameParts := pgparser.NormalizePostgreSQLQualifiedName(qualifiedName)
+			if len(qualifiedNameParts) > 0 {
+				return qualifiedNameParts[len(qualifiedNameParts)-1] // Return the last part (table name)
+			}
+		}
+	}
+
+	return ""
+}
+
+// getOrCreateTableDiff finds an existing table diff or creates a new one for the given table
+func getOrCreateTableDiff(diff *schema.MetadataDiff, tableName string, affectedTables map[string]*schema.TableDiff) *schema.TableDiff {
+	// Check if we already have this table in our map
+	if tableDiff, exists := affectedTables[tableName]; exists {
+		return tableDiff
+	}
+
+	// Create a new table diff for standalone index changes
+	// We set Action to ALTER since we're modifying an existing table by adding/removing indexes
+	newTableDiff := &schema.TableDiff{
+		Action:                  schema.MetadataDiffActionAlter,
+		SchemaName:              "public", // Default schema for PostgreSQL
+		TableName:               tableName,
+		OldTable:                nil, // Will be populated when SDL drift detection is implemented
+		NewTable:                nil, // Will be populated when SDL drift detection is implemented
+		OldASTNode:              nil, // No table-level AST changes for standalone indexes
+		NewASTNode:              nil, // No table-level AST changes for standalone indexes
+		ColumnChanges:           []*schema.ColumnDiff{},
+		IndexChanges:            []*schema.IndexDiff{},
+		PrimaryKeyChanges:       []*schema.PrimaryKeyDiff{},
+		UniqueConstraintChanges: []*schema.UniqueConstraintDiff{},
+		ForeignKeyChanges:       []*schema.ForeignKeyDiff{},
+		CheckConstraintChanges:  []*schema.CheckConstraintDiff{},
+	}
+
+	diff.TableChanges = append(diff.TableChanges, newTableDiff)
+	affectedTables[tableName] = newTableDiff
+	return newTableDiff
 }
