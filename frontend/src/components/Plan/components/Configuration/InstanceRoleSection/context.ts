@@ -39,7 +39,6 @@ export const provideInstanceRoleSettingContext = (refs: {
 
   const {
     isCreating,
-    project,
     plan,
     selectedSpec,
     selectedTask,

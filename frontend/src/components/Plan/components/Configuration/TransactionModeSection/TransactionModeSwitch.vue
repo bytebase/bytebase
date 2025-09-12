@@ -8,7 +8,7 @@
 
 <script setup lang="tsx">
 import { NSwitch } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { computed, watch } from "vue";
 import { getDefaultTransactionMode } from "@/utils";
 import { useSelectedSpec } from "../../SpecDetailView/context";
 import {

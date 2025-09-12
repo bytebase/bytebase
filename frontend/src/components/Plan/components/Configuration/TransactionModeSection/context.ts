@@ -38,7 +38,6 @@ export const provideTransactionModeSettingContext = (refs: {
 
   const {
     isCreating,
-    project,
     plan,
     selectedSpec,
     selectedTask,

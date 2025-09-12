@@ -13,14 +13,12 @@
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { databaseForSpec } from "@/components/Plan/logic";
-import { usePlanContext } from "@/components/Plan/logic";
 import { useUIStateStore } from "@/store";
 import { useCurrentProjectV1 } from "@/store";
 import { useInstanceV1EditorLanguage } from "@/utils";
 import { useSelectedSpec } from "../../SpecDetailView/context";
 
 const { project } = useCurrentProjectV1();
-const { plan } = usePlanContext();
 const selectedSpec = useSelectedSpec();
 const uiStateStore = useUIStateStore();
 
