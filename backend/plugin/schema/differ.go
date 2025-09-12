@@ -77,8 +77,14 @@ type TableDiff struct {
 	// Column changes
 	ColumnChanges []*ColumnDiff
 
-	// Index changes
+	// Index changes (excluding PK and UK which are handled separately)
 	IndexChanges []*IndexDiff
+
+	// Primary key changes
+	PrimaryKeyChanges []*PrimaryKeyDiff
+
+	// Unique constraint changes
+	UniqueConstraintChanges []*UniqueConstraintDiff
 
 	// Foreign key changes
 	ForeignKeyChanges []*ForeignKeyDiff
@@ -129,6 +135,24 @@ type CheckConstraintDiff struct {
 	NewCheckConstraint *storepb.CheckConstraintMetadata
 	OldASTNode         any // AST node for old check constraint
 	NewASTNode         any // AST node for new check constraint
+}
+
+// PrimaryKeyDiff represents changes to a primary key constraint.
+type PrimaryKeyDiff struct {
+	Action        MetadataDiffAction
+	OldPrimaryKey *storepb.IndexMetadata
+	NewPrimaryKey *storepb.IndexMetadata
+	OldASTNode    any // AST node for old primary key constraint
+	NewASTNode    any // AST node for new primary key constraint
+}
+
+// UniqueConstraintDiff represents changes to a unique constraint.
+type UniqueConstraintDiff struct {
+	Action              MetadataDiffAction
+	OldUniqueConstraint *storepb.IndexMetadata
+	NewUniqueConstraint *storepb.IndexMetadata
+	OldASTNode          any // AST node for old unique constraint
+	NewASTNode          any // AST node for new unique constraint
 }
 
 // TriggerDiff represents changes to a trigger.
@@ -2266,6 +2290,50 @@ func sortTableSubObjectChanges(tableDiff *TableDiff) {
 			bName = b.NewCheckConstraint.Name
 		} else if b.OldCheckConstraint != nil {
 			bName = b.OldCheckConstraint.Name
+		}
+
+		if aName != bName {
+			return strings.Compare(aName, bName)
+		}
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
+
+	// Sort primary key changes by constraint name, then action
+	slices.SortFunc(tableDiff.PrimaryKeyChanges, func(a, b *PrimaryKeyDiff) int {
+		aName := ""
+		if a.NewPrimaryKey != nil {
+			aName = a.NewPrimaryKey.Name
+		} else if a.OldPrimaryKey != nil {
+			aName = a.OldPrimaryKey.Name
+		}
+
+		bName := ""
+		if b.NewPrimaryKey != nil {
+			bName = b.NewPrimaryKey.Name
+		} else if b.OldPrimaryKey != nil {
+			bName = b.OldPrimaryKey.Name
+		}
+
+		if aName != bName {
+			return strings.Compare(aName, bName)
+		}
+		return strings.Compare(string(a.Action), string(b.Action))
+	})
+
+	// Sort unique constraint changes by constraint name, then action
+	slices.SortFunc(tableDiff.UniqueConstraintChanges, func(a, b *UniqueConstraintDiff) int {
+		aName := ""
+		if a.NewUniqueConstraint != nil {
+			aName = a.NewUniqueConstraint.Name
+		} else if a.OldUniqueConstraint != nil {
+			aName = a.OldUniqueConstraint.Name
+		}
+
+		bName := ""
+		if b.NewUniqueConstraint != nil {
+			bName = b.NewUniqueConstraint.Name
+		} else if b.OldUniqueConstraint != nil {
+			bName = b.OldUniqueConstraint.Name
 		}
 
 		if aName != bName {

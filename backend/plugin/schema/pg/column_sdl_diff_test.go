@@ -373,12 +373,12 @@ func TestColumnSDLDiff(t *testing.T) {
 				assert.Len(t, tableDiffs, 1, "Should have 1 table diff")
 				tableDiff := tableDiffs[0]
 				assert.Equal(t, schema.MetadataDiffActionAlter, tableDiff.Action)
-				assert.Len(t, tableDiff.IndexChanges, 1, "Should have 1 index change for UNIQUE constraint")
-				indexChange := tableDiff.IndexChanges[0]
-				assert.Equal(t, schema.MetadataDiffActionCreate, indexChange.Action)
+				assert.Len(t, tableDiff.UniqueConstraintChanges, 1, "Should have 1 unique constraint change")
+				uniqueChange := tableDiff.UniqueConstraintChanges[0]
+				assert.Equal(t, schema.MetadataDiffActionCreate, uniqueChange.Action)
 				// AST node should be present for created unique constraint
-				assert.NotNil(t, indexChange.NewASTNode)
-				assert.Nil(t, indexChange.OldASTNode)
+				assert.NotNil(t, uniqueChange.NewASTNode)
+				assert.Nil(t, uniqueChange.OldASTNode)
 			},
 		},
 	}
