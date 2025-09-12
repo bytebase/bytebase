@@ -204,8 +204,14 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 			previousText := previousChunk.GetText(previousChunks.Tokens)
 			if currentText != previousText {
 				// Table was modified - process column changes
-				oldASTNode := previousChunk.ASTNode.(*parser.CreatestmtContext)
-				newASTNode := currentChunk.ASTNode.(*parser.CreatestmtContext)
+				oldASTNode, ok := previousChunk.ASTNode.(*parser.CreatestmtContext)
+				if !ok {
+					return errors.Errorf("expected CreatestmtContext for previous table %s", previousChunk.Identifier)
+				}
+				newASTNode, ok := currentChunk.ASTNode.(*parser.CreatestmtContext)
+				if !ok {
+					return errors.Errorf("expected CreatestmtContext for current table %s", currentChunk.Identifier)
+				}
 
 				columnChanges := processColumnChanges(oldASTNode, newASTNode)
 
@@ -223,7 +229,10 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 			}
 		} else {
 			// New table
-			newASTNode := currentChunk.ASTNode.(*parser.CreatestmtContext)
+			newASTNode, ok := currentChunk.ASTNode.(*parser.CreatestmtContext)
+			if !ok {
+				return errors.Errorf("expected CreatestmtContext for new table %s", currentChunk.Identifier)
+			}
 
 			tableDiff := &schema.TableDiff{
 				Action:        schema.MetadataDiffActionCreate,
@@ -244,7 +253,10 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 		if _, exists := currentChunks.Tables[identifier]; !exists {
 			// Table was dropped
 			schemaName, tableName := parseTableIdentifier(previousChunk.Identifier)
-			oldASTNode := previousChunk.ASTNode.(*parser.CreatestmtContext)
+			oldASTNode, ok := previousChunk.ASTNode.(*parser.CreatestmtContext)
+			if !ok {
+				return errors.Errorf("expected CreatestmtContext for dropped table %s", previousChunk.Identifier)
+			}
 
 			tableDiff := &schema.TableDiff{
 				Action:        schema.MetadataDiffActionDrop,
