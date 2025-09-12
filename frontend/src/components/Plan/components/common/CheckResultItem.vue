@@ -96,26 +96,29 @@ const messageWithCode = (message: string, code: number | undefined): string => {
 };
 
 const displayTitle = computed(() => {
-  let title = props.title;
-
   // Skip localization for certain titles
-  if (title === "OK" || title === "Syntax error") {
-    return messageWithCode(title, props.code);
+  if (props.title === "OK" || props.title === "Syntax error") {
+    return messageWithCode(props.title, props.code);
   }
 
   // Only apply SQL review localization if this is a SQL review report
   if (props.reportType === "sqlReviewReport") {
-    // Try to get rule template and localization
+    const code = props.code;
+    if (!code) {
+      return props.title;
+    }
+
     const rule = getRuleTemplateByType(props.title);
     if (rule) {
       const ruleLocalization = getRuleLocalization(rule.type, rule.engine);
-      if (ruleLocalization.title) {
-        title = ruleLocalization.title;
-      }
+      const title = messageWithCode(ruleLocalization.title, code);
+      return title;
+    } else if (props.title.startsWith("builtin.")) {
+      return messageWithCode(getRuleLocalization(props.title).title, code);
     }
   }
 
   // Add error code if present
-  return messageWithCode(title, props.code);
+  return messageWithCode(props.title, props.code);
 });
 </script>
