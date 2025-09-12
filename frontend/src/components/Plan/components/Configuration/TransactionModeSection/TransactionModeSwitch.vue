@@ -9,13 +9,17 @@
 <script setup lang="tsx">
 import { NSwitch } from "naive-ui";
 import { computed, ref, watch } from "vue";
-import { useSpecSheet } from "../../StatementSection/useSpecSheet";
-import { useSelectedSpec } from "../../SpecDetailView/context";
 import { getDefaultTransactionMode } from "@/utils";
-import { parseStatement, updateTransactionMode } from "../../StatementSection/directiveUtils";
+import { useSelectedSpec } from "../../SpecDetailView/context";
+import {
+  parseStatement,
+  updateTransactionMode,
+} from "../../StatementSection/directiveUtils";
+import { useSpecSheet } from "../../StatementSection/useSpecSheet";
 import { useTransactionModeSettingContext } from "./context";
 
-const { allowChange, transactionMode, events } = useTransactionModeSettingContext();
+const { allowChange, transactionMode, events } =
+  useTransactionModeSettingContext();
 const selectedSpec = useSelectedSpec();
 const { sheetStatement, updateSheetStatement } = useSpecSheet(selectedSpec);
 
@@ -54,10 +58,7 @@ watch(
 // Update statement when transaction mode changes
 const updateStatementWithTransactionMode = () => {
   const mode = transactionMode.value;
-  const updatedStatement = updateTransactionMode(
-    sheetStatement.value,
-    mode
-  );
+  const updatedStatement = updateTransactionMode(sheetStatement.value, mode);
   updateSheetStatement(updatedStatement);
   events.emit("update");
 };

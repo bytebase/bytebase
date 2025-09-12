@@ -22,12 +22,20 @@ import { instanceRoleServiceClientConnect } from "@/grpcweb";
 import { DEFAULT_PAGE_SIZE } from "@/store/modules/common";
 import type { InstanceRole } from "@/types/proto-es/v1/instance_role_service_pb";
 import { ListInstanceRolesRequestSchema } from "@/types/proto-es/v1/instance_role_service_pb";
-import { parseStatement, updateRoleSetter } from "../../StatementSection/directiveUtils";
-import { useSpecSheet } from "../../StatementSection/useSpecSheet";
 import { useSelectedSpec } from "../../SpecDetailView/context";
+import {
+  parseStatement,
+  updateRoleSetter,
+} from "../../StatementSection/directiveUtils";
+import { useSpecSheet } from "../../StatementSection/useSpecSheet";
 import { useInstanceRoleSettingContext } from "./context";
 
-const { allowChange, selectedRole: contextSelectedRole, databases, events } = useInstanceRoleSettingContext();
+const {
+  allowChange,
+  selectedRole: contextSelectedRole,
+  databases,
+  events,
+} = useInstanceRoleSettingContext();
 const selectedSpec = useSelectedSpec();
 const { sheetStatement, updateSheetStatement } = useSpecSheet(selectedSpec);
 
@@ -54,7 +62,7 @@ watch(
   () => database.value?.instance,
   async () => {
     if (!database.value) return;
-    
+
     loading.value = true;
     try {
       const request = create(ListInstanceRolesRequestSchema, {
@@ -109,10 +117,7 @@ watch(
 );
 
 const setRoleInStatement = (roleName: string) => {
-  const updatedStatement = updateRoleSetter(
-    sheetStatement.value,
-    roleName
-  );
+  const updatedStatement = updateRoleSetter(sheetStatement.value, roleName);
   updateSheetStatement(updatedStatement);
   events.emit("update");
 };

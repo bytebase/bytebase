@@ -30,27 +30,31 @@ const { project } = useCurrentProjectV1();
 const { isCreating, plan, events, issue, rollout, readonly } = usePlanContext();
 const selectedSpec = useSelectedSpec();
 
-const { shouldShow: shouldShowTransactionModeSection, events: transactionModeEvents } =
-  provideTransactionModeSettingContext({
-    project,
-    plan,
-    selectedSpec,
-    isCreating,
-    issue,
-    rollout,
-    readonly,
-  });
+const {
+  shouldShow: shouldShowTransactionModeSection,
+  events: transactionModeEvents,
+} = provideTransactionModeSettingContext({
+  project,
+  plan,
+  selectedSpec,
+  isCreating,
+  issue,
+  rollout,
+  readonly,
+});
 
-const { shouldShow: shouldShowInstanceRoleSection, events: instanceRoleEvents } =
-  provideInstanceRoleSettingContext({
-    project,
-    plan,
-    selectedSpec,
-    isCreating,
-    issue,
-    rollout,
-    readonly,
-  });
+const {
+  shouldShow: shouldShowInstanceRoleSection,
+  events: instanceRoleEvents,
+} = provideInstanceRoleSettingContext({
+  project,
+  plan,
+  selectedSpec,
+  isCreating,
+  issue,
+  rollout,
+  readonly,
+});
 
 const { shouldShow: shouldShowGhostSection, events: ghostEvents } =
   provideGhostSettingContext({
@@ -75,10 +79,12 @@ const { shouldShow: shouldShowPreBackupSection, events: preBackupEvents } =
   });
 
 const shouldShow = computed(() => {
-  return shouldShowTransactionModeSection.value || 
+  return (
+    shouldShowTransactionModeSection.value ||
     shouldShowInstanceRoleSection.value ||
-    shouldShowGhostSection.value || 
-    shouldShowPreBackupSection.value;
+    shouldShowGhostSection.value ||
+    shouldShowPreBackupSection.value
+  );
 });
 
 transactionModeEvents.on("update", () => {

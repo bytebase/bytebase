@@ -189,7 +189,6 @@ import { useEditorState } from "@/components/Plan/logic/useEditorState";
 import RequiredStar from "@/components/RequiredStar.vue";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
-import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
 import { planServiceClientConnect } from "@/grpcweb";
 import {
   pushNotification,
@@ -210,6 +209,7 @@ import {
 import { useSelectedSpec } from "../../SpecDetailView/context";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import { useSpecSheet } from "../useSpecSheet";
+import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
 
 type LocalState = {
   statement: string;
