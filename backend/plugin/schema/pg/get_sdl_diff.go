@@ -214,16 +214,22 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 				}
 
 				columnChanges := processColumnChanges(oldASTNode, newASTNode)
+				foreignKeyChanges := processForeignKeyChanges(oldASTNode, newASTNode)
+				checkConstraintChanges := processCheckConstraintChanges(oldASTNode, newASTNode)
+				indexChanges := processIndexChanges(oldASTNode, newASTNode)
 
 				tableDiff := &schema.TableDiff{
-					Action:        schema.MetadataDiffActionAlter,
-					SchemaName:    schemaName,
-					TableName:     tableName,
-					OldTable:      nil, // Will be populated when SDL drift detection is implemented
-					NewTable:      nil, // Will be populated when SDL drift detection is implemented
-					OldASTNode:    oldASTNode,
-					NewASTNode:    newASTNode,
-					ColumnChanges: columnChanges,
+					Action:                 schema.MetadataDiffActionAlter,
+					SchemaName:             schemaName,
+					TableName:              tableName,
+					OldTable:               nil, // Will be populated when SDL drift detection is implemented
+					NewTable:               nil, // Will be populated when SDL drift detection is implemented
+					OldASTNode:             oldASTNode,
+					NewASTNode:             newASTNode,
+					ColumnChanges:          columnChanges,
+					ForeignKeyChanges:      foreignKeyChanges,
+					CheckConstraintChanges: checkConstraintChanges,
+					IndexChanges:           indexChanges,
 				}
 				diff.TableChanges = append(diff.TableChanges, tableDiff)
 			}
@@ -540,4 +546,398 @@ func extractAnyName(anyName parser.IAny_nameContext) string {
 
 	// Fallback to GetText() if tokens are not available
 	return anyName.GetText()
+}
+
+// ForeignKeyDefWithAST holds foreign key constraint definition with its AST node for text comparison
+type ForeignKeyDefWithAST struct {
+	Name    string
+	ASTNode parser.ITableconstraintContext
+}
+
+// CheckConstraintDefWithAST holds check constraint definition with its AST node for text comparison
+type CheckConstraintDefWithAST struct {
+	Name    string
+	ASTNode parser.ITableconstraintContext
+}
+
+// IndexDefWithAST holds index/unique constraint definition with its AST node for text comparison
+type IndexDefWithAST struct {
+	Name    string
+	ASTNode parser.ITableconstraintContext
+}
+
+// processForeignKeyChanges analyzes foreign key constraint changes between old and new table definitions
+// Following the text-first comparison pattern for performance optimization
+func processForeignKeyChanges(oldTable, newTable *parser.CreatestmtContext) []*schema.ForeignKeyDiff {
+	if oldTable == nil || newTable == nil {
+		return []*schema.ForeignKeyDiff{}
+	}
+
+	// Step 1: Extract all foreign key definitions with their AST nodes for text comparison
+	oldFKMap := extractForeignKeyDefinitionsWithAST(oldTable)
+	newFKMap := extractForeignKeyDefinitionsWithAST(newTable)
+
+	var fkDiffs []*schema.ForeignKeyDiff
+
+	// Step 2: Process current foreign keys to find created and modified foreign keys
+	for fkName, newFKDef := range newFKMap {
+		if oldFKDef, exists := oldFKMap[fkName]; exists {
+			// FK exists in both - check if modified by comparing text first
+			currentText := getForeignKeyText(newFKDef.ASTNode)
+			previousText := getForeignKeyText(oldFKDef.ASTNode)
+			if currentText != previousText {
+				// FK was modified - store AST nodes only
+				// Drop and recreate for modifications (PostgreSQL pattern)
+				fkDiffs = append(fkDiffs, &schema.ForeignKeyDiff{
+					Action:     schema.MetadataDiffActionDrop,
+					OldASTNode: oldFKDef.ASTNode,
+				})
+				fkDiffs = append(fkDiffs, &schema.ForeignKeyDiff{
+					Action:     schema.MetadataDiffActionCreate,
+					NewASTNode: newFKDef.ASTNode,
+				})
+			}
+			// If text is identical, skip - no changes detected
+		} else {
+			// New foreign key - store AST node only
+			fkDiffs = append(fkDiffs, &schema.ForeignKeyDiff{
+				Action:     schema.MetadataDiffActionCreate,
+				NewASTNode: newFKDef.ASTNode,
+			})
+		}
+	}
+
+	// Step 3: Process old foreign keys to find dropped ones
+	for fkName, oldFKDef := range oldFKMap {
+		if _, exists := newFKMap[fkName]; !exists {
+			// Foreign key was dropped - store AST node only
+			fkDiffs = append(fkDiffs, &schema.ForeignKeyDiff{
+				Action:     schema.MetadataDiffActionDrop,
+				OldASTNode: oldFKDef.ASTNode,
+			})
+		}
+	}
+
+	return fkDiffs
+}
+
+// processCheckConstraintChanges analyzes check constraint changes between old and new table definitions
+// Following the text-first comparison pattern for performance optimization
+func processCheckConstraintChanges(oldTable, newTable *parser.CreatestmtContext) []*schema.CheckConstraintDiff {
+	if oldTable == nil || newTable == nil {
+		return []*schema.CheckConstraintDiff{}
+	}
+
+	// Step 1: Extract all check constraint definitions with their AST nodes for text comparison
+	oldCheckMap := extractCheckConstraintDefinitionsWithAST(oldTable)
+	newCheckMap := extractCheckConstraintDefinitionsWithAST(newTable)
+
+	var checkDiffs []*schema.CheckConstraintDiff
+
+	// Step 2: Process current check constraints to find created and modified constraints
+	for checkName, newCheckDef := range newCheckMap {
+		if oldCheckDef, exists := oldCheckMap[checkName]; exists {
+			// Check constraint exists in both - check if modified by comparing text first
+			currentText := getCheckConstraintText(newCheckDef.ASTNode)
+			previousText := getCheckConstraintText(oldCheckDef.ASTNode)
+			if currentText != previousText {
+				// Check constraint was modified - store AST nodes only
+				// Drop and recreate for modifications (PostgreSQL pattern)
+				checkDiffs = append(checkDiffs, &schema.CheckConstraintDiff{
+					Action:     schema.MetadataDiffActionDrop,
+					OldASTNode: oldCheckDef.ASTNode,
+				})
+				checkDiffs = append(checkDiffs, &schema.CheckConstraintDiff{
+					Action:     schema.MetadataDiffActionCreate,
+					NewASTNode: newCheckDef.ASTNode,
+				})
+			}
+			// If text is identical, skip - no changes detected
+		} else {
+			// New check constraint - store AST node only
+			checkDiffs = append(checkDiffs, &schema.CheckConstraintDiff{
+				Action:     schema.MetadataDiffActionCreate,
+				NewASTNode: newCheckDef.ASTNode,
+			})
+		}
+	}
+
+	// Step 3: Process old check constraints to find dropped ones
+	for checkName, oldCheckDef := range oldCheckMap {
+		if _, exists := newCheckMap[checkName]; !exists {
+			// Check constraint was dropped - store AST node only
+			checkDiffs = append(checkDiffs, &schema.CheckConstraintDiff{
+				Action:     schema.MetadataDiffActionDrop,
+				OldASTNode: oldCheckDef.ASTNode,
+			})
+		}
+	}
+
+	return checkDiffs
+}
+
+// processIndexChanges analyzes index changes (including PK and UK) between old and new table definitions
+// Following the text-first comparison pattern for performance optimization
+func processIndexChanges(oldTable, newTable *parser.CreatestmtContext) []*schema.IndexDiff {
+	if oldTable == nil || newTable == nil {
+		return []*schema.IndexDiff{}
+	}
+
+	// Step 1: Extract all index/unique constraint definitions with their AST nodes for text comparison
+	oldIndexMap := extractIndexDefinitionsWithAST(oldTable)
+	newIndexMap := extractIndexDefinitionsWithAST(newTable)
+
+	var indexDiffs []*schema.IndexDiff
+
+	// Step 2: Process current indexes to find created and modified indexes
+	for indexName, newIndexDef := range newIndexMap {
+		if oldIndexDef, exists := oldIndexMap[indexName]; exists {
+			// Index exists in both - check if modified by comparing text first
+			currentText := getIndexText(newIndexDef.ASTNode)
+			previousText := getIndexText(oldIndexDef.ASTNode)
+			if currentText != previousText {
+				// Index was modified - store AST nodes only
+				// Drop and recreate for modifications (PostgreSQL pattern)
+				indexDiffs = append(indexDiffs, &schema.IndexDiff{
+					Action:     schema.MetadataDiffActionDrop,
+					OldASTNode: oldIndexDef.ASTNode,
+				})
+				indexDiffs = append(indexDiffs, &schema.IndexDiff{
+					Action:     schema.MetadataDiffActionCreate,
+					NewASTNode: newIndexDef.ASTNode,
+				})
+			}
+			// If text is identical, skip - no changes detected
+		} else {
+			// New index - store AST node only
+			indexDiffs = append(indexDiffs, &schema.IndexDiff{
+				Action:     schema.MetadataDiffActionCreate,
+				NewASTNode: newIndexDef.ASTNode,
+			})
+		}
+	}
+
+	// Step 3: Process old indexes to find dropped ones
+	for indexName, oldIndexDef := range oldIndexMap {
+		if _, exists := newIndexMap[indexName]; !exists {
+			// Index was dropped - store AST node only
+			indexDiffs = append(indexDiffs, &schema.IndexDiff{
+				Action:     schema.MetadataDiffActionDrop,
+				OldASTNode: oldIndexDef.ASTNode,
+			})
+		}
+	}
+
+	return indexDiffs
+}
+
+// extractForeignKeyDefinitionsWithAST extracts foreign key constraints with their AST nodes for text comparison
+func extractForeignKeyDefinitionsWithAST(createStmt *parser.CreatestmtContext) map[string]*ForeignKeyDefWithAST {
+	fkMap := make(map[string]*ForeignKeyDefWithAST)
+
+	if createStmt == nil || createStmt.Opttableelementlist() == nil {
+		return fkMap
+	}
+
+	tableElementList := createStmt.Opttableelementlist().Tableelementlist()
+	if tableElementList == nil {
+		return fkMap
+	}
+
+	for _, element := range tableElementList.AllTableelement() {
+		if element.Tableconstraint() != nil {
+			constraint := element.Tableconstraint()
+			if constraint.Constraintelem() != nil {
+				elem := constraint.Constraintelem()
+				if elem.FOREIGN() != nil && elem.KEY() != nil {
+					// This is a foreign key constraint
+					name := ""
+					if constraint.Name() != nil {
+						name = pgparser.NormalizePostgreSQLName(constraint.Name())
+					}
+					// Use constraint definition text as fallback key if name is empty
+					if name == "" {
+						// Get the full original text from tokens
+						if parser := constraint.GetParser(); parser != nil {
+							if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+								name = tokenStream.GetTextFromRuleContext(constraint)
+							}
+						}
+						if name == "" {
+							name = constraint.GetText() // Final fallback
+						}
+					}
+					fkMap[name] = &ForeignKeyDefWithAST{
+						Name:    name,
+						ASTNode: constraint,
+					}
+				}
+			}
+		}
+	}
+
+	return fkMap
+}
+
+// extractCheckConstraintDefinitionsWithAST extracts check constraints with their AST nodes for text comparison
+func extractCheckConstraintDefinitionsWithAST(createStmt *parser.CreatestmtContext) map[string]*CheckConstraintDefWithAST {
+	checkMap := make(map[string]*CheckConstraintDefWithAST)
+
+	if createStmt == nil || createStmt.Opttableelementlist() == nil {
+		return checkMap
+	}
+
+	tableElementList := createStmt.Opttableelementlist().Tableelementlist()
+	if tableElementList == nil {
+		return checkMap
+	}
+
+	for _, element := range tableElementList.AllTableelement() {
+		if element.Tableconstraint() != nil {
+			constraint := element.Tableconstraint()
+			if constraint.Constraintelem() != nil {
+				elem := constraint.Constraintelem()
+				if elem.CHECK() != nil {
+					// This is a check constraint
+					name := ""
+					if constraint.Name() != nil {
+						name = pgparser.NormalizePostgreSQLName(constraint.Name())
+					}
+					// Use constraint definition text as fallback key if name is empty
+					if name == "" {
+						// Get the full original text from tokens
+						if parser := constraint.GetParser(); parser != nil {
+							if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+								name = tokenStream.GetTextFromRuleContext(constraint)
+							}
+						}
+						if name == "" {
+							name = constraint.GetText() // Final fallback
+						}
+					}
+					checkMap[name] = &CheckConstraintDefWithAST{
+						Name:    name,
+						ASTNode: constraint,
+					}
+				}
+			}
+		}
+	}
+
+	return checkMap
+}
+
+// extractIndexDefinitionsWithAST extracts index/unique constraints with their AST nodes for text comparison
+func extractIndexDefinitionsWithAST(createStmt *parser.CreatestmtContext) map[string]*IndexDefWithAST {
+	indexMap := make(map[string]*IndexDefWithAST)
+
+	if createStmt == nil || createStmt.Opttableelementlist() == nil {
+		return indexMap
+	}
+
+	tableElementList := createStmt.Opttableelementlist().Tableelementlist()
+	if tableElementList == nil {
+		return indexMap
+	}
+
+	for _, element := range tableElementList.AllTableelement() {
+		if element.Tableconstraint() != nil {
+			constraint := element.Tableconstraint()
+			if constraint.Constraintelem() != nil {
+				elem := constraint.Constraintelem()
+				// Check for PRIMARY KEY or UNIQUE constraints
+				isPrimary := elem.PRIMARY() != nil && elem.KEY() != nil
+				isUnique := elem.UNIQUE() != nil
+
+				if isPrimary || isUnique {
+					// This is a primary key or unique constraint
+					name := ""
+					if constraint.Name() != nil {
+						name = pgparser.NormalizePostgreSQLName(constraint.Name())
+					}
+					// Use constraint definition text as fallback key if name is empty
+					if name == "" {
+						// Get the full original text from tokens
+						if parser := constraint.GetParser(); parser != nil {
+							if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+								name = tokenStream.GetTextFromRuleContext(constraint)
+							}
+						}
+						if name == "" {
+							name = constraint.GetText() // Final fallback
+						}
+					}
+					indexMap[name] = &IndexDefWithAST{
+						Name:    name,
+						ASTNode: constraint,
+					}
+				}
+			}
+		}
+	}
+
+	return indexMap
+}
+
+// getForeignKeyText returns the text representation of a foreign key constraint for comparison
+func getForeignKeyText(constraintAST parser.ITableconstraintContext) string {
+	if constraintAST == nil {
+		return ""
+	}
+
+	// Get tokens from the parser for precise text extraction
+	if parser := constraintAST.GetParser(); parser != nil {
+		if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+			start := constraintAST.GetStart()
+			stop := constraintAST.GetStop()
+			if start != nil && stop != nil {
+				return tokenStream.GetTextFromTokens(start, stop)
+			}
+		}
+	}
+
+	// Fallback to GetText() if tokens are not available
+	return constraintAST.GetText()
+}
+
+// getCheckConstraintText returns the text representation of a check constraint for comparison
+func getCheckConstraintText(constraintAST parser.ITableconstraintContext) string {
+	if constraintAST == nil {
+		return ""
+	}
+
+	// Get tokens from the parser for precise text extraction
+	if parser := constraintAST.GetParser(); parser != nil {
+		if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+			start := constraintAST.GetStart()
+			stop := constraintAST.GetStop()
+			if start != nil && stop != nil {
+				return tokenStream.GetTextFromTokens(start, stop)
+			}
+		}
+	}
+
+	// Fallback to GetText() if tokens are not available
+	return constraintAST.GetText()
+}
+
+// getIndexText returns the text representation of an index/unique constraint for comparison
+func getIndexText(constraintAST parser.ITableconstraintContext) string {
+	if constraintAST == nil {
+		return ""
+	}
+
+	// Get tokens from the parser for precise text extraction
+	if parser := constraintAST.GetParser(); parser != nil {
+		if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+			start := constraintAST.GetStart()
+			stop := constraintAST.GetStop()
+			if start != nil && stop != nil {
+				return tokenStream.GetTextFromTokens(start, stop)
+			}
+		}
+	}
+
+	// Fallback to GetText() if tokens are not available
+	return constraintAST.GetText()
 }
