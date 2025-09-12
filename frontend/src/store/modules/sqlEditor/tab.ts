@@ -264,10 +264,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   const updateTab = (id: string, payload: Partial<SQLEditorTab>) => {
     const tab = tabById(id);
     if (!tab) return;
-    tabsById.set(id, {
-      ...tab,
-      ...payload,
-    });
+    Object.assign(tab, payload);
   };
   const updateCurrentTab = (payload: Partial<SQLEditorTab>) => {
     const id = currentTabId.value;
