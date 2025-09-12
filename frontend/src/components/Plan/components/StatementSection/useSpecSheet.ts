@@ -43,10 +43,15 @@ export const useSpecSheet = (spec: ComputedRef<Plan_Spec>) => {
     },
   });
 
+  const updateSheetStatement = (statement: string) => {
+    sheetStatement.value = statement;
+  };
+
   return {
     sheet,
     sheetName,
     sheetReady,
     sheetStatement,
+    updateSheetStatement,
   };
 };
