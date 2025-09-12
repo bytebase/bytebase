@@ -561,9 +561,7 @@ db.createUser({
   user: "${DATASOURCE_READONLY_USER_NAME}",
   pwd: "YOUR_DB_PWD",
   roles: [
-    {role: "readAnyDatabase", db: "admin"},
-    {role: "dbAdminAnyDatabase", db: "admin"},
-    {role: "userAdminAnyDatabase", db: "admin"}
+    {role: "readAnyDatabase", db: "admin"}
   ]
 });
         `;
