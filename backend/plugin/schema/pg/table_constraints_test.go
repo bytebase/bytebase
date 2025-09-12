@@ -32,12 +32,12 @@ func TestTableConstraintsSDLDiff(t *testing.T) {
 				assert.Len(t, diff.TableChanges, 1)
 				tableDiff := diff.TableChanges[0]
 				assert.Equal(t, schema.MetadataDiffActionAlter, tableDiff.Action)
-				assert.Len(t, tableDiff.IndexChanges, 1)
-				indexChange := tableDiff.IndexChanges[0]
-				assert.Equal(t, schema.MetadataDiffActionCreate, indexChange.Action)
+				assert.Len(t, tableDiff.PrimaryKeyChanges, 1)
+				pkChange := tableDiff.PrimaryKeyChanges[0]
+				assert.Equal(t, schema.MetadataDiffActionCreate, pkChange.Action)
 				// AST node should be present for created primary key
-				assert.NotNil(t, indexChange.NewASTNode)
-				assert.Nil(t, indexChange.OldASTNode)
+				assert.NotNil(t, pkChange.NewASTNode)
+				assert.Nil(t, pkChange.OldASTNode)
 			},
 		},
 		{
@@ -130,8 +130,11 @@ func TestTableConstraintsSDLDiff(t *testing.T) {
 				tableDiff := diff.TableChanges[0]
 				assert.Equal(t, schema.MetadataDiffActionAlter, tableDiff.Action)
 
-				// Should have 2 index changes (PK and UNIQUE)
-				assert.Len(t, tableDiff.IndexChanges, 2)
+				// Should have 1 primary key change
+				assert.Len(t, tableDiff.PrimaryKeyChanges, 1)
+
+				// Should have 1 unique constraint change
+				assert.Len(t, tableDiff.UniqueConstraintChanges, 1)
 
 				// Should have 1 foreign key change
 				assert.Len(t, tableDiff.ForeignKeyChanges, 1)
@@ -189,12 +192,12 @@ func TestTableConstraintsSDLDiff(t *testing.T) {
 			validate: func(t *testing.T, diff *schema.MetadataDiff) {
 				assert.Len(t, diff.TableChanges, 1)
 				tableDiff := diff.TableChanges[0]
-				assert.Len(t, tableDiff.IndexChanges, 1)
-				indexChange := tableDiff.IndexChanges[0]
-				assert.Equal(t, schema.MetadataDiffActionCreate, indexChange.Action)
+				assert.Len(t, tableDiff.UniqueConstraintChanges, 1)
+				ukChange := tableDiff.UniqueConstraintChanges[0]
+				assert.Equal(t, schema.MetadataDiffActionCreate, ukChange.Action)
 				// AST node should be present for created unique constraint
-				assert.NotNil(t, indexChange.NewASTNode)
-				assert.Nil(t, indexChange.OldASTNode)
+				assert.NotNil(t, ukChange.NewASTNode)
+				assert.Nil(t, ukChange.OldASTNode)
 			},
 		},
 	}
