@@ -122,7 +122,6 @@ type ForeignKeyDiff struct {
 	NewASTNode    any // AST node for new foreign key constraint
 }
 
-
 // CheckConstraintDiff represents changes to a check constraint.
 type CheckConstraintDiff struct {
 	Action             MetadataDiffAction
