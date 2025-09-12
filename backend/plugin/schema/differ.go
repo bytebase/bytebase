@@ -109,8 +109,8 @@ type IndexDiff struct {
 	Action     MetadataDiffAction
 	OldIndex   *storepb.IndexMetadata
 	NewIndex   *storepb.IndexMetadata
-	OldASTNode interface{} // AST node for old index constraint
-	NewASTNode interface{} // AST node for new index constraint
+	OldASTNode any // AST node for old index constraint
+	NewASTNode any // AST node for new index constraint
 }
 
 // ForeignKeyDiff represents changes to a foreign key.
@@ -118,43 +118,18 @@ type ForeignKeyDiff struct {
 	Action        MetadataDiffAction
 	OldForeignKey *storepb.ForeignKeyMetadata
 	NewForeignKey *storepb.ForeignKeyMetadata
-	OldASTNode    interface{} // AST node for old foreign key constraint
-	NewASTNode    interface{} // AST node for new foreign key constraint
+	OldASTNode    any // AST node for old foreign key constraint
+	NewASTNode    any // AST node for new foreign key constraint
 }
 
-// GetOldForeignKey extracts and returns the old foreign key metadata from AST node if available
-func (d *ForeignKeyDiff) GetOldForeignKey() *storepb.ForeignKeyMetadata {
-	if d.OldForeignKey != nil {
-		return d.OldForeignKey
-	}
-	// Lazy extraction from AST node - extraction will be done when first accessed
-	if d.OldASTNode != nil {
-		// Note: This is a generic interface, actual extraction must be implemented in database-specific code
-		// For now, return nil - the caller should extract metadata directly from AST node when needed
-	}
-	return nil
-}
-
-// GetNewForeignKey extracts and returns the new foreign key metadata from AST node if available
-func (d *ForeignKeyDiff) GetNewForeignKey() *storepb.ForeignKeyMetadata {
-	if d.NewForeignKey != nil {
-		return d.NewForeignKey
-	}
-	// Lazy extraction from AST node - extraction will be done when first accessed
-	if d.NewASTNode != nil {
-		// Note: This is a generic interface, actual extraction must be implemented in database-specific code
-		// For now, return nil - the caller should extract metadata directly from AST node when needed
-	}
-	return nil
-}
 
 // CheckConstraintDiff represents changes to a check constraint.
 type CheckConstraintDiff struct {
 	Action             MetadataDiffAction
 	OldCheckConstraint *storepb.CheckConstraintMetadata
 	NewCheckConstraint *storepb.CheckConstraintMetadata
-	OldASTNode         interface{} // AST node for old check constraint
-	NewASTNode         interface{} // AST node for new check constraint
+	OldASTNode         any // AST node for old check constraint
+	NewASTNode         any // AST node for new check constraint
 }
 
 // TriggerDiff represents changes to a trigger.
