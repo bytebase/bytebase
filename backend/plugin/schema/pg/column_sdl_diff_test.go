@@ -196,6 +196,8 @@ func TestColumnSDLDiff(t *testing.T) {
 						assert.Nil(t, columnDiff.NewColumn, "DROP should have nil NewColumn")
 						assert.NotNil(t, columnDiff.OldASTNode, "DROP should have OldASTNode")
 						assert.Nil(t, columnDiff.NewASTNode, "DROP should have nil NewASTNode")
+					default:
+						t.Fatalf("Unexpected column diff action: %v", columnDiff.Action)
 					}
 				}
 
@@ -344,6 +346,8 @@ func TestColumnSDLDiff(t *testing.T) {
 						alterColumns = append(alterColumns, columnChange.NewColumn.Name)
 					case schema.MetadataDiffActionDrop:
 						dropColumns = append(dropColumns, columnChange.OldColumn.Name)
+					default:
+						t.Fatalf("Unexpected column change action: %v", columnChange.Action)
 					}
 				}
 
@@ -562,7 +566,8 @@ func TestColumnMetadataExtraction(t *testing.T) {
 			require.Contains(t, chunks.Tables, "test")
 
 			testChunk := chunks.Tables["test"]
-			createStmt := testChunk.ASTNode.(*parser.CreatestmtContext)
+			createStmt, ok := testChunk.ASTNode.(*parser.CreatestmtContext)
+			require.True(t, ok, "Should be a CreatestmtContext")
 
 			// Extract the first column definition directly
 			require.NotNil(t, createStmt.Opttableelementlist(), "Should have table element list")
