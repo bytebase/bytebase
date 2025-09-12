@@ -65,74 +65,17 @@
       </div>
     </div>
 
-    <!-- Status Drawer -->
+    <!-- Checks Drawer -->
     <Drawer v-model:show="drawerVisible">
       <DrawerContent
         :title="$t('plan.navigator.checks')"
         class="w-[40rem] max-w-[100vw] relative"
       >
-        <div class="w-full h-full flex flex-col">
-          <!-- Status Tabs Header -->
-          <div class="flex items-center gap-3">
-            <div
-              v-if="summary.error > 0"
-              class="flex items-center gap-1 px-2 py-1 cursor-pointer"
-              :class="[
-                selectedStatus === 'ERROR' && 'bg-gray-100 rounded-lg',
-                'text-lg text-error',
-              ]"
-              @click="selectedStatus = 'ERROR'"
-            >
-              <XCircleIcon class="w-6 h-6" />
-              <span>{{ $t("common.error") }}</span>
-              <span class="font-semibold">{{ summary.error }}</span>
-            </div>
-            <div
-              v-if="summary.warning > 0"
-              class="flex items-center gap-1 px-2 py-1 cursor-pointer"
-              :class="[
-                selectedStatus === 'WARNING' && 'bg-gray-100 rounded-lg',
-                'text-lg text-warning',
-              ]"
-              @click="selectedStatus = 'WARNING'"
-            >
-              <AlertCircleIcon class="w-6 h-6" />
-              <span>{{ $t("common.warning") }}</span>
-              <span class="font-semibold">{{ summary.warning }}</span>
-            </div>
-            <div
-              v-if="summary.success > 0"
-              class="flex items-center gap-1 px-2 py-1 cursor-pointer"
-              :class="[
-                selectedStatus === 'SUCCESS' && 'bg-gray-100 rounded-lg',
-                'text-lg text-success',
-              ]"
-              @click="selectedStatus = 'SUCCESS'"
-            >
-              <CheckCircleIcon class="w-6 h-6" />
-              <span>{{ $t("common.success") }}</span>
-              <span class="font-semibold">{{ summary.success }}</span>
-            </div>
-          </div>
-
-          <!-- Drawer Content -->
-          <div class="flex-1 overflow-y-auto py-4">
-            <div v-if="drawerAdvices.length > 0" class="space-y-2">
-              <CheckResultItem
-                v-for="(advice, idx) in drawerAdvices"
-                :key="idx"
-                :status="getCheckResultStatus(advice.status)"
-                :title="advice.title"
-                :content="advice.content"
-                :position="advice.startPosition"
-                :report-type="'sqlReviewReport'"
-              />
-            </div>
-            <div v-else class="text-center py-8 text-control-light">
-              {{ $t("common.no-data") }}
-            </div>
-          </div>
-        </div>
+        <ChecksView
+          :default-status="getDefaultStatus()"
+          :plan-check-runs="formattedCheckRuns"
+          :is-loading="isRunningChecks"
+        />
       </DrawerContent>
     </Drawer>
   </div>
@@ -153,7 +96,16 @@ import Drawer from "@/components/v2/Container/Drawer.vue";
 import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
 import { releaseServiceClientConnect } from "@/grpcweb";
 import { projectNamePrefix } from "@/store";
-import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
+import {
+  Plan_ChangeDatabaseConfig_Type,
+  PlanCheckRun_Type,
+  PlanCheckRun_Status,
+  PlanCheckRun_Result_Status,
+  type PlanCheckRun,
+  type PlanCheckRun_Result,
+  PlanCheckRunSchema,
+  PlanCheckRun_ResultSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
 import {
   CheckReleaseRequestSchema,
   Release_File_Type,
@@ -170,8 +122,8 @@ import {
 } from "@/utils";
 import { usePlanContext } from "../../logic/context";
 import { targetsForSpec } from "../../logic/plan";
+import ChecksView from "../ChecksView/ChecksView.vue";
 import { useSelectedSpec } from "../SpecDetailView/context";
-import CheckResultItem from "../common/CheckResultItem.vue";
 
 const { plan } = usePlanContext();
 const selectedSpec = useSelectedSpec();
@@ -239,18 +191,6 @@ const summary = computed(() => {
   return result;
 });
 
-const drawerAdvices = computed(() => {
-  return allAdvices.value.filter((advice) => {
-    if (selectedStatus.value === "ERROR") {
-      return advice.status === Advice_Status.ERROR;
-    } else if (selectedStatus.value === "WARNING") {
-      return advice.status === Advice_Status.WARNING;
-    } else {
-      return advice.status === Advice_Status.SUCCESS;
-    }
-  });
-});
-
 const runChecks = async () => {
   if (!plan.value.name || !selectedSpec.value) return;
 
@@ -308,6 +248,20 @@ const openDrawer = (status: "ERROR" | "WARNING" | "SUCCESS") => {
   drawerVisible.value = true;
 };
 
+// Convert string status to PlanCheckRun_Result_Status
+const getDefaultStatus = (): PlanCheckRun_Result_Status | undefined => {
+  switch (selectedStatus.value) {
+    case "ERROR":
+      return PlanCheckRun_Result_Status.ERROR;
+    case "WARNING":
+      return PlanCheckRun_Result_Status.WARNING;
+    case "SUCCESS":
+      return PlanCheckRun_Result_Status.SUCCESS;
+    default:
+      return undefined;
+  }
+};
+
 watch(
   () => selectedSpec.value.id,
   () => {
@@ -320,18 +274,48 @@ watch(
   }
 );
 
-const getCheckResultStatus = (
-  status: Advice_Status
-): "SUCCESS" | "WARNING" | "ERROR" => {
-  switch (status) {
-    case Advice_Status.ERROR:
-      return "ERROR";
-    case Advice_Status.WARNING:
-      return "WARNING";
-    case Advice_Status.SUCCESS:
-      return "SUCCESS";
-    default:
-      return "SUCCESS";
-  }
+// Transform CheckReleaseResponse_CheckResult[] to PlanCheckRun[] format
+const transformToFormattedCheckRuns = (
+  results: CheckReleaseResponse_CheckResult[]
+): PlanCheckRun[] => {
+  return results.map((result, index) => {
+    const planCheckRunResults: PlanCheckRun_Result[] = result.advices.map(
+      (advice) => {
+        return create(PlanCheckRun_ResultSchema, {
+          status:
+            advice.status === Advice_Status.ERROR
+              ? PlanCheckRun_Result_Status.ERROR
+              : advice.status === Advice_Status.WARNING
+                ? PlanCheckRun_Result_Status.WARNING
+                : PlanCheckRun_Result_Status.SUCCESS,
+          title: advice.title,
+          content: advice.content,
+          code: advice.code,
+          report: {
+            case: "sqlReviewReport",
+            value: {
+              startPosition: advice.startPosition,
+              line: advice.startPosition ? advice.startPosition.line : 0,
+            },
+          },
+        });
+      }
+    );
+
+    return create(PlanCheckRunSchema, {
+      name: `check-run-${index}`,
+      type: PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE,
+      status: PlanCheckRun_Status.DONE,
+      target: result.target,
+      results: planCheckRunResults,
+      createTime: { seconds: BigInt(Math.floor(Date.now() / 1000)), nanos: 0 },
+    });
+  });
 };
+
+// Format check runs for ChecksView component
+const formattedCheckRuns = computed(() => {
+  if (!checkResults.value) return [];
+  return transformToFormattedCheckRuns(checkResults.value);
+});
 </script>
