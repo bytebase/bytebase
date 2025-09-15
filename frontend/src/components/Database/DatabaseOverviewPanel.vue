@@ -156,7 +156,6 @@ import StreamTable from "@/components/StreamTable.vue";
 import TableDataTable from "@/components/TableDataTable.vue";
 import TaskTable from "@/components/TaskTable.vue";
 import ViewDataTable from "@/components/ViewDataTable.vue";
-import { SQL_EDITOR_SETTING_DATABASES_MODULE } from "@/router/sqlEditor";
 import { useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -328,15 +327,14 @@ const sequenceList = computed(() => {
     .flat();
 });
 
-watch([() => state.selectedSchemaName, route], ([schema, route]) => {
-  if (route.name === SQL_EDITOR_SETTING_DATABASES_MODULE) {
-    // Very weird, should not trigger this
-    return;
+watch(
+  () => state.selectedSchemaName,
+  (schema) => {
+    router.replace({
+      query: {
+        schema: schema ? schema : undefined,
+      },
+    });
   }
-  router.replace({
-    query: {
-      schema: schema ? schema : undefined,
-    },
-  });
-});
+);
 </script>

@@ -58,17 +58,12 @@ import type { ChatAction } from "@/plugins/ai";
 import { useAIContext } from "@/plugins/ai/logic";
 import * as promptUtils from "@/plugins/ai/logic/prompt";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import { SQL_EDITOR_SETTING_GENERAL_MODULE } from "@/router/sqlEditor";
 import {
-  useAppFeature,
   useConnectionOfCurrentSQLEditorTab,
   useSettingV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import {
-  DatabaseChangeMode,
-  Setting_SettingName,
-} from "@/types/proto-es/v1/setting_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2, nextAnimationFrame } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import Button from "./Button.vue";
@@ -86,7 +81,6 @@ const { t } = useI18n();
 const router = useRouter();
 const tabStore = useSQLEditorTabStore();
 const settingV1Store = useSettingV1Store();
-const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const openAIEnabled = computed(() => {
   const setting = settingV1Store.getSettingByName(Setting_SettingName.AI);
@@ -159,10 +153,7 @@ const handleClickButton = () => {
 
 const goConfigure = () => {
   router.push({
-    name:
-      databaseChangeMode.value === DatabaseChangeMode.EDITOR
-        ? SQL_EDITOR_SETTING_GENERAL_MODULE
-        : SETTING_ROUTE_WORKSPACE_GENERAL,
+    name: SETTING_ROUTE_WORKSPACE_GENERAL,
     hash: "#ai-assistant",
   });
 };

@@ -42,8 +42,7 @@ import {
   SETTING_ROUTE_WORKSPACE_GENERAL,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
 } from "@/router/dashboard/workspaceSetting";
-import { useAppFeature, usePermissionStore } from "@/store";
-import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
+import { usePermissionStore } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 export interface DashboardSidebarItem extends SidebarItem {
@@ -56,7 +55,6 @@ export interface DashboardSidebarItem extends SidebarItem {
 export const useDashboardSidebar = () => {
   const route = useRoute();
   const permissionStore = usePermissionStore();
-  const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
   const getItemClass = (item: SidebarItem): string[] => {
     const { name: current } = route;
@@ -191,7 +189,6 @@ export const useDashboardSidebar = () => {
         title: "CI/CD",
         icon: () => h(WorkflowIcon),
         type: "div",
-        hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
         children: [
           {
             title: t("sql-review.title"),
@@ -241,7 +238,6 @@ export const useDashboardSidebar = () => {
         title: t("settings.sidebar.integration"),
         icon: () => h(LinkIcon),
         type: "div",
-        hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
         children: [
           {
             title: t("settings.sidebar.im-integration"),

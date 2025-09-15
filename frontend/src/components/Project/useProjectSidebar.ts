@@ -32,10 +32,8 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_PLANS,
   PROJECT_V1_ROUTE_ROLLOUTS,
 } from "@/router/dashboard/projectV1";
-import { useAppFeature } from "@/store";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 
 interface ProjectSidebarItem extends SidebarItem {
@@ -48,7 +46,6 @@ interface ProjectSidebarItem extends SidebarItem {
 export const useProjectSidebar = (project: MaybeRef<Project>) => {
   const route = useRoute();
   const { enabledNewLayout } = useIssueLayoutVersion();
-  const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
   const isDefaultProject = computed((): boolean => {
     return unref(project).name === DEFAULT_PROJECT_NAME;
@@ -84,9 +81,7 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
             icon: () => h(Workflow),
             type: "div",
             expand: true,
-            hide:
-              isDefaultProject.value ||
-              databaseChangeMode.value === DatabaseChangeMode.EDITOR,
+            hide: isDefaultProject.value,
             children: [
               {
                 title: t("plan.plans"),
@@ -112,36 +107,28 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
             path: PROJECT_V1_ROUTE_CHANGELISTS,
             icon: () => h(PencilRuler),
             type: "div",
-            hide:
-              isDefaultProject.value ||
-              databaseChangeMode.value === DatabaseChangeMode.EDITOR,
+            hide: isDefaultProject.value,
           },
           {
             title: t("release.releases"),
             path: PROJECT_V1_ROUTE_RELEASES,
             icon: () => h(PackageIcon),
             type: "div",
-            hide:
-              isDefaultProject.value ||
-              databaseChangeMode.value === DatabaseChangeMode.EDITOR,
+            hide: isDefaultProject.value,
           },
           {
             title: t("plan.plans"),
             icon: () => h(LayoutList),
             path: PROJECT_V1_ROUTE_PLANS,
             type: "div",
-            hide:
-              isDefaultProject.value ||
-              databaseChangeMode.value === DatabaseChangeMode.EDITOR,
+            hide: isDefaultProject.value,
           },
           {
             title: t("rollout.rollouts"),
             path: PROJECT_V1_ROUTE_ROLLOUTS,
             icon: () => h(PlayCircle),
             type: "div",
-            hide:
-              isDefaultProject.value ||
-              databaseChangeMode.value === DatabaseChangeMode.EDITOR,
+            hide: isDefaultProject.value,
           },
         ];
 
@@ -161,13 +148,11 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
             title: t("common.groups"),
             path: PROJECT_V1_ROUTE_DATABASE_GROUPS,
             type: "div",
-            hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
           },
           {
             title: t("database.sync-schema.title"),
             path: PROJECT_V1_ROUTE_SYNC_SCHEMA,
             type: "div",
-            hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
           },
         ],
       },
@@ -189,9 +174,7 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
         icon: () => h(DownloadIcon),
         path: PROJECT_V1_ROUTE_EXPORT_CENTER,
         type: "div",
-        hide:
-          isDefaultProject.value ||
-          databaseChangeMode.value === DatabaseChangeMode.EDITOR,
+        hide: isDefaultProject.value,
       },
       {
         title: t("common.manage"),
@@ -209,7 +192,6 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
             title: t("common.webhooks"),
             path: PROJECT_V1_ROUTE_WEBHOOKS,
             type: "div",
-            hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
           },
           {
             title: t("project.masking-exemption.self"),

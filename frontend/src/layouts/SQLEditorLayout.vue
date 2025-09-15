@@ -7,20 +7,17 @@
 
     <BannersWrapper />
     <template v-if="ready">
-      <ProvideSQLEditorSettingContext v-if="isSettingPage" />
-      <ProvideSQLEditorContext v-else />
+      <ProvideSQLEditorContext />
     </template>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { onMounted } from "vue";
 import { useRouter } from "vue-router";
 import BannersWrapper from "@/components/BannersWrapper.vue";
 import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
-import ProvideSQLEditorSettingContext from "@/components/ProvideSQLEditorSettingContext.vue";
-import { SQL_EDITOR_SETTING_MODULE } from "@/router/sqlEditor";
 import {
   useEnvironmentV1Store,
   usePolicyV1Store,
@@ -36,12 +33,6 @@ const router = useRouter();
 provideSQLEditorContext();
 // provide context for sheets
 provideSheetContext();
-
-const isSettingPage = computed(() => {
-  return !!router.currentRoute.value.matched.find(
-    (r) => r.name === SQL_EDITOR_SETTING_MODULE
-  );
-});
 
 const ready = ref(false);
 

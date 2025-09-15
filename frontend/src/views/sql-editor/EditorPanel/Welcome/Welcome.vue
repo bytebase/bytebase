@@ -74,22 +74,17 @@ import { NButton } from "naive-ui";
 import { computed, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
-import { SQL_EDITOR_SETTING_INSTANCE_MODULE } from "@/router/sqlEditor";
+import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { useSQLEditorTabStore } from "@/store";
-import { useSidebarItems as useSettingItems } from "../../Setting/Sidebar";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import Button from "./Button.vue";
 
 const { showConnectionPanel, asidePanelTab } = useSQLEditorContext();
-const { itemList: settingItemList } = useSettingItems();
 const router = useRouter();
 
 const showCreateInstanceButton = computed(() => {
-  return (
-    settingItemList.value.findIndex(
-      (item) => item.name === SQL_EDITOR_SETTING_INSTANCE_MODULE
-    ) >= 0
-  );
+  return hasWorkspacePermissionV2("bb.instances.create");
 });
 
 const changeConnection = () => {
@@ -103,15 +98,8 @@ const createNewWorksheet = () => {
 };
 
 const gotoInstanceCreatePage = () => {
-  if (
-    settingItemList.value.findIndex(
-      (item) => item.name === SQL_EDITOR_SETTING_INSTANCE_MODULE
-    ) < 0
-  ) {
-    return;
-  }
   router.push({
-    name: SQL_EDITOR_SETTING_INSTANCE_MODULE,
+    name: INSTANCE_ROUTE_DASHBOARD,
     hash: `#add`,
   });
 };

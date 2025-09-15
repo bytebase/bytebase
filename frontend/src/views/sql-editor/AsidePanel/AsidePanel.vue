@@ -32,7 +32,7 @@
                 <RouterLink
                   v-if="allowCreateProject"
                   :to="{
-                    name: SQL_EDITOR_SETTING_PROJECT_MODULE,
+                    name: PROJECT_V1_ROUTE_DASHBOARD,
                     hash: '#new',
                   }"
                 >
@@ -65,7 +65,7 @@ import { useElementSize } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { ProjectSelect } from "@/components/v2";
-import { SQL_EDITOR_SETTING_PROJECT_MODULE } from "@/router/sqlEditor";
+import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { useSQLEditorStore, useSQLEditorTabStore } from "@/store";
 import { defaultProject, isValidProjectName } from "@/types";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";

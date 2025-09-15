@@ -1,6 +1,6 @@
 import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
-import { useAppFeature, useDatabaseV1ByName } from "@/store";
+import { useDatabaseV1ByName } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
@@ -38,8 +38,6 @@ export const provideDatabaseDetailContext = (
   instanceId: Ref<string>,
   databaseName: Ref<string>
 ) => {
-  const databaseOperations = useAppFeature("bb.feature.databases.operations");
-
   const { database } = useDatabaseV1ByName(
     computed(
       () =>
@@ -60,14 +58,9 @@ export const provideDatabaseDetailContext = (
     checkPermission("bb.databases.update")
   );
   const allowSyncDatabase = computed(() => {
-    return (
-      databaseOperations.value.has("SYNC-SCHEMA") &&
-      checkPermission("bb.databases.sync")
-    );
+    return checkPermission("bb.databases.sync");
   });
   const allowTransferDatabase = computed(() => {
-    if (!databaseOperations.value.has("TRANSFER-OUT")) return false;
-
     if (database.value.project === DEFAULT_PROJECT_NAME) {
       return true;
     }
@@ -80,14 +73,12 @@ export const provideDatabaseDetailContext = (
 
   const allowChangeData = computed(() => {
     return (
-      databaseOperations.value.has("CHANGE-DATA") &&
       database.value.project !== DEFAULT_PROJECT_NAME &&
       hasPermissionToCreateChangeDatabaseIssue(database.value)
     );
   });
   const allowAlterSchema = computed(() => {
     return (
-      databaseOperations.value.has("EDIT-SCHEMA") &&
       database.value.project !== DEFAULT_PROJECT_NAME &&
       hasPermissionToCreateChangeDatabaseIssue(database.value) &&
       instanceV1HasAlterSchema(database.value.instanceResource)

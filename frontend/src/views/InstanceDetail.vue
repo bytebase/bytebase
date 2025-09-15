@@ -121,7 +121,6 @@ import {
   useDatabaseV1Store,
   useInstanceV1Store,
   useEnvironmentV1Store,
-  useAppFeature,
 } from "@/store";
 import {
   instanceNamePrefix,
@@ -134,7 +133,6 @@ import {
   isValidDatabaseName,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import {
   instanceV1HasCreateDatabase,
   instanceV1Name,
@@ -174,7 +172,6 @@ const { t } = useI18n();
 const router = useRouter();
 const instanceV1Store = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
-const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 const pagedDatabaseTableRef = ref<InstanceType<typeof PagedDatabaseTable>>();
 
 const readonlyScopes = computed((): SearchScope[] => [
@@ -275,7 +272,6 @@ const instanceRoleList = computed(() => {
 
 const allowCreateDatabase = computed(() => {
   return (
-    databaseChangeMode.value === DatabaseChangeMode.PIPELINE &&
     instance.value.state === State.ACTIVE &&
     instanceV1HasCreateDatabase(instance.value)
   );

@@ -27,22 +27,17 @@
 import { TriangleAlertIcon } from "lucide-vue-next";
 import { NPopover } from "naive-ui";
 import { computed } from "vue";
-import { useRouter } from "vue-router";
-import { SQL_EDITOR_SETTING_INSTANCE_MODULE } from "@/router/sqlEditor";
 import { useSQLEditorTabStore } from "@/store";
 import { isValidInstanceName } from "@/types";
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { useSidebarItems as useSettingItems } from "../Setting/Sidebar";
 
 const props = defineProps<{
   instance: InstanceResource;
 }>();
 
 const tabStore = useSQLEditorTabStore();
-const router = useRouter();
-const { itemList: settingItemList } = useSettingItems();
 
 const allowManageInstance = computed(() => {
   return hasWorkspacePermissionV2("bb.instances.update");
@@ -65,18 +60,6 @@ const showReadonlyDatasourceHint = computed(() => {
 });
 
 const gotoInstanceDetailPage = () => {
-  const { name } = props.instance;
-  if (
-    settingItemList.value.findIndex(
-      (item) => item.name === SQL_EDITOR_SETTING_INSTANCE_MODULE
-    ) >= 0
-  ) {
-    router.push({
-      name: SQL_EDITOR_SETTING_INSTANCE_MODULE,
-      hash: `#${name}`,
-    });
-  } else {
-    window.open(`/${props.instance.name}`);
-  }
+  window.open(`/${props.instance.name}`);
 };
 </script>

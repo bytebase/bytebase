@@ -54,7 +54,6 @@
     </NScrollbar>
 
     <div class="flex items-center gap-2">
-      <SettingButton v-if="!hideSettingButton" size="small" />
       <BrandingLogoWrapper>
         <ProfileDropdown :link="true" />
       </BrandingLogoWrapper>
@@ -74,14 +73,9 @@ import { useI18n } from "vue-i18n";
 import Draggable from "vuedraggable";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import {
-  useAppFeature,
-  useSQLEditorTabStore,
-  useTabViewStateStore,
-} from "@/store";
+import { useSQLEditorTabStore, useTabViewStateStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { defer, usePreventBackAndForward } from "@/utils";
-import { SettingButton } from "../Setting";
 import { useSheetContext } from "../Sheet";
 import { useSQLEditorContext } from "../context";
 import BrandingLogoWrapper from "./BrandingLogoWrapper.vue";
@@ -104,7 +98,6 @@ const state = reactive<LocalState>({
   dragging: false,
   hoverTabId: "",
 });
-const enableSetting = useAppFeature("bb.feature.sql-editor.enable-setting");
 const { events: sheetEvents } = useSheetContext();
 const scrollbarRef = ref<InstanceType<typeof NScrollbar>>();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
@@ -115,14 +108,6 @@ const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
 const scrollState = reactive({
   moreLeft: false,
   moreRight: false,
-});
-
-const hideSettingButton = computed(() => {
-  if (!enableSetting.value) {
-    return true;
-  }
-
-  return false;
 });
 
 const scrollElement = computed((): HTMLElement | null | undefined => {
