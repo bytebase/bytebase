@@ -79,7 +79,7 @@ func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, req *con
 		Expression:  req.Msg.DatabaseGroup.DatabaseExpr,
 	}
 	if req.Msg.ValidateOnly {
-		result, err := convertStoreToV1DatabaseGroup(ctx, s.store, storeDatabaseGroup, projectResourceID, v1pb.DatabaseGroupView_FULL)
+		result, err := convertStoreToV1DatabaseGroup(ctx, s.store, storeDatabaseGroup, projectResourceID, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +102,7 @@ func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, req *con
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	result, err := convertStoreToV1DatabaseGroup(ctx, s.store, databaseGroup, projectResourceID, v1pb.DatabaseGroupView_FULL)
+	result, err := convertStoreToV1DatabaseGroup(ctx, s.store, databaseGroup, projectResourceID, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func (s *DatabaseGroupService) UpdateDatabaseGroup(ctx context.Context, req *con
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	result, err := convertStoreToV1DatabaseGroup(ctx, s.store, databaseGroup, projectResourceID, v1pb.DatabaseGroupView_FULL)
+	result, err := convertStoreToV1DatabaseGroup(ctx, s.store, databaseGroup, projectResourceID, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +287,7 @@ func convertStoreToV1DatabaseGroup(ctx context.Context, stores *store.Store, dat
 		Title:        databaseGroup.Placeholder,
 		DatabaseExpr: databaseGroup.Expression,
 	}
-	if view == v1pb.DatabaseGroupView_BASIC || view == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_UNSPECIFIED {
+	if view == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_BASIC || view == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_UNSPECIFIED {
 		return ret, nil
 	}
 
@@ -307,7 +307,7 @@ func convertStoreToV1DatabaseGroup(ctx context.Context, stores *store.Store, dat
 			Name: common.FormatDatabase(database.InstanceID, database.DatabaseName),
 		})
 	}
-	if view == v1pb.DatabaseGroupView_FULL {
+	if view == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL {
 		for _, database := range unmatches {
 			ret.UnmatchedDatabases = append(ret.UnmatchedDatabases, &v1pb.DatabaseGroup_Database{
 				Name: common.FormatDatabase(database.InstanceID, database.DatabaseName),

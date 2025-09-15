@@ -3772,9 +3772,9 @@ paths:
                   schema:
                     enum:
                         - DATABASE_GROUP_VIEW_UNSPECIFIED
-                        - BASIC
-                        - FULL
-                        - MATCHED
+                        - DATABASE_GROUP_VIEW_BASIC
+                        - DATABASE_GROUP_VIEW_FULL
+                        - DATABASE_GROUP_VIEW_MATCHED
                     type: string
                     format: enum
             responses:
@@ -3861,9 +3861,9 @@ paths:
                   schema:
                     enum:
                         - DATABASE_GROUP_VIEW_UNSPECIFIED
-                        - BASIC
-                        - FULL
-                        - MATCHED
+                        - DATABASE_GROUP_VIEW_BASIC
+                        - DATABASE_GROUP_VIEW_FULL
+                        - DATABASE_GROUP_VIEW_MATCHED
                     type: string
                     format: enum
             responses:

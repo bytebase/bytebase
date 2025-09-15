@@ -32,26 +32,26 @@ const (
 	// The API will default to the BASIC view.
 	DatabaseGroupView_DATABASE_GROUP_VIEW_UNSPECIFIED DatabaseGroupView = 0
 	// Include basic information about the database group, but exclude the list of matched databases and unmatched databases.
-	DatabaseGroupView_BASIC DatabaseGroupView = 1
+	DatabaseGroupView_DATABASE_GROUP_VIEW_BASIC DatabaseGroupView = 1
 	// Include everything.
-	DatabaseGroupView_FULL DatabaseGroupView = 2
+	DatabaseGroupView_DATABASE_GROUP_VIEW_FULL DatabaseGroupView = 2
 	// Include matched databases.
-	DatabaseGroupView_MATCHED DatabaseGroupView = 3
+	DatabaseGroupView_DATABASE_GROUP_VIEW_MATCHED DatabaseGroupView = 3
 )
 
 // Enum value maps for DatabaseGroupView.
 var (
 	DatabaseGroupView_name = map[int32]string{
 		0: "DATABASE_GROUP_VIEW_UNSPECIFIED",
-		1: "BASIC",
-		2: "FULL",
-		3: "MATCHED",
+		1: "DATABASE_GROUP_VIEW_BASIC",
+		2: "DATABASE_GROUP_VIEW_FULL",
+		3: "DATABASE_GROUP_VIEW_MATCHED",
 	}
 	DatabaseGroupView_value = map[string]int32{
 		"DATABASE_GROUP_VIEW_UNSPECIFIED": 0,
-		"BASIC":                           1,
-		"FULL":                            2,
-		"MATCHED":                         3,
+		"DATABASE_GROUP_VIEW_BASIC":       1,
+		"DATABASE_GROUP_VIEW_FULL":        2,
+		"DATABASE_GROUP_VIEW_MATCHED":     3,
 	}
 )
 
@@ -632,12 +632,12 @@ const file_v1_database_group_service_proto_rawDesc = "" +
 	"\x13unmatched_databases\x18\x05 \x03(\v2#.bytebase.v1.DatabaseGroup.DatabaseB\x03\xe0A\x03R\x12unmatchedDatabases\x1a\x1e\n" +
 	"\bDatabase\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name:R\xeaAO\n" +
-	"\x1abytebase.com/DatabaseGroup\x121projects/{project}/databaseGroups/{databaseGroup}*Z\n" +
+	"\x1abytebase.com/DatabaseGroup\x121projects/{project}/databaseGroups/{databaseGroup}*\x96\x01\n" +
 	"\x11DatabaseGroupView\x12#\n" +
-	"\x1fDATABASE_GROUP_VIEW_UNSPECIFIED\x10\x00\x12\t\n" +
-	"\x05BASIC\x10\x01\x12\b\n" +
-	"\x04FULL\x10\x02\x12\v\n" +
-	"\aMATCHED\x10\x032\xdb\a\n" +
+	"\x1fDATABASE_GROUP_VIEW_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19DATABASE_GROUP_VIEW_BASIC\x10\x01\x12\x1c\n" +
+	"\x18DATABASE_GROUP_VIEW_FULL\x10\x02\x12\x1f\n" +
+	"\x1bDATABASE_GROUP_VIEW_MATCHED\x10\x032\xdb\a\n" +
 	"\x14DatabaseGroupService\x12\xb5\x01\n" +
 	"\x12ListDatabaseGroups\x12&.bytebase.v1.ListDatabaseGroupsRequest\x1a'.bytebase.v1.ListDatabaseGroupsResponse\"N\xdaA\x06parent\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{parent=projects/*}/databaseGroups\x12\xa2\x01\n" +
 	"\x10GetDatabaseGroup\x12$.bytebase.v1.GetDatabaseGroupRequest\x1a\x1a.bytebase.v1.DatabaseGroup\"L\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{name=projects/*/databaseGroups/*}\x12\xcf\x01\n" +
