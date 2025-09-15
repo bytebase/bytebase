@@ -374,9 +374,7 @@
   },
   "settings": {
     "sidebar": {
-      "account": "Cuenta",
       "profile": "Perfil",
-      "workspace": "Espacio de trabajo",
       "security-and-policy": "Seguridad y Política",
       "integration": "Integración",
       "general": "General",

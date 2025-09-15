@@ -1,13 +1,11 @@
 <template>
   <div class="w-full flex flex-col justify-start items-start space-y-4">
     <SQLReviewForResource
-      v-if="databaseChangeMode === DatabaseChangeMode.PIPELINE"
       ref="sqlReviewForResourceRef"
       :resource="project.name"
       :allow-edit="allowEdit"
     />
     <RestrictIssueCreationConfigure
-      v-if="databaseChangeMode === DatabaseChangeMode.PIPELINE"
       ref="restrictIssueCreationConfigureRef"
       :resource="project.name"
       :allow-edit="allowEdit"
@@ -27,14 +25,11 @@ import RestrictIssueCreationConfigure from "@/components/GeneralSetting/Restrict
 import { SQLReviewForResource } from "@/components/SQLReview";
 import { useAppFeature } from "@/store";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 
 defineProps<{
   project: Project;
   allowEdit: boolean;
 }>();
-
-const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const restrictIssueCreationConfigureRef =
   ref<InstanceType<typeof RestrictIssueCreationConfigure>>();

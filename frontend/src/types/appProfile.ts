@@ -8,19 +8,6 @@ export type AppFeatures = {
   "bb.feature.hide-help": boolean;
   "bb.feature.hide-quick-start": boolean;
   "bb.feature.hide-trial": boolean;
-  "bb.feature.databases.operations": Set<
-    | "EDIT-SCHEMA"
-    | "CHANGE-DATA"
-    | "EXPORT-DATA"
-    | "SYNC-SCHEMA"
-    | "EDIT-LABELS"
-    | "EDIT-ENVIRONMENT"
-    | "TRANSFER-OUT"
-    | "TRANSFER-IN"
-  >;
-  "bb.feature.sql-editor.disallow-request-query": boolean;
-  "bb.feature.sql-editor.disallow-edit-schema": boolean;
-  "bb.feature.sql-editor.enable-setting": boolean;
   "bb.feature.sql-editor.sql-check-style": "PREFLIGHT" | "NOTIFICATION";
 };
 
@@ -34,19 +21,6 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.hide-help": false,
     "bb.feature.hide-quick-start": false,
     "bb.feature.hide-trial": false,
-    "bb.feature.databases.operations": new Set([
-      "EDIT-SCHEMA",
-      "CHANGE-DATA",
-      "EXPORT-DATA",
-      "SYNC-SCHEMA",
-      "EDIT-LABELS",
-      "EDIT-ENVIRONMENT",
-      "TRANSFER-OUT",
-      "TRANSFER-IN",
-    ]),
-    "bb.feature.sql-editor.disallow-request-query": false,
-    "bb.feature.sql-editor.disallow-edit-schema": false,
-    "bb.feature.sql-editor.enable-setting": false,
     "bb.feature.sql-editor.sql-check-style": "NOTIFICATION",
   },
 });

@@ -459,7 +459,6 @@ import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import { SQL_EDITOR_SETTING_GENERAL_MODULE } from "@/router/sqlEditor";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -912,9 +911,7 @@ const handleTemplateSelect = (template: IdentityProviderTemplate) => {
 
 const configureSetting = () => {
   router.push({
-    name: router.currentRoute.value.name?.toString().startsWith("sql-editor")
-      ? SQL_EDITOR_SETTING_GENERAL_MODULE
-      : SETTING_ROUTE_WORKSPACE_GENERAL,
+    name: SETTING_ROUTE_WORKSPACE_GENERAL,
   });
 };
 

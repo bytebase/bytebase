@@ -56,13 +56,11 @@ import { EnvironmentV1Name } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
-  useAppFeature,
   useDatabaseV1Store,
   useSQLEditorTabStore,
   useStorageStore,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import AdminModeButton from "./AdminModeButton.vue";
 
@@ -80,7 +78,6 @@ const emit = defineEmits<{
 const router = useRouter();
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
-const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const statement = computed(() => {
   const tab = tabStore.currentTab;
@@ -94,13 +91,10 @@ const actions = computed(() => {
   };
   const actions: Actions = {
     admin: false,
-    issue: false,
+    issue: true,
   };
   if (hasWorkspacePermissionV2("bb.sql.admin")) {
     actions.admin = true;
-  }
-  if (databaseChangeMode.value === DatabaseChangeMode.PIPELINE) {
-    actions.issue = true;
   }
 
   return actions;

@@ -174,7 +174,6 @@ const { t } = useI18n();
 const router = useRouter();
 const instanceV1Store = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
-const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 const pagedDatabaseTableRef = ref<InstanceType<typeof PagedDatabaseTable>>();
 
 const readonlyScopes = computed((): SearchScope[] => [
@@ -275,7 +274,6 @@ const instanceRoleList = computed(() => {
 
 const allowCreateDatabase = computed(() => {
   return (
-    databaseChangeMode.value === DatabaseChangeMode.PIPELINE &&
     instance.value.state === State.ACTIVE &&
     instanceV1HasCreateDatabase(instance.value)
   );

@@ -1,7 +1,5 @@
 import { computed } from "vue";
-import { useAppFeature } from "@/store";
 import { Risk_Source } from "./proto-es/v1/risk_service_pb";
-import { DatabaseChangeMode } from "./proto-es/v1/setting_service_pb";
 
 export const PresetRiskLevel = {
   HIGH: 300,
@@ -17,18 +15,13 @@ export const PresetRiskLevelList = [
 export const DEFAULT_RISK_LEVEL = 0;
 
 export const useSupportedSourceList = () => {
-  const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
   return computed(() => {
-    if (databaseChangeMode.value === DatabaseChangeMode.PIPELINE) {
-      return [
-        Risk_Source.DDL,
-        Risk_Source.DML,
-        Risk_Source.CREATE_DATABASE,
-        Risk_Source.DATA_EXPORT,
-        Risk_Source.REQUEST_ROLE,
-      ];
-    }
-
-    return [Risk_Source.DATA_EXPORT, Risk_Source.REQUEST_ROLE];
+    return [
+      Risk_Source.DDL,
+      Risk_Source.DML,
+      Risk_Source.CREATE_DATABASE,
+      Risk_Source.DATA_EXPORT,
+      Risk_Source.REQUEST_ROLE,
+    ];
   });
 };

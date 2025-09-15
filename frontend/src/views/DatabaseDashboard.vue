@@ -10,9 +10,7 @@
         :scope-options="scopeOptions"
       />
       <NButton
-        v-if="
-          allowToCreateDB && databaseChangeMode !== DatabaseChangeMode.EDITOR
-        "
+        v-if="allowToCreateDB"
         type="primary"
         @click="state.showCreateDrawer = true"
       >
@@ -93,7 +91,6 @@ defineProps<{
 
 const uiStateStore = useUIStateStore();
 const databaseStore = useDatabaseV1Store();
-const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 const pagedDatabaseTableRef = ref<InstanceType<typeof PagedDatabaseTable>>();
 
 const defaultSearchParams = () => {

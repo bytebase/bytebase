@@ -280,9 +280,6 @@ export const useDropdown = () => {
   const { availableActions } = useCurrentTabViewStateContext();
   const { events: editorEvents, schemaViewer } = useSQLEditorContext();
   const { selectAllFromTableOrView, viewDetail, openNewTab } = useActions();
-  const disallowEditSchema = useAppFeature(
-    "bb.feature.sql-editor.disallow-edit-schema"
-  );
   const $d = useDialog();
 
   const show = ref(false);
@@ -392,8 +389,7 @@ export const useDropdown = () => {
           });
         }
 
-        if (!disallowEditSchema.value) {
-          if (instanceV1HasAlterSchema(db.instanceResource)) {
+        if (instanceV1HasAlterSchema(db.instanceResource)) {
             items.push({
               key: "edit-schema",
               label: t("database.edit-schema"),
@@ -429,7 +425,6 @@ export const useDropdown = () => {
               copyToClipboard(url);
             },
           });
-        }
       }
       if (targetSupportsGenerateSQL(target)) {
         items.push({

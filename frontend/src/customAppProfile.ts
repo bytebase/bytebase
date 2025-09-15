@@ -3,7 +3,7 @@ import i18n from "./plugins/i18n";
 import { useActuatorV1Store, useSettingByName } from "./store";
 import { defaultAppProfile } from "./types";
 import {
-  DatabaseChangeMode as NewDatabaseChangeMode,
+  DatabaseChangeMode,
   Setting_SettingName,
 } from "./types/proto-es/v1/setting_service_pb";
 
@@ -12,10 +12,9 @@ export const overrideAppProfile = () => {
   const databaseChangeMode = computed(() => {
     if (setting.value?.value?.value?.case === "workspaceProfileSettingValue") {
       const mode = setting.value.value.value.value.databaseChangeMode;
-      if (mode === NewDatabaseChangeMode.EDITOR)
-        return NewDatabaseChangeMode.EDITOR;
+      if (mode === DatabaseChangeMode.EDITOR) return DatabaseChangeMode.EDITOR;
     }
-    return NewDatabaseChangeMode.PIPELINE;
+    return DatabaseChangeMode.PIPELINE;
   });
 
   overrideAppFeatures(databaseChangeMode.value);
@@ -29,9 +28,7 @@ export const overrideAppProfile = () => {
 };
 
 const overrideAppFeatures = (
-  databaseChangeMode:
-    | NewDatabaseChangeMode.PIPELINE
-    | NewDatabaseChangeMode.EDITOR
+  databaseChangeMode: DatabaseChangeMode.PIPELINE | DatabaseChangeMode.EDITOR
 ) => {
   const actuatorStore = useActuatorV1Store();
 
@@ -40,20 +37,12 @@ const overrideAppFeatures = (
     "bb.feature.database-change-mode": databaseChangeMode,
   });
 
-  if (databaseChangeMode === NewDatabaseChangeMode.EDITOR) {
+  if (databaseChangeMode === DatabaseChangeMode.EDITOR) {
     actuatorStore.overrideAppFeatures({
       "bb.feature.hide-quick-start": true,
       "bb.feature.hide-help": true,
       "bb.feature.hide-trial": true,
-      "bb.feature.sql-editor.disallow-edit-schema": true,
       "bb.feature.sql-editor.sql-check-style": "PREFLIGHT",
-      "bb.feature.sql-editor.disallow-request-query": true,
-      "bb.feature.sql-editor.enable-setting": true,
-      "bb.feature.databases.operations": new Set([
-        "SYNC-SCHEMA",
-        "EDIT-LABELS",
-        "TRANSFER-OUT",
-      ]),
     });
   }
 };

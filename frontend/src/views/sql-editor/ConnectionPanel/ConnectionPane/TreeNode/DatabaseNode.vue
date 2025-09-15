@@ -58,10 +58,6 @@ defineEmits<{
 
 const tabStore = useSQLEditorTabStore();
 
-const disallowRequestQuery = useAppFeature(
-  "bb.feature.sql-editor.disallow-request-query"
-);
-
 const database = computed(
   () => (props.node as TreeNode<"database">).meta.target
 );
@@ -69,6 +65,6 @@ const database = computed(
 const canQuery = computed(() => isDatabaseV1Queryable(database.value));
 
 const showRequestQueryButton = computed(() => {
-  return !disallowRequestQuery.value && !canQuery.value;
+  return !canQuery.value;
 });
 </script>

@@ -177,9 +177,7 @@ const { t } = useI18n();
 const policyStore = usePolicyV1Store();
 const { instance, database: connectedDatabase } =
   useConnectionOfCurrentSQLEditorTab();
-const disallowRequestQuery = useAppFeature(
-  "bb.feature.sql-editor.disallow-request-query"
-);
+
 const keyword = ref("");
 const detail: SQLResultViewContext["detail"] = ref(undefined);
 
@@ -201,7 +199,7 @@ const missingResource = computed((): DatabaseResource | undefined => {
 });
 
 const showRequestQueryButton = computed(() => {
-  return !disallowRequestQuery.value && missingResource.value;
+  return missingResource.value;
 });
 
 const viewMode = computed((): ViewMode => {

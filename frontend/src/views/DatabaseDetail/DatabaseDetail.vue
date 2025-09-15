@@ -123,20 +123,13 @@
         <DatabaseOverviewPanel class="mt-2" :database="database" />
       </NTabPane>
       <NTabPane
-        v-if="
-          databaseChangeMode === DatabaseChangeMode.PIPELINE &&
-          allowListChangelogs
-        "
+        v-if="allowListChangelogs"
         name="changelog"
         :tab="$t('common.changelog')"
       >
         <DatabaseChangelogPanel class="mt-2" :database="database" />
       </NTabPane>
-      <NTabPane
-        v-if="databaseChangeMode === DatabaseChangeMode.PIPELINE"
-        name="revision"
-        :tab="$t('database.revision.self')"
-      >
+      <NTabPane name="revision" :tab="$t('database.revision.self')">
         <DatabaseRevisionPanel class="mt-2" :database="database" />
       </NTabPane>
       <NTabPane name="catalog" :tab="$t('common.catalog')">
@@ -294,7 +287,6 @@ const {
   allowAlterSchema,
   allowListChangelogs,
 } = useDatabaseDetailContext();
-const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 watch(
   () => route.hash,
