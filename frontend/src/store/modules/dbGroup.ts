@@ -46,8 +46,10 @@ export const useDBGroupStore = defineStore("db-group", () => {
         break;
       case DatabaseGroupView.MATCHED:
         views = [DatabaseGroupView.MATCHED, DatabaseGroupView.FULL];
+        break;
       case DatabaseGroupView.FULL:
         views = [DatabaseGroupView.FULL];
+        break;
     }
 
     for (const v of views) {
