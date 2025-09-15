@@ -32,11 +32,11 @@ export const useDBGroupStore = defineStore("db-group", () => {
 
   const getCacheWithFallback = (
     name: string,
-    view: DatabaseGroupView = DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED
+    view: DatabaseGroupView = DatabaseGroupView.UNSPECIFIED
   ): DatabaseGroup | undefined => {
     let views: DatabaseGroupView[] = [];
     switch (view) {
-      case DatabaseGroupView.DATABASE_GROUP_VIEW_UNSPECIFIED:
+      case DatabaseGroupView.UNSPECIFIED:
       case DatabaseGroupView.BASIC:
         views = [
           DatabaseGroupView.BASIC,
