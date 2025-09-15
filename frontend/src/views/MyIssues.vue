@@ -89,12 +89,10 @@ import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
 import {
   useCurrentUserV1,
-  useAppFeature,
   useIssueV1Store,
   useRefreshIssueList,
 } from "@/store";
 import { type ComposedIssue } from "@/types";
-import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import type { SearchParams, SearchScopeId, SemanticIssueStatus } from "@/utils";
 import {
   buildIssueFilterBySearchParams,
@@ -126,7 +124,6 @@ const { t } = useI18n();
 const me = useCurrentUserV1();
 const route = useRoute();
 const router = useRouter();
-const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 const issueStore = useIssueV1Store();
 const issuePagedTable =
   ref<ComponentExposed<typeof PagedTable<ComposedIssue>>>();
@@ -179,7 +176,6 @@ const tabItemList = computed((): TabFilterItem<TabValue>[] => {
     {
       value: "WAITING_ROLLOUT",
       label: t("issue.waiting-rollout"),
-      hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
     },
   ];
   return items.filter((item) => !item.hide);

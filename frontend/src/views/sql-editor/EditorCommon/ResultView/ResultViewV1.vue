@@ -128,11 +128,7 @@ import { BBSpin } from "@/bbkit";
 import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
 import { parseStringToResource } from "@/components/GrantRequestPanel/DatabaseResourceForm/common";
 import { Drawer } from "@/components/v2";
-import {
-  useAppFeature,
-  useConnectionOfCurrentSQLEditorTab,
-  usePolicyV1Store,
-} from "@/store";
+import { useConnectionOfCurrentSQLEditorTab, usePolicyV1Store } from "@/store";
 import type {
   ComposedDatabase,
   DatabaseResource,
@@ -177,9 +173,7 @@ const { t } = useI18n();
 const policyStore = usePolicyV1Store();
 const { instance, database: connectedDatabase } =
   useConnectionOfCurrentSQLEditorTab();
-const disallowRequestQuery = useAppFeature(
-  "bb.feature.sql-editor.disallow-request-query"
-);
+
 const keyword = ref("");
 const detail: SQLResultViewContext["detail"] = ref(undefined);
 
@@ -201,7 +195,7 @@ const missingResource = computed((): DatabaseResource | undefined => {
 });
 
 const showRequestQueryButton = computed(() => {
-  return !disallowRequestQuery.value && missingResource.value;
+  return missingResource.value;
 });
 
 const viewMode = computed((): ViewMode => {

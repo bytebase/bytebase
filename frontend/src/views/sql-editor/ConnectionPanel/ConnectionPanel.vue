@@ -21,9 +21,7 @@
               quaternary
               size="tiny"
               style="--n-padding: 0 4px"
-              @click="
-                $router.push({ name: SQL_EDITOR_SETTING_INSTANCE_MODULE })
-              "
+              @click="$router.push({ name: INSTANCE_ROUTE_DASHBOARD })"
             >
               <template #icon>
                 <SettingsIcon class="w-4 h-4" />
@@ -46,8 +44,8 @@ import { SettingsIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { SQL_EDITOR_SETTING_INSTANCE_MODULE } from "@/router/sqlEditor";
-import { useSidebarItems as useSettingItems } from "../Setting/Sidebar";
+import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import ConnectionPane from "./ConnectionPane";
 
 defineProps<{
@@ -59,7 +57,6 @@ defineEmits<{
 }>();
 
 const { width: winWidth } = useWindowSize();
-const { itemList: settingItemList } = useSettingItems();
 const contentWidth = computed(() => {
   if (winWidth.value >= 800) {
     return "50vw";
@@ -68,11 +65,7 @@ const contentWidth = computed(() => {
 });
 
 const allowManageInstance = computed(() => {
-  return (
-    settingItemList.value.findIndex(
-      (item) => item.name === SQL_EDITOR_SETTING_INSTANCE_MODULE
-    ) >= 0
-  );
+  return hasWorkspacePermissionV2("bb.instances.list");
 });
 </script>
 

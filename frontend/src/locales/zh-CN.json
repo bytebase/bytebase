@@ -374,9 +374,7 @@
   },
   "settings": {
     "sidebar": {
-      "account": "账户",
       "profile": "个人信息",
-      "workspace": "工作空间",
       "security-and-policy": "安全 & 策略",
       "integration": "集成",
       "general": "通用",

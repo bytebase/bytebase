@@ -130,7 +130,6 @@ import { Drawer } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
-  useAppFeature,
   useDatabaseV1Store,
   useDBSchemaV1Store,
   useGracefulRequest,
@@ -285,9 +284,16 @@ const selectedDatabaseNameList = computed(() => {
 });
 
 const operations = computed(() => {
-  return Array.from(
-    useAppFeature("bb.feature.databases.operations").value
-  ).filter((operation) => {
+  return [
+    "EDIT-SCHEMA",
+    "CHANGE-DATA",
+    "EXPORT-DATA",
+    "SYNC-SCHEMA",
+    "EDIT-LABELS",
+    "EDIT-ENVIRONMENT",
+    "TRANSFER-OUT",
+    "TRANSFER-IN",
+  ].filter((operation) => {
     switch (operation) {
       case "TRANSFER-IN":
         return allowTransferInProject.value;

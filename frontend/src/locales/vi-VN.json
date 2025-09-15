@@ -374,9 +374,7 @@
   },
   "settings": {
     "sidebar": {
-      "account": "Tài khoản",
       "profile": "Hồ sơ",
-      "workspace": "Không gian làm việc",
       "security-and-policy": "Bảo mật & Chính sách",
       "integration": "Tích hợp",
       "general": "Chung",

@@ -1,7 +1,5 @@
-import { cloneDeep, pullAt, without } from "lodash-es";
+import { cloneDeep, pullAt } from "lodash-es";
 import { computed } from "vue";
-import { useAppFeature } from "@/store";
-import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 
 export type SemanticIssueStatus = "OPEN" | "CLOSED";
 
@@ -45,12 +43,8 @@ export const AllSearchScopeIdList = [
   "stage",
 ] as const;
 export const useSearchScopeIdList = () => {
-  const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
   return computed(() => {
-    if (databaseChangeMode.value === DatabaseChangeMode.PIPELINE) {
-      return AllSearchScopeIdList;
-    }
-    return without(AllSearchScopeIdList, "taskType");
+    return AllSearchScopeIdList;
   });
 };
 

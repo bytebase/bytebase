@@ -224,7 +224,6 @@ import { RichDatabaseName } from "@/components/v2";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
-  useAppFeature,
   useConnectionOfCurrentSQLEditorTab,
   usePolicyByParentAndType,
   useSQLEditorStore,
@@ -241,7 +240,6 @@ import {
 } from "@/types";
 import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
-import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import {
   ExportRequestSchema,
   type QueryResult,
@@ -314,7 +312,6 @@ const router = useRouter();
 const { dark, keyword } = useSQLResultViewContext();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
-const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 const currentTab = computed(() => tabStore.currentTab);
 const { instance: connectedInstance } = useConnectionOfCurrentSQLEditorTab();
 
@@ -356,12 +353,6 @@ const showSearchFeature = computed(() => {
 const allowToRequestExportData = computed(() => {
   const { database } = props;
   if (!database) {
-    return false;
-  }
-
-  // SQL Editor Mode has no issues
-  // So we cannot self-helped to request export either.
-  if (databaseChangeMode.value === DatabaseChangeMode.EDITOR) {
     return false;
   }
 

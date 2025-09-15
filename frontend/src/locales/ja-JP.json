@@ -374,9 +374,7 @@
   },
   "settings": {
     "sidebar": {
-      "account": "アカウント",
       "profile": "プロフィール",
-      "workspace": "ワークスペース",
       "security-and-policy": "セキュリティポリシー",
       "integration": "インテグレーション",
       "general": "全般",

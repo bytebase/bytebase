@@ -40,7 +40,7 @@ import { LinkIcon } from "lucide-vue-next";
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
-import { useAppFeature, useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore } from "@/store";
 import type { SQLEditorTreeNode as TreeNode } from "@/types";
 import { isDatabaseV1Queryable } from "@/utils";
 import RequestQueryButton from "../../../EditorCommon/ResultView/RequestQueryButton.vue";
@@ -58,10 +58,6 @@ defineEmits<{
 
 const tabStore = useSQLEditorTabStore();
 
-const disallowRequestQuery = useAppFeature(
-  "bb.feature.sql-editor.disallow-request-query"
-);
-
 const database = computed(
   () => (props.node as TreeNode<"database">).meta.target
 );
@@ -69,6 +65,6 @@ const database = computed(
 const canQuery = computed(() => isDatabaseV1Queryable(database.value));
 
 const showRequestQueryButton = computed(() => {
-  return !disallowRequestQuery.value && !canQuery.value;
+  return !canQuery.value;
 });
 </script>
