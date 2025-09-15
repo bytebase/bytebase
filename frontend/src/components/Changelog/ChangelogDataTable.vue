@@ -116,7 +116,7 @@ const columnList = computed(() => {
     {
       key: "version",
       title: t("common.version"),
-      width: 128,
+      width: 160,
       resizable: true,
       render: (changelog) => changelog.version || "-",
     },
