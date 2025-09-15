@@ -101,7 +101,7 @@ export function updateTransactionMode(
  */
 export function updateRoleSetter(
   statement: string,
-  roleName: string | null
+  roleName: string | undefined
 ): string {
   const parsed = parseStatement(statement);
 

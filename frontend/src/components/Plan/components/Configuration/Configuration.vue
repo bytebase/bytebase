@@ -4,10 +4,10 @@
       {{ $t("plan.options.self") }}
     </p>
     <div class="w-auto flex flex-col gap-2">
+      <InstanceRoleSection v-if="shouldShowInstanceRoleSection" />
       <TransactionModeSection v-if="shouldShowTransactionModeSection" />
       <GhostSection v-if="shouldShowGhostSection" />
       <PreBackupSection v-if="shouldShowPreBackupSection" />
-      <InstanceRoleSection v-if="shouldShowInstanceRoleSection" />
     </div>
   </div>
 </template>
