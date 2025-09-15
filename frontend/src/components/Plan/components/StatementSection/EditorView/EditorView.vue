@@ -106,7 +106,6 @@
         :readonly="isEditorReadonly"
         :dialect="dialect"
         :advices="isEditorReadonly || isCreating ? markers : []"
-        :auto-height="false"
         :auto-complete-context="{
           instance: database.instance,
           database: database.name,
