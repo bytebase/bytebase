@@ -90,19 +90,15 @@ func (in *APIAuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFun
 		}
 		ctx = context.WithValue(ctx, common.AuthContextKey, authContext)
 
-		principalID, err := in.getPrincipalIDConnect(ctx, accessTokenStr)
+		user, err := in.getUserConnect(ctx, accessTokenStr)
 		if err != nil {
 			if IsAuthenticationAllowed(req.Spec().Procedure, authContext) {
 				return next(ctx, req)
 			}
 			return nil, err
 		}
-		user, err := in.getUser(ctx, principalID)
-		if err != nil {
-			return nil, errs.Wrapf(err, "failed to get user for principal ID %d", principalID)
-		}
 
-		ctx = context.WithValue(ctx, common.PrincipalIDContextKey, principalID)
+		ctx = context.WithValue(ctx, common.PrincipalIDContextKey, user.ID)
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
 		return next(ctx, req)
 	}
@@ -129,19 +125,15 @@ func (in *APIAuthInterceptor) WrapStreamingHandler(next connect.StreamingHandler
 		}
 		ctx = context.WithValue(ctx, common.AuthContextKey, authContext)
 
-		principalID, err := in.getPrincipalIDConnect(ctx, accessTokenStr)
+		user, err := in.getUserConnect(ctx, accessTokenStr)
 		if err != nil {
 			if IsAuthenticationAllowed(conn.Spec().Procedure, authContext) {
 				return next(ctx, conn)
 			}
 			return err
 		}
-		user, err := in.getUser(ctx, principalID)
-		if err != nil {
-			return errs.Wrapf(err, "failed to get user for principal ID %d", principalID)
-		}
 
-		ctx = context.WithValue(ctx, common.PrincipalIDContextKey, principalID)
+		ctx = context.WithValue(ctx, common.PrincipalIDContextKey, user.ID)
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
 
 		return next(ctx, conn)
@@ -149,12 +141,12 @@ func (in *APIAuthInterceptor) WrapStreamingHandler(next connect.StreamingHandler
 }
 
 // authenticateConnect is a ConnectRPC-specific version that returns ConnectRPC errors.
-func (in *APIAuthInterceptor) authenticateConnect(ctx context.Context, accessTokenStr string) (int, error) {
+func (in *APIAuthInterceptor) authenticateConnect(ctx context.Context, accessTokenStr string) (*store.UserMessage, error) {
 	if accessTokenStr == "" {
-		return 0, connect.NewError(connect.CodeUnauthenticated, errs.New("access token not found"))
+		return nil, connect.NewError(connect.CodeUnauthenticated, errs.New("access token not found"))
 	}
 	if _, ok := in.stateCfg.ExpireCache.Get(accessTokenStr); ok {
-		return 0, connect.NewError(connect.CodeUnauthenticated, errs.New("access token expired"))
+		return nil, connect.NewError(connect.CodeUnauthenticated, errs.New("access token expired"))
 	}
 	claims := &claimsMessage{}
 	if _, err := jwt.ParseWithClaims(accessTokenStr, claims, func(t *jwt.Token) (any, error) {
@@ -169,12 +161,12 @@ func (in *APIAuthInterceptor) authenticateConnect(ctx context.Context, accessTok
 		return nil, errs.Errorf("unexpected access token kid=%v", t.Header["kid"])
 	}); err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
-			return 0, connect.NewError(connect.CodeUnauthenticated, errs.New("access token expired"))
+			return nil, connect.NewError(connect.CodeUnauthenticated, errs.New("access token expired"))
 		}
-		return 0, connect.NewError(connect.CodeUnauthenticated, errs.New("failed to parse claim"))
+		return nil, connect.NewError(connect.CodeUnauthenticated, errs.New("failed to parse claim"))
 	}
 	if !audienceContains(claims.Audience, fmt.Sprintf(AccessTokenAudienceFmt, in.profile.Mode)) {
-		return 0, connect.NewError(connect.CodeUnauthenticated, errs.Errorf(
+		return nil, connect.NewError(connect.CodeUnauthenticated, errs.Errorf(
 			"invalid access token, audience mismatch, got %q, expected %q. you may send request to the wrong environment",
 			claims.Audience,
 			fmt.Sprintf(AccessTokenAudienceFmt, in.profile.Mode),
@@ -183,32 +175,32 @@ func (in *APIAuthInterceptor) authenticateConnect(ctx context.Context, accessTok
 
 	principalID, err := strconv.Atoi(claims.Subject)
 	if err != nil {
-		return 0, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("malformed ID %q in the access token", claims.Subject))
+		return nil, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("malformed ID %q in the access token", claims.Subject))
 	}
 	user, err := in.store.GetUserByID(ctx, principalID)
 	if err != nil {
-		return 0, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("failed to find user ID %q in the access token", principalID))
+		return nil, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("failed to find user ID %q in the access token", principalID))
 	}
 	if user == nil {
-		return 0, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("user ID %q not exists in the access token", principalID))
+		return nil, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("user ID %q not exists in the access token", principalID))
 	}
 	if user.MemberDeleted {
-		return 0, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("user ID %q has been deactivated by administrators", user.ID))
+		return nil, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("user ID %q has been deactivated by administrators", user.ID))
 	}
 
-	return principalID, nil
+	return user, nil
 }
 
-// getPrincipalIDConnect is a ConnectRPC-specific version that returns ConnectRPC errors.
-func (in *APIAuthInterceptor) getPrincipalIDConnect(ctx context.Context, accessTokenStr string) (int, error) {
-	principalID, err := in.authenticateConnect(ctx, accessTokenStr)
+// getUserConnect is a ConnectRPC-specific version that returns ConnectRPC errors.
+func (in *APIAuthInterceptor) getUserConnect(ctx context.Context, accessTokenStr string) (*store.UserMessage, error) {
+	user, err := in.authenticateConnect(ctx, accessTokenStr)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	// Only update for authorized request.
 	in.profile.LastActiveTS.Store(time.Now().Unix())
-	return principalID, nil
+	return user, nil
 }
 
 // GetUserIDFromMFATempToken returns the user ID from the MFA temp token.
@@ -402,19 +394,4 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 		AuthMethod:             authMethod,
 		Audit:                  audit,
 	}, nil
-}
-
-func (in *APIAuthInterceptor) getUser(ctx context.Context, principalID int) (*store.UserMessage, error) {
-	user, err := in.store.GetUserByID(ctx, principalID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodePermissionDenied, errs.Errorf("failed to get member for user %v in processing authorize request.", principalID))
-	}
-	if user == nil {
-		return nil, connect.NewError(connect.CodePermissionDenied, errs.Errorf("member not found for user %v in processing authorize request.", principalID))
-	}
-	if user.MemberDeleted {
-		return nil, connect.NewError(connect.CodePermissionDenied, errs.Errorf("the user %v has been deactivated by the admin.", principalID))
-	}
-
-	return user, nil
 }
