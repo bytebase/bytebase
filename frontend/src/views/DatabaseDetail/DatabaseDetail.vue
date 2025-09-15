@@ -223,18 +223,13 @@ import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
 } from "@/router/dashboard/projectV1";
-import {
-  useAppFeature,
-  useEnvironmentV1Store,
-  useDatabaseV1ByName,
-} from "@/store";
+import { useEnvironmentV1Store, useDatabaseV1ByName } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import {
   instanceV1HasAlterSchema,
   isDatabaseV1Queryable,

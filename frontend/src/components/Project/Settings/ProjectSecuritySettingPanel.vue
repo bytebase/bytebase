@@ -23,7 +23,6 @@ import { ref, computed } from "vue";
 import AccessControlConfigure from "@/components/EnvironmentForm/AccessControlConfigure.vue";
 import RestrictIssueCreationConfigure from "@/components/GeneralSetting/RestrictIssueCreationConfigure.vue";
 import { SQLReviewForResource } from "@/components/SQLReview";
-import { useAppFeature } from "@/store";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 defineProps<{

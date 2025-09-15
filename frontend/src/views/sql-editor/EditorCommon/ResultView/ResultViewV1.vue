@@ -128,11 +128,7 @@ import { BBSpin } from "@/bbkit";
 import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
 import { parseStringToResource } from "@/components/GrantRequestPanel/DatabaseResourceForm/common";
 import { Drawer } from "@/components/v2";
-import {
-  useAppFeature,
-  useConnectionOfCurrentSQLEditorTab,
-  usePolicyV1Store,
-} from "@/store";
+import { useConnectionOfCurrentSQLEditorTab, usePolicyV1Store } from "@/store";
 import type {
   ComposedDatabase,
   DatabaseResource,

@@ -40,7 +40,7 @@ import { LinkIcon } from "lucide-vue-next";
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
-import { useAppFeature, useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore } from "@/store";
 import type { SQLEditorTreeNode as TreeNode } from "@/types";
 import { isDatabaseV1Queryable } from "@/utils";
 import RequestQueryButton from "../../../EditorCommon/ResultView/RequestQueryButton.vue";

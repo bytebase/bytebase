@@ -62,7 +62,7 @@ import {
   PagedDatabaseTable,
   DatabaseOperations,
 } from "@/components/v2/Model/DatabaseV1Table";
-import { useAppFeature, useDatabaseV1Store, useUIStateStore } from "@/store";
+import { useDatabaseV1Store, useUIStateStore } from "@/store";
 import {
   instanceNamePrefix,
   projectNamePrefix,
@@ -71,7 +71,6 @@ import {
 import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME, isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import type { SearchParams } from "@/utils";
 import {
   CommonFilterScopeIdList,
