@@ -1131,6 +1131,11 @@
       "delete-change": {
         "title": "Xóa thay đổi",
         "content": "Bạn có chắc chắn muốn xóa thay đổi này không?"
+      },
+      "role-selection": {
+        "title": "Lựa chọn vai trò cơ sở dữ liệu",
+        "description": "Chọn vai trò PostgreSQL để thực thi câu lệnh này.",
+        "technical-note": "Thêm \"SET ROLE {role};\" vào câu lệnh SQL của bạn."
       }
     },
     "targets": {
