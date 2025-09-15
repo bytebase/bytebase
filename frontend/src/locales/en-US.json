@@ -1131,6 +1131,11 @@
       "delete-change": {
         "title": "Delete Change",
         "content": "Are you sure you want to delete this change?"
+      },
+      "role-selection": {
+        "title": "Database Role Selection",
+        "description": "Choose which PostgreSQL role to execute this statement as.",
+        "technical-note": "Adds \"SET ROLE {role};\" to your SQL statement."
       }
     },
     "targets": {

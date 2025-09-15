@@ -1131,6 +1131,11 @@
       "delete-change": {
         "title": "削除変更",
         "content": "この変更を削除してもよろしいですか?"
+      },
+      "role-selection": {
+        "title": "データベースロールの選択",
+        "description": "このステートメントを実行する PostgreSQL ロールを選択します。",
+        "technical-note": "SQL ステートメントに「SET ROLE {role};」を追加します。"
       }
     },
     "targets": {
