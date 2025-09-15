@@ -21,7 +21,6 @@ import { t } from "@/plugins/i18n";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import {
   pushNotification,
-  useAppFeature,
   useSQLEditorTabStore,
   useTabViewStateStore,
   useDBSchemaV1Store,
@@ -390,41 +389,41 @@ export const useDropdown = () => {
         }
 
         if (instanceV1HasAlterSchema(db.instanceResource)) {
-            items.push({
-              key: "edit-schema",
-              label: t("database.edit-schema"),
-              icon: () => <SquarePenIcon class="w-4 h-4" />,
-              onSelect: () => {
-                editorEvents.emit("alter-schema", {
-                  databaseName: db.name,
-                  schema: schema,
-                  table: table,
-                });
-              },
-            });
-          }
-
           items.push({
-            key: "copy-url",
-            label: t("sql-editor.copy-url"),
-            icon: () => <LinkIcon class="w-4 h-4" />,
+            key: "edit-schema",
+            label: t("database.edit-schema"),
+            icon: () => <SquarePenIcon class="w-4 h-4" />,
             onSelect: () => {
-              const route = router.resolve({
-                name: SQL_EDITOR_DATABASE_MODULE,
-                params: {
-                  project: extractProjectResourceName(db.project),
-                  instance: extractInstanceResourceName(db.instance),
-                  database: db.databaseName,
-                },
-                query: {
-                  table: table,
-                  schema: schema,
-                },
+              editorEvents.emit("alter-schema", {
+                databaseName: db.name,
+                schema: schema,
+                table: table,
               });
-              const url = new URL(route.href, window.location.origin).href;
-              copyToClipboard(url);
             },
           });
+        }
+
+        items.push({
+          key: "copy-url",
+          label: t("sql-editor.copy-url"),
+          icon: () => <LinkIcon class="w-4 h-4" />,
+          onSelect: () => {
+            const route = router.resolve({
+              name: SQL_EDITOR_DATABASE_MODULE,
+              params: {
+                project: extractProjectResourceName(db.project),
+                instance: extractInstanceResourceName(db.instance),
+                database: db.databaseName,
+              },
+              query: {
+                table: table,
+                schema: schema,
+              },
+            });
+            const url = new URL(route.href, window.location.origin).href;
+            copyToClipboard(url);
+          },
+        });
       }
       if (targetSupportsGenerateSQL(target)) {
         items.push({
