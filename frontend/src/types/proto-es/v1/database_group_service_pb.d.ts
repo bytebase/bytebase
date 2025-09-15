@@ -290,21 +290,28 @@ export enum DatabaseGroupView {
    *
    * @generated from enum value: DATABASE_GROUP_VIEW_UNSPECIFIED = 0;
    */
-  UNSPECIFIED = 0,
+  DATABASE_GROUP_VIEW_UNSPECIFIED = 0,
 
   /**
    * Include basic information about the database group, but exclude the list of matched databases and unmatched databases.
    *
-   * @generated from enum value: DATABASE_GROUP_VIEW_BASIC = 1;
+   * @generated from enum value: BASIC = 1;
    */
   BASIC = 1,
 
   /**
    * Include everything.
    *
-   * @generated from enum value: DATABASE_GROUP_VIEW_FULL = 2;
+   * @generated from enum value: FULL = 2;
    */
   FULL = 2,
+
+  /**
+   * Include matched databases.
+   *
+   * @generated from enum value: MATCHED = 3;
+   */
+  MATCHED = 3,
 }
 
 /**

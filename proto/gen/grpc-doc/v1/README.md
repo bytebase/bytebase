@@ -6064,8 +6064,9 @@ The database group&#39;s `name` field is used to identify the database group to 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | DATABASE_GROUP_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
-| DATABASE_GROUP_VIEW_BASIC | 1 | Include basic information about the database group, but exclude the list of matched databases and unmatched databases. |
-| DATABASE_GROUP_VIEW_FULL | 2 | Include everything. |
+| BASIC | 1 | Include basic information about the database group, but exclude the list of matched databases and unmatched databases. |
+| FULL | 2 | Include everything. |
+| MATCHED | 3 | Include matched databases. |
 
 
  

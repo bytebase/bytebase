@@ -226,7 +226,7 @@ const loadTargetData = async () => {
 
     const dbGroupPromises = dbGroupTargets.map((target) =>
       dbGroupStore.getOrFetchDBGroupByName(target, {
-        view: DatabaseGroupView.FULL,
+        view: DatabaseGroupView.MATCHED,
       })
     );
 

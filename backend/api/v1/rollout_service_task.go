@@ -214,7 +214,7 @@ func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets [
 
 	for _, target := range targets {
 		if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
-			databaseGroup, err := getDatabaseGroupByName(ctx, s, target, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL)
+			databaseGroup, err := getDatabaseGroupByName(ctx, s, target, v1pb.DatabaseGroupView_FULL)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get database group %q", target)
 			}

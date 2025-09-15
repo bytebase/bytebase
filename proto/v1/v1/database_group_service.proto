@@ -160,10 +160,13 @@ enum DatabaseGroupView {
   DATABASE_GROUP_VIEW_UNSPECIFIED = 0;
 
   // Include basic information about the database group, but exclude the list of matched databases and unmatched databases.
-  DATABASE_GROUP_VIEW_BASIC = 1;
+  BASIC = 1;
 
   // Include everything.
-  DATABASE_GROUP_VIEW_FULL = 2;
+  FULL = 2;
+
+  // Include matched databases.
+  MATCHED = 3;
 }
 
 message DatabaseGroup {

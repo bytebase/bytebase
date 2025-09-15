@@ -175,7 +175,7 @@ func TestCreateDatabaseGroup(t *testing.T) {
 			databaseGroup := databaseGroupResp.Msg
 			databaseGroupResp, err = ctl.databaseGroupServiceClient.GetDatabaseGroup(ctx, connect.NewRequest(&v1pb.GetDatabaseGroupRequest{
 				Name: databaseGroup.Name,
-				View: v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL,
+				View: v1pb.DatabaseGroupView_FULL,
 			}))
 			a.NoError(err)
 			databaseGroup = databaseGroupResp.Msg
