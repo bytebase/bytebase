@@ -191,6 +191,7 @@ import {
   type TreeOption,
 } from "naive-ui";
 import { ref, shallowRef, nextTick, watch, h, computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
@@ -202,6 +203,7 @@ import {
   batchGetOrFetchDatabases,
   useProjectV1Store,
   useDatabaseV1Store,
+  useDBGroupStore,
   useSQLEditorTabStore,
   useCurrentUserV1,
   resolveOpeningDatabaseListFromSQLEditorTabList,
@@ -264,9 +266,11 @@ const treeStore = useSQLEditorTreeStore();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 const databaseStore = useDatabaseV1Store();
+const dbGroupStore = useDBGroupStore();
 const projectStore = useProjectV1Store();
 const environmentList = useEnvironmentV1List();
 const currentUser = useCurrentUserV1();
+const { t } = useI18n();
 
 const expandedState = useDynamicLocalStorage<{
   initialized: boolean;
@@ -304,6 +308,24 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
   showEmptyEnvironment: false,
   batchQueryDataSourceType: DataSourceType.READ_ONLY,
+});
+
+const flattenSelectedDatabasesFromGroup = computed(() => {
+  const nameMap = new Map<
+    string /* database name */,
+    string /* group title */
+  >();
+  for (const groupName of tabStore.currentTab?.batchQueryContext
+    ?.databaseGroups ?? []) {
+    const group = dbGroupStore.getDBGroupByName(groupName);
+    if (!group) {
+      continue;
+    }
+    for (const db of group.matchedDatabases) {
+      nameMap.set(db.name, group.title);
+    }
+  }
+  return nameMap;
 });
 
 const treeByEnvironment = shallowRef<
@@ -481,9 +503,20 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
     databaseName = (node as SQLEditorTreeNode<"database">).meta.target.name;
   }
 
+  const checkedByGroup =
+    flattenSelectedDatabasesFromGroup.value.get(databaseName);
+  let checkTooltip = "";
+  if (tabStore.currentTab?.connection.database === databaseName) {
+    checkTooltip = t("sql-editor.current-connection");
+  } else if (!!checkedByGroup) {
+    checkTooltip = t("sql-editor.matched-in-group", { title: checkedByGroup });
+  }
+
   return h(Label, {
     node,
-    checked: state.selectedDatabases.has(databaseName),
+    checked: state.selectedDatabases.has(databaseName) || !!checkedByGroup,
+    checkDisabled: !!checkedByGroup,
+    checkTooltip,
     keyword: state.params.query,
     connected: connectedDatabases.value.has(databaseName),
     "onUpdate:checked": (checked: boolean) => {

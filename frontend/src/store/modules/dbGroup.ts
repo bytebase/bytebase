@@ -228,7 +228,10 @@ export const useDBGroupStore = defineStore("db-group", () => {
   };
 });
 
-export const useDBGroupListByProject = (project: MaybeRef<string>) => {
+export const useDBGroupListByProject = (
+  project: MaybeRef<string>,
+  view: DatabaseGroupView = DatabaseGroupView.BASIC
+) => {
   const store = useDBGroupStore();
   const ready = ref(false);
   const dbGroupList = ref<DatabaseGroup[]>([]);
@@ -237,7 +240,7 @@ export const useDBGroupListByProject = (project: MaybeRef<string>) => {
     ready.value = false;
     dbGroupList.value = [];
     store
-      .fetchDBGroupListByProjectName(unref(project), DatabaseGroupView.BASIC)
+      .fetchDBGroupListByProjectName(unref(project), view)
       .then((response) => {
         ready.value = true;
         dbGroupList.value = response;
@@ -247,14 +250,17 @@ export const useDBGroupListByProject = (project: MaybeRef<string>) => {
   return { dbGroupList, ready };
 };
 
-export const useDatabaseGroupByName = (name: MaybeRef<string>) => {
+export const useDatabaseGroupByName = (
+  name: MaybeRef<string>,
+  view: DatabaseGroupView
+) => {
   const store = useDBGroupStore();
   const ready = ref(true);
   watch(
     () => unref(name),
     (name) => {
       ready.value = false;
-      store.getOrFetchDBGroupByName(name).then(() => {
+      store.getOrFetchDBGroupByName(name, { view }).then(() => {
         ready.value = true;
       });
     },

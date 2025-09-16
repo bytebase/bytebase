@@ -1,17 +1,21 @@
 <template>
   <div class="flex items-center max-w-full overflow-hidden gap-x-1">
-    <template v-if="tabStore.supportBatchMode">
-      <LinkIcon
-        v-if="tabStore.currentTab?.connection.database === database.name"
-        class="w-4 textinfolabel"
-      />
-      <NCheckbox
-        v-else-if="canQuery"
-        :checked="checked"
-        @click.stop.prevent=""
-        @update:checked="$emit('update:checked', $event)"
-      />
-    </template>
+    <NTooltip v-if="tabStore.supportBatchMode" :disabled="!checkTooltip">
+      <template #trigger>
+        <LinkIcon
+          v-if="tabStore.currentTab?.connection.database === database.name"
+          class="w-4 textinfolabel"
+        />
+        <NCheckbox
+          v-else
+          :checked="checked"
+          :disabled="checkDisabled || !canQuery"
+          @click.stop.prevent=""
+          @update:checked="$emit('update:checked', $event)"
+        />
+      </template>
+      {{ checkTooltip }}
+    </NTooltip>
 
     <RichDatabaseName
       :database="database"
@@ -37,7 +41,7 @@
 
 <script setup lang="ts">
 import { LinkIcon } from "lucide-vue-next";
-import { NCheckbox } from "naive-ui";
+import { NCheckbox, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
 import { useSQLEditorTabStore } from "@/store";
@@ -50,6 +54,8 @@ const props = defineProps<{
   keyword: string;
   connected?: boolean;
   checked?: boolean;
+  checkDisabled?: boolean;
+  checkTooltip?: string;
 }>();
 
 defineEmits<{
