@@ -2075,7 +2075,7 @@
     "show-empty-environments": "空の環境を表示",
     "select-encoding": "エンコーディングの選択",
     "current-connection": "現在の接続",
-    "matched-in-group": "データベース グループ \"{title}\" に一致しました",
+    "matched-in-group": "データベース グループ {title} に一致しました",
     "redis-command": {
       "self": "redisコマンドを実行する",
       "all-nodes": "すべてのノード",

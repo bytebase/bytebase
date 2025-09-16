@@ -2075,7 +2075,7 @@
     "show-empty-environments": "Hiển thị môi trường trống",
     "select-encoding": "Chọn mã hóa",
     "current-connection": "Kết nối hiện tại",
-    "matched-in-group": "Phù hợp trong nhóm cơ sở dữ liệu \"{title}\"",
+    "matched-in-group": "Phù hợp trong nhóm cơ sở dữ liệu: {title}",
     "redis-command": {
       "self": "Chạy lệnh redis trên",
       "all-nodes": "Tất cả các nút",
