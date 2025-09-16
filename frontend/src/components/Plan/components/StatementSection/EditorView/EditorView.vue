@@ -88,7 +88,7 @@
     <BBAttention
       v-if="isSheetOversize"
       type="warning"
-      :title="$t('issue.statement-from-sheet-warning')"
+      :description="$t('issue.statement-from-sheet-warning')"
     >
       <template #action>
         <DownloadSheetButton v-if="sheetName" :sheet="sheetName" size="small" />
