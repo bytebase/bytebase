@@ -79,7 +79,7 @@ func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, req *con
 		Expression:  req.Msg.DatabaseGroup.DatabaseExpr,
 	}
 	if req.Msg.ValidateOnly {
-		result, err := convertStoreToAPIDatabaseGroupFull(ctx, s.store, storeDatabaseGroup, projectResourceID)
+		result, err := convertStoreToV1DatabaseGroup(ctx, s.store, storeDatabaseGroup, projectResourceID, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +102,7 @@ func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, req *con
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	result, err := convertStoreToAPIDatabaseGroupFull(ctx, s.store, databaseGroup, projectResourceID)
+	result, err := convertStoreToV1DatabaseGroup(ctx, s.store, databaseGroup, projectResourceID, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func (s *DatabaseGroupService) UpdateDatabaseGroup(ctx context.Context, req *con
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	result, err := convertStoreToAPIDatabaseGroupFull(ctx, s.store, databaseGroup, projectResourceID)
+	result, err := convertStoreToV1DatabaseGroup(ctx, s.store, databaseGroup, projectResourceID, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
@@ -234,15 +234,11 @@ func (s *DatabaseGroupService) ListDatabaseGroups(ctx context.Context, req *conn
 
 	var apiDatabaseGroups []*v1pb.DatabaseGroup
 	for _, databaseGroup := range databaseGroups {
-		if req.Msg.View == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL {
-			fullDatabaseGroup, err := convertStoreToAPIDatabaseGroupFull(ctx, s.store, databaseGroup, projectResourceID)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert database group %q to full view", databaseGroup.ResourceID))
-			}
-			apiDatabaseGroups = append(apiDatabaseGroups, fullDatabaseGroup)
-		} else {
-			apiDatabaseGroups = append(apiDatabaseGroups, convertStoreToAPIDatabaseGroupBasic(databaseGroup, project.ResourceID))
+		group, err := convertStoreToV1DatabaseGroup(ctx, s.store, databaseGroup, projectResourceID, req.Msg.View)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert database group %q", databaseGroup.ResourceID))
 		}
+		apiDatabaseGroups = append(apiDatabaseGroups, group)
 	}
 	return connect.NewResponse(&v1pb.ListDatabaseGroupsResponse{
 		DatabaseGroups: apiDatabaseGroups,
@@ -282,13 +278,19 @@ func getDatabaseGroupByName(ctx context.Context, stores *store.Store, databaseGr
 	if databaseGroup == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database group %q not found", databaseGroupResourceID))
 	}
-	if view == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL {
-		return convertStoreToAPIDatabaseGroupFull(ctx, stores, databaseGroup, projectResourceID)
-	}
-	return convertStoreToAPIDatabaseGroupBasic(databaseGroup, projectResourceID), nil
+	return convertStoreToV1DatabaseGroup(ctx, stores, databaseGroup, projectResourceID, view)
 }
 
-func convertStoreToAPIDatabaseGroupFull(ctx context.Context, stores *store.Store, databaseGroup *store.DatabaseGroupMessage, projectResourceID string) (*v1pb.DatabaseGroup, error) {
+func convertStoreToV1DatabaseGroup(ctx context.Context, stores *store.Store, databaseGroup *store.DatabaseGroupMessage, projectResourceID string, view v1pb.DatabaseGroupView) (*v1pb.DatabaseGroup, error) {
+	ret := &v1pb.DatabaseGroup{
+		Name:         fmt.Sprintf("%s/%s%s", common.FormatProject(projectResourceID), common.DatabaseGroupNamePrefix, databaseGroup.ResourceID),
+		Title:        databaseGroup.Placeholder,
+		DatabaseExpr: databaseGroup.Expression,
+	}
+	if view == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_BASIC || view == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_UNSPECIFIED {
+		return ret, nil
+	}
+
 	databases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
 		ProjectID: &projectResourceID,
 	})
@@ -296,7 +298,6 @@ func convertStoreToAPIDatabaseGroupFull(ctx context.Context, stores *store.Store
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	ret := convertStoreToAPIDatabaseGroupBasic(databaseGroup, projectResourceID)
 	matches, unmatches, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, databases)
 	if err != nil {
 		return nil, err
@@ -306,19 +307,12 @@ func convertStoreToAPIDatabaseGroupFull(ctx context.Context, stores *store.Store
 			Name: common.FormatDatabase(database.InstanceID, database.DatabaseName),
 		})
 	}
-	for _, database := range unmatches {
-		ret.UnmatchedDatabases = append(ret.UnmatchedDatabases, &v1pb.DatabaseGroup_Database{
-			Name: common.FormatDatabase(database.InstanceID, database.DatabaseName),
-		})
+	if view == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL {
+		for _, database := range unmatches {
+			ret.UnmatchedDatabases = append(ret.UnmatchedDatabases, &v1pb.DatabaseGroup_Database{
+				Name: common.FormatDatabase(database.InstanceID, database.DatabaseName),
+			})
+		}
 	}
 	return ret, nil
-}
-
-func convertStoreToAPIDatabaseGroupBasic(databaseGroup *store.DatabaseGroupMessage, projectResourceID string) *v1pb.DatabaseGroup {
-	databaseGroupV1 := &v1pb.DatabaseGroup{
-		Name:         fmt.Sprintf("%s/%s%s", common.FormatProject(projectResourceID), common.DatabaseGroupNamePrefix, databaseGroup.ResourceID),
-		Title:        databaseGroup.Placeholder,
-		DatabaseExpr: databaseGroup.Expression,
-	}
-	return databaseGroupV1
 }

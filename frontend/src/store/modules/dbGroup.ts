@@ -1,6 +1,5 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
-import { computedAsync } from "@vueuse/core";
 import { head } from "lodash-es";
 import { defineStore } from "pinia";
 import type { MaybeRef } from "vue";
@@ -9,22 +8,17 @@ import { databaseGroupServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { buildCELExpr } from "@/plugins/cel";
-import type { ComposedDatabase } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
-import type {
-  DatabaseGroup,
-  DatabaseGroupView,
-} from "@/types/proto-es/v1/database_group_service_pb";
+import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 import {
   CreateDatabaseGroupRequestSchema,
   DeleteDatabaseGroupRequestSchema,
   GetDatabaseGroupRequestSchema,
   ListDatabaseGroupsRequestSchema,
   UpdateDatabaseGroupRequestSchema,
-  DatabaseGroupView as DatabaseGroupViewEnum,
+  DatabaseGroupView,
   DatabaseGroupSchema,
 } from "@/types/proto-es/v1/database_group_service_pb";
-import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { batchConvertParsedExprToCELString } from "@/utils";
 import { useCache } from "../cache";
 import { databaseGroupNamePrefix } from "./v1/common";
@@ -36,17 +30,53 @@ export const useDBGroupStore = defineStore("db-group", () => {
     "bb.database-group.by-name"
   );
 
+  const getCacheWithFallback = (
+    name: string,
+    view: DatabaseGroupView = DatabaseGroupView.UNSPECIFIED
+  ): DatabaseGroup | undefined => {
+    let views: DatabaseGroupView[] = [];
+    switch (view) {
+      case DatabaseGroupView.UNSPECIFIED:
+      case DatabaseGroupView.BASIC:
+        views = [
+          DatabaseGroupView.BASIC,
+          DatabaseGroupView.MATCHED,
+          DatabaseGroupView.FULL,
+        ];
+        break;
+      case DatabaseGroupView.MATCHED:
+        views = [DatabaseGroupView.MATCHED, DatabaseGroupView.FULL];
+        break;
+      case DatabaseGroupView.FULL:
+        views = [DatabaseGroupView.FULL];
+        break;
+    }
+
+    for (const v of views) {
+      const entity = cacheByName.getEntity([name, v]);
+      if (entity) {
+        return entity;
+      }
+    }
+  };
+
+  const removeDatabaseGroupCache = (name: string) => {
+    const views = [
+      DatabaseGroupView.BASIC,
+      DatabaseGroupView.MATCHED,
+      DatabaseGroupView.FULL,
+    ];
+    for (const view of views) {
+      cacheByName.invalidateEntity([name, view]);
+    }
+  };
+
   // Cache utils
   const setDatabaseGroupCache = (
     databaseGroup: DatabaseGroup,
     view: DatabaseGroupView
   ) => {
-    if (view === DatabaseGroupViewEnum.FULL) {
-      cacheByName.invalidateEntity([
-        databaseGroup.name,
-        DatabaseGroupViewEnum.BASIC,
-      ]);
-    }
+    removeDatabaseGroupCache(databaseGroup.name);
     cacheByName.setEntity([databaseGroup.name, view], databaseGroup);
   };
 
@@ -62,7 +92,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
       ...{
         skipCache: false,
         silent: false,
-        view: DatabaseGroupViewEnum.BASIC,
+        view: DatabaseGroupView.BASIC,
       },
       ...options,
     };
@@ -83,31 +113,27 @@ export const useDBGroupStore = defineStore("db-group", () => {
     return databaseGroup;
   };
 
-  const fetchDBGroupListByProjectName = async (projectName: string) => {
+  const fetchDBGroupListByProjectName = async (
+    projectName: string,
+    view: DatabaseGroupView
+  ) => {
     const request = create(ListDatabaseGroupsRequestSchema, {
       parent: projectName,
+      view,
     });
     const { databaseGroups } =
       await databaseGroupServiceClientConnect.listDatabaseGroups(request);
-    const databaseGroupList = [];
     for (const databaseGroup of databaseGroups) {
-      setDatabaseGroupCache(databaseGroup, DatabaseGroupViewEnum.BASIC);
-      databaseGroupList.push(databaseGroup);
+      setDatabaseGroupCache(databaseGroup, view);
     }
-    return databaseGroupList;
+    return databaseGroups;
   };
 
   const getDBGroupByName = (
     name: string,
     view?: DatabaseGroupView
   ): DatabaseGroup | undefined => {
-    if (!view) {
-      return (
-        cacheByName.getEntity([name, DatabaseGroupViewEnum.FULL]) ??
-        cacheByName.getEntity([name, DatabaseGroupViewEnum.BASIC])
-      );
-    }
-    return cacheByName.getEntity([name, view]);
+    return getCacheWithFallback(name, view);
   };
 
   const createDatabaseGroup = async ({
@@ -145,7 +171,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
         ),
       });
     if (!validateOnly) {
-      setDatabaseGroupCache(createdDatabaseGroup, DatabaseGroupViewEnum.FULL);
+      setDatabaseGroupCache(createdDatabaseGroup, DatabaseGroupView.FULL);
     }
     return createdDatabaseGroup;
   };
@@ -160,7 +186,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
     });
     const updatedDatabaseGroup =
       await databaseGroupServiceClientConnect.updateDatabaseGroup(request);
-    setDatabaseGroupCache(updatedDatabaseGroup, DatabaseGroupViewEnum.FULL);
+    setDatabaseGroupCache(updatedDatabaseGroup, DatabaseGroupView.FULL);
     return updatedDatabaseGroup;
   };
 
@@ -169,8 +195,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
       name: name,
     });
     await databaseGroupServiceClientConnect.deleteDatabaseGroup(request);
-    cacheByName.invalidateEntity([name, DatabaseGroupViewEnum.FULL]);
-    cacheByName.invalidateEntity([name, DatabaseGroupViewEnum.BASIC]);
+    removeDatabaseGroupCache(name);
   };
 
   const fetchDatabaseGroupMatchList = async ({
@@ -229,86 +254,15 @@ export const useDBGroupListByProject = (project: MaybeRef<string>) => {
   watchEffect(() => {
     ready.value = false;
     dbGroupList.value = [];
-    store.fetchDBGroupListByProjectName(unref(project)).then((response) => {
-      ready.value = true;
-      dbGroupList.value = response;
-    });
+    store
+      .fetchDBGroupListByProjectName(unref(project), DatabaseGroupView.BASIC)
+      .then((response) => {
+        ready.value = true;
+        dbGroupList.value = response;
+      });
   });
 
   return { dbGroupList, ready };
-};
-
-export const useDatabaseInGroupFilter = (
-  project: MaybeRef<Project>,
-  referenceDatabase: MaybeRef<ComposedDatabase | undefined>
-) => {
-  const isPreparingDatabaseGroups = ref(false);
-
-  const databaseGroups = computedAsync(
-    async () => {
-      const request = create(ListDatabaseGroupsRequestSchema, {
-        parent: unref(project).name,
-      });
-      const response =
-        await databaseGroupServiceClientConnect.listDatabaseGroups(request);
-      return Promise.all(
-        response.databaseGroups.map(async (group) => {
-          const getRequest = create(GetDatabaseGroupRequestSchema, {
-            name: group.name,
-            view: DatabaseGroupViewEnum.FULL,
-          });
-          return await databaseGroupServiceClientConnect.getDatabaseGroup(
-            getRequest
-          );
-        })
-      );
-    },
-    [],
-    {
-      evaluating: isPreparingDatabaseGroups,
-    }
-  );
-
-  const groupsContainRefDB = computed(() => {
-    const dbGroups = databaseGroups.value;
-    const referenceDB = unref(referenceDatabase);
-    if (!referenceDB) {
-      return dbGroups;
-    }
-    return dbGroups.filter((group) => {
-      return !!group.matchedDatabases.find(
-        (match) => match.name === referenceDB.name
-      );
-    });
-  });
-
-  const databaseFilter = (db: ComposedDatabase) => {
-    if (isPreparingDatabaseGroups.value) {
-      return false;
-    }
-    const dbGroups = databaseGroups.value;
-    if (!dbGroups) {
-      // dbGroups not configured
-      // allow all databases
-      return true;
-    }
-    const referenceDB = unref(referenceDatabase);
-    if (!referenceDB) {
-      // No ref DB
-      // allow all databases
-      return true;
-    }
-
-    if (groupsContainRefDB.value.length === 0) {
-      // the referenced DB is not in any group
-      // allow all databases
-      return true;
-    }
-    return groupsContainRefDB.value
-      .flatMap((group) => group.matchedDatabases.map((match) => match.name))
-      .includes(db.name);
-  };
-  return { isPreparingDatabaseGroups, databaseFilter };
 };
 
 export const useDatabaseGroupByName = (name: MaybeRef<string>) => {

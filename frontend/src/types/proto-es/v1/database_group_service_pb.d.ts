@@ -305,6 +305,13 @@ export enum DatabaseGroupView {
    * @generated from enum value: DATABASE_GROUP_VIEW_FULL = 2;
    */
   FULL = 2,
+
+  /**
+   * Include matched databases.
+   *
+   * @generated from enum value: DATABASE_GROUP_VIEW_MATCHED = 3;
+   */
+  MATCHED = 3,
 }
 
 /**

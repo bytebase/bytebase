@@ -32,7 +32,7 @@ export const flattenTargetsOfSpec = (spec: Plan_Spec): string[] => {
       if (isValidDatabaseGroupName(target)) {
         const dbGroup = useDBGroupStore().getDBGroupByName(
           target,
-          DatabaseGroupView.FULL
+          DatabaseGroupView.MATCHED
         );
         return dbGroup?.matchedDatabases.map((db) => db.name);
       }
