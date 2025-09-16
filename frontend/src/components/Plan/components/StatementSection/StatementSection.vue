@@ -1,11 +1,11 @@
 <template>
   <div
-    v-show="viewMode !== 'NONE'"
-    class="flex-1 max-h-[50vh] flex flex-col gap-y-2"
+    v-if="viewMode === 'EDITOR'"
+    class="flex-1 shrink min-h-0 max-h-[50vh] flex flex-col gap-y-2"
   >
-    <EditorView v-if="viewMode === 'EDITOR'" :key="editorViewKey" />
-    <ReleaseView v-else-if="viewMode === 'RELEASE'" />
+    <EditorView :key="editorViewKey" />
   </div>
+  <ReleaseView v-else-if="viewMode === 'RELEASE'" />
 </template>
 
 <script setup lang="ts">

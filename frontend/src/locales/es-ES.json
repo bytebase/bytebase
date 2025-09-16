@@ -55,6 +55,7 @@
     "run": "Ejecutar",
     "retry": "Reintentar",
     "skip": "Saltar",
+    "skipped": "Omitido",
     "dismiss": "Descartar",
     "back": "Volver",
     "next": "Siguiente",

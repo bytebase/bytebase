@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-2">
+  <div class="h-full flex flex-col gap-y-2">
     <NAlert type="info" :bordered="false">
       <template #icon>
         <heroicons-outline:information-circle class="w-5 h-5" />

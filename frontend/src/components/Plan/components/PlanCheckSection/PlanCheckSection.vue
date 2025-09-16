@@ -22,6 +22,18 @@
           </template>
           {{ $t("task.check-type.affected-rows.description") }}
         </NTooltip>
+
+        <NTooltip v-if="isStatementOversized">
+          <template #trigger>
+            <NTag type="warning" round>
+              <template #icon>
+                <CircleQuestionMarkIcon class="size-4" />
+              </template>
+              {{ $t("common.skipped") }}
+            </NTag>
+          </template>
+          {{ $t("issue.sql-check.statement-is-too-large") }}
+        </NTooltip>
       </div>
 
       <div class="flex items-center gap-2">
@@ -60,6 +72,7 @@ import type { ConnectError } from "@connectrpc/connect";
 import { PlayIcon, CircleQuestionMarkIcon } from "lucide-vue-next";
 import { NButton, NTooltip, NTag } from "naive-ui";
 import { computed, ref, watch } from "vue";
+import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import { planServiceClientConnect } from "@/grpcweb";
 import {
   useCurrentUserV1,
@@ -82,6 +95,7 @@ import { useResourcePoller } from "../../logic/poller";
 import ChecksDrawer from "../ChecksView/ChecksDrawer.vue";
 import PlanCheckStatusCount from "../PlanCheckStatusCount.vue";
 import { useSelectedSpec } from "../SpecDetailView/context";
+import { useSpecSheet } from "../StatementSection/useSpecSheet";
 
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
@@ -89,6 +103,7 @@ const { plan, planCheckRuns } = usePlanContext();
 const selectedSpec = useSelectedSpec();
 const { refreshResources } = useResourcePoller();
 const { statusCountString } = usePlanCheckStatus(plan);
+const { sheet } = useSpecSheet(selectedSpec);
 
 const isRunningChecks = ref(false);
 const showChecksDrawer = ref(false);
@@ -129,6 +144,11 @@ const affectedRows = computed(() => {
     }
     return acc;
   }, 0n);
+});
+
+const isStatementOversized = computed(() => {
+  if (!sheet.value) return false;
+  return sheet.value.contentSize > STATEMENT_SKIP_CHECK_THRESHOLD;
 });
 
 const runChecks = async () => {

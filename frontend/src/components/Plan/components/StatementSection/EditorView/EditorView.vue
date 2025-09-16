@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-1 flex flex-col gap-y-2">
+  <div class="h-full flex flex-col gap-y-2">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-x-4">
         <div class="flex items-center gap-x-1 text-sm">
@@ -88,7 +88,7 @@
     <BBAttention
       v-if="isSheetOversize"
       type="warning"
-      :title="$t('issue.statement-from-sheet-warning')"
+      :description="$t('issue.statement-from-sheet-warning')"
     >
       <template #action>
         <DownloadSheetButton v-if="sheetName" :sheet="sheetName" size="small" />
