@@ -298,7 +298,7 @@ func convertStoreToV1DatabaseGroup(ctx context.Context, stores *store.Store, dat
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	matches, unmatches, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, databases)
+	matches, err := utils.GetMatchedDatabasesInDatabaseGroup(ctx, databaseGroup, databases)
 	if err != nil {
 		return nil, err
 	}
@@ -306,13 +306,6 @@ func convertStoreToV1DatabaseGroup(ctx context.Context, stores *store.Store, dat
 		ret.MatchedDatabases = append(ret.MatchedDatabases, &v1pb.DatabaseGroup_Database{
 			Name: common.FormatDatabase(database.InstanceID, database.DatabaseName),
 		})
-	}
-	if view == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL {
-		for _, database := range unmatches {
-			ret.UnmatchedDatabases = append(ret.UnmatchedDatabases, &v1pb.DatabaseGroup_Database{
-				Name: common.FormatDatabase(database.InstanceID, database.DatabaseName),
-			})
-		}
 	}
 	return ret, nil
 }

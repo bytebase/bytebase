@@ -204,11 +204,11 @@ func (s *Store) GetReviewConfigForDatabase(ctx context.Context, database *Databa
 	for _, v := range resources {
 		reviewConfig, err := s.getReviewConfigByResource(ctx, v.resourceType, v.resource)
 		if err != nil {
-			slog.Debug("failed to get review config", slog.String("resource_type", string(v.resourceType)), slog.String("database", database.DatabaseName), log.BBError(err))
+			slog.Debug("failed to get review config", slog.String("resource_type", v.resourceType.String()), slog.String("database", database.DatabaseName), log.BBError(err))
 			continue
 		}
 		if reviewConfig == nil {
-			slog.Debug("review config is empty", slog.String("resource_type", string(v.resourceType)), slog.String("database", database.DatabaseName), log.BBError(err))
+			slog.Debug("review config is empty", slog.String("resource_type", v.resourceType.String()), slog.String("database", database.DatabaseName), log.BBError(err))
 			continue
 		}
 		return reviewConfig, nil

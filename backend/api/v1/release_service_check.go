@@ -85,7 +85,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 				return nil, connect.NewError(connect.CodeInternal, err)
 			}
 			// Filter out databases that are matched with the database group.
-			matches, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, existedDatabaseGroup, groupDatabases)
+			matches, err := utils.GetMatchedDatabasesInDatabaseGroup(ctx, existedDatabaseGroup, groupDatabases)
 			if err != nil {
 				return nil, err
 			}
