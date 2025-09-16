@@ -59,7 +59,10 @@ export function parseStatement(statement: string): ParsedStatement {
   }
 
   // Check for isolation level directive on the current line
-  if (currentIndex < lines.length && TXN_ISOLATION_REGEX.test(lines[currentIndex])) {
+  if (
+    currentIndex < lines.length &&
+    TXN_ISOLATION_REGEX.test(lines[currentIndex])
+  ) {
     const match = lines[currentIndex].match(TXN_ISOLATION_REGEX);
     if (match) {
       // Normalize the isolation level string
