@@ -342,6 +342,19 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		originalIndex = []int32{0}
 	}
 
+	// Validate isolation level for MySQL if specified
+	if transactionConfig.Isolation != common.IsolationLevelDefault {
+		validLevels := map[common.IsolationLevel]bool{
+			common.IsolationLevelReadUncommitted: true,
+			common.IsolationLevelReadCommitted:   true,
+			common.IsolationLevelRepeatableRead:  true,
+			common.IsolationLevelSerializable:    true,
+		}
+		if !validLevels[transactionConfig.Isolation] {
+			return 0, errors.Errorf("invalid isolation level for MySQL: %s. Supported levels: READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ, SERIALIZABLE", transactionConfig.Isolation)
+		}
+	}
+
 	// Execute based on transaction mode
 	if transactionConfig.Mode == common.TransactionModeOff {
 		return d.executeInAutoCommitMode(ctx, conn, commands, originalIndex, opts, connectionID)

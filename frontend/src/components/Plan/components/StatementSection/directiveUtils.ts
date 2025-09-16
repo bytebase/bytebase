@@ -47,33 +47,47 @@ export function parseStatement(statement: string): ParsedStatement {
     mainContent: "",
   };
 
-  let currentIndex = 0;
+  const directiveLines = new Set<number>();
 
-  // Check line 1 for transaction mode directive
-  if (lines.length > 0 && TXN_MODE_REGEX.test(lines[0])) {
-    const match = lines[0].match(TXN_MODE_REGEX);
-    if (match) {
-      result.transactionMode = match[1].toLowerCase() as "on" | "off";
-      currentIndex = 1;
+  // Scan lines from the top, stopping at first non-comment/non-empty line
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // Skip empty lines
+    if (trimmed === "") {
+      continue;
     }
-  }
 
-  // Check for isolation level directive on the current line
-  if (
-    currentIndex < lines.length &&
-    TXN_ISOLATION_REGEX.test(lines[currentIndex])
-  ) {
-    const match = lines[currentIndex].match(TXN_ISOLATION_REGEX);
-    if (match) {
+    // If it's not a comment, stop scanning for directives
+    if (!trimmed.startsWith("--")) {
+      break;
+    }
+
+    // Check for transaction mode directive
+    const txnModeMatch = line.match(TXN_MODE_REGEX);
+    if (txnModeMatch) {
+      result.transactionMode = txnModeMatch[1].toLowerCase() as "on" | "off";
+      directiveLines.add(i);
+      continue;
+    }
+
+    // Check for isolation level directive
+    const isolationMatch = line.match(TXN_ISOLATION_REGEX);
+    if (isolationMatch) {
       // Normalize the isolation level string
-      const isolation = match[1].toUpperCase().replace(/\s+/g, "_");
+      const isolation = isolationMatch[1].toUpperCase().replace(/\s+/g, "_");
       result.isolationLevel = isolation as IsolationLevel;
-      currentIndex++;
+      directiveLines.add(i);
+      continue;
     }
   }
+
+  // Build remaining content without directive lines
+  const remainingLines = lines.filter((_, i) => !directiveLines.has(i));
+  const remainingContent = remainingLines.join("\n");
 
   // Check for role setter block (can be anywhere in the remaining content)
-  const remainingContent = lines.slice(currentIndex).join("\n");
   const roleSetterMatch = remainingContent.match(ROLE_SETTER_REGEX);
 
   if (roleSetterMatch) {
@@ -89,16 +103,18 @@ export function parseStatement(statement: string): ParsedStatement {
 
 /**
  * Rebuilds a SQL statement from its components, ensuring proper ordering.
+ * Directives are placed at the top, followed by role setter, then main content.
  */
 export function buildStatement(components: ParsedStatement): string {
   const parts: string[] = [];
 
-  // Line 1: Transaction mode directive (if present)
+  // Add directives at the top (they can be in any order)
+  // Transaction mode directive (if present)
   if (components.transactionMode !== undefined) {
     parts.push(`-- txn-mode = ${components.transactionMode}`);
   }
 
-  // Line 2: Isolation level directive (if present and txn-mode is not explicitly off)
+  // Isolation level directive (if present and txn-mode is not explicitly off)
   if (
     components.isolationLevel !== undefined &&
     components.transactionMode !== "off"
