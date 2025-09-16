@@ -164,6 +164,9 @@ enum DatabaseGroupView {
 
   // Include everything.
   DATABASE_GROUP_VIEW_FULL = 2;
+
+  // Include matched databases.
+  DATABASE_GROUP_VIEW_MATCHED = 3;
 }
 
 message DatabaseGroup {

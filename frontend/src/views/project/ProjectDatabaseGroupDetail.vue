@@ -119,7 +119,7 @@ const hasDatabaseGroupFeature = featureToRef(
 watchEffect(async () => {
   await dbGroupStore.getOrFetchDBGroupByName(databaseGroupResourceName.value, {
     skipCache: true,
-    view: DatabaseGroupView.FULL,
+    view: DatabaseGroupView.BASIC,
   });
 });
 

@@ -262,7 +262,7 @@ const useExecuteSQL = () => {
               {
                 skipCache: false,
                 silent: true,
-                view: DatabaseGroupView.FULL,
+                view: DatabaseGroupView.MATCHED,
               }
             );
             for (const matchedDatabase of databaseGroup.matchedDatabases) {
