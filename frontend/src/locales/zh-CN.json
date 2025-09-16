@@ -2074,6 +2074,8 @@
     "select-a-database-to-start": "选择数据库以开始",
     "show-empty-environments": "显示空环境",
     "select-encoding": "选择编码",
+    "current-connection": "当前连接",
+    "matched-in-group": "在数据库组 {title} 中匹配",
     "redis-command": {
       "self": "运行 redis 命令",
       "all-nodes": "所有节点",

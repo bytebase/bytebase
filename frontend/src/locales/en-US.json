@@ -2074,6 +2074,8 @@
     "select-a-database-to-start": "Select a database to start",
     "show-empty-environments": "Show empty environments",
     "select-encoding": "Select encoding",
+    "current-connection": "Current connection",
+    "matched-in-group": "Matched in the database group: {title}",
     "redis-command": {
       "self": "Run redis command on",
       "all-nodes": "All nodes",
