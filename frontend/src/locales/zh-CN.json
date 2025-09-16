@@ -1131,6 +1131,11 @@
       "delete-change": {
         "title": "删除变更项",
         "content": "您确定要删除该变更项吗？"
+      },
+      "role-selection": {
+        "title": "数据库角色选择",
+        "description": "选择以哪个 PostgreSQL 角色来执行此语句。",
+        "technical-note": "将“SET ROLE {role};”添加到您的 SQL 语句中。"
       }
     },
     "targets": {

@@ -1,9 +1,18 @@
+import { create } from "@bufbuild/protobuf";
+import { cloneDeep } from "lodash-es";
+import { planServiceClientConnect } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
+import { projectNamePrefix, useSheetV1Store } from "@/store";
 import { useProjectV1Store } from "@/store";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
-import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
+import {
+  Plan_ChangeDatabaseConfig_Type,
+  UpdatePlanRequestSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { extractProjectResourceName } from "@/utils";
+import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
+import { extractProjectResourceName, setSheetStatement } from "@/utils";
+import { createEmptyLocalSheet, databaseEngineForSpec } from ".";
 
 export const projectOfPlan = (plan: Plan): Project => {
   const project = `projects/${extractProjectResourceName(plan.name)}`;
@@ -38,4 +47,47 @@ export const getSpecTitle = (spec: Plan_Spec): string => {
     title = t("plan.spec.type.unknown");
   }
   return title;
+};
+
+export const updateSpecSheetWithStatement = async (
+  plan: Plan,
+  spec: Plan_Spec,
+  statement: string
+): Promise<void> => {
+  const planPatch = cloneDeep(plan);
+  const specToPatch = planPatch.specs.find((s) => s.id === spec.id);
+
+  if (!specToPatch) {
+    throw new Error(
+      `Cannot find spec to patch for plan update ${JSON.stringify(spec)}`
+    );
+  }
+
+  if (specToPatch.config.case !== "changeDatabaseConfig") {
+    throw new Error(
+      `Unsupported spec type for plan update ${JSON.stringify(specToPatch)}`
+    );
+  }
+
+  const specEngine = await databaseEngineForSpec(specToPatch);
+  const newSheet = create(SheetSchema, {
+    ...createEmptyLocalSheet(),
+    title: plan.title,
+    engine: specEngine,
+  });
+  setSheetStatement(newSheet, statement);
+
+  const projectName = `${projectNamePrefix}${extractProjectResourceName(plan.name)}`;
+  const createdSheet = await useSheetV1Store().createSheet(
+    projectName,
+    newSheet
+  );
+
+  specToPatch.config.value.sheet = createdSheet.name;
+  const request = create(UpdatePlanRequestSchema, {
+    plan: planPatch,
+    updateMask: { paths: ["specs"] },
+  });
+
+  await planServiceClientConnect.updatePlan(request);
 };
