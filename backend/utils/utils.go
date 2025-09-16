@@ -172,25 +172,22 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 	return nil
 }
 
-// GetMatchedAndUnmatchedDatabasesInDatabaseGroup returns the matched and unmatched databases in the given database group.
-func GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, []*store.DatabaseMessage, error) {
+// GetMatchedDatabasesInDatabaseGroup returns the matched databases in the given database group.
+func GetMatchedDatabasesInDatabaseGroup(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, allDatabases []*store.DatabaseMessage) ([]*store.DatabaseMessage, error) {
 	var matches []*store.DatabaseMessage
-	var unmatches []*store.DatabaseMessage
 
 	// DONOT check bb.feature.database-grouping for instance. The API here is read-only in the frontend, we need to show if the instance is matched but missing required license.
 	// The feature guard will works during issue creation.
 	for _, database := range allDatabases {
 		matched, err := CheckDatabaseGroupMatch(ctx, databaseGroup.Expression.Expression, database)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		if matched {
 			matches = append(matches, database)
-		} else {
-			unmatches = append(unmatches, database)
 		}
 	}
-	return matches, unmatches, nil
+	return matches, nil
 }
 
 func CheckDatabaseGroupMatch(ctx context.Context, expression string, database *store.DatabaseMessage) (bool, error) {

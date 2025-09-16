@@ -35,8 +35,6 @@ const (
 	DatabaseGroupView_DATABASE_GROUP_VIEW_BASIC DatabaseGroupView = 1
 	// Include everything.
 	DatabaseGroupView_DATABASE_GROUP_VIEW_FULL DatabaseGroupView = 2
-	// Include matched databases.
-	DatabaseGroupView_DATABASE_GROUP_VIEW_MATCHED DatabaseGroupView = 3
 )
 
 // Enum value maps for DatabaseGroupView.
@@ -45,13 +43,11 @@ var (
 		0: "DATABASE_GROUP_VIEW_UNSPECIFIED",
 		1: "DATABASE_GROUP_VIEW_BASIC",
 		2: "DATABASE_GROUP_VIEW_FULL",
-		3: "DATABASE_GROUP_VIEW_MATCHED",
 	}
 	DatabaseGroupView_value = map[string]int32{
 		"DATABASE_GROUP_VIEW_UNSPECIFIED": 0,
 		"DATABASE_GROUP_VIEW_BASIC":       1,
 		"DATABASE_GROUP_VIEW_FULL":        2,
-		"DATABASE_GROUP_VIEW_MATCHED":     3,
 	}
 )
 
@@ -475,10 +471,8 @@ type DatabaseGroup struct {
 	DatabaseExpr *expr.Expr `protobuf:"bytes,3,opt,name=database_expr,json=databaseExpr,proto3" json:"database_expr,omitempty"`
 	// The list of databases that match the database group condition.
 	MatchedDatabases []*DatabaseGroup_Database `protobuf:"bytes,4,rep,name=matched_databases,json=matchedDatabases,proto3" json:"matched_databases,omitempty"`
-	// The list of databases that match the database group condition.
-	UnmatchedDatabases []*DatabaseGroup_Database `protobuf:"bytes,5,rep,name=unmatched_databases,json=unmatchedDatabases,proto3" json:"unmatched_databases,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *DatabaseGroup) Reset() {
@@ -535,13 +529,6 @@ func (x *DatabaseGroup) GetDatabaseExpr() *expr.Expr {
 func (x *DatabaseGroup) GetMatchedDatabases() []*DatabaseGroup_Database {
 	if x != nil {
 		return x.MatchedDatabases
-	}
-	return nil
-}
-
-func (x *DatabaseGroup) GetUnmatchedDatabases() []*DatabaseGroup_Database {
-	if x != nil {
-		return x.UnmatchedDatabases
 	}
 	return nil
 }
@@ -623,21 +610,19 @@ const file_v1_database_group_service_proto_rawDesc = "" +
 	"updateMask\"T\n" +
 	"\x1aDeleteDatabaseGroupRequest\x126\n" +
 	"\x04name\x18\x01 \x01(\tB\"\xe0A\x02\xfaA\x1c\n" +
-	"\x1abytebase.com/DatabaseGroupR\x04name\"\x97\x03\n" +
+	"\x1abytebase.com/DatabaseGroupR\x04name\"\xbc\x02\n" +
 	"\rDatabaseGroup\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x126\n" +
 	"\rdatabase_expr\x18\x03 \x01(\v2\x11.google.type.ExprR\fdatabaseExpr\x12U\n" +
-	"\x11matched_databases\x18\x04 \x03(\v2#.bytebase.v1.DatabaseGroup.DatabaseB\x03\xe0A\x03R\x10matchedDatabases\x12Y\n" +
-	"\x13unmatched_databases\x18\x05 \x03(\v2#.bytebase.v1.DatabaseGroup.DatabaseB\x03\xe0A\x03R\x12unmatchedDatabases\x1a\x1e\n" +
+	"\x11matched_databases\x18\x04 \x03(\v2#.bytebase.v1.DatabaseGroup.DatabaseB\x03\xe0A\x03R\x10matchedDatabases\x1a\x1e\n" +
 	"\bDatabase\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name:R\xeaAO\n" +
-	"\x1abytebase.com/DatabaseGroup\x121projects/{project}/databaseGroups/{databaseGroup}*\x96\x01\n" +
+	"\x1abytebase.com/DatabaseGroup\x121projects/{project}/databaseGroups/{databaseGroup}*u\n" +
 	"\x11DatabaseGroupView\x12#\n" +
 	"\x1fDATABASE_GROUP_VIEW_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19DATABASE_GROUP_VIEW_BASIC\x10\x01\x12\x1c\n" +
-	"\x18DATABASE_GROUP_VIEW_FULL\x10\x02\x12\x1f\n" +
-	"\x1bDATABASE_GROUP_VIEW_MATCHED\x10\x032\xdb\a\n" +
+	"\x18DATABASE_GROUP_VIEW_FULL\x10\x022\xdb\a\n" +
 	"\x14DatabaseGroupService\x12\xb5\x01\n" +
 	"\x12ListDatabaseGroups\x12&.bytebase.v1.ListDatabaseGroupsRequest\x1a'.bytebase.v1.ListDatabaseGroupsResponse\"N\xdaA\x06parent\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{parent=projects/*}/databaseGroups\x12\xa2\x01\n" +
 	"\x10GetDatabaseGroup\x12$.bytebase.v1.GetDatabaseGroupRequest\x1a\x1a.bytebase.v1.DatabaseGroup\"L\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{name=projects/*/databaseGroups/*}\x12\xcf\x01\n" +
@@ -682,22 +667,21 @@ var file_v1_database_group_service_proto_depIdxs = []int32{
 	9,  // 5: bytebase.v1.UpdateDatabaseGroupRequest.update_mask:type_name -> google.protobuf.FieldMask
 	10, // 6: bytebase.v1.DatabaseGroup.database_expr:type_name -> google.type.Expr
 	8,  // 7: bytebase.v1.DatabaseGroup.matched_databases:type_name -> bytebase.v1.DatabaseGroup.Database
-	8,  // 8: bytebase.v1.DatabaseGroup.unmatched_databases:type_name -> bytebase.v1.DatabaseGroup.Database
-	1,  // 9: bytebase.v1.DatabaseGroupService.ListDatabaseGroups:input_type -> bytebase.v1.ListDatabaseGroupsRequest
-	3,  // 10: bytebase.v1.DatabaseGroupService.GetDatabaseGroup:input_type -> bytebase.v1.GetDatabaseGroupRequest
-	4,  // 11: bytebase.v1.DatabaseGroupService.CreateDatabaseGroup:input_type -> bytebase.v1.CreateDatabaseGroupRequest
-	5,  // 12: bytebase.v1.DatabaseGroupService.UpdateDatabaseGroup:input_type -> bytebase.v1.UpdateDatabaseGroupRequest
-	6,  // 13: bytebase.v1.DatabaseGroupService.DeleteDatabaseGroup:input_type -> bytebase.v1.DeleteDatabaseGroupRequest
-	2,  // 14: bytebase.v1.DatabaseGroupService.ListDatabaseGroups:output_type -> bytebase.v1.ListDatabaseGroupsResponse
-	7,  // 15: bytebase.v1.DatabaseGroupService.GetDatabaseGroup:output_type -> bytebase.v1.DatabaseGroup
-	7,  // 16: bytebase.v1.DatabaseGroupService.CreateDatabaseGroup:output_type -> bytebase.v1.DatabaseGroup
-	7,  // 17: bytebase.v1.DatabaseGroupService.UpdateDatabaseGroup:output_type -> bytebase.v1.DatabaseGroup
-	11, // 18: bytebase.v1.DatabaseGroupService.DeleteDatabaseGroup:output_type -> google.protobuf.Empty
-	14, // [14:19] is the sub-list for method output_type
-	9,  // [9:14] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	1,  // 8: bytebase.v1.DatabaseGroupService.ListDatabaseGroups:input_type -> bytebase.v1.ListDatabaseGroupsRequest
+	3,  // 9: bytebase.v1.DatabaseGroupService.GetDatabaseGroup:input_type -> bytebase.v1.GetDatabaseGroupRequest
+	4,  // 10: bytebase.v1.DatabaseGroupService.CreateDatabaseGroup:input_type -> bytebase.v1.CreateDatabaseGroupRequest
+	5,  // 11: bytebase.v1.DatabaseGroupService.UpdateDatabaseGroup:input_type -> bytebase.v1.UpdateDatabaseGroupRequest
+	6,  // 12: bytebase.v1.DatabaseGroupService.DeleteDatabaseGroup:input_type -> bytebase.v1.DeleteDatabaseGroupRequest
+	2,  // 13: bytebase.v1.DatabaseGroupService.ListDatabaseGroups:output_type -> bytebase.v1.ListDatabaseGroupsResponse
+	7,  // 14: bytebase.v1.DatabaseGroupService.GetDatabaseGroup:output_type -> bytebase.v1.DatabaseGroup
+	7,  // 15: bytebase.v1.DatabaseGroupService.CreateDatabaseGroup:output_type -> bytebase.v1.DatabaseGroup
+	7,  // 16: bytebase.v1.DatabaseGroupService.UpdateDatabaseGroup:output_type -> bytebase.v1.DatabaseGroup
+	11, // 17: bytebase.v1.DatabaseGroupService.DeleteDatabaseGroup:output_type -> google.protobuf.Empty
+	13, // [13:18] is the sub-list for method output_type
+	8,  // [8:13] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_v1_database_group_service_proto_init() }

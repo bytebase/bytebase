@@ -3774,7 +3774,6 @@ paths:
                         - DATABASE_GROUP_VIEW_UNSPECIFIED
                         - DATABASE_GROUP_VIEW_BASIC
                         - DATABASE_GROUP_VIEW_FULL
-                        - DATABASE_GROUP_VIEW_MATCHED
                     type: string
                     format: enum
             responses:
@@ -3863,7 +3862,6 @@ paths:
                         - DATABASE_GROUP_VIEW_UNSPECIFIED
                         - DATABASE_GROUP_VIEW_BASIC
                         - DATABASE_GROUP_VIEW_FULL
-                        - DATABASE_GROUP_VIEW_MATCHED
                     type: string
                     format: enum
             responses:
@@ -9791,12 +9789,6 @@ components:
                          For example:
                          resource.environment_name == "test" && resource.database_name.startsWith("sample_")
                 matchedDatabases:
-                    readOnly: true
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/DatabaseGroup_Database'
-                    description: The list of databases that match the database group condition.
-                unmatchedDatabases:
                     readOnly: true
                     type: array
                     items:

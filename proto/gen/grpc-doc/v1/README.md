@@ -5947,7 +5947,6 @@ Support variables: resource.environment_name: the environment resource id. Suppo
 
 For example: resource.environment_name == &#34;test&#34; &amp;&amp; resource.database_name.startsWith(&#34;sample_&#34;) |
 | matched_databases | [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database) | repeated | The list of databases that match the database group condition. |
-| unmatched_databases | [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database) | repeated | The list of databases that match the database group condition. |
 
 
 
@@ -6066,7 +6065,6 @@ The database group&#39;s `name` field is used to identify the database group to 
 | DATABASE_GROUP_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
 | DATABASE_GROUP_VIEW_BASIC | 1 | Include basic information about the database group, but exclude the list of matched databases and unmatched databases. |
 | DATABASE_GROUP_VIEW_FULL | 2 | Include everything. |
-| DATABASE_GROUP_VIEW_MATCHED | 3 | Include matched databases. |
 
 
  
