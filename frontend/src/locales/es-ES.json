@@ -2074,6 +2074,8 @@
     "select-a-database-to-start": "Seleccione una base de datos para comenzar",
     "show-empty-environments": "Mostrar entornos vacíos",
     "select-encoding": "Seleccionar codificación",
+    "current-connection": "Conexión actual",
+    "matched-in-group": "Coincidido en el grupo de base de datos: {title}",
     "redis-command": {
       "self": "Ejecute el comando redis en",
       "all-nodes": "Todos los nodos",

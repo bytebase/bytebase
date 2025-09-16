@@ -67,6 +67,7 @@ import {
   useDBGroupListByProject,
 } from "@/store/modules";
 import { isValidDatabaseName } from "@/types";
+import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
 interface LocalState {
@@ -92,7 +93,8 @@ const hasDatabaseGroupFeature = featureToRef(
 const { database } = useConnectionOfCurrentSQLEditorTab();
 
 const { dbGroupList, ready } = useDBGroupListByProject(
-  computed(() => editorStore.project)
+  computed(() => editorStore.project),
+  DatabaseGroupView.FULL
 );
 
 const filteredDbGroupList = computed(() => {
