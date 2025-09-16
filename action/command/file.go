@@ -90,7 +90,7 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 			return nil, "", err
 		}
 
-		base := filepath.Base(m)
+		base := strings.TrimSuffix(filepath.Base(m), filepath.Ext(m))
 		var t v1pb.Release_File_ChangeType
 		switch {
 		case strings.HasSuffix(base, "dml"):
