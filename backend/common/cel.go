@@ -18,6 +18,7 @@ const celLimit = 1024 * 1024
 var RiskFactors = []cel.EnvOption{
 	cel.Variable("environment_id", cel.StringType), // use environment.resource_id
 	cel.Variable("project_id", cel.StringType),     // use project.resource_id
+	cel.Variable("instance_id", cel.StringType),    // use instance.resource_id
 	cel.Variable("db_engine", cel.StringType),
 
 	cel.Variable("database_name", cel.StringType),

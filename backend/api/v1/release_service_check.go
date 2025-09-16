@@ -244,6 +244,7 @@ loop:
 					commonArgs := map[string]any{
 						"environment_id": "",
 						"project_id":     database.ProjectID,
+						"instance_id":    instance.ResourceID,
 						"database_name":  database.DatabaseName,
 						// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
 						"db_engine":     engine.String(),
