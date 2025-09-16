@@ -3,6 +3,7 @@ import type { SelectOption } from "naive-ui";
 import { h } from "vue";
 import type { VNode } from "vue";
 import { type OptionConfig } from "@/components/ExprEditor/context";
+import { getInstanceIdOptions } from "@/components/SensitiveData/components/utils";
 import { EnvironmentV1Name } from "@/components/v2";
 import { SQLTypeList, type Factor } from "@/plugins/cel";
 import { t } from "@/plugins/i18n";
@@ -10,6 +11,7 @@ import {
   environmentNamePrefix,
   useEnvironmentV1Store,
   useProjectV1Store,
+  useInstanceV1Store,
   useRoleStore,
 } from "@/store";
 import {
@@ -73,6 +75,7 @@ export const orderByLevelDesc = (a: Risk, b: Risk): number => {
 const commonFactorList = [
   "environment_id", // use `environment.resource_id` instead.
   "project_id", // use `project.resource_id` instead.
+  "instance_id", // use `instance.resource_id` instead.
   "db_engine",
 ] as const;
 
@@ -257,6 +260,23 @@ export const getOptionConfigMap = (source: Risk_Source) => {
           },
         });
         return map;
+      case "instance_id":
+        const store = useInstanceV1Store();
+        map.set(factor, {
+          remote: true,
+          options: [],
+          search: async (keyword: string) => {
+            return store
+              .fetchInstanceList({
+                pageSize: getDefaultPagination(),
+                filter: {
+                  query: keyword,
+                },
+              })
+              .then((resp) => getInstanceIdOptions(resp.instances));
+          },
+        });
+        return map;
       case "db_engine":
         options = getDBEndingOptions();
         break;
@@ -284,6 +304,7 @@ export const getOptionConfigMap = (source: Risk_Source) => {
 export const factorSupportDropdown: Factor[] = [
   "environment_id",
   "project_id",
+  "instance_id",
   "db_engine",
   "sql_type",
   "level",
