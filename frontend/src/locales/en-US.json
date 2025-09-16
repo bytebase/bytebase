@@ -55,6 +55,7 @@
     "run": "Run",
     "retry": "Retry",
     "skip": "Skip",
+    "skipped": "Skipped",
     "dismiss": "Dismiss",
     "back": "Back",
     "next": "Next",
