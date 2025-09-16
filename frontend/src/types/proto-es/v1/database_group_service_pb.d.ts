@@ -246,13 +246,6 @@ export declare type DatabaseGroup = Message<"bytebase.v1.DatabaseGroup"> & {
    * @generated from field: repeated bytebase.v1.DatabaseGroup.Database matched_databases = 4;
    */
   matchedDatabases: DatabaseGroup_Database[];
-
-  /**
-   * The list of databases that match the database group condition.
-   *
-   * @generated from field: repeated bytebase.v1.DatabaseGroup.Database unmatched_databases = 5;
-   */
-  unmatchedDatabases: DatabaseGroup_Database[];
 };
 
 /**
@@ -305,13 +298,6 @@ export enum DatabaseGroupView {
    * @generated from enum value: DATABASE_GROUP_VIEW_FULL = 2;
    */
   FULL = 2,
-
-  /**
-   * Include matched databases.
-   *
-   * @generated from enum value: DATABASE_GROUP_VIEW_MATCHED = 3;
-   */
-  MATCHED = 3,
 }
 
 /**

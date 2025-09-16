@@ -38,14 +38,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
     switch (view) {
       case DatabaseGroupView.UNSPECIFIED:
       case DatabaseGroupView.BASIC:
-        views = [
-          DatabaseGroupView.BASIC,
-          DatabaseGroupView.MATCHED,
-          DatabaseGroupView.FULL,
-        ];
-        break;
-      case DatabaseGroupView.MATCHED:
-        views = [DatabaseGroupView.MATCHED, DatabaseGroupView.FULL];
+        views = [DatabaseGroupView.BASIC, DatabaseGroupView.FULL];
         break;
       case DatabaseGroupView.FULL:
         views = [DatabaseGroupView.FULL];
@@ -61,11 +54,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
   };
 
   const removeDatabaseGroupCache = (name: string) => {
-    const views = [
-      DatabaseGroupView.BASIC,
-      DatabaseGroupView.MATCHED,
-      DatabaseGroupView.FULL,
-    ];
+    const views = [DatabaseGroupView.BASIC, DatabaseGroupView.FULL];
     for (const view of views) {
       cacheByName.invalidateEntity([name, view]);
     }
@@ -155,7 +144,6 @@ export const useDBGroupStore = defineStore("db-group", () => {
       title: databaseGroup.title,
       databaseExpr: databaseGroup.databaseExpr,
       matchedDatabases: [],
-      unmatchedDatabases: [],
     });
     const request = create(CreateDatabaseGroupRequestSchema, {
       parent: projectName,
@@ -207,10 +195,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
   }) => {
     const celexpr = await buildCELExpr(expr);
     if (!celexpr) {
-      return {
-        matchedDatabaseList: [],
-        unmatchedDatabaseList: [],
-      };
+      return [];
     }
     const celStrings = await batchConvertParsedExprToCELString([celexpr]);
     const expression = head(celStrings) || "true"; // Fallback to true.
@@ -229,10 +214,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
       validateOnly: true,
     });
 
-    return {
-      matchedDatabaseList: result.matchedDatabases.map((item) => item.name),
-      unmatchedDatabaseList: result.unmatchedDatabases.map((item) => item.name),
-    };
+    return result.matchedDatabases.map((item) => item.name);
   };
 
   return {
