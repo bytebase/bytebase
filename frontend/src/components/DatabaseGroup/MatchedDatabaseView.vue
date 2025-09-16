@@ -172,14 +172,6 @@ const state = reactive<LocalState>({
 const dbGroupStore = useDBGroupStore();
 const databaseStore = useDatabaseV1Store();
 
-// const getDatabaseList = (i: number) => {
-//   const { databaseNameList, index } = state.databaseMatchLists[i];
-//   return databaseNameList
-//     .slice(0, index)
-//     .map((databaseName) => databaseStore.getDatabaseByName(databaseName))
-//     .filter((database) => isValidDatabaseName(database.name));
-// };
-
 const loadMoreDatabase = async <T,>(state: DatabaseMatchList<T>) => {
   state.loading = true;
   try {
