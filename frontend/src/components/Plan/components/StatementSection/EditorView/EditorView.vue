@@ -14,7 +14,6 @@
       </div>
       <div class="flex items-center justify-end gap-x-2">
         <template v-if="isCreating">
-          <FormatOnSaveCheckbox />
           <SQLUploadButton
             size="small"
             :loading="state.isUploadingFile"
@@ -56,7 +55,6 @@
             </template>
           </template>
           <template v-else>
-            <FormatOnSaveCheckbox />
             <SQLUploadButton
               size="small"
               :loading="state.isUploadingFile"
@@ -208,7 +206,6 @@ import {
 import { useSelectedSpec } from "../../SpecDetailView/context";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import { useSpecSheet } from "../useSpecSheet";
-import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
 
 type LocalState = {
   statement: string;
