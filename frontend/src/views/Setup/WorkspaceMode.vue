@@ -1,18 +1,7 @@
 <template>
   <div>
     <div class="mb-4 font-medium">
-      {{ $t("settings.general.workspace.database-change-mode.description") }}
-      <LearnMoreLink
-        url="https://docs.bytebase.com/administration/mode?source=console"
-        class="ml-1 text-sm"
-      />
-      <div class="text-control-placeholder text-sm">
-        {{
-          $t(
-            "settings.general.workspace.database-change-mode.can-be-changed-later"
-          )
-        }}
-      </div>
+      {{ $t("settings.general.workspace.default-landing-page.self") }}
     </div>
     <div class="w-full flex flex-col gap-8">
       <NRadioGroup
@@ -24,17 +13,17 @@
         <NSpace vertical size="large">
           <NRadio :value="DatabaseChangeMode.PIPELINE">
             <div class="flex flex-col gap-1">
-              <div class="font-medium text-base">
+              <div class="textinfo">
                 {{
                   $t(
-                    "settings.general.workspace.database-change-mode.issue-mode.self"
+                    "settings.general.workspace.default-landing-page.workspace.self"
                   )
                 }}
               </div>
-              <div class="text-control">
+              <div class="textinfolabel">
                 {{
                   $t(
-                    "settings.general.workspace.database-change-mode.issue-mode.description"
+                    "settings.general.workspace.default-landing-page.workspace.description"
                   )
                 }}
               </div>
@@ -42,17 +31,17 @@
           </NRadio>
           <NRadio :value="DatabaseChangeMode.EDITOR">
             <div class="flex flex-col gap-1">
-              <div class="font-medium text-base">
+              <div class="textinfo">
                 {{
                   $t(
-                    "settings.general.workspace.database-change-mode.sql-editor-mode.self"
+                    "settings.general.workspace.default-landing-page.sql-editor.self"
                   )
                 }}
               </div>
-              <div class="text-control">
+              <div class="textinfolabel">
                 {{
                   $t(
-                    "settings.general.workspace.database-change-mode.sql-editor-mode.description"
+                    "settings.general.workspace.default-landing-page.sql-editor.description"
                   )
                 }}
               </div>
@@ -66,7 +55,6 @@
 
 <script lang="ts" setup>
 import { NRadio, NRadioGroup, NSpace } from "naive-ui";
-import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 
 withDefaults(

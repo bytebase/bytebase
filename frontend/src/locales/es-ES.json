@@ -595,7 +595,6 @@
           "description": "Los usuarios no pueden iniciar sesión con correo electrónico y contraseña, solo se permite SSO.",
           "require-sso-setup": "Primero se debe crear un SSO funcional o los usuarios no podrán iniciar sesión."
         },
-        "network": "Red",
         "external-url": {
           "self": "URL Externa",
           "description": "La URL externa donde el usuario visita Bytebase, debe comenzar con http:// o https://."
@@ -702,20 +701,18 @@
           "title": "Prohibir la creación de problemas para la revisión de SQL con errores.",
           "description": "Una vez habilitado, a los usuarios solo se les permite crear problemas si la revisión de SQL no contiene errores."
         },
-        "database-change-mode": {
-          "self": "Modo de cambio de base de datos",
-          "description": "Controla cómo los usuarios realizan migraciones de esquemas de bases de datos",
-          "issue-mode": {
-            "self": "Modo de emisión (Gobernado)",
+        "default-landing-page": {
+          "self": "Página de destino predeterminada",
+          "workspace": {
+            "self": "Espacio de trabajo",
             "description": "Utilice el problema para solicitar, revisar, implementar y versionar cambios en la base de datos, adecuado para equipos con control de acceso y flujo de trabajo de CI y CD."
           },
-          "sql-editor-mode": {
-            "self": "Modo de edición SQL (Directo)",
+          "sql-editor": {
+            "self": "Editor de SQL",
             "description": "Utilice el Editor SQL para ejecutar cambios en la base de datos directamente, adecuado para uso de una sola persona o entornos que no requieren supervisión."
           },
-          "can-be-changed-later": "Utilice el Editor SQL para ejecutar cambios en la base de datos directamente. Adecuado para particulares.",
           "default-view-changed-to-sql-editor": "La vista predeterminada del espacio de trabajo se ha cambiado al Editor SQL.",
-          "go-to-sql-editor": "Ir al editor SQL",
+          "go-to-sql-editor": "Ir al Editor SQL",
           "go-to-workspace": "Ir al espacio de trabajo"
         }
       }
