@@ -263,7 +263,7 @@ func TestExportJSON(t *testing.T) {
 					},
 				},
 			},
-			want: "[{\"a\":0b00000101}]",
+			want: "[{\"a\":\"0b00000101\"}]",
 		},
 		{
 			result: &v1pb.QueryResult{
