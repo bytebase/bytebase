@@ -139,7 +139,15 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	}
 	ast := res.Stmts[0]
 
-	queryType, isExplainAnalyze := getQueryType(ast.Stmt, allSystems)
+	queryTypeListener := &queryTypeListener{
+		result:     base.QueryTypeUnknown,
+		allSystems: allSystems,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(queryTypeListener, root.Tree)
+	if queryTypeListener.err != nil {
+		return nil, errors.Wrapf(queryTypeListener.err, "failed to get query type from statement: %s", stmt)
+	}
+	queryType, isExplainAnalyze := queryTypeListener.result, queryTypeListener.isExplainAnalyze
 	if queryType != base.Select {
 		return &base.QuerySpan{
 			Type:          queryType,
