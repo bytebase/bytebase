@@ -150,15 +150,18 @@ func (l *sdlChunkExtractor) EnterCreatefunctionstmt(ctx *parser.Createfunctionst
 		return
 	}
 
-	// Join the parts to create the full identifier (schema.function_name or function_name)
+	// Join the parts to create the function name (schema.function_name or function_name)
 	funcName := strings.Join(funcNameParts, ".")
 
+	// Extract function signature for proper identification
+	funcSignature := extractFunctionSignature(ctx, funcName)
+
 	chunk := &schema.SDLChunk{
-		Identifier: funcName,
+		Identifier: funcSignature, // Use signature instead of name
 		ASTNode:    ctx,
 	}
 
-	l.chunks.Functions[funcName] = chunk
+	l.chunks.Functions[funcSignature] = chunk
 }
 
 func (l *sdlChunkExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
@@ -1271,24 +1274,15 @@ func processFunctionChanges(currentChunks, previousChunks *schema.SDLChunks, dif
 			currentText := currentChunk.GetText(currentChunks.Tokens)
 			previousText := previousChunk.GetText(previousChunks.Tokens)
 			if currentText != previousText {
-				// Function was modified - use drop and recreate pattern (PostgreSQL standard)
+				// Function was modified - use CREATE OR REPLACE (AST-only mode)
 				schemaName, functionName := parseIdentifier(identifier)
 				diff.FunctionChanges = append(diff.FunctionChanges, &schema.FunctionDiff{
-					Action:       schema.MetadataDiffActionDrop,
+					Action:       schema.MetadataDiffActionAlter,
 					SchemaName:   schemaName,
 					FunctionName: functionName,
 					OldFunction:  nil, // Will be populated when SDL drift detection is implemented
 					NewFunction:  nil, // Will be populated when SDL drift detection is implemented
 					OldASTNode:   previousChunk.ASTNode,
-					NewASTNode:   nil,
-				})
-				diff.FunctionChanges = append(diff.FunctionChanges, &schema.FunctionDiff{
-					Action:       schema.MetadataDiffActionCreate,
-					SchemaName:   schemaName,
-					FunctionName: functionName,
-					OldFunction:  nil, // Will be populated when SDL drift detection is implemented
-					NewFunction:  nil, // Will be populated when SDL drift detection is implemented
-					OldASTNode:   nil,
 					NewASTNode:   currentChunk.ASTNode,
 				})
 			}

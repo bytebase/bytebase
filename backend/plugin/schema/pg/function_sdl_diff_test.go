@@ -61,7 +61,7 @@ func TestFunctionSDLDiff(t *testing.T) {
 			expectedActions:         []schema.MetadataDiffAction{schema.MetadataDiffActionDrop},
 		},
 		{
-			name: "Modify function (drop and recreate)",
+			name: "Modify function (CREATE OR REPLACE)",
 			previousSDL: `
 				CREATE TABLE users (
 					id SERIAL PRIMARY KEY,
@@ -90,8 +90,8 @@ func TestFunctionSDLDiff(t *testing.T) {
 				END;
 				$$ LANGUAGE plpgsql;
 			`,
-			expectedFunctionChanges: 2, // Drop + Create
-			expectedActions:         []schema.MetadataDiffAction{schema.MetadataDiffActionDrop, schema.MetadataDiffActionCreate},
+			expectedFunctionChanges: 1, // ALTER only
+			expectedActions:         []schema.MetadataDiffAction{schema.MetadataDiffActionAlter},
 		},
 		{
 			name: "No changes to function",
@@ -268,6 +268,11 @@ func TestFunctionSDLDiff(t *testing.T) {
 						"Function diff %d should have OldASTNode for DROP action", i)
 					assert.Nil(t, funcDiff.NewASTNode,
 						"Function diff %d should not have NewASTNode for DROP action", i)
+				case schema.MetadataDiffActionAlter:
+					assert.NotNil(t, funcDiff.OldASTNode,
+						"Function diff %d should have OldASTNode for ALTER action", i)
+					assert.NotNil(t, funcDiff.NewASTNode,
+						"Function diff %d should have NewASTNode for ALTER action", i)
 				default:
 					t.Errorf("Unexpected action %v for function diff %d", funcDiff.Action, i)
 				}
