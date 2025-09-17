@@ -708,8 +708,8 @@
             "description": "使用工单来请求、审查、推出和版本数据库更改，适用于具有访问控制和 CI 与 CD 工作流的团队。"
           },
           "sql-editor": {
-            "self": "SQL编辑器",
-            "description": "使用SQL编辑器直接执行数据库更改，适合单人使用或不需要监督的环境。"
+            "self": "SQL 编辑器",
+            "description": "使用 SQL 编辑器直接执行数据库更改，适合单人使用或不需要管控的环境。"
           },
           "default-view-changed-to-sql-editor": "工作区的默认视图已更改为 SQL 编辑器。",
           "go-to-sql-editor": "转到 SQL 编辑器",
