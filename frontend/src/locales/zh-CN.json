@@ -702,7 +702,7 @@
           "description": "启用后，只有在预览阶段不包含任何“错误”级别告警的工单才能被提交。"
         },
         "default-landing-page": {
-          "self": "默认着陆页",
+          "self": "默认首页",
           "workspace": {
             "self": "工作区",
             "description": "使用问题来请求、审查、推出和版本数据库更改，适用于具有访问控制和 CI 与 CD 工作流的团队。"
