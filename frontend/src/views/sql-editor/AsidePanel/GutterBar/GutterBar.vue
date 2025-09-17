@@ -5,13 +5,7 @@
   >
     <div class="flex flex-col gap-y-1">
       <div class="flex flex-col justify-center items-center pb-1">
-        <router-link
-          target="_blank"
-          rel="noopener noreferrer"
-          :to="{
-            name: WORKSPACE_ROUTE_LANDING,
-          }"
-        >
+        <router-link target="_blank" rel="noopener noreferrer" :to="linkTarget">
           <img
             class="w-[36px] h-auto"
             src="@/assets/logo-icon.svg"
@@ -34,6 +28,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
+import { useRoute } from "vue-router";
+import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useSQLEditorContext, type AsidePanelTab } from "../../context";
 import TabItem from "./TabItem.vue";
@@ -48,7 +45,25 @@ withDefaults(
   }
 );
 
+const route = useRoute();
 const { asidePanelTab } = useSQLEditorContext();
+
+const linkTarget = computed(() => {
+  // If we have a project in the route, navigate to that project's detail page
+  const project = route.params.project as string | undefined;
+  if (project) {
+    return {
+      name: PROJECT_V1_ROUTE_DETAIL,
+      params: {
+        projectId: project,
+      },
+    };
+  }
+  // Otherwise fallback to workspace landing
+  return {
+    name: WORKSPACE_ROUTE_LANDING,
+  };
+});
 
 const handleClickTab = (target: AsidePanelTab) => {
   asidePanelTab.value = target;
