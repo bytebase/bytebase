@@ -17,6 +17,7 @@ import (
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 
+	"github.com/bytebase/parser/postgresql"
 	pgparser "github.com/bytebase/parser/postgresql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -44,6 +45,7 @@ const (
 
 // querySpanExtractor is the extractor to extract the query span from the given pgquery.RawStmt.
 type querySpanExtractor struct {
+	*postgresql.BasePostgreSQLParserListener
 	ctx             context.Context
 	defaultDatabase string
 	searchPath      []string
@@ -70,6 +72,10 @@ type querySpanExtractor struct {
 
 	// variables are variables declared in the function.
 	variables map[string]*base.QuerySpanResult
+
+	err error
+
+	accessTables []base.ColumnResource
 }
 
 // newQuerySpanExtractor creates a new query span extractor, the databaseMetadata and the ast are in the read guard.
@@ -102,18 +108,24 @@ func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.Databa
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 
-	// Our querySpanExtractor is based on the pg_query_go library, which does not support listening to or walking the AST.
-	// We separate the logic for querying spans and accessing data.
-	// The second one is achieved using ParseToJson, which is simpler.
-	accessTables, err := q.getAccessTables(stmt)
+	// Parse the statement by using ANTLR first to get the access span.
+	root, err := ParsePostgreSQL(stmt)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get access columns from statement: %s", stmt)
+		return nil, err
+	}
+	antlr.ParseTreeWalkerDefault.Walk(q, root.Tree)
+	if q.err != nil {
+		return nil, errors.Wrapf(q.err, "failed to extract query span from statement: %s", stmt)
+	}
+	accessesMap := make(base.SourceColumnSet)
+	for _, resource := range q.accessTables {
+		accessesMap[resource] = true
 	}
 	// We do not support simultaneous access to the system table and the user table
 	// because we do not synchronize the schema of the system table.
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
 	// As a result, we exclude getting query span results for accessing only the system table.
-	allSystems, mixed := isMixedQuery(accessTables)
+	allSystems, mixed := isMixedQuery(accessesMap)
 	if mixed {
 		return nil, base.MixUserSystemTablesError
 	}
@@ -140,7 +152,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	if isExplainAnalyze {
 		return &base.QuerySpan{
 			Type:          queryType,
-			SourceColumns: accessTables,
+			SourceColumns: accessesMap,
 			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
@@ -150,14 +162,14 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		var functionNotSupported *parsererror.FunctionNotSupportedError
 		if errors.As(err, &functionNotSupported) {
 			// Sadly, getAccessTables() returns nil for resources not found.
-			if len(accessTables) == 0 {
-				accessTables[base.ColumnResource{
+			if len(accessesMap) == 0 {
+				accessesMap[base.ColumnResource{
 					Database: q.defaultDatabase,
 				}] = true
 			}
 			return &base.QuerySpan{
 				Type:          base.Select,
-				SourceColumns: accessTables,
+				SourceColumns: accessesMap,
 				Results:       []base.QuerySpanResult{},
 				NotFoundError: functionNotSupported,
 			}, nil
@@ -165,14 +177,14 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		var resourceNotFound *parsererror.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
 			// Sadly, getAccessTables() returns nil for resources not found.
-			if len(accessTables) == 0 {
-				accessTables[base.ColumnResource{
+			if len(accessesMap) == 0 {
+				accessesMap[base.ColumnResource{
 					Database: q.defaultDatabase,
 				}] = true
 			}
 			return &base.QuerySpan{
 				Type:          base.Select,
-				SourceColumns: accessTables,
+				SourceColumns: accessesMap,
 				Results:       []base.QuerySpanResult{},
 				NotFoundError: resourceNotFound,
 			}, nil
@@ -183,12 +195,12 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 
 	// merge the source columns in the function to the access tables.
 	for source := range q.sourceColumnsInFunction {
-		accessTables[source] = true
+		accessesMap[source] = true
 	}
 
 	return &base.QuerySpan{
 		Type:          base.Select,
-		SourceColumns: accessTables,
+		SourceColumns: accessesMap,
 		Results:       tableSource.GetQuerySpanResult(),
 	}, nil
 }
