@@ -13,7 +13,6 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	pgpluginparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/plugin/schema/pg/ast"
@@ -82,7 +81,7 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 	}
 
 	// Build dependency graph for all objects being dropped or altered
-	graph := parserbase.NewGraph()
+	graph := base.NewGraph()
 
 	// Maps to store different object types
 	viewMap := make(map[string]*schema.ViewDiff)
@@ -506,7 +505,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	}
 
 	// Build dependency graph for all objects being created or altered
-	graph := parserbase.NewGraph()
+	graph := base.NewGraph()
 
 	// Maps to store different object types
 	viewMap := make(map[string]*schema.ViewDiff)
