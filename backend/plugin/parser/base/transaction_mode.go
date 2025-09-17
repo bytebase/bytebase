@@ -47,21 +47,21 @@ func ParseTransactionConfig(script string) (common.TransactionConfig, string) {
 	}
 
 	directiveLines := make(map[int]bool)
-	
+
 	// Scan lines from the top, stopping at first non-comment/non-empty line
 	for i, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		
+
 		// Skip empty lines
 		if trimmed == "" {
 			continue
 		}
-		
+
 		// If it's not a comment, stop scanning for directives
 		if !strings.HasPrefix(trimmed, "--") {
 			break
 		}
-		
+
 		// Check for transaction mode directive
 		if matches := txnModeDirectiveRegex.FindStringSubmatch(line); len(matches) == 2 {
 			mode := strings.ToLower(matches[1])
@@ -69,7 +69,7 @@ func ParseTransactionConfig(script string) (common.TransactionConfig, string) {
 			directiveLines[i] = true
 			continue
 		}
-		
+
 		// Check for isolation level directive
 		if matches := txnIsolationDirectiveRegex.FindStringSubmatch(line); len(matches) == 2 {
 			isolation := strings.ToUpper(matches[1])
