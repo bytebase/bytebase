@@ -10,7 +10,7 @@
         <SQLCheckV1Section v-if="isCreating" />
         <PlanCheckSection v-else />
       </template>
-      <div class="w-full flex-1 space-y-3 pt-3 overflow-x-auto flex flex-col">
+      <div class="w-full flex-1 space-y-3 pt-3 flex flex-col">
         <StatementSection />
         <Configuration />
       </div>

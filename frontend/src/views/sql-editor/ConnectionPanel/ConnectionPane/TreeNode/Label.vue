@@ -15,6 +15,8 @@
       :node="node"
       :keyword="keyword"
       :checked="checked"
+      :check-disabled="checkDisabled"
+      :check-tooltip="checkTooltip"
       :connected="connected"
     />
   </template>
@@ -35,6 +37,8 @@ const props = defineProps<{
   node: TreeNode;
   keyword: string;
   checked: boolean;
+  checkDisabled?: boolean;
+  checkTooltip?: string;
   connected: boolean;
 }>();
 

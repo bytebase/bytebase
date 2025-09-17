@@ -176,6 +176,8 @@ type ViewDiff struct {
 	ViewName   string
 	OldView    *storepb.ViewMetadata
 	NewView    *storepb.ViewMetadata
+	OldASTNode any // AST node for old view
+	NewASTNode any // AST node for new view
 }
 
 // MaterializedViewDiff represents changes to a materialized view.
@@ -194,6 +196,8 @@ type FunctionDiff struct {
 	FunctionName string
 	OldFunction  *storepb.FunctionMetadata
 	NewFunction  *storepb.FunctionMetadata
+	OldASTNode   any // AST node for old function
+	NewASTNode   any // AST node for new function
 
 	// Detailed change information for advanced engines
 	SignatureChanged    bool
@@ -210,6 +214,8 @@ type ProcedureDiff struct {
 	ProcedureName string
 	OldProcedure  *storepb.ProcedureMetadata
 	NewProcedure  *storepb.ProcedureMetadata
+	OldASTNode    any // AST node for old procedure
+	NewASTNode    any // AST node for new procedure
 }
 
 // SequenceDiff represents changes to a sequence.
@@ -327,6 +333,8 @@ func addNewSchemaObjects(diff *MetadataDiff, schemaName string, schema *model.Sc
 				SchemaName: schemaName,
 				ViewName:   viewName,
 				NewView:    view.GetProto(),
+				OldASTNode: nil,
+				NewASTNode: nil,
 			})
 		}
 	}
@@ -1447,6 +1455,8 @@ func compareViews(engine storepb.Engine, diff *MetadataDiff, schemaName string, 
 					SchemaName: schemaName,
 					ViewName:   viewName,
 					OldView:    oldView.GetProto(),
+					OldASTNode: nil,
+					NewASTNode: nil,
 				})
 			}
 		}
@@ -1466,6 +1476,8 @@ func compareViews(engine storepb.Engine, diff *MetadataDiff, schemaName string, 
 				SchemaName: schemaName,
 				ViewName:   viewName,
 				NewView:    newView.GetProto(),
+				OldASTNode: nil,
+				NewASTNode: nil,
 			})
 		} else if !oldView.GetProto().GetSkipDump() {
 			// Use engine-specific comparison
@@ -1479,6 +1491,8 @@ func compareViews(engine storepb.Engine, diff *MetadataDiff, schemaName string, 
 						ViewName:   viewName,
 						OldView:    oldView.GetProto(),
 						NewView:    newView.GetProto(),
+						OldASTNode: nil,
+						NewASTNode: nil,
 					})
 				}
 			} else if len(changes) > 0 {
@@ -1498,6 +1512,8 @@ func compareViews(engine storepb.Engine, diff *MetadataDiff, schemaName string, 
 						ViewName:   viewName,
 						OldView:    oldView.GetProto(),
 						NewView:    newView.GetProto(),
+						OldASTNode: nil,
+						NewASTNode: nil,
 					})
 				}
 				// TODO: Handle non-recreating changes like comment updates

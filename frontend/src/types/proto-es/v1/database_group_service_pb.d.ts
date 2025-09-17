@@ -246,13 +246,6 @@ export declare type DatabaseGroup = Message<"bytebase.v1.DatabaseGroup"> & {
    * @generated from field: repeated bytebase.v1.DatabaseGroup.Database matched_databases = 4;
    */
   matchedDatabases: DatabaseGroup_Database[];
-
-  /**
-   * The list of databases that match the database group condition.
-   *
-   * @generated from field: repeated bytebase.v1.DatabaseGroup.Database unmatched_databases = 5;
-   */
-  unmatchedDatabases: DatabaseGroup_Database[];
 };
 
 /**

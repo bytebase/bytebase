@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="w-[calc(100vw-8rem)] lg:max-w-[35vw] max-h-[calc(100vh-10rem)] flex flex-col gap-y-4 text-sm"
-  >
+  <div class="max-h-[calc(100vh-10rem)] flex flex-col gap-y-4 text-sm">
     <div class="flex-1 flex flex-col px-0.5 overflow-hidden space-y-4">
       <div class="space-y-1">
         <label class="block font-medium text-control space-x-1">
@@ -41,7 +39,7 @@
         <div class="text-control-light">
           {{ $t("custom-approval.approval-flow.node.description") }}
         </div>
-        <div class="py-1 w-[30rem] space-y-2">
+        <div class="py-1 space-y-2">
           <StepsTable
             v-if="state.rule.template.flow"
             :flow="state.rule.template.flow"

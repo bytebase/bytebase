@@ -4,6 +4,7 @@
     :title="title"
     :close-on-esc="false"
     :before-close="beforeClose"
+    style="width: 50rem; max-width: calc(100vw - 5rem)"
     @close="dialog = undefined"
   >
     <RuleForm

@@ -21,9 +21,8 @@ import (
 func TestCreateDatabaseGroup(t *testing.T) {
 	t.Parallel()
 	type testCasePrepareInstance struct {
-		instanceTitle         string
-		matchedDatabasesName  map[string]any
-		unmatchedDatabaseName map[string]any
+		instanceTitle        string
+		matchedDatabasesName map[string]any
 	}
 	testCases := []struct {
 		name                     string
@@ -42,7 +41,6 @@ func TestCreateDatabaseGroup(t *testing.T) {
 						"employee_01": nil,
 						"employee_02": nil,
 					},
-					unmatchedDatabaseName: map[string]any{},
 				},
 			},
 		},
@@ -56,10 +54,6 @@ func TestCreateDatabaseGroup(t *testing.T) {
 					matchedDatabasesName: map[string]any{
 						"employee_01": nil,
 						"employee_02": nil,
-					},
-					unmatchedDatabaseName: map[string]any{
-						"hello": nil,
-						"world": nil,
 					},
 				},
 			},
@@ -75,7 +69,6 @@ func TestCreateDatabaseGroup(t *testing.T) {
 						"employee_01": nil,
 						"employee_02": nil,
 					},
-					unmatchedDatabaseName: map[string]any{},
 				},
 				{
 					instanceTitle: "TestCreateDatabaseGroups_AllMatched_ManyInstances_02",
@@ -84,7 +77,6 @@ func TestCreateDatabaseGroup(t *testing.T) {
 						"employee_03": nil,
 						"employee_04": nil,
 					},
-					unmatchedDatabaseName: map[string]any{},
 				},
 			},
 		},
@@ -99,10 +91,6 @@ func TestCreateDatabaseGroup(t *testing.T) {
 						"employee_01": nil,
 						"employee_02": nil,
 					},
-					unmatchedDatabaseName: map[string]any{
-						"hello": nil,
-						"world": nil,
-					},
 				},
 				{
 					instanceTitle: "TestCreateDatabaseGroups_PartialMatched_ManyInstances_02",
@@ -110,10 +98,6 @@ func TestCreateDatabaseGroup(t *testing.T) {
 						"employee_02": nil,
 						"employee_03": nil,
 						"employee_04": nil,
-					},
-					unmatchedDatabaseName: map[string]any{
-						"hello": nil,
-						"world": nil,
 					},
 				},
 			},
@@ -156,10 +140,6 @@ func TestCreateDatabaseGroup(t *testing.T) {
 					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "")
 					a.NoError(err)
 				}
-				for preCreateDatabase := range prepareInstance.unmatchedDatabaseName {
-					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "")
-					a.NoError(err)
-				}
 			}
 			databaseGroupResp, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, connect.NewRequest(&v1pb.CreateDatabaseGroupRequest{
 				Parent:          ctl.project.Name,
@@ -181,7 +161,7 @@ func TestCreateDatabaseGroup(t *testing.T) {
 			databaseGroup = databaseGroupResp.Msg
 
 			gotInstanceTitleToMatchedDatabases := make(map[string][]string)
-			gotInstanceTitleToUnmatchedDatabases := make(map[string][]string)
+
 			for _, matchedDatabase := range databaseGroup.MatchedDatabases {
 				instanceResourceID := strings.Split(matchedDatabase.Name, "/")[1]
 				instanceTitle := instanceResourceID2InstanceTitle[instanceResourceID]
@@ -190,26 +170,12 @@ func TestCreateDatabaseGroup(t *testing.T) {
 				databaseName := strings.Split(matchedDatabase.Name, "/")[3]
 				gotInstanceTitleToMatchedDatabases[instanceTitle] = append(gotInstanceTitleToMatchedDatabases[instanceTitle], databaseName)
 			}
-			for _, unmatchedDatabase := range databaseGroup.UnmatchedDatabases {
-				instanceResourceID := strings.Split(unmatchedDatabase.Name, "/")[1]
-				instanceTitle := instanceResourceID2InstanceTitle[instanceResourceID]
-				a.NotEmpty(instanceTitle)
-
-				databaseName := strings.Split(unmatchedDatabase.Name, "/")[3]
-				gotInstanceTitleToUnmatchedDatabases[instanceTitle] = append(gotInstanceTitleToUnmatchedDatabases[instanceTitle], databaseName)
-			}
 
 			for _, prepareInstance := range tc.prepareInstances {
 				gotMatchedDatabases := gotInstanceTitleToMatchedDatabases[prepareInstance.instanceTitle]
-				gotUnmatchedDatabases := gotInstanceTitleToUnmatchedDatabases[prepareInstance.instanceTitle]
 				a.Equal(len(gotMatchedDatabases), len(prepareInstance.matchedDatabasesName))
-				a.Equal(len(gotUnmatchedDatabases), len(prepareInstance.unmatchedDatabaseName))
-
 				for wantMatchedDatabase := range prepareInstance.matchedDatabasesName {
 					a.Contains(gotMatchedDatabases, wantMatchedDatabase)
-				}
-				for wantUnmatchedDatabase := range prepareInstance.unmatchedDatabaseName {
-					a.Contains(gotUnmatchedDatabases, wantUnmatchedDatabase)
 				}
 			}
 		})

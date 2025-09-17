@@ -55,6 +55,7 @@
     "run": "运行",
     "retry": "重试",
     "skip": "跳过",
+    "skipped": "已跳过",
     "dismiss": "关闭",
     "back": "返回",
     "next": "下一步",
@@ -1131,6 +1132,11 @@
       "delete-change": {
         "title": "删除变更项",
         "content": "您确定要删除该变更项吗？"
+      },
+      "role-selection": {
+        "title": "数据库角色选择",
+        "description": "选择以哪个 PostgreSQL 角色来执行此语句。",
+        "technical-note": "将“SET ROLE {role};”添加到您的 SQL 语句中。"
       }
     },
     "targets": {
@@ -2069,6 +2075,8 @@
     "select-a-database-to-start": "选择数据库以开始",
     "show-empty-environments": "显示空环境",
     "select-encoding": "选择编码",
+    "current-connection": "当前连接",
+    "matched-in-group": "在数据库组 {title} 中匹配",
     "redis-command": {
       "self": "运行 redis 命令",
       "all-nodes": "所有节点",

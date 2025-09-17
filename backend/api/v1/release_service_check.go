@@ -85,7 +85,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 				return nil, connect.NewError(connect.CodeInternal, err)
 			}
 			// Filter out databases that are matched with the database group.
-			matches, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, existedDatabaseGroup, groupDatabases)
+			matches, err := utils.GetMatchedDatabasesInDatabaseGroup(ctx, existedDatabaseGroup, groupDatabases)
 			if err != nil {
 				return nil, err
 			}
@@ -244,6 +244,7 @@ loop:
 					commonArgs := map[string]any{
 						"environment_id": "",
 						"project_id":     database.ProjectID,
+						"instance_id":    instance.ResourceID,
 						"database_name":  database.DatabaseName,
 						// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
 						"db_engine":     engine.String(),

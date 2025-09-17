@@ -1372,7 +1372,7 @@ func getPlanDeployment(ctx context.Context, s *store.Store, specs []*storepb.Pla
 			return nil, errors.Wrapf(err, "failed to get database group")
 		}
 
-		matchedDatabases, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
+		matchedDatabases, err := utils.GetMatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get matched and unmatched databases in database group %q", id)
 		}

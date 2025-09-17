@@ -55,6 +55,7 @@
     "run": "走る",
     "retry": "リトライ",
     "skip": "飛び越える",
+    "skipped": "スキップ",
     "dismiss": "閉じる",
     "back": "戻る",
     "next": "次のステップ",
@@ -1131,6 +1132,11 @@
       "delete-change": {
         "title": "削除変更",
         "content": "この変更を削除してもよろしいですか?"
+      },
+      "role-selection": {
+        "title": "データベースロールの選択",
+        "description": "このステートメントを実行する PostgreSQL ロールを選択します。",
+        "technical-note": "SQL ステートメントに「SET ROLE {role};」を追加します。"
       }
     },
     "targets": {
@@ -2069,6 +2075,8 @@
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
     "show-empty-environments": "空の環境を表示",
     "select-encoding": "エンコーディングの選択",
+    "current-connection": "現在の接続",
+    "matched-in-group": "データベース グループ {title} に一致しました",
     "redis-command": {
       "self": "redisコマンドを実行する",
       "all-nodes": "すべてのノード",

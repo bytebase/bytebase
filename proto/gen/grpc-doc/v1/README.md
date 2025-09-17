@@ -5947,7 +5947,6 @@ Support variables: resource.environment_name: the environment resource id. Suppo
 
 For example: resource.environment_name == &#34;test&#34; &amp;&amp; resource.database_name.startsWith(&#34;sample_&#34;) |
 | matched_databases | [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database) | repeated | The list of databases that match the database group condition. |
-| unmatched_databases | [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database) | repeated | The list of databases that match the database group condition. |
 
 
 

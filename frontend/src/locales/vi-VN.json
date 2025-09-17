@@ -55,6 +55,7 @@
     "run": "Chạy",
     "retry": "Thử lại",
     "skip": "Bỏ qua",
+    "skipped": "Đã bỏ qua",
     "dismiss": "Loại bỏ",
     "back": "Quay lại",
     "next": "Tiếp theo",
@@ -1131,6 +1132,11 @@
       "delete-change": {
         "title": "Xóa thay đổi",
         "content": "Bạn có chắc chắn muốn xóa thay đổi này không?"
+      },
+      "role-selection": {
+        "title": "Lựa chọn vai trò cơ sở dữ liệu",
+        "description": "Chọn vai trò PostgreSQL để thực thi câu lệnh này.",
+        "technical-note": "Thêm \"SET ROLE {role};\" vào câu lệnh SQL của bạn."
       }
     },
     "targets": {
@@ -2069,6 +2075,8 @@
     "select-a-database-to-start": "Chọn một cơ sở dữ liệu để bắt đầu",
     "show-empty-environments": "Hiển thị môi trường trống",
     "select-encoding": "Chọn mã hóa",
+    "current-connection": "Kết nối hiện tại",
+    "matched-in-group": "Phù hợp trong nhóm cơ sở dữ liệu: {title}",
     "redis-command": {
       "self": "Chạy lệnh redis trên",
       "all-nodes": "Tất cả các nút",

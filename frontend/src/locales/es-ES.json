@@ -55,6 +55,7 @@
     "run": "Ejecutar",
     "retry": "Reintentar",
     "skip": "Saltar",
+    "skipped": "Omitido",
     "dismiss": "Descartar",
     "back": "Volver",
     "next": "Siguiente",
@@ -1131,6 +1132,11 @@
       "delete-change": {
         "title": "Eliminar cambio",
         "content": "¿Está seguro de que desea eliminar este cambio?"
+      },
+      "role-selection": {
+        "title": "Selección de roles de base de datos",
+        "description": "Elija qué rol de PostgreSQL desea ejecutar como esta declaración.",
+        "technical-note": "Agrega \"SET ROLE {role};\" a su declaración SQL."
       }
     },
     "targets": {
@@ -2069,6 +2075,8 @@
     "select-a-database-to-start": "Seleccione una base de datos para comenzar",
     "show-empty-environments": "Mostrar entornos vacíos",
     "select-encoding": "Seleccionar codificación",
+    "current-connection": "Conexión actual",
+    "matched-in-group": "Coincidido en el grupo de base de datos: {title}",
     "redis-command": {
       "self": "Ejecute el comando redis en",
       "all-nodes": "Todos los nodos",

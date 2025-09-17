@@ -199,7 +199,4 @@ message DatabaseGroup {
   }
   // The list of databases that match the database group condition.
   repeated Database matched_databases = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The list of databases that match the database group condition.
-  repeated Database unmatched_databases = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

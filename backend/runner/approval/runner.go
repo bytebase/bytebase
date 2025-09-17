@@ -465,6 +465,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 		commonArgs := map[string]any{
 			"environment_id": environmentID,
 			"project_id":     issue.Project.ResourceID,
+			"instance_id":    instance.ResourceID,
 			"database_name":  databaseName,
 			// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
 			"db_engine":     instance.Metadata.GetEngine().String(),
@@ -588,6 +589,7 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 				args := map[string]any{
 					"environment_id": "",
 					"project_id":     issue.Project.ResourceID,
+					"instance_id":    instance.ResourceID,
 					"database_name":  databaseName,
 					"db_engine":      instance.Metadata.GetEngine().String(),
 				}

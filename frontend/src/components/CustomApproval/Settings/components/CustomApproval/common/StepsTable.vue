@@ -74,6 +74,8 @@ const columns = computed((): DataTableColumn<ApprovalStep>[] => {
     {
       title: t("custom-approval.approval-flow.node.approver"),
       key: "approver",
+      minWidth: 200,
+      resizable: true,
       render: (step) => {
         if (props.editable) {
           return (
@@ -101,7 +103,6 @@ const columns = computed((): DataTableColumn<ApprovalStep>[] => {
     cols.push({
       title: t("common.operations"),
       key: "operations",
-      width: 200,
       render: (step, index) => (
         <div class="flex gap-x-1">
           <NButton
@@ -124,7 +125,7 @@ const columns = computed((): DataTableColumn<ApprovalStep>[] => {
               tooltip={t("custom-approval.approval-flow.node.delete")}
               onConfirm={() => removeStep(step, index)}
             >
-              <TrashIcon class={"w-4"} />
+              <TrashIcon class={"w-3"} />
             </SpinnerButton>
           )}
         </div>
