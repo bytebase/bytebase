@@ -52,6 +52,9 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 	// Process index changes (standalone CREATE INDEX statements)
 	processStandaloneIndexChanges(currentChunks, previousChunks, diff)
 
+	// Process view changes
+	processViewChanges(currentChunks, previousChunks, diff)
+
 	return diff, nil
 }
 
@@ -199,7 +202,7 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 
 	// Process current table chunks to find created and modified tables
 	for identifier, currentChunk := range currentChunks.Tables {
-		schemaName, tableName := parseTableIdentifier(currentChunk.Identifier)
+		schemaName, tableName := parseIdentifier(currentChunk.Identifier)
 
 		if previousChunk, exists := previousChunks.Tables[identifier]; exists {
 			// Table exists in both - check if modified
@@ -263,7 +266,7 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 	for identifier, previousChunk := range previousChunks.Tables {
 		if _, exists := currentChunks.Tables[identifier]; !exists {
 			// Table was dropped
-			schemaName, tableName := parseTableIdentifier(previousChunk.Identifier)
+			schemaName, tableName := parseIdentifier(previousChunk.Identifier)
 			oldASTNode, ok := previousChunk.ASTNode.(*parser.CreatestmtContext)
 			if !ok {
 				return errors.Errorf("expected CreatestmtContext for dropped table %s", previousChunk.Identifier)
@@ -408,7 +411,7 @@ func extractColumnMetadata(columnDef parser.IColumnDefContext) *storepb.ColumnMe
 }
 
 // parseTableIdentifier parses a table identifier and returns schema name and table name
-func parseTableIdentifier(identifier string) (schemaName, tableName string) {
+func parseIdentifier(identifier string) (schemaName, objectName string) {
 	parts := strings.Split(identifier, ".")
 	if len(parts) == 2 {
 		return parts[0], parts[1]
@@ -1182,4 +1185,69 @@ func getOrCreateTableDiff(diff *schema.MetadataDiff, tableName string, affectedT
 	diff.TableChanges = append(diff.TableChanges, newTableDiff)
 	affectedTables[tableName] = newTableDiff
 	return newTableDiff
+}
+
+// processViewChanges analyzes view changes between current and previous chunks
+// Following the text-first comparison pattern for performance optimization
+func processViewChanges(currentChunks, previousChunks *schema.SDLChunks, diff *schema.MetadataDiff) {
+	// Process current views to find created and modified views
+	for identifier, currentChunk := range currentChunks.Views {
+		if previousChunk, exists := previousChunks.Views[identifier]; exists {
+			// View exists in both - check if modified by comparing text first
+			currentText := currentChunk.GetText(currentChunks.Tokens)
+			previousText := previousChunk.GetText(previousChunks.Tokens)
+			if currentText != previousText {
+				// View was modified - use drop and recreate pattern (PostgreSQL standard)
+				schemaName, viewName := parseIdentifier(identifier)
+				diff.ViewChanges = append(diff.ViewChanges, &schema.ViewDiff{
+					Action:     schema.MetadataDiffActionDrop,
+					SchemaName: schemaName,
+					ViewName:   viewName,
+					OldView:    nil, // Will be populated when SDL drift detection is implemented
+					NewView:    nil, // Will be populated when SDL drift detection is implemented
+					OldASTNode: previousChunk.ASTNode,
+					NewASTNode: nil,
+				})
+				diff.ViewChanges = append(diff.ViewChanges, &schema.ViewDiff{
+					Action:     schema.MetadataDiffActionCreate,
+					SchemaName: schemaName,
+					ViewName:   viewName,
+					OldView:    nil, // Will be populated when SDL drift detection is implemented
+					NewView:    nil, // Will be populated when SDL drift detection is implemented
+					OldASTNode: nil,
+					NewASTNode: currentChunk.ASTNode,
+				})
+			}
+			// If text is identical, skip - no changes detected
+		} else {
+			// New view
+			schemaName, viewName := parseIdentifier(identifier)
+			diff.ViewChanges = append(diff.ViewChanges, &schema.ViewDiff{
+				Action:     schema.MetadataDiffActionCreate,
+				SchemaName: schemaName,
+				ViewName:   viewName,
+				OldView:    nil,
+				NewView:    nil, // Will be populated when SDL drift detection is implemented
+				OldASTNode: nil,
+				NewASTNode: currentChunk.ASTNode,
+			})
+		}
+	}
+
+	// Process previous views to find dropped ones
+	for identifier, previousChunk := range previousChunks.Views {
+		if _, exists := currentChunks.Views[identifier]; !exists {
+			// View was dropped
+			schemaName, viewName := parseIdentifier(identifier)
+			diff.ViewChanges = append(diff.ViewChanges, &schema.ViewDiff{
+				Action:     schema.MetadataDiffActionDrop,
+				SchemaName: schemaName,
+				ViewName:   viewName,
+				OldView:    nil, // Will be populated when SDL drift detection is implemented
+				NewView:    nil,
+				OldASTNode: previousChunk.ASTNode,
+				NewASTNode: nil,
+			})
+		}
+	}
 }
