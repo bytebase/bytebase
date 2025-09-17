@@ -1,0 +1,228 @@
+package pg
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/schema"
+)
+
+func TestProcedureSDLDiff(t *testing.T) {
+	tests := []struct {
+		name                    string
+		previousSDL             string
+		currentSDL              string
+		expectedFunctionChanges int // Note: procedures are stored as functions in PostgreSQL
+		expectedActions         []schema.MetadataDiffAction
+	}{
+		{
+			name:        "Create new procedure",
+			previousSDL: ``,
+			currentSDL: `
+				CREATE TABLE logs (
+					id SERIAL PRIMARY KEY,
+					message TEXT,
+					created_at TIMESTAMP DEFAULT NOW()
+				);
+				
+				CREATE PROCEDURE log_message(msg TEXT)
+				LANGUAGE plpgsql
+				AS $$
+				BEGIN
+					INSERT INTO logs (message) VALUES (msg);
+				END;
+				$$;
+			`,
+			expectedFunctionChanges: 1,
+			expectedActions:         []schema.MetadataDiffAction{schema.MetadataDiffActionCreate},
+		},
+		{
+			name: "Drop procedure",
+			previousSDL: `
+				CREATE TABLE logs (
+					id SERIAL PRIMARY KEY,
+					message TEXT,
+					created_at TIMESTAMP DEFAULT NOW()
+				);
+				
+				CREATE PROCEDURE log_message(msg TEXT)
+				LANGUAGE plpgsql
+				AS $$
+				BEGIN
+					INSERT INTO logs (message) VALUES (msg);
+				END;
+				$$;
+			`,
+			currentSDL: `
+				CREATE TABLE logs (
+					id SERIAL PRIMARY KEY,
+					message TEXT,
+					created_at TIMESTAMP DEFAULT NOW()
+				);
+			`,
+			expectedFunctionChanges: 1,
+			expectedActions:         []schema.MetadataDiffAction{schema.MetadataDiffActionDrop},
+		},
+		{
+			name: "Modify procedure (drop and recreate)",
+			previousSDL: `
+				CREATE TABLE logs (
+					id SERIAL PRIMARY KEY,
+					message TEXT,
+					created_at TIMESTAMP DEFAULT NOW()
+				);
+				
+				CREATE PROCEDURE log_message(msg TEXT)
+				LANGUAGE plpgsql
+				AS $$
+				BEGIN
+					INSERT INTO logs (message) VALUES (msg);
+				END;
+				$$;
+			`,
+			currentSDL: `
+				CREATE TABLE logs (
+					id SERIAL PRIMARY KEY,
+					message TEXT,
+					created_at TIMESTAMP DEFAULT NOW()
+				);
+				
+				CREATE PROCEDURE log_message(msg TEXT)
+				LANGUAGE plpgsql
+				AS $$
+				BEGIN
+					INSERT INTO logs (message, created_at) VALUES (msg, NOW());
+				END;
+				$$;
+			`,
+			expectedFunctionChanges: 2, // Drop + Create
+			expectedActions:         []schema.MetadataDiffAction{schema.MetadataDiffActionDrop, schema.MetadataDiffActionCreate},
+		},
+		{
+			name: "Mixed functions and procedures",
+			previousSDL: `
+				CREATE TABLE users (
+					id SERIAL PRIMARY KEY,
+					name VARCHAR(255),
+					email VARCHAR(255)
+				);
+				
+				CREATE FUNCTION get_user_count() RETURNS INTEGER
+				LANGUAGE plpgsql
+				AS $$
+				BEGIN
+					RETURN (SELECT COUNT(*) FROM users);
+				END;
+				$$;
+				
+				CREATE PROCEDURE add_user(user_name TEXT, user_email TEXT)
+				LANGUAGE plpgsql
+				AS $$
+				BEGIN
+					INSERT INTO users (name, email) VALUES (user_name, user_email);
+				END;
+				$$;
+			`,
+			currentSDL: `
+				CREATE TABLE users (
+					id SERIAL PRIMARY KEY,
+					name VARCHAR(255),
+					email VARCHAR(255)
+				);
+				
+				CREATE FUNCTION get_user_count() RETURNS INTEGER
+				LANGUAGE plpgsql
+				AS $$
+				BEGIN
+					RETURN (SELECT COUNT(*) FROM users);
+				END;
+				$$;
+				
+				CREATE PROCEDURE update_user_email(user_id INTEGER, new_email TEXT)
+				LANGUAGE plpgsql
+				AS $$
+				BEGIN
+					UPDATE users SET email = new_email WHERE id = user_id;
+				END;
+				$$;
+			`,
+			expectedFunctionChanges: 2, // Drop add_user + Create update_user_email
+			expectedActions:         []schema.MetadataDiffAction{schema.MetadataDiffActionCreate, schema.MetadataDiffActionDrop},
+		},
+		{
+			name: "Schema-qualified procedure",
+			previousSDL: `
+				CREATE SCHEMA admin;
+				CREATE TABLE admin.settings (
+					key VARCHAR(255) PRIMARY KEY,
+					value TEXT
+				);
+			`,
+			currentSDL: `
+				CREATE SCHEMA admin;
+				CREATE TABLE admin.settings (
+					key VARCHAR(255) PRIMARY KEY,
+					value TEXT
+				);
+				
+				CREATE PROCEDURE admin.update_setting(setting_key TEXT, setting_value TEXT)
+				LANGUAGE plpgsql
+				AS $$
+				BEGIN
+					INSERT INTO admin.settings (key, value) VALUES (setting_key, setting_value)
+					ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+				END;
+				$$;
+			`,
+			expectedFunctionChanges: 1,
+			expectedActions:         []schema.MetadataDiffAction{schema.MetadataDiffActionCreate},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			require.NoError(t, err)
+			require.NotNil(t, diff)
+
+			// Note: In PostgreSQL, procedures are stored as functions
+			assert.Equal(t, tt.expectedFunctionChanges, len(diff.FunctionChanges),
+				"Expected %d function changes (including procedures), got %d", tt.expectedFunctionChanges, len(diff.FunctionChanges))
+
+			// Check that the actions match expectations
+			var actualActions []schema.MetadataDiffAction
+			for _, funcDiff := range diff.FunctionChanges {
+				actualActions = append(actualActions, funcDiff.Action)
+			}
+
+			// Handle nil vs empty slice comparison
+			if len(tt.expectedActions) == 0 && len(actualActions) == 0 {
+				// Both are effectively empty - test passes
+				t.Log("Both expected and actual actions are empty")
+			} else {
+				assert.ElementsMatch(t, tt.expectedActions, actualActions,
+					"Expected actions %v, got %v", tt.expectedActions, actualActions)
+			}
+
+			// Verify AST nodes are properly set
+			for i, funcDiff := range diff.FunctionChanges {
+				switch funcDiff.Action {
+				case schema.MetadataDiffActionCreate:
+					assert.NotNil(t, funcDiff.NewASTNode,
+						"Function diff %d should have NewASTNode for CREATE action", i)
+					assert.Nil(t, funcDiff.OldASTNode,
+						"Function diff %d should not have OldASTNode for CREATE action", i)
+				case schema.MetadataDiffActionDrop:
+					assert.NotNil(t, funcDiff.OldASTNode,
+						"Function diff %d should have OldASTNode for DROP action", i)
+					assert.Nil(t, funcDiff.NewASTNode,
+						"Function diff %d should not have NewASTNode for DROP action", i)
+				default:
+					t.Errorf("Unexpected action %v for function diff %d", funcDiff.Action, i)
+				}
+			}
+		})
+	}
+}
