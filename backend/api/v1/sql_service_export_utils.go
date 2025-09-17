@@ -749,7 +749,7 @@ func convertValueToStringInJSON(value *v1pb.RowValue) string {
 		if err != nil {
 			return ""
 		}
-		return value
+		return `"` + value + `"`
 	case *v1pb.RowValue_NullValue:
 		return "null"
 	case *v1pb.RowValue_TimestampValue:
