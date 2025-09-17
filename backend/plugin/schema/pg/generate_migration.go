@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strconv"
@@ -8,11 +9,14 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	pgparser "github.com/bytebase/parser/postgresql"
+	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	pgpluginparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/plugin/schema/pg/ast"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
@@ -77,7 +81,7 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 	}
 
 	// Build dependency graph for all objects being dropped or altered
-	graph := parserbase.NewGraph()
+	graph := base.NewGraph()
 
 	// Maps to store different object types
 	viewMap := make(map[string]*schema.ViewDiff)
@@ -139,13 +143,23 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 	// Add dependency edges
 	// For views depending on tables/views
 	for viewID, viewDiff := range viewMap {
+		var dependencies []*storepb.DependencyColumn
+
 		if viewDiff.OldView != nil {
-			for _, dep := range viewDiff.OldView.DependencyColumns {
-				depID := getMigrationObjectID(dep.Schema, dep.Table)
-				if allObjects[depID] {
-					// Edge from dependent to dependency (view depends on table/view)
-					graph.AddEdge(viewID, depID)
-				}
+			// Use metadata if available
+			dependencies = viewDiff.OldView.DependencyColumns
+		} else if viewDiff.OldASTNode != nil {
+			// Extract dependencies from AST node for AST-only mode
+			// For simplicity, we use an empty schema metadata since we can't build full metadata in migration context
+			// This will only work for simple dependencies within the same database
+			dependencies = getViewDependenciesFromAST(viewDiff.OldASTNode, viewDiff.SchemaName, &storepb.DatabaseSchemaMetadata{})
+		}
+
+		for _, dep := range dependencies {
+			depID := getMigrationObjectID(dep.Schema, dep.Table)
+			if allObjects[depID] {
+				// Edge from dependent to dependency (view depends on table/view)
+				graph.AddEdge(viewID, depID)
 			}
 		}
 	}
@@ -491,7 +505,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	}
 
 	// Build dependency graph for all objects being created or altered
-	graph := parserbase.NewGraph()
+	graph := base.NewGraph()
 
 	// Maps to store different object types
 	viewMap := make(map[string]*schema.ViewDiff)
@@ -558,12 +572,22 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 
 	// For views depending on tables/views
 	for viewID, viewDiff := range viewMap {
+		var dependencies []*storepb.DependencyColumn
+
 		if viewDiff.NewView != nil {
-			for _, dep := range viewDiff.NewView.DependencyColumns {
-				depID := getMigrationObjectID(dep.Schema, dep.Table)
-				// Edge from dependency to dependent (table/view to view)
-				graph.AddEdge(depID, viewID)
-			}
+			// Use metadata if available
+			dependencies = viewDiff.NewView.DependencyColumns
+		} else if viewDiff.NewASTNode != nil {
+			// Extract dependencies from AST node for AST-only mode
+			// For simplicity, we use an empty schema metadata since we can't build full metadata in migration context
+			// This will only work for simple dependencies within the same database
+			dependencies = getViewDependenciesFromAST(viewDiff.NewASTNode, viewDiff.SchemaName, &storepb.DatabaseSchemaMetadata{})
+		}
+
+		for _, dep := range dependencies {
+			depID := getMigrationObjectID(dep.Schema, dep.Table)
+			// Edge from dependency to dependent (table/view to view)
+			graph.AddEdge(depID, viewID)
 		}
 	}
 
@@ -634,8 +658,17 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 		for _, viewDiff := range viewMap {
 			switch viewDiff.Action {
 			case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
-				if err := writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView); err != nil {
-					return err
+				// Support AST-only mode: if metadata is nil but AST node exists, use AST
+				if viewDiff.NewView != nil {
+					if err := writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView); err != nil {
+						return err
+					}
+				} else if viewDiff.NewASTNode != nil {
+					if err := writeMigrationViewFromAST(buf, viewDiff.NewASTNode); err != nil {
+						return err
+					}
+				} else {
+					return errors.Errorf("view diff for %s.%s has neither metadata nor AST node", viewDiff.SchemaName, viewDiff.ViewName)
 				}
 			default:
 				// No action needed
@@ -732,8 +765,17 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			} else if viewDiff, ok := viewMap[objID]; ok {
 				switch viewDiff.Action {
 				case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
-					if err := writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView); err != nil {
-						return err
+					// Support AST-only mode: if metadata is nil but AST node exists, use AST
+					if viewDiff.NewView != nil {
+						if err := writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView); err != nil {
+							return err
+						}
+					} else if viewDiff.NewASTNode != nil {
+						if err := writeMigrationViewFromAST(buf, viewDiff.NewASTNode); err != nil {
+							return err
+						}
+					} else {
+						return errors.Errorf("view diff for %s.%s has neither metadata nor AST node", viewDiff.SchemaName, viewDiff.ViewName)
 					}
 				default:
 					// No action needed for other operations
@@ -1546,6 +1588,49 @@ func writeMigrationSequenceOwnership(out *strings.Builder, schema string, seq *s
 	return nil
 }
 
+// writeView writes a CREATE VIEW statement from AST node or metadata
+func writeMigrationViewFromAST(out *strings.Builder, astNode any) error {
+	if astNode == nil {
+		return errors.New("AST node is nil")
+	}
+
+	// Extract the original SQL text from the AST node
+	var viewSQL string
+
+	// Try to cast to PostgreSQL ViewstmtContext first
+	if ctx, ok := astNode.(*pgparser.ViewstmtContext); ok {
+		// First try to get text using token stream
+		if tokenStream := ctx.GetParser().GetTokenStream(); tokenStream != nil {
+			start := ctx.GetStart()
+			stop := ctx.GetStop()
+			if start != nil && stop != nil {
+				viewSQL = tokenStream.GetTextFromTokens(start, stop)
+			}
+		}
+
+		// Fallback to GetText() if token stream approach failed
+		if viewSQL == "" {
+			viewSQL = ctx.GetText()
+		}
+	} else {
+		// Generic fallback - try to get text directly
+		if tree, ok := astNode.(interface{ GetText() string }); ok {
+			viewSQL = tree.GetText()
+		}
+	}
+
+	if viewSQL != "" {
+		_, _ = out.WriteString(viewSQL)
+		if !strings.HasSuffix(strings.TrimSpace(viewSQL), ";") {
+			_, _ = out.WriteString(`;`)
+		}
+		_, _ = out.WriteString("\n\n")
+		return nil
+	}
+
+	return errors.New("failed to extract SQL from AST node")
+}
+
 // writeView writes a CREATE VIEW statement
 func writeMigrationView(out *strings.Builder, schema string, view *storepb.ViewMetadata) error {
 	_, _ = out.WriteString(`CREATE VIEW "`)
@@ -2311,4 +2396,88 @@ func (v *CreateOrReplaceVisitor) hasOrReplace(ctx *pgparser.CreatefunctionstmtCo
 	}
 
 	return false
+}
+
+// getViewDependenciesFromAST extracts view dependencies from AST node
+// This reuses the same logic as getViewDependencies from get_database_metadata.go
+func getViewDependenciesFromAST(astNode any, schemaName string, fullSchemaMetadata *storepb.DatabaseSchemaMetadata) []*storepb.DependencyColumn {
+	if astNode == nil {
+		return []*storepb.DependencyColumn{}
+	}
+
+	// Extract the SELECT statement from the VIEW AST node
+	var selectStatement string
+
+	if ctx, ok := astNode.(*pgparser.ViewstmtContext); ok {
+		// Extract the SELECT statement from the ViewstmtContext
+		if ctx.Selectstmt() != nil {
+			// Try to get text using token stream first
+			if tokenStream := ctx.GetParser().GetTokenStream(); tokenStream != nil {
+				start := ctx.Selectstmt().GetStart()
+				stop := ctx.Selectstmt().GetStop()
+				if start != nil && stop != nil {
+					selectStatement = tokenStream.GetTextFromTokens(start, stop)
+				}
+			}
+
+			// Fallback to GetText() if token stream approach failed
+			if selectStatement == "" {
+				selectStatement = ctx.Selectstmt().GetText()
+			}
+		}
+	}
+
+	if selectStatement == "" {
+		return []*storepb.DependencyColumn{}
+	}
+
+	// Use the same dependency extraction logic as getViewDependencies
+	queryStatement := strings.TrimSpace(selectStatement)
+
+	// Use GetQuerySpan with the full schema metadata so it can resolve table/view references
+	span, err := pgpluginparser.GetQuerySpan(
+		context.Background(),
+		base.GetQuerySpanContext{
+			GetDatabaseMetadataFunc: func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
+				// Return the full schema metadata so GetQuerySpan can resolve references
+				dbMetadata := model.NewDatabaseMetadata(fullSchemaMetadata, false, false)
+				return databaseName, dbMetadata, nil
+			},
+			ListDatabaseNamesFunc: func(_ context.Context, _ string) ([]string, error) {
+				// Return empty list - we don't need actual database names for dependency extraction
+				return []string{}, nil
+			},
+		},
+		queryStatement,
+		"", // database
+		schemaName,
+		false, // case sensitive
+	)
+
+	// If error parsing query span, return empty dependencies
+	if err != nil {
+		return []*storepb.DependencyColumn{} // nolint:nilerr
+	}
+
+	// Collect unique dependencies
+	dependencyMap := make(map[string]*storepb.DependencyColumn)
+	for sourceColumn := range span.SourceColumns {
+		// Create dependency key in format: schema.table
+		key := fmt.Sprintf("%s.%s", sourceColumn.Schema, sourceColumn.Table)
+		if _, exists := dependencyMap[key]; !exists {
+			dependencyMap[key] = &storepb.DependencyColumn{
+				Schema: sourceColumn.Schema,
+				Table:  sourceColumn.Table,
+				Column: "*", // Use wildcard since we're tracking table-level dependencies
+			}
+		}
+	}
+
+	// Convert map to slice
+	var dependencies []*storepb.DependencyColumn
+	for _, dep := range dependencyMap {
+		dependencies = append(dependencies, dep)
+	}
+
+	return dependencies
 }
