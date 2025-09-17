@@ -595,7 +595,6 @@
           "description": "用户将无法通过邮箱和密码进行登录，只允许通过所配置的 SSO 进行登录。",
           "require-sso-setup": "开启前必须先要创建 SSO，否则用户将无法正常登录。"
         },
-        "network": "网络",
         "external-url": {
           "self": "External URL",
           "description": "用户或回调能访问到的 Bytebase URL，必须以 http:// 或 https:// 开头。"
@@ -702,20 +701,18 @@
           "title": "禁止提交包含错误告警的工单",
           "description": "启用后，只有在预览阶段不包含任何“错误”级别告警的工单才能被提交。"
         },
-        "database-change-mode": {
-          "self": "数据库变更模式",
-          "description": "控制用户如何变更数据库",
-          "issue-mode": {
-            "self": "工单模式（管控）",
-            "description": "使用工单来提交，审核，发布，版本化数据库变更，适合具有访问控制和 CI 和 CD 工作流的团队。"
+        "default-landing-page": {
+          "self": "默认首页",
+          "workspace": {
+            "self": "工作区",
+            "description": "使用工单来请求、审查、推出和版本数据库更改，适用于具有访问控制和 CI 与 CD 工作流的团队。"
           },
-          "sql-editor-mode": {
-            "self": "SQL 编辑器模式（直接）",
-            "description": "使用 SQL 编辑器直接执行数据库变更，适合单人使用或不需要管控的环境。"
+          "sql-editor": {
+            "self": "SQL 编辑器",
+            "description": "使用 SQL 编辑器直接执行数据库更改，适合单人使用或不需要管控的环境。"
           },
-          "can-be-changed-later": "此设置以后可以随时更改。",
-          "default-view-changed-to-sql-editor": "工作空间的默认视图已更改为 SQL 编辑器。",
-          "go-to-sql-editor": "前往 SQL 编辑器",
+          "default-view-changed-to-sql-editor": "工作区的默认视图已更改为 SQL 编辑器。",
+          "go-to-sql-editor": "转到 SQL 编辑器",
           "go-to-workspace": "前往工作区"
         }
       }

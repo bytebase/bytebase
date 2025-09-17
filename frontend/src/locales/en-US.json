@@ -595,7 +595,6 @@
           "description": "Users cannot sign in with email & password, only SSO is allowed.",
           "require-sso-setup": "A functional SSO must be created first, or users won't be able to log in."
         },
-        "network": "Network",
         "external-url": {
           "self": "External URL",
           "description": "The external URL where user visits Bytebase, must start with http:// or https://."
@@ -702,18 +701,16 @@
           "title": "Disallow issue creation for SQL review with errors",
           "description": "Once enabled, users are only allowed to create issues if the SQL review does not contain any errors."
         },
-        "database-change-mode": {
-          "self": "Database Change Mode",
-          "description": "Control how users perform database changes",
-          "issue-mode": {
-            "self": "Issue Mode (Governed)",
+        "default-landing-page": {
+          "self": "Default landing page",
+          "workspace": {
+            "self": "Workspace",
             "description": "Use issue to request, review, rollout, and version database changes, suitable for teams with access control and CI & CD workflow."
           },
-          "sql-editor-mode": {
-            "self": "SQL Editor Mode (Direct)",
+          "sql-editor": {
+            "self": "SQL Editor",
             "description": "Use SQL Editor to execute database changes directly, suitable for single-person use or environments that do not require supervision."
           },
-          "can-be-changed-later": "This setting can be changed anytime later.",
           "default-view-changed-to-sql-editor": "The workspace's default view has been changed to SQL Editor.",
           "go-to-sql-editor": "Go to SQL Editor",
           "go-to-workspace": "Go to workspace"

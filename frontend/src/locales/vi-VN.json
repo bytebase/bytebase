@@ -595,7 +595,6 @@
           "description": "Người dùng không thể đăng nhập bằng email & mật khẩu, chỉ cho phép SSO.",
           "require-sso-setup": "Phải tạo SSO hoạt động trước, nếu không người dùng sẽ không thể đăng nhập."
         },
-        "network": "Mạng",
         "external-url": {
           "self": "URL bên ngoài",
           "description": "URL bên ngoài mà người dùng truy cập Bytebase, phải bắt đầu bằng http:// hoặc https://."
@@ -702,19 +701,17 @@
           "title": "Không cho phép tạo vấn đề khi đánh giá SQL có lỗi",
           "description": "Khi được bật, người dùng chỉ được phép tạo vấn đề nếu đánh giá SQL không chứa bất kỳ lỗi nào."
         },
-        "database-change-mode": {
-          "self": "Chế độ Thay đổi Cơ sở dữ liệu",
-          "description": "Kiểm soát cách người dùng thực hiện thay đổi cơ sở dữ liệu",
-          "issue-mode": {
-            "self": "Chế độ Vấn đề (Được quản lý)",
-            "description": "Sử dụng vấn đề để yêu cầu, xem xét, triển khai và tạo phiên bản thay đổi cơ sở dữ liệu, phù hợp với các nhóm có kiểm soát truy cập và quy trình CI & CD."
+        "default-landing-page": {
+          "self": "Trang đích mặc định",
+          "workspace": {
+            "self": "Không gian làm việc",
+            "description": "Sử dụng issue để yêu cầu, xem xét, triển khai và thay đổi phiên bản cơ sở dữ liệu, phù hợp với các nhóm có kiểm soát truy cập và quy trình làm việc CI & CD."
           },
-          "sql-editor-mode": {
-            "self": "Chế độ Trình soạn thảo SQL (Trực tiếp)",
-            "description": "Sử dụng Trình soạn thảo SQL để thực hiện thay đổi cơ sở dữ liệu trực tiếp, phù hợp cho người dùng cá nhân hoặc môi trường không yêu cầu giám sát."
+          "sql-editor": {
+            "self": "Trình soạn thảo SQL",
+            "description": "Sử dụng SQL Editor để thực hiện trực tiếp các thay đổi cơ sở dữ liệu, phù hợp cho mục đích sử dụng của một người hoặc môi trường không yêu cầu giám sát."
           },
-          "can-be-changed-later": "Cài đặt này có thể được thay đổi bất cứ lúc nào sau này.",
-          "default-view-changed-to-sql-editor": "Chế độ xem mặc định của không gian làm việc đã được thay đổi thành Trình soạn thảo SQL.",
+          "default-view-changed-to-sql-editor": "Chế độ xem mặc định của không gian làm việc đã được thay đổi thành SQL Editor.",
           "go-to-sql-editor": "Đi tới Trình soạn thảo SQL",
           "go-to-workspace": "Đi đến không gian làm việc"
         }
