@@ -595,7 +595,6 @@
           "description": "ユーザーはメールとパスワードでサインインすることはできず、SSO のみが許可されます。",
           "require-sso-setup": "最初に機能する SSO を作成する必要があります。そうしないと、ユーザーはログインできません。"
         },
-        "network": "ネットワーク",
         "external-url": {
           "self": "外部URL",
           "description": "ユーザーまたはコールバックがアクセスできる Bytebase URL は、http:// または https:// で始まる必要があります。"
@@ -702,20 +701,18 @@
           "title": "エラーアラートを含むイシューの提出は禁止されています",
           "description": "有効にすると、プレビュー段階で「エラー」レベルのアラームを含まないイシューのみを送信できます。"
         },
-        "database-change-mode": {
-          "self": "データベース変更モード",
-          "description": "ユーザーがデータベース スキーマの移行を実行する方法を制御します",
-          "issue-mode": {
-            "self": "作業モード（ガバナンス）",
+        "default-landing-page": {
+          "self": "デフォルトのランディングページ",
+          "workspace": {
+            "self": "ワークスペース",
             "description": "問題を使用して、データベースの変更をリクエスト、レビュー、ロールアウト、バージョン管理します。これは、アクセス制御と CI および CD ワークフローを備えたチームに適しています。"
           },
-          "sql-editor-mode": {
-            "self": "SQL エディター モード (直接)",
+          "sql-editor": {
+            "self": "SQLエディター",
             "description": "SQL エディターを使用してデータベースの変更を直接実行します。これは、1 人で使用する場合や、監視を必要としない環境に適しています。"
           },
-          "can-be-changed-later": "この設定は後でいつでも変更できます。",
-          "default-view-changed-to-sql-editor": "ワークスペースのデフォルトのビューが SQL エディターに変更されました。",
-          "go-to-sql-editor": "SQLエディターに移動します",
+          "default-view-changed-to-sql-editor": "ワークスペースのデフォルト ビューが SQL エディターに変更されました。",
+          "go-to-sql-editor": "SQLエディタに移動",
           "go-to-workspace": "ワークスペースに移動"
         }
       }

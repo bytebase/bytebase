@@ -320,10 +320,10 @@ const options = computed((): DropdownOption[] => [
         >
           {isSQLEditorRoute(router)
             ? t(
-                "settings.general.workspace.database-change-mode.go-to-workspace"
+                "settings.general.workspace.default-landing-page.go-to-workspace"
               )
             : t(
-                "settings.general.workspace.database-change-mode.go-to-sql-editor"
+                "settings.general.workspace.default-landing-page.go-to-sql-editor"
               )}
         </a>
       );

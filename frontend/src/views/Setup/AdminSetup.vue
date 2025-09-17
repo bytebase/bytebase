@@ -157,7 +157,7 @@ const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 const STEP_LIST = [
   { title: t("setup.basic-info") },
   { title: t("setup.self") },
-  { title: t("settings.general.workspace.database-change-mode.self") },
+  { title: t("settings.general.workspace.default-landing-page.self") },
 ];
 
 const allowNext = computed(() => {

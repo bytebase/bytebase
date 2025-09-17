@@ -1,14 +1,8 @@
 <template>
   <div class="space-y-0 divide-y divide-block-border pt-2">
-    <DatabaseChangeModeSetting
-      ref="databaseChangeModeSettingRef"
-      :title="$t('settings.general.workspace.database-change-mode.self')"
-      :allow-edit="allowEdit"
-    />
-    <NetworkSetting
-      v-if="!isSaaSMode"
-      ref="networkSettingRef"
-      :title="$t('settings.general.workspace.network')"
+    <GeneralSetting
+      ref="generalSettingRef"
+      :title="$t('common.general')"
       :allow-edit="allowEdit"
     />
     <BrandingSetting
@@ -59,7 +53,6 @@
 <script lang="ts" setup>
 import { useEventListener } from "@vueuse/core";
 import { NButton } from "naive-ui";
-import { storeToRefs } from "pinia";
 import { onMounted, ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, onBeforeRouteLeave } from "vue-router";
@@ -67,13 +60,11 @@ import {
   BrandingSetting,
   SecuritySetting,
   AccountSetting,
-  NetworkSetting,
   AIAugmentationSetting,
   AnnouncementSetting,
-  DatabaseChangeModeSetting,
+  GeneralSetting,
   ProductImprovementSetting,
 } from "@/components/GeneralSetting";
-import { useActuatorV1Store } from "@/store";
 import { pushNotification } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 
@@ -82,13 +73,10 @@ defineProps<{
 }>();
 
 const route = useRoute();
-const actuatorStore = useActuatorV1Store();
 const { t } = useI18n();
 
 const accountSettingRef = ref<InstanceType<typeof AccountSetting>>();
-const databaseChangeModeSettingRef =
-  ref<InstanceType<typeof DatabaseChangeModeSetting>>();
-const networkSettingRef = ref<InstanceType<typeof NetworkSetting>>();
+const generalSettingRef = ref<InstanceType<typeof GeneralSetting>>();
 const brandingSettingRef = ref<InstanceType<typeof BrandingSetting>>();
 const securitySettingRef = ref<InstanceType<typeof SecuritySetting>>();
 const aiAugmentationSettingRef =
@@ -100,8 +88,7 @@ const productImprovementSettingRef =
 const settingRefList = computed(() => {
   return [
     accountSettingRef,
-    databaseChangeModeSettingRef,
-    networkSettingRef,
+    generalSettingRef,
     brandingSettingRef,
     securitySettingRef,
     aiAugmentationSettingRef,
@@ -117,7 +104,6 @@ onMounted(async () => {
     document.body.querySelector(route.hash)?.scrollIntoView();
   }
 });
-const { isSaaSMode } = storeToRefs(actuatorStore);
 
 const isDirty = computed(() => {
   return settingRefList.value.some((settingRef) => settingRef.value?.isDirty);
