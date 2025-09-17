@@ -55,6 +55,9 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 	// Process view changes
 	processViewChanges(currentChunks, previousChunks, diff)
 
+	// Process function changes
+	processFunctionChanges(currentChunks, previousChunks, diff)
+
 	return diff, nil
 }
 
@@ -138,11 +141,14 @@ func (l *sdlChunkExtractor) EnterCreatefunctionstmt(ctx *parser.Createfunctionst
 		return
 	}
 
-	// Extract function name directly from the text
-	funcName := funcNameCtx.GetText()
-	if funcName == "" {
+	// Extract function name using proper normalization
+	funcNameParts := pgparser.NormalizePostgreSQLFuncName(funcNameCtx)
+	if len(funcNameParts) == 0 {
 		return
 	}
+
+	// Join the parts to create the full identifier (schema.function_name or function_name)
+	funcName := strings.Join(funcNameParts, ".")
 
 	chunk := &schema.SDLChunk{
 		Identifier: funcName,
@@ -1247,6 +1253,71 @@ func processViewChanges(currentChunks, previousChunks *schema.SDLChunks, diff *s
 				NewView:    nil,
 				OldASTNode: previousChunk.ASTNode,
 				NewASTNode: nil,
+			})
+		}
+	}
+}
+
+// processFunctionChanges analyzes function changes between current and previous chunks
+// Following the text-first comparison pattern for performance optimization
+func processFunctionChanges(currentChunks, previousChunks *schema.SDLChunks, diff *schema.MetadataDiff) {
+	// Process current functions to find created and modified functions
+	for identifier, currentChunk := range currentChunks.Functions {
+		if previousChunk, exists := previousChunks.Functions[identifier]; exists {
+			// Function exists in both - check if modified by comparing text first
+			currentText := currentChunk.GetText(currentChunks.Tokens)
+			previousText := previousChunk.GetText(previousChunks.Tokens)
+			if currentText != previousText {
+				// Function was modified - use drop and recreate pattern (PostgreSQL standard)
+				schemaName, functionName := parseIdentifier(identifier)
+				diff.FunctionChanges = append(diff.FunctionChanges, &schema.FunctionDiff{
+					Action:       schema.MetadataDiffActionDrop,
+					SchemaName:   schemaName,
+					FunctionName: functionName,
+					OldFunction:  nil, // Will be populated when SDL drift detection is implemented
+					NewFunction:  nil, // Will be populated when SDL drift detection is implemented
+					OldASTNode:   previousChunk.ASTNode,
+					NewASTNode:   nil,
+				})
+				diff.FunctionChanges = append(diff.FunctionChanges, &schema.FunctionDiff{
+					Action:       schema.MetadataDiffActionCreate,
+					SchemaName:   schemaName,
+					FunctionName: functionName,
+					OldFunction:  nil, // Will be populated when SDL drift detection is implemented
+					NewFunction:  nil, // Will be populated when SDL drift detection is implemented
+					OldASTNode:   nil,
+					NewASTNode:   currentChunk.ASTNode,
+				})
+			}
+			// If text is identical, skip - no changes detected
+		} else {
+			// New function
+			schemaName, functionName := parseIdentifier(identifier)
+			diff.FunctionChanges = append(diff.FunctionChanges, &schema.FunctionDiff{
+				Action:       schema.MetadataDiffActionCreate,
+				SchemaName:   schemaName,
+				FunctionName: functionName,
+				OldFunction:  nil,
+				NewFunction:  nil,
+				OldASTNode:   nil,
+				NewASTNode:   currentChunk.ASTNode,
+			})
+		}
+	}
+
+	// Process previous functions to find dropped ones
+	for identifier, previousChunk := range previousChunks.Functions {
+		if _, exists := currentChunks.Functions[identifier]; !exists {
+			// Function was dropped
+			schemaName, functionName := parseIdentifier(identifier)
+			diff.FunctionChanges = append(diff.FunctionChanges, &schema.FunctionDiff{
+				Action:       schema.MetadataDiffActionDrop,
+				SchemaName:   schemaName,
+				FunctionName: functionName,
+				OldFunction:  nil, // Will be populated when SDL drift detection is implemented
+				NewFunction:  nil,
+				OldASTNode:   previousChunk.ASTNode,
+				NewASTNode:   nil,
 			})
 		}
 	}

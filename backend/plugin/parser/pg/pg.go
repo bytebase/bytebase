@@ -252,18 +252,53 @@ func NormalizePostgreSQLFuncName(ctx parser.IFunc_nameContext) []string {
 
 	var result []string
 
-	// Handle simple function name
-	if ctx.Colid() != nil {
-		result = append(result, NormalizePostgreSQLColid(ctx.Colid()))
+	// Handle type_function_name (simple identifiers)
+	if ctx.Type_function_name() != nil {
+		result = append(result, normalizePostgreSQLTypeFunctionName(ctx.Type_function_name()))
 	}
 
-	// Handle qualified function name with indirection
-	if ctx.Indirection() != nil {
-		parts := normalizePostgreSQLIndirection(ctx.Indirection())
-		result = append(result, parts...)
+	// Handle qualified function name (colid + indirection)
+	if ctx.Colid() != nil {
+		result = append(result, NormalizePostgreSQLColid(ctx.Colid()))
+
+		// Handle indirection for qualified names
+		if ctx.Indirection() != nil {
+			parts := normalizePostgreSQLIndirection(ctx.Indirection())
+			result = append(result, parts...)
+		}
+	}
+
+	// Handle builtin function names
+	if ctx.Builtin_function_name() != nil {
+		result = append(result, ctx.Builtin_function_name().GetText())
+	}
+
+	// Handle special keywords LEFT/RIGHT
+	if len(result) == 0 && ctx.GetText() != "" {
+		// Fallback for special cases like LEFT, RIGHT keywords
+		result = append(result, strings.ToLower(ctx.GetText()))
 	}
 
 	return result
+}
+
+// normalizePostgreSQLTypeFunctionName normalizes a type_function_name context.
+func normalizePostgreSQLTypeFunctionName(ctx parser.IType_function_nameContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	// type_function_name can be identifier, unreserved_keyword, plsql_unreserved_keyword, or type_func_name_keyword
+	text := ctx.GetText()
+
+	// Remove quotes if present and convert to lowercase for normalization
+	if len(text) >= 2 && text[0] == '"' && text[len(text)-1] == '"' {
+		// Quoted identifier - preserve case but remove quotes
+		return text[1 : len(text)-1]
+	}
+
+	// Unquoted identifier - convert to lowercase
+	return strings.ToLower(text)
 }
 
 // NormalizePostgreSQLName normalizes the given name.

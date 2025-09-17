@@ -196,6 +196,8 @@ type FunctionDiff struct {
 	FunctionName string
 	OldFunction  *storepb.FunctionMetadata
 	NewFunction  *storepb.FunctionMetadata
+	OldASTNode   any // AST node for old function
+	NewASTNode   any // AST node for new function
 
 	// Detailed change information for advanced engines
 	SignatureChanged    bool
@@ -212,6 +214,8 @@ type ProcedureDiff struct {
 	ProcedureName string
 	OldProcedure  *storepb.ProcedureMetadata
 	NewProcedure  *storepb.ProcedureMetadata
+	OldASTNode    any // AST node for old procedure
+	NewASTNode    any // AST node for new procedure
 }
 
 // SequenceDiff represents changes to a sequence.
