@@ -225,6 +225,8 @@ type SequenceDiff struct {
 	SequenceName string
 	OldSequence  *storepb.SequenceMetadata
 	NewSequence  *storepb.SequenceMetadata
+	OldASTNode   any // AST node for old sequence
+	NewASTNode   any // AST node for new sequence
 }
 
 // EnumTypeDiff represents changes to an enum type.
