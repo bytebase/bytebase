@@ -76,10 +76,12 @@ CREATE TABLE project (
     name text NOT NULL,
     resource_id text NOT NULL,
     data_classification_config_id text NOT NULL DEFAULT '',
-    setting jsonb NOT NULL DEFAULT '{}'
+    setting jsonb NOT NULL DEFAULT '{}',
+    labels jsonb NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_project_unique_resource_id ON project(resource_id);
+CREATE INDEX idx_project_labels ON project USING GIN (labels);
 
 -- Project Hook
 CREATE TABLE project_webhook (

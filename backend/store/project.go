@@ -21,6 +21,7 @@ type ProjectMessage struct {
 	Webhooks                   []*ProjectWebhookMessage
 	DataClassificationConfigID string
 	Setting                    *storepb.Project
+	Labels                     map[string]string
 	Deleted                    bool
 }
 
@@ -44,6 +45,7 @@ type UpdateProjectMessage struct {
 	Title                      *string
 	DataClassificationConfigID *string
 	Setting                    *storepb.Project
+	Labels                     *map[string]string
 	Delete                     *bool
 }
 
@@ -132,20 +134,32 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		Title:                      create.Title,
 		DataClassificationConfigID: create.DataClassificationConfigID,
 		Setting:                    create.Setting,
+		Labels:                     create.Labels,
 	}
+
+	labelsJSON, err := protojson.Marshal(create.Labels)
+	if err != nil {
+		return nil, err
+	}
+	if create.Labels == nil {
+		labelsJSON = []byte("{}")
+	}
+
 	if _, err := tx.ExecContext(ctx, `
 			INSERT INTO project (
 				resource_id,
 				name,
 				data_classification_config_id,
-				setting
+				setting,
+				labels
 			)
-			VALUES ($1, $2, $3, $4)
+			VALUES ($1, $2, $3, $4, $5)
 		`,
 		create.ResourceID,
 		create.Title,
 		create.DataClassificationConfigID,
 		payload,
+		labelsJSON,
 	); err != nil {
 		return nil, err
 	}
@@ -265,6 +279,13 @@ func updateProjectImplV2(ctx context.Context, txn *sql.Tx, patch *UpdateProjectM
 		}
 		set, args = append(set, fmt.Sprintf("setting = $%d", len(args)+1)), append(args, payload)
 	}
+	if v := patch.Labels; v != nil {
+		labelsJSON, err := protojson.Marshal(v)
+		if err != nil {
+			return err
+		}
+		set, args = append(set, fmt.Sprintf("labels = $%d", len(args)+1)), append(args, labelsJSON)
+	}
 
 	args = append(args, patch.ResourceID)
 	if _, err := txn.ExecContext(ctx, fmt.Sprintf(`
@@ -297,6 +318,7 @@ func (s *Store) listProjectImplV2(ctx context.Context, txn *sql.Tx, find *FindPr
 			name,
 			data_classification_config_id,
 			setting,
+			labels,
 			deleted
 		FROM project
 		WHERE %s
@@ -318,11 +340,13 @@ func (s *Store) listProjectImplV2(ctx context.Context, txn *sql.Tx, find *FindPr
 	for rows.Next() {
 		var projectMessage ProjectMessage
 		var payload []byte
+		var labelsJSON []byte
 		if err := rows.Scan(
 			&projectMessage.ResourceID,
 			&projectMessage.Title,
 			&projectMessage.DataClassificationConfigID,
 			&payload,
+			&labelsJSON,
 			&projectMessage.Deleted,
 		); err != nil {
 			return nil, err
@@ -332,6 +356,13 @@ func (s *Store) listProjectImplV2(ctx context.Context, txn *sql.Tx, find *FindPr
 			return nil, err
 		}
 		projectMessage.Setting = setting
+
+		labels := make(map[string]string)
+		if err := common.ProtojsonUnmarshaler.Unmarshal(labelsJSON, &labels); err != nil {
+			return nil, err
+		}
+		projectMessage.Labels = labels
+
 		projectMessages = append(projectMessages, &projectMessage)
 	}
 	if err := rows.Err(); err != nil {

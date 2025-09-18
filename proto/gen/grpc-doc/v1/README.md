@@ -475,6 +475,7 @@
     - [ListProjectsResponse](#bytebase-v1-ListProjectsResponse)
     - [Project](#bytebase-v1-Project)
     - [Project.ExecutionRetryPolicy](#bytebase-v1-Project-ExecutionRetryPolicy)
+    - [Project.LabelsEntry](#bytebase-v1-Project-LabelsEntry)
     - [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest)
     - [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest)
     - [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse)
@@ -7899,6 +7900,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | execution_retry_policy | [Project.ExecutionRetryPolicy](#bytebase-v1-Project-ExecutionRetryPolicy) |  | Execution retry policy for the task run. |
 | ci_sampling_size | [int32](#int32) |  | The maximum databases of rows to sample during CI data validation. Without specification, sampling is disabled, resulting in a full validation. |
 | parallel_tasks_per_rollout | [int32](#int32) |  | The maximum number of parallel tasks to run during the rollout. |
+| labels | [Project.LabelsEntry](#bytebase-v1-Project-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the project. For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34;backend&#34; } |
 
 
 
@@ -7914,6 +7916,22 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | maximum_retries | [int32](#int32) |  | The maximum number of retries for the lock timeout issue. |
+
+
+
+
+
+
+<a name="bytebase-v1-Project-LabelsEntry"></a>
+
+### Project.LabelsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
 
 
 
