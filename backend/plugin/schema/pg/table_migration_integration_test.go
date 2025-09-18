@@ -338,4 +338,3 @@ func TestComplexTableWithConstraintsAndIndexes(t *testing.T) {
 func containsTableString(s, substr string) bool {
 	return strings.Contains(s, substr)
 }
-
