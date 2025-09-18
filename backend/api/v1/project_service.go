@@ -151,12 +151,19 @@ func getListProjectFilter(filter string) (*store.ListResourceFilter, error) {
 			return fmt.Sprintf("project.deleted = $%d", len(positionalArgs)), nil
 		default:
 			// Check if it's a label filter (e.g., "labels.environment" == "production")
-			if strings.HasPrefix(variable.(string), "labels.") {
-				labelKey := strings.TrimPrefix(variable.(string), "labels.")
-				labelValue := value.(string)
+			varStr, ok := variable.(string)
+			if !ok {
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
+			}
+			if strings.HasPrefix(varStr, "labels.") {
+				labelKey := strings.TrimPrefix(varStr, "labels.")
+				labelValueStr, ok := value.(string)
+				if !ok {
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("label value must be a string, got %T", value))
+				}
 				// Use JSONB containment operator to check if the label exists with the specified value
 				// The setting column contains a proto message with a labels field
-				positionalArgs = append(positionalArgs, fmt.Sprintf(`{"%s":"%s"}`, labelKey, labelValue))
+				positionalArgs = append(positionalArgs, fmt.Sprintf(`{"%s":"%s"}`, labelKey, labelValueStr))
 				return fmt.Sprintf("project.setting->'labels' @> $%d::jsonb", len(positionalArgs)), nil
 			}
 			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
