@@ -1083,6 +1083,10 @@
                   <a href="#bytebase.store.Project.ExecutionRetryPolicy"><span class="badge">M</span>Project.ExecutionRetryPolicy</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.Project.LabelsEntry"><span class="badge">M</span>Project.LabelsEntry</a>
+                </li>
+              
               
               
               
@@ -10306,6 +10310,14 @@ Without specification, sampling is disabled, resulting in a full validation. </p
                   <td><p>The maximum number of parallel tasks to run during the rollout. </p></td>
                 </tr>
               
+                <tr>
+                  <td>labels</td>
+                  <td><a href="#bytebase.store.Project.LabelsEntry">Project.LabelsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>Labels are key-value pairs that can be attached to the project.
+For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34;backend&#34; } </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -10328,6 +10340,37 @@ Without specification, sampling is disabled, resulting in a full validation. </p
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p>The maximum number of retries for the lock timeout issue. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Project.LabelsEntry">Project.LabelsEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>

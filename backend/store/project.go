@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -22,7 +21,6 @@ type ProjectMessage struct {
 	Webhooks                   []*ProjectWebhookMessage
 	DataClassificationConfigID string
 	Setting                    *storepb.Project
-	Labels                     map[string]string
 	Deleted                    bool
 }
 
@@ -46,7 +44,6 @@ type UpdateProjectMessage struct {
 	Title                      *string
 	DataClassificationConfigID *string
 	Setting                    *storepb.Project
-	Labels                     *map[string]string
 	Delete                     *bool
 }
 
@@ -135,32 +132,20 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		Title:                      create.Title,
 		DataClassificationConfigID: create.DataClassificationConfigID,
 		Setting:                    create.Setting,
-		Labels:                     create.Labels,
 	}
-
-	labelsJSON := []byte("{}")
-	if create.Labels != nil {
-		labelsJSON, err = json.Marshal(create.Labels)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	if _, err := tx.ExecContext(ctx, `
 			INSERT INTO project (
 				resource_id,
 				name,
 				data_classification_config_id,
-				setting,
-				labels
+				setting
 			)
-			VALUES ($1, $2, $3, $4, $5)
+			VALUES ($1, $2, $3, $4)
 		`,
 		create.ResourceID,
 		create.Title,
 		create.DataClassificationConfigID,
 		payload,
-		labelsJSON,
 	); err != nil {
 		return nil, err
 	}
@@ -280,13 +265,6 @@ func updateProjectImplV2(ctx context.Context, txn *sql.Tx, patch *UpdateProjectM
 		}
 		set, args = append(set, fmt.Sprintf("setting = $%d", len(args)+1)), append(args, payload)
 	}
-	if v := patch.Labels; v != nil {
-		labelsJSON, err := json.Marshal(*v)
-		if err != nil {
-			return err
-		}
-		set, args = append(set, fmt.Sprintf("labels = $%d", len(args)+1)), append(args, labelsJSON)
-	}
 
 	args = append(args, patch.ResourceID)
 	if _, err := txn.ExecContext(ctx, fmt.Sprintf(`
@@ -319,7 +297,6 @@ func (s *Store) listProjectImplV2(ctx context.Context, txn *sql.Tx, find *FindPr
 			name,
 			data_classification_config_id,
 			setting,
-			labels,
 			deleted
 		FROM project
 		WHERE %s
@@ -341,13 +318,11 @@ func (s *Store) listProjectImplV2(ctx context.Context, txn *sql.Tx, find *FindPr
 	for rows.Next() {
 		var projectMessage ProjectMessage
 		var payload []byte
-		var labelsJSON []byte
 		if err := rows.Scan(
 			&projectMessage.ResourceID,
 			&projectMessage.Title,
 			&projectMessage.DataClassificationConfigID,
 			&payload,
-			&labelsJSON,
 			&projectMessage.Deleted,
 		); err != nil {
 			return nil, err
@@ -357,13 +332,6 @@ func (s *Store) listProjectImplV2(ctx context.Context, txn *sql.Tx, find *FindPr
 			return nil, err
 		}
 		projectMessage.Setting = setting
-
-		labels := make(map[string]string)
-		if err := json.Unmarshal(labelsJSON, &labels); err != nil {
-			return nil, err
-		}
-		projectMessage.Labels = labels
-
 		projectMessages = append(projectMessages, &projectMessage)
 	}
 	if err := rows.Err(); err != nil {
