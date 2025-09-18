@@ -275,7 +275,10 @@ type UpdateChangelistRequest struct {
 	// Format: projects/{project}/changelists/{changelist}
 	Changelist *Changelist `protobuf:"bytes,1,opt,name=changelist,proto3" json:"changelist,omitempty"`
 	// The list of fields to be updated.
-	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	// If set to true, and the changelist is not found, a new changelist will be created.
+	// In this situation, `update_mask` is ignored.
+	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -322,6 +325,13 @@ func (x *UpdateChangelistRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 		return x.UpdateMask
 	}
 	return nil
+}
+
+func (x *UpdateChangelistRequest) GetAllowMissing() bool {
+	if x != nil {
+		return x.AllowMissing
+	}
+	return false
 }
 
 type DeleteChangelistRequest struct {
@@ -531,13 +541,14 @@ const file_v1_changelist_service_proto_rawDesc = "" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\"|\n" +
 	"\x17ListChangelistsResponse\x129\n" +
 	"\vchangelists\x18\x01 \x03(\v2\x17.bytebase.v1.ChangelistR\vchangelists\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x94\x01\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xb9\x01\n" +
 	"\x17UpdateChangelistRequest\x12<\n" +
 	"\n" +
 	"changelist\x18\x01 \x01(\v2\x17.bytebase.v1.ChangelistB\x03\xe0A\x02R\n" +
 	"changelist\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"N\n" +
+	"updateMask\x12#\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"N\n" +
 	"\x17DeleteChangelistRequest\x123\n" +
 	"\x04name\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
 	"\x17bytebase.com/ChangelistR\x04name\"\xe8\x02\n" +

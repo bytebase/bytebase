@@ -31,6 +31,14 @@ export declare type UpdateSubscriptionRequest = Message<"bytebase.v1.UpdateSubsc
    * @generated from field: string license = 1;
    */
   license: string;
+
+  /**
+   * If set to true, and the subscription is not found, a new subscription will be created.
+   * In this situation, `update_mask` is ignored.
+   *
+   * @generated from field: bool allow_missing = 2;
+   */
+  allowMissing: boolean;
 };
 
 /**

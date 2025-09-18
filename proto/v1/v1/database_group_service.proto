@@ -143,6 +143,10 @@ message UpdateDatabaseGroupRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
+
+  // If set to true, and the database group is not found, a new database group will be created.
+  // In this situation, `update_mask` is ignored.
+  bool allow_missing = 3;
 }
 
 message DeleteDatabaseGroupRequest {

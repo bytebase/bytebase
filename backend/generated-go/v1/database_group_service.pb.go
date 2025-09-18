@@ -355,7 +355,10 @@ type UpdateDatabaseGroupRequest struct {
 	// Format: projects/{project}/databaseGroups/{databaseGroup}
 	DatabaseGroup *DatabaseGroup `protobuf:"bytes,1,opt,name=database_group,json=databaseGroup,proto3" json:"database_group,omitempty"`
 	// The list of fields to update.
-	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	// If set to true, and the database group is not found, a new database group will be created.
+	// In this situation, `update_mask` is ignored.
+	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -402,6 +405,13 @@ func (x *UpdateDatabaseGroupRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 		return x.UpdateMask
 	}
 	return nil
+}
+
+func (x *UpdateDatabaseGroupRequest) GetAllowMissing() bool {
+	if x != nil {
+		return x.AllowMissing
+	}
+	return false
 }
 
 type DeleteDatabaseGroupRequest struct {
@@ -603,11 +613,12 @@ const file_v1_database_group_service_proto_rawDesc = "" +
 	"\x14bytebase.com/ProjectR\x06parent\x12F\n" +
 	"\x0edatabase_group\x18\x02 \x01(\v2\x1a.bytebase.v1.DatabaseGroupB\x03\xe0A\x02R\rdatabaseGroup\x12*\n" +
 	"\x11database_group_id\x18\x03 \x01(\tR\x0fdatabaseGroupId\x12#\n" +
-	"\rvalidate_only\x18\x04 \x01(\bR\fvalidateOnly\"\xa1\x01\n" +
+	"\rvalidate_only\x18\x04 \x01(\bR\fvalidateOnly\"\xc6\x01\n" +
 	"\x1aUpdateDatabaseGroupRequest\x12F\n" +
 	"\x0edatabase_group\x18\x01 \x01(\v2\x1a.bytebase.v1.DatabaseGroupB\x03\xe0A\x02R\rdatabaseGroup\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"T\n" +
+	"updateMask\x12#\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"T\n" +
 	"\x1aDeleteDatabaseGroupRequest\x126\n" +
 	"\x04name\x18\x01 \x01(\tB\"\xe0A\x02\xfaA\x1c\n" +
 	"\x1abytebase.com/DatabaseGroupR\x04name\"\xbc\x02\n" +

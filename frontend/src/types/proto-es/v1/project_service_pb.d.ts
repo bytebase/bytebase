@@ -244,6 +244,14 @@ export declare type UpdateProjectRequest = Message<"bytebase.v1.UpdateProjectReq
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */
   updateMask?: FieldMask;
+
+  /**
+   * If set to true, and the project is not found, a new project will be created.
+   * In this situation, `update_mask` is ignored.
+   *
+   * @generated from field: bool allow_missing = 3;
+   */
+  allowMissing: boolean;
 };
 
 /**
@@ -619,6 +627,14 @@ export declare type UpdateWebhookRequest = Message<"bytebase.v1.UpdateWebhookReq
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */
   updateMask?: FieldMask;
+
+  /**
+   * If set to true, and the webhook is not found, a new webhook will be created.
+   * In this situation, `update_mask` is ignored.
+   *
+   * @generated from field: bool allow_missing = 3;
+   */
+  allowMissing: boolean;
 };
 
 /**

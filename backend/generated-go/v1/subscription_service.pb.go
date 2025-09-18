@@ -376,8 +376,11 @@ func (*GetSubscriptionRequest) Descriptor() ([]byte, []int) {
 }
 
 type UpdateSubscriptionRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	License       string                 `protobuf:"bytes,1,opt,name=license,proto3" json:"license,omitempty"`
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	License string                 `protobuf:"bytes,1,opt,name=license,proto3" json:"license,omitempty"`
+	// If set to true, and the subscription is not found, a new subscription will be created.
+	// In this situation, `update_mask` is ignored.
+	AllowMissing  bool `protobuf:"varint,2,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -417,6 +420,13 @@ func (x *UpdateSubscriptionRequest) GetLicense() string {
 		return x.License
 	}
 	return ""
+}
+
+func (x *UpdateSubscriptionRequest) GetAllowMissing() bool {
+	if x != nil {
+		return x.AllowMissing
+	}
+	return false
 }
 
 type Subscription struct {
@@ -638,9 +648,10 @@ var File_v1_subscription_service_proto protoreflect.FileDescriptor
 const file_v1_subscription_service_proto_rawDesc = "" +
 	"\n" +
 	"\x1dv1/subscription_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x18\n" +
-	"\x16GetSubscriptionRequest\"5\n" +
+	"\x16GetSubscriptionRequest\"Z\n" +
 	"\x19UpdateSubscriptionRequest\x12\x18\n" +
-	"\alicense\x18\x01 \x01(\tR\alicense\"\xb1\x02\n" +
+	"\alicense\x18\x01 \x01(\tR\alicense\x12#\n" +
+	"\rallow_missing\x18\x02 \x01(\bR\fallowMissing\"\xb1\x02\n" +
 	"\fSubscription\x12.\n" +
 	"\x04plan\x18\x01 \x01(\x0e2\x15.bytebase.v1.PlanTypeB\x03\xe0A\x03R\x04plan\x12\x19\n" +
 	"\x05seats\x18\x02 \x01(\x05B\x03\xe0A\x03R\x05seats\x12!\n" +

@@ -483,6 +483,18 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user, error: %v", err))
 	}
 	if user == nil {
+		if request.Msg.AllowMissing {
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersCreate, callerUser)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
+			}
+			if !ok {
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionUsersCreate))
+			}
+			return s.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+				User: request.Msg.User,
+			}))
+		}
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %d not found", userID))
 	}
 	if user.MemberDeleted {

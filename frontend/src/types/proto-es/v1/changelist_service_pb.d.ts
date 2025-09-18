@@ -155,6 +155,14 @@ export declare type UpdateChangelistRequest = Message<"bytebase.v1.UpdateChangel
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */
   updateMask?: FieldMask;
+
+  /**
+   * If set to true, and the changelist is not found, a new changelist will be created.
+   * In this situation, `update_mask` is ignored.
+   *
+   * @generated from field: bool allow_missing = 3;
+   */
+  allowMissing: boolean;
 };
 
 /**

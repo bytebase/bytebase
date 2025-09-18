@@ -106,6 +106,14 @@ export declare type UpdateWorksheetOrganizerRequest = Message<"bytebase.v1.Updat
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */
   updateMask?: FieldMask;
+
+  /**
+   * If set to true, and the worksheet organizer is not found, a new worksheet organizer will be created.
+   * In this situation, `update_mask` is ignored.
+   *
+   * @generated from field: bool allow_missing = 3;
+   */
+  allowMissing: boolean;
 };
 
 /**

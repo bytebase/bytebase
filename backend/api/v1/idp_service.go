@@ -120,9 +120,25 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 		return nil, err
 	}
 
-	identityProviderMessage, err := s.getIdentityProviderMessage(ctx, req.Msg.IdentityProvider.Name)
+	identityProviderID, err := common.GetIdentityProviderID(req.Msg.IdentityProvider.Name)
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	identityProviderMessage, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
+		ResourceID: &identityProviderID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	if identityProviderMessage == nil {
+		if req.Msg.AllowMissing {
+			return s.CreateIdentityProvider(ctx, connect.NewRequest(&v1pb.CreateIdentityProviderRequest{
+				IdentityProviderId: identityProviderID,
+				IdentityProvider:   req.Msg.IdentityProvider,
+			}))
+		}
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("identity provider %q not found", req.Msg.IdentityProvider.Name))
 	}
 
 	patch := &store.UpdateIdentityProviderMessage{

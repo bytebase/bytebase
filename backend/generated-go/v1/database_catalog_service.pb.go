@@ -132,7 +132,10 @@ type UpdateDatabaseCatalogRequest struct {
 	//
 	// The catalog's `name` field is used to identify the database catalog to update.
 	// Format: instances/{instance}/databases/{database}/catalog
-	Catalog       *DatabaseCatalog `protobuf:"bytes,1,opt,name=catalog,proto3" json:"catalog,omitempty"`
+	Catalog *DatabaseCatalog `protobuf:"bytes,1,opt,name=catalog,proto3" json:"catalog,omitempty"`
+	// If set to true, and the database catalog is not found, a new database catalog will be created.
+	// In this situation, `update_mask` is ignored.
+	AllowMissing  bool `protobuf:"varint,2,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -172,6 +175,13 @@ func (x *UpdateDatabaseCatalogRequest) GetCatalog() *DatabaseCatalog {
 		return x.Catalog
 	}
 	return nil
+}
+
+func (x *UpdateDatabaseCatalogRequest) GetAllowMissing() bool {
+	if x != nil {
+		return x.AllowMissing
+	}
+	return false
 }
 
 type DatabaseCatalog struct {
@@ -692,9 +702,10 @@ const file_v1_database_catalog_service_proto_rawDesc = "" +
 	"!v1/database_catalog_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x13v1/annotation.proto\"U\n" +
 	"\x19GetDatabaseCatalogRequest\x128\n" +
 	"\x04name\x18\x01 \x01(\tB$\xe0A\x02\xfaA\x1e\n" +
-	"\x1cbytebase.com/DatabaseCatalogR\x04name\"[\n" +
+	"\x1cbytebase.com/DatabaseCatalogR\x04name\"\x80\x01\n" +
 	"\x1cUpdateDatabaseCatalogRequest\x12;\n" +
-	"\acatalog\x18\x01 \x01(\v2\x1c.bytebase.v1.DatabaseCatalogB\x03\xe0A\x02R\acatalog\"\xb1\x01\n" +
+	"\acatalog\x18\x01 \x01(\v2\x1c.bytebase.v1.DatabaseCatalogB\x03\xe0A\x02R\acatalog\x12#\n" +
+	"\rallow_missing\x18\x02 \x01(\bR\fallowMissing\"\xb1\x01\n" +
 	"\x0fDatabaseCatalog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x124\n" +
 	"\aschemas\x18\x02 \x03(\v2\x1a.bytebase.v1.SchemaCatalogR\aschemas:T\xeaAQ\n" +

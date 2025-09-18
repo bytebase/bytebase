@@ -191,6 +191,14 @@ export declare type UpdateInstanceRequest = Message<"bytebase.v1.UpdateInstanceR
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */
   updateMask?: FieldMask;
+
+  /**
+   * If set to true, and the instance is not found, a new instance will be created.
+   * In this situation, `update_mask` is ignored.
+   *
+   * @generated from field: bool allow_missing = 3;
+   */
+  allowMissing: boolean;
 };
 
 /**
@@ -501,6 +509,14 @@ export declare type UpdateDataSourceRequest = Message<"bytebase.v1.UpdateDataSou
    * @generated from field: bool validate_only = 4;
    */
   validateOnly: boolean;
+
+  /**
+   * If set to true, and the data source is not found, a new data source will be created.
+   * In this situation, `update_mask` is ignored.
+   *
+   * @generated from field: bool allow_missing = 5;
+   */
+  allowMissing: boolean;
 };
 
 /**

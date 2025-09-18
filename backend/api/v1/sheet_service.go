@@ -204,10 +204,11 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with resource id %q had deleted", projectResourceID))
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("principal ID not found"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
+
 	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
 		UID:       &sheetUID,
 		ProjectID: &project.ResourceID,
@@ -216,12 +217,25 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get sheet"))
 	}
 	if sheet == nil {
+		if request.Msg.AllowMissing {
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionSheetsCreate, user, project.ResourceID)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
+			}
+			if !ok {
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionSheetsCreate))
+			}
+			return s.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+				Parent: common.FormatProject(project.ResourceID),
+				Sheet:  request.Msg.Sheet,
+			}))
+		}
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %q not found", request.Msg.Sheet.Name))
 	}
 
 	sheetPatch := &store.PatchSheetMessage{
 		UID:       sheet.UID,
-		UpdaterID: principalID,
+		UpdaterID: user.ID,
 	}
 
 	for _, path := range request.Msg.UpdateMask.Paths {

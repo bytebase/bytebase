@@ -431,8 +431,11 @@ type UpdateUserRequest struct {
 	RegenerateTempMfaSecret bool `protobuf:"varint,4,opt,name=regenerate_temp_mfa_secret,json=regenerateTempMfaSecret,proto3" json:"regenerate_temp_mfa_secret,omitempty"`
 	// The regenerate_recovery_codes flag means to regenerate recovery codes for user.
 	RegenerateRecoveryCodes bool `protobuf:"varint,5,opt,name=regenerate_recovery_codes,json=regenerateRecoveryCodes,proto3" json:"regenerate_recovery_codes,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	// If set to true, and the user is not found, a new user will be created.
+	// In this situation, `update_mask` is ignored.
+	AllowMissing  bool `protobuf:"varint,6,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UpdateUserRequest) Reset() {
@@ -496,6 +499,13 @@ func (x *UpdateUserRequest) GetRegenerateTempMfaSecret() bool {
 func (x *UpdateUserRequest) GetRegenerateRecoveryCodes() bool {
 	if x != nil {
 		return x.RegenerateRecoveryCodes
+	}
+	return false
+}
+
+func (x *UpdateUserRequest) GetAllowMissing() bool {
+	if x != nil {
+		return x.AllowMissing
 	}
 	return false
 }
@@ -825,14 +835,15 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x05users\x18\x01 \x03(\v2\x11.bytebase.v1.UserR\x05users\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"?\n" +
 	"\x11CreateUserRequest\x12*\n" +
-	"\x04user\x18\x01 \x01(\v2\x11.bytebase.v1.UserB\x03\xe0A\x02R\x04user\"\xa2\x02\n" +
+	"\x04user\x18\x01 \x01(\v2\x11.bytebase.v1.UserB\x03\xe0A\x02R\x04user\"\xc7\x02\n" +
 	"\x11UpdateUserRequest\x12*\n" +
 	"\x04user\x18\x01 \x01(\v2\x11.bytebase.v1.UserB\x03\xe0A\x02R\x04user\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12\x1e\n" +
 	"\botp_code\x18\x03 \x01(\tH\x00R\aotpCode\x88\x01\x01\x12;\n" +
 	"\x1aregenerate_temp_mfa_secret\x18\x04 \x01(\bR\x17regenerateTempMfaSecret\x12:\n" +
-	"\x19regenerate_recovery_codes\x18\x05 \x01(\bR\x17regenerateRecoveryCodesB\v\n" +
+	"\x19regenerate_recovery_codes\x18\x05 \x01(\bR\x17regenerateRecoveryCodes\x12#\n" +
+	"\rallow_missing\x18\x06 \x01(\bR\fallowMissingB\v\n" +
 	"\t_otp_code\"B\n" +
 	"\x11DeleteUserRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +

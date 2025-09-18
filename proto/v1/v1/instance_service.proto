@@ -247,6 +247,10 @@ message UpdateInstanceRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
+
+  // If set to true, and the instance is not found, a new instance will be created.
+  // In this situation, `update_mask` is ignored.
+  bool allow_missing = 3;
 }
 
 message DeleteInstanceRequest {
@@ -373,6 +377,10 @@ message UpdateDataSourceRequest {
 
   // Validate only also tests the data source connection.
   bool validate_only = 4;
+
+  // If set to true, and the data source is not found, a new data source will be created.
+  // In this situation, `update_mask` is ignored.
+  bool allow_missing = 5;
 }
 
 message Instance {

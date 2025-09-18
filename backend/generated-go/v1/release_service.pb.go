@@ -546,7 +546,10 @@ type UpdateReleaseRequest struct {
 	// The release to update.
 	Release *Release `protobuf:"bytes,1,opt,name=release,proto3" json:"release,omitempty"`
 	// The list of fields to be updated.
-	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	// If set to true, and the release is not found, a new release will be created.
+	// In this situation, `update_mask` is ignored.
+	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -593,6 +596,13 @@ func (x *UpdateReleaseRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 		return x.UpdateMask
 	}
 	return nil
+}
+
+func (x *UpdateReleaseRequest) GetAllowMissing() bool {
+	if x != nil {
+		return x.AllowMissing
+	}
+	return false
 }
 
 type DeleteReleaseRequest struct {
@@ -1211,11 +1221,12 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x14CreateReleaseRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x123\n" +
-	"\arelease\x18\x02 \x01(\v2\x14.bytebase.v1.ReleaseB\x03\xe0A\x02R\arelease\"\x88\x01\n" +
+	"\arelease\x18\x02 \x01(\v2\x14.bytebase.v1.ReleaseB\x03\xe0A\x02R\arelease\"\xad\x01\n" +
 	"\x14UpdateReleaseRequest\x123\n" +
 	"\arelease\x18\x01 \x01(\v2\x14.bytebase.v1.ReleaseB\x03\xe0A\x02R\arelease\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"H\n" +
+	"updateMask\x12#\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"H\n" +
 	"\x14DeleteReleaseRequest\x120\n" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ReleaseR\x04name\"J\n" +

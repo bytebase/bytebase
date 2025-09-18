@@ -427,9 +427,37 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask must be set"))
 	}
 
-	databaseMessage, err := getDatabaseMessage(ctx, s.store, req.Msg.Database.Name)
+	// Extract database information from the name
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(req.Msg.Database.Name)
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse database name %q", req.Msg.Database.Name))
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get instance %s", instanceID))
+	}
+	if instance == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
+	}
+
+	find := &store.FindDatabaseMessage{
+		InstanceID:      &instanceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
+		ShowDeleted:     true,
+	}
+	databaseMessage, err := s.store.GetDatabaseV2(ctx, find)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+	}
+	if databaseMessage == nil {
+		if req.Msg.AllowMissing {
+			// Database creation is not supported through UpdateDatabase API.
+			// Databases must be created through the plan and rollout system.
+			return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("database creation is not supported through UpdateDatabase, use plan and rollout instead"))
+		}
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", req.Msg.Database.Name))
 	}
 	if databaseMessage.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q was deleted", req.Msg.Database.Name))
