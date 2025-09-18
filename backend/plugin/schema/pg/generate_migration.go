@@ -498,8 +498,19 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	// Create sequences (before tables as they might be used in column defaults)
 	for _, seqDiff := range diff.SequenceChanges {
 		if seqDiff.Action == schema.MetadataDiffActionCreate {
-			if err := writeMigrationCreateSequence(buf, seqDiff.SchemaName, seqDiff.NewSequence); err != nil {
-				return err
+			// Support both metadata and AST-only modes
+			if seqDiff.NewSequence != nil {
+				// Metadata mode: use sequence metadata
+				if err := writeMigrationCreateSequence(buf, seqDiff.SchemaName, seqDiff.NewSequence); err != nil {
+					return err
+				}
+			} else if seqDiff.NewASTNode != nil {
+				// AST-only mode: extract SQL from AST node
+				if err := writeMigrationSequenceFromAST(buf, seqDiff.NewASTNode); err != nil {
+					return err
+				}
+			} else {
+				return errors.Errorf("sequence diff for %s.%s has neither metadata nor AST node", seqDiff.SchemaName, seqDiff.SequenceName)
 			}
 		}
 	}
@@ -708,7 +719,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 
 		// Set sequence ownership after all tables are created
 		for _, seqDiff := range diff.SequenceChanges {
-			if seqDiff.Action == schema.MetadataDiffActionCreate && seqDiff.NewSequence.OwnerTable != "" && seqDiff.NewSequence.OwnerColumn != "" {
+			if seqDiff.Action == schema.MetadataDiffActionCreate && seqDiff.NewSequence != nil && seqDiff.NewSequence.OwnerTable != "" && seqDiff.NewSequence.OwnerColumn != "" {
 				if err := writeMigrationSequenceOwnership(buf, seqDiff.SchemaName, seqDiff.NewSequence); err != nil {
 					return err
 				}
@@ -817,7 +828,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 
 		// Set sequence ownership after all tables are created
 		for _, seqDiff := range diff.SequenceChanges {
-			if seqDiff.Action == schema.MetadataDiffActionCreate && seqDiff.NewSequence.OwnerTable != "" && seqDiff.NewSequence.OwnerColumn != "" {
+			if seqDiff.Action == schema.MetadataDiffActionCreate && seqDiff.NewSequence != nil && seqDiff.NewSequence.OwnerTable != "" && seqDiff.NewSequence.OwnerColumn != "" {
 				if err := writeMigrationSequenceOwnership(buf, seqDiff.SchemaName, seqDiff.NewSequence); err != nil {
 					return err
 				}
@@ -1156,6 +1167,49 @@ func writeDropFunction(out *strings.Builder, schema, function string) {
 
 	_, _ = out.WriteString(`;`)
 	_, _ = out.WriteString("\n")
+}
+
+// writeMigrationSequenceFromAST writes CREATE SEQUENCE statement from AST node
+func writeMigrationSequenceFromAST(out *strings.Builder, astNode any) error {
+	if astNode == nil {
+		return errors.New("AST node is nil")
+	}
+
+	// Extract the original SQL text from the AST node
+	var sequenceSQL string
+
+	// Try to cast to PostgreSQL CreateseqstmtContext
+	if ctx, ok := astNode.(*pgparser.CreateseqstmtContext); ok {
+		// First try to get text using token stream
+		if tokenStream := ctx.GetParser().GetTokenStream(); tokenStream != nil {
+			start := ctx.GetStart()
+			stop := ctx.GetStop()
+			if start != nil && stop != nil {
+				sequenceSQL = tokenStream.GetTextFromTokens(start, stop)
+			}
+		}
+
+		// Fallback to GetText() if token stream approach failed
+		if sequenceSQL == "" {
+			sequenceSQL = ctx.GetText()
+		}
+	} else {
+		return errors.Errorf("unsupported AST node type for sequence: %T", astNode)
+	}
+
+	if sequenceSQL == "" {
+		return errors.New("failed to extract sequence SQL from AST node")
+	}
+
+	// Write the sequence SQL
+	_, _ = out.WriteString(sequenceSQL)
+	// Ensure statement ends with semicolon
+	if !strings.HasSuffix(strings.TrimSpace(sequenceSQL), ";") {
+		_, _ = out.WriteString(";")
+	}
+	_, _ = out.WriteString("\n\n")
+
+	return nil
 }
 
 func writeDropView(out *strings.Builder, schema, view string) {
