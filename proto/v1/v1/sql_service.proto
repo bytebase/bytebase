@@ -21,11 +21,6 @@ service SQLService {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:query"
       body: "*"
-
-      additional_bindings: {
-        post: "/v1/{name=instances/*}:query"
-        body: "*"
-      }
     };
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
@@ -57,10 +52,6 @@ service SQLService {
       post: "/v1/{name=instances/*/databases/*}:export"
       body: "*"
 
-      additional_bindings: {
-        post: "/v1/{name=instances/*}:export"
-        body: "*"
-      }
       additional_bindings: {
         post: "/v1/{name=projects/*/rollouts/*}:export"
         body: "*"
