@@ -1137,8 +1137,24 @@ func writeDropFunction(out *strings.Builder, schema, function string) {
 	_, _ = out.WriteString(`DROP FUNCTION IF EXISTS "`)
 	_, _ = out.WriteString(schema)
 	_, _ = out.WriteString(`"."`)
-	_, _ = out.WriteString(function)
-	_, _ = out.WriteString(`";`)
+
+	// Parse function signature to extract function name and parameters
+	// Format: function_name(param1 type1, param2 type2)
+	parenIndex := strings.Index(function, "(")
+	if parenIndex > 0 {
+		// Extract function name and parameters separately
+		funcName := function[:parenIndex]
+		params := function[parenIndex:] // includes parentheses
+		_, _ = out.WriteString(funcName)
+		_, _ = out.WriteString(`"`)
+		_, _ = out.WriteString(params)
+	} else {
+		// Fallback for functions without parameters
+		_, _ = out.WriteString(function)
+		_, _ = out.WriteString(`"()`)
+	}
+
+	_, _ = out.WriteString(`;`)
 	_, _ = out.WriteString("\n")
 }
 
@@ -1459,19 +1475,29 @@ func writeAddCheckConstraint(out *strings.Builder, schema, table string, check *
 func writeFunctionDiff(out *strings.Builder, funcDiff *schema.FunctionDiff) error {
 	switch funcDiff.Action {
 	case schema.MetadataDiffActionCreate:
-		// CREATE new function
-		_, _ = out.WriteString(funcDiff.NewFunction.Definition)
-		if !strings.HasSuffix(strings.TrimSpace(funcDiff.NewFunction.Definition), ";") {
-			_, _ = out.WriteString(";")
+		// CREATE new function - support both metadata and AST-only modes
+		if funcDiff.NewFunction != nil {
+			// Metadata mode: use function definition
+			_, _ = out.WriteString(funcDiff.NewFunction.Definition)
+			if !strings.HasSuffix(strings.TrimSpace(funcDiff.NewFunction.Definition), ";") {
+				_, _ = out.WriteString(";")
+			}
+			_, _ = out.WriteString("\n\n")
+		} else if funcDiff.NewASTNode != nil {
+			// AST-only mode: extract SQL from AST node
+			if err := writeMigrationFunctionFromAST(out, funcDiff.NewASTNode); err != nil {
+				return err
+			}
+		} else {
+			return errors.Errorf("function diff for %s.%s has neither metadata nor AST node", funcDiff.SchemaName, funcDiff.FunctionName)
 		}
-		_, _ = out.WriteString("\n\n")
 
 	case schema.MetadataDiffActionAlter:
 		// ALTER function using CREATE OR REPLACE
 		// The decision to use ALTER vs DROP/CREATE was already made in differ.go
 		// If we reach here, it means we can safely use CREATE OR REPLACE
 		if funcDiff.NewFunction != nil {
-			// Use ANTLR parser to safely convert CREATE FUNCTION to CREATE OR REPLACE FUNCTION
+			// Metadata mode: use ANTLR parser to safely convert CREATE FUNCTION to CREATE OR REPLACE FUNCTION
 			definition := convertToCreateOrReplace(funcDiff.NewFunction.Definition)
 
 			_, _ = out.WriteString(definition)
@@ -1479,6 +1505,13 @@ func writeFunctionDiff(out *strings.Builder, funcDiff *schema.FunctionDiff) erro
 				_, _ = out.WriteString(";")
 			}
 			_, _ = out.WriteString("\n\n")
+		} else if funcDiff.NewASTNode != nil {
+			// AST-only mode: extract SQL and convert to CREATE OR REPLACE
+			if err := writeMigrationFunctionFromASTWithReplace(out, funcDiff.NewASTNode); err != nil {
+				return err
+			}
+		} else {
+			return errors.Errorf("function diff for %s.%s has neither metadata nor AST node", funcDiff.SchemaName, funcDiff.FunctionName)
 		}
 
 	default:
@@ -1643,6 +1676,93 @@ func writeMigrationView(out *strings.Builder, schema string, view *storepb.ViewM
 		_, _ = out.WriteString(`;`)
 	}
 	_, _ = out.WriteString("\n")
+	return nil
+}
+
+// writeMigrationFunctionFromAST writes a CREATE FUNCTION statement from AST node
+func writeMigrationFunctionFromAST(out *strings.Builder, astNode any) error {
+	if astNode == nil {
+		return errors.New("AST node is nil")
+	}
+
+	// Extract the original SQL text from the AST node
+	var functionSQL string
+
+	// Try to cast to PostgreSQL CreatefunctionstmtContext first
+	if ctx, ok := astNode.(*pgparser.CreatefunctionstmtContext); ok {
+		// First try to get text using token stream
+		if tokenStream := ctx.GetParser().GetTokenStream(); tokenStream != nil {
+			start := ctx.GetStart()
+			stop := ctx.GetStop()
+			if start != nil && stop != nil {
+				functionSQL = tokenStream.GetTextFromTokens(start, stop)
+			}
+		}
+
+		// Fallback to GetText() if token stream approach failed
+		if functionSQL == "" {
+			functionSQL = ctx.GetText()
+		}
+	} else {
+		return errors.Errorf("unsupported AST node type for function: %T", astNode)
+	}
+
+	if functionSQL == "" {
+		return errors.New("could not extract function SQL from AST node")
+	}
+
+	// Write the function SQL
+	_, _ = out.WriteString(functionSQL)
+	if !strings.HasSuffix(strings.TrimSpace(functionSQL), ";") {
+		_, _ = out.WriteString(";")
+	}
+	_, _ = out.WriteString("\n\n")
+
+	return nil
+}
+
+// writeMigrationFunctionFromASTWithReplace writes a CREATE OR REPLACE FUNCTION statement from AST node
+func writeMigrationFunctionFromASTWithReplace(out *strings.Builder, astNode any) error {
+	if astNode == nil {
+		return errors.New("AST node is nil")
+	}
+
+	// Extract the original SQL text from the AST node
+	var functionSQL string
+
+	// Try to cast to PostgreSQL CreatefunctionstmtContext first
+	if ctx, ok := astNode.(*pgparser.CreatefunctionstmtContext); ok {
+		// First try to get text using token stream
+		if tokenStream := ctx.GetParser().GetTokenStream(); tokenStream != nil {
+			start := ctx.GetStart()
+			stop := ctx.GetStop()
+			if start != nil && stop != nil {
+				functionSQL = tokenStream.GetTextFromTokens(start, stop)
+			}
+		}
+
+		// Fallback to GetText() if token stream approach failed
+		if functionSQL == "" {
+			functionSQL = ctx.GetText()
+		}
+	} else {
+		return errors.Errorf("unsupported AST node type for function: %T", astNode)
+	}
+
+	if functionSQL == "" {
+		return errors.New("could not extract function SQL from AST node")
+	}
+
+	// Convert CREATE FUNCTION to CREATE OR REPLACE FUNCTION
+	functionSQL = convertToCreateOrReplace(functionSQL)
+
+	// Write the function SQL
+	_, _ = out.WriteString(functionSQL)
+	if !strings.HasSuffix(strings.TrimSpace(functionSQL), ";") {
+		_, _ = out.WriteString(";")
+	}
+	_, _ = out.WriteString("\n\n")
+
 	return nil
 }
 
