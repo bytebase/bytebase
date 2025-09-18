@@ -631,25 +631,34 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 		// Create tables first (without foreign keys)
 		for _, tableDiff := range tableMap {
 			if tableDiff.Action == schema.MetadataDiffActionCreate {
-				createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable, false)
-				if err != nil {
-					return err
-				}
-				_, _ = buf.WriteString(createTableSQL)
-				if createTableSQL != "" {
-					_, _ = buf.WriteString("\n")
-				}
-
-				// Add table and column comments for newly created tables
-				if tableDiff.NewTable != nil && tableDiff.NewTable.Comment != "" {
-					writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
-				}
+				// Support both metadata mode and AST-only mode
 				if tableDiff.NewTable != nil {
+					// Metadata mode: use generateCreateTable
+					createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable, false)
+					if err != nil {
+						return err
+					}
+					_, _ = buf.WriteString(createTableSQL)
+					if createTableSQL != "" {
+						_, _ = buf.WriteString("\n")
+					}
+
+					// Add table and column comments for newly created tables
+					if tableDiff.NewTable.Comment != "" {
+						writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
+					}
 					for _, col := range tableDiff.NewTable.Columns {
 						if col.Comment != "" {
 							writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, col.Name, col.Comment)
 						}
 					}
+				} else if tableDiff.NewASTNode != nil {
+					// AST-only mode: extract SQL from AST node
+					if err := writeMigrationTableFromAST(buf, tableDiff.NewASTNode); err != nil {
+						return err
+					}
+				} else {
+					return errors.Errorf("table CREATE action requires either NewTable metadata or NewASTNode for table %s.%s", tableDiff.SchemaName, tableDiff.TableName)
 				}
 			}
 		}
@@ -742,26 +751,34 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			if tableDiff, ok := tableMap[objID]; ok {
 				switch tableDiff.Action {
 				case schema.MetadataDiffActionCreate:
-					// Create table without foreign keys
-					createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable, false)
-					if err != nil {
-						return err
-					}
-					_, _ = buf.WriteString(createTableSQL)
-					if createTableSQL != "" {
-						_, _ = buf.WriteString("\n")
-					}
-
-					// Add table and column comments for newly created tables
-					if tableDiff.NewTable != nil && tableDiff.NewTable.Comment != "" {
-						writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
-					}
+					// Support both metadata mode and AST-only mode
 					if tableDiff.NewTable != nil {
+						// Metadata mode: use generateCreateTable
+						createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable, false)
+						if err != nil {
+							return err
+						}
+						_, _ = buf.WriteString(createTableSQL)
+						if createTableSQL != "" {
+							_, _ = buf.WriteString("\n")
+						}
+
+						// Add table and column comments for newly created tables
+						if tableDiff.NewTable.Comment != "" {
+							writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
+						}
 						for _, col := range tableDiff.NewTable.Columns {
 							if col.Comment != "" {
 								writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, col.Name, col.Comment)
 							}
 						}
+					} else if tableDiff.NewASTNode != nil {
+						// AST-only mode: extract SQL from AST node
+						if err := writeMigrationTableFromAST(buf, tableDiff.NewASTNode); err != nil {
+							return err
+						}
+					} else {
+						return errors.Errorf("table CREATE action requires either NewTable metadata or NewASTNode for table %s.%s", tableDiff.SchemaName, tableDiff.TableName)
 					}
 				case schema.MetadataDiffActionAlter:
 					// Handle column additions for ALTER operations
@@ -1205,6 +1222,48 @@ func writeMigrationSequenceFromAST(out *strings.Builder, astNode any) error {
 	_, _ = out.WriteString(sequenceSQL)
 	// Ensure statement ends with semicolon
 	if !strings.HasSuffix(strings.TrimSpace(sequenceSQL), ";") {
+		_, _ = out.WriteString(";")
+	}
+	_, _ = out.WriteString("\n\n")
+
+	return nil
+}
+
+// writeMigrationTableFromAST writes CREATE TABLE statement from AST node
+func writeMigrationTableFromAST(out *strings.Builder, astNode any) error {
+	if astNode == nil {
+		return errors.New("AST node is nil")
+	}
+
+	// Extract the original SQL text from the AST node
+	var tableSQL string
+
+	// Try to cast to PostgreSQL CreatestmtContext
+	if ctx, ok := astNode.(*pgparser.CreatestmtContext); ok {
+		// First try to get text using token stream
+		if tokenStream := ctx.GetParser().GetTokenStream(); tokenStream != nil {
+			start := ctx.GetStart()
+			stop := ctx.GetStop()
+			if start != nil && stop != nil {
+				tableSQL = tokenStream.GetTextFromTokens(start, stop)
+			}
+		}
+
+		// If token stream failed, fall back to GetText() method
+		if tableSQL == "" {
+			tableSQL = ctx.GetText()
+		}
+	}
+
+	// If we couldn't extract SQL, return an error
+	if tableSQL == "" {
+		return errors.New("could not extract table SQL from AST node")
+	}
+
+	// Write the table SQL
+	_, _ = out.WriteString(tableSQL)
+	// Ensure statement ends with semicolon
+	if !strings.HasSuffix(strings.TrimSpace(tableSQL), ";") {
 		_, _ = out.WriteString(";")
 	}
 	_, _ = out.WriteString("\n\n")
