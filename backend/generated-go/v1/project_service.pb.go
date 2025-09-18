@@ -985,8 +985,11 @@ type Project struct {
 	CiSamplingSize int32 `protobuf:"varint,23,opt,name=ci_sampling_size,json=ciSamplingSize,proto3" json:"ci_sampling_size,omitempty"`
 	// The maximum number of parallel tasks to run during the rollout.
 	ParallelTasksPerRollout int32 `protobuf:"varint,24,opt,name=parallel_tasks_per_rollout,json=parallelTasksPerRollout,proto3" json:"parallel_tasks_per_rollout,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	// Labels are key-value pairs that can be attached to the project.
+	// For example, { "environment": "production", "team": "backend" }
+	Labels        map[string]string `protobuf:"bytes,25,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Project) Reset() {
@@ -1136,6 +1139,13 @@ func (x *Project) GetParallelTasksPerRollout() int32 {
 		return x.ParallelTasksPerRollout
 	}
 	return 0
+}
+
+func (x *Project) GetLabels() map[string]string {
+	if x != nil {
+		return x.Labels
+	}
+	return nil
 }
 
 type AddWebhookRequest struct {
@@ -1684,7 +1694,7 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12\x14\n" +
 	"\x05color\x18\x02 \x01(\tR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\xd8\a\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\xcd\b\n" +
 	"\aProject\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
@@ -1702,9 +1712,13 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x13allow_self_approval\x18\x15 \x01(\bR\x11allowSelfApproval\x12_\n" +
 	"\x16execution_retry_policy\x18\x16 \x01(\v2).bytebase.v1.Project.ExecutionRetryPolicyR\x14executionRetryPolicy\x12(\n" +
 	"\x10ci_sampling_size\x18\x17 \x01(\x05R\x0eciSamplingSize\x12;\n" +
-	"\x1aparallel_tasks_per_rollout\x18\x18 \x01(\x05R\x17parallelTasksPerRollout\x1a?\n" +
+	"\x1aparallel_tasks_per_rollout\x18\x18 \x01(\x05R\x17parallelTasksPerRollout\x128\n" +
+	"\x06labels\x18\x19 \x03(\v2 .bytebase.v1.Project.LabelsEntryR\x06labels\x1a?\n" +
 	"\x14ExecutionRetryPolicy\x12'\n" +
-	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetries:-\xeaA*\n" +
+	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetries\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:-\xeaA*\n" +
 	"\x14bytebase.com/Project\x12\x12projects/{project}J\x04\b\x02\x10\x03\"\x80\x01\n" +
 	"\x11AddWebhookRequest\x126\n" +
 	"\aproject\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
@@ -1784,7 +1798,7 @@ func file_v1_project_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_project_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_v1_project_service_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_v1_project_service_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_v1_project_service_proto_goTypes = []any{
 	(Webhook_Type)(0),                              // 0: bytebase.v1.Webhook.Type
 	(Activity_Type)(0),                             // 1: bytebase.v1.Activity.Type
@@ -1811,67 +1825,69 @@ var file_v1_project_service_proto_goTypes = []any{
 	(*Activity)(nil),                               // 22: bytebase.v1.Activity
 	(*BatchGetIamPolicyResponse_PolicyResult)(nil), // 23: bytebase.v1.BatchGetIamPolicyResponse.PolicyResult
 	(*Project_ExecutionRetryPolicy)(nil),           // 24: bytebase.v1.Project.ExecutionRetryPolicy
-	(*fieldmaskpb.FieldMask)(nil),                  // 25: google.protobuf.FieldMask
-	(State)(0),                                     // 26: bytebase.v1.State
-	(*IamPolicy)(nil),                              // 27: bytebase.v1.IamPolicy
-	(*GetIamPolicyRequest)(nil),                    // 28: bytebase.v1.GetIamPolicyRequest
-	(*SetIamPolicyRequest)(nil),                    // 29: bytebase.v1.SetIamPolicyRequest
-	(*emptypb.Empty)(nil),                          // 30: google.protobuf.Empty
+	nil,                                            // 25: bytebase.v1.Project.LabelsEntry
+	(*fieldmaskpb.FieldMask)(nil),                  // 26: google.protobuf.FieldMask
+	(State)(0),                                     // 27: bytebase.v1.State
+	(*IamPolicy)(nil),                              // 28: bytebase.v1.IamPolicy
+	(*GetIamPolicyRequest)(nil),                    // 29: bytebase.v1.GetIamPolicyRequest
+	(*SetIamPolicyRequest)(nil),                    // 30: bytebase.v1.SetIamPolicyRequest
+	(*emptypb.Empty)(nil),                          // 31: google.protobuf.Empty
 }
 var file_v1_project_service_proto_depIdxs = []int32{
 	15, // 0: bytebase.v1.ListProjectsResponse.projects:type_name -> bytebase.v1.Project
 	15, // 1: bytebase.v1.SearchProjectsResponse.projects:type_name -> bytebase.v1.Project
 	15, // 2: bytebase.v1.CreateProjectRequest.project:type_name -> bytebase.v1.Project
 	15, // 3: bytebase.v1.UpdateProjectRequest.project:type_name -> bytebase.v1.Project
-	25, // 4: bytebase.v1.UpdateProjectRequest.update_mask:type_name -> google.protobuf.FieldMask
+	26, // 4: bytebase.v1.UpdateProjectRequest.update_mask:type_name -> google.protobuf.FieldMask
 	23, // 5: bytebase.v1.BatchGetIamPolicyResponse.policy_results:type_name -> bytebase.v1.BatchGetIamPolicyResponse.PolicyResult
-	26, // 6: bytebase.v1.Project.state:type_name -> bytebase.v1.State
+	27, // 6: bytebase.v1.Project.state:type_name -> bytebase.v1.State
 	21, // 7: bytebase.v1.Project.webhooks:type_name -> bytebase.v1.Webhook
 	14, // 8: bytebase.v1.Project.issue_labels:type_name -> bytebase.v1.Label
 	24, // 9: bytebase.v1.Project.execution_retry_policy:type_name -> bytebase.v1.Project.ExecutionRetryPolicy
-	21, // 10: bytebase.v1.AddWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
-	21, // 11: bytebase.v1.UpdateWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
-	25, // 12: bytebase.v1.UpdateWebhookRequest.update_mask:type_name -> google.protobuf.FieldMask
-	21, // 13: bytebase.v1.RemoveWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
-	21, // 14: bytebase.v1.TestWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
-	0,  // 15: bytebase.v1.Webhook.type:type_name -> bytebase.v1.Webhook.Type
-	1,  // 16: bytebase.v1.Webhook.notification_types:type_name -> bytebase.v1.Activity.Type
-	27, // 17: bytebase.v1.BatchGetIamPolicyResponse.PolicyResult.policy:type_name -> bytebase.v1.IamPolicy
-	2,  // 18: bytebase.v1.ProjectService.GetProject:input_type -> bytebase.v1.GetProjectRequest
-	3,  // 19: bytebase.v1.ProjectService.ListProjects:input_type -> bytebase.v1.ListProjectsRequest
-	5,  // 20: bytebase.v1.ProjectService.SearchProjects:input_type -> bytebase.v1.SearchProjectsRequest
-	7,  // 21: bytebase.v1.ProjectService.CreateProject:input_type -> bytebase.v1.CreateProjectRequest
-	8,  // 22: bytebase.v1.ProjectService.UpdateProject:input_type -> bytebase.v1.UpdateProjectRequest
-	9,  // 23: bytebase.v1.ProjectService.DeleteProject:input_type -> bytebase.v1.DeleteProjectRequest
-	10, // 24: bytebase.v1.ProjectService.UndeleteProject:input_type -> bytebase.v1.UndeleteProjectRequest
-	11, // 25: bytebase.v1.ProjectService.BatchDeleteProjects:input_type -> bytebase.v1.BatchDeleteProjectsRequest
-	28, // 26: bytebase.v1.ProjectService.GetIamPolicy:input_type -> bytebase.v1.GetIamPolicyRequest
-	12, // 27: bytebase.v1.ProjectService.BatchGetIamPolicy:input_type -> bytebase.v1.BatchGetIamPolicyRequest
-	29, // 28: bytebase.v1.ProjectService.SetIamPolicy:input_type -> bytebase.v1.SetIamPolicyRequest
-	16, // 29: bytebase.v1.ProjectService.AddWebhook:input_type -> bytebase.v1.AddWebhookRequest
-	17, // 30: bytebase.v1.ProjectService.UpdateWebhook:input_type -> bytebase.v1.UpdateWebhookRequest
-	18, // 31: bytebase.v1.ProjectService.RemoveWebhook:input_type -> bytebase.v1.RemoveWebhookRequest
-	19, // 32: bytebase.v1.ProjectService.TestWebhook:input_type -> bytebase.v1.TestWebhookRequest
-	15, // 33: bytebase.v1.ProjectService.GetProject:output_type -> bytebase.v1.Project
-	4,  // 34: bytebase.v1.ProjectService.ListProjects:output_type -> bytebase.v1.ListProjectsResponse
-	6,  // 35: bytebase.v1.ProjectService.SearchProjects:output_type -> bytebase.v1.SearchProjectsResponse
-	15, // 36: bytebase.v1.ProjectService.CreateProject:output_type -> bytebase.v1.Project
-	15, // 37: bytebase.v1.ProjectService.UpdateProject:output_type -> bytebase.v1.Project
-	30, // 38: bytebase.v1.ProjectService.DeleteProject:output_type -> google.protobuf.Empty
-	15, // 39: bytebase.v1.ProjectService.UndeleteProject:output_type -> bytebase.v1.Project
-	30, // 40: bytebase.v1.ProjectService.BatchDeleteProjects:output_type -> google.protobuf.Empty
-	27, // 41: bytebase.v1.ProjectService.GetIamPolicy:output_type -> bytebase.v1.IamPolicy
-	13, // 42: bytebase.v1.ProjectService.BatchGetIamPolicy:output_type -> bytebase.v1.BatchGetIamPolicyResponse
-	27, // 43: bytebase.v1.ProjectService.SetIamPolicy:output_type -> bytebase.v1.IamPolicy
-	15, // 44: bytebase.v1.ProjectService.AddWebhook:output_type -> bytebase.v1.Project
-	15, // 45: bytebase.v1.ProjectService.UpdateWebhook:output_type -> bytebase.v1.Project
-	15, // 46: bytebase.v1.ProjectService.RemoveWebhook:output_type -> bytebase.v1.Project
-	20, // 47: bytebase.v1.ProjectService.TestWebhook:output_type -> bytebase.v1.TestWebhookResponse
-	33, // [33:48] is the sub-list for method output_type
-	18, // [18:33] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	25, // 10: bytebase.v1.Project.labels:type_name -> bytebase.v1.Project.LabelsEntry
+	21, // 11: bytebase.v1.AddWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
+	21, // 12: bytebase.v1.UpdateWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
+	26, // 13: bytebase.v1.UpdateWebhookRequest.update_mask:type_name -> google.protobuf.FieldMask
+	21, // 14: bytebase.v1.RemoveWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
+	21, // 15: bytebase.v1.TestWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
+	0,  // 16: bytebase.v1.Webhook.type:type_name -> bytebase.v1.Webhook.Type
+	1,  // 17: bytebase.v1.Webhook.notification_types:type_name -> bytebase.v1.Activity.Type
+	28, // 18: bytebase.v1.BatchGetIamPolicyResponse.PolicyResult.policy:type_name -> bytebase.v1.IamPolicy
+	2,  // 19: bytebase.v1.ProjectService.GetProject:input_type -> bytebase.v1.GetProjectRequest
+	3,  // 20: bytebase.v1.ProjectService.ListProjects:input_type -> bytebase.v1.ListProjectsRequest
+	5,  // 21: bytebase.v1.ProjectService.SearchProjects:input_type -> bytebase.v1.SearchProjectsRequest
+	7,  // 22: bytebase.v1.ProjectService.CreateProject:input_type -> bytebase.v1.CreateProjectRequest
+	8,  // 23: bytebase.v1.ProjectService.UpdateProject:input_type -> bytebase.v1.UpdateProjectRequest
+	9,  // 24: bytebase.v1.ProjectService.DeleteProject:input_type -> bytebase.v1.DeleteProjectRequest
+	10, // 25: bytebase.v1.ProjectService.UndeleteProject:input_type -> bytebase.v1.UndeleteProjectRequest
+	11, // 26: bytebase.v1.ProjectService.BatchDeleteProjects:input_type -> bytebase.v1.BatchDeleteProjectsRequest
+	29, // 27: bytebase.v1.ProjectService.GetIamPolicy:input_type -> bytebase.v1.GetIamPolicyRequest
+	12, // 28: bytebase.v1.ProjectService.BatchGetIamPolicy:input_type -> bytebase.v1.BatchGetIamPolicyRequest
+	30, // 29: bytebase.v1.ProjectService.SetIamPolicy:input_type -> bytebase.v1.SetIamPolicyRequest
+	16, // 30: bytebase.v1.ProjectService.AddWebhook:input_type -> bytebase.v1.AddWebhookRequest
+	17, // 31: bytebase.v1.ProjectService.UpdateWebhook:input_type -> bytebase.v1.UpdateWebhookRequest
+	18, // 32: bytebase.v1.ProjectService.RemoveWebhook:input_type -> bytebase.v1.RemoveWebhookRequest
+	19, // 33: bytebase.v1.ProjectService.TestWebhook:input_type -> bytebase.v1.TestWebhookRequest
+	15, // 34: bytebase.v1.ProjectService.GetProject:output_type -> bytebase.v1.Project
+	4,  // 35: bytebase.v1.ProjectService.ListProjects:output_type -> bytebase.v1.ListProjectsResponse
+	6,  // 36: bytebase.v1.ProjectService.SearchProjects:output_type -> bytebase.v1.SearchProjectsResponse
+	15, // 37: bytebase.v1.ProjectService.CreateProject:output_type -> bytebase.v1.Project
+	15, // 38: bytebase.v1.ProjectService.UpdateProject:output_type -> bytebase.v1.Project
+	31, // 39: bytebase.v1.ProjectService.DeleteProject:output_type -> google.protobuf.Empty
+	15, // 40: bytebase.v1.ProjectService.UndeleteProject:output_type -> bytebase.v1.Project
+	31, // 41: bytebase.v1.ProjectService.BatchDeleteProjects:output_type -> google.protobuf.Empty
+	28, // 42: bytebase.v1.ProjectService.GetIamPolicy:output_type -> bytebase.v1.IamPolicy
+	13, // 43: bytebase.v1.ProjectService.BatchGetIamPolicy:output_type -> bytebase.v1.BatchGetIamPolicyResponse
+	28, // 44: bytebase.v1.ProjectService.SetIamPolicy:output_type -> bytebase.v1.IamPolicy
+	15, // 45: bytebase.v1.ProjectService.AddWebhook:output_type -> bytebase.v1.Project
+	15, // 46: bytebase.v1.ProjectService.UpdateWebhook:output_type -> bytebase.v1.Project
+	15, // 47: bytebase.v1.ProjectService.RemoveWebhook:output_type -> bytebase.v1.Project
+	20, // 48: bytebase.v1.ProjectService.TestWebhook:output_type -> bytebase.v1.TestWebhookResponse
+	34, // [34:49] is the sub-list for method output_type
+	19, // [19:34] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_v1_project_service_proto_init() }
@@ -1888,7 +1904,7 @@ func file_v1_project_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_project_service_proto_rawDesc), len(file_v1_project_service_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   23,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

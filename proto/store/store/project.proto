@@ -50,4 +50,8 @@ message Project {
 
   // The maximum number of parallel tasks to run during the rollout.
   int32 parallel_tasks_per_rollout = 13;
+
+  // Labels are key-value pairs that can be attached to the project.
+  // For example, { "environment": "production", "team": "backend" }
+  map<string, string> labels = 14;
 }
