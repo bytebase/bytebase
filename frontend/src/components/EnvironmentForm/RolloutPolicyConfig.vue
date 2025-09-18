@@ -9,6 +9,7 @@
           @update:value="updateRoles(rolloutPolicy.roles)"
         />
         <NCheckbox
+          v-if="shouldShowIssueCreator"
           :checked="isIssueCreatorChecked"
           :disabled="disabled"
           @update:checked="toggleIssueRoles($event, VirtualRoleType.CREATOR)"
@@ -18,6 +19,7 @@
           </div>
         </NCheckbox>
         <NCheckbox
+          v-if="shouldShowLastApprover"
           :checked="isIssueLastApproverChecked"
           :disabled="disabled"
           @update:checked="
@@ -76,6 +78,28 @@ const rolloutPolicy = ref<RolloutPolicy>(
       : create(RolloutPolicySchema)
   )
 );
+
+// Check if deprecated options are configured in the original policy
+const originalPolicy = computed(() =>
+  props.policy.policy?.case === "rolloutPolicy"
+    ? props.policy.policy.value
+    : undefined
+);
+
+const shouldShowIssueCreator = computed(() => {
+  // Show if the original policy has this role configured
+  return (
+    originalPolicy.value?.issueRoles?.includes(VirtualRoleType.CREATOR) ?? false
+  );
+});
+
+const shouldShowLastApprover = computed(() => {
+  // Show if the original policy has this role configured
+  return (
+    originalPolicy.value?.issueRoles?.includes(VirtualRoleType.LAST_APPROVER) ??
+    false
+  );
+});
 
 const isAutomaticRolloutChecked = computed(() => {
   return rolloutPolicy.value.automatic;
