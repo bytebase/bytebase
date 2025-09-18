@@ -189,3 +189,33 @@ func (s *LicenseService) RefreshCache(ctx context.Context) {
 	s.mu.Unlock()
 	s.LoadSubscription(ctx)
 }
+
+// GetAuditLogRetentionDays returns the audit log retention period in days for the current plan.
+// Returns:
+//   - 0: No access (FREE plan)
+//   - positive number: Days of retention (TEAM plan = 7 days)
+//   - -1: Unlimited retention (ENTERPRISE plan)
+func (s *LicenseService) GetAuditLogRetentionDays() int {
+	plan := s.GetEffectivePlan()
+	switch plan {
+	case v1pb.PlanType_FREE:
+		return 0
+	case v1pb.PlanType_TEAM:
+		return 7 // 7 days retention for TEAM plan
+	case v1pb.PlanType_ENTERPRISE:
+		return -1 // Unlimited
+	default:
+		return 0
+	}
+}
+
+// GetAuditLogRetentionCutoff returns the earliest timestamp for accessible audit logs.
+// Returns nil for unlimited retention (ENTERPRISE plan) or no access (FREE plan).
+func (s *LicenseService) GetAuditLogRetentionCutoff() *time.Time {
+	days := s.GetAuditLogRetentionDays()
+	if days <= 0 {
+		return nil // Either no access (0) or unlimited (-1)
+	}
+	cutoff := time.Now().AddDate(0, 0, -days)
+	return &cutoff
+}
