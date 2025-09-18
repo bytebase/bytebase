@@ -231,7 +231,7 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 					return errors.Errorf("expected CreatestmtContext for current table %s", currentChunk.Identifier)
 				}
 
-				columnChanges := processColumnChanges(oldASTNode, newASTNode)
+				columnChanges := processColumnChanges(oldASTNode, newASTNode, currentSchema, previousSchema)
 				foreignKeyChanges := processForeignKeyChanges(oldASTNode, newASTNode)
 				checkConstraintChanges := processCheckConstraintChanges(oldASTNode, newASTNode)
 				primaryKeyChanges := processPrimaryKeyChanges(oldASTNode, newASTNode)
@@ -303,10 +303,14 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 
 // processColumnChanges analyzes column changes between old and new table definitions
 // Following the same pattern as processTableChanges: compare text first, then analyze differences
-func processColumnChanges(oldTable, newTable *parser.CreatestmtContext) []*schema.ColumnDiff {
+// If schemas are nil, operates in AST-only mode without metadata extraction
+func processColumnChanges(oldTable, newTable *parser.CreatestmtContext, currentSchema, previousSchema *model.DatabaseSchema) []*schema.ColumnDiff {
 	if oldTable == nil || newTable == nil {
 		return []*schema.ColumnDiff{}
 	}
+
+	// Detect AST-only mode: when both schemas are nil, operate without metadata extraction
+	astOnlyMode := currentSchema == nil && previousSchema == nil
 
 	// Step 1: Extract all column definitions with their AST nodes for text comparison
 	oldColumnMap := extractColumnDefinitionsWithAST(oldTable)
@@ -321,9 +325,12 @@ func processColumnChanges(oldTable, newTable *parser.CreatestmtContext) []*schem
 			currentText := getColumnText(newColumnDef.ASTNode)
 			previousText := getColumnText(oldColumnDef.ASTNode)
 			if currentText != previousText {
-				// Column was modified - only now extract detailed metadata
-				oldColumn := extractColumnMetadata(oldColumnDef.ASTNode)
-				newColumn := extractColumnMetadata(newColumnDef.ASTNode)
+				// Column was modified - extract metadata only if not in AST-only mode
+				var oldColumn, newColumn *storepb.ColumnMetadata
+				if !astOnlyMode {
+					oldColumn = extractColumnMetadata(oldColumnDef.ASTNode)
+					newColumn = extractColumnMetadata(newColumnDef.ASTNode)
+				}
 
 				columnDiffs = append(columnDiffs, &schema.ColumnDiff{
 					Action:     schema.MetadataDiffActionAlter,
@@ -335,8 +342,11 @@ func processColumnChanges(oldTable, newTable *parser.CreatestmtContext) []*schem
 			}
 			// If text is identical, skip - no changes detected
 		} else {
-			// New column - extract metadata only for new columns
-			newColumn := extractColumnMetadata(newColumnDef.ASTNode)
+			// New column - extract metadata only if not in AST-only mode
+			var newColumn *storepb.ColumnMetadata
+			if !astOnlyMode {
+				newColumn = extractColumnMetadata(newColumnDef.ASTNode)
+			}
 			columnDiffs = append(columnDiffs, &schema.ColumnDiff{
 				Action:     schema.MetadataDiffActionCreate,
 				OldColumn:  nil,
@@ -350,8 +360,11 @@ func processColumnChanges(oldTable, newTable *parser.CreatestmtContext) []*schem
 	// Step 3: Process previous columns to find dropped columns
 	for columnName, oldColumnDef := range oldColumnMap {
 		if _, exists := newColumnMap[columnName]; !exists {
-			// Column was dropped - extract metadata only for dropped columns
-			oldColumn := extractColumnMetadata(oldColumnDef.ASTNode)
+			// Column was dropped - extract metadata only if not in AST-only mode
+			var oldColumn *storepb.ColumnMetadata
+			if !astOnlyMode {
+				oldColumn = extractColumnMetadata(oldColumnDef.ASTNode)
+			}
 			columnDiffs = append(columnDiffs, &schema.ColumnDiff{
 				Action:     schema.MetadataDiffActionDrop,
 				OldColumn:  oldColumn,
