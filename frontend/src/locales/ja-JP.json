@@ -1144,6 +1144,10 @@
       },
       "view-all": "すべて表示 ({count})"
     },
+    "select-isolation-level": "分離レベルを選択",
+    "isolation-level": {
+      "self": "分離レベル"
+    },
     "options": {
       "self": "オプション",
       "applies-to-all-tasks": "すべてのタスクに適用",
