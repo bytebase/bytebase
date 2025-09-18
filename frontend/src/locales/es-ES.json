@@ -204,6 +204,7 @@
     "info": "Información",
     "minutes": "Minutos",
     "filter-by-name": "Filtrar por nombre",
+    "filter-by-name-or-label": "Filtrar por nombre o etiqueta (ej: labels.environment == \"production\")",
     "search-by-name": "Buscar por nombre",
     "license": "Licencia",
     "view-details": "Ver detalles",

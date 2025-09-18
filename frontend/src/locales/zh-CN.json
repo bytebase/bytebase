@@ -204,6 +204,7 @@
     "info": "信息",
     "minutes": "分钟",
     "filter-by-name": "按名称过滤",
+    "filter-by-name-or-label": "按名称或标签过滤 (例如: labels.environment == \"production\")",
     "search-by-name": "按名称搜索",
     "license": "证书",
     "view-details": "查看详情",

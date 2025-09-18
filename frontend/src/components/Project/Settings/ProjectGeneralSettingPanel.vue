@@ -187,10 +187,13 @@ const validateNewLabel = computed((): string => {
 const sortedLabels = computed(() => {
   return Object.keys(state.labels)
     .sort()
-    .reduce((acc, key) => {
-      acc[key] = state.labels[key];
-      return acc;
-    }, {} as Record<string, string>);
+    .reduce(
+      (acc, key) => {
+        acc[key] = state.labels[key];
+        return acc;
+      },
+      {} as Record<string, string>
+    );
 });
 
 const validateLabelKey = (key: string): boolean => {
