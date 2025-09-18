@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -137,12 +138,12 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		Labels:                     create.Labels,
 	}
 
-	labelsJSON, err := protojson.Marshal(create.Labels)
-	if err != nil {
-		return nil, err
-	}
-	if create.Labels == nil {
-		labelsJSON = []byte("{}")
+	labelsJSON := []byte("{}")
+	if create.Labels != nil {
+		labelsJSON, err = json.Marshal(create.Labels)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if _, err := tx.ExecContext(ctx, `
@@ -280,7 +281,7 @@ func updateProjectImplV2(ctx context.Context, txn *sql.Tx, patch *UpdateProjectM
 		set, args = append(set, fmt.Sprintf("setting = $%d", len(args)+1)), append(args, payload)
 	}
 	if v := patch.Labels; v != nil {
-		labelsJSON, err := protojson.Marshal(v)
+		labelsJSON, err := json.Marshal(*v)
 		if err != nil {
 			return err
 		}
@@ -358,7 +359,7 @@ func (s *Store) listProjectImplV2(ctx context.Context, txn *sql.Tx, find *FindPr
 		projectMessage.Setting = setting
 
 		labels := make(map[string]string)
-		if err := common.ProtojsonUnmarshaler.Unmarshal(labelsJSON, &labels); err != nil {
+		if err := json.Unmarshal(labelsJSON, &labels); err != nil {
 			return nil, err
 		}
 		projectMessage.Labels = labels
