@@ -11961,6 +11961,13 @@ components:
                     type: integer
                     description: The maximum number of parallel tasks to run during the rollout.
                     format: int32
+                labels:
+                    type: object
+                    additionalProperties:
+                        type: string
+                    description: |-
+                        Labels are key-value pairs that can be attached to the project.
+                         For example, { "environment": "production", "team": "backend" }
         Project_ExecutionRetryPolicy:
             type: object
             properties:

@@ -108,8 +108,11 @@ type Project struct {
 	CiSamplingSize int32 `protobuf:"varint,12,opt,name=ci_sampling_size,json=ciSamplingSize,proto3" json:"ci_sampling_size,omitempty"`
 	// The maximum number of parallel tasks to run during the rollout.
 	ParallelTasksPerRollout int32 `protobuf:"varint,13,opt,name=parallel_tasks_per_rollout,json=parallelTasksPerRollout,proto3" json:"parallel_tasks_per_rollout,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	// Labels are key-value pairs that can be attached to the project.
+	// For example, { "environment": "production", "team": "backend" }
+	Labels        map[string]string `protobuf:"bytes,14,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Project) Reset() {
@@ -226,6 +229,13 @@ func (x *Project) GetParallelTasksPerRollout() int32 {
 	return 0
 }
 
+func (x *Project) GetLabels() map[string]string {
+	if x != nil {
+		return x.Labels
+	}
+	return nil
+}
+
 type Project_ExecutionRetryPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The maximum number of retries for the lock timeout issue.
@@ -279,7 +289,7 @@ const file_store_project_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12\x14\n" +
 	"\x05color\x18\x02 \x01(\tR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\xe6\x05\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\xde\x06\n" +
 	"\aProject\x128\n" +
 	"\fissue_labels\x18\x02 \x03(\v2\x15.bytebase.store.LabelR\vissueLabels\x12,\n" +
 	"\x12force_issue_labels\x18\x03 \x01(\bR\x10forceIssueLabels\x124\n" +
@@ -293,9 +303,13 @@ const file_store_project_proto_rawDesc = "" +
 	" \x01(\bR\x11allowSelfApproval\x12b\n" +
 	"\x16execution_retry_policy\x18\v \x01(\v2,.bytebase.store.Project.ExecutionRetryPolicyR\x14executionRetryPolicy\x12(\n" +
 	"\x10ci_sampling_size\x18\f \x01(\x05R\x0eciSamplingSize\x12;\n" +
-	"\x1aparallel_tasks_per_rollout\x18\r \x01(\x05R\x17parallelTasksPerRollout\x1a?\n" +
+	"\x1aparallel_tasks_per_rollout\x18\r \x01(\x05R\x17parallelTasksPerRollout\x12;\n" +
+	"\x06labels\x18\x0e \x03(\v2#.bytebase.store.Project.LabelsEntryR\x06labels\x1a?\n" +
 	"\x14ExecutionRetryPolicy\x12'\n" +
-	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetriesJ\x04\b\x01\x10\x02B\x14Z\x12generated-go/storeb\x06proto3"
+	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetries\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x01\x10\x02B\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
 	file_store_project_proto_rawDescOnce sync.Once
@@ -309,20 +323,22 @@ func file_store_project_proto_rawDescGZIP() []byte {
 	return file_store_project_proto_rawDescData
 }
 
-var file_store_project_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_store_project_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_store_project_proto_goTypes = []any{
 	(*Label)(nil),                        // 0: bytebase.store.Label
 	(*Project)(nil),                      // 1: bytebase.store.Project
 	(*Project_ExecutionRetryPolicy)(nil), // 2: bytebase.store.Project.ExecutionRetryPolicy
+	nil,                                  // 3: bytebase.store.Project.LabelsEntry
 }
 var file_store_project_proto_depIdxs = []int32{
 	0, // 0: bytebase.store.Project.issue_labels:type_name -> bytebase.store.Label
 	2, // 1: bytebase.store.Project.execution_retry_policy:type_name -> bytebase.store.Project.ExecutionRetryPolicy
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	3, // 2: bytebase.store.Project.labels:type_name -> bytebase.store.Project.LabelsEntry
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_store_project_proto_init() }
@@ -336,7 +352,7 @@ func file_store_project_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_project_proto_rawDesc), len(file_store_project_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

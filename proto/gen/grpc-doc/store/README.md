@@ -229,6 +229,7 @@
     - [Label](#bytebase-store-Label)
     - [Project](#bytebase-store-Project)
     - [Project.ExecutionRetryPolicy](#bytebase-store-Project-ExecutionRetryPolicy)
+    - [Project.LabelsEntry](#bytebase-store-Project-LabelsEntry)
   
 - [store/project_webhook.proto](#store_project_webhook-proto)
     - [ProjectWebhookPayload](#bytebase-store-ProjectWebhookPayload)
@@ -3766,6 +3767,7 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | execution_retry_policy | [Project.ExecutionRetryPolicy](#bytebase-store-Project-ExecutionRetryPolicy) |  | Execution retry policy for the task run. |
 | ci_sampling_size | [int32](#int32) |  | The maximum number of databases to sample during CI data validation. Without specification, sampling is disabled, resulting in a full validation. |
 | parallel_tasks_per_rollout | [int32](#int32) |  | The maximum number of parallel tasks to run during the rollout. |
+| labels | [Project.LabelsEntry](#bytebase-store-Project-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the project. For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34;backend&#34; } |
 
 
 
@@ -3781,6 +3783,22 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | maximum_retries | [int32](#int32) |  | The maximum number of retries for the lock timeout issue. |
+
+
+
+
+
+
+<a name="bytebase-store-Project-LabelsEntry"></a>
+
+### Project.LabelsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
 
 
 

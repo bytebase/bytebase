@@ -542,6 +542,14 @@ export declare type Project = Message<"bytebase.v1.Project"> & {
    * @generated from field: int32 parallel_tasks_per_rollout = 24;
    */
   parallelTasksPerRollout: number;
+
+  /**
+   * Labels are key-value pairs that can be attached to the project.
+   * For example, { "environment": "production", "team": "backend" }
+   *
+   * @generated from field: map<string, string> labels = 25;
+   */
+  labels: { [key: string]: string };
 };
 
 /**
