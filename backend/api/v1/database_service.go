@@ -107,6 +107,12 @@ func getVariableAndValueFromExpr(expr celast.Expr) (string, any) {
 		switch arg.Kind() {
 		case celast.IdentKind:
 			variable = arg.AsIdent()
+		case celast.SelectKind:
+			// Handle member selection like "labels.environment"
+			sel := arg.AsSelect()
+			if sel.Operand().Kind() == celast.IdentKind {
+				variable = fmt.Sprintf("%s.%s", sel.Operand().AsIdent(), sel.FieldName())
+			}
 		case celast.LiteralKind:
 			value = arg.AsLiteral().Value()
 		case celast.ListKind:

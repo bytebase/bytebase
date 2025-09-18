@@ -4,7 +4,7 @@
       <AdvancedSearch
         v-model:params="state.params"
         :autofocus="false"
-        :placeholder="$t('common.filter-by-name')"
+        :placeholder="$t('common.filter-by-name-or-label')"
       />
       <NButton
         v-if="hasWorkspacePermissionV2('bb.projects.create')"

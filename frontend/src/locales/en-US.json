@@ -204,6 +204,7 @@
     "info": "Info",
     "minutes": "Minutes",
     "filter-by-name": "Filter by name",
+    "filter-by-name-or-label": "Filter by name or label (e.g., labels.environment == \"production\")",
     "search-by-name": "Search by name",
     "license": "License",
     "view-details": "View details",
@@ -1876,6 +1877,21 @@
         "parallel_tasks_per_rollout": {
           "self": "Parallel tasks per rollout",
           "description": "Control the number of parallel tasks per rollout. Setting this to zero disables any throttling."
+        }
+      },
+      "project-labels": {
+        "self": "Project Labels",
+        "description": "Organize projects with key-value labels (max 64)",
+        "key": "Key",
+        "value": "Value",
+        "add-label": "Add label",
+        "key-placeholder": "environment",
+        "value-placeholder": "production",
+        "validation": {
+          "max-labels": "Maximum 64 labels allowed",
+          "invalid-key": "Key must start with lowercase letter and contain only lowercase letters, numbers, underscores, and dashes (max 63 chars)",
+          "invalid-value": "Value must contain only letters, numbers, underscores, and dashes (max 63 chars)",
+          "duplicate-key": "Label key already exists"
         }
       }
     },

@@ -1877,6 +1877,21 @@
           "self": "每个发布的并行任务数",
           "description": "控制每个发布的并行任务数量。\n将其设置为零，可以禁用任何节流。"
         }
+      },
+      "project-labels": {
+        "self": "项目标签",
+        "description": "用键值标签组织项目（最多64个）",
+        "key": "键",
+        "value": "值",
+        "key-placeholder": "例如：environment",
+        "value-placeholder": "例如：production",
+        "add-label": "添加标签",
+        "validation": {
+          "max-labels": "最多允许64个标签",
+          "invalid-key": "键必须以小写字母开头，长度1-63个字符，仅允许小写字母、数字、连字符、下划线",
+          "invalid-value": "值必须为0-63个字符，仅允许字母、数字、连字符、下划线",
+          "duplicate-key": "标签键已存在"
+        }
       }
     },
     "members": {

@@ -47,6 +47,8 @@ const props = withDefaults(
     selectedProjectNames?: string[];
     // Whether to show selection checkboxes
     showSelection?: boolean;
+    // Whether to show labels column (hidden in dropdowns for cleaner UI)
+    showLabels?: boolean;
   }>(),
   {
     bordered: true,
@@ -54,6 +56,7 @@ const props = withDefaults(
     keyword: undefined,
     selectedProjectNames: () => [],
     showSelection: false,
+    showLabels: true,
   }
 );
 
@@ -135,6 +138,41 @@ const columnList = computed((): ProjectDataTableColumn[] => {
             keyword={props.keyword}
           />
         ),
+      },
+      {
+        key: "labels",
+        title: t("common.labels"),
+        width: 300,
+        ellipsis: true,
+        hide: !props.showLabels,
+        render: (project) => {
+          const labels = project.labels || {};
+          const labelEntries = Object.entries(labels).slice(0, 3); // Show max 3 labels
+          const remainingCount = Object.keys(labels).length - 3;
+
+          if (labelEntries.length === 0) {
+            return null;
+          }
+
+          return (
+            <div class="flex flex-wrap gap-1">
+              {labelEntries.map(([key, value]) => (
+                <span
+                  key={key}
+                  class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800"
+                  title={`${key}: ${value}`}
+                >
+                  {key}: {value}
+                </span>
+              ))}
+              {remainingCount > 0 && (
+                <span class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
+                  +{remainingCount} more
+                </span>
+              )}
+            </div>
+          );
+        },
       },
     ] as ProjectDataTableColumn[]
   ).filter((column) => !column.hide);

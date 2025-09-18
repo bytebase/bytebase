@@ -40,12 +40,25 @@ export interface ProjectFilter {
 
 const getListProjectFilter = (params: ProjectFilter) => {
   const list = [];
-  const search = params.query?.trim().toLowerCase();
+  const search = params.query?.trim();
+
   if (search) {
-    list.push(
-      `(name.matches("${search}") || resource_id.matches("${search}"))`
-    );
+    // Check if the search contains label filtering syntax
+    // Examples: labels.environment == "production" or labels.team == "backend"
+    const labelFilterPattern = /labels\.\w+\s*==\s*"[^"]+"/;
+
+    if (labelFilterPattern.test(search)) {
+      // It's a label filter, pass it directly as a CEL expression
+      list.push(search);
+    } else {
+      // It's a regular name/resource_id search
+      const searchLower = search.toLowerCase();
+      list.push(
+        `(name.matches("${searchLower}") || resource_id.matches("${searchLower}"))`
+      );
+    }
   }
+
   if (params.excludeDefault) {
     list.push("exclude_default == true");
   }
