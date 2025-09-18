@@ -487,6 +487,28 @@ const (
 	TransactionModeUnspecified TransactionMode = ""
 )
 
+// IsolationLevel represents the transaction isolation level.
+type IsolationLevel string
+
+const (
+	// IsolationLevelDefault uses the database's default isolation level.
+	IsolationLevelDefault IsolationLevel = ""
+	// IsolationLevelReadUncommitted allows dirty reads.
+	IsolationLevelReadUncommitted IsolationLevel = "READ UNCOMMITTED"
+	// IsolationLevelReadCommitted prevents dirty reads.
+	IsolationLevelReadCommitted IsolationLevel = "READ COMMITTED"
+	// IsolationLevelRepeatableRead prevents dirty reads and non-repeatable reads.
+	IsolationLevelRepeatableRead IsolationLevel = "REPEATABLE READ"
+	// IsolationLevelSerializable provides the highest isolation level.
+	IsolationLevelSerializable IsolationLevel = "SERIALIZABLE"
+)
+
+// TransactionConfig represents the complete transaction configuration.
+type TransactionConfig struct {
+	Mode      TransactionMode
+	Isolation IsolationLevel
+}
+
 // GetDefaultTransactionMode returns the default transaction mode.
 // All engines default to "on" (transactional) for safety and backward compatibility.
 // Users can explicitly set "-- txn-mode = off" when needed for engines with limited transactional DDL support.

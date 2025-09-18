@@ -288,13 +288,13 @@ func parseVersion(version string) (string, string, error) {
 
 // Execute executes a SQL statement.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	// Parse transaction mode from the script
-	transactionMode, cleanedStatement := base.ParseTransactionMode(statement)
+	// Parse transaction configuration from the script
+	transactionConfig, cleanedStatement := base.ParseTransactionConfig(statement)
 	statement = cleanedStatement
 
 	// Apply default when transaction mode is not specified
-	if transactionMode == common.TransactionModeUnspecified {
-		transactionMode = common.GetDefaultTransactionMode()
+	if transactionConfig.Mode == common.TransactionModeUnspecified {
+		transactionConfig.Mode = common.GetDefaultTransactionMode()
 	}
 
 	statement, err := mysqlparser.DealWithDelimiter(statement)
@@ -342,15 +342,28 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		originalIndex = []int32{0}
 	}
 
+	// Validate isolation level for MySQL if specified
+	if transactionConfig.Isolation != common.IsolationLevelDefault {
+		validLevels := map[common.IsolationLevel]bool{
+			common.IsolationLevelReadUncommitted: true,
+			common.IsolationLevelReadCommitted:   true,
+			common.IsolationLevelRepeatableRead:  true,
+			common.IsolationLevelSerializable:    true,
+		}
+		if !validLevels[transactionConfig.Isolation] {
+			return 0, errors.Errorf("invalid isolation level for MySQL: %s. Supported levels: READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ, SERIALIZABLE", transactionConfig.Isolation)
+		}
+	}
+
 	// Execute based on transaction mode
-	if transactionMode == common.TransactionModeOff {
+	if transactionConfig.Mode == common.TransactionModeOff {
 		return d.executeInAutoCommitMode(ctx, conn, commands, originalIndex, opts, connectionID)
 	}
-	return d.executeInTransactionMode(ctx, conn, commands, originalIndex, opts, connectionID)
+	return d.executeInTransactionMode(ctx, conn, commands, originalIndex, opts, connectionID, transactionConfig.Isolation)
 }
 
 // executeInTransactionMode executes statements within a single transaction
-func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, commands []base.SingleSQL, originalIndex []int32, opts db.ExecuteOptions, connectionID string) (int64, error) {
+func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, commands []base.SingleSQL, originalIndex []int32, opts db.ExecuteOptions, connectionID string, isolationLevel common.IsolationLevel) (int64, error) {
 	var totalRowsAffected int64
 
 	if err := conn.Raw(func(driverConn any) error {
@@ -358,7 +371,14 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, c
 		exer := driverConn.(driver.ExecerContext)
 		//nolint
 		txer := driverConn.(driver.ConnBeginTx)
-		tx, err := txer.BeginTx(ctx, driver.TxOptions{})
+
+		// Set isolation level if specified
+		txOptions := driver.TxOptions{}
+		if isolationLevel != common.IsolationLevelDefault {
+			txOptions.Isolation = driver.IsolationLevel(base.ConvertToSQLIsolation(isolationLevel))
+		}
+
+		tx, err := txer.BeginTx(ctx, txOptions)
 		if err != nil {
 			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
 			return err

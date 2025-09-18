@@ -1144,6 +1144,10 @@
       },
       "view-all": "Ver todo ({count})"
     },
+    "select-isolation-level": "Seleccionar nivel de aislamiento",
+    "isolation-level": {
+      "self": "Nivel de Aislamiento"
+    },
     "options": {
       "self": "Opciones",
       "applies-to-all-tasks": "Se aplica a todas las tareas.",

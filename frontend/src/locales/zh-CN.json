@@ -1144,6 +1144,10 @@
       },
       "view-all": "查看全部 ({count})"
     },
+    "select-isolation-level": "选择隔离级别",
+    "isolation-level": {
+      "self": "隔离级别"
+    },
     "options": {
       "self": "配置项",
       "applies-to-all-tasks": "适用于所有任务",

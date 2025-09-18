@@ -4,10 +4,11 @@
       {{ $t("plan.options.self") }}
     </p>
     <div class="w-auto flex flex-col gap-2">
-      <InstanceRoleSection v-if="shouldShowInstanceRoleSection" />
       <TransactionModeSection v-if="shouldShowTransactionModeSection" />
+      <IsolationLevelSection v-if="shouldShowIsolationLevelSection" />
       <GhostSection v-if="shouldShowGhostSection" />
       <PreBackupSection v-if="shouldShowPreBackupSection" />
+      <InstanceRoleSection v-if="shouldShowInstanceRoleSection" />
     </div>
   </div>
 </template>
@@ -21,6 +22,8 @@ import GhostSection from "./GhostSection";
 import { provideGhostSettingContext } from "./GhostSection/context";
 import InstanceRoleSection from "./InstanceRoleSection";
 import { provideInstanceRoleSettingContext } from "./InstanceRoleSection/context";
+import IsolationLevelSection from "./IsolationLevelSection";
+import { provideIsolationLevelSettingContext } from "./IsolationLevelSection/context";
 import PreBackupSection from "./PreBackupSection";
 import { providePreBackupSettingContext } from "./PreBackupSection/context";
 import TransactionModeSection from "./TransactionModeSection";
@@ -56,6 +59,19 @@ const {
   readonly,
 });
 
+const {
+  shouldShow: shouldShowIsolationLevelSection,
+  events: isolationLevelEvents,
+} = provideIsolationLevelSettingContext({
+  project,
+  plan,
+  selectedSpec,
+  isCreating,
+  issue,
+  rollout,
+  readonly,
+});
+
 const { shouldShow: shouldShowGhostSection, events: ghostEvents } =
   provideGhostSettingContext({
     project,
@@ -81,6 +97,7 @@ const { shouldShow: shouldShowPreBackupSection, events: preBackupEvents } =
 const shouldShow = computed(() => {
   return (
     shouldShowTransactionModeSection.value ||
+    shouldShowIsolationLevelSection.value ||
     shouldShowInstanceRoleSection.value ||
     shouldShowGhostSection.value ||
     shouldShowPreBackupSection.value
@@ -94,6 +111,12 @@ transactionModeEvents.on("update", () => {
 });
 
 instanceRoleEvents.on("update", () => {
+  events.emit("status-changed", {
+    eager: true,
+  });
+});
+
+isolationLevelEvents.on("update", () => {
   events.emit("status-changed", {
     eager: true,
   });

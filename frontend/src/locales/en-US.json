@@ -1144,6 +1144,10 @@
       },
       "view-all": "View all ({count})"
     },
+    "select-isolation-level": "Select isolation level",
+    "isolation-level": {
+      "self": "Isolation Level"
+    },
     "options": {
       "self": "Options",
       "applies-to-all-tasks": "Applies to all tasks",

@@ -1144,6 +1144,10 @@
       },
       "view-all": "Xem tất cả ({count})"
     },
+    "select-isolation-level": "Chọn mức độ cô lập",
+    "isolation-level": {
+      "self": "Mức Độ Cô Lập"
+    },
     "options": {
       "self": "Tùy chọn",
       "applies-to-all-tasks": "Áp dụng cho tất cả các nhiệm vụ",
