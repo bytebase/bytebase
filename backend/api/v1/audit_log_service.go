@@ -47,6 +47,12 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *connect.
 		return nil, err
 	}
 
+	// Apply retention-based filtering based on the plan
+	retentionCutoff := s.licenseService.GetAuditLogRetentionCutoff()
+	if retentionCutoff != nil {
+		filter = s.applyRetentionFilter(filter, retentionCutoff)
+	}
+
 	orderByKeys, err := getSearchAuditLogsOrderByKeys(request.Msg.OrderBy)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get order by keys"))
@@ -350,4 +356,24 @@ func (s *AuditLogService) getUserByIdentifier(ctx context.Context, identifier st
 		return nil, errors.Errorf("cannot found user %s", email)
 	}
 	return user, nil
+}
+
+// applyRetentionFilter merges retention-based filtering with user-provided filters.
+func (*AuditLogService) applyRetentionFilter(userFilter *store.ListResourceFilter, cutoff *time.Time) *store.ListResourceFilter {
+	if cutoff == nil {
+		return userFilter
+	}
+
+	if userFilter == nil {
+		return &store.ListResourceFilter{
+			Where: "(created_at >= $1)",
+			Args:  []any{*cutoff},
+		}
+	}
+
+	// Combine with existing filter using AND
+	return &store.ListResourceFilter{
+		Where: fmt.Sprintf("(%s) AND (created_at >= $%d)", userFilter.Where, len(userFilter.Args)+1),
+		Args:  append(userFilter.Args, *cutoff),
+	}
 }
