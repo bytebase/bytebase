@@ -357,10 +357,15 @@ func addNewSchemaObjects(diff *MetadataDiff, schemaName string, schema *model.Sc
 	// Add all functions
 	for _, function := range schema.ListFunctions() {
 		if !function.GetProto().GetSkipDump() {
+			// Use signature if available, otherwise fall back to name
+			functionName := function.GetProto().Signature
+			if functionName == "" {
+				functionName = function.GetProto().Name
+			}
 			diff.FunctionChanges = append(diff.FunctionChanges, &FunctionDiff{
 				Action:       MetadataDiffActionCreate,
 				SchemaName:   schemaName,
-				FunctionName: function.GetProto().Name,
+				FunctionName: functionName,
 				NewFunction:  function.GetProto(),
 			})
 		}
@@ -1631,10 +1636,15 @@ func compareFunctions(engine storepb.Engine, diff *MetadataDiff, schemaName stri
 	// Check for dropped functions
 	for sig, oldFunc := range oldFuncsBySignature {
 		if _, exists := newFuncsBySignature[sig]; !exists {
+			// Use signature if available, otherwise fall back to name
+			functionName := oldFunc.GetProto().Signature
+			if functionName == "" {
+				functionName = oldFunc.GetProto().Name
+			}
 			diff.FunctionChanges = append(diff.FunctionChanges, &FunctionDiff{
 				Action:       MetadataDiffActionDrop,
 				SchemaName:   schemaName,
-				FunctionName: oldFunc.GetProto().Name,
+				FunctionName: functionName,
 				OldFunction:  oldFunc.GetProto(),
 			})
 		}
@@ -1644,10 +1654,15 @@ func compareFunctions(engine storepb.Engine, diff *MetadataDiff, schemaName stri
 	for sig, newFunc := range newFuncsBySignature {
 		oldFunc, exists := oldFuncsBySignature[sig]
 		if !exists {
+			// Use signature if available, otherwise fall back to name
+			functionName := newFunc.GetProto().Signature
+			if functionName == "" {
+				functionName = newFunc.GetProto().Name
+			}
 			diff.FunctionChanges = append(diff.FunctionChanges, &FunctionDiff{
 				Action:       MetadataDiffActionCreate,
 				SchemaName:   schemaName,
-				FunctionName: newFunc.GetProto().Name,
+				FunctionName: functionName,
 				NewFunction:  newFunc.GetProto(),
 			})
 		} else {
@@ -1661,10 +1676,15 @@ func compareFunctions(engine storepb.Engine, diff *MetadataDiff, schemaName stri
 			// Determine the action based on the comparison result
 			if comparison.CanUseAlterFunction {
 				// Use ALTER FUNCTION for body-only changes
+				// Use signature if available, otherwise fall back to name
+				functionName := oldFunc.GetProto().Signature
+				if functionName == "" {
+					functionName = oldFunc.GetProto().Name
+				}
 				diff.FunctionChanges = append(diff.FunctionChanges, &FunctionDiff{
 					Action:              MetadataDiffActionAlter,
 					SchemaName:          schemaName,
-					FunctionName:        oldFunc.GetProto().Name,
+					FunctionName:        functionName,
 					OldFunction:         oldFunc.GetProto(),
 					NewFunction:         newFunc.GetProto(),
 					SignatureChanged:    comparison.SignatureChanged,
@@ -1675,10 +1695,20 @@ func compareFunctions(engine storepb.Engine, diff *MetadataDiff, schemaName stri
 				})
 			} else {
 				// Use DROP and CREATE for signature changes
+				// Use signature if available, otherwise fall back to name for DROP
+				oldFunctionName := oldFunc.GetProto().Signature
+				if oldFunctionName == "" {
+					oldFunctionName = oldFunc.GetProto().Name
+				}
+				// Use signature if available, otherwise fall back to name for CREATE
+				newFunctionName := newFunc.GetProto().Signature
+				if newFunctionName == "" {
+					newFunctionName = newFunc.GetProto().Name
+				}
 				diff.FunctionChanges = append(diff.FunctionChanges, &FunctionDiff{
 					Action:              MetadataDiffActionDrop,
 					SchemaName:          schemaName,
-					FunctionName:        oldFunc.GetProto().Name,
+					FunctionName:        oldFunctionName,
 					OldFunction:         oldFunc.GetProto(),
 					SignatureChanged:    comparison.SignatureChanged,
 					BodyChanged:         comparison.BodyChanged,
@@ -1689,7 +1719,7 @@ func compareFunctions(engine storepb.Engine, diff *MetadataDiff, schemaName stri
 				diff.FunctionChanges = append(diff.FunctionChanges, &FunctionDiff{
 					Action:              MetadataDiffActionCreate,
 					SchemaName:          schemaName,
-					FunctionName:        newFunc.GetProto().Name,
+					FunctionName:        newFunctionName,
 					NewFunction:         newFunc.GetProto(),
 					SignatureChanged:    comparison.SignatureChanged,
 					BodyChanged:         comparison.BodyChanged,
