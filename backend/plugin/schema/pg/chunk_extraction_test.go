@@ -58,7 +58,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;`,
 			expectedResults: map[string]string{
-				"FUNCTION:get_user_count": `CREATE FUNCTION get_user_count() RETURNS INTEGER AS $$
+				"FUNCTION:get_user_count()": `CREATE FUNCTION get_user_count() RETURNS INTEGER AS $$
 BEGIN
     RETURN (SELECT COUNT(*) FROM users);
 END;
@@ -107,7 +107,7 @@ SELECT id, name, price
 FROM products
 WHERE price > 0`,
 				"INDEX:idx_products_price": `CREATE INDEX idx_products_price ON products(price)`,
-				"FUNCTION:calculate_discount": `CREATE FUNCTION calculate_discount(amount DECIMAL) RETURNS DECIMAL AS $$
+				"FUNCTION:calculate_discount(amount numeric)": `CREATE FUNCTION calculate_discount(amount DECIMAL) RETURNS DECIMAL AS $$
 BEGIN
     RETURN amount * 0.9;
 END;

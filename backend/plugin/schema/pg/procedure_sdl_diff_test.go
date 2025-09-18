@@ -66,7 +66,7 @@ func TestProcedureSDLDiff(t *testing.T) {
 			expectedActions:         []schema.MetadataDiffAction{schema.MetadataDiffActionDrop},
 		},
 		{
-			name: "Modify procedure (drop and recreate)",
+			name: "Modify procedure (CREATE OR REPLACE)",
 			previousSDL: `
 				CREATE TABLE logs (
 					id SERIAL PRIMARY KEY,
@@ -97,8 +97,8 @@ func TestProcedureSDLDiff(t *testing.T) {
 				END;
 				$$;
 			`,
-			expectedFunctionChanges: 2, // Drop + Create
-			expectedActions:         []schema.MetadataDiffAction{schema.MetadataDiffActionDrop, schema.MetadataDiffActionCreate},
+			expectedFunctionChanges: 1, // ALTER only
+			expectedActions:         []schema.MetadataDiffAction{schema.MetadataDiffActionAlter},
 		},
 		{
 			name: "Mixed functions and procedures",
@@ -219,6 +219,11 @@ func TestProcedureSDLDiff(t *testing.T) {
 						"Function diff %d should have OldASTNode for DROP action", i)
 					assert.Nil(t, funcDiff.NewASTNode,
 						"Function diff %d should not have NewASTNode for DROP action", i)
+				case schema.MetadataDiffActionAlter:
+					assert.NotNil(t, funcDiff.OldASTNode,
+						"Function diff %d should have OldASTNode for ALTER action", i)
+					assert.NotNil(t, funcDiff.NewASTNode,
+						"Function diff %d should have NewASTNode for ALTER action", i)
 				default:
 					t.Errorf("Unexpected action %v for function diff %d", funcDiff.Action, i)
 				}
