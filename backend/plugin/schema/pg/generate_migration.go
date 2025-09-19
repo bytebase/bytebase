@@ -299,10 +299,18 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 				// Drop indexes
 				for _, indexDiff := range tableDiff.IndexChanges {
 					if indexDiff.Action == schema.MetadataDiffActionDrop {
-						if indexDiff.OldIndex.IsConstraint {
-							writeDropConstraint(buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.OldIndex.Name)
-						} else {
-							writeDropIndex(buf, tableDiff.SchemaName, indexDiff.OldIndex.Name)
+						if indexDiff.OldIndex != nil {
+							// Metadata mode: use index metadata
+							if indexDiff.OldIndex.IsConstraint {
+								writeDropConstraint(buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.OldIndex.Name)
+							} else {
+								writeDropIndex(buf, tableDiff.SchemaName, indexDiff.OldIndex.Name)
+							}
+						} else if indexDiff.OldASTNode != nil {
+							// AST-only mode: extract from AST node
+							if indexAST, ok := indexDiff.OldASTNode.(*pgparser.IndexstmtContext); ok {
+								writeDropIndexFromAST(buf, tableDiff.SchemaName, indexAST)
+							}
 						}
 					}
 				}
@@ -404,10 +412,18 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 				// Drop indexes
 				for _, indexDiff := range tableDiff.IndexChanges {
 					if indexDiff.Action == schema.MetadataDiffActionDrop {
-						if indexDiff.OldIndex.IsConstraint {
-							writeDropConstraint(buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.OldIndex.Name)
-						} else {
-							writeDropIndex(buf, tableDiff.SchemaName, indexDiff.OldIndex.Name)
+						if indexDiff.OldIndex != nil {
+							// Metadata mode: use index metadata
+							if indexDiff.OldIndex.IsConstraint {
+								writeDropConstraint(buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.OldIndex.Name)
+							} else {
+								writeDropIndex(buf, tableDiff.SchemaName, indexDiff.OldIndex.Name)
+							}
+						} else if indexDiff.OldASTNode != nil {
+							// AST-only mode: extract from AST node
+							if indexAST, ok := indexDiff.OldASTNode.(*pgparser.IndexstmtContext); ok {
+								writeDropIndexFromAST(buf, tableDiff.SchemaName, indexAST)
+							}
 						}
 					}
 				}
@@ -1116,15 +1132,26 @@ func generateAlterTableWithOptions(tableDiff *schema.TableDiff, includeColumnAdd
 	// Add indexes
 	for _, indexDiff := range tableDiff.IndexChanges {
 		if indexDiff.Action == schema.MetadataDiffActionCreate {
-			if indexDiff.NewIndex.IsConstraint {
-				// Add constraint (primary key or unique constraint)
-				if indexDiff.NewIndex.Primary {
-					writeMigrationPrimaryKey(&buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
-				} else if indexDiff.NewIndex.Unique {
-					writeMigrationUniqueKey(&buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
+			if indexDiff.NewIndex != nil {
+				// Metadata mode: use index metadata
+				if indexDiff.NewIndex.IsConstraint {
+					// Add constraint (primary key or unique constraint)
+					if indexDiff.NewIndex.Primary {
+						writeMigrationPrimaryKey(&buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
+					} else if indexDiff.NewIndex.Unique {
+						writeMigrationUniqueKey(&buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
+					}
+				} else {
+					writeMigrationIndex(&buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
 				}
-			} else {
-				writeMigrationIndex(&buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
+			} else if indexDiff.NewASTNode != nil {
+				// AST-only mode: extract from AST node
+				if indexAST, ok := indexDiff.NewASTNode.(*pgparser.IndexstmtContext); ok {
+					if err := writeCreateIndexFromAST(&buf, indexAST); err != nil {
+						// If AST extraction fails, log error but continue (non-fatal)
+						_, _ = buf.WriteString(fmt.Sprintf("-- Error creating index: %v\n", err))
+					}
+				}
 			}
 		}
 	}
@@ -3362,4 +3389,66 @@ func writeAddPrimaryKeyFromAST(out *strings.Builder, schema, table string, const
 	}
 
 	return errors.New("could not extract PRIMARY KEY constraint from AST node")
+}
+
+// Index helper functions for AST-only mode
+
+// extractIndexNameFromAST extracts index name from standalone CREATE INDEX AST node
+func extractIndexNameFromAST(indexAST *pgparser.IndexstmtContext) string {
+	if indexAST == nil {
+		return ""
+	}
+
+	if indexAST.Name() != nil {
+		return pgpluginparser.NormalizePostgreSQLName(indexAST.Name())
+	}
+
+	return ""
+}
+
+// writeDropIndexFromAST drops an index using AST node
+func writeDropIndexFromAST(out *strings.Builder, schema string, indexAST *pgparser.IndexstmtContext) {
+	indexName := extractIndexNameFromAST(indexAST)
+	if indexName == "" {
+		// If we can't extract a name, use a fallback
+		indexName = "unknown_index"
+	}
+	writeDropIndex(out, schema, indexName)
+}
+
+// writeCreateIndexFromAST creates an index using AST node
+func writeCreateIndexFromAST(out *strings.Builder, indexAST *pgparser.IndexstmtContext) error {
+	if indexAST == nil {
+		return errors.New("index AST node is nil")
+	}
+
+	// Extract the original SQL text from the AST node
+	var indexSQL string
+
+	// Try to get text using token stream first
+	if tokenStream := indexAST.GetParser().GetTokenStream(); tokenStream != nil {
+		start := indexAST.GetStart()
+		stop := indexAST.GetStop()
+		if start != nil && stop != nil {
+			indexSQL = tokenStream.GetTextFromTokens(start, stop)
+		}
+	}
+
+	// Fallback to GetText() if token stream approach failed
+	if indexSQL == "" {
+		indexSQL = indexAST.GetText()
+	}
+
+	if indexSQL == "" {
+		return errors.New("could not extract index SQL from AST node")
+	}
+
+	// Write the index SQL
+	_, _ = out.WriteString(indexSQL)
+	if !strings.HasSuffix(strings.TrimSpace(indexSQL), ";") {
+		_, _ = out.WriteString(";")
+	}
+	_, _ = out.WriteString("\n")
+
+	return nil
 }
