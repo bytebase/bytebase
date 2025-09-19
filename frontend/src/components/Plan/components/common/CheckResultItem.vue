@@ -50,7 +50,7 @@ const props = defineProps<{
   position?: CheckResultPosition;
   affectedRows?: bigint;
   code?: number;
-  reportType?: "sqlReviewReport" | "sqlSummaryReport" | string;
+  reportType?: "sqlReviewReport" | "sqlSummaryReport";
 }>();
 
 const statusIcon = computed(() => {
