@@ -89,6 +89,14 @@ export declare type UpdateActuatorInfoRequest = Message<"bytebase.v1.UpdateActua
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */
   updateMask?: FieldMask;
+
+  /**
+   * If set to true, and the actuator is not found, a new actuator will be created.
+   * In this situation, `update_mask` is ignored.
+   *
+   * @generated from field: bool allow_missing = 3;
+   */
+  allowMissing: boolean;
 };
 
 /**

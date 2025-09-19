@@ -87,6 +87,13 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the actuator is not found, a new actuator will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -904,6 +911,13 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the identity provider is not found, a new identity provider will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -1125,6 +1139,13 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the instance is not found, a new instance will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -1289,6 +1310,13 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the database is not found, a new database will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -1358,6 +1386,13 @@ paths:
                   required: true
                   schema:
                     type: string
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the database catalog is not found, a new database catalog will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -2938,6 +2973,13 @@ paths:
                   description: Validate only also tests the data source connection.
                   schema:
                     type: boolean
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the data source is not found, a new data source will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -3392,6 +3434,13 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the project is not found, a new project will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -3648,6 +3697,13 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the changelist is not found, a new changelist will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -3865,6 +3921,13 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the database group is not found, a new database group will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -4172,6 +4235,13 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the issue is not found, a new issue will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -4346,6 +4416,13 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the issue comment is not found, a new issue comment will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -4649,6 +4726,13 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the plan is not found, a new plan will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -5243,6 +5327,13 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the release is not found, a new release will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -6109,6 +6200,13 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the sheet is not found, a new sheet will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -6223,6 +6321,13 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the webhook is not found, a new webhook will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -6791,6 +6896,13 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the risk is not found, a new risk will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -7219,6 +7331,14 @@ paths:
                 - SubscriptionService
             description: 'Permissions required: bb.settings.set'
             operationId: SubscriptionService_UpdateSubscription
+            parameters:
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the subscription is not found, a new subscription will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -7452,6 +7572,13 @@ paths:
                 - name: regenerateRecoveryCodes
                   in: query
                   description: The regenerate_recovery_codes flag means to regenerate recovery codes for user.
+                  schema:
+                    type: boolean
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the user is not found, a new user will be created.
+                     In this situation, `update_mask` is ignored.
                   schema:
                     type: boolean
             requestBody:
@@ -7700,6 +7827,13 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the worksheet organizer is not found, a new worksheet organizer will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -14266,6 +14400,11 @@ components:
                     type: string
                     description: The list of fields to update.
                     format: field-mask
+                allowMissing:
+                    type: boolean
+                    description: |-
+                        If set to true, and the database is not found, a new database will be created.
+                         In this situation, `update_mask` is ignored.
         UpdateInstanceRequest:
             required:
                 - instance
@@ -14283,6 +14422,11 @@ components:
                     type: string
                     description: The list of fields to update.
                     format: field-mask
+                allowMissing:
+                    type: boolean
+                    description: |-
+                        If set to true, and the instance is not found, a new instance will be created.
+                         In this situation, `update_mask` is ignored.
         User:
             type: object
             properties:

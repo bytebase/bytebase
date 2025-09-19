@@ -262,6 +262,14 @@ export declare type UpdateIssueRequest = Message<"bytebase.v1.UpdateIssueRequest
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */
   updateMask?: FieldMask;
+
+  /**
+   * If set to true, and the issue is not found, a new issue will be created.
+   * In this situation, `update_mask` is ignored.
+   *
+   * @generated from field: bool allow_missing = 3;
+   */
+  allowMissing: boolean;
 };
 
 /**
@@ -940,6 +948,14 @@ export declare type UpdateIssueCommentRequest = Message<"bytebase.v1.UpdateIssue
    * @generated from field: google.protobuf.FieldMask update_mask = 3;
    */
   updateMask?: FieldMask;
+
+  /**
+   * If set to true, and the issue comment is not found, a new issue comment will be created.
+   * In this situation, `update_mask` is ignored.
+   *
+   * @generated from field: bool allow_missing = 4;
+   */
+  allowMissing: boolean;
 };
 
 /**

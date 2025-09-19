@@ -904,7 +904,10 @@ type UpdateDatabaseRequest struct {
 	// Format: instances/{instance}/databases/{database}
 	Database *Database `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"`
 	// The list of fields to update.
-	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	// If set to true, and the database is not found, a new database will be created.
+	// In this situation, `update_mask` is ignored.
+	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -951,6 +954,13 @@ func (x *UpdateDatabaseRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 		return x.UpdateMask
 	}
 	return nil
+}
+
+func (x *UpdateDatabaseRequest) GetAllowMissing() bool {
+	if x != nil {
+		return x.AllowMissing
+	}
+	return false
 }
 
 type BatchUpdateDatabasesRequest struct {
@@ -5912,11 +5922,12 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\fshow_deleted\x18\x05 \x01(\bR\vshowDeleted\"t\n" +
 	"\x15ListDatabasesResponse\x123\n" +
 	"\tdatabases\x18\x01 \x03(\v2\x15.bytebase.v1.DatabaseR\tdatabases\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8c\x01\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xb1\x01\n" +
 	"\x15UpdateDatabaseRequest\x126\n" +
 	"\bdatabase\x18\x01 \x01(\v2\x15.bytebase.v1.DatabaseB\x03\xe0A\x02R\bdatabase\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"z\n" +
+	"updateMask\x12#\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"z\n" +
 	"\x1bBatchUpdateDatabasesRequest\x12\x16\n" +
 	"\x06parent\x18\x01 \x01(\tR\x06parent\x12C\n" +
 	"\brequests\x18\x02 \x03(\v2\".bytebase.v1.UpdateDatabaseRequestB\x03\xe0A\x02R\brequests\"S\n" +

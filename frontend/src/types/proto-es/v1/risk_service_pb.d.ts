@@ -127,6 +127,14 @@ export declare type UpdateRiskRequest = Message<"bytebase.v1.UpdateRiskRequest">
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */
   updateMask?: FieldMask;
+
+  /**
+   * If set to true, and the risk is not found, a new risk will be created.
+   * In this situation, `update_mask` is ignored.
+   *
+   * @generated from field: bool allow_missing = 3;
+   */
+  allowMissing: boolean;
 };
 
 /**

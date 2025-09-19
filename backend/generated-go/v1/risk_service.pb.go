@@ -299,7 +299,10 @@ type UpdateRiskRequest struct {
 	// Format: risks/{risk}
 	Risk *Risk `protobuf:"bytes,1,opt,name=risk,proto3" json:"risk,omitempty"`
 	// The list of fields to update.
-	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	// If set to true, and the risk is not found, a new risk will be created.
+	// In this situation, `update_mask` is ignored.
+	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -346,6 +349,13 @@ func (x *UpdateRiskRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 		return x.UpdateMask
 	}
 	return nil
+}
+
+func (x *UpdateRiskRequest) GetAllowMissing() bool {
+	if x != nil {
+		return x.AllowMissing
+	}
+	return false
 }
 
 type DeleteRiskRequest struct {
@@ -567,11 +577,12 @@ const file_v1_risk_service_proto_rawDesc = "" +
 	"\x04risk\x18\x01 \x01(\v2\x11.bytebase.v1.RiskB\x03\xe0A\x02R\x04risk\"?\n" +
 	"\x0eGetRiskRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
-	"\x11bytebase.com/RiskR\x04name\"\x81\x01\n" +
+	"\x11bytebase.com/RiskR\x04name\"\xa6\x01\n" +
 	"\x11UpdateRiskRequest\x12*\n" +
 	"\x04risk\x18\x01 \x01(\v2\x11.bytebase.v1.RiskB\x03\xe0A\x02R\x04risk\x12@\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
-	"updateMask\"B\n" +
+	"updateMask\x12#\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"B\n" +
 	"\x11DeleteRiskRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/RiskR\x04name\"\xd9\x02\n" +

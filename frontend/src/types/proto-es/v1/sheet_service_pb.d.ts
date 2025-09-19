@@ -129,6 +129,14 @@ export declare type UpdateSheetRequest = Message<"bytebase.v1.UpdateSheetRequest
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */
   updateMask?: FieldMask;
+
+  /**
+   * If set to true, and the sheet is not found, a new sheet will be created.
+   * In this situation, `update_mask` is ignored.
+   *
+   * @generated from field: bool allow_missing = 3;
+   */
+  allowMissing: boolean;
 };
 
 /**

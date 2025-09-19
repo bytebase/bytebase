@@ -323,6 +323,19 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan %q: %v", req.Plan.Name, err))
 	}
 	if oldPlan == nil {
+		if req.AllowMissing {
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionPlansCreate, user, projectID)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
+			}
+			if !ok {
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionPlansCreate))
+			}
+			return s.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
+				Parent: common.FormatProject(projectID),
+				Plan:   req.Plan,
+			}))
+		}
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %q not found", req.Plan.Name))
 	}
 

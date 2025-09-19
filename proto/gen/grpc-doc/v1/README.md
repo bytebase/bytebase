@@ -1077,6 +1077,7 @@ offset.
 | catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  | The database catalog to update.
 
 The catalog&#39;s `name` field is used to identify the database catalog to update. Format: instances/{instance}/databases/{database}/catalog |
+| allow_missing | [bool](#bool) |  | If set to true, and the database catalog is not found, a new database catalog will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -1751,6 +1752,7 @@ For example: name == &#34;sample instance&#34; name.matches(&#34;sample&#34;) re
 | data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 | validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
+| allow_missing | [bool](#bool) |  | If set to true, and the data source is not found, a new data source will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -1769,6 +1771,7 @@ For example: name == &#34;sample instance&#34; name.matches(&#34;sample&#34;) re
 
 The instance&#39;s `name` field is used to identify the instance to update. Format: instances/{instance} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the instance is not found, a new instance will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -3100,6 +3103,7 @@ TessellationConfig defines tessellation parameters for spatial indexes.
 
 The database&#39;s `name` field is used to identify the database to update. Format: instances/{instance}/databases/{database} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the database is not found, a new database will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -3842,6 +3846,7 @@ When paginating, all other parameters provided to `SearchIssues` must match the 
 | parent | [string](#string) |  | The issue name Format: projects/{project}/issues/{issue} |
 | issue_comment | [IssueComment](#bytebase-v1-IssueComment) |  |  |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the issue comment is not found, a new issue comment will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -3860,6 +3865,7 @@ When paginating, all other parameters provided to `SearchIssues` must match the 
 
 The issue&#39;s `name` field is used to identify the issue to update. Format: projects/{project}/issues/{issue} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the issue is not found, a new issue will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -4977,6 +4983,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
 | regenerate_temp_mfa_secret | [bool](#bool) |  | The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user. This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response. |
 | regenerate_recovery_codes | [bool](#bool) |  | The regenerate_recovery_codes flag means to regenerate recovery codes for user. |
+| allow_missing | [bool](#bool) |  | If set to true, and the user is not found, a new user will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -5193,6 +5200,7 @@ The theme resources.
 | ----- | ---- | ----- | ----------- |
 | actuator | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  | The actuator to update. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the actuator is not found, a new actuator will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -5876,6 +5884,7 @@ When paginating, all other parameters provided to `ListDatabases` must match the
 
 The changelist&#39;s `name` field is used to identify the changelist to update. Format: projects/{project}/changelists/{changelist} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. |
+| allow_missing | [bool](#bool) |  | If set to true, and the changelist is not found, a new changelist will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -6048,6 +6057,7 @@ When paginating, all other parameters provided to `ListDatabaseGroups` must matc
 
 The database group&#39;s `name` field is used to identify the database group to update. Format: projects/{project}/databaseGroups/{databaseGroup} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the database group is not found, a new database group will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -6610,6 +6620,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 The identity provider&#39;s `name` field is used to identify the identity provider to update. Format: idps/{identity_provider} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the identity provider is not found, a new identity provider will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -7584,6 +7595,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &
 
 The plan&#39;s `name` field is used to identify the plan to update. Format: projects/{project}/plans/{plan} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the plan is not found, a new plan will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -8051,6 +8063,7 @@ When paginating, all other parameters provided to `SearchProjects` must match th
 
 The project&#39;s `name` field is used to identify the project to update. Format: projects/{project} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the project is not found, a new project will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -8067,6 +8080,7 @@ The project&#39;s `name` field is used to identify the project to update. Format
 | ----- | ---- | ----- | ----------- |
 | webhook | [Webhook](#bytebase-v1-Webhook) |  | The webhook to modify. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the webhook is not found, a new webhook will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -9103,6 +9117,7 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 | ----- | ---- | ----- | ----------- |
 | release | [Release](#bytebase-v1-Release) |  | The release to update. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. |
+| allow_missing | [bool](#bool) |  | If set to true, and the release is not found, a new release will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -9639,6 +9654,7 @@ When the risk source is REQUEST_ROLE, support following variables: project_id ex
 
 The risk&#39;s `name` field is used to identify the risk to update. Format: risks/{risk} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the risk is not found, a new risk will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -10929,6 +10945,7 @@ Read from `pg_stat_activity`
 
 The sheet&#39;s `name` field is used to identify the sheet to update. Format: projects/{project}/sheets/{sheet} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the sheet. (e.g. `title`, `statement`; *not* `sheet.title` or `sheet.statement`) Only support update the following fields for now: - `title` - `statement` |
+| allow_missing | [bool](#bool) |  | If set to true, and the sheet is not found, a new sheet will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -11050,6 +11067,7 @@ PlanLimitConfig represents a single plan&#39;s configuration
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | license | [string](#string) |  |  |
+| allow_missing | [bool](#bool) |  | If set to true, and the subscription is not found, a new subscription will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -11276,6 +11294,7 @@ When paginating, all other parameters provided to `SearchWorksheets` must match 
 
 The organizer&#39;s `worksheet` field is used to identify the worksheet. Format: worksheets/{worksheet} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the worksheet organizer. Only support update the following fields for now: - `starred` |
+| allow_missing | [bool](#bool) |  | If set to true, and the worksheet organizer is not found, a new worksheet organizer will be created. In this situation, `update_mask` is ignored. |
 
 
 

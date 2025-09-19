@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -19,13 +20,15 @@ import (
 type RiskService struct {
 	v1connect.UnimplementedRiskServiceHandler
 	store          *store.Store
+	iamManager     *iam.Manager
 	licenseService *enterprise.LicenseService
 }
 
 // NewRiskService creates a new RiskService.
-func NewRiskService(store *store.Store, licenseService *enterprise.LicenseService) *RiskService {
+func NewRiskService(store *store.Store, iamManager *iam.Manager, licenseService *enterprise.LicenseService) *RiskService {
 	return &RiskService{
 		store:          store,
+		iamManager:     iamManager,
 		licenseService: licenseService,
 	}
 }
@@ -97,9 +100,35 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *connect.Request[v
 	if request.Msg.UpdateMask == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("update_mask must be set"))
 	}
-	risk, err := s.getRiskByName(ctx, request.Msg.Risk.Name)
+
+	riskID, err := common.GetRiskID(request.Msg.Risk.Name)
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
+	}
+
+	risk, err := s.store.GetRisk(ctx, riskID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get risk"))
+	}
+	if risk == nil {
+		if request.Msg.AllowMissing {
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionRisksCreate, user)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
+			}
+			if !ok {
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionRisksCreate))
+			}
+			return s.CreateRisk(ctx, connect.NewRequest(&v1pb.CreateRiskRequest{
+				Risk: request.Msg.Risk,
+			}))
+		}
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("risk %q not found", request.Msg.Risk.Name))
 	}
 
 	patch := &store.UpdateRiskMessage{}

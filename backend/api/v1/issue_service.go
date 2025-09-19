@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"strings"
 	"time"
@@ -1090,8 +1091,31 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	if req.Msg.UpdateMask == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask must be set"))
 	}
+
 	issue, err := s.getIssueMessage(ctx, req.Msg.Issue.Name)
 	if err != nil {
+		if connect.CodeOf(err) == connect.CodeNotFound && req.Msg.AllowMissing {
+			// When allow_missing is true and issue doesn't exist, create a new one
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionIssuesCreate, user)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
+			}
+			if !ok {
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionIssuesCreate))
+			}
+
+			// Extract project ID from the issue name (format: projects/{project}/issues/{issue})
+			parts := strings.Split(req.Msg.Issue.Name, "/")
+			if len(parts) < 4 || parts[0] != "projects" || parts[2] != "issues" {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid issue name format: %q", req.Msg.Issue.Name))
+			}
+			projectID := parts[1]
+
+			return s.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+				Parent: fmt.Sprintf("projects/%s", projectID),
+				Issue:  req.Msg.Issue,
+			}))
+		}
 		return nil, err
 	}
 
@@ -1434,6 +1458,11 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask is required"))
 	}
 
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
+
 	_, _, issueCommentUID, err := common.GetProjectIDIssueUIDIssueCommentUID(req.Msg.IssueComment.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid comment name %q: %v", req.Msg.IssueComment.Name, err))
@@ -1443,6 +1472,19 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue comment: %v", err))
 	}
 	if issueComment == nil {
+		if req.Msg.AllowMissing {
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionIssueCommentsCreate, user)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
+			}
+			if !ok {
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionIssueCommentsCreate))
+			}
+			return s.CreateIssueComment(ctx, connect.NewRequest(&v1pb.CreateIssueCommentRequest{
+				Parent:       req.Msg.Parent,
+				IssueComment: req.Msg.IssueComment,
+			}))
+		}
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue comment not found"))
 	}
 

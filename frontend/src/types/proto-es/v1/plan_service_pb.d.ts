@@ -237,6 +237,14 @@ export declare type UpdatePlanRequest = Message<"bytebase.v1.UpdatePlanRequest">
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */
   updateMask?: FieldMask;
+
+  /**
+   * If set to true, and the plan is not found, a new plan will be created.
+   * In this situation, `update_mask` is ignored.
+   *
+   * @generated from field: bool allow_missing = 3;
+   */
+  allowMissing: boolean;
 };
 
 /**

@@ -427,9 +427,17 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask must be set"))
 	}
 
+	// Use the helper function to get the database
 	databaseMessage, err := getDatabaseMessage(ctx, s.store, req.Msg.Database.Name)
 	if err != nil {
-		return nil, err
+		// Check if it's a not found error and allow_missing is true
+		if strings.Contains(err.Error(), "not found") && req.Msg.AllowMissing {
+			// Database creation is not supported through UpdateDatabase API.
+			// Databases must be created through the plan and rollout system.
+			return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("database creation is not supported through UpdateDatabase, use plan and rollout instead"))
+		}
+		// For other errors or when allow_missing is false, return the error
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	if databaseMessage.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q was deleted", req.Msg.Database.Name))

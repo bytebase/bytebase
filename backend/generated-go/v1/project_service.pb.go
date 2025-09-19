@@ -570,7 +570,10 @@ type UpdateProjectRequest struct {
 	// Format: projects/{project}
 	Project *Project `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
 	// The list of fields to update.
-	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	// If set to true, and the project is not found, a new project will be created.
+	// In this situation, `update_mask` is ignored.
+	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -617,6 +620,13 @@ func (x *UpdateProjectRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 		return x.UpdateMask
 	}
 	return nil
+}
+
+func (x *UpdateProjectRequest) GetAllowMissing() bool {
+	if x != nil {
+		return x.AllowMissing
+	}
+	return false
 }
 
 type DeleteProjectRequest struct {
@@ -1208,7 +1218,10 @@ type UpdateWebhookRequest struct {
 	// The webhook to modify.
 	Webhook *Webhook `protobuf:"bytes,1,opt,name=webhook,proto3" json:"webhook,omitempty"`
 	// The list of fields to update.
-	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	// If set to true, and the webhook is not found, a new webhook will be created.
+	// In this situation, `update_mask` is ignored.
+	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1255,6 +1268,13 @@ func (x *UpdateWebhookRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 		return x.UpdateMask
 	}
 	return nil
+}
+
+func (x *UpdateWebhookRequest) GetAllowMissing() bool {
+	if x != nil {
+		return x.AllowMissing
+	}
+	return false
 }
 
 type RemoveWebhookRequest struct {
@@ -1666,11 +1686,12 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x14CreateProjectRequest\x123\n" +
 	"\aproject\x18\x01 \x01(\v2\x14.bytebase.v1.ProjectB\x03\xe0A\x02R\aproject\x12\x1d\n" +
 	"\n" +
-	"project_id\x18\x02 \x01(\tR\tprojectId\"\x88\x01\n" +
+	"project_id\x18\x02 \x01(\tR\tprojectId\"\xad\x01\n" +
 	"\x14UpdateProjectRequest\x123\n" +
 	"\aproject\x18\x01 \x01(\v2\x14.bytebase.v1.ProjectB\x03\xe0A\x02R\aproject\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"t\n" +
+	"updateMask\x12#\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"t\n" +
 	"\x14DeleteProjectRequest\x120\n" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x04name\x12\x14\n" +
@@ -1723,11 +1744,12 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x11AddWebhookRequest\x126\n" +
 	"\aproject\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\aproject\x123\n" +
-	"\awebhook\x18\x02 \x01(\v2\x14.bytebase.v1.WebhookB\x03\xe0A\x02R\awebhook\"\x88\x01\n" +
+	"\awebhook\x18\x02 \x01(\v2\x14.bytebase.v1.WebhookB\x03\xe0A\x02R\awebhook\"\xad\x01\n" +
 	"\x14UpdateWebhookRequest\x123\n" +
 	"\awebhook\x18\x01 \x01(\v2\x14.bytebase.v1.WebhookB\x03\xe0A\x02R\awebhook\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"K\n" +
+	"updateMask\x12#\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"K\n" +
 	"\x14RemoveWebhookRequest\x123\n" +
 	"\awebhook\x18\x01 \x01(\v2\x14.bytebase.v1.WebhookB\x03\xe0A\x02R\awebhook\"\x81\x01\n" +
 	"\x12TestWebhookRequest\x126\n" +
