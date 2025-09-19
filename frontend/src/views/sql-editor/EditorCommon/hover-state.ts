@@ -11,7 +11,7 @@ export type HoverStateContext<S> = {
   update: UpdateFn<S>;
 };
 
-export const useHoverStateContext = <S>(key: string) => {
+export const useHoverStateContext = <S>(key: string): HoverStateContext<S> => {
   const KEY = `bb.sql-editor.${key}.hover-state`;
   return inject(KEY)!;
 };

@@ -226,7 +226,7 @@ import {
   BatchSkipTasksRequestSchema,
   BatchCancelTaskRunsRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   Task_Status,
   TaskRun_Status,
