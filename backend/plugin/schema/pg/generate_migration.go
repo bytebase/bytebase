@@ -212,7 +212,15 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 			if tableDiff.Action == schema.MetadataDiffActionAlter {
 				for _, fkDiff := range tableDiff.ForeignKeyChanges {
 					if fkDiff.Action == schema.MetadataDiffActionDrop {
-						writeDropForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fkDiff.OldForeignKey.Name)
+						if fkDiff.OldForeignKey != nil {
+							// Metadata mode: use constraint metadata
+							writeDropForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fkDiff.OldForeignKey.Name)
+						} else if fkDiff.OldASTNode != nil {
+							// AST-only mode: extract from AST node
+							if constraintAST, ok := fkDiff.OldASTNode.(pgparser.ITableconstraintContext); ok {
+								writeDropForeignKeyFromAST(buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST)
+							}
+						}
 					}
 				}
 			}
@@ -262,7 +270,29 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 				// Drop check constraints
 				for _, checkDiff := range tableDiff.CheckConstraintChanges {
 					if checkDiff.Action == schema.MetadataDiffActionDrop {
-						writeDropCheckConstraint(buf, tableDiff.SchemaName, tableDiff.TableName, checkDiff.OldCheckConstraint.Name)
+						if checkDiff.OldCheckConstraint != nil {
+							// Metadata mode: use constraint metadata
+							writeDropCheckConstraint(buf, tableDiff.SchemaName, tableDiff.TableName, checkDiff.OldCheckConstraint.Name)
+						} else if checkDiff.OldASTNode != nil {
+							// AST-only mode: extract from AST node
+							if constraintAST, ok := checkDiff.OldASTNode.(pgparser.ITableconstraintContext); ok {
+								writeDropCheckConstraintFromAST(buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST)
+							}
+						}
+					}
+				}
+				// Drop primary key constraints
+				for _, pkDiff := range tableDiff.PrimaryKeyChanges {
+					if pkDiff.Action == schema.MetadataDiffActionDrop {
+						if pkDiff.OldPrimaryKey != nil {
+							// Metadata mode: use constraint metadata
+							writeDropConstraint(buf, tableDiff.SchemaName, tableDiff.TableName, pkDiff.OldPrimaryKey.Name)
+						} else if pkDiff.OldASTNode != nil {
+							// AST-only mode: extract from AST node
+							if constraintAST, ok := pkDiff.OldASTNode.(pgparser.ITableconstraintContext); ok {
+								writeDropPrimaryKeyFromAST(buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST)
+							}
+						}
 					}
 				}
 
@@ -298,7 +328,15 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 				// Drop foreign keys first
 				for _, fkDiff := range tableDiff.ForeignKeyChanges {
 					if fkDiff.Action == schema.MetadataDiffActionDrop {
-						writeDropForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fkDiff.OldForeignKey.Name)
+						if fkDiff.OldForeignKey != nil {
+							// Metadata mode: use constraint metadata
+							writeDropForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fkDiff.OldForeignKey.Name)
+						} else if fkDiff.OldASTNode != nil {
+							// AST-only mode: extract from AST node
+							if constraintAST, ok := fkDiff.OldASTNode.(pgparser.ITableconstraintContext); ok {
+								writeDropForeignKeyFromAST(buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST)
+							}
+						}
 					}
 				}
 			}
@@ -337,7 +375,29 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 				// Drop check constraints
 				for _, checkDiff := range tableDiff.CheckConstraintChanges {
 					if checkDiff.Action == schema.MetadataDiffActionDrop {
-						writeDropCheckConstraint(buf, tableDiff.SchemaName, tableDiff.TableName, checkDiff.OldCheckConstraint.Name)
+						if checkDiff.OldCheckConstraint != nil {
+							// Metadata mode: use constraint metadata
+							writeDropCheckConstraint(buf, tableDiff.SchemaName, tableDiff.TableName, checkDiff.OldCheckConstraint.Name)
+						} else if checkDiff.OldASTNode != nil {
+							// AST-only mode: extract from AST node
+							if constraintAST, ok := checkDiff.OldASTNode.(pgparser.ITableconstraintContext); ok {
+								writeDropCheckConstraintFromAST(buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST)
+							}
+						}
+					}
+				}
+				// Drop primary key constraints
+				for _, pkDiff := range tableDiff.PrimaryKeyChanges {
+					if pkDiff.Action == schema.MetadataDiffActionDrop {
+						if pkDiff.OldPrimaryKey != nil {
+							// Metadata mode: use constraint metadata
+							writeDropConstraint(buf, tableDiff.SchemaName, tableDiff.TableName, pkDiff.OldPrimaryKey.Name)
+						} else if pkDiff.OldASTNode != nil {
+							// AST-only mode: extract from AST node
+							if constraintAST, ok := pkDiff.OldASTNode.(pgparser.ITableconstraintContext); ok {
+								writeDropPrimaryKeyFromAST(buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST)
+							}
+						}
 					}
 				}
 
@@ -1072,7 +1132,54 @@ func generateAlterTableWithOptions(tableDiff *schema.TableDiff, includeColumnAdd
 	// Add check constraints
 	for _, checkDiff := range tableDiff.CheckConstraintChanges {
 		if checkDiff.Action == schema.MetadataDiffActionCreate {
-			writeAddCheckConstraint(&buf, tableDiff.SchemaName, tableDiff.TableName, checkDiff.NewCheckConstraint)
+			if checkDiff.NewCheckConstraint != nil {
+				// Metadata mode: use constraint metadata
+				writeAddCheckConstraint(&buf, tableDiff.SchemaName, tableDiff.TableName, checkDiff.NewCheckConstraint)
+			} else if checkDiff.NewASTNode != nil {
+				// AST-only mode: extract from AST node
+				if constraintAST, ok := checkDiff.NewASTNode.(pgparser.ITableconstraintContext); ok {
+					if err := writeAddCheckConstraintFromAST(&buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST); err != nil {
+						// If AST extraction fails, log error but continue (non-fatal)
+						_, _ = buf.WriteString(fmt.Sprintf("-- Error adding check constraint: %v\n", err))
+					}
+				}
+			}
+		}
+	}
+
+	// Add unique constraints
+	for _, uniqueDiff := range tableDiff.UniqueConstraintChanges {
+		if uniqueDiff.Action == schema.MetadataDiffActionCreate {
+			if uniqueDiff.NewUniqueConstraint != nil {
+				// Metadata mode: use constraint metadata
+				writeMigrationUniqueKey(&buf, tableDiff.SchemaName, tableDiff.TableName, uniqueDiff.NewUniqueConstraint)
+			} else if uniqueDiff.NewASTNode != nil {
+				// AST-only mode: extract from AST node
+				if constraintAST, ok := uniqueDiff.NewASTNode.(pgparser.ITableconstraintContext); ok {
+					if err := writeAddUniqueConstraintFromAST(&buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST); err != nil {
+						// If AST extraction fails, log error but continue (non-fatal)
+						_, _ = buf.WriteString(fmt.Sprintf("-- Error adding unique constraint: %v\n", err))
+					}
+				}
+			}
+		}
+	}
+
+	// Add primary key constraints
+	for _, pkDiff := range tableDiff.PrimaryKeyChanges {
+		if pkDiff.Action == schema.MetadataDiffActionCreate {
+			if pkDiff.NewPrimaryKey != nil {
+				// Metadata mode: use constraint metadata
+				writeMigrationPrimaryKey(&buf, tableDiff.SchemaName, tableDiff.TableName, pkDiff.NewPrimaryKey)
+			} else if pkDiff.NewASTNode != nil {
+				// AST-only mode: extract from AST node
+				if constraintAST, ok := pkDiff.NewASTNode.(pgparser.ITableconstraintContext); ok {
+					if err := writeAddPrimaryKeyFromAST(&buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST); err != nil {
+						// If AST extraction fails, log error but continue (non-fatal)
+						_, _ = buf.WriteString(fmt.Sprintf("-- Error adding primary key constraint: %v\n", err))
+					}
+				}
+			}
 		}
 	}
 
@@ -1085,8 +1192,19 @@ func generateAlterTableForeignKeys(tableDiff *schema.TableDiff) (string, error) 
 
 	for _, fkDiff := range tableDiff.ForeignKeyChanges {
 		if fkDiff.Action == schema.MetadataDiffActionCreate {
-			if err := writeMigrationForeignKey(&buf, tableDiff.SchemaName, tableDiff.TableName, fkDiff.NewForeignKey); err != nil {
-				return "", err
+			if fkDiff.NewForeignKey != nil {
+				// Metadata mode: use constraint metadata
+				if err := writeMigrationForeignKey(&buf, tableDiff.SchemaName, tableDiff.TableName, fkDiff.NewForeignKey); err != nil {
+					return "", err
+				}
+			} else if fkDiff.NewASTNode != nil {
+				// AST-only mode: extract from AST node
+				if constraintAST, ok := fkDiff.NewASTNode.(pgparser.ITableconstraintContext); ok {
+					if err := writeAddForeignKeyFromAST(&buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST); err != nil {
+						// If AST extraction fails, log error but continue (non-fatal)
+						_, _ = buf.WriteString(fmt.Sprintf("-- Error adding foreign key constraint: %v\n", err))
+					}
+				}
 			}
 		}
 	}
@@ -1363,6 +1481,17 @@ func writeDropCheckConstraint(out *strings.Builder, schema, table, constraint st
 }
 
 func writeDropConstraint(out *strings.Builder, schema, table, constraint string) {
+	_, _ = out.WriteString(`ALTER TABLE "`)
+	_, _ = out.WriteString(schema)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(table)
+	_, _ = out.WriteString(`" DROP CONSTRAINT IF EXISTS "`)
+	_, _ = out.WriteString(constraint)
+	_, _ = out.WriteString(`";`)
+	_, _ = out.WriteString("\n")
+}
+
+func writeDropPrimaryKey(out *strings.Builder, schema, table, constraint string) {
 	_, _ = out.WriteString(`ALTER TABLE "`)
 	_, _ = out.WriteString(schema)
 	_, _ = out.WriteString(`"."`)
@@ -3007,4 +3136,230 @@ func getTextFromAST(ctx antlr.ParseTree) string {
 
 	// Fallback to GetText() if tokens are not available
 	return ctx.GetText()
+}
+
+// extractConstraintNameFromAST extracts constraint name from table constraint AST node
+func extractConstraintNameFromAST(constraintAST pgparser.ITableconstraintContext) string {
+	if constraintAST == nil {
+		return ""
+	}
+
+	if constraintAST.Name() != nil {
+		return pgpluginparser.NormalizePostgreSQLName(constraintAST.Name())
+	}
+
+	// If no explicit name, generate one based on constraint type and content
+	if constraintAST.Constraintelem() != nil {
+		elem := constraintAST.Constraintelem()
+
+		// For CHECK constraints, try to generate a meaningful name
+		if elem.CHECK() != nil {
+			// Extract table name from context if possible, otherwise use a generic name
+			return "check_constraint"
+		}
+
+		// For FOREIGN KEY constraints
+		if elem.FOREIGN() != nil && elem.KEY() != nil {
+			return "foreign_key_constraint"
+		}
+
+		// For UNIQUE constraints
+		if elem.UNIQUE() != nil {
+			return "unique_constraint"
+		}
+
+		// For PRIMARY KEY constraints
+		if elem.PRIMARY() != nil && elem.KEY() != nil {
+			return "primary_key_constraint"
+		}
+	}
+
+	// Fallback: use the full constraint text as identifier
+	return getTextFromAST(constraintAST)
+}
+
+// writeDropCheckConstraintFromAST drops a check constraint using AST node
+func writeDropCheckConstraintFromAST(out *strings.Builder, schema, table string, constraintAST pgparser.ITableconstraintContext) {
+	constraintName := extractConstraintNameFromAST(constraintAST)
+	if constraintName == "" {
+		// If we can't extract a name, use the constraint text as fallback
+		constraintName = getTextFromAST(constraintAST)
+	}
+	writeDropCheckConstraint(out, schema, table, constraintName)
+}
+
+// writeDropForeignKeyFromAST drops a foreign key constraint using AST node
+func writeDropForeignKeyFromAST(out *strings.Builder, schema, table string, constraintAST pgparser.ITableconstraintContext) {
+	constraintName := extractConstraintNameFromAST(constraintAST)
+	if constraintName == "" {
+		// If we can't extract a name, use the constraint text as fallback
+		constraintName = getTextFromAST(constraintAST)
+	}
+	writeDropForeignKey(out, schema, table, constraintName)
+}
+
+// writeDropPrimaryKeyFromAST drops a primary key constraint using AST node
+func writeDropPrimaryKeyFromAST(out *strings.Builder, schema, table string, constraintAST pgparser.ITableconstraintContext) {
+	constraintName := extractConstraintNameFromAST(constraintAST)
+	if constraintName == "" {
+		// If we can't extract a name, generate a default primary key name
+		constraintName = fmt.Sprintf("%s_pkey", table)
+	}
+	writeDropPrimaryKey(out, schema, table, constraintName)
+}
+
+// writeAddCheckConstraintFromAST adds a check constraint using AST node
+func writeAddCheckConstraintFromAST(out *strings.Builder, schema, table string, constraintAST pgparser.ITableconstraintContext) error {
+	if constraintAST == nil {
+		return errors.New("constraint AST node is nil")
+	}
+
+	constraintName := extractConstraintNameFromAST(constraintAST)
+
+	// Extract CHECK expression
+	if constraintAST.Constraintelem() != nil {
+		elem := constraintAST.Constraintelem()
+		if elem.CHECK() != nil && elem.A_expr() != nil {
+			checkExpr := getTextFromAST(elem.A_expr())
+
+			// Generate constraint name if not provided
+			if constraintName == "" || constraintName == "check_constraint" {
+				constraintName = fmt.Sprintf("%s_check", table)
+			}
+
+			_, _ = out.WriteString(`ALTER TABLE "`)
+			_, _ = out.WriteString(schema)
+			_, _ = out.WriteString(`"."`)
+			_, _ = out.WriteString(table)
+			_, _ = out.WriteString(`" ADD CONSTRAINT "`)
+			_, _ = out.WriteString(constraintName)
+			_, _ = out.WriteString(`" CHECK (`)
+			_, _ = out.WriteString(checkExpr)
+			_, _ = out.WriteString(`);`)
+			_, _ = out.WriteString("\n")
+			return nil
+		}
+	}
+
+	return errors.New("could not extract CHECK constraint from AST node")
+}
+
+// writeAddForeignKeyFromAST adds a foreign key constraint using AST node
+func writeAddForeignKeyFromAST(out *strings.Builder, schema, table string, constraintAST pgparser.ITableconstraintContext) error {
+	if constraintAST == nil {
+		return errors.New("constraint AST node is nil")
+	}
+
+	constraintName := extractConstraintNameFromAST(constraintAST)
+
+	// Extract FOREIGN KEY definition
+	if constraintAST.Constraintelem() != nil {
+		elem := constraintAST.Constraintelem()
+		if elem.FOREIGN() != nil && elem.KEY() != nil {
+			// Generate constraint name if not provided
+			if constraintName == "" || constraintName == "foreign_key_constraint" {
+				constraintName = fmt.Sprintf("%s_fkey", table)
+			}
+
+			// Extract the FOREIGN KEY part from the full constraint
+			// This is a simplified approach - we'll use the original constraint text
+			// but replace the constraint name if needed
+			_, _ = out.WriteString(`ALTER TABLE "`)
+			_, _ = out.WriteString(schema)
+			_, _ = out.WriteString(`"."`)
+			_, _ = out.WriteString(table)
+			_, _ = out.WriteString(`" ADD CONSTRAINT "`)
+			_, _ = out.WriteString(constraintName)
+			_, _ = out.WriteString(`" `)
+
+			// Extract just the FOREIGN KEY part (after constraint name)
+			if constraintAST.Constraintelem() != nil {
+				fkElem := constraintAST.Constraintelem()
+				fkText := getTextFromAST(fkElem)
+				_, _ = out.WriteString(fkText)
+			}
+
+			_, _ = out.WriteString(`;`)
+			_, _ = out.WriteString("\n")
+			return nil
+		}
+	}
+
+	return errors.New("could not extract FOREIGN KEY constraint from AST node")
+}
+
+// writeAddUniqueConstraintFromAST adds a unique constraint using AST node
+func writeAddUniqueConstraintFromAST(out *strings.Builder, schema, table string, constraintAST pgparser.ITableconstraintContext) error {
+	if constraintAST == nil {
+		return errors.New("constraint AST node is nil")
+	}
+
+	constraintName := extractConstraintNameFromAST(constraintAST)
+
+	// Extract UNIQUE definition
+	if constraintAST.Constraintelem() != nil {
+		elem := constraintAST.Constraintelem()
+		if elem.UNIQUE() != nil {
+			// Generate constraint name if not provided
+			if constraintName == "" || constraintName == "unique_constraint" {
+				constraintName = fmt.Sprintf("%s_unique", table)
+			}
+
+			_, _ = out.WriteString(`ALTER TABLE "`)
+			_, _ = out.WriteString(schema)
+			_, _ = out.WriteString(`"."`)
+			_, _ = out.WriteString(table)
+			_, _ = out.WriteString(`" ADD CONSTRAINT "`)
+			_, _ = out.WriteString(constraintName)
+			_, _ = out.WriteString(`" `)
+
+			// Extract the UNIQUE part
+			uniqueText := getTextFromAST(elem)
+			_, _ = out.WriteString(uniqueText)
+
+			_, _ = out.WriteString(`;`)
+			_, _ = out.WriteString("\n")
+			return nil
+		}
+	}
+
+	return errors.New("could not extract UNIQUE constraint from AST node")
+}
+
+// writeAddPrimaryKeyFromAST adds a primary key constraint using AST node
+func writeAddPrimaryKeyFromAST(out *strings.Builder, schema, table string, constraintAST pgparser.ITableconstraintContext) error {
+	if constraintAST == nil {
+		return errors.New("constraint AST node is nil")
+	}
+
+	constraintName := extractConstraintNameFromAST(constraintAST)
+
+	// Extract PRIMARY KEY definition
+	if constraintAST.Constraintelem() != nil {
+		elem := constraintAST.Constraintelem()
+		if elem.PRIMARY() != nil && elem.KEY() != nil {
+			// Generate constraint name if not provided
+			if constraintName == "" || constraintName == "primary_key_constraint" {
+				constraintName = fmt.Sprintf("%s_pkey", table)
+			}
+
+			_, _ = out.WriteString(`ALTER TABLE "`)
+			_, _ = out.WriteString(schema)
+			_, _ = out.WriteString(`"."`)
+			_, _ = out.WriteString(table)
+			_, _ = out.WriteString(`" ADD CONSTRAINT "`)
+			_, _ = out.WriteString(constraintName)
+			_, _ = out.WriteString(`" `)
+
+			// Extract the PRIMARY KEY part
+			pkText := getTextFromAST(elem)
+			_, _ = out.WriteString(pkText)
+
+			_, _ = out.WriteString(`;`)
+			_, _ = out.WriteString("\n")
+			return nil
+		}
+	}
+
+	return errors.New("could not extract PRIMARY KEY constraint from AST node")
 }

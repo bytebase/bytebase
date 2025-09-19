@@ -622,24 +622,52 @@ func processForeignKeyChanges(oldTable, newTable *parser.CreatestmtContext) []*s
 	}
 
 	// Step 1: Extract all foreign key definitions with their AST nodes for text comparison
-	oldFKMap := extractForeignKeyDefinitionsWithAST(oldTable)
-	newFKMap := extractForeignKeyDefinitionsWithAST(newTable)
+	oldFKList := extractForeignKeyDefinitionsInOrder(oldTable)
+	newFKList := extractForeignKeyDefinitionsInOrder(newTable)
+
+	// Create maps for quick lookup
+	oldFKMap := make(map[string]*ForeignKeyDefWithAST)
+	for _, def := range oldFKList {
+		oldFKMap[def.Name] = def
+	}
+	newFKMap := make(map[string]*ForeignKeyDefWithAST)
+	for _, def := range newFKList {
+		newFKMap[def.Name] = def
+	}
 
 	var fkDiffs []*schema.ForeignKeyDiff
 
-	// Step 2: Process current foreign keys to find created and modified foreign keys
-	for fkName, newFKDef := range newFKMap {
-		if oldFKDef, exists := oldFKMap[fkName]; exists {
+	// Step 2: Process old foreign keys in reverse order for DROP operations
+	for i := len(oldFKList) - 1; i >= 0; i-- {
+		oldFKDef := oldFKList[i]
+		if newFKDef, exists := newFKMap[oldFKDef.Name]; exists {
 			// FK exists in both - check if modified by comparing text first
 			currentText := getForeignKeyText(newFKDef.ASTNode)
 			previousText := getForeignKeyText(oldFKDef.ASTNode)
 			if currentText != previousText {
 				// FK was modified - store AST nodes only
-				// Drop and recreate for modifications (PostgreSQL pattern)
 				fkDiffs = append(fkDiffs, &schema.ForeignKeyDiff{
 					Action:     schema.MetadataDiffActionDrop,
 					OldASTNode: oldFKDef.ASTNode,
 				})
+			}
+		} else {
+			// Foreign key was dropped - store AST node only
+			fkDiffs = append(fkDiffs, &schema.ForeignKeyDiff{
+				Action:     schema.MetadataDiffActionDrop,
+				OldASTNode: oldFKDef.ASTNode,
+			})
+		}
+	}
+
+	// Step 3: Process new foreign keys in order for CREATE operations
+	for _, newFKDef := range newFKList {
+		if oldFKDef, exists := oldFKMap[newFKDef.Name]; exists {
+			// FK exists in both - check if modified by comparing text first
+			currentText := getForeignKeyText(newFKDef.ASTNode)
+			previousText := getForeignKeyText(oldFKDef.ASTNode)
+			if currentText != previousText {
+				// FK was modified - store AST nodes only
 				fkDiffs = append(fkDiffs, &schema.ForeignKeyDiff{
 					Action:     schema.MetadataDiffActionCreate,
 					NewASTNode: newFKDef.ASTNode,
@@ -655,17 +683,6 @@ func processForeignKeyChanges(oldTable, newTable *parser.CreatestmtContext) []*s
 		}
 	}
 
-	// Step 3: Process old foreign keys to find dropped ones
-	for fkName, oldFKDef := range oldFKMap {
-		if _, exists := newFKMap[fkName]; !exists {
-			// Foreign key was dropped - store AST node only
-			fkDiffs = append(fkDiffs, &schema.ForeignKeyDiff{
-				Action:     schema.MetadataDiffActionDrop,
-				OldASTNode: oldFKDef.ASTNode,
-			})
-		}
-	}
-
 	return fkDiffs
 }
 
@@ -677,14 +694,25 @@ func processCheckConstraintChanges(oldTable, newTable *parser.CreatestmtContext)
 	}
 
 	// Step 1: Extract all check constraint definitions with their AST nodes for text comparison
-	oldCheckMap := extractCheckConstraintDefinitionsWithAST(oldTable)
-	newCheckMap := extractCheckConstraintDefinitionsWithAST(newTable)
+	oldCheckList := extractCheckConstraintDefinitionsInOrder(oldTable)
+	newCheckList := extractCheckConstraintDefinitionsInOrder(newTable)
+
+	// Create maps for quick lookup
+	oldCheckMap := make(map[string]*CheckConstraintDefWithAST)
+	for _, def := range oldCheckList {
+		oldCheckMap[def.Name] = def
+	}
+	newCheckMap := make(map[string]*CheckConstraintDefWithAST)
+	for _, def := range newCheckList {
+		newCheckMap[def.Name] = def
+	}
 
 	var checkDiffs []*schema.CheckConstraintDiff
 
-	// Step 2: Process current check constraints to find created and modified constraints
-	for checkName, newCheckDef := range newCheckMap {
-		if oldCheckDef, exists := oldCheckMap[checkName]; exists {
+	// Step 2: Process old constraints in reverse order for DROP operations
+	for i := len(oldCheckList) - 1; i >= 0; i-- {
+		oldCheckDef := oldCheckList[i]
+		if newCheckDef, exists := newCheckMap[oldCheckDef.Name]; exists {
 			// Check constraint exists in both - check if modified by comparing text first
 			currentText := getCheckConstraintText(newCheckDef.ASTNode)
 			previousText := getCheckConstraintText(oldCheckDef.ASTNode)
@@ -695,6 +723,24 @@ func processCheckConstraintChanges(oldTable, newTable *parser.CreatestmtContext)
 					Action:     schema.MetadataDiffActionDrop,
 					OldASTNode: oldCheckDef.ASTNode,
 				})
+			}
+		} else {
+			// Check constraint was dropped - store AST node only
+			checkDiffs = append(checkDiffs, &schema.CheckConstraintDiff{
+				Action:     schema.MetadataDiffActionDrop,
+				OldASTNode: oldCheckDef.ASTNode,
+			})
+		}
+	}
+
+	// Step 3: Process new constraints in order for CREATE operations
+	for _, newCheckDef := range newCheckList {
+		if oldCheckDef, exists := oldCheckMap[newCheckDef.Name]; exists {
+			// Check constraint exists in both - check if modified by comparing text first
+			currentText := getCheckConstraintText(newCheckDef.ASTNode)
+			previousText := getCheckConstraintText(oldCheckDef.ASTNode)
+			if currentText != previousText {
+				// Check constraint was modified - store AST nodes only
 				checkDiffs = append(checkDiffs, &schema.CheckConstraintDiff{
 					Action:     schema.MetadataDiffActionCreate,
 					NewASTNode: newCheckDef.ASTNode,
@@ -706,17 +752,6 @@ func processCheckConstraintChanges(oldTable, newTable *parser.CreatestmtContext)
 			checkDiffs = append(checkDiffs, &schema.CheckConstraintDiff{
 				Action:     schema.MetadataDiffActionCreate,
 				NewASTNode: newCheckDef.ASTNode,
-			})
-		}
-	}
-
-	// Step 3: Process old check constraints to find dropped ones
-	for checkName, oldCheckDef := range oldCheckMap {
-		if _, exists := newCheckMap[checkName]; !exists {
-			// Check constraint was dropped - store AST node only
-			checkDiffs = append(checkDiffs, &schema.CheckConstraintDiff{
-				Action:     schema.MetadataDiffActionDrop,
-				OldASTNode: oldCheckDef.ASTNode,
 			})
 		}
 	}
@@ -783,14 +818,25 @@ func processUniqueConstraintChanges(oldTable, newTable *parser.CreatestmtContext
 	}
 
 	// Step 1: Extract all unique constraint definitions with their AST nodes for text comparison
-	oldUKMap := extractUniqueConstraintDefinitionsWithAST(oldTable)
-	newUKMap := extractUniqueConstraintDefinitionsWithAST(newTable)
+	oldUKList := extractUniqueConstraintDefinitionsInOrder(oldTable)
+	newUKList := extractUniqueConstraintDefinitionsInOrder(newTable)
+
+	// Create maps for quick lookup
+	oldUKMap := make(map[string]*IndexDefWithAST)
+	for _, def := range oldUKList {
+		oldUKMap[def.Name] = def
+	}
+	newUKMap := make(map[string]*IndexDefWithAST)
+	for _, def := range newUKList {
+		newUKMap[def.Name] = def
+	}
 
 	var ukDiffs []*schema.UniqueConstraintDiff
 
-	// Step 2: Process current unique constraints to find created and modified unique constraints
-	for ukName, newUKDef := range newUKMap {
-		if oldUKDef, exists := oldUKMap[ukName]; exists {
+	// Step 2: Process old constraints in reverse order for DROP operations
+	for i := len(oldUKList) - 1; i >= 0; i-- {
+		oldUKDef := oldUKList[i]
+		if newUKDef, exists := newUKMap[oldUKDef.Name]; exists {
 			// UK exists in both - check if modified by comparing text first
 			currentText := getIndexText(newUKDef.ASTNode)
 			previousText := getIndexText(oldUKDef.ASTNode)
@@ -800,11 +846,30 @@ func processUniqueConstraintChanges(oldTable, newTable *parser.CreatestmtContext
 					Action:     schema.MetadataDiffActionDrop,
 					OldASTNode: oldUKDef.ASTNode,
 				})
+			}
+		} else {
+			// UK was dropped - store AST node only
+			ukDiffs = append(ukDiffs, &schema.UniqueConstraintDiff{
+				Action:     schema.MetadataDiffActionDrop,
+				OldASTNode: oldUKDef.ASTNode,
+			})
+		}
+	}
+
+	// Step 3: Process new constraints in order for CREATE operations
+	for _, newUKDef := range newUKList {
+		if oldUKDef, exists := oldUKMap[newUKDef.Name]; exists {
+			// UK exists in both - check if modified by comparing text first
+			currentText := getIndexText(newUKDef.ASTNode)
+			previousText := getIndexText(oldUKDef.ASTNode)
+			if currentText != previousText {
+				// UK was modified - store AST nodes only
 				ukDiffs = append(ukDiffs, &schema.UniqueConstraintDiff{
 					Action:     schema.MetadataDiffActionCreate,
 					NewASTNode: newUKDef.ASTNode,
 				})
 			}
+			// If text is identical, skip - no changes detected
 		} else {
 			// New UK - store AST node only
 			ukDiffs = append(ukDiffs, &schema.UniqueConstraintDiff{
@@ -814,31 +879,71 @@ func processUniqueConstraintChanges(oldTable, newTable *parser.CreatestmtContext
 		}
 	}
 
-	// Step 3: Process old unique constraints to find dropped ones
-	for ukName, oldUKDef := range oldUKMap {
-		if _, exists := newUKMap[ukName]; !exists {
-			// UK was dropped - store AST node only
-			ukDiffs = append(ukDiffs, &schema.UniqueConstraintDiff{
-				Action:     schema.MetadataDiffActionDrop,
-				OldASTNode: oldUKDef.ASTNode,
-			})
-		}
-	}
-
 	return ukDiffs
 }
 
-// extractForeignKeyDefinitionsWithAST extracts foreign key constraints with their AST nodes for text comparison
-func extractForeignKeyDefinitionsWithAST(createStmt *parser.CreatestmtContext) map[string]*ForeignKeyDefWithAST {
-	fkMap := make(map[string]*ForeignKeyDefWithAST)
+// extractUniqueConstraintDefinitionsInOrder extracts unique constraints with their AST nodes in SQL order
+func extractUniqueConstraintDefinitionsInOrder(createStmt *parser.CreatestmtContext) []*IndexDefWithAST {
+	var ukList []*IndexDefWithAST
 
 	if createStmt == nil || createStmt.Opttableelementlist() == nil {
-		return fkMap
+		return ukList
 	}
 
 	tableElementList := createStmt.Opttableelementlist().Tableelementlist()
 	if tableElementList == nil {
-		return fkMap
+		return ukList
+	}
+
+	for _, element := range tableElementList.AllTableelement() {
+		if element.Tableconstraint() != nil {
+			constraint := element.Tableconstraint()
+			if constraint.Constraintelem() != nil {
+				elem := constraint.Constraintelem()
+				// Check for UNIQUE constraints (but not PRIMARY KEY)
+				isUnique := elem.UNIQUE() != nil && (elem.PRIMARY() == nil || elem.KEY() == nil)
+
+				if isUnique {
+					// This is a unique constraint
+					name := ""
+					if constraint.Name() != nil {
+						name = pgparser.NormalizePostgreSQLName(constraint.Name())
+					}
+					// Use constraint definition text as fallback key if name is empty
+					if name == "" {
+						// Get the full original text from tokens
+						if parser := constraint.GetParser(); parser != nil {
+							if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+								name = tokenStream.GetTextFromRuleContext(constraint)
+							}
+						}
+						if name == "" {
+							name = constraint.GetText() // Final fallback
+						}
+					}
+					ukList = append(ukList, &IndexDefWithAST{
+						Name:    name,
+						ASTNode: constraint,
+					})
+				}
+			}
+		}
+	}
+
+	return ukList
+}
+
+// extractForeignKeyDefinitionsInOrder extracts foreign key constraints with their AST nodes in SQL order
+func extractForeignKeyDefinitionsInOrder(createStmt *parser.CreatestmtContext) []*ForeignKeyDefWithAST {
+	var fkList []*ForeignKeyDefWithAST
+
+	if createStmt == nil || createStmt.Opttableelementlist() == nil {
+		return fkList
+	}
+
+	tableElementList := createStmt.Opttableelementlist().Tableelementlist()
+	if tableElementList == nil {
+		return fkList
 	}
 
 	for _, element := range tableElementList.AllTableelement() {
@@ -864,29 +969,29 @@ func extractForeignKeyDefinitionsWithAST(createStmt *parser.CreatestmtContext) m
 							name = constraint.GetText() // Final fallback
 						}
 					}
-					fkMap[name] = &ForeignKeyDefWithAST{
+					fkList = append(fkList, &ForeignKeyDefWithAST{
 						Name:    name,
 						ASTNode: constraint,
-					}
+					})
 				}
 			}
 		}
 	}
 
-	return fkMap
+	return fkList
 }
 
-// extractCheckConstraintDefinitionsWithAST extracts check constraints with their AST nodes for text comparison
-func extractCheckConstraintDefinitionsWithAST(createStmt *parser.CreatestmtContext) map[string]*CheckConstraintDefWithAST {
-	checkMap := make(map[string]*CheckConstraintDefWithAST)
+// extractCheckConstraintDefinitionsInOrder extracts check constraints with their AST nodes in SQL order
+func extractCheckConstraintDefinitionsInOrder(createStmt *parser.CreatestmtContext) []*CheckConstraintDefWithAST {
+	var checkList []*CheckConstraintDefWithAST
 
 	if createStmt == nil || createStmt.Opttableelementlist() == nil {
-		return checkMap
+		return checkList
 	}
 
 	tableElementList := createStmt.Opttableelementlist().Tableelementlist()
 	if tableElementList == nil {
-		return checkMap
+		return checkList
 	}
 
 	for _, element := range tableElementList.AllTableelement() {
@@ -912,16 +1017,16 @@ func extractCheckConstraintDefinitionsWithAST(createStmt *parser.CreatestmtConte
 							name = constraint.GetText() // Final fallback
 						}
 					}
-					checkMap[name] = &CheckConstraintDefWithAST{
+					checkList = append(checkList, &CheckConstraintDefWithAST{
 						Name:    name,
 						ASTNode: constraint,
-					}
+					})
 				}
 			}
 		}
 	}
 
-	return checkMap
+	return checkList
 }
 
 // extractPrimaryKeyDefinitionsWithAST extracts primary key constraints with their AST nodes
@@ -973,57 +1078,6 @@ func extractPrimaryKeyDefinitionsWithAST(createStmt *parser.CreatestmtContext) m
 	}
 
 	return pkMap
-}
-
-// extractUniqueConstraintDefinitionsWithAST extracts unique constraints with their AST nodes
-func extractUniqueConstraintDefinitionsWithAST(createStmt *parser.CreatestmtContext) map[string]*IndexDefWithAST {
-	ukMap := make(map[string]*IndexDefWithAST)
-
-	if createStmt == nil || createStmt.Opttableelementlist() == nil {
-		return ukMap
-	}
-
-	tableElementList := createStmt.Opttableelementlist().Tableelementlist()
-	if tableElementList == nil {
-		return ukMap
-	}
-
-	for _, element := range tableElementList.AllTableelement() {
-		if element.Tableconstraint() != nil {
-			constraint := element.Tableconstraint()
-			if constraint.Constraintelem() != nil {
-				elem := constraint.Constraintelem()
-				// Check for UNIQUE constraints (but not PRIMARY KEY)
-				isUnique := elem.UNIQUE() != nil && (elem.PRIMARY() == nil || elem.KEY() == nil)
-
-				if isUnique {
-					// This is a unique constraint
-					name := ""
-					if constraint.Name() != nil {
-						name = pgparser.NormalizePostgreSQLName(constraint.Name())
-					}
-					// Use constraint definition text as fallback key if name is empty
-					if name == "" {
-						// Get the full original text from tokens
-						if parser := constraint.GetParser(); parser != nil {
-							if tokenStream := parser.GetTokenStream(); tokenStream != nil {
-								name = tokenStream.GetTextFromRuleContext(constraint)
-							}
-						}
-						if name == "" {
-							name = constraint.GetText() // Final fallback
-						}
-					}
-					ukMap[name] = &IndexDefWithAST{
-						Name:    name,
-						ASTNode: constraint,
-					}
-				}
-			}
-		}
-	}
-
-	return ukMap
 }
 
 // getForeignKeyText returns the text representation of a foreign key constraint for comparison
