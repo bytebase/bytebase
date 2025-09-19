@@ -311,27 +311,21 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask must be set"))
 	}
 
-	projectID, err := common.GetProjectID(req.Msg.Project.Name)
+	project, err := s.getProjectMessage(ctx, req.Msg.Project.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
+		if connect.CodeOf(err) == connect.CodeNotFound && req.Msg.AllowMissing {
+			// When allow_missing is true and project doesn't exist, create a new one
+			user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+			if !ok {
+				return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
+			}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
-	}
+			projectID, perr := common.GetProjectID(req.Msg.Project.Name)
+			if perr != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, perr)
+			}
 
-	find := &store.FindProjectMessage{
-		ResourceID:  &projectID,
-		ShowDeleted: true,
-	}
-	project, err := s.store.GetProjectV2(ctx, find)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-	if project == nil {
-		if req.Msg.AllowMissing {
-			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsCreate, user)
+			ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionProjectsCreate, user)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
 			}
@@ -343,7 +337,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 				ProjectId: projectID,
 			}))
 		}
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", req.Msg.Project.Name))
+		return nil, err
 	}
 	if project.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Project.Name))

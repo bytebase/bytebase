@@ -422,25 +422,21 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("update_mask must be set"))
 	}
 
-	instanceID, err := common.GetInstanceID(req.Msg.Instance.Name)
+	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Instance.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
+		if strings.Contains(err.Error(), "not found") && req.Msg.AllowMissing {
+			// When allow_missing is true and instance doesn't exist, create a new one
+			user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+			if !ok {
+				return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
+			}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
-	}
+			instanceID, ierr := common.GetInstanceID(req.Msg.Instance.Name)
+			if ierr != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, ierr)
+			}
 
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-	if instance == nil {
-		if req.Msg.AllowMissing {
-			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstancesCreate, user)
+			ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionInstancesCreate, user)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
 			}
@@ -452,7 +448,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 				Instance:   req.Msg.Instance,
 			}))
 		}
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", req.Msg.Instance.Name))
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	if instance.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", req.Msg.Instance.Name))

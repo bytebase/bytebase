@@ -1092,16 +1092,10 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask must be set"))
 	}
 
-	issueID, err := common.GetIssueID(req.Msg.Issue.Name)
+	issue, err := s.getIssueMessage(ctx, req.Msg.Issue.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
-	}
-	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issueID})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue, error: %v", err))
-	}
-	if issue == nil {
-		if req.Msg.AllowMissing {
+		if connect.CodeOf(err) == connect.CodeNotFound && req.Msg.AllowMissing {
+			// When allow_missing is true and issue doesn't exist, create a new one
 			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionIssuesCreate, user)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
@@ -1109,16 +1103,20 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			if !ok {
 				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionIssuesCreate))
 			}
-			projectID, err := common.GetProjectID(req.Msg.Issue.Name)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
+
+			// Extract project ID from the issue name (format: projects/{project}/issues/{issue})
+			parts := strings.Split(req.Msg.Issue.Name, "/")
+			if len(parts) < 4 || parts[0] != "projects" || parts[2] != "issues" {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid issue name format: %q", req.Msg.Issue.Name))
 			}
+			projectID := parts[1]
+
 			return s.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 				Parent: fmt.Sprintf("projects/%s", projectID),
 				Issue:  req.Msg.Issue,
 			}))
 		}
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue %d not found", issueID))
+		return nil, err
 	}
 
 	updateMasks := map[string]bool{}
