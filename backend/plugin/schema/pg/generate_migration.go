@@ -897,10 +897,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 		// Add triggers for ALTER table operations after foreign keys
 		for _, tableDiff := range tableMap {
 			if tableDiff.Action == schema.MetadataDiffActionAlter {
-				triggerSQL, err := generateAlterTableTriggers(tableDiff)
-				if err != nil {
-					return err
-				}
+				triggerSQL := generateAlterTableTriggers(tableDiff)
 				_, _ = buf.WriteString(triggerSQL)
 				if triggerSQL != "" {
 					_, _ = buf.WriteString("\n")
@@ -1079,7 +1076,6 @@ func generateAlterTableWithOptions(tableDiff *schema.TableDiff, includeColumnAdd
 		}
 	}
 
-
 	return buf.String(), nil
 }
 
@@ -1099,7 +1095,7 @@ func generateAlterTableForeignKeys(tableDiff *schema.TableDiff) (string, error) 
 }
 
 // generateAlterTableTriggers generates trigger statements for a table diff
-func generateAlterTableTriggers(tableDiff *schema.TableDiff) (string, error) {
+func generateAlterTableTriggers(tableDiff *schema.TableDiff) string {
 	var buf strings.Builder
 
 	for _, triggerDiff := range tableDiff.TriggerChanges {
@@ -1108,7 +1104,7 @@ func generateAlterTableTriggers(tableDiff *schema.TableDiff) (string, error) {
 		}
 	}
 
-	return buf.String(), nil
+	return buf.String()
 }
 
 func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDiff) string {
