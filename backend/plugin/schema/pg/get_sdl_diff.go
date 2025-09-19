@@ -759,7 +759,6 @@ func processCheckConstraintChanges(oldTable, newTable *parser.CreatestmtContext)
 	return checkDiffs
 }
 
-
 // processPrimaryKeyChanges analyzes primary key constraint changes between old and new table definitions
 func processPrimaryKeyChanges(oldTable, newTable *parser.CreatestmtContext) []*schema.PrimaryKeyDiff {
 	if oldTable == nil || newTable == nil {
@@ -982,7 +981,6 @@ func extractForeignKeyDefinitionsInOrder(createStmt *parser.CreatestmtContext) [
 	return fkList
 }
 
-
 // extractCheckConstraintDefinitionsInOrder extracts check constraints with their AST nodes in SQL order
 func extractCheckConstraintDefinitionsInOrder(createStmt *parser.CreatestmtContext) []*CheckConstraintDefWithAST {
 	var checkList []*CheckConstraintDefWithAST
@@ -1081,7 +1079,6 @@ func extractPrimaryKeyDefinitionsWithAST(createStmt *parser.CreatestmtContext) m
 
 	return pkMap
 }
-
 
 // getForeignKeyText returns the text representation of a foreign key constraint for comparison
 func getForeignKeyText(constraintAST parser.ITableconstraintContext) string {
