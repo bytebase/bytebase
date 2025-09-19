@@ -218,6 +218,7 @@ roles:
       - bb.sql.select
       - bb.taskRuns.create
       - bb.taskRuns.list
+      - bb.groups.create
       - bb.groups.get
       - bb.groups.list
       - bb.worksheets.get
@@ -237,7 +238,6 @@ roles:
       - bb.roles.get
       - bb.settings.get
       - bb.settings.list
-      - bb.groups.create
       - bb.groups.get
       - bb.groups.list
       - bb.workspaces.getIamPolicy
