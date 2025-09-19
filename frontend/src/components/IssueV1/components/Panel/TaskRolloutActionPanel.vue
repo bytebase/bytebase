@@ -439,7 +439,7 @@ const handleConfirm = async (action: TaskRolloutAction) => {
           );
           return currentRunningTaskRun;
         })
-        .filter((taskRun) => taskRun !== undefined) as TaskRun[];
+        .filter((taskRun) => taskRun !== undefined);
       if (taskRunListToCancel.length > 0) {
         const request = create(BatchCancelTaskRunsRequestSchema, {
           parent: `${stage.name}/tasks/-`,

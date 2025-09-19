@@ -87,7 +87,7 @@ export const provideInstanceRoleSettingContext = (refs: {
     } else {
       // For creating mode, we can infer from the change type
       const config = selectedSpec.value.config
-        .value as Plan_ChangeDatabaseConfig;
+        .value;
       // Check if it's a schema or data update based on the config
       taskType = config.sheet
         ? Task_Type.DATABASE_SCHEMA_UPDATE

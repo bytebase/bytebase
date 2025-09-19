@@ -230,7 +230,7 @@ const createSheets = async () => {
       const engine = await databaseEngineForSpec(spec);
       sheet.engine = engine;
       pendingCreateSheetMap.set(sheet.name, sheet);
-      await maybeFormatSQL(sheet, engine as Engine);
+      await maybeFormatSQL(sheet, engine);
     }
   }
   const pendingCreateSheetList = Array.from(pendingCreateSheetMap.values());

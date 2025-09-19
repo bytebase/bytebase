@@ -55,7 +55,7 @@ export const useAttractFocus = (options: MaybeRef<AttractFocusOptions>) => {
 
     const target = document.querySelector(
       targetSelector
-    ) as HTMLTextAreaElement | null;
+    );
     // monaco-editor will consume the focus event with key stroke11
     target?.focus();
   });

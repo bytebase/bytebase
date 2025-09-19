@@ -376,7 +376,7 @@ const updateKeyword = (value: string) => {
 const columns = computed(() => {
   return props.result.columnNames.map<ColumnDef<QueryRow, RowValue>>(
     (columnName, index) => {
-      const columnType = props.result.columnTypeNames[index] as string;
+      const columnType = props.result.columnTypeNames[index];
 
       return {
         id: `${columnName}@${index}`,

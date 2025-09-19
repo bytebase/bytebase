@@ -173,7 +173,7 @@ export const flattenTreeOptions = (
     return [
       option,
       ...flattenTreeOptions(
-        (option.children as DatabaseTreeOption[] | undefined) ?? []
+        (option.children) ?? []
       ),
     ];
   });

@@ -330,7 +330,7 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
               for (const value of values) {
                 const temp: DatabaseResource = cloneDeep(
                   databaseResource
-                ) as DatabaseResource;
+                );
                 temp.schema = value as string;
                 conditionExpression.databaseResources!.push(temp);
               }
@@ -345,7 +345,7 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
               for (const value of values) {
                 const temp: DatabaseResource = cloneDeep(
                   databaseResource
-                ) as DatabaseResource;
+                );
                 temp.table = value as string;
                 conditionExpression.databaseResources!.push(temp);
               }

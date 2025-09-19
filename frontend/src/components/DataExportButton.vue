@@ -351,7 +351,7 @@ const convertSingleFile = async (
   const buffer = content.buffer.slice(
     content.byteOffset,
     content.byteOffset + content.byteLength
-  ) as ArrayBuffer; // TypeScript 5.9.2 requires explicit ArrayBuffer type
+  ); // TypeScript 5.9.2 requires explicit ArrayBuffer type
   let blob = new Blob([buffer], {
     type: fileType,
   });

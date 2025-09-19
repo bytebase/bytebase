@@ -13,7 +13,7 @@ export type HoverStateContext<S> = {
 
 export const useHoverStateContext = <S>(key: string) => {
   const KEY = `bb.sql-editor.${key}.hover-state`;
-  return inject(KEY)! as HoverStateContext<S>;
+  return inject(KEY)!;
 };
 
 export const provideHoverStateContext = <S>(key: string) => {
