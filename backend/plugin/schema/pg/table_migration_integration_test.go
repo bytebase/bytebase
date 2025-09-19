@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -168,7 +169,7 @@ CREATE TABLE table_c (id INTEGER PRIMARY KEY);
 			}
 
 			// Step 3: Generate migration SQL using AST nodes
-			migrationSQL, err := generateMigration(diff)
+			migrationSQL, err := schema.GenerateMigration(storepb.Engine_POSTGRES, diff)
 			require.NoError(t, err)
 
 			// Step 4: Verify the generated migration matches expectations
@@ -224,7 +225,7 @@ func TestTableMigrationASTOnlyModeValidation(t *testing.T) {
 	assert.Nil(t, tableDiff.OldASTNode, "No old AST node for CREATE action")
 
 	// Generate migration should work with AST nodes only
-	migrationSQL, err := generateMigration(diff)
+	migrationSQL, err := schema.GenerateMigration(storepb.Engine_POSTGRES, diff)
 	require.NoError(t, err)
 	assert.Contains(t, migrationSQL, "CREATE TABLE test_table")
 	assert.Contains(t, migrationSQL, "id SERIAL PRIMARY KEY")
@@ -276,7 +277,7 @@ func TestMultipleTablesHandling(t *testing.T) {
 	assert.Equal(t, expectedTables, tableNames, "Should have correct table names")
 
 	// Generate migration SQL - this should work with both tables
-	migrationSQL, err := generateMigration(diff)
+	migrationSQL, err := schema.GenerateMigration(storepb.Engine_POSTGRES, diff)
 	require.NoError(t, err)
 	assert.NotEmpty(t, migrationSQL, "Migration SQL should not be empty")
 
@@ -323,7 +324,7 @@ func TestComplexTableWithConstraintsAndIndexes(t *testing.T) {
 	assert.NotNil(t, tableDiff.NewASTNode, "AST node should be present")
 
 	// Generate migration
-	migrationSQL, err := generateMigration(diff)
+	migrationSQL, err := schema.GenerateMigration(storepb.Engine_POSTGRES, diff)
 	require.NoError(t, err)
 
 	// Verify the migration contains the complex table definition
@@ -539,7 +540,7 @@ ALTER TABLE "public"."orders" ADD CONSTRAINT "fk_customer" FOREIGN KEY (customer
 			assert.True(t, hasConstraintChanges, "Should detect constraint changes")
 
 			// Generate migration SQL
-			migrationSQL, err := generateMigration(diff)
+			migrationSQL, err := schema.GenerateMigration(storepb.Engine_POSTGRES, diff)
 			require.NoError(t, err)
 
 			// Normalize whitespace for comparison
@@ -620,7 +621,7 @@ func TestTableConstraintComplexChanges(t *testing.T) {
 	}
 
 	// Generate migration SQL
-	migrationSQL, err := generateMigration(diff)
+	migrationSQL, err := schema.GenerateMigration(storepb.Engine_POSTGRES, diff)
 	require.NoError(t, err)
 	assert.NotEmpty(t, migrationSQL, "Migration SQL should not be empty")
 
@@ -876,7 +877,7 @@ func TestCreateTableWithTableConstraintsIntegration(t *testing.T) {
 				"AST-only mode should not have metadata")
 
 			// Step 3: Generate migration SQL using AST nodes
-			migrationSQL, err := generateMigration(diff)
+			migrationSQL, err := schema.GenerateMigration(storepb.Engine_POSTGRES, diff)
 			require.NoError(t, err)
 
 			// Step 4: Verify the generated migration matches expectations
@@ -913,4 +914,192 @@ func TestCreateTableWithTableConstraintsIntegration(t *testing.T) {
 // Helper function to check if a string contains a substring (table tests)
 func containsTableString(s, substr string) bool {
 	return strings.Contains(s, substr)
+}
+
+func TestIndexSDLDiffAndMigrationIntegration(t *testing.T) {
+	tests := []struct {
+		name              string
+		previousSDL       string
+		currentSDL        string
+		expectedMigration string
+	}{
+		{
+			name: "Create standalone indexes",
+			previousSDL: `
+				CREATE TABLE orders (
+					id SERIAL PRIMARY KEY,
+					customer_id INTEGER NOT NULL,
+					total_amount DECIMAL(12,2) NOT NULL,
+					status VARCHAR(20) DEFAULT 'pending'
+				);
+			`,
+			currentSDL: `
+				CREATE TABLE orders (
+					id SERIAL PRIMARY KEY,
+					customer_id INTEGER NOT NULL,
+					total_amount DECIMAL(12,2) NOT NULL,
+					status VARCHAR(20) DEFAULT 'pending'
+				);
+
+				CREATE INDEX idx_orders_customer_id ON orders (customer_id);
+				CREATE UNIQUE INDEX idx_orders_status_unique ON orders (status);
+				CREATE INDEX idx_orders_complex ON orders (customer_id, total_amount DESC);
+			`,
+			expectedMigration: `CREATE INDEX idx_orders_customer_id ON orders (customer_id);
+CREATE UNIQUE INDEX idx_orders_status_unique ON orders (status);
+CREATE INDEX idx_orders_complex ON orders (customer_id, total_amount DESC);`,
+		},
+		{
+			name: "Drop standalone indexes",
+			previousSDL: `
+				CREATE TABLE orders (
+					id SERIAL PRIMARY KEY,
+					customer_id INTEGER NOT NULL,
+					total_amount DECIMAL(12,2) NOT NULL,
+					status VARCHAR(20) DEFAULT 'pending'
+				);
+
+				CREATE INDEX idx_orders_customer_id ON orders (customer_id);
+				CREATE UNIQUE INDEX idx_orders_status_unique ON orders (status);
+			`,
+			currentSDL: `
+				CREATE TABLE orders (
+					id SERIAL PRIMARY KEY,
+					customer_id INTEGER NOT NULL,
+					total_amount DECIMAL(12,2) NOT NULL,
+					status VARCHAR(20) DEFAULT 'pending'
+				);
+			`,
+			expectedMigration: `DROP INDEX IF EXISTS "public"."idx_orders_customer_id";
+DROP INDEX IF EXISTS "public"."idx_orders_status_unique";`,
+		},
+		{
+			name: "Replace indexes (drop old, create new)",
+			previousSDL: `
+				CREATE TABLE orders (
+					id SERIAL PRIMARY KEY,
+					customer_id INTEGER NOT NULL,
+					total_amount DECIMAL(12,2) NOT NULL,
+					status VARCHAR(20) DEFAULT 'pending'
+				);
+
+				CREATE INDEX idx_orders_old ON orders (customer_id);
+			`,
+			currentSDL: `
+				CREATE TABLE orders (
+					id SERIAL PRIMARY KEY,
+					customer_id INTEGER NOT NULL,
+					total_amount DECIMAL(12,2) NOT NULL,
+					status VARCHAR(20) DEFAULT 'pending'
+				);
+
+				CREATE INDEX idx_orders_new ON orders (customer_id, status);
+			`,
+			expectedMigration: `DROP INDEX IF EXISTS "public"."idx_orders_old";
+
+CREATE INDEX idx_orders_new ON orders (customer_id, status);`,
+		},
+		{
+			name: "Mixed index operations",
+			previousSDL: `
+				CREATE TABLE orders (
+					id SERIAL PRIMARY KEY,
+					customer_id INTEGER NOT NULL,
+					total_amount DECIMAL(12,2) NOT NULL,
+					status VARCHAR(20) DEFAULT 'pending'
+				);
+
+				CREATE INDEX idx_orders_customer ON orders (customer_id);
+				CREATE INDEX idx_orders_amount ON orders (total_amount);
+			`,
+			currentSDL: `
+				CREATE TABLE orders (
+					id SERIAL PRIMARY KEY,
+					customer_id INTEGER NOT NULL,
+					total_amount DECIMAL(12,2) NOT NULL,
+					status VARCHAR(20) DEFAULT 'pending'
+				);
+
+				CREATE INDEX idx_orders_customer ON orders (customer_id);
+				CREATE UNIQUE INDEX idx_orders_status ON orders (status);
+				CREATE INDEX idx_orders_complex ON orders (customer_id, status, total_amount DESC);
+			`,
+			expectedMigration: `DROP INDEX IF EXISTS "public"."idx_orders_amount";
+
+CREATE UNIQUE INDEX idx_orders_status ON orders (status);
+CREATE INDEX idx_orders_complex ON orders (customer_id, status, total_amount DESC);`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Get diff in AST-only mode (no metadata extraction)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			require.NoError(t, err, "GetSDLDiff should not return error")
+			require.NotNil(t, diff, "diff should not be nil")
+
+			// Generate migration using AST-only mode
+			migrationSQL, err := schema.GenerateMigration(storepb.Engine_POSTGRES, diff)
+			require.NoError(t, err, "GenerateMigration should not return error")
+
+			// Normalize whitespace for comparison
+			normalizedExpected := strings.TrimSpace(tt.expectedMigration)
+			normalizedActual := strings.TrimSpace(migrationSQL)
+
+			if normalizedExpected == "" {
+				assert.Empty(t, normalizedActual, "Migration should be empty")
+			} else {
+				// For index tests, check that essential parts are present
+				if strings.Contains(tt.expectedMigration, "CREATE INDEX") {
+					assert.Contains(t, migrationSQL, "CREATE INDEX",
+						"Migration should contain CREATE INDEX statements")
+				}
+				if strings.Contains(tt.expectedMigration, "CREATE UNIQUE INDEX") {
+					assert.Contains(t, migrationSQL, "CREATE UNIQUE INDEX",
+						"Migration should contain CREATE UNIQUE INDEX statements")
+				}
+				if strings.Contains(tt.expectedMigration, "DROP INDEX") {
+					assert.Contains(t, migrationSQL, "DROP INDEX IF EXISTS",
+						"Migration should contain DROP INDEX statements")
+				}
+
+				// Check that specific index names are mentioned
+				lines := strings.Split(normalizedExpected, "\n")
+				for _, line := range lines {
+					line = strings.TrimSpace(line)
+					if strings.Contains(line, "idx_") {
+						// Extract index name and check it exists in migration
+						if strings.Contains(line, "CREATE") {
+							// For CREATE statements, check the full statement structure is preserved
+							assert.Contains(t, migrationSQL, line,
+								"Migration should contain the expected CREATE INDEX statement")
+						} else if strings.Contains(line, "DROP") {
+							// For DROP statements, just check the index name is dropped
+							indexName := extractIndexNameFromLine(line)
+							if indexName != "" {
+								assert.Contains(t, migrationSQL, indexName,
+									"Migration should drop the expected index")
+							}
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+// Helper function to extract index name from DROP INDEX statement
+func extractIndexNameFromLine(line string) string {
+	if strings.Contains(line, "DROP INDEX") && strings.Contains(line, `"."`) {
+		// Extract from DROP INDEX IF EXISTS "schema"."index_name";
+		parts := strings.Split(line, `"."`)
+		if len(parts) >= 2 {
+			indexPart := parts[1]
+			// Remove trailing quote and semicolon
+			if strings.Contains(indexPart, `"`) {
+				return strings.Split(indexPart, `"`)[0]
+			}
+		}
+	}
+	return ""
 }
