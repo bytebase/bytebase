@@ -52,7 +52,7 @@ export function useQuickLink() {
         sidebarItem.children.map((child) =>
           getAccessListBySidebar(child, sidebarItem.icon)
         )
-      ).filter((item) => item) as QuickLink[];
+      ).filter((item) => item);
     }
 
     return [];
@@ -61,7 +61,7 @@ export function useQuickLink() {
   const fullQuickLinkList = computed((): QuickLink[] => {
     const accessList = flatten(
       dashboardSidebarItemList.value.map((item) => getAccessListBySidebar(item))
-    ).filter((item) => item) as QuickLink[];
+    ).filter((item) => item);
 
     accessList.unshift(
       {

@@ -464,7 +464,7 @@ const buildUpdatedIdentityProvider = (): IdentityProvider => {
     });
   }
 
-  return result as IdentityProvider;
+  return result;
 };
 
 const initializeFromProps = () => {

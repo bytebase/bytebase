@@ -98,7 +98,7 @@ const onLabelsUpdate = async (labels: string[]) => {
 };
 
 const renderLabel = (option: IssueLabelOption, selected: boolean) => {
-  const { color, value } = option as IssueLabelOption;
+  const { color, value } = option;
   return h("div", { class: "flex items-center gap-x-2" }, [
     h(NCheckbox, { checked: selected, size: "small" }),
     h("div", {

@@ -170,12 +170,7 @@ export const flattenTreeOptions = (
   options: DatabaseTreeOption[]
 ): DatabaseTreeOption[] => {
   return options.flatMap((option) => {
-    return [
-      option,
-      ...flattenTreeOptions(
-        (option.children as DatabaseTreeOption[] | undefined) ?? []
-      ),
-    ];
+    return [option, ...flattenTreeOptions(option.children ?? [])];
   });
 };
 

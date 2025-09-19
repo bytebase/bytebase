@@ -144,7 +144,7 @@ onMounted(async () => {
     return;
   }
 
-  const databaseGroupEntity = databaseGroup as DatabaseGroup;
+  const databaseGroupEntity = databaseGroup;
   const [, databaseGroupName] = getProjectNameAndDatabaseGroupName(
     databaseGroup.name
   );
@@ -263,7 +263,7 @@ const doConfirm = async () => {
     }
     await dbGroupStore.updateDatabaseGroup(
       {
-        ...props.databaseGroup!,
+        ...props.databaseGroup,
         title: formState.placeholder,
         databaseExpr: create(ExprSchema, {
           expression: celString,

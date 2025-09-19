@@ -23,7 +23,7 @@ export const instanceLimitFeature = new Set<PlanFeature>();
 PLANS.forEach((plan) => {
   planFeatureMatrix.set(plan.type, new Set(plan.features));
 });
-(planData as any).instanceFeatures.forEach((feature: string) => {
+planData.instanceFeatures.forEach((feature: string) => {
   instanceLimitFeature.add(PlanFeature[feature as keyof typeof PlanFeature]);
 });
 

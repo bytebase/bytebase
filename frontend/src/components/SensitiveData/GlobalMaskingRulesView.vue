@@ -340,7 +340,7 @@ const onPolicyUpsert = async () => {
 };
 
 const factorList = computed((): Factor[] => {
-  const list = [
+  const list: Factor[] = [
     "environment_id", // using `environment.resource_id`
     "project_id", // using `project.resource_id`
     "instance_id", // using `instance.resource_id`

@@ -328,9 +328,7 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
               conditionExpression.databaseResources?.pop();
             if (databaseResource) {
               for (const value of values) {
-                const temp: DatabaseResource = cloneDeep(
-                  databaseResource
-                ) as DatabaseResource;
+                const temp: DatabaseResource = cloneDeep(databaseResource);
                 temp.schema = value as string;
                 conditionExpression.databaseResources!.push(temp);
               }
@@ -343,9 +341,7 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
               conditionExpression.databaseResources?.pop();
             if (databaseResource) {
               for (const value of values) {
-                const temp: DatabaseResource = cloneDeep(
-                  databaseResource
-                ) as DatabaseResource;
+                const temp: DatabaseResource = cloneDeep(databaseResource);
                 temp.table = value as string;
                 conditionExpression.databaseResources!.push(temp);
               }

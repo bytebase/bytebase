@@ -68,7 +68,7 @@ export const usePlanContextWithRollout = () => {
   return {
     ...context,
     rollout: context.rollout as Ref<Rollout>,
-    taskRuns: context.taskRuns as Ref<TaskRun[]>,
+    taskRuns: context.taskRuns,
   };
 };
 

@@ -193,7 +193,7 @@ export const setConnection = (
     ...extra,
   };
   const conn = coreTab.connection;
-  const database = node.meta.target as ComposedDatabase;
+  const database = node.meta.target;
   conn.instance = database.instance;
   conn.database = database.name;
   setDefaultDataSourceForConn(conn, database);

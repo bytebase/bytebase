@@ -336,7 +336,7 @@ const handleMySQLTypesChange = async () => {
   );
   const fieldTemplateTypesOfMySQL = uniq(
     mysqlFieldTemplates
-      .map((item) => (item.column?.type || "") as string)
+      .map((item) => item.column?.type || "")
       .filter(Boolean)
       .map((item) => item.toLowerCase())
   );
@@ -410,7 +410,7 @@ const handlePostgreSQLTypesChange = async () => {
   );
   const fieldTemplateTypesOfPostgreSQL = uniq(
     postgresFieldTemplates
-      .map((item) => (item.column?.type || "") as string)
+      .map((item) => item.column?.type || "")
       .filter(Boolean)
       .map((item) => item.toLowerCase())
   );

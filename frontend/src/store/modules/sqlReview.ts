@@ -193,7 +193,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         updateMask.push("rules");
         patch.rules = ruleList.map((r) => {
           return create(SQLReviewRuleSchema, {
-            type: r.type as string,
+            type: r.type,
             level: r.level,
             engine: r.engine,
             comment: r.comment,
