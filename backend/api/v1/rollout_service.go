@@ -607,7 +607,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 	if len(request.Tasks) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("The tasks in request cannot be empty"))
 	}
-	projectID, rolloutID, err := common.GetProjectIDRolloutID(request.Parent)
+	projectID, rolloutID, _, err := common.GetProjectIDRolloutIDMaybeStageID(request.Parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}

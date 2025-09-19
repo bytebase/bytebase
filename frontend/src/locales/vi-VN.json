@@ -621,8 +621,7 @@
             "self": "Số lượng hàng kết quả SQL tối đa",
             "rows": "Hàng",
             "description": "Giới hạn số hàng đầu ra trong kết quả truy vấn SQL, giá trị <= 0 nghĩa là không giới hạn.",
-            "limit": "Không giới hạn khi giá trị <= 0",
-            "limit-warning": "Xuất tối đa {count} hàng do hạn chế truy vấn"
+            "limit": "Không giới hạn khi giá trị <= 0"
           }
         },
         "query-data-policy": {
@@ -1033,7 +1032,6 @@
     "data-export": {
       "options": "Tùy chọn",
       "format": "Định dạng",
-      "encrypt": "Mã hóa",
       "file-downloaded": "Tệp đã tải xuống",
       "download-tooltip": "Có sẵn trong 24 giờ"
     },
