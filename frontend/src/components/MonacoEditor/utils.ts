@@ -147,7 +147,7 @@ export const progressiveDelay = (serial: number) => {
 export const positionWithOffset = (
   line: number,
   column: number,
-  selection?: Selection | undefined | null
+  selection?: Selection | null
 ) => {
   if (!selection || selection.isEmpty()) {
     return [line, column];

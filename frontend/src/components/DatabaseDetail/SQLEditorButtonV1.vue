@@ -80,7 +80,7 @@ const gotoSQLEditor = () => {
     return;
   }
 
-  const database = props.database as ComposedDatabase;
+  const database = props.database;
   if (database.project === DEFAULT_PROJECT_NAME) {
     if (!hasProjectPermissionV2(defaultProject(), "bb.sql.select")) {
       // For unassigned databases, only high-privileged users

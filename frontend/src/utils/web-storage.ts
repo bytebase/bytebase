@@ -152,7 +152,7 @@ export const useDynamicLocalStorage = <
             key: key.value,
             oldValue,
             newValue,
-            storageArea: storage!,
+            storageArea: storage,
           },
         })
       );
@@ -161,15 +161,15 @@ export const useDynamicLocalStorage = <
 
   function write(v: unknown) {
     try {
-      const oldValue = storage!.getItem(key.value);
+      const oldValue = storage.getItem(key.value);
 
       if (v == null) {
         dispatchWriteEvent(oldValue, null);
-        storage!.removeItem(key.value);
+        storage.removeItem(key.value);
       } else {
         const serialized = serializer.write(v as any);
         if (oldValue !== serialized) {
-          storage!.setItem(key.value, serialized);
+          storage.setItem(key.value, serialized);
           dispatchWriteEvent(oldValue, serialized);
         }
       }
@@ -179,11 +179,11 @@ export const useDynamicLocalStorage = <
   }
 
   function read(event?: StorageEventLike) {
-    const rawValue = event ? event.newValue : storage!.getItem(key.value);
+    const rawValue = event ? event.newValue : storage.getItem(key.value);
 
     if (rawValue == null) {
       if (writeDefaults && rawInit != null)
-        storage!.setItem(key.value, serializer.write(rawInit));
+        storage.setItem(key.value, serializer.write(rawInit));
       return rawInit;
     } else if (!event && mergeDefaults) {
       const value = serializer.read(rawValue);

@@ -6,11 +6,7 @@ import { useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
-import type {
-  Plan,
-  Plan_Spec,
-  Plan_ChangeDatabaseConfig,
-} from "@/types/proto-es/v1/plan_service_pb";
+import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Task, Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
@@ -85,8 +81,7 @@ export const provideTransactionModeSettingContext = (refs: {
       taskType = task?.type;
     } else {
       // For creating mode, we can infer from the change type
-      const config = selectedSpec.value.config
-        .value as Plan_ChangeDatabaseConfig;
+      const config = selectedSpec.value.config.value;
       // Check if it's a schema or data update based on the config
       taskType = config.sheet
         ? Task_Type.DATABASE_SCHEMA_UPDATE

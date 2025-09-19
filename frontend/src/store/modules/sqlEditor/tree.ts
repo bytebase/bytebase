@@ -48,7 +48,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     target: NodeTarget<T>
   ) => {
     const id = idForSQLEditorTreeNodeTarget(type, target);
-    return (nodeListMapById.get(id) ?? []) as string[];
+    return nodeListMapById.get(id) ?? [];
   };
 
   return {

@@ -98,7 +98,7 @@ import { NButton, NInput } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import ExprEditor from "@/components/ExprEditor";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import type { ConditionGroupExpr, SimpleExpr } from "@/plugins/cel";
+import type { ConditionGroupExpr, Factor, SimpleExpr } from "@/plugins/cel";
 import { ExprType } from "@/plugins/cel";
 import {
   resolveCELExpr,
@@ -152,7 +152,7 @@ const state = reactive<LocalState>({
 });
 const mode = computed(() => context.dialog.value?.mode ?? "CREATE");
 
-const extractFactorList = (expr: SimpleExpr): string[] => {
+const extractFactorList = (expr: SimpleExpr): Factor[] => {
   switch (expr.type) {
     case ExprType.Condition:
       return expr.args.length > 1 ? [expr.args[0]] : [];

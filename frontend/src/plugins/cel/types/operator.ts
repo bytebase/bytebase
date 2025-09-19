@@ -129,6 +129,16 @@ const OperatorList: Record<Factor, Operator[]> = {
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
+
+  // These factors don't have operator candidates for user selection.
+  "request.export_format": [],
+  "request.row_limit": [],
+  "resource.database": [],
+  "resource.schema": [],
+  "resource.table": [],
+  "resource.column_name": [],
+  "resource.schema_name": [],
+  "request.time": [],
 };
 
 export const getOperatorListByFactor = (factor: Factor) => {
