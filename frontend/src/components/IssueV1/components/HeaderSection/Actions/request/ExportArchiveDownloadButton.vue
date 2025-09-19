@@ -105,7 +105,7 @@ const downloadExportArchive = async () => {
     })
   );
   const fileType = getExportFileType(exportDataConfig.value);
-  const buffer = content.buffer.slice(
+  const buffer: ArrayBuffer = content.buffer.slice(
     content.byteOffset,
     content.byteOffset + content.byteLength
   );

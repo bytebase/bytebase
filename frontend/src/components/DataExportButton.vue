@@ -348,7 +348,7 @@ const convertSingleFile = async (
     : getExportFileType(options.format);
 
   // Create Blob from Uint8Array
-  const buffer = content.buffer.slice(
+  const buffer: ArrayBuffer = content.buffer.slice(
     content.byteOffset,
     content.byteOffset + content.byteLength
   ); // TypeScript 5.9.2 requires explicit ArrayBuffer type
