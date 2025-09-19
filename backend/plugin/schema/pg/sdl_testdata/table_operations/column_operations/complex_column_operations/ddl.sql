@@ -17,5 +17,6 @@ CREATE INDEX idx_products_category_id ON public.products USING btree (category_i
 CREATE INDEX idx_products_name ON public.products USING btree (name);
 CREATE INDEX idx_products_price ON public.products USING btree (price);
 ALTER TABLE "public"."products" ADD CONSTRAINT "products_price_check" CHECK (price > 0);
+
 ALTER TABLE "public"."products" ADD CONSTRAINT "fk_products_category" FOREIGN KEY ("category_id") REFERENCES "public"."categories" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT;
 
