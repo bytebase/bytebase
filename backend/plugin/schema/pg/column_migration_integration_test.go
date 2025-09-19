@@ -182,9 +182,9 @@ ALTER TABLE "public"."products" ALTER COLUMN "price" SET DEFAULT 0.00;
 					salary DECIMAL(10,2) DEFAULT 50000.00
 				);
 			`,
-			expectedMigration: `ALTER TABLE "public"."employees" ALTER COLUMN "name" TYPE VARCHAR(200);
+			expectedMigration: `ALTER TABLE "public"."employees" ALTER COLUMN "email" TYPE VARCHAR(320);
+ALTER TABLE "public"."employees" ALTER COLUMN "name" TYPE VARCHAR(200);
 ALTER TABLE "public"."employees" ALTER COLUMN "name" SET NOT NULL;
-ALTER TABLE "public"."employees" ALTER COLUMN "email" TYPE VARCHAR(320);
 ALTER TABLE "public"."employees" ALTER COLUMN "salary" TYPE DECIMAL(10,2);
 ALTER TABLE "public"."employees" ALTER COLUMN "salary" SET DEFAULT 50000.00;
 
@@ -264,8 +264,8 @@ ALTER TABLE "public"."measurements" ALTER COLUMN "value" SET DEFAULT 0.0000;
 					created_at TIMESTAMP DEFAULT NOW()
 				);
 			`,
-			expectedMigration: `ALTER TABLE "public"."users" ADD COLUMN email VARCHAR(320) UNIQUE;
-ALTER TABLE "public"."users" ADD COLUMN created_at TIMESTAMP DEFAULT NOW();
+			expectedMigration: `ALTER TABLE "public"."users" ADD COLUMN created_at TIMESTAMP DEFAULT NOW();
+ALTER TABLE "public"."users" ADD COLUMN email VARCHAR(320) UNIQUE;
 
 `,
 		},
@@ -334,10 +334,10 @@ ALTER TABLE "public"."inventory" ALTER COLUMN "quantity" SET DEFAULT 1;
 					big_count BIGINT NOT NULL
 				);
 			`,
-			expectedMigration: `ALTER TABLE "public"."counters" ALTER COLUMN "small_count" TYPE INTEGER;
+			expectedMigration: `ALTER TABLE "public"."counters" ALTER COLUMN "big_count" SET NOT NULL;
+ALTER TABLE "public"."counters" ALTER COLUMN "small_count" TYPE INTEGER;
 ALTER TABLE "public"."counters" ALTER COLUMN "small_count" SET NOT NULL;
 ALTER TABLE "public"."counters" ALTER COLUMN "small_count" SET DEFAULT 0;
-ALTER TABLE "public"."counters" ALTER COLUMN "big_count" SET NOT NULL;
 
 `,
 		},
@@ -357,9 +357,9 @@ ALTER TABLE "public"."counters" ALTER COLUMN "big_count" SET NOT NULL;
 					content TEXT DEFAULT ''
 				);
 			`,
-			expectedMigration: `ALTER TABLE "public"."documents" ALTER COLUMN "title" TYPE VARCHAR(100);
+			expectedMigration: `ALTER TABLE "public"."documents" ALTER COLUMN "content" SET DEFAULT '';
+ALTER TABLE "public"."documents" ALTER COLUMN "title" TYPE VARCHAR(100);
 ALTER TABLE "public"."documents" ALTER COLUMN "title" SET NOT NULL;
-ALTER TABLE "public"."documents" ALTER COLUMN "content" SET DEFAULT '';
 
 `,
 		},

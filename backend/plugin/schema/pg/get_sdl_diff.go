@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -154,7 +155,7 @@ func (l *sdlChunkExtractor) EnterCreatefunctionstmt(ctx *parser.Createfunctionst
 	funcName := strings.Join(funcNameParts, ".")
 
 	// Extract function signature for proper identification
-	funcSignature := extractFunctionSignature(ctx, funcName)
+	funcSignature := ExtractFunctionSignature(ctx, funcName)
 
 	chunk := &schema.SDLChunk{
 		Identifier: funcSignature, // Use signature instead of name
@@ -319,7 +320,15 @@ func processColumnChanges(oldTable, newTable *parser.CreatestmtContext, currentS
 	var columnDiffs []*schema.ColumnDiff
 
 	// Step 2: Process current columns to find created and modified columns
-	for columnName, newColumnDef := range newColumnMap {
+	// Get sorted column names for stable iteration order
+	newColumnNames := make([]string, 0, len(newColumnMap))
+	for columnName := range newColumnMap {
+		newColumnNames = append(newColumnNames, columnName)
+	}
+	slices.Sort(newColumnNames)
+
+	for _, columnName := range newColumnNames {
+		newColumnDef := newColumnMap[columnName]
 		if oldColumnDef, exists := oldColumnMap[columnName]; exists {
 			// Column exists in both - check if modified by comparing text first
 			currentText := getColumnText(newColumnDef.ASTNode)
@@ -358,7 +367,15 @@ func processColumnChanges(oldTable, newTable *parser.CreatestmtContext, currentS
 	}
 
 	// Step 3: Process previous columns to find dropped columns
-	for columnName, oldColumnDef := range oldColumnMap {
+	// Get sorted column names for stable iteration order
+	oldColumnNames := make([]string, 0, len(oldColumnMap))
+	for columnName := range oldColumnMap {
+		oldColumnNames = append(oldColumnNames, columnName)
+	}
+	slices.Sort(oldColumnNames)
+
+	for _, columnName := range oldColumnNames {
+		oldColumnDef := oldColumnMap[columnName]
 		if _, exists := newColumnMap[columnName]; !exists {
 			// Column was dropped - extract metadata only if not in AST-only mode
 			var oldColumn *storepb.ColumnMetadata
