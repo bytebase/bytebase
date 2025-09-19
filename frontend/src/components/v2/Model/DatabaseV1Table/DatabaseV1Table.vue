@@ -24,7 +24,7 @@ import { useI18n } from "vue-i18n";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
 import { hostPortOfInstanceV1 } from "@/utils";
-import { DatabaseNameCell, ProjectNameCell, DatabaseLabelsCell } from "./cells";
+import { DatabaseNameCell, ProjectNameCell, LabelsCell } from "@/components/v2/Model/cells";
 
 type DatabaseDataTableColumn = DataTableColumn<ComposedDatabase> & {
   hide?: boolean;
@@ -153,7 +153,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     title: t("common.labels"),
     resizable: true,
     render: (data) => (
-      <DatabaseLabelsCell labels={data.labels} showCount={1} placeholder="-" />
+      <LabelsCell labels={data.labels} showCount={1} placeholder="-" />
     ),
   };
 

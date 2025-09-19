@@ -925,8 +925,12 @@
           "title": "Table",
           "description": "Input the value then press Enter"
         },
+        "label": {
+          "title": "Label",
+          "description": "Input the \"key:value\" pair then press Enter"
+        },
         "database-label": {
-          "title": "Database Label",
+          "title": "Database Label (Deprecated - use Label)",
           "description": "Input the \"key:value\" pair then press Enter"
         },
         "engine": {

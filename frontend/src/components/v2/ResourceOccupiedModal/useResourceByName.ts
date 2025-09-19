@@ -1,6 +1,6 @@
 import { type Ref, watchEffect, computed, h } from "vue";
 import { EnvironmentV1Name, RichDatabaseName } from "@/components/v2";
-import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
+import { ProjectNameCell } from "@/components/v2/Model/cells";
 import { t } from "@/plugins/i18n";
 import {
   useEnvironmentV1Store,

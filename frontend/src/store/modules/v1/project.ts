@@ -36,6 +36,8 @@ export interface ProjectFilter {
   query?: string;
   excludeDefault?: boolean;
   state?: State;
+  // label should be "{label key}:{label value}" format
+  labels?: string[];
 }
 
 const getListProjectFilter = (params: ProjectFilter) => {
@@ -43,19 +45,23 @@ const getListProjectFilter = (params: ProjectFilter) => {
   const search = params.query?.trim();
 
   if (search) {
-    // Check if the search contains label filtering syntax
-    // Examples: labels.environment == "production" or labels.team == "backend"
-    const labelFilterPattern = /labels\.\w+\s*==\s*"[^"]+"/;
+    // It's a regular name/resource_id search
+    const searchLower = search.toLowerCase();
+    list.push(
+      `(name.matches("${searchLower}") || resource_id.matches("${searchLower}"))`
+    );
+  }
 
-    if (labelFilterPattern.test(search)) {
-      // It's a label filter, pass it directly as a CEL expression
-      list.push(search);
-    } else {
-      // It's a regular name/resource_id search
-      const searchLower = search.toLowerCase();
-      list.push(
-        `(name.matches("${searchLower}") || resource_id.matches("${searchLower}"))`
-      );
+  // Handle label filters from structured labels array
+  if (params.labels && params.labels.length > 0) {
+    // label filter like: labels.environment == "production" && labels.tier == "critical"
+    for (const label of params.labels) {
+      const sections = label.split(":");
+      if (sections.length !== 2) {
+        continue;
+      }
+      const [key, value] = sections;
+      list.push(`labels.${key} == "${value}"`);
     }
   }
 

@@ -56,7 +56,7 @@ import { NButton, NPopover } from "naive-ui";
 import { reactive, watch } from "vue";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import { Drawer } from "@/components/v2";
-import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
+import { ProjectNameCell } from "@/components/v2/Model/cells";
 import { useCurrentProjectV1 } from "@/store";
 import { isValidProjectName } from "@/types";
 import ProjectSwitchContent from "./ProjectSwitchContent.vue";

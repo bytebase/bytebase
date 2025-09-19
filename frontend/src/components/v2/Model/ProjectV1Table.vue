@@ -22,7 +22,7 @@ import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
+import { ProjectNameCell, LabelsCell } from "@/components/v2/Model/cells";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { getProjectName } from "@/store/modules/v1/common";
@@ -145,34 +145,13 @@ const columnList = computed((): ProjectDataTableColumn[] => {
         width: 300,
         ellipsis: true,
         hide: !props.showLabels,
-        render: (project) => {
-          const labels = project.labels || {};
-          const labelEntries = Object.entries(labels).slice(0, 3); // Show max 3 labels
-          const remainingCount = Object.keys(labels).length - 3;
-
-          if (labelEntries.length === 0) {
-            return null;
-          }
-
-          return (
-            <div class="flex flex-wrap gap-1">
-              {labelEntries.map(([key, value]) => (
-                <span
-                  key={key}
-                  class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800"
-                  title={`${key}: ${value}`}
-                >
-                  {key}: {value}
-                </span>
-              ))}
-              {remainingCount > 0 && (
-                <span class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
-                  +{remainingCount} more
-                </span>
-              )}
-            </div>
-          );
-        },
+        render: (project) => (
+          <LabelsCell
+            labels={project.labels || {}}
+            showCount={3}
+            placeholder=""
+          />
+        ),
       },
     ] as ProjectDataTableColumn[]
   ).filter((column) => !column.hide);
