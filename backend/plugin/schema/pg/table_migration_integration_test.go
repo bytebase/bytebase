@@ -334,6 +334,582 @@ func TestComplexTableWithConstraintsAndIndexes(t *testing.T) {
 	assert.Contains(t, migrationSQL, "CONSTRAINT unique_customer_date UNIQUE")
 }
 
+func TestTableConstraintSDLDiffAndMigrationIntegration(t *testing.T) {
+	tests := []struct {
+		name              string
+		previousSDL       string
+		currentSDL        string
+		expectedMigration string
+	}{
+		{
+			name: "Add CHECK constraint",
+			previousSDL: `
+				CREATE TABLE products (
+					id SERIAL PRIMARY KEY,
+					price DECIMAL(10,2) NOT NULL
+				);
+			`,
+			currentSDL: `
+				CREATE TABLE products (
+					id SERIAL PRIMARY KEY,
+					price DECIMAL(10,2) NOT NULL,
+					CONSTRAINT chk_price CHECK (price > 0)
+				);
+			`,
+			expectedMigration: `ALTER TABLE "public"."products" ADD CONSTRAINT "chk_price" CHECK (price > 0);`,
+		},
+		{
+			name: "Add FOREIGN KEY constraint",
+			previousSDL: `
+				CREATE TABLE orders (
+					id SERIAL PRIMARY KEY,
+					customer_id INTEGER NOT NULL
+				);
+			`,
+			currentSDL: `
+				CREATE TABLE orders (
+					id SERIAL PRIMARY KEY,
+					customer_id INTEGER NOT NULL,
+					CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(id)
+				);
+			`,
+			expectedMigration: `ALTER TABLE "public"."orders" ADD CONSTRAINT "fk_customer" FOREIGN KEY (customer_id) REFERENCES customers(id);`,
+		},
+		{
+			name: "Add UNIQUE constraint",
+			previousSDL: `
+				CREATE TABLE users (
+					id SERIAL PRIMARY KEY,
+					email VARCHAR(255) NOT NULL
+				);
+			`,
+			currentSDL: `
+				CREATE TABLE users (
+					id SERIAL PRIMARY KEY,
+					email VARCHAR(255) NOT NULL,
+					CONSTRAINT unique_email UNIQUE (email)
+				);
+			`,
+			expectedMigration: `ALTER TABLE "public"."users" ADD CONSTRAINT "unique_email" UNIQUE (email);`,
+		},
+		{
+			name: "Drop CHECK constraint",
+			previousSDL: `
+				CREATE TABLE products (
+					id SERIAL PRIMARY KEY,
+					price DECIMAL(10,2) NOT NULL,
+					CONSTRAINT chk_price CHECK (price > 0)
+				);
+			`,
+			currentSDL: `
+				CREATE TABLE products (
+					id SERIAL PRIMARY KEY,
+					price DECIMAL(10,2) NOT NULL
+				);
+			`,
+			expectedMigration: `ALTER TABLE "public"."products" DROP CONSTRAINT IF EXISTS "chk_price";`,
+		},
+		{
+			name: "Drop FOREIGN KEY constraint",
+			previousSDL: `
+				CREATE TABLE orders (
+					id SERIAL PRIMARY KEY,
+					customer_id INTEGER NOT NULL,
+					CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(id)
+				);
+			`,
+			currentSDL: `
+				CREATE TABLE orders (
+					id SERIAL PRIMARY KEY,
+					customer_id INTEGER NOT NULL
+				);
+			`,
+			expectedMigration: `ALTER TABLE "public"."orders" DROP CONSTRAINT IF EXISTS "fk_customer";`,
+		},
+		{
+			name: "Modify CHECK constraint",
+			previousSDL: `
+				CREATE TABLE products (
+					id SERIAL PRIMARY KEY,
+					price DECIMAL(10,2) NOT NULL,
+					CONSTRAINT chk_price CHECK (price > 0)
+				);
+			`,
+			currentSDL: `
+				CREATE TABLE products (
+					id SERIAL PRIMARY KEY,
+					price DECIMAL(10,2) NOT NULL,
+					CONSTRAINT chk_price CHECK (price >= 0)
+				);
+			`,
+			expectedMigration: `ALTER TABLE "public"."products" DROP CONSTRAINT IF EXISTS "chk_price";
+
+ALTER TABLE "public"."products" ADD CONSTRAINT "chk_price" CHECK (price >= 0);`,
+		},
+		{
+			name: "Add PRIMARY KEY constraint",
+			previousSDL: `
+				CREATE TABLE users (
+					id INTEGER NOT NULL,
+					name VARCHAR(255) NOT NULL
+				);
+			`,
+			currentSDL: `
+				CREATE TABLE users (
+					id INTEGER NOT NULL,
+					name VARCHAR(255) NOT NULL,
+					CONSTRAINT pk_users PRIMARY KEY (id)
+				);
+			`,
+			expectedMigration: `ALTER TABLE "public"."users" ADD CONSTRAINT "pk_users" PRIMARY KEY (id);`,
+		},
+		{
+			name: "Drop PRIMARY KEY constraint",
+			previousSDL: `
+				CREATE TABLE users (
+					id INTEGER NOT NULL,
+					name VARCHAR(255) NOT NULL,
+					CONSTRAINT pk_users PRIMARY KEY (id)
+				);
+			`,
+			currentSDL: `
+				CREATE TABLE users (
+					id INTEGER NOT NULL,
+					name VARCHAR(255) NOT NULL
+				);
+			`,
+			expectedMigration: `ALTER TABLE "public"."users" DROP CONSTRAINT IF EXISTS "pk_users";`,
+		},
+		{
+			name: "Add multiple constraints",
+			previousSDL: `
+				CREATE TABLE orders (
+					id SERIAL PRIMARY KEY,
+					customer_id INTEGER NOT NULL,
+					total_amount DECIMAL(12,2) NOT NULL,
+					status VARCHAR(20) DEFAULT 'pending'
+				);
+			`,
+			currentSDL: `
+				CREATE TABLE orders (
+					id SERIAL PRIMARY KEY,
+					customer_id INTEGER NOT NULL,
+					total_amount DECIMAL(12,2) NOT NULL,
+					status VARCHAR(20) DEFAULT 'pending',
+					CONSTRAINT chk_total_amount CHECK (total_amount >= 0),
+					CONSTRAINT chk_status CHECK (status IN ('pending', 'confirmed', 'shipped')),
+					CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(id),
+					CONSTRAINT unique_customer_status UNIQUE (customer_id, status)
+				);
+			`,
+			expectedMigration: `ALTER TABLE "public"."orders" ADD CONSTRAINT "chk_total_amount" CHECK (total_amount >= 0);
+ALTER TABLE "public"."orders" ADD CONSTRAINT "chk_status" CHECK (status IN ('pending', 'confirmed', 'shipped'));
+ALTER TABLE "public"."orders" ADD CONSTRAINT "unique_customer_status" UNIQUE (customer_id, status);
+
+ALTER TABLE "public"."orders" ADD CONSTRAINT "fk_customer" FOREIGN KEY (customer_id) REFERENCES customers(id);`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Get diff in AST-only mode (nil schemas for AST-only)
+			diff, err := GetSDLDiff(test.currentSDL, test.previousSDL, nil, nil)
+			require.NoError(t, err)
+			require.NotNil(t, diff)
+
+			// Should have one table change
+			require.Len(t, diff.TableChanges, 1)
+			tableDiff := diff.TableChanges[0]
+
+			// Verify it's an ALTER action for constraint changes
+			assert.Equal(t, schema.MetadataDiffActionAlter, tableDiff.Action)
+
+			// Verify AST-only mode properties
+			assert.Nil(t, tableDiff.NewTable, "AST-only mode should not extract metadata")
+			assert.Nil(t, tableDiff.OldTable, "AST-only mode should not extract metadata")
+			assert.NotNil(t, tableDiff.NewASTNode, "New AST node should be present")
+			assert.NotNil(t, tableDiff.OldASTNode, "Old AST node should be present")
+
+			// Verify constraint changes are detected
+			hasConstraintChanges := len(tableDiff.CheckConstraintChanges) > 0 ||
+				len(tableDiff.ForeignKeyChanges) > 0 ||
+				len(tableDiff.UniqueConstraintChanges) > 0 ||
+				len(tableDiff.PrimaryKeyChanges) > 0
+
+			assert.True(t, hasConstraintChanges, "Should detect constraint changes")
+
+			// Generate migration SQL
+			migrationSQL, err := generateMigration(diff)
+			require.NoError(t, err)
+
+			// Normalize whitespace for comparison
+			normalizedMigration := strings.TrimSpace(migrationSQL)
+			normalizedExpected := strings.TrimSpace(test.expectedMigration)
+
+			assert.Equal(t, normalizedExpected, normalizedMigration,
+				"Migration SQL should match expected output")
+		})
+	}
+}
+
+func TestTableConstraintComplexChanges(t *testing.T) {
+	// Test a complex scenario with constraint additions, modifications, and drops
+	previousSDL := `
+		CREATE TABLE users (
+			id SERIAL PRIMARY KEY,
+			email VARCHAR(255) NOT NULL UNIQUE,
+			age INTEGER CHECK (age >= 18),
+			created_at TIMESTAMP DEFAULT NOW()
+		);
+
+		CREATE TABLE orders (
+			id SERIAL PRIMARY KEY,
+			user_id INTEGER NOT NULL,
+			amount DECIMAL(10,2) NOT NULL,
+			CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id)
+		);
+	`
+
+	currentSDL := `
+		CREATE TABLE users (
+			id SERIAL PRIMARY KEY,
+			email VARCHAR(255) NOT NULL,
+			age INTEGER CHECK (age >= 16),
+			phone VARCHAR(20) UNIQUE,
+			created_at TIMESTAMP DEFAULT NOW()
+		);
+
+		CREATE TABLE orders (
+			id SERIAL PRIMARY KEY,
+			user_id INTEGER NOT NULL,
+			amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
+			status VARCHAR(20) DEFAULT 'pending',
+			CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+			CONSTRAINT unique_user_amount UNIQUE (user_id, amount)
+		);
+	`
+
+	// Get diff in AST-only mode
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	require.NoError(t, err)
+	require.NotNil(t, diff)
+
+	// Should have changes for both tables
+	assert.Len(t, diff.TableChanges, 2)
+
+	// Check that each table has the expected constraint changes
+	for _, tableDiff := range diff.TableChanges {
+		assert.Equal(t, schema.MetadataDiffActionAlter, tableDiff.Action)
+
+		// Verify AST-only mode properties
+		assert.Nil(t, tableDiff.NewTable, "AST-only mode should not extract metadata")
+		assert.Nil(t, tableDiff.OldTable, "AST-only mode should not extract metadata")
+		assert.NotNil(t, tableDiff.NewASTNode, "New AST node should be present")
+		assert.NotNil(t, tableDiff.OldASTNode, "Old AST node should be present")
+
+		// Verify constraint or column changes are detected
+		hasConstraintChanges := len(tableDiff.CheckConstraintChanges) > 0 ||
+			len(tableDiff.ForeignKeyChanges) > 0 ||
+			len(tableDiff.UniqueConstraintChanges) > 0 ||
+			len(tableDiff.PrimaryKeyChanges) > 0 ||
+			len(tableDiff.ColumnChanges) > 0
+
+		if tableDiff.TableName == "users" || tableDiff.TableName == "orders" {
+			assert.True(t, hasConstraintChanges, "Should detect constraint or column changes for %s", tableDiff.TableName)
+		}
+	}
+
+	// Generate migration SQL
+	migrationSQL, err := generateMigration(diff)
+	require.NoError(t, err)
+	assert.NotEmpty(t, migrationSQL, "Migration SQL should not be empty")
+
+	// Verify the migration handles both tables
+	assert.Contains(t, migrationSQL, "users")
+	assert.Contains(t, migrationSQL, "orders")
+}
+
+func TestCreateTableWithTableConstraintsIntegration(t *testing.T) {
+	tests := []struct {
+		name              string
+		previousSDL       string
+		currentSDL        string
+		expectedMigration string
+	}{
+		{
+			name:        "Create table with CHECK constraint",
+			previousSDL: ``,
+			currentSDL: `
+				CREATE TABLE products (
+					id SERIAL PRIMARY KEY,
+					name VARCHAR(255) NOT NULL,
+					price DECIMAL(10,2) NOT NULL,
+					CONSTRAINT chk_price CHECK (price > 0)
+				);
+			`,
+			expectedMigration: `CREATE TABLE products (
+					id SERIAL PRIMARY KEY,
+					name VARCHAR(255) NOT NULL,
+					price DECIMAL(10,2) NOT NULL,
+					CONSTRAINT chk_price CHECK (price > 0)
+				);
+
+`,
+		},
+		{
+			name:        "Create table with FOREIGN KEY constraint",
+			previousSDL: ``,
+			currentSDL: `
+				CREATE TABLE orders (
+					id SERIAL PRIMARY KEY,
+					customer_id INTEGER NOT NULL,
+					order_date DATE DEFAULT CURRENT_DATE,
+					CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+				);
+			`,
+			expectedMigration: `CREATE TABLE orders (
+					id SERIAL PRIMARY KEY,
+					customer_id INTEGER NOT NULL,
+					order_date DATE DEFAULT CURRENT_DATE,
+					CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+				);
+
+`,
+		},
+		{
+			name:        "Create table with UNIQUE constraint",
+			previousSDL: ``,
+			currentSDL: `
+				CREATE TABLE users (
+					id SERIAL PRIMARY KEY,
+					email VARCHAR(320) NOT NULL,
+					username VARCHAR(50) NOT NULL,
+					CONSTRAINT unique_email UNIQUE (email),
+					CONSTRAINT unique_username UNIQUE (username)
+				);
+			`,
+			expectedMigration: `CREATE TABLE users (
+					id SERIAL PRIMARY KEY,
+					email VARCHAR(320) NOT NULL,
+					username VARCHAR(50) NOT NULL,
+					CONSTRAINT unique_email UNIQUE (email),
+					CONSTRAINT unique_username UNIQUE (username)
+				);
+
+`,
+		},
+		{
+			name:        "Create table with PRIMARY KEY constraint",
+			previousSDL: ``,
+			currentSDL: `
+				CREATE TABLE composite_key_table (
+					tenant_id INTEGER NOT NULL,
+					user_id INTEGER NOT NULL,
+					data TEXT,
+					CONSTRAINT pk_composite PRIMARY KEY (tenant_id, user_id)
+				);
+			`,
+			expectedMigration: `CREATE TABLE composite_key_table (
+					tenant_id INTEGER NOT NULL,
+					user_id INTEGER NOT NULL,
+					data TEXT,
+					CONSTRAINT pk_composite PRIMARY KEY (tenant_id, user_id)
+				);
+
+`,
+		},
+		{
+			name:        "Create table with multiple constraints",
+			previousSDL: ``,
+			currentSDL: `
+				CREATE TABLE orders (
+					id SERIAL,
+					customer_id INTEGER NOT NULL,
+					order_date DATE DEFAULT CURRENT_DATE,
+					total_amount DECIMAL(12,2) NOT NULL,
+					status VARCHAR(20) DEFAULT 'pending',
+					created_at TIMESTAMP DEFAULT NOW(),
+					CONSTRAINT pk_orders PRIMARY KEY (id),
+					CONSTRAINT chk_total_amount CHECK (total_amount >= 0),
+					CONSTRAINT chk_status CHECK (status IN ('pending', 'confirmed', 'shipped', 'delivered')),
+					CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+					CONSTRAINT unique_customer_date UNIQUE (customer_id, order_date)
+				);
+			`,
+			expectedMigration: `CREATE TABLE orders (
+					id SERIAL,
+					customer_id INTEGER NOT NULL,
+					order_date DATE DEFAULT CURRENT_DATE,
+					total_amount DECIMAL(12,2) NOT NULL,
+					status VARCHAR(20) DEFAULT 'pending',
+					created_at TIMESTAMP DEFAULT NOW(),
+					CONSTRAINT pk_orders PRIMARY KEY (id),
+					CONSTRAINT chk_total_amount CHECK (total_amount >= 0),
+					CONSTRAINT chk_status CHECK (status IN ('pending', 'confirmed', 'shipped', 'delivered')),
+					CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+					CONSTRAINT unique_customer_date UNIQUE (customer_id, order_date)
+				);
+
+`,
+		},
+		{
+			name:        "Create table with complex CHECK constraints",
+			previousSDL: ``,
+			currentSDL: `
+				CREATE TABLE employees (
+					id SERIAL PRIMARY KEY,
+					first_name VARCHAR(50) NOT NULL,
+					last_name VARCHAR(50) NOT NULL,
+					email VARCHAR(320) NOT NULL,
+					salary DECIMAL(10,2),
+					hire_date DATE DEFAULT CURRENT_DATE,
+					department_id INTEGER,
+					CONSTRAINT chk_salary CHECK (salary IS NULL OR salary > 0),
+					CONSTRAINT chk_email_format CHECK (email ~* '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
+					CONSTRAINT chk_hire_date CHECK (hire_date >= '2000-01-01'),
+					CONSTRAINT chk_name_not_empty CHECK (LENGTH(TRIM(first_name)) > 0 AND LENGTH(TRIM(last_name)) > 0),
+					CONSTRAINT unique_email UNIQUE (email),
+					CONSTRAINT fk_department FOREIGN KEY (department_id) REFERENCES departments(id)
+				);
+			`,
+			expectedMigration: `CREATE TABLE employees (
+					id SERIAL PRIMARY KEY,
+					first_name VARCHAR(50) NOT NULL,
+					last_name VARCHAR(50) NOT NULL,
+					email VARCHAR(320) NOT NULL,
+					salary DECIMAL(10,2),
+					hire_date DATE DEFAULT CURRENT_DATE,
+					department_id INTEGER,
+					CONSTRAINT chk_salary CHECK (salary IS NULL OR salary > 0),
+					CONSTRAINT chk_email_format CHECK (email ~* '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
+					CONSTRAINT chk_hire_date CHECK (hire_date >= '2000-01-01'),
+					CONSTRAINT chk_name_not_empty CHECK (LENGTH(TRIM(first_name)) > 0 AND LENGTH(TRIM(last_name)) > 0),
+					CONSTRAINT unique_email UNIQUE (email),
+					CONSTRAINT fk_department FOREIGN KEY (department_id) REFERENCES departments(id)
+				);
+
+`,
+		},
+		{
+			name:        "Create table with FOREIGN KEY and referential actions",
+			previousSDL: ``,
+			currentSDL: `
+				CREATE TABLE order_items (
+					id SERIAL PRIMARY KEY,
+					order_id INTEGER NOT NULL,
+					product_id INTEGER NOT NULL,
+					quantity INTEGER NOT NULL DEFAULT 1,
+					unit_price DECIMAL(10,2) NOT NULL,
+					CONSTRAINT chk_quantity CHECK (quantity > 0),
+					CONSTRAINT chk_unit_price CHECK (unit_price > 0),
+					CONSTRAINT fk_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE ON UPDATE CASCADE,
+					CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+					CONSTRAINT unique_order_product UNIQUE (order_id, product_id)
+				);
+			`,
+			expectedMigration: `CREATE TABLE order_items (
+					id SERIAL PRIMARY KEY,
+					order_id INTEGER NOT NULL,
+					product_id INTEGER NOT NULL,
+					quantity INTEGER NOT NULL DEFAULT 1,
+					unit_price DECIMAL(10,2) NOT NULL,
+					CONSTRAINT chk_quantity CHECK (quantity > 0),
+					CONSTRAINT chk_unit_price CHECK (unit_price > 0),
+					CONSTRAINT fk_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE ON UPDATE CASCADE,
+					CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+					CONSTRAINT unique_order_product UNIQUE (order_id, product_id)
+				);
+
+`,
+		},
+		{
+			name:        "Create table with schema-qualified constraint references",
+			previousSDL: ``,
+			currentSDL: `
+				CREATE TABLE audit.user_actions (
+					id BIGSERIAL PRIMARY KEY,
+					user_id INTEGER NOT NULL,
+					action_type VARCHAR(50) NOT NULL,
+					table_name VARCHAR(100) NOT NULL,
+					record_id INTEGER,
+					action_timestamp TIMESTAMP DEFAULT NOW(),
+					CONSTRAINT chk_action_type CHECK (action_type IN ('INSERT', 'UPDATE', 'DELETE')),
+					CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE,
+					CONSTRAINT unique_user_action_time UNIQUE (user_id, action_timestamp)
+				);
+			`,
+			expectedMigration: `CREATE TABLE audit.user_actions (
+					id BIGSERIAL PRIMARY KEY,
+					user_id INTEGER NOT NULL,
+					action_type VARCHAR(50) NOT NULL,
+					table_name VARCHAR(100) NOT NULL,
+					record_id INTEGER,
+					action_timestamp TIMESTAMP DEFAULT NOW(),
+					CONSTRAINT chk_action_type CHECK (action_type IN ('INSERT', 'UPDATE', 'DELETE')),
+					CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE,
+					CONSTRAINT unique_user_action_time UNIQUE (user_id, action_timestamp)
+				);
+
+`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Step 1: Get SDL diff using AST-only mode (no metadata extraction)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			require.NoError(t, err)
+			require.NotNil(t, diff)
+
+			// Step 2: Verify that diff contains table creation with AST nodes
+			require.Len(t, diff.TableChanges, 1)
+			tableDiff := diff.TableChanges[0]
+
+			assert.Equal(t, schema.MetadataDiffActionCreate, tableDiff.Action,
+				"Should be a CREATE action")
+			assert.NotNil(t, tableDiff.NewASTNode,
+				"Create action should have NewASTNode")
+			assert.Nil(t, tableDiff.OldASTNode,
+				"Create action should not have OldASTNode")
+			// Verify that no metadata was extracted (AST-only mode)
+			assert.Nil(t, tableDiff.NewTable,
+				"AST-only mode should not have metadata")
+
+			// Step 3: Generate migration SQL using AST nodes
+			migrationSQL, err := generateMigration(diff)
+			require.NoError(t, err)
+
+			// Step 4: Verify the generated migration matches expectations
+			assert.Equal(t, tt.expectedMigration, migrationSQL,
+				"Generated migration SQL should match expected output")
+
+			// Step 5: Verify the migration contains expected constraint keywords
+			if tt.expectedMigration != "" {
+				if containsTableString(tt.expectedMigration, "CHECK") {
+					assert.Contains(t, migrationSQL, "CHECK",
+						"Migration should contain CHECK constraint")
+				}
+				if containsTableString(tt.expectedMigration, "FOREIGN KEY") {
+					assert.Contains(t, migrationSQL, "FOREIGN KEY",
+						"Migration should contain FOREIGN KEY constraint")
+				}
+				if containsTableString(tt.expectedMigration, "UNIQUE") {
+					assert.Contains(t, migrationSQL, "UNIQUE",
+						"Migration should contain UNIQUE constraint")
+				}
+				if containsTableString(tt.expectedMigration, "PRIMARY KEY") {
+					assert.Contains(t, migrationSQL, "PRIMARY KEY",
+						"Migration should contain PRIMARY KEY constraint")
+				}
+				if containsTableString(tt.expectedMigration, "CONSTRAINT") {
+					assert.Contains(t, migrationSQL, "CONSTRAINT",
+						"Migration should contain CONSTRAINT keyword")
+				}
+			}
+		})
+	}
+}
+
 // Helper function to check if a string contains a substring (table tests)
 func containsTableString(s, substr string) bool {
 	return strings.Contains(s, substr)
