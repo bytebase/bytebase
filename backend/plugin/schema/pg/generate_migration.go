@@ -280,7 +280,13 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 				// Drop columns
 				for _, colDiff := range tableDiff.ColumnChanges {
 					if colDiff.Action == schema.MetadataDiffActionDrop {
-						writeDropColumn(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.OldColumn.Name)
+						if colDiff.OldColumn != nil {
+							// Metadata mode - use column metadata
+							writeDropColumn(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.OldColumn.Name)
+						} else if colDiff.OldASTNode != nil {
+							// AST-only mode - use AST functions
+							_ = writeDropColumnFromAST(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.OldASTNode)
+						}
 					}
 				}
 			}
@@ -349,7 +355,13 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 				// Drop columns
 				for _, colDiff := range tableDiff.ColumnChanges {
 					if colDiff.Action == schema.MetadataDiffActionDrop {
-						writeDropColumn(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.OldColumn.Name)
+						if colDiff.OldColumn != nil {
+							// Metadata mode - use column metadata
+							writeDropColumn(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.OldColumn.Name)
+						} else if colDiff.OldASTNode != nil {
+							// AST-only mode - use AST functions
+							_ = writeDropColumnFromAST(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.OldASTNode)
+						}
 					}
 				}
 			}
@@ -781,11 +793,15 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 						return errors.Errorf("table CREATE action requires either NewTable metadata or NewASTNode for table %s.%s", tableDiff.SchemaName, tableDiff.TableName)
 					}
 				case schema.MetadataDiffActionAlter:
-					// Handle column additions for ALTER operations
-					for _, colDiff := range tableDiff.ColumnChanges {
-						if colDiff.Action == schema.MetadataDiffActionCreate {
-							writeAddColumn(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn)
-						}
+					// Handle ALTER table operations with generateAlterTableWithOptions
+					// Skip foreign keys in the first pass to avoid dependency issues
+					alterTableSQL, err := generateAlterTableWithOptions(tableDiff, true)
+					if err != nil {
+						return err
+					}
+					_, _ = buf.WriteString(alterTableSQL)
+					if alterTableSQL != "" {
+						_, _ = buf.WriteString("\n")
 					}
 				default:
 					// No action needed for other operations
@@ -863,6 +879,32 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			}
 		}
 
+		// Add foreign keys for ALTER table operations after all tables are created
+		for _, tableDiff := range tableMap {
+			if tableDiff.Action == schema.MetadataDiffActionAlter {
+				// Only add foreign keys in this second pass
+				fkSQL, err := generateAlterTableForeignKeys(tableDiff)
+				if err != nil {
+					return err
+				}
+				_, _ = buf.WriteString(fkSQL)
+				if fkSQL != "" {
+					_, _ = buf.WriteString("\n")
+				}
+			}
+		}
+
+		// Add triggers for ALTER table operations after foreign keys
+		for _, tableDiff := range tableMap {
+			if tableDiff.Action == schema.MetadataDiffActionAlter {
+				triggerSQL := generateAlterTableTriggers(tableDiff)
+				_, _ = buf.WriteString(triggerSQL)
+				if triggerSQL != "" {
+					_, _ = buf.WriteString("\n")
+				}
+			}
+		}
+
 		// Create triggers after foreign keys (only for CREATE table operations)
 		for _, tableDiff := range tableMap {
 			if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
@@ -882,19 +924,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 		}
 	}
 
-	// Handle ALTER table operations
+	// ALTER table operations are now handled earlier in the topological order
 	for _, tableDiff := range diff.TableChanges {
 		if tableDiff.Action == schema.MetadataDiffActionAlter {
-			// Skip column additions as they were handled earlier
-			alterTableSQL, err := generateAlterTableWithOptions(tableDiff, false)
-			if err != nil {
-				return err
-			}
-			_, _ = buf.WriteString(alterTableSQL)
-			if alterTableSQL != "" {
-				_, _ = buf.WriteString("\n")
-			}
-
 			// Handle table comment changes
 			if err := generateTableCommentChanges(buf, tableDiff); err != nil {
 				return err
@@ -990,7 +1022,16 @@ func generateAlterTableWithOptions(tableDiff *schema.TableDiff, includeColumnAdd
 	if includeColumnAdditions {
 		for _, colDiff := range tableDiff.ColumnChanges {
 			if colDiff.Action == schema.MetadataDiffActionCreate {
-				writeAddColumn(&buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn)
+				// Support both metadata mode and AST-only mode
+				if colDiff.NewColumn != nil {
+					// Metadata mode: use existing writeAddColumn
+					writeAddColumn(&buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn)
+				} else if colDiff.NewASTNode != nil {
+					// AST-only mode: extract SQL from AST node
+					if err := writeAddColumnFromAST(&buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.NewASTNode); err != nil {
+						return "", err
+					}
+				}
 			}
 		}
 	}
@@ -998,8 +1039,17 @@ func generateAlterTableWithOptions(tableDiff *schema.TableDiff, includeColumnAdd
 	// Alter columns
 	for _, colDiff := range tableDiff.ColumnChanges {
 		if colDiff.Action == schema.MetadataDiffActionAlter {
-			alterColSQL := generateAlterColumn(tableDiff.SchemaName, tableDiff.TableName, colDiff)
-			_, _ = buf.WriteString(alterColSQL)
+			// Support both metadata mode and AST-only mode
+			if colDiff.OldColumn != nil && colDiff.NewColumn != nil {
+				// Metadata mode: use existing generateAlterColumn
+				alterColSQL := generateAlterColumn(tableDiff.SchemaName, tableDiff.TableName, colDiff)
+				_, _ = buf.WriteString(alterColSQL)
+			} else if colDiff.OldASTNode != nil && colDiff.NewASTNode != nil {
+				// AST-only mode: use ALTER COLUMN approach
+				if err := writeAlterColumnFromAST(&buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.OldASTNode, colDiff.NewASTNode); err != nil {
+					return "", err
+				}
+			}
 		}
 	}
 
@@ -1026,7 +1076,13 @@ func generateAlterTableWithOptions(tableDiff *schema.TableDiff, includeColumnAdd
 		}
 	}
 
-	// Add foreign keys last (they depend on other tables/columns)
+	return buf.String(), nil
+}
+
+// generateAlterTableForeignKeys generates foreign key statements for a table diff
+func generateAlterTableForeignKeys(tableDiff *schema.TableDiff) (string, error) {
+	var buf strings.Builder
+
 	for _, fkDiff := range tableDiff.ForeignKeyChanges {
 		if fkDiff.Action == schema.MetadataDiffActionCreate {
 			if err := writeMigrationForeignKey(&buf, tableDiff.SchemaName, tableDiff.TableName, fkDiff.NewForeignKey); err != nil {
@@ -1035,14 +1091,20 @@ func generateAlterTableWithOptions(tableDiff *schema.TableDiff, includeColumnAdd
 		}
 	}
 
-	// Add triggers after foreign keys
+	return buf.String(), nil
+}
+
+// generateAlterTableTriggers generates trigger statements for a table diff
+func generateAlterTableTriggers(tableDiff *schema.TableDiff) string {
+	var buf strings.Builder
+
 	for _, triggerDiff := range tableDiff.TriggerChanges {
 		if triggerDiff.Action == schema.MetadataDiffActionCreate {
 			writeMigrationTrigger(&buf, triggerDiff.NewTrigger)
 		}
 	}
 
-	return buf.String(), nil
+	return buf.String()
 }
 
 func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDiff) string {
@@ -1572,6 +1634,118 @@ func writeAlterColumnDropDefault(out *strings.Builder, schema, table, column str
 	_, _ = out.WriteString("\n")
 }
 
+// writeAddColumnFromAST writes ALTER TABLE ADD COLUMN statement from AST node
+func writeAddColumnFromAST(out *strings.Builder, schema, table string, columnASTNode pgparser.IColumnDefContext) error {
+	if columnASTNode == nil {
+		return errors.New("Column AST node is nil")
+	}
+
+	columnDefinition := extractColumnDefinitionFromAST(columnASTNode)
+	if columnDefinition == "" {
+		return errors.New("could not extract column definition from AST node")
+	}
+
+	_, _ = out.WriteString(`ALTER TABLE "`)
+	_, _ = out.WriteString(schema)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(table)
+	_, _ = out.WriteString(`" ADD COLUMN `)
+	_, _ = out.WriteString(columnDefinition)
+	_, _ = out.WriteString(";\n")
+
+	return nil
+}
+
+// writeDropColumnFromAST writes ALTER TABLE DROP COLUMN statement from AST node
+func writeDropColumnFromAST(out *strings.Builder, schema, table string, columnASTNode pgparser.IColumnDefContext) error {
+	if columnASTNode == nil {
+		return errors.New("Column AST node is nil")
+	}
+
+	columnName := extractColumnNameFromAST(columnASTNode)
+	if columnName == "" {
+		return errors.New("could not extract column name from AST node")
+	}
+
+	_, _ = out.WriteString(`ALTER TABLE "`)
+	_, _ = out.WriteString(schema)
+	_, _ = out.WriteString(`"."`)
+	_, _ = out.WriteString(table)
+	_, _ = out.WriteString(`" DROP COLUMN IF EXISTS "`)
+	_, _ = out.WriteString(columnName)
+	_, _ = out.WriteString(`";`)
+	_, _ = out.WriteString("\n")
+
+	return nil
+}
+
+// writeAlterColumnFromAST writes ALTER TABLE ALTER COLUMN statement from AST nodes
+func writeAlterColumnFromAST(out *strings.Builder, schema, table string, oldColumnASTNode, newColumnASTNode pgparser.IColumnDefContext) error {
+	if oldColumnASTNode == nil || newColumnASTNode == nil {
+		return errors.New("Column AST nodes are nil")
+	}
+
+	// Extract column metadata from both AST nodes (without normalization except for column name)
+	oldMetadata := extractColumnMetadataFromAST(oldColumnASTNode)
+	newMetadata := extractColumnMetadataFromAST(newColumnASTNode)
+
+	if oldMetadata == nil || newMetadata == nil {
+		return errors.New("could not extract column metadata from AST nodes")
+	}
+
+	if oldMetadata.Name == "" {
+		return errors.New("could not extract column name from AST node")
+	}
+
+	// Check for type changes
+	if oldMetadata.Type != newMetadata.Type {
+		_, _ = out.WriteString(`ALTER TABLE "`)
+		_, _ = out.WriteString(schema)
+		_, _ = out.WriteString(`"."`)
+		_, _ = out.WriteString(table)
+		_, _ = out.WriteString(`" ALTER COLUMN "`)
+		_, _ = out.WriteString(oldMetadata.Name)
+		_, _ = out.WriteString(`" TYPE `)
+		_, _ = out.WriteString(newMetadata.Type)
+		_, _ = out.WriteString(";\n")
+	}
+
+	// Check for nullable changes
+	if oldMetadata.Nullable != newMetadata.Nullable {
+		_, _ = out.WriteString(`ALTER TABLE "`)
+		_, _ = out.WriteString(schema)
+		_, _ = out.WriteString(`"."`)
+		_, _ = out.WriteString(table)
+		_, _ = out.WriteString(`" ALTER COLUMN "`)
+		_, _ = out.WriteString(oldMetadata.Name)
+		if newMetadata.Nullable {
+			_, _ = out.WriteString(`" DROP NOT NULL`)
+		} else {
+			_, _ = out.WriteString(`" SET NOT NULL`)
+		}
+		_, _ = out.WriteString(";\n")
+	}
+
+	// Check for default value changes
+	if oldMetadata.Default != newMetadata.Default {
+		_, _ = out.WriteString(`ALTER TABLE "`)
+		_, _ = out.WriteString(schema)
+		_, _ = out.WriteString(`"."`)
+		_, _ = out.WriteString(table)
+		_, _ = out.WriteString(`" ALTER COLUMN "`)
+		_, _ = out.WriteString(oldMetadata.Name)
+		if newMetadata.Default == "" {
+			_, _ = out.WriteString(`" DROP DEFAULT`)
+		} else {
+			_, _ = out.WriteString(`" SET DEFAULT `)
+			_, _ = out.WriteString(newMetadata.Default)
+		}
+		_, _ = out.WriteString(";\n")
+	}
+
+	return nil
+}
+
 func writeAddCheckConstraint(out *strings.Builder, schema, table string, check *storepb.CheckConstraintMetadata) {
 	_, _ = out.WriteString(`ALTER TABLE "`)
 	_, _ = out.WriteString(schema)
@@ -1759,9 +1933,9 @@ func writeMigrationViewFromAST(out *strings.Builder, astNode any) error {
 			viewSQL = ctx.GetText()
 		}
 	} else {
-		// Generic fallback - try to get text directly
-		if tree, ok := astNode.(interface{ GetText() string }); ok {
-			viewSQL = tree.GetText()
+		// Generic fallback - try to get text using token approach first
+		if tree, ok := astNode.(antlr.ParseTree); ok {
+			viewSQL = getTextFromAST(tree)
 		}
 	}
 
@@ -2581,6 +2755,30 @@ func (v *CreateOrReplaceVisitor) visitCreateFunctionStmt(ctx *pgparser.Createfun
 	return nil
 }
 
+// extractColumnNameFromAST extracts column name from column definition AST node
+func extractColumnNameFromAST(columnASTNode pgparser.IColumnDefContext) string {
+	if columnASTNode == nil {
+		return ""
+	}
+
+	// Use the proper normalization function for PostgreSQL column identifiers
+	if columnASTNode.Colid() != nil {
+		return pgpluginparser.NormalizePostgreSQLColid(columnASTNode.Colid())
+	}
+
+	return ""
+}
+
+// extractColumnDefinitionFromAST extracts the full column definition from AST node
+func extractColumnDefinitionFromAST(columnASTNode pgparser.IColumnDefContext) string {
+	if columnASTNode == nil {
+		return ""
+	}
+
+	// Use the getTextFromAST helper to extract text properly
+	return getTextFromAST(columnASTNode)
+}
+
 // findFunctionToken finds the FUNCTION token in the CREATE FUNCTION statement
 func (v *CreateOrReplaceVisitor) findFunctionToken(ctx *pgparser.CreatefunctionstmtContext) antlr.Token {
 	// Get all tokens in the context range
@@ -2653,9 +2851,9 @@ func getViewDependenciesFromAST(astNode any, schemaName string, fullSchemaMetada
 				}
 			}
 
-			// Fallback to GetText() if token stream approach failed
+			// Fallback to token-based approach if token stream approach failed
 			if selectStatement == "" {
-				selectStatement = ctx.Selectstmt().GetText()
+				selectStatement = getTextFromAST(ctx.Selectstmt())
 			}
 		}
 	}
@@ -2713,4 +2911,100 @@ func getViewDependenciesFromAST(astNode any, schemaName string, fullSchemaMetada
 	}
 
 	return dependencies
+}
+
+// extractColumnMetadataFromAST extracts column metadata from AST node without normalization (except column name)
+// This is used in AST-only mode where we need the raw values for comparison
+func extractColumnMetadataFromAST(columnDef pgparser.IColumnDefContext) *columnMetadataAST {
+	if columnDef == nil {
+		return nil
+	}
+
+	// Only normalize the column name - everything else stays as raw text
+	columnName := ""
+	if columnDef.Colid() != nil {
+		columnName = pgpluginparser.NormalizePostgreSQLColid(columnDef.Colid())
+	}
+
+	metadata := &columnMetadataAST{
+		Name: columnName,
+	}
+
+	// Extract type as raw text
+	if columnDef.Typename() != nil {
+		metadata.Type = getTextFromAST(columnDef.Typename())
+	}
+
+	// Extract nullable - check AST directly for NOT NULL constraint
+	metadata.Nullable = true // Default is nullable
+	if columnDef.Colquallist() != nil {
+		for _, qualifier := range columnDef.Colquallist().AllColconstraint() {
+			if qualifier != nil && qualifier.Colconstraintelem() != nil {
+				elem := qualifier.Colconstraintelem()
+				// Check for NOT NULL constraint using AST inspection
+				if elem.NOT() != nil && elem.NULL_P() != nil {
+					metadata.Nullable = false
+					break
+				}
+				// Check for explicit NULL constraint
+				if elem.NULL_P() != nil && elem.NOT() == nil {
+					metadata.Nullable = true
+				}
+			}
+		}
+	}
+
+	// Extract default value using AST inspection
+	if columnDef.Colquallist() != nil {
+		for _, qualifier := range columnDef.Colquallist().AllColconstraint() {
+			if qualifier != nil && qualifier.Colconstraintelem() != nil {
+				elem := qualifier.Colconstraintelem()
+				// Check for DEFAULT constraint using AST inspection
+				if elem.DEFAULT() != nil && elem.B_expr() != nil {
+					metadata.Default = getTextFromAST(elem.B_expr())
+					break
+				}
+			}
+		}
+	}
+
+	return metadata
+}
+
+// columnMetadataAST holds column metadata extracted from AST without normalization
+type columnMetadataAST struct {
+	Name     string
+	Type     string
+	Nullable bool
+	Default  string
+}
+
+// getTextFromAST extracts text from AST node using tokens when available, fallback to GetText()
+func getTextFromAST(ctx antlr.ParseTree) string {
+	if ctx == nil {
+		return ""
+	}
+
+	// Try to get text from tokens first (preferred method)
+	// Check for interfaces that have the required methods
+	type parserContext interface {
+		GetParser() antlr.Parser
+		GetStart() antlr.Token
+		GetStop() antlr.Token
+	}
+
+	if ruleContext, ok := ctx.(parserContext); ok {
+		if parser := ruleContext.GetParser(); parser != nil {
+			if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+				start := ruleContext.GetStart()
+				stop := ruleContext.GetStop()
+				if start != nil && stop != nil {
+					return tokenStream.GetTextFromTokens(start, stop)
+				}
+			}
+		}
+	}
+
+	// Fallback to GetText() if tokens are not available
+	return ctx.GetText()
 }

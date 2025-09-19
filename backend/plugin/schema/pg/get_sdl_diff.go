@@ -154,7 +154,7 @@ func (l *sdlChunkExtractor) EnterCreatefunctionstmt(ctx *parser.Createfunctionst
 	funcName := strings.Join(funcNameParts, ".")
 
 	// Extract function signature for proper identification
-	funcSignature := extractFunctionSignature(ctx, funcName)
+	funcSignature := ExtractFunctionSignature(ctx, funcName)
 
 	chunk := &schema.SDLChunk{
 		Identifier: funcSignature, // Use signature instead of name
@@ -231,7 +231,7 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 					return errors.Errorf("expected CreatestmtContext for current table %s", currentChunk.Identifier)
 				}
 
-				columnChanges := processColumnChanges(oldASTNode, newASTNode)
+				columnChanges := processColumnChanges(oldASTNode, newASTNode, currentSchema, previousSchema)
 				foreignKeyChanges := processForeignKeyChanges(oldASTNode, newASTNode)
 				checkConstraintChanges := processCheckConstraintChanges(oldASTNode, newASTNode)
 				primaryKeyChanges := processPrimaryKeyChanges(oldASTNode, newASTNode)
@@ -303,27 +303,36 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 
 // processColumnChanges analyzes column changes between old and new table definitions
 // Following the same pattern as processTableChanges: compare text first, then analyze differences
-func processColumnChanges(oldTable, newTable *parser.CreatestmtContext) []*schema.ColumnDiff {
+// If schemas are nil, operates in AST-only mode without metadata extraction
+func processColumnChanges(oldTable, newTable *parser.CreatestmtContext, currentSchema, previousSchema *model.DatabaseSchema) []*schema.ColumnDiff {
 	if oldTable == nil || newTable == nil {
 		return []*schema.ColumnDiff{}
 	}
 
+	// Detect AST-only mode: when both schemas are nil, operate without metadata extraction
+	astOnlyMode := currentSchema == nil && previousSchema == nil
+
 	// Step 1: Extract all column definitions with their AST nodes for text comparison
-	oldColumnMap := extractColumnDefinitionsWithAST(oldTable)
-	newColumnMap := extractColumnDefinitionsWithAST(newTable)
+	oldColumns := extractColumnDefinitionsWithAST(oldTable)
+	newColumns := extractColumnDefinitionsWithAST(newTable)
 
 	var columnDiffs []*schema.ColumnDiff
 
 	// Step 2: Process current columns to find created and modified columns
-	for columnName, newColumnDef := range newColumnMap {
-		if oldColumnDef, exists := oldColumnMap[columnName]; exists {
+	// Use the order from the new table's AST to maintain original column order
+	for _, columnName := range newColumns.Order {
+		newColumnDef := newColumns.Map[columnName]
+		if oldColumnDef, exists := oldColumns.Map[columnName]; exists {
 			// Column exists in both - check if modified by comparing text first
 			currentText := getColumnText(newColumnDef.ASTNode)
 			previousText := getColumnText(oldColumnDef.ASTNode)
 			if currentText != previousText {
-				// Column was modified - only now extract detailed metadata
-				oldColumn := extractColumnMetadata(oldColumnDef.ASTNode)
-				newColumn := extractColumnMetadata(newColumnDef.ASTNode)
+				// Column was modified - extract metadata only if not in AST-only mode
+				var oldColumn, newColumn *storepb.ColumnMetadata
+				if !astOnlyMode {
+					oldColumn = extractColumnMetadata(oldColumnDef.ASTNode)
+					newColumn = extractColumnMetadata(newColumnDef.ASTNode)
+				}
 
 				columnDiffs = append(columnDiffs, &schema.ColumnDiff{
 					Action:     schema.MetadataDiffActionAlter,
@@ -335,8 +344,11 @@ func processColumnChanges(oldTable, newTable *parser.CreatestmtContext) []*schem
 			}
 			// If text is identical, skip - no changes detected
 		} else {
-			// New column - extract metadata only for new columns
-			newColumn := extractColumnMetadata(newColumnDef.ASTNode)
+			// New column - extract metadata only if not in AST-only mode
+			var newColumn *storepb.ColumnMetadata
+			if !astOnlyMode {
+				newColumn = extractColumnMetadata(newColumnDef.ASTNode)
+			}
 			columnDiffs = append(columnDiffs, &schema.ColumnDiff{
 				Action:     schema.MetadataDiffActionCreate,
 				OldColumn:  nil,
@@ -348,10 +360,15 @@ func processColumnChanges(oldTable, newTable *parser.CreatestmtContext) []*schem
 	}
 
 	// Step 3: Process previous columns to find dropped columns
-	for columnName, oldColumnDef := range oldColumnMap {
-		if _, exists := newColumnMap[columnName]; !exists {
-			// Column was dropped - extract metadata only for dropped columns
-			oldColumn := extractColumnMetadata(oldColumnDef.ASTNode)
+	// Use the order from the old table's AST to maintain original column order
+	for _, columnName := range oldColumns.Order {
+		oldColumnDef := oldColumns.Map[columnName]
+		if _, exists := newColumns.Map[columnName]; !exists {
+			// Column was dropped - extract metadata only if not in AST-only mode
+			var oldColumn *storepb.ColumnMetadata
+			if !astOnlyMode {
+				oldColumn = extractColumnMetadata(oldColumnDef.ASTNode)
+			}
 			columnDiffs = append(columnDiffs, &schema.ColumnDiff{
 				Action:     schema.MetadataDiffActionDrop,
 				OldColumn:  oldColumn,
@@ -371,13 +388,22 @@ type ColumnDefWithAST struct {
 	ASTNode parser.IColumnDefContext
 }
 
-// extractColumnDefinitionsWithAST extracts only column name and AST node for text comparison
-// This is more efficient than full metadata extraction when we only need text comparison
-func extractColumnDefinitionsWithAST(createStmt *parser.CreatestmtContext) map[string]*ColumnDefWithAST {
-	columns := make(map[string]*ColumnDefWithAST)
+// ColumnDefWithASTOrdered holds column definitions in AST order for deterministic processing
+type ColumnDefWithASTOrdered struct {
+	Map   map[string]*ColumnDefWithAST
+	Order []string // Column names in the order they appear in the AST
+}
+
+// extractColumnDefinitionsWithAST extracts column definitions and preserves their AST order
+// This ensures deterministic processing while maintaining the original column order
+func extractColumnDefinitionsWithAST(createStmt *parser.CreatestmtContext) *ColumnDefWithASTOrdered {
+	result := &ColumnDefWithASTOrdered{
+		Map:   make(map[string]*ColumnDefWithAST),
+		Order: []string{},
+	}
 
 	if createStmt == nil {
-		return columns
+		return result
 	}
 
 	// Get the optTableElementList which contains column definitions
@@ -391,16 +417,18 @@ func extractColumnDefinitionsWithAST(createStmt *parser.CreatestmtContext) map[s
 				if columnDef.Colid() != nil {
 					columnName := pgparser.NormalizePostgreSQLColid(columnDef.Colid())
 
-					columns[columnName] = &ColumnDefWithAST{
+					result.Map[columnName] = &ColumnDefWithAST{
 						Name:    columnName,
 						ASTNode: columnDef,
 					}
+					// Preserve the order columns appear in the AST
+					result.Order = append(result.Order, columnName)
 				}
 			}
 		}
 	}
 
-	return columns
+	return result
 }
 
 // extractColumnMetadata extracts full column metadata from a single column AST node

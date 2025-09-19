@@ -65,14 +65,16 @@ func TestColumnSDLDiff(t *testing.T) {
 
 				columnDiff := columnDiffs[0]
 				assert.Equal(t, schema.MetadataDiffActionCreate, columnDiff.Action, "Should be CREATE action")
-				assert.Nil(t, columnDiff.OldColumn, "CREATE should have nil OldColumn")
-				assert.NotNil(t, columnDiff.NewColumn, "CREATE should have NewColumn")
-				assert.Equal(t, "email", columnDiff.NewColumn.Name, "Column name should match")
-				assert.Contains(t, columnDiff.NewColumn.Type, "VARCHAR", "Should contain VARCHAR type")
+				assert.Nil(t, columnDiff.OldColumn, "CREATE should have nil OldColumn in AST-only mode")
+				assert.Nil(t, columnDiff.NewColumn, "CREATE should have nil NewColumn in AST-only mode")
 
 				// Verify AST nodes
 				assert.Nil(t, columnDiff.OldASTNode, "CREATE should have nil OldASTNode")
 				assert.NotNil(t, columnDiff.NewASTNode, "CREATE should have NewASTNode")
+
+				// Extract column name from AST for verification
+				columnName := extractColumnNameFromAST(columnDiff.NewASTNode)
+				assert.Equal(t, "email", columnName, "Column name should match")
 			},
 		},
 		{
@@ -96,13 +98,16 @@ func TestColumnSDLDiff(t *testing.T) {
 
 				columnDiff := columnDiffs[0]
 				assert.Equal(t, schema.MetadataDiffActionDrop, columnDiff.Action, "Should be DROP action")
-				assert.NotNil(t, columnDiff.OldColumn, "DROP should have OldColumn")
+				assert.Nil(t, columnDiff.OldColumn, "DROP should have nil OldColumn in AST-only mode")
 				assert.Nil(t, columnDiff.NewColumn, "DROP should have nil NewColumn")
-				assert.Equal(t, "email", columnDiff.OldColumn.Name, "Column name should match")
 
 				// Verify AST nodes
 				assert.NotNil(t, columnDiff.OldASTNode, "DROP should have OldASTNode")
 				assert.Nil(t, columnDiff.NewASTNode, "DROP should have nil NewASTNode")
+
+				// Extract column name from AST for verification
+				columnName := extractColumnNameFromAST(columnDiff.OldASTNode)
+				assert.Equal(t, "email", columnName, "Column name should match")
 			},
 		},
 		{
@@ -125,16 +130,18 @@ func TestColumnSDLDiff(t *testing.T) {
 
 				columnDiff := columnDiffs[0]
 				assert.Equal(t, schema.MetadataDiffActionAlter, columnDiff.Action, "Should be ALTER action")
-				assert.NotNil(t, columnDiff.OldColumn, "ALTER should have OldColumn")
-				assert.NotNil(t, columnDiff.NewColumn, "ALTER should have NewColumn")
-				assert.Equal(t, "name", columnDiff.OldColumn.Name, "Old column name should match")
-				assert.Equal(t, "name", columnDiff.NewColumn.Name, "New column name should match")
-				assert.Contains(t, columnDiff.OldColumn.Type, "VARCHAR(255)", "Old type should contain VARCHAR(255)")
-				assert.Contains(t, columnDiff.NewColumn.Type, "TEXT", "New type should contain TEXT")
+				assert.Nil(t, columnDiff.OldColumn, "ALTER should have nil OldColumn in AST-only mode")
+				assert.Nil(t, columnDiff.NewColumn, "ALTER should have nil NewColumn in AST-only mode")
 
 				// Verify AST nodes
 				assert.NotNil(t, columnDiff.OldASTNode, "ALTER should have OldASTNode")
 				assert.NotNil(t, columnDiff.NewASTNode, "ALTER should have NewASTNode")
+
+				// Extract column names from AST for verification
+				oldColumnName := extractColumnNameFromAST(columnDiff.OldASTNode)
+				newColumnName := extractColumnNameFromAST(columnDiff.NewASTNode)
+				assert.Equal(t, "name", oldColumnName, "Old column name should match")
+				assert.Equal(t, "name", newColumnName, "New column name should match")
 
 				// Verify AST text extraction
 				oldText := getColumnText(columnDiff.OldASTNode)
@@ -178,22 +185,25 @@ func TestColumnSDLDiff(t *testing.T) {
 					switch columnDiff.Action {
 					case schema.MetadataDiffActionCreate:
 						createCount++
-						createColumns = append(createColumns, columnDiff.NewColumn.Name)
-						assert.Nil(t, columnDiff.OldColumn, "CREATE should have nil OldColumn")
-						assert.NotNil(t, columnDiff.NewColumn, "CREATE should have NewColumn")
+						columnName := extractColumnNameFromAST(columnDiff.NewASTNode)
+						createColumns = append(createColumns, columnName)
+						assert.Nil(t, columnDiff.OldColumn, "CREATE should have nil OldColumn in AST-only mode")
+						assert.Nil(t, columnDiff.NewColumn, "CREATE should have nil NewColumn in AST-only mode")
 						assert.Nil(t, columnDiff.OldASTNode, "CREATE should have nil OldASTNode")
 						assert.NotNil(t, columnDiff.NewASTNode, "CREATE should have NewASTNode")
 					case schema.MetadataDiffActionAlter:
 						alterCount++
-						alterColumns = append(alterColumns, columnDiff.NewColumn.Name)
-						assert.NotNil(t, columnDiff.OldColumn, "ALTER should have OldColumn")
-						assert.NotNil(t, columnDiff.NewColumn, "ALTER should have NewColumn")
+						columnName := extractColumnNameFromAST(columnDiff.NewASTNode)
+						alterColumns = append(alterColumns, columnName)
+						assert.Nil(t, columnDiff.OldColumn, "ALTER should have nil OldColumn in AST-only mode")
+						assert.Nil(t, columnDiff.NewColumn, "ALTER should have nil NewColumn in AST-only mode")
 						assert.NotNil(t, columnDiff.OldASTNode, "ALTER should have OldASTNode")
 						assert.NotNil(t, columnDiff.NewASTNode, "ALTER should have NewASTNode")
 					case schema.MetadataDiffActionDrop:
 						dropCount++
-						dropColumns = append(dropColumns, columnDiff.OldColumn.Name)
-						assert.NotNil(t, columnDiff.OldColumn, "DROP should have OldColumn")
+						columnName := extractColumnNameFromAST(columnDiff.OldASTNode)
+						dropColumns = append(dropColumns, columnName)
+						assert.Nil(t, columnDiff.OldColumn, "DROP should have nil OldColumn in AST-only mode")
 						assert.Nil(t, columnDiff.NewColumn, "DROP should have nil NewColumn")
 						assert.NotNil(t, columnDiff.OldASTNode, "DROP should have OldASTNode")
 						assert.Nil(t, columnDiff.NewASTNode, "DROP should have nil NewASTNode")
@@ -231,8 +241,18 @@ func TestColumnSDLDiff(t *testing.T) {
 
 				columnDiff := columnDiffs[0]
 				assert.Equal(t, schema.MetadataDiffActionAlter, columnDiff.Action, "Should be ALTER action")
-				assert.False(t, columnDiff.OldColumn.Nullable, "Old column should not be nullable (has NOT NULL)")
-				assert.True(t, columnDiff.NewColumn.Nullable, "New column should be nullable (no NOT NULL)")
+				assert.Nil(t, columnDiff.OldColumn, "Should have nil OldColumn in AST-only mode")
+				assert.Nil(t, columnDiff.NewColumn, "Should have nil NewColumn in AST-only mode")
+
+				// Verify AST nodes are available
+				assert.NotNil(t, columnDiff.OldASTNode, "Should have OldASTNode")
+				assert.NotNil(t, columnDiff.NewASTNode, "Should have NewASTNode")
+
+				// Check constraint differences via AST text
+				oldText := getColumnText(columnDiff.OldASTNode)
+				newText := getColumnText(columnDiff.NewASTNode)
+				assert.Contains(t, oldText, "NOT NULL", "Old AST should contain NOT NULL")
+				assert.NotContains(t, newText, "NOT NULL", "New AST should not contain NOT NULL")
 			},
 		},
 		{
@@ -255,8 +275,18 @@ func TestColumnSDLDiff(t *testing.T) {
 
 				columnDiff := columnDiffs[0]
 				assert.Equal(t, schema.MetadataDiffActionAlter, columnDiff.Action, "Should be ALTER action")
-				assert.Equal(t, "'active'", columnDiff.OldColumn.Default, "Old default should match")
-				assert.Equal(t, "'inactive'", columnDiff.NewColumn.Default, "New default should match")
+				assert.Nil(t, columnDiff.OldColumn, "Should have nil OldColumn in AST-only mode")
+				assert.Nil(t, columnDiff.NewColumn, "Should have nil NewColumn in AST-only mode")
+
+				// Verify AST nodes are available
+				assert.NotNil(t, columnDiff.OldASTNode, "Should have OldASTNode")
+				assert.NotNil(t, columnDiff.NewASTNode, "Should have NewASTNode")
+
+				// Check default value differences via AST text
+				oldText := getColumnText(columnDiff.OldASTNode)
+				newText := getColumnText(columnDiff.NewASTNode)
+				assert.Contains(t, oldText, "'active'", "Old AST should contain 'active'")
+				assert.Contains(t, newText, "'inactive'", "New AST should contain 'inactive'")
 			},
 		},
 		{
@@ -277,8 +307,18 @@ func TestColumnSDLDiff(t *testing.T) {
 
 				columnDiff := columnDiffs[0]
 				assert.Equal(t, schema.MetadataDiffActionAlter, columnDiff.Action, "Should be ALTER action")
-				assert.Equal(t, `"C"`, columnDiff.OldColumn.Collation, "Old collation should match")
-				assert.Equal(t, `"en_US"`, columnDiff.NewColumn.Collation, "New collation should match")
+				assert.Nil(t, columnDiff.OldColumn, "Should have nil OldColumn in AST-only mode")
+				assert.Nil(t, columnDiff.NewColumn, "Should have nil NewColumn in AST-only mode")
+
+				// Verify AST nodes are available
+				assert.NotNil(t, columnDiff.OldASTNode, "Should have OldASTNode")
+				assert.NotNil(t, columnDiff.NewASTNode, "Should have NewASTNode")
+
+				// Check collation differences via AST text
+				oldText := getColumnText(columnDiff.OldASTNode)
+				newText := getColumnText(columnDiff.NewASTNode)
+				assert.Contains(t, oldText, `"C"`, "Old AST should contain 'C' collation")
+				assert.Contains(t, newText, `"en_US"`, "New AST should contain 'en_US' collation")
 			},
 		},
 		{
@@ -301,7 +341,8 @@ func TestColumnSDLDiff(t *testing.T) {
 
 				columnDiff := columnDiffs[0]
 				assert.Equal(t, schema.MetadataDiffActionAlter, columnDiff.Action, "Should be ALTER action")
-				assert.Equal(t, "id", columnDiff.NewColumn.Name, "Column name should match")
+				columnName := extractColumnNameFromAST(columnDiff.NewASTNode)
+				assert.Equal(t, "id", columnName, "Column name should match")
 
 				// Verify that text comparison detects the difference
 				oldText := getColumnText(columnDiff.OldASTNode)
@@ -414,11 +455,29 @@ func TestColumnSDLDiff(t *testing.T) {
 				for _, columnChange := range tableDiff.ColumnChanges {
 					switch columnChange.Action {
 					case schema.MetadataDiffActionCreate:
-						createColumns = append(createColumns, columnChange.NewColumn.Name)
+						if columnChange.NewColumn != nil {
+							createColumns = append(createColumns, columnChange.NewColumn.Name)
+						} else if columnChange.NewASTNode != nil {
+							// AST-only mode: extract column name from AST
+							columnName := extractColumnNameFromAST(columnChange.NewASTNode)
+							createColumns = append(createColumns, columnName)
+						}
 					case schema.MetadataDiffActionAlter:
-						alterColumns = append(alterColumns, columnChange.NewColumn.Name)
+						if columnChange.NewColumn != nil {
+							alterColumns = append(alterColumns, columnChange.NewColumn.Name)
+						} else if columnChange.NewASTNode != nil {
+							// AST-only mode: extract column name from AST
+							columnName := extractColumnNameFromAST(columnChange.NewASTNode)
+							alterColumns = append(alterColumns, columnName)
+						}
 					case schema.MetadataDiffActionDrop:
-						dropColumns = append(dropColumns, columnChange.OldColumn.Name)
+						if columnChange.OldColumn != nil {
+							dropColumns = append(dropColumns, columnChange.OldColumn.Name)
+						} else if columnChange.OldASTNode != nil {
+							// AST-only mode: extract column name from AST
+							columnName := extractColumnNameFromAST(columnChange.OldASTNode)
+							dropColumns = append(dropColumns, columnName)
+						}
 					default:
 						t.Fatalf("Unexpected column change action: %v", columnChange.Action)
 					}

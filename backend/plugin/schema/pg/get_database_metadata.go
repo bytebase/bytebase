@@ -1591,7 +1591,7 @@ func (e *metadataExtractor) EnterCreatefunctionstmt(ctx *parser.Createfunctionst
 	functionMetadata := &storepb.FunctionMetadata{
 		Name:       funcName,
 		Definition: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-		Signature:  extractFunctionSignature(ctx, funcName),
+		Signature:  ExtractFunctionSignature(ctx, funcName),
 	}
 
 	if schemaMetadata.Functions == nil {
@@ -1600,8 +1600,8 @@ func (e *metadataExtractor) EnterCreatefunctionstmt(ctx *parser.Createfunctionst
 	schemaMetadata.Functions = append(schemaMetadata.Functions, functionMetadata)
 }
 
-// extractFunctionSignature extracts the function signature with parameter types
-func extractFunctionSignature(ctx *parser.CreatefunctionstmtContext, funcName string) string {
+// ExtractFunctionSignature extracts the function signature with parameter types
+func ExtractFunctionSignature(ctx *parser.CreatefunctionstmtContext, funcName string) string {
 	var signature strings.Builder
 	signature.WriteString(funcName)
 	signature.WriteString(`(`)
