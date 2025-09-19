@@ -3712,6 +3712,14 @@ The catalog&#39;s `name` field is used to identify the database catalog to updat
 Format: instances/{instance}/databases/{database}/catalog </p></td>
                 </tr>
               
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the database catalog is not found, a new database catalog will be created.
+In this situation, `update_mask` is ignored. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5510,6 +5518,14 @@ Format: instances/{instance} </p></td>
                   <td><p>Validate only also tests the data source connection. </p></td>
                 </tr>
               
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the data source is not found, a new data source will be created.
+In this situation, `update_mask` is ignored. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5542,6 +5558,14 @@ Format: instances/{instance} </p></td>
                   <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
                   <td></td>
                   <td><p>The list of fields to update. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the instance is not found, a new instance will be created.
+In this situation, `update_mask` is ignored. </p></td>
                 </tr>
               
             </tbody>
@@ -9455,6 +9479,14 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p>The list of fields to update. </p></td>
                 </tr>
               
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the database is not found, a new database will be created.
+In this situation, `update_mask` is ignored. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -11516,6 +11548,14 @@ Format: projects/{project}/issues/{issue} </p></td>
                   <td><p>The list of fields to update. </p></td>
                 </tr>
               
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the issue comment is not found, a new issue comment will be created.
+In this situation, `update_mask` is ignored. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -11548,6 +11588,14 @@ Format: projects/{project}/issues/{issue} </p></td>
                   <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
                   <td></td>
                   <td><p>The list of fields to update. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the issue is not found, a new issue will be created.
+In this situation, `update_mask` is ignored. </p></td>
                 </tr>
               
             </tbody>
@@ -14388,6 +14436,14 @@ This is used for MFA setup. The temporary MFA secret and recovery codes will be 
                   <td><p>The regenerate_recovery_codes flag means to regenerate recovery codes for user. </p></td>
                 </tr>
               
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the user is not found, a new user will be created.
+In this situation, `update_mask` is ignored. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -15056,6 +15112,14 @@ Permissions required: bb.users.undelete</p></td>
                   <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
                   <td></td>
                   <td><p>The list of fields to update. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the actuator is not found, a new actuator will be created.
+In this situation, `update_mask` is ignored. </p></td>
                 </tr>
               
             </tbody>
@@ -16723,6 +16787,14 @@ Format: projects/{project}/changelists/{changelist} </p></td>
                   <td><p>The list of fields to be updated. </p></td>
                 </tr>
               
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the changelist is not found, a new changelist will be created.
+In this situation, `update_mask` is ignored. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -17159,6 +17231,14 @@ Format: projects/{project}/databaseGroups/{databaseGroup} </p></td>
                   <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
                   <td></td>
                   <td><p>The list of fields to update. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the database group is not found, a new database group will be created.
+In this situation, `update_mask` is ignored. </p></td>
                 </tr>
               
             </tbody>
@@ -18570,6 +18650,14 @@ Format: idps/{identity_provider} </p></td>
                   <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
                   <td></td>
                   <td><p>The list of fields to update. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the identity provider is not found, a new identity provider will be created.
+In this situation, `update_mask` is ignored. </p></td>
                 </tr>
               
             </tbody>
@@ -21214,6 +21302,14 @@ Format: projects/{project}/plans/{plan} </p></td>
                   <td><p>The list of fields to update. </p></td>
                 </tr>
               
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the plan is not found, a new plan will be created.
+In this situation, `update_mask` is ignored. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -22392,6 +22488,14 @@ Format: projects/{project} </p></td>
                   <td><p>The list of fields to update. </p></td>
                 </tr>
               
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the project is not found, a new project will be created.
+In this situation, `update_mask` is ignored. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -22421,6 +22525,14 @@ Format: projects/{project} </p></td>
                   <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
                   <td></td>
                   <td><p>The list of fields to update. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the webhook is not found, a new webhook will be created.
+In this situation, `update_mask` is ignored. </p></td>
                 </tr>
               
             </tbody>
@@ -25402,6 +25514,14 @@ Format: projects/{project}/releases/{release} </p></td>
                   <td><p>The list of fields to be updated. </p></td>
                 </tr>
               
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the release is not found, a new release will be created.
+In this situation, `update_mask` is ignored. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -26860,6 +26980,14 @@ Format: risks/{risk} </p></td>
                   <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
                   <td></td>
                   <td><p>The list of fields to update. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the risk is not found, a new risk will be created.
+In this situation, `update_mask` is ignored. </p></td>
                 </tr>
               
             </tbody>
@@ -30253,6 +30381,14 @@ Only support update the following fields for now:
 - `statement` </p></td>
                 </tr>
               
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the sheet is not found, a new sheet will be created.
+In this situation, `update_mask` is ignored. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -30559,6 +30695,14 @@ Only support update the following fields for now:
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the subscription is not found, a new subscription will be created.
+In this situation, `update_mask` is ignored. </p></td>
                 </tr>
               
             </tbody>
@@ -31328,6 +31472,14 @@ Format: worksheets/{worksheet} </p></td>
 Fields are specified relative to the worksheet organizer.
 Only support update the following fields for now:
 - `starred` </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the worksheet organizer is not found, a new worksheet organizer will be created.
+In this situation, `update_mask` is ignored. </p></td>
                 </tr>
               
             </tbody>

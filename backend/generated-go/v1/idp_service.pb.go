@@ -415,7 +415,10 @@ type UpdateIdentityProviderRequest struct {
 	// Format: idps/{identity_provider}
 	IdentityProvider *IdentityProvider `protobuf:"bytes,1,opt,name=identity_provider,json=identityProvider,proto3" json:"identity_provider,omitempty"`
 	// The list of fields to update.
-	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	// If set to true, and the identity provider is not found, a new identity provider will be created.
+	// In this situation, `update_mask` is ignored.
+	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -462,6 +465,13 @@ func (x *UpdateIdentityProviderRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 		return x.UpdateMask
 	}
 	return nil
+}
+
+func (x *UpdateIdentityProviderRequest) GetAllowMissing() bool {
+	if x != nil {
+		return x.AllowMissing
+	}
+	return false
 }
 
 type DeleteIdentityProviderRequest struct {
@@ -1292,11 +1302,12 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\x1dCreateIdentityProviderRequest\x12O\n" +
 	"\x11identity_provider\x18\x01 \x01(\v2\x1d.bytebase.v1.IdentityProviderB\x03\xe0A\x02R\x10identityProvider\x120\n" +
 	"\x14identity_provider_id\x18\x02 \x01(\tR\x12identityProviderId\x12#\n" +
-	"\rvalidate_only\x18\x03 \x01(\bR\fvalidateOnly\"\xad\x01\n" +
+	"\rvalidate_only\x18\x03 \x01(\bR\fvalidateOnly\"\xd2\x01\n" +
 	"\x1dUpdateIdentityProviderRequest\x12O\n" +
 	"\x11identity_provider\x18\x01 \x01(\v2\x1d.bytebase.v1.IdentityProviderB\x03\xe0A\x02R\x10identityProvider\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"M\n" +
+	"updateMask\x12#\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"M\n" +
 	"\x1dDeleteIdentityProviderRequest\x12,\n" +
 	"\x04name\x18\x01 \x01(\tB\x18\xe0A\x02\xfaA\x12\n" +
 	"\x10bytebase.com/IdPR\x04name\"\xd4\x01\n" +

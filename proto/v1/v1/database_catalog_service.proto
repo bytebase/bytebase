@@ -47,6 +47,10 @@ message UpdateDatabaseCatalogRequest {
   // The catalog's `name` field is used to identify the database catalog to update.
   // Format: instances/{instance}/databases/{database}/catalog
   DatabaseCatalog catalog = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // If set to true, and the database catalog is not found, a new database catalog will be created.
+  // In this situation, `update_mask` is ignored.
+  bool allow_missing = 2;
 }
 
 message DatabaseCatalog {

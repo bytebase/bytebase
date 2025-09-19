@@ -15,6 +15,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -30,6 +31,7 @@ type ReleaseService struct {
 	sheetManager *sheet.Manager
 	schemaSyncer *schemasync.Syncer
 	dbFactory    *dbfactory.DBFactory
+	iamManager   *iam.Manager
 }
 
 func NewReleaseService(
@@ -37,12 +39,14 @@ func NewReleaseService(
 	sheetManager *sheet.Manager,
 	schemaSyncer *schemasync.Syncer,
 	dbFactory *dbfactory.DBFactory,
+	iamManager *iam.Manager,
 ) *ReleaseService {
 	return &ReleaseService{
 		store:        store,
 		sheetManager: sheetManager,
 		schemaSyncer: schemaSyncer,
 		dbFactory:    dbFactory,
+		iamManager:   iamManager,
 	}
 }
 
@@ -275,15 +279,41 @@ func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask must be set"))
 	}
 
-	_, releaseUID, err := common.GetProjectReleaseUID(req.Msg.Release.Name)
+	projectID, releaseUID, err := common.GetProjectReleaseUID(req.Msg.Release.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release uid"))
 	}
+
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
+
 	release, err := s.store.GetRelease(ctx, releaseUID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get release"))
 	}
 	if release == nil {
+		if req.Msg.AllowMissing {
+			project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project"))
+			}
+			if project == nil {
+				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
+			}
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionReleasesCreate, user, project.ResourceID)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
+			}
+			if !ok {
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionReleasesCreate))
+			}
+			return s.CreateRelease(ctx, connect.NewRequest(&v1pb.CreateReleaseRequest{
+				Parent:  common.FormatProject(project.ResourceID),
+				Release: req.Msg.Release,
+			}))
+		}
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %v not found", releaseUID))
 	}
 	if release.Deleted {

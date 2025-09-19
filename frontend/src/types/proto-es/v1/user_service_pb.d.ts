@@ -222,6 +222,14 @@ export declare type UpdateUserRequest = Message<"bytebase.v1.UpdateUserRequest">
    * @generated from field: bool regenerate_recovery_codes = 5;
    */
   regenerateRecoveryCodes: boolean;
+
+  /**
+   * If set to true, and the user is not found, a new user will be created.
+   * In this situation, `update_mask` is ignored.
+   *
+   * @generated from field: bool allow_missing = 6;
+   */
+  allowMissing: boolean;
 };
 
 /**

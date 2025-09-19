@@ -313,6 +313,30 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 
 	project, err := s.getProjectMessage(ctx, req.Msg.Project.Name)
 	if err != nil {
+		if connect.CodeOf(err) == connect.CodeNotFound && req.Msg.AllowMissing {
+			// When allow_missing is true and project doesn't exist, create a new one
+			user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+			if !ok {
+				return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
+			}
+
+			projectID, perr := common.GetProjectID(req.Msg.Project.Name)
+			if perr != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, perr)
+			}
+
+			ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionProjectsCreate, user)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
+			}
+			if !ok {
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionProjectsCreate))
+			}
+			return s.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
+				Project:   req.Msg.Project,
+				ProjectId: projectID,
+			}))
+		}
 		return nil, err
 	}
 	if project.Deleted {
@@ -925,6 +949,26 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if webhook == nil {
+		if req.Msg.AllowMissing {
+			// When allow_missing is true and webhook doesn't exist, create a new one
+			user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+			if !ok {
+				return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
+			}
+			// Check if user has permission to update project (which includes adding webhooks)
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsUpdate, user, project.ResourceID)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
+			}
+			if !ok {
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionProjectsUpdate))
+			}
+			// Call AddWebhook instead since we're creating a new webhook
+			return s.AddWebhook(ctx, connect.NewRequest(&v1pb.AddWebhookRequest{
+				Project: fmt.Sprintf("projects/%s", project.ResourceID),
+				Webhook: req.Msg.Webhook,
+			}))
+		}
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("webhook %q not found", req.Msg.Webhook.Url))
 	}
 

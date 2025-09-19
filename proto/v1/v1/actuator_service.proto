@@ -77,6 +77,10 @@ message UpdateActuatorInfoRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // If set to true, and the actuator is not found, a new actuator will be created.
+  // In this situation, `update_mask` is ignored.
+  bool allow_missing = 3;
 }
 
 message DeleteCacheRequest {}

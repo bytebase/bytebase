@@ -292,7 +292,10 @@ type UpdateSheetRequest struct {
 	// Only support update the following fields for now:
 	// - `title`
 	// - `statement`
-	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	// If set to true, and the sheet is not found, a new sheet will be created.
+	// In this situation, `update_mask` is ignored.
+	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -339,6 +342,13 @@ func (x *UpdateSheetRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 		return x.UpdateMask
 	}
 	return nil
+}
+
+func (x *UpdateSheetRequest) GetAllowMissing() bool {
+	if x != nil {
+		return x.AllowMissing
+	}
+	return false
 }
 
 type Sheet struct {
@@ -576,11 +586,12 @@ const file_v1_sheet_service_proto_rawDesc = "" +
 	"\x0fGetSheetRequest\x12.\n" +
 	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
 	"\x12bytebase.com/SheetR\x04name\x12\x10\n" +
-	"\x03raw\x18\x02 \x01(\bR\x03raw\"\x80\x01\n" +
+	"\x03raw\x18\x02 \x01(\bR\x03raw\"\xa5\x01\n" +
 	"\x12UpdateSheetRequest\x12-\n" +
 	"\x05sheet\x18\x01 \x01(\v2\x12.bytebase.v1.SheetB\x03\xe0A\x02R\x05sheet\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"\x89\x03\n" +
+	"updateMask\x12#\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\x89\x03\n" +
 	"\x05Sheet\x12\x1a\n" +
 	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12\x19\n" +
 	"\x05title\x18\x03 \x01(\tB\x03\xe0A\x02R\x05title\x12\x1d\n" +

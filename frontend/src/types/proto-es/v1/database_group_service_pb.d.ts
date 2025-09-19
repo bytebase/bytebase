@@ -177,6 +177,14 @@ export declare type UpdateDatabaseGroupRequest = Message<"bytebase.v1.UpdateData
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */
   updateMask?: FieldMask;
+
+  /**
+   * If set to true, and the database group is not found, a new database group will be created.
+   * In this situation, `update_mask` is ignored.
+   *
+   * @generated from field: bool allow_missing = 3;
+   */
+  allowMissing: boolean;
 };
 
 /**

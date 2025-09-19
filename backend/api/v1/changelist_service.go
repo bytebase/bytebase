@@ -175,17 +175,32 @@ func (s *ChangelistService) UpdateChangelist(ctx context.Context, req *connect.R
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
 	}
+
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
+	}
+
 	changelist, err := s.store.GetChangelist(ctx, &store.FindChangelistMessage{ProjectID: &project.ResourceID, ResourceID: &changelistID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if changelist == nil {
+		if req.Msg.AllowMissing {
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionChangelistsCreate, user, project.ResourceID)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
+			}
+			if !ok {
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionChangelistsCreate))
+			}
+			return s.CreateChangelist(ctx, connect.NewRequest(&v1pb.CreateChangelistRequest{
+				Parent:       common.FormatProject(project.ResourceID),
+				ChangelistId: changelistID,
+				Changelist:   req.Msg.Changelist,
+			}))
+		}
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("changelist %q not found", changelistID))
-	}
-
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 	update := &store.UpdateChangelistMessage{
 		UpdaterID:  user.ID,

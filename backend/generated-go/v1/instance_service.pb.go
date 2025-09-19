@@ -623,7 +623,10 @@ type UpdateInstanceRequest struct {
 	// Format: instances/{instance}
 	Instance *Instance `protobuf:"bytes,1,opt,name=instance,proto3" json:"instance,omitempty"`
 	// The list of fields to update.
-	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	// If set to true, and the instance is not found, a new instance will be created.
+	// In this situation, `update_mask` is ignored.
+	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -670,6 +673,13 @@ func (x *UpdateInstanceRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 		return x.UpdateMask
 	}
 	return nil
+}
+
+func (x *UpdateInstanceRequest) GetAllowMissing() bool {
+	if x != nil {
+		return x.AllowMissing
+	}
+	return false
 }
 
 type DeleteInstanceRequest struct {
@@ -1288,7 +1298,10 @@ type UpdateDataSourceRequest struct {
 	// The list of fields to update.
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,3,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 	// Validate only also tests the data source connection.
-	ValidateOnly  bool `protobuf:"varint,4,opt,name=validate_only,json=validateOnly,proto3" json:"validate_only,omitempty"`
+	ValidateOnly bool `protobuf:"varint,4,opt,name=validate_only,json=validateOnly,proto3" json:"validate_only,omitempty"`
+	// If set to true, and the data source is not found, a new data source will be created.
+	// In this situation, `update_mask` is ignored.
+	AllowMissing  bool `protobuf:"varint,5,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1347,6 +1360,13 @@ func (x *UpdateDataSourceRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 func (x *UpdateDataSourceRequest) GetValidateOnly() bool {
 	if x != nil {
 		return x.ValidateOnly
+	}
+	return false
+}
+
+func (x *UpdateDataSourceRequest) GetAllowMissing() bool {
+	if x != nil {
+		return x.AllowMissing
 	}
 	return false
 }
@@ -2620,11 +2640,12 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\binstance\x18\x01 \x01(\v2\x15.bytebase.v1.InstanceB\x03\xe0A\x02R\binstance\x12\x1f\n" +
 	"\vinstance_id\x18\x02 \x01(\tR\n" +
 	"instanceId\x12#\n" +
-	"\rvalidate_only\x18\x03 \x01(\bR\fvalidateOnly\"\x8c\x01\n" +
+	"\rvalidate_only\x18\x03 \x01(\bR\fvalidateOnly\"\xb1\x01\n" +
 	"\x15UpdateInstanceRequest\x126\n" +
 	"\binstance\x18\x01 \x01(\v2\x15.bytebase.v1.InstanceB\x03\xe0A\x02R\binstance\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"v\n" +
+	"updateMask\x12#\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"v\n" +
 	"\x15DeleteInstanceRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/InstanceR\x04name\x12\x14\n" +
@@ -2663,7 +2684,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/InstanceR\x04name\x12=\n" +
 	"\vdata_source\x18\x02 \x01(\v2\x17.bytebase.v1.DataSourceB\x03\xe0A\x02R\n" +
-	"dataSource\"\xed\x01\n" +
+	"dataSource\"\x92\x02\n" +
 	"\x17UpdateDataSourceRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/InstanceR\x04name\x12=\n" +
@@ -2671,7 +2692,8 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"dataSource\x12;\n" +
 	"\vupdate_mask\x18\x03 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
-	"\rvalidate_only\x18\x04 \x01(\bR\fvalidateOnly\"\xbb\x05\n" +
+	"\rvalidate_only\x18\x04 \x01(\bR\fvalidateOnly\x12#\n" +
+	"\rallow_missing\x18\x05 \x01(\bR\fallowMissing\"\xbb\x05\n" +
 	"\bInstance\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +

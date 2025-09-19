@@ -274,6 +274,10 @@ message UpdateProjectRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
+
+  // If set to true, and the project is not found, a new project will be created.
+  // In this situation, `update_mask` is ignored.
+  bool allow_missing = 3;
 }
 
 message DeleteProjectRequest {
@@ -425,6 +429,10 @@ message UpdateWebhookRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
+
+  // If set to true, and the webhook is not found, a new webhook will be created.
+  // In this situation, `update_mask` is ignored.
+  bool allow_missing = 3;
 }
 
 message RemoveWebhookRequest {

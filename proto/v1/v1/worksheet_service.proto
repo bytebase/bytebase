@@ -126,6 +126,10 @@ message UpdateWorksheetOrganizerRequest {
   // Only support update the following fields for now:
   // - `starred`
   google.protobuf.FieldMask update_mask = 2;
+
+  // If set to true, and the worksheet organizer is not found, a new worksheet organizer will be created.
+  // In this situation, `update_mask` is ignored.
+  bool allow_missing = 3;
 }
 
 message WorksheetOrganizer {

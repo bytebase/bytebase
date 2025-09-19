@@ -212,6 +212,10 @@ message UpdatePlanRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // If set to true, and the plan is not found, a new plan will be created.
+  // In this situation, `update_mask` is ignored.
+  bool allow_missing = 3;
 }
 
 message Plan {

@@ -56,6 +56,8 @@ func local_request_SubscriptionService_GetSubscription_0(ctx context.Context, ma
 	return msg, metadata, err
 }
 
+var filter_SubscriptionService_UpdateSubscription_0 = &utilities.DoubleArray{Encoding: map[string]int{"license": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+
 func request_SubscriptionService_UpdateSubscription_0(ctx context.Context, marshaler runtime.Marshaler, client SubscriptionServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq UpdateSubscriptionRequest
@@ -67,6 +69,12 @@ func request_SubscriptionService_UpdateSubscription_0(ctx context.Context, marsh
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
 	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SubscriptionService_UpdateSubscription_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 	msg, err := client.UpdateSubscription(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
@@ -77,6 +85,12 @@ func local_request_SubscriptionService_UpdateSubscription_0(ctx context.Context,
 		metadata runtime.ServerMetadata
 	)
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.License); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SubscriptionService_UpdateSubscription_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.UpdateSubscription(ctx, &protoReq)

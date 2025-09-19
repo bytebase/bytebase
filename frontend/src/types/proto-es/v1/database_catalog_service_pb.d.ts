@@ -42,6 +42,14 @@ export declare type UpdateDatabaseCatalogRequest = Message<"bytebase.v1.UpdateDa
    * @generated from field: bytebase.v1.DatabaseCatalog catalog = 1;
    */
   catalog?: DatabaseCatalog;
+
+  /**
+   * If set to true, and the database catalog is not found, a new database catalog will be created.
+   * In this situation, `update_mask` is ignored.
+   *
+   * @generated from field: bool allow_missing = 2;
+   */
+  allowMissing: boolean;
 };
 
 /**

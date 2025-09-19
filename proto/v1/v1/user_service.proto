@@ -197,6 +197,10 @@ message UpdateUserRequest {
 
   // The regenerate_recovery_codes flag means to regenerate recovery codes for user.
   bool regenerate_recovery_codes = 5;
+
+  // If set to true, and the user is not found, a new user will be created.
+  // In this situation, `update_mask` is ignored.
+  bool allow_missing = 6;
 }
 
 message DeleteUserRequest {

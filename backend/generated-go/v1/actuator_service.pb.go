@@ -185,7 +185,10 @@ type UpdateActuatorInfoRequest struct {
 	// The actuator to update.
 	Actuator *ActuatorInfo `protobuf:"bytes,1,opt,name=actuator,proto3" json:"actuator,omitempty"`
 	// The list of fields to update.
-	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	// If set to true, and the actuator is not found, a new actuator will be created.
+	// In this situation, `update_mask` is ignored.
+	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -232,6 +235,13 @@ func (x *UpdateActuatorInfoRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 		return x.UpdateMask
 	}
 	return nil
+}
+
+func (x *UpdateActuatorInfoRequest) GetAllowMissing() bool {
+	if x != nil {
+		return x.AllowMissing
+	}
+	return false
 }
 
 type DeleteCacheRequest struct {
@@ -569,11 +579,12 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\x0fResourcePackage\x12\x12\n" +
 	"\x04logo\x18\x01 \x01(\fR\x04logo\"\x14\n" +
 	"\x12SetupSampleRequest\"\x18\n" +
-	"\x16GetActuatorInfoRequest\"\x99\x01\n" +
+	"\x16GetActuatorInfoRequest\"\xbe\x01\n" +
 	"\x19UpdateActuatorInfoRequest\x12:\n" +
 	"\bactuator\x18\x01 \x01(\v2\x19.bytebase.v1.ActuatorInfoB\x03\xe0A\x02R\bactuator\x12@\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
-	"updateMask\"\x14\n" +
+	"updateMask\x12#\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\x14\n" +
 	"\x12DeleteCacheRequest\"\xe5\b\n" +
 	"\fActuatorInfo\x12\x1d\n" +
 	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +

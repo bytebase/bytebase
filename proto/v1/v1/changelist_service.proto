@@ -131,6 +131,10 @@ message UpdateChangelistRequest {
 
   // The list of fields to be updated.
   google.protobuf.FieldMask update_mask = 2;
+
+  // If set to true, and the changelist is not found, a new changelist will be created.
+  // In this situation, `update_mask` is ignored.
+  bool allow_missing = 3;
 }
 
 message DeleteChangelistRequest {

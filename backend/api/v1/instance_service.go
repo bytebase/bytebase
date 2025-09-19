@@ -424,7 +424,31 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 
 	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Instance.Name)
 	if err != nil {
-		return nil, err
+		if strings.Contains(err.Error(), "not found") && req.Msg.AllowMissing {
+			// When allow_missing is true and instance doesn't exist, create a new one
+			user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+			if !ok {
+				return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
+			}
+
+			instanceID, ierr := common.GetInstanceID(req.Msg.Instance.Name)
+			if ierr != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, ierr)
+			}
+
+			ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionInstancesCreate, user)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
+			}
+			if !ok {
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionInstancesCreate))
+			}
+			return s.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+				InstanceId: instanceID,
+				Instance:   req.Msg.Instance,
+			}))
+		}
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	if instance.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", req.Msg.Instance.Name))
@@ -762,6 +786,11 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("update_mask must be set"))
 	}
 
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
+	}
+
 	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
 	if err != nil {
 		return nil, err
@@ -778,6 +807,19 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		}
 	}
 	if dataSource == nil {
+		if req.Msg.AllowMissing {
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstancesCreate, user)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
+			}
+			if !ok {
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionInstancesCreate))
+			}
+			return s.AddDataSource(ctx, connect.NewRequest(&v1pb.AddDataSourceRequest{
+				Name:       req.Msg.Name,
+				DataSource: req.Msg.DataSource,
+			}))
+		}
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf(`cannot found data source "%s"`, req.Msg.DataSource.Id))
 	}
 

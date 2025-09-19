@@ -246,7 +246,10 @@ type UpdateWorksheetOrganizerRequest struct {
 	// Fields are specified relative to the worksheet organizer.
 	// Only support update the following fields for now:
 	// - `starred`
-	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
+	// If set to true, and the worksheet organizer is not found, a new worksheet organizer will be created.
+	// In this situation, `update_mask` is ignored.
+	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -293,6 +296,13 @@ func (x *UpdateWorksheetOrganizerRequest) GetUpdateMask() *fieldmaskpb.FieldMask
 		return x.UpdateMask
 	}
 	return nil
+}
+
+func (x *UpdateWorksheetOrganizerRequest) GetAllowMissing() bool {
+	if x != nil {
+		return x.AllowMissing
+	}
+	return false
 }
 
 type WorksheetOrganizer struct {
@@ -691,11 +701,12 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\x16UpdateWorksheetRequest\x129\n" +
 	"\tworksheet\x18\x01 \x01(\v2\x16.bytebase.v1.WorksheetB\x03\xe0A\x02R\tworksheet\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"\xa2\x01\n" +
+	"updateMask\"\xc7\x01\n" +
 	"\x1fUpdateWorksheetOrganizerRequest\x12B\n" +
 	"\torganizer\x18\x01 \x01(\v2\x1f.bytebase.v1.WorksheetOrganizerB\x03\xe0A\x02R\torganizer\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"Q\n" +
+	"updateMask\x12#\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"Q\n" +
 	"\x12WorksheetOrganizer\x12!\n" +
 	"\tworksheet\x18\x01 \x01(\tB\x03\xe0A\x02R\tworksheet\x12\x18\n" +
 	"\astarred\x18\x02 \x01(\bR\astarred\"1\n" +
