@@ -5,6 +5,7 @@
       class="w-full flex-1 flex flex-col gap-3 px-4 divide-y overflow-x-auto"
     >
       <TargetListSection />
+      <DataExportOptionsSection v-if="isDataExportPlan" />
       <FailedTaskRunsSection v-if="!isCreating && rollout" />
       <template v-if="!specHasRelease">
         <SQLCheckV1Section v-if="isCreating" />
@@ -29,6 +30,7 @@ import PlanCheckSection from "../PlanCheckSection";
 import { providePlanSQLCheckContext } from "../SQLCheckSection";
 import SQLCheckV1Section from "../SQLCheckV1Section";
 import StatementSection from "../StatementSection";
+import DataExportOptionsSection from "./DataExportOptionsSection.vue";
 import FailedTaskRunsSection from "./FailedTaskRunsSection.vue";
 import SpecListSection from "./SpecListSection.vue";
 import TargetListSection from "./TargetListSection.vue";
@@ -52,9 +54,18 @@ const specHasRelease = computed(() => {
   );
 });
 
+const isDataExportPlan = computed(() => {
+  return plan.value.specs.every(
+    (spec) => spec.config.case === "exportDataConfig"
+  );
+});
+
 const shouldShowSpecList = computed(() => {
   return (
-    isCreating.value || plan.value.specs.length > 1 || plan.value.rollout === ""
+    (isCreating.value ||
+      plan.value.specs.length > 1 ||
+      plan.value.rollout === "") &&
+    !isDataExportPlan.value
   );
 });
 </script>

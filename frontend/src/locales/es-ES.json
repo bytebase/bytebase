@@ -621,8 +621,7 @@
             "self": "Máximo de filas de resultados de SQL",
             "rows": "Filas",
             "description": "Limite las filas de salida en el resultado de la consulta SQL, el valor <= 0 significa que no hay límite.",
-            "limit": "No hay límite cuando el valor <= 0",
-            "limit-warning": "Exportación máxima de {count} filas debido a la restricción de la consulta"
+            "limit": "No hay límite cuando el valor <= 0"
           }
         },
         "query-data-policy": {
@@ -1033,7 +1032,6 @@
     "data-export": {
       "options": "Opciones de exportación",
       "format": "Formato",
-      "encrypt": "Cifrar",
       "file-downloaded": "Archivo Descargado",
       "download-tooltip": "Disponible por 24 horas"
     },

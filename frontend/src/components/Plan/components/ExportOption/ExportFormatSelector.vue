@@ -8,7 +8,9 @@
     />
   </NRadioGroup>
   <template v-else>
-    <span class="text-base">{{ exportFormatToString(format) }}</span>
+    <span class="text-sm font-medium leading-6">{{
+      exportFormatToString(format)
+    }}</span>
   </template>
 </template>
 

@@ -45,7 +45,7 @@ import { useRouter, type LocationQueryRaw } from "vue-router";
 import DatabaseAndGroupSelector, {
   type DatabaseSelectState,
 } from "@/components/DatabaseAndGroupSelector/";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useProjectByName } from "@/store";
 import { generateIssueTitle, extractProjectResourceName } from "@/utils";
 import { DrawerContent } from "../v2";
@@ -94,10 +94,10 @@ const navigateToIssuePage = async () => {
   }
 
   router.push({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    name: PROJECT_V1_ROUTE_PLAN_DETAIL,
     params: {
       projectId: extractProjectResourceName(project.value.name),
-      issueSlug: "create",
+      planId: "create",
     },
     query,
   });

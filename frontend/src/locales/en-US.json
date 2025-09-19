@@ -621,8 +621,7 @@
             "self": "Maximum SQL result rows",
             "rows": "Rows",
             "description": "Limit the output rows in SQL query result.",
-            "limit": "No limit when the value <= 0",
-            "limit-warning": "Maximum export {count} rows due to the query restriction"
+            "limit": "No limit when the value <= 0"
           }
         },
         "query-data-policy": {
@@ -1033,7 +1032,6 @@
     "data-export": {
       "options": "Options",
       "format": "Format",
-      "encrypt": "Encrypt",
       "file-downloaded": "File Downloaded",
       "download-tooltip": "Available for 24 hours"
     },

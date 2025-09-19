@@ -119,7 +119,6 @@ const {
   hasRunning: hasRunningPlanChecks,
 } = usePlanCheckStatus(plan);
 
-// Provide issue review context when an issue exists
 const reviewContext = useIssueReviewContext();
 
 // Policy for restricting issue creation when plan checks fail
@@ -143,13 +142,17 @@ const pendingReviewAction = ref<IssueReviewAction | undefined>(undefined);
 const pendingStatusAction = ref<IssueStatusAction | undefined>(undefined);
 const pendingRolloutAction = ref<RolloutAction | undefined>(undefined);
 
-// Get the stage that contains database creation tasks
+// Get the stage that contains database creation or export tasks
 const rolloutStage = computed(() => {
   if (!rollout.value) return undefined;
 
-  // Find the first stage with database creation tasks
+  // Find the first stage with database creation or export tasks
   return rollout.value.stages.find((stage) =>
-    stage.tasks.some((task) => task.type === Task_Type.DATABASE_CREATE)
+    stage.tasks.some(
+      (task) =>
+        task.type === Task_Type.DATABASE_CREATE ||
+        task.type === Task_Type.DATABASE_EXPORT
+    )
   );
 });
 
@@ -334,11 +337,15 @@ const availableActions = computed(() => {
     hasProjectPermissionV2(project.value, "bb.taskRuns.create") &&
     issueValue.approvalFindingDone
   ) {
-    const hasDatabaseCreateTasks = rollout.value.stages.some((stage) =>
-      stage.tasks.some((task) => task.type === Task_Type.DATABASE_CREATE)
+    const hasDatabaseCreateOrExportTasks = rollout.value.stages.some((stage) =>
+      stage.tasks.some(
+        (task) =>
+          task.type === Task_Type.DATABASE_CREATE ||
+          task.type === Task_Type.DATABASE_EXPORT
+      )
     );
 
-    if (hasDatabaseCreateTasks) {
+    if (hasDatabaseCreateOrExportTasks) {
       // Show ROLLOUT_START if there are actionable database creation tasks
       // This includes both normal rollout and force rollout scenarios
       const hasStartableTasks = rollout.value.stages

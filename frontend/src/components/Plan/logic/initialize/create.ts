@@ -9,6 +9,7 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { IssueType } from "@/types";
+import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
   PlanSchema,
@@ -177,6 +178,7 @@ const buildSpecForTargetsV1 = async (
         value: createProto(Plan_ExportDataConfigSchema, {
           targets,
           sheet,
+          format: ExportFormat.JSON, // default to JSON
         }),
       };
       break;

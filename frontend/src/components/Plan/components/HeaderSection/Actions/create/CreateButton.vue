@@ -34,16 +34,39 @@ import {
   getLocalSheetByName,
 } from "@/components/Plan/logic";
 import { usePlanContext } from "@/components/Plan/logic";
-import { planServiceClientConnect } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
-import { useCurrentProjectV1, useSheetV1Store } from "@/store";
+import {
+  planServiceClientConnect,
+  issueServiceClientConnect,
+  rolloutServiceClientConnect,
+} from "@/grpcweb";
+import {
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+} from "@/router/dashboard/projectV1";
+import {
+  useCurrentProjectV1,
+  useSheetV1Store,
+  useCurrentUserV1,
+  pushNotification,
+} from "@/store";
+import {
+  CreateIssueRequestSchema,
+  IssueSchema,
+  IssueStatus,
+  Issue_Type,
+} from "@/types/proto-es/v1/issue_service_pb";
 import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { type Plan_ChangeDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
+import {
+  type Plan_ChangeDatabaseConfig,
+  type Plan_ExportDataConfig,
+} from "@/types/proto-es/v1/plan_service_pb";
+import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   extractPlanUID,
   extractProjectResourceName,
   extractSheetUID,
+  extractIssueUID,
   hasProjectPermissionV2,
 } from "@/utils";
 
@@ -52,10 +75,18 @@ const router = useRouter();
 const { project } = useCurrentProjectV1();
 const { plan } = usePlanContext();
 const sheetStore = useSheetV1Store();
+const currentUser = useCurrentUserV1();
 const loading = ref(false);
 
 // Use the validation hook for all specs
 const { isSpecEmpty } = useSpecsValidation(computed(() => plan.value.specs));
+
+// Check if this is a data export plan
+const isDataExportPlan = computed(() => {
+  return plan.value.specs.every(
+    (spec) => spec.config.case === "exportDataConfig"
+  );
+});
 
 const planCreateErrorList = computed(() => {
   const errorList: string[] = [];
@@ -75,39 +106,107 @@ const doCreatePlan = async () => {
   loading.value = true;
 
   try {
-    await createSheets();
-    const request = create(CreatePlanRequestSchema, {
-      parent: project.value.name,
-      plan: plan.value,
-    });
-    const createdPlan = await planServiceClientConnect.createPlan(request);
-    if (!createdPlan) return;
-
-    nextTick(() => {
-      router.replace({
-        name: PROJECT_V1_ROUTE_PLAN_DETAIL,
-        params: {
-          projectId: extractProjectResourceName(createdPlan.name),
-          planId: extractPlanUID(createdPlan.name),
-        },
+    // For data export plans, create plan + issue + rollout and redirect to issue
+    if (isDataExportPlan.value) {
+      await doCreateDataExportIssue();
+    } else {
+      // For regular plans, just create the plan
+      await createSheets();
+      const request = create(CreatePlanRequestSchema, {
+        parent: project.value.name,
+        plan: plan.value,
       });
-    });
+      const createdPlan = await planServiceClientConnect.createPlan(request);
+      if (!createdPlan) return;
 
-    return createdPlan;
-  } catch {
+      nextTick(() => {
+        router.replace({
+          name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+          params: {
+            projectId: extractProjectResourceName(createdPlan.name),
+            planId: extractPlanUID(createdPlan.name),
+          },
+        });
+      });
+    }
+  } catch (error) {
+    console.error("Failed to create plan:", error);
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "Failed to create",
+      description: String(error),
+    });
     loading.value = false;
   }
+};
+
+// Create data export issue (plan + issue + rollout)
+const doCreateDataExportIssue = async () => {
+  // Create sheets first
+  await createSheets();
+
+  // Create the plan
+  const planRequest = create(CreatePlanRequestSchema, {
+    parent: project.value.name,
+    plan: plan.value,
+  });
+  const createdPlan = await planServiceClientConnect.createPlan(planRequest);
+  if (!createdPlan) return;
+
+  // Create the issue
+  const issueRequest = create(CreateIssueRequestSchema, {
+    parent: project.value.name,
+    issue: create(IssueSchema, {
+      creator: `users/${currentUser.value.email}`,
+      labels: [],
+      plan: createdPlan.name,
+      status: IssueStatus.OPEN,
+      type: Issue_Type.DATABASE_EXPORT,
+      rollout: "",
+    }),
+  });
+  const createdIssue =
+    await issueServiceClientConnect.createIssue(issueRequest);
+
+  // Create the rollout
+  const rolloutRequest = create(CreateRolloutRequestSchema, {
+    parent: project.value.name,
+    rollout: {
+      plan: createdPlan.name,
+    },
+  });
+  await rolloutServiceClientConnect.createRollout(rolloutRequest);
+
+  // Redirect to issue detail page
+  nextTick(() => {
+    router.replace({
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+      params: {
+        projectId: extractProjectResourceName(createdPlan.name),
+        issueId: extractIssueUID(createdIssue.name),
+      },
+    });
+  });
 };
 
 // Create sheets for spec configs and update their resource names.
 const createSheets = async () => {
   const specs = plan.value.specs || [];
-  const configWithSheetList: Plan_ChangeDatabaseConfig[] = [];
+  const configWithSheetList: (
+    | Plan_ChangeDatabaseConfig
+    | Plan_ExportDataConfig
+  )[] = [];
   const pendingCreateSheetMap = new Map<string, Sheet>();
 
   for (const spec of specs) {
-    const config =
-      spec.config?.case === "changeDatabaseConfig" ? spec.config.value : null;
+    let config = null;
+    if (spec.config?.case === "changeDatabaseConfig") {
+      config = spec.config.value;
+    } else if (spec.config?.case === "exportDataConfig") {
+      config = spec.config.value;
+    }
+
     if (!config) continue;
     configWithSheetList.push(config);
     if (pendingCreateSheetMap.has(config.sheet)) continue;

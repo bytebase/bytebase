@@ -621,8 +621,7 @@
             "self": "SQL结果行数上限",
             "rows": "行",
             "description": "限制SQL查询结果的输出行数，值 <=0 表示不限制。",
-            "limit": "当值 <= 0 时无限制",
-            "limit-warning": "由于查询限制，最多可导出 {count} 行"
+            "limit": "当值 <= 0 时无限制"
           }
         },
         "query-data-policy": {
@@ -1033,7 +1032,6 @@
     "data-export": {
       "options": "配置项",
       "format": "导出格式",
-      "encrypt": "加密",
       "file-downloaded": "文件已下载",
       "download-tooltip": "24 小时可用"
     },

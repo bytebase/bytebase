@@ -185,7 +185,8 @@ watch(
       plan.value.specs.some(
         (spec) =>
           spec.config.case !== "changeDatabaseConfig" &&
-          spec.config.case !== "createDatabaseConfig"
+          spec.config.case !== "createDatabaseConfig" &&
+          spec.config.case !== "exportDataConfig"
       )
     ) {
       router.replace({
