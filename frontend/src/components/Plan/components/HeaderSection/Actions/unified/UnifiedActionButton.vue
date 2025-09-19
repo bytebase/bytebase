@@ -8,6 +8,9 @@
         :disabled="disabled"
         @click="$emit('perform-action', action)"
       >
+        <template v-if="action === 'EXPORT_DOWNLOAD'" #icon>
+          <DownloadIcon class="w-5 h-5" />
+        </template>
         {{ actionDisplayName(action) }}
       </NButton>
     </template>
@@ -18,8 +21,11 @@
 </template>
 
 <script setup lang="ts">
+import { DownloadIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { usePlanContext } from "../../../../logic";
 import type { UnifiedAction } from "./types";
 
 defineProps<{
@@ -33,6 +39,14 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
+const { plan } = usePlanContext();
+
+// Check if this is a database export plan
+const isExportPlan = computed(() => {
+  return plan.value.specs.some(
+    (spec) => spec.config?.case === "exportDataConfig"
+  );
+});
 
 const actionDisplayName = (action: UnifiedAction): string => {
   switch (action) {
@@ -55,9 +69,11 @@ const actionDisplayName = (action: UnifiedAction): string => {
     case "PLAN_REOPEN":
       return t("common.reopen");
     case "ROLLOUT_START":
-      return t("common.rollout");
+      return isExportPlan.value ? t("common.export") : t("common.rollout");
     case "ROLLOUT_CANCEL":
       return t("common.cancel");
+    case "EXPORT_DOWNLOAD":
+      return t("common.download");
   }
 };
 
@@ -66,6 +82,7 @@ const actionButtonProps = (action: UnifiedAction) => {
     case "ISSUE_REVIEW_APPROVE":
     case "ISSUE_CREATE":
     case "ROLLOUT_START":
+    case "EXPORT_DOWNLOAD":
       return {
         type: "primary" as const,
       };
@@ -79,6 +96,7 @@ const actionButtonProps = (action: UnifiedAction) => {
     case "ISSUE_STATUS_CLOSE":
     case "PLAN_CLOSE":
     case "PLAN_REOPEN":
+    case "ROLLOUT_CANCEL":
       return {
         type: "default" as const,
       };

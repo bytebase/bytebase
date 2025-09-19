@@ -1,0 +1,71 @@
+<template>
+  <div class="w-full py-3">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-base">{{ $t("issue.data-export.options") }}</span>
+    </div>
+
+    <div class="space-y-3">
+      <!-- Export Format -->
+      <div class="flex items-center gap-4">
+        <span class="text-sm min-w-[100px]">{{
+          $t("export-data.export-format")
+        }}</span>
+        <ExportFormatSelector
+          v-model:format="exportFormat"
+          :editable="isCreating"
+        />
+      </div>
+
+      <!-- Password Protection -->
+      <div class="flex items-center gap-4 min-h-7">
+        <span class="text-sm min-w-[100px]">{{
+          $t("export-data.password-optional")
+        }}</span>
+        <ExportPasswordInputer
+          v-model:password="exportPassword"
+          :editable="isCreating"
+        />
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from "vue";
+import { ExportFormat } from "@/types/proto-es/v1/common_pb";
+import { usePlanContext } from "../../logic/context";
+import ExportFormatSelector from "../ExportOption/ExportFormatSelector.vue";
+import ExportPasswordInputer from "../ExportOption/ExportPasswordInputer.vue";
+import { useSelectedSpec } from "./context";
+
+const { isCreating } = usePlanContext();
+const selectedSpec = useSelectedSpec();
+
+const exportFormat = computed({
+  get() {
+    if (selectedSpec.value.config.case === "exportDataConfig") {
+      return selectedSpec.value.config.value.format || ExportFormat.JSON;
+    }
+    return ExportFormat.JSON;
+  },
+  set(value) {
+    if (selectedSpec.value.config.case === "exportDataConfig") {
+      selectedSpec.value.config.value.format = value;
+    }
+  },
+});
+
+const exportPassword = computed({
+  get() {
+    if (selectedSpec.value.config.case === "exportDataConfig") {
+      return selectedSpec.value.config.value.password || "";
+    }
+    return "";
+  },
+  set(value) {
+    if (selectedSpec.value.config.case === "exportDataConfig") {
+      selectedSpec.value.config.value.password = value || undefined;
+    }
+  },
+});
+</script>

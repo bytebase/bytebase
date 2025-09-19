@@ -2,7 +2,6 @@
   <div class="relative overflow-x-hidden h-full">
     <template v-if="ready">
       <GrantRequestIssueDetailPage v-if="isGrantRequestIssue(issue)" />
-      <DataExportIssueDetailPage v-else-if="isDatabaseDataExportIssue(issue)" />
       <IssueDetailPage v-else />
     </template>
     <div v-else class="w-full h-full flex flex-col items-center justify-center">
@@ -15,10 +14,10 @@
 import { useTitle } from "@vueuse/core";
 import Emittery from "emittery";
 import { NSpin } from "naive-ui";
-import { computed, onMounted, toRef } from "vue";
+import { computed, onMounted, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 import {
-  DataExportIssueDetailPage,
   GrantRequestIssueDetailPage,
   provideIssueContext,
   useBaseIssueContext,
@@ -30,8 +29,14 @@ import {
   type PlanCheckRunEvents,
 } from "@/components/PlanCheckRun/context";
 import { useBodyLayoutContext } from "@/layouts/common";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+  PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
+} from "@/router/dashboard/projectV1";
 import { projectNamePrefix, useProjectByName, useUIStateStore } from "@/store";
 import {
+  extractIssueUID,
+  extractProjectResourceName,
   isDatabaseDataExportIssue,
   isGrantRequestIssue,
   isValidIssueName,
@@ -47,6 +52,8 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const router = useRouter();
+const route = useRoute();
 
 const { project, ready: projectReady } = useProjectByName(
   computed(() => `${projectNamePrefix}${props.projectId}`)
@@ -103,6 +110,40 @@ onMounted(() => {
     });
   }
 });
+
+// Watch for when the issue data is ready and handle redirects
+watch(
+  ready,
+  (isReady) => {
+    if (!isReady) return;
+
+    // Redirect all data export issues to new layout
+    if (isDatabaseDataExportIssue(issue.value)) {
+      if (isCreating.value) {
+        // Redirect creation to plan creation page
+        router.replace({
+          name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
+          params: {
+            projectId: extractProjectResourceName(project.value.name),
+            planId: "create",
+          },
+          query: route.query,
+        });
+      } else {
+        // Redirect existing issues to new issue detail layout
+        router.replace({
+          name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+          params: {
+            projectId: extractProjectResourceName(project.value.name),
+            issueId: extractIssueUID(issue.value.name),
+          },
+          query: route.query,
+        });
+      }
+    }
+  },
+  { immediate: true }
+);
 
 const documentTitle = computed(() => {
   if (isCreating.value) {

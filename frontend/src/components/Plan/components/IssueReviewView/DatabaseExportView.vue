@@ -1,16 +1,44 @@
 <template>
-  <!-- TODO: Add database export specific overview content -->
-  <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-    <div class="text-lg font-medium text-green-900 mb-2">
-      Database Export Overview
-    </div>
-    <div class="text-sm text-green-700">
-      Export Data plan overview - Coming Soon
-    </div>
+  <div class="w-full space-y-4">
+    <!-- Tasks Section -->
+    <TasksSection />
+
+    <!-- Export Options Section -->
+    <OptionsSection />
+
+    <!-- SQL Statement Section -->
+    <StatementSection />
   </div>
 </template>
 
 <script lang="ts" setup>
-// TODO: Add database export specific logic
-// This component will handle the review interface for export data plans
+import { computed, watchEffect } from "vue";
+import { useDatabaseV1Store, useSheetV1Store } from "@/store";
+import type { Plan_ExportDataConfig } from "@/types/proto-es/v1/plan_service_pb";
+import { useSelectedSpec } from "../SpecDetailView/context";
+import StatementSection from "../StatementSection";
+import { TasksSection, OptionsSection } from "./DatabaseExportView";
+
+const databaseStore = useDatabaseV1Store();
+const sheetStore = useSheetV1Store();
+
+const selectedSpec = useSelectedSpec();
+
+const exportDataConfig = computed(() => {
+  return selectedSpec.value.config.value as Plan_ExportDataConfig;
+});
+
+// Fetch target databases
+watchEffect(() => {
+  exportDataConfig.value?.targets?.forEach((target) => {
+    databaseStore.getOrFetchDatabaseByName(target);
+  });
+});
+
+// Fetch sheet for statement display
+watchEffect(() => {
+  if (exportDataConfig.value?.sheet) {
+    sheetStore.getOrFetchSheetByName(exportDataConfig.value.sheet);
+  }
+});
 </script>

@@ -621,8 +621,7 @@
             "self": "最大SQL結果行数",
             "rows": "行",
             "description": "SQL クエリ結果の出力行を制限します。値 <= 0 は制限がないことを意味します。",
-            "limit": "値が0以下の場合、制限なし",
-            "limit-warning": "クエリ制限により、最大エクスポート行数は {count} 行です"
+            "limit": "値が0以下の場合、制限なし"
           }
         },
         "query-data-policy": {
@@ -1033,7 +1032,6 @@
     "data-export": {
       "options": "設定項目",
       "format": "エクスポート形式",
-      "encrypt": "暗号化",
       "file-downloaded": "ダウンロードされたファイル",
       "download-tooltip": "24 時間利用可能"
     },

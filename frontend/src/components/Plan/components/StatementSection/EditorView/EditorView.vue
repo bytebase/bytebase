@@ -96,7 +96,7 @@
     <div class="relative flex-1">
       <MonacoEditor
         ref="monacoEditorRef"
-        class="w-full h-full min-h-[200px] border rounded-[3px]"
+        class="w-full h-full min-h-[200px] border rounded overflow-hidden"
         :filename="filename"
         :content="state.statement"
         :language="language"
@@ -426,7 +426,10 @@ const updateStatement = async (statement: string) => {
       )}`
     );
   }
-  if (specToPatch.config.case !== "changeDatabaseConfig") {
+  if (
+    specToPatch.config.case !== "changeDatabaseConfig" &&
+    specToPatch.config.case !== "exportDataConfig"
+  ) {
     throw new Error(
       `Unsupported spec type for plan update ${JSON.stringify(specToPatch)}`
     );

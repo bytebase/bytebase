@@ -1,7 +1,5 @@
 <template>
   <div class="flex gap-x-3">
-    <IssueExtraActionButtonGroup v-if="shouldShowExtraActionButtonGroup" />
-
     <RolloutActionButtonGroup
       v-if="primaryTaskRolloutActionList.length > 0"
       :task-rollout-action-list="primaryTaskRolloutActionList"
@@ -33,12 +31,8 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
-import { isDatabaseDataExportIssue } from "@/utils";
 import type { ExtraActionOption } from "../common";
-import {
-  IssueStatusActionButtonGroup,
-  IssueExtraActionButtonGroup,
-} from "../common";
+import { IssueStatusActionButtonGroup } from "../common";
 import RolloutActionButtonGroup from "./RolloutActionButtonGroup.vue";
 import type { RolloutAction } from "./common";
 
@@ -107,15 +101,8 @@ const extraActionList = computed(() => {
   return list;
 });
 
-const shouldShowExtraActionButtonGroup = computed(() => {
-  return isDatabaseDataExportIssue(issue.value);
-});
-
 const issueStatusButtonsDisplayMode = computed(() => {
-  return shouldShowExtraActionButtonGroup.value ||
-    primaryTaskRolloutActionList.value.length > 0
-    ? "DROPDOWN"
-    : "BUTTON";
+  return primaryTaskRolloutActionList.value.length > 0 ? "DROPDOWN" : "BUTTON";
 });
 
 const performRolloutAction = async (params: RolloutAction) => {

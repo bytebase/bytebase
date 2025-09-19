@@ -33,92 +33,96 @@
           <PlanCheckStatusCount :plan="plan" />
         </div>
 
-        <!-- Stage/Task information - hidden for database creation tasks -->
-        <template v-if="shouldShowStageTaskInfo">
-          <div
-            class="flex flex-row gap-x-2 shrink-0 overflow-y-hidden justify-start items-center"
-          >
-            <label class="font-medium text-control">
-              {{ $t("common.stage") }}
-            </label>
-            <EnvironmentV1Name
-              :environment="
-                environmentStore.getEnvironmentByName(targetStage.environment)
-              "
-              :link="false"
-            />
-          </div>
+        <!-- Stage information -->
+        <div
+          v-if="shouldShowStageInfo"
+          class="flex flex-row gap-x-2 shrink-0 overflow-y-hidden justify-start items-center"
+        >
+          <label class="font-medium text-control">
+            {{ $t("common.stage") }}
+          </label>
+          <EnvironmentV1Name
+            :environment="
+              environmentStore.getEnvironmentByName(targetStage.environment)
+            "
+            :link="false"
+          />
+        </div>
 
-          <div
-            class="flex flex-col gap-y-1 shrink overflow-y-hidden justify-start"
-          >
-            <div class="flex items-center justify-between">
-              <label class="text-control">
-                <span class="font-medium">{{
-                  $t("common.task", eligibleTasks.length)
-                }}</span>
-                <span class="opacity-80" v-if="eligibleTasks.length > 1">
-                  ({{
-                    eligibleTasks.length === target.stage.tasks.length
-                      ? eligibleTasks.length
-                      : `${eligibleTasks.length} / ${target.stage.tasks.length}`
-                  }})
-                </span>
-              </label>
-            </div>
-            <div class="flex-1 overflow-y-auto">
-              <template v-if="useVirtualScroll">
-                <NVirtualList
-                  :items="eligibleTasks"
-                  :item-size="itemHeight"
-                  class="max-h-64"
-                  item-resizable
-                >
-                  <template #default="{ item: task }">
-                    <div
-                      :key="task.name"
-                      class="flex items-center text-sm"
-                      :style="{ height: `${itemHeight}px` }"
-                    >
-                      <NTag
-                        v-if="semanticTaskType(task.type)"
-                        class="mr-2"
-                        size="small"
-                      >
-                        <span class="inline-block text-center">
-                          {{ semanticTaskType(task.type) }}
-                        </span>
-                      </NTag>
-                      <TaskDatabaseName :task="task" />
-                    </div>
-                  </template>
-                </NVirtualList>
-              </template>
-              <template v-else>
-                <NScrollbar class="max-h-64">
-                  <ul class="text-sm space-y-2">
-                    <li
-                      v-for="task in eligibleTasks"
-                      :key="task.name"
-                      class="flex items-center"
-                    >
-                      <NTag
-                        v-if="semanticTaskType(task.type)"
-                        class="mr-2"
-                        size="small"
-                      >
-                        <span class="inline-block text-center">
-                          {{ semanticTaskType(task.type) }}
-                        </span>
-                      </NTag>
-                      <TaskDatabaseName :task="task" />
-                    </li>
-                  </ul>
-                </NScrollbar>
-              </template>
-            </div>
+        <!-- Task information -->
+        <div
+          v-if="shouldShowTaskInfo"
+          class="flex flex-col gap-y-1 shrink overflow-y-hidden justify-start"
+        >
+          <div class="flex items-center justify-between">
+            <label class="text-control">
+              <span class="font-medium">{{
+                $t("common.task", eligibleTasks.length)
+              }}</span>
+              <span
+                class="opacity-80"
+                v-if="eligibleTasks.length > 1 && shouldShowStageInfo"
+              >
+                ({{
+                  eligibleTasks.length === target.stage.tasks.length
+                    ? eligibleTasks.length
+                    : `${eligibleTasks.length} / ${target.stage.tasks.length}`
+                }})
+              </span>
+            </label>
           </div>
-        </template>
+          <div class="flex-1 overflow-y-auto">
+            <template v-if="useVirtualScroll">
+              <NVirtualList
+                :items="eligibleTasks"
+                :item-size="itemHeight"
+                class="max-h-64"
+                item-resizable
+              >
+                <template #default="{ item: task }">
+                  <div
+                    :key="task.name"
+                    class="flex items-center text-sm"
+                    :style="{ height: `${itemHeight}px` }"
+                  >
+                    <NTag
+                      v-if="semanticTaskType(task.type)"
+                      class="mr-2"
+                      size="small"
+                    >
+                      <span class="inline-block text-center">
+                        {{ semanticTaskType(task.type) }}
+                      </span>
+                    </NTag>
+                    <TaskDatabaseName :task="task" />
+                  </div>
+                </template>
+              </NVirtualList>
+            </template>
+            <template v-else>
+              <NScrollbar class="max-h-64">
+                <ul class="text-sm space-y-2">
+                  <li
+                    v-for="task in eligibleTasks"
+                    :key="task.name"
+                    class="flex items-center"
+                  >
+                    <NTag
+                      v-if="semanticTaskType(task.type)"
+                      class="mr-2"
+                      size="small"
+                    >
+                      <span class="inline-block text-center">
+                        {{ semanticTaskType(task.type) }}
+                      </span>
+                    </NTag>
+                    <TaskDatabaseName :task="task" />
+                  </li>
+                </ul>
+              </NScrollbar>
+            </template>
+          </div>
+        </div>
 
         <div v-if="showScheduledTimePicker" class="flex flex-col">
           <h3 class="font-medium text-control mb-1">
@@ -235,7 +239,7 @@
 import { create } from "@bufbuild/protobuf";
 import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
-import { head } from "lodash-es";
+import { flatten, head } from "lodash-es";
 import {
   NAlert,
   NButton,
@@ -409,13 +413,13 @@ const validationMessages = computed(() => {
   const messages: string[] = [];
 
   // Basic validation errors
-  if (runnableTasks.value.length === 0) {
+  if (eligibleTasks.value.length === 0) {
     messages.push(t("common.no-data"));
   }
 
   if (
     !canPerformTaskAction(
-      runnableTasks.value,
+      eligibleTasks.value,
       rollout.value,
       project.value,
       issue?.value
@@ -463,7 +467,7 @@ const validationMessages = computed(() => {
 
   if (
     props.action === "CANCEL" &&
-    runnableTasks.value.some(
+    eligibleTasks.value.some(
       (task) =>
         task.status !== Task_Status.PENDING &&
         task.status !== Task_Status.RUNNING
@@ -537,6 +541,34 @@ const title = computed(() => {
 
 // Get eligible tasks based on action type and target
 const eligibleTasks = computed(() => {
+  // For database create/export tasks, get all relevant tasks from all stages
+  if (isDatabaseCreationOrExportTask.value) {
+    const allTasks = flatten(rollout.value.stages.map((stage) => stage.tasks));
+    // Apply action-based filtering
+    if (props.action === "RUN") {
+      return allTasks.filter(
+        (task) =>
+          task.status === Task_Status.NOT_STARTED ||
+          task.status === Task_Status.CANCELED ||
+          task.status === Task_Status.FAILED
+      );
+    } else if (props.action === "SKIP") {
+      return allTasks.filter(
+        (task) =>
+          task.status === Task_Status.NOT_STARTED ||
+          task.status === Task_Status.FAILED ||
+          task.status === Task_Status.CANCELED
+      );
+    } else if (props.action === "CANCEL") {
+      return allTasks.filter(
+        (task) =>
+          task.status === Task_Status.PENDING ||
+          task.status === Task_Status.RUNNING
+      );
+    }
+    return allTasks;
+  }
+
   // If specific tasks are provided, use them
   if (
     props.target.type === "tasks" &&
@@ -574,11 +606,6 @@ const eligibleTasks = computed(() => {
   return [];
 });
 
-// Get the tasks that will actually be run
-const runnableTasks = computed(() => {
-  return eligibleTasks.value;
-});
-
 // Virtual scroll configuration
 const useVirtualScroll = computed(() => eligibleTasks.value.length > 50);
 const itemHeight = computed(() => 32); // Height of each task item in pixels
@@ -589,12 +616,26 @@ const showScheduledTimePicker = computed(() => {
 
 // Check if any of the eligible tasks are database creation tasks
 const isDatabaseCreationTask = computed(() => {
-  return eligibleTasks.value.every(
-    (task) => task.type === Task_Type.DATABASE_CREATE
-  );
+  const allTasks = flatten(rollout.value.stages.map((stage) => stage.tasks));
+  return allTasks.every((task) => task.type === Task_Type.DATABASE_CREATE);
 });
 
-const shouldShowStageTaskInfo = computed(() => !isDatabaseCreationTask.value);
+// Check if any of the eligible tasks are database export tasks
+const isDatabaseExportTask = computed(() => {
+  const allTasks = flatten(rollout.value.stages.map((stage) => stage.tasks));
+  return allTasks.every((task) => task.type === Task_Type.DATABASE_EXPORT);
+});
+
+// Check if any of the eligible tasks are database creation or export tasks
+const isDatabaseCreationOrExportTask = computed(() => {
+  return isDatabaseCreationTask.value || isDatabaseExportTask.value;
+});
+
+const shouldShowStageInfo = computed(
+  () => !isDatabaseCreationOrExportTask.value
+);
+
+const shouldShowTaskInfo = computed(() => !isDatabaseCreationTask.value);
 
 // Handle execution mode change (immediate vs scheduled)
 const handleExecutionModeChange = (value: string) => {
@@ -605,39 +646,97 @@ const handleExecutionModeChange = (value: string) => {
   }
 };
 
+// Helper function to group tasks by their stage (environment) for export tasks
+const groupTasksByStage = (tasks: Task[]) => {
+  const tasksByStage = new Map<string, Task[]>();
+  for (const task of tasks) {
+    // Extract stage from task name: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+    const pathParts = task.name.split("/");
+    const stageIndex = pathParts.findIndex((part) => part === "stages");
+    if (stageIndex !== -1 && stageIndex + 1 < pathParts.length) {
+      const stageId = pathParts[stageIndex + 1];
+      if (!tasksByStage.has(stageId)) {
+        tasksByStage.set(stageId, []);
+      }
+      tasksByStage.get(stageId)!.push(task);
+    }
+  }
+  return tasksByStage;
+};
+
+// Helper function to add run time to a request if specified
+const addRunTimeToRequest = (request: any) => {
+  if (runTimeInMS.value !== undefined) {
+    // Convert timestamp to protobuf Timestamp format
+    const runTimeSeconds = Math.floor(runTimeInMS.value / 1000);
+    const runTimeNanos = (runTimeInMS.value % 1000) * 1000000;
+    request.runTime = create(TimestampSchema, {
+      seconds: BigInt(runTimeSeconds),
+      nanos: runTimeNanos,
+    });
+  }
+};
+
 const handleConfirm = async () => {
   state.loading = true;
+
+  const parent = isDatabaseCreationOrExportTask.value
+    ? rollout.value.name
+    : targetStage.value.name;
   try {
     if (props.action === "RUN") {
-      // Prepare the request parameters
-      const request = create(BatchRunTasksRequestSchema, {
-        parent: targetStage.value.name,
-        tasks: runnableTasks.value.map((task) => task.name),
-        reason: comment.value,
-      });
+      // For export tasks, group by stage/environment and make separate batch calls
+      if (isDatabaseExportTask.value) {
+        const tasksByStage = groupTasksByStage(eligibleTasks.value);
 
-      if (runTimeInMS.value !== undefined) {
-        // Convert timestamp to protobuf Timestamp format
-        const runTimeSeconds = Math.floor(runTimeInMS.value / 1000);
-        const runTimeNanos = (runTimeInMS.value % 1000) * 1000000;
-        request.runTime = create(TimestampSchema, {
-          seconds: BigInt(runTimeSeconds),
-          nanos: runTimeNanos,
+        // Make batch run calls for each stage/environment
+        for (const [_stageId, stageTasks] of tasksByStage) {
+          const request = create(BatchRunTasksRequestSchema, {
+            parent,
+            tasks: stageTasks.map((task) => task.name),
+            reason: comment.value,
+          });
+          addRunTimeToRequest(request);
+          await rolloutServiceClientConnect.batchRunTasks(request);
+        }
+      } else {
+        // For non-export tasks, use the original logic
+        const request = create(BatchRunTasksRequestSchema, {
+          parent,
+          tasks: eligibleTasks.value.map((task) => task.name),
+          reason: comment.value,
         });
+        addRunTimeToRequest(request);
+        await rolloutServiceClientConnect.batchRunTasks(request);
       }
-      await rolloutServiceClientConnect.batchRunTasks(request);
     } else if (props.action === "SKIP") {
-      const request = create(BatchSkipTasksRequestSchema, {
-        parent: targetStage.value.name,
-        tasks: runnableTasks.value.map((task) => task.name),
-        reason: comment.value,
-      });
-      await rolloutServiceClientConnect.batchSkipTasks(request);
+      // For export tasks, group by stage/environment and make separate batch calls
+      if (isDatabaseExportTask.value) {
+        const tasksByStage = groupTasksByStage(eligibleTasks.value);
+
+        // Make batch skip calls for each stage/environment
+        for (const [_stageId, stageTasks] of tasksByStage) {
+          const request = create(BatchSkipTasksRequestSchema, {
+            parent,
+            tasks: stageTasks.map((task) => task.name),
+            reason: comment.value,
+          });
+          await rolloutServiceClientConnect.batchSkipTasks(request);
+        }
+      } else {
+        // For non-export tasks, use the original logic
+        const request = create(BatchSkipTasksRequestSchema, {
+          parent,
+          tasks: eligibleTasks.value.map((task) => task.name),
+          reason: comment.value,
+        });
+        await rolloutServiceClientConnect.batchSkipTasks(request);
+      }
     } else if (props.action === "CANCEL") {
       // Fetch task runs for the tasks to be canceled.
       const taskRuns = (
         await Promise.all(
-          runnableTasks.value.map(async (task) => {
+          eligibleTasks.value.map(async (task) => {
             const request = create(ListTaskRunsRequestSchema, {
               parent: task.name,
               pageSize: 10,
@@ -653,12 +752,46 @@ const handleConfirm = async () => {
           taskRun.status === TaskRun_Status.PENDING ||
           taskRun.status === TaskRun_Status.RUNNING
       );
-      const request = create(BatchCancelTaskRunsRequestSchema, {
-        parent: `${targetStage.value.name}/tasks/-`,
-        taskRuns: cancelableTaskRuns.map((taskRun) => taskRun.name),
-        reason: comment.value,
-      });
-      await rolloutServiceClientConnect.batchCancelTaskRuns(request);
+
+      if (isDatabaseCreationOrExportTask.value) {
+        // For database creation/export tasks, group task runs by stage and cancel them per stage
+        const taskRunsByStage = new Map<string, typeof cancelableTaskRuns>();
+
+        for (const taskRun of cancelableTaskRuns) {
+          // Extract stage name from task run path: projects/.../rollouts/.../stages/{stage}/tasks/.../taskRuns/...
+          const pathParts = taskRun.name.split("/");
+          const stageIndex = pathParts.findIndex((part) => part === "stages");
+          if (stageIndex >= 0 && stageIndex + 1 < pathParts.length) {
+            const stageName = pathParts.slice(0, stageIndex + 2).join("/"); // projects/.../rollouts/.../stages/{stage}
+            if (!taskRunsByStage.has(stageName)) {
+              taskRunsByStage.set(stageName, []);
+            }
+            taskRunsByStage.get(stageName)!.push(taskRun);
+          }
+        }
+
+        // Cancel task runs for each stage separately
+        await Promise.all(
+          Array.from(taskRunsByStage.entries()).map(
+            ([stageName, stageTaskRuns]) => {
+              const request = create(BatchCancelTaskRunsRequestSchema, {
+                parent: `${stageName}/tasks/-`,
+                taskRuns: stageTaskRuns.map((taskRun) => taskRun.name),
+                reason: comment.value,
+              });
+              return rolloutServiceClientConnect.batchCancelTaskRuns(request);
+            }
+          )
+        );
+      } else {
+        // For regular stage-level tasks
+        const request = create(BatchCancelTaskRunsRequestSchema, {
+          parent: `${targetStage.value.name}/tasks/-`,
+          taskRuns: cancelableTaskRuns.map((taskRun) => taskRun.name),
+          reason: comment.value,
+        });
+        await rolloutServiceClientConnect.batchCancelTaskRuns(request);
+      }
     }
 
     emit("confirm");

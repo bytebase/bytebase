@@ -222,7 +222,7 @@ import DataExportButton from "@/components/DataExportButton.vue";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { RichDatabaseName } from "@/components/v2";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useConnectionOfCurrentSQLEditorTab,
   usePolicyByParentAndType,
@@ -543,10 +543,10 @@ const handleRequestExport = async () => {
     sqlStorageKey,
   };
   const route = router.resolve({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    name: PROJECT_V1_ROUTE_PLAN_DETAIL,
     params: {
       projectId: extractProjectResourceName(project.name),
-      issueSlug: "create",
+      planId: "create",
     },
     query,
   });

@@ -127,7 +127,10 @@ import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
 import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
+} from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -351,11 +354,15 @@ const generateMultiDb = async (
     ),
     databaseList: props.databases.map((db) => db.name).join(","),
   };
+  // Use CI/CD UI for data export issues, legacy UI for others
+  const isDataExport = type === "bb.issue.database.data.export";
   router.push({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    name: isDataExport
+      ? PROJECT_V1_ROUTE_PLAN_DETAIL
+      : PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(selectedProjectName.value),
-      issueSlug: "create",
+      [isDataExport ? "planId" : "issueSlug"]: "create",
     },
     query,
   });
