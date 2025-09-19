@@ -1880,19 +1880,7 @@
         }
       },
       "project-labels": {
-        "self": "Etiquetas del Proyecto",
-        "description": "Organizar proyectos con etiquetas clave-valor (máximo 64)",
-        "key": "Clave",
-        "value": "Valor",
-        "key-placeholder": "ej., environment",
-        "value-placeholder": "ej., production",
-        "add-label": "Agregar etiqueta",
-        "validation": {
-          "max-labels": "Máximo 64 etiquetas permitidas",
-          "invalid-key": "La clave debe comenzar con letra minúscula, 1-63 caracteres, solo letras minúsculas, dígitos, guiones, guiones bajos",
-          "invalid-value": "El valor debe tener 0-63 caracteres, solo letras, dígitos, guiones, guiones bajos",
-          "duplicate-key": "La clave de etiqueta ya existe"
-        }
+        "description": "Organizar proyectos con etiquetas clave-valor (máximo 64)"
       }
     },
     "members": {

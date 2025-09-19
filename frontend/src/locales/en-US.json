@@ -1884,19 +1884,7 @@
         }
       },
       "project-labels": {
-        "self": "Project Labels",
-        "description": "Organize projects with key-value labels (max 64)",
-        "key": "Key",
-        "value": "Value",
-        "add-label": "Add label",
-        "key-placeholder": "environment",
-        "value-placeholder": "production",
-        "validation": {
-          "max-labels": "Maximum 64 labels allowed",
-          "invalid-key": "Key must start with lowercase letter and contain only lowercase letters, numbers, underscores, and dashes (max 63 chars)",
-          "invalid-value": "Value must contain only letters, numbers, underscores, and dashes (max 63 chars)",
-          "duplicate-key": "Label key already exists"
-        }
+        "description": "Organize projects with key-value labels (max 64)"
       }
     },
     "members": {

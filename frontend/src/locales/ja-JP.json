@@ -1880,19 +1880,7 @@
         }
       },
       "project-labels": {
-        "self": "プロジェクトラベル",
-        "description": "キーバリューラベルでプロジェクトを整理（最大64個）",
-        "key": "キー",
-        "value": "値",
-        "key-placeholder": "例：environment",
-        "value-placeholder": "例：production",
-        "add-label": "ラベルを追加",
-        "validation": {
-          "max-labels": "最大64個のラベルが許可されています",
-          "invalid-key": "キーは小文字で始まり、1-63文字で、小文字・数字・ハイフン・アンダースコアのみ使用可能",
-          "invalid-value": "値は0-63文字で、文字・数字・ハイフン・アンダースコアのみ使用可能",
-          "duplicate-key": "ラベルキーが既に存在します"
-        }
+        "description": "キーバリューラベルでプロジェクトを整理（最大64個）"
       }
     },
     "members": {

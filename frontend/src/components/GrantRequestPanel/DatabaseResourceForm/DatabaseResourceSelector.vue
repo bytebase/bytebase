@@ -88,7 +88,7 @@ const scopeOptions = useCommonSearchScopeOptions([
   ...CommonFilterScopeIdList,
   "project",
   "label",
-  "database-label",  // Keep for backward compatibility
+  "database-label", // Keep for backward compatibility
   "engine",
   "table",
 ]);

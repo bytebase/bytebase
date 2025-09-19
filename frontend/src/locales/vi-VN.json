@@ -1880,19 +1880,7 @@
         }
       },
       "project-labels": {
-        "self": "Nhãn Dự án",
-        "description": "Tổ chức dự án với nhãn khóa-giá trị (tối đa 64)",
-        "key": "Khóa",
-        "value": "Giá trị",
-        "key-placeholder": "ví dụ: environment",
-        "value-placeholder": "ví dụ: production",
-        "add-label": "Thêm nhãn",
-        "validation": {
-          "max-labels": "Tối đa 64 nhãn được phép",
-          "invalid-key": "Khóa phải bắt đầu bằng chữ thường, 1-63 ký tự, chỉ chữ thường, số, dấu gạch ngang, gạch dưới",
-          "invalid-value": "Giá trị phải có 0-63 ký tự, chỉ chữ cái, số, dấu gạch ngang, gạch dưới",
-          "duplicate-key": "Khóa nhãn đã tồn tại"
-        }
+        "description": "Tổ chức dự án với nhãn khóa-giá trị (tối đa 64)"
       }
     },
     "members": {

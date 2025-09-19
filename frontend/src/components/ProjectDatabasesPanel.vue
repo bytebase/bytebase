@@ -124,7 +124,7 @@ const allowToCreateDB = computed(() => {
 const scopeOptions = useCommonSearchScopeOptions([
   ...CommonFilterScopeIdList,
   "label",
-  "database-label",  // Keep for backward compatibility
+  "database-label", // Keep for backward compatibility
   "engine",
   "drifted",
 ]);

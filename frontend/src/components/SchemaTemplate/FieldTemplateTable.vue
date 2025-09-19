@@ -110,10 +110,7 @@ const columns = computed(
         title: t("common.labels"),
         key: "labels",
         render: (item) => (
-          <LabelsCell
-            labels={item.catalog?.labels ?? {}}
-            showCount={2}
-          />
+          <LabelsCell labels={item.catalog?.labels ?? {}} showCount={2} />
         ),
       }
     );

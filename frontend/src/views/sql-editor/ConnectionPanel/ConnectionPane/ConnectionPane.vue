@@ -420,7 +420,7 @@ const handleUncheckDatabaseGroup = (databaseGroupName: string) => {
 const scopeOptions = useCommonSearchScopeOptions([
   ...CommonFilterScopeIdList.filter((scope) => scope !== "environment"),
   "label",
-  "database-label",  // Keep for backward compatibility
+  "database-label", // Keep for backward compatibility
   "engine",
 ]);
 
