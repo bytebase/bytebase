@@ -794,6 +794,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 					}
 				case schema.MetadataDiffActionAlter:
 					// Handle ALTER table operations with generateAlterTableWithOptions
+					// Skip foreign keys in the first pass to avoid dependency issues
 					alterTableSQL, err := generateAlterTableWithOptions(tableDiff, true)
 					if err != nil {
 						return err
@@ -874,6 +875,35 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 					if err := writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk); err != nil {
 						return err
 					}
+				}
+			}
+		}
+
+		// Add foreign keys for ALTER table operations after all tables are created
+		for _, tableDiff := range tableMap {
+			if tableDiff.Action == schema.MetadataDiffActionAlter {
+				// Only add foreign keys in this second pass
+				fkSQL, err := generateAlterTableForeignKeys(tableDiff)
+				if err != nil {
+					return err
+				}
+				_, _ = buf.WriteString(fkSQL)
+				if fkSQL != "" {
+					_, _ = buf.WriteString("\n")
+				}
+			}
+		}
+
+		// Add triggers for ALTER table operations after foreign keys
+		for _, tableDiff := range tableMap {
+			if tableDiff.Action == schema.MetadataDiffActionAlter {
+				triggerSQL, err := generateAlterTableTriggers(tableDiff)
+				if err != nil {
+					return err
+				}
+				_, _ = buf.WriteString(triggerSQL)
+				if triggerSQL != "" {
+					_, _ = buf.WriteString("\n")
 				}
 			}
 		}
@@ -1049,7 +1079,14 @@ func generateAlterTableWithOptions(tableDiff *schema.TableDiff, includeColumnAdd
 		}
 	}
 
-	// Add foreign keys last (they depend on other tables/columns)
+
+	return buf.String(), nil
+}
+
+// generateAlterTableForeignKeys generates foreign key statements for a table diff
+func generateAlterTableForeignKeys(tableDiff *schema.TableDiff) (string, error) {
+	var buf strings.Builder
+
 	for _, fkDiff := range tableDiff.ForeignKeyChanges {
 		if fkDiff.Action == schema.MetadataDiffActionCreate {
 			if err := writeMigrationForeignKey(&buf, tableDiff.SchemaName, tableDiff.TableName, fkDiff.NewForeignKey); err != nil {
@@ -1058,7 +1095,13 @@ func generateAlterTableWithOptions(tableDiff *schema.TableDiff, includeColumnAdd
 		}
 	}
 
-	// Add triggers after foreign keys
+	return buf.String(), nil
+}
+
+// generateAlterTableTriggers generates trigger statements for a table diff
+func generateAlterTableTriggers(tableDiff *schema.TableDiff) (string, error) {
+	var buf strings.Builder
+
 	for _, triggerDiff := range tableDiff.TriggerChanges {
 		if triggerDiff.Action == schema.MetadataDiffActionCreate {
 			writeMigrationTrigger(&buf, triggerDiff.NewTrigger)

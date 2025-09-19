@@ -5,6 +5,11 @@ ALTER TABLE "public"."bookings" ADD COLUMN "booking_dates" daterange NOT NULL;
 ALTER TABLE "public"."bookings" ADD COLUMN "discount_range" numrange DEFAULT '[0,100)'::NUMRANGE;
 ALTER TABLE "public"."bookings" ADD COLUMN "duration_range" int8range;
 ALTER TABLE "public"."bookings" ADD COLUMN "valid_periods" _tstzrange;
+ALTER TABLE "public"."bookings" ALTER COLUMN "booking_period" SET NOT NULL;
+CREATE INDEX idx_bookings_dates ON public.bookings USING gist (booking_dates);
+CREATE INDEX idx_bookings_period ON public.bookings USING gist (booking_period);
+CREATE INDEX idx_bookings_price ON public.bookings USING gist (price_range);
+
 CREATE TABLE "public"."permissions_matrix" (
     "permission_id" integer NOT NULL DEFAULT nextval('public.permissions_matrix_permission_id_seq'::regclass),
     "user_role" character varying(50) NOT NULL,
@@ -31,11 +36,6 @@ CREATE INDEX idx_scheduling_dates ON public.scheduling USING gin (available_date
 ALTER TABLE "public"."system_flags" ADD COLUMN "access_mask" bit(64);
 ALTER TABLE "public"."system_flags" ADD COLUMN "feature_flags" bit(32) DEFAULT B'00000000000000000000000000000000';
 ALTER TABLE "public"."system_flags" ADD COLUMN "system_state" bit(128);
-ALTER TABLE "public"."bookings" ALTER COLUMN "booking_period" SET NOT NULL;
-CREATE INDEX idx_bookings_dates ON public.bookings USING gist (booking_dates);
-CREATE INDEX idx_bookings_period ON public.bookings USING gist (booking_period);
-CREATE INDEX idx_bookings_price ON public.bookings USING gist (price_range);
-
 ALTER TABLE "public"."system_flags" ALTER COLUMN "bit_flags" TYPE bit(16);
 ALTER TABLE "public"."system_flags" ALTER COLUMN "bit_flags" SET NOT NULL;
 ALTER TABLE "public"."system_flags" ALTER COLUMN "bit_flags" SET DEFAULT B'0000000000000000';

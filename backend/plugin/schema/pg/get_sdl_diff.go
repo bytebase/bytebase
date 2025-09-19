@@ -1,7 +1,6 @@
 package pg
 
 import (
-	"slices"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -314,22 +313,16 @@ func processColumnChanges(oldTable, newTable *parser.CreatestmtContext, currentS
 	astOnlyMode := currentSchema == nil && previousSchema == nil
 
 	// Step 1: Extract all column definitions with their AST nodes for text comparison
-	oldColumnMap := extractColumnDefinitionsWithAST(oldTable)
-	newColumnMap := extractColumnDefinitionsWithAST(newTable)
+	oldColumns := extractColumnDefinitionsWithAST(oldTable)
+	newColumns := extractColumnDefinitionsWithAST(newTable)
 
 	var columnDiffs []*schema.ColumnDiff
 
 	// Step 2: Process current columns to find created and modified columns
-	// Get sorted column names for stable iteration order
-	newColumnNames := make([]string, 0, len(newColumnMap))
-	for columnName := range newColumnMap {
-		newColumnNames = append(newColumnNames, columnName)
-	}
-	slices.Sort(newColumnNames)
-
-	for _, columnName := range newColumnNames {
-		newColumnDef := newColumnMap[columnName]
-		if oldColumnDef, exists := oldColumnMap[columnName]; exists {
+	// Use the order from the new table's AST to maintain original column order
+	for _, columnName := range newColumns.Order {
+		newColumnDef := newColumns.Map[columnName]
+		if oldColumnDef, exists := oldColumns.Map[columnName]; exists {
 			// Column exists in both - check if modified by comparing text first
 			currentText := getColumnText(newColumnDef.ASTNode)
 			previousText := getColumnText(oldColumnDef.ASTNode)
@@ -367,16 +360,10 @@ func processColumnChanges(oldTable, newTable *parser.CreatestmtContext, currentS
 	}
 
 	// Step 3: Process previous columns to find dropped columns
-	// Get sorted column names for stable iteration order
-	oldColumnNames := make([]string, 0, len(oldColumnMap))
-	for columnName := range oldColumnMap {
-		oldColumnNames = append(oldColumnNames, columnName)
-	}
-	slices.Sort(oldColumnNames)
-
-	for _, columnName := range oldColumnNames {
-		oldColumnDef := oldColumnMap[columnName]
-		if _, exists := newColumnMap[columnName]; !exists {
+	// Use the order from the old table's AST to maintain original column order
+	for _, columnName := range oldColumns.Order {
+		oldColumnDef := oldColumns.Map[columnName]
+		if _, exists := newColumns.Map[columnName]; !exists {
 			// Column was dropped - extract metadata only if not in AST-only mode
 			var oldColumn *storepb.ColumnMetadata
 			if !astOnlyMode {
@@ -401,13 +388,22 @@ type ColumnDefWithAST struct {
 	ASTNode parser.IColumnDefContext
 }
 
-// extractColumnDefinitionsWithAST extracts only column name and AST node for text comparison
-// This is more efficient than full metadata extraction when we only need text comparison
-func extractColumnDefinitionsWithAST(createStmt *parser.CreatestmtContext) map[string]*ColumnDefWithAST {
-	columns := make(map[string]*ColumnDefWithAST)
+// ColumnDefWithASTOrdered holds column definitions in AST order for deterministic processing
+type ColumnDefWithASTOrdered struct {
+	Map   map[string]*ColumnDefWithAST
+	Order []string // Column names in the order they appear in the AST
+}
+
+// extractColumnDefinitionsWithAST extracts column definitions and preserves their AST order
+// This ensures deterministic processing while maintaining the original column order
+func extractColumnDefinitionsWithAST(createStmt *parser.CreatestmtContext) *ColumnDefWithASTOrdered {
+	result := &ColumnDefWithASTOrdered{
+		Map:   make(map[string]*ColumnDefWithAST),
+		Order: []string{},
+	}
 
 	if createStmt == nil {
-		return columns
+		return result
 	}
 
 	// Get the optTableElementList which contains column definitions
@@ -421,16 +417,18 @@ func extractColumnDefinitionsWithAST(createStmt *parser.CreatestmtContext) map[s
 				if columnDef.Colid() != nil {
 					columnName := pgparser.NormalizePostgreSQLColid(columnDef.Colid())
 
-					columns[columnName] = &ColumnDefWithAST{
+					result.Map[columnName] = &ColumnDefWithAST{
 						Name:    columnName,
 						ASTNode: columnDef,
 					}
+					// Preserve the order columns appear in the AST
+					result.Order = append(result.Order, columnName)
 				}
 			}
 		}
 	}
 
-	return columns
+	return result
 }
 
 // extractColumnMetadata extracts full column metadata from a single column AST node

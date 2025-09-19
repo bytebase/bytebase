@@ -15,13 +15,13 @@ ALTER TABLE "public"."events" ADD COLUMN "capacities" _int4;
 ALTER TABLE "public"."events" ADD COLUMN "locations" _text DEFAULT ARRAY[]::TEXT[] NOT NULL;
 ALTER TABLE "public"."events" ADD COLUMN "metadata" _jsonb DEFAULT ARRAY[]::JSONB[];
 ALTER TABLE "public"."events" ADD COLUMN "schedules" _timestamp;
-ALTER TABLE "public"."products" ADD COLUMN "features" _jsonb;
-ALTER TABLE "public"."products" ADD COLUMN "ratings" _int4 DEFAULT ARRAY[0,0,0,0,0];
-ALTER TABLE "public"."products" ADD COLUMN "variants" _text;
 ALTER TABLE "public"."events" ALTER COLUMN "event_dates" TYPE _timestamptz;
 CREATE INDEX idx_events_locations ON public.events USING gin (locations);
 CREATE INDEX idx_events_participants ON public.events USING gin (participant_ids);
 
+ALTER TABLE "public"."products" ADD COLUMN "features" _jsonb;
+ALTER TABLE "public"."products" ADD COLUMN "ratings" _int4 DEFAULT ARRAY[0,0,0,0,0];
+ALTER TABLE "public"."products" ADD COLUMN "variants" _text;
 ALTER TABLE "public"."products" ALTER COLUMN "category_ids" TYPE _int8;
 ALTER TABLE "public"."products" ALTER COLUMN "tags" SET DEFAULT ARRAY[]::TEXT[];
 CREATE INDEX idx_products_categories ON public.products USING gin (category_ids);
