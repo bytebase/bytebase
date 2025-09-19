@@ -1,8 +1,11 @@
 <template>
   <div class="flex items-center gap-x-2">
-    <!-- Primary action button -->
+    <!-- Export Archive Download Action for export data issues (replaces primary action) -->
+    <ExportArchiveDownloadAction v-if="shouldShowExportDownload" />
+
+    <!-- Primary action button (hidden when export download is shown) -->
     <UnifiedActionButton
-      v-if="primaryAction"
+      v-else-if="primaryAction && primaryAction.action !== 'EXPORT_DOWNLOAD'"
       :action="primaryAction.action"
       :disabled="disabled || primaryAction.disabled"
       :disabled-tooltip="disabled ? disabledTooltip : primaryAction.description"
@@ -33,12 +36,21 @@
 </template>
 
 <script setup lang="ts">
+import { last } from "lodash-es";
 import { EllipsisVerticalIcon } from "lucide-vue-next";
 import { NButton, NDropdown, type DropdownOption } from "naive-ui";
 import { computed, h } from "vue";
 import type { VNode } from "vue";
 import { useI18n } from "vue-i18n";
 import { DropdownItemWithErrorList } from "@/components/IssueV1/components/common";
+import { useCurrentUserV1, extractUserId } from "@/store";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  TaskRun_ExportArchiveStatus,
+  Task_Type,
+} from "@/types/proto-es/v1/rollout_service_pb";
+import { usePlanContext } from "../../../../logic";
+import { ExportArchiveDownloadAction } from "../export";
 import UnifiedActionButton from "./UnifiedActionButton.vue";
 import type { ActionConfig, UnifiedAction } from "./types";
 
@@ -54,6 +66,74 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const { plan, issue, rollout, taskRuns } = usePlanContext();
+const currentUser = useCurrentUserV1();
+
+// Check if this is a database export plan
+const isExportPlan = computed(() => {
+  return plan.value.specs.every(
+    (spec) => spec.config.case === "exportDataConfig"
+  );
+});
+
+// Export download logic
+const hasExportDataTask = computed(() => {
+  return (
+    rollout.value?.stages.some((stage) =>
+      stage.tasks.some((task) => task.type === Task_Type.DATABASE_EXPORT)
+    ) || false
+  );
+});
+
+const taskRun = computed(() => {
+  if (!rollout.value || !taskRuns.value.length) return undefined;
+
+  // Find export tasks first
+  const exportTasks = rollout.value.stages
+    .flatMap((stage) => stage.tasks)
+    .filter((task) => {
+      // Find tasks that belong to export data specs
+      const exportSpec = plan.value.specs.find(
+        (spec) =>
+          spec.config?.case === "exportDataConfig" && spec.id === task.specId
+      );
+      return !!exportSpec;
+    });
+
+  // Get task runs for export tasks
+  const exportTaskRuns = taskRuns.value.filter((taskRun) =>
+    exportTasks.some((task) => taskRun.name.startsWith(task.name + "/"))
+  );
+
+  return last(exportTaskRuns);
+});
+
+const shouldShowExportDownload = computed(() => {
+  // Must have export data tasks
+  if (!hasExportDataTask.value) return false;
+
+  // Must have an issue
+  if (!issue?.value) return false;
+
+  // Issue status must be OPEN or DONE
+  if (![IssueStatus.OPEN, IssueStatus.DONE].includes(issue.value.status)) {
+    return false;
+  }
+
+  // Current user must be the issue creator
+  const currentUserEmail = currentUser.value.email;
+  const issueCreator = extractUserId(issue.value.creator);
+  if (currentUserEmail !== issueCreator) return false;
+
+  // Check if export archive is ready
+  if (
+    taskRun.value?.exportArchiveStatus !== TaskRun_ExportArchiveStatus.READY
+  ) {
+    return false;
+  }
+
+  return true;
+});
 
 const actionDisplayName = (action: UnifiedAction): string => {
   switch (action) {
@@ -76,9 +156,11 @@ const actionDisplayName = (action: UnifiedAction): string => {
     case "PLAN_REOPEN":
       return t("common.reopen");
     case "ROLLOUT_START":
-      return t("common.rollout");
+      return isExportPlan.value ? t("common.export") : t("common.rollout");
     case "ROLLOUT_CANCEL":
       return t("common.cancel");
+    case "EXPORT_DOWNLOAD":
+      return t("common.download");
   }
 };
 

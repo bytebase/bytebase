@@ -1,5 +1,4 @@
 import BannerSection from "./BannerSection.vue";
-import DataExportSection from "./DataExportSection";
 import DescriptionSection from "./DescriptionSection";
 import HeaderSection from "./HeaderSection";
 import IssueCommentSection from "./IssueCommentSection";
@@ -24,6 +23,5 @@ export {
   DescriptionSection,
   IssueSearch,
   Sidebar,
-  DataExportSection,
   IssueCommentSection,
 };
