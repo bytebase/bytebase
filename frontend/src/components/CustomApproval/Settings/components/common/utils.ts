@@ -72,27 +72,27 @@ export const orderByLevelDesc = (a: Risk, b: Risk): number => {
   return a.name < b.name ? -1 : 1;
 };
 
-const commonFactorList = [
+const commonFactorList: Factor[] = [
   "environment_id", // use `environment.resource_id` instead.
   "project_id", // use `project.resource_id` instead.
   "instance_id", // use `instance.resource_id` instead.
   "db_engine",
 ] as const;
 
-const schemaObjectNameFactorList = [
+const schemaObjectNameFactorList: Factor[] = [
   "database_name",
   "schema_name",
   "table_name",
 ] as const;
 
-const migrationFactorList = [
+const migrationFactorList: Factor[] = [
   "affected_rows",
   "table_rows",
   "sql_type",
   "sql_statement",
 ] as const;
 
-export const RiskSourceFactorMap: Map<Risk_Source, string[]> = new Map([
+export const RiskSourceFactorMap: Map<Risk_Source, Factor[]> = new Map([
   [
     Risk_Source.DDL,
     [
@@ -292,6 +292,8 @@ export const getOptionConfigMap = (source: Risk_Source) => {
       case "role":
         options = getRoleOptions();
         break;
+      default:
+        throw new Error(`Unsupported factor: ${factor}`);
     }
     map.set(factor, {
       remote: false,
