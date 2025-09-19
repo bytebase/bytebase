@@ -48,7 +48,7 @@ export const StringFactorList = [
 ] as const;
 export type StringFactor = (typeof StringFactorList)[number];
 
-export const TimestampFactorList = ["request.time"];
+export const TimestampFactorList = ["request.time"] as const;
 export type TimestampFactor = (typeof TimestampFactorList)[number];
 
 export const HighLevelFactorList = ["level", "source"] as const;
