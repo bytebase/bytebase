@@ -26,7 +26,7 @@ import { useDebounceFn } from "@vueuse/core";
 import { intersection } from "lodash-es";
 import { computed, watchEffect, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
+import { ProjectNameCell } from "@/components/v2/Model/cells";
 import { useProjectV1Store, usePermissionStore } from "@/store";
 import {
   unknownProject,

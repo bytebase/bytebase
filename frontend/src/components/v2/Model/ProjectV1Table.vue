@@ -22,7 +22,7 @@ import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
+import { ProjectNameCell, LabelsCell } from "@/components/v2/Model/cells";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { getProjectName } from "@/store/modules/v1/common";
@@ -47,6 +47,8 @@ const props = withDefaults(
     selectedProjectNames?: string[];
     // Whether to show selection checkboxes
     showSelection?: boolean;
+    // Whether to show labels column (hidden in dropdowns for cleaner UI)
+    showLabels?: boolean;
   }>(),
   {
     bordered: true,
@@ -54,6 +56,7 @@ const props = withDefaults(
     keyword: undefined,
     selectedProjectNames: () => [],
     showSelection: false,
+    showLabels: true,
   }
 );
 
@@ -133,6 +136,20 @@ const columnList = computed((): ProjectDataTableColumn[] => {
             mode="ALL_SHORT"
             project={project}
             keyword={props.keyword}
+          />
+        ),
+      },
+      {
+        key: "labels",
+        title: t("common.labels"),
+        width: 300,
+        ellipsis: true,
+        hide: !props.showLabels,
+        render: (project) => (
+          <LabelsCell
+            labels={project.labels || {}}
+            showCount={3}
+            placeholder=""
           />
         ),
       },

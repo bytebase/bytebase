@@ -204,6 +204,7 @@
     "info": "Thông tin",
     "minutes": "Phút",
     "filter-by-name": "Lọc theo tên",
+    "filter-by-name-or-label": "Lọc theo tên hoặc nhãn (ví dụ: labels.environment == \"production\")",
     "search-by-name": "Tìm kiếm theo tên",
     "license": "Giấy phép",
     "view-details": "Xem chi tiết",
@@ -1875,6 +1876,9 @@
           "self": "Nhiệm vụ song song cho mỗi lần triển khai",
           "description": "Kiểm soát số lượng các tác vụ song song cho mỗi lần triển khai. \nĐặt điều này thành 0 vô hiệu hóa bất kỳ điều chỉnh."
         }
+      },
+      "project-labels": {
+        "description": "Tổ chức dự án với nhãn khóa-giá trị (tối đa 64)"
       }
     },
     "members": {

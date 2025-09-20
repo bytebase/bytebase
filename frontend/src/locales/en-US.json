@@ -204,6 +204,7 @@
     "info": "Info",
     "minutes": "Minutes",
     "filter-by-name": "Filter by name",
+    "filter-by-name-or-label": "Filter by name or label (e.g., labels.environment == \"production\")",
     "search-by-name": "Search by name",
     "license": "License",
     "view-details": "View details",
@@ -923,8 +924,12 @@
           "title": "Table",
           "description": "Input the value then press Enter"
         },
+        "label": {
+          "title": "Label",
+          "description": "Input the \"key:value\" pair then press Enter"
+        },
         "database-label": {
-          "title": "Database Label",
+          "title": "Database Label (Deprecated - use Label)",
           "description": "Input the \"key:value\" pair then press Enter"
         },
         "engine": {
@@ -1875,6 +1880,9 @@
           "self": "Parallel tasks per rollout",
           "description": "Control the number of parallel tasks per rollout. Setting this to zero disables any throttling."
         }
+      },
+      "project-labels": {
+        "description": "Organize projects with key-value labels (max 64)"
       }
     },
     "members": {

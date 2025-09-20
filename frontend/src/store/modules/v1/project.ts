@@ -36,16 +36,35 @@ export interface ProjectFilter {
   query?: string;
   excludeDefault?: boolean;
   state?: State;
+  // label should be "{label key}:{label value}" format
+  labels?: string[];
 }
 
 const getListProjectFilter = (params: ProjectFilter) => {
   const list = [];
-  const search = params.query?.trim().toLowerCase();
+  const search = params.query?.trim();
+
   if (search) {
+    // It's a regular name/resource_id search
+    const searchLower = search.toLowerCase();
     list.push(
-      `(name.matches("${search}") || resource_id.matches("${search}"))`
+      `(name.matches("${searchLower}") || resource_id.matches("${searchLower}"))`
     );
   }
+
+  // Handle label filters from structured labels array
+  if (params.labels && params.labels.length > 0) {
+    // label filter like: labels.environment == "production" && labels.tier == "critical"
+    for (const label of params.labels) {
+      const sections = label.split(":");
+      if (sections.length !== 2) {
+        continue;
+      }
+      const [key, value] = sections;
+      list.push(`labels.${key} == "${value}"`);
+    }
+  }
+
   if (params.excludeDefault) {
     list.push("exclude_default == true");
   }

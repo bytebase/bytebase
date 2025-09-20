@@ -204,6 +204,7 @@
     "info": "信息",
     "minutes": "分钟",
     "filter-by-name": "按名称过滤",
+    "filter-by-name-or-label": "按名称或标签过滤 (例如: labels.environment == \"production\")",
     "search-by-name": "按名称搜索",
     "license": "证书",
     "view-details": "查看详情",
@@ -1875,6 +1876,9 @@
           "self": "每个发布的并行任务数",
           "description": "控制每个发布的并行任务数量。\n将其设置为零，可以禁用任何节流。"
         }
+      },
+      "project-labels": {
+        "description": "用键值标签组织项目（最多64个）"
       }
     },
     "members": {

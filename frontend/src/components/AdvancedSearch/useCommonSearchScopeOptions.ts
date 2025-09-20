@@ -153,6 +153,12 @@ export const useCommonSearchScopeOptions = (
           };
         }),
       }),
+      label: () => ({
+        id: "label",
+        title: t("common.labels"),
+        description: t("issue.advanced-search.scope.label.description"),
+        allowMultiple: true,
+      }),
       "database-label": () => ({
         id: "database-label",
         title: t("issue.advanced-search.scope.database-label.title"),
@@ -160,6 +166,7 @@ export const useCommonSearchScopeOptions = (
           "issue.advanced-search.scope.database-label.description"
         ),
         allowMultiple: true,
+        deprecated: true, // Show deprecation notice
       }),
       table: () => ({
         id: "table",
