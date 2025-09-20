@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center space-x-1">
-    <DatabaseLabelsCell :labels="labels" :show-count="2" />
+    <LabelsCell :labels="labels" :show-count="2" />
     <button
       v-if="!readonly"
       class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
@@ -24,7 +24,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { reactive } from "vue";
-import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
+import { LabelsCell } from "@/components/v2/Model/cells";
 import { useDatabaseCatalog, getColumnCatalog } from "@/store";
 import LabelEditorDrawer from "../LabelEditorDrawer.vue";
 import { updateColumnCatalog } from "./utils";

@@ -2,6 +2,7 @@ package v1
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -435,5 +437,102 @@ func TestListProjectFilter(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.want.Where, filter.Where)
 		}
+	}
+}
+
+func TestValidateProjectLabels(t *testing.T) {
+	tests := []struct {
+		name    string
+		labels  map[string]string
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:    "Valid labels",
+			labels:  map[string]string{"environment": "production", "team": "backend"},
+			wantErr: false,
+		},
+		{
+			name:    "Empty labels",
+			labels:  map[string]string{},
+			wantErr: false,
+		},
+		{
+			name:    "Valid key with empty value",
+			labels:  map[string]string{"environment": ""},
+			wantErr: false,
+		},
+		{
+			name:    "Key starting with number",
+			labels:  map[string]string{"1environment": "production"},
+			wantErr: true,
+			errMsg:  "invalid label key",
+		},
+		{
+			name:    "Key with uppercase",
+			labels:  map[string]string{"Environment": "production"},
+			wantErr: true,
+			errMsg:  "invalid label key",
+		},
+		{
+			name:    "Key with special characters",
+			labels:  map[string]string{"env@prod": "production"},
+			wantErr: true,
+			errMsg:  "invalid label key",
+		},
+		{
+			name:    "Value with special characters",
+			labels:  map[string]string{"environment": "prod@123"},
+			wantErr: true,
+			errMsg:  "invalid label value",
+		},
+		{
+			name:    "Key too long",
+			labels:  map[string]string{strings.Repeat("a", 64): "value"},
+			wantErr: true,
+			errMsg:  "invalid label key",
+		},
+		{
+			name:    "Value too long",
+			labels:  map[string]string{"key": strings.Repeat("a", 64)},
+			wantErr: true,
+			errMsg:  "invalid label value",
+		},
+		{
+			name: "Too many labels",
+			labels: func() map[string]string {
+				labels := make(map[string]string)
+				for i := 0; i < 65; i++ {
+					labels[fmt.Sprintf("key%d", i)] = "value"
+				}
+				return labels
+			}(),
+			wantErr: true,
+			errMsg:  "maximum 64 labels allowed",
+		},
+		{
+			name:    "Valid underscore and dash",
+			labels:  map[string]string{"env_name": "prod-01", "team-name": "backend_01"},
+			wantErr: false,
+		},
+		{
+			name:    "Valid mixed case value",
+			labels:  map[string]string{"environment": "Production", "region": "US-East-1"},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateProjectLabels(tt.labels)
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errMsg != "" {
+					assert.Contains(t, err.Error(), tt.errMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
 	}
 }

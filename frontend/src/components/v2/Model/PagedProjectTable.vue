@@ -11,6 +11,7 @@
         :project-list="list"
         :selected-project-names="selectedProjectNames"
         :show-selection="showSelection"
+        :show-labels="showLabels"
         :keyword="filter.query"
         @update:selected-project-names="updateSelectedProjectNames"
       />
@@ -32,10 +33,12 @@ const props = withDefaults(
     sessionKey: string;
     selectedProjectNames?: string[];
     showSelection?: boolean;
+    showLabels?: boolean;
   }>(),
   {
     selectedProjectNames: () => [],
     showSelection: false,
+    showLabels: true,
   }
 );
 

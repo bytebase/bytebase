@@ -3,8 +3,9 @@
     <div class="flex items-center justify-between px-4 space-x-2">
       <AdvancedSearch
         v-model:params="state.params"
+        :scope-options="scopeOptions"
         :autofocus="false"
-        :placeholder="$t('common.filter-by-name')"
+        :placeholder="$t('common.filter-by-name-or-label')"
       />
       <NButton
         v-if="hasWorkspacePermissionV2('bb.projects.create')"
@@ -57,6 +58,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRouter } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
+import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import { PagedProjectTable } from "@/components/v2";
 import { Drawer } from "@/components/v2";
@@ -89,9 +91,20 @@ const projectStore = useProjectV1Store();
 
 const pagedProjectTableRef = ref<ComponentExposed<typeof PagedProjectTable>>();
 
+// Add label to the available scopes for filtering projects
+const scopeOptions = useCommonSearchScopeOptions(["label"]);
+
+// Extract labels from the search scopes
+const selectedLabels = computed(() => {
+  return state.params.scopes
+    .filter((scope) => scope.id === "label")
+    .map((scope) => scope.value);
+});
+
 const filter = computed(() => ({
   query: state.params.query,
   excludeDefault: true,
+  labels: selectedLabels.value,
 }));
 
 const selectedProjectNames = computed(() => {

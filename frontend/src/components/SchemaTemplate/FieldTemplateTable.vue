@@ -19,7 +19,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite";
 import { MiniActionButton } from "@/components/v2";
-import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
+import { LabelsCell } from "@/components/v2/Model/cells";
 import { useSettingV1Store } from "@/store";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto-es/v1/setting_service_pb";
@@ -110,10 +110,7 @@ const columns = computed(
         title: t("common.labels"),
         key: "labels",
         render: (item) => (
-          <DatabaseLabelsCell
-            labels={item.catalog?.labels ?? {}}
-            showCount={2}
-          />
+          <LabelsCell labels={item.catalog?.labels ?? {}} showCount={2} />
         ),
       }
     );

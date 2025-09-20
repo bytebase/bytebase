@@ -419,7 +419,8 @@ const handleUncheckDatabaseGroup = (databaseGroupName: string) => {
 
 const scopeOptions = useCommonSearchScopeOptions([
   ...CommonFilterScopeIdList.filter((scope) => scope !== "environment"),
-  "database-label",
+  "label",
+  "database-label", // Keep for backward compatibility
   "engine",
 ]);
 
@@ -616,7 +617,7 @@ useEmitteryEventListener(editorEvents, "tree-ready", async () => {
 
 const selectedLabels = computed(() => {
   return state.params.scopes
-    .filter((scope) => scope.id === "database-label")
+    .filter((scope) => scope.id === "label" || scope.id === "database-label")
     .map((scope) => scope.value);
 });
 

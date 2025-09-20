@@ -1,6 +1,6 @@
 <template>
   <div class="flex justify-start items-center">
-    <DatabaseLabelsCell :labels="columnCatalog?.labels ?? {}" :show-count="1" />
+    <LabelsCell :labels="columnCatalog?.labels ?? {}" :show-count="1" />
     <MiniActionButton v-if="!readonly && !disabled" @click="$emit('edit')">
       <PencilIcon class="w-3 h-3" />
     </MiniActionButton>
@@ -12,7 +12,7 @@ import { PencilIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { useSchemaEditorContext } from "@/components/SchemaEditorLite/context";
 import { MiniActionButton } from "@/components/v2";
-import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
+import { LabelsCell } from "@/components/v2/Model/cells";
 
 const props = defineProps<{
   database: string;

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -149,6 +150,22 @@ func getListProjectFilter(filter string) (*store.ListResourceFilter, error) {
 			positionalArgs = append(positionalArgs, v1pb.State(v1State) == v1pb.State_DELETED)
 			return fmt.Sprintf("project.deleted = $%d", len(positionalArgs)), nil
 		default:
+			// Check if it's a label filter (e.g., "labels.environment" == "production")
+			varStr, ok := variable.(string)
+			if !ok {
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
+			}
+			if strings.HasPrefix(varStr, "labels.") {
+				labelKey := strings.TrimPrefix(varStr, "labels.")
+				labelValueStr, ok := value.(string)
+				if !ok {
+					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("label value must be a string, got %T", value))
+				}
+				// Use JSONB containment operator to check if the label exists with the specified value
+				// The setting column contains a proto message with a labels field
+				positionalArgs = append(positionalArgs, fmt.Sprintf(`{"%s":"%s"}`, labelKey, labelValueStr))
+				return fmt.Sprintf("project.setting->'labels' @> $%d::jsonb", len(positionalArgs)), nil
+			}
 			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
 		}
 	}
@@ -276,6 +293,12 @@ func (s *ProjectService) SearchProjects(ctx context.Context, req *connect.Reques
 func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request[v1pb.CreateProjectRequest]) (*connect.Response[v1pb.Project], error) {
 	if !isValidResourceID(req.Msg.ProjectId) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid project ID %v", req.Msg.ProjectId))
+	}
+
+	if req.Msg.Project != nil && req.Msg.Project.Labels != nil {
+		if err := validateProjectLabels(req.Msg.Project.Labels); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
 	}
 
 	projectMessage := convertToProjectMessage(req.Msg.ProjectId, req.Msg.Project)
@@ -425,6 +448,13 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 		case "parallel_tasks_per_rollout":
 			projectSettings := project.Setting
 			projectSettings.ParallelTasksPerRollout = req.Msg.Project.ParallelTasksPerRollout
+			patch.Setting = projectSettings
+		case "labels":
+			if err := validateProjectLabels(req.Msg.Project.Labels); err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			}
+			projectSettings := project.Setting
+			projectSettings.Labels = req.Msg.Project.Labels
 			patch.Setting = projectSettings
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupport update_mask "%s"`, path))
@@ -1446,6 +1476,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		ExecutionRetryPolicy:       convertToV1ExecutionRetryPolicy(projectMessage.Setting.ExecutionRetryPolicy),
 		CiSamplingSize:             projectMessage.Setting.CiSamplingSize,
 		ParallelTasksPerRollout:    projectMessage.Setting.ParallelTasksPerRollout,
+		Labels:                     projectMessage.Setting.Labels,
 	}
 }
 
@@ -1482,6 +1513,7 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) *store.Pr
 		AllowSelfApproval:          project.AllowSelfApproval,
 		CiSamplingSize:             project.CiSamplingSize,
 		ParallelTasksPerRollout:    project.ParallelTasksPerRollout,
+		Labels:                     project.Labels,
 	}
 	return &store.ProjectMessage{
 		ResourceID: resourceID,
@@ -1700,4 +1732,29 @@ func validateMember(member string) error {
 		}
 	}
 	return errors.Errorf("invalid user %s", member)
+}
+
+// validateProjectLabels validates the project labels according to the requirements.
+func validateProjectLabels(labels map[string]string) error {
+	if len(labels) > 64 {
+		return errors.Errorf("maximum 64 labels allowed, got %d", len(labels))
+	}
+
+	// Key pattern: must start with lowercase letter, then lowercase letters, numbers, underscores, dashes (max 63 chars)
+	keyPattern := `^[a-z][a-z0-9_-]{0,62}$`
+	// Value pattern: letters, numbers, underscores, dashes (max 63 chars, can be empty)
+	valuePattern := `^[a-zA-Z0-9_-]{0,63}$`
+
+	keyRegex := regexp.MustCompile(keyPattern)
+	valueRegex := regexp.MustCompile(valuePattern)
+
+	for key, value := range labels {
+		if !keyRegex.MatchString(key) {
+			return errors.Errorf("invalid label key %q: must start with lowercase letter and contain only lowercase letters, numbers, underscores, and dashes (max 63 chars)", key)
+		}
+		if !valueRegex.MatchString(value) {
+			return errors.Errorf("invalid label value %q for key %q: must contain only letters, numbers, underscores, and dashes (max 63 chars)", value, key)
+		}
+	}
+	return nil
 }

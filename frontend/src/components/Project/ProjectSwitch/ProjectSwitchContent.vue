@@ -52,6 +52,7 @@
             isValidProjectName(project.name) ? project : undefined
           "
           :keyword="state.searchText"
+          :show-labels="false"
           @row-click="onProjectSelect"
         />
         <PagedProjectTable
@@ -60,6 +61,7 @@
           session-key="bb.project-table"
           :filter="filter"
           :loading="state.loading"
+          :show-labels="false"
           @row-click="onProjectSelect"
         />
       </NTabPane>

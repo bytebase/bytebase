@@ -204,6 +204,7 @@
     "info": "情報",
     "minutes": "分",
     "filter-by-name": "名前でフィルタリングする",
+    "filter-by-name-or-label": "名前またはラベルでフィルタリング (例: labels.environment == \"production\")",
     "search-by-name": "名前で検索",
     "license": "ライセンス",
     "view-details": "詳細を確認する",
@@ -1875,6 +1876,9 @@
           "self": "ロールアウトごとの並列タスク",
           "description": "ロールアウトあたりの並列タスクの数を制御します。\nこれをゼロに設定すると、スロットリングが無効になります。"
         }
+      },
+      "project-labels": {
+        "description": "キーバリューラベルでプロジェクトを整理（最大64個）"
       }
     },
     "members": {

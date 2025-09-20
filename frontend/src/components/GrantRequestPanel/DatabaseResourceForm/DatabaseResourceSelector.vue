@@ -87,7 +87,8 @@ const { t } = useI18n();
 const scopeOptions = useCommonSearchScopeOptions([
   ...CommonFilterScopeIdList,
   "project",
-  "database-label",
+  "label",
+  "database-label", // Keep for backward compatibility
   "engine",
   "table",
 ]);
@@ -226,7 +227,7 @@ const filterTableList = computed(() => {
 
 const selectedLabels = computed(() => {
   return params.value.scopes
-    .filter((scope) => scope.id === "database-label")
+    .filter((scope) => scope.id === "label" || scope.id === "database-label")
     .map((scope) => scope.value);
 });
 
