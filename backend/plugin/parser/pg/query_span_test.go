@@ -59,7 +59,7 @@ func TestGetQuerySpan(t *testing.T) {
 			if record {
 				testCases[i].QuerySpan = resultYaml
 			} else {
-				a.Equal(tc.QuerySpan, resultYaml, "statement: %s", tc.Statement)
+				a.Equal(tc.QuerySpan, resultYaml, "idx: %d statement: %s", i, tc.Statement)
 			}
 		}
 

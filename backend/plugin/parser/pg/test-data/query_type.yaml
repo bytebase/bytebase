@@ -227,3 +227,335 @@
           table: t1
           column: ""
     predicatecolumns: []
+- description: UPDATE statement
+  statement: UPDATE t SET a = 1 WHERE b = 2;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {"name":  "a"},
+                {"name":  "b"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 5
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: DELETE statement
+  statement: DELETE FROM t WHERE id > 100;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {"name":  "id"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 5
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: MERGE statement
+  statement: MERGE INTO target USING source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.value = source.value;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 5
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: COPY statement
+  statement: COPY t FROM '/tmp/data.csv' CSV;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 5
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: ALTER TABLE statement
+  statement: ALTER TABLE t ADD COLUMN new_col VARCHAR(255);
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: DROP TABLE statement
+  statement: DROP TABLE IF EXISTS t CASCADE;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: CREATE INDEX statement
+  statement: CREATE INDEX idx_name ON t (col1, col2);
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: CREATE VIEW statement
+  statement: CREATE VIEW v AS SELECT * FROM t WHERE status = 'active';
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: CREATE FUNCTION statement
+  statement: CREATE FUNCTION add_numbers(a int, b int) RETURNS int AS $$ BEGIN RETURN a + b; END; $$ LANGUAGE plpgsql;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: CREATE TRIGGER statement
+  statement: CREATE TRIGGER audit_trigger AFTER INSERT ON t FOR EACH ROW EXECUTE FUNCTION audit_function();
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: CREATE SEQUENCE statement
+  statement: CREATE SEQUENCE seq_id START 1 INCREMENT 1;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: CREATE SCHEMA statement
+  statement: CREATE SCHEMA myschema;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: CREATE DATABASE statement
+  statement: CREATE DATABASE mydb;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: TRUNCATE statement
+  statement: TRUNCATE TABLE t RESTART IDENTITY CASCADE;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: SELECT INTO - should be DDL not SELECT
+  statement: SELECT * INTO new_table FROM old_table WHERE id > 100;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: CREATE TABLE AS statement
+  statement: CREATE TABLE new_table AS SELECT * FROM old_table;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: REFRESH MATERIALIZED VIEW statement
+  statement: REFRESH MATERIALIZED VIEW CONCURRENTLY mv_sales;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 5
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: Simple SELECT
+  statement: SELECT * FROM t;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 1
+    results: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: ""
+          column: ""
+    predicatecolumns: []
+- description: SHOW statement
+  statement: SHOW ALL;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 3
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: ALTER SEQUENCE
+  statement: ALTER SEQUENCE seq_id RESTART WITH 100;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: CREATE ROLE
+  statement: CREATE ROLE admin WITH LOGIN PASSWORD 'secret';
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: GRANT statement - should be DDL
+  statement: GRANT SELECT ON TABLE t TO user1;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: VACUUM statement
+  statement: VACUUM ANALYZE t;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: CLUSTER statement
+  statement: CLUSTER t USING idx_name;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: COMMENT statement
+  statement: COMMENT ON TABLE t IS 'This is a test table';
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
