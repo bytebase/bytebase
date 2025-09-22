@@ -126,7 +126,8 @@ const confirmOverrideStatement = async (
 };
 
 export const useActions = () => {
-  const { updateViewState } = useCurrentTabViewStateContext();
+  const { updateViewState, viewState: currentTabViewState } =
+    useCurrentTabViewStateContext();
   const databaseStore = useDatabaseV1Store();
 
   const selectAllFromTableOrView = async (node: TreeNode) => {
@@ -161,12 +162,7 @@ export const useActions = () => {
     runQuery(db, schema, tableOrViewName, query);
   };
 
-  const openNewTab = ({
-    title,
-    view,
-    schema,
-    table,
-  }: {
+  const openNewTab = (params: {
     title?: string;
     schema?: string;
     table?: string;
@@ -175,6 +171,17 @@ export const useActions = () => {
     const tabStore = useSQLEditorTabStore();
     const tabViewStateStore = useTabViewStateStore();
 
+    let schema = params.schema;
+    let table = params.table;
+    if (currentTabViewState.value) {
+      if (!schema) {
+        schema = currentTabViewState.value.schema;
+      }
+      if (!table) {
+        table = currentTabViewState.value.table;
+      }
+    }
+
     const fromTab = tabStore.currentTab;
     const clonedTab = defaultSQLEditorTab();
     if (fromTab) {
@@ -182,7 +189,7 @@ export const useActions = () => {
       clonedTab.treeState = cloneDeep(fromTab.treeState);
     }
     clonedTab.status = "CLEAN";
-    clonedTab.title = title ?? "";
+    clonedTab.title = params.title ?? "";
 
     for (const tab of tabStore.tabList) {
       if (tab.id === fromTab?.id) {
@@ -195,7 +202,10 @@ export const useActions = () => {
         continue;
       }
       const viewState = tabViewStateStore.getViewState(tab.id);
-      if (viewState.view !== view || (schema && viewState.schema !== schema)) {
+      if (
+        viewState.view !== params.view ||
+        (schema && viewState.schema !== schema)
+      ) {
         continue;
       }
       tabStore.setCurrentTabId(tab.id);
@@ -203,7 +213,7 @@ export const useActions = () => {
     }
 
     tabStore.addTab(clonedTab);
-    updateViewState({ view, schema, table });
+    updateViewState({ view: params.view, schema, table });
   };
 
   const viewDetail = async (node: TreeNode) => {
