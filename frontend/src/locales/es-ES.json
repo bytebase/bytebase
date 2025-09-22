@@ -961,7 +961,8 @@
       "on": "Activado",
       "off": "Desactivado",
       "on-tooltip": "Envuelve todas las declaraciones en una sola transacción (BEGIN/COMMIT).",
-      "off-tooltip": "Ejecuta declaraciones individualmente en modo de confirmación automática. Las declaraciones se confirman inmediatamente y no se pueden revertir si una declaración posterior falla."
+      "off-tooltip": "Ejecuta declaraciones individualmente en modo de confirmación automática. Las declaraciones se confirman inmediatamente y no se pueden revertir si una declaración posterior falla.",
+      "execution-order-note": "Las declaraciones no transaccionales se ejecutarán en último lugar."
     },
     "waiting-earliest-allowed-time": "Se ejecutará después de {time}",
     "batch-transition": {

@@ -961,7 +961,8 @@
       "on": "Bật",
       "off": "Tắt",
       "on-tooltip": "Gói tất cả các câu lệnh trong một giao dịch duy nhất (BEGIN/COMMIT).",
-      "off-tooltip": "Thực thi các câu lệnh riêng lẻ trong chế độ tự động commit. Các câu lệnh được commit ngay lập tức và không thể khôi phục nếu câu lệnh sau đó thất bại."
+      "off-tooltip": "Thực thi các câu lệnh riêng lẻ trong chế độ tự động commit. Các câu lệnh được commit ngay lập tức và không thể khôi phục nếu câu lệnh sau đó thất bại.",
+      "execution-order-note": "Các câu lệnh không liên quan đến giao dịch sẽ được thực hiện cuối cùng."
     },
     "waiting-earliest-allowed-time": "Sẽ chạy sau {time}",
     "batch-transition": {
