@@ -63,16 +63,10 @@ func configureGrpcRouters(
 		}),
 		grpcruntime.WithForwardResponseOption(gatewayModifier.Modify),
 		grpcruntime.WithRoutingErrorHandler(func(ctx context.Context, sm *grpcruntime.ServeMux, m grpcruntime.Marshaler, w http.ResponseWriter, r *http.Request, httpStatus int) {
-			if httpStatus != http.StatusNotFound {
-				grpcruntime.DefaultRoutingErrorHandler(ctx, sm, m, w, r, httpStatus)
-				return
-			}
-
 			err := &grpcruntime.HTTPStatusError{
 				HTTPStatus: httpStatus,
-				Err:        connect.NewError(connect.CodeNotFound, errors.Errorf("Routing error. Please check the request URI %v", r.RequestURI)),
+				Err:        connect.NewError(connect.CodeNotFound, errors.Errorf("gateway routing error %d: request method %v, URI %v", httpStatus, r.Method, r.RequestURI)),
 			}
-
 			grpcruntime.DefaultHTTPErrorHandler(ctx, sm, m, w, r, err)
 		}),
 	)
