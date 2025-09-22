@@ -48,9 +48,9 @@ func (s *WorksheetService) CreateWorksheet(
 	if request.Worksheet == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("worksheet must be set"))
 	}
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("principal ID not found"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
 	projectResourceID, err := common.GetProjectID(request.Worksheet.Project)
@@ -85,7 +85,7 @@ func (s *WorksheetService) CreateWorksheet(
 		}
 		database = db
 	}
-	storeWorksheetCreate, err := convertToStoreWorksheetMessage(project, database, principalID, request.Worksheet)
+	storeWorksheetCreate, err := convertToStoreWorksheetMessage(project, database, user.ID, request.Worksheet)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to convert worksheet: %v", err))
 	}
@@ -265,9 +265,9 @@ func (s *WorksheetService) SearchWorksheets(
 	req *connect.Request[v1pb.SearchWorksheetsRequest],
 ) (*connect.Response[v1pb.SearchWorksheetsResponse], error) {
 	request := req.Msg
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("principal ID not found"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
 	worksheetFind := &store.FindWorkSheetMessage{}
@@ -280,13 +280,13 @@ func (s *WorksheetService) SearchWorksheets(
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("filter should not be empty"))
 	}
 
-	filter, err := s.getListSheetFilter(ctx, principalID, request.Filter)
+	filter, err := s.getListSheetFilter(ctx, user.ID, request.Filter)
 	if err != nil {
 		return nil, err
 	}
 	worksheetFind.Filter = filter
 
-	worksheetList, err := s.store.ListWorkSheets(ctx, worksheetFind, principalID)
+	worksheetList, err := s.store.ListWorkSheets(ctx, worksheetFind, user.ID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list worksheets: %v", err))
 	}
@@ -341,13 +341,13 @@ func (s *WorksheetService) UpdateWorksheet(
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid worksheet id %d, must be positive integer", worksheetUID))
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("principal ID not found"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 	worksheet, err := s.store.GetWorkSheet(ctx, &store.FindWorkSheetMessage{
 		UID: &worksheetUID,
-	}, principalID)
+	}, user.ID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get worksheet: %v", err))
 	}
@@ -398,7 +398,7 @@ func (s *WorksheetService) UpdateWorksheet(
 
 	worksheet, err = s.store.GetWorkSheet(ctx, &store.FindWorkSheetMessage{
 		UID: &worksheetUID,
-	}, principalID)
+	}, user.ID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get worksheet: %v", err))
 	}
@@ -424,13 +424,13 @@ func (s *WorksheetService) DeleteWorksheet(
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("principal ID not found"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 	worksheet, err := s.store.GetWorkSheet(ctx, &store.FindWorkSheetMessage{
 		UID: &worksheetUID,
-	}, principalID)
+	}, user.ID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get worksheet: %v", err))
 	}
@@ -481,13 +481,13 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot access worksheet %s", worksheet.Title))
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("principal ID not found"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 	worksheetOrganizerUpsert := &store.WorksheetOrganizerMessage{
 		WorksheetUID: worksheetUID,
-		PrincipalUID: principalID,
+		PrincipalUID: user.ID,
 	}
 
 	for _, path := range request.UpdateMask.Paths {
@@ -508,11 +508,11 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(
 }
 
 func (s *WorksheetService) findWorksheet(ctx context.Context, find *store.FindWorkSheetMessage) (*store.WorkSheetMessage, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("principal ID not found"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	worksheet, err := s.store.GetWorkSheet(ctx, find, principalID)
+	worksheet, err := s.store.GetWorkSheet(ctx, find, user.ID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get worksheet: %v", err))
 	}
@@ -527,7 +527,7 @@ func (s *WorksheetService) findWorksheet(ctx context.Context, find *store.FindWo
 // PRIVATE: the creator.
 // PROJECT_WRITE: all members with bb.projects.get permission in the project.
 func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *store.WorkSheetMessage) (bool, error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return false, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
@@ -564,7 +564,7 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 // PROJECT_WRITE: all members with bb.projects.get permission in the project.
 // PROJECT_READ: all members with bb.projects.get permission in the project.
 func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *store.WorkSheetMessage) (bool, error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return false, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}

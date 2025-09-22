@@ -40,9 +40,9 @@ func (s *ChangelistService) CreateChangelist(ctx context.Context, req *connect.R
 	if req.Msg.Changelist == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("changelist must be set"))
 	}
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("principal ID not found"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 
 	projectResourceID, err := common.GetProjectID(req.Msg.Parent)
@@ -74,7 +74,7 @@ func (s *ChangelistService) CreateChangelist(ctx context.Context, req *connect.R
 		ProjectID:  project.ResourceID,
 		ResourceID: req.Msg.ChangelistId,
 		Payload:    convertV1ChangelistPayload(req.Msg.Changelist),
-		CreatorID:  principalID,
+		CreatorID:  user.ID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -176,7 +176,7 @@ func (s *ChangelistService) UpdateChangelist(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}

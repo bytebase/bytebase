@@ -45,9 +45,9 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *connect.Request
 	if request.Msg.Sheet == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("sheet must be set"))
 	}
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("principal ID not found"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
 	projectResourceID, err := common.GetProjectID(request.Msg.Parent)
@@ -67,7 +67,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with resource id %q had deleted", projectResourceID))
 	}
 
-	storeSheetCreate := convertToStoreSheetMessage(project.ResourceID, principalID, request.Msg.Sheet)
+	storeSheetCreate := convertToStoreSheetMessage(project.ResourceID, user.ID, request.Msg.Sheet)
 	sheet, err := s.sheetManager.CreateSheet(ctx, storeSheetCreate)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheet"))
@@ -83,7 +83,7 @@ func (s *SheetService) BatchCreateSheets(ctx context.Context, request *connect.R
 	if len(request.Msg.Requests) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("requests must be set"))
 	}
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
@@ -204,7 +204,7 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with resource id %q had deleted", projectResourceID))
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}

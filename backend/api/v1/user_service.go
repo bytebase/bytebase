@@ -100,7 +100,7 @@ func (s *UserService) BatchGetUsers(ctx context.Context, request *connect.Reques
 
 // GetCurrentUser gets the current authenticated user.
 func (*UserService) GetCurrentUser(ctx context.Context, _ *connect.Request[emptypb.Empty]) (*connect.Response[v1pb.User], error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok || user == nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("authenticated user not found"))
 	}
@@ -128,7 +128,7 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 		return nil, err
 	}
 	if v := find.ProjectID; v != nil {
-		user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+		user, ok := GetUserFromContext(ctx)
 		if !ok {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 		}
@@ -315,7 +315,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err == nil {
 		if setting.DisallowSignup || s.profile.SaaS {
-			callerUser, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+			callerUser, ok := GetUserFromContext(ctx)
 			if !ok {
 				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed"))
 			}
@@ -463,7 +463,7 @@ func (s *UserService) validatePassword(ctx context.Context, password string) err
 
 // UpdateUser updates a user.
 func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v1pb.UpdateUserRequest]) (*connect.Response[v1pb.User], error) {
-	callerUser, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	callerUser, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("failed to get caller user"))
 	}
@@ -653,7 +653,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 
 // DeleteUser deletes a user.
 func (s *UserService) DeleteUser(ctx context.Context, request *connect.Request[v1pb.DeleteUserRequest]) (*connect.Response[emptypb.Empty], error) {
-	callerUser, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	callerUser, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("failed to get caller user"))
 	}
@@ -750,7 +750,7 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 		return nil, err
 	}
 
-	callerUser, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	callerUser, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("failed to get caller user"))
 	}

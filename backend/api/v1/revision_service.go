@@ -254,7 +254,7 @@ func (s *RevisionService) DeleteRevision(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get revision UID from %v", request.Name))
 	}
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}

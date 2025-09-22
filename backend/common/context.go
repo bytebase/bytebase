@@ -11,10 +11,8 @@ import (
 type ContextKey int
 
 const (
-	// PrincipalIDContextKey is the key name used to store principal id in the context.
-	PrincipalIDContextKey ContextKey = iota
 	// UserContextKey is the key name used to store user message in the context.
-	UserContextKey
+	UserContextKey ContextKey = iota
 	AuthContextKey
 	ServiceDataKey
 )

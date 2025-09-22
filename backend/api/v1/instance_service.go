@@ -426,7 +426,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") && req.Msg.AllowMissing {
 			// When allow_missing is true and instance doesn't exist, create a new one
-			user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+			user, ok := GetUserFromContext(ctx)
 			if !ok {
 				return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 			}
@@ -786,7 +786,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("update_mask must be set"))
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}

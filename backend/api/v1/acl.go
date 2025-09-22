@@ -108,7 +108,7 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		return nil
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}

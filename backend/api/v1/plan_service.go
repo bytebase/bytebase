@@ -144,7 +144,7 @@ func (s *PlanService) SearchPlans(ctx context.Context, request *connect.Request[
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
@@ -229,9 +229,9 @@ func getProjectIDsSearchFilter(ctx context.Context, user *store.UserMessage, per
 // CreatePlan creates a new plan.
 func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v1pb.CreatePlanRequest]) (*connect.Response[v1pb.Plan], error) {
 	req := request.Msg
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("principal ID not found"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 	projectID, err := common.GetProjectID(req.Parent)
 	if err != nil {
@@ -268,7 +268,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 	if _, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.dbFactory, planMessage.Config.GetSpecs(), deployment, project); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline from the plan, please check you request, error: %v", err))
 	}
-	plan, err := s.store.CreatePlan(ctx, planMessage, principalID)
+	plan, err := s.store.CreatePlan(ctx, planMessage, user.ID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan, error: %v", err))
 	}
@@ -303,7 +303,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	if len(req.UpdateMask.Paths) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("update_mask must not be empty"))
 	}
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
