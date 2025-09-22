@@ -1210,10 +1210,10 @@ paths:
                      - project: the project full name in "projects/{id}" format, support "==" operator.
                      - instance: the instance full name in "instances/{id}" format, support "==" operator.
                      - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
-                     - label: the database label in "{key}:{value1},{value2}" format. Support "==" operator.
                      - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
                      - drifted: should be "true" or "false", show drifted databases if it's true, support "==" operator.
                      - table: filter by the database table, support "==" and ".matches()" operator.
+                     - labels.{key}: the database label, support "==" and "in" operators.
 
                      For example:
                      environment == "environments/{environment resource id}"
@@ -1224,13 +1224,13 @@ paths:
                      engine == "MYSQL"
                      engine in ["MYSQL", "POSTGRES"]
                      !(engine in ["MYSQL", "POSTGRES"])
-                     label == "region:asia"
-                     label == "tenant:asia,europe"
-                     label == "region:asia" && label == "tenant:bytebase"
                      exclude_unassigned == true
                      drifted == true
                      table == "sample"
                      table.matches("sam")
+                     labels.environment == "production"
+                     labels.region == "asia"
+                     labels.region in ["asia", "europe"]
 
                      You can combine filter conditions like:
                      environment == "environments/prod" && name.matches("employee")
@@ -3297,6 +3297,7 @@ paths:
                   description: |-
                     Filter the project.
                      Check filter for SearchProjectsRequest for details.
+                     Supports filtering by name, resource_id, state, and labels (e.g., labels.environment == "production").
                   schema:
                     type: string
             responses:
@@ -3992,10 +3993,10 @@ paths:
                      - project: the project full name in "projects/{id}" format, support "==" operator.
                      - instance: the instance full name in "instances/{id}" format, support "==" operator.
                      - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
-                     - label: the database label in "{key}:{value1},{value2}" format. Support "==" operator.
                      - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
                      - drifted: should be "true" or "false", show drifted databases if it's true, support "==" operator.
                      - table: filter by the database table, support "==" and ".matches()" operator.
+                     - labels.{key}: the database label, support "==" and "in" operators.
 
                      For example:
                      environment == "environments/{environment resource id}"
@@ -4006,13 +4007,13 @@ paths:
                      engine == "MYSQL"
                      engine in ["MYSQL", "POSTGRES"]
                      !(engine in ["MYSQL", "POSTGRES"])
-                     label == "region:asia"
-                     label == "tenant:asia,europe"
-                     label == "region:asia" && label == "tenant:bytebase"
                      exclude_unassigned == true
                      drifted == true
                      table == "sample"
                      table.matches("sam")
+                     labels.environment == "production"
+                     labels.region == "asia"
+                     labels.region in ["asia", "europe"]
 
                      You can combine filter conditions like:
                      environment == "environments/prod" && name.matches("employee")
@@ -7927,10 +7928,10 @@ paths:
                      - project: the project full name in "projects/{id}" format, support "==" operator.
                      - instance: the instance full name in "instances/{id}" format, support "==" operator.
                      - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
-                     - label: the database label in "{key}:{value1},{value2}" format. Support "==" operator.
                      - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
                      - drifted: should be "true" or "false", show drifted databases if it's true, support "==" operator.
                      - table: filter by the database table, support "==" and ".matches()" operator.
+                     - labels.{key}: the database label, support "==" and "in" operators.
 
                      For example:
                      environment == "environments/{environment resource id}"
@@ -7941,13 +7942,13 @@ paths:
                      engine == "MYSQL"
                      engine in ["MYSQL", "POSTGRES"]
                      !(engine in ["MYSQL", "POSTGRES"])
-                     label == "region:asia"
-                     label == "tenant:asia,europe"
-                     label == "region:asia" && label == "tenant:bytebase"
                      exclude_unassigned == true
                      drifted == true
                      table == "sample"
                      table.matches("sam")
+                     labels.environment == "production"
+                     labels.region == "asia"
+                     labels.region in ["asia", "europe"]
 
                      You can combine filter conditions like:
                      environment == "environments/prod" && name.matches("employee")
@@ -13291,6 +13292,7 @@ components:
                          - resource_id: the project id, support "==" and ".matches()" operator.
                          - exclude_default: if not include the default project, should be "true" or "false", support "==" operator.
                          - state: check the State enum for the values, support "==" operator.
+                         - labels.{key}: the project label, support "==" and "in" operators.
 
                          For example:
                          name = "project name"
@@ -13299,9 +13301,13 @@ components:
                          resource_id.matches("project id")
                          exclude_default == true
                          state == "DELETED"
+                         labels.environment == "production"
+                         labels.tier == "critical"
+                         labels.environment in ["staging", "prod"]
                          You can combine filter conditions like:
                          name = "project name" && resource_id.matches("project id")
                          name.matches("project name") || resource_id = "project id"
+                         labels.environment == "production" && labels.tier == "critical"
                 pageSize:
                     type: integer
                     description: |-

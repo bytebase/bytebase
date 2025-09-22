@@ -75,14 +75,14 @@ const state = reactive<LocalState>({
 
 // Convert labels to KVList format for LabelListEditor
 const labelKVList = ref(
-  convertLabelsToKVList(props.project.labels || {}, true /* sort */)
+  convertLabelsToKVList(props.project.labels, true /* sort */)
 );
 
 // Watch for external changes to project labels
 watch(
   () => props.project.labels,
   (newLabels) => {
-    labelKVList.value = convertLabelsToKVList(newLabels || {}, true /* sort */);
+    labelKVList.value = convertLabelsToKVList(newLabels, true /* sort */);
   }
 );
 
@@ -129,7 +129,7 @@ defineExpose({
   revert: () => {
     state.title = props.project.title;
     labelKVList.value = convertLabelsToKVList(
-      props.project.labels || {},
+      props.project.labels,
       true /* sort */
     );
   },

@@ -204,8 +204,6 @@
     "info": "Thông tin",
     "minutes": "Phút",
     "filter-by-name": "Lọc theo tên",
-    "filter-by-name-or-label": "Lọc theo tên hoặc nhãn (ví dụ: labels.environment == \"production\")",
-    "search-by-name": "Tìm kiếm theo tên",
     "license": "Giấy phép",
     "view-details": "Xem chi tiết",
     "force-verb": "Buộc {verb}",
@@ -916,17 +914,16 @@
           "description": "Tìm kiếm theo trạng thái phê duyệt của vấn đề",
           "title": "Trạng thái phê duyệt"
         },
-        "label": {
-          "title": "Nhãn",
+        "issue-label": {
+          "title": "Nhãn vấn đề",
           "description": "Lọc theo nhãn vấn đề"
         },
         "table": {
           "title": "bề mặt",
           "description": "Nhập giá trị sau đó nhấn Enter"
         },
-        "database-label": {
-          "title": "Nhãn cơ sở dữ liệu",
-          "description": "Nhập \"key:value\" rồi nhấn Enter"
+        "label": {
+          "description": "Nhập cặp \"key:value\" rồi nhấn Enter"
         },
         "engine": {
           "title": "Động cơ",
@@ -1734,6 +1731,7 @@
     }
   },
   "project": {
+    "filter-projects": "Lọc dự án",
     "table": {
       "name": "@:common.name"
     },
@@ -2351,7 +2349,6 @@
     "delete": "Xóa chính sách đánh giá SQL",
     "input-then-press-enter": "Nhập giá trị sau đó nhấn enter để thêm",
     "not-available-for-free": "Quy tắc không khả dụng cho {plan}",
-    "search-by-name": "Tìm kiếm theo tên",
     "attach-resource": {
       "no-linked-resources": "Không có tài nguyên nào được đính kèm",
       "change-resources": "Thay đổi tài nguyên đính kèm",

@@ -141,6 +141,25 @@ func getSubConditionFromExpr(expr celast.Expr, getFilter func(expr celast.Expr) 
 	return strings.Join(args, fmt.Sprintf(" %s ", join)), nil
 }
 
+func parseToLabelFilterSQL(resource, key string, value any) (string, error) {
+	switch v := value.(type) {
+	case string:
+		return fmt.Sprintf("%s->'labels'->>'%s' = '%s'", resource, key, v), nil
+	case []any:
+		if len(v) == 0 {
+			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("empty label filter"))
+		}
+
+		labelValueList := []string{}
+		for _, raw := range v {
+			labelValueList = append(labelValueList, fmt.Sprintf(`'%s'`, raw.(string)))
+		}
+		return fmt.Sprintf("%s->'labels'->>'%s' IN (%s)", resource, key, strings.Join(labelValueList, ",")), nil
+	default:
+		return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("empty value %v for label filter", value))
+	}
+}
+
 func parseToEngineSQL(expr celast.Expr, relation string) (string, error) {
 	variable, value := getVariableAndValueFromExpr(expr)
 	if variable != "engine" {
@@ -225,15 +244,6 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 		case "name":
 			positionalArgs = append(positionalArgs, value)
 			return fmt.Sprintf("db.name = $%d", len(positionalArgs)), nil
-		case "label":
-			keyVal := strings.Split(value.(string), ":")
-			if len(keyVal) != 2 {
-				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid label filter %q, should be in "{label key}:{label value} format"`, value))
-			}
-			labelKey := keyVal[0]
-			labelValues := strings.Split(keyVal[1], ",")
-			positionalArgs = append(positionalArgs, labelValues)
-			return fmt.Sprintf("db.metadata->'labels'->>'%s' = ANY($%d)", labelKey, len(positionalArgs)), nil
 		case "drifted":
 			drifted, ok := value.(bool)
 			if !ok {
@@ -261,6 +271,13 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 				)
 			`, len(positionalArgs)), nil
 		default:
+			varStr, ok := variable.(string)
+			if !ok {
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
+			}
+			if labelKey, ok := strings.CutPrefix(varStr, "labels."); ok {
+				return parseToLabelFilterSQL("db.metadata", labelKey, value)
+			}
 			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
 		}
 	}
@@ -303,7 +320,13 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`only "name" or "table" support %q operator, but found %q`, celoverloads.Matches, variable))
 				}
 			case celoperators.In:
-				return parseToEngineSQL(expr, "IN")
+				variable, value := getVariableAndValueFromExpr(expr)
+				if variable == "engine" {
+					return parseToEngineSQL(expr, "IN")
+				} else if labelKey, ok := strings.CutPrefix(variable, "labels."); ok {
+					return parseToLabelFilterSQL("db.metadata", labelKey, value)
+				}
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
 			case celoperators.LogicalNot:
 				args := expr.AsCall().Args()
 				if len(args) != 1 {

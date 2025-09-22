@@ -234,6 +234,7 @@ type ListProjectsRequest struct {
 	ShowDeleted bool `protobuf:"varint,3,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
 	// Filter the project.
 	// Check filter for SearchProjectsRequest for details.
+	// Supports filtering by name, resource_id, state, and labels (e.g., labels.environment == "production").
 	Filter        string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -364,6 +365,7 @@ type SearchProjectsRequest struct {
 	// - resource_id: the project id, support "==" and ".matches()" operator.
 	// - exclude_default: if not include the default project, should be "true" or "false", support "==" operator.
 	// - state: check the State enum for the values, support "==" operator.
+	// - labels.{key}: the project label, support "==" and "in" operators.
 	//
 	// For example:
 	// name = "project name"
@@ -372,9 +374,13 @@ type SearchProjectsRequest struct {
 	// resource_id.matches("project id")
 	// exclude_default == true
 	// state == "DELETED"
+	// labels.environment == "production"
+	// labels.tier == "critical"
+	// labels.environment in ["staging", "prod"]
 	// You can combine filter conditions like:
 	// name = "project name" && resource_id.matches("project id")
 	// name.matches("project name") || resource_id = "project id"
+	// labels.environment == "production" && labels.tier == "critical"
 	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
 	// The maximum number of projects to return. The service may return fewer than
 	// this value.

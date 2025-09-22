@@ -71,6 +71,39 @@ const isValidParentName = (parent: string): boolean => {
   return false;
 };
 
+// getLabelFilter convert the input to API label filter format like: labels.{key} == {value}
+// the input label should be "{label key}:{value1},{value2}" format
+export const getLabelFilter = (labels: string[]): string[] => {
+  const labelMap = new Map<string, string[]>(); // key: value[]
+  for (const label of labels) {
+    const sections = label.split(":");
+    if (sections.length !== 2) {
+      continue;
+    }
+    const [key, rawValue] = sections;
+    const values = rawValue.split(",");
+    if (!labelMap.has(key)) {
+      labelMap.set(key, []);
+    }
+    labelMap.get(key)?.push(...values);
+  }
+
+  return [...labelMap.entries()].reduce((result, [key, values]) => {
+    switch (values.length) {
+      case 0:
+        return result;
+      case 1:
+        result.push(`labels.${key} == "${values[0]}"`);
+        return result;
+      default:
+        result.push(
+          `labels.${key} in [${values.map((v) => `"${v}"`).join(", ")}]`
+        );
+        return result;
+    }
+  }, [] as string[]);
+};
+
 const getListDatabaseFilter = (filter: DatabaseFilter): string => {
   const params: string[] = [];
   if (isValidProjectName(filter.project)) {
@@ -107,24 +140,11 @@ const getListDatabaseFilter = (filter: DatabaseFilter): string => {
   if (keyword) {
     params.push(`name.matches("${keyword}")`);
   }
+
   if (filter.labels) {
-    // label filter like:
-    // label == "region:asia,europe" && label == "tenant:bytebase"
-    const labelMap = new Map<string, Set<string>>();
-    for (const label of filter.labels) {
-      const sections = label.split(":");
-      if (sections.length !== 2) {
-        continue;
-      }
-      if (!labelMap.has(sections[0])) {
-        labelMap.set(sections[0], new Set());
-      }
-      labelMap.get(sections[0])!.add(sections[1]);
-    }
-    for (const [labelKey, labelValues] of labelMap.entries()) {
-      params.push(`label == "${labelKey}:${[...labelValues].join(",")}"`);
-    }
+    params.push(...getLabelFilter(filter.labels));
   }
+
   if (filter.table) {
     params.push(`table.matches("${filter.table}")`);
   }

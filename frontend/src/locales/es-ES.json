@@ -204,8 +204,6 @@
     "info": "Información",
     "minutes": "Minutos",
     "filter-by-name": "Filtrar por nombre",
-    "filter-by-name-or-label": "Filtrar por nombre o etiqueta (ej: labels.environment == \"production\")",
-    "search-by-name": "Buscar por nombre",
     "license": "Licencia",
     "view-details": "Ver detalles",
     "force-verb": "forzar {verbo}",
@@ -916,17 +914,16 @@
           "description": "Buscar por estado de revisión del problema",
           "title": "Estado de aprobación"
         },
-        "label": {
-          "title": "Etiqueta",
+        "issue-label": {
+          "title": "Etiqueta de emisión",
           "description": "Filtrar por etiqueta de problema"
         },
         "table": {
           "title": "Mesa",
           "description": "Ingrese el valor y luego presione Enter"
         },
-        "database-label": {
-          "title": "Etiqueta de base de datos",
-          "description": "Ingrese la \"key:value\" y luego presione Enter"
+        "label": {
+          "description": "Ingrese el par \"clave:valor\" y luego presione Enter"
         },
         "engine": {
           "title": "Motor",
@@ -1734,6 +1731,7 @@
     }
   },
   "project": {
+    "filter-projects": "Filtrar proyectos",
     "table": {
       "name": "@:common.name"
     },
@@ -2351,7 +2349,6 @@
     "delete": "Eliminar política de revisión SQL",
     "input-then-press-enter": "Ingrese el valor y luego presione enter para agregar",
     "not-available-for-free": "La regla no está disponible para {plan}",
-    "search-by-name": "Buscar por nombre",
     "attach-resource": {
       "no-linked-resources": "Sin recursos adjuntos",
       "change-resources": "Cambiar recursos adjuntos",

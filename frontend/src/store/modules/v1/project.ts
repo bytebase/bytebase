@@ -30,6 +30,7 @@ import {
 } from "@/types/proto-es/v1/project_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { projectNamePrefix } from "./common";
+import { getLabelFilter } from "./database";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
 export interface ProjectFilter {
@@ -52,17 +53,8 @@ const getListProjectFilter = (params: ProjectFilter) => {
     );
   }
 
-  // Handle label filters from structured labels array
-  if (params.labels && params.labels.length > 0) {
-    // label filter like: labels.environment == "production" && labels.tier == "critical"
-    for (const label of params.labels) {
-      const sections = label.split(":");
-      if (sections.length !== 2) {
-        continue;
-      }
-      const [key, value] = sections;
-      list.push(`labels.${key} == "${value}"`);
-    }
+  if (params.labels) {
+    list.push(...getLabelFilter(params.labels));
   }
 
   if (params.excludeDefault) {
