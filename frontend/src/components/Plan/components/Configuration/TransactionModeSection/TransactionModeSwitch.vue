@@ -31,11 +31,6 @@ const { plan, isCreating } = usePlanContext();
 // Flag to prevent circular updates
 const isUpdatingFromUI = ref(false);
 
-// Default transaction mode
-const getDefaultForCurrentTask = () => {
-  return getDefaultTransactionMode();
-};
-
 const isTransactionOn = computed({
   get: () => transactionMode.value === "on",
   set: (value: boolean) => {
@@ -53,7 +48,7 @@ const isTransactionOn = computed({
 const initializeFromStatement = () => {
   if (!sheetReady.value || !sheetStatement.value) {
     // If sheet is not ready or statement is empty, use default
-    transactionMode.value = getDefaultForCurrentTask() ? "on" : "off";
+    transactionMode.value = getDefaultTransactionMode() ? "on" : "off";
     return;
   }
 
@@ -61,7 +56,7 @@ const initializeFromStatement = () => {
   if (parsed.transactionMode !== undefined) {
     transactionMode.value = parsed.transactionMode;
   } else {
-    transactionMode.value = getDefaultForCurrentTask() ? "on" : "off";
+    transactionMode.value = getDefaultTransactionMode() ? "on" : "off";
   }
 };
 

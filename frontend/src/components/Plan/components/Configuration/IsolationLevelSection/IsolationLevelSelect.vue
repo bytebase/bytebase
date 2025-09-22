@@ -26,7 +26,6 @@ import {
   type IsolationLevel,
 } from "../../StatementSection/directiveUtils";
 import { useSpecSheet } from "../../StatementSection/useSpecSheet";
-import { useTransactionModeSettingContext } from "../TransactionModeSection/context";
 import { useIsolationLevelSettingContext } from "./context";
 
 const {
@@ -34,9 +33,6 @@ const {
   isolationLevel: contextIsolationLevel,
   events,
 } = useIsolationLevelSettingContext();
-
-// Also need transaction mode to know if we should show this
-const { transactionMode } = useTransactionModeSettingContext();
 
 const selectedSpec = useSelectedSpec();
 const { sheetStatement, sheet, sheetReady } = useSpecSheet(selectedSpec);
@@ -112,17 +108,6 @@ watch(
     }
   },
   { immediate: true }
-);
-
-// Clear isolation level if transaction mode is turned off
-watch(
-  () => transactionMode.value,
-  (mode) => {
-    if (mode === "off" && contextIsolationLevel.value) {
-      contextIsolationLevel.value = undefined;
-      setIsolationInStatement(undefined);
-    }
-  }
 );
 
 const setIsolationInStatement = async (
