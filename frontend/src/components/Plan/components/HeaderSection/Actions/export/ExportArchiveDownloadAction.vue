@@ -1,47 +1,48 @@
 <template>
-  <NTooltip
-    v-if="taskRun?.exportArchiveStatus === TaskRun_ExportArchiveStatus.READY"
-  >
+  <NTooltip>
     <template #trigger>
       <NButton
         type="primary"
         :loading="state.isExporting"
         @click="downloadExportArchive"
+        v-if="!isExported"
       >
         <template #icon>
           <DownloadIcon class="w-5 h-5" />
         </template>
         {{ $t("common.download") }}
       </NButton>
+      <div
+        v-else
+        class="flex flex-row items-center gap-2 text-sm textlabel !leading-8"
+      >
+        <CalendarXIcon class="w-5 h-auto" />
+        {{ $t("issue.data-export.file-expired") }}
+      </div>
     </template>
     <span class="text-sm">
       {{ $t("issue.data-export.download-tooltip") }}
     </span>
   </NTooltip>
-  <div
-    v-else-if="
-      taskRun?.exportArchiveStatus === TaskRun_ExportArchiveStatus.EXPORTED
-    "
-    class="flex flex-row items-center gap-2 text-sm textlabel !leading-8"
-  >
-    <CircleCheckBigIcon class="w-5 h-auto" />
-    {{ $t("issue.data-export.file-downloaded") }}
-  </div>
 </template>
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
-import { last } from "lodash-es";
-import { DownloadIcon, CircleCheckBigIcon } from "lucide-vue-next";
+import { first, orderBy } from "lodash-es";
+import { DownloadIcon, CalendarXIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import { usePlanContext } from "@/components/Plan/logic";
 import { useSQLStore } from "@/store";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Plan_ExportDataConfig } from "@/types/proto-es/v1/plan_service_pb";
-import { TaskRun_ExportArchiveStatus } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  TaskRun_ExportArchiveStatus,
+  type TaskRun,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
+import { extractTaskRunUID, extractTaskUID } from "@/utils";
 
 interface LocalState {
   isExporting: boolean;
@@ -52,27 +53,26 @@ const state = reactive<LocalState>({
   isExporting: false,
 });
 
-const taskRun = computed(() => {
-  if (!rollout.value || !taskRuns.value.length) return undefined;
-
-  // Find export tasks first
-  const exportTasks = rollout.value.stages
+const isExported = computed(() => {
+  const exportTaskRuns = rollout.value?.stages
     .flatMap((stage) => stage.tasks)
-    .filter((task) => {
-      // Find tasks that belong to export data specs
-      const exportSpec = plan.value.specs.find(
-        (spec) =>
-          spec.config?.case === "exportDataConfig" && spec.id === task.specId
+    .map((task) => {
+      const taskRunsForTask = taskRuns.value.filter(
+        (taskRun) => extractTaskUID(taskRun.name) === extractTaskUID(task.name)
       );
-      return !!exportSpec;
-    });
-
-  // Get task runs for export tasks
-  const exportTaskRuns = taskRuns.value.filter((taskRun) =>
-    exportTasks.some((task) => taskRun.name.startsWith(task.name + "/"))
+      return first(
+        orderBy(
+          taskRunsForTask,
+          (taskRun) => Number(extractTaskRunUID(taskRun.name)),
+          "desc"
+        )
+      );
+    })
+    .filter(Boolean) as TaskRun[];
+  return exportTaskRuns.every(
+    (taskRun) =>
+      taskRun.exportArchiveStatus === TaskRun_ExportArchiveStatus.EXPORTED
   );
-
-  return last(exportTaskRuns);
 });
 
 const exportDataConfig = computed((): Plan_ExportDataConfig | undefined => {
@@ -89,7 +89,7 @@ const downloadExportArchive = async () => {
   try {
     const content = await useSQLStore().exportData(
       create(ExportRequestSchema, {
-        name: rollout.value.name,
+        name: `${rollout.value.name}/stages/-`,
       })
     );
     const fileType = getExportFileType(exportDataConfig.value);

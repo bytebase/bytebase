@@ -1033,8 +1033,8 @@
     "data-export": {
       "options": "Opciones de exportación",
       "format": "Formato",
-      "file-downloaded": "Archivo Descargado",
-      "download-tooltip": "Disponible por 24 horas"
+      "download-tooltip": "Disponible por 24 horas",
+      "file-expired": "Archivo expirado"
     },
     "task-run": {
       "logs": "Registros",

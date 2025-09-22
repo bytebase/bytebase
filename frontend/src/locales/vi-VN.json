@@ -1033,8 +1033,8 @@
     "data-export": {
       "options": "Tùy chọn",
       "format": "Định dạng",
-      "file-downloaded": "Tệp đã tải xuống",
-      "download-tooltip": "Có sẵn trong 24 giờ"
+      "download-tooltip": "Có sẵn trong 24 giờ",
+      "file-expired": "Tệp đã hết hạn"
     },
     "task-run": {
       "logs": "Nhật ký",
