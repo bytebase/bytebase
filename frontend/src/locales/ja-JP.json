@@ -204,8 +204,6 @@
     "info": "情報",
     "minutes": "分",
     "filter-by-name": "名前でフィルタリングする",
-    "filter-by-name-or-label": "名前またはラベルでフィルタリング (例: labels.environment == \"production\")",
-    "search-by-name": "名前で検索",
     "license": "ライセンス",
     "view-details": "詳細を確認する",
     "force-verb": "フォース{verb}",
@@ -916,17 +914,16 @@
           "description": "イシューの承認ステータスで検索する",
           "title": "承認状況"
         },
-        "label": {
-          "title": "ラベル",
-          "description": "イシュータグで絞り込む"
+        "issue-label": {
+          "title": "問題ラベル",
+          "description": "問題ラベルでフィルタリング"
         },
         "table": {
           "title": "テーブル",
           "description": "値を入力してEnterを押します"
         },
-        "database-label": {
-          "title": "データベースラベル",
-          "description": "\"key:value\"を入力し、Enterを押します。"
+        "label": {
+          "description": "「キー:値」のペアを入力し、Enterを押します"
         },
         "engine": {
           "title": "エンジン",
@@ -1734,6 +1731,7 @@
     }
   },
   "project": {
+    "filter-projects": "プロジェクトをフィルタリング",
     "table": {
       "name": "@:common.name"
     },
@@ -2351,7 +2349,6 @@
     "delete": "監査ポリシーの削除",
     "input-then-press-enter": "入力後、Enterを押して追加します",
     "not-available-for-free": "{plan}定期購入ではこのルールを使用できません",
-    "search-by-name": "名前で検索",
     "attach-resource": {
       "no-linked-resources": "リソースのバインドはありません",
       "change-resources": "バインドされたリソースを変更する",

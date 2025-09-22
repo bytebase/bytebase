@@ -122,10 +122,10 @@ export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesReq
    * - project: the project full name in "projects/{id}" format, support "==" operator.
    * - instance: the instance full name in "instances/{id}" format, support "==" operator.
    * - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
-   * - label: the database label in "{key}:{value1},{value2}" format. Support "==" operator.
    * - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
    * - drifted: should be "true" or "false", show drifted databases if it's true, support "==" operator.
    * - table: filter by the database table, support "==" and ".matches()" operator.
+   * - labels.{key}: the database label, support "==" and "in" operators.
    *
    * For example:
    * environment == "environments/{environment resource id}"
@@ -136,13 +136,13 @@ export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesReq
    * engine == "MYSQL"
    * engine in ["MYSQL", "POSTGRES"]
    * !(engine in ["MYSQL", "POSTGRES"])
-   * label == "region:asia"
-   * label == "tenant:asia,europe"
-   * label == "region:asia" && label == "tenant:bytebase"
    * exclude_unassigned == true
    * drifted == true
    * table == "sample"
    * table.matches("sam")
+   * labels.environment == "production"
+   * labels.region == "asia"
+   * labels.region in ["asia", "europe"]
    *
    * You can combine filter conditions like:
    * environment == "environments/prod" && name.matches("employee")

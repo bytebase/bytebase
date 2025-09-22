@@ -195,7 +195,6 @@ const scopeOptions = useCommonSearchScopeOptions([
   ...CommonFilterScopeIdList,
   "project",
   "label",
-  "database-label", // Keep for backward compatibility
 ]);
 
 watch(
@@ -256,7 +255,7 @@ const selectedProject = computed(() => {
 
 const selectedLabels = computed(() => {
   return state.params.scopes
-    .filter((scope) => scope.id === "label" || scope.id === "database-label")
+    .filter((scope) => scope.id === "label")
     .map((scope) => scope.value);
 });
 

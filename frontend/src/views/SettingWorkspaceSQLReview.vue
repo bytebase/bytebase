@@ -17,7 +17,7 @@
         v-model:value="searchText"
         style="max-width: 100%"
         :autofocus="true"
-        :placeholder="$t('sql-review.search-by-name')"
+        :placeholder="$t('common.filter-by-name')"
       />
       <NButton
         v-if="hasCreatePolicyPermission"

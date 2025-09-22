@@ -155,16 +155,8 @@ func getListProjectFilter(filter string) (*store.ListResourceFilter, error) {
 			if !ok {
 				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
 			}
-			if strings.HasPrefix(varStr, "labels.") {
-				labelKey := strings.TrimPrefix(varStr, "labels.")
-				labelValueStr, ok := value.(string)
-				if !ok {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("label value must be a string, got %T", value))
-				}
-				// Use JSONB containment operator to check if the label exists with the specified value
-				// The setting column contains a proto message with a labels field
-				positionalArgs = append(positionalArgs, fmt.Sprintf(`{"%s":"%s"}`, labelKey, labelValueStr))
-				return fmt.Sprintf("project.setting->'labels' @> $%d::jsonb", len(positionalArgs)), nil
+			if labelKey, ok := strings.CutPrefix(varStr, "labels."); ok {
+				return parseToLabelFilterSQL("project.setting", labelKey, value)
 			}
 			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
 		}
@@ -202,6 +194,12 @@ func getListProjectFilter(filter string) (*store.ListResourceFilter, error) {
 				default:
 					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
 				}
+			case celoperators.In:
+				variable, value := getVariableAndValueFromExpr(expr)
+				if labelKey, ok := strings.CutPrefix(variable, "labels."); ok {
+					return parseToLabelFilterSQL("project.setting", labelKey, value)
+				}
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected %v operator for %v", functionName, variable))
 			default:
 				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected function %v", functionName))
 			}

@@ -204,8 +204,6 @@
     "info": "信息",
     "minutes": "分钟",
     "filter-by-name": "按名称过滤",
-    "filter-by-name-or-label": "按名称或标签过滤 (例如: labels.environment == \"production\")",
-    "search-by-name": "按名称搜索",
     "license": "证书",
     "view-details": "查看详情",
     "force-verb": "强制{verb}",
@@ -916,16 +914,15 @@
           "description": "按工单的审批状态搜索",
           "title": "审批状态"
         },
-        "label": {
-          "title": "标签",
+        "issue-label": {
+          "title": "工单标签",
           "description": "按工单标签过滤"
         },
         "table": {
           "title": "表",
           "description": "输入值然后按 Enter"
         },
-        "database-label": {
-          "title": "数据库标签",
+        "label": {
           "description": "输入 \"key:value\" 后按下回车"
         },
         "engine": {
@@ -1734,6 +1731,7 @@
     }
   },
   "project": {
+    "filter-projects": "过滤项目",
     "table": {
       "name": "@:common.name"
     },
@@ -2351,7 +2349,6 @@
     "delete": "删除审核策略",
     "input-then-press-enter": "输入后按下回车来添加",
     "not-available-for-free": "{plan}订阅不能使用该规则",
-    "search-by-name": "按名称搜索",
     "attach-resource": {
       "no-linked-resources": "没有绑定的资源",
       "change-resources": "更改绑定的资源",

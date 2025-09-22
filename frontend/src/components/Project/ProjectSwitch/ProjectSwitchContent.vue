@@ -17,7 +17,7 @@
         <div class="flex flex-row justify-end items-center gap-x-2">
           <SearchBox
             v-model:value="state.searchText"
-            :placeholder="$t('common.search-by-name')"
+            :placeholder="$t('common.filter-by-name')"
             :autofocus="false"
             class="!w-40"
             size="small"
