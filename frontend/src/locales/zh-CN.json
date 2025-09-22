@@ -961,7 +961,8 @@
       "on": "开启",
       "off": "关闭",
       "on-tooltip": "将所有语句包装在单个事务中（BEGIN/COMMIT）。",
-      "off-tooltip": "以自动提交模式单独执行语句。语句立即提交，如果后续语句失败则无法回滚。"
+      "off-tooltip": "以自动提交模式单独执行语句。语句立即提交，如果后续语句失败则无法回滚。",
+      "execution-order-note": "非事务性语句将最后执行。"
     },
     "waiting-earliest-allowed-time": "将于 {time} 之后执行",
     "batch-transition": {
