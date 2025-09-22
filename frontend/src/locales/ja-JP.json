@@ -1033,8 +1033,8 @@
     "data-export": {
       "options": "設定項目",
       "format": "エクスポート形式",
-      "file-downloaded": "ダウンロードされたファイル",
-      "download-tooltip": "24 時間利用可能"
+      "download-tooltip": "24 時間利用可能",
+      "file-expired": "ファイルの有効期限が切れました"
     },
     "task-run": {
       "logs": "ログ",

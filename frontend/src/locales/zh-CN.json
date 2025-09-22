@@ -1033,8 +1033,8 @@
     "data-export": {
       "options": "配置项",
       "format": "导出格式",
-      "file-downloaded": "文件已下载",
-      "download-tooltip": "24 小时可用"
+      "download-tooltip": "24 小时可用",
+      "file-expired": "文件已过期"
     },
     "task-run": {
       "logs": "日志",
