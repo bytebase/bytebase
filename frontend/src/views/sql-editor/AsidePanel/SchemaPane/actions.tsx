@@ -126,7 +126,8 @@ const confirmOverrideStatement = async (
 };
 
 export const useActions = () => {
-  const { updateViewState, viewState: currentTabViewState } = useCurrentTabViewStateContext();
+  const { updateViewState, viewState: currentTabViewState } =
+    useCurrentTabViewStateContext();
   const databaseStore = useDatabaseV1Store();
 
   const selectAllFromTableOrView = async (node: TreeNode) => {
@@ -201,7 +202,10 @@ export const useActions = () => {
         continue;
       }
       const viewState = tabViewStateStore.getViewState(tab.id);
-      if (viewState.view !== params.view || (schema && viewState.schema !== schema)) {
+      if (
+        viewState.view !== params.view ||
+        (schema && viewState.schema !== schema)
+      ) {
         continue;
       }
       tabStore.setCurrentTabId(tab.id);
