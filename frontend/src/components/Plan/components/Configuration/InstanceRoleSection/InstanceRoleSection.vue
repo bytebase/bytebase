@@ -1,7 +1,7 @@
 <template>
   <div class="w-full flex items-center gap-3">
     <div class="flex items-center min-w-24">
-      <label class="text-sm font-medium text-main">
+      <label class="text-sm text-main">
         {{ $t("common.role.self") }}
       </label>
       <NTooltip>
@@ -13,7 +13,9 @@
         <template #default>
           <div class="max-w-xs">
             <div class="space-y-1">
-              <p class="font-medium">{{ $t("plan.spec.role-selection.title") }}</p>
+              <p class="font-medium">
+                {{ $t("plan.spec.role-selection.title") }}
+              </p>
               <p class="text-sm">
                 {{ $t("plan.spec.role-selection.description") }}
               </p>
