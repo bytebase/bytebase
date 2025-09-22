@@ -28,7 +28,6 @@ export const AllSearchScopeIdList = [
   "label",
   // database related search scopes.
   "engine",
-  "database-label", // Deprecated: use "label" instead
   "drifted",
   "table",
   // issue related search scopes.

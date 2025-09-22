@@ -251,8 +251,8 @@ export const useIssueSearchScopeOptions = (
       },
       {
         id: "issue-label",
-        title: t("issue.advanced-search.scope.label.title"),
-        description: t("issue.advanced-search.scope.label.description"),
+        title: t("issue.advanced-search.scope.issue-label.title"),
+        description: t("issue.advanced-search.scope.issue-label.description"),
         options: projectLabels.value.map((label) => {
           return {
             value: label.value,

@@ -51,17 +51,24 @@ func TestListDatabaseFilter(t *testing.T) {
 			},
 		},
 		{
-			input: `label == "region:asia" && label == "tenant:bytebase"`,
+			input: `labels.region == "asia" && labels.tenant == "bytebase"`,
 			want: &store.ListResourceFilter{
-				Where: `((db.metadata->'labels'->>'region' = ANY($1)) AND (db.metadata->'labels'->>'tenant' = ANY($2)))`,
-				Args:  []any{"asia", "bytebase"},
+				Where: `((db.metadata->'labels'->>'region' = 'asia') AND (db.metadata->'labels'->>'tenant' = 'bytebase'))`,
+				Args:  []any{},
 			},
 		},
 		{
-			input: `(label == "region:asia" || label == "tenant:bytebase") && exclude_unassigned == true`,
+			input: `(labels.region == "asia" || labels.tenant == "bytebase") && exclude_unassigned == true`,
 			want: &store.ListResourceFilter{
-				Where: `(((db.metadata->'labels'->>'region' = ANY($1)) OR (db.metadata->'labels'->>'tenant' = ANY($2))) AND (db.project != $3))`,
-				Args:  []any{"asia", "bytebase", common.DefaultProjectID},
+				Where: `(((db.metadata->'labels'->>'region' = 'asia') OR (db.metadata->'labels'->>'tenant' = 'bytebase')) AND (db.project != $1))`,
+				Args:  []any{common.DefaultProjectID},
+			},
+		},
+		{
+			input: `labels.region in ["asia", "europe"] && labels.tenant == "bytebase"`,
+			want: &store.ListResourceFilter{
+				Where: `((db.metadata->'labels'->>'region' IN ('asia','europe')) AND (db.metadata->'labels'->>'tenant' = 'bytebase'))`,
+				Args:  []any{},
 			},
 		},
 	}

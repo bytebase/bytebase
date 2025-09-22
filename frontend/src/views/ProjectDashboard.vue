@@ -5,7 +5,7 @@
         v-model:params="state.params"
         :scope-options="scopeOptions"
         :autofocus="false"
-        :placeholder="$t('common.filter-by-name-or-label')"
+        :placeholder="$t('project.filter-projects')"
       />
       <NButton
         v-if="hasWorkspacePermissionV2('bb.projects.create')"

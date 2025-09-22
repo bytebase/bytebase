@@ -130,6 +130,7 @@ const columnList = computed((): ProjectDataTableColumn[] => {
       },
       {
         key: "title",
+        resizable: true,
         title: t("project.table.name"),
         render: (project) => (
           <ProjectNameCell
@@ -142,15 +143,11 @@ const columnList = computed((): ProjectDataTableColumn[] => {
       {
         key: "labels",
         title: t("common.labels"),
+        resizable: true,
         width: 300,
-        ellipsis: true,
         hide: !props.showLabels,
         render: (project) => (
-          <LabelsCell
-            labels={project.labels || {}}
-            showCount={3}
-            placeholder=""
-          />
+          <LabelsCell labels={project.labels} showCount={3} placeholder="-" />
         ),
       },
     ] as ProjectDataTableColumn[]
