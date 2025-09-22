@@ -465,18 +465,9 @@ const secondaryActions = computed((): ActionConfig[] => {
   if (actions.includes("ISSUE_REVIEW_REJECT")) {
     secondary.push({ action: "ISSUE_REVIEW_REJECT" });
   }
-
-  // Rollout actions in dropdown
-  if (
-    primaryAction.value?.action !== "ROLLOUT_START" &&
-    actions.includes("ROLLOUT_START")
-  ) {
-    secondary.push({ action: "ROLLOUT_START" });
-  }
   if (actions.includes("ROLLOUT_CANCEL")) {
     secondary.push({ action: "ROLLOUT_CANCEL" });
   }
-
   if (actions.includes("ISSUE_STATUS_CLOSE")) {
     secondary.push({ action: "ISSUE_STATUS_CLOSE" });
   }

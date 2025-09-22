@@ -275,9 +275,14 @@ import {
   ListTaskRunsRequestSchema,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
+import type {
+  BatchRunTasksRequest,
+  Stage,
+  Task,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import {
+  extractStageUID,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
   isNullOrUndefined,
@@ -650,22 +655,16 @@ const handleExecutionModeChange = (value: string) => {
 const groupTasksByStage = (tasks: Task[]) => {
   const tasksByStage = new Map<string, Task[]>();
   for (const task of tasks) {
-    // Extract stage from task name: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-    const pathParts = task.name.split("/");
-    const stageIndex = pathParts.findIndex((part) => part === "stages");
-    if (stageIndex !== -1 && stageIndex + 1 < pathParts.length) {
-      const stageId = pathParts[stageIndex + 1];
-      if (!tasksByStage.has(stageId)) {
-        tasksByStage.set(stageId, []);
-      }
-      tasksByStage.get(stageId)!.push(task);
+    const stageId = extractStageUID(task.name);
+    if (!tasksByStage.has(stageId)) {
+      tasksByStage.set(stageId, []);
     }
+    tasksByStage.get(stageId)!.push(task);
   }
   return tasksByStage;
 };
 
-// Helper function to add run time to a request if specified
-const addRunTimeToRequest = (request: any) => {
+const addRunTimeToRequest = (request: BatchRunTasksRequest) => {
   if (runTimeInMS.value !== undefined) {
     // Convert timestamp to protobuf Timestamp format
     const runTimeSeconds = Math.floor(runTimeInMS.value / 1000);
@@ -680,9 +679,6 @@ const addRunTimeToRequest = (request: any) => {
 const handleConfirm = async () => {
   state.loading = true;
 
-  const parent = isDatabaseCreationOrExportTask.value
-    ? rollout.value.name
-    : targetStage.value.name;
   try {
     if (props.action === "RUN") {
       // For export tasks, group by stage/environment and make separate batch calls
@@ -690,9 +686,9 @@ const handleConfirm = async () => {
         const tasksByStage = groupTasksByStage(eligibleTasks.value);
 
         // Make batch run calls for each stage/environment
-        for (const [_stageId, stageTasks] of tasksByStage) {
+        for (const [stageId, stageTasks] of tasksByStage) {
           const request = create(BatchRunTasksRequestSchema, {
-            parent,
+            parent: `${rollout.value.name}/stages/${stageId}`,
             tasks: stageTasks.map((task) => task.name),
             reason: comment.value,
           });
@@ -702,7 +698,7 @@ const handleConfirm = async () => {
       } else {
         // For non-export tasks, use the original logic
         const request = create(BatchRunTasksRequestSchema, {
-          parent,
+          parent: targetStage.value.name,
           tasks: eligibleTasks.value.map((task) => task.name),
           reason: comment.value,
         });
@@ -715,9 +711,9 @@ const handleConfirm = async () => {
         const tasksByStage = groupTasksByStage(eligibleTasks.value);
 
         // Make batch skip calls for each stage/environment
-        for (const [_stageId, stageTasks] of tasksByStage) {
+        for (const [stageId, stageTasks] of tasksByStage) {
           const request = create(BatchSkipTasksRequestSchema, {
-            parent,
+            parent: `${rollout.value.name}/stages/${stageId}`,
             tasks: stageTasks.map((task) => task.name),
             reason: comment.value,
           });
@@ -726,7 +722,7 @@ const handleConfirm = async () => {
       } else {
         // For non-export tasks, use the original logic
         const request = create(BatchSkipTasksRequestSchema, {
-          parent,
+          parent: targetStage.value.name,
           tasks: eligibleTasks.value.map((task) => task.name),
           reason: comment.value,
         });
