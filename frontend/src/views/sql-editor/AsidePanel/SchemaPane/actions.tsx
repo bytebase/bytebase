@@ -170,15 +170,14 @@ export const useActions = () => {
     const tabStore = useSQLEditorTabStore();
     const tabViewStateStore = useTabViewStateStore();
 
-    let schema = params.schema
-    let table = params.table
-
+    let schema = params.schema;
+    let table = params.table;
     if (currentTabViewState.value) {
       if (!schema) {
-        schema = currentTabViewState.value.schema
+        schema = currentTabViewState.value.schema;
       }
       if (!table) {
-        currentTabViewState.value.table
+        currentTabViewState.value.table;
       }
     }
 
