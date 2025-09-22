@@ -1,20 +1,23 @@
 <template>
-  <div
-    class="w-full flex items-center justify-start gap-x-2 flex-wrap whitespace-nowrap"
-  >
+  <div class="w-full flex items-center gap-3">
+    <div class="flex items-center min-w-24">
+      <label class="text-sm text-main">
+        {{ $t("task.prior-backup") }}
+      </label>
+      <NTooltip>
+        <template #trigger>
+          <heroicons:information-circle
+            class="w-4 h-4 text-control-light cursor-help"
+          />
+        </template>
+        <template #default>
+          <div class="max-w-xs">
+            {{ $t("task.prior-backup-tips") }}
+          </div>
+        </template>
+      </NTooltip>
+    </div>
     <PreBackupSwitch />
-    <NTooltip>
-      <template #trigger>
-        <div class="textlabel flex items-center">
-          <span>{{ $t("task.prior-backup") }}</span>
-        </div>
-      </template>
-      <template #default>
-        <div class="max-w-[20rem]">
-          {{ $t("task.prior-backup-tips") }}
-        </div>
-      </template>
-    </NTooltip>
   </div>
 </template>
 

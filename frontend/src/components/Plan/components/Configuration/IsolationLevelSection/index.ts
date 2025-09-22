@@ -1,2 +1,3 @@
-export { default } from "./IsolationLevelSection.vue";
-export * from "./context";
+import IsolationLevelSection from "./IsolationLevelSection.vue";
+
+export default IsolationLevelSection;
