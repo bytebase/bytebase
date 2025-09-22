@@ -491,3 +491,8 @@ func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceNam
 	}
 	return database, nil
 }
+
+func GetUserFromContext(ctx context.Context) (*store.UserMessage, bool) {
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	return user, ok
+}
