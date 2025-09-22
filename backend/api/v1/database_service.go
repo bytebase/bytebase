@@ -325,9 +325,8 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 					return parseToEngineSQL(expr, "IN")
 				} else if labelKey, ok := strings.CutPrefix(variable, "labels."); ok {
 					return parseToLabelFilterSQL("db.metadata", labelKey, value)
-				} else {
-					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
 				}
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
 			case celoperators.LogicalNot:
 				args := expr.AsCall().Args()
 				if len(args) != 1 {
