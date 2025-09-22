@@ -178,7 +178,7 @@ export const useActions = () => {
         schema = currentTabViewState.value.schema;
       }
       if (!table) {
-        currentTabViewState.value.table;
+        table = currentTabViewState.value.table;
       }
     }
 
