@@ -6,10 +6,14 @@ import { useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
-import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
+import {
+  Plan_ChangeDatabaseConfig_Type,
+  type Plan,
+  type Plan_Spec,
+} from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import type { Task, Rollout } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { flattenTaskV1List, instanceV1SupportsTransactionMode } from "@/utils";
 
 export const KEY = Symbol(
@@ -25,22 +29,13 @@ export const provideTransactionModeSettingContext = (refs: {
   project: Ref<Project>;
   plan: Ref<Plan>;
   selectedSpec: Ref<Plan_Spec | undefined>;
-  selectedTask?: Ref<Task | undefined>;
   issue?: Ref<Issue | undefined>;
   rollout?: Ref<Rollout | undefined>;
   readonly?: Ref<boolean>;
 }) => {
   const databaseStore = useDatabaseV1Store();
 
-  const {
-    isCreating,
-    plan,
-    selectedSpec,
-    selectedTask,
-    issue,
-    rollout,
-    readonly,
-  } = refs;
+  const { isCreating, plan, selectedSpec, issue, rollout, readonly } = refs;
 
   const events = new Emittery<{
     update: never;
@@ -70,31 +65,10 @@ export const provideTransactionModeSettingContext = (refs: {
     if (selectedSpec.value.config?.case !== "changeDatabaseConfig") {
       return false;
     }
-
-    // Get the task type from spec or selected task
-    let taskType: Task_Type | undefined;
-    if (selectedTask?.value) {
-      taskType = selectedTask.value.type;
-    } else if (rollout?.value) {
-      const tasks = flattenTaskV1List(rollout.value);
-      const task = tasks.find((t) => t.specId === selectedSpec.value?.id);
-      taskType = task?.type;
-    } else {
-      // For creating mode, we can infer from the change type
-      const config = selectedSpec.value.config.value;
-      // Check if it's a schema or data update based on the config
-      taskType = config.sheet
-        ? Task_Type.DATABASE_SCHEMA_UPDATE
-        : Task_Type.DATABASE_DATA_UPDATE;
-    }
-
-    return (
-      taskType &&
-      [
-        Task_Type.DATABASE_SCHEMA_UPDATE,
-        Task_Type.DATABASE_DATA_UPDATE,
-      ].includes(taskType)
-    );
+    return [
+      Plan_ChangeDatabaseConfig_Type.DATA,
+      Plan_ChangeDatabaseConfig_Type.MIGRATE,
+    ].includes(selectedSpec.value.config.value.type);
   });
 
   const allowChange = computed(() => {
@@ -113,23 +87,17 @@ export const provideTransactionModeSettingContext = (refs: {
       return false;
     }
 
-    let task: Task | undefined;
-    if (selectedTask?.value) {
-      task = selectedTask.value;
-    } else if (rollout?.value) {
-      const tasks = flattenTaskV1List(rollout.value);
-      task = tasks.find((t) => t.specId === selectedSpec.value?.id);
-    }
-
-    // If task is running/done/etc, disallow
+    const tasks = flattenTaskV1List(rollout?.value) || [];
+    // If any task is running/done/etc, disallow
     if (
-      task &&
-      [
-        Task_Status.PENDING,
-        Task_Status.RUNNING,
-        Task_Status.DONE,
-        Task_Status.SKIPPED,
-      ].includes(task.status)
+      tasks.some((task) => {
+        return [
+          Task_Status.PENDING,
+          Task_Status.RUNNING,
+          Task_Status.DONE,
+          Task_Status.SKIPPED,
+        ].includes(task.status);
+      })
     ) {
       return false;
     }
@@ -140,7 +108,6 @@ export const provideTransactionModeSettingContext = (refs: {
   const context = {
     isCreating,
     selectedSpec,
-    selectedTask,
     plan,
     shouldShow,
     allowChange,

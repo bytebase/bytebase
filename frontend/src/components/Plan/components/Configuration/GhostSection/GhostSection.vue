@@ -1,19 +1,21 @@
 <template>
   <div class="flex flex-col items-start gap-1">
-    <div
-      class="w-full flex flex-row items-center gap-2 whitespace-nowrap flex-wrap"
-    >
-      <GhostSwitch />
-      <div class="textlabel flex items-center gap-x-1 whitespace-nowrap">
+    <div class="w-full flex items-center gap-3">
+      <div class="flex items-center min-w-24">
+        <label class="text-sm text-main">
+          {{ $t("task.online-migration.self") }}
+        </label>
         <NTooltip>
           <template #trigger>
-            {{ $t("task.online-migration.self") }}
+            <heroicons:information-circle
+              class="w-4 h-4 text-control-light cursor-help"
+            />
           </template>
           <template #default>
             <i18n-t
               tag="p"
               keypath="issue.migration-mode.online.description"
-              class="whitespace-pre-line max-w-[20rem]"
+              class="whitespace-pre-line max-w-xs"
             >
               <template #link>
                 <!-- TODO: update docs for mariadb -->
@@ -26,6 +28,7 @@
           </template>
         </NTooltip>
       </div>
+      <GhostSwitch />
       <NButton
         v-if="enabled && allowChange"
         tag="div"

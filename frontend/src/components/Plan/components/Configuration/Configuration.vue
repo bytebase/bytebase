@@ -1,14 +1,16 @@
 <template>
-  <div v-if="shouldShow" class="w-full flex flex-col gap-2">
-    <p class="text-base">
-      {{ $t("plan.options.self") }}
-    </p>
-    <div class="w-auto flex flex-col gap-2">
+  <div v-if="shouldShow" class="w-full">
+    <div class="mb-4">
+      <h3 class="text-lg font-medium text-main">
+        {{ $t("plan.options.self") }}
+      </h3>
+    </div>
+    <div class="space-y-4">
+      <InstanceRoleSection v-if="shouldShowInstanceRoleSection" />
       <TransactionModeSection v-if="shouldShowTransactionModeSection" />
       <IsolationLevelSection v-if="shouldShowIsolationLevelSection" />
-      <GhostSection v-if="shouldShowGhostSection" />
       <PreBackupSection v-if="shouldShowPreBackupSection" />
-      <InstanceRoleSection v-if="shouldShowInstanceRoleSection" />
+      <GhostSection v-if="shouldShowGhostSection" />
     </div>
   </div>
 </template>
