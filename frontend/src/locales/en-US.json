@@ -1037,8 +1037,8 @@
     "data-export": {
       "options": "Options",
       "format": "Format",
-      "file-downloaded": "File Downloaded",
-      "download-tooltip": "Available for 24 hours"
+      "download-tooltip": "Available for 24 hours",
+      "file-expired": "File Expired"
     },
     "task-run": {
       "logs": "Logs",

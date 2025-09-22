@@ -782,9 +782,16 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 }
 
 func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) (*v1pb.ExportResponse, error) {
-	_, rolloutID, _, err := common.GetProjectIDRolloutIDMaybeStageID(requestName)
+	// Try to parse as rollout name first (more specific), then fallback to stage name
+	var rolloutID int
+	var err error
+	_, rolloutID, err = common.GetProjectIDRolloutID(requestName)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse rollout ID: %v", err))
+		// If rollout parsing fails, try parsing as stage name
+		_, rolloutID, _, err = common.GetProjectIDRolloutIDMaybeStageID(requestName)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse request name as rollout or stage: %v", err))
+		}
 	}
 	rollout, err := s.store.GetRollout(ctx, rolloutID)
 	if err != nil {

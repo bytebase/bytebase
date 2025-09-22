@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { last } from "lodash-es";
+import { first, orderBy } from "lodash-es";
 import { EllipsisVerticalIcon } from "lucide-vue-next";
 import { NButton, NDropdown, type DropdownOption } from "naive-ui";
 import { computed, h } from "vue";
@@ -46,9 +46,12 @@ import { DropdownItemWithErrorList } from "@/components/IssueV1/components/commo
 import { useCurrentUserV1, extractUserId } from "@/store";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  TaskRun_ExportArchiveStatus,
   Task_Type,
+  TaskRun_ExportArchiveStatus,
+  TaskRun_Status,
+  type TaskRun,
 } from "@/types/proto-es/v1/rollout_service_pb";
+import { extractTaskRunUID, extractTaskUID } from "@/utils";
 import { usePlanContext } from "../../../../logic";
 import { ExportArchiveDownloadAction } from "../export";
 import UnifiedActionButton from "./UnifiedActionButton.vue";
@@ -76,41 +79,16 @@ const isExportPlan = computed(() => {
   );
 });
 
-// Export download logic
-const hasExportDataTask = computed(() => {
-  return (
-    rollout.value?.stages.some((stage) =>
-      stage.tasks.some((task) => task.type === Task_Type.DATABASE_EXPORT)
-    ) || false
-  );
-});
-
-const taskRun = computed(() => {
-  if (!rollout.value || !taskRuns.value.length) return undefined;
-
-  // Find export tasks first
-  const exportTasks = rollout.value.stages
-    .flatMap((stage) => stage.tasks)
-    .filter((task) => {
-      // Find tasks that belong to export data specs
-      const exportSpec = plan.value.specs.find(
-        (spec) =>
-          spec.config?.case === "exportDataConfig" && spec.id === task.specId
-      );
-      return !!exportSpec;
-    });
-
-  // Get task runs for export tasks
-  const exportTaskRuns = taskRuns.value.filter((taskRun) =>
-    exportTasks.some((task) => taskRun.name.startsWith(task.name + "/"))
-  );
-
-  return last(exportTaskRuns);
-});
-
 const shouldShowExportDownload = computed(() => {
+  const exportTasks =
+    rollout.value?.stages
+      .flatMap((stage) => stage.tasks)
+      .filter((task) => {
+        return task.type === Task_Type.DATABASE_EXPORT;
+      }) || [];
+
   // Must have export data tasks
-  if (!hasExportDataTask.value) return false;
+  if (exportTasks.length === 0) return false;
 
   // Must have an issue
   if (!issue?.value) return false;
@@ -121,13 +99,35 @@ const shouldShowExportDownload = computed(() => {
   }
 
   // Current user must be the issue creator
-  const currentUserEmail = currentUser.value.email;
-  const issueCreator = extractUserId(issue.value.creator);
-  if (currentUserEmail !== issueCreator) return false;
+  if (currentUser.value.email !== extractUserId(issue.value.creator)) {
+    return false;
+  }
+
+  // Get latest task run for each export task
+  const exportTaskRuns = exportTasks
+    .map((task) => {
+      const taskRunsForTask = taskRuns.value.filter(
+        (taskRun) => extractTaskUID(taskRun.name) === extractTaskUID(task.name)
+      );
+      return first(
+        orderBy(
+          taskRunsForTask,
+          (taskRun) => Number(extractTaskRunUID(taskRun.name)),
+          "desc"
+        )
+      );
+    })
+    .filter(Boolean) as TaskRun[];
 
   // Check if export archive is ready
   if (
-    taskRun.value?.exportArchiveStatus !== TaskRun_ExportArchiveStatus.READY
+    exportTaskRuns.length === 0 ||
+    exportTaskRuns.some(
+      (taskRun) =>
+        taskRun.status !== TaskRun_Status.DONE ||
+        (taskRun.exportArchiveStatus !== TaskRun_ExportArchiveStatus.READY &&
+          taskRun.exportArchiveStatus !== TaskRun_ExportArchiveStatus.EXPORTED)
+    )
   ) {
     return false;
   }
