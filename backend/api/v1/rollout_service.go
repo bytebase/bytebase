@@ -329,9 +329,9 @@ func (s *RolloutService) buildRolloutFindWithFilter(ctx context.Context, pipelin
 // CreateRollout creates a rollout from plan.
 func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request[v1pb.CreateRolloutRequest]) (*connect.Response[v1pb.Rollout], error) {
 	request := req.Msg
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("principal ID not found"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
@@ -377,7 +377,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		rolloutV1.Plan = request.Rollout.GetPlan()
 		return connect.NewResponse(rolloutV1), nil
 	}
-	pipelineUID, err := s.store.CreatePipelineAIO(ctx, planID, pipelineCreate, principalID)
+	pipelineUID, err := s.store.CreatePipelineAIO(ctx, planID, pipelineCreate, user.ID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create pipeline, error: %v", err))
 	}
@@ -666,7 +666,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("No tasks to run in the stage"))
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
@@ -786,7 +786,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		taskByID[task.ID] = task
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
@@ -891,7 +891,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 		}
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}

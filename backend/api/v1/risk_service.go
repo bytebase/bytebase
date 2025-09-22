@@ -106,7 +106,7 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}

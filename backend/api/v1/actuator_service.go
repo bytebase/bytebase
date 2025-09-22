@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/sampleinstance"
@@ -123,7 +122,7 @@ func (s *ActuatorService) SetupSample(
 	ctx context.Context,
 	_ *connect.Request[v1pb.SetupSampleRequest],
 ) (*connect.Response[emptypb.Empty], error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok || user == nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}

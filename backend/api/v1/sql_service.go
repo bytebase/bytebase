@@ -1172,13 +1172,13 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Requ
 	}
 	limitPlusOne := offset.limit + 1
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("principal ID not found"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
 	find := &store.FindQueryHistoryMessage{
-		CreatorUID: &principalID,
+		CreatorUID: &user.ID,
 		Limit:      &limitPlusOne,
 		Offset:     &offset.offset,
 	}
@@ -1576,7 +1576,7 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.Us
 }
 
 func (*SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}

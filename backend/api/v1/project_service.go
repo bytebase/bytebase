@@ -221,7 +221,7 @@ func getListProjectFilter(filter string) (*store.ListResourceFilter, error) {
 
 // SearchProjects searches all projects on which the user has bb.projects.get permission.
 func (s *ProjectService) SearchProjects(ctx context.Context, req *connect.Request[v1pb.SearchProjectsRequest]) (*connect.Response[v1pb.SearchProjectsResponse], error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
@@ -309,13 +309,13 @@ func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request
 		projectMessage.DataClassificationConfigID = setting.Configs[0].Id
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("principal ID not found"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 	project, err := s.store.CreateProjectV2(ctx,
 		projectMessage,
-		principalID,
+		user.ID,
 	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -336,7 +336,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 	if err != nil {
 		if connect.CodeOf(err) == connect.CodeNotFound && req.Msg.AllowMissing {
 			// When allow_missing is true and project doesn't exist, create a new one
-			user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+			user, ok := GetUserFromContext(ctx)
 			if !ok {
 				return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 			}
@@ -979,7 +979,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 	if webhook == nil {
 		if req.Msg.AllowMissing {
 			// When allow_missing is true and webhook doesn't exist, create a new one
-			user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+			user, ok := GetUserFromContext(ctx)
 			if !ok {
 				return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 			}

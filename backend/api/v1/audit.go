@@ -138,7 +138,7 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 	}
 
 	var user string
-	if u, ok := ctx.Value(common.UserContextKey).(*store.UserMessage); ok {
+	if u, ok := GetUserFromContext(ctx); ok {
 		user = common.FormatUserUID(u.ID)
 	} else {
 		if loginResponse, ok := response.(*v1pb.LoginResponse); ok {
