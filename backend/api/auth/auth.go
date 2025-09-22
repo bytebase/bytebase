@@ -98,7 +98,6 @@ func (in *APIAuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFun
 			return nil, err
 		}
 
-		ctx = context.WithValue(ctx, common.PrincipalIDContextKey, user.ID)
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
 		return next(ctx, req)
 	}
@@ -133,7 +132,6 @@ func (in *APIAuthInterceptor) WrapStreamingHandler(next connect.StreamingHandler
 			return err
 		}
 
-		ctx = context.WithValue(ctx, common.PrincipalIDContextKey, user.ID)
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
 
 		return next(ctx, conn)

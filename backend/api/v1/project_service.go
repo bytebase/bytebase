@@ -309,13 +309,13 @@ func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request
 		projectMessage.DataClassificationConfigID = setting.Configs[0].Id
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("principal ID not found"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 	project, err := s.store.CreateProjectV2(ctx,
 		projectMessage,
-		principalID,
+		user.ID,
 	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
