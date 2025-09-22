@@ -1103,7 +1103,7 @@
     "schema-migration-description": "数据库结构变更（DDL），包括表、列、索引、约束和模式变更",
     "data-change": "数据变更",
     "data-change-description": "数据库数据修改（DML），包括插入、更新、删除和数据迁移",
-    "select-targets": "选择变更对象",
+    "select-targets": "选择目标库",
     "ready-for-review": "提交审批",
     "overview": {
       "no-checks": "没有检查"
@@ -1136,8 +1136,8 @@
       }
     },
     "targets": {
-      "title": "变更对象",
-      "no-targets-found": "未找到变更对象",
+      "title": "目标库",
+      "no-targets-found": "未找到目标库",
       "type": {
         "database-group": "数据库组"
       },

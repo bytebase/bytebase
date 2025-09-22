@@ -17,7 +17,7 @@
       </div>
       <template #footer>
         <div class="flex items-center justify-end gap-x-3">
-          <NButton @click="show = false">
+          <NButton @click="show = false" quaternary>
             {{ $t("common.cancel") }}
           </NButton>
           <NButton
