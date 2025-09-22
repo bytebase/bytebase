@@ -11,12 +11,15 @@
           />
         </template>
         <template #default>
-          <div class="max-w-xs">
+          <div class="max-w-xs space-y-1">
             <div v-if="transactionMode === 'on'">
               {{ $t("issue.transaction-mode.on-tooltip") }}
             </div>
             <div v-else>
               {{ $t("issue.transaction-mode.off-tooltip") }}
+            </div>
+            <div class="text-sm text-gray-400">
+              {{ $t("issue.transaction-mode.execution-order-note") }}
             </div>
           </div>
         </template>
