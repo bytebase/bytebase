@@ -86,7 +86,7 @@ func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, req *con
 		return connect.NewResponse(result), nil
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
@@ -131,7 +131,7 @@ func (s *DatabaseGroupService) UpdateDatabaseGroup(ctx context.Context, req *con
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", projectResourceID))
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}

@@ -327,7 +327,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, req *connect.Request[v1
 	if projectID != "-" {
 		issueFind.ProjectID = &projectID
 	}
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
@@ -393,7 +393,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 }
 
 func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v1pb.CreateIssueRequest) (*connect.Response[v1pb.Issue], error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
@@ -486,7 +486,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 }
 
 func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1pb.CreateIssueRequest) (*connect.Response[v1pb.Issue], error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
@@ -577,7 +577,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 }
 
 func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, request *v1pb.CreateIssueRequest) (*connect.Response[v1pb.Issue], error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
@@ -1084,7 +1084,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 
 // UpdateIssue updates the issue.
 func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1pb.UpdateIssueRequest]) (*connect.Response[v1pb.Issue], error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
@@ -1281,7 +1281,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 
 // BatchUpdateIssuesStatus batch updates issues status.
 func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect.Request[v1pb.BatchUpdateIssuesStatusRequest]) (*connect.Response[v1pb.BatchUpdateIssuesStatusResponse], error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
@@ -1421,7 +1421,7 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, req *connect.Requ
 	if req.Msg.IssueComment.Comment == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue comment is empty"))
 	}
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
@@ -1458,7 +1458,7 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask is required"))
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}

@@ -527,7 +527,7 @@ func (s *WorksheetService) findWorksheet(ctx context.Context, find *store.FindWo
 // PRIVATE: the creator.
 // PROJECT_WRITE: all members with bb.projects.get permission in the project.
 func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *store.WorkSheetMessage) (bool, error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return false, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
@@ -564,7 +564,7 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 // PROJECT_WRITE: all members with bb.projects.get permission in the project.
 // PROJECT_READ: all members with bb.projects.get permission in the project.
 func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *store.WorkSheetMessage) (bool, error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return false, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}

@@ -83,7 +83,7 @@ func (s *SheetService) BatchCreateSheets(ctx context.Context, request *connect.R
 	if len(request.Msg.Requests) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("requests must be set"))
 	}
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
@@ -204,7 +204,7 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with resource id %q had deleted", projectResourceID))
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}

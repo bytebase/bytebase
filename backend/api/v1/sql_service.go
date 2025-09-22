@@ -1576,7 +1576,7 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.Us
 }
 
 func (*SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}

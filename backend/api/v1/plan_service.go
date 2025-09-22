@@ -144,7 +144,7 @@ func (s *PlanService) SearchPlans(ctx context.Context, request *connect.Request[
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
@@ -303,7 +303,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	if len(req.UpdateMask.Paths) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("update_mask must not be empty"))
 	}
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
