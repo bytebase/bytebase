@@ -412,8 +412,8 @@
     - [QueryDataPolicy](#bytebase-v1-QueryDataPolicy)
     - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy)
     - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
-    - [RolloutPolicy.Validation](#bytebase-v1-RolloutPolicy-Validation)
-    - [RolloutPolicy.Validation.RequiredStatusChecks](#bytebase-v1-RolloutPolicy-Validation-RequiredStatusChecks)
+    - [RolloutPolicy.Checkers](#bytebase-v1-RolloutPolicy-Checkers)
+    - [RolloutPolicy.Checkers.RequiredStatusChecks](#bytebase-v1-RolloutPolicy-Checkers-RequiredStatusChecks)
     - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
     - [TagPolicy](#bytebase-v1-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-v1-TagPolicy-TagsEntry)
@@ -423,7 +423,7 @@
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action)
     - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
     - [PolicyType](#bytebase-v1-PolicyType)
-    - [RolloutPolicy.Validation.PlanCheckEnforcement](#bytebase-v1-RolloutPolicy-Validation-PlanCheckEnforcement)
+    - [RolloutPolicy.Checkers.PlanCheckEnforcement](#bytebase-v1-RolloutPolicy-Checkers-PlanCheckEnforcement)
     - [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel)
   
     - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
@@ -6964,38 +6964,38 @@ QueryDataPolicy is the policy configuration for querying data.
 | automatic | [bool](#bool) |  |  |
 | roles | [string](#string) | repeated |  |
 | issue_roles | [string](#string) | repeated | **Deprecated.** Deprecated. roles/LAST_APPROVER roles/CREATOR |
-| validation | [RolloutPolicy.Validation](#bytebase-v1-RolloutPolicy-Validation) |  | Validation rules that must be satisfied before rollout execution. These checks are performed in UI workflows only. |
+| checkers | [RolloutPolicy.Checkers](#bytebase-v1-RolloutPolicy-Checkers) |  | Checkers that must pass before rollout execution. These checks are performed in UI workflows only. |
 
 
 
 
 
 
-<a name="bytebase-v1-RolloutPolicy-Validation"></a>
+<a name="bytebase-v1-RolloutPolicy-Checkers"></a>
 
-### RolloutPolicy.Validation
+### RolloutPolicy.Checkers
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | required_issue_approval | [bool](#bool) |  | Whether issue approval is required before proceeding with rollout. |
-| required_status_checks | [RolloutPolicy.Validation.RequiredStatusChecks](#bytebase-v1-RolloutPolicy-Validation-RequiredStatusChecks) |  | Status checks that must pass before rollout can be executed. |
+| required_status_checks | [RolloutPolicy.Checkers.RequiredStatusChecks](#bytebase-v1-RolloutPolicy-Checkers-RequiredStatusChecks) |  | Status checks that must pass before rollout can be executed. |
 
 
 
 
 
 
-<a name="bytebase-v1-RolloutPolicy-Validation-RequiredStatusChecks"></a>
+<a name="bytebase-v1-RolloutPolicy-Checkers-RequiredStatusChecks"></a>
 
-### RolloutPolicy.Validation.RequiredStatusChecks
+### RolloutPolicy.Checkers.RequiredStatusChecks
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| plan_check_enforcement | [RolloutPolicy.Validation.PlanCheckEnforcement](#bytebase-v1-RolloutPolicy-Validation-PlanCheckEnforcement) |  | Enforcement level for plan check results during rollout validation. |
+| plan_check_enforcement | [RolloutPolicy.Checkers.PlanCheckEnforcement](#bytebase-v1-RolloutPolicy-Checkers-PlanCheckEnforcement) |  | Enforcement level for plan check results during rollout validation. |
 
 
 
@@ -7132,9 +7132,9 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 
 
 
-<a name="bytebase-v1-RolloutPolicy-Validation-PlanCheckEnforcement"></a>
+<a name="bytebase-v1-RolloutPolicy-Checkers-PlanCheckEnforcement"></a>
 
-### RolloutPolicy.Validation.PlanCheckEnforcement
+### RolloutPolicy.Checkers.PlanCheckEnforcement
 
 
 | Name | Number | Description |

@@ -1025,11 +1025,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.RolloutPolicy.Validation"><span class="badge">M</span>RolloutPolicy.Validation</a>
+                  <a href="#bytebase.store.RolloutPolicy.Checkers"><span class="badge">M</span>RolloutPolicy.Checkers</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.RolloutPolicy.Validation.RequiredStatusChecks"><span class="badge">M</span>RolloutPolicy.Validation.RequiredStatusChecks</a>
+                  <a href="#bytebase.store.RolloutPolicy.Checkers.RequiredStatusChecks"><span class="badge">M</span>RolloutPolicy.Checkers.RequiredStatusChecks</a>
                 </li>
               
                 <li>
@@ -1066,7 +1066,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.RolloutPolicy.Validation.PlanCheckEnforcement"><span class="badge">E</span>RolloutPolicy.Validation.PlanCheckEnforcement</a>
+                  <a href="#bytebase.store.RolloutPolicy.Checkers.PlanCheckEnforcement"><span class="badge">E</span>RolloutPolicy.Checkers.PlanCheckEnforcement</a>
                 </li>
               
                 <li>
@@ -9833,10 +9833,10 @@ roles/CREATOR </p></td>
                 </tr>
               
                 <tr>
-                  <td>validation</td>
-                  <td><a href="#bytebase.store.RolloutPolicy.Validation">RolloutPolicy.Validation</a></td>
+                  <td>checkers</td>
+                  <td><a href="#bytebase.store.RolloutPolicy.Checkers">RolloutPolicy.Checkers</a></td>
                   <td></td>
-                  <td><p>Validation rules that must be satisfied before rollout execution.
+                  <td><p>Checkers that must pass before rollout execution.
 These checks are performed in UI workflows only. </p></td>
                 </tr>
               
@@ -9868,7 +9868,7 @@ These checks are performed in UI workflows only. </p></td>
 
         
       
-        <h3 id="bytebase.store.RolloutPolicy.Validation">RolloutPolicy.Validation</h3>
+        <h3 id="bytebase.store.RolloutPolicy.Checkers">RolloutPolicy.Checkers</h3>
         <p></p>
 
         
@@ -9887,7 +9887,7 @@ These checks are performed in UI workflows only. </p></td>
               
                 <tr>
                   <td>required_status_checks</td>
-                  <td><a href="#bytebase.store.RolloutPolicy.Validation.RequiredStatusChecks">RolloutPolicy.Validation.RequiredStatusChecks</a></td>
+                  <td><a href="#bytebase.store.RolloutPolicy.Checkers.RequiredStatusChecks">RolloutPolicy.Checkers.RequiredStatusChecks</a></td>
                   <td></td>
                   <td><p>Status checks that must pass before rollout can be executed. </p></td>
                 </tr>
@@ -9899,7 +9899,7 @@ These checks are performed in UI workflows only. </p></td>
 
         
       
-        <h3 id="bytebase.store.RolloutPolicy.Validation.RequiredStatusChecks">RolloutPolicy.Validation.RequiredStatusChecks</h3>
+        <h3 id="bytebase.store.RolloutPolicy.Checkers.RequiredStatusChecks">RolloutPolicy.Checkers.RequiredStatusChecks</h3>
         <p></p>
 
         
@@ -9911,7 +9911,7 @@ These checks are performed in UI workflows only. </p></td>
               
                 <tr>
                   <td>plan_check_enforcement</td>
-                  <td><a href="#bytebase.store.RolloutPolicy.Validation.PlanCheckEnforcement">RolloutPolicy.Validation.PlanCheckEnforcement</a></td>
+                  <td><a href="#bytebase.store.RolloutPolicy.Checkers.PlanCheckEnforcement">RolloutPolicy.Checkers.PlanCheckEnforcement</a></td>
                   <td></td>
                   <td><p>Enforcement level for plan check results during rollout validation. </p></td>
                 </tr>
@@ -10226,7 +10226,7 @@ for example, the environment resource can have the sql review config tag, like &
           </tbody>
         </table>
       
-        <h3 id="bytebase.store.RolloutPolicy.Validation.PlanCheckEnforcement">RolloutPolicy.Validation.PlanCheckEnforcement</h3>
+        <h3 id="bytebase.store.RolloutPolicy.Checkers.PlanCheckEnforcement">RolloutPolicy.Checkers.PlanCheckEnforcement</h3>
         <p></p>
         <table class="enum-table">
           <thead>

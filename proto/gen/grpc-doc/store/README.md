@@ -214,8 +214,8 @@
     - [QueryDataPolicy](#bytebase-store-QueryDataPolicy)
     - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-store-RestrictIssueCreationForSQLReviewPolicy)
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
-    - [RolloutPolicy.Validation](#bytebase-store-RolloutPolicy-Validation)
-    - [RolloutPolicy.Validation.RequiredStatusChecks](#bytebase-store-RolloutPolicy-Validation-RequiredStatusChecks)
+    - [RolloutPolicy.Checkers](#bytebase-store-RolloutPolicy-Checkers)
+    - [RolloutPolicy.Checkers.RequiredStatusChecks](#bytebase-store-RolloutPolicy-Checkers-RequiredStatusChecks)
     - [SQLReviewRule](#bytebase-store-SQLReviewRule)
     - [TagPolicy](#bytebase-store-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
@@ -225,7 +225,7 @@
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
     - [Policy.Resource](#bytebase-store-Policy-Resource)
     - [Policy.Type](#bytebase-store-Policy-Type)
-    - [RolloutPolicy.Validation.PlanCheckEnforcement](#bytebase-store-RolloutPolicy-Validation-PlanCheckEnforcement)
+    - [RolloutPolicy.Checkers.PlanCheckEnforcement](#bytebase-store-RolloutPolicy-Checkers-PlanCheckEnforcement)
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
   
 - [store/project.proto](#store_project-proto)
@@ -3574,38 +3574,38 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | automatic | [bool](#bool) |  |  |
 | roles | [string](#string) | repeated |  |
 | issue_roles | [string](#string) | repeated | **Deprecated.** Deprecated. roles/LAST_APPROVER roles/CREATOR |
-| validation | [RolloutPolicy.Validation](#bytebase-store-RolloutPolicy-Validation) |  | Validation rules that must be satisfied before rollout execution. These checks are performed in UI workflows only. |
+| checkers | [RolloutPolicy.Checkers](#bytebase-store-RolloutPolicy-Checkers) |  | Checkers that must pass before rollout execution. These checks are performed in UI workflows only. |
 
 
 
 
 
 
-<a name="bytebase-store-RolloutPolicy-Validation"></a>
+<a name="bytebase-store-RolloutPolicy-Checkers"></a>
 
-### RolloutPolicy.Validation
+### RolloutPolicy.Checkers
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | required_issue_approval | [bool](#bool) |  | Whether issue approval is required before proceeding with rollout. |
-| required_status_checks | [RolloutPolicy.Validation.RequiredStatusChecks](#bytebase-store-RolloutPolicy-Validation-RequiredStatusChecks) |  | Status checks that must pass before rollout can be executed. |
+| required_status_checks | [RolloutPolicy.Checkers.RequiredStatusChecks](#bytebase-store-RolloutPolicy-Checkers-RequiredStatusChecks) |  | Status checks that must pass before rollout can be executed. |
 
 
 
 
 
 
-<a name="bytebase-store-RolloutPolicy-Validation-RequiredStatusChecks"></a>
+<a name="bytebase-store-RolloutPolicy-Checkers-RequiredStatusChecks"></a>
 
-### RolloutPolicy.Validation.RequiredStatusChecks
+### RolloutPolicy.Checkers.RequiredStatusChecks
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| plan_check_enforcement | [RolloutPolicy.Validation.PlanCheckEnforcement](#bytebase-store-RolloutPolicy-Validation-PlanCheckEnforcement) |  | Enforcement level for plan check results during rollout validation. |
+| plan_check_enforcement | [RolloutPolicy.Checkers.PlanCheckEnforcement](#bytebase-store-RolloutPolicy-Checkers-PlanCheckEnforcement) |  | Enforcement level for plan check results during rollout validation. |
 
 
 
@@ -3737,9 +3737,9 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 
 
 
-<a name="bytebase-store-RolloutPolicy-Validation-PlanCheckEnforcement"></a>
+<a name="bytebase-store-RolloutPolicy-Checkers-PlanCheckEnforcement"></a>
 
-### RolloutPolicy.Validation.PlanCheckEnforcement
+### RolloutPolicy.Checkers.PlanCheckEnforcement
 
 
 | Name | Number | Description |

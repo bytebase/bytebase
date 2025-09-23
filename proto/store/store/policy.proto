@@ -37,11 +37,11 @@ message RolloutPolicy {
   // roles/LAST_APPROVER
   // roles/CREATOR
   repeated string issue_roles = 3 [deprecated = true];
-  // Validation rules that must be satisfied before rollout execution.
+  // Checkers that must pass before rollout execution.
   // These checks are performed in UI workflows only.
-  Validation validation = 4;
+  Checkers checkers = 4;
 
-  message Validation {
+  message Checkers {
     // Whether issue approval is required before proceeding with rollout.
     bool required_issue_approval = 1;
 
