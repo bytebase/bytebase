@@ -83,6 +83,8 @@ linters:
           disabled: true
         - name: max-control-nesting
           disabled: true
+        - name: identical-switch-branches
+          disabled: true
         - name: comment-spacings
           arguments:
             - exhaustive
