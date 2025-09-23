@@ -223,6 +223,7 @@
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
     - [Policy.Resource](#bytebase-store-Policy-Resource)
     - [Policy.Type](#bytebase-store-Policy-Type)
+    - [RolloutPolicy.PlanCheckLevel](#bytebase-store-RolloutPolicy-PlanCheckLevel)
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
   
 - [store/project.proto](#store_project-proto)
@@ -3570,7 +3571,9 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | ----- | ---- | ----- | ----------- |
 | automatic | [bool](#bool) |  |  |
 | roles | [string](#string) | repeated |  |
-| issue_roles | [string](#string) | repeated | roles/LAST_APPROVER roles/CREATOR |
+| issue_roles | [string](#string) | repeated | **Deprecated.** Deprecated. roles/LAST_APPROVER roles/CREATOR |
+| require_issue_approval | [bool](#bool) |  | Whether issue approval is required before rollout. Default: true (for backward compatibility) |
+| plan_check_level | [RolloutPolicy.PlanCheckLevel](#bytebase-store-RolloutPolicy-PlanCheckLevel) |  | The plan check level required for rollout. Default: ERROR (for backward compatibility) |
 
 
 
@@ -3699,6 +3702,19 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | IAM | 8 |  |
 | TAG | 9 |  |
 | DATA_SOURCE_QUERY | 10 |  |
+
+
+
+<a name="bytebase-store-RolloutPolicy-PlanCheckLevel"></a>
+
+### RolloutPolicy.PlanCheckLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PLAN_CHECK_LEVEL_UNSPECIFIED | 0 | Default to ERROR. |
+| ERROR | 1 | Only block rollout on ERROR level issues, allow WARNING level issues. |
+| WARNING | 2 | Block rollout on both ERROR and WARNING level issues. |
 
 
 

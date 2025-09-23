@@ -322,12 +322,30 @@ export declare type RolloutPolicy = Message<"bytebase.v1.RolloutPolicy"> & {
   roles: string[];
 
   /**
+   * Deprecated.
    * roles/LAST_APPROVER
    * roles/CREATOR
    *
-   * @generated from field: repeated string issue_roles = 3;
+   * @generated from field: repeated string issue_roles = 3 [deprecated = true];
+   * @deprecated
    */
   issueRoles: string[];
+
+  /**
+   * Whether issue approval is required before rollout.
+   * Default: true (for backward compatibility)
+   *
+   * @generated from field: bool require_issue_approval = 4;
+   */
+  requireIssueApproval: boolean;
+
+  /**
+   * The plan check level required for rollout.
+   * Default: ERROR (for backward compatibility)
+   *
+   * @generated from field: bytebase.v1.RolloutPolicy.PlanCheckLevel plan_check_level = 5;
+   */
+  planCheckLevel: RolloutPolicy_PlanCheckLevel;
 };
 
 /**
@@ -335,6 +353,37 @@ export declare type RolloutPolicy = Message<"bytebase.v1.RolloutPolicy"> & {
  * Use `create(RolloutPolicySchema)` to create a new message.
  */
 export declare const RolloutPolicySchema: GenMessage<RolloutPolicy>;
+
+/**
+ * @generated from enum bytebase.v1.RolloutPolicy.PlanCheckLevel
+ */
+export enum RolloutPolicy_PlanCheckLevel {
+  /**
+   * Default to ERROR.
+   *
+   * @generated from enum value: PLAN_CHECK_LEVEL_UNSPECIFIED = 0;
+   */
+  PLAN_CHECK_LEVEL_UNSPECIFIED = 0,
+
+  /**
+   * Only block rollout on ERROR level issues, allow WARNING level issues.
+   *
+   * @generated from enum value: ERROR = 1;
+   */
+  ERROR = 1,
+
+  /**
+   * Block rollout on both ERROR and WARNING level issues.
+   *
+   * @generated from enum value: WARNING = 2;
+   */
+  WARNING = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.RolloutPolicy.PlanCheckLevel.
+ */
+export declare const RolloutPolicy_PlanCheckLevelSchema: GenEnum<RolloutPolicy_PlanCheckLevel>;
 
 /**
  * @generated from message bytebase.v1.DisableCopyDataPolicy

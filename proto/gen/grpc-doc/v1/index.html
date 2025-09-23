@@ -1786,6 +1786,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.RolloutPolicy.PlanCheckLevel"><span class="badge">E</span>RolloutPolicy.PlanCheckLevel</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.SQLReviewRuleLevel"><span class="badge">E</span>SQLReviewRuleLevel</a>
                 </li>
               
@@ -19536,13 +19540,51 @@ The default value is -1, means no limit. </p></td>
                   <td>issue_roles</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>roles/LAST_APPROVER
+                  <td><p><strong>Deprecated.</strong> Deprecated.
+roles/LAST_APPROVER
 roles/CREATOR </p></td>
+                </tr>
+              
+                <tr>
+                  <td>require_issue_approval</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether issue approval is required before rollout.
+Default: true (for backward compatibility) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>plan_check_level</td>
+                  <td><a href="#bytebase.v1.RolloutPolicy.PlanCheckLevel">RolloutPolicy.PlanCheckLevel</a></td>
+                  <td></td>
+                  <td><p>The plan check level required for rollout.
+Default: ERROR (for backward compatibility) </p></td>
                 </tr>
               
             </tbody>
           </table>
 
+          
+            
+            
+            <h4>Fields with deprecated option</h4>
+            <table>
+              <thead>
+                <tr>
+                  <td>Name</td>
+                  <td>Option</td>
+                </tr>
+              </thead>
+              <tbody>
+              
+                <tr>
+                  <td>issue_roles</td>
+                  <td><p>true</p></td>
+                </tr>
+              
+              </tbody>
+            </table>
+            
           
 
         
@@ -19856,6 +19898,35 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>DATA_QUERY</td>
                 <td>16</td>
                 <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.RolloutPolicy.PlanCheckLevel">RolloutPolicy.PlanCheckLevel</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>PLAN_CHECK_LEVEL_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Default to ERROR.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ERROR</td>
+                <td>1</td>
+                <td><p>Only block rollout on ERROR level issues, allow WARNING level issues.</p></td>
+              </tr>
+            
+              <tr>
+                <td>WARNING</td>
+                <td>2</td>
+                <td><p>Block rollout on both ERROR and WARNING level issues.</p></td>
               </tr>
             
           </tbody>

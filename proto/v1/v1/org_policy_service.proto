@@ -282,9 +282,27 @@ enum PolicyResourceType {
 message RolloutPolicy {
   bool automatic = 1;
   repeated string roles = 2;
+  // Deprecated.
   // roles/LAST_APPROVER
   // roles/CREATOR
-  repeated string issue_roles = 3;
+  repeated string issue_roles = 3 [deprecated = true];
+
+  // Whether issue approval is required before rollout.
+  // Default: true (for backward compatibility)
+  bool require_issue_approval = 4;
+
+  // The plan check level required for rollout.
+  // Default: ERROR (for backward compatibility)
+  PlanCheckLevel plan_check_level = 5;
+
+  enum PlanCheckLevel {
+    // Default to ERROR.
+    PLAN_CHECK_LEVEL_UNSPECIFIED = 0;
+    // Only block rollout on ERROR level issues, allow WARNING level issues.
+    ERROR = 1;
+    // Block rollout on both ERROR and WARNING level issues.
+    WARNING = 2;
+  }
 }
 
 message DisableCopyDataPolicy {

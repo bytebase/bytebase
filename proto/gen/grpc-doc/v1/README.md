@@ -421,6 +421,7 @@
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action)
     - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
     - [PolicyType](#bytebase-v1-PolicyType)
+    - [RolloutPolicy.PlanCheckLevel](#bytebase-v1-RolloutPolicy-PlanCheckLevel)
     - [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel)
   
     - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
@@ -6960,7 +6961,9 @@ QueryDataPolicy is the policy configuration for querying data.
 | ----- | ---- | ----- | ----------- |
 | automatic | [bool](#bool) |  |  |
 | roles | [string](#string) | repeated |  |
-| issue_roles | [string](#string) | repeated | roles/LAST_APPROVER roles/CREATOR |
+| issue_roles | [string](#string) | repeated | **Deprecated.** Deprecated. roles/LAST_APPROVER roles/CREATOR |
+| require_issue_approval | [bool](#bool) |  | Whether issue approval is required before rollout. Default: true (for backward compatibility) |
+| plan_check_level | [RolloutPolicy.PlanCheckLevel](#bytebase-v1-RolloutPolicy-PlanCheckLevel) |  | The plan check level required for rollout. Default: ERROR (for backward compatibility) |
 
 
 
@@ -7094,6 +7097,19 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | TAG | 13 |  |
 | DATA_SOURCE_QUERY | 14 |  |
 | DATA_QUERY | 16 |  |
+
+
+
+<a name="bytebase-v1-RolloutPolicy-PlanCheckLevel"></a>
+
+### RolloutPolicy.PlanCheckLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PLAN_CHECK_LEVEL_UNSPECIFIED | 0 | Default to ERROR. |
+| ERROR | 1 | Only block rollout on ERROR level issues, allow WARNING level issues. |
+| WARNING | 2 | Block rollout on both ERROR and WARNING level issues. |
 
 
 
