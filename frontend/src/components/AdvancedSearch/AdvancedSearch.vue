@@ -92,7 +92,8 @@ import { NButton, NInput, type InputInst } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { zindexable as vZindexable } from "vdirs";
 import { reactive, watch, onMounted, ref, computed, nextTick } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
+import { useCurrentUserV1 } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { SearchParams, SearchScopeId } from "@/utils";
 import {
@@ -103,6 +104,7 @@ import {
   buildSearchTextBySearchParams,
   buildSearchParamsBySearchText,
   mergeSearchParams,
+  useDynamicLocalStorage,
 } from "@/utils";
 import ScopeMenu from "./ScopeMenu.vue";
 import ScopeTags from "./ScopeTags.vue";
@@ -144,8 +146,16 @@ interface LocalState {
   >;
 }
 
-const route = useRoute();
 const router = useRouter();
+const me = useCurrentUserV1();
+
+const cachedQuery = useDynamicLocalStorage<string>(
+  computed(
+    () =>
+      `bb.advanced-search.${me.value.name}.${router.currentRoute.value.name?.toString()}`
+  ),
+  ""
+);
 
 const defaultSearchParams = () => {
   const params = emptySearchParams();
@@ -625,8 +635,8 @@ onMounted(() => {
   if (props.autofocus) {
     inputRef.value?.inputElRef?.focus();
   }
-  const { qs } = route.query;
-  if (typeof qs === "string" && qs.length > 0) {
+  const qs = cachedQuery.value;
+  if (qs.length > 0) {
     const params = buildSearchParamsBySearchText(qs);
     const existedScopes = props.params.scopes.reduce((map, scope) => {
       map.set(scope.id, scope.readonly ?? false);
@@ -691,12 +701,7 @@ watch(
       inputText.value = params.query;
     }
     if (props.overrideRouteQuery) {
-      router.replace({
-        query: {
-          ...route.query,
-          qs: buildSearchTextBySearchParams(params),
-        },
-      });
+      cachedQuery.value = buildSearchTextBySearchParams(params);
     }
   },
   { deep: true }
