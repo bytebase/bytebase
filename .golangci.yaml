@@ -85,6 +85,8 @@ linters:
           disabled: true
         - name: identical-switch-branches
           disabled: true
+        - name: identical-ifelseif-branches
+          disabled: true
         - name: comment-spacings
           arguments:
             - exhaustive
