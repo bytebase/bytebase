@@ -8,11 +8,11 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
+	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -365,10 +365,10 @@ func TestFindIamPolicyDeltas(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i, test := range tests {
 		deltas := findIamPolicyDeltas(test.oldPolicy, test.newIamPolicy)
-		if !cmp.Equal(test.want, deltas, cmpopts.IgnoreUnexported(v1pb.BindingDelta{}, expr.Expr{})) {
-			t.Fatalf("%v != %v", test.want, deltas)
+		if !cmp.Equal(test.want, deltas, protocmp.Transform()) {
+			t.Fatalf("index %d\n%s", i, cmp.Diff(test.want, deltas, protocmp.Transform()))
 		}
 	}
 }
