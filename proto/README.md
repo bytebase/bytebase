@@ -1,6 +1,7 @@
 # Installation
 
 - Install buf: https://docs.buf.build/installation
+- Install protoc-gen-go-equal: `go install github.com/bytebase/protoc-gen-go-equal@main`
 - Run: buf generate
 - Format: buf format -w
 

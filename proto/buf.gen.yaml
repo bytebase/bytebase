@@ -1,6 +1,9 @@
 version: v2
 clean: true
 plugins:
+  - local: protoc-gen-go-equal
+    out: ../backend/generated-go
+    opt: paths=source_relative
   - remote: buf.build/protocolbuffers/go
     out: ../backend/generated-go
     opt: paths=source_relative
