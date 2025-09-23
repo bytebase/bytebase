@@ -37,19 +37,32 @@ message RolloutPolicy {
   // roles/LAST_APPROVER
   // roles/CREATOR
   repeated string issue_roles = 3 [deprecated = true];
+  // Validation rules that must be satisfied before rollout execution.
+  // These checks are performed in UI workflows only.
+  Validation validation = 4;
 
-  // Whether issue approval is required before rollout.
-  bool require_issue_approval = 4;
+  message Validation {
+    // Whether issue approval is required before proceeding with rollout.
+    bool required_issue_approval = 1;
 
-  // The plan check level required for rollout.
-  PlanCheckLevel plan_check_level = 5;
+    // Status checks that must pass before rollout can be executed.
+    RequiredStatusChecks required_status_checks = 2;
 
-  enum PlanCheckLevel {
-    PLAN_CHECK_LEVEL_UNSPECIFIED = 0;
-    // Only block rollout on ERROR level check results, allow WARNING level check results.
-    ERROR = 1;
-    // Block rollout on both ERROR and WARNING level check results.
-    WARNING = 2;
+    message RequiredStatusChecks {
+      // Enforcement level for plan check results during rollout validation.
+      PlanCheckEnforcement plan_check_enforcement = 1;
+    }
+
+    enum PlanCheckEnforcement {
+      // Allow rollout regardless of plan check results (no enforcement).
+      PLAN_CHECK_ENFORCEMENT_UNSPECIFIED = 0;
+
+      // Block rollout only when plan check finds errors.
+      ERROR_ONLY = 1;
+
+      // Block rollout when plan check finds errors or warnings.
+      STRICT = 2;
+    }
   }
 }
 

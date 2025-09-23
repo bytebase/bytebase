@@ -1025,6 +1025,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.RolloutPolicy.Validation"><span class="badge">M</span>RolloutPolicy.Validation</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.RolloutPolicy.Validation.RequiredStatusChecks"><span class="badge">M</span>RolloutPolicy.Validation.RequiredStatusChecks</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.SQLReviewRule"><span class="badge">M</span>SQLReviewRule</a>
                 </li>
               
@@ -1058,7 +1066,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.RolloutPolicy.PlanCheckLevel"><span class="badge">E</span>RolloutPolicy.PlanCheckLevel</a>
+                  <a href="#bytebase.store.RolloutPolicy.Validation.PlanCheckEnforcement"><span class="badge">E</span>RolloutPolicy.Validation.PlanCheckEnforcement</a>
                 </li>
               
                 <li>
@@ -9825,17 +9833,11 @@ roles/CREATOR </p></td>
                 </tr>
               
                 <tr>
-                  <td>require_issue_approval</td>
-                  <td><a href="#bool">bool</a></td>
+                  <td>validation</td>
+                  <td><a href="#bytebase.store.RolloutPolicy.Validation">RolloutPolicy.Validation</a></td>
                   <td></td>
-                  <td><p>Whether issue approval is required before rollout. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>plan_check_level</td>
-                  <td><a href="#bytebase.store.RolloutPolicy.PlanCheckLevel">RolloutPolicy.PlanCheckLevel</a></td>
-                  <td></td>
-                  <td><p>The plan check level required for rollout. </p></td>
+                  <td><p>Validation rules that must be satisfied before rollout execution.
+These checks are performed in UI workflows only. </p></td>
                 </tr>
               
             </tbody>
@@ -9862,6 +9864,61 @@ roles/CREATOR </p></td>
               </tbody>
             </table>
             
+          
+
+        
+      
+        <h3 id="bytebase.store.RolloutPolicy.Validation">RolloutPolicy.Validation</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>required_issue_approval</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether issue approval is required before proceeding with rollout. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>required_status_checks</td>
+                  <td><a href="#bytebase.store.RolloutPolicy.Validation.RequiredStatusChecks">RolloutPolicy.Validation.RequiredStatusChecks</a></td>
+                  <td></td>
+                  <td><p>Status checks that must pass before rollout can be executed. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.RolloutPolicy.Validation.RequiredStatusChecks">RolloutPolicy.Validation.RequiredStatusChecks</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>plan_check_enforcement</td>
+                  <td><a href="#bytebase.store.RolloutPolicy.Validation.PlanCheckEnforcement">RolloutPolicy.Validation.PlanCheckEnforcement</a></td>
+                  <td></td>
+                  <td><p>Enforcement level for plan check results during rollout validation. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
           
 
         
@@ -10169,7 +10226,7 @@ for example, the environment resource can have the sql review config tag, like &
           </tbody>
         </table>
       
-        <h3 id="bytebase.store.RolloutPolicy.PlanCheckLevel">RolloutPolicy.PlanCheckLevel</h3>
+        <h3 id="bytebase.store.RolloutPolicy.Validation.PlanCheckEnforcement">RolloutPolicy.Validation.PlanCheckEnforcement</h3>
         <p></p>
         <table class="enum-table">
           <thead>
@@ -10178,21 +10235,21 @@ for example, the environment resource can have the sql review config tag, like &
           <tbody>
             
               <tr>
-                <td>PLAN_CHECK_LEVEL_UNSPECIFIED</td>
+                <td>PLAN_CHECK_ENFORCEMENT_UNSPECIFIED</td>
                 <td>0</td>
-                <td><p></p></td>
+                <td><p>Allow rollout regardless of plan check results (no enforcement).</p></td>
               </tr>
             
               <tr>
-                <td>ERROR</td>
+                <td>ERROR_ONLY</td>
                 <td>1</td>
-                <td><p>Only block rollout on ERROR level check results, allow WARNING level check results.</p></td>
+                <td><p>Block rollout only when plan check finds errors.</p></td>
               </tr>
             
               <tr>
-                <td>WARNING</td>
+                <td>STRICT</td>
                 <td>2</td>
-                <td><p>Block rollout on both ERROR and WARNING level check results.</p></td>
+                <td><p>Block rollout when plan check finds errors or warnings.</p></td>
               </tr>
             
           </tbody>

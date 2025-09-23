@@ -332,18 +332,12 @@ export declare type RolloutPolicy = Message<"bytebase.v1.RolloutPolicy"> & {
   issueRoles: string[];
 
   /**
-   * Whether issue approval is required before rollout.
+   * Validation rules that must be satisfied before rollout execution.
+   * These checks are performed in UI workflows only.
    *
-   * @generated from field: bool require_issue_approval = 4;
+   * @generated from field: bytebase.v1.RolloutPolicy.Validation validation = 4;
    */
-  requireIssueApproval: boolean;
-
-  /**
-   * The plan check level required for rollout.
-   *
-   * @generated from field: bytebase.v1.RolloutPolicy.PlanCheckLevel plan_check_level = 5;
-   */
-  planCheckLevel: RolloutPolicy_PlanCheckLevel;
+  validation?: RolloutPolicy_Validation;
 };
 
 /**
@@ -353,33 +347,78 @@ export declare type RolloutPolicy = Message<"bytebase.v1.RolloutPolicy"> & {
 export declare const RolloutPolicySchema: GenMessage<RolloutPolicy>;
 
 /**
- * @generated from enum bytebase.v1.RolloutPolicy.PlanCheckLevel
+ * @generated from message bytebase.v1.RolloutPolicy.Validation
  */
-export enum RolloutPolicy_PlanCheckLevel {
+export declare type RolloutPolicy_Validation = Message<"bytebase.v1.RolloutPolicy.Validation"> & {
   /**
-   * @generated from enum value: PLAN_CHECK_LEVEL_UNSPECIFIED = 0;
+   * Whether issue approval is required before proceeding with rollout.
+   *
+   * @generated from field: bool required_issue_approval = 1;
    */
-  PLAN_CHECK_LEVEL_UNSPECIFIED = 0,
+  requiredIssueApproval: boolean;
 
   /**
-   * Only block rollout on ERROR level check results, allow WARNING level check results.
+   * Status checks that must pass before rollout can be executed.
    *
-   * @generated from enum value: ERROR = 1;
+   * @generated from field: bytebase.v1.RolloutPolicy.Validation.RequiredStatusChecks required_status_checks = 2;
    */
-  ERROR = 1,
+  requiredStatusChecks?: RolloutPolicy_Validation_RequiredStatusChecks;
+};
+
+/**
+ * Describes the message bytebase.v1.RolloutPolicy.Validation.
+ * Use `create(RolloutPolicy_ValidationSchema)` to create a new message.
+ */
+export declare const RolloutPolicy_ValidationSchema: GenMessage<RolloutPolicy_Validation>;
+
+/**
+ * @generated from message bytebase.v1.RolloutPolicy.Validation.RequiredStatusChecks
+ */
+export declare type RolloutPolicy_Validation_RequiredStatusChecks = Message<"bytebase.v1.RolloutPolicy.Validation.RequiredStatusChecks"> & {
+  /**
+   * Enforcement level for plan check results during rollout validation.
+   *
+   * @generated from field: bytebase.v1.RolloutPolicy.Validation.PlanCheckEnforcement plan_check_enforcement = 1;
+   */
+  planCheckEnforcement: RolloutPolicy_Validation_PlanCheckEnforcement;
+};
+
+/**
+ * Describes the message bytebase.v1.RolloutPolicy.Validation.RequiredStatusChecks.
+ * Use `create(RolloutPolicy_Validation_RequiredStatusChecksSchema)` to create a new message.
+ */
+export declare const RolloutPolicy_Validation_RequiredStatusChecksSchema: GenMessage<RolloutPolicy_Validation_RequiredStatusChecks>;
+
+/**
+ * @generated from enum bytebase.v1.RolloutPolicy.Validation.PlanCheckEnforcement
+ */
+export enum RolloutPolicy_Validation_PlanCheckEnforcement {
+  /**
+   * Allow rollout regardless of plan check results (no enforcement).
+   *
+   * @generated from enum value: PLAN_CHECK_ENFORCEMENT_UNSPECIFIED = 0;
+   */
+  PLAN_CHECK_ENFORCEMENT_UNSPECIFIED = 0,
 
   /**
-   * Block rollout on both ERROR and WARNING level check results.
+   * Block rollout only when plan check finds errors.
    *
-   * @generated from enum value: WARNING = 2;
+   * @generated from enum value: ERROR_ONLY = 1;
    */
-  WARNING = 2,
+  ERROR_ONLY = 1,
+
+  /**
+   * Block rollout when plan check finds errors or warnings.
+   *
+   * @generated from enum value: STRICT = 2;
+   */
+  STRICT = 2,
 }
 
 /**
- * Describes the enum bytebase.v1.RolloutPolicy.PlanCheckLevel.
+ * Describes the enum bytebase.v1.RolloutPolicy.Validation.PlanCheckEnforcement.
  */
-export declare const RolloutPolicy_PlanCheckLevelSchema: GenEnum<RolloutPolicy_PlanCheckLevel>;
+export declare const RolloutPolicy_Validation_PlanCheckEnforcementSchema: GenEnum<RolloutPolicy_Validation_PlanCheckEnforcement>;
 
 /**
  * @generated from message bytebase.v1.DisableCopyDataPolicy
