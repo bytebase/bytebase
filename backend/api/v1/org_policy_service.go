@@ -683,7 +683,7 @@ func convertToStorePBRolloutPolicy(policy *v1pb.RolloutPolicy) *storepb.RolloutP
 	return &storepb.RolloutPolicy{
 		Automatic:  policy.Automatic,
 		Roles:      policy.Roles,
-		IssueRoles: policy.IssueRoles,
+		IssueRoles: policy.IssueRoles, //nolint:staticcheck // TODO: remove deprecated IssueRoles
 	}
 }
 

@@ -1753,6 +1753,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.RolloutPolicy.Checkers"><span class="badge">M</span>RolloutPolicy.Checkers</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks"><span class="badge">M</span>RolloutPolicy.Checkers.RequiredStatusChecks</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.SQLReviewRule"><span class="badge">M</span>SQLReviewRule</a>
                 </li>
               
@@ -1783,6 +1791,10 @@
               
                 <li>
                   <a href="#bytebase.v1.PolicyType"><span class="badge">E</span>PolicyType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement"><span class="badge">E</span>RolloutPolicy.Checkers.PlanCheckEnforcement</a>
                 </li>
               
                 <li>
@@ -19536,8 +19548,93 @@ The default value is -1, means no limit. </p></td>
                   <td>issue_roles</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>roles/LAST_APPROVER
+                  <td><p><strong>Deprecated.</strong> Deprecated.
+roles/LAST_APPROVER
 roles/CREATOR </p></td>
+                </tr>
+              
+                <tr>
+                  <td>checkers</td>
+                  <td><a href="#bytebase.v1.RolloutPolicy.Checkers">RolloutPolicy.Checkers</a></td>
+                  <td></td>
+                  <td><p>Checkers that must pass before rollout execution.
+These checks are performed in UI workflows only. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+            
+            
+            <h4>Fields with deprecated option</h4>
+            <table>
+              <thead>
+                <tr>
+                  <td>Name</td>
+                  <td>Option</td>
+                </tr>
+              </thead>
+              <tbody>
+              
+                <tr>
+                  <td>issue_roles</td>
+                  <td><p>true</p></td>
+                </tr>
+              
+              </tbody>
+            </table>
+            
+          
+
+        
+      
+        <h3 id="bytebase.v1.RolloutPolicy.Checkers">RolloutPolicy.Checkers</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>required_issue_approval</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether issue approval is required before proceeding with rollout. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>required_status_checks</td>
+                  <td><a href="#bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks">RolloutPolicy.Checkers.RequiredStatusChecks</a></td>
+                  <td></td>
+                  <td><p>Status checks that must pass before rollout can be executed. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks">RolloutPolicy.Checkers.RequiredStatusChecks</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>plan_check_enforcement</td>
+                  <td><a href="#bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement">RolloutPolicy.Checkers.PlanCheckEnforcement</a></td>
+                  <td></td>
+                  <td><p>Enforcement level for plan check results during rollout validation. </p></td>
                 </tr>
               
             </tbody>
@@ -19856,6 +19953,35 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>DATA_QUERY</td>
                 <td>16</td>
                 <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement">RolloutPolicy.Checkers.PlanCheckEnforcement</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>PLAN_CHECK_ENFORCEMENT_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Allow rollout regardless of plan check results (no enforcement).</p></td>
+              </tr>
+            
+              <tr>
+                <td>ERROR_ONLY</td>
+                <td>1</td>
+                <td><p>Block rollout only when plan check finds errors.</p></td>
+              </tr>
+            
+              <tr>
+                <td>STRICT</td>
+                <td>2</td>
+                <td><p>Block rollout when plan check finds errors or warnings.</p></td>
               </tr>
             
           </tbody>
