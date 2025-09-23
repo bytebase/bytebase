@@ -357,21 +357,19 @@ export declare const RolloutPolicySchema: GenMessage<RolloutPolicy>;
  */
 export enum RolloutPolicy_PlanCheckLevel {
   /**
-   * Default to ERROR.
-   *
    * @generated from enum value: PLAN_CHECK_LEVEL_UNSPECIFIED = 0;
    */
   PLAN_CHECK_LEVEL_UNSPECIFIED = 0,
 
   /**
-   * Only block rollout on ERROR level issues, allow WARNING level issues.
+   * Only block rollout on ERROR level check results, allow WARNING level check results.
    *
    * @generated from enum value: ERROR = 1;
    */
   ERROR = 1,
 
   /**
-   * Block rollout on both ERROR and WARNING level issues.
+   * Block rollout on both ERROR and WARNING level check results.
    *
    * @generated from enum value: WARNING = 2;
    */

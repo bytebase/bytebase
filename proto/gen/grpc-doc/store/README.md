@@ -3712,9 +3712,9 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| PLAN_CHECK_LEVEL_UNSPECIFIED | 0 | Default to ERROR. |
-| ERROR | 1 | Only block rollout on ERROR level issues, allow WARNING level issues. |
-| WARNING | 2 | Block rollout on both ERROR and WARNING level issues. |
+| PLAN_CHECK_LEVEL_UNSPECIFIED | 0 |  |
+| ERROR | 1 | Only block rollout on ERROR level check results, allow WARNING level check results. |
+| WARNING | 2 | Block rollout on both ERROR and WARNING level check results. |
 
 
 

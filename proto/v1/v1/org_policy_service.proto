@@ -294,11 +294,10 @@ message RolloutPolicy {
   PlanCheckLevel plan_check_level = 5;
 
   enum PlanCheckLevel {
-    // Default to ERROR.
     PLAN_CHECK_LEVEL_UNSPECIFIED = 0;
-    // Only block rollout on ERROR level issues, allow WARNING level issues.
+    // Only block rollout on ERROR level check results, allow WARNING level check results.
     ERROR = 1;
-    // Block rollout on both ERROR and WARNING level issues.
+    // Block rollout on both ERROR and WARNING level check results.
     WARNING = 2;
   }
 }

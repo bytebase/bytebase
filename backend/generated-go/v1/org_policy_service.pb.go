@@ -200,11 +200,10 @@ func (SQLReviewRuleLevel) EnumDescriptor() ([]byte, []int) {
 type RolloutPolicy_PlanCheckLevel int32
 
 const (
-	// Default to ERROR.
 	RolloutPolicy_PLAN_CHECK_LEVEL_UNSPECIFIED RolloutPolicy_PlanCheckLevel = 0
-	// Only block rollout on ERROR level issues, allow WARNING level issues.
+	// Only block rollout on ERROR level check results, allow WARNING level check results.
 	RolloutPolicy_ERROR RolloutPolicy_PlanCheckLevel = 1
-	// Block rollout on both ERROR and WARNING level issues.
+	// Block rollout on both ERROR and WARNING level check results.
 	RolloutPolicy_WARNING RolloutPolicy_PlanCheckLevel = 2
 )
 
