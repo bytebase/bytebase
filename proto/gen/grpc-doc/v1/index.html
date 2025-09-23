@@ -1705,10 +1705,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.DisableCopyDataPolicy"><span class="badge">M</span>DisableCopyDataPolicy</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.GetPolicyRequest"><span class="badge">M</span>GetPolicyRequest</a>
                 </li>
               
@@ -19029,30 +19025,6 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
 
         
       
-        <h3 id="bytebase.v1.DisableCopyDataPolicy">DisableCopyDataPolicy</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>active</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.GetPolicyRequest">GetPolicyRequest</h3>
         <p></p>
 
@@ -19380,13 +19352,6 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                 </tr>
               
                 <tr>
-                  <td>disable_copy_data_policy</td>
-                  <td><a href="#bytebase.v1.DisableCopyDataPolicy">DisableCopyDataPolicy</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>masking_rule_policy</td>
                   <td><a href="#bytebase.v1.MaskingRulePolicy">MaskingRulePolicy</a></td>
                   <td></td>
@@ -19487,6 +19452,13 @@ The default value is 100MB, we will use the default value if the setting not exi
                   <td></td>
                   <td><p>The return rows limit.
 The default value is -1, means no limit. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>disable_copy_data</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Disable copying data. </p></td>
                 </tr>
               
             </tbody>
@@ -19910,12 +19882,6 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>ROLLOUT_POLICY</td>
                 <td>11</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DISABLE_COPY_DATA</td>
-                <td>8</td>
                 <td><p></p></td>
               </tr>
             

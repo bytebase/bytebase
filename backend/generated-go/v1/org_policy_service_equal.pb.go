@@ -142,9 +142,6 @@ func (x *Policy) Equal(y *Policy) bool {
 	if !x.GetRolloutPolicy().Equal(y.GetRolloutPolicy()) {
 		return false
 	}
-	if !x.GetDisableCopyDataPolicy().Equal(y.GetDisableCopyDataPolicy()) {
-		return false
-	}
 	if !x.GetMaskingRulePolicy().Equal(y.GetMaskingRulePolicy()) {
 		return false
 	}
@@ -167,6 +164,35 @@ func (x *Policy) Equal(y *Policy) bool {
 		return false
 	}
 	if x.ResourceType != y.ResourceType {
+		return false
+	}
+	return true
+}
+
+func (x *RolloutPolicy_Checkers_RequiredStatusChecks) Equal(y *RolloutPolicy_Checkers_RequiredStatusChecks) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.PlanCheckEnforcement != y.PlanCheckEnforcement {
+		return false
+	}
+	return true
+}
+
+func (x *RolloutPolicy_Checkers) Equal(y *RolloutPolicy_Checkers) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.RequiredIssueApproval != y.RequiredIssueApproval {
+		return false
+	}
+	if !x.RequiredStatusChecks.Equal(y.RequiredStatusChecks) {
 		return false
 	}
 	return true
@@ -198,17 +224,7 @@ func (x *RolloutPolicy) Equal(y *RolloutPolicy) bool {
 			return false
 		}
 	}
-	return true
-}
-
-func (x *DisableCopyDataPolicy) Equal(y *DisableCopyDataPolicy) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Active != y.Active {
+	if !x.Checkers.Equal(y.Checkers) {
 		return false
 	}
 	return true
@@ -231,6 +247,9 @@ func (x *QueryDataPolicy) Equal(y *QueryDataPolicy) bool {
 		return false
 	}
 	if x.MaximumResultRows != y.MaximumResultRows {
+		return false
+	}
+	if x.DisableCopyData != y.DisableCopyData {
 		return false
 	}
 	return true

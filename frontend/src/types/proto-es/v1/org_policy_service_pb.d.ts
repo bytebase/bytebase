@@ -246,12 +246,6 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
     case: "rolloutPolicy";
   } | {
     /**
-     * @generated from field: bytebase.v1.DisableCopyDataPolicy disable_copy_data_policy = 16;
-     */
-    value: DisableCopyDataPolicy;
-    case: "disableCopyDataPolicy";
-  } | {
-    /**
      * @generated from field: bytebase.v1.MaskingRulePolicy masking_rule_policy = 17;
      */
     value: MaskingRulePolicy;
@@ -421,22 +415,6 @@ export enum RolloutPolicy_Checkers_PlanCheckEnforcement {
 export declare const RolloutPolicy_Checkers_PlanCheckEnforcementSchema: GenEnum<RolloutPolicy_Checkers_PlanCheckEnforcement>;
 
 /**
- * @generated from message bytebase.v1.DisableCopyDataPolicy
- */
-export declare type DisableCopyDataPolicy = Message<"bytebase.v1.DisableCopyDataPolicy"> & {
-  /**
-   * @generated from field: bool active = 1;
-   */
-  active: boolean;
-};
-
-/**
- * Describes the message bytebase.v1.DisableCopyDataPolicy.
- * Use `create(DisableCopyDataPolicySchema)` to create a new message.
- */
-export declare const DisableCopyDataPolicySchema: GenMessage<DisableCopyDataPolicy>;
-
-/**
  * QueryDataPolicy is the policy configuration for querying data.
  *
  * @generated from message bytebase.v1.QueryDataPolicy
@@ -471,6 +449,13 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
    * @generated from field: int32 maximum_result_rows = 4;
    */
   maximumResultRows: number;
+
+  /**
+   * Disable copying data.
+   *
+   * @generated from field: bool disable_copy_data = 5;
+   */
+  disableCopyData: boolean;
 };
 
 /**
@@ -789,11 +774,6 @@ export enum PolicyType {
    * @generated from enum value: ROLLOUT_POLICY = 11;
    */
   ROLLOUT_POLICY = 11,
-
-  /**
-   * @generated from enum value: DISABLE_COPY_DATA = 8;
-   */
-  DISABLE_COPY_DATA = 8,
 
   /**
    * @generated from enum value: MASKING_RULE = 9;

@@ -244,11 +244,11 @@ const disallowCopyingData = computed(() => {
   if (props.database) {
     const projectLevelPolicy = policyStore.getPolicyByParentAndType({
       parentPath: props.database?.project,
-      policyType: PolicyType.DISABLE_COPY_DATA,
+      policyType: PolicyType.DATA_QUERY,
     });
     if (
-      projectLevelPolicy?.policy?.case === "disableCopyDataPolicy" &&
-      projectLevelPolicy.policy.value.active
+      projectLevelPolicy?.policy?.case === "queryDataPolicy" &&
+      projectLevelPolicy.policy.value.disableCopyData
     ) {
       return true;
     }
@@ -260,11 +260,11 @@ const disallowCopyingData = computed(() => {
   if (environment) {
     const policy = policyStore.getPolicyByParentAndType({
       parentPath: environment,
-      policyType: PolicyType.DISABLE_COPY_DATA,
+      policyType: PolicyType.DATA_QUERY,
     });
     if (
-      policy?.policy?.case === "disableCopyDataPolicy" &&
-      policy.policy.value.active
+      policy?.policy?.case === "queryDataPolicy" &&
+      policy.policy.value.disableCopyData
     ) {
       return true;
     }

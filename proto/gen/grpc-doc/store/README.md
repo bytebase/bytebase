@@ -203,7 +203,6 @@
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
     - [DataSourceQueryPolicy](#bytebase-store-DataSourceQueryPolicy)
-    - [DisableCopyDataPolicy](#bytebase-store-DisableCopyDataPolicy)
     - [EnvironmentTierPolicy](#bytebase-store-EnvironmentTierPolicy)
     - [IamPolicy](#bytebase-store-IamPolicy)
     - [MaskingExceptionPolicy](#bytebase-store-MaskingExceptionPolicy)
@@ -3408,21 +3407,6 @@ DataSourceQueryPolicy is the policy configuration for running statements in the 
 
 
 
-<a name="bytebase-store-DisableCopyDataPolicy"></a>
-
-### DisableCopyDataPolicy
-DisableCopyDataPolicy is the policy configuration for disabling copying data.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| active | [bool](#bool) |  |  |
-
-
-
-
-
-
 <a name="bytebase-store-EnvironmentTierPolicy"></a>
 
 ### EnvironmentTierPolicy
@@ -3542,6 +3526,7 @@ QueryDataPolicy is the policy configuration for querying data.
 | disable_export | [bool](#bool) |  | Disable export data in the SQL editor |
 | maximum_result_size | [int64](#int64) |  | The size limit in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
 | maximum_result_rows | [int32](#int32) |  | The return rows limit. The default value is -1, means no limit. |
+| disable_copy_data | [bool](#bool) |  | Disable copying data. |
 
 
 
@@ -3727,7 +3712,6 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | TYPE_UNSPECIFIED | 0 |  |
 | ROLLOUT | 1 |  |
 | MASKING_EXCEPTION | 2 |  |
-| DISABLE_COPY_DATA | 3 |  |
 | QUERY_DATA | 5 |  |
 | MASKING_RULE | 6 |  |
 | RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW | 7 |  |

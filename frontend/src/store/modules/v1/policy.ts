@@ -243,8 +243,6 @@ const getUpdateMaskFromPolicyType = (policyType: PolicyType) => {
       return [PolicySchema.field.queryDataPolicy.name];
     case PolicyType.DATA_SOURCE_QUERY:
       return [PolicySchema.field.dataSourceQueryPolicy.name];
-    case PolicyType.DISABLE_COPY_DATA:
-      return [PolicySchema.field.disableCopyDataPolicy.name];
     case PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW:
       return [PolicySchema.field.restrictIssueCreationForSqlReviewPolicy.name];
     case PolicyType.TAG:
