@@ -1,7 +1,7 @@
 FROM node:23.11.1-slim AS frontend
 ARG GIT_COMMIT
 
-RUN npm i -g pnpm@10.14.0
+RUN npm i -g pnpm@10.17.1
 
 WORKDIR /frontend-build
 
