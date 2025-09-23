@@ -103,11 +103,16 @@ export function useInitializePlan(
 
       // Fetch the associated issue if it exists
       if (rolloutResult.issue) {
-        const issueRequest = create(GetIssueRequestSchema, {
-          name: rolloutResult.issue,
-        });
-        const newIssue = await issueServiceClientConnect.getIssue(issueRequest);
-        issueResult = newIssue;
+        try {
+          const issueRequest = create(GetIssueRequestSchema, {
+            name: rolloutResult.issue,
+          });
+          const newIssue =
+            await issueServiceClientConnect.getIssue(issueRequest);
+          issueResult = newIssue;
+        } catch {
+          // Issue might not exist or we don't have permission, that's ok
+        }
       }
     } else if (uid.startsWith("issue:")) {
       // Fetch plan from issue
