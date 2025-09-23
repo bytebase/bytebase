@@ -114,6 +114,8 @@ linters:
         text: Enter(.*)_(.*)
       - path: (.+)\.go$
         text: Exit(.*)_(.*)
+      - path: action/bitbucket/bitbucket.go
+        text: "unsecure-url-scheme.*http://api.bitbucket.org"
     paths:
       - proto/generated-go
       - frontend
