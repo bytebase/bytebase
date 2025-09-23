@@ -314,7 +314,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
@@ -381,7 +380,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
@@ -1679,7 +1677,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
@@ -1752,7 +1749,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
@@ -2499,7 +2495,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
@@ -2566,7 +2561,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
@@ -3069,7 +3063,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
@@ -3140,7 +3133,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
@@ -4958,7 +4950,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
@@ -5025,7 +5016,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW

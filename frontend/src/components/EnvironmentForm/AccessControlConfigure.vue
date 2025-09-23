@@ -8,7 +8,7 @@
     <div>
       <div class="w-full inline-flex items-center gap-x-2">
         <Switch
-          v-model:value="state.disableCopyDataPolicy.active"
+          v-model:value="state.queryDataPolicy.disableCopyData"
           :text="true"
           :disabled="!allowUpdatePolicy || !hasRestrictCopyingDataFeature"
         />
@@ -106,12 +106,12 @@ import { hasFeature, usePolicyV1Store } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import type {
   DataSourceQueryPolicy,
-  DisableCopyDataPolicy,
+  QueryDataPolicy,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   DataSourceQueryPolicySchema,
   DataSourceQueryPolicy_Restriction,
-  DisableCopyDataPolicySchema,
+  QueryDataPolicySchema,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -120,7 +120,7 @@ import { FeatureBadge } from "../FeatureGuard";
 import { Switch } from "../v2";
 
 interface LocalState {
-  disableCopyDataPolicy: DisableCopyDataPolicy;
+  queryDataPolicy: QueryDataPolicy;
   dataSourceQueryPolicy: DataSourceQueryPolicy;
 }
 
@@ -133,15 +133,15 @@ const policyStore = usePolicyV1Store();
 
 const getInitialState = (): LocalState => {
   return {
-    disableCopyDataPolicy: (() => {
+    queryDataPolicy: (() => {
       const policy = policyStore.getPolicyByParentAndType({
         parentPath: props.resource,
-        policyType: PolicyType.DISABLE_COPY_DATA,
+        policyType: PolicyType.DATA_QUERY,
       });
-      if (policy?.policy.case === "disableCopyDataPolicy") {
+      if (policy?.policy.case === "queryDataPolicy") {
         return cloneDeep(policy.policy.value);
       }
-      return createProto(DisableCopyDataPolicySchema, {});
+      return createProto(QueryDataPolicySchema, {});
     })(),
     dataSourceQueryPolicy: (() => {
       const policy = policyStore.getPolicyByParentAndType({
@@ -162,7 +162,7 @@ watchEffect(async () => {
   await Promise.all([
     policyStore.getOrFetchPolicyByParentAndType({
       parentPath: props.resource,
-      policyType: PolicyType.DISABLE_COPY_DATA,
+      policyType: PolicyType.DATA_QUERY,
     }),
     policyStore.getOrFetchPolicyByParentAndType({
       parentPath: props.resource,
@@ -199,15 +199,15 @@ const allowUpdatePolicy = computed(() => {
   return props.allowEdit && hasWorkspacePermissionV2("bb.policies.update");
 });
 
-const updateDisableCopyDataPolicy = async () => {
+const updateQueryDataPolicy = async () => {
   await policyStore.upsertPolicy({
     parentPath: props.resource,
     policy: {
-      type: PolicyType.DISABLE_COPY_DATA,
+      type: PolicyType.DATA_QUERY,
       policy: {
-        case: "disableCopyDataPolicy",
+        case: "queryDataPolicy",
         value: {
-          ...state.disableCopyDataPolicy,
+          ...state.queryDataPolicy,
         },
       },
     },
@@ -244,10 +244,8 @@ defineExpose({
     ) {
       await updateAdminDataSourceQueryRestrctionPolicy();
     }
-    if (
-      !isEqual(state.disableCopyDataPolicy, initialState.disableCopyDataPolicy)
-    ) {
-      await updateDisableCopyDataPolicy();
+    if (!isEqual(state.queryDataPolicy, initialState.queryDataPolicy)) {
+      await updateQueryDataPolicy();
     }
   },
   revert: () => {
