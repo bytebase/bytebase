@@ -237,7 +237,7 @@ const allowRevokeMember = computed(() => {
 const isRoleShouldShowDatabaseRelatedColumns = (role: string) => {
   return (
     role !== PresetRoleType.PROJECT_OWNER &&
-    checkRoleContainsAnyPermission(role, "bb.sql.select", "bb.sql.export")
+    checkRoleContainsAnyPermission(role, "bb.sql.select")
   );
 };
 

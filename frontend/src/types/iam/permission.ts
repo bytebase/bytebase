@@ -102,7 +102,6 @@ export type Permission =
   | "bb.sql.dml"
   | "bb.sql.explain"
   | "bb.sql.info"
-  | "bb.sql.export"
   | "bb.sql.admin"
   | "bb.taskRuns.create"
   | "bb.taskRuns.list"
