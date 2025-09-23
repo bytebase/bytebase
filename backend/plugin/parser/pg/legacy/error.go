@@ -1,4 +1,4 @@
-package pg
+package legacy
 
 import "github.com/pkg/errors"
 

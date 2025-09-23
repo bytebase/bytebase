@@ -1,5 +1,5 @@
-// Package pg implements the parser for PostgreSQL.
-package pg
+// Package legacy implements the parser for PostgreSQL.
+package legacy
 
 import (
 	"strings"
