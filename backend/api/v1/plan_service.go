@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"slices"
 	"strings"
 	"time"
@@ -13,9 +14,7 @@ import (
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	celoverloads "github.com/google/cel-go/common/overloads"
-	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -469,7 +468,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 							planCheckRunsTrigger = true
 							break
 						}
-						if !cmp.Equal(oldConfig.GhostFlags, newConfig.GhostFlags) {
+						if !oldConfig.Equal(newConfig) {
 							// gh-ost flags changed.
 							planCheckRunsTrigger = true
 							break
@@ -544,7 +543,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 							return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid ghost flags %q, error %v", newFlags, err))
 						}
 						oldFlags := task.Payload.GetFlags()
-						if cmp.Equal(oldFlags, newFlags) {
+						if maps.Equal(oldFlags, newFlags) {
 							return nil
 						}
 						taskPatch.Flags = &newFlags
@@ -1269,7 +1268,7 @@ func diffSpecsDirectly(oldSpecs []*v1pb.Plan_Spec, newSpecs []*v1pb.Plan_Spec) (
 	for _, spec := range newSpecs {
 		if oldSpec, exists := oldSpecsMap[spec.Id]; !exists {
 			added = append(added, spec)
-		} else if !cmp.Equal(oldSpec, spec, protocmp.Transform()) {
+		} else if !oldSpec.Equal(spec) {
 			updated = append(updated, spec)
 		}
 	}
