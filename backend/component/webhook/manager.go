@@ -190,7 +190,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 				role := strings.TrimPrefix(role, "roles/")
 				usersGetters = append(usersGetters, getUsersFromRole(m.store, role, e.Project.ResourceID))
 			}
-			for _, issueRole := range u.RolloutPolicy.GetIssueRoles() {
+			for _, issueRole := range u.RolloutPolicy.GetIssueRoles() { //nolint:staticcheck // TODO: remove deprecated IssueRoles
 				switch issueRole {
 				case "roles/LAST_APPROVER":
 					usersGetters = append(usersGetters, getUsersFromIssueLastApprover(m.store, e.Issue.Approval))
