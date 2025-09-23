@@ -333,7 +333,6 @@ export declare type RolloutPolicy = Message<"bytebase.v1.RolloutPolicy"> & {
 
   /**
    * Whether issue approval is required before rollout.
-   * Default: true (for backward compatibility)
    *
    * @generated from field: bool require_issue_approval = 4;
    */
@@ -341,7 +340,6 @@ export declare type RolloutPolicy = Message<"bytebase.v1.RolloutPolicy"> & {
 
   /**
    * The plan check level required for rollout.
-   * Default: ERROR (for backward compatibility)
    *
    * @generated from field: bytebase.v1.RolloutPolicy.PlanCheckLevel plan_check_level = 5;
    */

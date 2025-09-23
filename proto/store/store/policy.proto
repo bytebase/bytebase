@@ -39,11 +39,9 @@ message RolloutPolicy {
   repeated string issue_roles = 3 [deprecated = true];
 
   // Whether issue approval is required before rollout.
-  // Default: true (for backward compatibility)
   bool require_issue_approval = 4;
 
   // The plan check level required for rollout.
-  // Default: ERROR (for backward compatibility)
   PlanCheckLevel plan_check_level = 5;
 
   enum PlanCheckLevel {

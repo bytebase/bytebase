@@ -445,10 +445,8 @@ type RolloutPolicy struct {
 	// Deprecated: Marked as deprecated in store/policy.proto.
 	IssueRoles []string `protobuf:"bytes,3,rep,name=issue_roles,json=issueRoles,proto3" json:"issue_roles,omitempty"`
 	// Whether issue approval is required before rollout.
-	// Default: true (for backward compatibility)
 	RequireIssueApproval bool `protobuf:"varint,4,opt,name=require_issue_approval,json=requireIssueApproval,proto3" json:"require_issue_approval,omitempty"`
 	// The plan check level required for rollout.
-	// Default: ERROR (for backward compatibility)
 	PlanCheckLevel RolloutPolicy_PlanCheckLevel `protobuf:"varint,5,opt,name=plan_check_level,json=planCheckLevel,proto3,enum=bytebase.store.RolloutPolicy_PlanCheckLevel" json:"plan_check_level,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache

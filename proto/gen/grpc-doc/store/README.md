@@ -3572,8 +3572,8 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | automatic | [bool](#bool) |  |  |
 | roles | [string](#string) | repeated |  |
 | issue_roles | [string](#string) | repeated | **Deprecated.** Deprecated. roles/LAST_APPROVER roles/CREATOR |
-| require_issue_approval | [bool](#bool) |  | Whether issue approval is required before rollout. Default: true (for backward compatibility) |
-| plan_check_level | [RolloutPolicy.PlanCheckLevel](#bytebase-store-RolloutPolicy-PlanCheckLevel) |  | The plan check level required for rollout. Default: ERROR (for backward compatibility) |
+| require_issue_approval | [bool](#bool) |  | Whether issue approval is required before rollout. |
+| plan_check_level | [RolloutPolicy.PlanCheckLevel](#bytebase-store-RolloutPolicy-PlanCheckLevel) |  | The plan check level required for rollout. |
 
 
 
