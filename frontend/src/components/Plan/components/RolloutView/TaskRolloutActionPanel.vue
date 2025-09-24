@@ -464,7 +464,7 @@ const validationMessages = computed(() => {
       messages.push(planCheckError.value);
     }
 
-    // Automatic rollout info (only show if tasks have no task runs)
+    // Automatic rollout info (only show for non-export tasks with no task runs)
     if (
       isAutomaticRollout.value &&
       !isDatabaseExportTask.value &&
