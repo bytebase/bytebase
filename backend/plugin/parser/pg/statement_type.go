@@ -13,8 +13,10 @@ func GetStatementTypes(asts any) ([]string, error) {
 	}
 	sqlTypeSet := make(map[string]bool)
 	for _, node := range nodes {
-		t := getStatementType(node)
-		sqlTypeSet[t] = true
+		types := getStatementType(node)
+		for _, t := range types {
+			sqlTypeSet[t] = true
+		}
 	}
 	var sqlTypes []string
 	for sqlType := range sqlTypeSet {
@@ -23,118 +25,131 @@ func GetStatementTypes(asts any) ([]string, error) {
 	return sqlTypes, nil
 }
 
-func getStatementType(node ast.Node) string {
+func getStatementType(node ast.Node) []string {
 	switch node := node.(type) {
 	// DDL
 
 	// CREATE
 	case *ast.CreateIndexStmt:
-		return "CREATE_INDEX"
+		return []string{"CREATE_INDEX"}
 	case *ast.CreateTableStmt:
 		switch node.Name.Type {
-		case ast.TableTypeView:
-			return "CREATE_VIEW"
+		case ast.TableTypeView, ast.TableTypeMaterializedView:
+			return []string{"CREATE_VIEW"}
 		case ast.TableTypeBaseTable:
-			return "CREATE_TABLE"
+			return []string{"CREATE_TABLE"}
 		default:
-			return "CREATE_TABLE"
+			return []string{"CREATE_TABLE"}
 		}
+	case *ast.CreateViewStmt, *ast.CreateMaterializedViewStmt:
+		return []string{"CREATE_VIEW"}
 	case *ast.CreateSequenceStmt:
-		return "CREATE_SEQUENCE"
+		return []string{"CREATE_SEQUENCE"}
 	case *ast.CreateDatabaseStmt:
-		return "CREATE_DATABASE"
+		return []string{"CREATE_DATABASE"}
 	case *ast.CreateSchemaStmt:
-		return "CREATE_SCHEMA"
+		return []string{"CREATE_SCHEMA"}
 	case *ast.CreateFunctionStmt:
-		return "CREATE_FUNCTION"
+		return []string{"CREATE_FUNCTION"}
 	case *ast.CreateTriggerStmt:
-		return "CREATE_TRIGGER"
+		return []string{"CREATE_TRIGGER"}
 	case *ast.CreateTypeStmt:
-		return "CREATE_TYPE"
+		return []string{"CREATE_TYPE"}
 	case *ast.CreateExtensionStmt:
-		return "CREATE_EXTENSION"
+		return []string{"CREATE_EXTENSION"}
 
 	// DROP
 	case *ast.DropColumnStmt:
-		return "DROP_COLUMN"
+		return []string{"DROP_COLUMN"}
 	case *ast.DropConstraintStmt:
-		return "DROP_CONSTRAINT"
+		return []string{"DROP_CONSTRAINT"}
 	case *ast.DropDatabaseStmt:
-		return "DROP_DATABASE"
+		return []string{"DROP_DATABASE"}
 	case *ast.DropDefaultStmt:
-		return "DROP_DEFAULT"
+		return []string{"DROP_DEFAULT"}
 	case *ast.DropExtensionStmt:
-		return "DROP_EXTENSION"
+		return []string{"DROP_EXTENSION"}
 	case *ast.DropFunctionStmt:
-		return "DROP_FUNCTION"
+		return []string{"DROP_FUNCTION"}
 	case *ast.DropIndexStmt:
-		return "DROP_INDEX"
+		return []string{"DROP_INDEX"}
 	case *ast.DropNotNullStmt:
-		return "DROP_NOT_NULL"
+		return []string{"DROP_NOT_NULL"}
 	case *ast.DropSchemaStmt:
-		return "DROP_SCHEMA"
+		return []string{"DROP_SCHEMA"}
 	case *ast.DropSequenceStmt:
-		return "DROP_SEQUENCE"
+		return []string{"DROP_SEQUENCE"}
 	case *ast.DropTableStmt:
-		return "DROP_TABLE"
+		var types []string
+		for _, table := range node.TableList {
+			switch table.Type {
+			case ast.TableTypeView, ast.TableTypeMaterializedView:
+				types = append(types, "DROP_VIEW")
+			case ast.TableTypeBaseTable:
+				types = append(types, "DROP_TABLE")
+			default:
+				types = append(types, "DROP_TABLE")
+			}
+		}
+		return types
 	case *ast.DropTriggerStmt:
-		return "DROP_TRIGGER"
+		return []string{"DROP_TRIGGER"}
 	case *ast.DropTypeStmt:
-		return "DROP_TYPE"
+		return []string{"DROP_TYPE"}
 
 		// ALTER
 	case *ast.AlterColumnTypeStmt:
-		return "ALTER_COLUMN_TYPE"
+		return []string{"ALTER_COLUMN_TYPE"}
 	case *ast.AlterSequenceStmt:
-		return "ALTER_SEQUENCE"
+		return []string{"ALTER_SEQUENCE"}
 	case *ast.AlterTableStmt:
 		switch node.Table.Type {
-		case ast.TableTypeView:
-			return "ALTER_VIEW"
+		case ast.TableTypeView, ast.TableTypeMaterializedView:
+			return []string{"ALTER_VIEW"}
 		case ast.TableTypeBaseTable:
-			return "ALTER_TABLE"
+			return []string{"ALTER_TABLE"}
 		default:
-			return "ALTER_TABLE"
+			return []string{"ALTER_TABLE"}
 		}
 	case *ast.AlterTypeStmt:
-		return "ALTER_TYPE"
+		return []string{"ALTER_TYPE"}
 
 	case *ast.AddColumnListStmt:
-		return "ALTER_TABLE_ADD_COLUMN_LIST"
+		return []string{"ALTER_TABLE_ADD_COLUMN_LIST"}
 	case *ast.AddConstraintStmt:
-		return "ALTER_TABLE_ADD_CONSTRAINT"
+		return []string{"ALTER_TABLE_ADD_CONSTRAINT"}
 
 	// RENAME
 	case *ast.RenameColumnStmt:
-		return "RENAME_COLUMN"
+		return []string{"RENAME_COLUMN"}
 	case *ast.RenameConstraintStmt:
-		return "RENAME_CONSTRAINT"
+		return []string{"RENAME_CONSTRAINT"}
 	case *ast.RenameIndexStmt:
-		return "RENAME_INDEX"
+		return []string{"RENAME_INDEX"}
 	case *ast.RenameSchemaStmt:
-		return "RENAME_SCHEMA"
+		return []string{"RENAME_SCHEMA"}
 	case *ast.RenameTableStmt:
 		switch node.Table.Type {
-		case ast.TableTypeView:
-			return "RENAME_VIEW"
+		case ast.TableTypeView, ast.TableTypeMaterializedView:
+			return []string{"RENAME_VIEW"}
 		case ast.TableTypeBaseTable:
-			return "RENAME_TABLE"
+			return []string{"RENAME_TABLE"}
 		default:
-			return "RENAME_TABLE"
+			return []string{"RENAME_TABLE"}
 		}
 
 	case *ast.CommentStmt:
-		return "COMMENT"
+		return []string{"COMMENT"}
 
 	// DML
 
 	case *ast.InsertStmt:
-		return "INSERT"
+		return []string{"INSERT"}
 	case *ast.UpdateStmt:
-		return "UPDATE"
+		return []string{"UPDATE"}
 	case *ast.DeleteStmt:
-		return "DELETE"
+		return []string{"DELETE"}
 	}
 
-	return "UNKNOWN"
+	return []string{"UNKNOWN"}
 }
