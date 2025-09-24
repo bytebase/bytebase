@@ -125,6 +125,7 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import {
   CheckCircleIcon,
@@ -142,8 +143,10 @@ import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import {
   PlanCheckRun_Result_Status,
+  PlanCheckRun_Status,
   PlanCheckRun_Type,
   type PlanCheckRun,
+  PlanCheckRun_ResultSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { humanizeTs } from "@/utils";
 import CheckResultItem from "../common/CheckResultItem.vue";
@@ -170,6 +173,11 @@ const statusSummary = computed(() => {
   const summary = { error: 0, warning: 0, success: 0 };
 
   for (const checkRun of props.planCheckRuns) {
+    // Count failed plan check runs as errors
+    if (checkRun.status === PlanCheckRun_Status.FAILED) {
+      summary.error++;
+    }
+
     for (const result of checkRun.results) {
       if (result.status === PlanCheckRun_Result_Status.ERROR) {
         summary.error++;
@@ -217,6 +225,14 @@ const filteredCheckRuns = computed(() => {
   return props.planCheckRuns.filter((checkRun) => {
     // Filter by status - check if any result matches the selected status
     if (selectedStatus.value !== undefined) {
+      // If filtering for errors, include failed check runs
+      if (
+        selectedStatus.value === PlanCheckRun_Result_Status.ERROR &&
+        checkRun.status === PlanCheckRun_Status.FAILED
+      ) {
+        return true;
+      }
+
       const hasMatchingResult = checkRun.results.some(
         (result) => result.status === selectedStatus.value
       );
@@ -229,12 +245,30 @@ const filteredCheckRuns = computed(() => {
 });
 
 const getFilteredResults = (checkRun: PlanCheckRun) => {
-  return checkRun.results.filter((result) => {
+  let results = checkRun.results.filter((result) => {
     return (
       selectedStatus.value === undefined ||
       result.status === selectedStatus.value
     );
   });
+
+  // For failed check runs, add a synthetic error result if filtering for errors or no filter
+  if (
+    checkRun.status === PlanCheckRun_Status.FAILED &&
+    (selectedStatus.value === undefined ||
+      selectedStatus.value === PlanCheckRun_Result_Status.ERROR)
+  ) {
+    // Create a synthetic error result for the failed check run
+    const syntheticResult = create(PlanCheckRun_ResultSchema, {
+      status: PlanCheckRun_Result_Status.ERROR,
+      title: "Check Failed",
+      content: checkRun.error || "Plan check run failed",
+      code: 0,
+    });
+    results = [syntheticResult, ...results];
+  }
+
+  return results;
 };
 
 const getCheckTypeIcon = (type: PlanCheckRun_Type) => {
