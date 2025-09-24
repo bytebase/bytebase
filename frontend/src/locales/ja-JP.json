@@ -226,7 +226,6 @@
       "n-rows": "{n} 行"
     },
     "back-to-workspace": "ワークスペースに戻る",
-    "override": "オーバーライド",
     "encoding": "エンコーディング",
     "finish": "仕上げる",
     "title": "タイトル",
@@ -2106,7 +2105,6 @@
     "manage-connections": "接続を管理する",
     "view-detail": "詳細を見る",
     "generate-sql": "SQLの生成",
-    "current-editing-statement-is-not-empty": "現在編集中のステートメントは空ではありません。",
     "run-anyway": "とにかく走ってください",
     "no-project": {
       "not-member-of-any-projects": "あなたはどのプロジェクトのメンバーでもありません。",

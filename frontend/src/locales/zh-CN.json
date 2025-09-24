@@ -226,7 +226,6 @@
       "n-rows": "{n} 行"
     },
     "back-to-workspace": "返回工作空间",
-    "override": "覆盖",
     "encoding": "编码",
     "finish": "完成",
     "title": "标题",
@@ -2106,7 +2105,6 @@
     "manage-connections": "管理连接",
     "view-detail": "查看详情",
     "generate-sql": "生成 SQL",
-    "current-editing-statement-is-not-empty": "当前编辑中的语句不为空。",
     "run-anyway": "仍要运行",
     "no-project": {
       "not-member-of-any-projects": "你不是任何项目的成员。",

@@ -12,7 +12,7 @@ import {
   SquarePenIcon,
 } from "lucide-vue-next";
 import { type DropdownOption } from "naive-ui";
-import { computed, h, nextTick, ref } from "vue";
+import { computed, nextTick, ref } from "vue";
 import { useRouter } from "vue-router";
 import { TableIcon } from "@/components/Icon";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
