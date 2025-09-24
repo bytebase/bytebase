@@ -226,7 +226,6 @@
       "n-rows": "{n} rows"
     },
     "back-to-workspace": "Back to workspace",
-    "override": "Override",
     "encoding": "Encoding",
     "finish": "Finish",
     "title": "Title",
@@ -2106,7 +2105,6 @@
     "manage-connections": "Manage connections",
     "view-detail": "View detail",
     "generate-sql": "Generate SQL",
-    "current-editing-statement-is-not-empty": "Current editing statement is not empty.",
     "run-anyway": "Run anyway",
     "no-project": {
       "not-member-of-any-projects": "You are not any member of any projects.",

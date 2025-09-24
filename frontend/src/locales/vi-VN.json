@@ -226,7 +226,6 @@
       "n-rows": "{n} dòng"
     },
     "back-to-workspace": "Quay lại không gian làm việc",
-    "override": "Ghi đè",
     "encoding": "Mã hóa",
     "finish": "Hoàn tất",
     "title": "Tiêu đề",
@@ -2106,7 +2105,6 @@
     "manage-connections": "Quản lý kết nối",
     "view-detail": "Xem chi tiết",
     "generate-sql": "Tạo SQL",
-    "current-editing-statement-is-not-empty": "Câu lệnh đang chỉnh sửa hiện tại không trống.",
     "run-anyway": "Vẫn chạy",
     "no-project": {
       "not-member-of-any-projects": "Bạn không phải là thành viên của bất kỳ dự án nào.",

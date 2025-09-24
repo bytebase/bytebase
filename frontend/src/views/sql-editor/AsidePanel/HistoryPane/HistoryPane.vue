@@ -68,9 +68,8 @@
 import { useDebounceFn } from "@vueuse/core";
 import dayjs from "dayjs";
 import { escape } from "lodash-es";
-import * as monaco from "monaco-editor";
 import { NButton } from "naive-ui";
-import { computed, reactive, watch, nextTick } from "vue";
+import { computed, reactive, watch } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { SearchBox } from "@/components/v2";
 import { CopyButton } from "@/components/v2";
@@ -80,13 +79,10 @@ import {
   useSQLEditorStore,
   type QueryHistoryFilter,
 } from "@/store";
-import {
-  DEBOUNCE_SEARCH_DELAY,
-  getDateForPbTimestampProtoEs,
-  type SQLEditorTab,
-} from "@/types";
+import { DEBOUNCE_SEARCH_DELAY, getDateForPbTimestampProtoEs } from "@/types";
 import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
 import { getHighlightHTMLByKeyWords } from "@/utils";
+import { useSQLEditorContext } from "@/views/sql-editor/context";
 
 interface State {
   search: string;
@@ -96,6 +92,7 @@ interface State {
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 const queryHistoryStore = useSQLEditorQueryHistoryStore();
+const { events: editorEvents } = useSQLEditorContext();
 
 const state = reactive<State>({
   search: "",
@@ -155,13 +152,15 @@ const titleOfQueryHistory = (history: QueryHistory) => {
   );
 };
 
-const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
+const handleQueryHistoryClick = (queryHistory: QueryHistory) => {
   const { statement } = queryHistory;
-
-  // Open a new tab with the connection and statement.
-  const tab = tabStore.currentTab;
-
-  const openInNewTab = () => {
+  if (tabStore.currentTab) {
+    editorEvents.emit("append-editor-content", {
+      content: statement,
+      select: true,
+    });
+  } else {
+    // Open a new tab with the connection and statement.
     tabStore.addTab(
       {
         title: `Query history at ${titleOfQueryHistory(queryHistory)}`,
@@ -169,35 +168,6 @@ const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
       },
       /* beside */ true
     );
-  };
-  const openInCurrentTab = async (tab: SQLEditorTab) => {
-    const newStatement = [tab.statement, statement]
-      .filter((s) => s)
-      .join("\n\n");
-    const selection = new monaco.Selection(
-      tab.statement.split("\n").length + 1,
-      0,
-      newStatement.split("\n").length + 1,
-      0
-    );
-    tabStore.updateCurrentTab({
-      statement: newStatement,
-    });
-
-    nextTick(() => {
-      tabStore.updateCurrentTab({
-        editorState: {
-          ...tab.editorState,
-          selection: selection,
-        },
-      });
-    });
-  };
-
-  if (tab) {
-    openInCurrentTab(tab);
-  } else {
-    openInNewTab();
   }
 };
 </script>

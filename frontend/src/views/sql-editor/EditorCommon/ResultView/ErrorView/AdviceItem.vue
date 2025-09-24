@@ -27,6 +27,7 @@
 
 <script setup lang="ts">
 import { CircleAlertIcon } from "lucide-vue-next";
+import { Selection } from "monaco-editor";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { positionWithOffset } from "@/components/MonacoEditor/utils";
@@ -71,9 +72,9 @@ const position = computed(() => {
 
 const doScroll = () => {
   const { startLine, startColumn, endLine, endColumn } = position.value;
-  editorEvents.emit("set-editor-selection", {
-    start: { line: startLine, column: startColumn },
-    end: { line: endLine, column: endColumn },
-  });
+  editorEvents.emit(
+    "set-editor-selection",
+    new Selection(startLine, startColumn, endLine, endColumn)
+  );
 };
 </script>

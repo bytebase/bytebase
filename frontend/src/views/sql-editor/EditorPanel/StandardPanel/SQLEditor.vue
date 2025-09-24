@@ -33,9 +33,10 @@
 
 <script lang="ts" setup>
 import { type IDisposable } from "monaco-editor";
+import { type IRange, Selection } from "monaco-editor";
 import { storeToRefs } from "pinia";
 import { v1 as uuidv1 } from "uuid";
-import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch, nextTick } from "vue";
 import type {
   AdviceOption,
   IStandaloneCodeEditor,
@@ -86,11 +87,7 @@ const {
 } = useSQLEditorContext();
 const { currentTab, isSwitchingTab } = storeToRefs(tabStore);
 const AIContext = useAIContext();
-const pendingFormatContentCommand = ref(false);
-const pendingSetSelectionCommand = ref<{
-  start: { line: number; column: number };
-  end?: { line: number; column: number };
-}>();
+
 const { events: executeSQLEvents } = useExecuteSQL();
 const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
 
@@ -167,12 +164,14 @@ const getActiveStatement = () => {
 };
 
 watch(
-  () => tabStore.currentTab?.editorState.selection,
-  (selection) => {
-    if (!selection || !activeSQLEditorRef.value) {
+  () => currentTab.value?.editorState.selection?.toString(),
+  () => {
+    if (!tabStore.currentTab?.editorState.selection) {
       return;
     }
-    activeSQLEditorRef.value.setSelection(selection);
+    activeSQLEditorRef.value?.setSelection(
+      tabStore.currentTab.editorState.selection
+    );
   }
 );
 
@@ -296,41 +295,6 @@ const handleEditorReady = (
   );
 
   watch(
-    pendingFormatContentCommand,
-    (pending) => {
-      if (pending) {
-        formatEditorContent(editor, dialect.value);
-        nextTick(() => {
-          pendingFormatContentCommand.value = false;
-        });
-      }
-    },
-    { immediate: true }
-  );
-
-  watch(
-    pendingSetSelectionCommand,
-    (range) => {
-      if (range) {
-        const start = range.start;
-        const end = range.end ?? start;
-        editor.setSelection({
-          startLineNumber: start.line,
-          startColumn: start.column,
-          endLineNumber: end.line,
-          endColumn: end.column,
-        });
-        editor.revealLineNearTop(start.line);
-        editor.focus();
-        nextTick(() => {
-          pendingSetSelectionCommand.value = undefined;
-        });
-      }
-    },
-    { immediate: true }
-  );
-
-  watch(
     pendingInsertAtCaret,
     () => {
       const editor = activeSQLEditorRef.value;
@@ -359,6 +323,7 @@ const handleEditorReady = (
     { immediate: true }
   );
 };
+
 const updateAdvices = (
   tab: SQLEditorTab,
   params: SQLEditorQueryParams,
@@ -396,6 +361,7 @@ const updateAdvices = (
     };
   });
 };
+
 const handleUploadFile = (content: string) => {
   const editor = activeSQLEditorRef.value;
   if (!editor) return;
@@ -422,11 +388,42 @@ const handleUploadFile = (content: string) => {
 };
 
 useEmitteryEventListener(editorEvents, "format-content", () => {
-  pendingFormatContentCommand.value = true;
+  if (activeSQLEditorRef.value) {
+    formatEditorContent(activeSQLEditorRef.value, dialect.value);
+  }
 });
-useEmitteryEventListener(editorEvents, "set-editor-selection", (range) => {
-  pendingSetSelectionCommand.value = range;
-});
+
+useEmitteryEventListener(
+  editorEvents,
+  "set-editor-selection",
+  (selection: IRange) => {
+    activeSQLEditorRef.value?.setSelection(selection);
+    activeSQLEditorRef.value?.revealLineNearTop(selection.startLineNumber);
+    activeSQLEditorRef.value?.focus();
+  }
+);
+
+useEmitteryEventListener(
+  editorEvents,
+  "append-editor-content",
+  ({ content, select }: { content: string; select: boolean }) => {
+    const oldStatement = currentTab.value?.statement ?? "";
+    const newStatement = [oldStatement, content].filter((s) => s).join("\n\n");
+    activeSQLEditorRef.value?.setValue(newStatement);
+
+    if (select) {
+      const selection = new Selection(
+        oldStatement.split("\n").length + 1,
+        0,
+        newStatement.split("\n").length + 1,
+        0
+      );
+      nextTick(() => {
+        editorEvents.emit("set-editor-selection", selection);
+      });
+    }
+  }
+);
 
 useEmitteryEventListener(
   executeSQLEvents,

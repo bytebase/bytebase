@@ -226,7 +226,6 @@
       "n-rows": "{n} filas"
     },
     "back-to-workspace": "Volver al espacio de trabajo",
-    "override": "Anular",
     "encoding": "Codificación",
     "finish": "Finalizar",
     "title": "Título",
@@ -2106,7 +2105,6 @@
     "manage-connections": "Gestionar las conexiones",
     "view-detail": "Ver detalle",
     "generate-sql": "Generar SQL",
-    "current-editing-statement-is-not-empty": "La declaración de edición actual no está vacía.",
     "run-anyway": "Corre de todos modos",
     "no-project": {
       "not-member-of-any-projects": "No eres miembro de ningún proyecto.",
