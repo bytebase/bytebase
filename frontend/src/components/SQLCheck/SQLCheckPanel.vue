@@ -56,13 +56,12 @@
 <script setup lang="ts">
 import { create as createProto } from "@bufbuild/protobuf";
 import { NButton, NTag } from "naive-ui";
-import { computed, watchEffect, ref } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
 import PlanCheckRunDetail from "@/components/PlanCheckRun/PlanCheckRunDetail.vue";
-import { usePolicyV1Store } from "@/store";
+import { useProjectV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   PlanCheckRunSchema,
   PlanCheckRun_ResultSchema,
@@ -101,13 +100,13 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const restrictIssueCreationForSqlReviewPolicy = ref(false);
-const policyV1Store = usePolicyV1Store();
+const projectStore = useProjectV1Store();
 
 // disallow creating issues if advice statuses contains any error.
 const restrictIssueCreationForSQLReview = computed((): boolean => {
+  const project = projectStore.getProjectById(props.project);
   return (
-    restrictIssueCreationForSqlReviewPolicy.value &&
+    (project?.enforceSqlReview || false) &&
     props.advices.some((advice) => advice.status === Advice_Status.ERROR)
   );
 });
@@ -122,25 +121,6 @@ const riskLevelText = computed(() => {
     return t("issue.risk-level.high");
   }
   return "";
-});
-
-watchEffect(async () => {
-  const projectLevelPolicy =
-    await policyV1Store.getOrFetchPolicyByParentAndType({
-      parentPath: props.project,
-      policyType: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
-    });
-  if (
-    projectLevelPolicy?.policy?.case ===
-      "restrictIssueCreationForSqlReviewPolicy" &&
-    projectLevelPolicy.policy.value.disallow
-  ) {
-    restrictIssueCreationForSqlReviewPolicy.value = true;
-    return;
-  }
-
-  // Fall back to default value.
-  restrictIssueCreationForSqlReviewPolicy.value = false;
 });
 
 const planCheckRun = computed((): PlanCheckRun => {

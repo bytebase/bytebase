@@ -564,6 +564,14 @@ export declare type Project = Message<"bytebase.v1.Project"> & {
    * @generated from field: map<string, string> labels = 25;
    */
   labels: { [key: string]: string };
+
+  /**
+   * Whether to enforce SQL review checks to pass before issue creation.
+   * If enabled, issues cannot be created when SQL review finds errors.
+   *
+   * @generated from field: bool enforce_sql_review = 26;
+   */
+  enforceSqlReview: boolean;
 };
 
 /**

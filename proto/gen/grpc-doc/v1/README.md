@@ -409,7 +409,6 @@
     - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-v1-Policy)
     - [QueryDataPolicy](#bytebase-v1-QueryDataPolicy)
-    - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy)
     - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
     - [RolloutPolicy.Checkers](#bytebase-v1-RolloutPolicy-Checkers)
     - [RolloutPolicy.Checkers.RequiredStatusChecks](#bytebase-v1-RolloutPolicy-Checkers-RequiredStatusChecks)
@@ -6891,7 +6890,6 @@ For example: environment_id == &#34;test&#34; &amp;&amp; project_id == &#34;samp
 | rollout_policy | [RolloutPolicy](#bytebase-v1-RolloutPolicy) |  |  |
 | masking_rule_policy | [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy) |  |  |
 | masking_exception_policy | [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy) |  |  |
-| restrict_issue_creation_for_sql_review_policy | [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy) |  |  |
 | tag_policy | [TagPolicy](#bytebase-v1-TagPolicy) |  |  |
 | data_source_query_policy | [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy) |  |  |
 | query_data_policy | [QueryDataPolicy](#bytebase-v1-QueryDataPolicy) |  |  |
@@ -6916,21 +6914,6 @@ QueryDataPolicy is the policy configuration for querying data.
 | maximum_result_size | [int64](#int64) |  | The size limit in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
 | maximum_result_rows | [int32](#int32) |  | The return rows limit. The default value is -1, means no limit. |
 | disable_copy_data | [bool](#bool) |  | Disable copying data. |
-
-
-
-
-
-
-<a name="bytebase-v1-RestrictIssueCreationForSQLReviewPolicy"></a>
-
-### RestrictIssueCreationForSQLReviewPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| disallow | [bool](#bool) |  |  |
 
 
 
@@ -7108,7 +7091,6 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | ROLLOUT_POLICY | 11 |  |
 | MASKING_RULE | 9 |  |
 | MASKING_EXCEPTION | 10 |  |
-| RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW | 12 |  |
 | TAG | 13 |  |
 | DATA_SOURCE_QUERY | 14 |  |
 | DATA_QUERY | 16 |  |
@@ -7944,6 +7926,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | ci_sampling_size | [int32](#int32) |  | The maximum databases of rows to sample during CI data validation. Without specification, sampling is disabled, resulting in a full validation. |
 | parallel_tasks_per_rollout | [int32](#int32) |  | The maximum number of parallel tasks to run during the rollout. |
 | labels | [Project.LabelsEntry](#bytebase-v1-Project-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the project. For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34;backend&#34; } |
+| enforce_sql_review | [bool](#bool) |  | Whether to enforce SQL review checks to pass before issue creation. If enabled, issues cannot be created when SQL review finds errors. |
 
 
 

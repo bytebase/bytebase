@@ -15,7 +15,6 @@ message Policy {
     MASKING_EXCEPTION = 2;
     QUERY_DATA = 5;
     MASKING_RULE = 6;
-    RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 7;
     IAM = 8;
     TAG = 9;
     DATA_SOURCE_QUERY = 10;
@@ -173,11 +172,6 @@ message QueryDataPolicy {
 
   // Disable copying data.
   bool disable_copy_data = 5;
-}
-
-// RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restricting issue creation for SQL review.
-message RestrictIssueCreationForSQLReviewPolicy {
-  bool disallow = 1;
 }
 
 // DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.

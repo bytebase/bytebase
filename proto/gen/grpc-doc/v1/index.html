@@ -1741,10 +1741,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.RestrictIssueCreationForSQLReviewPolicy"><span class="badge">M</span>RestrictIssueCreationForSQLReviewPolicy</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.RolloutPolicy"><span class="badge">M</span>RolloutPolicy</a>
                 </li>
               
@@ -19366,13 +19362,6 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                 </tr>
               
                 <tr>
-                  <td>restrict_issue_creation_for_sql_review_policy</td>
-                  <td><a href="#bytebase.v1.RestrictIssueCreationForSQLReviewPolicy">RestrictIssueCreationForSQLReviewPolicy</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>tag_policy</td>
                   <td><a href="#bytebase.v1.TagPolicy">TagPolicy</a></td>
                   <td></td>
@@ -19459,30 +19448,6 @@ The default value is -1, means no limit. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Disable copying data. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.RestrictIssueCreationForSQLReviewPolicy">RestrictIssueCreationForSQLReviewPolicy</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>disallow</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -19894,12 +19859,6 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>MASKING_EXCEPTION</td>
                 <td>10</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW</td>
-                <td>12</td>
                 <td><p></p></td>
               </tr>
             
@@ -22283,6 +22242,14 @@ Without specification, sampling is disabled, resulting in a full validation. </p
                   <td>repeated</td>
                   <td><p>Labels are key-value pairs that can be attached to the project.
 For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34;backend&#34; } </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enforce_sql_review</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether to enforce SQL review checks to pass before issue creation.
+If enabled, issues cannot be created when SQL review finds errors. </p></td>
                 </tr>
               
             </tbody>

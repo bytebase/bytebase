@@ -45,7 +45,7 @@
 import { create } from "@bufbuild/protobuf";
 import { head } from "lodash-es";
 import { useDialog } from "naive-ui";
-import { computed, nextTick, ref, watchEffect } from "vue";
+import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useSpecsValidation } from "@/components/Plan/components/common";
@@ -64,7 +64,6 @@ import {
   extractUserId,
   useCurrentProjectV1,
   pushNotification,
-  usePolicyV1Store,
 } from "@/store";
 import { usePlanStore } from "@/store/modules/v1/plan";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -75,7 +74,6 @@ import {
   Issue_Approver_Status,
   Issue_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { PlanCheckRun_Result_Status } from "@/types/proto-es/v1/plan_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
@@ -107,7 +105,6 @@ const { isCreating, plan, issue, rollout, events } = usePlanContext();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
 const planStore = usePlanStore();
-const policyV1Store = usePolicyV1Store();
 const editorState = useEditorState();
 
 // Use the validation hook for all specs
@@ -122,7 +119,6 @@ const {
 const reviewContext = useIssueReviewContext();
 
 // Policy for restricting issue creation when plan checks fail
-const restrictIssueCreationForSqlReviewPolicy = ref(false);
 
 // Computed property for actions disabled state.
 const actionsDisabled = computed(() => {
@@ -154,40 +150,6 @@ const rolloutStage = computed(() => {
         task.type === Task_Type.DATABASE_EXPORT
     )
   );
-});
-
-// Watch for policy changes to determine if issue creation is restricted
-watchEffect(async () => {
-  const workspaceLevelPolicy =
-    await policyV1Store.getOrFetchPolicyByParentAndType({
-      parentPath: "",
-      policyType: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
-    });
-  if (
-    workspaceLevelPolicy?.policy?.case ===
-      "restrictIssueCreationForSqlReviewPolicy" &&
-    workspaceLevelPolicy.policy.value.disallow
-  ) {
-    restrictIssueCreationForSqlReviewPolicy.value = true;
-    return;
-  }
-
-  const projectLevelPolicy =
-    await policyV1Store.getOrFetchPolicyByParentAndType({
-      parentPath: project.value.name,
-      policyType: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
-    });
-  if (
-    projectLevelPolicy?.policy?.case ===
-      "restrictIssueCreationForSqlReviewPolicy" &&
-    projectLevelPolicy.policy.value.disallow
-  ) {
-    restrictIssueCreationForSqlReviewPolicy.value = true;
-    return;
-  }
-
-  // Fall back to default value.
-  restrictIssueCreationForSqlReviewPolicy.value = false;
 });
 
 // Compute available actions based on issue state and user permissions
@@ -396,7 +358,7 @@ const primaryAction = computed((): ActionConfig | undefined => {
     const planChecksFailed =
       planCheckSummaryStatus.value === PlanCheckRun_Result_Status.ERROR;
     const isRestrictedByPolicy =
-      planChecksFailed && restrictIssueCreationForSqlReviewPolicy.value;
+      planChecksFailed && (project.value.enforceSqlReview || false);
     const hasRunningChecks = hasRunningPlanChecks.value;
 
     const errors: string[] = [];

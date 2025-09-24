@@ -211,7 +211,6 @@
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-store-Policy)
     - [QueryDataPolicy](#bytebase-store-QueryDataPolicy)
-    - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-store-RestrictIssueCreationForSQLReviewPolicy)
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
     - [RolloutPolicy.Checkers](#bytebase-store-RolloutPolicy-Checkers)
     - [RolloutPolicy.Checkers.RequiredStatusChecks](#bytebase-store-RolloutPolicy-Checkers-RequiredStatusChecks)
@@ -3533,21 +3532,6 @@ QueryDataPolicy is the policy configuration for querying data.
 
 
 
-<a name="bytebase-store-RestrictIssueCreationForSQLReviewPolicy"></a>
-
-### RestrictIssueCreationForSQLReviewPolicy
-RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restricting issue creation for SQL review.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| disallow | [bool](#bool) |  |  |
-
-
-
-
-
-
 <a name="bytebase-store-RolloutPolicy"></a>
 
 ### RolloutPolicy
@@ -3714,7 +3698,6 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | MASKING_EXCEPTION | 2 |  |
 | QUERY_DATA | 5 |  |
 | MASKING_RULE | 6 |  |
-| RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW | 7 |  |
 | IAM | 8 |  |
 | TAG | 9 |  |
 | DATA_SOURCE_QUERY | 10 |  |
@@ -3800,6 +3783,7 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | ci_sampling_size | [int32](#int32) |  | The maximum number of databases to sample during CI data validation. Without specification, sampling is disabled, resulting in a full validation. |
 | parallel_tasks_per_rollout | [int32](#int32) |  | The maximum number of parallel tasks to run during the rollout. |
 | labels | [Project.LabelsEntry](#bytebase-store-Project-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the project. For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34;backend&#34; } |
+| enforce_sql_review | [bool](#bool) |  | Whether to enforce SQL review checks to pass before issue creation. If enabled, issues cannot be created when SQL review finds errors. |
 
 
 

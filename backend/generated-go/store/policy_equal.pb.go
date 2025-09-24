@@ -289,19 +289,6 @@ func (x *QueryDataPolicy) Equal(y *QueryDataPolicy) bool {
 	return true
 }
 
-func (x *RestrictIssueCreationForSQLReviewPolicy) Equal(y *RestrictIssueCreationForSQLReviewPolicy) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Disallow != y.Disallow {
-		return false
-	}
-	return true
-}
-
 func (x *DataSourceQueryPolicy) Equal(y *DataSourceQueryPolicy) bool {
 	if x == y {
 		return true

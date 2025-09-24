@@ -1003,9 +1003,12 @@ type Project struct {
 	ParallelTasksPerRollout int32 `protobuf:"varint,24,opt,name=parallel_tasks_per_rollout,json=parallelTasksPerRollout,proto3" json:"parallel_tasks_per_rollout,omitempty"`
 	// Labels are key-value pairs that can be attached to the project.
 	// For example, { "environment": "production", "team": "backend" }
-	Labels        map[string]string `protobuf:"bytes,25,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Labels map[string]string `protobuf:"bytes,25,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// Whether to enforce SQL review checks to pass before issue creation.
+	// If enabled, issues cannot be created when SQL review finds errors.
+	EnforceSqlReview bool `protobuf:"varint,26,opt,name=enforce_sql_review,json=enforceSqlReview,proto3" json:"enforce_sql_review,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *Project) Reset() {
@@ -1162,6 +1165,13 @@ func (x *Project) GetLabels() map[string]string {
 		return x.Labels
 	}
 	return nil
+}
+
+func (x *Project) GetEnforceSqlReview() bool {
+	if x != nil {
+		return x.EnforceSqlReview
+	}
+	return false
 }
 
 type AddWebhookRequest struct {
@@ -1721,7 +1731,7 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12\x14\n" +
 	"\x05color\x18\x02 \x01(\tR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\xcd\b\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\xfb\b\n" +
 	"\aProject\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
@@ -1740,7 +1750,8 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x16execution_retry_policy\x18\x16 \x01(\v2).bytebase.v1.Project.ExecutionRetryPolicyR\x14executionRetryPolicy\x12(\n" +
 	"\x10ci_sampling_size\x18\x17 \x01(\x05R\x0eciSamplingSize\x12;\n" +
 	"\x1aparallel_tasks_per_rollout\x18\x18 \x01(\x05R\x17parallelTasksPerRollout\x128\n" +
-	"\x06labels\x18\x19 \x03(\v2 .bytebase.v1.Project.LabelsEntryR\x06labels\x1a?\n" +
+	"\x06labels\x18\x19 \x03(\v2 .bytebase.v1.Project.LabelsEntryR\x06labels\x12,\n" +
+	"\x12enforce_sql_review\x18\x1a \x01(\bR\x10enforceSqlReview\x1a?\n" +
 	"\x14ExecutionRetryPolicy\x12'\n" +
 	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetries\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
