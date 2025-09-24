@@ -150,19 +150,15 @@ useEmitteryEventListener(
 
 const editorPanelContext = provideCurrentTabViewStateContext();
 
-useEmitteryEventListener(
-  editorEvents,
-  "insert-at-caret",
-  async ({ content }) => {
-    if (!tabStore.currentTab) return;
-    editorPanelContext.updateViewState({
-      view: "CODE",
-    });
-    requestAnimationFrame(() => {
-      pendingInsertAtCaret.value = content;
-    });
-  }
-);
+useEmitteryEventListener(editorEvents, "insert-at-caret", ({ content }) => {
+  if (!tabStore.currentTab) return;
+  editorPanelContext.updateViewState({
+    view: "CODE",
+  });
+  requestAnimationFrame(() => {
+    pendingInsertAtCaret.value = content;
+  });
+});
 </script>
 
 <style lang="postcss">

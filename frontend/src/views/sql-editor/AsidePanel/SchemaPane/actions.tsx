@@ -11,7 +11,7 @@ import {
   LinkIcon,
   SquarePenIcon,
 } from "lucide-vue-next";
-import { NButton, useDialog, type DropdownOption } from "naive-ui";
+import { type DropdownOption } from "naive-ui";
 import { computed, h, nextTick, ref } from "vue";
 import { useRouter } from "vue-router";
 import { TableIcon } from "@/components/Icon";
@@ -42,7 +42,6 @@ import { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import {
-  defer,
   extractInstanceResourceName,
   extractProjectResourceName,
   generateSimpleDeleteStatement,
@@ -58,7 +57,7 @@ import {
 } from "@/utils";
 import { keyWithPosition } from "../../EditorCommon";
 import { useCurrentTabViewStateContext } from "../../EditorPanel";
-import { useSQLEditorContext } from "../../context";
+import { useSQLEditorContext, type SQLEditorEvents } from "../../context";
 import type { NodeTarget, NodeType, TreeNode } from "./tree";
 import { readableTextForNodeTarget } from "./tree";
 
@@ -66,64 +65,6 @@ type DropdownOptionWithTreeNode = DropdownOption & {
   onSelect?: () => void;
 };
 const SELECT_ALL_LIMIT = 50; // default pagesize of SQL Editor
-
-const confirmOverrideStatement = async (
-  $d: ReturnType<typeof useDialog>,
-  _statement: string
-): Promise<"CANCEL" | "OVERRIDE" | "COPY"> => {
-  const { currentTab } = useSQLEditorTabStore();
-  if (!currentTab) {
-    return Promise.resolve("CANCEL");
-  }
-  if (currentTab.statement.trim().length === 0) {
-    return Promise.resolve("OVERRIDE");
-  }
-
-  const d = defer<"CANCEL" | "OVERRIDE" | "COPY">();
-  const dialog = $d.warning({
-    title: t("common.warning"),
-    content: t("sql-editor.current-editing-statement-is-not-empty"),
-    contentClass: "whitespace-pre-wrap",
-    style: "z-index: 100000",
-    closable: false,
-    closeOnEsc: false,
-    maskClosable: false,
-    action: () => {
-      const buttons = [
-        h(
-          NButton,
-          { size: "small", onClick: () => d.resolve("CANCEL") },
-          { default: () => t("common.cancel") }
-        ),
-        h(
-          NButton,
-          {
-            size: "small",
-            type: "warning",
-            onClick: () => d.resolve("OVERRIDE"),
-          },
-          { default: () => t("common.override") }
-        ),
-        h(
-          NButton,
-          {
-            size: "small",
-            type: "primary",
-            onClick: () => d.resolve("COPY"),
-          },
-          { default: () => t("common.copy") }
-        ),
-      ];
-      return h(
-        "div",
-        { class: "flex items-center justify-end gap-2" },
-        buttons
-      );
-    },
-  });
-  d.promise.then(() => dialog.destroy());
-  return d.promise;
-};
 
 export const useActions = () => {
   const { updateViewState, viewState: currentTabViewState } =
@@ -289,7 +230,6 @@ export const useDropdown = () => {
   const { availableActions } = useCurrentTabViewStateContext();
   const { events: editorEvents, schemaViewer } = useSQLEditorContext();
   const { selectAllFromTableOrView, viewDetail, openNewTab } = useActions();
-  const $d = useDialog();
 
   const show = ref(false);
   const position = ref<Position>({
@@ -463,7 +403,7 @@ export const useDropdown = () => {
               ),
               engine
             );
-            applyContentToCurrentTabOrCopyToClipboard(statement, $d);
+            applyContentToCurrentTabOrCopyToClipboard(statement, editorEvents);
           },
         });
         if (type === "table") {
@@ -484,7 +424,7 @@ export const useDropdown = () => {
                 generateSimpleInsertStatement(engine, schema, table, columns),
                 engine
               );
-              applyContentToCurrentTabOrCopyToClipboard(statement, $d);
+              applyContentToCurrentTabOrCopyToClipboard(statement, editorEvents);
             },
           });
           generateSQLChildren.push({
@@ -496,7 +436,7 @@ export const useDropdown = () => {
                 generateSimpleUpdateStatement(engine, schema, table, columns),
                 engine
               );
-              applyContentToCurrentTabOrCopyToClipboard(statement, $d);
+              applyContentToCurrentTabOrCopyToClipboard(statement, editorEvents);
             },
           });
           generateSQLChildren.push({
@@ -508,7 +448,7 @@ export const useDropdown = () => {
                 generateSimpleDeleteStatement(engine, schema, table),
                 engine
               );
-              applyContentToCurrentTabOrCopyToClipboard(statement, $d);
+              applyContentToCurrentTabOrCopyToClipboard(statement, editorEvents);
             },
           });
         }
@@ -604,31 +544,20 @@ const targetSupportsGenerateSQL = (target: NodeTarget) => {
 
 const applyContentToCurrentTabOrCopyToClipboard = async (
   content: string,
-  $d: ReturnType<typeof useDialog>
+  editorEvents: SQLEditorEvents
 ) => {
   const tabStore = useSQLEditorTabStore();
+
   const tab = tabStore.currentTab;
   if (!tab) {
     copyToClipboard(content);
     return;
   }
-  if (tab.statement.trim().length === 0) {
-    tabStore.updateCurrentTab({
-      statement: content,
-    });
-    return;
-  }
-  const choice = await confirmOverrideStatement($d, content);
-  if (choice === "CANCEL") {
-    return;
-  }
-  if (choice === "OVERRIDE") {
-    tabStore.updateCurrentTab({
-      statement: content,
-    });
-    return;
-  }
-  copyToClipboard(content);
+
+  editorEvents.emit("append-editor-content", {
+    content: content,
+    select: true,
+  });
 };
 
 const copyToClipboard = (content: string) => {
