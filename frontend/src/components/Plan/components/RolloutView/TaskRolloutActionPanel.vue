@@ -200,6 +200,7 @@
             {{ $t("rollout.force-rollout") }}
           </NCheckbox>
         </div>
+        <div v-else />
 
         <div class="flex justify-end gap-x-2">
           <NButton quaternary @click="$emit('close')">
