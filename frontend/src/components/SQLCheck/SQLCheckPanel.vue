@@ -125,20 +125,6 @@ const riskLevelText = computed(() => {
 });
 
 watchEffect(async () => {
-  const workspaceLevelPolicy =
-    await policyV1Store.getOrFetchPolicyByParentAndType({
-      parentPath: "",
-      policyType: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
-    });
-  if (
-    workspaceLevelPolicy?.policy?.case ===
-      "restrictIssueCreationForSqlReviewPolicy" &&
-    workspaceLevelPolicy.policy.value.disallow
-  ) {
-    restrictIssueCreationForSqlReviewPolicy.value = true;
-    return;
-  }
-
   const projectLevelPolicy =
     await policyV1Store.getOrFetchPolicyByParentAndType({
       parentPath: props.project,

@@ -43,12 +43,6 @@
           {{ $t("settings.general.workspace.data-export.description") }}
         </div>
       </div>
-      <RestrictIssueCreationConfigure
-        ref="restrictIssueCreationConfigureRef"
-        :resource="''"
-        :allow-edit="allowEdit"
-        text-class="font-medium"
-      />
       <MaximumSQLResultSizeSetting
         ref="maximumSQLResultSizeSettingRef"
         :allow-edit="allowEdit"
@@ -92,7 +86,6 @@ import DomainRestrictionSetting from "./DomainRestrictionSetting.vue";
 import MaximumRoleExpirationSetting from "./MaximumRoleExpirationSetting.vue";
 import MaximumSQLResultSizeSetting from "./MaximumSQLResultSizeSetting.vue";
 import QueryDataPolicySetting from "./QueryDataPolicySetting.vue";
-import RestrictIssueCreationConfigure from "./RestrictIssueCreationConfigure.vue";
 
 interface LocalState {
   enableWatermark: boolean;
@@ -114,8 +107,6 @@ const maximumRoleExpirationSettingRef =
   ref<InstanceType<typeof MaximumRoleExpirationSetting>>();
 const maximumSQLResultSizeSettingRef =
   ref<InstanceType<typeof MaximumSQLResultSizeSetting>>();
-const restrictIssueCreationConfigureRef =
-  ref<InstanceType<typeof RestrictIssueCreationConfigure>>();
 const queryDataPolicySettingRef =
   ref<InstanceType<typeof QueryDataPolicySetting>>();
 
@@ -123,7 +114,6 @@ const settingRefList = computed(() => [
   domainRestrictionSettingRef,
   maximumRoleExpirationSettingRef,
   maximumSQLResultSizeSettingRef,
-  restrictIssueCreationConfigureRef,
   queryDataPolicySettingRef,
 ]);
 
