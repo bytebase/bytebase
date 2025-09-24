@@ -104,7 +104,7 @@ const projectStore = useProjectV1Store();
 
 // disallow creating issues if advice statuses contains any error.
 const restrictIssueCreationForSQLReview = computed((): boolean => {
-  const project = projectStore.getProjectById(props.project);
+  const project = projectStore.getProjectByName(props.project);
   return (
     (project?.enforceSqlReview || false) &&
     props.advices.some((advice) => advice.status === Advice_Status.ERROR)
