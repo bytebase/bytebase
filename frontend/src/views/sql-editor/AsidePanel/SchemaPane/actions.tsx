@@ -424,7 +424,10 @@ export const useDropdown = () => {
                 generateSimpleInsertStatement(engine, schema, table, columns),
                 engine
               );
-              applyContentToCurrentTabOrCopyToClipboard(statement, editorEvents);
+              applyContentToCurrentTabOrCopyToClipboard(
+                statement,
+                editorEvents
+              );
             },
           });
           generateSQLChildren.push({
@@ -436,7 +439,10 @@ export const useDropdown = () => {
                 generateSimpleUpdateStatement(engine, schema, table, columns),
                 engine
               );
-              applyContentToCurrentTabOrCopyToClipboard(statement, editorEvents);
+              applyContentToCurrentTabOrCopyToClipboard(
+                statement,
+                editorEvents
+              );
             },
           });
           generateSQLChildren.push({
@@ -448,7 +454,10 @@ export const useDropdown = () => {
                 generateSimpleDeleteStatement(engine, schema, table),
                 engine
               );
-              applyContentToCurrentTabOrCopyToClipboard(statement, editorEvents);
+              applyContentToCurrentTabOrCopyToClipboard(
+                statement,
+                editorEvents
+              );
             },
           });
         }
