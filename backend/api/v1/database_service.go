@@ -833,19 +833,29 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, req *connect.Re
 		dbSchema = newDBSchema
 	}
 	// We only support MySQL engine for now.
-	schema := string(dbSchema.GetSchema())
+	schemaString := string(dbSchema.GetSchema())
 	if req.Msg.SdlFormat {
 		switch instance.Metadata.GetEngine() {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-			sdlSchema, err := transform.SchemaTransform(storepb.Engine_MYSQL, schema)
+			sdlSchema, err := transform.SchemaTransform(storepb.Engine_MYSQL, schemaString)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert schema to sdl format, error %v", err.Error()))
 			}
-			schema = sdlSchema
+			schemaString = sdlSchema
+		case storepb.Engine_POSTGRES:
+			// Use the new SDL format for PostgreSQL
+			sdlSchema, err := schema.GetDatabaseDefinition(instance.Metadata.GetEngine(), schema.GetDefinitionContext{
+				SkipBackupSchema: true,
+				SDLFormat:        true,
+			}, dbSchema.GetMetadata())
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert PostgreSQL schema to SDL format, error %v", err.Error()))
+			}
+			schemaString = sdlSchema
 		default:
 		}
 	}
-	return connect.NewResponse(&v1pb.DatabaseSchema{Schema: schema}), nil
+	return connect.NewResponse(&v1pb.DatabaseSchema{Schema: schemaString}), nil
 }
 
 // DiffSchema diff the database schema.
