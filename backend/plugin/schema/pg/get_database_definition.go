@@ -2465,7 +2465,7 @@ func writeViewSDL(out io.Writer, schemaName string, view *storepb.ViewMetadata) 
 	return err
 }
 
-func writeFunctionSDL(out io.Writer, _schemaName string, function *storepb.FunctionMetadata) error {
+func writeFunctionSDL(out io.Writer, _ string, function *storepb.FunctionMetadata) error {
 	// The function definition should already include the complete CREATE FUNCTION statement
 	definition := strings.TrimSpace(function.Definition)
 	// Remove trailing semicolon if present
