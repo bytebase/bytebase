@@ -45,7 +45,7 @@ interface LocalState {
 
 const props = defineProps<{
   taskRun: TaskRun;
-  database: Database;
+  database?: Database;
 }>();
 
 const sheetStore = useSheetV1Store();
@@ -62,7 +62,7 @@ const sheet = computed(() =>
 
 const showTaskRunSessionTab = computed(
   () =>
-    props.database.instanceResource &&
+    props.database?.instanceResource &&
     TASK_RUN_SESSION_SUPPORTED_ENGINES.includes(
       props.database.instanceResource.engine
     )

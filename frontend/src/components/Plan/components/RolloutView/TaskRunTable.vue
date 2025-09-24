@@ -3,7 +3,7 @@
     size="small"
     :row-key="rowKey"
     :columns="columnList"
-    :data="taskRuns"
+    :data="sortedTaskRuns"
     :striped="true"
     :bordered="true"
   />
@@ -17,7 +17,7 @@
         v-if="taskRunDetailContext.taskRun"
         :key="taskRunDetailContext.taskRun.name"
         :task-run="taskRunDetailContext.taskRun"
-        :database="database"
+        :database="getDatabaseForTaskRun(taskRunDetailContext.taskRun)"
       />
     </DrawerContent>
   </Drawer>
@@ -33,6 +33,7 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRunDetail.vue";
 import TaskRunStatusIcon from "@/components/IssueV1/components/TaskRunSection/TaskRunStatusIcon.vue";
+import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useCurrentProjectV1 } from "@/store";
@@ -43,20 +44,48 @@ import {
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
-import { humanizeDurationV1 } from "@/utils";
+import { humanizeDurationV1, extractTaskUID } from "@/utils";
+import { usePlanContextWithRollout } from "../../logic";
 import TaskRunComment from "./TaskRunComment.vue";
 
 const props = defineProps<{
-  task: Task;
   taskRuns: TaskRun[];
+  showDatabaseColumn?: boolean; // Whether to show database column
 }>();
+
+// Sort task runs by creation time descending (newest first)
+const sortedTaskRuns = computed(() => {
+  return [...props.taskRuns].sort((a, b) => {
+    const timeA = a.createTime ? Number(a.createTime.seconds) : 0;
+    const timeB = b.createTime ? Number(b.createTime.seconds) : 0;
+    return timeB - timeA; // Descending order
+  });
+});
 
 const { t } = useI18n();
 const { project } = useCurrentProjectV1();
+const { rollout } = usePlanContextWithRollout();
 
-const database = computed(() => {
-  return databaseForTask(project.value, props.task);
-});
+// Helper function to get task for a given task run
+const getTaskForTaskRun = (taskRun: TaskRun): Task | undefined => {
+  if (!rollout.value) return undefined;
+
+  // Search through all stages and tasks in the rollout
+  for (const stage of rollout.value.stages) {
+    for (const task of stage.tasks) {
+      if (extractTaskUID(task.name) === extractTaskUID(taskRun.name)) {
+        return task;
+      }
+    }
+  }
+  return undefined;
+};
+
+// Helper function to get database for a task run
+const getDatabaseForTaskRun = (taskRun: TaskRun) => {
+  const task = getTaskForTaskRun(taskRun);
+  return task ? databaseForTask(project.value, task) : undefined;
+};
 
 const taskRunDetailContext = ref<{
   show: boolean;
@@ -78,6 +107,23 @@ const columnList = computed((): DataTableColumn<TaskRun>[] => {
         return <TaskRunStatusIcon status={taskRun.status} />;
       },
     },
+    ...(props.showDatabaseColumn
+      ? [
+          {
+            key: "database",
+            title: t("common.database"),
+            width: 200,
+            render: (taskRun: TaskRun) => {
+              const db = getDatabaseForTaskRun(taskRun);
+              return db ? (
+                <DatabaseDisplay database={db.name} showEnvironment={true} />
+              ) : (
+                "-"
+              );
+            },
+          },
+        ]
+      : []),
     {
       key: "detail",
       title: t("common.detail"),

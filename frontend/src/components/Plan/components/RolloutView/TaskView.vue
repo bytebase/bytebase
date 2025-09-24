@@ -80,7 +80,7 @@
       <div class="flex items-center justify-between mb-2">
         <span class="text-base font-medium">{{ $t("task-run.history") }}</span>
       </div>
-      <TaskRunTable :task="task" :task-runs="taskRuns" />
+      <TaskRunTable :task-runs="taskRuns" />
     </div>
 
     <!-- Sheet Statement -->

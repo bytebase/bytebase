@@ -3,6 +3,9 @@
     <!-- Tasks Section -->
     <TasksSection />
 
+    <!-- Execution History Section -->
+    <ExecutionHistorySection v-if="taskRuns.length > 0" />
+
     <!-- Export Options Section -->
     <OptionsSection />
 
@@ -15,14 +18,20 @@
 import { computed, watchEffect } from "vue";
 import { useDatabaseV1Store, useSheetV1Store } from "@/store";
 import type { Plan_ExportDataConfig } from "@/types/proto-es/v1/plan_service_pb";
+import { usePlanContextWithRollout } from "../../logic";
 import { useSelectedSpec } from "../SpecDetailView/context";
 import StatementSection from "../StatementSection";
-import { TasksSection, OptionsSection } from "./DatabaseExportView";
+import {
+  TasksSection,
+  OptionsSection,
+  ExecutionHistorySection,
+} from "./DatabaseExportView";
 
 const databaseStore = useDatabaseV1Store();
 const sheetStore = useSheetV1Store();
 
 const selectedSpec = useSelectedSpec();
+const { taskRuns } = usePlanContextWithRollout();
 
 const exportDataConfig = computed(() => {
   return selectedSpec.value.config.value as Plan_ExportDataConfig;
