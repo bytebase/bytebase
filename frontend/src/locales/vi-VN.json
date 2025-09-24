@@ -1544,7 +1544,26 @@
       "info": "Các tác vụ có thể được thực hiện bởi người dùng có quyền 'taskRuns.Create' hoặc các vai trò sau",
       "auto": "Triển khai tự động",
       "auto-info": "Nếu tất cả kiểm tra vượt qua, thay đổi sẽ được triển khai và thực hiện tự động.",
-      "last-issue-approver": "Người phê duyệt vấn đề cuối cùng"
+      "last-issue-approver": "Người phê duyệt vấn đề cuối cùng",
+      "checkers": {
+        "self": "Yêu cầu",
+        "required-issue-approval": {
+          "self": "Yêu cầu phê duyệt vấn đề",
+          "description": "Vấn đề phải được chấp thuận trước khi triển khai."
+        },
+        "plan-check-enforcement": {
+          "self": "Kiểm tra kế hoạch thực thi",
+          "description": "Triển khai theo khối dựa trên kết quả kiểm tra kế hoạch.",
+          "error-only": {
+            "self": "Chỉ chặn lỗi",
+            "description": "Chỉ chặn triển khai khi kiểm tra kế hoạch phát hiện lỗi."
+          },
+          "strict": {
+            "self": "Thực thi nghiêm ngặt",
+            "description": "Chặn triển khai khi kiểm tra kế hoạch phát hiện lỗi hoặc cảnh báo."
+          }
+        }
+      }
     },
     "environment-tier": {
       "name": "Cấp môi trường",

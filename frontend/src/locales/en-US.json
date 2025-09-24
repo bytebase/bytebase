@@ -1544,7 +1544,26 @@
       "info": "Tasks can be executed by users with '{permission}' permission or the following roles",
       "auto": "Automatic",
       "auto-info": "If all check pass, the change will be rolled out and executed automatically.",
-      "last-issue-approver": "Last Issue Approver"
+      "last-issue-approver": "Last Issue Approver",
+      "checkers": {
+        "self": "Requirements",
+        "required-issue-approval": {
+          "self": "Require Issue Approval",
+          "description": "Issue must be approved before rollout can proceed."
+        },
+        "plan-check-enforcement": {
+          "self": "Plan Check Enforcement",
+          "description": "Block rollout based on plan check results.",
+          "error-only": {
+            "self": "Block on Errors Only",
+            "description": "Block rollout only when plan check finds errors."
+          },
+          "strict": {
+            "self": "Strict Enforcement",
+            "description": "Block rollout when plan check finds errors or warnings."
+          }
+        }
+      }
     },
     "environment-tier": {
       "name": "Environment Tier",

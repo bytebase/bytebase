@@ -667,10 +667,23 @@ func convertToV1RolloutPolicyPayload(payloadStr string) (*v1pb.Policy_RolloutPol
 }
 
 func convertToStorePBRolloutPolicy(policy *v1pb.RolloutPolicy) *storepb.RolloutPolicy {
+	var checkers *storepb.RolloutPolicy_Checkers
+	if policy.Checkers != nil {
+		checkers = &storepb.RolloutPolicy_Checkers{
+			RequiredIssueApproval: policy.Checkers.RequiredIssueApproval,
+		}
+		if policy.Checkers.RequiredStatusChecks != nil {
+			checkers.RequiredStatusChecks = &storepb.RolloutPolicy_Checkers_RequiredStatusChecks{
+				PlanCheckEnforcement: storepb.RolloutPolicy_Checkers_PlanCheckEnforcement(policy.Checkers.RequiredStatusChecks.PlanCheckEnforcement),
+			}
+		}
+	}
+
 	return &storepb.RolloutPolicy{
 		Automatic:  policy.Automatic,
 		Roles:      policy.Roles,
 		IssueRoles: policy.IssueRoles, //nolint:staticcheck // TODO: remove deprecated IssueRoles
+		Checkers:   checkers,
 	}
 }
 
