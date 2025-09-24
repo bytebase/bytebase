@@ -694,8 +694,6 @@
           "self": "Link",
           "placeholder": "Input announcement link"
         },
-        "restrict-issue-creation-for-sql-review": {
-        },
         "default-landing-page": {
           "self": "Default landing page",
           "workspace": {

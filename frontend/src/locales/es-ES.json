@@ -694,10 +694,6 @@
           "self": "Enlace",
           "placeholder": "Enlace de anuncio de entrada"
         },
-        "restrict-issue-creation-for-sql-review": {
-          "title": "Prohibir la creación de problemas para la revisión de SQL con errores.",
-          "description": "Una vez habilitado, a los usuarios solo se les permite crear problemas si la revisión de SQL no contiene errores."
-        },
         "default-landing-page": {
           "self": "Página de destino predeterminada",
           "workspace": {
