@@ -662,12 +662,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 				}
 
 				if len(taskPatchList) != 0 {
-					issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
-						PipelineID: oldPlan.PipelineUID,
-					})
-					if err != nil {
-						return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue: %v", err))
-					}
 					if issue != nil {
 						// Do not allow to update task if issue is done or canceled.
 						if issue.Status == storepb.Issue_DONE || issue.Status == storepb.Issue_CANCELED {
