@@ -142,7 +142,7 @@ import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
 import { Trash2Icon } from "lucide-vue-next";
 import { NButton, NInput, NTooltip } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import EmailInput from "@/components/EmailInput.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
@@ -211,6 +211,13 @@ const state = reactive<LocalState>({
 });
 
 const isCreating = computed(() => !props.group);
+
+watchEffect(async () => {
+  if (props.group) {
+    const memberUserIds = props.group.members.map((m) => m.member);
+    await userStore.batchGetUsers(memberUserIds);
+  }
+});
 
 const disallowEditMember = computed(() => !!props.group?.source);
 
