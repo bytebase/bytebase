@@ -6,16 +6,18 @@
     :row-key="(row) => row.name"
     :bordered="true"
     :loading="loading"
-    :default-expanded-row-keys="expandedRowKeys"
+    :cascade="false"
+    allow-checking-not-loaded
+    @load="onGroupLoad"
+    v-model:expanded-row-keys="expandedRowKeys"
   />
 </template>
 
 <script lang="tsx" setup>
-import { computedAsync } from "@vueuse/core";
 import { orderBy } from "lodash-es";
-import type { DataTableColumn } from "naive-ui";
+import type { DataTableColumn, DataTableRowData } from "naive-ui";
 import { NDataTable } from "naive-ui";
-import { computed, h } from "vue";
+import { computed, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useUserStore } from "@/store";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
@@ -28,6 +30,7 @@ import GroupOperationsCell from "./cells/GroupOperationsCell.vue";
 interface GroupRowData {
   type: "group";
   name: string;
+  isLeaf: boolean;
   group: Group;
   children: UserRowData[];
 }
@@ -59,8 +62,41 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const userStore = useUserStore();
+const expandedRowKeys = ref<string[]>([]);
 
-const expandedRowKeys = computed(() => props.groups.map((group) => group.name));
+const onGroupLoad = async (row: DataTableRowData) => {
+  if (row.type !== "group") {
+    return;
+  }
+  const group = (row as GroupRowData).group;
+  const memberUserIds = group.members.map((m) => m.member);
+  if (memberUserIds.length > 0) {
+    await userStore.batchGetUsers(memberUserIds);
+  }
+
+  const members: UserRowData[] = [];
+  for (const member of group.members) {
+    const user = userStore.getUserByIdentifier(member.member);
+    if (!user) {
+      continue;
+    }
+    members.push({
+      type: "user",
+      name: `${group.name}-${user.name}`,
+      user,
+      role: member.role,
+    });
+  }
+
+  row.children = orderBy(
+    members,
+    [
+      (member) => (member.role === GroupMember_Role.OWNER ? 1 : 0),
+      (member) => member.user.name,
+    ],
+    ["desc", "desc"]
+  );
+};
 
 const columns = computed(() => {
   return [
@@ -72,7 +108,6 @@ const columns = computed(() => {
         if (row.type === "group") {
           return <GroupNameCell group={row.group} link={false} />;
         }
-
         return (
           <GroupMemberNameCell
             user={row.user}
@@ -102,44 +137,19 @@ const columns = computed(() => {
   ] as DataTableColumn<GroupRowData | UserRowData>[];
 });
 
-const userListByGroup = computedAsync(async () => {
+const userListByGroup = computed(() => {
   const rowDataList: GroupRowData[] = [];
 
   for (const group of props.groups) {
-    // Fetch user data for all members in this group
-    const memberUserIds = group.members.map((m) => m.member);
-    if (memberUserIds.length > 0) {
-      await userStore.batchGetUsers(memberUserIds);
-    }
-
-    const members: UserRowData[] = [];
-    for (const member of group.members) {
-      const user = userStore.getUserByIdentifier(member.member);
-      if (!user) {
-        continue;
-      }
-      members.push({
-        type: "user",
-        name: `${group.name}-${user.name}`,
-        user,
-        role: member.role,
-      });
-    }
     rowDataList.push({
       type: "group",
       group,
+      isLeaf: group.members.length === 0,
       name: group.name,
-      children: orderBy(
-        members,
-        [
-          (member) => (member.role === GroupMember_Role.OWNER ? 1 : 0),
-          (member) => member.user.name,
-        ],
-        ["desc", "desc"]
-      ),
+      children: [],
     });
   }
 
   return rowDataList;
-}, []);
+});
 </script>
