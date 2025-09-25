@@ -419,6 +419,10 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 			projectSettings := project.Setting
 			projectSettings.EnforceIssueTitle = req.Msg.Project.EnforceIssueTitle
 			patch.Setting = projectSettings
+		case "enforce_sql_review":
+			projectSettings := project.Setting
+			projectSettings.EnforceSqlReview = req.Msg.Project.EnforceSqlReview
+			patch.Setting = projectSettings
 		case "auto_enable_backup":
 			projectSettings := project.Setting
 			projectSettings.AutoEnableBackup = req.Msg.Project.AutoEnableBackup
@@ -1467,6 +1471,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		AllowModifyStatement:       projectMessage.Setting.AllowModifyStatement,
 		AutoResolveIssue:           projectMessage.Setting.AutoResolveIssue,
 		EnforceIssueTitle:          projectMessage.Setting.EnforceIssueTitle,
+		EnforceSqlReview:           projectMessage.Setting.EnforceSqlReview,
 		AutoEnableBackup:           projectMessage.Setting.AutoEnableBackup,
 		SkipBackupErrors:           projectMessage.Setting.SkipBackupErrors,
 		PostgresDatabaseTenantMode: projectMessage.Setting.PostgresDatabaseTenantMode,
@@ -1512,6 +1517,7 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) *store.Pr
 		CiSamplingSize:             project.CiSamplingSize,
 		ParallelTasksPerRollout:    project.ParallelTasksPerRollout,
 		Labels:                     project.Labels,
+		EnforceSqlReview:           project.EnforceSqlReview,
 	}
 	return &store.ProjectMessage{
 		ResourceID: resourceID,

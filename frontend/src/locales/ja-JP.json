@@ -694,10 +694,6 @@
           "self": "リンク",
           "placeholder": "お知らせのリンクを入力してください"
         },
-        "restrict-issue-creation-for-sql-review": {
-          "title": "エラーアラートを含むイシューの提出は禁止されています",
-          "description": "有効にすると、プレビュー段階で「エラー」レベルのアラームを含まないイシューのみを送信できます。"
-        },
         "default-landing-page": {
           "self": "デフォルトのランディングページ",
           "workspace": {
@@ -1864,6 +1860,10 @@
         "enforce-issue-title": {
           "self": "問題のタイトルを強制する",
           "description": "問題のタイトルが空でないこと、および自動生成ではなくユーザーが作成することを強制します。"
+        },
+        "enforce-sql-review": {
+          "self": "SQL レビューを強制",
+          "description": "課題作成を許可する前に、SQL レビューチェックがエラーなしで合格することを要求します。"
         },
         "allow-self-approval": {
           "self": "自己承認を許可する",

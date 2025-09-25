@@ -694,10 +694,6 @@
           "self": "Liên kết",
           "placeholder": "Nhập liên kết thông báo"
         },
-        "restrict-issue-creation-for-sql-review": {
-          "title": "Không cho phép tạo vấn đề khi đánh giá SQL có lỗi",
-          "description": "Khi được bật, người dùng chỉ được phép tạo vấn đề nếu đánh giá SQL không chứa bất kỳ lỗi nào."
-        },
         "default-landing-page": {
           "self": "Trang đích mặc định",
           "workspace": {
@@ -1864,6 +1860,10 @@
         "enforce-issue-title": {
           "self": "Bắt buộc tiêu đề vấn đề",
           "description": "Bắt buộc tiêu đề vấn đề không được để trống và được tạo bởi người dùng thay vì được tạo tự động."
+        },
+        "enforce-sql-review": {
+          "self": "Bắt buộc đánh giá SQL",
+          "description": "Yêu cầu kiểm tra đánh giá SQL phải vượt qua mà không có lỗi trước khi cho phép tạo vấn đề。"
         },
         "allow-self-approval": {
           "self": "Cho phép tự phê duyệt",

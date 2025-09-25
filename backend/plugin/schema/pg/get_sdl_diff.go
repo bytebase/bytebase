@@ -20,6 +20,16 @@ func init() {
 }
 
 func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previousSchema *model.DatabaseSchema) (*schema.MetadataDiff, error) {
+	// Check for initialization scenario: previousUserSDLText is empty
+	if strings.TrimSpace(previousUserSDLText) == "" && currentSchema != nil {
+		// Initialization scenario: convert currentSchema to SDL format as baseline
+		generatedSDL, err := convertDatabaseSchemaToSDL(currentSchema)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to convert current schema to SDL format for initialization")
+		}
+		previousUserSDLText = generatedSDL
+	}
+
 	currentChunks, err := ChunkSDLText(currentSDLText)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to chunk current SDL text")
@@ -1465,4 +1475,20 @@ func processSequenceChanges(currentChunks, previousChunks *schema.SDLChunks, dif
 			})
 		}
 	}
+}
+
+// convertDatabaseSchemaToSDL converts a model.DatabaseSchema to SDL format string
+// This is used in initialization scenarios where previousUserSDLText is empty
+func convertDatabaseSchemaToSDL(dbSchema *model.DatabaseSchema) (string, error) {
+	if dbSchema == nil {
+		return "", nil
+	}
+
+	metadata := dbSchema.GetMetadata()
+	if metadata == nil {
+		return "", nil
+	}
+
+	// Use the existing getSDLFormat function from get_database_definition.go
+	return getSDLFormat(metadata)
 }

@@ -148,9 +148,6 @@ func (x *Policy) Equal(y *Policy) bool {
 	if !x.GetMaskingExceptionPolicy().Equal(y.GetMaskingExceptionPolicy()) {
 		return false
 	}
-	if !x.GetRestrictIssueCreationForSqlReviewPolicy().Equal(y.GetRestrictIssueCreationForSqlReviewPolicy()) {
-		return false
-	}
 	if !x.GetTagPolicy().Equal(y.GetTagPolicy()) {
 		return false
 	}
@@ -354,19 +351,6 @@ func (x *MaskingRulePolicy) Equal(y *MaskingRulePolicy) bool {
 		if !x.Rules[i].Equal(y.Rules[i]) {
 			return false
 		}
-	}
-	return true
-}
-
-func (x *RestrictIssueCreationForSQLReviewPolicy) Equal(y *RestrictIssueCreationForSQLReviewPolicy) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Disallow != y.Disallow {
-		return false
 	}
 	return true
 }

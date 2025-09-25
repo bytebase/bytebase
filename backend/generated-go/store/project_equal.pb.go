@@ -95,5 +95,8 @@ func (x *Project) Equal(y *Project) bool {
 			return false
 		}
 	}
+	if x.EnforceSqlReview != y.EnforceSqlReview {
+		return false
+	}
 	return true
 }

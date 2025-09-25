@@ -116,6 +116,23 @@
       <div>
         <div class="flex items-center gap-x-2">
           <Switch
+            v-model:value="state.enforceSqlReview"
+            :text="true"
+            :disabled="!allowUpdateIssueProjectSetting || loading"
+          />
+          <span class="textlabel">
+            {{ $t("project.settings.issue-related.enforce-sql-review.self") }}
+          </span>
+        </div>
+        <div class="mt-1 mb-3 text-sm text-gray-400">
+          {{
+            $t("project.settings.issue-related.enforce-sql-review.description")
+          }}
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center gap-x-2">
+          <Switch
             v-model:value="state.allowSelfApproval"
             :text="true"
             :disabled="!allowUpdateIssueProjectSetting || loading"
@@ -291,6 +308,7 @@ import {
 
 interface LocalState {
   issueLabels: Label[];
+  enforceSqlReview: boolean;
   allowModifyStatement: boolean;
   autoResolveIssue: boolean;
   forceIssueLabels: boolean;
@@ -308,6 +326,7 @@ const getInitialLocalState = (): LocalState => {
   const project = props.project;
   return {
     issueLabels: [...cloneDeep(project.issueLabels)],
+    enforceSqlReview: project.enforceSqlReview,
     allowModifyStatement: project.allowModifyStatement,
     autoResolveIssue: project.autoResolveIssue,
     forceIssueLabels: project.forceIssueLabels,
@@ -424,6 +443,9 @@ const updateMask = computed(() => {
   }
   if (state.forceIssueLabels !== props.project.forceIssueLabels) {
     mask.push("force_issue_labels");
+  }
+  if (state.enforceSqlReview !== props.project.enforceSqlReview) {
+    mask.push("enforce_sql_review");
   }
   if (state.allowModifyStatement !== props.project.allowModifyStatement) {
     mask.push("allow_modify_statement");

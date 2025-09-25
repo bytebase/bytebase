@@ -694,10 +694,6 @@
           "self": "链接",
           "placeholder": "输入公告链接"
         },
-        "restrict-issue-creation-for-sql-review": {
-          "title": "禁止提交包含错误告警的工单",
-          "description": "启用后，只有在预览阶段不包含任何“错误”级别告警的工单才能被提交。"
-        },
         "default-landing-page": {
           "self": "默认首页",
           "workspace": {
@@ -1864,6 +1860,10 @@
         "enforce-issue-title": {
           "self": "要求手动输入工单标题",
           "description": "工单标题必须由用户输入而不是自动生成。"
+        },
+        "enforce-sql-review": {
+          "self": "强制 SQL 审核",
+          "description": "在允许创建工单之前，要求 SQL 审核检查通过且无错误。"
         },
         "allow-self-approval": {
           "self": "允许创建者审批",

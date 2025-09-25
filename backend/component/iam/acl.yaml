@@ -109,6 +109,8 @@ roles:
       - bb.sql.export
       - bb.users.create
       - bb.users.delete
+      - bb.users.get
+      - bb.users.list
       - bb.users.undelete
       - bb.users.update
       - bb.worksheets.get
@@ -216,6 +218,8 @@ roles:
       - bb.sql.info
       - bb.sql.export
       - bb.sql.select
+      - bb.users.get
+      - bb.users.list
       - bb.taskRuns.create
       - bb.taskRuns.list
       - bb.groups.get
@@ -240,6 +244,8 @@ roles:
       - bb.groups.create
       - bb.groups.get
       - bb.groups.list
+      - bb.users.get
+      - bb.users.list
       - bb.workspaces.getIamPolicy
   - name: roles/projectOwner
     title: Project owner
