@@ -48,9 +48,6 @@ const ensureGroupIdentifier = (id: string) => {
 
 export const useGroupStore = defineStore("group", () => {
   const groupMapByName = reactive(new Map<string, Group>());
-  const resetCache = () => {
-    groupMapByName.clear();
-  };
 
   // Getters
   const groupList = computed(() => {
@@ -83,7 +80,6 @@ export const useGroupStore = defineStore("group", () => {
       await groupServiceClientConnect.listGroups(request, {
         contextValues: createContextValues().set(silentContextKey, true),
       });
-    resetCache();
     for (const group of groups) {
       groupMapByName.set(group.name, group);
     }
