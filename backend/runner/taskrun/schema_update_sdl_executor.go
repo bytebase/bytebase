@@ -93,8 +93,7 @@ func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, 
 	// Try to get the previous successful SDL text from task history
 	previousUserSDLText, err := getPreviousSuccessfulSDLText(ctx, s, database.InstanceID, database.DatabaseName)
 	if err != nil {
-		// Log the error but don't fail - we can still use initialization scenario
-		// This allows the system to work even if there's no previous SDL history
+		return "", errors.Wrapf(err, "failed to get previous SDL text for database %q", database.DatabaseName)
 	}
 
 	// Use GetSDLDiff with previous SDL text or initialization scenario support
