@@ -5,11 +5,6 @@
       :resource="project.name"
       :allow-edit="allowEdit"
     />
-    <RestrictIssueCreationConfigure
-      ref="restrictIssueCreationConfigureRef"
-      :resource="project.name"
-      :allow-edit="allowEdit"
-    />
     <AccessControlConfigure
       ref="accessControlConfigureRef"
       :resource="project.name"
@@ -21,7 +16,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import AccessControlConfigure from "@/components/EnvironmentForm/AccessControlConfigure.vue";
-import RestrictIssueCreationConfigure from "@/components/GeneralSetting/RestrictIssueCreationConfigure.vue";
 import { SQLReviewForResource } from "@/components/SQLReview";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
@@ -30,8 +24,6 @@ defineProps<{
   allowEdit: boolean;
 }>();
 
-const restrictIssueCreationConfigureRef =
-  ref<InstanceType<typeof RestrictIssueCreationConfigure>>();
 const accessControlConfigureRef =
   ref<InstanceType<typeof AccessControlConfigure>>();
 const sqlReviewForResourceRef =
@@ -39,15 +31,11 @@ const sqlReviewForResourceRef =
 
 const isDirty = computed(
   () =>
-    restrictIssueCreationConfigureRef.value?.isDirty ||
     accessControlConfigureRef.value?.isDirty ||
     sqlReviewForResourceRef.value?.isDirty
 );
 
 const onUpdate = async () => {
-  if (restrictIssueCreationConfigureRef.value?.isDirty) {
-    await restrictIssueCreationConfigureRef.value.update();
-  }
   if (sqlReviewForResourceRef.value?.isDirty) {
     await sqlReviewForResourceRef.value.update();
   }
@@ -59,7 +47,6 @@ const onUpdate = async () => {
 const resetState = () => {
   sqlReviewForResourceRef.value?.revert();
   accessControlConfigureRef.value?.revert();
-  restrictIssueCreationConfigureRef.value?.revert();
 };
 
 defineExpose({

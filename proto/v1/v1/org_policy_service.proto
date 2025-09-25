@@ -245,7 +245,6 @@ message Policy {
     RolloutPolicy rollout_policy = 19;
     MaskingRulePolicy masking_rule_policy = 17;
     MaskingExceptionPolicy masking_exception_policy = 18;
-    RestrictIssueCreationForSQLReviewPolicy restrict_issue_creation_for_sql_review_policy = 20;
     TagPolicy tag_policy = 21;
     DataSourceQueryPolicy data_source_query_policy = 22;
     QueryDataPolicy query_data_policy = 24;
@@ -258,13 +257,12 @@ message Policy {
 }
 
 enum PolicyType {
-  reserved 2, 4, 6, 5, 7, 15;
+  reserved 2, 4, 6, 5, 7, 12, 15;
 
   POLICY_TYPE_UNSPECIFIED = 0;
   ROLLOUT_POLICY = 11;
   MASKING_RULE = 9;
   MASKING_EXCEPTION = 10;
-  RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 12;
   TAG = 13;
   DATA_SOURCE_QUERY = 14;
   DATA_QUERY = 16;
@@ -423,10 +421,6 @@ message MaskingRulePolicy {
     string semantic_type = 3;
   }
   repeated MaskingRule rules = 1;
-}
-
-message RestrictIssueCreationForSQLReviewPolicy {
-  bool disallow = 1;
 }
 
 message TagPolicy {

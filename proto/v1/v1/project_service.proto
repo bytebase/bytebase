@@ -415,6 +415,10 @@ message Project {
   // Labels are key-value pairs that can be attached to the project.
   // For example, { "environment": "production", "team": "backend" }
   map<string, string> labels = 25;
+
+  // Whether to enforce SQL review checks to pass before issue creation.
+  // If enabled, issues cannot be created when SQL review finds errors.
+  bool enforce_sql_review = 26;
 }
 
 message AddWebhookRequest {

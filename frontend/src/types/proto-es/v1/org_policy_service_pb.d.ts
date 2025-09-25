@@ -258,12 +258,6 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
     case: "maskingExceptionPolicy";
   } | {
     /**
-     * @generated from field: bytebase.v1.RestrictIssueCreationForSQLReviewPolicy restrict_issue_creation_for_sql_review_policy = 20;
-     */
-    value: RestrictIssueCreationForSQLReviewPolicy;
-    case: "restrictIssueCreationForSqlReviewPolicy";
-  } | {
-    /**
      * @generated from field: bytebase.v1.TagPolicy tag_policy = 21;
      */
     value: TagPolicy;
@@ -666,22 +660,6 @@ export declare type MaskingRulePolicy_MaskingRule = Message<"bytebase.v1.Masking
 export declare const MaskingRulePolicy_MaskingRuleSchema: GenMessage<MaskingRulePolicy_MaskingRule>;
 
 /**
- * @generated from message bytebase.v1.RestrictIssueCreationForSQLReviewPolicy
- */
-export declare type RestrictIssueCreationForSQLReviewPolicy = Message<"bytebase.v1.RestrictIssueCreationForSQLReviewPolicy"> & {
-  /**
-   * @generated from field: bool disallow = 1;
-   */
-  disallow: boolean;
-};
-
-/**
- * Describes the message bytebase.v1.RestrictIssueCreationForSQLReviewPolicy.
- * Use `create(RestrictIssueCreationForSQLReviewPolicySchema)` to create a new message.
- */
-export declare const RestrictIssueCreationForSQLReviewPolicySchema: GenMessage<RestrictIssueCreationForSQLReviewPolicy>;
-
-/**
  * @generated from message bytebase.v1.TagPolicy
  */
 export declare type TagPolicy = Message<"bytebase.v1.TagPolicy"> & {
@@ -784,11 +762,6 @@ export enum PolicyType {
    * @generated from enum value: MASKING_EXCEPTION = 10;
    */
   MASKING_EXCEPTION = 10,
-
-  /**
-   * @generated from enum value: RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 12;
-   */
-  RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 12,
 
   /**
    * @generated from enum value: TAG = 13;

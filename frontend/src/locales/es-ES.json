@@ -694,10 +694,6 @@
           "self": "Enlace",
           "placeholder": "Enlace de anuncio de entrada"
         },
-        "restrict-issue-creation-for-sql-review": {
-          "title": "Prohibir la creación de problemas para la revisión de SQL con errores.",
-          "description": "Una vez habilitado, a los usuarios solo se les permite crear problemas si la revisión de SQL no contiene errores."
-        },
         "default-landing-page": {
           "self": "Página de destino predeterminada",
           "workspace": {
@@ -1845,6 +1841,10 @@
         "enforce-issue-title": {
           "self": "Hacer cumplir el título del problema",
           "description": "Exigir que el título del problema no esté vacío y que lo cree el usuario en lugar de generarse automáticamente."
+        },
+        "enforce-sql-review": {
+          "self": "Aplicar revisión SQL",
+          "description": "Requiere que las comprobaciones de revisión SQL pasen sin errores antes de permitir la creación de issues."
         },
         "allow-self-approval": {
           "self": "Permitir la autoaprobación",
