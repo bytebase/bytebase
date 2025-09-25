@@ -15,7 +15,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // NewSchemaDeclareExecutor creates a schema declare (SDL) task executor.
@@ -91,22 +90,21 @@ func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, 
 		return "", errors.Errorf("database schema %q not found", database.DatabaseName)
 	}
 
-	targetSchemaMetadata, err := schema.GetDatabaseMetadata(pengine, sheetContent)
+	// Try to get the previous successful SDL text from task history
+	previousUserSDLText, err := getPreviousSuccessfulSDLText(ctx, s, database.InstanceID, database.DatabaseName)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get database metadata for database %q", database.DatabaseName)
+		return "", errors.Wrapf(err, "failed to get previous SDL text for database %q", database.DatabaseName)
 	}
 
-	targetSchema := model.NewDatabaseSchema(
-		targetSchemaMetadata,
-		[]byte(sheetContent),
-		&storepb.DatabaseConfig{},
-		pengine,
-		store.IsObjectCaseSensitive(instance),
-	)
-
-	schemaDiff, err := schema.GetDatabaseSchemaDiff(pengine, dbSchema, targetSchema)
+	// Use GetSDLDiff with previous SDL text or initialization scenario support
+	// - engine: the database engine
+	// - currentSDLText: user's target SDL input
+	// - previousUserSDLText: previous SDL text (empty triggers initialization scenario)
+	// - currentSchema: current database schema (used as baseline in initialization)
+	// - previousSchema: not needed for this implementation
+	schemaDiff, err := schema.GetSDLDiff(pengine, sheetContent, previousUserSDLText, dbSchema, nil)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to compute schema diff")
+		return "", errors.Wrap(err, "failed to compute SDL schema diff")
 	}
 
 	// Filter out bbdataarchive schema changes for Postgres
@@ -120,4 +118,57 @@ func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, 
 	}
 
 	return migrationSQL, nil
+}
+
+// getPreviousSuccessfulSDLText retrieves the SDL text from the most recent
+// successfully completed SDL changelog for the given database.
+// Returns empty string if no previous successful SDL changelog is found.
+func getPreviousSuccessfulSDLText(ctx context.Context, s *store.Store, instanceID string, databaseName string) (string, error) {
+	// Find the most recent successful SDL changelog for this database
+	// We only want MIGRATE_SDL type changelogs that are completed (DONE status)
+	doneStatus := store.ChangelogStatusDone
+	limit := 1 // We only need the most recent one
+
+	changelogs, err := s.ListChangelogs(ctx, &store.FindChangelogMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+		TypeList:     []string{storepb.ChangelogPayload_MIGRATE_SDL.String()}, // Only SDL migrations
+		Status:       &doneStatus,
+		Limit:        &limit, // Get only the most recent one
+		ShowFull:     false,  // We only need the sheet reference from payload
+	})
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to list previous SDL changelogs for database %s", databaseName)
+	}
+
+	if len(changelogs) == 0 {
+		// No previous SDL changelogs found - this is fine, we'll use initialization scenario
+		return "", nil
+	}
+
+	mostRecentChangelog := changelogs[0] // ListChangelogs should return them in descending order by creation time
+
+	// Extract the sheet ID from the changelog payload
+	if mostRecentChangelog.Payload == nil {
+		return "", nil
+	}
+
+	sheetResource := mostRecentChangelog.Payload.Sheet
+	if sheetResource == "" {
+		return "", nil
+	}
+
+	// Extract sheet ID from resource string format: "projects/{project}/sheets/{sheet}"
+	_, sheetID, err := common.GetProjectResourceIDSheetUID(sheetResource)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to extract sheet ID from resource %s", sheetResource)
+	}
+
+	// Get the sheet content (original SDL text)
+	previousSDLText, err := s.GetSheetStatementByID(ctx, sheetID)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get sheet statement for previous SDL changelog sheet ID %d", sheetID)
+	}
+
+	return previousSDLText, nil
 }

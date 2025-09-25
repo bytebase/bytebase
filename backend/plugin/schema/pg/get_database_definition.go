@@ -1987,6 +1987,16 @@ func writeExtension(out io.Writer, extension *storepb.ExtensionMetadata) error {
 func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 	var buf strings.Builder
 
+	// Write CREATE SCHEMA statements first for non-public schemas
+	for _, schema := range metadata.Schemas {
+		if schema.SkipDump {
+			continue
+		}
+		if err := writeSchema(&buf, schema); err != nil {
+			return "", err
+		}
+	}
+
 	// Mapping from table ID to sequence metadata for table-owned sequences
 	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
 
