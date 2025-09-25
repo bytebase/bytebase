@@ -410,7 +410,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 			// Compare specs directly
 			oldSpecs := convertToPlanSpecs(oldPlan.Config.Specs)
-			removed, added, updated := diffSpecsDirectly(oldSpecs, req.Plan.Specs)
+			removed, added, updated := diffSpecs(oldSpecs, req.Plan.Specs)
 
 			// Check if there are any changes at all.
 			hasChanges := len(removed) > 0 || len(added) > 0 || len(updated) > 0
@@ -1240,10 +1240,10 @@ func (s *PlanService) getUserByIdentifier(ctx context.Context, identifier string
 	return user, nil
 }
 
-// diffSpecsDirectly checks if there are any specs removed, added or updated in the new plan.
+// diffSpecs checks if there are any specs removed, added or updated in the new plan.
 // It performs a deep comparison of all spec fields using protocol buffer comparison.
 // Returns (removed, added, updated) slices of specs.
-func diffSpecsDirectly(oldSpecs []*v1pb.Plan_Spec, newSpecs []*v1pb.Plan_Spec) ([]*v1pb.Plan_Spec, []*v1pb.Plan_Spec, []*v1pb.Plan_Spec) {
+func diffSpecs(oldSpecs []*v1pb.Plan_Spec, newSpecs []*v1pb.Plan_Spec) ([]*v1pb.Plan_Spec, []*v1pb.Plan_Spec, []*v1pb.Plan_Spec) {
 	oldSpecsMap := make(map[string]*v1pb.Plan_Spec, len(oldSpecs))
 	newSpecsMap := make(map[string]*v1pb.Plan_Spec, len(newSpecs))
 
@@ -1426,6 +1426,7 @@ func storePlanConfigHasRelease(plan *storepb.PlanConfig) bool {
 }
 
 func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (storepb.Task_Type, error) {
+	//exhaustive:enforce
 	switch s := spec.Config.(type) {
 	case *v1pb.Plan_Spec_CreateDatabaseConfig:
 		return storepb.Task_DATABASE_CREATE, nil
@@ -1437,11 +1438,16 @@ func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (storepb.Task_Type, error) {
 			return storepb.Task_DATABASE_SCHEMA_UPDATE, nil
 		case v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST:
 			return storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST, nil
+		case v1pb.Plan_ChangeDatabaseConfig_MIGRATE_SDL:
+			return storepb.Task_DATABASE_SCHEMA_UPDATE_SDL, nil
+		case v1pb.Plan_ChangeDatabaseConfig_TYPE_UNSPECIFIED:
+			return storepb.Task_TASK_TYPE_UNSPECIFIED, errors.Errorf("unexpected unspecified change database config type")
 		default:
 			return storepb.Task_TASK_TYPE_UNSPECIFIED, errors.Errorf("invalid change database config type %s", s.ChangeDatabaseConfig.Type)
 		}
 	case *v1pb.Plan_Spec_ExportDataConfig:
 		return storepb.Task_DATABASE_EXPORT, nil
+	default:
+		return storepb.Task_TASK_TYPE_UNSPECIFIED, errors.Errorf("unknown spec config type")
 	}
-	return storepb.Task_TASK_TYPE_UNSPECIFIED, errors.Errorf("unknown spec config type")
 }
