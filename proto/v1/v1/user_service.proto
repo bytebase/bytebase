@@ -21,7 +21,8 @@ service UserService {
   rpc GetUser(GetUserRequest) returns (User) {
     option (google.api.http) = {get: "/v1/{name=users/*}"};
     option (google.api.method_signature) = "name";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.permission) = "bb.users.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   // Get the users in batch.
@@ -29,7 +30,8 @@ service UserService {
   // Permissions required: bb.users.get
   rpc BatchGetUsers(BatchGetUsersRequest) returns (BatchGetUsersResponse) {
     option (google.api.http) = {get: "/v1/users:batchGet"};
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.permission) = "bb.users.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   // Get the current authenticated user.
@@ -46,7 +48,8 @@ service UserService {
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
     option (google.api.http) = {get: "/v1/users"};
     option (google.api.method_signature) = "parent";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.permission) = "bb.users.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   // Create a user.
