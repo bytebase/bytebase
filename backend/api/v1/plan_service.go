@@ -672,11 +672,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			}
 
 			for _, taskPatch := range taskPatchList {
-				if taskPatch.SheetID != nil {
-					task := tasksMap[taskPatch.ID]
-					if task.LatestTaskRunStatus == storepb.TaskRun_PENDING || task.LatestTaskRunStatus == storepb.TaskRun_RUNNING || task.LatestTaskRunStatus == storepb.TaskRun_SKIPPED || task.LatestTaskRunStatus == storepb.TaskRun_DONE {
-						return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot update plan because task %v is %s", task.ID, task.LatestTaskRunStatus))
-					}
+				task := tasksMap[taskPatch.ID]
+				if task.LatestTaskRunStatus == storepb.TaskRun_PENDING || task.LatestTaskRunStatus == storepb.TaskRun_RUNNING || task.LatestTaskRunStatus == storepb.TaskRun_SKIPPED || task.LatestTaskRunStatus == storepb.TaskRun_DONE {
+					return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot update plan because task %v is %s", task.ID, task.LatestTaskRunStatus))
 				}
 			}
 
