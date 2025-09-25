@@ -1540,7 +1540,26 @@
       "info": "Las tareas pueden ser ejecutadas por usuarios con el permiso '{permission}' o los siguientes roles",
       "auto": "Automático",
       "auto-info": "Si se aprueban todas las comprobaciones, el cambio se implementará y ejecutará automáticamente.",
-      "last-issue-approver": "Aprobador de último tema"
+      "last-issue-approver": "Aprobador de último tema",
+      "checkers": {
+        "self": "Requisitos",
+        "required-issue-approval": {
+          "self": "Requerir aprobación de emisión",
+          "description": "El problema debe ser aprobado antes de que pueda continuar la implementación."
+        },
+        "plan-check-enforcement": {
+          "self": "Control de cumplimiento del plan",
+          "description": "Implementación de bloques según los resultados de la verificación del plan.",
+          "error-only": {
+            "self": "Bloquear solo errores",
+            "description": "Bloquear la implementación solo cuando la verificación del plan encuentre errores."
+          },
+          "strict": {
+            "self": "Aplicación estricta",
+            "description": "Bloquear la implementación cuando la verificación del plan encuentra errores o advertencias."
+          }
+        }
+      }
     },
     "environment-tier": {
       "name": "Nivel de Entorno",
