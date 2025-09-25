@@ -48,9 +48,6 @@ const ensureGroupIdentifier = (id: string) => {
 
 export const useGroupStore = defineStore("group", () => {
   const groupMapByName = reactive(new Map<string, Group>());
-  const resetCache = () => {
-    groupMapByName.clear();
-  };
 
   // Getters
   const groupList = computed(() => {
