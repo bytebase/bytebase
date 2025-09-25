@@ -83,7 +83,6 @@ export const useGroupStore = defineStore("group", () => {
       await groupServiceClientConnect.listGroups(request, {
         contextValues: createContextValues().set(silentContextKey, true),
       });
-    resetCache();
     for (const group of groups) {
       groupMapByName.set(group.name, group);
     }
