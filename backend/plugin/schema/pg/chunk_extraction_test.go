@@ -27,7 +27,7 @@ func TestChunkSDLTextExtraction(t *testing.T) {
     name VARCHAR(255) NOT NULL
 );`,
 			expectedResults: map[string]string{
-				"TABLE:users": `CREATE TABLE users (
+				"TABLE:public.users": `CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL
 )`,
@@ -44,12 +44,12 @@ CREATE INDEX idx_users_name ON users(name);
 
 CREATE SEQUENCE user_seq START 1;`,
 			expectedResults: map[string]string{
-				"TABLE:users": `CREATE TABLE users (
+				"TABLE:public.users": `CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL
 )`,
-				"INDEX:idx_users_name": `CREATE INDEX idx_users_name ON users(name)`,
-				"SEQUENCE:user_seq":    `CREATE SEQUENCE user_seq START 1`,
+				"INDEX:public.idx_users_name": `CREATE INDEX idx_users_name ON users(name)`,
+				"SEQUENCE:public.user_seq":    `CREATE SEQUENCE user_seq START 1`,
 			},
 		},
 		{
@@ -60,7 +60,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;`,
 			expectedResults: map[string]string{
-				"FUNCTION:get_user_count()": `CREATE FUNCTION get_user_count() RETURNS INTEGER AS $$
+				"FUNCTION:public.get_user_count()": `CREATE FUNCTION get_user_count() RETURNS INTEGER AS $$
 BEGIN
     RETURN (SELECT COUNT(*) FROM users);
 END;
@@ -99,22 +99,22 @@ $$ LANGUAGE plpgsql;
 
 CREATE SEQUENCE product_seq START 100;`,
 			expectedResults: map[string]string{
-				"TABLE:products": `CREATE TABLE products (
+				"TABLE:public.products": `CREATE TABLE products (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     price DECIMAL(10,2)
 )`,
-				"VIEW:product_summary": `CREATE VIEW product_summary AS
+				"VIEW:public.product_summary": `CREATE VIEW product_summary AS
 SELECT id, name, price
 FROM products
 WHERE price > 0`,
-				"INDEX:idx_products_price": `CREATE INDEX idx_products_price ON products(price)`,
-				"FUNCTION:calculate_discount(amount numeric)": `CREATE FUNCTION calculate_discount(amount DECIMAL) RETURNS DECIMAL AS $$
+				"INDEX:public.idx_products_price": `CREATE INDEX idx_products_price ON products(price)`,
+				"FUNCTION:public.calculate_discount(amount numeric)": `CREATE FUNCTION calculate_discount(amount DECIMAL) RETURNS DECIMAL AS $$
 BEGIN
     RETURN amount * 0.9;
 END;
 $$ LANGUAGE plpgsql`,
-				"SEQUENCE:product_seq": `CREATE SEQUENCE product_seq START 100`,
+				"SEQUENCE:public.product_seq": `CREATE SEQUENCE product_seq START 100`,
 			},
 		},
 	}

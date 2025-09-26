@@ -182,23 +182,35 @@ func (l *sdlChunkExtractor) EnterCreatefunctionstmt(ctx *parser.Createfunctionst
 		return
 	}
 
-	// Join the parts to create the function name (schema.function_name or function_name)
-	funcName := strings.Join(funcNameParts, ".")
-
-	// Ensure schema.functionName format
-	var schemaQualifiedName string
-	if strings.Contains(funcName, ".") {
-		schemaQualifiedName = funcName
+	// Parse schema and function name directly from parts
+	var schemaName, functionName string
+	if len(funcNameParts) == 2 {
+		// Schema qualified: schema.function_name
+		schemaName = funcNameParts[0]
+		functionName = funcNameParts[1]
+	} else if len(funcNameParts) == 1 {
+		// Unqualified: function_name (assume public schema)
+		schemaName = "public"
+		functionName = funcNameParts[0]
 	} else {
-		schemaQualifiedName = "public." + funcName
+		// Unexpected format
+		return
 	}
 
+	if functionName == "" {
+		return
+	}
+
+	// Generate function signature with parameter types
+	signature := ExtractFunctionSignature(ctx, functionName)
+	schemaQualifiedSignature := schemaName + "." + signature
+
 	chunk := &schema.SDLChunk{
-		Identifier: schemaQualifiedName,
+		Identifier: schemaQualifiedSignature,
 		ASTNode:    ctx,
 	}
 
-	l.chunks.Functions[schemaQualifiedName] = chunk
+	l.chunks.Functions[schemaQualifiedSignature] = chunk
 }
 
 func (l *sdlChunkExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
