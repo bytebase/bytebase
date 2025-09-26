@@ -2103,6 +2103,55 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 	return buf.String(), nil
 }
 
+// writeColumnSDL writes a single column definition to the output writer
+// This function is extracted from writeCreateTableSDL to enable code reuse
+func writeColumnSDL(out io.Writer, column *storepb.ColumnMetadata) error {
+	if _, err := io.WriteString(out, `"`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, column.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" `); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, column.Type); err != nil {
+		return err
+	}
+
+	if column.Default != "" {
+		if _, err := io.WriteString(out, ` DEFAULT `); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, column.Default); err != nil {
+			return err
+		}
+	}
+
+	if !column.Nullable {
+		if _, err := io.WriteString(out, ` NOT NULL`); err != nil {
+			return err
+		}
+	}
+
+	if column.Collation != "" {
+		if _, err := io.WriteString(out, ` COLLATE "`); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, column.Collation); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableMetadata) error {
 	if _, err := io.WriteString(out, `CREATE TABLE "`); err != nil {
 		return err
@@ -2136,35 +2185,9 @@ func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableM
 			return err
 		}
 
-		if _, err := io.WriteString(out, `"`); err != nil {
+		// Use the extracted writeColumnSDL function
+		if err := writeColumnSDL(out, column); err != nil {
 			return err
-		}
-
-		if _, err := io.WriteString(out, column.Name); err != nil {
-			return err
-		}
-
-		if _, err := io.WriteString(out, `" `); err != nil {
-			return err
-		}
-
-		if _, err := io.WriteString(out, column.Type); err != nil {
-			return err
-		}
-
-		if column.Default != "" {
-			if _, err := io.WriteString(out, ` DEFAULT `); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, column.Default); err != nil {
-				return err
-			}
-		}
-
-		if !column.Nullable {
-			if _, err := io.WriteString(out, ` NOT NULL`); err != nil {
-				return err
-			}
 		}
 	}
 

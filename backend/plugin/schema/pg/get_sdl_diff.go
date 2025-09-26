@@ -1653,6 +1653,22 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 		}
 	}
 
+	// Process table modifications: apply column-level changes using ANTLR rewrite
+	for tableKey, currentTable := range currentTables {
+		if previousTable, exists := previousTables[tableKey]; exists {
+			// Table exists in both schemas - check for column differences
+			if existingKey, chunkExists := existingChunkKeys[tableKey]; chunkExists {
+				if chunk := previousChunks.Tables[existingKey]; chunk != nil {
+					// Apply column-level changes to the existing chunk
+					err := applyColumnChangesToChunk(chunk, currentTable, previousTable)
+					if err != nil {
+						return errors.Wrapf(err, "failed to apply column changes to table %s", tableKey)
+					}
+				}
+			}
+		}
+	}
+
 	// Process table deletions: remove dropped tables from chunks
 	for tableKey := range previousTables {
 		if _, exists := currentTables[tableKey]; !exists {
@@ -1666,6 +1682,266 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 	}
 
 	return nil
+}
+
+// applyColumnChangesToChunk applies minimal column changes to an existing CREATE TABLE chunk using ANTLR rewrite
+func applyColumnChangesToChunk(chunk *schema.SDLChunk, currentTable, previousTable *storepb.TableMetadata) error {
+	if chunk == nil || chunk.ASTNode == nil || currentTable == nil || previousTable == nil {
+		return nil
+	}
+
+	createStmt, ok := chunk.ASTNode.(*parser.CreatestmtContext)
+	if !ok {
+		return errors.New("chunk AST node is not a CREATE TABLE statement")
+	}
+
+	// Get the token stream and create a rewriter
+	ctxParser := createStmt.GetParser()
+	if ctxParser == nil {
+		return errors.New("parser not available for AST node")
+	}
+
+	tokenStream := ctxParser.GetTokenStream()
+	if tokenStream == nil {
+		return errors.New("token stream not available for parser")
+	}
+
+	rewriter := antlr.NewTokenStreamRewriter(tokenStream)
+
+	// Create column maps for efficient lookups
+	currentColumns := make(map[string]*storepb.ColumnMetadata)
+	previousColumns := make(map[string]*storepb.ColumnMetadata)
+
+	for _, col := range currentTable.Columns {
+		currentColumns[col.Name] = col
+	}
+	for _, col := range previousTable.Columns {
+		previousColumns[col.Name] = col
+	}
+
+	// Extract existing column definitions from AST
+	existingColumnDefs := extractColumnDefinitionsWithAST(createStmt)
+
+	// Phase 1: Handle column deletions (process in reverse order to maintain token positions)
+	for i := len(existingColumnDefs.Order) - 1; i >= 0; i-- {
+		columnName := existingColumnDefs.Order[i]
+		if _, exists := currentColumns[columnName]; !exists {
+			// Column was deleted
+			columnDef := existingColumnDefs.Map[columnName]
+			err := deleteColumnFromAST(rewriter, columnDef.ASTNode, createStmt)
+			if err != nil {
+				return errors.Wrapf(err, "failed to delete column %s", columnName)
+			}
+		}
+	}
+
+	// Phase 2: Handle column modifications
+	for _, columnName := range existingColumnDefs.Order {
+		if currentCol, currentExists := currentColumns[columnName]; currentExists {
+			if previousCol, previousExists := previousColumns[columnName]; previousExists {
+				// Column exists in both - check if modified
+				if !columnsEqual(currentCol, previousCol) {
+					columnDef := existingColumnDefs.Map[columnName]
+					err := modifyColumnInAST(rewriter, columnDef.ASTNode, currentCol)
+					if err != nil {
+						return errors.Wrapf(err, "failed to modify column %s", columnName)
+					}
+				}
+			}
+		}
+	}
+
+	// Phase 3: Handle column additions (add at the end)
+	for _, currentCol := range currentTable.Columns {
+		if _, exists := previousColumns[currentCol.Name]; !exists {
+			// Column was added
+			err := addColumnToAST(rewriter, createStmt, currentCol)
+			if err != nil {
+				return errors.Wrapf(err, "failed to add column %s", currentCol.Name)
+			}
+		}
+	}
+
+	// Apply the changes and update the chunk
+	modifiedText := rewriter.GetTextDefault()
+
+	// Parse the modified text to create a new AST node
+	parseResult, err := pgparser.ParsePostgreSQL(modifiedText)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse modified CREATE TABLE statement")
+	}
+
+	// Extract the new CREATE TABLE AST node
+	var newCreateTableNode *parser.CreatestmtContext
+	antlr.ParseTreeWalkerDefault.Walk(&createTableExtractor{
+		result: &newCreateTableNode,
+	}, parseResult.Tree)
+
+	if newCreateTableNode == nil {
+		return errors.New("failed to extract CREATE TABLE AST node from modified text")
+	}
+
+	// Update the chunk with the new AST node
+	chunk.ASTNode = newCreateTableNode
+
+	return nil
+}
+
+// deleteColumnFromAST removes a column definition from the CREATE TABLE statement using token rewriter
+// Improved comma handling: always look for a following comma first, regardless of column position
+func deleteColumnFromAST(rewriter *antlr.TokenStreamRewriter, columnDef parser.IColumnDefContext, _ *parser.CreatestmtContext) error {
+	if columnDef == nil {
+		return errors.New("column definition is nil")
+	}
+
+	startToken := columnDef.GetStart()
+	stopToken := columnDef.GetStop()
+	if startToken == nil || stopToken == nil {
+		return errors.New("unable to get column definition tokens")
+	}
+
+	// Strategy: Always try to remove the following comma first
+	// This handles cases where there are table constraints after columns
+	nextCommaIndex := -1
+	for i := stopToken.GetTokenIndex() + 1; i < rewriter.GetTokenStream().Size(); i++ {
+		token := rewriter.GetTokenStream().Get(i)
+		if token.GetTokenType() == parser.PostgreSQLParserCOMMA {
+			nextCommaIndex = i
+			break
+		}
+		// Skip whitespace and comments, but stop at other meaningful tokens
+		if token.GetChannel() == antlr.TokenDefaultChannel {
+			// Found a non-comma token on the default channel, stop searching
+			break
+		}
+	}
+
+	if nextCommaIndex != -1 {
+		// Found a following comma - remove column and the comma
+		// This works for all cases: middle columns, columns followed by constraints, etc.
+		rewriter.DeleteDefault(startToken.GetTokenIndex(), nextCommaIndex)
+	} else {
+		// No following comma found - this might be the last element
+		// Try to find a preceding comma to remove
+		prevCommaIndex := -1
+		for i := startToken.GetTokenIndex() - 1; i >= 0; i-- {
+			token := rewriter.GetTokenStream().Get(i)
+			if token.GetTokenType() == parser.PostgreSQLParserCOMMA {
+				prevCommaIndex = i
+				break
+			}
+			// Skip whitespace and comments, but stop at other meaningful tokens
+			if token.GetChannel() == antlr.TokenDefaultChannel {
+				break
+			}
+		}
+
+		if prevCommaIndex != -1 {
+			// Found a preceding comma - remove it along with the column
+			rewriter.DeleteDefault(prevCommaIndex, stopToken.GetTokenIndex())
+		} else {
+			// No comma found (single column case) - just remove the column
+			rewriter.DeleteDefault(startToken.GetTokenIndex(), stopToken.GetTokenIndex())
+		}
+	}
+
+	return nil
+}
+
+// modifyColumnInAST modifies an existing column definition using token rewriter
+func modifyColumnInAST(rewriter *antlr.TokenStreamRewriter, columnDef parser.IColumnDefContext, newColumn *storepb.ColumnMetadata) error {
+	if columnDef == nil || newColumn == nil {
+		return errors.New("column definition or new column metadata is nil")
+	}
+
+	startToken := columnDef.GetStart()
+	stopToken := columnDef.GetStop()
+	if startToken == nil || stopToken == nil {
+		return errors.New("unable to get column definition tokens")
+	}
+
+	// Generate new column definition SDL
+	newColumnSDL := generateColumnSDL(newColumn)
+
+	// Replace the entire column definition
+	rewriter.ReplaceDefault(startToken.GetTokenIndex(), stopToken.GetTokenIndex(), newColumnSDL)
+
+	return nil
+}
+
+// addColumnToAST adds a new column definition to the CREATE TABLE statement
+func addColumnToAST(rewriter *antlr.TokenStreamRewriter, createStmt *parser.CreatestmtContext, newColumn *storepb.ColumnMetadata) error {
+	if createStmt == nil || newColumn == nil {
+		return errors.New("create statement or new column metadata is nil")
+	}
+
+	// Find the last column definition to insert after it
+	columnDefs := extractColumnDefinitionsWithAST(createStmt)
+
+	if len(columnDefs.Order) == 0 {
+		// No existing columns - need to add first column to empty table
+		// Find the opening parenthesis and insert after it
+		if createStmt.Opttableelementlist() != nil {
+			// Table has element list structure, find the position to insert
+			for i := 0; i < rewriter.GetTokenStream().Size(); i++ {
+				token := rewriter.GetTokenStream().Get(i)
+				if token.GetTokenType() == parser.PostgreSQLParserOPEN_PAREN {
+					// Found opening parenthesis, insert new column after it
+					newColumnSDL := "\n    " + generateColumnSDL(newColumn) + "\n"
+					rewriter.InsertAfterDefault(i, newColumnSDL)
+					return nil
+				}
+			}
+		}
+		return errors.New("unable to find position to insert first column")
+	}
+
+	// Get the last column definition
+	lastColumnName := columnDefs.Order[len(columnDefs.Order)-1]
+	lastColumnDef := columnDefs.Map[lastColumnName]
+
+	stopToken := lastColumnDef.ASTNode.GetStop()
+	if stopToken == nil {
+		return errors.New("unable to get last column stop token")
+	}
+
+	// Generate new column definition SDL with leading comma and proper indentation
+	newColumnSDL := ",\n    " + generateColumnSDL(newColumn)
+
+	// Insert after the last column
+	rewriter.InsertAfterDefault(stopToken.GetTokenIndex(), newColumnSDL)
+
+	return nil
+}
+
+// generateColumnSDL generates SDL text for a single column definition using the extracted writeColumnSDL function
+func generateColumnSDL(column *storepb.ColumnMetadata) string {
+	if column == nil {
+		return ""
+	}
+
+	var buf strings.Builder
+	err := writeColumnSDL(&buf, column)
+	if err != nil {
+		// If there's an error writing to the buffer, return empty string
+		// This should rarely happen since we're writing to a strings.Builder
+		return ""
+	}
+
+	return buf.String()
+}
+
+// columnsEqual compares two column metadata objects for equality
+func columnsEqual(a, b *storepb.ColumnMetadata) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+
+	return a.Name == b.Name &&
+		a.Type == b.Type &&
+		a.Nullable == b.Nullable &&
+		a.Default == b.Default &&
+		a.Collation == b.Collation
 }
 
 // convertDatabaseSchemaToSDL converts a model.DatabaseSchema to SDL format string
