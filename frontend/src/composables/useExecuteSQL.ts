@@ -491,7 +491,7 @@ const useExecuteSQL = () => {
 
 const isOnlySelectError = (resultSet: SQLResultSetV1) => {
   if (
-    resultSet.error === "Support SELECT sql statement only" &&
+    resultSet.error.match(/Support SELECT sql statement only/) &&
     resultSet.status === Code.InvalidArgument
   ) {
     return true;
