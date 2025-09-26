@@ -1540,7 +1540,6 @@
       "info": "Las tareas pueden ser ejecutadas por usuarios con el permiso '{permission}' o los siguientes roles",
       "auto": "Automático",
       "auto-info": "Si se aprueban todas las comprobaciones, el cambio se implementará y ejecutará automáticamente.",
-      "last-issue-approver": "Aprobador de último tema",
       "checkers": {
         "self": "Requisitos",
         "required-issue-approval": {
@@ -2767,9 +2766,6 @@
     "project-viewer": {
       "self": "Espectador del proyecto",
       "description": "El espectador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
-    },
-    "issue-creator": {
-      "self": "Creador del problema"
     }
   },
   "database-group": {

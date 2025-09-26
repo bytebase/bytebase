@@ -310,16 +310,6 @@ export declare type RolloutPolicy = Message<"bytebase.v1.RolloutPolicy"> & {
   roles: string[];
 
   /**
-   * Deprecated.
-   * roles/LAST_APPROVER
-   * roles/CREATOR
-   *
-   * @generated from field: repeated string issue_roles = 3 [deprecated = true];
-   * @deprecated
-   */
-  issueRoles: string[];
-
-  /**
    * Checkers that must pass before rollout execution.
    * These checks are performed in UI workflows only.
    *

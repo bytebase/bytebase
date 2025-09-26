@@ -1136,7 +1136,7 @@ func GetValidRolloutPolicyForEnvironment(ctx context.Context, stores *store.Stor
 }
 
 // canUserRunEnvironmentTasks returns if a user can run the tasks in an environment.
-func (s *RolloutService) canUserRunEnvironmentTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, environment string, creatorUID int) (bool, error) {
+func (s *RolloutService) canUserRunEnvironmentTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, environment string, _ int) (bool, error) {
 	// For data export issues, only the creator can run tasks.
 	if issue != nil && issue.Type == storepb.Issue_DATABASE_EXPORT {
 		return issue.Creator.ID == user.ID, nil
@@ -1176,20 +1176,6 @@ func (s *RolloutService) canUserRunEnvironmentTasks(ctx context.Context, user *s
 		}
 	}
 
-	if user.ID == creatorUID {
-		if slices.Contains(p.IssueRoles, "roles/CREATOR") { //nolint:staticcheck // TODO: remove deprecated IssueRoles
-			return true, nil
-		}
-	}
-
-	if issue != nil {
-		if lastApproverUID := getLastApproverUID(issue.Payload.GetApproval()); lastApproverUID != nil && *lastApproverUID == user.ID {
-			if slices.Contains(p.IssueRoles, "roles/LAST_APPROVER") { //nolint:staticcheck // TODO: remove deprecated IssueRoles
-				return true, nil
-			}
-		}
-	}
-
 	return false, nil
 }
 
@@ -1199,23 +1185,6 @@ func (s *RolloutService) canUserCancelEnvironmentTaskRun(ctx context.Context, us
 
 func (s *RolloutService) canUserSkipEnvironmentTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, environment string, creatorUID int) (bool, error) {
 	return s.canUserRunEnvironmentTasks(ctx, user, project, issue, environment, creatorUID)
-}
-
-func getLastApproverUID(approval *storepb.IssuePayloadApproval) *int {
-	if approval == nil {
-		return nil
-	}
-	if !approval.ApprovalFindingDone {
-		return nil
-	}
-	if approval.ApprovalFindingError != "" {
-		return nil
-	}
-	if len(approval.Approvers) > 0 {
-		id := int(approval.Approvers[len(approval.Approvers)-1].PrincipalId)
-		return &id
-	}
-	return nil
 }
 
 func (s *RolloutService) getUserByIdentifier(ctx context.Context, identifier string) (*store.UserMessage, error) {
