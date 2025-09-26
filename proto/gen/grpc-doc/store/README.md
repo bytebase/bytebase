@@ -3542,7 +3542,6 @@ QueryDataPolicy is the policy configuration for querying data.
 | ----- | ---- | ----- | ----------- |
 | automatic | [bool](#bool) |  |  |
 | roles | [string](#string) | repeated |  |
-| issue_roles | [string](#string) | repeated | **Deprecated.** Deprecated. roles/LAST_APPROVER roles/CREATOR |
 | checkers | [RolloutPolicy.Checkers](#bytebase-store-RolloutPolicy-Checkers) |  | Checkers that must pass before rollout execution. These checks are performed in UI workflows only. |
 
 

@@ -432,12 +432,6 @@ type RolloutPolicy struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	Automatic bool                   `protobuf:"varint,1,opt,name=automatic,proto3" json:"automatic,omitempty"`
 	Roles     []string               `protobuf:"bytes,2,rep,name=roles,proto3" json:"roles,omitempty"`
-	// Deprecated.
-	// roles/LAST_APPROVER
-	// roles/CREATOR
-	//
-	// Deprecated: Marked as deprecated in store/policy.proto.
-	IssueRoles []string `protobuf:"bytes,3,rep,name=issue_roles,json=issueRoles,proto3" json:"issue_roles,omitempty"`
 	// Checkers that must pass before rollout execution.
 	// These checks are performed in UI workflows only.
 	Checkers      *RolloutPolicy_Checkers `protobuf:"bytes,4,opt,name=checkers,proto3" json:"checkers,omitempty"`
@@ -485,14 +479,6 @@ func (x *RolloutPolicy) GetAutomatic() bool {
 func (x *RolloutPolicy) GetRoles() []string {
 	if x != nil {
 		return x.Roles
-	}
-	return nil
-}
-
-// Deprecated: Marked as deprecated in store/policy.proto.
-func (x *RolloutPolicy) GetIssueRoles() []string {
-	if x != nil {
-		return x.IssueRoles
 	}
 	return nil
 }
@@ -1275,12 +1261,10 @@ const file_store_policy_proto_rawDesc = "" +
 	"\x14RESOURCE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tWORKSPACE\x10\x01\x12\x0f\n" +
 	"\vENVIRONMENT\x10\x02\x12\v\n" +
-	"\aPROJECT\x10\x03\"\xcc\x04\n" +
+	"\aPROJECT\x10\x03\"\xa7\x04\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
-	"\x05roles\x18\x02 \x03(\tR\x05roles\x12#\n" +
-	"\vissue_roles\x18\x03 \x03(\tB\x02\x18\x01R\n" +
-	"issueRoles\x12B\n" +
+	"\x05roles\x18\x02 \x03(\tR\x05roles\x12B\n" +
 	"\bcheckers\x18\x04 \x01(\v2&.bytebase.store.RolloutPolicy.CheckersR\bcheckers\x1a\x9d\x03\n" +
 	"\bCheckers\x126\n" +
 	"\x17required_issue_approval\x18\x01 \x01(\bR\x15requiredIssueApproval\x12q\n" +

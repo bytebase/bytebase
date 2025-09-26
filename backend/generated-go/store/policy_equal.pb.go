@@ -65,14 +65,6 @@ func (x *RolloutPolicy) Equal(y *RolloutPolicy) bool {
 			return false
 		}
 	}
-	if len(x.IssueRoles) != len(y.IssueRoles) {
-		return false
-	}
-	for i := 0; i < len(x.IssueRoles); i++ {
-		if x.IssueRoles[i] != y.IssueRoles[i] {
-			return false
-		}
-	}
 	if !x.Checkers.Equal(y.Checkers) {
 		return false
 	}

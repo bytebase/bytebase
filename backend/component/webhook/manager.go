@@ -190,16 +190,6 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 				role := strings.TrimPrefix(role, "roles/")
 				usersGetters = append(usersGetters, getUsersFromRole(m.store, role, e.Project.ResourceID))
 			}
-			for _, issueRole := range u.RolloutPolicy.GetIssueRoles() { //nolint:staticcheck // TODO: remove deprecated IssueRoles
-				switch issueRole {
-				case "roles/LAST_APPROVER":
-					usersGetters = append(usersGetters, getUsersFromIssueLastApprover(m.store, e.Issue.Approval))
-				case "roles/CREATOR":
-					usersGetters = append(usersGetters, getUsersFromUsers(e.Issue.Creator))
-				default:
-					// Skip unknown issue roles
-				}
-			}
 		}
 		mentionedUser := map[int]bool{}
 		for _, usersGetter := range usersGetters {
@@ -384,23 +374,6 @@ func getUsersFromRole(s *store.Store, role string, projectID string) func(contex
 func getUsersFromUsers(users ...*store.UserMessage) func(context.Context) ([]*store.UserMessage, error) {
 	return func(_ context.Context) ([]*store.UserMessage, error) {
 		return users, nil
-	}
-}
-
-func getUsersFromIssueLastApprover(s *store.Store, approval *storepb.IssuePayloadApproval) func(context.Context) ([]*store.UserMessage, error) {
-	return func(ctx context.Context) ([]*store.UserMessage, error) {
-		var userUID int
-		if approvers := approval.GetApprovers(); len(approvers) > 0 {
-			userUID = int(approvers[len(approvers)-1].PrincipalId)
-		}
-		if userUID == 0 {
-			return nil, nil
-		}
-		user, err := s.GetUserByID(ctx, userUID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get user")
-		}
-		return []*store.UserMessage{user}, nil
 	}
 }
 

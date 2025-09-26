@@ -328,7 +328,6 @@ export const getEmptyRolloutPolicy = (
       value: create(RolloutPolicySchema, {
         automatic: false,
         roles: [],
-        issueRoles: [],
       }),
     },
   });

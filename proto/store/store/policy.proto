@@ -31,10 +31,6 @@ message Policy {
 message RolloutPolicy {
   bool automatic = 1;
   repeated string roles = 2;
-  // Deprecated.
-  // roles/LAST_APPROVER
-  // roles/CREATOR
-  repeated string issue_roles = 3 [deprecated = true];
   // Checkers that must pass before rollout execution.
   // These checks are performed in UI workflows only.
   Checkers checkers = 4;
