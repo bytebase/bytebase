@@ -15299,11 +15299,11 @@ If the condition evaluates to false, then this binding does not apply to the cur
 The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
 Support variables:
-resource.database: the database full name in &#34;instances/{instance}/databases/{database}&#34; format, used by the &#34;roles/sqlEditorUser&#34; and &#34;roles/projectExporter&#34; role, support &#34;==&#34; operator.
-resource.schema: the schema name, used by the &#34;roles/sqlEditorUser&#34; and &#34;roles/projectExporter&#34; role, support &#34;==&#34; operator.
-resource.table: the table name, used by the &#34;roles/sqlEditorUser&#34; and &#34;roles/projectExporter&#34; role, support &#34;==&#34; operator.
+resource.database: the database full name in &#34;instances/{instance}/databases/{database}&#34; format, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator.
+resource.schema: the schema name, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator.
+resource.table: the table name, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator.
 request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`.
-request.row_limit: the maximum export rows, used by the &#34;roles/projectExporter&#34; role. Only support &#34;&lt;=&#34; operation.
+request.row_limit: the maximum export rows, used by the &#34;roles/sqlEditorUser&#34; role. Only support &#34;&lt;=&#34; operation.
 
 For example:
 resource.database == &#34;instances/local-pg/databases/postgres&#34; &amp;&amp; resource.schema in [&#34;public&#34;,&#34;another_schema&#34;]
@@ -19482,15 +19482,6 @@ The default value is -1, means no limit. </p></td>
                 </tr>
               
                 <tr>
-                  <td>issue_roles</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p><strong>Deprecated.</strong> Deprecated.
-roles/LAST_APPROVER
-roles/CREATOR </p></td>
-                </tr>
-              
-                <tr>
                   <td>checkers</td>
                   <td><a href="#bytebase.v1.RolloutPolicy.Checkers">RolloutPolicy.Checkers</a></td>
                   <td></td>
@@ -19501,27 +19492,6 @@ These checks are performed in UI workflows only. </p></td>
             </tbody>
           </table>
 
-          
-            
-            
-            <h4>Fields with deprecated option</h4>
-            <table>
-              <thead>
-                <tr>
-                  <td>Name</td>
-                  <td>Option</td>
-                </tr>
-              </thead>
-              <tbody>
-              
-                <tr>
-                  <td>issue_roles</td>
-                  <td><p>true</p></td>
-                </tr>
-              
-              </tbody>
-            </table>
-            
           
 
         

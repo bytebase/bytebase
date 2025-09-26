@@ -99,7 +99,6 @@ const (
 	PermissionSQLDml                  Permission = "bb.sql.dml"
 	PermissionSQLExplain              Permission = "bb.sql.explain"
 	PermissionSQLInfo                 Permission = "bb.sql.info"
-	PermissionSQLExport               Permission = "bb.sql.export"
 	PermissionSQLAdmin                Permission = "bb.sql.admin"
 	PermissionTaskRunsCreate          Permission = "bb.taskRuns.create"
 	PermissionTaskRunsList            Permission = "bb.taskRuns.list"
@@ -217,7 +216,6 @@ var allPermissions = []Permission{
 	PermissionSQLDml,
 	PermissionSQLExplain,
 	PermissionSQLInfo,
-	PermissionSQLExport,
 	PermissionSQLAdmin,
 	PermissionTaskRunsCreate,
 	PermissionTaskRunsList,

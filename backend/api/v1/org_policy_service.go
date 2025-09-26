@@ -652,10 +652,9 @@ func convertToV1RolloutPolicyPayload(payloadStr string) (*v1pb.Policy_RolloutPol
 
 func convertToStorePBRolloutPolicy(policy *v1pb.RolloutPolicy) *storepb.RolloutPolicy {
 	return &storepb.RolloutPolicy{
-		Automatic:  policy.Automatic,
-		Roles:      policy.Roles,
-		IssueRoles: policy.IssueRoles, //nolint:staticcheck // TODO: remove deprecated IssueRoles
-		Checkers:   convertToStorePBCheckers(policy.Checkers),
+		Automatic: policy.Automatic,
+		Roles:     policy.Roles,
+		Checkers:  convertToStorePBCheckers(policy.Checkers),
 	}
 }
 

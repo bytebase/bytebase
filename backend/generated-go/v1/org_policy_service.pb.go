@@ -918,12 +918,6 @@ type RolloutPolicy struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	Automatic bool                   `protobuf:"varint,1,opt,name=automatic,proto3" json:"automatic,omitempty"`
 	Roles     []string               `protobuf:"bytes,2,rep,name=roles,proto3" json:"roles,omitempty"`
-	// Deprecated.
-	// roles/LAST_APPROVER
-	// roles/CREATOR
-	//
-	// Deprecated: Marked as deprecated in v1/org_policy_service.proto.
-	IssueRoles []string `protobuf:"bytes,3,rep,name=issue_roles,json=issueRoles,proto3" json:"issue_roles,omitempty"`
 	// Checkers that must pass before rollout execution.
 	// These checks are performed in UI workflows only.
 	Checkers      *RolloutPolicy_Checkers `protobuf:"bytes,4,opt,name=checkers,proto3" json:"checkers,omitempty"`
@@ -971,14 +965,6 @@ func (x *RolloutPolicy) GetAutomatic() bool {
 func (x *RolloutPolicy) GetRoles() []string {
 	if x != nil {
 		return x.Roles
-	}
-	return nil
-}
-
-// Deprecated: Marked as deprecated in v1/org_policy_service.proto.
-func (x *RolloutPolicy) GetIssueRoles() []string {
-	if x != nil {
-		return x.IssueRoles
 	}
 	return nil
 }
@@ -1660,12 +1646,10 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\aenforce\x18\r \x01(\bR\aenforce\x12I\n" +
 	"\rresource_type\x18\x0e \x01(\x0e2\x1f.bytebase.v1.PolicyResourceTypeB\x03\xe0A\x03R\fresourceType:\xe5\x01\xeaA\xe1\x01\n" +
 	"\x13bytebase.com/Policy\x12\x11policies/{policy}\x12$projects/{project}/policies/{policy}\x12,environments/{environment}/policies/{policy}\x12&instances/{instance}/policies/{policy}\x12;instances/{instance}/databases/{database}/policies/{policy}B\b\n" +
-	"\x06policyJ\x04\b\x02\x10\x03J\x04\b\x17\x10\x18\"\xc3\x04\n" +
+	"\x06policyJ\x04\b\x02\x10\x03J\x04\b\x17\x10\x18\"\x9e\x04\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
-	"\x05roles\x18\x02 \x03(\tR\x05roles\x12#\n" +
-	"\vissue_roles\x18\x03 \x03(\tB\x02\x18\x01R\n" +
-	"issueRoles\x12?\n" +
+	"\x05roles\x18\x02 \x03(\tR\x05roles\x12?\n" +
 	"\bcheckers\x18\x04 \x01(\v2#.bytebase.v1.RolloutPolicy.CheckersR\bcheckers\x1a\x97\x03\n" +
 	"\bCheckers\x126\n" +
 	"\x17required_issue_approval\x18\x01 \x01(\bR\x15requiredIssueApproval\x12n\n" +

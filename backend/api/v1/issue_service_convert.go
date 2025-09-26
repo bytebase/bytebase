@@ -121,24 +121,6 @@ func (s *IssueService) convertToIssueReleasers(ctx context.Context, issue *store
 	var releasers []string
 
 	releasers = append(releasers, policy.Roles...)
-	for _, role := range policy.IssueRoles { //nolint:staticcheck // TODO: remove deprecated IssueRoles
-		switch role {
-		case "roles/CREATOR":
-			releasers = append(releasers, common.FormatUserEmail(issue.Creator.Email))
-		case "roles/LAST_APPROVER":
-			approvers := issue.Payload.GetApproval().GetApprovers()
-			if len(approvers) > 0 {
-				lastApproverUID := approvers[len(approvers)-1].GetPrincipalId()
-				user, err := s.store.GetUserByID(ctx, int(lastApproverUID))
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to get last approver uid %d", lastApproverUID)
-				}
-				releasers = append(releasers, common.FormatUserEmail(user.Email))
-			}
-		default:
-			// Handle other roles
-		}
-	}
 
 	return releasers, nil
 }

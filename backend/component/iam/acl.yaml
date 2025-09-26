@@ -106,7 +106,6 @@ roles:
       - bb.sql.explain
       - bb.sql.info
       - bb.sql.select
-      - bb.sql.export
       - bb.users.create
       - bb.users.delete
       - bb.users.get
@@ -216,7 +215,6 @@ roles:
       - bb.sql.dml
       - bb.sql.explain
       - bb.sql.info
-      - bb.sql.export
       - bb.sql.select
       - bb.users.get
       - bb.users.list
@@ -311,7 +309,6 @@ roles:
       - bb.sql.dml
       - bb.sql.explain
       - bb.sql.info
-      - bb.sql.export
       - bb.sql.select
       - bb.taskRuns.list
       - bb.worksheets.get
@@ -374,18 +371,6 @@ roles:
       - bb.sql.explain
       - bb.sql.info
       - bb.sql.select
-      - bb.worksheets.get
-  - name: roles/projectExporter
-    title: Project exporter
-    permissions:
-      - bb.databaseCatalogs.get
-      - bb.databases.check
-      - bb.databases.get
-      - bb.databases.getSchema
-      - bb.databases.list
-      - bb.projects.get
-      - bb.projects.getIamPolicy
-      - bb.sql.export
       - bb.worksheets.get
   - name: roles/projectReleaser
     title: Project releaser

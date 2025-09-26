@@ -1540,7 +1540,6 @@
       "info": "Các tác vụ có thể được thực hiện bởi người dùng có quyền 'taskRuns.Create' hoặc các vai trò sau",
       "auto": "Triển khai tự động",
       "auto-info": "Nếu tất cả kiểm tra vượt qua, thay đổi sẽ được triển khai và thực hiện tự động.",
-      "last-issue-approver": "Người phê duyệt vấn đề cuối cùng",
       "checkers": {
         "self": "Yêu cầu",
         "required-issue-approval": {
@@ -2767,9 +2766,6 @@
     "project-viewer": {
       "self": "Người xem dự án",
       "description": "Quyền chỉ đọc để xem thông tin cơ bản của dự án, truy cập cơ sở dữ liệu và bắt đầu các yêu cầu đặc quyền."
-    },
-    "issue-creator": {
-      "self": "Người tạo vấn đề"
     }
   },
   "database-group": {

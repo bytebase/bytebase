@@ -8,24 +8,6 @@
           multiple
           @update:value="updateRoles(rolloutPolicy.roles)"
         />
-        <NCheckbox
-          v-if="shouldShowIssueCreator"
-          :checked="isIssueCreatorChecked"
-          :disabled="disabled"
-          @update:checked="toggleIssueRoles($event, VirtualRoleType.CREATOR)"
-        >
-          {{ $t("role.issue-creator.self") }}
-        </NCheckbox>
-        <NCheckbox
-          v-if="shouldShowLastApprover"
-          :checked="isIssueLastApproverChecked"
-          :disabled="disabled"
-          @update:checked="
-            toggleIssueRoles($event, VirtualRoleType.LAST_APPROVER)
-          "
-        >
-          {{ $t("policy.rollout.last-issue-approver") }}
-        </NCheckbox>
       </div>
       <NCheckbox
         :checked="isAutomaticRolloutChecked"
@@ -143,10 +125,9 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { cloneDeep, uniq } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import { NCheckbox, NRadioGroup, NRadio } from "naive-ui";
 import { ref, watch, computed } from "vue";
-import { VirtualRoleType } from "@/types";
 import type {
   Policy,
   RolloutPolicy,
@@ -177,36 +158,8 @@ const rolloutPolicy = ref<RolloutPolicy>(
   )
 );
 
-// Check if deprecated options are configured in the original policy
-const originalPolicy = computed(() =>
-  props.policy.policy?.case === "rolloutPolicy"
-    ? props.policy.policy.value
-    : undefined
-);
-
-const shouldShowIssueCreator = computed(() => {
-  // Show if the original policy has this role configured
-  return (
-    originalPolicy.value?.issueRoles?.includes(VirtualRoleType.CREATOR) ?? false
-  );
-});
-
-const shouldShowLastApprover = computed(() => {
-  // Show if the original policy has this role configured
-  return (
-    originalPolicy.value?.issueRoles?.includes(VirtualRoleType.LAST_APPROVER) ??
-    false
-  );
-});
-
 const isAutomaticRolloutChecked = computed(() => {
   return rolloutPolicy.value.automatic;
-});
-const isIssueCreatorChecked = computed(() => {
-  return rolloutPolicy.value.issueRoles.includes(VirtualRoleType.CREATOR);
-});
-const isIssueLastApproverChecked = computed(() => {
-  return rolloutPolicy.value.issueRoles.includes(VirtualRoleType.LAST_APPROVER);
 });
 
 const isRequiredIssueApprovalChecked = computed(() => {
@@ -244,23 +197,6 @@ const toggleAutomaticRollout = (selected: boolean) => {
     create(RolloutPolicySchema, {
       ...rolloutPolicy.value,
       automatic: selected,
-    })
-  );
-};
-const toggleIssueRoles = (checked: boolean, role: string) => {
-  const issueRoles = [...rolloutPolicy.value.issueRoles];
-  if (checked) {
-    issueRoles.push(role);
-  } else {
-    const index = issueRoles.indexOf(role);
-    if (index !== -1) {
-      issueRoles.splice(index, 1);
-    }
-  }
-  update(
-    create(RolloutPolicySchema, {
-      ...rolloutPolicy.value,
-      issueRoles: uniq(issueRoles),
     })
   );
 };

@@ -119,7 +119,7 @@ func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*Iam
 
 	p := &storepb.IamPolicy{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal iam policy")
+		return nil, errors.Wrapf(err, "failed to unmarshal iam policy for %v", policy.Resource)
 	}
 
 	return &IamPolicyMessage{

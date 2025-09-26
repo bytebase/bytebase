@@ -532,9 +532,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 					// Flags for gh-ost.
 					if err := func() error {
-						switch newTaskType {
-						case storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
-						default:
+						if newTaskType != storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST {
 							return nil
 						}
 
