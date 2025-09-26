@@ -202,8 +202,7 @@ func (l *sdlChunkExtractor) EnterCreatefunctionstmt(ctx *parser.Createfunctionst
 	}
 
 	// Generate function signature with parameter types
-	// For now, use simple function name as identifier (ExtractFunctionSignature not available in this file)
-	signature := functionName
+	signature := ExtractFunctionSignature(ctx, functionName)
 	schemaQualifiedSignature := schemaName + "." + signature
 
 	chunk := &schema.SDLChunk{
