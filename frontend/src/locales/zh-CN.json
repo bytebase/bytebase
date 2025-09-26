@@ -1081,8 +1081,8 @@
       "under-review": "等待审批"
     },
     "approval": {
-      "rejected-error": "此工单已被退回。请确认并勾选强制运行才能继续。",
-      "pending-error": "此工单正在等待审批。请确认并勾选强制运行才能继续。",
+      "rejected-error": "此工单已被退回。",
+      "pending-error": "此工单正在等待审批。",
       "approved-and-waiting-for-rollout": "该工单已批准，等待发布。"
     },
     "new-layout": "使用新版 CI/CD 页面"
@@ -1180,11 +1180,12 @@
   },
   "rollout": {
     "rollouts": "发布任务",
-    "force-rollout": "强制运行",
+    "bypass-stage-requirements": "绕过提醒",
     "task-execution-notices": "任务执行提醒",
+    "task-execution-errors": "任务执行警告",
     "no-active-task-to-cancel": "没有要取消的任务。",
     "automatic-rollout": {
-      "description": "此环境已启用自动部署。当所有条件满足时，任务将自动执行。"
+      "description": "此环境已启用自动部署。"
     },
     "stage": {
       "self": "阶段 | 阶段",
@@ -1195,9 +1196,7 @@
       }
     },
     "message": {
-      "pervious-stages-incomplete": {
-        "description": "存在未完成的前置阶段。请确认并勾选强制运行才能继续。"
-      }
+      "pervious-stages-incomplete": {}
     }
   },
   "quick-action": {

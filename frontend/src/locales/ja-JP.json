@@ -1081,8 +1081,8 @@
       "under-review": "審査中"
     },
     "approval": {
-      "rejected-error": "問題の承認が拒否されました。続行するには強制ロールアウトを有効にしてください。",
-      "pending-error": "問題の承認が保留中です。続行するには強制ロールアウトを有効にしてください。",
+      "rejected-error": "問題の承認が拒否されました。",
+      "pending-error": "問題の承認が保留中です。",
       "approved-and-waiting-for-rollout": "この問題は承認されており、展開する準備ができています。"
     },
     "new-layout": "新しいCI/CDレイアウト"
@@ -1180,11 +1180,12 @@
   },
   "rollout": {
     "rollouts": "ロールアウト",
-    "force-rollout": "強制実行",
+    "bypass-stage-requirements": "バイパス警告",
     "task-execution-notices": "タスク実行通知",
+    "task-execution-errors": "タスク実行エラー",
     "no-active-task-to-cancel": "キャンセルするアクティブなタスクはありません。",
     "automatic-rollout": {
-      "description": "この環境では自動ロールアウトが有効になっています。すべての条件が満たされると、タスクは自動的に実行されます。"
+      "description": "この環境では自動ロールアウトが有効になっています。"
     },
     "stage": {
       "self": "ステージ | ステージ",
@@ -1195,9 +1196,7 @@
       }
     },
     "message": {
-      "pervious-stages-incomplete": {
-        "description": "前のステージの一部が完了していません。続行するには強制実行を有効にしてください。"
-      }
+      "pervious-stages-incomplete": {}
     }
   },
   "quick-action": {

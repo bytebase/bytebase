@@ -38,7 +38,6 @@ import { EllipsisVerticalIcon } from "lucide-vue-next";
 import { NButton, NDropdown } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { useCurrentProjectV1 } from "@/store";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import type {
   Task,
@@ -48,7 +47,7 @@ import type {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContextWithRollout } from "../../logic";
 import TaskRolloutActionPanel from "./TaskRolloutActionPanel.vue";
-import { useTaskActionPermissions } from "./taskPermissions";
+import { canRolloutTasks } from "./taskPermissions";
 
 type TaskStatusAction =
   // NOT_STARTED -> PENDING
@@ -71,9 +70,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { project } = useCurrentProjectV1();
-const { readonly, issue } = usePlanContextWithRollout();
-const { canPerformTaskAction } = useTaskActionPermissions();
+const { readonly } = usePlanContextWithRollout();
 const showActionPanel = ref(false);
 const selectedAction = ref<TaskStatusAction>();
 
@@ -132,12 +129,7 @@ const canPerformTaskActions = computed(() => {
   if (!props.rollout || readonly.value) {
     return false;
   }
-  return canPerformTaskAction(
-    [props.task],
-    props.rollout,
-    project.value,
-    issue.value
-  );
+  return canRolloutTasks([props.task]);
 });
 
 const primaryAction = computed((): TaskStatusAction | null => {

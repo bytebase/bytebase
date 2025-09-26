@@ -8,19 +8,36 @@
   >
     <template #default>
       <div class="flex flex-col gap-y-4 h-full overflow-y-hidden px-1">
-        <!-- Consolidated Alert -->
+        <!-- Error Alert -->
         <NAlert
-          v-if="validationMessages.length > 0"
+          v-if="validationErrors.length > 0"
+          type="error"
+          :title="$t('rollout.task-execution-errors')"
+        >
+          <ul class="list-disc list-inside space-y-1">
+            <li
+              v-for="(error, index) in validationErrors"
+              :key="index"
+              class="text-sm"
+            >
+              {{ error }}
+            </li>
+          </ul>
+        </NAlert>
+
+        <!-- Warning Alert -->
+        <NAlert
+          v-if="validationWarnings.length > 0"
           type="warning"
           :title="$t('rollout.task-execution-notices')"
         >
           <ul class="list-disc list-inside space-y-1">
             <li
-              v-for="(message, index) in validationMessages"
+              v-for="(warning, index) in validationWarnings"
               :key="index"
               class="text-sm"
             >
-              {{ message }}
+              {{ warning }}
             </li>
           </ul>
         </NAlert>
@@ -194,10 +211,13 @@
     </template>
     <template #footer>
       <div class="w-full flex flex-row justify-between items-center gap-x-2">
-        <!-- Force rollout checkbox -->
-        <div v-if="shouldShowForceRollout" class="flex items-center">
-          <NCheckbox v-model:checked="forceRollout" :disabled="state.loading">
-            {{ $t("rollout.force-rollout") }}
+        <!-- Bypass stage requirements checkbox -->
+        <div v-if="shouldShowBypassOption" class="flex items-center">
+          <NCheckbox
+            v-model:checked="bypassPolicyChecks"
+            :disabled="state.loading"
+          >
+            {{ $t("rollout.bypass-stage-requirements") }}
           </NCheckbox>
         </div>
         <div v-else />
@@ -207,10 +227,13 @@
             {{ $t("common.close") }}
           </NButton>
 
-          <NTooltip :disabled="validationMessages.length === 0" placement="top">
+          <NTooltip :disabled="validationErrors.length === 0" placement="top">
             <template #trigger>
               <NButton
-                :disabled="shouldShowForceRollout && !forceRollout"
+                :disabled="
+                  validationErrors.length > 0 ||
+                  (validationWarnings.length > 0 && !bypassPolicyChecks)
+                "
                 type="primary"
                 @click="handleConfirm"
               >
@@ -226,7 +249,7 @@
               </NButton>
             </template>
             <template #default>
-              <ErrorList :errors="validationMessages" />
+              <ErrorList :errors="validationErrors" />
             </template>
           </NTooltip>
         </div>
@@ -262,12 +285,14 @@ import { EnvironmentV1Name } from "@/components/v2";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import {
   pushNotification,
-  useCurrentProjectV1,
   useEnvironmentV1Store,
   usePolicyByParentAndType,
 } from "@/store";
 import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
-import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
+import {
+  PolicyType,
+  RolloutPolicy_Checkers_PlanCheckEnforcement,
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   BatchRunTasksRequestSchema,
   BatchSkipTasksRequestSchema,
@@ -281,17 +306,12 @@ import type {
   Task,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  extractStageUID,
-  hasProjectPermissionV2,
-  hasWorkspacePermissionV2,
-  isNullOrUndefined,
-} from "@/utils";
+import { extractStageUID, isNullOrUndefined } from "@/utils";
 import { usePlanContextWithRollout, usePlanCheckStatus } from "../../logic";
 import { useIssueReviewContext } from "../../logic/issue-review";
 import PlanCheckStatusCount from "../PlanCheckStatusCount.vue";
 import TaskDatabaseName from "./TaskDatabaseName.vue";
-import { useTaskActionPermissions } from "./taskPermissions";
+import { canRolloutTasks } from "./taskPermissions";
 
 // Default delay for running tasks if not scheduled immediately.
 // 1 hour in milliseconds
@@ -315,17 +335,15 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { project } = useCurrentProjectV1();
 const { issue, rollout, plan, taskRuns } = usePlanContextWithRollout();
 const reviewContext = useIssueReviewContext();
 const state = reactive<LocalState>({
   loading: false,
 });
 const environmentStore = useEnvironmentV1Store();
-const { canPerformTaskAction } = useTaskActionPermissions();
 const comment = ref("");
 const runTimeInMS = ref<number | undefined>(undefined);
-const forceRollout = ref(false);
+const bypassPolicyChecks = ref(false);
 const { statusSummary: planCheckStatus } = usePlanCheckStatus(plan);
 
 // Check issue approval status using the review context
@@ -362,143 +380,209 @@ const issueApprovalStatus = computed(() => {
   };
 });
 
-// Check if all previous stages are complete (done or skipped)
-const previousStagesStatus = computed(() => {
-  if (!rollout.value || !targetStage.value) {
-    return { allComplete: true, hasIncomplete: false };
-  }
-
-  const stages = rollout.value.stages;
-  const currentStageIndex = stages.findIndex(
-    (stage) => stage.environment === targetStage.value.environment
-  );
-
-  if (currentStageIndex <= 0) {
-    // This is the first stage or stage not found
-    return { allComplete: true, hasIncomplete: false };
-  }
-
-  // Check all previous stages
-  for (let i = 0; i < currentStageIndex; i++) {
-    const stage = stages[i];
-    const hasIncompleteTasks = stage.tasks.some(
-      (task) =>
-        task.status !== Task_Status.DONE && task.status !== Task_Status.SKIPPED
-    );
-    if (hasIncompleteTasks) {
-      return { allComplete: false, hasIncomplete: true };
-    }
-  }
-
-  return { allComplete: true, hasIncomplete: false };
-});
-
 const shouldShowComment = computed(() => !isNullOrUndefined(issue?.value));
 
-// Plan check error validation
+// Plan check error validation based on rollout policy checkers
 const planCheckError = computed(() => {
-  if (props.action === "RUN") {
-    // Only consider plan check errors for RUN action.
+  if (props.action !== "RUN") {
+    return undefined;
+  }
+
+  // Get the plan check enforcement level from the rollout policy
+  const planCheckEnforcement =
+    rolloutPolicy.value?.policy?.case === "rolloutPolicy"
+      ? rolloutPolicy.value.policy.value.checkers?.requiredStatusChecks
+          ?.planCheckEnforcement
+      : undefined;
+
+  // If no enforcement is specified, default to no validation
+  if (!planCheckEnforcement) {
+    return undefined;
+  }
+
+  if (planCheckStatus.value.running > 0) {
+    return t(
+      "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
+    );
+  }
+  // ERROR_ONLY enforcement: only block on errors
+  if (
+    planCheckEnforcement ===
+    RolloutPolicy_Checkers_PlanCheckEnforcement.ERROR_ONLY
+  ) {
     if (planCheckStatus.value.error > 0) {
       return t(
         "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
       );
     }
-    if (planCheckStatus.value.running > 0) {
+  }
+  // STRICT enforcement: block on both errors and warnings
+  if (
+    planCheckEnforcement === RolloutPolicy_Checkers_PlanCheckEnforcement.STRICT
+  ) {
+    if (planCheckStatus.value.error > 0 || planCheckStatus.value.warning > 0) {
       return t(
-        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
+        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
       );
     }
   }
   return undefined;
 });
 
-// Collect all validation messages for both display and error checking
-const validationMessages = computed(() => {
-  const messages: string[] = [];
-
-  // Basic validation errors
-  if (eligibleTasks.value.length === 0) {
-    messages.push(t("common.no-data"));
+// Plan check warning validation for non-blocking plan check results
+const planCheckWarning = computed(() => {
+  if (props.action !== "RUN" || planCheckStatus.value.total === 0) {
+    return undefined;
   }
 
+  // Get the plan check enforcement level from the rollout policy
+  const planCheckEnforcement =
+    rolloutPolicy.value?.policy?.case === "rolloutPolicy"
+      ? rolloutPolicy.value.policy.value.checkers?.requiredStatusChecks
+          ?.planCheckEnforcement
+      : undefined;
+
+  // If there's no enforcement policy, show any plan check issues as warnings
+  if (!planCheckEnforcement) {
+    if (planCheckStatus.value.running > 0) {
+      return t(
+        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
+      );
+    }
+    if (planCheckStatus.value.error > 0 || planCheckStatus.value.warning > 0) {
+      return t(
+        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
+      );
+    }
+  }
+
+  // Show warnings for plan check results that don't violate enforcement policy
   if (
-    !canPerformTaskAction(
-      eligibleTasks.value,
-      rollout.value,
-      project.value,
-      issue?.value
+    planCheckEnforcement ===
+    RolloutPolicy_Checkers_PlanCheckEnforcement.ERROR_ONLY
+  ) {
+    // Show warnings as non-blocking when ERROR_ONLY policy allows them
+    if (planCheckStatus.value.warning > 0) {
+      return t(
+        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
+      );
+    }
+  }
+
+  return undefined;
+});
+
+// Collect blocking validation errors
+const validationErrors = computed(() => {
+  const errors: string[] = [];
+
+  // Permission errors - always block rollout
+  if (!canRolloutTasks(eligibleTasks.value)) {
+    errors.push(t("task.no-permission"));
+  }
+
+  // No active tasks to cancel - blocking error
+  if (
+    props.action === "CANCEL" &&
+    eligibleTasks.value.length > 0 &&
+    !eligibleTasks.value.some(
+      (task) =>
+        task.status === Task_Status.PENDING ||
+        task.status === Task_Status.RUNNING
     )
   ) {
-    messages.push(t("task.no-permission"));
+    errors.push(t("rollout.no-active-task-to-cancel"));
   }
 
   if (props.action === "RUN") {
-    // Validate scheduled time if not running immediately
-    if (runTimeInMS.value !== undefined && runTimeInMS.value <= Date.now()) {
-      messages.push(t("task.error.scheduled-time-must-be-in-the-future"));
-    }
+    // Issue approval errors (only if policy requires it) - HARD BLOCK
+    const requiresIssueApproval =
+      rolloutPolicy.value?.policy?.case === "rolloutPolicy"
+        ? rolloutPolicy.value.policy.value.checkers?.requiredIssueApproval
+        : false;
 
-    // Issue approval messages (only if not forcing rollout)
     if (
+      requiresIssueApproval &&
       issueApprovalStatus.value.hasIssue &&
       !issueApprovalStatus.value.isApproved
     ) {
       const isRejected = issueApprovalStatus.value.status === "rejected";
-      messages.push(
+      errors.push(
         isRejected
           ? t("issue.approval.rejected-error")
           : t("issue.approval.pending-error")
       );
     }
 
-    // Previous stages incomplete (only if not forcing rollout)
-    if (previousStagesStatus.value.hasIncomplete) {
-      messages.push(
-        t("rollout.message.pervious-stages-incomplete.description")
+    // Plan check errors (based on rollout policy) - HARD BLOCK
+    if (planCheckError.value) {
+      errors.push(planCheckError.value);
+    }
+  }
+
+  return errors;
+});
+
+// Collect validation warnings that don't block rollout
+const validationWarnings = computed(() => {
+  const warnings: string[] = [];
+
+  // Basic validation warnings
+  if (eligibleTasks.value.length === 0) {
+    warnings.push(t("common.no-data"));
+  }
+
+  if (props.action === "RUN") {
+    // Validate scheduled time if not running immediately
+    if (runTimeInMS.value !== undefined && runTimeInMS.value <= Date.now()) {
+      warnings.push(t("task.error.scheduled-time-must-be-in-the-future"));
+    }
+
+    // Plan check warnings (non-blocking plan check results)
+    if (planCheckWarning.value) {
+      warnings.push(planCheckWarning.value);
+    }
+
+    // Issue approval warnings (when not required by policy but issue is not approved)
+    const requiresIssueApproval =
+      rolloutPolicy.value?.policy?.case === "rolloutPolicy"
+        ? rolloutPolicy.value.policy.value.checkers?.requiredIssueApproval
+        : false;
+
+    if (
+      !requiresIssueApproval &&
+      issueApprovalStatus.value.hasIssue &&
+      !issueApprovalStatus.value.isApproved
+    ) {
+      const isRejected = issueApprovalStatus.value.status === "rejected";
+      warnings.push(
+        isRejected
+          ? t("issue.approval.rejected-error")
+          : t("issue.approval.pending-error")
       );
     }
 
-    // Plan check errors (only if not forcing rollout)
-    if (planCheckError.value) {
-      messages.push(planCheckError.value);
-    }
-
-    // Automatic rollout info (only show for non-export tasks with no task runs)
+    // Automatic rollout info (always show as warning for non-export tasks with no task runs)
     if (
       isAutomaticRollout.value &&
       !isDatabaseExportTask.value &&
       !hasTaskRuns.value
     ) {
-      messages.push(t("rollout.automatic-rollout.description"));
+      warnings.push(t("rollout.automatic-rollout.description"));
     }
   }
 
-  if (
-    props.action === "CANCEL" &&
-    eligibleTasks.value.some(
-      (task) =>
-        task.status !== Task_Status.PENDING &&
-        task.status !== Task_Status.RUNNING
-    )
-  ) {
-    messages.push(t("rollout.no-active-task-to-cancel"));
-  }
-
-  return messages;
+  return warnings;
 });
 
-const shouldShowForceRollout = computed(() => {
-  // Show force rollout checkbox for RUN action when:
-  // 1. Issue approval is not complete, OR
-  // 2. Plan check has errors
-  return Boolean(
-    props.action === "RUN" &&
-      (hasWorkspacePermissionV2("bb.taskRuns.create") ||
-        hasProjectPermissionV2(project.value, "bb.taskRuns.create")) &&
-      ((issueApprovalStatus.value.hasIssue &&
-        !issueApprovalStatus.value.isApproved) ||
-        planCheckError.value)
+const shouldShowBypassOption = computed(() => {
+  if (props.action !== "RUN") {
+    return false;
+  }
+
+  // Only show bypass option when there are warnings but NO errors
+  return (
+    validationWarnings.value.length > 0 && validationErrors.value.length === 0
   );
 });
 
@@ -821,6 +905,6 @@ const handleConfirm = async () => {
 const resetState = () => {
   comment.value = "";
   runTimeInMS.value = undefined;
-  forceRollout.value = false;
+  bypassPolicyChecks.value = false;
 };
 </script>

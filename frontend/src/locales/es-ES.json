@@ -1081,8 +1081,8 @@
       "under-review": "Bajo revisión"
     },
     "approval": {
-      "rejected-error": "Se ha rechazado la aprobación del problema. Habilite la implementación forzada para continuar.",
-      "pending-error": "La aprobación del problema está pendiente. Habilite la implementación forzada para continuar.",
+      "rejected-error": "Se ha rechazado la aprobación del problema.",
+      "pending-error": "La aprobación del problema está pendiente.",
       "approved-and-waiting-for-rollout": "Este problema ha sido aprobado y está listo para implementarse."
     },
     "new-layout": "Nuevo diseño de CI/CD"
@@ -1180,11 +1180,12 @@
   },
   "rollout": {
     "rollouts": "Despliegues",
-    "force-rollout": "Ejecución forzada",
+    "bypass-stage-requirements": "Advertencias de bypass",
     "task-execution-notices": "Avisos de ejecución de tareas",
+    "task-execution-errors": "Errores de ejecución de tareas",
     "no-active-task-to-cancel": "No hay ninguna tarea activa para cancelar.",
     "automatic-rollout": {
-      "description": "Este entorno tiene habilitada la implementación automática. Las tareas se ejecutarán automáticamente cuando se cumplan todas las condiciones."
+      "description": "Este entorno tiene habilitada la implementación automática."
     },
     "stage": {
       "self": "Escenario | Escenarios",
@@ -1195,9 +1196,7 @@
       }
     },
     "message": {
-      "pervious-stages-incomplete": {
-        "description": "Algunas etapas anteriores no se han completado. Activa la ejecución forzada para continuar."
-      }
+      "pervious-stages-incomplete": {}
     }
   },
   "quick-action": {
