@@ -70,7 +70,6 @@ import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import { Drawer } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import {
-  useCurrentUserV1,
   useProjectByName,
   useIssueV1Store,
   useRefreshIssueList,
@@ -118,7 +117,6 @@ const defaultSearchParams = () => {
   return params;
 };
 
-const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
   showRequestExportPanel: false,
   params: defaultSearchParams(),
@@ -136,13 +134,8 @@ const issuePagedTable =
   ref<ComponentExposed<typeof PagedTable<ComposedIssue>>>();
 
 const dataExportIssueSearchParams = computed(() => {
-  // Default scopes with type and creator.
-  const defaultScopes = [
-    {
-      id: "creator",
-      value: currentUser.value.email,
-    },
-  ];
+  // Default scopes with type.
+  const defaultScopes = [];
   // If specific project is provided, add project scope.
   if (specificProject.value) {
     defaultScopes.push({
