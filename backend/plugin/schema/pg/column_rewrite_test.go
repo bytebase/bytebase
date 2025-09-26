@@ -7,22 +7,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	parser "github.com/bytebase/parser/postgresql"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	parser "github.com/bytebase/parser/postgresql"
 )
 
 // TestColumnRewriteOperations tests the ANTLR TokenStreamRewriter functionality
 // for column operations including add, modify, delete with various edge cases
 func TestColumnRewriteOperations(t *testing.T) {
 	testCases := []struct {
-		name           string
-		originalSDL    string
-		currentTable   *storepb.TableMetadata
-		previousTable  *storepb.TableMetadata
-		expectedSDL    string
-		description    string
+		name          string
+		originalSDL   string
+		currentTable  *storepb.TableMetadata
+		previousTable *storepb.TableMetadata
+		expectedSDL   string
+		description   string
 	}{
 		// Single Column Add Tests
 		{
