@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -67,7 +68,7 @@ func TestGetSDLDiff_InitializationScenario(t *testing.T) {
 			),
 			previousSchema:          nil,
 			expectedDiffEmpty:       false, // Diff may be generated due to format differences
-			expectedTableChanges:    2,     // May have changes due to format differences
+			expectedTableChanges:    1,     // One table creation
 			expectedViewChanges:     0,
 			expectedFunctionChanges: 0,
 			expectedSequenceChanges: 0,
@@ -123,7 +124,7 @@ func TestGetSDLDiff_InitializationScenario(t *testing.T) {
 			),
 			previousSchema:          nil,
 			expectedDiffEmpty:       false, // Diff may be generated due to format differences
-			expectedTableChanges:    2,     // May have changes due to format differences
+			expectedTableChanges:    1,     // One table creation
 			expectedViewChanges:     0,
 			expectedFunctionChanges: 0,
 			expectedSequenceChanges: 0,
@@ -238,6 +239,245 @@ func TestConvertDatabaseSchemaToSDL(t *testing.T) {
 				} else {
 					require.Equal(t, tt.expectedSDL, result)
 				}
+			}
+		})
+	}
+}
+
+// TestGetSDLDiff_MinimalChangesScenario tests the minimal changes functionality
+// This is a basic test to verify that the drift detection logic is invoked
+func TestGetSDLDiff_MinimalChangesScenario(t *testing.T) {
+	currentSDLText := "CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT NOT NULL);"
+	previousUserSDLText := `CREATE TABLE users (
+		id SERIAL PRIMARY KEY,
+		name TEXT NOT NULL
+	);`
+
+	currentSchema := model.NewDatabaseSchema(
+		&storepb.DatabaseSchemaMetadata{
+			Name: "test_db",
+			Schemas: []*storepb.SchemaMetadata{
+				{
+					Name: "public",
+					Tables: []*storepb.TableMetadata{
+						{
+							Name: "users",
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "integer", Nullable: false},
+								{Name: "name", Type: "text", Nullable: false},
+							},
+						},
+						{
+							Name: "posts", // This table exists in current schema but not in previous
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "integer", Nullable: false},
+								{Name: "title", Type: "text", Nullable: false},
+							},
+						},
+					},
+				},
+			},
+		},
+		nil,
+		nil,
+		storepb.Engine_POSTGRES,
+		false,
+	)
+
+	previousSchema := model.NewDatabaseSchema(
+		&storepb.DatabaseSchemaMetadata{
+			Name: "test_db",
+			Schemas: []*storepb.SchemaMetadata{
+				{
+					Name: "public",
+					Tables: []*storepb.TableMetadata{
+						{
+							Name: "users",
+							Columns: []*storepb.ColumnMetadata{
+								{Name: "id", Type: "integer", Nullable: false},
+								{Name: "name", Type: "text", Nullable: false},
+							},
+						},
+					},
+				},
+			},
+		},
+		nil,
+		nil,
+		storepb.Engine_POSTGRES,
+		false,
+	)
+
+	// Test that the function runs without error when schemas are provided
+	diff, err := GetSDLDiff(currentSDLText, previousUserSDLText, currentSchema, previousSchema)
+	require.NoError(t, err)
+	require.NotNil(t, diff)
+
+	// We don't assert specific outcomes here because the main goal is to test
+	// that the minimal changes logic is invoked and doesn't crash
+	t.Logf("Generated %d table changes", len(diff.TableChanges))
+	for i, change := range diff.TableChanges {
+		t.Logf("Change %d: %s %s", i+1, change.Action, change.TableName)
+	}
+}
+
+func TestApplyMinimalChangesToChunks(t *testing.T) {
+	tests := []struct {
+		name                string
+		previousUserSDLText string
+		currentSchema       *model.DatabaseSchema
+		previousSchema      *model.DatabaseSchema
+		expectedTables      []string
+	}{
+		{
+			name: "add_new_table_to_existing_chunks",
+			previousUserSDLText: `CREATE TABLE users (
+				id SERIAL PRIMARY KEY,
+				name TEXT NOT NULL
+			);`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer", Nullable: false},
+										{Name: "name", Type: "text", Nullable: false},
+									},
+								},
+								{
+									Name: "posts",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer", Nullable: false},
+										{Name: "title", Type: "text", Nullable: false},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer", Nullable: false},
+										{Name: "name", Type: "text", Nullable: false},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedTables: []string{"public.users", "public.posts"},
+		},
+		{
+			name: "multi_schema_with_same_table_names",
+			previousUserSDLText: `CREATE TABLE public.users (
+				id SERIAL PRIMARY KEY,
+				name TEXT NOT NULL
+			);`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer", Nullable: false},
+										{Name: "name", Type: "text", Nullable: false},
+									},
+								},
+							},
+						},
+						{
+							Name: "admin",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users", // Same table name but different schema
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer", Nullable: false},
+										{Name: "role", Type: "text", Nullable: false},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer", Nullable: false},
+										{Name: "name", Type: "text", Nullable: false},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedTables: []string{"public.users", "admin.users"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Parse the SDL text into chunks
+			previousChunks, err := ChunkSDLText(tt.previousUserSDLText)
+			require.NoError(t, err)
+
+			// Apply minimal changes to chunks
+			err = applyMinimalChangesToChunks(previousChunks, tt.currentSchema, tt.previousSchema)
+			require.NoError(t, err)
+
+			// Check that all expected tables are present in the chunks
+			require.Equal(t, len(tt.expectedTables), len(previousChunks.Tables))
+			for _, expectedTable := range tt.expectedTables {
+				chunk, exists := previousChunks.Tables[expectedTable]
+				require.True(t, exists, "Expected table %s not found in chunks", expectedTable)
+
+				// Check that we can get text from the chunk
+				text := chunk.GetText()
+				require.NotEmpty(t, text)
+				require.Contains(t, strings.ToUpper(text), "CREATE TABLE")
 			}
 		})
 	}

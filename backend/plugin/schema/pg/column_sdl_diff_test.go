@@ -700,9 +700,9 @@ func TestColumnMetadataExtraction(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			chunks, err := ChunkSDLText(tc.sdlText)
 			require.NoError(t, err)
-			require.Contains(t, chunks.Tables, "test")
+			require.Contains(t, chunks.Tables, "public.test")
 
-			testChunk := chunks.Tables["test"]
+			testChunk := chunks.Tables["public.test"]
 			createStmt, ok := testChunk.ASTNode.(*parser.CreatestmtContext)
 			require.True(t, ok, "Should be a CreatestmtContext")
 
