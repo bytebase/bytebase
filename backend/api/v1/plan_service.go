@@ -522,6 +522,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 						taskTypes := []storepb.Task_Type{
 							storepb.Task_DATABASE_SCHEMA_UPDATE,
 							storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST,
+							storepb.Task_DATABASE_DATA_UPDATE,
 						}
 						if !slices.Contains(taskTypes, newTaskType) || !slices.Contains(taskTypes, task.Type) {
 							return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task types in %v are allowed to updated, and they are allowed to be changed to %v", taskTypes, taskTypes))
