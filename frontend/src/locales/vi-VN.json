@@ -1081,8 +1081,8 @@
       "under-review": "Đang xem xét"
     },
     "approval": {
-      "rejected-error": "Đã từ chối phê duyệt vấn đề. Vui lòng bật triển khai bắt buộc để tiếp tục.",
-      "pending-error": "Đang chờ phê duyệt vấn đề. Vui lòng bật triển khai bắt buộc để tiếp tục.",
+      "rejected-error": "Đã từ chối phê duyệt vấn đề.",
+      "pending-error": "Đang chờ phê duyệt vấn đề.",
       "approved-and-waiting-for-rollout": "Phiên bản này đã được chấp thuận và sẵn sàng triển khai."
     },
     "new-layout": "Bố cục CI/CD mới"
@@ -1180,11 +1180,12 @@
   },
   "rollout": {
     "rollouts": "Triển khai",
-    "force-rollout": "Chạy bắt buộc",
+    "bypass-stage-requirements": "Bỏ qua cảnh báo",
     "task-execution-notices": "Thông báo thực hiện nhiệm vụ",
+    "task-execution-errors": "Lỗi thực hiện tác vụ",
     "no-active-task-to-cancel": "Không có tác vụ nào đang hoạt động để hủy.",
     "automatic-rollout": {
-      "description": "Môi trường này đã bật tính năng triển khai tự động. Các tác vụ sẽ tự động thực thi khi đáp ứng tất cả các điều kiện."
+      "description": "Môi trường này đã bật tính năng triển khai tự động."
     },
     "stage": {
       "self": "Giai đoạn | Các giai đoạn",
@@ -1195,9 +1196,7 @@
       }
     },
     "message": {
-      "pervious-stages-incomplete": {
-        "description": "Một số giai đoạn trước chưa hoàn tất. Vui lòng bật chế độ chạy bắt buộc để tiếp tục."
-      }
+      "pervious-stages-incomplete": {}
     }
   },
   "quick-action": {

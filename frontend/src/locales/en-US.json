@@ -1180,11 +1180,12 @@
   },
   "rollout": {
     "rollouts": "Rollouts",
-    "force-rollout": "Force run",
+    "bypass-stage-requirements": "Bypass warnings",
     "task-execution-notices": "Task execution notices",
+    "task-execution-errors": "Task execution errors",
     "no-active-task-to-cancel": "No active task to cancel.",
     "automatic-rollout": {
-      "description": "This environment has automatic rollout enabled. Tasks will execute automatically when all conditions are met."
+      "description": "This environment has automatic rollout enabled."
     },
     "stage": {
       "self": "Stage | Stages",
@@ -1195,9 +1196,7 @@
       }
     },
     "message": {
-      "pervious-stages-incomplete": {
-        "description": "Some previous stages are not completed."
-      }
+      "pervious-stages-incomplete": {}
     }
   },
   "quick-action": {

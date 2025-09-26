@@ -55,7 +55,6 @@ import { NButton, NScrollbar, NTooltip } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { useCurrentProjectV1 } from "@/store";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import type {
   Task,
@@ -64,7 +63,7 @@ import type {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContextWithRollout } from "../../logic";
 import TaskRolloutActionPanel from "./TaskRolloutActionPanel.vue";
-import { useTaskActionPermissions } from "./taskPermissions";
+import { canRolloutTasks } from "./taskPermissions";
 
 interface TaskAction {
   icon: VNode;
@@ -96,9 +95,7 @@ const state = reactive<LocalState>({
 });
 
 const { t } = useI18n();
-const { project } = useCurrentProjectV1();
-const { readonly, issue } = usePlanContextWithRollout();
-const { canPerformTaskAction } = useTaskActionPermissions();
+const { readonly } = usePlanContextWithRollout();
 
 // Action target for the panel
 const actionTarget = computed(() => {
@@ -154,12 +151,7 @@ const canPerformTaskActions = computed(() => {
   if (readonly.value) {
     return false;
   }
-  return canPerformTaskAction(
-    props.tasks,
-    props.rollout,
-    project.value,
-    issue.value
-  );
+  return canRolloutTasks(props.tasks);
 });
 
 const getDisabledTooltip = (_action: string) => {

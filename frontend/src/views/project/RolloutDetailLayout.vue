@@ -34,7 +34,7 @@
 
 <script lang="ts" setup>
 import { NBreadcrumb, NBreadcrumbItem } from "naive-ui";
-import { computed } from "vue";
+import { computed, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { usePlanContextWithRollout } from "@/components/Plan";
 import { provideRolloutViewContext } from "@/components/Plan/components/RolloutView/context";
@@ -43,7 +43,12 @@ import {
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
 } from "@/router/dashboard/projectV1";
-import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
+import {
+  useCurrentProjectV1,
+  useEnvironmentV1Store,
+  usePolicyV1Store,
+} from "@/store";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { extractProjectResourceName } from "@/utils";
 
 const route = useRoute();
@@ -51,6 +56,7 @@ const router = useRouter();
 const { rollout } = usePlanContextWithRollout();
 const { project } = useCurrentProjectV1();
 const environmentStore = useEnvironmentV1Store();
+const policyStore = usePolicyV1Store();
 const { mergedStages } = provideRolloutViewContext();
 
 // Route parameters
@@ -60,6 +66,31 @@ const taskId = computed(() => route.params.taskId as string);
 const stage = computed(() =>
   mergedStages.value.find((s) => s.name.endsWith(`/${stageId.value}`))
 );
+
+// Prepare rollout policies for all stages in the rollout.
+watchEffect(() => {
+  if (!rollout.value) return;
+
+  const environmentNames = new Set<string>();
+  // Collect all unique environment names from stages
+  for (const stage of rollout.value.stages) {
+    if (stage.environment) {
+      environmentNames.add(stage.environment);
+    }
+  }
+
+  // Fetch rollout policies for each environment
+  for (const environmentName of environmentNames) {
+    policyStore
+      .getOrFetchPolicyByParentAndType({
+        parentPath: environmentName,
+        policyType: PolicyType.ROLLOUT_POLICY,
+      })
+      .catch(() => {
+        // Silently ignore errors as policies might not exist
+      });
+  }
+});
 
 // Navigation handlers
 const navigateToRollout = () => {
