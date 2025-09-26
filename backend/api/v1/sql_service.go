@@ -271,7 +271,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 
 	for _, result := range results {
 		// AllowExport is a validate only check.
-		checkErr := s.accessCheck(ctx, instance, database, user, spans, int(result.RowsCount), request.Explain, true /* isExport */)
+		checkErr := s.accessCheck(ctx, instance, database, user, spans, int(result.RowsCount), request.Explain)
 		result.AllowExport = checkErr == nil
 	}
 
@@ -312,7 +312,7 @@ func getMaximumSQLResultLimit(
 	return value
 }
 
-type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, []*parserbase.QuerySpan, int, bool /* isExplain */, bool /* isExport */) error
+type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, []*parserbase.QuerySpan, int, bool /* isExplain */) error
 
 func extractSourceTable(comment string) (string, string, string, error) {
 	pattern := `\((\w+),\s*(\w+)(?:,\s*(\w+))?\)`
@@ -476,7 +476,7 @@ func queryRetry(
 		}
 		if optionalAccessCheck != nil {
 			// Check query access
-			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Limit, queryContext.Explain, false); err != nil {
+			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Limit, queryContext.Explain); err != nil {
 				return nil, nil, time.Duration(0), err
 			}
 			slog.Debug("optional access check", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
@@ -923,7 +923,7 @@ func DoExport(
 	}
 	if len(results) == 1 {
 		if optionalAccessCheck != nil {
-			if err := optionalAccessCheck(ctx, instance, database, user, spans, int(results[0].RowsCount), queryContext.Explain, true); err != nil {
+			if err := optionalAccessCheck(ctx, instance, database, user, spans, int(results[0].RowsCount), queryContext.Explain); err != nil {
 				return nil, duration, err
 			}
 		}
@@ -1365,7 +1365,7 @@ func (s *SQLService) accessCheck(
 	spans []*parserbase.QuerySpan,
 	limit int,
 	isExplain bool,
-	isExport bool) error {
+) error {
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
 	if err != nil {
 		return err
@@ -1450,7 +1450,7 @@ func (s *SQLService) accessCheck(
 					return connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 				}
 
-				ok, err := s.hasDatabaseAccessRights(ctx, user, []*storepb.IamPolicy{workspacePolicy.Policy, projectPolicy.Policy}, attributes, isExport)
+				ok, err := s.hasDatabaseAccessRights(ctx, user, []*storepb.IamPolicy{workspacePolicy.Policy, projectPolicy.Policy}, attributes)
 				if err != nil {
 					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for database: %q, error %v", column.Database, err))
 				}
@@ -1547,11 +1547,8 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 	return nil
 }
 
-func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.UserMessage, iamPolicies []*storepb.IamPolicy, attributes map[string]any, isExport bool) (bool, error) {
+func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.UserMessage, iamPolicies []*storepb.IamPolicy, attributes map[string]any) (bool, error) {
 	wantPermission := iam.PermissionSQLSelect
-	if isExport {
-		wantPermission = iam.PermissionSQLExport
-	}
 
 	bindings := utils.GetUserIAMPolicyBindings(ctx, s.store, user, iamPolicies...)
 	for _, binding := range bindings {

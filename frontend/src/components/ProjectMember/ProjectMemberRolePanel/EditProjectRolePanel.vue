@@ -25,11 +25,7 @@
           <div
             v-if="
               binding.role !== PresetRoleType.PROJECT_OWNER &&
-              checkRoleContainsAnyPermission(
-                binding.role,
-                'bb.sql.select',
-                'bb.sql.export'
-              )
+              checkRoleContainsAnyPermission(binding.role, 'bb.sql.select')
             "
             class="w-full"
           >
@@ -49,7 +45,7 @@
           <template
             v-if="
               binding.role !== PresetRoleType.PROJECT_OWNER &&
-              checkRoleContainsAnyPermission(binding.role, 'bb.sql.export')
+              checkRoleContainsAnyPermission(binding.role, 'bb.sql.select')
             "
           >
             <div class="w-full flex flex-col justify-start items-start">

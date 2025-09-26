@@ -43,11 +43,7 @@
     <div
       v-if="
         state.role !== PresetRoleType.PROJECT_OWNER &&
-        checkRoleContainsAnyPermission(
-          state.role,
-          'bb.sql.select',
-          'bb.sql.export'
-        )
+        checkRoleContainsAnyPermission(state.role, 'bb.sql.select')
       "
       class="w-full space-y-2"
     >
@@ -172,7 +168,7 @@ watch(
 const roleSupportExport = computed(
   () =>
     state.role !== PresetRoleType.PROJECT_OWNER &&
-    checkRoleContainsAnyPermission(state.role, "bb.sql.export")
+    checkRoleContainsAnyPermission(state.role, "bb.sql.select")
 );
 
 watch(
