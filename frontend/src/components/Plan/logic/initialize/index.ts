@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { ConnectError, Code } from "@connectrpc/connect";
 import { computed, ref, unref, watch, type MaybeRef } from "vue";
 import { useRoute, useRouter, type LocationQuery } from "vue-router";
 import {
@@ -86,6 +87,7 @@ export function useInitializePlan(
       const rolloutRequest = create(GetRolloutRequestSchema, {
         name: `${projectNamePrefix}${projectId}/rollouts/${rolloutUid}`,
       });
+
       const newRollout =
         await rolloutServiceClientConnect.getRollout(rolloutRequest);
       rolloutResult = newRollout;
@@ -118,6 +120,7 @@ export function useInitializePlan(
       const request = create(GetIssueRequestSchema, {
         name: `${projectNamePrefix}${projectId}/issues/${issueUid}`,
       });
+
       const newIssue = await issueServiceClientConnect.getIssue(request);
       issueResult = newIssue;
 
@@ -143,16 +146,12 @@ export function useInitializePlan(
 
       // Fetch the associated rollout if it exists
       if (issueResult.rollout) {
-        try {
-          const rolloutRequest = create(GetRolloutRequestSchema, {
-            name: issueResult.rollout,
-          });
-          const newRollout =
-            await rolloutServiceClientConnect.getRollout(rolloutRequest);
-          rolloutResult = newRollout;
-        } catch {
-          // Rollout might not exist or we don't have permission, that's ok
-        }
+        const rolloutRequest = create(GetRolloutRequestSchema, {
+          name: issueResult.rollout,
+        });
+        const newRollout =
+          await rolloutServiceClientConnect.getRollout(rolloutRequest);
+        rolloutResult = newRollout;
       }
     } else {
       // Direct plan ID
@@ -162,29 +161,21 @@ export function useInitializePlan(
 
       // If we have a plan, try to fetch the associated issue if it exists
       if (planResult.issue) {
-        try {
-          const request = create(GetIssueRequestSchema, {
-            name: planResult.issue,
-          });
-          const newIssue = await issueServiceClientConnect.getIssue(request);
-          issueResult = newIssue;
-        } catch {
-          // Issue might not exist or we don't have permission, that's ok
-        }
+        const request = create(GetIssueRequestSchema, {
+          name: planResult.issue,
+        });
+        const newIssue = await issueServiceClientConnect.getIssue(request);
+        issueResult = newIssue;
       }
 
       // If we have a plan, try to fetch the associated rollout if it exists
       if (planResult.rollout) {
-        try {
-          const rolloutRequest = create(GetRolloutRequestSchema, {
-            name: planResult.rollout,
-          });
-          const newRollout =
-            await rolloutServiceClientConnect.getRollout(rolloutRequest);
-          rolloutResult = newRollout;
-        } catch {
-          // Rollout might not exist or we don't have permission, that's ok
-        }
+        const rolloutRequest = create(GetRolloutRequestSchema, {
+          name: planResult.rollout,
+        });
+        const newRollout =
+          await rolloutServiceClientConnect.getRollout(rolloutRequest);
+        rolloutResult = newRollout;
       }
     }
 
@@ -198,14 +189,16 @@ export function useInitializePlan(
 
   watch(
     [uid, () => unref(projectId)],
-    ([uid, projectId]) => {
+    async ([uid, projectId]) => {
       if (uid === String(UNKNOWN_ID)) {
         router.push({ name: "error.404" });
         return;
       }
       const url = route.fullPath;
       isInitializing.value = true;
-      runner(uid, projectId, url).then(async (result) => {
+
+      try {
+        const result = await runner(uid, projectId, url);
         if (result.url !== route.fullPath) {
           // the url changed, drop the outdated result
           return;
@@ -214,7 +207,22 @@ export function useInitializePlan(
         issue.value = result.issue;
         rollout.value = result.rollout;
         isInitializing.value = false;
-      });
+      } catch (error: any) {
+        // Check Connect error type and handle accordingly
+        if (error instanceof ConnectError) {
+          if (error.code === Code.NotFound) {
+            router.push({ name: "error.404" });
+          } else if (error.code === Code.PermissionDenied) {
+            router.push({ name: "error.403" });
+          }
+          isInitializing.value = false;
+          return;
+        }
+
+        isInitializing.value = false;
+        console.error("Error initializing plan:", error);
+        throw error;
+      }
     },
     { immediate: true }
   );

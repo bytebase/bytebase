@@ -226,7 +226,6 @@
       "n-rows": "{n} 行"
     },
     "back-to-workspace": "返回工作空间",
-    "override": "覆盖",
     "encoding": "编码",
     "finish": "完成",
     "title": "标题",
@@ -694,10 +693,6 @@
         "extra-link": {
           "self": "链接",
           "placeholder": "输入公告链接"
-        },
-        "restrict-issue-creation-for-sql-review": {
-          "title": "禁止提交包含错误告警的工单",
-          "description": "启用后，只有在预览阶段不包含任何“错误”级别告警的工单才能被提交。"
         },
         "default-landing-page": {
           "self": "默认首页",
@@ -1545,7 +1540,26 @@
       "info": "拥有 “{permission}” 权限或以下角色的用户可以发布",
       "auto": "自动发布",
       "auto-info": "如果预检查都通过的话，会自动发布，执行变更。",
-      "last-issue-approver": "自定义审批的最后一个审批人"
+      "last-issue-approver": "自定义审批的最后一个审批人",
+      "checkers": {
+        "self": "控制项",
+        "required-issue-approval": {
+          "self": "工单需要通过审批",
+          "description": "工单必须先通过审批，才能继续发布任务。"
+        },
+        "plan-check-enforcement": {
+          "self": "任务检查结果控制",
+          "description": "根据任务检查的结果来控制能否发布。",
+          "error-only": {
+            "self": "仅在错误时阻止",
+            "description": "仅当任务检查发现错误时阻止发布。"
+          },
+          "strict": {
+            "self": "严格模式",
+            "description": "当任务检查发现错误或警告时均阻止发布。"
+          }
+        }
+      }
     },
     "environment-tier": {
       "name": "环境级别",
@@ -1847,6 +1861,10 @@
           "self": "要求手动输入工单标题",
           "description": "工单标题必须由用户输入而不是自动生成。"
         },
+        "enforce-sql-review": {
+          "self": "强制 SQL 审核",
+          "description": "在允许创建工单之前，要求 SQL 审核检查通过且无错误。"
+        },
         "allow-self-approval": {
           "self": "允许创建者审批",
           "description": "允许创建者审批自己创建的工单。"
@@ -2106,7 +2124,6 @@
     "manage-connections": "管理连接",
     "view-detail": "查看详情",
     "generate-sql": "生成 SQL",
-    "current-editing-statement-is-not-empty": "当前编辑中的语句不为空。",
     "run-anyway": "仍要运行",
     "no-project": {
       "not-member-of-any-projects": "你不是任何项目的成员。",

@@ -200,7 +200,7 @@
             {{ $t("rollout.force-rollout") }}
           </NCheckbox>
         </div>
-        <div v-else></div>
+        <div v-else />
 
         <div class="flex justify-end gap-x-2">
           <NButton quaternary @click="$emit('close')">
@@ -210,7 +210,7 @@
           <NTooltip :disabled="validationMessages.length === 0" placement="top">
             <template #trigger>
               <NButton
-                :disabled="validationMessages.length > 0 && !forceRollout"
+                :disabled="shouldShowForceRollout && !forceRollout"
                 type="primary"
                 @click="handleConfirm"
               >
@@ -316,7 +316,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { project } = useCurrentProjectV1();
-const { issue, rollout, plan } = usePlanContextWithRollout();
+const { issue, rollout, plan, taskRuns } = usePlanContextWithRollout();
 const reviewContext = useIssueReviewContext();
 const state = reactive<LocalState>({
   loading: false,
@@ -464,8 +464,12 @@ const validationMessages = computed(() => {
       messages.push(planCheckError.value);
     }
 
-    // Automatic rollout info (always show as informational)
-    if (isAutomaticRollout.value) {
+    // Automatic rollout info (only show for non-export tasks with no task runs)
+    if (
+      isAutomaticRollout.value &&
+      !isDatabaseExportTask.value &&
+      !hasTaskRuns.value
+    ) {
       messages.push(t("rollout.automatic-rollout.description"));
     }
   }
@@ -487,17 +491,14 @@ const validationMessages = computed(() => {
 const shouldShowForceRollout = computed(() => {
   // Show force rollout checkbox for RUN action when:
   // 1. Issue approval is not complete, OR
-  // 2. Previous stages are not complete, OR
-  // 3. Environment has automatic rollout enabled
-  return (
+  // 2. Plan check has errors
+  return Boolean(
     props.action === "RUN" &&
-    (hasWorkspacePermissionV2("bb.taskRuns.create") ||
-      hasProjectPermissionV2(project.value, "bb.taskRuns.create")) &&
-    ((issueApprovalStatus.value.hasIssue &&
-      !issueApprovalStatus.value.isApproved) ||
-      previousStagesStatus.value.hasIncomplete ||
-      planCheckError.value ||
-      isAutomaticRollout.value)
+      (hasWorkspacePermissionV2("bb.taskRuns.create") ||
+        hasProjectPermissionV2(project.value, "bb.taskRuns.create")) &&
+      ((issueApprovalStatus.value.hasIssue &&
+        !issueApprovalStatus.value.isApproved) ||
+        planCheckError.value)
   );
 });
 
@@ -520,6 +521,13 @@ const isAutomaticRollout = computed(() => {
     rolloutPolicy.value?.enforce &&
     rolloutPolicy.value.policy?.case === "rolloutPolicy" &&
     rolloutPolicy.value.policy.value.automatic
+  );
+});
+
+// Check if any of the eligible tasks have task runs
+const hasTaskRuns = computed(() => {
+  return eligibleTasks.value.some((task) =>
+    taskRuns.value.some((taskRun) => taskRun.name.startsWith(`${task.name}/`))
   );
 });
 
@@ -677,8 +685,9 @@ const addRunTimeToRequest = (request: BatchRunTasksRequest) => {
 };
 
 const handleConfirm = async () => {
-  state.loading = true;
+  if (state.loading) return;
 
+  state.loading = true;
   try {
     if (props.action === "RUN") {
       // For export tasks, group by stage/environment and make separate batch calls

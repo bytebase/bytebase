@@ -69,6 +69,7 @@ export const provideInstanceRoleSettingContext = (refs: {
     return [
       Plan_ChangeDatabaseConfig_Type.DATA,
       Plan_ChangeDatabaseConfig_Type.MIGRATE,
+      Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST,
     ].includes(selectedSpec.value.config.value.type);
   });
 

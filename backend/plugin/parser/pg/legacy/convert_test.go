@@ -1,4 +1,4 @@
-package pg
+package legacy
 
 import (
 	"encoding/json"

@@ -105,6 +105,8 @@ permissions:
   - bb.taskRuns.list
   - bb.users.create
   - bb.users.delete
+  - bb.users.get
+  - bb.users.list
   - bb.users.undelete
   - bb.users.update
   - bb.worksheets.get

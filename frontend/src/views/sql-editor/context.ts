@@ -1,5 +1,6 @@
 import { useLocalStorage } from "@vueuse/core";
 import Emittery from "emittery";
+import { type IRange } from "monaco-editor";
 import type { InjectionKey, Ref } from "vue";
 import { inject, provide, ref } from "vue";
 import { useSQLEditorStore } from "@/store";
@@ -12,7 +13,7 @@ export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY";
 // 30% by default
 export const storedAIPanelSize = useLocalStorage("bb.plugin.ai.panel-size", 30);
 
-type SQLEditorEvents = Emittery<{
+export type SQLEditorEvents = Emittery<{
   "save-sheet": {
     tab: SQLEditorTab;
     editTitle?: boolean;
@@ -29,10 +30,8 @@ type SQLEditorEvents = Emittery<{
   "project-context-ready": {
     project: string;
   };
-  "set-editor-selection": {
-    start: { line: number; column: number };
-    end?: { line: number; column: number };
-  };
+  "set-editor-selection": IRange;
+  "append-editor-content": { content: string; select: boolean };
   "insert-at-caret": {
     content: string;
   };

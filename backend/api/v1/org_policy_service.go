@@ -22,15 +22,13 @@ import (
 var (
 	// allowedResourceTypes includes allowed resource types for each policy type.
 	allowedResourceTypes = map[storepb.Policy_Type][]storepb.Policy_Resource{
-		storepb.Policy_ROLLOUT:                                {storepb.Policy_ENVIRONMENT},
-		storepb.Policy_TAG:                                    {storepb.Policy_ENVIRONMENT, storepb.Policy_PROJECT},
-		storepb.Policy_DISABLE_COPY_DATA:                      {storepb.Policy_ENVIRONMENT, storepb.Policy_PROJECT},
-		storepb.Policy_QUERY_DATA:                             {storepb.Policy_WORKSPACE},
-		storepb.Policy_MASKING_RULE:                           {storepb.Policy_WORKSPACE},
-		storepb.Policy_MASKING_EXCEPTION:                      {storepb.Policy_PROJECT},
-		storepb.Policy_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW: {storepb.Policy_WORKSPACE, storepb.Policy_PROJECT},
-		storepb.Policy_IAM:                                    {storepb.Policy_WORKSPACE},
-		storepb.Policy_DATA_SOURCE_QUERY:                      {storepb.Policy_ENVIRONMENT, storepb.Policy_PROJECT},
+		storepb.Policy_ROLLOUT:           {storepb.Policy_ENVIRONMENT},
+		storepb.Policy_TAG:               {storepb.Policy_ENVIRONMENT, storepb.Policy_PROJECT},
+		storepb.Policy_QUERY_DATA:        {storepb.Policy_WORKSPACE, storepb.Policy_ENVIRONMENT, storepb.Policy_PROJECT},
+		storepb.Policy_MASKING_RULE:      {storepb.Policy_WORKSPACE},
+		storepb.Policy_MASKING_EXCEPTION: {storepb.Policy_PROJECT},
+		storepb.Policy_IAM:               {storepb.Policy_WORKSPACE},
+		storepb.Policy_DATA_SOURCE_QUERY: {storepb.Policy_ENVIRONMENT, storepb.Policy_PROJECT},
 	}
 )
 
@@ -204,14 +202,10 @@ func pathMatchType(path string, policyType storepb.Policy_Type) bool {
 	switch policyType {
 	case storepb.Policy_ROLLOUT:
 		return path == "rollout_policy"
-	case storepb.Policy_DISABLE_COPY_DATA:
-		return path == "disable_copy_data_policy"
 	case storepb.Policy_MASKING_RULE:
 		return path == "masking_rule_policy"
 	case storepb.Policy_MASKING_EXCEPTION:
 		return path == "masking_exception_policy"
-	case storepb.Policy_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW:
-		return path == "restrict_issue_creation_for_sql_review_policy"
 	case storepb.Policy_TAG:
 		return path == "tag_policy"
 	case storepb.Policy_DATA_SOURCE_QUERY:
@@ -442,17 +436,13 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 			return "", errors.Wrap(err, "failed to marshal tag policy")
 		}
 		return string(payloadBytes), nil
-	case v1pb.PolicyType_DISABLE_COPY_DATA:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_RESTRICT_COPYING_DATA); err != nil {
-			return "", connect.NewError(connect.CodePermissionDenied, err)
-		}
-		payload := convertToDisableCopyDataPolicyPayload(policy.GetDisableCopyDataPolicy())
-		payloadBytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal policy")
-		}
-		return string(payloadBytes), nil
 	case v1pb.PolicyType_DATA_QUERY:
+		// Check license for both query policy and restrict copying data features
+		if policy.GetQueryDataPolicy() != nil && policy.GetQueryDataPolicy().DisableCopyData {
+			if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_RESTRICT_COPYING_DATA); err != nil {
+				return "", connect.NewError(connect.CodePermissionDenied, err)
+			}
+		}
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
 			return "", connect.NewError(connect.CodePermissionDenied, err)
 		}
@@ -483,13 +473,6 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		payloadBytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal masking exception policy")
-		}
-		return string(payloadBytes), nil
-	case v1pb.PolicyType_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW:
-		payload := convertToRestrictIssueCreationForSQLReviewPayload(policy.GetRestrictIssueCreationForSqlReviewPolicy())
-		payloadBytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal restrict issue creation for SQL review policy")
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_DATA_SOURCE_QUERY:
@@ -538,12 +521,6 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, policyMessage *s
 		policy.Policy = &v1pb.Policy_TagPolicy{
 			TagPolicy: p,
 		}
-	case storepb.Policy_DISABLE_COPY_DATA:
-		payload, err := convertToV1PBDisableCopyDataPolicy(policyMessage.Payload)
-		if err != nil {
-			return nil, err
-		}
-		policy.Policy = payload
 	case storepb.Policy_QUERY_DATA:
 		payload, err := convertToV1PBQueryDataPolicy(policyMessage.Payload)
 		if err != nil {
@@ -568,12 +545,6 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, policyMessage *s
 		policy.Policy = &v1pb.Policy_MaskingExceptionPolicy{
 			MaskingExceptionPolicy: payload,
 		}
-	case storepb.Policy_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW:
-		payload, err := convertToV1PBRestrictIssueCreationForSQLReviewPolicy(policyMessage.Payload)
-		if err != nil {
-			return nil, err
-		}
-		policy.Policy = payload
 	case storepb.Policy_DATA_SOURCE_QUERY:
 		payload, err := convertToV1PBDataSourceQueryPolicy(policyMessage.Payload)
 		if err != nil {
@@ -683,20 +654,24 @@ func convertToStorePBRolloutPolicy(policy *v1pb.RolloutPolicy) *storepb.RolloutP
 	return &storepb.RolloutPolicy{
 		Automatic:  policy.Automatic,
 		Roles:      policy.Roles,
-		IssueRoles: policy.IssueRoles,
+		IssueRoles: policy.IssueRoles, //nolint:staticcheck // TODO: remove deprecated IssueRoles
+		Checkers:   convertToStorePBCheckers(policy.Checkers),
 	}
 }
 
-func convertToV1PBDisableCopyDataPolicy(payloadStr string) (*v1pb.Policy_DisableCopyDataPolicy, error) {
-	payload := &storepb.DisableCopyDataPolicy{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal disable copy policy payload")
+func convertToStorePBCheckers(checkers *v1pb.RolloutPolicy_Checkers) *storepb.RolloutPolicy_Checkers {
+	if checkers == nil {
+		return nil
 	}
-	return &v1pb.Policy_DisableCopyDataPolicy{
-		DisableCopyDataPolicy: &v1pb.DisableCopyDataPolicy{
-			Active: payload.Active,
-		},
-	}, nil
+	result := &storepb.RolloutPolicy_Checkers{
+		RequiredIssueApproval: checkers.RequiredIssueApproval,
+	}
+	if checkers.RequiredStatusChecks != nil {
+		result.RequiredStatusChecks = &storepb.RolloutPolicy_Checkers_RequiredStatusChecks{
+			PlanCheckEnforcement: storepb.RolloutPolicy_Checkers_PlanCheckEnforcement(checkers.RequiredStatusChecks.PlanCheckEnforcement),
+		}
+	}
+	return result
 }
 
 func convertToV1PBQueryDataPolicy(payloadStr string) (*v1pb.Policy_QueryDataPolicy, error) {
@@ -710,14 +685,9 @@ func convertToV1PBQueryDataPolicy(payloadStr string) (*v1pb.Policy_QueryDataPoli
 			DisableExport:     payload.DisableExport,
 			MaximumResultSize: payload.MaximumResultSize,
 			MaximumResultRows: payload.MaximumResultRows,
+			DisableCopyData:   payload.DisableCopyData,
 		},
 	}, nil
-}
-
-func convertToDisableCopyDataPolicyPayload(policy *v1pb.DisableCopyDataPolicy) *storepb.DisableCopyDataPolicy {
-	return &storepb.DisableCopyDataPolicy{
-		Active: policy.Active,
-	}
 }
 
 func convertToQueryDataPolicyPayload(policy *v1pb.QueryDataPolicy) *storepb.QueryDataPolicy {
@@ -726,6 +696,7 @@ func convertToQueryDataPolicyPayload(policy *v1pb.QueryDataPolicy) *storepb.Quer
 		DisableExport:     policy.DisableExport,
 		MaximumResultSize: policy.MaximumResultSize,
 		MaximumResultRows: policy.MaximumResultRows,
+		DisableCopyData:   policy.DisableCopyData,
 	}
 }
 
@@ -818,24 +789,6 @@ func (s *OrgPolicyService) convertToV1PBMaskingExceptionPolicyPayload(ctx contex
 	}
 }
 
-func convertToV1PBRestrictIssueCreationForSQLReviewPolicy(payloadStr string) (*v1pb.Policy_RestrictIssueCreationForSqlReviewPolicy, error) {
-	payload := &storepb.RestrictIssueCreationForSQLReviewPolicy{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
-		return nil, err
-	}
-	return &v1pb.Policy_RestrictIssueCreationForSqlReviewPolicy{
-		RestrictIssueCreationForSqlReviewPolicy: &v1pb.RestrictIssueCreationForSQLReviewPolicy{
-			Disallow: payload.Disallow,
-		},
-	}, nil
-}
-
-func convertToRestrictIssueCreationForSQLReviewPayload(policy *v1pb.RestrictIssueCreationForSQLReviewPolicy) *storepb.RestrictIssueCreationForSQLReviewPolicy {
-	return &storepb.RestrictIssueCreationForSQLReviewPolicy{
-		Disallow: policy.Disallow,
-	}
-}
-
 func convertToV1PBDataSourceQueryPolicy(payloadStr string) (*v1pb.Policy_DataSourceQueryPolicy, error) {
 	payload := &storepb.DataSourceQueryPolicy{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
@@ -869,12 +822,8 @@ func convertV1PBToStorePBPolicyType(pType v1pb.PolicyType) (storepb.Policy_Type,
 		return storepb.Policy_MASKING_RULE, nil
 	case v1pb.PolicyType_MASKING_EXCEPTION:
 		return storepb.Policy_MASKING_EXCEPTION, nil
-	case v1pb.PolicyType_DISABLE_COPY_DATA:
-		return storepb.Policy_DISABLE_COPY_DATA, nil
 	case v1pb.PolicyType_DATA_QUERY:
 		return storepb.Policy_QUERY_DATA, nil
-	case v1pb.PolicyType_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW:
-		return storepb.Policy_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW, nil
 	case v1pb.PolicyType_DATA_SOURCE_QUERY:
 		return storepb.Policy_DATA_SOURCE_QUERY, nil
 	default:
@@ -892,12 +841,8 @@ func convertStorePBToV1PBPolicyType(pType storepb.Policy_Type) v1pb.PolicyType {
 		return v1pb.PolicyType_MASKING_RULE
 	case storepb.Policy_MASKING_EXCEPTION:
 		return v1pb.PolicyType_MASKING_EXCEPTION
-	case storepb.Policy_DISABLE_COPY_DATA:
-		return v1pb.PolicyType_DISABLE_COPY_DATA
 	case storepb.Policy_QUERY_DATA:
 		return v1pb.PolicyType_DATA_QUERY
-	case storepb.Policy_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW:
-		return v1pb.PolicyType_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
 	case storepb.Policy_DATA_SOURCE_QUERY:
 		return v1pb.PolicyType_DATA_SOURCE_QUERY
 	default:

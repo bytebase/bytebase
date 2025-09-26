@@ -226,7 +226,6 @@
       "n-rows": "{n} rows"
     },
     "back-to-workspace": "Back to workspace",
-    "override": "Override",
     "encoding": "Encoding",
     "finish": "Finish",
     "title": "Title",
@@ -694,10 +693,6 @@
         "extra-link": {
           "self": "Link",
           "placeholder": "Input announcement link"
-        },
-        "restrict-issue-creation-for-sql-review": {
-          "title": "Disallow issue creation for SQL review with errors",
-          "description": "Once enabled, users are only allowed to create issues if the SQL review does not contain any errors."
         },
         "default-landing-page": {
           "self": "Default landing page",
@@ -1545,7 +1540,26 @@
       "info": "Tasks can be executed by users with '{permission}' permission or the following roles",
       "auto": "Automatic",
       "auto-info": "If all check pass, the change will be rolled out and executed automatically.",
-      "last-issue-approver": "Last Issue Approver"
+      "last-issue-approver": "Last Issue Approver",
+      "checkers": {
+        "self": "Requirements",
+        "required-issue-approval": {
+          "self": "Require Issue Approval",
+          "description": "Issue must be approved before rollout can proceed."
+        },
+        "plan-check-enforcement": {
+          "self": "Plan Check Enforcement",
+          "description": "Block rollout based on plan check results.",
+          "error-only": {
+            "self": "Block on Errors Only",
+            "description": "Block rollout only when plan check finds errors."
+          },
+          "strict": {
+            "self": "Strict Enforcement",
+            "description": "Block rollout when plan check finds errors or warnings."
+          }
+        }
+      }
     },
     "environment-tier": {
       "name": "Environment Tier",
@@ -1847,6 +1861,10 @@
           "self": "Enforce issue title",
           "description": "Enforce issue title to be non-empty and created by user instead of auto generated."
         },
+        "enforce-sql-review": {
+          "self": "Enforce SQL review",
+          "description": "Require SQL review checks to pass without errors before allowing issue creation."
+        },
         "allow-self-approval": {
           "self": "Allow self approval",
           "description": "Allow the issue creator to approve the issue."
@@ -2106,7 +2124,6 @@
     "manage-connections": "Manage connections",
     "view-detail": "View detail",
     "generate-sql": "Generate SQL",
-    "current-editing-statement-is-not-empty": "Current editing statement is not empty.",
     "run-anyway": "Run anyway",
     "no-project": {
       "not-member-of-any-projects": "You are not any member of any projects.",

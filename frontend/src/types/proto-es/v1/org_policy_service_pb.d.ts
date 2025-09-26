@@ -246,12 +246,6 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
     case: "rolloutPolicy";
   } | {
     /**
-     * @generated from field: bytebase.v1.DisableCopyDataPolicy disable_copy_data_policy = 16;
-     */
-    value: DisableCopyDataPolicy;
-    case: "disableCopyDataPolicy";
-  } | {
-    /**
      * @generated from field: bytebase.v1.MaskingRulePolicy masking_rule_policy = 17;
      */
     value: MaskingRulePolicy;
@@ -262,12 +256,6 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
      */
     value: MaskingExceptionPolicy;
     case: "maskingExceptionPolicy";
-  } | {
-    /**
-     * @generated from field: bytebase.v1.RestrictIssueCreationForSQLReviewPolicy restrict_issue_creation_for_sql_review_policy = 20;
-     */
-    value: RestrictIssueCreationForSQLReviewPolicy;
-    case: "restrictIssueCreationForSqlReviewPolicy";
   } | {
     /**
      * @generated from field: bytebase.v1.TagPolicy tag_policy = 21;
@@ -322,12 +310,22 @@ export declare type RolloutPolicy = Message<"bytebase.v1.RolloutPolicy"> & {
   roles: string[];
 
   /**
+   * Deprecated.
    * roles/LAST_APPROVER
    * roles/CREATOR
    *
-   * @generated from field: repeated string issue_roles = 3;
+   * @generated from field: repeated string issue_roles = 3 [deprecated = true];
+   * @deprecated
    */
   issueRoles: string[];
+
+  /**
+   * Checkers that must pass before rollout execution.
+   * These checks are performed in UI workflows only.
+   *
+   * @generated from field: bytebase.v1.RolloutPolicy.Checkers checkers = 4;
+   */
+  checkers?: RolloutPolicy_Checkers;
 };
 
 /**
@@ -337,20 +335,78 @@ export declare type RolloutPolicy = Message<"bytebase.v1.RolloutPolicy"> & {
 export declare const RolloutPolicySchema: GenMessage<RolloutPolicy>;
 
 /**
- * @generated from message bytebase.v1.DisableCopyDataPolicy
+ * @generated from message bytebase.v1.RolloutPolicy.Checkers
  */
-export declare type DisableCopyDataPolicy = Message<"bytebase.v1.DisableCopyDataPolicy"> & {
+export declare type RolloutPolicy_Checkers = Message<"bytebase.v1.RolloutPolicy.Checkers"> & {
   /**
-   * @generated from field: bool active = 1;
+   * Whether issue approval is required before proceeding with rollout.
+   *
+   * @generated from field: bool required_issue_approval = 1;
    */
-  active: boolean;
+  requiredIssueApproval: boolean;
+
+  /**
+   * Status checks that must pass before rollout can be executed.
+   *
+   * @generated from field: bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks required_status_checks = 2;
+   */
+  requiredStatusChecks?: RolloutPolicy_Checkers_RequiredStatusChecks;
 };
 
 /**
- * Describes the message bytebase.v1.DisableCopyDataPolicy.
- * Use `create(DisableCopyDataPolicySchema)` to create a new message.
+ * Describes the message bytebase.v1.RolloutPolicy.Checkers.
+ * Use `create(RolloutPolicy_CheckersSchema)` to create a new message.
  */
-export declare const DisableCopyDataPolicySchema: GenMessage<DisableCopyDataPolicy>;
+export declare const RolloutPolicy_CheckersSchema: GenMessage<RolloutPolicy_Checkers>;
+
+/**
+ * @generated from message bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks
+ */
+export declare type RolloutPolicy_Checkers_RequiredStatusChecks = Message<"bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks"> & {
+  /**
+   * Enforcement level for plan check results during rollout validation.
+   *
+   * @generated from field: bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement plan_check_enforcement = 1;
+   */
+  planCheckEnforcement: RolloutPolicy_Checkers_PlanCheckEnforcement;
+};
+
+/**
+ * Describes the message bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks.
+ * Use `create(RolloutPolicy_Checkers_RequiredStatusChecksSchema)` to create a new message.
+ */
+export declare const RolloutPolicy_Checkers_RequiredStatusChecksSchema: GenMessage<RolloutPolicy_Checkers_RequiredStatusChecks>;
+
+/**
+ * @generated from enum bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement
+ */
+export enum RolloutPolicy_Checkers_PlanCheckEnforcement {
+  /**
+   * Allow rollout regardless of plan check results (no enforcement).
+   *
+   * @generated from enum value: PLAN_CHECK_ENFORCEMENT_UNSPECIFIED = 0;
+   */
+  PLAN_CHECK_ENFORCEMENT_UNSPECIFIED = 0,
+
+  /**
+   * Block rollout only when plan check finds errors.
+   *
+   * @generated from enum value: ERROR_ONLY = 1;
+   */
+  ERROR_ONLY = 1,
+
+  /**
+   * Block rollout when plan check finds errors or warnings.
+   *
+   * @generated from enum value: STRICT = 2;
+   */
+  STRICT = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement.
+ */
+export declare const RolloutPolicy_Checkers_PlanCheckEnforcementSchema: GenEnum<RolloutPolicy_Checkers_PlanCheckEnforcement>;
 
 /**
  * QueryDataPolicy is the policy configuration for querying data.
@@ -387,6 +443,13 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
    * @generated from field: int32 maximum_result_rows = 4;
    */
   maximumResultRows: number;
+
+  /**
+   * Disable copying data.
+   *
+   * @generated from field: bool disable_copy_data = 5;
+   */
+  disableCopyData: boolean;
 };
 
 /**
@@ -597,22 +660,6 @@ export declare type MaskingRulePolicy_MaskingRule = Message<"bytebase.v1.Masking
 export declare const MaskingRulePolicy_MaskingRuleSchema: GenMessage<MaskingRulePolicy_MaskingRule>;
 
 /**
- * @generated from message bytebase.v1.RestrictIssueCreationForSQLReviewPolicy
- */
-export declare type RestrictIssueCreationForSQLReviewPolicy = Message<"bytebase.v1.RestrictIssueCreationForSQLReviewPolicy"> & {
-  /**
-   * @generated from field: bool disallow = 1;
-   */
-  disallow: boolean;
-};
-
-/**
- * Describes the message bytebase.v1.RestrictIssueCreationForSQLReviewPolicy.
- * Use `create(RestrictIssueCreationForSQLReviewPolicySchema)` to create a new message.
- */
-export declare const RestrictIssueCreationForSQLReviewPolicySchema: GenMessage<RestrictIssueCreationForSQLReviewPolicy>;
-
-/**
  * @generated from message bytebase.v1.TagPolicy
  */
 export declare type TagPolicy = Message<"bytebase.v1.TagPolicy"> & {
@@ -707,11 +754,6 @@ export enum PolicyType {
   ROLLOUT_POLICY = 11,
 
   /**
-   * @generated from enum value: DISABLE_COPY_DATA = 8;
-   */
-  DISABLE_COPY_DATA = 8,
-
-  /**
    * @generated from enum value: MASKING_RULE = 9;
    */
   MASKING_RULE = 9,
@@ -720,11 +762,6 @@ export enum PolicyType {
    * @generated from enum value: MASKING_EXCEPTION = 10;
    */
   MASKING_EXCEPTION = 10,
-
-  /**
-   * @generated from enum value: RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 12;
-   */
-  RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 12,
 
   /**
    * @generated from enum value: TAG = 13;

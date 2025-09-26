@@ -2,29 +2,51 @@
   <NDataTable
     key="iam-members"
     :columns="columns"
-    :data="bindings"
-    :row-key="(row: MemberBinding) => row.binding"
+    :data="data"
+    :row-key="(row: BindingRowData | UserRoleData) => row.key"
     :bordered="true"
     :striped="true"
+    :cascade="false"
+    allow-checking-not-loaded
     :checked-row-keys="selectedBindings"
+    v-model:expanded-row-keys="expandedRowKeys"
+    @load="onGroupLoad"
     @update:checked-row-keys="handleMemberSelection"
   />
 </template>
 
 <script lang="tsx" setup>
-import type { DataTableColumn, DataTableRowKey } from "naive-ui";
+import { orderBy } from "lodash-es";
+import type {
+  DataTableColumn,
+  DataTableRowKey,
+  DataTableRowData,
+} from "naive-ui";
 import { NDataTable } from "naive-ui";
-import { computed, h } from "vue";
+import { computed, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import GroupMemberNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupMemberNameCell.vue";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { useUserStore } from "@/store";
-import { unknownUser } from "@/types";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import type { MemberBinding } from "../types";
 import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
 import UserRolesCell from "./cells/UserRolesCell.vue";
+
+interface BindingRowData {
+  isLeaf: boolean;
+  data: MemberBinding;
+  key: string;
+  type: "binding";
+  children?: UserRoleData[];
+}
+
+interface UserRoleData {
+  data: User;
+  key: string;
+  type: "user";
+}
 
 const props = defineProps<{
   scope: "workspace" | "project";
@@ -43,70 +65,96 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const userStore = useUserStore();
+const expandedRowKeys = ref<string[]>([]);
+
+const data = computed((): BindingRowData[] => {
+  return props.bindings.map((binding) => {
+    return {
+      data: binding,
+      key: binding.binding,
+      type: "binding",
+      isLeaf:
+        binding.type !== "groups" || (binding.group?.members.length ?? 0) === 0,
+    };
+  });
+});
+
+const onGroupLoad = async (row: DataTableRowData) => {
+  const binding = (row as BindingRowData).data;
+  if (binding.type !== "groups" || !binding.group?.members) {
+    return;
+  }
+
+  const memberUserIds = binding.group.members.map((m) => m.member);
+  if (memberUserIds.length > 0) {
+    await userStore.batchGetUsers(memberUserIds);
+  }
+
+  const children: UserRoleData[] = [];
+  for (const member of binding.group.members) {
+    const user = userStore.getUserByIdentifier(member.member);
+    if (!user) {
+      continue;
+    }
+    children.push({
+      data: user,
+      key: `${binding.group?.name}-${user.name}`,
+      type: "user",
+    });
+  }
+
+  row.children = orderBy(children, [(data) => data.data.name], ["desc"]);
+};
 
 const columns = computed(
-  (): DataTableColumn<MemberBinding & { hide?: boolean }>[] => {
+  (): DataTableColumn<
+    (BindingRowData | UserRoleData) & { hide?: boolean }
+  >[] => {
     return [
       {
         type: "selection",
         hide: !props.allowEdit,
-        disabled: (memberBinding: MemberBinding) => {
-          return props.selectDisabled(memberBinding);
-        },
-      },
-      {
-        type: "expand",
-        hide: !props.bindings.some((binding) => binding.type === "groups"),
-        expandable: (memberBinding: MemberBinding) =>
-          memberBinding.type === "groups" &&
-          !!memberBinding.group?.members.length,
-        renderExpand: (memberBinding: MemberBinding) => {
-          // Fetch user data for group members when expanded
-          if (memberBinding.group?.members) {
-            const memberUserIds = memberBinding.group.members.map(
-              (m) => m.member
-            );
-            userStore.batchGetUsers(memberUserIds);
-          }
-
+        disabled: (rowData: BindingRowData | UserRoleData) => {
           return (
-            <div class="pl-20 space-y-2">
-              {memberBinding.group?.members.map((member) => {
-                const user =
-                  userStore.getUserByIdentifier(member.member) ?? unknownUser();
-                return (
-                  <GroupMemberNameCell
-                    key={`${memberBinding.group?.name}-${user.name}`}
-                    user={user}
-                    onClickUser={props.onClickUser}
-                  />
-                );
-              })}
-            </div>
+            rowData.type == "user" ||
+            props.selectDisabled((rowData as BindingRowData).data)
           );
+        },
+        cellProps: (rowData: BindingRowData | UserRoleData) => {
+          if (rowData.type === "user") {
+            return { style: { visibility: "hidden" } };
+          }
+          return {};
         },
       },
       {
         key: "account",
         title: t("settings.members.table.account"),
-        width: "32rem",
         resizable: true,
-        render: (memberBinding: MemberBinding) => {
-          if (memberBinding.type === "groups") {
-            const deleted = memberBinding.group?.deleted ?? false;
+        className: "flex items-center",
+        render: (rowData: BindingRowData | UserRoleData) => {
+          if (rowData.type === "user") {
+            return (
+              <GroupMemberNameCell
+                user={rowData.data}
+                onClickUser={props.onClickUser}
+              />
+            );
+          }
+
+          const binding = (rowData as BindingRowData).data;
+          if (binding.type === "groups") {
+            const deleted = binding.group?.deleted ?? false;
             return (
               <GroupNameCell
-                group={memberBinding.group!}
+                group={binding.group!}
                 link={!deleted}
                 deleted={deleted}
               />
             );
           }
           return (
-            <UserNameCell
-              binding={memberBinding}
-              onClickUser={props.onClickUser}
-            />
+            <UserNameCell binding={binding} onClickUser={props.onClickUser} />
           );
         },
       },
@@ -114,10 +162,15 @@ const columns = computed(
         key: "roles",
         title: t("settings.members.table.role"),
         resizable: true,
-        render: (memberBinding: MemberBinding) => {
+        render: (rowData: BindingRowData | UserRoleData) => {
+          if (rowData.type === "user") {
+            return null;
+          }
+
+          const binding = (rowData as BindingRowData).data;
           return h(UserRolesCell, {
-            role: memberBinding,
-            key: memberBinding.binding,
+            role: binding,
+            key: binding.binding,
           });
         },
       },
@@ -125,22 +178,29 @@ const columns = computed(
         key: "operations",
         title: "",
         width: "4rem",
-        render: (memberBinding: MemberBinding) => {
+        render: (rowData: BindingRowData | UserRoleData) => {
+          if (rowData.type === "user") {
+            return null;
+          }
+
+          const binding = (rowData as BindingRowData).data;
           return h(UserOperationsCell, {
             scope: props.scope,
-            key: memberBinding.binding,
+            key: binding.binding,
             allowEdit: props.allowEdit,
-            binding: memberBinding,
+            binding: binding,
             "onUpdate-binding": () => {
-              emit("update-binding", memberBinding);
+              emit("update-binding", binding);
             },
             "onRevoke-binding": () => {
-              emit("revoke-binding", memberBinding);
+              emit("revoke-binding", binding);
             },
           });
         },
       },
-    ].filter((column) => !column.hide) as DataTableColumn<MemberBinding>[];
+    ].filter((column) => !column.hide) as DataTableColumn<
+      BindingRowData | UserRoleData
+    >[];
   }
 );
 

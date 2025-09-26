@@ -40,6 +40,7 @@ type getSDLDiff func(currentSDLText, previousUserSDLText string, currentSchema, 
 type GetDefinitionContext struct {
 	SkipBackupSchema bool
 	PrintHeader      bool
+	SDLFormat        bool
 }
 
 func RegisterGetSequenceDefinition(engine storepb.Engine, f getSequenceDefinition) {

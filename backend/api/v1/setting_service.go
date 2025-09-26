@@ -8,10 +8,8 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -755,7 +753,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 	}
 	for _, template := range schemaTemplateSetting.FieldTemplates {
 		oldTemplate, ok := oldFieldTemplateMap[template.Id]
-		if ok && cmp.Equal(oldTemplate, template, protocmp.Transform()) {
+		if ok && oldTemplate.Equal(template) {
 			continue
 		}
 		tableMetadata := &v1pb.TableMetadata{
@@ -774,7 +772,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 	}
 	for _, template := range schemaTemplateSetting.TableTemplates {
 		oldTemplate, ok := oldTableTemplateMap[template.Id]
-		if ok && cmp.Equal(oldTemplate, template, protocmp.Transform()) {
+		if ok && oldTemplate.Equal(template) {
 			continue
 		}
 		if err := validateTableMetadata(template.Engine, template.Table); err != nil {

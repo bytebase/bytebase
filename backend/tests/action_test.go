@@ -292,14 +292,14 @@ func TestActionCheckCommand(t *testing.T) {
 		a.NoError(err)
 		defer ctl.Close(ctx)
 
-		// Create MySQL test database
-		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
-		defer mysqlContainer.Close(ctx)
+		// Create PostgreSQL test database
+		database, pgContainer := ctl.createTestPostgreSQLDatabase(ctx, t)
+		defer pgContainer.Close(ctx)
 
 		// Create test data directory and schema.sql file
 		testDataDir := t.TempDir()
 		schemaContent := `CREATE TABLE users (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     username VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
@@ -333,16 +333,16 @@ func TestActionCheckCommand(t *testing.T) {
 		a.NoError(err)
 		defer ctl.Close(ctx)
 
-		// Create MySQL test database
-		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
-		defer mysqlContainer.Close(ctx)
+		// Create PostgreSQL test database
+		database, pgContainer := ctl.createTestPostgreSQLDatabase(ctx, t)
+		defer pgContainer.Close(ctx)
 
 		// Create test data directory with multiple SQL files
 		testDataDir := t.TempDir()
 
 		// Create users.sql
 		usersContent := `CREATE TABLE users (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     username VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
@@ -352,7 +352,7 @@ func TestActionCheckCommand(t *testing.T) {
 
 		// Create products.sql
 		productsContent := `CREATE TABLE products (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     price DECIMAL(10,2)
 );`
@@ -404,7 +404,7 @@ func TestActionCheckCommand(t *testing.T) {
 		// Create test data directory and schema.sql file
 		testDataDir := t.TempDir()
 		schemaContent := `CREATE TABLE users (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     username VARCHAR(255) NOT NULL UNIQUE,
     email VARCHAR(255)
 );`
@@ -438,14 +438,14 @@ func TestActionCheckCommand(t *testing.T) {
 		a.NoError(err)
 		defer ctl.Close(ctx)
 
-		// Create MySQL test database
-		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
-		defer mysqlContainer.Close(ctx)
+		// Create PostgreSQL test database
+		database, pgContainer := ctl.createTestPostgreSQLDatabase(ctx, t)
+		defer pgContainer.Close(ctx)
 
 		// Create test data directory with invalid SQL
 		testDataDir := t.TempDir()
 		invalidSchemaContent := `CREATE TABLE users (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     username VARCHAR(255) NOT NULL UNIQUE
     email VARCHAR(255)  -- Missing comma after previous column
 );`
@@ -605,6 +605,48 @@ func (ctl *controller) createTestMySQLDatabase(ctx context.Context, t *testing.T
 	a.NoError(err)
 
 	return databaseResp.Msg, mysqlContainer
+}
+
+// createTestPostgreSQLDatabase creates a test PostgreSQL database instance and database
+func (ctl *controller) createTestPostgreSQLDatabase(ctx context.Context, t *testing.T) (*v1pb.Database, *Container) {
+	a := require.New(t)
+
+	// Get PostgreSQL container
+	pgContainer, err := getPgContainer(ctx)
+	a.NoError(err)
+
+	// Create PostgreSQL instance
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("inst")[:8],
+		Instance: &v1pb.Instance{
+			Title:       "Test PostgreSQL Instance",
+			Engine:      v1pb.Engine_POSTGRES,
+			Environment: stringPtr("environments/prod"),
+			Activation:  true,
+			DataSources: []*v1pb.DataSource{{
+				Type:     v1pb.DataSourceType_ADMIN,
+				Host:     pgContainer.host,
+				Port:     pgContainer.port,
+				Username: "postgres",
+				Password: "root-password",
+				Id:       "admin",
+			}},
+		},
+	}))
+	a.NoError(err)
+
+	// Create database
+	dbName := generateRandomString("db")[:8]
+	err = ctl.createDatabaseV2(ctx, ctl.project, instanceResp.Msg, nil, dbName, "postgres")
+	a.NoError(err)
+
+	// Get database
+	databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, dbName),
+	}))
+	a.NoError(err)
+
+	return databaseResp.Msg, pgContainer
 }
 
 func TestActionRolloutCommand(t *testing.T) {
@@ -1142,14 +1184,14 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		a.NoError(err)
 		defer ctl.Close(ctx)
 
-		// Create MySQL test database
-		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
-		defer mysqlContainer.Close(ctx)
+		// Create PostgreSQL test database
+		database, pgContainer := ctl.createTestPostgreSQLDatabase(ctx, t)
+		defer pgContainer.Close(ctx)
 
 		// Create test data directory and schema.sql file
 		testDataDir := t.TempDir()
 		migrationContent1 := `CREATE TABLE users (
-    id INT,
+    id SERIAL,
     username VARCHAR(255) NOT NULL UNIQUE
 );`
 		schemaFile := filepath.Join(testDataDir, "schema.sql")
@@ -1215,9 +1257,9 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		a.NoError(err)
 		defer ctl.Close(ctx)
 
-		// Create MySQL test database
-		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
-		defer mysqlContainer.Close(ctx)
+		// Create PostgreSQL test database
+		database, pgContainer := ctl.createTestPostgreSQLDatabase(ctx, t)
+		defer pgContainer.Close(ctx)
 
 		// Create test data directory
 		testDataDir := t.TempDir()
@@ -1225,7 +1267,7 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 
 		// First version of schema
 		migrationContent1 := `CREATE TABLE users (
-    id INT,
+    id SERIAL,
     username VARCHAR(255) NOT NULL UNIQUE
 );`
 		err = os.WriteFile(schemaFile, []byte(migrationContent1), 0644)
@@ -1264,7 +1306,7 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 
 		// Update schema.sql with evolved schema (second version)
 		migrationContent2 := `CREATE TABLE users (
-    id INT,
+    id SERIAL,
     username VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
@@ -1324,14 +1366,14 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		a.NoError(err)
 		defer ctl.Close(ctx)
 
-		// Create MySQL test database
-		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
-		defer mysqlContainer.Close(ctx)
+		// Create PostgreSQL test database
+		database, pgContainer := ctl.createTestPostgreSQLDatabase(ctx, t)
+		defer pgContainer.Close(ctx)
 
 		// Create test data directory and schema.sql file
 		testDataDir := t.TempDir()
 		migrationContent := `CREATE TABLE users (
-    id INT,
+    id SERIAL,
     username VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
@@ -1494,16 +1536,16 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		a.NoError(err)
 		defer ctl.Close(ctx)
 
-		// Create multiple MySQL test databases
-		database1, mysqlContainer1 := ctl.createTestMySQLDatabase(ctx, t)
-		defer mysqlContainer1.Close(ctx)
-		database2, mysqlContainer2 := ctl.createTestMySQLDatabase(ctx, t)
-		defer mysqlContainer2.Close(ctx)
+		// Create multiple PostgreSQL test databases
+		database1, pgContainer1 := ctl.createTestPostgreSQLDatabase(ctx, t)
+		defer pgContainer1.Close(ctx)
+		database2, pgContainer2 := ctl.createTestPostgreSQLDatabase(ctx, t)
+		defer pgContainer2.Close(ctx)
 
 		// Create test data directory and schema.sql file
 		testDataDir := t.TempDir()
 		migrationContent := `CREATE TABLE users (
-    id INT,
+    id SERIAL,
     username VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
@@ -1559,9 +1601,9 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		a.NoError(err)
 		defer ctl.Close(ctx)
 
-		// Create MySQL test database
-		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
-		defer mysqlContainer.Close(ctx)
+		// Create PostgreSQL test database
+		database, pgContainer := ctl.createTestPostgreSQLDatabase(ctx, t)
+		defer pgContainer.Close(ctx)
 
 		// Create database group
 		databaseGroup, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, connect.NewRequest(&v1pb.CreateDatabaseGroupRequest{
@@ -1577,7 +1619,7 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		// Create test data directory and schema.sql file
 		testDataDir := t.TempDir()
 		migrationContent := `CREATE TABLE users (
-    id INT,
+    id SERIAL,
     username VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
@@ -1631,16 +1673,16 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		a.NoError(err)
 		defer ctl.Close(ctx)
 
-		// Create MySQL test database
-		database, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
-		defer mysqlContainer.Close(ctx)
+		// Create PostgreSQL test database
+		database, pgContainer := ctl.createTestPostgreSQLDatabase(ctx, t)
+		defer pgContainer.Close(ctx)
 
 		// Create test data directory with multiple SQL files
 		testDataDir := t.TempDir()
 
 		// Create users.sql
 		usersContent := `CREATE TABLE users (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     username VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
@@ -1650,7 +1692,7 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 
 		// Create names.sql
 		namesContent := `CREATE TABLE names (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL
 );`

@@ -203,7 +203,6 @@
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
     - [DataSourceQueryPolicy](#bytebase-store-DataSourceQueryPolicy)
-    - [DisableCopyDataPolicy](#bytebase-store-DisableCopyDataPolicy)
     - [EnvironmentTierPolicy](#bytebase-store-EnvironmentTierPolicy)
     - [IamPolicy](#bytebase-store-IamPolicy)
     - [MaskingExceptionPolicy](#bytebase-store-MaskingExceptionPolicy)
@@ -212,8 +211,9 @@
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-store-Policy)
     - [QueryDataPolicy](#bytebase-store-QueryDataPolicy)
-    - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-store-RestrictIssueCreationForSQLReviewPolicy)
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
+    - [RolloutPolicy.Checkers](#bytebase-store-RolloutPolicy-Checkers)
+    - [RolloutPolicy.Checkers.RequiredStatusChecks](#bytebase-store-RolloutPolicy-Checkers-RequiredStatusChecks)
     - [SQLReviewRule](#bytebase-store-SQLReviewRule)
     - [TagPolicy](#bytebase-store-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
@@ -223,6 +223,7 @@
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
     - [Policy.Resource](#bytebase-store-Policy-Resource)
     - [Policy.Type](#bytebase-store-Policy-Type)
+    - [RolloutPolicy.Checkers.PlanCheckEnforcement](#bytebase-store-RolloutPolicy-Checkers-PlanCheckEnforcement)
     - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
   
 - [store/project.proto](#store_project-proto)
@@ -3405,21 +3406,6 @@ DataSourceQueryPolicy is the policy configuration for running statements in the 
 
 
 
-<a name="bytebase-store-DisableCopyDataPolicy"></a>
-
-### DisableCopyDataPolicy
-DisableCopyDataPolicy is the policy configuration for disabling copying data.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| active | [bool](#bool) |  |  |
-
-
-
-
-
-
 <a name="bytebase-store-EnvironmentTierPolicy"></a>
 
 ### EnvironmentTierPolicy
@@ -3539,21 +3525,7 @@ QueryDataPolicy is the policy configuration for querying data.
 | disable_export | [bool](#bool) |  | Disable export data in the SQL editor |
 | maximum_result_size | [int64](#int64) |  | The size limit in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
 | maximum_result_rows | [int32](#int32) |  | The return rows limit. The default value is -1, means no limit. |
-
-
-
-
-
-
-<a name="bytebase-store-RestrictIssueCreationForSQLReviewPolicy"></a>
-
-### RestrictIssueCreationForSQLReviewPolicy
-RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restricting issue creation for SQL review.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| disallow | [bool](#bool) |  |  |
+| disable_copy_data | [bool](#bool) |  | Disable copying data. |
 
 
 
@@ -3570,7 +3542,39 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | ----- | ---- | ----- | ----------- |
 | automatic | [bool](#bool) |  |  |
 | roles | [string](#string) | repeated |  |
-| issue_roles | [string](#string) | repeated | roles/LAST_APPROVER roles/CREATOR |
+| issue_roles | [string](#string) | repeated | **Deprecated.** Deprecated. roles/LAST_APPROVER roles/CREATOR |
+| checkers | [RolloutPolicy.Checkers](#bytebase-store-RolloutPolicy-Checkers) |  | Checkers that must pass before rollout execution. These checks are performed in UI workflows only. |
+
+
+
+
+
+
+<a name="bytebase-store-RolloutPolicy-Checkers"></a>
+
+### RolloutPolicy.Checkers
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| required_issue_approval | [bool](#bool) |  | Whether issue approval is required before proceeding with rollout. |
+| required_status_checks | [RolloutPolicy.Checkers.RequiredStatusChecks](#bytebase-store-RolloutPolicy-Checkers-RequiredStatusChecks) |  | Status checks that must pass before rollout can be executed. |
+
+
+
+
+
+
+<a name="bytebase-store-RolloutPolicy-Checkers-RequiredStatusChecks"></a>
+
+### RolloutPolicy.Checkers.RequiredStatusChecks
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| plan_check_enforcement | [RolloutPolicy.Checkers.PlanCheckEnforcement](#bytebase-store-RolloutPolicy-Checkers-PlanCheckEnforcement) |  | Enforcement level for plan check results during rollout validation. |
 
 
 
@@ -3692,13 +3696,24 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | TYPE_UNSPECIFIED | 0 |  |
 | ROLLOUT | 1 |  |
 | MASKING_EXCEPTION | 2 |  |
-| DISABLE_COPY_DATA | 3 |  |
 | QUERY_DATA | 5 |  |
 | MASKING_RULE | 6 |  |
-| RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW | 7 |  |
 | IAM | 8 |  |
 | TAG | 9 |  |
 | DATA_SOURCE_QUERY | 10 |  |
+
+
+
+<a name="bytebase-store-RolloutPolicy-Checkers-PlanCheckEnforcement"></a>
+
+### RolloutPolicy.Checkers.PlanCheckEnforcement
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PLAN_CHECK_ENFORCEMENT_UNSPECIFIED | 0 | Allow rollout regardless of plan check results (no enforcement). |
+| ERROR_ONLY | 1 | Block rollout only when plan check finds errors. |
+| STRICT | 2 | Block rollout when plan check finds errors or warnings. |
 
 
 
@@ -3768,6 +3783,7 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | ci_sampling_size | [int32](#int32) |  | The maximum number of databases to sample during CI data validation. Without specification, sampling is disabled, resulting in a full validation. |
 | parallel_tasks_per_rollout | [int32](#int32) |  | The maximum number of parallel tasks to run during the rollout. |
 | labels | [Project.LabelsEntry](#bytebase-store-Project-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the project. For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34;backend&#34; } |
+| enforce_sql_review | [bool](#bool) |  | Whether to enforce SQL review checks to pass before issue creation. If enabled, issues cannot be created when SQL review finds errors. |
 
 
 

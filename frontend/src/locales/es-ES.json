@@ -226,7 +226,6 @@
       "n-rows": "{n} filas"
     },
     "back-to-workspace": "Volver al espacio de trabajo",
-    "override": "Anular",
     "encoding": "Codificación",
     "finish": "Finalizar",
     "title": "Título",
@@ -694,10 +693,6 @@
         "extra-link": {
           "self": "Enlace",
           "placeholder": "Enlace de anuncio de entrada"
-        },
-        "restrict-issue-creation-for-sql-review": {
-          "title": "Prohibir la creación de problemas para la revisión de SQL con errores.",
-          "description": "Una vez habilitado, a los usuarios solo se les permite crear problemas si la revisión de SQL no contiene errores."
         },
         "default-landing-page": {
           "self": "Página de destino predeterminada",
@@ -1545,7 +1540,26 @@
       "info": "Las tareas pueden ser ejecutadas por usuarios con el permiso '{permission}' o los siguientes roles",
       "auto": "Automático",
       "auto-info": "Si se aprueban todas las comprobaciones, el cambio se implementará y ejecutará automáticamente.",
-      "last-issue-approver": "Aprobador de último tema"
+      "last-issue-approver": "Aprobador de último tema",
+      "checkers": {
+        "self": "Requisitos",
+        "required-issue-approval": {
+          "self": "Requerir aprobación de emisión",
+          "description": "El problema debe ser aprobado antes de que pueda continuar la implementación."
+        },
+        "plan-check-enforcement": {
+          "self": "Control de cumplimiento del plan",
+          "description": "Implementación de bloques según los resultados de la verificación del plan.",
+          "error-only": {
+            "self": "Bloquear solo errores",
+            "description": "Bloquear la implementación solo cuando la verificación del plan encuentre errores."
+          },
+          "strict": {
+            "self": "Aplicación estricta",
+            "description": "Bloquear la implementación cuando la verificación del plan encuentra errores o advertencias."
+          }
+        }
+      }
     },
     "environment-tier": {
       "name": "Nivel de Entorno",
@@ -1847,6 +1861,10 @@
           "self": "Hacer cumplir el título del problema",
           "description": "Exigir que el título del problema no esté vacío y que lo cree el usuario en lugar de generarse automáticamente."
         },
+        "enforce-sql-review": {
+          "self": "Aplicar revisión SQL",
+          "description": "Requiere que las comprobaciones de revisión SQL pasen sin errores antes de permitir la creación de issues."
+        },
         "allow-self-approval": {
           "self": "Permitir la autoaprobación",
           "description": "Permitir que el creador del problema apruebe el problema."
@@ -2106,7 +2124,6 @@
     "manage-connections": "Gestionar las conexiones",
     "view-detail": "Ver detalle",
     "generate-sql": "Generar SQL",
-    "current-editing-statement-is-not-empty": "La declaración de edición actual no está vacía.",
     "run-anyway": "Corre de todos modos",
     "no-project": {
       "not-member-of-any-projects": "No eres miembro de ningún proyecto.",

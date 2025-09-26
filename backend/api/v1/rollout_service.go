@@ -1177,14 +1177,14 @@ func (s *RolloutService) canUserRunEnvironmentTasks(ctx context.Context, user *s
 	}
 
 	if user.ID == creatorUID {
-		if slices.Contains(p.IssueRoles, "roles/CREATOR") {
+		if slices.Contains(p.IssueRoles, "roles/CREATOR") { //nolint:staticcheck // TODO: remove deprecated IssueRoles
 			return true, nil
 		}
 	}
 
 	if issue != nil {
 		if lastApproverUID := getLastApproverUID(issue.Payload.GetApproval()); lastApproverUID != nil && *lastApproverUID == user.ID {
-			if slices.Contains(p.IssueRoles, "roles/LAST_APPROVER") {
+			if slices.Contains(p.IssueRoles, "roles/LAST_APPROVER") { //nolint:staticcheck // TODO: remove deprecated IssueRoles
 				return true, nil
 			}
 		}

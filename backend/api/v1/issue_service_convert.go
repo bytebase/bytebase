@@ -121,7 +121,7 @@ func (s *IssueService) convertToIssueReleasers(ctx context.Context, issue *store
 	var releasers []string
 
 	releasers = append(releasers, policy.Roles...)
-	for _, role := range policy.IssueRoles {
+	for _, role := range policy.IssueRoles { //nolint:staticcheck // TODO: remove deprecated IssueRoles
 		switch role {
 		case "roles/CREATOR":
 			releasers = append(releasers, common.FormatUserEmail(issue.Creator.Email))

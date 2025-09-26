@@ -403,9 +403,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		payload, err = json.Marshal(NamingRulePayload{
 			Format: "_delete$",
 		})
-	case SchemaRuleTableNaming:
-		fallthrough
-	case SchemaRuleColumnNaming:
+	case SchemaRuleTableNaming, SchemaRuleColumnNaming:
 		format := "^[a-z]+(_[a-z]+)*$"
 		maxLength := 64
 		switch dbType {

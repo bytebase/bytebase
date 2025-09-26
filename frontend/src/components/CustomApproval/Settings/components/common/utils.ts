@@ -292,13 +292,40 @@ export const getOptionConfigMap = (source: Risk_Source) => {
       case "role":
         options = getRoleOptions();
         break;
+      //
+      // factors that don't need special handling
+      //
+      case "database_name":
+      case "schema_name":
+      case "table_name":
+      case "sql_statement":
+      case "resource.database":
+      case "resource.schema":
+      case "resource.table":
+      case "request.export_format":
+      case "resource.environment_name":
+      case "resource.instance_id":
+      case "resource.database_name":
+      case "resource.table_name":
+      case "resource.column_name":
+      case "resource.schema_name":
+      case "classification_level":
+      case "column_name":
+      case "affected_rows":
+      case "table_rows":
+      case "export_rows":
+      case "request.row_limit":
+      case "expiration_days":
+      case "request.time":
+        break;
       default:
-        throw new Error(`Unsupported factor: ${factor}`);
+        // This should never happen if all factors are handled above
+        const _exhaustiveCheck: never = factor;
+        throw new Error(`Unhandled factor: ${_exhaustiveCheck}`);
     }
-    map.set(factor, {
-      remote: false,
-      options,
-    });
+
+    map.set(factor, { options, remote: false });
+
     return map;
   }, new Map<Factor, OptionConfig>());
 };

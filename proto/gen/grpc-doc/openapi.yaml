@@ -314,10 +314,8 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
-                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -381,10 +379,8 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
-                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -1679,10 +1675,8 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
-                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -1752,10 +1746,8 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
-                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -2499,10 +2491,8 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
-                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -2566,10 +2556,8 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
-                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -3069,10 +3057,8 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
-                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -3140,10 +3126,8 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
-                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -4958,10 +4942,8 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
-                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -5025,10 +5007,8 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - DISABLE_COPY_DATA
                         - MASKING_RULE
                         - MASKING_EXCEPTION
-                        - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -12103,6 +12083,11 @@ components:
                     description: |-
                         Labels are key-value pairs that can be attached to the project.
                          For example, { "environment": "production", "team": "backend" }
+                enforceSqlReview:
+                    type: boolean
+                    description: |-
+                        Whether to enforce SQL review checks to pass before issue creation.
+                         If enabled, issues cannot be created when SQL review finds errors.
         Project_ExecutionRetryPolicy:
             type: object
             properties:

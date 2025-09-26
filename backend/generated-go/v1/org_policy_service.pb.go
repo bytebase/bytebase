@@ -29,15 +29,13 @@ const (
 type PolicyType int32
 
 const (
-	PolicyType_POLICY_TYPE_UNSPECIFIED                PolicyType = 0
-	PolicyType_ROLLOUT_POLICY                         PolicyType = 11
-	PolicyType_DISABLE_COPY_DATA                      PolicyType = 8
-	PolicyType_MASKING_RULE                           PolicyType = 9
-	PolicyType_MASKING_EXCEPTION                      PolicyType = 10
-	PolicyType_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW PolicyType = 12
-	PolicyType_TAG                                    PolicyType = 13
-	PolicyType_DATA_SOURCE_QUERY                      PolicyType = 14
-	PolicyType_DATA_QUERY                             PolicyType = 16
+	PolicyType_POLICY_TYPE_UNSPECIFIED PolicyType = 0
+	PolicyType_ROLLOUT_POLICY          PolicyType = 11
+	PolicyType_MASKING_RULE            PolicyType = 9
+	PolicyType_MASKING_EXCEPTION       PolicyType = 10
+	PolicyType_TAG                     PolicyType = 13
+	PolicyType_DATA_SOURCE_QUERY       PolicyType = 14
+	PolicyType_DATA_QUERY              PolicyType = 16
 )
 
 // Enum value maps for PolicyType.
@@ -45,24 +43,20 @@ var (
 	PolicyType_name = map[int32]string{
 		0:  "POLICY_TYPE_UNSPECIFIED",
 		11: "ROLLOUT_POLICY",
-		8:  "DISABLE_COPY_DATA",
 		9:  "MASKING_RULE",
 		10: "MASKING_EXCEPTION",
-		12: "RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW",
 		13: "TAG",
 		14: "DATA_SOURCE_QUERY",
 		16: "DATA_QUERY",
 	}
 	PolicyType_value = map[string]int32{
-		"POLICY_TYPE_UNSPECIFIED":                0,
-		"ROLLOUT_POLICY":                         11,
-		"DISABLE_COPY_DATA":                      8,
-		"MASKING_RULE":                           9,
-		"MASKING_EXCEPTION":                      10,
-		"RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW": 12,
-		"TAG":                                    13,
-		"DATA_SOURCE_QUERY":                      14,
-		"DATA_QUERY":                             16,
+		"POLICY_TYPE_UNSPECIFIED": 0,
+		"ROLLOUT_POLICY":          11,
+		"MASKING_RULE":            9,
+		"MASKING_EXCEPTION":       10,
+		"TAG":                     13,
+		"DATA_SOURCE_QUERY":       14,
+		"DATA_QUERY":              16,
 	}
 )
 
@@ -197,6 +191,58 @@ func (SQLReviewRuleLevel) EnumDescriptor() ([]byte, []int) {
 	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{2}
 }
 
+type RolloutPolicy_Checkers_PlanCheckEnforcement int32
+
+const (
+	// Allow rollout regardless of plan check results (no enforcement).
+	RolloutPolicy_Checkers_PLAN_CHECK_ENFORCEMENT_UNSPECIFIED RolloutPolicy_Checkers_PlanCheckEnforcement = 0
+	// Block rollout only when plan check finds errors.
+	RolloutPolicy_Checkers_ERROR_ONLY RolloutPolicy_Checkers_PlanCheckEnforcement = 1
+	// Block rollout when plan check finds errors or warnings.
+	RolloutPolicy_Checkers_STRICT RolloutPolicy_Checkers_PlanCheckEnforcement = 2
+)
+
+// Enum value maps for RolloutPolicy_Checkers_PlanCheckEnforcement.
+var (
+	RolloutPolicy_Checkers_PlanCheckEnforcement_name = map[int32]string{
+		0: "PLAN_CHECK_ENFORCEMENT_UNSPECIFIED",
+		1: "ERROR_ONLY",
+		2: "STRICT",
+	}
+	RolloutPolicy_Checkers_PlanCheckEnforcement_value = map[string]int32{
+		"PLAN_CHECK_ENFORCEMENT_UNSPECIFIED": 0,
+		"ERROR_ONLY":                         1,
+		"STRICT":                             2,
+	}
+)
+
+func (x RolloutPolicy_Checkers_PlanCheckEnforcement) Enum() *RolloutPolicy_Checkers_PlanCheckEnforcement {
+	p := new(RolloutPolicy_Checkers_PlanCheckEnforcement)
+	*p = x
+	return p
+}
+
+func (x RolloutPolicy_Checkers_PlanCheckEnforcement) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RolloutPolicy_Checkers_PlanCheckEnforcement) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_org_policy_service_proto_enumTypes[3].Descriptor()
+}
+
+func (RolloutPolicy_Checkers_PlanCheckEnforcement) Type() protoreflect.EnumType {
+	return &file_v1_org_policy_service_proto_enumTypes[3]
+}
+
+func (x RolloutPolicy_Checkers_PlanCheckEnforcement) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RolloutPolicy_Checkers_PlanCheckEnforcement.Descriptor instead.
+func (RolloutPolicy_Checkers_PlanCheckEnforcement) EnumDescriptor() ([]byte, []int) {
+	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{7, 0, 0}
+}
+
 type MaskingExceptionPolicy_MaskingException_Action int32
 
 const (
@@ -230,11 +276,11 @@ func (x MaskingExceptionPolicy_MaskingException_Action) String() string {
 }
 
 func (MaskingExceptionPolicy_MaskingException_Action) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_org_policy_service_proto_enumTypes[3].Descriptor()
+	return file_v1_org_policy_service_proto_enumTypes[4].Descriptor()
 }
 
 func (MaskingExceptionPolicy_MaskingException_Action) Type() protoreflect.EnumType {
-	return &file_v1_org_policy_service_proto_enumTypes[3]
+	return &file_v1_org_policy_service_proto_enumTypes[4]
 }
 
 func (x MaskingExceptionPolicy_MaskingException_Action) Number() protoreflect.EnumNumber {
@@ -243,7 +289,7 @@ func (x MaskingExceptionPolicy_MaskingException_Action) Number() protoreflect.En
 
 // Deprecated: Use MaskingExceptionPolicy_MaskingException_Action.Descriptor instead.
 func (MaskingExceptionPolicy_MaskingException_Action) EnumDescriptor() ([]byte, []int) {
-	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{11, 0, 0}
+	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{10, 0, 0}
 }
 
 type DataSourceQueryPolicy_Restriction int32
@@ -281,11 +327,11 @@ func (x DataSourceQueryPolicy_Restriction) String() string {
 }
 
 func (DataSourceQueryPolicy_Restriction) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_org_policy_service_proto_enumTypes[4].Descriptor()
+	return file_v1_org_policy_service_proto_enumTypes[5].Descriptor()
 }
 
 func (DataSourceQueryPolicy_Restriction) Type() protoreflect.EnumType {
-	return &file_v1_org_policy_service_proto_enumTypes[4]
+	return &file_v1_org_policy_service_proto_enumTypes[5]
 }
 
 func (x DataSourceQueryPolicy_Restriction) Number() protoreflect.EnumNumber {
@@ -294,7 +340,7 @@ func (x DataSourceQueryPolicy_Restriction) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataSourceQueryPolicy_Restriction.Descriptor instead.
 func (DataSourceQueryPolicy_Restriction) EnumDescriptor() ([]byte, []int) {
-	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{15, 0}
+	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{13, 0}
 }
 
 type CreatePolicyRequest struct {
@@ -689,10 +735,8 @@ type Policy struct {
 	// Types that are valid to be assigned to Policy:
 	//
 	//	*Policy_RolloutPolicy
-	//	*Policy_DisableCopyDataPolicy
 	//	*Policy_MaskingRulePolicy
 	//	*Policy_MaskingExceptionPolicy
-	//	*Policy_RestrictIssueCreationForSqlReviewPolicy
 	//	*Policy_TagPolicy
 	//	*Policy_DataSourceQueryPolicy
 	//	*Policy_QueryDataPolicy
@@ -771,15 +815,6 @@ func (x *Policy) GetRolloutPolicy() *RolloutPolicy {
 	return nil
 }
 
-func (x *Policy) GetDisableCopyDataPolicy() *DisableCopyDataPolicy {
-	if x != nil {
-		if x, ok := x.Policy.(*Policy_DisableCopyDataPolicy); ok {
-			return x.DisableCopyDataPolicy
-		}
-	}
-	return nil
-}
-
 func (x *Policy) GetMaskingRulePolicy() *MaskingRulePolicy {
 	if x != nil {
 		if x, ok := x.Policy.(*Policy_MaskingRulePolicy); ok {
@@ -793,15 +828,6 @@ func (x *Policy) GetMaskingExceptionPolicy() *MaskingExceptionPolicy {
 	if x != nil {
 		if x, ok := x.Policy.(*Policy_MaskingExceptionPolicy); ok {
 			return x.MaskingExceptionPolicy
-		}
-	}
-	return nil
-}
-
-func (x *Policy) GetRestrictIssueCreationForSqlReviewPolicy() *RestrictIssueCreationForSQLReviewPolicy {
-	if x != nil {
-		if x, ok := x.Policy.(*Policy_RestrictIssueCreationForSqlReviewPolicy); ok {
-			return x.RestrictIssueCreationForSqlReviewPolicy
 		}
 	}
 	return nil
@@ -856,20 +882,12 @@ type Policy_RolloutPolicy struct {
 	RolloutPolicy *RolloutPolicy `protobuf:"bytes,19,opt,name=rollout_policy,json=rolloutPolicy,proto3,oneof"`
 }
 
-type Policy_DisableCopyDataPolicy struct {
-	DisableCopyDataPolicy *DisableCopyDataPolicy `protobuf:"bytes,16,opt,name=disable_copy_data_policy,json=disableCopyDataPolicy,proto3,oneof"`
-}
-
 type Policy_MaskingRulePolicy struct {
 	MaskingRulePolicy *MaskingRulePolicy `protobuf:"bytes,17,opt,name=masking_rule_policy,json=maskingRulePolicy,proto3,oneof"`
 }
 
 type Policy_MaskingExceptionPolicy struct {
 	MaskingExceptionPolicy *MaskingExceptionPolicy `protobuf:"bytes,18,opt,name=masking_exception_policy,json=maskingExceptionPolicy,proto3,oneof"`
-}
-
-type Policy_RestrictIssueCreationForSqlReviewPolicy struct {
-	RestrictIssueCreationForSqlReviewPolicy *RestrictIssueCreationForSQLReviewPolicy `protobuf:"bytes,20,opt,name=restrict_issue_creation_for_sql_review_policy,json=restrictIssueCreationForSqlReviewPolicy,proto3,oneof"`
 }
 
 type Policy_TagPolicy struct {
@@ -886,13 +904,9 @@ type Policy_QueryDataPolicy struct {
 
 func (*Policy_RolloutPolicy) isPolicy_Policy() {}
 
-func (*Policy_DisableCopyDataPolicy) isPolicy_Policy() {}
-
 func (*Policy_MaskingRulePolicy) isPolicy_Policy() {}
 
 func (*Policy_MaskingExceptionPolicy) isPolicy_Policy() {}
-
-func (*Policy_RestrictIssueCreationForSqlReviewPolicy) isPolicy_Policy() {}
 
 func (*Policy_TagPolicy) isPolicy_Policy() {}
 
@@ -904,9 +918,15 @@ type RolloutPolicy struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	Automatic bool                   `protobuf:"varint,1,opt,name=automatic,proto3" json:"automatic,omitempty"`
 	Roles     []string               `protobuf:"bytes,2,rep,name=roles,proto3" json:"roles,omitempty"`
+	// Deprecated.
 	// roles/LAST_APPROVER
 	// roles/CREATOR
-	IssueRoles    []string `protobuf:"bytes,3,rep,name=issue_roles,json=issueRoles,proto3" json:"issue_roles,omitempty"`
+	//
+	// Deprecated: Marked as deprecated in v1/org_policy_service.proto.
+	IssueRoles []string `protobuf:"bytes,3,rep,name=issue_roles,json=issueRoles,proto3" json:"issue_roles,omitempty"`
+	// Checkers that must pass before rollout execution.
+	// These checks are performed in UI workflows only.
+	Checkers      *RolloutPolicy_Checkers `protobuf:"bytes,4,opt,name=checkers,proto3" json:"checkers,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -955,6 +975,7 @@ func (x *RolloutPolicy) GetRoles() []string {
 	return nil
 }
 
+// Deprecated: Marked as deprecated in v1/org_policy_service.proto.
 func (x *RolloutPolicy) GetIssueRoles() []string {
 	if x != nil {
 		return x.IssueRoles
@@ -962,48 +983,11 @@ func (x *RolloutPolicy) GetIssueRoles() []string {
 	return nil
 }
 
-type DisableCopyDataPolicy struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Active        bool                   `protobuf:"varint,1,opt,name=active,proto3" json:"active,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DisableCopyDataPolicy) Reset() {
-	*x = DisableCopyDataPolicy{}
-	mi := &file_v1_org_policy_service_proto_msgTypes[8]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DisableCopyDataPolicy) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DisableCopyDataPolicy) ProtoMessage() {}
-
-func (x *DisableCopyDataPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_org_policy_service_proto_msgTypes[8]
+func (x *RolloutPolicy) GetCheckers() *RolloutPolicy_Checkers {
 	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
+		return x.Checkers
 	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DisableCopyDataPolicy.ProtoReflect.Descriptor instead.
-func (*DisableCopyDataPolicy) Descriptor() ([]byte, []int) {
-	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{8}
-}
-
-func (x *DisableCopyDataPolicy) GetActive() bool {
-	if x != nil {
-		return x.Active
-	}
-	return false
+	return nil
 }
 
 // QueryDataPolicy is the policy configuration for querying data.
@@ -1019,13 +1003,15 @@ type QueryDataPolicy struct {
 	// The return rows limit.
 	// The default value is -1, means no limit.
 	MaximumResultRows int32 `protobuf:"varint,4,opt,name=maximum_result_rows,json=maximumResultRows,proto3" json:"maximum_result_rows,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// Disable copying data.
+	DisableCopyData bool `protobuf:"varint,5,opt,name=disable_copy_data,json=disableCopyData,proto3" json:"disable_copy_data,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *QueryDataPolicy) Reset() {
 	*x = QueryDataPolicy{}
-	mi := &file_v1_org_policy_service_proto_msgTypes[9]
+	mi := &file_v1_org_policy_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1037,7 +1023,7 @@ func (x *QueryDataPolicy) String() string {
 func (*QueryDataPolicy) ProtoMessage() {}
 
 func (x *QueryDataPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_org_policy_service_proto_msgTypes[9]
+	mi := &file_v1_org_policy_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1050,7 +1036,7 @@ func (x *QueryDataPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryDataPolicy.ProtoReflect.Descriptor instead.
 func (*QueryDataPolicy) Descriptor() ([]byte, []int) {
-	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{9}
+	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *QueryDataPolicy) GetTimeout() *durationpb.Duration {
@@ -1081,6 +1067,13 @@ func (x *QueryDataPolicy) GetMaximumResultRows() int32 {
 	return 0
 }
 
+func (x *QueryDataPolicy) GetDisableCopyData() bool {
+	if x != nil {
+		return x.DisableCopyData
+	}
+	return false
+}
+
 // The SQL review rules. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
 type SQLReviewRule struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1096,7 +1089,7 @@ type SQLReviewRule struct {
 
 func (x *SQLReviewRule) Reset() {
 	*x = SQLReviewRule{}
-	mi := &file_v1_org_policy_service_proto_msgTypes[10]
+	mi := &file_v1_org_policy_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1108,7 +1101,7 @@ func (x *SQLReviewRule) String() string {
 func (*SQLReviewRule) ProtoMessage() {}
 
 func (x *SQLReviewRule) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_org_policy_service_proto_msgTypes[10]
+	mi := &file_v1_org_policy_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1121,7 +1114,7 @@ func (x *SQLReviewRule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SQLReviewRule.ProtoReflect.Descriptor instead.
 func (*SQLReviewRule) Descriptor() ([]byte, []int) {
-	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{10}
+	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SQLReviewRule) GetType() string {
@@ -1169,7 +1162,7 @@ type MaskingExceptionPolicy struct {
 
 func (x *MaskingExceptionPolicy) Reset() {
 	*x = MaskingExceptionPolicy{}
-	mi := &file_v1_org_policy_service_proto_msgTypes[11]
+	mi := &file_v1_org_policy_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1181,7 +1174,7 @@ func (x *MaskingExceptionPolicy) String() string {
 func (*MaskingExceptionPolicy) ProtoMessage() {}
 
 func (x *MaskingExceptionPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_org_policy_service_proto_msgTypes[11]
+	mi := &file_v1_org_policy_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1194,7 +1187,7 @@ func (x *MaskingExceptionPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MaskingExceptionPolicy.ProtoReflect.Descriptor instead.
 func (*MaskingExceptionPolicy) Descriptor() ([]byte, []int) {
-	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{11}
+	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *MaskingExceptionPolicy) GetMaskingExceptions() []*MaskingExceptionPolicy_MaskingException {
@@ -1213,7 +1206,7 @@ type MaskingRulePolicy struct {
 
 func (x *MaskingRulePolicy) Reset() {
 	*x = MaskingRulePolicy{}
-	mi := &file_v1_org_policy_service_proto_msgTypes[12]
+	mi := &file_v1_org_policy_service_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1225,7 +1218,7 @@ func (x *MaskingRulePolicy) String() string {
 func (*MaskingRulePolicy) ProtoMessage() {}
 
 func (x *MaskingRulePolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_org_policy_service_proto_msgTypes[12]
+	mi := &file_v1_org_policy_service_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1238,7 +1231,7 @@ func (x *MaskingRulePolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MaskingRulePolicy.ProtoReflect.Descriptor instead.
 func (*MaskingRulePolicy) Descriptor() ([]byte, []int) {
-	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{12}
+	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *MaskingRulePolicy) GetRules() []*MaskingRulePolicy_MaskingRule {
@@ -1246,50 +1239,6 @@ func (x *MaskingRulePolicy) GetRules() []*MaskingRulePolicy_MaskingRule {
 		return x.Rules
 	}
 	return nil
-}
-
-type RestrictIssueCreationForSQLReviewPolicy struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Disallow      bool                   `protobuf:"varint,1,opt,name=disallow,proto3" json:"disallow,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RestrictIssueCreationForSQLReviewPolicy) Reset() {
-	*x = RestrictIssueCreationForSQLReviewPolicy{}
-	mi := &file_v1_org_policy_service_proto_msgTypes[13]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RestrictIssueCreationForSQLReviewPolicy) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RestrictIssueCreationForSQLReviewPolicy) ProtoMessage() {}
-
-func (x *RestrictIssueCreationForSQLReviewPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_org_policy_service_proto_msgTypes[13]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RestrictIssueCreationForSQLReviewPolicy.ProtoReflect.Descriptor instead.
-func (*RestrictIssueCreationForSQLReviewPolicy) Descriptor() ([]byte, []int) {
-	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{13}
-}
-
-func (x *RestrictIssueCreationForSQLReviewPolicy) GetDisallow() bool {
-	if x != nil {
-		return x.Disallow
-	}
-	return false
 }
 
 type TagPolicy struct {
@@ -1303,7 +1252,7 @@ type TagPolicy struct {
 
 func (x *TagPolicy) Reset() {
 	*x = TagPolicy{}
-	mi := &file_v1_org_policy_service_proto_msgTypes[14]
+	mi := &file_v1_org_policy_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1315,7 +1264,7 @@ func (x *TagPolicy) String() string {
 func (*TagPolicy) ProtoMessage() {}
 
 func (x *TagPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_org_policy_service_proto_msgTypes[14]
+	mi := &file_v1_org_policy_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1328,7 +1277,7 @@ func (x *TagPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TagPolicy.ProtoReflect.Descriptor instead.
 func (*TagPolicy) Descriptor() ([]byte, []int) {
-	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{14}
+	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *TagPolicy) GetTags() map[string]string {
@@ -1352,7 +1301,7 @@ type DataSourceQueryPolicy struct {
 
 func (x *DataSourceQueryPolicy) Reset() {
 	*x = DataSourceQueryPolicy{}
-	mi := &file_v1_org_policy_service_proto_msgTypes[15]
+	mi := &file_v1_org_policy_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1364,7 +1313,7 @@ func (x *DataSourceQueryPolicy) String() string {
 func (*DataSourceQueryPolicy) ProtoMessage() {}
 
 func (x *DataSourceQueryPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_org_policy_service_proto_msgTypes[15]
+	mi := &file_v1_org_policy_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1377,7 +1326,7 @@ func (x *DataSourceQueryPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataSourceQueryPolicy.ProtoReflect.Descriptor instead.
 func (*DataSourceQueryPolicy) Descriptor() ([]byte, []int) {
-	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{15}
+	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *DataSourceQueryPolicy) GetAdminDataSourceRestriction() DataSourceQueryPolicy_Restriction {
@@ -1399,6 +1348,105 @@ func (x *DataSourceQueryPolicy) GetDisallowDml() bool {
 		return x.DisallowDml
 	}
 	return false
+}
+
+type RolloutPolicy_Checkers struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Whether issue approval is required before proceeding with rollout.
+	RequiredIssueApproval bool `protobuf:"varint,1,opt,name=required_issue_approval,json=requiredIssueApproval,proto3" json:"required_issue_approval,omitempty"`
+	// Status checks that must pass before rollout can be executed.
+	RequiredStatusChecks *RolloutPolicy_Checkers_RequiredStatusChecks `protobuf:"bytes,2,opt,name=required_status_checks,json=requiredStatusChecks,proto3" json:"required_status_checks,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *RolloutPolicy_Checkers) Reset() {
+	*x = RolloutPolicy_Checkers{}
+	mi := &file_v1_org_policy_service_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RolloutPolicy_Checkers) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RolloutPolicy_Checkers) ProtoMessage() {}
+
+func (x *RolloutPolicy_Checkers) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_org_policy_service_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RolloutPolicy_Checkers.ProtoReflect.Descriptor instead.
+func (*RolloutPolicy_Checkers) Descriptor() ([]byte, []int) {
+	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{7, 0}
+}
+
+func (x *RolloutPolicy_Checkers) GetRequiredIssueApproval() bool {
+	if x != nil {
+		return x.RequiredIssueApproval
+	}
+	return false
+}
+
+func (x *RolloutPolicy_Checkers) GetRequiredStatusChecks() *RolloutPolicy_Checkers_RequiredStatusChecks {
+	if x != nil {
+		return x.RequiredStatusChecks
+	}
+	return nil
+}
+
+type RolloutPolicy_Checkers_RequiredStatusChecks struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Enforcement level for plan check results during rollout validation.
+	PlanCheckEnforcement RolloutPolicy_Checkers_PlanCheckEnforcement `protobuf:"varint,1,opt,name=plan_check_enforcement,json=planCheckEnforcement,proto3,enum=bytebase.v1.RolloutPolicy_Checkers_PlanCheckEnforcement" json:"plan_check_enforcement,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *RolloutPolicy_Checkers_RequiredStatusChecks) Reset() {
+	*x = RolloutPolicy_Checkers_RequiredStatusChecks{}
+	mi := &file_v1_org_policy_service_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RolloutPolicy_Checkers_RequiredStatusChecks) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RolloutPolicy_Checkers_RequiredStatusChecks) ProtoMessage() {}
+
+func (x *RolloutPolicy_Checkers_RequiredStatusChecks) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_org_policy_service_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RolloutPolicy_Checkers_RequiredStatusChecks.ProtoReflect.Descriptor instead.
+func (*RolloutPolicy_Checkers_RequiredStatusChecks) Descriptor() ([]byte, []int) {
+	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{7, 0, 0}
+}
+
+func (x *RolloutPolicy_Checkers_RequiredStatusChecks) GetPlanCheckEnforcement() RolloutPolicy_Checkers_PlanCheckEnforcement {
+	if x != nil {
+		return x.PlanCheckEnforcement
+	}
+	return RolloutPolicy_Checkers_PLAN_CHECK_ENFORCEMENT_UNSPECIFIED
 }
 
 type MaskingExceptionPolicy_MaskingException struct {
@@ -1458,7 +1506,7 @@ func (x *MaskingExceptionPolicy_MaskingException) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use MaskingExceptionPolicy_MaskingException.ProtoReflect.Descriptor instead.
 func (*MaskingExceptionPolicy_MaskingException) Descriptor() ([]byte, []int) {
-	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{11, 0}
+	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{10, 0}
 }
 
 func (x *MaskingExceptionPolicy_MaskingException) GetAction() MaskingExceptionPolicy_MaskingException_Action {
@@ -1542,7 +1590,7 @@ func (x *MaskingRulePolicy_MaskingRule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MaskingRulePolicy_MaskingRule.ProtoReflect.Descriptor instead.
 func (*MaskingRulePolicy_MaskingRule) Descriptor() ([]byte, []int) {
-	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{12, 0}
+	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{11, 0}
 }
 
 func (x *MaskingRulePolicy_MaskingRule) GetId() string {
@@ -1597,16 +1645,14 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\f_policy_type\"o\n" +
 	"\x14ListPoliciesResponse\x12/\n" +
 	"\bpolicies\x18\x01 \x03(\v2\x13.bytebase.v1.PolicyR\bpolicies\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xb0\t\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xb8\a\n" +
 	"\x06Policy\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12.\n" +
 	"\x13inherit_from_parent\x18\x04 \x01(\bR\x11inheritFromParent\x12+\n" +
 	"\x04type\x18\x05 \x01(\x0e2\x17.bytebase.v1.PolicyTypeR\x04type\x12C\n" +
-	"\x0erollout_policy\x18\x13 \x01(\v2\x1a.bytebase.v1.RolloutPolicyH\x00R\rrolloutPolicy\x12]\n" +
-	"\x18disable_copy_data_policy\x18\x10 \x01(\v2\".bytebase.v1.DisableCopyDataPolicyH\x00R\x15disableCopyDataPolicy\x12P\n" +
+	"\x0erollout_policy\x18\x13 \x01(\v2\x1a.bytebase.v1.RolloutPolicyH\x00R\rrolloutPolicy\x12P\n" +
 	"\x13masking_rule_policy\x18\x11 \x01(\v2\x1e.bytebase.v1.MaskingRulePolicyH\x00R\x11maskingRulePolicy\x12_\n" +
-	"\x18masking_exception_policy\x18\x12 \x01(\v2#.bytebase.v1.MaskingExceptionPolicyH\x00R\x16maskingExceptionPolicy\x12\x96\x01\n" +
-	"-restrict_issue_creation_for_sql_review_policy\x18\x14 \x01(\v24.bytebase.v1.RestrictIssueCreationForSQLReviewPolicyH\x00R'restrictIssueCreationForSqlReviewPolicy\x127\n" +
+	"\x18masking_exception_policy\x18\x12 \x01(\v2#.bytebase.v1.MaskingExceptionPolicyH\x00R\x16maskingExceptionPolicy\x127\n" +
 	"\n" +
 	"tag_policy\x18\x15 \x01(\v2\x16.bytebase.v1.TagPolicyH\x00R\ttagPolicy\x12]\n" +
 	"\x18data_source_query_policy\x18\x16 \x01(\v2\".bytebase.v1.DataSourceQueryPolicyH\x00R\x15dataSourceQueryPolicy\x12J\n" +
@@ -1614,19 +1660,30 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\aenforce\x18\r \x01(\bR\aenforce\x12I\n" +
 	"\rresource_type\x18\x0e \x01(\x0e2\x1f.bytebase.v1.PolicyResourceTypeB\x03\xe0A\x03R\fresourceType:\xe5\x01\xeaA\xe1\x01\n" +
 	"\x13bytebase.com/Policy\x12\x11policies/{policy}\x12$projects/{project}/policies/{policy}\x12,environments/{environment}/policies/{policy}\x12&instances/{instance}/policies/{policy}\x12;instances/{instance}/databases/{database}/policies/{policy}B\b\n" +
-	"\x06policyJ\x04\b\x02\x10\x03J\x04\b\x17\x10\x18\"d\n" +
+	"\x06policyJ\x04\b\x02\x10\x03J\x04\b\x17\x10\x18\"\xc3\x04\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
-	"\x05roles\x18\x02 \x03(\tR\x05roles\x12\x1f\n" +
-	"\vissue_roles\x18\x03 \x03(\tR\n" +
-	"issueRoles\"/\n" +
-	"\x15DisableCopyDataPolicy\x12\x16\n" +
-	"\x06active\x18\x01 \x01(\bR\x06active\"\xcd\x01\n" +
+	"\x05roles\x18\x02 \x03(\tR\x05roles\x12#\n" +
+	"\vissue_roles\x18\x03 \x03(\tB\x02\x18\x01R\n" +
+	"issueRoles\x12?\n" +
+	"\bcheckers\x18\x04 \x01(\v2#.bytebase.v1.RolloutPolicy.CheckersR\bcheckers\x1a\x97\x03\n" +
+	"\bCheckers\x126\n" +
+	"\x17required_issue_approval\x18\x01 \x01(\bR\x15requiredIssueApproval\x12n\n" +
+	"\x16required_status_checks\x18\x02 \x01(\v28.bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecksR\x14requiredStatusChecks\x1a\x86\x01\n" +
+	"\x14RequiredStatusChecks\x12n\n" +
+	"\x16plan_check_enforcement\x18\x01 \x01(\x0e28.bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcementR\x14planCheckEnforcement\"Z\n" +
+	"\x14PlanCheckEnforcement\x12&\n" +
+	"\"PLAN_CHECK_ENFORCEMENT_UNSPECIFIED\x10\x00\x12\x0e\n" +
+	"\n" +
+	"ERROR_ONLY\x10\x01\x12\n" +
+	"\n" +
+	"\x06STRICT\x10\x02\"\xf9\x01\n" +
 	"\x0fQueryDataPolicy\x123\n" +
 	"\atimeout\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12%\n" +
 	"\x0edisable_export\x18\x02 \x01(\bR\rdisableExport\x12.\n" +
 	"\x13maximum_result_size\x18\x03 \x01(\x03R\x11maximumResultSize\x12.\n" +
-	"\x13maximum_result_rows\x18\x04 \x01(\x05R\x11maximumResultRows\"\xbb\x01\n" +
+	"\x13maximum_result_rows\x18\x04 \x01(\x05R\x11maximumResultRows\x12*\n" +
+	"\x11disable_copy_data\x18\x05 \x01(\bR\x0fdisableCopyData\"\xbb\x01\n" +
 	"\rSQLReviewRule\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x125\n" +
 	"\x05level\x18\x02 \x01(\x0e2\x1f.bytebase.v1.SQLReviewRuleLevelR\x05level\x12\x18\n" +
@@ -1649,9 +1706,7 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\vMaskingRule\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
 	"\tcondition\x18\x02 \x01(\v2\x11.google.type.ExprR\tcondition\x12#\n" +
-	"\rsemantic_type\x18\x03 \x01(\tR\fsemanticType\"E\n" +
-	"'RestrictIssueCreationForSQLReviewPolicy\x12\x1a\n" +
-	"\bdisallow\x18\x01 \x01(\bR\bdisallow\"z\n" +
+	"\rsemantic_type\x18\x03 \x01(\tR\fsemanticType\"z\n" +
 	"\tTagPolicy\x124\n" +
 	"\x04tags\x18\x01 \x03(\v2 .bytebase.v1.TagPolicy.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
@@ -1664,20 +1719,18 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\vRestriction\x12\x1b\n" +
 	"\x17RESTRICTION_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bFALLBACK\x10\x01\x12\f\n" +
-	"\bDISALLOW\x10\x02*\xfd\x01\n" +
+	"\bDISALLOW\x10\x02*\xc0\x01\n" +
 	"\n" +
 	"PolicyType\x12\x1b\n" +
 	"\x17POLICY_TYPE_UNSPECIFIED\x10\x00\x12\x12\n" +
-	"\x0eROLLOUT_POLICY\x10\v\x12\x15\n" +
-	"\x11DISABLE_COPY_DATA\x10\b\x12\x10\n" +
+	"\x0eROLLOUT_POLICY\x10\v\x12\x10\n" +
 	"\fMASKING_RULE\x10\t\x12\x15\n" +
 	"\x11MASKING_EXCEPTION\x10\n" +
-	"\x12*\n" +
-	"&RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW\x10\f\x12\a\n" +
+	"\x12\a\n" +
 	"\x03TAG\x10\r\x12\x15\n" +
 	"\x11DATA_SOURCE_QUERY\x10\x0e\x12\x0e\n" +
 	"\n" +
-	"DATA_QUERY\x10\x10\"\x04\b\x02\x10\x02\"\x04\b\x04\x10\x04\"\x04\b\x06\x10\x06\"\x04\b\x05\x10\x05\"\x04\b\a\x10\a\"\x04\b\x0f\x10\x0f*`\n" +
+	"DATA_QUERY\x10\x10\"\x04\b\x02\x10\x02\"\x04\b\x04\x10\x04\"\x04\b\x06\x10\x06\"\x04\b\x05\x10\x05\"\x04\b\a\x10\a\"\x04\b\f\x10\f\"\x04\b\x0f\x10\x0f*`\n" +
 	"\x12PolicyResourceType\x12\x1d\n" +
 	"\x19RESOURCE_TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tWORKSPACE\x10\x01\x12\x0f\n" +
@@ -1707,81 +1760,83 @@ func file_v1_org_policy_service_proto_rawDescGZIP() []byte {
 	return file_v1_org_policy_service_proto_rawDescData
 }
 
-var file_v1_org_policy_service_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
+var file_v1_org_policy_service_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
 var file_v1_org_policy_service_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_v1_org_policy_service_proto_goTypes = []any{
-	(PolicyType)(0),         // 0: bytebase.v1.PolicyType
-	(PolicyResourceType)(0), // 1: bytebase.v1.PolicyResourceType
-	(SQLReviewRuleLevel)(0), // 2: bytebase.v1.SQLReviewRuleLevel
-	(MaskingExceptionPolicy_MaskingException_Action)(0), // 3: bytebase.v1.MaskingExceptionPolicy.MaskingException.Action
-	(DataSourceQueryPolicy_Restriction)(0),              // 4: bytebase.v1.DataSourceQueryPolicy.Restriction
-	(*CreatePolicyRequest)(nil),                         // 5: bytebase.v1.CreatePolicyRequest
-	(*UpdatePolicyRequest)(nil),                         // 6: bytebase.v1.UpdatePolicyRequest
-	(*DeletePolicyRequest)(nil),                         // 7: bytebase.v1.DeletePolicyRequest
-	(*GetPolicyRequest)(nil),                            // 8: bytebase.v1.GetPolicyRequest
-	(*ListPoliciesRequest)(nil),                         // 9: bytebase.v1.ListPoliciesRequest
-	(*ListPoliciesResponse)(nil),                        // 10: bytebase.v1.ListPoliciesResponse
-	(*Policy)(nil),                                      // 11: bytebase.v1.Policy
-	(*RolloutPolicy)(nil),                               // 12: bytebase.v1.RolloutPolicy
-	(*DisableCopyDataPolicy)(nil),                       // 13: bytebase.v1.DisableCopyDataPolicy
+	(PolicyType)(0),                                     // 0: bytebase.v1.PolicyType
+	(PolicyResourceType)(0),                             // 1: bytebase.v1.PolicyResourceType
+	(SQLReviewRuleLevel)(0),                             // 2: bytebase.v1.SQLReviewRuleLevel
+	(RolloutPolicy_Checkers_PlanCheckEnforcement)(0),    // 3: bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement
+	(MaskingExceptionPolicy_MaskingException_Action)(0), // 4: bytebase.v1.MaskingExceptionPolicy.MaskingException.Action
+	(DataSourceQueryPolicy_Restriction)(0),              // 5: bytebase.v1.DataSourceQueryPolicy.Restriction
+	(*CreatePolicyRequest)(nil),                         // 6: bytebase.v1.CreatePolicyRequest
+	(*UpdatePolicyRequest)(nil),                         // 7: bytebase.v1.UpdatePolicyRequest
+	(*DeletePolicyRequest)(nil),                         // 8: bytebase.v1.DeletePolicyRequest
+	(*GetPolicyRequest)(nil),                            // 9: bytebase.v1.GetPolicyRequest
+	(*ListPoliciesRequest)(nil),                         // 10: bytebase.v1.ListPoliciesRequest
+	(*ListPoliciesResponse)(nil),                        // 11: bytebase.v1.ListPoliciesResponse
+	(*Policy)(nil),                                      // 12: bytebase.v1.Policy
+	(*RolloutPolicy)(nil),                               // 13: bytebase.v1.RolloutPolicy
 	(*QueryDataPolicy)(nil),                             // 14: bytebase.v1.QueryDataPolicy
 	(*SQLReviewRule)(nil),                               // 15: bytebase.v1.SQLReviewRule
 	(*MaskingExceptionPolicy)(nil),                      // 16: bytebase.v1.MaskingExceptionPolicy
 	(*MaskingRulePolicy)(nil),                           // 17: bytebase.v1.MaskingRulePolicy
-	(*RestrictIssueCreationForSQLReviewPolicy)(nil),     // 18: bytebase.v1.RestrictIssueCreationForSQLReviewPolicy
-	(*TagPolicy)(nil),                                   // 19: bytebase.v1.TagPolicy
-	(*DataSourceQueryPolicy)(nil),                       // 20: bytebase.v1.DataSourceQueryPolicy
-	(*MaskingExceptionPolicy_MaskingException)(nil),     // 21: bytebase.v1.MaskingExceptionPolicy.MaskingException
-	(*MaskingRulePolicy_MaskingRule)(nil),               // 22: bytebase.v1.MaskingRulePolicy.MaskingRule
-	nil,                                                 // 23: bytebase.v1.TagPolicy.TagsEntry
-	(*fieldmaskpb.FieldMask)(nil),                       // 24: google.protobuf.FieldMask
-	(*durationpb.Duration)(nil),                         // 25: google.protobuf.Duration
-	(Engine)(0),                                         // 26: bytebase.v1.Engine
-	(*expr.Expr)(nil),                                   // 27: google.type.Expr
-	(*emptypb.Empty)(nil),                               // 28: google.protobuf.Empty
+	(*TagPolicy)(nil),                                   // 18: bytebase.v1.TagPolicy
+	(*DataSourceQueryPolicy)(nil),                       // 19: bytebase.v1.DataSourceQueryPolicy
+	(*RolloutPolicy_Checkers)(nil),                      // 20: bytebase.v1.RolloutPolicy.Checkers
+	(*RolloutPolicy_Checkers_RequiredStatusChecks)(nil), // 21: bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks
+	(*MaskingExceptionPolicy_MaskingException)(nil),     // 22: bytebase.v1.MaskingExceptionPolicy.MaskingException
+	(*MaskingRulePolicy_MaskingRule)(nil),               // 23: bytebase.v1.MaskingRulePolicy.MaskingRule
+	nil,                                                 // 24: bytebase.v1.TagPolicy.TagsEntry
+	(*fieldmaskpb.FieldMask)(nil),                       // 25: google.protobuf.FieldMask
+	(*durationpb.Duration)(nil),                         // 26: google.protobuf.Duration
+	(Engine)(0),                                         // 27: bytebase.v1.Engine
+	(*expr.Expr)(nil),                                   // 28: google.type.Expr
+	(*emptypb.Empty)(nil),                               // 29: google.protobuf.Empty
 }
 var file_v1_org_policy_service_proto_depIdxs = []int32{
-	11, // 0: bytebase.v1.CreatePolicyRequest.policy:type_name -> bytebase.v1.Policy
+	12, // 0: bytebase.v1.CreatePolicyRequest.policy:type_name -> bytebase.v1.Policy
 	0,  // 1: bytebase.v1.CreatePolicyRequest.type:type_name -> bytebase.v1.PolicyType
-	11, // 2: bytebase.v1.UpdatePolicyRequest.policy:type_name -> bytebase.v1.Policy
-	24, // 3: bytebase.v1.UpdatePolicyRequest.update_mask:type_name -> google.protobuf.FieldMask
+	12, // 2: bytebase.v1.UpdatePolicyRequest.policy:type_name -> bytebase.v1.Policy
+	25, // 3: bytebase.v1.UpdatePolicyRequest.update_mask:type_name -> google.protobuf.FieldMask
 	0,  // 4: bytebase.v1.ListPoliciesRequest.policy_type:type_name -> bytebase.v1.PolicyType
-	11, // 5: bytebase.v1.ListPoliciesResponse.policies:type_name -> bytebase.v1.Policy
+	12, // 5: bytebase.v1.ListPoliciesResponse.policies:type_name -> bytebase.v1.Policy
 	0,  // 6: bytebase.v1.Policy.type:type_name -> bytebase.v1.PolicyType
-	12, // 7: bytebase.v1.Policy.rollout_policy:type_name -> bytebase.v1.RolloutPolicy
-	13, // 8: bytebase.v1.Policy.disable_copy_data_policy:type_name -> bytebase.v1.DisableCopyDataPolicy
-	17, // 9: bytebase.v1.Policy.masking_rule_policy:type_name -> bytebase.v1.MaskingRulePolicy
-	16, // 10: bytebase.v1.Policy.masking_exception_policy:type_name -> bytebase.v1.MaskingExceptionPolicy
-	18, // 11: bytebase.v1.Policy.restrict_issue_creation_for_sql_review_policy:type_name -> bytebase.v1.RestrictIssueCreationForSQLReviewPolicy
-	19, // 12: bytebase.v1.Policy.tag_policy:type_name -> bytebase.v1.TagPolicy
-	20, // 13: bytebase.v1.Policy.data_source_query_policy:type_name -> bytebase.v1.DataSourceQueryPolicy
-	14, // 14: bytebase.v1.Policy.query_data_policy:type_name -> bytebase.v1.QueryDataPolicy
-	1,  // 15: bytebase.v1.Policy.resource_type:type_name -> bytebase.v1.PolicyResourceType
-	25, // 16: bytebase.v1.QueryDataPolicy.timeout:type_name -> google.protobuf.Duration
-	2,  // 17: bytebase.v1.SQLReviewRule.level:type_name -> bytebase.v1.SQLReviewRuleLevel
-	26, // 18: bytebase.v1.SQLReviewRule.engine:type_name -> bytebase.v1.Engine
-	21, // 19: bytebase.v1.MaskingExceptionPolicy.masking_exceptions:type_name -> bytebase.v1.MaskingExceptionPolicy.MaskingException
-	22, // 20: bytebase.v1.MaskingRulePolicy.rules:type_name -> bytebase.v1.MaskingRulePolicy.MaskingRule
-	23, // 21: bytebase.v1.TagPolicy.tags:type_name -> bytebase.v1.TagPolicy.TagsEntry
-	4,  // 22: bytebase.v1.DataSourceQueryPolicy.admin_data_source_restriction:type_name -> bytebase.v1.DataSourceQueryPolicy.Restriction
-	3,  // 23: bytebase.v1.MaskingExceptionPolicy.MaskingException.action:type_name -> bytebase.v1.MaskingExceptionPolicy.MaskingException.Action
-	27, // 24: bytebase.v1.MaskingExceptionPolicy.MaskingException.condition:type_name -> google.type.Expr
-	27, // 25: bytebase.v1.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
-	8,  // 26: bytebase.v1.OrgPolicyService.GetPolicy:input_type -> bytebase.v1.GetPolicyRequest
-	9,  // 27: bytebase.v1.OrgPolicyService.ListPolicies:input_type -> bytebase.v1.ListPoliciesRequest
-	5,  // 28: bytebase.v1.OrgPolicyService.CreatePolicy:input_type -> bytebase.v1.CreatePolicyRequest
-	6,  // 29: bytebase.v1.OrgPolicyService.UpdatePolicy:input_type -> bytebase.v1.UpdatePolicyRequest
-	7,  // 30: bytebase.v1.OrgPolicyService.DeletePolicy:input_type -> bytebase.v1.DeletePolicyRequest
-	11, // 31: bytebase.v1.OrgPolicyService.GetPolicy:output_type -> bytebase.v1.Policy
-	10, // 32: bytebase.v1.OrgPolicyService.ListPolicies:output_type -> bytebase.v1.ListPoliciesResponse
-	11, // 33: bytebase.v1.OrgPolicyService.CreatePolicy:output_type -> bytebase.v1.Policy
-	11, // 34: bytebase.v1.OrgPolicyService.UpdatePolicy:output_type -> bytebase.v1.Policy
-	28, // 35: bytebase.v1.OrgPolicyService.DeletePolicy:output_type -> google.protobuf.Empty
-	31, // [31:36] is the sub-list for method output_type
-	26, // [26:31] is the sub-list for method input_type
-	26, // [26:26] is the sub-list for extension type_name
-	26, // [26:26] is the sub-list for extension extendee
-	0,  // [0:26] is the sub-list for field type_name
+	13, // 7: bytebase.v1.Policy.rollout_policy:type_name -> bytebase.v1.RolloutPolicy
+	17, // 8: bytebase.v1.Policy.masking_rule_policy:type_name -> bytebase.v1.MaskingRulePolicy
+	16, // 9: bytebase.v1.Policy.masking_exception_policy:type_name -> bytebase.v1.MaskingExceptionPolicy
+	18, // 10: bytebase.v1.Policy.tag_policy:type_name -> bytebase.v1.TagPolicy
+	19, // 11: bytebase.v1.Policy.data_source_query_policy:type_name -> bytebase.v1.DataSourceQueryPolicy
+	14, // 12: bytebase.v1.Policy.query_data_policy:type_name -> bytebase.v1.QueryDataPolicy
+	1,  // 13: bytebase.v1.Policy.resource_type:type_name -> bytebase.v1.PolicyResourceType
+	20, // 14: bytebase.v1.RolloutPolicy.checkers:type_name -> bytebase.v1.RolloutPolicy.Checkers
+	26, // 15: bytebase.v1.QueryDataPolicy.timeout:type_name -> google.protobuf.Duration
+	2,  // 16: bytebase.v1.SQLReviewRule.level:type_name -> bytebase.v1.SQLReviewRuleLevel
+	27, // 17: bytebase.v1.SQLReviewRule.engine:type_name -> bytebase.v1.Engine
+	22, // 18: bytebase.v1.MaskingExceptionPolicy.masking_exceptions:type_name -> bytebase.v1.MaskingExceptionPolicy.MaskingException
+	23, // 19: bytebase.v1.MaskingRulePolicy.rules:type_name -> bytebase.v1.MaskingRulePolicy.MaskingRule
+	24, // 20: bytebase.v1.TagPolicy.tags:type_name -> bytebase.v1.TagPolicy.TagsEntry
+	5,  // 21: bytebase.v1.DataSourceQueryPolicy.admin_data_source_restriction:type_name -> bytebase.v1.DataSourceQueryPolicy.Restriction
+	21, // 22: bytebase.v1.RolloutPolicy.Checkers.required_status_checks:type_name -> bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks
+	3,  // 23: bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks.plan_check_enforcement:type_name -> bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement
+	4,  // 24: bytebase.v1.MaskingExceptionPolicy.MaskingException.action:type_name -> bytebase.v1.MaskingExceptionPolicy.MaskingException.Action
+	28, // 25: bytebase.v1.MaskingExceptionPolicy.MaskingException.condition:type_name -> google.type.Expr
+	28, // 26: bytebase.v1.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
+	9,  // 27: bytebase.v1.OrgPolicyService.GetPolicy:input_type -> bytebase.v1.GetPolicyRequest
+	10, // 28: bytebase.v1.OrgPolicyService.ListPolicies:input_type -> bytebase.v1.ListPoliciesRequest
+	6,  // 29: bytebase.v1.OrgPolicyService.CreatePolicy:input_type -> bytebase.v1.CreatePolicyRequest
+	7,  // 30: bytebase.v1.OrgPolicyService.UpdatePolicy:input_type -> bytebase.v1.UpdatePolicyRequest
+	8,  // 31: bytebase.v1.OrgPolicyService.DeletePolicy:input_type -> bytebase.v1.DeletePolicyRequest
+	12, // 32: bytebase.v1.OrgPolicyService.GetPolicy:output_type -> bytebase.v1.Policy
+	11, // 33: bytebase.v1.OrgPolicyService.ListPolicies:output_type -> bytebase.v1.ListPoliciesResponse
+	12, // 34: bytebase.v1.OrgPolicyService.CreatePolicy:output_type -> bytebase.v1.Policy
+	12, // 35: bytebase.v1.OrgPolicyService.UpdatePolicy:output_type -> bytebase.v1.Policy
+	29, // 36: bytebase.v1.OrgPolicyService.DeletePolicy:output_type -> google.protobuf.Empty
+	32, // [32:37] is the sub-list for method output_type
+	27, // [27:32] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_v1_org_policy_service_proto_init() }
@@ -1794,10 +1849,8 @@ func file_v1_org_policy_service_proto_init() {
 	file_v1_org_policy_service_proto_msgTypes[4].OneofWrappers = []any{}
 	file_v1_org_policy_service_proto_msgTypes[6].OneofWrappers = []any{
 		(*Policy_RolloutPolicy)(nil),
-		(*Policy_DisableCopyDataPolicy)(nil),
 		(*Policy_MaskingRulePolicy)(nil),
 		(*Policy_MaskingExceptionPolicy)(nil),
-		(*Policy_RestrictIssueCreationForSqlReviewPolicy)(nil),
 		(*Policy_TagPolicy)(nil),
 		(*Policy_DataSourceQueryPolicy)(nil),
 		(*Policy_QueryDataPolicy)(nil),
@@ -1807,7 +1860,7 @@ func file_v1_org_policy_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_org_policy_service_proto_rawDesc), len(file_v1_org_policy_service_proto_rawDesc)),
-			NumEnums:      5,
+			NumEnums:      6,
 			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,

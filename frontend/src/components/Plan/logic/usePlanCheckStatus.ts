@@ -27,7 +27,7 @@ export const usePlanCheckStatus = (
 
     const statusCount = plan.value.planCheckRunStatusCount || {};
 
-    if (statusCount["ERROR"] > 0) {
+    if (statusCount["ERROR"] > 0 || statusCount["FAILED"] > 0) {
       return PlanCheckRun_Result_Status.ERROR;
     } else if (statusCount["WARNING"] > 0) {
       return PlanCheckRun_Result_Status.WARNING;
@@ -59,9 +59,13 @@ export const usePlanCheckStatus = (
       statusCount[
         PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.ERROR]
       ] || 0;
-    const total = running + success + warning + error;
+    // Also count FAILED plan check runs as errors
+    const failed =
+      statusCount[PlanCheckRun_Status[PlanCheckRun_Status.FAILED]] || 0;
+    const totalError = error + failed;
+    const total = running + success + warning + totalError;
 
-    return { running, success, warning, error, total };
+    return { running, success, warning, error: totalError, total };
   });
 
   const hasAnyStatus = computed(() => {

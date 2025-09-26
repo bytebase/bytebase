@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"fmt"
 	"io"
 	"strings"
 
@@ -48,6 +49,10 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 	}
 
 	var buf strings.Builder
+
+	if ctx.SDLFormat {
+		return getSDLFormat(metadata)
+	}
 
 	if ctx.PrintHeader {
 		if _, err := buf.WriteString(header); err != nil {
@@ -278,6 +283,15 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 		}
 	}
 	return buf.String(), nil
+}
+
+func GetSchemaSDLDefinition(schema *storepb.SchemaMetadata) (string, error) {
+	// Create a temporary database metadata containing just this schema
+	tempMetadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{schema},
+	}
+
+	return getSDLFormat(tempMetadata)
 }
 
 func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
@@ -1968,6 +1982,558 @@ func writeExtension(out io.Writer, extension *storepb.ExtensionMetadata) error {
 
 	_, err := io.WriteString(out, "\n\n")
 	return err
+}
+
+func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
+	var buf strings.Builder
+
+	// Write CREATE SCHEMA statements first for non-public schemas
+	for _, schema := range metadata.Schemas {
+		if schema.SkipDump {
+			continue
+		}
+		if err := writeSchema(&buf, schema); err != nil {
+			return "", err
+		}
+	}
+
+	// Mapping from table ID to sequence metadata for table-owned sequences
+	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
+
+	for _, schema := range metadata.Schemas {
+		if schema.SkipDump {
+			continue
+		}
+
+		// Write independent sequences first (not owned by any table)
+		for _, sequence := range schema.Sequences {
+			if sequence.SkipDump {
+				continue
+			}
+			if sequence.OwnerTable == "" || sequence.OwnerColumn == "" {
+				if err := writeSequenceSDL(&buf, schema.Name, sequence); err != nil {
+					return "", err
+				}
+				if _, err := buf.WriteString(";\n\n"); err != nil {
+					return "", err
+				}
+				continue
+			}
+			// Table-owned sequences will be handled with their tables
+			tableID := getObjectID(schema.Name, sequence.OwnerTable)
+			sequenceMap[tableID] = append(sequenceMap[tableID], sequence)
+		}
+	}
+
+	for _, schema := range metadata.Schemas {
+		if schema.SkipDump {
+			continue
+		}
+
+		// Write tables with their owned sequences
+		for _, table := range schema.Tables {
+			if table.SkipDump {
+				continue
+			}
+
+			tableID := getObjectID(schema.Name, table.Name)
+			tableSequences := sequenceMap[tableID]
+
+			// Write table-owned sequences that are not identity sequences
+			if len(tableSequences) > 0 {
+				_, identitySequences, nonIdentitySequences := splitSequencesByIdentityOrNot(table, tableSequences)
+				for _, sequence := range nonIdentitySequences {
+					if err := writeSequenceSDL(&buf, schema.Name, sequence); err != nil {
+						return "", err
+					}
+					if _, err := buf.WriteString(";\n\n"); err != nil {
+						return "", err
+					}
+				}
+				// Identity sequences are handled as part of column definition
+				_ = identitySequences
+			}
+
+			// Write CREATE TABLE statement
+			if err := writeCreateTableSDL(&buf, schema.Name, table); err != nil {
+				return "", err
+			}
+
+			if _, err := buf.WriteString(";\n\n"); err != nil {
+				return "", err
+			}
+
+			// Write CREATE INDEX statements for non-constraint indexes
+			if err := writeIndexesSDL(&buf, schema.Name, table); err != nil {
+				return "", err
+			}
+		}
+
+		// Write views after tables
+		for _, view := range schema.Views {
+			if view.SkipDump {
+				continue
+			}
+
+			if err := writeViewSDL(&buf, schema.Name, view); err != nil {
+				return "", err
+			}
+
+			if _, err := buf.WriteString(";\n\n"); err != nil {
+				return "", err
+			}
+		}
+
+		// Write functions and procedures after views
+		for _, function := range schema.Functions {
+			if function.SkipDump {
+				continue
+			}
+
+			if err := writeFunctionSDL(&buf, schema.Name, function); err != nil {
+				return "", err
+			}
+
+			if _, err := buf.WriteString(";\n\n"); err != nil {
+				return "", err
+			}
+		}
+	}
+
+	return buf.String(), nil
+}
+
+func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableMetadata) error {
+	if _, err := io.WriteString(out, `CREATE TABLE "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, schemaName); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, table.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" (`); err != nil {
+		return err
+	}
+
+	// Write columns
+	for i, column := range table.Columns {
+		if i > 0 {
+			if _, err := io.WriteString(out, ","); err != nil {
+				return err
+			}
+		}
+
+		if _, err := io.WriteString(out, "\n    "); err != nil {
+			return err
+		}
+
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+
+		if _, err := io.WriteString(out, column.Name); err != nil {
+			return err
+		}
+
+		if _, err := io.WriteString(out, `" `); err != nil {
+			return err
+		}
+
+		if _, err := io.WriteString(out, column.Type); err != nil {
+			return err
+		}
+
+		if column.Default != "" {
+			if _, err := io.WriteString(out, ` DEFAULT `); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, column.Default); err != nil {
+				return err
+			}
+		}
+
+		if !column.Nullable {
+			if _, err := io.WriteString(out, ` NOT NULL`); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Write table constraints
+	if err := writeTableConstraintsSDL(out, table); err != nil {
+		return err
+	}
+
+	_, err := io.WriteString(out, "\n)")
+	return err
+}
+
+func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata) error {
+	// Write primary key constraint
+	for _, index := range table.Indexes {
+		if index.Primary {
+			if _, err := io.WriteString(out, ",\n    "); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, `CONSTRAINT "`); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, index.Name); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, `" PRIMARY KEY (`); err != nil {
+				return err
+			}
+			for i, expression := range index.Expressions {
+				if i > 0 {
+					if _, err := io.WriteString(out, ", "); err != nil {
+						return err
+					}
+				}
+				if _, err := io.WriteString(out, `"`); err != nil {
+					return err
+				}
+				if _, err := io.WriteString(out, expression); err != nil {
+					return err
+				}
+				if _, err := io.WriteString(out, `"`); err != nil {
+					return err
+				}
+			}
+			if _, err := io.WriteString(out, ")"); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Write unique constraints
+	for _, index := range table.Indexes {
+		if index.Unique && !index.Primary && index.IsConstraint {
+			if _, err := io.WriteString(out, ",\n    "); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, `CONSTRAINT "`); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, index.Name); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, `" UNIQUE (`); err != nil {
+				return err
+			}
+			for i, expression := range index.Expressions {
+				if i > 0 {
+					if _, err := io.WriteString(out, ", "); err != nil {
+						return err
+					}
+				}
+				if _, err := io.WriteString(out, `"`); err != nil {
+					return err
+				}
+				if _, err := io.WriteString(out, expression); err != nil {
+					return err
+				}
+				if _, err := io.WriteString(out, `"`); err != nil {
+					return err
+				}
+			}
+			if _, err := io.WriteString(out, ")"); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Write check constraints
+	for _, check := range table.CheckConstraints {
+		if _, err := io.WriteString(out, ",\n    "); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `CONSTRAINT "`); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, check.Name); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `" CHECK `); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, check.Expression); err != nil {
+			return err
+		}
+	}
+
+	// Write foreign key constraints
+	for _, fk := range table.ForeignKeys {
+		if _, err := io.WriteString(out, ",\n    "); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `CONSTRAINT "`); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, fk.Name); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `" FOREIGN KEY (`); err != nil {
+			return err
+		}
+		for i, column := range fk.Columns {
+			if i > 0 {
+				if _, err := io.WriteString(out, ", "); err != nil {
+					return err
+				}
+			}
+			if _, err := io.WriteString(out, `"`); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, column); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, `"`); err != nil {
+				return err
+			}
+		}
+		if _, err := io.WriteString(out, ") REFERENCES \""); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, fk.ReferencedSchema); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `"."`); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, fk.ReferencedTable); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, "\" ("); err != nil {
+			return err
+		}
+		for i, column := range fk.ReferencedColumns {
+			if i > 0 {
+				if _, err := io.WriteString(out, ", "); err != nil {
+					return err
+				}
+			}
+			if _, err := io.WriteString(out, `"`); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, column); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, `"`); err != nil {
+				return err
+			}
+		}
+		if _, err := io.WriteString(out, ")"); err != nil {
+			return err
+		}
+
+		// Add ON DELETE clause if specified
+		if fk.OnDelete != "" && fk.OnDelete != "NO ACTION" {
+			if _, err := io.WriteString(out, " ON DELETE "); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, fk.OnDelete); err != nil {
+				return err
+			}
+		}
+
+		// Add ON UPDATE clause if specified
+		if fk.OnUpdate != "" && fk.OnUpdate != "NO ACTION" {
+			if _, err := io.WriteString(out, " ON UPDATE "); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, fk.OnUpdate); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func writeIndexesSDL(out io.Writer, schemaName string, table *storepb.TableMetadata) error {
+	for _, index := range table.Indexes {
+		// Skip indexes that are constraints (primary key, unique constraints)
+		// These are already handled in the CREATE TABLE statement
+		if index.Primary || index.IsConstraint {
+			continue
+		}
+
+		if err := writeIndexSDL(out, schemaName, table.Name, index); err != nil {
+			return err
+		}
+
+		if _, err := io.WriteString(out, ";\n\n"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeIndexSDL(out io.Writer, schemaName string, tableName string, index *storepb.IndexMetadata) error {
+	if index.Unique {
+		if _, err := io.WriteString(out, `CREATE UNIQUE INDEX "`); err != nil {
+			return err
+		}
+	} else {
+		if _, err := io.WriteString(out, `CREATE INDEX "`); err != nil {
+			return err
+		}
+	}
+
+	if _, err := io.WriteString(out, index.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" ON "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, schemaName); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, tableName); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" (`); err != nil {
+		return err
+	}
+
+	for i, expression := range index.Expressions {
+		if i > 0 {
+			if _, err := io.WriteString(out, ", "); err != nil {
+				return err
+			}
+		}
+
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+
+		if _, err := io.WriteString(out, expression); err != nil {
+			return err
+		}
+
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+
+		// Add DESC if this column is marked as descending
+		if i < len(index.Descending) && index.Descending[i] {
+			if _, err := io.WriteString(out, " DESC"); err != nil {
+				return err
+			}
+		}
+	}
+
+	_, err := io.WriteString(out, ")")
+	return err
+}
+
+func writeViewSDL(out io.Writer, schemaName string, view *storepb.ViewMetadata) error {
+	if _, err := io.WriteString(out, `CREATE VIEW "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, schemaName); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, view.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" AS `); err != nil {
+		return err
+	}
+
+	// The view definition should already include the SELECT statement
+	definition := strings.TrimSpace(view.Definition)
+	// Remove trailing semicolon if present
+	definition = strings.TrimSuffix(definition, ";")
+
+	_, err := io.WriteString(out, definition)
+	return err
+}
+
+func writeFunctionSDL(out io.Writer, _ string, function *storepb.FunctionMetadata) error {
+	// The function definition should already include the complete CREATE FUNCTION statement
+	definition := strings.TrimSpace(function.Definition)
+	// Remove trailing semicolon if present
+	definition = strings.TrimSuffix(definition, ";")
+
+	_, err := io.WriteString(out, definition)
+	return err
+}
+
+func writeSequenceSDL(out io.Writer, schemaName string, sequence *storepb.SequenceMetadata) error {
+	// Write CREATE SEQUENCE statement with schema and name
+	if _, err := fmt.Fprintf(out, "CREATE SEQUENCE \"%s\".\"%s\"", schemaName, sequence.Name); err != nil {
+		return err
+	}
+
+	// Add data type if not default (bigint)
+	if sequence.DataType != "" && sequence.DataType != "bigint" {
+		if _, err := fmt.Fprintf(out, " AS %s", sequence.DataType); err != nil {
+			return err
+		}
+	}
+
+	// Add START WITH if not default (1)
+	if sequence.Start != "" && sequence.Start != "1" {
+		if _, err := fmt.Fprintf(out, " START WITH %s", sequence.Start); err != nil {
+			return err
+		}
+	}
+
+	// Add INCREMENT BY if not default (1)
+	if sequence.Increment != "" && sequence.Increment != "1" {
+		if _, err := fmt.Fprintf(out, " INCREMENT BY %s", sequence.Increment); err != nil {
+			return err
+		}
+	}
+
+	// Add MINVALUE if specified and not default
+	if sequence.MinValue != "" && sequence.MinValue != "1" && sequence.MinValue != "-9223372036854775808" {
+		if _, err := fmt.Fprintf(out, " MINVALUE %s", sequence.MinValue); err != nil {
+			return err
+		}
+	}
+
+	// Add MAXVALUE if specified and not default
+	if sequence.MaxValue != "" && sequence.MaxValue != "9223372036854775807" {
+		if _, err := fmt.Fprintf(out, " MAXVALUE %s", sequence.MaxValue); err != nil {
+			return err
+		}
+	}
+
+	// Add CYCLE if true (NO CYCLE is the default)
+	if sequence.Cycle {
+		if _, err := io.WriteString(out, " CYCLE"); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func writeSchema(out io.Writer, schema *storepb.SchemaMetadata) error {

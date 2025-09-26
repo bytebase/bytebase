@@ -400,7 +400,6 @@
     - [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest)
     - [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy)
     - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
-    - [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy)
     - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
     - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
     - [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse)
@@ -410,8 +409,9 @@
     - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-v1-Policy)
     - [QueryDataPolicy](#bytebase-v1-QueryDataPolicy)
-    - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy)
     - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
+    - [RolloutPolicy.Checkers](#bytebase-v1-RolloutPolicy-Checkers)
+    - [RolloutPolicy.Checkers.RequiredStatusChecks](#bytebase-v1-RolloutPolicy-Checkers-RequiredStatusChecks)
     - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
     - [TagPolicy](#bytebase-v1-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-v1-TagPolicy-TagsEntry)
@@ -421,6 +421,7 @@
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action)
     - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
     - [PolicyType](#bytebase-v1-PolicyType)
+    - [RolloutPolicy.Checkers.PlanCheckEnforcement](#bytebase-v1-RolloutPolicy-Checkers-PlanCheckEnforcement)
     - [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel)
   
     - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
@@ -6747,21 +6748,6 @@ DataSourceQueryPolicy is the policy configuration for running statements in the 
 
 
 
-<a name="bytebase-v1-DisableCopyDataPolicy"></a>
-
-### DisableCopyDataPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| active | [bool](#bool) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-GetPolicyRequest"></a>
 
 ### GetPolicyRequest
@@ -6902,10 +6888,8 @@ For example: environment_id == &#34;test&#34; &amp;&amp; project_id == &#34;samp
 | inherit_from_parent | [bool](#bool) |  |  |
 | type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
 | rollout_policy | [RolloutPolicy](#bytebase-v1-RolloutPolicy) |  |  |
-| disable_copy_data_policy | [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy) |  |  |
 | masking_rule_policy | [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy) |  |  |
 | masking_exception_policy | [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy) |  |  |
-| restrict_issue_creation_for_sql_review_policy | [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy) |  |  |
 | tag_policy | [TagPolicy](#bytebase-v1-TagPolicy) |  |  |
 | data_source_query_policy | [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy) |  |  |
 | query_data_policy | [QueryDataPolicy](#bytebase-v1-QueryDataPolicy) |  |  |
@@ -6929,21 +6913,7 @@ QueryDataPolicy is the policy configuration for querying data.
 | disable_export | [bool](#bool) |  | Disable export data in the SQL editor |
 | maximum_result_size | [int64](#int64) |  | The size limit in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
 | maximum_result_rows | [int32](#int32) |  | The return rows limit. The default value is -1, means no limit. |
-
-
-
-
-
-
-<a name="bytebase-v1-RestrictIssueCreationForSQLReviewPolicy"></a>
-
-### RestrictIssueCreationForSQLReviewPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| disallow | [bool](#bool) |  |  |
+| disable_copy_data | [bool](#bool) |  | Disable copying data. |
 
 
 
@@ -6960,7 +6930,39 @@ QueryDataPolicy is the policy configuration for querying data.
 | ----- | ---- | ----- | ----------- |
 | automatic | [bool](#bool) |  |  |
 | roles | [string](#string) | repeated |  |
-| issue_roles | [string](#string) | repeated | roles/LAST_APPROVER roles/CREATOR |
+| issue_roles | [string](#string) | repeated | **Deprecated.** Deprecated. roles/LAST_APPROVER roles/CREATOR |
+| checkers | [RolloutPolicy.Checkers](#bytebase-v1-RolloutPolicy-Checkers) |  | Checkers that must pass before rollout execution. These checks are performed in UI workflows only. |
+
+
+
+
+
+
+<a name="bytebase-v1-RolloutPolicy-Checkers"></a>
+
+### RolloutPolicy.Checkers
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| required_issue_approval | [bool](#bool) |  | Whether issue approval is required before proceeding with rollout. |
+| required_status_checks | [RolloutPolicy.Checkers.RequiredStatusChecks](#bytebase-v1-RolloutPolicy-Checkers-RequiredStatusChecks) |  | Status checks that must pass before rollout can be executed. |
+
+
+
+
+
+
+<a name="bytebase-v1-RolloutPolicy-Checkers-RequiredStatusChecks"></a>
+
+### RolloutPolicy.Checkers.RequiredStatusChecks
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| plan_check_enforcement | [RolloutPolicy.Checkers.PlanCheckEnforcement](#bytebase-v1-RolloutPolicy-Checkers-PlanCheckEnforcement) |  | Enforcement level for plan check results during rollout validation. |
 
 
 
@@ -7087,13 +7089,24 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | ---- | ------ | ----------- |
 | POLICY_TYPE_UNSPECIFIED | 0 |  |
 | ROLLOUT_POLICY | 11 |  |
-| DISABLE_COPY_DATA | 8 |  |
 | MASKING_RULE | 9 |  |
 | MASKING_EXCEPTION | 10 |  |
-| RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW | 12 |  |
 | TAG | 13 |  |
 | DATA_SOURCE_QUERY | 14 |  |
 | DATA_QUERY | 16 |  |
+
+
+
+<a name="bytebase-v1-RolloutPolicy-Checkers-PlanCheckEnforcement"></a>
+
+### RolloutPolicy.Checkers.PlanCheckEnforcement
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PLAN_CHECK_ENFORCEMENT_UNSPECIFIED | 0 | Allow rollout regardless of plan check results (no enforcement). |
+| ERROR_ONLY | 1 | Block rollout only when plan check finds errors. |
+| STRICT | 2 | Block rollout when plan check finds errors or warnings. |
 
 
 
@@ -7913,6 +7926,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | ci_sampling_size | [int32](#int32) |  | The maximum databases of rows to sample during CI data validation. Without specification, sampling is disabled, resulting in a full validation. |
 | parallel_tasks_per_rollout | [int32](#int32) |  | The maximum number of parallel tasks to run during the rollout. |
 | labels | [Project.LabelsEntry](#bytebase-v1-Project-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the project. For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34;backend&#34; } |
+| enforce_sql_review | [bool](#bool) |  | Whether to enforce SQL review checks to pass before issue creation. If enabled, issues cannot be created when SQL review finds errors. |
 
 
 

@@ -226,7 +226,6 @@
       "n-rows": "{n} 行"
     },
     "back-to-workspace": "ワークスペースに戻る",
-    "override": "オーバーライド",
     "encoding": "エンコーディング",
     "finish": "仕上げる",
     "title": "タイトル",
@@ -694,10 +693,6 @@
         "extra-link": {
           "self": "リンク",
           "placeholder": "お知らせのリンクを入力してください"
-        },
-        "restrict-issue-creation-for-sql-review": {
-          "title": "エラーアラートを含むイシューの提出は禁止されています",
-          "description": "有効にすると、プレビュー段階で「エラー」レベルのアラームを含まないイシューのみを送信できます。"
         },
         "default-landing-page": {
           "self": "デフォルトのランディングページ",
@@ -1545,7 +1540,26 @@
       "info": "タスクは、「{permission}」許可または次の役割でユーザーが実行できます",
       "auto": "自動",
       "auto-info": "すべての事前チェックに合格すると、自動的にリリースされ、変更が反映されます。",
-      "last-issue-approver": "イシューの最終承認者"
+      "last-issue-approver": "イシューの最終承認者",
+      "checkers": {
+        "self": "要件",
+        "required-issue-approval": {
+          "self": "問題の承認が必要",
+          "description": "ロールアウトを続行する前に、問題を承認する必要があります。"
+        },
+        "plan-check-enforcement": {
+          "self": "計画チェックの実施",
+          "description": "計画チェック結果に基づいてブロックのロールアウトを行います。",
+          "error-only": {
+            "self": "エラーのみブロック",
+            "description": "計画チェックでエラーが見つかった場合のみロールアウトをブロックします。"
+          },
+          "strict": {
+            "self": "厳格な施行",
+            "description": "計画チェックでエラーまたは警告が見つかった場合は、ロールアウトをブロックします。"
+          }
+        }
+      }
     },
     "environment-tier": {
       "name": "環境レベル",
@@ -1847,6 +1861,10 @@
           "self": "問題のタイトルを強制する",
           "description": "問題のタイトルが空でないこと、および自動生成ではなくユーザーが作成することを強制します。"
         },
+        "enforce-sql-review": {
+          "self": "SQL レビューを強制",
+          "description": "課題作成を許可する前に、SQL レビューチェックがエラーなしで合格することを要求します。"
+        },
         "allow-self-approval": {
           "self": "自己承認を許可する",
           "description": "問題の作成者が問題を承認できるようにします。"
@@ -2106,7 +2124,6 @@
     "manage-connections": "接続を管理する",
     "view-detail": "詳細を見る",
     "generate-sql": "SQLの生成",
-    "current-editing-statement-is-not-empty": "現在編集中のステートメントは空ではありません。",
     "run-anyway": "とにかく走ってください",
     "no-project": {
       "not-member-of-any-projects": "あなたはどのプロジェクトのメンバーでもありません。",

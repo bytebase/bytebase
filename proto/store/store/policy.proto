@@ -13,10 +13,8 @@ message Policy {
     TYPE_UNSPECIFIED = 0;
     ROLLOUT = 1;
     MASKING_EXCEPTION = 2;
-    DISABLE_COPY_DATA = 3;
     QUERY_DATA = 5;
     MASKING_RULE = 6;
-    RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 7;
     IAM = 8;
     TAG = 9;
     DATA_SOURCE_QUERY = 10;
@@ -33,9 +31,37 @@ message Policy {
 message RolloutPolicy {
   bool automatic = 1;
   repeated string roles = 2;
+  // Deprecated.
   // roles/LAST_APPROVER
   // roles/CREATOR
-  repeated string issue_roles = 3;
+  repeated string issue_roles = 3 [deprecated = true];
+  // Checkers that must pass before rollout execution.
+  // These checks are performed in UI workflows only.
+  Checkers checkers = 4;
+
+  message Checkers {
+    // Whether issue approval is required before proceeding with rollout.
+    bool required_issue_approval = 1;
+
+    // Status checks that must pass before rollout can be executed.
+    RequiredStatusChecks required_status_checks = 2;
+
+    message RequiredStatusChecks {
+      // Enforcement level for plan check results during rollout validation.
+      PlanCheckEnforcement plan_check_enforcement = 1;
+    }
+
+    enum PlanCheckEnforcement {
+      // Allow rollout regardless of plan check results (no enforcement).
+      PLAN_CHECK_ENFORCEMENT_UNSPECIFIED = 0;
+
+      // Block rollout only when plan check finds errors.
+      ERROR_ONLY = 1;
+
+      // Block rollout when plan check finds errors or warnings.
+      STRICT = 2;
+    }
+  }
 }
 
 // MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
@@ -128,11 +154,6 @@ message EnvironmentTierPolicy {
   string color = 2;
 }
 
-// DisableCopyDataPolicy is the policy configuration for disabling copying data.
-message DisableCopyDataPolicy {
-  bool active = 1;
-}
-
 // QueryDataPolicy is the policy configuration for querying data.
 message QueryDataPolicy {
   // The query timeout duration.
@@ -148,11 +169,9 @@ message QueryDataPolicy {
   // The return rows limit.
   // The default value is -1, means no limit.
   int32 maximum_result_rows = 4;
-}
 
-// RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restricting issue creation for SQL review.
-message RestrictIssueCreationForSQLReviewPolicy {
-  bool disallow = 1;
+  // Disable copying data.
+  bool disable_copy_data = 5;
 }
 
 // DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.

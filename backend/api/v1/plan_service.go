@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"slices"
 	"strings"
 	"time"
@@ -13,9 +14,7 @@ import (
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	celoverloads "github.com/google/cel-go/common/overloads"
-	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -411,7 +410,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 			// Compare specs directly
 			oldSpecs := convertToPlanSpecs(oldPlan.Config.Specs)
-			removed, added, updated := diffSpecsDirectly(oldSpecs, req.Plan.Specs)
+			removed, added, updated := diffSpecs(oldSpecs, req.Plan.Specs)
 
 			// Check if there are any changes at all.
 			hasChanges := len(removed) > 0 || len(added) > 0 || len(updated) > 0
@@ -469,7 +468,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 							planCheckRunsTrigger = true
 							break
 						}
-						if !cmp.Equal(oldConfig.GhostFlags, newConfig.GhostFlags) {
+						if !oldConfig.Equal(newConfig) {
 							// gh-ost flags changed.
 							planCheckRunsTrigger = true
 							break
@@ -544,7 +543,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 							return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid ghost flags %q, error %v", newFlags, err))
 						}
 						oldFlags := task.Payload.GetFlags()
-						if cmp.Equal(oldFlags, newFlags) {
+						if maps.Equal(oldFlags, newFlags) {
 							return nil
 						}
 						taskPatch.Flags = &newFlags
@@ -663,12 +662,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 				}
 
 				if len(taskPatchList) != 0 {
-					issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
-						PipelineID: oldPlan.PipelineUID,
-					})
-					if err != nil {
-						return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue: %v", err))
-					}
 					if issue != nil {
 						// Do not allow to update task if issue is done or canceled.
 						if issue.Status == storepb.Issue_DONE || issue.Status == storepb.Issue_CANCELED {
@@ -679,11 +672,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			}
 
 			for _, taskPatch := range taskPatchList {
-				if taskPatch.SheetID != nil {
-					task := tasksMap[taskPatch.ID]
-					if task.LatestTaskRunStatus == storepb.TaskRun_PENDING || task.LatestTaskRunStatus == storepb.TaskRun_RUNNING || task.LatestTaskRunStatus == storepb.TaskRun_SKIPPED || task.LatestTaskRunStatus == storepb.TaskRun_DONE {
-						return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot update plan because task %v is %s", task.ID, task.LatestTaskRunStatus))
-					}
+				task := tasksMap[taskPatch.ID]
+				if task.LatestTaskRunStatus == storepb.TaskRun_PENDING || task.LatestTaskRunStatus == storepb.TaskRun_RUNNING || task.LatestTaskRunStatus == storepb.TaskRun_SKIPPED || task.LatestTaskRunStatus == storepb.TaskRun_DONE {
+					return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot update plan because task %v is %s", task.ID, task.LatestTaskRunStatus))
 				}
 			}
 
@@ -1241,10 +1232,10 @@ func (s *PlanService) getUserByIdentifier(ctx context.Context, identifier string
 	return user, nil
 }
 
-// diffSpecsDirectly checks if there are any specs removed, added or updated in the new plan.
+// diffSpecs checks if there are any specs removed, added or updated in the new plan.
 // It performs a deep comparison of all spec fields using protocol buffer comparison.
 // Returns (removed, added, updated) slices of specs.
-func diffSpecsDirectly(oldSpecs []*v1pb.Plan_Spec, newSpecs []*v1pb.Plan_Spec) ([]*v1pb.Plan_Spec, []*v1pb.Plan_Spec, []*v1pb.Plan_Spec) {
+func diffSpecs(oldSpecs []*v1pb.Plan_Spec, newSpecs []*v1pb.Plan_Spec) ([]*v1pb.Plan_Spec, []*v1pb.Plan_Spec, []*v1pb.Plan_Spec) {
 	oldSpecsMap := make(map[string]*v1pb.Plan_Spec, len(oldSpecs))
 	newSpecsMap := make(map[string]*v1pb.Plan_Spec, len(newSpecs))
 
@@ -1269,7 +1260,7 @@ func diffSpecsDirectly(oldSpecs []*v1pb.Plan_Spec, newSpecs []*v1pb.Plan_Spec) (
 	for _, spec := range newSpecs {
 		if oldSpec, exists := oldSpecsMap[spec.Id]; !exists {
 			added = append(added, spec)
-		} else if !cmp.Equal(oldSpec, spec, protocmp.Transform()) {
+		} else if !oldSpec.Equal(spec) {
 			updated = append(updated, spec)
 		}
 	}
@@ -1427,6 +1418,7 @@ func storePlanConfigHasRelease(plan *storepb.PlanConfig) bool {
 }
 
 func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (storepb.Task_Type, error) {
+	//exhaustive:enforce
 	switch s := spec.Config.(type) {
 	case *v1pb.Plan_Spec_CreateDatabaseConfig:
 		return storepb.Task_DATABASE_CREATE, nil
@@ -1438,11 +1430,16 @@ func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (storepb.Task_Type, error) {
 			return storepb.Task_DATABASE_SCHEMA_UPDATE, nil
 		case v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST:
 			return storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST, nil
+		case v1pb.Plan_ChangeDatabaseConfig_MIGRATE_SDL:
+			return storepb.Task_DATABASE_SCHEMA_UPDATE_SDL, nil
+		case v1pb.Plan_ChangeDatabaseConfig_TYPE_UNSPECIFIED:
+			return storepb.Task_TASK_TYPE_UNSPECIFIED, errors.Errorf("unexpected unspecified change database config type")
 		default:
 			return storepb.Task_TASK_TYPE_UNSPECIFIED, errors.Errorf("invalid change database config type %s", s.ChangeDatabaseConfig.Type)
 		}
 	case *v1pb.Plan_Spec_ExportDataConfig:
 		return storepb.Task_DATABASE_EXPORT, nil
+	default:
+		return storepb.Task_TASK_TYPE_UNSPECIFIED, errors.Errorf("unknown spec config type")
 	}
-	return storepb.Task_TASK_TYPE_UNSPECIFIED, errors.Errorf("unknown spec config type")
 }
