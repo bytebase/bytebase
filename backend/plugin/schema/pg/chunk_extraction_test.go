@@ -4,11 +4,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	parser "github.com/bytebase/parser/postgresql"
 
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -123,7 +125,7 @@ $$ LANGUAGE plpgsql`,
 			chunks, err := ChunkSDLText(tc.sdlText)
 			require.NoError(t, err, "Should successfully chunk SDL text")
 			require.NotNil(t, chunks, "Chunks should not be nil")
-			require.NotNil(t, chunks.Tokens, "Token stream should not be nil")
+			// Token stream is no longer stored in chunks, obtained from AST nodes directly
 
 			// Build a map of all chunks with type:identifier keys
 			allChunks := make(map[string]*schema.SDLChunk)
@@ -157,7 +159,7 @@ $$ LANGUAGE plpgsql`,
 				assert.NotNil(t, chunk.ASTNode, "Chunk AST node should not be nil")
 
 				// Extract text using GetText method and compare
-				actualText := chunk.GetText(chunks.Tokens)
+				actualText := chunk.GetText()
 				require.NotEmpty(t, actualText, "GetText should return non-empty text")
 
 				// Normalize whitespace for comparison
@@ -258,17 +260,97 @@ func TestChunkGetTextMethod(t *testing.T) {
 
 	chunks, err := ChunkSDLText(sdlText)
 	require.NoError(t, err)
-	require.Contains(t, chunks.Tables, "test_table")
+	require.Contains(t, chunks.Tables, "public.test_table")
 
-	chunk := chunks.Tables["test_table"]
+	chunk := chunks.Tables["public.test_table"]
 
 	// Test GetText method
-	text := chunk.GetText(chunks.Tokens)
+	text := chunk.GetText()
 	assert.NotEmpty(t, text, "GetText should return non-empty text")
 	assert.Contains(t, text, "CREATE TABLE test_table", "Text should contain table creation")
 	assert.Contains(t, text, "id INTEGER PRIMARY KEY", "Text should contain column definition")
 
-	// Test with nil tokens (should handle gracefully)
-	emptyText := chunk.GetText(nil)
-	assert.Empty(t, emptyText, "GetText with nil tokens should return empty string")
+	// Test that GetText works with the new token-less approach
+	// (This test is no longer relevant since we get tokens from AST directly)
+}
+
+func TestChunkKeyFormats(t *testing.T) {
+	sdlText := `CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT);
+CREATE TABLE admin.users (id SERIAL, role TEXT);
+CREATE SEQUENCE user_seq;
+CREATE SEQUENCE admin.admin_seq;
+CREATE VIEW user_view AS SELECT * FROM users;
+CREATE VIEW admin.admin_view AS SELECT * FROM admin.users;
+CREATE INDEX idx_users_name ON users(name);`
+
+	chunks, err := ChunkSDLText(sdlText)
+	require.NoError(t, err)
+	require.NotNil(t, chunks)
+
+	// Check that all chunk keys use schema.objectName format
+	expectedTableKeys := []string{"public.users", "admin.users"}
+	expectedSequenceKeys := []string{"public.user_seq", "admin.admin_seq"}
+	expectedViewKeys := []string{"public.user_view", "admin.admin_view"}
+	expectedIndexKeys := []string{"public.idx_users_name"}
+
+	// Verify table chunk keys
+	require.Equal(t, len(expectedTableKeys), len(chunks.Tables))
+	for _, key := range expectedTableKeys {
+		_, exists := chunks.Tables[key]
+		require.True(t, exists, "Expected table key %s not found", key)
+	}
+
+	// Verify sequence chunk keys
+	require.Equal(t, len(expectedSequenceKeys), len(chunks.Sequences))
+	for _, key := range expectedSequenceKeys {
+		_, exists := chunks.Sequences[key]
+		require.True(t, exists, "Expected sequence key %s not found", key)
+	}
+
+	// Verify view chunk keys
+	require.Equal(t, len(expectedViewKeys), len(chunks.Views))
+	for _, key := range expectedViewKeys {
+		_, exists := chunks.Views[key]
+		require.True(t, exists, "Expected view key %s not found", key)
+	}
+
+	// Verify index chunk keys
+	require.Equal(t, len(expectedIndexKeys), len(chunks.Indexes))
+	for _, key := range expectedIndexKeys {
+		_, exists := chunks.Indexes[key]
+		require.True(t, exists, "Expected index key %s not found", key)
+	}
+}
+
+// TestNewTableASTParsing tests that new tables created during drift detection
+// have proper AST nodes that can generate correct text
+func TestNewTableASTParsing(t *testing.T) {
+	// Test the createTableExtractor functionality
+	tableSDL := `CREATE TABLE "public"."users" (
+    "id" integer NOT NULL,
+    "name" text NOT NULL
+);`
+
+	parseResult, err := pgparser.ParsePostgreSQL(tableSDL)
+	require.NoError(t, err)
+
+	// Extract the CREATE TABLE AST node
+	var createTableNode *parser.CreatestmtContext
+	antlr.ParseTreeWalkerDefault.Walk(&createTableExtractor{
+		result: &createTableNode,
+	}, parseResult.Tree)
+
+	require.NotNil(t, createTableNode, "Should extract CREATE TABLE AST node")
+
+	// Create chunk with the AST node
+	chunk := &schema.SDLChunk{
+		Identifier: "public.users",
+		ASTNode:    createTableNode,
+	}
+
+	// Verify we can extract text from the AST node
+	text := chunk.GetText()
+	require.NotEmpty(t, text)
+	require.Contains(t, strings.ToUpper(text), "CREATE TABLE")
+	require.Contains(t, text, "users")
 }

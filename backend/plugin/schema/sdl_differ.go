@@ -9,29 +9,41 @@ type SDLChunk struct {
 	ASTNode    antlr.ParserRuleContext // The parsed AST node for this chunk
 }
 
-// GetText extracts text from the AST node using the provided token stream
-func (c *SDLChunk) GetText(tokens *antlr.CommonTokenStream) string {
-	if c.ASTNode == nil || tokens == nil {
+// GetText extracts text from the AST node using its own token stream
+func (c *SDLChunk) GetText() string {
+	if c.ASTNode == nil {
 		return ""
 	}
 
-	start := c.ASTNode.GetStart()
-	stop := c.ASTNode.GetStop()
-
-	if start == nil || stop == nil {
-		return ""
+	// Check for interfaces that have the required methods
+	type parserContext interface {
+		GetParser() antlr.Parser
+		GetStart() antlr.Token
+		GetStop() antlr.Token
 	}
 
-	return tokens.GetTextFromTokens(start, stop)
+	if ruleContext, ok := c.ASTNode.(parserContext); ok {
+		if parser := ruleContext.GetParser(); parser != nil {
+			if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+				start := ruleContext.GetStart()
+				stop := ruleContext.GetStop()
+				if start != nil && stop != nil {
+					return tokenStream.GetTextFromTokens(start, stop)
+				}
+			}
+		}
+	}
+
+	// Fallback to node's GetText method
+	return c.ASTNode.GetText()
 }
 
 type SDLChunks struct {
-	Tables    map[string]*SDLChunk     // key: table name/identifier
-	Views     map[string]*SDLChunk     // key: view name/identifier
-	Functions map[string]*SDLChunk     // key: function name/identifier
-	Indexes   map[string]*SDLChunk     // key: index name/identifier
-	Sequences map[string]*SDLChunk     // key: sequence name/identifier
-	Tokens    *antlr.CommonTokenStream // Token stream for extracting text from AST nodes
+	Tables    map[string]*SDLChunk // key: table name/identifier
+	Views     map[string]*SDLChunk // key: view name/identifier
+	Functions map[string]*SDLChunk // key: function name/identifier
+	Indexes   map[string]*SDLChunk // key: index name/identifier
+	Sequences map[string]*SDLChunk // key: sequence name/identifier
 }
 
 type SDLDiff struct {
