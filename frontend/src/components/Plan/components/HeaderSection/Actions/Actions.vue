@@ -294,45 +294,52 @@ const availableActions = computed(() => {
   }
 
   // Check for rollout actions when rollout exists and has database creation tasks
-  if (
-    rollout.value &&
-    hasProjectPermissionV2(project.value, "bb.taskRuns.create") &&
-    issueValue.approvalFindingDone
-  ) {
-    const hasDatabaseCreateOrExportTasks = rollout.value.stages.some((stage) =>
-      stage.tasks.some(
-        (task) =>
-          task.type === Task_Type.DATABASE_CREATE ||
-          task.type === Task_Type.DATABASE_EXPORT
-      )
-    );
+  if (rollout.value && issueValue.approvalFindingDone) {
+    // Different permission checks based on issue type
+    // For export data issues: only the creator can run tasks
+    // For other issues: need bb.taskRuns.create permission
+    const canRunTasks =
+      issueValue.type === Issue_Type.DATABASE_EXPORT
+        ? currentUserEmail === extractUserId(issueValue.creator)
+        : hasProjectPermissionV2(project.value, "bb.taskRuns.create");
 
-    if (hasDatabaseCreateOrExportTasks) {
-      // Show ROLLOUT_START if there are actionable database creation tasks
-      // This includes both normal rollout and force rollout scenarios
-      const hasStartableTasks = rollout.value.stages
-        .flatMap((stage) => stage.tasks)
-        .some((task) =>
-          [
-            Task_Status.NOT_STARTED,
-            Task_Status.FAILED,
-            Task_Status.CANCELED,
-          ].includes(task.status)
-        );
+    if (canRunTasks) {
+      const hasDatabaseCreateOrExportTasks = rollout.value.stages.some(
+        (stage) =>
+          stage.tasks.some(
+            (task) =>
+              task.type === Task_Type.DATABASE_CREATE ||
+              task.type === Task_Type.DATABASE_EXPORT
+          )
+      );
 
-      if (hasStartableTasks) {
-        actions.push("ROLLOUT_START");
-      }
+      if (hasDatabaseCreateOrExportTasks) {
+        // Show ROLLOUT_START if there are actionable database creation tasks
+        // This includes both normal rollout and force rollout scenarios
+        const hasStartableTasks = rollout.value.stages
+          .flatMap((stage) => stage.tasks)
+          .some((task) =>
+            [
+              Task_Status.NOT_STARTED,
+              Task_Status.FAILED,
+              Task_Status.CANCELED,
+            ].includes(task.status)
+          );
 
-      // Check for cancel action on running/pending tasks
-      const runningTask = rollout.value.stages
-        .flatMap((stage) => stage.tasks)
-        .find((task) =>
-          [Task_Status.PENDING, Task_Status.RUNNING].includes(task.status)
-        );
+        if (hasStartableTasks) {
+          actions.push("ROLLOUT_START");
+        }
 
-      if (runningTask) {
-        actions.push("ROLLOUT_CANCEL");
+        // Check for cancel action on running/pending tasks
+        const runningTask = rollout.value.stages
+          .flatMap((stage) => stage.tasks)
+          .find((task) =>
+            [Task_Status.PENDING, Task_Status.RUNNING].includes(task.status)
+          );
+
+        if (runningTask) {
+          actions.push("ROLLOUT_CANCEL");
+        }
       }
     }
   }
