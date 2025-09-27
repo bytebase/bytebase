@@ -40,6 +40,14 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 		return nil, errors.Wrap(err, "failed to chunk previous SDL text")
 	}
 
+	// Check for drift scenario: when both schemas are provided, apply minimal changes to previousChunks
+	if currentSchema != nil && previousSchema != nil {
+		err = applyMinimalChangesToChunks(previousChunks, currentSchema, previousSchema)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to apply minimal changes to SDL chunks")
+		}
+	}
+
 	// Initialize MetadataDiff
 	diff := &schema.MetadataDiff{
 		DatabaseName:            "",
@@ -82,7 +90,6 @@ func ChunkSDLText(sdlText string) (*schema.SDLChunks, error) {
 			Functions: make(map[string]*schema.SDLChunk),
 			Indexes:   make(map[string]*schema.SDLChunk),
 			Sequences: make(map[string]*schema.SDLChunk),
-			Tokens:    nil,
 		}, nil
 	}
 
@@ -99,7 +106,6 @@ func ChunkSDLText(sdlText string) (*schema.SDLChunks, error) {
 			Functions: make(map[string]*schema.SDLChunk),
 			Indexes:   make(map[string]*schema.SDLChunk),
 			Sequences: make(map[string]*schema.SDLChunk),
-			Tokens:    parseResult.Tokens,
 		},
 		tokens: parseResult.Tokens,
 	}
@@ -124,12 +130,20 @@ func (l *sdlChunkExtractor) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 	identifier := pgparser.NormalizePostgreSQLQualifiedName(ctx.Qualified_name(0))
 	identifierStr := strings.Join(identifier, ".")
 
+	// Ensure schema.tableName format
+	var schemaQualifiedName string
+	if strings.Contains(identifierStr, ".") {
+		schemaQualifiedName = identifierStr
+	} else {
+		schemaQualifiedName = "public." + identifierStr
+	}
+
 	chunk := &schema.SDLChunk{
-		Identifier: identifierStr,
+		Identifier: schemaQualifiedName,
 		ASTNode:    ctx,
 	}
 
-	l.chunks.Tables[identifierStr] = chunk
+	l.chunks.Tables[schemaQualifiedName] = chunk
 }
 
 func (l *sdlChunkExtractor) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext) {
@@ -140,12 +154,20 @@ func (l *sdlChunkExtractor) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext)
 	identifier := pgparser.NormalizePostgreSQLQualifiedName(ctx.Qualified_name())
 	identifierStr := strings.Join(identifier, ".")
 
+	// Ensure schema.sequenceName format
+	var schemaQualifiedName string
+	if strings.Contains(identifierStr, ".") {
+		schemaQualifiedName = identifierStr
+	} else {
+		schemaQualifiedName = "public." + identifierStr
+	}
+
 	chunk := &schema.SDLChunk{
-		Identifier: identifierStr,
+		Identifier: schemaQualifiedName,
 		ASTNode:    ctx,
 	}
 
-	l.chunks.Sequences[identifierStr] = chunk
+	l.chunks.Sequences[schemaQualifiedName] = chunk
 }
 
 func (l *sdlChunkExtractor) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
@@ -160,18 +182,35 @@ func (l *sdlChunkExtractor) EnterCreatefunctionstmt(ctx *parser.Createfunctionst
 		return
 	}
 
-	// Join the parts to create the function name (schema.function_name or function_name)
-	funcName := strings.Join(funcNameParts, ".")
+	// Parse schema and function name directly from parts
+	var schemaName, functionName string
+	if len(funcNameParts) == 2 {
+		// Schema qualified: schema.function_name
+		schemaName = funcNameParts[0]
+		functionName = funcNameParts[1]
+	} else if len(funcNameParts) == 1 {
+		// Unqualified: function_name (assume public schema)
+		schemaName = "public"
+		functionName = funcNameParts[0]
+	} else {
+		// Unexpected format
+		return
+	}
 
-	// Extract function signature for proper identification
-	funcSignature := ExtractFunctionSignature(ctx, funcName)
+	if functionName == "" {
+		return
+	}
+
+	// Generate function signature with parameter types
+	signature := ExtractFunctionSignature(ctx, functionName)
+	schemaQualifiedSignature := schemaName + "." + signature
 
 	chunk := &schema.SDLChunk{
-		Identifier: funcSignature, // Use signature instead of name
+		Identifier: schemaQualifiedSignature,
 		ASTNode:    ctx,
 	}
 
-	l.chunks.Functions[funcSignature] = chunk
+	l.chunks.Functions[schemaQualifiedSignature] = chunk
 }
 
 func (l *sdlChunkExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
@@ -191,12 +230,20 @@ func (l *sdlChunkExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 		return
 	}
 
+	// Ensure schema.indexName format
+	var schemaQualifiedName string
+	if strings.Contains(indexName, ".") {
+		schemaQualifiedName = indexName
+	} else {
+		schemaQualifiedName = "public." + indexName
+	}
+
 	chunk := &schema.SDLChunk{
-		Identifier: indexName,
+		Identifier: schemaQualifiedName,
 		ASTNode:    ctx,
 	}
 
-	l.chunks.Indexes[indexName] = chunk
+	l.chunks.Indexes[schemaQualifiedName] = chunk
 }
 
 func (l *sdlChunkExtractor) EnterViewstmt(ctx *parser.ViewstmtContext) {
@@ -207,12 +254,20 @@ func (l *sdlChunkExtractor) EnterViewstmt(ctx *parser.ViewstmtContext) {
 	identifier := pgparser.NormalizePostgreSQLQualifiedName(ctx.Qualified_name())
 	identifierStr := strings.Join(identifier, ".")
 
+	// Ensure schema.viewName format
+	var schemaQualifiedName string
+	if strings.Contains(identifierStr, ".") {
+		schemaQualifiedName = identifierStr
+	} else {
+		schemaQualifiedName = "public." + identifierStr
+	}
+
 	chunk := &schema.SDLChunk{
-		Identifier: identifierStr,
+		Identifier: schemaQualifiedName,
 		ASTNode:    ctx,
 	}
 
-	l.chunks.Views[identifierStr] = chunk
+	l.chunks.Views[schemaQualifiedName] = chunk
 }
 
 // processTableChanges processes changes to tables by comparing SDL chunks
@@ -228,8 +283,8 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 
 		if previousChunk, exists := previousChunks.Tables[identifier]; exists {
 			// Table exists in both - check if modified
-			currentText := currentChunk.GetText(currentChunks.Tokens)
-			previousText := previousChunk.GetText(previousChunks.Tokens)
+			currentText := currentChunk.GetText()
+			previousText := previousChunk.GetText()
 			if currentText != previousText {
 				// Table was modified - process column changes
 				oldASTNode, ok := previousChunk.ASTNode.(*parser.CreatestmtContext)
@@ -265,22 +320,38 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 			}
 		} else {
 			// New table
-			newASTNode, ok := currentChunk.ASTNode.(*parser.CreatestmtContext)
-			if !ok {
-				return errors.Errorf("expected CreatestmtContext for new table %s", currentChunk.Identifier)
-			}
+			// Handle generated chunks (from drift detection) that don't have AST nodes
+			if currentChunk.ASTNode == nil {
+				// This is a generated chunk, create a simplified diff entry
+				tableDiff := &schema.TableDiff{
+					Action:        schema.MetadataDiffActionCreate,
+					SchemaName:    schemaName,
+					TableName:     tableName,
+					OldTable:      nil,
+					NewTable:      nil,
+					OldASTNode:    nil,
+					NewASTNode:    nil,                    // No AST node for generated content
+					ColumnChanges: []*schema.ColumnDiff{}, // Empty - table creation automatically creates all columns
+				}
+				diff.TableChanges = append(diff.TableChanges, tableDiff)
+			} else {
+				newASTNode, ok := currentChunk.ASTNode.(*parser.CreatestmtContext)
+				if !ok {
+					return errors.Errorf("expected CreatestmtContext for new table %s", currentChunk.Identifier)
+				}
 
-			tableDiff := &schema.TableDiff{
-				Action:        schema.MetadataDiffActionCreate,
-				SchemaName:    schemaName,
-				TableName:     tableName,
-				OldTable:      nil,
-				NewTable:      nil, // Will be populated when SDL drift detection is implemented
-				OldASTNode:    nil,
-				NewASTNode:    newASTNode,
-				ColumnChanges: []*schema.ColumnDiff{}, // Empty - table creation automatically creates all columns
+				tableDiff := &schema.TableDiff{
+					Action:        schema.MetadataDiffActionCreate,
+					SchemaName:    schemaName,
+					TableName:     tableName,
+					OldTable:      nil,
+					NewTable:      nil, // Will be populated when SDL drift detection is implemented
+					OldASTNode:    nil,
+					NewASTNode:    newASTNode,
+					ColumnChanges: []*schema.ColumnDiff{}, // Empty - table creation automatically creates all columns
+				}
+				diff.TableChanges = append(diff.TableChanges, tableDiff)
 			}
-			diff.TableChanges = append(diff.TableChanges, tableDiff)
 		}
 	}
 
@@ -289,6 +360,14 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 		if _, exists := currentChunks.Tables[identifier]; !exists {
 			// Table was dropped
 			schemaName, tableName := parseIdentifier(previousChunk.Identifier)
+
+			// Handle generated chunks (from drift detection) that don't have AST nodes
+			if previousChunk.ASTNode == nil {
+				// This is a generated chunk that was removed, skip it in the diff
+				// It means this table was added during drift detection but doesn't exist in current SDL
+				continue
+			}
+
 			oldASTNode, ok := previousChunk.ASTNode.(*parser.CreatestmtContext)
 			if !ok {
 				return errors.Errorf("expected CreatestmtContext for dropped table %s", previousChunk.Identifier)
@@ -460,13 +539,23 @@ func extractColumnMetadata(columnDef parser.IColumnDefContext) *storepb.ColumnMe
 	}
 }
 
-// parseTableIdentifier parses a table identifier and returns schema name and table name
+// parseIdentifier parses a table identifier and returns schema name and table name
 func parseIdentifier(identifier string) (schemaName, objectName string) {
 	parts := strings.Split(identifier, ".")
 	if len(parts) == 2 {
 		return parts[0], parts[1]
 	}
 	return "public", identifier
+}
+
+// createTableExtractor extracts CREATE TABLE AST node from parse tree
+type createTableExtractor struct {
+	*parser.BasePostgreSQLParserListener
+	result **parser.CreatestmtContext
+}
+
+func (e *createTableExtractor) EnterCreatestmt(ctx *parser.CreatestmtContext) {
+	*e.result = ctx
 }
 
 // getColumnText extracts the text representation of a column definition
@@ -1298,8 +1387,8 @@ func processViewChanges(currentChunks, previousChunks *schema.SDLChunks, diff *s
 	for identifier, currentChunk := range currentChunks.Views {
 		if previousChunk, exists := previousChunks.Views[identifier]; exists {
 			// View exists in both - check if modified by comparing text first
-			currentText := currentChunk.GetText(currentChunks.Tokens)
-			previousText := previousChunk.GetText(previousChunks.Tokens)
+			currentText := currentChunk.GetText()
+			previousText := previousChunk.GetText()
 			if currentText != previousText {
 				// View was modified - use drop and recreate pattern (PostgreSQL standard)
 				schemaName, viewName := parseIdentifier(identifier)
@@ -1363,8 +1452,8 @@ func processFunctionChanges(currentChunks, previousChunks *schema.SDLChunks, dif
 	for identifier, currentChunk := range currentChunks.Functions {
 		if previousChunk, exists := previousChunks.Functions[identifier]; exists {
 			// Function exists in both - check if modified by comparing text first
-			currentText := currentChunk.GetText(currentChunks.Tokens)
-			previousText := previousChunk.GetText(previousChunks.Tokens)
+			currentText := currentChunk.GetText()
+			previousText := previousChunk.GetText()
 			if currentText != previousText {
 				// Function was modified - use CREATE OR REPLACE (AST-only mode)
 				schemaName, functionName := parseIdentifier(identifier)
@@ -1419,8 +1508,8 @@ func processSequenceChanges(currentChunks, previousChunks *schema.SDLChunks, dif
 	for identifier, currentChunk := range currentChunks.Sequences {
 		if previousChunk, exists := previousChunks.Sequences[identifier]; exists {
 			// Sequence exists in both - check if modified by comparing text first
-			currentText := currentChunk.GetText(currentChunks.Tokens)
-			previousText := previousChunk.GetText(previousChunks.Tokens)
+			currentText := currentChunk.GetText()
+			previousText := previousChunk.GetText()
 			if currentText != previousText {
 				// Sequence was modified - use drop and recreate pattern (PostgreSQL standard)
 				schemaName, sequenceName := parseIdentifier(identifier)
@@ -1475,6 +1564,384 @@ func processSequenceChanges(currentChunks, previousChunks *schema.SDLChunks, dif
 			})
 		}
 	}
+}
+
+// applyMinimalChangesToChunks applies minimal changes to the previous SDL chunks based on schema differences
+// This implements the minimal change principle for drift scenarios by directly manipulating chunks
+func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
+		return nil
+	}
+
+	// Get table differences between schemas
+	currentMetadata := currentSchema.GetMetadata()
+	previousMetadata := previousSchema.GetMetadata()
+	if currentMetadata == nil || previousMetadata == nil {
+		return nil
+	}
+
+	// Create maps for efficient table lookup using full schema.table identifier
+	currentTables := make(map[string]*storepb.TableMetadata)
+	previousTables := make(map[string]*storepb.TableMetadata)
+
+	// Build current tables map with proper schema qualification
+	for _, schema := range currentMetadata.Schemas {
+		schemaName := schema.Name
+		if schemaName == "" {
+			schemaName = "public" // Default schema for PostgreSQL
+		}
+		for _, table := range schema.Tables {
+			tableKey := schemaName + "." + table.Name
+			currentTables[tableKey] = table
+		}
+	}
+
+	// Build previous tables map with proper schema qualification
+	for _, schema := range previousMetadata.Schemas {
+		schemaName := schema.Name
+		if schemaName == "" {
+			schemaName = "public" // Default schema for PostgreSQL
+		}
+		for _, table := range schema.Tables {
+			tableKey := schemaName + "." + table.Name
+			previousTables[tableKey] = table
+		}
+	}
+
+	// Build existing chunk keys mapping for table operations
+	existingChunkKeys := make(map[string]string) // schema.table -> chunk key
+	for chunkKey := range previousChunks.Tables {
+		existingChunkKeys[chunkKey] = chunkKey
+	}
+
+	// Process table additions: add new tables to chunks
+	for tableKey, currentTable := range currentTables {
+		if _, exists := previousTables[tableKey]; !exists {
+			// Table was added - generate SDL for the new table and parse it to AST
+			var buf strings.Builder
+			schemaName, _ := parseIdentifier(tableKey)
+			err := writeCreateTableSDL(&buf, schemaName, currentTable)
+			if err != nil {
+				return errors.Wrapf(err, "failed to generate SDL for new table %s", tableKey)
+			}
+			tableSDL := buf.String()
+
+			// Parse the generated SDL to create AST node
+			parseResult, err := pgparser.ParsePostgreSQL(tableSDL)
+			if err != nil {
+				return errors.Wrapf(err, "failed to parse generated SDL for new table %s", tableKey)
+			}
+
+			// Extract the CREATE TABLE AST node
+			var createTableNode *parser.CreatestmtContext
+			antlr.ParseTreeWalkerDefault.Walk(&createTableExtractor{
+				result: &createTableNode,
+			}, parseResult.Tree)
+
+			if createTableNode == nil {
+				return errors.Errorf("failed to extract CREATE TABLE AST node for new table %s", tableKey)
+			}
+
+			// Always use schema.table format for all table identifiers
+			chunkKey := tableKey
+
+			// Add the new table chunk with proper AST node
+			previousChunks.Tables[chunkKey] = &schema.SDLChunk{
+				Identifier: chunkKey,
+				ASTNode:    createTableNode,
+			}
+		}
+	}
+
+	// Process table modifications: apply column-level changes using ANTLR rewrite
+	for tableKey, currentTable := range currentTables {
+		if previousTable, exists := previousTables[tableKey]; exists {
+			// Table exists in both schemas - check for column differences
+			if existingKey, chunkExists := existingChunkKeys[tableKey]; chunkExists {
+				if chunk := previousChunks.Tables[existingKey]; chunk != nil {
+					// Apply column-level changes to the existing chunk
+					err := applyColumnChangesToChunk(chunk, currentTable, previousTable)
+					if err != nil {
+						return errors.Wrapf(err, "failed to apply column changes to table %s", tableKey)
+					}
+				}
+			}
+		}
+	}
+
+	// Process table deletions: remove dropped tables from chunks
+	for tableKey := range previousTables {
+		if _, exists := currentTables[tableKey]; !exists {
+			// Table was dropped - find the corresponding chunk key and remove it
+			if existingKey, exists := existingChunkKeys[tableKey]; exists {
+				delete(previousChunks.Tables, existingKey)
+			}
+			// If no mapping exists, the table was not in the original chunks,
+			// so there's nothing to delete - this is the expected behavior
+		}
+	}
+
+	return nil
+}
+
+// applyColumnChangesToChunk applies minimal column changes to an existing CREATE TABLE chunk using ANTLR rewrite
+func applyColumnChangesToChunk(chunk *schema.SDLChunk, currentTable, previousTable *storepb.TableMetadata) error {
+	if chunk == nil || chunk.ASTNode == nil || currentTable == nil || previousTable == nil {
+		return nil
+	}
+
+	createStmt, ok := chunk.ASTNode.(*parser.CreatestmtContext)
+	if !ok {
+		return errors.New("chunk AST node is not a CREATE TABLE statement")
+	}
+
+	// Get the token stream and create a rewriter
+	ctxParser := createStmt.GetParser()
+	if ctxParser == nil {
+		return errors.New("parser not available for AST node")
+	}
+
+	tokenStream := ctxParser.GetTokenStream()
+	if tokenStream == nil {
+		return errors.New("token stream not available for parser")
+	}
+
+	rewriter := antlr.NewTokenStreamRewriter(tokenStream)
+
+	// Create column maps for efficient lookups
+	currentColumns := make(map[string]*storepb.ColumnMetadata)
+	previousColumns := make(map[string]*storepb.ColumnMetadata)
+
+	for _, col := range currentTable.Columns {
+		currentColumns[col.Name] = col
+	}
+	for _, col := range previousTable.Columns {
+		previousColumns[col.Name] = col
+	}
+
+	// Extract existing column definitions from AST
+	existingColumnDefs := extractColumnDefinitionsWithAST(createStmt)
+
+	// Phase 1: Handle column deletions (process in reverse order to maintain token positions)
+	for i := len(existingColumnDefs.Order) - 1; i >= 0; i-- {
+		columnName := existingColumnDefs.Order[i]
+		if _, exists := currentColumns[columnName]; !exists {
+			// Column was deleted
+			columnDef := existingColumnDefs.Map[columnName]
+			err := deleteColumnFromAST(rewriter, columnDef.ASTNode, createStmt)
+			if err != nil {
+				return errors.Wrapf(err, "failed to delete column %s", columnName)
+			}
+		}
+	}
+
+	// Phase 2: Handle column modifications
+	for _, columnName := range existingColumnDefs.Order {
+		if currentCol, currentExists := currentColumns[columnName]; currentExists {
+			if previousCol, previousExists := previousColumns[columnName]; previousExists {
+				// Column exists in both - check if modified
+				if !columnsEqual(currentCol, previousCol) {
+					columnDef := existingColumnDefs.Map[columnName]
+					err := modifyColumnInAST(rewriter, columnDef.ASTNode, currentCol)
+					if err != nil {
+						return errors.Wrapf(err, "failed to modify column %s", columnName)
+					}
+				}
+			}
+		}
+	}
+
+	// Phase 3: Handle column additions (add at the end)
+	for _, currentCol := range currentTable.Columns {
+		if _, exists := previousColumns[currentCol.Name]; !exists {
+			// Column was added
+			err := addColumnToAST(rewriter, createStmt, currentCol)
+			if err != nil {
+				return errors.Wrapf(err, "failed to add column %s", currentCol.Name)
+			}
+		}
+	}
+
+	// Apply the changes and update the chunk
+	modifiedText := rewriter.GetTextDefault()
+
+	// Parse the modified text to create a new AST node
+	parseResult, err := pgparser.ParsePostgreSQL(modifiedText)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse modified CREATE TABLE statement")
+	}
+
+	// Extract the new CREATE TABLE AST node
+	var newCreateTableNode *parser.CreatestmtContext
+	antlr.ParseTreeWalkerDefault.Walk(&createTableExtractor{
+		result: &newCreateTableNode,
+	}, parseResult.Tree)
+
+	if newCreateTableNode == nil {
+		return errors.New("failed to extract CREATE TABLE AST node from modified text")
+	}
+
+	// Update the chunk with the new AST node
+	chunk.ASTNode = newCreateTableNode
+
+	return nil
+}
+
+// deleteColumnFromAST removes a column definition from the CREATE TABLE statement using token rewriter
+// Improved comma handling: always look for a following comma first, regardless of column position
+func deleteColumnFromAST(rewriter *antlr.TokenStreamRewriter, columnDef parser.IColumnDefContext, _ *parser.CreatestmtContext) error {
+	if columnDef == nil {
+		return errors.New("column definition is nil")
+	}
+
+	startToken := columnDef.GetStart()
+	stopToken := columnDef.GetStop()
+	if startToken == nil || stopToken == nil {
+		return errors.New("unable to get column definition tokens")
+	}
+
+	// Strategy: Always try to remove the following comma first
+	// This handles cases where there are table constraints after columns
+	nextCommaIndex := -1
+	for i := stopToken.GetTokenIndex() + 1; i < rewriter.GetTokenStream().Size(); i++ {
+		token := rewriter.GetTokenStream().Get(i)
+		if token.GetTokenType() == parser.PostgreSQLParserCOMMA {
+			nextCommaIndex = i
+			break
+		}
+		// Skip whitespace and comments, but stop at other meaningful tokens
+		if token.GetChannel() == antlr.TokenDefaultChannel {
+			// Found a non-comma token on the default channel, stop searching
+			break
+		}
+	}
+
+	if nextCommaIndex != -1 {
+		// Found a following comma - remove column and the comma
+		// This works for all cases: middle columns, columns followed by constraints, etc.
+		rewriter.DeleteDefault(startToken.GetTokenIndex(), nextCommaIndex)
+	} else {
+		// No following comma found - this might be the last element
+		// Try to find a preceding comma to remove
+		prevCommaIndex := -1
+		for i := startToken.GetTokenIndex() - 1; i >= 0; i-- {
+			token := rewriter.GetTokenStream().Get(i)
+			if token.GetTokenType() == parser.PostgreSQLParserCOMMA {
+				prevCommaIndex = i
+				break
+			}
+			// Skip whitespace and comments, but stop at other meaningful tokens
+			if token.GetChannel() == antlr.TokenDefaultChannel {
+				break
+			}
+		}
+
+		if prevCommaIndex != -1 {
+			// Found a preceding comma - remove it along with the column
+			rewriter.DeleteDefault(prevCommaIndex, stopToken.GetTokenIndex())
+		} else {
+			// No comma found (single column case) - just remove the column
+			rewriter.DeleteDefault(startToken.GetTokenIndex(), stopToken.GetTokenIndex())
+		}
+	}
+
+	return nil
+}
+
+// modifyColumnInAST modifies an existing column definition using token rewriter
+func modifyColumnInAST(rewriter *antlr.TokenStreamRewriter, columnDef parser.IColumnDefContext, newColumn *storepb.ColumnMetadata) error {
+	if columnDef == nil || newColumn == nil {
+		return errors.New("column definition or new column metadata is nil")
+	}
+
+	startToken := columnDef.GetStart()
+	stopToken := columnDef.GetStop()
+	if startToken == nil || stopToken == nil {
+		return errors.New("unable to get column definition tokens")
+	}
+
+	// Generate new column definition SDL
+	newColumnSDL := generateColumnSDL(newColumn)
+
+	// Replace the entire column definition
+	rewriter.ReplaceDefault(startToken.GetTokenIndex(), stopToken.GetTokenIndex(), newColumnSDL)
+
+	return nil
+}
+
+// addColumnToAST adds a new column definition to the CREATE TABLE statement
+func addColumnToAST(rewriter *antlr.TokenStreamRewriter, createStmt *parser.CreatestmtContext, newColumn *storepb.ColumnMetadata) error {
+	if createStmt == nil || newColumn == nil {
+		return errors.New("create statement or new column metadata is nil")
+	}
+
+	// Find the last column definition to insert after it
+	columnDefs := extractColumnDefinitionsWithAST(createStmt)
+
+	if len(columnDefs.Order) == 0 {
+		// No existing columns - need to add first column to empty table
+		// Find the opening parenthesis and insert after it
+		if createStmt.Opttableelementlist() != nil {
+			// Table has element list structure, find the position to insert
+			for i := 0; i < rewriter.GetTokenStream().Size(); i++ {
+				token := rewriter.GetTokenStream().Get(i)
+				if token.GetTokenType() == parser.PostgreSQLParserOPEN_PAREN {
+					// Found opening parenthesis, insert new column after it
+					newColumnSDL := "\n    " + generateColumnSDL(newColumn) + "\n"
+					rewriter.InsertAfterDefault(i, newColumnSDL)
+					return nil
+				}
+			}
+		}
+		return errors.New("unable to find position to insert first column")
+	}
+
+	// Get the last column definition
+	lastColumnName := columnDefs.Order[len(columnDefs.Order)-1]
+	lastColumnDef := columnDefs.Map[lastColumnName]
+
+	stopToken := lastColumnDef.ASTNode.GetStop()
+	if stopToken == nil {
+		return errors.New("unable to get last column stop token")
+	}
+
+	// Generate new column definition SDL with leading comma and proper indentation
+	newColumnSDL := ",\n    " + generateColumnSDL(newColumn)
+
+	// Insert after the last column
+	rewriter.InsertAfterDefault(stopToken.GetTokenIndex(), newColumnSDL)
+
+	return nil
+}
+
+// generateColumnSDL generates SDL text for a single column definition using the extracted writeColumnSDL function
+func generateColumnSDL(column *storepb.ColumnMetadata) string {
+	if column == nil {
+		return ""
+	}
+
+	var buf strings.Builder
+	err := writeColumnSDL(&buf, column)
+	if err != nil {
+		// If there's an error writing to the buffer, return empty string
+		// This should rarely happen since we're writing to a strings.Builder
+		return ""
+	}
+
+	return buf.String()
+}
+
+// columnsEqual compares two column metadata objects for equality
+func columnsEqual(a, b *storepb.ColumnMetadata) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+
+	return a.Name == b.Name &&
+		a.Type == b.Type &&
+		a.Nullable == b.Nullable &&
+		a.Default == b.Default &&
+		a.Collation == b.Collation
 }
 
 // convertDatabaseSchemaToSDL converts a model.DatabaseSchema to SDL format string

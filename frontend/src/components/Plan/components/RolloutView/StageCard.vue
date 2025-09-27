@@ -214,7 +214,7 @@ import {
 } from "@/utils";
 import { usePlanContextWithRollout } from "../../logic";
 import StageActions from "./StageActions.vue";
-import { useTaskActionPermissions } from "./taskPermissions";
+import { canRolloutTasks } from "./taskPermissions";
 
 const props = defineProps<{
   rollout: Rollout;
@@ -231,9 +231,7 @@ const emit = defineEmits<{
 const router = useRouter();
 const { project } = useCurrentProjectV1();
 const environmentStore = useEnvironmentV1Store();
-const { readonly, issue } = usePlanContextWithRollout();
-
-const { canPerformTaskAction } = useTaskActionPermissions();
+const { readonly } = usePlanContextWithRollout();
 
 const isCreated = computed(() => {
   return props.rollout.stages.some(
@@ -296,12 +294,7 @@ const canRunTasks = computed(() => {
   if (readonly.value) {
     return false;
   }
-  return canPerformTaskAction(
-    filteredTasks.value,
-    props.rollout,
-    project.value,
-    issue.value
-  );
+  return canRolloutTasks(filteredTasks.value);
 });
 
 const canCreateRollout = computed(() => {
