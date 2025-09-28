@@ -19,7 +19,10 @@ func NewCatalog(ctx context.Context, s *store.Store, instanceID, databaseName st
 
 	dbMetadata := overrideDatabaseMetadata
 	if dbMetadata == nil {
-		databaseMeta, err := s.GetDBSchema(ctx, instanceID, databaseName)
+		databaseMeta, err := s.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			InstanceID:   instanceID,
+			DatabaseName: databaseName,
+		})
 		if err != nil {
 			return nil, err
 		}

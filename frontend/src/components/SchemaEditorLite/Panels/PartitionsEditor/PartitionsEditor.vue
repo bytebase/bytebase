@@ -21,7 +21,6 @@
       :bordered="true"
       :bottom-bordered="true"
       class="schema-editor-table-partitions-editor"
-      :class="[disableDiffColoring && 'disable-diff-coloring']"
     />
   </div>
 </template>
@@ -101,13 +100,8 @@ const tableBodyHeight = computed(() => {
 });
 // Use this to avoid unnecessary initial rendering
 const layoutReady = computed(() => tableHeaderHeight.value > 0);
-const {
-  disableDiffColoring,
-  markEditStatus,
-  getPartitionStatus,
-  getTableStatus,
-  removeEditStatus,
-} = useSchemaEditorContext();
+const { markEditStatus, getPartitionStatus, getTableStatus, removeEditStatus } =
+  useSchemaEditorContext();
 
 const tableStatus = computed(() => {
   return getTableStatus(props.db, {
@@ -167,11 +161,6 @@ const flattenItemList = computed(() => {
     partition: TablePartitionMetadata,
     parent?: TablePartitionMetadata
   ) => {
-    if (disableDiffColoring.value) {
-      if (statusForPartition(partition) === "dropped") {
-        return;
-      }
-    }
     list.push({
       partition,
       parent,

@@ -5,6 +5,7 @@
     :max-height="640"
     :virtual-scroll="true"
     :striped="true"
+    :loading="loading"
     :row-key="(view: ViewMetadata) => `${database.name}.${schemaName}.${view.name}`"
     :bordered="true"
   />
@@ -13,7 +14,6 @@
 <script lang="tsx" setup>
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
-import type { PropType } from "vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
@@ -21,20 +21,18 @@ import type { ViewMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { hasSchemaProperty } from "@/utils";
 import EllipsisSQLView from "./EllipsisSQLView.vue";
 
-const props = defineProps({
-  database: {
-    required: true,
-    type: Object as PropType<ComposedDatabase>,
-  },
-  schemaName: {
-    type: String,
-    default: "",
-  },
-  viewList: {
-    required: true,
-    type: Object as PropType<ViewMetadata[]>,
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    database: ComposedDatabase;
+    schemaName?: string;
+    viewList: ViewMetadata[];
+    loading?: boolean;
+  }>(),
+  {
+    schemaName: "",
+    loading: false,
+  }
+);
 
 const { t } = useI18n();
 

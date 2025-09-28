@@ -1,3 +1,4 @@
+import { cloneDeep } from "lodash-es";
 import type { ComposedDatabase } from "@/types";
 import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
@@ -19,21 +20,33 @@ export const useApplyMetadataEdit = (context: SchemaEditorContext) => {
     metadata: DatabaseMetadata,
     catalog: DatabaseCatalog
   ) => {
+    const response = cloneDeep(metadata);
     // Drop schemas
-    metadata.schemas = metadata.schemas.filter((schema) => {
+    response.schemas = response.schemas.filter((schema) => {
       const status = getSchemaStatus(database, {
         schema,
       });
       return status !== "dropped";
     });
     // Drop tables, views, procedures and functions
-    metadata.schemas.forEach((schema) => {
+    response.schemas.forEach((schema) => {
       schema.tables = schema.tables.filter((table) => {
         const status = getTableStatus(database, {
           schema,
           table,
         });
         return status !== "dropped";
+      });
+      // Drop columns
+      schema.tables.forEach((table) => {
+        table.columns = table.columns.filter((column) => {
+          const status = getColumnStatus(database, {
+            schema,
+            table,
+            column,
+          });
+          return status !== "dropped";
+        });
       });
       schema.views = schema.views.filter((view) => {
         const status = getViewStatus(database, {
@@ -57,21 +70,10 @@ export const useApplyMetadataEdit = (context: SchemaEditorContext) => {
         return status !== "dropped";
       });
     });
-    // Drop columns
-    metadata.schemas.forEach((schema) => {
-      schema.tables.forEach((table) => {
-        table.columns = table.columns.filter((column) => {
-          const status = getColumnStatus(database, {
-            schema,
-            table,
-            column,
-          });
-          return status !== "dropped";
-        });
-      });
-    });
 
-    cleanupUnusedCatalog(metadata, catalog);
+    const updatedCatalog = cleanupUnusedCatalog(response, catalog);
+
+    return { metadata: response, catalog: updatedCatalog };
   };
 
   return { applyMetadataEdit };

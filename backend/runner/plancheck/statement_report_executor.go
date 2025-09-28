@@ -138,7 +138,10 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 
 // GetSQLSummaryReport gets the SQL summary report for the given statement and database.
 func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, database *store.DatabaseMessage, statement string) (*storepb.PlanCheckRunResult_Result_SqlSummaryReport, error) {
-	databaseSchema, err := stores.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+	databaseSchema, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+	})
 	if err != nil {
 		return nil, err
 	}

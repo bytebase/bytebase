@@ -5,13 +5,13 @@
     :data="streamList"
     :striped="true"
     :bordered="true"
+    :loading="loading"
   />
 </template>
 
 <script lang="ts" setup>
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
-import type { PropType } from "vue";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import DefinitionView from "@/components/DefinitionView.vue";
@@ -22,20 +22,18 @@ import {
   StreamMetadata_Type,
 } from "@/types/proto-es/v1/database_service_pb";
 
-const props = defineProps({
-  database: {
-    required: true,
-    type: Object as PropType<ComposedDatabase>,
-  },
-  schemaName: {
-    type: String,
-    default: "",
-  },
-  streamList: {
-    required: true,
-    type: Object as PropType<StreamMetadata[]>,
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    database: ComposedDatabase;
+    schemaName?: string;
+    streamList: StreamMetadata[];
+    loading?: boolean;
+  }>(),
+  {
+    schemaName: "",
+    loading: false,
+  }
+);
 
 const { t } = useI18n();
 

@@ -320,7 +320,10 @@ func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, inst
 	if database == nil {
 		return nil, nil, nil
 	}
-	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+	})
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to find database schema: %q", sourceColumn.Database)
 	}

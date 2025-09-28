@@ -20,7 +20,6 @@
       :bordered="true"
       :bottom-bordered="true"
       class="schema-editor-table-list"
-      :class="[disableDiffColoring && 'disable-diff-coloring']"
     />
   </div>
 
@@ -96,7 +95,6 @@ const { t } = useI18n();
 const {
   readonly,
   selectionEnabled,
-  disableDiffColoring,
   addTab,
   markEditStatus,
   removeEditStatus,
@@ -131,17 +129,11 @@ const state = reactive<LocalState>({
   showSchemaTemplateDrawer: false,
 });
 const filteredTables = computed(() => {
-  const tables = disableDiffColoring.value
-    ? props.tables.filter((table) => {
-        const status = statusForTable(table);
-        return status !== "dropped";
-      })
-    : props.tables;
   const keyword = props.searchPattern?.trim();
   if (!keyword) {
-    return tables;
+    return props.tables;
   }
-  return tables.filter((table) => table.name.includes(keyword));
+  return props.tables.filter((table) => table.name.includes(keyword));
 });
 
 const engine = computed(() => {

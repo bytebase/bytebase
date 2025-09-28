@@ -21,12 +21,14 @@
 </template>
 
 <script lang="ts" setup>
+import { cloneDeep } from "lodash-es";
 import { Splitpanes, Pane } from "splitpanes";
 import "splitpanes/dist/splitpanes.css";
-import { reactive, computed, onMounted, toRef, ref, watch } from "vue";
+import { computed, onMounted, toRef } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useSettingV1Store } from "@/store";
+import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import Aside from "./Aside";
@@ -41,32 +43,21 @@ const props = defineProps<{
   selectedRolloutObjects?: RolloutObject[];
   targets?: EditTarget[];
   loading?: boolean;
-  diffWhenReady?: boolean;
-  disableDiffColoring?: boolean;
   hidePreview?: boolean;
 }>();
+
 const emit = defineEmits<{
   (event: "update:selected-rollout-objects", objects: RolloutObject[]): void;
   (event: "update-is-editing", objects: RolloutObject[]): void;
 }>();
 
-interface LocalState {
-  diffing: boolean;
-  initialized: boolean;
-}
-
 const settingStore = useSettingV1Store();
-const state = reactive<LocalState>({
-  diffing: false,
-  initialized: false,
-});
 
 // Prepare schema template contexts.
 onMounted(async () => {
   await settingStore.getOrFetchSettingByName(
     Setting_SettingName.SCHEMA_TEMPLATE
   );
-  state.initialized = true;
 });
 
 const targets = computed(() => {
@@ -74,20 +65,28 @@ const targets = computed(() => {
 });
 
 const ready = computed(() => {
-  return state.initialized && targets.value.length > 0;
+  return targets.value.length > 0;
 });
 
 const combinedLoading = computed(() => {
-  return props.loading || state.diffing || !ready.value;
+  return props.loading || !ready.value;
+});
+
+const classificationConfig = computed(() => {
+  if (!props.project.dataClassificationConfigId) {
+    return;
+  }
+  return settingStore.getProjectClassification(
+    props.project.dataClassificationConfigId
+  );
 });
 
 const context = provideSchemaEditorContext({
   targets,
   project: toRef(props, "project"),
-  classificationConfigId: ref(props.project.dataClassificationConfigId),
+  classificationConfig,
   readonly: toRef(props, "readonly"),
   selectedRolloutObjects: toRef(props, "selectedRolloutObjects"),
-  disableDiffColoring: toRef(props, "disableDiffColoring"),
   hidePreview: toRef(props, "hidePreview"),
 });
 const { rebuildMetadataEdit, applyMetadataEdit } = useAlgorithm(context);
@@ -100,18 +99,6 @@ useEmitteryEventListener(context.events, "rebuild-edit-status", (params) => {
   }
 });
 
-watch(
-  [ready, () => props.diffWhenReady],
-  ([ready, diffWhenReady]) => {
-    if (ready && diffWhenReady) {
-      targets.value.forEach((target) => {
-        rebuildMetadataEdit(target);
-      });
-    }
-  },
-  { immediate: true }
-);
-
 useEmitteryEventListener(
   context.events,
   "update:selected-rollout-objects",
@@ -120,14 +107,58 @@ useEmitteryEventListener(
   }
 );
 
+useEmitteryEventListener(context.events, "merge-metadata", (metadatas) => {
+  for (const metadata of metadatas) {
+    const target = props.targets?.find(
+      (t) => t.metadata.name === metadata.name
+    );
+    if (!target) {
+      continue;
+    }
+
+    mergeTableMetadataToTarge({
+      metadata,
+      mergeTo: target.metadata,
+    });
+    mergeTableMetadataToTarge({
+      metadata,
+      mergeTo: target.baselineMetadata,
+    });
+  }
+});
+
+const mergeTableMetadataToTarge = ({
+  metadata,
+  mergeTo,
+}: {
+  metadata: DatabaseMetadata;
+  mergeTo: DatabaseMetadata;
+}) => {
+  for (const schema of metadata.schemas) {
+    if (schema.tables.length === 0) {
+      continue;
+    }
+    const targetSchema = mergeTo.schemas.find((s) => s.name === schema.name);
+    if (!targetSchema) {
+      continue;
+    }
+
+    for (const table of schema.tables) {
+      if (!targetSchema.tables.find((t) => t.name === table.name)) {
+        targetSchema.tables.push(cloneDeep(table));
+      }
+    }
+  }
+};
+
 const refreshPreview = () => {
   context.events.emit("refresh-preview");
 };
 
 defineExpose({
-  rebuildMetadataEdit,
   applyMetadataEdit,
   refreshPreview,
+  isDirty: computed(() => context.dirtyPaths.value.size > 0),
 });
 </script>
 

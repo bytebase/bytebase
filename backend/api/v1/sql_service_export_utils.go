@@ -336,7 +336,10 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 			return nil, nil
 		}
 
-		dbSchema, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+		dbSchema, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			InstanceID:   database.InstanceID,
+			DatabaseName: database.DatabaseName,
+		})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database schema"))
 		}
@@ -363,7 +366,10 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 					if resourceDB == nil {
 						continue
 					}
-					resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
+					resourceDBSchema, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+						InstanceID:   resourceDB.InstanceID,
+						DatabaseName: resourceDB.DatabaseName,
+					})
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database schema %v in instance %v", sourceColumn.Database, instance.ResourceID))
 					}
@@ -405,7 +411,10 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 			return nil, nil
 		}
 
-		dbSchema, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+		dbSchema, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			InstanceID:   database.InstanceID,
+			DatabaseName: database.DatabaseName,
+		})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database schema"))
 		}
@@ -458,7 +467,10 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 			return nil, nil
 		}
 
-		dbSchema, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+		dbSchema, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			InstanceID:   database.InstanceID,
+			DatabaseName: database.DatabaseName,
+		})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database schema"))
 		}
@@ -484,7 +496,10 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 					if resourceDB == nil {
 						continue
 					}
-					resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
+					resourceDBSchema, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+						InstanceID:   resourceDB.InstanceID,
+						DatabaseName: resourceDB.DatabaseName,
+					})
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database schema %v in instance %v", sr.Database, instance.ResourceID))
 					}
@@ -541,7 +556,10 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 			return nil, nil
 		}
 
-		dbSchema, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+		dbSchema, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			InstanceID:   database.InstanceID,
+			DatabaseName: database.DatabaseName,
+		})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database schema"))
 		}
@@ -568,7 +586,10 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 					if resourceDB == nil {
 						continue
 					}
-					resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
+					resourceDBSchema, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+						InstanceID:   resourceDB.InstanceID,
+						DatabaseName: resourceDB.DatabaseName,
+					})
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database schema %v in instance %v", sr.Database, instance.ResourceID))
 					}
@@ -623,7 +644,10 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 			return nil, nil
 		}
 
-		dbSchema, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+		dbSchema, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			InstanceID:   database.InstanceID,
+			DatabaseName: database.DatabaseName,
+		})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database schema"))
 		}
@@ -654,7 +678,10 @@ func getResources(ctx context.Context, storeInstance *store.Store, engine storep
 					if resourceDB == nil {
 						continue
 					}
-					resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
+					resourceDBSchema, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+						InstanceID:   resourceDB.InstanceID,
+						DatabaseName: resourceDB.DatabaseName,
+					})
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database schema %v in instance %v", sr.Database, instance.ResourceID))
 					}

@@ -362,19 +362,29 @@ export declare type GetDatabaseMetadataRequest = Message<"bytebase.v1.GetDatabas
    *
    * Supported filter:
    * - schema: the schema name, support "==" operator.
-   * - table: the table name, support "==" operator.
+   * - table: the table name, support "==" and ".matches()" operator.
    *
    * For example:
    * schema == "schema-a"
    * table == "table-a"
-   * schema == "schema-a" && table == "table-a"
-   * The filter used for a specific schema object such as
-   * "schemas/schema-a/tables/table-a".
+   * table.matches("table-a")
+   * schema == "schema-a" && table.matches("sample")
+   * The filter used to search table with wildcard "sample" in the schema "schemas/schema-a".
    * The column masking level will only be returned when a table filter is used.
    *
    * @generated from field: string filter = 2;
    */
   filter: string;
+
+  /**
+   * Limit the response size of returned table metadata per schema.
+   * For example, if the database has 3 schemas, and each schema has 100 tables,
+   * if limit is 20, then only 20 tables will be returned for each schema, total 60 tables.
+   * Default 0, means no limit.
+   *
+   * @generated from field: int32 limit = 3;
+   */
+  limit: number;
 };
 
 /**

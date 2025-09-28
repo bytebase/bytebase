@@ -18,15 +18,20 @@ type UpdateDBSchemaMessage struct {
 	Config *storepb.DatabaseConfig
 }
 
+type FindDBSchemaMessage struct {
+	InstanceID   string
+	DatabaseName string
+}
+
 // GetDBSchema gets the schema for a database.
-func (s *Store) GetDBSchema(ctx context.Context, instanceID, databaseName string) (*model.DatabaseSchema, error) {
-	if v, ok := s.dbSchemaCache.Get(getDatabaseCacheKey(instanceID, databaseName)); ok && s.enableCache {
+func (s *Store) GetDBSchema(ctx context.Context, find *FindDBSchemaMessage) (*model.DatabaseSchema, error) {
+	if v, ok := s.dbSchemaCache.Get(getDatabaseCacheKey(find.InstanceID, find.DatabaseName)); ok && s.enableCache {
 		return v, nil
 	}
 
 	where, args := []string{"TRUE"}, []any{}
-	where, args = append(where, fmt.Sprintf("instance = $%d", len(args)+1)), append(args, instanceID)
-	where, args = append(where, fmt.Sprintf("db_name = $%d", len(args)+1)), append(args, databaseName)
+	where, args = append(where, fmt.Sprintf("instance = $%d", len(args)+1)), append(args, find.InstanceID)
+	where, args = append(where, fmt.Sprintf("db_name = $%d", len(args)+1)), append(args, find.DatabaseName)
 
 	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
@@ -57,12 +62,12 @@ func (s *Store) GetDBSchema(ctx context.Context, instanceID, databaseName string
 		return nil, err
 	}
 
-	dbSchema, err := s.convertMetadataAndConfig(ctx, metadata, schema, config, instanceID)
+	dbSchema, err := s.convertMetadataAndConfig(ctx, metadata, schema, config, find.InstanceID)
 	if err != nil {
 		return nil, err
 	}
 
-	s.dbSchemaCache.Add(getDatabaseCacheKey(instanceID, databaseName), dbSchema)
+	s.dbSchemaCache.Add(getDatabaseCacheKey(find.InstanceID, find.DatabaseName), dbSchema)
 	return dbSchema, nil
 }
 

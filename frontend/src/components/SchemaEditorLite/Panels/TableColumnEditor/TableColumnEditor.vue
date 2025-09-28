@@ -21,7 +21,6 @@
       :bordered="true"
       :bottom-bordered="true"
       class="schema-editor-table-column-editor"
-      :class="[disableDiffColoring && 'disable-diff-coloring']"
     />
   </div>
 
@@ -121,7 +120,6 @@ const props = withDefaults(
     showClassificationColumn?: "ALWAYS" | "AUTO";
     filterColumn?: (column: ColumnMetadata) => boolean;
     disableAlterColumn?: (column: ColumnMetadata) => boolean;
-    getColumnItemComputedClassList?: (column: ColumnMetadata) => string;
   }>(),
   {
     show: true,
@@ -134,7 +132,6 @@ const props = withDefaults(
     showClassificationColumn: "AUTO",
     filterColumn: (_: ColumnMetadata) => true,
     disableAlterColumn: (_: ColumnMetadata) => false,
-    getColumnItemComputedClassList: (_: ColumnMetadata) => "",
   }
 );
 
@@ -172,7 +169,6 @@ const state = reactive<LocalState>({
 const {
   classificationConfig,
   showClassificationColumn: canShowClassificationColumn,
-  disableDiffColoring,
   selectionEnabled,
   markEditStatus,
   getColumnStatus,
@@ -612,14 +608,7 @@ const columns = computed(() => {
 });
 
 const shownColumnList = computed(() => {
-  const filtered = props.table.columns.filter(props.filterColumn);
-  if (disableDiffColoring.value) {
-    return filtered.filter((column) => {
-      const status = statusForColumn(column);
-      return status !== "dropped";
-    });
-  }
-  return filtered;
+  return props.table.columns.filter(props.filterColumn);
 });
 
 const isColumnPrimaryKey = (column: ColumnMetadata): boolean => {
@@ -746,7 +735,7 @@ const onLabelsApply = (labelsList: { [key: string]: string }[]) => {
 };
 
 const classesForRow = (column: ColumnMetadata) => {
-  return props.getColumnItemComputedClassList(column);
+  return statusForColumn(column);
 };
 
 const isDroppedColumn = (column: ColumnMetadata): boolean => {
@@ -761,6 +750,7 @@ const vlRef = computed(() => {
   return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
     ?.virtualListRef;
 });
+
 useConsumePendingScrollToColumn(
   computed(() => ({
     db: props.db,

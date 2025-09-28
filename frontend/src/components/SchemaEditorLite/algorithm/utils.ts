@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { cloneDeep } from "lodash-es";
 import type {
   TableCatalog,
   SchemaCatalog,
@@ -48,13 +49,15 @@ export const cleanupUnusedCatalog = (
   };
 
   const schemaMap = keyBy(metadata.schemas, (schema) => schema.name);
+  const response = cloneDeep(catalog);
   // Remove unused schema catalog
-  catalog.schemas = catalog.schemas.filter((sc) => schemaMap.has(sc.name));
+  response.schemas = response.schemas.filter((sc) => schemaMap.has(sc.name));
   // Recursively cleanup table catalog
-  catalog.schemas.forEach((sc) => {
+  response.schemas.forEach((sc) => {
     const schema = schemaMap.get(sc.name)!;
     cleanupTableCatalog(schema, sc);
   });
   // Cleanup empty schema catalog
-  catalog.schemas = catalog.schemas.filter((sc) => sc.tables.length > 0);
+  response.schemas = response.schemas.filter((sc) => sc.tables.length > 0);
+  return response;
 };

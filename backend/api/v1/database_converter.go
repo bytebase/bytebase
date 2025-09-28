@@ -1,16 +1,19 @@
 package v1
 
 import (
+	"strings"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filter *metadataFilter) *v1pb.DatabaseMetadata {
+func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filter *metadataFilter, limit int) *v1pb.DatabaseMetadata {
 	m := &v1pb.DatabaseMetadata{
 		CharacterSet: metadata.CharacterSet,
 		Collation:    metadata.Collation,
 		Owner:        metadata.Owner,
 	}
+
 	for _, schema := range metadata.Schemas {
 		if schema == nil {
 			continue
@@ -31,11 +34,20 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				continue
 			}
 			if filter != nil && filter.table != nil {
-				if table.Name != *filter.table {
-					continue
+				if !filter.table.wildcard {
+					if table.Name != filter.table.name {
+						continue
+					}
+				} else {
+					if !strings.Contains(strings.ToLower(table.Name), filter.table.name) {
+						continue
+					}
 				}
 			}
 			s.Tables = append(s.Tables, convertStoreTableMetadata(table))
+			if limit > 0 && len(s.Tables) >= limit {
+				break
+			}
 		}
 		for _, externalTable := range schema.ExternalTables {
 			if externalTable == nil {

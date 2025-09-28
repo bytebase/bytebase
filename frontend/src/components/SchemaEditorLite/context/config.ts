@@ -12,17 +12,21 @@ import {
   TableCatalog_ColumnsSchema,
   ColumnCatalogSchema,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
-import type { EditTarget } from "../types";
+import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { keyForResourceName } from "./common";
 
-export const useEditCatalogs = (targets: Ref<EditTarget[]>) => {
+export const useEditCatalogs = (
+  targets: Ref<{ database: string; catalog: DatabaseCatalog }[]>
+) => {
   // Build maps from keys to metadata objects for acceleration
-  const buildMaps = (targets: EditTarget[]) => {
+  const buildMaps = (
+    targets: { database: string; catalog: DatabaseCatalog }[]
+  ) => {
     const databaseCatalog = reactive(
       new Map(
         targets.map((target) => {
           const key = keyForResourceName({
-            database: target.database.name,
+            database: target.database,
           });
           return [key, target.catalog];
         })
@@ -34,7 +38,7 @@ export const useEditCatalogs = (targets: Ref<EditTarget[]>) => {
           return target.catalog.schemas.flatMap((schemaCatalog) => {
             return schemaCatalog.tables.map((tableCatalog) => {
               const key = keyForResourceName({
-                database: target.database.name,
+                database: target.database,
                 schema: schemaCatalog.name,
                 table: tableCatalog.name,
               });
@@ -55,7 +59,7 @@ export const useEditCatalogs = (targets: Ref<EditTarget[]>) => {
                   : []
               ).map((columnCatalog) => {
                 const key = keyForResourceName({
-                  database: target.database.name,
+                  database: target.database,
                   schema: schemaCatalog.name,
                   table: tableCatalog.name,
                   column: columnCatalog.name,

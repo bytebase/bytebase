@@ -12,6 +12,7 @@
         <NSelect
           v-model:value="state.selectedSchemaName"
           :options="schemaNameOptions"
+          :disabled="state.loading"
           :placeholder="$t('database.schema.select')"
           class="!w-auto min-w-[12rem]"
         />
@@ -20,15 +21,15 @@
       <template v-if="databaseEngine !== Engine.REDIS">
         <div class="mb-4 w-full flex flex-row justify-between items-center">
           <div class="text-lg leading-6 font-medium text-main">
-            <span v-if="databaseEngine === Engine.MONGODB">{{
-              $t("db.collections")
-            }}</span>
+            <span v-if="databaseEngine === Engine.MONGODB">
+              {{ $t("db.collections") }}
+            </span>
             <span v-else>{{ $t("db.tables") }}</span>
           </div>
           <SearchBox
-            :value="state.tableNameSearchKeyword"
+            v-model:value="state.tableNameSearchKeyword"
             :placeholder="$t('common.filter-by-name')"
-            @update:value="state.tableNameSearchKeyword = $event"
+            :disabled="state.loading"
           />
         </div>
 
@@ -36,7 +37,8 @@
           :database="database"
           :schema-name="state.selectedSchemaName"
           :table-list="tableList"
-          :search="state.tableNameSearchKeyword"
+          :search="state.tableNameSearchKeyword.trim().toLowerCase()"
+          :loading="state.loading"
         />
 
         <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
@@ -46,6 +48,7 @@
           :database="database"
           :schema-name="state.selectedSchemaName"
           :view-list="viewList"
+          :loading="state.loading"
         />
 
         <template
@@ -60,16 +63,17 @@
               {{ $t("db.external-tables") }}
             </div>
             <SearchBox
-              :value="state.externalTableNameSearchKeyword"
+              v-model:value="state.externalTableNameSearchKeyword"
               :placeholder="$t('common.filter-by-name')"
-              @update:value="state.externalTableNameSearchKeyword = $event"
+              :disabled="state.loading"
             />
           </div>
           <ExternalTableDataTable
             :database="database"
             :schema-name="state.selectedSchemaName"
             :external-table-list="externalTableList"
-            :search="state.externalTableNameSearchKeyword"
+            :search="state.externalTableNameSearchKeyword.trim().toLowerCase()"
+            :loading="state.loading"
           />
         </template>
 
@@ -77,7 +81,10 @@
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.extensions") }}
           </div>
-          <DBExtensionDataTable :db-extension-list="dbExtensionList" />
+          <DBExtensionDataTable
+            :db-extension-list="dbExtensionList"
+            :loading="state.loading"
+          />
         </template>
 
         <template
@@ -93,6 +100,7 @@
             :database="database"
             :schema-name="state.selectedSchemaName"
             :function-list="functionList"
+            :loading="state.loading"
           />
         </template>
 
@@ -104,6 +112,7 @@
             :database="database"
             :schema-name="state.selectedSchemaName"
             :sequence-list="sequenceList"
+            :loading="state.loading"
           />
         </template>
 
@@ -115,6 +124,7 @@
             :database="database"
             :schema-name="state.selectedSchemaName"
             :stream-list="streamList"
+            :loading="state.loading"
           />
 
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
@@ -124,6 +134,7 @@
             :database="database"
             :schema-name="state.selectedSchemaName"
             :task-list="taskList"
+            :loading="state.loading"
           />
         </template>
 
@@ -135,6 +146,7 @@
             :database="database"
             :schema-name="state.selectedSchemaName"
             :package-list="packageList"
+            :loading="state.loading"
           />
         </template>
       </template>
@@ -170,6 +182,7 @@ import { SearchBox } from "../v2";
 import DatabaseOverviewInfo from "./DatabaseOverviewInfo.vue";
 
 interface LocalState {
+  loading: boolean;
   selectedSchemaName?: string;
   tableNameSearchKeyword: string;
   externalTableNameSearchKeyword: string;
@@ -183,6 +196,8 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const state = reactive<LocalState>({
+  loading: true,
+  selectedSchemaName: "",
   tableNameSearchKeyword: "",
   externalTableNameSearchKeyword: "",
 });
@@ -202,6 +217,7 @@ const hasSchemaPropertyV1 = computed(() => {
 watch(
   () => props.database.name,
   async (database) => {
+    state.loading = true;
     await dbSchemaStore.getOrFetchDatabaseMetadata({
       database,
       skipCache: false,
@@ -223,7 +239,10 @@ watch(
           state.selectedSchemaName = head(schemaList.value)?.name || "";
         }
       }
+    } else {
+      state.selectedSchemaName = undefined;
     }
+    state.loading = false;
   },
   { immediate: true }
 );

@@ -1250,16 +1250,21 @@ type GetDatabaseMetadataRequest struct {
 	//
 	// Supported filter:
 	// - schema: the schema name, support "==" operator.
-	// - table: the table name, support "==" operator.
+	// - table: the table name, support "==" and ".matches()" operator.
 	//
 	// For example:
 	// schema == "schema-a"
 	// table == "table-a"
-	// schema == "schema-a" && table == "table-a"
-	// The filter used for a specific schema object such as
-	// "schemas/schema-a/tables/table-a".
+	// table.matches("table-a")
+	// schema == "schema-a" && table.matches("sample")
+	// The filter used to search table with wildcard "sample" in the schema "schemas/schema-a".
 	// The column masking level will only be returned when a table filter is used.
-	Filter        string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
+	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
+	// Limit the response size of returned table metadata per schema.
+	// For example, if the database has 3 schemas, and each schema has 100 tables,
+	// if limit is 20, then only 20 tables will be returned for each schema, total 60 tables.
+	// Default 0, means no limit.
+	Limit         int32 `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1306,6 +1311,13 @@ func (x *GetDatabaseMetadataRequest) GetFilter() string {
 		return x.Filter
 	}
 	return ""
+}
+
+func (x *GetDatabaseMetadataRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
 }
 
 type GetDatabaseSchemaRequest struct {
@@ -5941,11 +5953,12 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x13SyncDatabaseRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\"\x16\n" +
-	"\x14SyncDatabaseResponse\"o\n" +
+	"\x14SyncDatabaseResponse\"\x85\x01\n" +
 	"\x1aGetDatabaseMetadataRequest\x129\n" +
 	"\x04name\x18\x01 \x01(\tB%\xe0A\x02\xfaA\x1f\n" +
 	"\x1dbytebase.com/DatabaseMetadataR\x04name\x12\x16\n" +
-	"\x06filter\x18\x02 \x01(\tR\x06filter\"r\n" +
+	"\x06filter\x18\x02 \x01(\tR\x06filter\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\"r\n" +
 	"\x18GetDatabaseSchemaRequest\x127\n" +
 	"\x04name\x18\x01 \x01(\tB#\xe0A\x02\xfaA\x1d\n" +
 	"\x1bbytebase.com/DatabaseSchemaR\x04name\x12\x1d\n" +

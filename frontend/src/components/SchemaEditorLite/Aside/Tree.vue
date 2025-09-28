@@ -3,20 +3,16 @@
     class="w-full h-full pl-1 pr-2 flex flex-col gap-y-2 relative overflow-y-hidden"
   >
     <div class="w-full sticky top-0 pt-2">
-      <NInput
-        v-model:value="searchPattern"
+      <SearchBox
         :size="'small'"
+        v-model:value="searchPattern"
+        style="max-width: 100%"
         :placeholder="$t('schema-editor.search-database-and-table')"
-      >
-        <template #prefix>
-          <heroicons-outline:search class="w-4 h-auto text-gray-300" />
-        </template>
-      </NInput>
+      />
     </div>
     <div
       ref="treeContainerElRef"
       class="schema-editor-tree flex-1 pb-1 text-sm overflow-hidden select-none"
-      :class="[disableDiffColoring && 'disable-diff-coloring']"
       :data-height="treeContainerHeight"
     >
       <NTree
@@ -28,7 +24,7 @@
           height: `${treeContainerHeight}px`,
         }"
         :data="treeDataRef"
-        :pattern="searchPattern"
+        :pattern="loading ? undefined : debouncedSearchPattern"
         :render-prefix="renderPrefix"
         :render-label="renderLabel"
         :render-suffix="renderSuffix"
@@ -98,12 +94,12 @@
 </template>
 
 <script lang="ts" setup>
-import { useElementSize } from "@vueuse/core";
+import { useElementSize, refDebounced } from "@vueuse/core";
 import { MD5 } from "crypto-js";
 import { cloneDeep, debounce, escape, head } from "lodash-es";
 import { MoreHorizontalIcon, CopyIcon } from "lucide-vue-next";
 import type { TreeOption } from "naive-ui";
-import { NInput, NDropdown, NTree, NPerformantEllipsis } from "naive-ui";
+import { NDropdown, NTree, NPerformantEllipsis } from "naive-ui";
 import {
   computed,
   onMounted,
@@ -115,7 +111,9 @@ import {
   type VNode,
 } from "vue";
 import { useI18n } from "vue-i18n";
+import { SearchBox } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
+import { useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
@@ -188,7 +186,6 @@ const {
   targets,
   readonly,
   currentTab,
-  disableDiffColoring,
   addTab,
   markEditStatus,
   removeEditStatus,
@@ -208,6 +205,7 @@ const state = reactive<LocalState>({
   shouldRelocateTreeNode: false,
 });
 
+const dbSchemaStore = useDBSchemaV1Store();
 const treeContainerElRef = ref<HTMLElement>();
 const { height: treeContainerHeight } = useElementSize(
   treeContainerElRef,
@@ -218,10 +216,44 @@ const { height: treeContainerHeight } = useElementSize(
 );
 const treeRef = ref<InstanceType<typeof NTree>>();
 const searchPattern = ref("");
+const debouncedSearchPattern = refDebounced(searchPattern, 200);
+const loading = ref(false);
 const expandedKeysRef = ref<string[]>([]);
 const selectedKeysRef = ref<string[]>([]);
 const treeDataRef = ref<TreeNode[]>([]);
 const treeNodeMap = new Map<string, TreeNode>();
+
+const handleSearch = debounce(
+  async (search: string) => {
+    if (loading.value) return;
+    loading.value = true;
+
+    if (search.trim() !== "") {
+      const responses = await Promise.all(
+        targets.value.map(async (target) => {
+          const metadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
+            database: target.database.name,
+            skipCache: true,
+            limit: 100,
+            filter: `table.matches("${search.trim()}")`,
+          });
+          return metadata;
+        })
+      );
+      await events.emit("merge-metadata", responses);
+      buildDatabaseTreeData(false);
+    }
+
+    loading.value = false;
+  },
+  500,
+  { trailing: true }
+);
+
+watch(
+  () => searchPattern.value,
+  (search) => handleSearch(search)
+);
 
 const {
   menu: contextMenu,
@@ -281,6 +313,7 @@ const findFirstTableGroupNode = (
   }
   return undefined;
 };
+
 const buildDatabaseTreeData = (openFirstChild: boolean) => {
   const treeNodeList = buildTree(targets.value, treeNodeMap, {
     byInstance: true,
@@ -301,9 +334,6 @@ const debouncedBuildDatabaseTreeData = debounce(buildDatabaseTreeData, 100);
 useEmitteryEventListener(events, "rebuild-tree", (params) => {
   debouncedBuildDatabaseTreeData(params.openFirstChild);
 });
-watch(disableDiffColoring, () =>
-  buildDatabaseTreeData(/* !openFirstChild */ false)
-);
 
 const tabWatchKey = computed(() => {
   const tab = currentTab.value;

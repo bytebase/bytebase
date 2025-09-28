@@ -236,6 +236,9 @@ func (x *GetDatabaseMetadataRequest) Equal(y *GetDatabaseMetadataRequest) bool {
 	if x.Filter != y.Filter {
 		return false
 	}
+	if x.Limit != y.Limit {
+		return false
+	}
 	return true
 }
 

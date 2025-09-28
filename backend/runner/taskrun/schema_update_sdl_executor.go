@@ -83,7 +83,10 @@ func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, 
 		return "", errors.Wrapf(err, "failed to convert %q to parser engine", instance.Metadata.GetEngine())
 	}
 
-	dbSchema, err := s.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+	dbSchema, err := s.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+	})
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
 	}
