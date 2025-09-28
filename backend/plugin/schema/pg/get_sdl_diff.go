@@ -2255,7 +2255,7 @@ func deleteConstraintFromAST(rewriter *antlr.TokenStreamRewriter, constraintAST 
 }
 
 // modifyConstraintInAST modifies a constraint definition using token rewriter
-func modifyConstraintInAST(rewriter *antlr.TokenStreamRewriter, constraintAST parser.ITableconstraintContext, newConstraint interface{}) error {
+func modifyConstraintInAST(rewriter *antlr.TokenStreamRewriter, constraintAST parser.ITableconstraintContext, newConstraint any) error {
 	if constraintAST == nil || rewriter == nil || newConstraint == nil {
 		return errors.New("constraint AST, rewriter, or new constraint is nil")
 	}
@@ -2294,7 +2294,7 @@ func modifyConstraintInAST(rewriter *antlr.TokenStreamRewriter, constraintAST pa
 }
 
 // addConstraintToAST adds a new constraint to the CREATE TABLE statement using token rewriter
-func addConstraintToAST(rewriter *antlr.TokenStreamRewriter, createStmt *parser.CreatestmtContext, newConstraint interface{}) error {
+func addConstraintToAST(rewriter *antlr.TokenStreamRewriter, createStmt *parser.CreatestmtContext, newConstraint any) error {
 	if rewriter == nil || createStmt == nil || newConstraint == nil {
 		return errors.New("rewriter, create statement, or new constraint is nil")
 	}
@@ -2477,11 +2477,17 @@ func extractPrimaryKeyDefinitionsInOrder(createStmt *parser.CreatestmtContext) [
 	// Iterate through table elements to find constraints
 	for _, element := range tableElementList.(*parser.TableelementlistContext).AllTableelement() {
 		if tableConstraint := element.(*parser.TableelementContext).Tableconstraint(); tableConstraint != nil {
-			constraint := tableConstraint.(*parser.TableconstraintContext)
+			constraint, ok := tableConstraint.(*parser.TableconstraintContext)
+			if !ok {
+				continue
+			}
 
 			// Check if it's a primary key constraint
 			if constraint.Constraintelem() != nil {
-				elem := constraint.Constraintelem().(*parser.ConstraintelemContext)
+				elem, ok := constraint.Constraintelem().(*parser.ConstraintelemContext)
+				if !ok {
+					continue
+				}
 				if elem.PRIMARY() != nil && elem.KEY() != nil {
 					// Extract constraint name
 					constraintName := ""
@@ -2525,11 +2531,17 @@ func extractUniqueKeyDefinitionsInOrder(createStmt *parser.CreatestmtContext) []
 	// Iterate through table elements to find constraints
 	for _, element := range tableElementList.(*parser.TableelementlistContext).AllTableelement() {
 		if tableConstraint := element.(*parser.TableelementContext).Tableconstraint(); tableConstraint != nil {
-			constraint := tableConstraint.(*parser.TableconstraintContext)
+			constraint, ok := tableConstraint.(*parser.TableconstraintContext)
+			if !ok {
+				continue
+			}
 
 			// Check if it's a unique constraint
 			if constraint.Constraintelem() != nil {
-				elem := constraint.Constraintelem().(*parser.ConstraintelemContext)
+				elem, ok := constraint.Constraintelem().(*parser.ConstraintelemContext)
+				if !ok {
+					continue
+				}
 				if elem.UNIQUE() != nil {
 					// Extract constraint name
 					constraintName := ""

@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	"github.com/antlr4-go/antlr/v4"
+	parser "github.com/bytebase/parser/postgresql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
-	parser "github.com/bytebase/parser/postgresql"
 )
 
 // TestConstraintRewriteOperations tests the ANTLR TokenStreamRewriter functionality
