@@ -315,12 +315,12 @@ func TestColumnRewriteOperations(t *testing.T) {
 			}
 
 			// Apply column changes
-			err = applyColumnChangesToChunk(chunk, tc.currentTable, tc.previousTable)
+			err = applyTableChangesToChunk(chunk, tc.currentTable, tc.previousTable)
 			if tc.expectedSDL == "" {
 				// For cases where we don't specify expected SDL, we just want to ensure no error
-				assert.NoError(t, err, "applyColumnChangesToChunk should not return error")
+				assert.NoError(t, err, "applyTableChangesToChunk should not return error")
 			} else {
-				require.NoError(t, err, "applyColumnChangesToChunk failed")
+				require.NoError(t, err, "applyTableChangesToChunk failed")
 
 				// Get the modified SDL text by recreating the chunk text
 				// Since we don't have a direct way to get text from AST, we'll validate the structure instead
@@ -453,7 +453,7 @@ func TestColumnRewriteWithCollation(t *testing.T) {
 		ASTNode:    createTableNode,
 	}
 
-	err = applyColumnChangesToChunk(chunk, currentTable, previousTable)
+	err = applyTableChangesToChunk(chunk, currentTable, previousTable)
 	assert.NoError(t, err, "Should handle collation changes without error")
 }
 

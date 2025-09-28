@@ -1126,6 +1126,80 @@ func getObjectID(schema string, object string) string {
 	return buf.String()
 }
 
+// writePrimaryKeyConstraintSDL writes a single primary key constraint SDL
+func writePrimaryKeyConstraintSDL(out io.Writer, index *storepb.IndexMetadata) error {
+	if index == nil || !index.Primary {
+		return errors.New("invalid primary key constraint")
+	}
+
+	if _, err := io.WriteString(out, `CONSTRAINT "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, index.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" PRIMARY KEY (`); err != nil {
+		return err
+	}
+	for i, expression := range index.Expressions {
+		if i > 0 {
+			if _, err := io.WriteString(out, ", "); err != nil {
+				return err
+			}
+		}
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, expression); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+	}
+	if _, err := io.WriteString(out, ")"); err != nil {
+		return err
+	}
+	return nil
+}
+
+// writeUniqueKeyConstraintSDL writes a single unique key constraint SDL
+func writeUniqueKeyConstraintSDL(out io.Writer, index *storepb.IndexMetadata) error {
+	if index == nil || !index.Unique || index.Primary || !index.IsConstraint {
+		return errors.New("invalid unique key constraint")
+	}
+
+	if _, err := io.WriteString(out, `CONSTRAINT "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, index.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" UNIQUE (`); err != nil {
+		return err
+	}
+	for i, expression := range index.Expressions {
+		if i > 0 {
+			if _, err := io.WriteString(out, ", "); err != nil {
+				return err
+			}
+		}
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, expression); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+	}
+	if _, err := io.WriteString(out, ")"); err != nil {
+		return err
+	}
+	return nil
+}
+
 func writeCreateTable(out io.Writer, schema string, tableName string, columns []*storepb.ColumnMetadata, checks []*storepb.CheckConstraintMetadata) error {
 	if _, err := io.WriteString(out, `CREATE TABLE "`); err != nil {
 		return err
@@ -2207,32 +2281,7 @@ func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata) error
 			if _, err := io.WriteString(out, ",\n    "); err != nil {
 				return err
 			}
-			if _, err := io.WriteString(out, `CONSTRAINT "`); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, index.Name); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, `" PRIMARY KEY (`); err != nil {
-				return err
-			}
-			for i, expression := range index.Expressions {
-				if i > 0 {
-					if _, err := io.WriteString(out, ", "); err != nil {
-						return err
-					}
-				}
-				if _, err := io.WriteString(out, `"`); err != nil {
-					return err
-				}
-				if _, err := io.WriteString(out, expression); err != nil {
-					return err
-				}
-				if _, err := io.WriteString(out, `"`); err != nil {
-					return err
-				}
-			}
-			if _, err := io.WriteString(out, ")"); err != nil {
+			if err := writePrimaryKeyConstraintSDL(out, index); err != nil {
 				return err
 			}
 		}
@@ -2244,32 +2293,7 @@ func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata) error
 			if _, err := io.WriteString(out, ",\n    "); err != nil {
 				return err
 			}
-			if _, err := io.WriteString(out, `CONSTRAINT "`); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, index.Name); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, `" UNIQUE (`); err != nil {
-				return err
-			}
-			for i, expression := range index.Expressions {
-				if i > 0 {
-					if _, err := io.WriteString(out, ", "); err != nil {
-						return err
-					}
-				}
-				if _, err := io.WriteString(out, `"`); err != nil {
-					return err
-				}
-				if _, err := io.WriteString(out, expression); err != nil {
-					return err
-				}
-				if _, err := io.WriteString(out, `"`); err != nil {
-					return err
-				}
-			}
-			if _, err := io.WriteString(out, ")"); err != nil {
+			if err := writeUniqueKeyConstraintSDL(out, index); err != nil {
 				return err
 			}
 		}
@@ -2280,16 +2304,7 @@ func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata) error
 		if _, err := io.WriteString(out, ",\n    "); err != nil {
 			return err
 		}
-		if _, err := io.WriteString(out, `CONSTRAINT "`); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, check.Name); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, `" CHECK `); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, check.Expression); err != nil {
+		if err := writeCheckConstraintSDL(out, check); err != nil {
 			return err
 		}
 	}
@@ -2299,84 +2314,8 @@ func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata) error
 		if _, err := io.WriteString(out, ",\n    "); err != nil {
 			return err
 		}
-		if _, err := io.WriteString(out, `CONSTRAINT "`); err != nil {
+		if err := writeForeignKeyConstraintSDL(out, fk); err != nil {
 			return err
-		}
-		if _, err := io.WriteString(out, fk.Name); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, `" FOREIGN KEY (`); err != nil {
-			return err
-		}
-		for i, column := range fk.Columns {
-			if i > 0 {
-				if _, err := io.WriteString(out, ", "); err != nil {
-					return err
-				}
-			}
-			if _, err := io.WriteString(out, `"`); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, column); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, `"`); err != nil {
-				return err
-			}
-		}
-		if _, err := io.WriteString(out, ") REFERENCES \""); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, fk.ReferencedSchema); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, `"."`); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, fk.ReferencedTable); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, "\" ("); err != nil {
-			return err
-		}
-		for i, column := range fk.ReferencedColumns {
-			if i > 0 {
-				if _, err := io.WriteString(out, ", "); err != nil {
-					return err
-				}
-			}
-			if _, err := io.WriteString(out, `"`); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, column); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, `"`); err != nil {
-				return err
-			}
-		}
-		if _, err := io.WriteString(out, ")"); err != nil {
-			return err
-		}
-
-		// Add ON DELETE clause if specified
-		if fk.OnDelete != "" && fk.OnDelete != "NO ACTION" {
-			if _, err := io.WriteString(out, " ON DELETE "); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, fk.OnDelete); err != nil {
-				return err
-			}
-		}
-
-		// Add ON UPDATE clause if specified
-		if fk.OnUpdate != "" && fk.OnUpdate != "NO ACTION" {
-			if _, err := io.WriteString(out, " ON UPDATE "); err != nil {
-				return err
-			}
-			if _, err := io.WriteString(out, fk.OnUpdate); err != nil {
-				return err
-			}
 		}
 	}
 
@@ -2578,4 +2517,119 @@ func writeSchema(out io.Writer, schema *storepb.SchemaMetadata) error {
 
 	_, err := io.WriteString(out, "\n\n")
 	return err
+}
+
+// writeCheckConstraintSDL writes a single check constraint SDL
+func writeCheckConstraintSDL(out io.Writer, check *storepb.CheckConstraintMetadata) error {
+	if _, err := io.WriteString(out, `CONSTRAINT "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, check.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" CHECK (`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, check.Expression); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, ")"); err != nil {
+		return err
+	}
+	return nil
+}
+
+// writeForeignKeyConstraintSDL writes a single foreign key constraint SDL
+func writeForeignKeyConstraintSDL(out io.Writer, fk *storepb.ForeignKeyMetadata) error {
+	if _, err := io.WriteString(out, `CONSTRAINT "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, fk.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" FOREIGN KEY (`); err != nil {
+		return err
+	}
+	for i, column := range fk.Columns {
+		if i > 0 {
+			if _, err := io.WriteString(out, ", "); err != nil {
+				return err
+			}
+		}
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, column); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+	}
+	if _, err := io.WriteString(out, ") REFERENCES "); err != nil {
+		return err
+	}
+
+	// Always add schema qualifier according to project principle
+	if fk.ReferencedSchema != "" {
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, fk.ReferencedSchema); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `".`); err != nil {
+			return err
+		}
+	}
+
+	if _, err := io.WriteString(out, `"`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, fk.ReferencedTable); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "\" ("); err != nil {
+		return err
+	}
+	for i, column := range fk.ReferencedColumns {
+		if i > 0 {
+			if _, err := io.WriteString(out, ", "); err != nil {
+				return err
+			}
+		}
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, column); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+	}
+	if _, err := io.WriteString(out, ")"); err != nil {
+		return err
+	}
+
+	// Add ON DELETE clause if specified
+	if fk.OnDelete != "" && fk.OnDelete != "NO ACTION" {
+		if _, err := io.WriteString(out, " ON DELETE "); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, fk.OnDelete); err != nil {
+			return err
+		}
+	}
+
+	// Add ON UPDATE clause if specified
+	if fk.OnUpdate != "" && fk.OnUpdate != "NO ACTION" {
+		if _, err := io.WriteString(out, " ON UPDATE "); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, fk.OnUpdate); err != nil {
+			return err
+		}
+	}
+	return nil
 }
