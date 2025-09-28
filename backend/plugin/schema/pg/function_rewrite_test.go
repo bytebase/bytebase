@@ -16,12 +16,12 @@ import (
 // for standalone CREATE FUNCTION operations including add, modify, delete
 func TestFunctionRewriteOperations(t *testing.T) {
 	testCases := []struct {
-		name                   string
-		originalSDL            string
-		currentFunctions       []*storepb.FunctionMetadata
-		previousFunctions      []*storepb.FunctionMetadata
-		expectedFunctionCount  int
-		description            string
+		name                  string
+		originalSDL           string
+		currentFunctions      []*storepb.FunctionMetadata
+		previousFunctions     []*storepb.FunctionMetadata
+		expectedFunctionCount int
+		description           string
 	}{
 		{
 			name: "Add new standalone function",

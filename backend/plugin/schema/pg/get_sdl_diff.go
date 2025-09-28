@@ -1691,6 +1691,12 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 		return errors.Wrap(err, "failed to apply function changes")
 	}
 
+	// Process sequence changes: apply minimal changes to sequence chunks
+	err = applySequenceChangesToChunks(previousChunks, currentSchema, previousSchema)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply sequence changes")
+	}
+
 	return nil
 }
 
@@ -3223,6 +3229,291 @@ type functionExtractor struct {
 }
 
 func (e *functionExtractor) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
+	if e.result != nil && *e.result == nil {
+		*e.result = ctx
+	}
+}
+
+// applySequenceChangesToChunks applies minimal changes to CREATE SEQUENCE chunks
+// This handles creation, modification, and deletion of sequence statements
+func applySequenceChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
+		return nil
+	}
+
+	// Get sequence differences by comparing schema metadata
+	currentMetadata := currentSchema.GetMetadata()
+	previousMetadata := previousSchema.GetMetadata()
+	if currentMetadata == nil || previousMetadata == nil {
+		return nil
+	}
+
+	// Build sequence maps for current and previous schemas
+	currentSequences := make(map[string]*storepb.SequenceMetadata)
+	previousSequences := make(map[string]*storepb.SequenceMetadata)
+
+	// Collect all sequences from current schema
+	for _, schema := range currentMetadata.Schemas {
+		for _, sequence := range schema.Sequences {
+			sequenceKey := formatSequenceKey(schema.Name, sequence.Name)
+			currentSequences[sequenceKey] = sequence
+		}
+	}
+
+	// Collect all sequences from previous schema
+	for _, schema := range previousMetadata.Schemas {
+		for _, sequence := range schema.Sequences {
+			sequenceKey := formatSequenceKey(schema.Name, sequence.Name)
+			previousSequences[sequenceKey] = sequence
+		}
+	}
+
+	// Process sequence additions: create new sequence chunks
+	for sequenceKey, currentSequence := range currentSequences {
+		if _, exists := previousSequences[sequenceKey]; !exists {
+			// New sequence - create a chunk for it
+			err := createSequenceChunk(previousChunks, currentSequence, sequenceKey)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create sequence chunk for %s", sequenceKey)
+			}
+		}
+	}
+
+	// Process sequence modifications: update existing chunks
+	for sequenceKey, currentSequence := range currentSequences {
+		if previousSequence, exists := previousSequences[sequenceKey]; exists {
+			// Sequence exists in both - check if it needs modification
+			err := updateSequenceChunkIfNeeded(previousChunks, currentSequence, previousSequence, sequenceKey)
+			if err != nil {
+				return errors.Wrapf(err, "failed to update sequence chunk for %s", sequenceKey)
+			}
+		}
+	}
+
+	// Process sequence deletions: remove dropped sequence chunks
+	for sequenceKey := range previousSequences {
+		if _, exists := currentSequences[sequenceKey]; !exists {
+			// Sequence was dropped - remove it from chunks
+			deleteSequenceChunk(previousChunks, sequenceKey)
+		}
+	}
+
+	return nil
+}
+
+// formatSequenceKey creates a consistent key for sequence identification
+func formatSequenceKey(schemaName, sequenceName string) string {
+	if schemaName == "" {
+		schemaName = "public"
+	}
+	return schemaName + "." + sequenceName
+}
+
+// extractSchemaFromSequenceKey extracts the schema name from a sequence key
+func extractSchemaFromSequenceKey(sequenceKey string) string {
+	parts := strings.SplitN(sequenceKey, ".", 2)
+	if len(parts) >= 1 {
+		return parts[0]
+	}
+	return "public"
+}
+
+// createSequenceChunk creates a new CREATE SEQUENCE chunk and adds it to the chunks
+func createSequenceChunk(chunks *schema.SDLChunks, sequence *storepb.SequenceMetadata, sequenceKey string) error {
+	if sequence == nil || chunks == nil {
+		return nil
+	}
+
+	// Generate sequence SDL using the existing writeSequenceSDL function
+	schemaName := extractSchemaFromSequenceKey(sequenceKey)
+	sdl := generateCreateSequenceSDL(schemaName, sequence)
+	if sdl == "" {
+		return errors.Errorf("failed to generate SDL for sequence %s", sequenceKey)
+	}
+
+	// Parse the SDL to get the AST node
+	astNode, err := extractSequenceASTFromSDL(sdl)
+	if err != nil {
+		return errors.Wrapf(err, "failed to extract AST from generated sequence SDL for %s", sequenceKey)
+	}
+
+	// Create the chunk
+	chunk := &schema.SDLChunk{
+		Identifier: sequenceKey,
+		ASTNode:    astNode,
+	}
+
+	// Ensure Sequences map is initialized
+	if chunks.Sequences == nil {
+		chunks.Sequences = make(map[string]*schema.SDLChunk)
+	}
+
+	chunks.Sequences[sequenceKey] = chunk
+	return nil
+}
+
+// updateSequenceChunkIfNeeded updates a sequence chunk if the definition has changed
+func updateSequenceChunkIfNeeded(chunks *schema.SDLChunks, currentSequence, previousSequence *storepb.SequenceMetadata, sequenceKey string) error {
+	if currentSequence == nil || previousSequence == nil || chunks == nil {
+		return nil
+	}
+
+	// Check if sequence definitions are different
+	if !sequenceDefinitionsEqual(currentSequence, previousSequence) {
+		// Sequence was modified - update the chunk
+		err := updateSequenceChunk(chunks, currentSequence, sequenceKey)
+		if err != nil {
+			return errors.Wrapf(err, "failed to update sequence chunk for %s", sequenceKey)
+		}
+	}
+
+	return nil
+}
+
+// updateSequenceChunk updates an existing sequence chunk with new definition
+func updateSequenceChunk(chunks *schema.SDLChunks, sequence *storepb.SequenceMetadata, sequenceKey string) error {
+	if sequence == nil || chunks == nil {
+		return nil
+	}
+
+	// Generate new sequence SDL
+	schemaName := extractSchemaFromSequenceKey(sequenceKey)
+	sdl := generateCreateSequenceSDL(schemaName, sequence)
+	if sdl == "" {
+		return errors.Errorf("failed to generate SDL for sequence %s", sequenceKey)
+	}
+
+	// Parse the SDL to get the AST node
+	astNode, err := extractSequenceASTFromSDL(sdl)
+	if err != nil {
+		return errors.Wrapf(err, "failed to extract AST from generated sequence SDL for %s", sequenceKey)
+	}
+
+	// Update the existing chunk
+	if chunk := chunks.Sequences[sequenceKey]; chunk != nil {
+		chunk.ASTNode = astNode
+	} else {
+		// Create new chunk if it doesn't exist
+		chunk := &schema.SDLChunk{
+			Identifier: sequenceKey,
+			ASTNode:    astNode,
+		}
+		chunks.Sequences[sequenceKey] = chunk
+	}
+
+	return nil
+}
+
+// deleteSequenceChunk removes a sequence chunk from the chunks
+func deleteSequenceChunk(chunks *schema.SDLChunks, sequenceKey string) {
+	if chunks != nil && chunks.Sequences != nil {
+		delete(chunks.Sequences, sequenceKey)
+	}
+}
+
+// generateCreateSequenceSDL generates SDL for a CREATE SEQUENCE statement
+func generateCreateSequenceSDL(schemaName string, sequence *storepb.SequenceMetadata) string {
+	if sequence == nil {
+		return ""
+	}
+
+	if schemaName == "" {
+		schemaName = "public"
+	}
+
+	var buf strings.Builder
+	// Use the existing writeSequenceSDL function
+	if err := writeSequenceSDL(&buf, schemaName, sequence); err != nil {
+		return ""
+	}
+
+	return buf.String()
+}
+
+// sequenceDefinitionsEqual compares two sequence definitions to see if they are equivalent
+func sequenceDefinitionsEqual(sequence1, sequence2 *storepb.SequenceMetadata) bool {
+	if sequence1 == nil && sequence2 == nil {
+		return true
+	}
+	if sequence1 == nil || sequence2 == nil {
+		return false
+	}
+
+	// Compare sequence names
+	if sequence1.Name != sequence2.Name {
+		return false
+	}
+
+	// Compare sequence parameters
+	if sequence1.DataType != sequence2.DataType ||
+		sequence1.Start != sequence2.Start ||
+		sequence1.Increment != sequence2.Increment ||
+		sequence1.MaxValue != sequence2.MaxValue ||
+		sequence1.MinValue != sequence2.MinValue ||
+		sequence1.CacheSize != sequence2.CacheSize ||
+		sequence1.Cycle != sequence2.Cycle ||
+		sequence1.OwnerTable != sequence2.OwnerTable ||
+		sequence1.OwnerColumn != sequence2.OwnerColumn {
+		return false
+	}
+
+	return true
+}
+
+// extractSequenceASTFromSDL parses a sequence SDL and extracts the CREATE SEQUENCE AST node
+func extractSequenceASTFromSDL(sdl string) (antlr.ParserRuleContext, error) {
+	if sdl == "" {
+		return nil, errors.New("empty SDL provided")
+	}
+
+	// Parse the SDL to get AST
+	parseResult, err := pgparser.ParsePostgreSQL(sdl)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse sequence SDL")
+	}
+
+	tree := parseResult.Tree
+
+	// Extract the CREATE SEQUENCE node using a walker
+	var result *parser.CreateseqstmtContext
+	extractor := &sequenceExtractor{result: &result}
+	antlr.NewParseTreeWalker().Walk(extractor, tree)
+
+	if result == nil {
+		return nil, errors.New("no CREATE SEQUENCE statement found in SDL")
+	}
+
+	return result, nil
+}
+
+// extractSequenceTextFromAST extracts normalized text from sequence AST node using token stream
+func extractSequenceTextFromAST(sequenceAST *parser.CreateseqstmtContext) string {
+	if sequenceAST == nil {
+		return ""
+	}
+
+	// Get tokens from the parser
+	if parser := sequenceAST.GetParser(); parser != nil {
+		if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+			start := sequenceAST.GetStart()
+			stop := sequenceAST.GetStop()
+			if start != nil && stop != nil {
+				return tokenStream.GetTextFromTokens(start, stop)
+			}
+		}
+	}
+
+	// Fallback to GetText() if tokens are not available
+	return sequenceAST.GetText()
+}
+
+// sequenceExtractor is a walker to extract CREATE SEQUENCE AST nodes
+type sequenceExtractor struct {
+	parser.BasePostgreSQLParserListener
+	result **parser.CreateseqstmtContext
+}
+
+func (e *sequenceExtractor) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext) {
 	if e.result != nil && *e.result == nil {
 		*e.result = ctx
 	}
