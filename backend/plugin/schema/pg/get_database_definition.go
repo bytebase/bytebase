@@ -1147,13 +1147,7 @@ func writePrimaryKeyConstraintSDL(out io.Writer, index *storepb.IndexMetadata) e
 				return err
 			}
 		}
-		if _, err := io.WriteString(out, `"`); err != nil {
-			return err
-		}
 		if _, err := io.WriteString(out, expression); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, `"`); err != nil {
 			return err
 		}
 	}
@@ -1184,13 +1178,7 @@ func writeUniqueKeyConstraintSDL(out io.Writer, index *storepb.IndexMetadata) er
 				return err
 			}
 		}
-		if _, err := io.WriteString(out, `"`); err != nil {
-			return err
-		}
 		if _, err := io.WriteString(out, expression); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, `"`); err != nil {
 			return err
 		}
 	}
@@ -1581,47 +1569,7 @@ func writePartitionIndex(out io.Writer, schema string, partition *storepb.TableP
 }
 
 func writeIndex(out io.Writer, schema string, table string, index *storepb.IndexMetadata) error {
-	if index.Unique {
-		if _, err := io.WriteString(out, `CREATE UNIQUE INDEX "`); err != nil {
-			return err
-		}
-	} else {
-		if _, err := io.WriteString(out, `CREATE INDEX "`); err != nil {
-			return err
-		}
-	}
-	if _, err := io.WriteString(out, index.Name); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, `" ON ONLY "`); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, schema); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, `"."`); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, table); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, `" `); err != nil {
-		return err
-	}
-	if err := writeIndexKeyList(out, index); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, ";\n\n"); err != nil {
-		return err
-	}
-
-	if len(index.Comment) > 0 {
-		if err := writeIndexComment(out, schema, index); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return writeIndexInternal(out, schema, table, index, true, true)
 }
 
 func writeIndexKeyList(out io.Writer, index *storepb.IndexMetadata) error {
@@ -1728,13 +1676,7 @@ func writeUniqueKey(out io.Writer, schema string, table string, index *storepb.I
 				return err
 			}
 		}
-		if _, err := io.WriteString(out, "\""); err != nil {
-			return err
-		}
 		if _, err := io.WriteString(out, expression); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, "\""); err != nil {
 			return err
 		}
 	}
@@ -1796,13 +1738,7 @@ func writePrimaryKey(out io.Writer, schema string, table string, index *storepb.
 				return err
 			}
 		}
-		if _, err := io.WriteString(out, "\""); err != nil {
-			return err
-		}
 		if _, err := io.WriteString(out, expression); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, "\""); err != nil {
 			return err
 		}
 	}
@@ -2342,6 +2278,11 @@ func writeIndexesSDL(out io.Writer, schemaName string, table *storepb.TableMetad
 }
 
 func writeIndexSDL(out io.Writer, schemaName string, tableName string, index *storepb.IndexMetadata) error {
+	return writeIndexInternal(out, schemaName, tableName, index, true, false)
+}
+
+// writeIndexInternal is the core index writing function with options for different modes
+func writeIndexInternal(out io.Writer, schema string, table string, index *storepb.IndexMetadata, useOnlyClause bool, includeTerminatorAndComment bool) error {
 	if index.Unique {
 		if _, err := io.WriteString(out, `CREATE UNIQUE INDEX "`); err != nil {
 			return err
@@ -2351,60 +2292,60 @@ func writeIndexSDL(out io.Writer, schemaName string, tableName string, index *st
 			return err
 		}
 	}
-
 	if _, err := io.WriteString(out, index.Name); err != nil {
 		return err
 	}
 
-	if _, err := io.WriteString(out, `" ON "`); err != nil {
-		return err
+	if useOnlyClause {
+		if _, err := io.WriteString(out, `" ON ONLY "`); err != nil {
+			return err
+		}
+	} else {
+		if _, err := io.WriteString(out, `" ON "`); err != nil {
+			return err
+		}
 	}
 
-	if _, err := io.WriteString(out, schemaName); err != nil {
+	if _, err := io.WriteString(out, schema); err != nil {
 		return err
 	}
-
 	if _, err := io.WriteString(out, `"."`); err != nil {
 		return err
 	}
-
-	if _, err := io.WriteString(out, tableName); err != nil {
+	if _, err := io.WriteString(out, table); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"`); err != nil {
 		return err
 	}
 
-	if _, err := io.WriteString(out, `" (`); err != nil {
+	// Add USING clause for non-btree indexes
+	if index.Type != "" && index.Type != "btree" {
+		if _, err := fmt.Fprintf(out, " USING %s", strings.ToUpper(index.Type)); err != nil {
+			return err
+		}
+	}
+
+	if _, err := io.WriteString(out, ` `); err != nil {
+		return err
+	}
+	if err := writeIndexKeyList(out, index); err != nil {
 		return err
 	}
 
-	for i, expression := range index.Expressions {
-		if i > 0 {
-			if _, err := io.WriteString(out, ", "); err != nil {
-				return err
-			}
-		}
-
-		if _, err := io.WriteString(out, `"`); err != nil {
+	if includeTerminatorAndComment {
+		if _, err := io.WriteString(out, ";\n\n"); err != nil {
 			return err
 		}
 
-		if _, err := io.WriteString(out, expression); err != nil {
-			return err
-		}
-
-		if _, err := io.WriteString(out, `"`); err != nil {
-			return err
-		}
-
-		// Add DESC if this column is marked as descending
-		if i < len(index.Descending) && index.Descending[i] {
-			if _, err := io.WriteString(out, " DESC"); err != nil {
+		if len(index.Comment) > 0 {
+			if err := writeIndexComment(out, schema, index); err != nil {
 				return err
 			}
 		}
 	}
 
-	_, err := io.WriteString(out, ")")
-	return err
+	return nil
 }
 
 func writeViewSDL(out io.Writer, schemaName string, view *storepb.ViewMetadata) error {

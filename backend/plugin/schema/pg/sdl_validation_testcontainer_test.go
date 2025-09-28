@@ -108,7 +108,7 @@ CREATE TABLE "public"."audit" (
 
 ALTER SEQUENCE "public"."audit_id_seq" OWNED BY "public"."audit"."id";
 
-ALTER TABLE ONLY "public"."audit" ADD CONSTRAINT "audit_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."audit" ADD CONSTRAINT "audit_pkey" PRIMARY KEY (id);
 
 CREATE INDEX "idx_audit_changed_at" ON ONLY "public"."audit" (changed_at);
 
@@ -121,7 +121,7 @@ CREATE TABLE "public"."department" (
     "dept_name" text NOT NULL
 );
 
-ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_pkey" PRIMARY KEY ("dept_no");
+ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_pkey" PRIMARY KEY (dept_no);
 
 ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_dept_name_key" UNIQUE ("dept_name");
 
@@ -132,7 +132,7 @@ CREATE TABLE "public"."dept_emp" (
     "to_date" date NOT NULL
 );
 
-ALTER TABLE ONLY "public"."dept_emp" ADD CONSTRAINT "dept_emp_pkey" PRIMARY KEY ("emp_no", "dept_no");
+ALTER TABLE ONLY "public"."dept_emp" ADD CONSTRAINT "dept_emp_pkey" PRIMARY KEY (emp_no, dept_no);
 
 CREATE TABLE "public"."dept_manager" (
     "emp_no" integer NOT NULL,
@@ -141,7 +141,7 @@ CREATE TABLE "public"."dept_manager" (
     "to_date" date NOT NULL
 );
 
-ALTER TABLE ONLY "public"."dept_manager" ADD CONSTRAINT "dept_manager_pkey" PRIMARY KEY ("emp_no", "dept_no");
+ALTER TABLE ONLY "public"."dept_manager" ADD CONSTRAINT "dept_manager_pkey" PRIMARY KEY (emp_no, dept_no);
 
 CREATE SEQUENCE "public"."employee_emp_no_seq"
     AS integer
@@ -163,7 +163,7 @@ CREATE TABLE "public"."employee" (
 
 ALTER SEQUENCE "public"."employee_emp_no_seq" OWNED BY "public"."employee"."emp_no";
 
-ALTER TABLE ONLY "public"."employee" ADD CONSTRAINT "employee_pkey" PRIMARY KEY ("emp_no");
+ALTER TABLE ONLY "public"."employee" ADD CONSTRAINT "employee_pkey" PRIMARY KEY (emp_no);
 
 CREATE INDEX "idx_employee_hire_date" ON ONLY "public"."employee" (hire_date);
 
@@ -197,7 +197,7 @@ CREATE TABLE "public"."salary" (
     "to_date" date NOT NULL
 );
 
-ALTER TABLE ONLY "public"."salary" ADD CONSTRAINT "salary_pkey" PRIMARY KEY ("emp_no", "from_date");
+ALTER TABLE ONLY "public"."salary" ADD CONSTRAINT "salary_pkey" PRIMARY KEY (emp_no, from_date);
 
 CREATE INDEX "idx_salary_amount" ON ONLY "public"."salary" (amount);
 
@@ -208,7 +208,7 @@ CREATE TABLE "public"."title" (
     "to_date" date
 );
 
-ALTER TABLE ONLY "public"."title" ADD CONSTRAINT "title_pkey" PRIMARY KEY ("emp_no", "title", "from_date");
+ALTER TABLE ONLY "public"."title" ADD CONSTRAINT "title_pkey" PRIMARY KEY (emp_no, title, from_date);
 
 CREATE VIEW "public"."dept_emp_latest_date" AS 
  SELECT emp_no,
