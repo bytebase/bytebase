@@ -169,12 +169,14 @@ func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, inst
 	}
 
 	// Get the previous schema from sync history
+	// Use SyncHistoryUID (after applying the SDL) instead of PrevSyncHistoryUID (before applying)
+	// This represents the database schema state after the previous SDL was successfully applied
 	var previousSchema *model.DatabaseSchema
-	if mostRecentChangelog.PrevSyncHistoryUID != nil {
+	if mostRecentChangelog.SyncHistoryUID != nil {
 		// Get the sync history record to obtain the schema metadata
-		syncHistory, err := s.GetSyncHistoryByUID(ctx, *mostRecentChangelog.PrevSyncHistoryUID)
+		syncHistory, err := s.GetSyncHistoryByUID(ctx, *mostRecentChangelog.SyncHistoryUID)
 		if err != nil {
-			return "", nil, errors.Wrapf(err, "failed to get sync history by UID %d", *mostRecentChangelog.PrevSyncHistoryUID)
+			return "", nil, errors.Wrapf(err, "failed to get sync history by UID %d", *mostRecentChangelog.SyncHistoryUID)
 		}
 
 		if syncHistory != nil && syncHistory.Metadata != nil {
