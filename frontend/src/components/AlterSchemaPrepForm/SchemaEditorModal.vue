@@ -240,7 +240,7 @@ const prepareDatabaseMetadata = async () => {
       dbSchemaStore.getOrFetchDatabaseMetadata({
         database: database.name,
         skipCache: true,
-        limit: 500,
+        limit: 200,
       }),
       dbCatalogStore.getOrFetchDatabaseCatalog({
         database: database.name,
@@ -346,9 +346,12 @@ const generateDiffDDLMap = async (silent: boolean) => {
   }
   for (let i = 0; i < state.targets.length; i++) {
     const target = state.targets[i];
-    const { database, metadata, baselineMetadata, catalog, baselineCatalog } =
-      target;
-    applyMetadataEdit(database, metadata, catalog);
+    const { database, baselineMetadata, baselineCatalog } = target;
+    const { metadata, catalog } = applyMetadataEdit(
+      database,
+      target.metadata,
+      target.catalog
+    );
 
     const result = await generateSingleDiffDDL({
       database,

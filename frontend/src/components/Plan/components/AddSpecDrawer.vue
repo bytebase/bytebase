@@ -457,9 +457,12 @@ const handlePreviewDDL = async () => {
     const refreshPreview = schemaEditorRef.value?.refreshPreview;
 
     if (typeof applyMetadataEdit === "function") {
-      const { database, metadata, baselineMetadata, catalog, baselineCatalog } =
-        target;
-      applyMetadataEdit(database, metadata, catalog);
+      const { database, baselineMetadata, baselineCatalog } = target;
+      const { metadata, catalog } = applyMetadataEdit(
+        database,
+        target.metadata,
+        target.catalog
+      );
 
       // Trigger preview refresh in the schema editor
       if (typeof refreshPreview === "function") {
@@ -519,15 +522,12 @@ const handleConfirm = async () => {
       const refreshPreview = schemaEditorRef.value?.refreshPreview;
 
       if (typeof applyMetadataEdit === "function") {
-        const {
+        const { database, baselineMetadata, baselineCatalog } = target;
+        const { metadata, catalog } = applyMetadataEdit(
           database,
-          metadata,
-          baselineMetadata,
-          catalog,
-          baselineCatalog,
-        } = target;
-        applyMetadataEdit(database, metadata, catalog);
-
+          target.metadata,
+          target.catalog
+        );
         // Trigger preview refresh before generating final DDL
         if (typeof refreshPreview === "function") {
           refreshPreview();
