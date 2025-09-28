@@ -1681,6 +1681,12 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 		}
 	}
 
+	// Process standalone index changes: apply minimal changes to index chunks
+	err := applyStandaloneIndexChangesToChunks(previousChunks, currentSchema, previousSchema)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply standalone index changes")
+	}
+
 	return nil
 }
 
@@ -2639,4 +2645,242 @@ func generateUniqueKeyConstraintSDL(constraint *storepb.IndexMetadata) string {
 		return ""
 	}
 	return buf.String()
+}
+
+// extendedIndexMetadata stores index metadata with table and schema context
+type extendedIndexMetadata struct {
+	*storepb.IndexMetadata
+	SchemaName string
+	TableName  string
+}
+
+// applyStandaloneIndexChangesToChunks applies minimal changes to standalone CREATE INDEX chunks
+// This handles creation, modification, and deletion of independent index statements
+func applyStandaloneIndexChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
+		return nil
+	}
+
+	// Get index differences by comparing schema metadata
+	currentMetadata := currentSchema.GetMetadata()
+	previousMetadata := previousSchema.GetMetadata()
+	if currentMetadata == nil || previousMetadata == nil {
+		return nil
+	}
+
+	// Build index maps for current and previous schemas
+	currentIndexes := make(map[string]*extendedIndexMetadata)
+	previousIndexes := make(map[string]*extendedIndexMetadata)
+
+	// Collect all standalone indexes from current schema (only non-constraint indexes)
+	for _, schema := range currentMetadata.Schemas {
+		for _, table := range schema.Tables {
+			for _, index := range table.Indexes {
+				// Only include standalone indexes (not constraints like PRIMARY KEY, UNIQUE CONSTRAINT)
+				if !index.IsConstraint && !index.Primary {
+					indexKey := formatIndexKey(schema.Name, index.Name)
+					// Store extended index metadata with table/schema context
+					extendedIndex := &extendedIndexMetadata{
+						IndexMetadata: index,
+						SchemaName:    schema.Name,
+						TableName:     table.Name,
+					}
+					currentIndexes[indexKey] = extendedIndex
+				}
+			}
+		}
+	}
+
+	// Collect all standalone indexes from previous schema
+	for _, schema := range previousMetadata.Schemas {
+		for _, table := range schema.Tables {
+			for _, index := range table.Indexes {
+				// Only include standalone indexes (not constraints)
+				if !index.IsConstraint && !index.Primary {
+					indexKey := formatIndexKey(schema.Name, index.Name)
+					extendedIndex := &extendedIndexMetadata{
+						IndexMetadata: index,
+						SchemaName:    schema.Name,
+						TableName:     table.Name,
+					}
+					previousIndexes[indexKey] = extendedIndex
+				}
+			}
+		}
+	}
+
+	// Process index additions: create new index chunks
+	for indexKey, currentIndex := range currentIndexes {
+		if _, exists := previousIndexes[indexKey]; !exists {
+			// New index - create a chunk for it
+			err := createIndexChunk(previousChunks, currentIndex, indexKey)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create index chunk for %s", indexKey)
+			}
+		}
+	}
+
+	// Process index modifications: update existing chunks
+	for indexKey, currentIndex := range currentIndexes {
+		if previousIndex, exists := previousIndexes[indexKey]; exists {
+			// Index exists in both - check if it needs modification
+			err := updateIndexChunkIfNeeded(previousChunks, currentIndex, previousIndex, indexKey)
+			if err != nil {
+				return errors.Wrapf(err, "failed to update index chunk for %s", indexKey)
+			}
+		}
+	}
+
+	// Process index deletions: remove dropped index chunks
+	for indexKey := range previousIndexes {
+		if _, exists := currentIndexes[indexKey]; !exists {
+			// Index was dropped - remove it from chunks
+			deleteIndexChunk(previousChunks, indexKey)
+		}
+	}
+
+	return nil
+}
+
+// formatIndexKey creates a consistent key for index identification
+func formatIndexKey(schemaName, indexName string) string {
+	if schemaName == "" {
+		schemaName = "public"
+	}
+	return schemaName + "." + indexName
+}
+
+// createIndexChunk creates a new CREATE INDEX chunk and adds it to the chunks
+func createIndexChunk(chunks *schema.SDLChunks, extIndex *extendedIndexMetadata, indexKey string) error {
+	if extIndex == nil || extIndex.IndexMetadata == nil || chunks == nil {
+		return nil
+	}
+
+	// Generate SDL text for the index
+	indexSDL := generateCreateIndexSDL(extIndex)
+	if indexSDL == "" {
+		return errors.New("failed to generate SDL for index")
+	}
+
+	// Parse the SDL to get AST node
+	parseResult, err := pgparser.ParsePostgreSQL(indexSDL)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse generated index SDL: %s", indexSDL)
+	}
+
+	// Extract the CREATE INDEX AST node
+	var indexASTNode *parser.IndexstmtContext
+	antlr.ParseTreeWalkerDefault.Walk(&indexExtractor{
+		result: &indexASTNode,
+	}, parseResult.Tree)
+
+	if indexASTNode == nil {
+		return errors.New("failed to extract CREATE INDEX AST node")
+	}
+
+	// Create and add the chunk
+	chunk := &schema.SDLChunk{
+		Identifier: indexKey,
+		ASTNode:    indexASTNode,
+	}
+
+	if chunks.Indexes == nil {
+		chunks.Indexes = make(map[string]*schema.SDLChunk)
+	}
+	chunks.Indexes[indexKey] = chunk
+
+	return nil
+}
+
+// updateIndexChunkIfNeeded updates an existing index chunk if the index definition has changed
+func updateIndexChunkIfNeeded(chunks *schema.SDLChunks, currentIndex, previousIndex *extendedIndexMetadata, indexKey string) error {
+	if currentIndex == nil || previousIndex == nil || chunks == nil {
+		return nil
+	}
+
+	// Check if the index definition has changed
+	if !indexDefinitionsEqual(currentIndex.IndexMetadata, previousIndex.IndexMetadata) {
+		// Index has changed - regenerate the chunk
+		err := createIndexChunk(chunks, currentIndex, indexKey)
+		if err != nil {
+			return errors.Wrapf(err, "failed to recreate index chunk for %s", indexKey)
+		}
+	}
+
+	return nil
+}
+
+// deleteIndexChunk removes an index chunk from the chunks
+func deleteIndexChunk(chunks *schema.SDLChunks, indexKey string) {
+	if chunks != nil && chunks.Indexes != nil {
+		delete(chunks.Indexes, indexKey)
+	}
+}
+
+// indexDefinitionsEqual compares two index definitions to see if they are equivalent
+func indexDefinitionsEqual(index1, index2 *storepb.IndexMetadata) bool {
+	if index1 == nil || index2 == nil {
+		return false
+	}
+
+	// Compare basic properties
+	if index1.Name != index2.Name ||
+		index1.Unique != index2.Unique ||
+		index1.Type != index2.Type ||
+		len(index1.Expressions) != len(index2.Expressions) ||
+		len(index1.Descending) != len(index2.Descending) {
+		return false
+	}
+
+	// Compare expressions
+	for i, expr := range index1.Expressions {
+		if i >= len(index2.Expressions) || expr != index2.Expressions[i] {
+			return false
+		}
+	}
+
+	// Compare descending flags
+	for i, desc := range index1.Descending {
+		if i >= len(index2.Descending) || desc != index2.Descending[i] {
+			return false
+		}
+	}
+
+	// Note: PostgreSQL IndexMetadata doesn't have a Where field in the current schema
+	// Index WHERE clauses are handled differently in the system
+	// For now, we'll consider indexes equal if all other fields match
+
+	return true
+}
+
+// generateCreateIndexSDL generates SDL text for a CREATE INDEX statement using writeIndexSDL
+func generateCreateIndexSDL(extIndex *extendedIndexMetadata) string {
+	if extIndex == nil || extIndex.IndexMetadata == nil {
+		return ""
+	}
+
+	var buf strings.Builder
+	schemaName := extIndex.SchemaName
+	if schemaName == "" {
+		schemaName = "public"
+	}
+
+	// Use the existing writeIndexSDL function from get_database_definition.go
+	if err := writeIndexSDL(&buf, schemaName, extIndex.TableName, extIndex.IndexMetadata); err != nil {
+		return ""
+	}
+
+	return buf.String()
+}
+
+// indexExtractor is a walker to extract CREATE INDEX AST nodes
+type indexExtractor struct {
+	parser.BasePostgreSQLParserListener
+	result **parser.IndexstmtContext
+}
+
+func (e *indexExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
+	if e.result != nil && *e.result == nil {
+		*e.result = ctx
+	}
 }

@@ -215,7 +215,7 @@ func TestConstraintRewriteOperations(t *testing.T) {
 			expectedSDL: `CREATE TABLE orders (
     "id" INTEGER NOT NULL,
     "order_number" VARCHAR(50),
-    CONSTRAINT "pk_orders" PRIMARY KEY ("id")
+    CONSTRAINT "pk_orders" PRIMARY KEY (id)
 );`,
 			description: "Should add primary key constraint to existing table",
 		},
@@ -253,7 +253,7 @@ func TestConstraintRewriteOperations(t *testing.T) {
 			expectedSDL: `CREATE TABLE users (
     "id" INTEGER NOT NULL,
     "email" VARCHAR(255),
-    CONSTRAINT "uk_users_email" UNIQUE ("email")
+    CONSTRAINT "uk_users_email" UNIQUE (email)
 );`,
 			description: "Should add unique constraint to existing table",
 		},
@@ -301,8 +301,8 @@ func TestConstraintRewriteOperations(t *testing.T) {
     "id" INTEGER NOT NULL,
     "email" VARCHAR(255),
     "phone" VARCHAR(20),
-    CONSTRAINT "pk_customers" PRIMARY KEY ("id"),
-    CONSTRAINT "uk_customers_email" UNIQUE ("email")
+    CONSTRAINT "pk_customers" PRIMARY KEY (id),
+    CONSTRAINT "uk_customers_email" UNIQUE (email)
 );`,
 			description: "Should add both primary key and unique constraints",
 		},
@@ -505,7 +505,7 @@ func TestConstraintRewriteOperations(t *testing.T) {
     "id" INTEGER NOT NULL,
     "tenant_id" INTEGER NOT NULL,
     "name" VARCHAR(255),
-    CONSTRAINT "pk_composite_new" PRIMARY KEY ("id", "tenant_id")
+    CONSTRAINT "pk_composite_new" PRIMARY KEY (id, tenant_id)
 );`,
 			description: "Should modify primary key constraint to include multiple columns",
 		},
@@ -554,7 +554,7 @@ func TestConstraintRewriteOperations(t *testing.T) {
     "id" INTEGER NOT NULL,
     "email" VARCHAR(255),
     "username" VARCHAR(100),
-    CONSTRAINT "uk_users_email_username" UNIQUE ("email", "username")
+    CONSTRAINT "uk_users_email_username" UNIQUE (email, username)
 );`,
 			description: "Should modify unique constraint to include multiple columns",
 		},
@@ -658,8 +658,8 @@ func TestConstraintRewriteOperations(t *testing.T) {
     "id" INTEGER NOT NULL,
     "session_id" VARCHAR(255) NOT NULL,
     "timestamp" TIMESTAMP,
-    CONSTRAINT "pk_logs_session_timestamp" PRIMARY KEY ("session_id", "timestamp"),
-    CONSTRAINT "uk_logs_id" UNIQUE ("id")
+    CONSTRAINT "pk_logs_session_timestamp" PRIMARY KEY (session_id, timestamp),
+    CONSTRAINT "uk_logs_id" UNIQUE (id)
 );`,
 			description: "Should replace primary key constraint and add unique constraint",
 		},
