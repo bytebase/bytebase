@@ -11,7 +11,6 @@ import type {
 } from "@/types/proto-es/v1/database_service_pb";
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
 import { groupBy } from "@/utils";
-import { useSchemaEditorContext } from "../context";
 import { keyForResource } from "../context/common";
 import {
   engineSupportsEditFunctions,
@@ -177,8 +176,6 @@ export type BuildTreeOptions = {
 };
 
 export const useBuildTree = () => {
-  const context = useSchemaEditorContext();
-
   const buildTree = (
     targets: EditTarget[],
     map: Map<string, TreeNode>,

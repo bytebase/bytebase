@@ -145,7 +145,6 @@ const mergeTableMetadataToTarge = ({
 
     for (const table of schema.tables) {
       if (!targetSchema.tables.find((t) => t.name === table.name)) {
-        // eslint-disable-next-line vue/no-mutating-props
         targetSchema.tables.push(cloneDeep(table));
       }
     }
