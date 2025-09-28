@@ -144,7 +144,7 @@ func TestGetDatabaseDefinitionSDLFormat(t *testing.T) {
 								CheckConstraints: []*storepb.CheckConstraintMetadata{
 									{
 										Name:       "users_age_check",
-										Expression: "(age >= 0)",
+										Expression: "age >= 0",
 									},
 								},
 							},
@@ -156,8 +156,8 @@ func TestGetDatabaseDefinitionSDLFormat(t *testing.T) {
     "id" SERIAL NOT NULL,
     "email" VARCHAR(320) NOT NULL,
     "age" INTEGER,
-    CONSTRAINT "users_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "users_email_key" UNIQUE ("email"),
+    CONSTRAINT "users_pkey" PRIMARY KEY (id),
+    CONSTRAINT "users_email_key" UNIQUE (email),
     CONSTRAINT "users_age_check" CHECK (age >= 0)
 );
 
@@ -210,7 +210,7 @@ func TestGetDatabaseDefinitionSDLFormat(t *testing.T) {
 			expected: `CREATE TABLE "public"."orders" (
     "id" SERIAL NOT NULL,
     "user_id" INTEGER NOT NULL,
-    CONSTRAINT "orders_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "orders_pkey" PRIMARY KEY (id),
     CONSTRAINT "orders_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users" ("id") ON DELETE CASCADE
 );
 
@@ -332,14 +332,14 @@ CREATE TABLE "public"."products" (
     "name" VARCHAR(255) NOT NULL,
     "category_id" INTEGER,
     "price" DECIMAL(10,2) NOT NULL,
-    CONSTRAINT "products_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "products_pkey" PRIMARY KEY (id)
 );
 
-CREATE INDEX "idx_products_name" ON "public"."products" ("name");
+CREATE INDEX "idx_products_name" ON ONLY "public"."products" (name);
 
-CREATE INDEX "idx_products_category_price" ON "public"."products" ("category_id", "price" DESC);
+CREATE INDEX "idx_products_category_price" ON ONLY "public"."products" (category_id, price DESC);
 
-CREATE UNIQUE INDEX "idx_products_name_unique" ON "public"."products" ("name");
+CREATE UNIQUE INDEX "idx_products_name_unique" ON ONLY "public"."products" (name);
 
 `,
 		},
@@ -438,14 +438,14 @@ GROUP BY u.id, u.name`,
     "name" VARCHAR(255) NOT NULL,
     "email" VARCHAR(320) NOT NULL,
     "active" BOOLEAN DEFAULT true NOT NULL,
-    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "users_pkey" PRIMARY KEY (id)
 );
 
 CREATE TABLE "public"."orders" (
     "id" SERIAL NOT NULL,
     "user_id" INTEGER NOT NULL,
     "total" DECIMAL(10,2) NOT NULL,
-    CONSTRAINT "orders_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "orders_pkey" PRIMARY KEY (id)
 );
 
 CREATE VIEW "public"."active_users" AS SELECT id, name, email
@@ -542,7 +542,7 @@ $$`,
     "id" SERIAL NOT NULL,
     "name" VARCHAR(255) NOT NULL,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "users_pkey" PRIMARY KEY (id)
 );
 
 CREATE FUNCTION "public"."get_user_count"() RETURNS integer

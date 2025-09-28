@@ -1659,10 +1659,10 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 			// Table exists in both schemas - check for column differences
 			if existingKey, chunkExists := existingChunkKeys[tableKey]; chunkExists {
 				if chunk := previousChunks.Tables[existingKey]; chunk != nil {
-					// Apply column-level changes to the existing chunk
-					err := applyColumnChangesToChunk(chunk, currentTable, previousTable)
+					// Apply both column and constraint changes to the existing chunk using a single rewriter
+					err := applyTableChangesToChunk(chunk, currentTable, previousTable)
 					if err != nil {
-						return errors.Wrapf(err, "failed to apply column changes to table %s", tableKey)
+						return errors.Wrapf(err, "failed to apply table changes to table %s", tableKey)
 					}
 				}
 			}
@@ -1681,11 +1681,17 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 		}
 	}
 
+	// Process standalone index changes: apply minimal changes to index chunks
+	err := applyStandaloneIndexChangesToChunks(previousChunks, currentSchema, previousSchema)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply standalone index changes")
+	}
+
 	return nil
 }
 
-// applyColumnChangesToChunk applies minimal column changes to an existing CREATE TABLE chunk using ANTLR rewrite
-func applyColumnChangesToChunk(chunk *schema.SDLChunk, currentTable, previousTable *storepb.TableMetadata) error {
+// applyTableChangesToChunk applies minimal column and constraint changes to an existing CREATE TABLE chunk using a single ANTLR rewriter
+func applyTableChangesToChunk(chunk *schema.SDLChunk, currentTable, previousTable *storepb.TableMetadata) error {
 	if chunk == nil || chunk.ASTNode == nil || currentTable == nil || previousTable == nil {
 		return nil
 	}
@@ -1695,7 +1701,7 @@ func applyColumnChangesToChunk(chunk *schema.SDLChunk, currentTable, previousTab
 		return errors.New("chunk AST node is not a CREATE TABLE statement")
 	}
 
-	// Get the token stream and create a rewriter
+	// Get the token stream and create a single rewriter for both column and constraint changes
 	ctxParser := createStmt.GetParser()
 	if ctxParser == nil {
 		return errors.New("parser not available for AST node")
@@ -1708,6 +1714,45 @@ func applyColumnChangesToChunk(chunk *schema.SDLChunk, currentTable, previousTab
 
 	rewriter := antlr.NewTokenStreamRewriter(tokenStream)
 
+	// Apply column changes using the shared rewriter
+	err := applyColumnChanges(rewriter, createStmt, currentTable, previousTable)
+	if err != nil {
+		return errors.Wrapf(err, "failed to apply column changes")
+	}
+
+	// Apply constraint changes using the same rewriter
+	err = applyConstraintChanges(rewriter, createStmt, currentTable, previousTable)
+	if err != nil {
+		return errors.Wrapf(err, "failed to apply constraint changes")
+	}
+
+	// Apply all changes and update the chunk with a single parse
+	modifiedSQL := rewriter.GetTextDefault()
+
+	// Parse the modified SQL to get the new AST (only once for both column and constraint changes)
+	parseResult, err := pgparser.ParsePostgreSQL(modifiedSQL)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse modified SQL: %s", modifiedSQL)
+	}
+
+	// Extract the new CREATE TABLE AST node
+	var newCreateTableNode *parser.CreatestmtContext
+	antlr.ParseTreeWalkerDefault.Walk(&createTableExtractor{
+		result: &newCreateTableNode,
+	}, parseResult.Tree)
+
+	if newCreateTableNode == nil {
+		return errors.New("failed to extract CREATE TABLE AST node from modified text")
+	}
+
+	// Update the chunk with the new AST node
+	chunk.ASTNode = newCreateTableNode
+
+	return nil
+}
+
+// applyColumnChanges applies column changes using the provided rewriter without parsing SQL
+func applyColumnChanges(rewriter *antlr.TokenStreamRewriter, createStmt *parser.CreatestmtContext, currentTable, previousTable *storepb.TableMetadata) error {
 	// Create column maps for efficient lookups
 	currentColumns := make(map[string]*storepb.ColumnMetadata)
 	previousColumns := make(map[string]*storepb.ColumnMetadata)
@@ -1762,27 +1807,221 @@ func applyColumnChangesToChunk(chunk *schema.SDLChunk, currentTable, previousTab
 		}
 	}
 
-	// Apply the changes and update the chunk
-	modifiedText := rewriter.GetTextDefault()
+	return nil
+}
 
-	// Parse the modified text to create a new AST node
-	parseResult, err := pgparser.ParsePostgreSQL(modifiedText)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse modified CREATE TABLE statement")
+// applyConstraintChanges applies constraint changes using the provided rewriter without parsing SQL
+func applyConstraintChanges(rewriter *antlr.TokenStreamRewriter, createStmt *parser.CreatestmtContext, currentTable, previousTable *storepb.TableMetadata) error {
+	// Create constraint maps for efficient lookups
+	currentCheckConstraints := make(map[string]*storepb.CheckConstraintMetadata)
+	previousCheckConstraints := make(map[string]*storepb.CheckConstraintMetadata)
+	currentFKConstraints := make(map[string]*storepb.ForeignKeyMetadata)
+	previousFKConstraints := make(map[string]*storepb.ForeignKeyMetadata)
+	currentPKConstraints := make(map[string]*storepb.IndexMetadata)
+	previousPKConstraints := make(map[string]*storepb.IndexMetadata)
+	currentUKConstraints := make(map[string]*storepb.IndexMetadata)
+	previousUKConstraints := make(map[string]*storepb.IndexMetadata)
+
+	// Build constraint maps from metadata
+	for _, constraint := range currentTable.CheckConstraints {
+		currentCheckConstraints[constraint.Name] = constraint
+	}
+	for _, constraint := range previousTable.CheckConstraints {
+		previousCheckConstraints[constraint.Name] = constraint
+	}
+	for _, constraint := range currentTable.ForeignKeys {
+		currentFKConstraints[constraint.Name] = constraint
+	}
+	for _, constraint := range previousTable.ForeignKeys {
+		previousFKConstraints[constraint.Name] = constraint
+	}
+	// Build primary key constraint maps
+	for _, index := range currentTable.Indexes {
+		if index.Primary {
+			currentPKConstraints[index.Name] = index
+		}
+	}
+	for _, index := range previousTable.Indexes {
+		if index.Primary {
+			previousPKConstraints[index.Name] = index
+		}
+	}
+	// Build unique key constraint maps (unique constraints, not just indexes)
+	for _, index := range currentTable.Indexes {
+		if index.Unique && !index.Primary && index.IsConstraint {
+			currentUKConstraints[index.Name] = index
+		}
+	}
+	for _, index := range previousTable.Indexes {
+		if index.Unique && !index.Primary && index.IsConstraint {
+			previousUKConstraints[index.Name] = index
+		}
 	}
 
-	// Extract the new CREATE TABLE AST node
-	var newCreateTableNode *parser.CreatestmtContext
-	antlr.ParseTreeWalkerDefault.Walk(&createTableExtractor{
-		result: &newCreateTableNode,
-	}, parseResult.Tree)
+	// Extract constraint definitions with AST nodes for precise manipulation
+	currentCheckDefs := extractCheckConstraintDefinitionsWithAST(createStmt)
+	currentFKDefs := extractForeignKeyDefinitionsWithAST(createStmt)
+	currentPKDefs := extractPrimaryKeyDefinitionsInOrder(createStmt)
+	currentUKDefs := extractUniqueKeyDefinitionsInOrder(createStmt)
 
-	if newCreateTableNode == nil {
-		return errors.New("failed to extract CREATE TABLE AST node from modified text")
+	// Phase 1: Handle constraint deletions (reverse order for stability)
+	// Delete check constraints
+	for i := len(currentCheckDefs) - 1; i >= 0; i-- {
+		checkDef := currentCheckDefs[i]
+		if _, exists := currentCheckConstraints[checkDef.Name]; !exists {
+			// Constraint was dropped
+			err := deleteConstraintFromAST(rewriter, checkDef.ASTNode, createStmt)
+			if err != nil {
+				return errors.Wrapf(err, "failed to delete check constraint %s", checkDef.Name)
+			}
+		}
 	}
 
-	// Update the chunk with the new AST node
-	chunk.ASTNode = newCreateTableNode
+	// Delete foreign key constraints
+	for i := len(currentFKDefs) - 1; i >= 0; i-- {
+		fkDef := currentFKDefs[i]
+		if _, exists := currentFKConstraints[fkDef.Name]; !exists {
+			// Constraint was dropped
+			err := deleteConstraintFromAST(rewriter, fkDef.ASTNode, createStmt)
+			if err != nil {
+				return errors.Wrapf(err, "failed to delete foreign key constraint %s", fkDef.Name)
+			}
+		}
+	}
+
+	// Delete primary key constraints
+	for i := len(currentPKDefs) - 1; i >= 0; i-- {
+		pkDef := currentPKDefs[i]
+		if _, exists := currentPKConstraints[pkDef.Name]; !exists {
+			// Constraint was dropped
+			err := deleteConstraintFromAST(rewriter, pkDef.ASTNode, createStmt)
+			if err != nil {
+				return errors.Wrapf(err, "failed to delete primary key constraint %s", pkDef.Name)
+			}
+		}
+	}
+
+	// Delete unique key constraints
+	for i := len(currentUKDefs) - 1; i >= 0; i-- {
+		ukDef := currentUKDefs[i]
+		if _, exists := currentUKConstraints[ukDef.Name]; !exists {
+			// Constraint was dropped
+			err := deleteConstraintFromAST(rewriter, ukDef.ASTNode, createStmt)
+			if err != nil {
+				return errors.Wrapf(err, "failed to delete unique key constraint %s", ukDef.Name)
+			}
+		}
+	}
+
+	// Phase 2: Handle constraint modifications
+	// Modify check constraints
+	for _, checkDef := range currentCheckDefs {
+		if currentConstraint, exists := currentCheckConstraints[checkDef.Name]; exists {
+			if previousConstraint, wasPresent := previousCheckConstraints[checkDef.Name]; wasPresent {
+				// Check if constraint was modified by comparing text
+				if !constraintsEqual(currentConstraint, previousConstraint) {
+					err := modifyConstraintInAST(rewriter, checkDef.ASTNode, currentConstraint)
+					if err != nil {
+						return errors.Wrapf(err, "failed to modify check constraint %s", checkDef.Name)
+					}
+				}
+			}
+		}
+	}
+
+	// Modify foreign key constraints
+	for _, fkDef := range currentFKDefs {
+		if currentConstraint, exists := currentFKConstraints[fkDef.Name]; exists {
+			if previousConstraint, wasPresent := previousFKConstraints[fkDef.Name]; wasPresent {
+				// Check if constraint was modified
+				if !fkConstraintsEqual(currentConstraint, previousConstraint) {
+					err := modifyConstraintInAST(rewriter, fkDef.ASTNode, currentConstraint)
+					if err != nil {
+						return errors.Wrapf(err, "failed to modify foreign key constraint %s", fkDef.Name)
+					}
+				}
+			}
+		}
+	}
+
+	// Modify primary key constraints
+	for _, pkDef := range currentPKDefs {
+		if currentConstraint, exists := currentPKConstraints[pkDef.Name]; exists {
+			if previousConstraint, wasPresent := previousPKConstraints[pkDef.Name]; wasPresent {
+				// Check if constraint was modified
+				if !pkConstraintsEqual(currentConstraint, previousConstraint) {
+					err := modifyConstraintInAST(rewriter, pkDef.ASTNode, currentConstraint)
+					if err != nil {
+						return errors.Wrapf(err, "failed to modify primary key constraint %s", pkDef.Name)
+					}
+				}
+			}
+		}
+	}
+
+	// Modify unique key constraints
+	for _, ukDef := range currentUKDefs {
+		if currentConstraint, exists := currentUKConstraints[ukDef.Name]; exists {
+			if previousConstraint, wasPresent := previousUKConstraints[ukDef.Name]; wasPresent {
+				// Check if constraint was modified
+				if !ukConstraintsEqual(currentConstraint, previousConstraint) {
+					err := modifyConstraintInAST(rewriter, ukDef.ASTNode, currentConstraint)
+					if err != nil {
+						return errors.Wrapf(err, "failed to modify unique key constraint %s", ukDef.Name)
+					}
+				}
+			}
+		}
+	}
+
+	// Phase 3: Handle constraint additions
+	// Add new check constraints
+	for _, currentConstraint := range currentTable.CheckConstraints {
+		if _, existed := previousCheckConstraints[currentConstraint.Name]; !existed {
+			// New check constraint
+			err := addConstraintToAST(rewriter, createStmt, currentConstraint)
+			if err != nil {
+				return errors.Wrapf(err, "failed to add check constraint %s", currentConstraint.Name)
+			}
+		}
+	}
+
+	// Add new foreign key constraints
+	for _, currentConstraint := range currentTable.ForeignKeys {
+		if _, existed := previousFKConstraints[currentConstraint.Name]; !existed {
+			// New foreign key constraint
+			err := addConstraintToAST(rewriter, createStmt, currentConstraint)
+			if err != nil {
+				return errors.Wrapf(err, "failed to add foreign key constraint %s", currentConstraint.Name)
+			}
+		}
+	}
+
+	// Add new primary key constraints
+	for _, currentIndex := range currentTable.Indexes {
+		if currentIndex.Primary {
+			if _, existed := previousPKConstraints[currentIndex.Name]; !existed {
+				// New primary key constraint
+				err := addConstraintToAST(rewriter, createStmt, currentIndex)
+				if err != nil {
+					return errors.Wrapf(err, "failed to add primary key constraint %s", currentIndex.Name)
+				}
+			}
+		}
+	}
+
+	// Add new unique key constraints
+	for _, currentIndex := range currentTable.Indexes {
+		if currentIndex.Unique && !currentIndex.Primary && currentIndex.IsConstraint {
+			if _, existed := previousUKConstraints[currentIndex.Name]; !existed {
+				// New unique key constraint
+				err := addConstraintToAST(rewriter, createStmt, currentIndex)
+				if err != nil {
+					return errors.Wrapf(err, "failed to add unique key constraint %s", currentIndex.Name)
+				}
+			}
+		}
+	}
 
 	return nil
 }
@@ -1958,4 +2197,690 @@ func convertDatabaseSchemaToSDL(dbSchema *model.DatabaseSchema) (string, error) 
 
 	// Use the existing getSDLFormat function from get_database_definition.go
 	return getSDLFormat(metadata)
+}
+
+// deleteConstraintFromAST removes a constraint definition from the CREATE TABLE statement using token rewriter
+func deleteConstraintFromAST(rewriter *antlr.TokenStreamRewriter, constraintAST parser.ITableconstraintContext, _ *parser.CreatestmtContext) error {
+	if constraintAST == nil || rewriter == nil {
+		return errors.New("constraint AST or rewriter is nil")
+	}
+
+	// Get start and stop tokens for the constraint
+	startToken := constraintAST.GetStart()
+	stopToken := constraintAST.GetStop()
+
+	if startToken == nil || stopToken == nil {
+		return errors.New("unable to get constraint definition tokens")
+	}
+
+	// Strategy: Always try to remove the following comma first
+	// This handles cases where there are more constraints after this one
+	nextCommaIndex := -1
+	for i := stopToken.GetTokenIndex() + 1; i < rewriter.GetTokenStream().Size(); i++ {
+		token := rewriter.GetTokenStream().Get(i)
+		if token.GetTokenType() == parser.PostgreSQLParserCOMMA {
+			nextCommaIndex = i
+			break
+		}
+		// Skip whitespace and comments, but stop at other meaningful tokens
+		if token.GetChannel() == antlr.TokenDefaultChannel {
+			// Found a non-comma token on the default channel, stop searching
+			break
+		}
+	}
+
+	if nextCommaIndex != -1 {
+		// Found a following comma - remove constraint and the comma
+		rewriter.DeleteDefault(startToken.GetTokenIndex(), nextCommaIndex)
+	} else {
+		// No following comma found - this might be the last element
+		// Try to find a preceding comma to remove
+		prevCommaIndex := -1
+		for i := startToken.GetTokenIndex() - 1; i >= 0; i-- {
+			token := rewriter.GetTokenStream().Get(i)
+			if token.GetTokenType() == parser.PostgreSQLParserCOMMA {
+				prevCommaIndex = i
+				break
+			}
+			// Skip whitespace and comments, but stop at other meaningful tokens
+			if token.GetChannel() == antlr.TokenDefaultChannel {
+				break
+			}
+		}
+
+		if prevCommaIndex != -1 {
+			// Found a preceding comma - remove it along with the constraint
+			rewriter.DeleteDefault(prevCommaIndex, stopToken.GetTokenIndex())
+		} else {
+			// No comma found (single constraint case) - just remove the constraint
+			rewriter.DeleteDefault(startToken.GetTokenIndex(), stopToken.GetTokenIndex())
+		}
+	}
+
+	return nil
+}
+
+// modifyConstraintInAST modifies a constraint definition using token rewriter
+func modifyConstraintInAST(rewriter *antlr.TokenStreamRewriter, constraintAST parser.ITableconstraintContext, newConstraint any) error {
+	if constraintAST == nil || rewriter == nil || newConstraint == nil {
+		return errors.New("constraint AST, rewriter, or new constraint is nil")
+	}
+
+	// Get start and stop tokens for the constraint
+	startToken := constraintAST.GetStart()
+	stopToken := constraintAST.GetStop()
+
+	if startToken == nil || stopToken == nil {
+		return errors.New("unable to get constraint definition tokens")
+	}
+
+	// Generate the new constraint SDL
+	var newConstraintSDL string
+	switch constraint := newConstraint.(type) {
+	case *storepb.CheckConstraintMetadata:
+		newConstraintSDL = generateCheckConstraintSDL(constraint)
+	case *storepb.ForeignKeyMetadata:
+		newConstraintSDL = generateForeignKeyConstraintSDL(constraint)
+	case *storepb.IndexMetadata:
+		if constraint.Primary {
+			newConstraintSDL = generatePrimaryKeyConstraintSDL(constraint)
+		} else if constraint.Unique && constraint.IsConstraint {
+			newConstraintSDL = generateUniqueKeyConstraintSDL(constraint)
+		} else {
+			return errors.New("unsupported index constraint type")
+		}
+	default:
+		return errors.New("unsupported constraint type")
+	}
+
+	// Replace the entire constraint definition
+	rewriter.ReplaceDefault(startToken.GetTokenIndex(), stopToken.GetTokenIndex(), newConstraintSDL)
+
+	return nil
+}
+
+// addConstraintToAST adds a new constraint to the CREATE TABLE statement using token rewriter
+func addConstraintToAST(rewriter *antlr.TokenStreamRewriter, createStmt *parser.CreatestmtContext, newConstraint any) error {
+	if rewriter == nil || createStmt == nil || newConstraint == nil {
+		return errors.New("rewriter, create statement, or new constraint is nil")
+	}
+
+	// Generate the new constraint SDL
+	var newConstraintSDL string
+	switch constraint := newConstraint.(type) {
+	case *storepb.CheckConstraintMetadata:
+		newConstraintSDL = generateCheckConstraintSDL(constraint)
+	case *storepb.ForeignKeyMetadata:
+		newConstraintSDL = generateForeignKeyConstraintSDL(constraint)
+	case *storepb.IndexMetadata:
+		if constraint.Primary {
+			newConstraintSDL = generatePrimaryKeyConstraintSDL(constraint)
+		} else if constraint.Unique && constraint.IsConstraint {
+			newConstraintSDL = generateUniqueKeyConstraintSDL(constraint)
+		} else {
+			return errors.New("unsupported index constraint type")
+		}
+	default:
+		return errors.New("unsupported constraint type")
+	}
+
+	// Find the position to insert the constraint
+	// Look for the closing parenthesis of the CREATE TABLE statement
+	optTableElementList := createStmt.Opttableelementlist()
+	if optTableElementList == nil {
+		return errors.New("CREATE TABLE statement has no table element list")
+	}
+
+	tableElementList := optTableElementList.Tableelementlist()
+	if tableElementList == nil {
+		return errors.New("table element list is nil")
+	}
+
+	// Get all table elements to find the last one
+	tableElements := tableElementList.AllTableelement()
+	if len(tableElements) == 0 {
+		return errors.New("no table elements found")
+	}
+
+	// Get the last element (could be a column or constraint)
+	lastElement := tableElements[len(tableElements)-1]
+	stopToken := lastElement.GetStop()
+	if stopToken == nil {
+		return errors.New("unable to get last table element stop token")
+	}
+
+	// Generate constraint definition SDL with leading comma and proper indentation
+	constraintSDL := ",\n    " + newConstraintSDL
+
+	// Insert after the last element
+	rewriter.InsertAfterDefault(stopToken.GetTokenIndex(), constraintSDL)
+
+	return nil
+}
+
+// generateCheckConstraintSDL generates SDL text for a check constraint using the existing writeCheckConstraintSDL function
+func generateCheckConstraintSDL(constraint *storepb.CheckConstraintMetadata) string {
+	if constraint == nil {
+		return ""
+	}
+
+	var buf strings.Builder
+	err := writeCheckConstraintSDL(&buf, constraint)
+	if err != nil {
+		// If there's an error writing to the buffer, return empty string
+		// This should rarely happen since we're writing to a strings.Builder
+		return ""
+	}
+
+	return buf.String()
+}
+
+// generateForeignKeyConstraintSDL generates SDL text for a foreign key constraint using the existing writeForeignKeyConstraintSDL function
+func generateForeignKeyConstraintSDL(constraint *storepb.ForeignKeyMetadata) string {
+	if constraint == nil {
+		return ""
+	}
+
+	var buf strings.Builder
+	err := writeForeignKeyConstraintSDL(&buf, constraint)
+	if err != nil {
+		// If there's an error writing to the buffer, return empty string
+		// This should rarely happen since we're writing to a strings.Builder
+		return ""
+	}
+
+	return buf.String()
+}
+
+// constraintsEqual compares two check constraint metadata objects for equality
+func constraintsEqual(a, b *storepb.CheckConstraintMetadata) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+
+	return a.Name == b.Name && a.Expression == b.Expression
+}
+
+// fkConstraintsEqual compares two foreign key constraint metadata objects for equality
+func fkConstraintsEqual(a, b *storepb.ForeignKeyMetadata) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+
+	// Compare basic properties
+	if a.Name != b.Name ||
+		a.ReferencedSchema != b.ReferencedSchema ||
+		a.ReferencedTable != b.ReferencedTable ||
+		a.OnDelete != b.OnDelete ||
+		a.OnUpdate != b.OnUpdate {
+		return false
+	}
+
+	// Compare columns arrays
+	if len(a.Columns) != len(b.Columns) ||
+		len(a.ReferencedColumns) != len(b.ReferencedColumns) {
+		return false
+	}
+
+	for i := range a.Columns {
+		if a.Columns[i] != b.Columns[i] {
+			return false
+		}
+	}
+
+	for i := range a.ReferencedColumns {
+		if a.ReferencedColumns[i] != b.ReferencedColumns[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+// extractCheckConstraintDefinitionsWithAST extracts check constraint definitions with their AST nodes
+// Note: This is a wrapper around the existing function with a different name for clarity
+func extractCheckConstraintDefinitionsWithAST(createStmt *parser.CreatestmtContext) []*CheckConstraintDefWithAST {
+	return extractCheckConstraintDefinitionsInOrder(createStmt)
+}
+
+// extractForeignKeyDefinitionsWithAST extracts foreign key constraint definitions with their AST nodes
+// Note: This is a wrapper around the existing function with a different name for clarity
+func extractForeignKeyDefinitionsWithAST(createStmt *parser.CreatestmtContext) []*ForeignKeyDefWithAST {
+	return extractForeignKeyDefinitionsInOrder(createStmt)
+}
+
+// PrimaryKeyDefWithAST represents a primary key constraint definition with its AST node
+type PrimaryKeyDefWithAST struct {
+	Name    string
+	ASTNode parser.ITableconstraintContext
+}
+
+// UniqueKeyDefWithAST represents a unique key constraint definition with its AST node
+type UniqueKeyDefWithAST struct {
+	Name    string
+	ASTNode parser.ITableconstraintContext
+}
+
+// extractPrimaryKeyDefinitionsInOrder extracts primary key constraint definitions with their AST nodes
+func extractPrimaryKeyDefinitionsInOrder(createStmt *parser.CreatestmtContext) []*PrimaryKeyDefWithAST {
+	var pkDefs []*PrimaryKeyDefWithAST
+
+	if createStmt == nil {
+		return pkDefs
+	}
+
+	// Navigate through the CREATE TABLE AST to find table constraints
+	optTableElementList := createStmt.Opttableelementlist()
+	if optTableElementList == nil {
+		return pkDefs
+	}
+
+	tableElementList := optTableElementList.(*parser.OpttableelementlistContext).Tableelementlist()
+	if tableElementList == nil {
+		return pkDefs
+	}
+
+	// Iterate through table elements to find constraints
+	for _, element := range tableElementList.(*parser.TableelementlistContext).AllTableelement() {
+		if tableConstraint := element.(*parser.TableelementContext).Tableconstraint(); tableConstraint != nil {
+			constraint, ok := tableConstraint.(*parser.TableconstraintContext)
+			if !ok {
+				continue
+			}
+
+			// Check if it's a primary key constraint
+			if constraint.Constraintelem() != nil {
+				elem, ok := constraint.Constraintelem().(*parser.ConstraintelemContext)
+				if !ok {
+					continue
+				}
+				if elem.PRIMARY() != nil && elem.KEY() != nil {
+					// Extract constraint name
+					constraintName := ""
+					if constraint.Name() != nil {
+						constraintName = pgparser.NormalizePostgreSQLName(constraint.Name())
+					}
+
+					if constraintName != "" {
+						pkDefs = append(pkDefs, &PrimaryKeyDefWithAST{
+							Name:    constraintName,
+							ASTNode: constraint,
+						})
+					}
+				}
+			}
+		}
+	}
+
+	return pkDefs
+}
+
+// extractUniqueKeyDefinitionsInOrder extracts unique key constraint definitions with their AST nodes
+func extractUniqueKeyDefinitionsInOrder(createStmt *parser.CreatestmtContext) []*UniqueKeyDefWithAST {
+	var ukDefs []*UniqueKeyDefWithAST
+
+	if createStmt == nil {
+		return ukDefs
+	}
+
+	// Navigate through the CREATE TABLE AST to find table constraints
+	optTableElementList := createStmt.Opttableelementlist()
+	if optTableElementList == nil {
+		return ukDefs
+	}
+
+	tableElementList := optTableElementList.(*parser.OpttableelementlistContext).Tableelementlist()
+	if tableElementList == nil {
+		return ukDefs
+	}
+
+	// Iterate through table elements to find constraints
+	for _, element := range tableElementList.(*parser.TableelementlistContext).AllTableelement() {
+		if tableConstraint := element.(*parser.TableelementContext).Tableconstraint(); tableConstraint != nil {
+			constraint, ok := tableConstraint.(*parser.TableconstraintContext)
+			if !ok {
+				continue
+			}
+
+			// Check if it's a unique constraint
+			if constraint.Constraintelem() != nil {
+				elem, ok := constraint.Constraintelem().(*parser.ConstraintelemContext)
+				if !ok {
+					continue
+				}
+				if elem.UNIQUE() != nil {
+					// Extract constraint name
+					constraintName := ""
+					if constraint.Name() != nil {
+						constraintName = pgparser.NormalizePostgreSQLName(constraint.Name())
+					}
+
+					if constraintName != "" {
+						ukDefs = append(ukDefs, &UniqueKeyDefWithAST{
+							Name:    constraintName,
+							ASTNode: constraint,
+						})
+					}
+				}
+			}
+		}
+	}
+
+	return ukDefs
+}
+
+// pkConstraintsEqual checks if two primary key constraints are equal
+func pkConstraintsEqual(a, b *storepb.IndexMetadata) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+
+	// Compare basic properties
+	if a.Name != b.Name || a.Primary != b.Primary {
+		return false
+	}
+
+	// Compare expressions (columns)
+	if len(a.Expressions) != len(b.Expressions) {
+		return false
+	}
+
+	for i := range a.Expressions {
+		if a.Expressions[i] != b.Expressions[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+// ukConstraintsEqual checks if two unique key constraints are equal
+func ukConstraintsEqual(a, b *storepb.IndexMetadata) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+
+	// Compare basic properties
+	if a.Name != b.Name || a.Unique != b.Unique || a.IsConstraint != b.IsConstraint {
+		return false
+	}
+
+	// Compare expressions (columns)
+	if len(a.Expressions) != len(b.Expressions) {
+		return false
+	}
+
+	for i := range a.Expressions {
+		if a.Expressions[i] != b.Expressions[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+// generatePrimaryKeyConstraintSDL generates SDL text for a primary key constraint
+func generatePrimaryKeyConstraintSDL(constraint *storepb.IndexMetadata) string {
+	if constraint == nil || !constraint.Primary {
+		return ""
+	}
+
+	var buf strings.Builder
+	err := writePrimaryKeyConstraintSDL(&buf, constraint)
+	if err != nil {
+		return ""
+	}
+	return buf.String()
+}
+
+// generateUniqueKeyConstraintSDL generates SDL text for a unique key constraint
+func generateUniqueKeyConstraintSDL(constraint *storepb.IndexMetadata) string {
+	if constraint == nil || !constraint.Unique || constraint.Primary || !constraint.IsConstraint {
+		return ""
+	}
+
+	var buf strings.Builder
+	err := writeUniqueKeyConstraintSDL(&buf, constraint)
+	if err != nil {
+		return ""
+	}
+	return buf.String()
+}
+
+// extendedIndexMetadata stores index metadata with table and schema context
+type extendedIndexMetadata struct {
+	*storepb.IndexMetadata
+	SchemaName string
+	TableName  string
+}
+
+// applyStandaloneIndexChangesToChunks applies minimal changes to standalone CREATE INDEX chunks
+// This handles creation, modification, and deletion of independent index statements
+func applyStandaloneIndexChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
+		return nil
+	}
+
+	// Get index differences by comparing schema metadata
+	currentMetadata := currentSchema.GetMetadata()
+	previousMetadata := previousSchema.GetMetadata()
+	if currentMetadata == nil || previousMetadata == nil {
+		return nil
+	}
+
+	// Build index maps for current and previous schemas
+	currentIndexes := make(map[string]*extendedIndexMetadata)
+	previousIndexes := make(map[string]*extendedIndexMetadata)
+
+	// Collect all standalone indexes from current schema (only non-constraint indexes)
+	for _, schema := range currentMetadata.Schemas {
+		for _, table := range schema.Tables {
+			for _, index := range table.Indexes {
+				// Only include standalone indexes (not constraints like PRIMARY KEY, UNIQUE CONSTRAINT)
+				if !index.IsConstraint && !index.Primary {
+					indexKey := formatIndexKey(schema.Name, index.Name)
+					// Store extended index metadata with table/schema context
+					extendedIndex := &extendedIndexMetadata{
+						IndexMetadata: index,
+						SchemaName:    schema.Name,
+						TableName:     table.Name,
+					}
+					currentIndexes[indexKey] = extendedIndex
+				}
+			}
+		}
+	}
+
+	// Collect all standalone indexes from previous schema
+	for _, schema := range previousMetadata.Schemas {
+		for _, table := range schema.Tables {
+			for _, index := range table.Indexes {
+				// Only include standalone indexes (not constraints)
+				if !index.IsConstraint && !index.Primary {
+					indexKey := formatIndexKey(schema.Name, index.Name)
+					extendedIndex := &extendedIndexMetadata{
+						IndexMetadata: index,
+						SchemaName:    schema.Name,
+						TableName:     table.Name,
+					}
+					previousIndexes[indexKey] = extendedIndex
+				}
+			}
+		}
+	}
+
+	// Process index additions: create new index chunks
+	for indexKey, currentIndex := range currentIndexes {
+		if _, exists := previousIndexes[indexKey]; !exists {
+			// New index - create a chunk for it
+			err := createIndexChunk(previousChunks, currentIndex, indexKey)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create index chunk for %s", indexKey)
+			}
+		}
+	}
+
+	// Process index modifications: update existing chunks
+	for indexKey, currentIndex := range currentIndexes {
+		if previousIndex, exists := previousIndexes[indexKey]; exists {
+			// Index exists in both - check if it needs modification
+			err := updateIndexChunkIfNeeded(previousChunks, currentIndex, previousIndex, indexKey)
+			if err != nil {
+				return errors.Wrapf(err, "failed to update index chunk for %s", indexKey)
+			}
+		}
+	}
+
+	// Process index deletions: remove dropped index chunks
+	for indexKey := range previousIndexes {
+		if _, exists := currentIndexes[indexKey]; !exists {
+			// Index was dropped - remove it from chunks
+			deleteIndexChunk(previousChunks, indexKey)
+		}
+	}
+
+	return nil
+}
+
+// formatIndexKey creates a consistent key for index identification
+func formatIndexKey(schemaName, indexName string) string {
+	if schemaName == "" {
+		schemaName = "public"
+	}
+	return schemaName + "." + indexName
+}
+
+// createIndexChunk creates a new CREATE INDEX chunk and adds it to the chunks
+func createIndexChunk(chunks *schema.SDLChunks, extIndex *extendedIndexMetadata, indexKey string) error {
+	if extIndex == nil || extIndex.IndexMetadata == nil || chunks == nil {
+		return nil
+	}
+
+	// Generate SDL text for the index
+	indexSDL := generateCreateIndexSDL(extIndex)
+	if indexSDL == "" {
+		return errors.New("failed to generate SDL for index")
+	}
+
+	// Parse the SDL to get AST node
+	parseResult, err := pgparser.ParsePostgreSQL(indexSDL)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse generated index SDL: %s", indexSDL)
+	}
+
+	// Extract the CREATE INDEX AST node
+	var indexASTNode *parser.IndexstmtContext
+	antlr.ParseTreeWalkerDefault.Walk(&indexExtractor{
+		result: &indexASTNode,
+	}, parseResult.Tree)
+
+	if indexASTNode == nil {
+		return errors.New("failed to extract CREATE INDEX AST node")
+	}
+
+	// Create and add the chunk
+	chunk := &schema.SDLChunk{
+		Identifier: indexKey,
+		ASTNode:    indexASTNode,
+	}
+
+	if chunks.Indexes == nil {
+		chunks.Indexes = make(map[string]*schema.SDLChunk)
+	}
+	chunks.Indexes[indexKey] = chunk
+
+	return nil
+}
+
+// updateIndexChunkIfNeeded updates an existing index chunk if the index definition has changed
+func updateIndexChunkIfNeeded(chunks *schema.SDLChunks, currentIndex, previousIndex *extendedIndexMetadata, indexKey string) error {
+	if currentIndex == nil || previousIndex == nil || chunks == nil {
+		return nil
+	}
+
+	// Check if the index definition has changed
+	if !indexDefinitionsEqual(currentIndex.IndexMetadata, previousIndex.IndexMetadata) {
+		// Index has changed - regenerate the chunk
+		err := createIndexChunk(chunks, currentIndex, indexKey)
+		if err != nil {
+			return errors.Wrapf(err, "failed to recreate index chunk for %s", indexKey)
+		}
+	}
+
+	return nil
+}
+
+// deleteIndexChunk removes an index chunk from the chunks
+func deleteIndexChunk(chunks *schema.SDLChunks, indexKey string) {
+	if chunks != nil && chunks.Indexes != nil {
+		delete(chunks.Indexes, indexKey)
+	}
+}
+
+// indexDefinitionsEqual compares two index definitions to see if they are equivalent
+func indexDefinitionsEqual(index1, index2 *storepb.IndexMetadata) bool {
+	if index1 == nil || index2 == nil {
+		return false
+	}
+
+	// Compare basic properties
+	if index1.Name != index2.Name ||
+		index1.Unique != index2.Unique ||
+		index1.Type != index2.Type ||
+		len(index1.Expressions) != len(index2.Expressions) ||
+		len(index1.Descending) != len(index2.Descending) {
+		return false
+	}
+
+	// Compare expressions
+	for i, expr := range index1.Expressions {
+		if i >= len(index2.Expressions) || expr != index2.Expressions[i] {
+			return false
+		}
+	}
+
+	// Compare descending flags
+	for i, desc := range index1.Descending {
+		if i >= len(index2.Descending) || desc != index2.Descending[i] {
+			return false
+		}
+	}
+
+	// Note: PostgreSQL IndexMetadata doesn't have a Where field in the current schema
+	// Index WHERE clauses are handled differently in the system
+	// For now, we'll consider indexes equal if all other fields match
+
+	return true
+}
+
+// generateCreateIndexSDL generates SDL text for a CREATE INDEX statement using writeIndexSDL
+func generateCreateIndexSDL(extIndex *extendedIndexMetadata) string {
+	if extIndex == nil || extIndex.IndexMetadata == nil {
+		return ""
+	}
+
+	var buf strings.Builder
+	schemaName := extIndex.SchemaName
+	if schemaName == "" {
+		schemaName = "public"
+	}
+
+	// Use the existing writeIndexSDL function from get_database_definition.go
+	if err := writeIndexSDL(&buf, schemaName, extIndex.TableName, extIndex.IndexMetadata); err != nil {
+		return ""
+	}
+
+	return buf.String()
+}
+
+// indexExtractor is a walker to extract CREATE INDEX AST nodes
+type indexExtractor struct {
+	parser.BasePostgreSQLParserListener
+	result **parser.IndexstmtContext
+}
+
+func (e *indexExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
+	if e.result != nil && *e.result == nil {
+		*e.result = ctx
+	}
 }
