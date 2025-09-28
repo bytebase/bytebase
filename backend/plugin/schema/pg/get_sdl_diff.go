@@ -183,26 +183,24 @@ func (l *sdlChunkExtractor) EnterCreatefunctionstmt(ctx *parser.Createfunctionst
 	}
 
 	// Parse schema and function name directly from parts
-	var schemaName, functionName string
+	var schemaName string
 	if len(funcNameParts) == 2 {
 		// Schema qualified: schema.function_name
 		schemaName = funcNameParts[0]
-		functionName = funcNameParts[1]
 	} else if len(funcNameParts) == 1 {
 		// Unqualified: function_name (assume public schema)
 		schemaName = "public"
-		functionName = funcNameParts[0]
 	} else {
 		// Unexpected format
 		return
 	}
 
-	if functionName == "" {
+	// Use the unified function signature extraction
+	signature := extractFunctionSignatureFromAST(ctx)
+	if signature == "" {
 		return
 	}
 
-	// Generate function signature with parameter types
-	signature := ExtractFunctionSignature(ctx, functionName)
 	schemaQualifiedSignature := schemaName + "." + signature
 
 	chunk := &schema.SDLChunk{
@@ -1687,6 +1685,12 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 		return errors.Wrap(err, "failed to apply standalone index changes")
 	}
 
+	// Process function changes: apply minimal changes to function chunks
+	err = applyFunctionChangesToChunks(previousChunks, currentSchema, previousSchema)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply function changes")
+	}
+
 	return nil
 }
 
@@ -2880,6 +2884,345 @@ type indexExtractor struct {
 }
 
 func (e *indexExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
+	if e.result != nil && *e.result == nil {
+		*e.result = ctx
+	}
+}
+
+// applyFunctionChangesToChunks applies minimal changes to CREATE FUNCTION chunks
+// This handles creation, modification, and deletion of function statements
+func applyFunctionChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
+	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
+		return nil
+	}
+
+	// Get function differences by comparing schema metadata
+	currentMetadata := currentSchema.GetMetadata()
+	previousMetadata := previousSchema.GetMetadata()
+	if currentMetadata == nil || previousMetadata == nil {
+		return nil
+	}
+
+	// Build function maps for current and previous schemas
+	currentFunctions := make(map[string]*storepb.FunctionMetadata)
+	previousFunctions := make(map[string]*storepb.FunctionMetadata)
+
+	// Collect all functions from current schema
+	for _, schema := range currentMetadata.Schemas {
+		for _, function := range schema.Functions {
+			functionKey := formatFunctionKey(schema.Name, function)
+			currentFunctions[functionKey] = function
+		}
+	}
+
+	// Collect all functions from previous schema
+	for _, schema := range previousMetadata.Schemas {
+		for _, function := range schema.Functions {
+			functionKey := formatFunctionKey(schema.Name, function)
+			previousFunctions[functionKey] = function
+		}
+	}
+
+	// Process function additions: create new function chunks
+	for functionKey, currentFunction := range currentFunctions {
+		if _, exists := previousFunctions[functionKey]; !exists {
+			// New function - create a chunk for it
+			err := createFunctionChunk(previousChunks, currentFunction, functionKey)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create function chunk for %s", functionKey)
+			}
+		}
+	}
+
+	// Process function modifications: update existing chunks
+	for functionKey, currentFunction := range currentFunctions {
+		if previousFunction, exists := previousFunctions[functionKey]; exists {
+			// Function exists in both - check if it needs modification
+			err := updateFunctionChunkIfNeeded(previousChunks, currentFunction, previousFunction, functionKey)
+			if err != nil {
+				return errors.Wrapf(err, "failed to update function chunk for %s", functionKey)
+			}
+		}
+	}
+
+	// Process function deletions: remove dropped function chunks
+	for functionKey := range previousFunctions {
+		if _, exists := currentFunctions[functionKey]; !exists {
+			// Function was dropped - remove it from chunks
+			deleteFunctionChunk(previousChunks, functionKey)
+		}
+	}
+
+	return nil
+}
+
+// formatFunctionKey creates a consistent key for function identification using the full signature
+func formatFunctionKey(schemaName string, function *storepb.FunctionMetadata) string {
+	if schemaName == "" {
+		schemaName = "public"
+	}
+
+	// Extract the function signature from the definition
+	signature := extractFunctionSignatureFromDefinition(function)
+	if signature == "" {
+		// Fallback to just the function name if signature extraction fails
+		signature = function.Name + "()"
+	}
+
+	return schemaName + "." + signature
+}
+
+// extractFunctionSignatureFromDefinition extracts the function signature from its definition
+func extractFunctionSignatureFromDefinition(function *storepb.FunctionMetadata) string {
+	if function == nil || function.Definition == "" {
+		return ""
+	}
+
+	// Parse the function definition to extract signature
+	parseResult, err := pgparser.ParsePostgreSQL(function.Definition)
+	if err != nil {
+		return ""
+	}
+
+	tree := parseResult.Tree
+
+	// Extract the CREATE FUNCTION node using a walker
+	var result *parser.CreatefunctionstmtContext
+	extractor := &functionExtractor{result: &result}
+	antlr.NewParseTreeWalker().Walk(extractor, tree)
+
+	if result == nil {
+		return ""
+	}
+
+	// Use the unified function signature extraction
+	return extractFunctionSignatureFromAST(result)
+}
+
+// extractFunctionSignatureFromAST extracts function signature from CREATE FUNCTION AST node
+// This is the unified function used by both chunk extraction and function comparison
+func extractFunctionSignatureFromAST(ctx *parser.CreatefunctionstmtContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	funcNameCtx := ctx.Func_name()
+	if funcNameCtx == nil {
+		return ""
+	}
+
+	// Extract function name using proper normalization
+	funcNameParts := pgparser.NormalizePostgreSQLFuncName(funcNameCtx)
+	if len(funcNameParts) == 0 {
+		return ""
+	}
+
+	// Get the function name (without schema)
+	var functionName string
+	if len(funcNameParts) == 2 {
+		// Schema qualified: schema.function_name
+		functionName = funcNameParts[1]
+	} else if len(funcNameParts) == 1 {
+		// Unqualified: function_name
+		functionName = funcNameParts[0]
+	} else {
+		// Unexpected format
+		return ""
+	}
+
+	if functionName == "" {
+		return ""
+	}
+
+	// Use the existing ExtractFunctionSignature function
+	return ExtractFunctionSignature(ctx, functionName)
+}
+
+// createFunctionChunk creates a new CREATE FUNCTION chunk and adds it to the chunks
+func createFunctionChunk(chunks *schema.SDLChunks, function *storepb.FunctionMetadata, functionKey string) error {
+	if function == nil || chunks == nil {
+		return nil
+	}
+
+	// Generate function SDL using the existing writeFunctionSDL function
+	sdl := generateCreateFunctionSDL(function)
+	if sdl == "" {
+		return errors.Errorf("failed to generate SDL for function %s", functionKey)
+	}
+
+	// Parse the SDL to get the AST node
+	astNode, err := extractFunctionASTFromSDL(sdl)
+	if err != nil {
+		return errors.Wrapf(err, "failed to extract AST from generated function SDL for %s", functionKey)
+	}
+
+	// Create the chunk
+	chunk := &schema.SDLChunk{
+		Identifier: functionKey,
+		ASTNode:    astNode,
+	}
+
+	// Ensure Functions map is initialized
+	if chunks.Functions == nil {
+		chunks.Functions = make(map[string]*schema.SDLChunk)
+	}
+
+	chunks.Functions[functionKey] = chunk
+	return nil
+}
+
+// updateFunctionChunkIfNeeded updates a function chunk if the definition has changed
+func updateFunctionChunkIfNeeded(chunks *schema.SDLChunks, currentFunction, previousFunction *storepb.FunctionMetadata, functionKey string) error {
+	if currentFunction == nil || previousFunction == nil || chunks == nil {
+		return nil
+	}
+
+	// Check if function definitions are different
+	if !functionDefinitionsEqual(currentFunction, previousFunction) {
+		// Function was modified - update the chunk
+		err := updateFunctionChunk(chunks, currentFunction, functionKey)
+		if err != nil {
+			return errors.Wrapf(err, "failed to update function chunk for %s", functionKey)
+		}
+	}
+
+	return nil
+}
+
+// updateFunctionChunk updates an existing function chunk with new definition
+func updateFunctionChunk(chunks *schema.SDLChunks, function *storepb.FunctionMetadata, functionKey string) error {
+	if function == nil || chunks == nil {
+		return nil
+	}
+
+	// Generate new function SDL
+	sdl := generateCreateFunctionSDL(function)
+	if sdl == "" {
+		return errors.Errorf("failed to generate SDL for function %s", functionKey)
+	}
+
+	// Parse the SDL to get the AST node
+	astNode, err := extractFunctionASTFromSDL(sdl)
+	if err != nil {
+		return errors.Wrapf(err, "failed to extract AST from generated function SDL for %s", functionKey)
+	}
+
+	// Update the existing chunk
+	if chunk := chunks.Functions[functionKey]; chunk != nil {
+		chunk.ASTNode = astNode
+	} else {
+		// Create new chunk if it doesn't exist
+		chunk := &schema.SDLChunk{
+			Identifier: functionKey,
+			ASTNode:    astNode,
+		}
+		chunks.Functions[functionKey] = chunk
+	}
+
+	return nil
+}
+
+// deleteFunctionChunk removes a function chunk from the chunks
+func deleteFunctionChunk(chunks *schema.SDLChunks, functionKey string) {
+	if chunks != nil && chunks.Functions != nil {
+		delete(chunks.Functions, functionKey)
+	}
+}
+
+// generateCreateFunctionSDL generates SDL for a CREATE FUNCTION statement
+func generateCreateFunctionSDL(function *storepb.FunctionMetadata) string {
+	if function == nil {
+		return ""
+	}
+
+	var buf strings.Builder
+	// Use the existing writeFunctionSDL function
+	if err := writeFunctionSDL(&buf, "", function); err != nil {
+		return ""
+	}
+
+	return buf.String()
+}
+
+// extractFunctionTextFromAST extracts normalized text from function AST node using token stream
+func extractFunctionTextFromAST(functionAST *parser.CreatefunctionstmtContext) string {
+	if functionAST == nil {
+		return ""
+	}
+
+	// Get tokens from the parser
+	if parser := functionAST.GetParser(); parser != nil {
+		if tokenStream := parser.GetTokenStream(); tokenStream != nil {
+			start := functionAST.GetStart()
+			stop := functionAST.GetStop()
+			if start != nil && stop != nil {
+				return tokenStream.GetTextFromTokens(start, stop)
+			}
+		}
+	}
+
+	// Fallback to GetText() if tokens are not available
+	return functionAST.GetText()
+}
+
+// functionDefinitionsEqual compares two function definitions to see if they are equivalent
+func functionDefinitionsEqual(function1, function2 *storepb.FunctionMetadata) bool {
+	if function1 == nil && function2 == nil {
+		return true
+	}
+	if function1 == nil || function2 == nil {
+		return false
+	}
+
+	// Compare function names
+	if function1.Name != function2.Name {
+		return false
+	}
+
+	// Compare function definitions (most important comparison)
+	definition1 := strings.TrimSpace(function1.Definition)
+	definition2 := strings.TrimSpace(function2.Definition)
+
+	// Normalize definitions for comparison
+	definition1 = strings.TrimSuffix(definition1, ";")
+	definition2 = strings.TrimSuffix(definition2, ";")
+
+	return definition1 == definition2
+}
+
+// extractFunctionASTFromSDL parses a function SDL and extracts the CREATE FUNCTION AST node
+func extractFunctionASTFromSDL(sdl string) (antlr.ParserRuleContext, error) {
+	if sdl == "" {
+		return nil, errors.New("empty SDL provided")
+	}
+
+	// Parse the SDL to get AST
+	parseResult, err := pgparser.ParsePostgreSQL(sdl)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse function SDL")
+	}
+
+	tree := parseResult.Tree
+
+	// Extract the CREATE FUNCTION node using a walker
+	var result *parser.CreatefunctionstmtContext
+	extractor := &functionExtractor{result: &result}
+	antlr.NewParseTreeWalker().Walk(extractor, tree)
+
+	if result == nil {
+		return nil, errors.New("no CREATE FUNCTION statement found in SDL")
+	}
+
+	return result, nil
+}
+
+// functionExtractor is a walker to extract CREATE FUNCTION AST nodes
+type functionExtractor struct {
+	parser.BasePostgreSQLParserListener
+	result **parser.CreatefunctionstmtContext
+}
+
+func (e *functionExtractor) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
 	if e.result != nil && *e.result == nil {
 		*e.result = ctx
 	}
