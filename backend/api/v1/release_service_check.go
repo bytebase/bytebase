@@ -436,7 +436,10 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	changeType storepb.PlanCheckRunConfig_ChangeDatabaseType,
 	statement string,
 ) (storepb.Advice_Status, []*v1pb.Advice, error) {
-	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+	})
 	if err != nil {
 		return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
 	}
@@ -444,7 +447,10 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
 			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to sync database schema for database %s", database.String())
 		}
-		dbSchema, err = s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+		dbSchema, err = s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			InstanceID:   database.InstanceID,
+			DatabaseName: database.DatabaseName,
+		})
 		if err != nil {
 			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
 		}

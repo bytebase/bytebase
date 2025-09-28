@@ -76,8 +76,7 @@ export const useDatabaseCatalogV1Store = defineStore(
           contextValues: createContextValues().set(silentContextKey, silent),
         })
         .then((res) => {
-          setCache(res);
-          return res;
+          return setCache(res);
         });
 
       return promise;

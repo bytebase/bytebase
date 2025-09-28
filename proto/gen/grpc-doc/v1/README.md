@@ -2551,9 +2551,10 @@ FunctionMetadata is the metadata for functions.
 | name | [string](#string) |  | The name of the database to retrieve metadata. Format: instances/{instance}/databases/{database}/metadata |
 | filter | [string](#string) |  | Filter is used to filter databases returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - schema: the schema name, support &#34;==&#34; operator. - table: the table name, support &#34;==&#34; operator.
+Supported filter: - schema: the schema name, support &#34;==&#34; operator. - table: the table name, support &#34;==&#34; and &#34;.matches()&#34; operator.
 
-For example: schema == &#34;schema-a&#34; table == &#34;table-a&#34; schema == &#34;schema-a&#34; &amp;&amp; table == &#34;table-a&#34; The filter used for a specific schema object such as &#34;schemas/schema-a/tables/table-a&#34;. The column masking level will only be returned when a table filter is used. |
+For example: schema == &#34;schema-a&#34; table == &#34;table-a&#34; table.matches(&#34;table-a&#34;) schema == &#34;schema-a&#34; &amp;&amp; table.matches(&#34;sample&#34;) The filter used to search table with wildcard &#34;sample&#34; in the schema &#34;schemas/schema-a&#34;. The column masking level will only be returned when a table filter is used. |
+| limit | [int32](#int32) |  | Limit the response size of returned table metadata per schema. For example, if the database has 3 schemas, and each schema has 100 tables, if limit is 20, then only 20 tables will be returned for each schema, total 60 tables. Default 0, means no limit. |
 
 
 

@@ -9,10 +9,7 @@ import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_ID, EMPTY_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
 import { GetDatabaseMetadataRequestSchema } from "@/types/proto-es/v1/database_service_pb";
-import type {
-  TableMetadata,
-  DatabaseMetadata,
-} from "@/types/proto-es/v1/database_service_pb";
+import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import {
   TableMetadataSchema,
   DatabaseMetadataSchema,
@@ -22,114 +19,79 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import { extractDatabaseResourceName } from "@/utils";
 
-type DatabaseMetadataCacheKey = [string /* database metadata resource name */];
-type TableMetadataCacheKey = [
+type DatabaseMetadataCacheKey = [
   string /* database metadata resource name */,
-  string /* schema */,
-  string /* table */,
+  string /* filter */,
+  number /* limit */,
 ];
 
 export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
   const cacheByName = useCache<DatabaseMetadataCacheKey, DatabaseMetadata>(
     "bb.db-schema.by-name"
   );
-  const tableRequestCacheByName = useCache<
-    TableMetadataCacheKey,
-    TableMetadata | undefined
-  >("bb.db-schema.table-metadata-by-name");
 
   // getCache try use cache.
-  const getCache = (name: string): DatabaseMetadata | undefined => {
+  const getCache = ({
+    name,
+    filter,
+    limit,
+  }: {
+    name: string;
+    filter: string;
+    limit: number;
+  }): DatabaseMetadata | undefined => {
     const metadataResourceName = ensureDatabaseMetadataResourceName(name);
-
-    const full = cacheByName.getEntity([metadataResourceName]);
-    if (full) {
-      return full;
-    }
-
-    const entity = cacheByName.getEntity([metadataResourceName]);
-    return entity;
+    return cacheByName.getEntity([metadataResourceName, filter, limit]);
   };
-  const getRequestCache = (
-    name: string
-  ): Promise<DatabaseMetadata> | undefined => {
+
+  const getRequestCache = ({
+    name,
+    filter,
+    limit,
+  }: {
+    name: string;
+    filter: string;
+    limit: number;
+  }): Promise<DatabaseMetadata> | undefined => {
     const metadataResourceName = ensureDatabaseMetadataResourceName(name);
-    const entity = cacheByName.getRequest([metadataResourceName]);
-    return entity;
+    return cacheByName.getRequest([metadataResourceName, filter, limit]);
   };
-  const setCache = (metadata: DatabaseMetadata) => {
-    cacheByName.setEntity([metadata.name], metadata);
+
+  const setCache = ({
+    metadata,
+    filter,
+    limit,
+  }: {
+    metadata: DatabaseMetadata;
+    filter: string;
+    limit: number;
+  }) => {
+    cacheByName.setEntity([metadata.name, filter, limit], metadata);
     return metadata;
   };
-  const setRequestCache = (
-    name: string,
-    promise: Promise<DatabaseMetadata>
-  ) => {
+
+  const setRequestCache = ({
+    name,
+    filter,
+    limit,
+    promise,
+  }: {
+    name: string;
+    filter: string;
+    limit: number;
+    promise: Promise<DatabaseMetadata>;
+  }) => {
     const metadataResourceName = ensureDatabaseMetadataResourceName(name);
-    cacheByName.setRequest([metadataResourceName], promise);
-  };
-  const mergeCache = (
-    metadata: DatabaseMetadata,
-    dropIfNotExist: boolean = false
-  ) => {
-    const existed = getCache(metadata.name);
-    if (!existed) {
-      return setCache(metadata);
-    }
-
-    for (const schema of metadata.schemas) {
-      const schemaIndex = existed.schemas.findIndex(
-        (s) => s.name === schema.name
-      );
-      if (schemaIndex < 0) {
-        existed.schemas.push(schema);
-        continue;
-      }
-      for (const table of schema.tables) {
-        const tableIndex = existed.schemas[schemaIndex].tables.findIndex(
-          (t) => t.name === table.name
-        );
-        if (tableIndex < 0) {
-          existed.schemas[schemaIndex].tables.push(table);
-        } else {
-          existed.schemas[schemaIndex].tables[tableIndex] = table;
-        }
-      }
-
-      dropCacheIfNotExist(
-        dropIfNotExist,
-        schema.tables,
-        existed.schemas[schemaIndex].tables
-      );
-    }
-
-    dropCacheIfNotExist(dropIfNotExist, metadata.schemas, existed.schemas);
-
-    return setCache(existed);
-  };
-
-  // drop old data if it not exists in the new data list.
-  const dropCacheIfNotExist = (
-    dropIfNotExist: boolean,
-    newList: { name: string }[],
-    oldList: { name: string }[]
-  ) => {
-    if (!dropIfNotExist) {
-      return;
-    }
-    let i = 0;
-    while (i < oldList.length) {
-      const index = newList.findIndex((s) => s.name === oldList[i].name);
-      if (index < 0) {
-        oldList.splice(i, 1);
-      } else {
-        i++;
-      }
-    }
+    cacheByName.setRequest([metadataResourceName, filter, limit], promise);
+    return promise;
   };
 
   const getDatabaseMetadataWithoutDefault = (database: string) =>
-    getCache(database);
+    getCache({
+      name: database,
+      filter: "",
+      limit: 0,
+    });
 
   /**
    *
@@ -153,8 +115,16 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     database: string;
     skipCache?: boolean;
     silent?: boolean;
+    limit?: number; // limit the number of returned tables per schema
+    filter?: string; // used to filter schema and table, e.g. schema == "public" && table.matches("user*")
   }) => {
-    const { database, skipCache = false, silent = false } = params;
+    const {
+      limit = 0,
+      filter = "",
+      database,
+      silent = false,
+      skipCache = false,
+    } = params;
     const { databaseName } = extractDatabaseResourceName(database);
     if (
       databaseName === String(UNKNOWN_ID) ||
@@ -167,16 +137,17 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
       });
     }
 
-    const metadataResourceName = ensureDatabaseMetadataResourceName(database);
-
     if (!skipCache) {
-      const existed = getCache(database);
+      const existed = getCache({ name: database, filter, limit });
       if (existed) {
         // The metadata entity is stored in local dictionary.
         return existed;
       }
-
-      const cachedRequest = getRequestCache(metadataResourceName);
+      const cachedRequest = getRequestCache({
+        name: database,
+        filter,
+        limit,
+      });
       if (cachedRequest) {
         // The request was sent but still not returned.
         // We won't create a duplicated request.
@@ -186,24 +157,27 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
 
     // Send a request and cache it.
     console.debug("[getOrFetchDatabaseMetadata]", {
-      name: metadataResourceName,
+      database,
+      limit,
+      filter,
     });
     const request = create(GetDatabaseMetadataRequestSchema, {
-      name: metadataResourceName,
+      name: ensureDatabaseMetadataResourceName(database),
+      limit,
+      filter,
     });
-    const promise = databaseServiceClientConnect.getDatabaseMetadata(request, {
-      contextValues: createContextValues().set(silentContextKey, silent),
-    }); // Work directly with proto-es types
-    setRequestCache(metadataResourceName, promise);
-    promise.then((res) => {
-      mergeCache(res, true);
-    });
-
-    return promise;
+    const promise = databaseServiceClientConnect
+      .getDatabaseMetadata(request, {
+        contextValues: createContextValues().set(silentContextKey, silent),
+      })
+      .then((res) => {
+        return setCache({ metadata: res, filter, limit });
+      });
+    return setRequestCache({ name: database, filter, limit, promise });
   };
 
   const getSchemaList = (database: string) => {
-    return getCache(database)?.schemas ?? [];
+    return getDatabaseMetadataWithoutDefault(database)?.schemas ?? [];
   };
 
   const getSchemaMetadata = ({
@@ -226,7 +200,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     database: string;
     schema?: string;
   }) => {
-    const databaseMetadata = getCache(database);
+    const databaseMetadata = getDatabaseMetadataWithoutDefault(database);
     if (!databaseMetadata) {
       return [];
     }
@@ -259,13 +233,11 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     database,
     schema,
     table,
-    skipCache = false,
     silent = false,
   }: {
     database: string;
     schema: string;
     table: string;
-    skipCache?: boolean;
     silent?: boolean;
   }) => {
     const { databaseName } = extractDatabaseResourceName(database);
@@ -278,47 +250,15 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
       });
     }
 
-    const metadataResourceName = ensureDatabaseMetadataResourceName(database);
-
-    if (!skipCache) {
-      const existedTable = getTableMetadata({ database, table, schema });
-      if (existedTable && existedTable.columns.length > 0) {
-        return existedTable;
-      }
-
-      const existedRequest = tableRequestCacheByName.getRequest([
-        metadataResourceName,
-        schema,
-        table,
-      ]);
-      if (existedRequest) {
-        return existedRequest;
-      }
-    }
-
-    console.debug("[getOrFetchDatabaseMetadata]", {
-      name: metadataResourceName,
+    return getOrFetchDatabaseMetadata({
+      database,
+      silent,
       filter: `schema == "${schema}" && table == "${table}"`,
+    }).then((res) => {
+      return res.schemas
+        .find((s) => s.name === schema)
+        ?.tables.find((t) => t.name === table);
     });
-    const request = create(GetDatabaseMetadataRequestSchema, {
-      name: metadataResourceName,
-      filter: `schema == "${schema}" && table == "${table}"`,
-    });
-    const promise = databaseServiceClientConnect
-      .getDatabaseMetadata(request, {
-        contextValues: createContextValues().set(silentContextKey, silent),
-      })
-      .then((res) => mergeCache(res))
-      .then((res) => {
-        return res.schemas
-          .find((s) => s.name === schema)
-          ?.tables.find((t) => t.name === table);
-      });
-    tableRequestCacheByName.setRequest(
-      [metadataResourceName, schema, table],
-      promise
-    );
-    return promise;
   };
 
   const getExternalTableList = ({
@@ -328,7 +268,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     database: string;
     schema?: string;
   }) => {
-    const databaseMetadata = getCache(database);
+    const databaseMetadata = getDatabaseMetadataWithoutDefault(database);
     if (!databaseMetadata) {
       return [];
     }
@@ -363,7 +303,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     database: string,
     schema?: string
   ) => {
-    if (!getCache(database)) {
+    if (!getDatabaseMetadataWithoutDefault(database)) {
       await getOrFetchDatabaseMetadata({ database });
     }
     return getExternalTableList({ database, schema });
@@ -376,7 +316,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     database: string;
     schema?: string;
   }) => {
-    const databaseMetadata = getCache(database);
+    const databaseMetadata = getDatabaseMetadataWithoutDefault(database);
     if (!databaseMetadata) {
       return [];
     }
@@ -406,7 +346,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
   };
 
   const getExtensionList = (database: string) => {
-    const databaseMetadata = getCache(database);
+    const databaseMetadata = getDatabaseMetadataWithoutDefault(database);
     if (!databaseMetadata) {
       return [];
     }
@@ -421,7 +361,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     database: string;
     schema?: string;
   }) => {
-    const databaseMetadata = getCache(database);
+    const databaseMetadata = getDatabaseMetadataWithoutDefault(database);
     if (!databaseMetadata) {
       return [];
     }
@@ -435,15 +375,11 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
 
   const removeCache = (name: string) => {
     const metadataResourceName = ensureDatabaseMetadataResourceName(name);
-    cacheByName.invalidateEntity([metadataResourceName]);
-    cacheByName.invalidateEntity([metadataResourceName]);
-    Array.from(tableRequestCacheByName.requestCacheMap.values()).forEach(
-      (cache) => {
-        if (cache.keys[0] === metadataResourceName) {
-          tableRequestCacheByName.invalidateRequest(cache.keys);
-        }
+    Array.from(cacheByName.requestCacheMap.values()).forEach((cache) => {
+      if (cache.keys[0] === metadataResourceName) {
+        cacheByName.invalidateRequest(cache.keys);
       }
-    );
+    });
   };
 
   return {

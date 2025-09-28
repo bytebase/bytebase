@@ -720,19 +720,44 @@ func getDatabaseMetadataFilter(filter string) (*metadataFilter, error) {
 					}
 				}
 				return nil
+			case celoverloads.Matches:
+				variable := expr.AsCall().Target().AsIdent()
+				if variable != "table" {
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %v", variable))
+				}
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid args for %q`, variable))
+				}
+				value := args[0].AsLiteral().Value()
+				strValue, ok := value.(string)
+				if !ok {
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect string, got %T, hint: filter literals should be string", value))
+				}
+				metaFilter.table = &tableMetadataFilter{
+					name:     strings.ToLower(strValue),
+					wildcard: true,
+				}
+				return nil
 			case celoperators.Equals:
 				variable, value := getVariableAndValueFromExpr(expr)
-				stringVal, ok := value.(string)
+				if variable != "schema" {
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %v", variable))
+				}
+				strValue, ok := value.(string)
 				if !ok {
 					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected string but found %q", value))
 				}
 				switch variable {
 				case "schema":
-					metaFilter.schema = &stringVal
+					lowerValue := strings.ToLower(strValue)
+					metaFilter.schema = &lowerValue
 				case "table":
-					metaFilter.table = &stringVal
+					metaFilter.table = &tableMetadataFilter{
+						name: strings.ToLower(strValue),
+					}
 				default:
-					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected variable %v", variable))
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %v", variable))
 				}
 				return nil
 			default:
@@ -763,7 +788,10 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, req *connect.
 	if database.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q was deleted", name))
 	}
-	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
 	}
@@ -771,7 +799,10 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, req *connect.
 		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to sync database schema for database %q, error %v", name, err))
 		}
-		newDBSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+		newDBSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			InstanceID:   database.InstanceID,
+			DatabaseName: database.DatabaseName,
+		})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
 		}
@@ -785,7 +816,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, req *connect.
 	if err != nil {
 		return nil, err
 	}
-	v1pbMetadata := convertStoreDatabaseMetadata(dbSchema.GetMetadata(), filter)
+	v1pbMetadata := convertStoreDatabaseMetadata(dbSchema.GetMetadata(), filter, int(req.Msg.Limit))
 	v1pbMetadata.Name = fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix)
 
 	return connect.NewResponse(v1pbMetadata), nil
@@ -815,7 +846,10 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, req *connect.Re
 	if database == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseName))
 	}
-	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
 	}
@@ -823,7 +857,10 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, req *connect.Re
 		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to sync database schema for database %q, error %v", databaseName, err))
 		}
-		newDBSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+		newDBSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			InstanceID:   database.InstanceID,
+			DatabaseName: database.DatabaseName,
+		})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
 		}
@@ -974,7 +1011,10 @@ func (s *DatabaseService) getSourceDBSchema(ctx context.Context, request *v1pb.D
 		}
 
 		// Fallback to current database schema if no sync history
-		dbSchema, err := s.store.GetDBSchema(ctx, instanceID, databaseName)
+		dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			InstanceID:   instanceID,
+			DatabaseName: databaseName,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -989,7 +1029,10 @@ func (s *DatabaseService) getSourceDBSchema(ctx context.Context, request *v1pb.D
 		return nil, err
 	}
 
-	dbSchema, err := s.store.GetDBSchema(ctx, instanceID, databaseName)
+	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		InstanceID:   instanceID,
+		DatabaseName: databaseName,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -1048,7 +1091,10 @@ func (s *DatabaseService) getTargetDBSchema(ctx context.Context, request *v1pb.D
 		}
 
 		// Fallback to current database schema if no sync history
-		dbSchema, err := s.store.GetDBSchema(ctx, instanceID, databaseName)
+		dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			InstanceID:   instanceID,
+			DatabaseName: databaseName,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -1270,9 +1316,14 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 	}, nil
 }
 
+type tableMetadataFilter struct {
+	name     string
+	wildcard bool
+}
+
 type metadataFilter struct {
-	schema *string
-	table  *string
+	schema *string // exact match
+	table  *tableMetadataFilter
 }
 
 func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Request[v1pb.GetSchemaStringRequest]) (*connect.Response[v1pb.GetSchemaStringResponse], error) {
@@ -1289,7 +1340,10 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", database.InstanceID))
 	}
 
-	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("Failed to get database schema: %v", err))
 	}

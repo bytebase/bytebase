@@ -128,7 +128,10 @@ func (e *StatementAdviseExecutor) runReview(
 	statement string,
 	enablePriorBackup bool,
 ) ([]*storepb.PlanCheckRunResult_Result, error) {
-	dbSchema, err := e.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+	dbSchema, err := e.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+	})
 	if err != nil {
 		return nil, err
 	}

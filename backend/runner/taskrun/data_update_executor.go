@@ -361,7 +361,10 @@ func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) parserbase.GetData
 		if database == nil {
 			return "", nil, nil
 		}
-		databaseMetadata, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+		databaseMetadata, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			InstanceID:   instanceID,
+			DatabaseName: databaseName,
+		})
 		if err != nil {
 			return "", nil, err
 		}

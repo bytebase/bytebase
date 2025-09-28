@@ -359,7 +359,10 @@ func replaceBackupTableWithSource(ctx context.Context, stores *store.Store, inst
 			return nil
 		}
 	}
-	dbSchema, err := stores.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+	dbSchema, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+	})
 	if err != nil {
 		return err
 	}
@@ -654,7 +657,10 @@ func queryRetry(
 }
 
 func getCosmosDBContainerObjectSchema(ctx context.Context, stores *store.Store, instanceID string, databaseName string, containerName string) (*storepb.ObjectSchema, error) {
-	dbSchema, err := stores.GetDBSchema(ctx, instanceID, databaseName)
+	dbSchema, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		InstanceID:   instanceID,
+		DatabaseName: databaseName,
+	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database schema: %q", databaseName)
 	}
@@ -1262,7 +1268,10 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 		}
 		var linkedMeta *model.LinkedDatabaseMetadata
 		for _, database := range databases {
-			meta, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+			meta, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+				InstanceID:   database.InstanceID,
+				DatabaseName: database.DatabaseName,
+			})
 			if err != nil {
 				return "", "", nil, err
 			}
@@ -1307,7 +1316,10 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 			return "", "", nil, nil
 		}
 		// Get the linked database metadata.
-		linkedDatabaseMetadata, err := storeInstance.GetDBSchema(ctx, linkedDatabase.InstanceID, linkedDatabase.DatabaseName)
+		linkedDatabaseMetadata, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			InstanceID:   linkedDatabase.InstanceID,
+			DatabaseName: linkedDatabase.DatabaseName,
+		})
 		if err != nil {
 			return "", "", nil, err
 		}
@@ -1330,7 +1342,10 @@ func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) parserbase.GetData
 		if database == nil {
 			return "", nil, nil
 		}
-		databaseMetadata, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+		databaseMetadata, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			InstanceID:   instanceID,
+			DatabaseName: databaseName,
+		})
 		if err != nil {
 			return "", nil, err
 		}
@@ -1658,7 +1673,10 @@ func (s *SQLService) SQLReviewCheck(
 		return storepb.Advice_SUCCESS, nil, nil
 	}
 
-	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+	dbSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+	})
 	if err != nil {
 		return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
 	}
@@ -1666,7 +1684,10 @@ func (s *SQLService) SQLReviewCheck(
 		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
 			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to sync database schema for database %s", database.String())
 		}
-		dbSchema, err = s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+		dbSchema, err = s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			InstanceID:   database.InstanceID,
+			DatabaseName: database.DatabaseName,
+		})
 		if err != nil {
 			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
 		}
