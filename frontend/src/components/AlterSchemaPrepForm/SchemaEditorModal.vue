@@ -240,7 +240,7 @@ const prepareDatabaseMetadata = async () => {
       dbSchemaStore.getOrFetchDatabaseMetadata({
         database: database.name,
         skipCache: true,
-        limit: 1,
+        limit: 500,
       }),
       dbCatalogStore.getOrFetchDatabaseCatalog({
         database: database.name,
