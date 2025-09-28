@@ -119,7 +119,6 @@
             column.name.includes(props.searchPattern.trim())
         "
         :disable-alter-column="disableAlterColumn"
-        :get-column-item-computed-class-list="getColumnItemComputedClassList"
         :show-database-catalog-column="false"
         @drop="handleDropColumn"
         @restore="handleRestoreColumn"
@@ -322,20 +321,24 @@ const metadataForColumn = (column: ColumnMetadata) => {
     column,
   };
 };
+
 const statusForSchema = () => {
   return getSchemaStatus(props.db, {
     schema: props.schema,
   });
 };
+
 const statusForTable = () => {
   return getTableStatus(props.db, {
     schema: props.schema,
     table: props.table,
   });
 };
+
 const statusForColumn = (column: ColumnMetadata) => {
   return getColumnStatus(props.db, metadataForColumn(column));
 };
+
 const markColumnStatus = (column: ColumnMetadata, status: EditStatus) => {
   markEditStatus(props.db, metadataForColumn(column), status);
 };
@@ -347,10 +350,6 @@ const isDroppedSchema = computed(() => {
 const isDroppedTable = computed(() => {
   return statusForTable() === "dropped";
 });
-
-const getColumnItemComputedClassList = (column: ColumnMetadata): string => {
-  return statusForColumn(column);
-};
 
 const isDroppedColumn = (column: ColumnMetadata): boolean => {
   return statusForColumn(column) === "dropped";

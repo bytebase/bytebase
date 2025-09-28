@@ -741,9 +741,6 @@ func getDatabaseMetadataFilter(filter string) (*metadataFilter, error) {
 				return nil
 			case celoperators.Equals:
 				variable, value := getVariableAndValueFromExpr(expr)
-				if variable != "schema" {
-					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %v", variable))
-				}
 				strValue, ok := value.(string)
 				if !ok {
 					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected string but found %q", value))

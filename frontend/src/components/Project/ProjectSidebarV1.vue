@@ -56,7 +56,7 @@ const onSelect = (item: SidebarItem, e: MouseEvent | undefined) => {
   if (e?.ctrlKey || e?.metaKey) {
     window.open(route.fullPath, "_blank");
   } else {
-    router.replace(route);
+    router.push(route);
   }
 };
 </script>

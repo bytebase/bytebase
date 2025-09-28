@@ -242,7 +242,6 @@ const context = useSchemaEditorContext();
 const {
   readonly,
   selectionEnabled,
-  disableDiffColoring,
   events,
   addTab,
   getSchemaStatus,
@@ -286,15 +285,7 @@ const allowCreateTable = computed(() => {
 
 const schemaSelectorOptionList = computed(() => {
   const optionList = [];
-  const schemas = disableDiffColoring.value
-    ? props.database.schemas.filter((schema) => {
-        const status = getSchemaStatus(props.db, {
-          schema,
-        });
-        return status !== "dropped";
-      })
-    : props.database.schemas;
-  for (const schema of schemas) {
+  for (const schema of props.database.schemas) {
     optionList.push({
       label: schema.name,
       value: schema.name,

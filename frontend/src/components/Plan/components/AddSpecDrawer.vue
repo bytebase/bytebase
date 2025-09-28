@@ -106,12 +106,11 @@
             <div class="relative h-[600px]">
               <MaskSpinner v-if="isPreparingMetadata" />
               <SchemaEditorLite
-                ref="schemaEditorRef"
                 v-if="schemaEditTargets.length > 0"
+                ref="schemaEditorRef"
                 :project="project"
                 :targets="schemaEditTargets"
                 :loading="isPreparingMetadata"
-                :diff-when-ready="false"
                 :hide-preview="false"
               />
             </div>
@@ -397,15 +396,17 @@ const prepareDatabaseMetadata = async () => {
 
     const database = databaseV1Store.getDatabaseByName(databaseName);
 
-    const metadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
-      database: database.name,
-      skipCache: true,
-    });
-
-    const catalog = await dbCatalogStore.getOrFetchDatabaseCatalog({
-      database: database.name,
-      skipCache: true,
-    });
+    const [metadata, catalog] = await Promise.all([
+      dbSchemaStore.getOrFetchDatabaseMetadata({
+        database: database.name,
+        skipCache: true,
+        limit: 500,
+      }),
+      dbCatalogStore.getOrFetchDatabaseCatalog({
+        database: database.name,
+        skipCache: true,
+      }),
+    ]);
 
     schemaEditTargets.value = [
       {
@@ -456,7 +457,7 @@ const handlePreviewDDL = async () => {
     const refreshPreview = schemaEditorRef.value?.refreshPreview;
 
     if (typeof applyMetadataEdit === "function") {
-      const { database, metadata, catalog, baselineMetadata, baselineCatalog } =
+      const { database, metadata, baselineMetadata, catalog, baselineCatalog } =
         target;
       applyMetadataEdit(database, metadata, catalog);
 
@@ -521,8 +522,8 @@ const handleConfirm = async () => {
         const {
           database,
           metadata,
-          catalog,
           baselineMetadata,
+          catalog,
           baselineCatalog,
         } = target;
         applyMetadataEdit(database, metadata, catalog);

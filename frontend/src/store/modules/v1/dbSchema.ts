@@ -250,6 +250,11 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
       });
     }
 
+    const tableMetadata = getTableMetadata({ database, schema, table });
+    if (tableMetadata.name === table) {
+      return tableMetadata;
+    }
+
     return getOrFetchDatabaseMetadata({
       database,
       silent,

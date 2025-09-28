@@ -423,7 +423,6 @@ const table = computedAsync(
       database: databaseName,
       schema: schemaName,
       table: tableName,
-      skipCache: true,
       silent: false,
     });
   },

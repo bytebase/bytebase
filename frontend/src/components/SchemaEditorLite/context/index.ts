@@ -2,9 +2,10 @@ import Emittery from "emittery";
 import type { Ref } from "vue";
 import { inject, provide, computed } from "vue";
 import { supportSetClassificationFromComment } from "@/components/ColumnDataTable/utils";
-import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import type { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import type { RebuildMetadataEditReset } from "../algorithm/rebuild";
 import type { EditTarget, RolloutObject } from "../types";
 import { useEditCatalogs } from "./config";
@@ -23,6 +24,7 @@ export type SchemaEditorEvents = Emittery<{
   ["rebuild-edit-status"]: { resets: RebuildMetadataEditReset[] };
   ["clear-tabs"]: undefined;
   ["refresh-preview"]: undefined;
+  ["merge-metadata"]: DatabaseMetadata[];
 }>;
 
 export type SchemaEditorOptions = {
@@ -33,32 +35,29 @@ export type SchemaEditorOptions = {
 export const provideSchemaEditorContext = (params: {
   readonly: Ref<boolean>;
   project: Ref<Project>;
-  classificationConfigId: Ref<string | undefined>;
+  classificationConfig: Ref<DataClassificationConfig | undefined>;
   targets: Ref<EditTarget[]>;
   selectedRolloutObjects: Ref<RolloutObject[] | undefined>;
-  disableDiffColoring: Ref<boolean>;
   hidePreview: Ref<boolean>;
   options?: Ref<SchemaEditorOptions>;
 }) => {
   const events = new Emittery() as SchemaEditorEvents;
-  const classificationConfig = computed(() => {
-    if (!params.classificationConfigId.value) {
-      return;
-    }
-    return useSettingV1Store().getProjectClassification(
-      params.classificationConfigId.value
-    );
-  });
 
   const context = {
     events,
     ...params,
     ...useTabs(events),
     ...useEditStatus(),
-    ...useEditCatalogs(params.targets),
+    ...useEditCatalogs(
+      computed(() =>
+        params.targets.value.map((target) => ({
+          database: target.database.name,
+          catalog: target.catalog,
+        }))
+      )
+    ),
     ...useScrollStatus(),
     ...useSelection(params.selectedRolloutObjects, events),
-    classificationConfig,
     showClassificationColumn: (
       engine: Engine,
       classificationFromConfig: boolean

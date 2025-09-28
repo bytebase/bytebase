@@ -259,10 +259,9 @@ const targets = computed(() => {
 const context = provideSchemaEditorContext({
   targets,
   project: ref(unknownProject()),
-  classificationConfigId: ref(classificationConfig.value?.id),
+  classificationConfig,
   readonly: toRef(props, "readonly"),
   selectedRolloutObjects: ref(undefined),
-  disableDiffColoring: ref(true),
   hidePreview: ref(false),
 });
 

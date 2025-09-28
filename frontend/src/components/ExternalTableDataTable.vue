@@ -7,6 +7,7 @@
     :virtual-scroll="true"
     :striped="true"
     :bordered="true"
+    :loading="loading"
     :row-key="
       (ex: ExternalTableMetadata) => `${database.name}.${schemaName}.${ex.name}`
     "
@@ -21,12 +22,12 @@
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
-import type { PropType } from "vue";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { HighlightLabelText } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
 import type { ExternalTableMetadata } from "@/types/proto-es/v1/database_service_pb";
 import ExternalTableDetailDrawer from "./ExternalTableDetailDrawer.vue";
@@ -35,25 +36,20 @@ type LocalState = {
   selectedTableName?: string;
 };
 
-const props = defineProps({
-  database: {
-    required: true,
-    type: Object as PropType<ComposedDatabase>,
-  },
-  schemaName: {
-    type: String,
-    default: "",
-  },
-  externalTableList: {
-    required: true,
-    type: Object as PropType<ExternalTableMetadata[]>,
+const props = withDefaults(
+  defineProps<{
+    database: ComposedDatabase;
+    schemaName?: string;
+    externalTableList: ExternalTableMetadata[];
+    search?: string;
+    loading?: boolean;
+  }>(),
+  {
     schemaName: "",
-  },
-  search: {
-    type: String,
-    default: "",
-  },
-});
+    search: "",
+    loading: false,
+  }
+);
 
 const { t } = useI18n();
 const state = reactive<LocalState>({});
@@ -64,21 +60,31 @@ const columns = computed(() => {
       key: "name",
       title: t("common.name"),
       render: (row) => {
-        return row.name;
+        return <HighlightLabelText keyword={props.search} text={row.name} />;
       },
     },
     {
       key: "name",
       title: t("database.external-server-name"),
       render: (row) => {
-        return row.externalServerName;
+        return (
+          <HighlightLabelText
+            keyword={props.search}
+            text={row.externalServerName}
+          />
+        );
       },
     },
     {
       key: "name",
       title: t("database.external-database-name"),
       render: (row) => {
-        return row.externalDatabaseName;
+        return (
+          <HighlightLabelText
+            keyword={props.search}
+            text={row.externalDatabaseName}
+          />
+        );
       },
     },
   ] as DataTableColumn<ExternalTableMetadata>[];
@@ -87,13 +93,9 @@ const columns = computed(() => {
 const filteredData = computed(() => {
   return props.externalTableList.filter((row) => {
     return (
-      row.name.toLowerCase().includes(props.search.toLowerCase()) ||
-      row.externalServerName
-        .toLowerCase()
-        .includes(props.search.toLowerCase()) ||
-      row.externalDatabaseName
-        .toLowerCase()
-        .includes(props.search.toLowerCase())
+      row.name.toLowerCase().includes(props.search) ||
+      row.externalServerName.toLowerCase().includes(props.search) ||
+      row.externalDatabaseName.toLowerCase().includes(props.search)
     );
   });
 });

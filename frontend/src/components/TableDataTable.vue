@@ -10,6 +10,7 @@
     "
     :striped="true"
     :bordered="true"
+    :loading="loading"
   />
 
   <TableDetailDrawer
@@ -25,15 +26,15 @@
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
-import type { PropType } from "vue";
-import { computed, h, onMounted, reactive, watch } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import { updateTableCatalog } from "@/components/ColumnDataTable/utils";
+import { HighlightLabelText } from "@/components/v2";
 import {
   featureToRef,
   getTableCatalog,
@@ -51,24 +52,20 @@ type LocalState = {
   selectedTableName?: string;
 };
 
-const props = defineProps({
-  database: {
-    required: true,
-    type: Object as PropType<ComposedDatabase>,
-  },
-  schemaName: {
-    type: String,
-    default: "",
-  },
-  tableList: {
-    required: true,
-    type: Object as PropType<TableMetadata[]>,
-  },
-  search: {
-    type: String,
-    default: "",
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    database: ComposedDatabase;
+    schemaName?: string;
+    tableList: TableMetadata[];
+    search?: string;
+    loading?: boolean;
+  }>(),
+  {
+    schemaName: "",
+    search: "",
+    loading: false,
+  }
+);
 
 const { t } = useI18n();
 const route = useRoute();
@@ -140,7 +137,7 @@ const columns = computed(() => {
         tooltip: true,
       },
       render: (row) => {
-        return row.name;
+        return <HighlightLabelText keyword={props.search} text={row.name} />;
       },
     },
     {
@@ -163,12 +160,14 @@ const columns = computed(() => {
           props.schemaName,
           table.name
         );
-        return h(ClassificationCell, {
-          classification: tableCatalog.classification,
-          classificationConfig: classificationConfig.value,
-          engine: engine.value,
-          onApply: (id: string) => onClassificationIdApply(table.name, id),
-        });
+        return (
+          <ClassificationCell
+            classification={tableCatalog?.classification}
+            classificationConfig={classificationConfig.value}
+            engine={engine.value}
+            onApply={(id: string) => onClassificationIdApply(table.name, id)}
+          />
+        );
       },
     },
     {
@@ -228,7 +227,7 @@ const mixedTableList = computed(() => {
   const tableList = props.tableList;
   if (props.search) {
     return tableList.filter((table) => {
-      return table.name.toLowerCase().includes(props.search.toLowerCase());
+      return table.name.toLowerCase().includes(props.search);
     });
   }
   return tableList;

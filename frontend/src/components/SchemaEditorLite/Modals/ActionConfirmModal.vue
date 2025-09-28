@@ -22,31 +22,24 @@
 <script lang="ts" setup>
 import type { ButtonProps } from "naive-ui";
 import { NButton } from "naive-ui";
-import type { PropType } from "vue";
 import { BBModal } from "@/bbkit";
 
-const props = defineProps({
-  show: {
-    type: Boolean,
-    default: true,
-  },
-  title: {
-    type: String,
-    default: "",
-  },
-  description: {
-    type: String,
-    default: "",
-  },
-  negativeButtonProps: {
-    type: Object as PropType<ButtonProps>,
-    default: () => ({ quaternary: true }),
-  },
-  positiveButtonProps: {
-    type: Object as PropType<ButtonProps>,
-    default: () => ({ type: "primary" }),
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    show: boolean;
+    title: string;
+    description: string;
+    negativeButtonProps?: ButtonProps;
+    positiveButtonProps?: ButtonProps;
+  }>(),
+  {
+    show: true,
+    title: "",
+    description: "",
+    negativeButtonProps: () => ({ quaternary: true }),
+    positiveButtonProps: () => ({ type: "primary" }),
+  }
+);
 
 const emit = defineEmits<{
   (event: "close"): void;

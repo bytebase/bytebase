@@ -260,15 +260,6 @@ export const useBuildTree = () => {
     database: DatabaseMetadata,
     parent: TreeNodeForDatabase | undefined
   ) => {
-    if (context.disableDiffColoring.value) {
-      schemas = schemas.filter((schema) => {
-        const status = context.getSchemaStatus(db, {
-          schema,
-        });
-        return status !== "dropped";
-      });
-    }
-
     const mapSchemaChildrenNodes = (
       schema: SchemaMetadata,
       parent: TreeNodeForSchema | TreeNodeForDatabase | undefined
@@ -415,16 +406,6 @@ export const useBuildTree = () => {
     map: Map<string, TreeNode>,
     parent: TreeNodeForGroup<"table">
   ) => {
-    if (context.disableDiffColoring.value) {
-      tables = tables.filter((table) => {
-        const status = context.getTableStatus(parent.db, {
-          ...parent.metadata,
-          table,
-        });
-        return status !== "dropped";
-      });
-    }
-
     return tables.map((table) => {
       const { db } = parent;
       const metadata = {
@@ -456,16 +437,6 @@ export const useBuildTree = () => {
     map: Map<string, TreeNode>,
     parent: TreeNodeForGroup<"view">
   ) => {
-    if (context.disableDiffColoring.value) {
-      views = views.filter((view) => {
-        const status = context.getViewStatus(parent.db, {
-          ...parent.metadata,
-          view,
-        });
-        return status !== "dropped";
-      });
-    }
-
     return views.map((view) => {
       const { db } = parent;
       const metadata = {
@@ -492,16 +463,6 @@ export const useBuildTree = () => {
     map: Map<string, TreeNode>,
     parent: TreeNodeForGroup<"procedure">
   ) => {
-    if (context.disableDiffColoring.value) {
-      procedures = procedures.filter((procedure) => {
-        const status = context.getProcedureStatus(parent.db, {
-          ...parent.metadata,
-          procedure,
-        });
-        return status !== "dropped";
-      });
-    }
-
     return procedures.map((procedure) => {
       const { db } = parent;
       const metadata = {
@@ -528,16 +489,6 @@ export const useBuildTree = () => {
     map: Map<string, TreeNode>,
     parent: TreeNodeForGroup<"function">
   ) => {
-    if (context.disableDiffColoring.value) {
-      functions = functions.filter((func) => {
-        const status = context.getFunctionStatus(parent.db, {
-          ...parent.metadata,
-          function: func,
-        });
-        return status !== "dropped";
-      });
-    }
-
     return functions.map((func) => {
       const { db } = parent;
       const metadata = {
@@ -564,16 +515,6 @@ export const useBuildTree = () => {
     map: Map<string, TreeNode>,
     parent: TreeNodeForTable
   ) => {
-    if (context.disableDiffColoring.value) {
-      columns = columns.filter((column) => {
-        const status = context.getColumnStatus(parent.db, {
-          ...parent.metadata,
-          column,
-        });
-        return status !== "dropped";
-      });
-    }
-
     return columns.map((column) => {
       const { db } = parent;
       const metadata = {

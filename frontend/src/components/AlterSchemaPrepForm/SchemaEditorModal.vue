@@ -12,15 +12,9 @@
     container-class="h-full flex flex-col gap-y-4"
     @close="dismissModal"
   >
-    <MaskSpinner
-      v-if="state.isGeneratingDDL || state.previewStatus"
-      class="!bg-white/75"
-    >
+    <MaskSpinner v-if="state.previewStatus" class="!bg-white/75">
       <span class="text-sm">
-        <template v-if="state.previewStatus">{{
-          state.previewStatus
-        }}</template>
-        <template v-else-if="state.isGeneratingDDL">Generating DDL</template>
+        {{ state.previewStatus }}
       </span>
     </MaskSpinner>
 
@@ -41,8 +35,6 @@
           :project="project"
           :targets="state.targets"
           :loading="state.isPreparingMetadata"
-          :diff-when-ready="false"
-          :show-last-updater="false"
         />
       </NTabPane>
       <NTabPane
@@ -84,6 +76,7 @@
       </NTabPane>
       <template #suffix>
         <SchemaEditorSQLCheckButton
+          v-if="!state.isPreparingMetadata"
           :database-list="databaseList"
           :get-statement="generateOrGetEditingDDL"
         />
@@ -120,7 +113,6 @@
 import { cloneDeep, head, uniq } from "lodash-es";
 import { NTabs, NButton, NTabPane, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import type { PropType } from "vue";
 import { computed, onMounted, h, reactive, ref, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, type LocationQuery } from "vue-router";
@@ -140,8 +132,6 @@ import {
 import type { ComposedDatabase } from "@/types";
 import { unknownProject, isValidProjectName, dialectOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
-import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import {
   TinyTimer,
   defer,
@@ -164,26 +154,16 @@ interface LocalState {
   editStatement: string;
   showActionConfirmModal: boolean;
   isPreparingMetadata: boolean;
-  isGeneratingDDL: boolean;
   previewStatus: string;
   targets: EditTarget[];
   isUploadingFile: boolean;
 }
 
-const props = defineProps({
-  databaseNames: {
-    type: Array as PropType<string[]>,
-    required: true,
-  },
-  alterType: {
-    type: String as PropType<"MULTI_DB" | "SINGLE_DB">,
-    required: true,
-  },
-  newWindow: {
-    type: Boolean,
-    default: false,
-  },
-});
+const props = defineProps<{
+  databaseNames: string[];
+  alterType: "MULTI_DB" | "SINGLE_DB";
+  newWindow?: boolean;
+}>();
 
 const emit = defineEmits<{
   (event: "close"): void;
@@ -196,8 +176,7 @@ const state = reactive<LocalState>({
   selectedTab: "schema-editor",
   editStatement: "",
   showActionConfirmModal: false,
-  isPreparingMetadata: false,
-  isGeneratingDDL: false,
+  isPreparingMetadata: true,
   previewStatus: "",
   targets: [],
   isUploadingFile: false,
@@ -212,7 +191,7 @@ const $dialog = useDialog();
 const allowPreviewIssue = computed(() => {
   if (state.selectedTab === "schema-editor") {
     // Always return true for schema editor to prevent huge calculation from schema editor.
-    return true;
+    return schemaEditorRef.value?.isDirty ?? false;
   } else {
     return state.editStatement !== "";
   }
@@ -251,41 +230,33 @@ const editTargetsKey = computed(() => {
 const prepareDatabaseMetadata = async () => {
   state.isPreparingMetadata = true;
   state.targets = [];
-  const timer = new TinyTimer<"fetchMetadata" | "convertEditTargets">(
-    "SchemaEditorModal"
-  );
+  const timer = new TinyTimer<"fetchMetadata">("SchemaEditorModal");
   timer.begin("fetchMetadata");
-  const targets: {
-    database: ComposedDatabase;
-    metadata: DatabaseMetadata;
-    catalog: DatabaseCatalog;
-  }[] = [];
   for (let i = 0; i < databaseList.value.length; i++) {
     const database = databaseList.value[i];
-    const metadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
-      database: database.name,
-      skipCache: true,
-    });
-    const catalog = await dbCatalogStore.getOrFetchDatabaseCatalog({
-      database: database.name,
-      skipCache: true,
-    });
+    const [metadata, catalog] = await Promise.all([
+      // Fetch the latest metadata and catalog without cache.
+      // So that we don't need to deep clone these objects.
+      dbSchemaStore.getOrFetchDatabaseMetadata({
+        database: database.name,
+        skipCache: true,
+        limit: 1,
+      }),
+      dbCatalogStore.getOrFetchDatabaseCatalog({
+        database: database.name,
+        skipCache: true,
+      }),
+    ]);
 
-    targets.push({ database, metadata, catalog });
-  }
-  timer.end("fetchMetadata", databaseList.value.length);
-
-  timer.begin("convertEditTargets");
-  state.targets = targets.map<EditTarget>(({ database, metadata, catalog }) => {
-    return {
+    state.targets.push({
       database,
       metadata: cloneDeep(metadata),
       baselineMetadata: metadata,
       catalog: cloneDeep(catalog),
       baselineCatalog: catalog,
-    };
-  });
-  timer.end("convertEditTargets", databaseList.value.length);
+    });
+  }
+  timer.end("fetchMetadata", databaseList.value.length);
   timer.printAll();
   state.isPreparingMetadata = false;
 };
@@ -344,6 +315,13 @@ const generateOrGetEditingDDL = async () => {
       errors: [],
     };
   }
+  if (!schemaEditorRef.value?.isDirty) {
+    // No change in schema editor, return empty statement directly.
+    return {
+      statement: "",
+      errors: [],
+    };
+  }
 
   const statementMap = await generateDiffDDLMap(/* silent */ true);
   const results = Array.from(statementMap.values());
@@ -357,7 +335,7 @@ const generateOrGetEditingDDL = async () => {
 
 const generateDiffDDLMap = async (silent: boolean) => {
   if (!silent) {
-    state.isGeneratingDDL = true;
+    state.previewStatus = "Generating DDL";
   }
 
   const statementMap = new Map<string, GenerateDiffDDLResult>();
@@ -368,17 +346,13 @@ const generateDiffDDLMap = async (silent: boolean) => {
   }
   for (let i = 0; i < state.targets.length; i++) {
     const target = state.targets[i];
-    const {
-      database,
-      baselineMetadata: source,
-      metadata,
-      catalog,
-      baselineCatalog,
-    } = target;
+    const { database, metadata, baselineMetadata, catalog, baselineCatalog } =
+      target;
     applyMetadataEdit(database, metadata, catalog);
+
     const result = await generateSingleDiffDDL({
       database,
-      sourceMetadata: source,
+      sourceMetadata: baselineMetadata,
       targetMetadata: metadata,
       sourceCatalog: baselineCatalog,
       targetCatalog: catalog,
@@ -397,7 +371,7 @@ const generateDiffDDLMap = async (silent: boolean) => {
     statementMap.set(database.name, result);
   }
 
-  state.isGeneratingDDL = false;
+  state.previewStatus = "";
   return statementMap;
 };
 
