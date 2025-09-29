@@ -1,7 +1,6 @@
 <template>
   <div class="flex flex-col items-start gap-1">
-    <div class="w-full flex items-center gap-3">
-      <GhostSwitch />
+    <div class="w-full flex items-center justify-between gap-3">
       <div class="flex items-center gap-1">
         <label class="text-sm text-main">
           {{ $t("task.online-migration.self") }}
@@ -28,21 +27,22 @@
             </i18n-t>
           </template>
         </NTooltip>
+        <NButton
+          v-if="enabled && allowChange"
+          tag="div"
+          size="tiny"
+          style="--n-padding: 0 5px"
+          @click="showFlagsPanel = true"
+        >
+          <template #icon>
+            <WrenchIcon class="w-4 h-4" />
+          </template>
+          <template #default>
+            {{ $t("task.online-migration.configure") }}
+          </template>
+        </NButton>
       </div>
-      <NButton
-        v-if="enabled && allowChange"
-        tag="div"
-        size="tiny"
-        style="--n-padding: 0 5px"
-        @click="showFlagsPanel = true"
-      >
-        <template #icon>
-          <WrenchIcon class="w-4 h-4" />
-        </template>
-        <template #default>
-          {{ $t("task.online-migration.configure") }}
-        </template>
-      </NButton>
+      <GhostSwitch />
     </div>
 
     <GhostFlagsPanel

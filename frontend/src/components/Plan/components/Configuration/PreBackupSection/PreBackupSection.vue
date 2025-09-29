@@ -1,6 +1,5 @@
 <template>
-  <div class="w-full flex items-center gap-3">
-    <PreBackupSwitch />
+  <div class="w-full flex items-center justify-between gap-3">
     <div class="flex items-center gap-1">
       <label class="text-sm text-main">
         {{ $t("task.prior-backup") }}
@@ -18,6 +17,7 @@
         </template>
       </NTooltip>
     </div>
+    <PreBackupSwitch />
   </div>
 </template>
 

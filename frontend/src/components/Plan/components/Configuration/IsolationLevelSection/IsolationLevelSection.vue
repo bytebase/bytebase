@@ -1,5 +1,8 @@
 <template>
-  <div v-if="shouldShowCombined" class="w-full flex items-center gap-3">
+  <div
+    v-if="shouldShowCombined"
+    class="w-full flex items-center justify-between gap-3"
+  >
     <div class="flex items-center gap-1">
       <label class="text-sm text-main">
         {{ $t("plan.isolation-level.self") }}
