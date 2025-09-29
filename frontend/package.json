@@ -52,7 +52,7 @@
     "markdown-it": "^14.1.0",
     "match-sorter": "6.3.4",
     "monaco-editor": "npm:@codingame/monaco-vscode-editor-api@15.0.3",
-    "monaco-languageclient": "9.7.0",
+    "monaco-languageclient": "9.11.0",
     "naive-ui": "2.42.0",
     "normalize-wheel": "^1.0.1",
     "pev2": "1.16.0",
