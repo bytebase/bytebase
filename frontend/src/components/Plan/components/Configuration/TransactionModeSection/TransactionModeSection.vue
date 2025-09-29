@@ -1,6 +1,5 @@
 <template>
-  <div class="w-full flex items-center gap-3">
-    <TransactionModeSwitch />
+  <div class="w-full flex items-center justify-between gap-3">
     <div class="flex items-center gap-1">
       <label class="text-sm text-main">
         {{ $t("issue.transaction-mode.label") }}
@@ -26,6 +25,7 @@
         </template>
       </NTooltip>
     </div>
+    <TransactionModeSwitch />
   </div>
 </template>
 
