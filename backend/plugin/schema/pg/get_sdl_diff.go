@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -48,6 +49,13 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 		}
 	}
 
+	// Pre-compute SDL chunks from current database metadata for performance optimization
+	// This avoids repeated calls to convertDatabaseSchemaToSDL and ChunkSDLText during usability checks
+	currentDBSDLChunks, err := buildCurrentDatabaseSDLChunks(currentSchema)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build current database SDL chunks")
+	}
+
 	// Initialize MetadataDiff
 	diff := &schema.MetadataDiff{
 		DatabaseName:            "",
@@ -62,22 +70,22 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 	}
 
 	// Process table changes
-	err = processTableChanges(currentChunks, previousChunks, currentSchema, previousSchema, diff)
+	err = processTableChanges(currentChunks, previousChunks, currentSchema, previousSchema, currentDBSDLChunks, diff)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to process table changes")
 	}
 
 	// Process index changes (standalone CREATE INDEX statements)
-	processStandaloneIndexChanges(currentChunks, previousChunks, diff)
+	processStandaloneIndexChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
 
 	// Process view changes
-	processViewChanges(currentChunks, previousChunks, diff)
+	processViewChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
 
 	// Process function changes
-	processFunctionChanges(currentChunks, previousChunks, diff)
+	processFunctionChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
 
 	// Process sequence changes
-	processSequenceChanges(currentChunks, previousChunks, diff)
+	processSequenceChanges(currentChunks, previousChunks, currentDBSDLChunks, diff)
 
 	return diff, nil
 }
@@ -270,20 +278,20 @@ func (l *sdlChunkExtractor) EnterViewstmt(ctx *parser.ViewstmtContext) {
 
 // processTableChanges processes changes to tables by comparing SDL chunks
 // nolint:unparam
-func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema, diff *schema.MetadataDiff) error {
-	// TODO: currentSchema and previousSchema will be used later for SDL drift detection
-	_ = currentSchema
-	_ = previousSchema
-
+func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) error {
 	// Process current table chunks to find created and modified tables
-	for identifier, currentChunk := range currentChunks.Tables {
+	for _, currentChunk := range currentChunks.Tables {
 		schemaName, tableName := parseIdentifier(currentChunk.Identifier)
 
-		if previousChunk, exists := previousChunks.Tables[identifier]; exists {
+		if previousChunk, exists := previousChunks.Tables[currentChunk.Identifier]; exists {
 			// Table exists in both - check if modified
 			currentText := currentChunk.GetText()
 			previousText := previousChunk.GetText()
 			if currentText != previousText {
+				// Apply usability check: skip diff if current chunk matches database metadata SDL
+				if currentDBSDLChunks.shouldSkipChunkDiffForUsability(currentText, currentChunk.Identifier) {
+					continue
+				}
 				// Table was modified - process column changes
 				oldASTNode, ok := previousChunk.ASTNode.(*parser.CreatestmtContext)
 				if !ok {
@@ -294,11 +302,11 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 					return errors.Errorf("expected CreatestmtContext for current table %s", currentChunk.Identifier)
 				}
 
-				columnChanges := processColumnChanges(oldASTNode, newASTNode, currentSchema, previousSchema)
-				foreignKeyChanges := processForeignKeyChanges(oldASTNode, newASTNode)
-				checkConstraintChanges := processCheckConstraintChanges(oldASTNode, newASTNode)
-				primaryKeyChanges := processPrimaryKeyChanges(oldASTNode, newASTNode)
-				uniqueConstraintChanges := processUniqueConstraintChanges(oldASTNode, newASTNode)
+				columnChanges := processColumnChanges(oldASTNode, newASTNode, currentSchema, previousSchema, currentDBSDLChunks, currentChunk.Identifier)
+				foreignKeyChanges := processForeignKeyChanges(oldASTNode, newASTNode, currentDBSDLChunks, currentChunk.Identifier)
+				checkConstraintChanges := processCheckConstraintChanges(oldASTNode, newASTNode, currentDBSDLChunks, currentChunk.Identifier)
+				primaryKeyChanges := processPrimaryKeyChanges(oldASTNode, newASTNode, currentDBSDLChunks, currentChunk.Identifier)
+				uniqueConstraintChanges := processUniqueConstraintChanges(oldASTNode, newASTNode, currentDBSDLChunks, currentChunk.Identifier)
 
 				tableDiff := &schema.TableDiff{
 					Action:                  schema.MetadataDiffActionAlter,
@@ -391,7 +399,7 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 // processColumnChanges analyzes column changes between old and new table definitions
 // Following the same pattern as processTableChanges: compare text first, then analyze differences
 // If schemas are nil, operates in AST-only mode without metadata extraction
-func processColumnChanges(oldTable, newTable *parser.CreatestmtContext, currentSchema, previousSchema *model.DatabaseSchema) []*schema.ColumnDiff {
+func processColumnChanges(oldTable, newTable *parser.CreatestmtContext, currentSchema, previousSchema *model.DatabaseSchema, currentDBSDLChunks *currentDatabaseSDLChunks, tableIdentifier string) []*schema.ColumnDiff {
 	if oldTable == nil || newTable == nil {
 		return []*schema.ColumnDiff{}
 	}
@@ -414,6 +422,11 @@ func processColumnChanges(oldTable, newTable *parser.CreatestmtContext, currentS
 			currentText := getColumnText(newColumnDef.ASTNode)
 			previousText := getColumnText(oldColumnDef.ASTNode)
 			if currentText != previousText {
+				// Apply column-level usability check: skip diff if current column matches database metadata SDL
+				schemaName, tableName := parseIdentifier(tableIdentifier)
+				if currentDBSDLChunks != nil && currentDBSDLChunks.shouldSkipColumnDiffForUsability(currentText, schemaName, tableName, columnName) {
+					continue
+				}
 				// Column was modified - extract metadata only if not in AST-only mode
 				var oldColumn, newColumn *storepb.ColumnMetadata
 				if !astOnlyMode {
@@ -713,7 +726,7 @@ type IndexDefWithAST struct {
 
 // processForeignKeyChanges analyzes foreign key constraint changes between old and new table definitions
 // Following the text-first comparison pattern for performance optimization
-func processForeignKeyChanges(oldTable, newTable *parser.CreatestmtContext) []*schema.ForeignKeyDiff {
+func processForeignKeyChanges(oldTable, newTable *parser.CreatestmtContext, currentDBSDLChunks *currentDatabaseSDLChunks, tableIdentifier string) []*schema.ForeignKeyDiff {
 	if oldTable == nil || newTable == nil {
 		return []*schema.ForeignKeyDiff{}
 	}
@@ -734,43 +747,28 @@ func processForeignKeyChanges(oldTable, newTable *parser.CreatestmtContext) []*s
 
 	var fkDiffs []*schema.ForeignKeyDiff
 
-	// Step 2: Process old foreign keys in reverse order for DROP operations
-	for i := len(oldFKList) - 1; i >= 0; i-- {
-		oldFKDef := oldFKList[i]
-		if newFKDef, exists := newFKMap[oldFKDef.Name]; exists {
-			// FK exists in both - check if modified by comparing text first
-			currentText := getForeignKeyText(newFKDef.ASTNode)
-			previousText := getForeignKeyText(oldFKDef.ASTNode)
-			if currentText != previousText {
-				// FK was modified - store AST nodes only
-				fkDiffs = append(fkDiffs, &schema.ForeignKeyDiff{
-					Action:     schema.MetadataDiffActionDrop,
-					OldASTNode: oldFKDef.ASTNode,
-				})
-			}
-		} else {
-			// Foreign key was dropped - store AST node only
-			fkDiffs = append(fkDiffs, &schema.ForeignKeyDiff{
-				Action:     schema.MetadataDiffActionDrop,
-				OldASTNode: oldFKDef.ASTNode,
-			})
-		}
-	}
-
-	// Step 3: Process new foreign keys in order for CREATE operations
+	// Step 2: Process current foreign keys to find created and modified foreign keys
 	for _, newFKDef := range newFKList {
 		if oldFKDef, exists := oldFKMap[newFKDef.Name]; exists {
 			// FK exists in both - check if modified by comparing text first
 			currentText := getForeignKeyText(newFKDef.ASTNode)
 			previousText := getForeignKeyText(oldFKDef.ASTNode)
 			if currentText != previousText {
-				// FK was modified - store AST nodes only
+				// Apply constraint-level usability check: skip diff if current constraint matches database metadata SDL
+				schemaName, tableName := parseIdentifier(tableIdentifier)
+				if currentDBSDLChunks != nil && currentDBSDLChunks.shouldSkipConstraintDiffForUsability(currentText, schemaName, tableName, newFKDef.Name) {
+					continue
+				}
+				// FK was modified - drop and recreate (PostgreSQL pattern)
+				fkDiffs = append(fkDiffs, &schema.ForeignKeyDiff{
+					Action:     schema.MetadataDiffActionDrop,
+					OldASTNode: oldFKDef.ASTNode,
+				})
 				fkDiffs = append(fkDiffs, &schema.ForeignKeyDiff{
 					Action:     schema.MetadataDiffActionCreate,
 					NewASTNode: newFKDef.ASTNode,
 				})
 			}
-			// If text is identical, skip - no changes detected
 		} else {
 			// New foreign key - store AST node only
 			fkDiffs = append(fkDiffs, &schema.ForeignKeyDiff{
@@ -780,12 +778,23 @@ func processForeignKeyChanges(oldTable, newTable *parser.CreatestmtContext) []*s
 		}
 	}
 
+	// Step 3: Process old foreign keys to find dropped ones
+	for _, oldFKDef := range oldFKList {
+		if _, exists := newFKMap[oldFKDef.Name]; !exists {
+			// Foreign key was dropped - store AST node only
+			fkDiffs = append(fkDiffs, &schema.ForeignKeyDiff{
+				Action:     schema.MetadataDiffActionDrop,
+				OldASTNode: oldFKDef.ASTNode,
+			})
+		}
+	}
+
 	return fkDiffs
 }
 
 // processCheckConstraintChanges analyzes check constraint changes between old and new table definitions
 // Following the text-first comparison pattern for performance optimization
-func processCheckConstraintChanges(oldTable, newTable *parser.CreatestmtContext) []*schema.CheckConstraintDiff {
+func processCheckConstraintChanges(oldTable, newTable *parser.CreatestmtContext, currentDBSDLChunks *currentDatabaseSDLChunks, tableIdentifier string) []*schema.CheckConstraintDiff {
 	if oldTable == nil || newTable == nil {
 		return []*schema.CheckConstraintDiff{}
 	}
@@ -806,44 +815,28 @@ func processCheckConstraintChanges(oldTable, newTable *parser.CreatestmtContext)
 
 	var checkDiffs []*schema.CheckConstraintDiff
 
-	// Step 2: Process old constraints in reverse order for DROP operations
-	for i := len(oldCheckList) - 1; i >= 0; i-- {
-		oldCheckDef := oldCheckList[i]
-		if newCheckDef, exists := newCheckMap[oldCheckDef.Name]; exists {
-			// Check constraint exists in both - check if modified by comparing text first
-			currentText := getCheckConstraintText(newCheckDef.ASTNode)
-			previousText := getCheckConstraintText(oldCheckDef.ASTNode)
-			if currentText != previousText {
-				// Check constraint was modified - store AST nodes only
-				// Drop and recreate for modifications (PostgreSQL pattern)
-				checkDiffs = append(checkDiffs, &schema.CheckConstraintDiff{
-					Action:     schema.MetadataDiffActionDrop,
-					OldASTNode: oldCheckDef.ASTNode,
-				})
-			}
-		} else {
-			// Check constraint was dropped - store AST node only
-			checkDiffs = append(checkDiffs, &schema.CheckConstraintDiff{
-				Action:     schema.MetadataDiffActionDrop,
-				OldASTNode: oldCheckDef.ASTNode,
-			})
-		}
-	}
-
-	// Step 3: Process new constraints in order for CREATE operations
+	// Step 2: Process current check constraints to find created and modified check constraints
 	for _, newCheckDef := range newCheckList {
 		if oldCheckDef, exists := oldCheckMap[newCheckDef.Name]; exists {
 			// Check constraint exists in both - check if modified by comparing text first
 			currentText := getCheckConstraintText(newCheckDef.ASTNode)
 			previousText := getCheckConstraintText(oldCheckDef.ASTNode)
 			if currentText != previousText {
-				// Check constraint was modified - store AST nodes only
+				// Apply constraint-level usability check: skip diff if current constraint matches database metadata SDL
+				schemaName, tableName := parseIdentifier(tableIdentifier)
+				if currentDBSDLChunks != nil && currentDBSDLChunks.shouldSkipConstraintDiffForUsability(currentText, schemaName, tableName, newCheckDef.Name) {
+					continue
+				}
+				// Check constraint was modified - drop and recreate (PostgreSQL pattern)
+				checkDiffs = append(checkDiffs, &schema.CheckConstraintDiff{
+					Action:     schema.MetadataDiffActionDrop,
+					OldASTNode: oldCheckDef.ASTNode,
+				})
 				checkDiffs = append(checkDiffs, &schema.CheckConstraintDiff{
 					Action:     schema.MetadataDiffActionCreate,
 					NewASTNode: newCheckDef.ASTNode,
 				})
 			}
-			// If text is identical, skip - no changes detected
 		} else {
 			// New check constraint - store AST node only
 			checkDiffs = append(checkDiffs, &schema.CheckConstraintDiff{
@@ -853,11 +846,22 @@ func processCheckConstraintChanges(oldTable, newTable *parser.CreatestmtContext)
 		}
 	}
 
+	// Step 3: Process old check constraints to find dropped ones
+	for _, oldCheckDef := range oldCheckList {
+		if _, exists := newCheckMap[oldCheckDef.Name]; !exists {
+			// Check constraint was dropped - store AST node only
+			checkDiffs = append(checkDiffs, &schema.CheckConstraintDiff{
+				Action:     schema.MetadataDiffActionDrop,
+				OldASTNode: oldCheckDef.ASTNode,
+			})
+		}
+	}
+
 	return checkDiffs
 }
 
 // processPrimaryKeyChanges analyzes primary key constraint changes between old and new table definitions
-func processPrimaryKeyChanges(oldTable, newTable *parser.CreatestmtContext) []*schema.PrimaryKeyDiff {
+func processPrimaryKeyChanges(oldTable, newTable *parser.CreatestmtContext, currentDBSDLChunks *currentDatabaseSDLChunks, tableIdentifier string) []*schema.PrimaryKeyDiff {
 	if oldTable == nil || newTable == nil {
 		return []*schema.PrimaryKeyDiff{}
 	}
@@ -875,6 +879,11 @@ func processPrimaryKeyChanges(oldTable, newTable *parser.CreatestmtContext) []*s
 			currentText := getIndexText(newPKDef.ASTNode)
 			previousText := getIndexText(oldPKDef.ASTNode)
 			if currentText != previousText {
+				// Apply constraint-level usability check: skip diff if current constraint matches database metadata SDL
+				schemaName, tableName := parseIdentifier(tableIdentifier)
+				if currentDBSDLChunks != nil && currentDBSDLChunks.shouldSkipConstraintDiffForUsability(currentText, schemaName, tableName, pkName) {
+					continue
+				}
 				// PK was modified - store AST nodes only
 				pkDiffs = append(pkDiffs, &schema.PrimaryKeyDiff{
 					Action:     schema.MetadataDiffActionDrop,
@@ -909,7 +918,7 @@ func processPrimaryKeyChanges(oldTable, newTable *parser.CreatestmtContext) []*s
 }
 
 // processUniqueConstraintChanges analyzes unique constraint changes between old and new table definitions
-func processUniqueConstraintChanges(oldTable, newTable *parser.CreatestmtContext) []*schema.UniqueConstraintDiff {
+func processUniqueConstraintChanges(oldTable, newTable *parser.CreatestmtContext, currentDBSDLChunks *currentDatabaseSDLChunks, tableIdentifier string) []*schema.UniqueConstraintDiff {
 	if oldTable == nil || newTable == nil {
 		return []*schema.UniqueConstraintDiff{}
 	}
@@ -930,48 +939,44 @@ func processUniqueConstraintChanges(oldTable, newTable *parser.CreatestmtContext
 
 	var ukDiffs []*schema.UniqueConstraintDiff
 
-	// Step 2: Process old constraints in reverse order for DROP operations
-	for i := len(oldUKList) - 1; i >= 0; i-- {
-		oldUKDef := oldUKList[i]
-		if newUKDef, exists := newUKMap[oldUKDef.Name]; exists {
-			// UK exists in both - check if modified by comparing text first
-			currentText := getIndexText(newUKDef.ASTNode)
-			previousText := getIndexText(oldUKDef.ASTNode)
-			if currentText != previousText {
-				// UK was modified - store AST nodes only
-				ukDiffs = append(ukDiffs, &schema.UniqueConstraintDiff{
-					Action:     schema.MetadataDiffActionDrop,
-					OldASTNode: oldUKDef.ASTNode,
-				})
-			}
-		} else {
-			// UK was dropped - store AST node only
-			ukDiffs = append(ukDiffs, &schema.UniqueConstraintDiff{
-				Action:     schema.MetadataDiffActionDrop,
-				OldASTNode: oldUKDef.ASTNode,
-			})
-		}
-	}
-
-	// Step 3: Process new constraints in order for CREATE operations
+	// Step 2: Process current unique constraints to find created and modified unique constraints
 	for _, newUKDef := range newUKList {
 		if oldUKDef, exists := oldUKMap[newUKDef.Name]; exists {
 			// UK exists in both - check if modified by comparing text first
 			currentText := getIndexText(newUKDef.ASTNode)
 			previousText := getIndexText(oldUKDef.ASTNode)
 			if currentText != previousText {
-				// UK was modified - store AST nodes only
+				// Apply constraint-level usability check: skip diff if current constraint matches database metadata SDL
+				schemaName, tableName := parseIdentifier(tableIdentifier)
+				if currentDBSDLChunks != nil && currentDBSDLChunks.shouldSkipConstraintDiffForUsability(currentText, schemaName, tableName, newUKDef.Name) {
+					continue
+				}
+				// UK was modified - drop and recreate (PostgreSQL pattern)
+				ukDiffs = append(ukDiffs, &schema.UniqueConstraintDiff{
+					Action:     schema.MetadataDiffActionDrop,
+					OldASTNode: oldUKDef.ASTNode,
+				})
 				ukDiffs = append(ukDiffs, &schema.UniqueConstraintDiff{
 					Action:     schema.MetadataDiffActionCreate,
 					NewASTNode: newUKDef.ASTNode,
 				})
 			}
-			// If text is identical, skip - no changes detected
 		} else {
 			// New UK - store AST node only
 			ukDiffs = append(ukDiffs, &schema.UniqueConstraintDiff{
 				Action:     schema.MetadataDiffActionCreate,
 				NewASTNode: newUKDef.ASTNode,
+			})
+		}
+	}
+
+	// Step 3: Process old unique constraints to find dropped ones
+	for _, oldUKDef := range oldUKList {
+		if _, exists := newUKMap[oldUKDef.Name]; !exists {
+			// UK was dropped - store AST node only
+			ukDiffs = append(ukDiffs, &schema.UniqueConstraintDiff{
+				Action:     schema.MetadataDiffActionDrop,
+				OldASTNode: oldUKDef.ASTNode,
 			})
 		}
 	}
@@ -1242,7 +1247,7 @@ func getIndexText(constraintAST parser.ITableconstraintContext) string {
 
 // processStandaloneIndexChanges analyzes standalone CREATE INDEX statement changes
 // and adds them to the appropriate table's IndexChanges
-func processStandaloneIndexChanges(currentChunks, previousChunks *schema.SDLChunks, diff *schema.MetadataDiff) {
+func processStandaloneIndexChanges(currentChunks, previousChunks *schema.SDLChunks, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) {
 	if currentChunks == nil || previousChunks == nil {
 		return
 	}
@@ -1254,17 +1259,21 @@ func processStandaloneIndexChanges(currentChunks, previousChunks *schema.SDLChun
 	}
 
 	// Step 1: Process current indexes to find created and modified indexes
-	for indexName, currentChunk := range currentChunks.Indexes {
+	for _, currentChunk := range currentChunks.Indexes {
 		tableName := extractTableNameFromIndex(currentChunk.ASTNode)
 		if tableName == "" {
 			continue // Skip if we can't determine the table name
 		}
 
-		if previousChunk, exists := previousChunks.Indexes[indexName]; exists {
+		if previousChunk, exists := previousChunks.Indexes[currentChunk.Identifier]; exists {
 			// Index exists in both - check if modified by comparing text first
 			currentText := getStandaloneIndexText(currentChunk.ASTNode)
 			previousText := getStandaloneIndexText(previousChunk.ASTNode)
 			if currentText != previousText {
+				// Apply usability check: skip diff if current chunk matches database metadata
+				if currentDBSDLChunks.shouldSkipChunkDiffForUsability(currentText, currentChunk.Identifier) {
+					continue
+				}
 				// Index was modified - use drop and recreate pattern (PostgreSQL standard)
 				tableDiff := getOrCreateTableDiff(diff, tableName, affectedTables)
 				tableDiff.IndexChanges = append(tableDiff.IndexChanges, &schema.IndexDiff{
@@ -1380,16 +1389,20 @@ func getOrCreateTableDiff(diff *schema.MetadataDiff, tableName string, affectedT
 
 // processViewChanges analyzes view changes between current and previous chunks
 // Following the text-first comparison pattern for performance optimization
-func processViewChanges(currentChunks, previousChunks *schema.SDLChunks, diff *schema.MetadataDiff) {
+func processViewChanges(currentChunks, previousChunks *schema.SDLChunks, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) {
 	// Process current views to find created and modified views
-	for identifier, currentChunk := range currentChunks.Views {
-		if previousChunk, exists := previousChunks.Views[identifier]; exists {
+	for _, currentChunk := range currentChunks.Views {
+		if previousChunk, exists := previousChunks.Views[currentChunk.Identifier]; exists {
 			// View exists in both - check if modified by comparing text first
 			currentText := currentChunk.GetText()
 			previousText := previousChunk.GetText()
 			if currentText != previousText {
+				// Apply usability check: skip diff if current chunk matches database metadata SDL
+				if currentDBSDLChunks.shouldSkipChunkDiffForUsability(currentText, currentChunk.Identifier) {
+					continue
+				}
 				// View was modified - use drop and recreate pattern (PostgreSQL standard)
-				schemaName, viewName := parseIdentifier(identifier)
+				schemaName, viewName := parseIdentifier(currentChunk.Identifier)
 				diff.ViewChanges = append(diff.ViewChanges, &schema.ViewDiff{
 					Action:     schema.MetadataDiffActionDrop,
 					SchemaName: schemaName,
@@ -1412,7 +1425,7 @@ func processViewChanges(currentChunks, previousChunks *schema.SDLChunks, diff *s
 			// If text is identical, skip - no changes detected
 		} else {
 			// New view
-			schemaName, viewName := parseIdentifier(identifier)
+			schemaName, viewName := parseIdentifier(currentChunk.Identifier)
 			diff.ViewChanges = append(diff.ViewChanges, &schema.ViewDiff{
 				Action:     schema.MetadataDiffActionCreate,
 				SchemaName: schemaName,
@@ -1445,16 +1458,20 @@ func processViewChanges(currentChunks, previousChunks *schema.SDLChunks, diff *s
 
 // processFunctionChanges analyzes function changes between current and previous chunks
 // Following the text-first comparison pattern for performance optimization
-func processFunctionChanges(currentChunks, previousChunks *schema.SDLChunks, diff *schema.MetadataDiff) {
+func processFunctionChanges(currentChunks, previousChunks *schema.SDLChunks, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) {
 	// Process current functions to find created and modified functions
-	for identifier, currentChunk := range currentChunks.Functions {
-		if previousChunk, exists := previousChunks.Functions[identifier]; exists {
+	for _, currentChunk := range currentChunks.Functions {
+		if previousChunk, exists := previousChunks.Functions[currentChunk.Identifier]; exists {
 			// Function exists in both - check if modified by comparing text first
 			currentText := currentChunk.GetText()
 			previousText := previousChunk.GetText()
 			if currentText != previousText {
+				// Apply usability check: skip diff if current chunk matches database metadata SDL
+				if currentDBSDLChunks.shouldSkipChunkDiffForUsability(currentText, currentChunk.Identifier) {
+					continue
+				}
 				// Function was modified - use CREATE OR REPLACE (AST-only mode)
-				schemaName, functionName := parseIdentifier(identifier)
+				schemaName, functionName := parseIdentifier(currentChunk.Identifier)
 				diff.FunctionChanges = append(diff.FunctionChanges, &schema.FunctionDiff{
 					Action:       schema.MetadataDiffActionAlter,
 					SchemaName:   schemaName,
@@ -1468,7 +1485,7 @@ func processFunctionChanges(currentChunks, previousChunks *schema.SDLChunks, dif
 			// If text is identical, skip - no changes detected
 		} else {
 			// New function
-			schemaName, functionName := parseIdentifier(identifier)
+			schemaName, functionName := parseIdentifier(currentChunk.Identifier)
 			diff.FunctionChanges = append(diff.FunctionChanges, &schema.FunctionDiff{
 				Action:       schema.MetadataDiffActionCreate,
 				SchemaName:   schemaName,
@@ -1501,16 +1518,20 @@ func processFunctionChanges(currentChunks, previousChunks *schema.SDLChunks, dif
 
 // processSequenceChanges analyzes sequence changes between current and previous chunks
 // Following the text-first comparison pattern for performance optimization
-func processSequenceChanges(currentChunks, previousChunks *schema.SDLChunks, diff *schema.MetadataDiff) {
+func processSequenceChanges(currentChunks, previousChunks *schema.SDLChunks, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) {
 	// Process current sequences to find created and modified sequences
-	for identifier, currentChunk := range currentChunks.Sequences {
-		if previousChunk, exists := previousChunks.Sequences[identifier]; exists {
+	for _, currentChunk := range currentChunks.Sequences {
+		if previousChunk, exists := previousChunks.Sequences[currentChunk.Identifier]; exists {
 			// Sequence exists in both - check if modified by comparing text first
 			currentText := currentChunk.GetText()
 			previousText := previousChunk.GetText()
 			if currentText != previousText {
+				// Apply usability check: skip diff if current chunk matches database metadata SDL
+				if currentDBSDLChunks.shouldSkipChunkDiffForUsability(currentText, currentChunk.Identifier) {
+					continue
+				}
 				// Sequence was modified - use drop and recreate pattern (PostgreSQL standard)
-				schemaName, sequenceName := parseIdentifier(identifier)
+				schemaName, sequenceName := parseIdentifier(currentChunk.Identifier)
 				diff.SequenceChanges = append(diff.SequenceChanges, &schema.SequenceDiff{
 					Action:       schema.MetadataDiffActionDrop,
 					SchemaName:   schemaName,
@@ -1533,7 +1554,7 @@ func processSequenceChanges(currentChunks, previousChunks *schema.SDLChunks, dif
 			// If text is identical, skip - no changes detected
 		} else {
 			// New sequence
-			schemaName, sequenceName := parseIdentifier(identifier)
+			schemaName, sequenceName := parseIdentifier(currentChunk.Identifier)
 			diff.SequenceChanges = append(diff.SequenceChanges, &schema.SequenceDiff{
 				Action:       schema.MetadataDiffActionCreate,
 				SchemaName:   schemaName,
@@ -1608,8 +1629,10 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 
 	// Build existing chunk keys mapping for table operations
 	existingChunkKeys := make(map[string]string) // schema.table -> chunk key
-	for chunkKey := range previousChunks.Tables {
-		existingChunkKeys[chunkKey] = chunkKey
+	for chunkKey, chunk := range previousChunks.Tables {
+		if chunk != nil {
+			existingChunkKeys[chunk.Identifier] = chunkKey
+		}
 	}
 
 	// Process table additions: add new tables to chunks
@@ -1700,32 +1723,51 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 	return nil
 }
 
-// applyTableChangesToChunk applies minimal column and constraint changes to an existing CREATE TABLE chunk using a single ANTLR rewriter
+// applyTableChangesToChunk applies minimal column and constraint changes to an existing CREATE TABLE chunk
+// by working with the individual chunk's SQL text instead of the full script's tokenStream
 func applyTableChangesToChunk(chunk *schema.SDLChunk, currentTable, previousTable *storepb.TableMetadata) error {
 	if chunk == nil || chunk.ASTNode == nil || currentTable == nil || previousTable == nil {
 		return nil
 	}
 
-	createStmt, ok := chunk.ASTNode.(*parser.CreatestmtContext)
-	if !ok {
-		return errors.New("chunk AST node is not a CREATE TABLE statement")
+	// Get the original chunk text
+	originalChunkText := chunk.GetText()
+	if originalChunkText == "" {
+		return errors.New("chunk has no text content")
 	}
 
-	// Get the token stream and create a single rewriter for both column and constraint changes
+	// Parse the individual chunk text to get a fresh AST with its own tokenStream
+	parseResult, err := pgparser.ParsePostgreSQL(originalChunkText)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse original chunk text: %s", originalChunkText)
+	}
+
+	// Extract the CREATE TABLE AST node from the fresh parse
+	var createStmt *parser.CreatestmtContext
+	antlr.ParseTreeWalkerDefault.Walk(&createTableExtractor{
+		result: &createStmt,
+	}, parseResult.Tree)
+
+	if createStmt == nil {
+		return errors.New("failed to extract CREATE TABLE AST node from chunk text")
+	}
+
+	// Get the parser and tokenStream from the fresh parse
 	ctxParser := createStmt.GetParser()
 	if ctxParser == nil {
-		return errors.New("parser not available for AST node")
+		return errors.New("parser not available for fresh AST node")
 	}
 
 	tokenStream := ctxParser.GetTokenStream()
 	if tokenStream == nil {
-		return errors.New("token stream not available for parser")
+		return errors.New("token stream not available for fresh parser")
 	}
 
+	// Create rewriter for the individual chunk's tokenStream
 	rewriter := antlr.NewTokenStreamRewriter(tokenStream)
 
-	// Apply column changes using the shared rewriter
-	err := applyColumnChanges(rewriter, createStmt, currentTable, previousTable)
+	// Apply column changes using the rewriter
+	err = applyColumnChanges(rewriter, createStmt, currentTable, previousTable)
 	if err != nil {
 		return errors.Wrapf(err, "failed to apply column changes")
 	}
@@ -1736,20 +1778,20 @@ func applyTableChangesToChunk(chunk *schema.SDLChunk, currentTable, previousTabl
 		return errors.Wrapf(err, "failed to apply constraint changes")
 	}
 
-	// Apply all changes and update the chunk with a single parse
+	// Get the modified SQL from the rewriter
 	modifiedSQL := rewriter.GetTextDefault()
 
-	// Parse the modified SQL to get the new AST (only once for both column and constraint changes)
-	parseResult, err := pgparser.ParsePostgreSQL(modifiedSQL)
+	// Parse the modified SQL to get the final AST
+	finalParseResult, err := pgparser.ParsePostgreSQL(modifiedSQL)
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse modified SQL: %s", modifiedSQL)
 	}
 
-	// Extract the new CREATE TABLE AST node
+	// Extract the final CREATE TABLE AST node
 	var newCreateTableNode *parser.CreatestmtContext
 	antlr.ParseTreeWalkerDefault.Walk(&createTableExtractor{
 		result: &newCreateTableNode,
-	}, parseResult.Tree)
+	}, finalParseResult.Tree)
 
 	if newCreateTableNode == nil {
 		return errors.New("failed to extract CREATE TABLE AST node from modified text")
@@ -2049,13 +2091,29 @@ func deleteColumnFromAST(rewriter *antlr.TokenStreamRewriter, columnDef parser.I
 		return errors.New("unable to get column definition tokens")
 	}
 
+	// Find the actual deletion range including commas and whitespace
+	deleteStartIndex := startToken.GetTokenIndex()
+	deleteEndIndex := stopToken.GetTokenIndex()
+
 	// Strategy: Always try to remove the following comma first
 	// This handles cases where there are table constraints after columns
 	nextCommaIndex := -1
+	nextCommaEndIndex := -1
 	for i := stopToken.GetTokenIndex() + 1; i < rewriter.GetTokenStream().Size(); i++ {
 		token := rewriter.GetTokenStream().Get(i)
 		if token.GetTokenType() == parser.PostgreSQLParserCOMMA {
 			nextCommaIndex = i
+			// Look for whitespace after the comma to include in deletion
+			nextCommaEndIndex = i
+			for j := i + 1; j < rewriter.GetTokenStream().Size(); j++ {
+				nextToken := rewriter.GetTokenStream().Get(j)
+				// Include whitespace and newlines after the comma
+				if nextToken.GetChannel() != antlr.TokenDefaultChannel {
+					nextCommaEndIndex = j
+				} else {
+					break
+				}
+			}
 			break
 		}
 		// Skip whitespace and comments, but stop at other meaningful tokens
@@ -2066,17 +2124,28 @@ func deleteColumnFromAST(rewriter *antlr.TokenStreamRewriter, columnDef parser.I
 	}
 
 	if nextCommaIndex != -1 {
-		// Found a following comma - remove column and the comma
-		// This works for all cases: middle columns, columns followed by constraints, etc.
-		rewriter.DeleteDefault(startToken.GetTokenIndex(), nextCommaIndex)
+		// Found a following comma - remove column, comma, and trailing whitespace
+		deleteEndIndex = nextCommaEndIndex
 	} else {
 		// No following comma found - this might be the last element
 		// Try to find a preceding comma to remove
 		prevCommaIndex := -1
+		prevCommaStartIndex := -1
 		for i := startToken.GetTokenIndex() - 1; i >= 0; i-- {
 			token := rewriter.GetTokenStream().Get(i)
 			if token.GetTokenType() == parser.PostgreSQLParserCOMMA {
 				prevCommaIndex = i
+				// Look for whitespace before the comma to include in deletion
+				prevCommaStartIndex = i
+				for j := i - 1; j >= 0; j-- {
+					prevToken := rewriter.GetTokenStream().Get(j)
+					// Include whitespace and newlines before the comma
+					if prevToken.GetChannel() != antlr.TokenDefaultChannel {
+						prevCommaStartIndex = j
+					} else {
+						break
+					}
+				}
 				break
 			}
 			// Skip whitespace and comments, but stop at other meaningful tokens
@@ -2086,13 +2155,24 @@ func deleteColumnFromAST(rewriter *antlr.TokenStreamRewriter, columnDef parser.I
 		}
 
 		if prevCommaIndex != -1 {
-			// Found a preceding comma - remove it along with the column
-			rewriter.DeleteDefault(prevCommaIndex, stopToken.GetTokenIndex())
+			// Found a preceding comma - remove it along with leading whitespace and the column
+			deleteStartIndex = prevCommaStartIndex
 		} else {
 			// No comma found (single column case) - just remove the column
-			rewriter.DeleteDefault(startToken.GetTokenIndex(), stopToken.GetTokenIndex())
+			// But also clean up any trailing whitespace that might leave empty lines
+			for i := stopToken.GetTokenIndex() + 1; i < rewriter.GetTokenStream().Size(); i++ {
+				token := rewriter.GetTokenStream().Get(i)
+				if token.GetChannel() != antlr.TokenDefaultChannel {
+					deleteEndIndex = i
+				} else {
+					break
+				}
+			}
 		}
 	}
+
+	// Perform the deletion with the computed range
+	rewriter.DeleteDefault(deleteStartIndex, deleteEndIndex)
 
 	return nil
 }
@@ -2193,6 +2273,192 @@ func columnsEqual(a, b *storepb.ColumnMetadata) bool {
 		a.Collation == b.Collation
 }
 
+// currentDatabaseSDLChunks stores pre-computed SDL chunks from current database metadata
+// for performance optimization during usability checks
+type currentDatabaseSDLChunks struct {
+	chunks      map[string]string // maps chunk identifier to normalized SDL text from current database metadata
+	columns     map[string]string // maps "schema.table.column" to normalized column SDL text
+	constraints map[string]string // maps "schema.table.constraint" to normalized constraint SDL text
+}
+
+// buildCurrentDatabaseSDLChunks pre-computes SDL chunks from the current database schema
+// for usability checks. This avoids repeated expensive calls to convertDatabaseSchemaToSDL
+// and ChunkSDLText during diff processing by storing normalized SDL text from current database metadata.
+func buildCurrentDatabaseSDLChunks(currentSchema *model.DatabaseSchema) (*currentDatabaseSDLChunks, error) {
+	sdlChunks := &currentDatabaseSDLChunks{
+		chunks:      make(map[string]string),
+		columns:     make(map[string]string),
+		constraints: make(map[string]string),
+	}
+
+	// Only build SDL chunks if current schema is provided
+	if currentSchema == nil {
+		return sdlChunks, nil
+	}
+
+	// Generate SDL from current database metadata
+	currentSDL, err := convertDatabaseSchemaToSDL(currentSchema)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert current schema to SDL")
+	}
+
+	// Parse the generated SDL to get chunks
+	currentSDLChunks, err := ChunkSDLText(currentSDL)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to chunk current schema SDL")
+	}
+
+	// Populate SDL chunks with normalized chunk texts from current database metadata
+	for identifier, chunk := range currentSDLChunks.Tables {
+		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetText())
+
+		// Extract column and constraint SDL texts for fine-grained usability checks
+		if err := extractColumnAndConstraintSDLTexts(chunk, identifier, sdlChunks); err != nil {
+			// Log error but don't fail the entire operation
+			// Fine-grained usability checks will fall back to table-level checks
+			continue
+		}
+	}
+	for identifier, chunk := range currentSDLChunks.Views {
+		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetText())
+	}
+	for identifier, chunk := range currentSDLChunks.Functions {
+		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetText())
+	}
+	for identifier, chunk := range currentSDLChunks.Sequences {
+		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetText())
+	}
+	for identifier, chunk := range currentSDLChunks.Indexes {
+		sdlChunks.chunks[identifier] = strings.TrimSpace(chunk.GetText())
+	}
+
+	return sdlChunks, nil
+}
+
+// extractColumnAndConstraintSDLTexts extracts individual column and constraint SDL texts
+// from a table chunk for fine-grained usability checks
+func extractColumnAndConstraintSDLTexts(chunk *schema.SDLChunk, tableIdentifier string, sdlChunks *currentDatabaseSDLChunks) error {
+	if chunk == nil || chunk.ASTNode == nil {
+		return nil
+	}
+
+	createStmt, ok := chunk.ASTNode.(*parser.CreatestmtContext)
+	if !ok {
+		return errors.New("chunk AST node is not a CREATE TABLE statement")
+	}
+
+	schemaName, tableName := parseIdentifier(tableIdentifier)
+
+	// Extract column definitions with their SDL texts
+	columnDefs := extractColumnDefinitionsWithAST(createStmt)
+	for columnName, columnDef := range columnDefs.Map {
+		columnSDLText := strings.TrimSpace(getColumnText(columnDef.ASTNode))
+		columnKey := fmt.Sprintf("%s.%s.%s", schemaName, tableName, columnName)
+		sdlChunks.columns[columnKey] = columnSDLText
+	}
+
+	// Extract constraint definitions with their SDL texts
+	// Primary Key constraints
+	pkDefs := extractPrimaryKeyDefinitionsWithAST(createStmt)
+	for constraintName, pkDef := range pkDefs {
+		constraintSDLText := strings.TrimSpace(getIndexText(pkDef.ASTNode))
+		constraintKey := fmt.Sprintf("%s.%s.%s", schemaName, tableName, constraintName)
+		sdlChunks.constraints[constraintKey] = constraintSDLText
+	}
+
+	// Unique constraints
+	uniqueDefs := extractUniqueConstraintDefinitionsInOrder(createStmt)
+	for _, uniqueDef := range uniqueDefs {
+		constraintSDLText := strings.TrimSpace(getIndexText(uniqueDef.ASTNode))
+		constraintKey := fmt.Sprintf("%s.%s.%s", schemaName, tableName, uniqueDef.Name)
+		sdlChunks.constraints[constraintKey] = constraintSDLText
+	}
+
+	// Check constraints
+	checkDefs := extractCheckConstraintDefinitionsWithAST(createStmt)
+	for _, checkDef := range checkDefs {
+		constraintSDLText := strings.TrimSpace(getCheckConstraintText(checkDef.ASTNode))
+		constraintKey := fmt.Sprintf("%s.%s.%s", schemaName, tableName, checkDef.Name)
+		sdlChunks.constraints[constraintKey] = constraintSDLText
+	}
+
+	// Foreign Key constraints
+	fkDefs := extractForeignKeyDefinitionsWithAST(createStmt)
+	for _, fkDef := range fkDefs {
+		constraintSDLText := strings.TrimSpace(getForeignKeyText(fkDef.ASTNode))
+		constraintKey := fmt.Sprintf("%s.%s.%s", schemaName, tableName, fkDef.Name)
+		sdlChunks.constraints[constraintKey] = constraintSDLText
+	}
+
+	return nil
+}
+
+// shouldSkipChunkDiffForUsability checks if a chunk should skip diff comparison
+// by comparing against the pre-computed SDL chunks from current database metadata
+func (sdlChunks *currentDatabaseSDLChunks) shouldSkipChunkDiffForUsability(chunkText string, chunkIdentifier string) bool {
+	if sdlChunks == nil || len(sdlChunks.chunks) == 0 {
+		return false
+	}
+
+	// Get the corresponding SDL text from current database metadata
+	currentDatabaseSDLText, exists := sdlChunks.chunks[chunkIdentifier]
+	if !exists {
+		return false
+	}
+
+	// Normalize current chunk text for comparison
+	normalizedChunkText := strings.TrimSpace(chunkText)
+
+	// If chunk text matches current database metadata SDL, skip the diff (no actual change needed)
+	return normalizedChunkText == currentDatabaseSDLText
+}
+
+// shouldSkipColumnDiffForUsability checks if a column should skip diff comparison
+// by comparing against the pre-computed column SDL texts from current database metadata
+func (sdlChunks *currentDatabaseSDLChunks) shouldSkipColumnDiffForUsability(columnText string, schemaName, tableName, columnName string) bool {
+	if sdlChunks == nil || len(sdlChunks.columns) == 0 {
+		return false
+	}
+
+	// Build column key
+	columnKey := fmt.Sprintf("%s.%s.%s", schemaName, tableName, columnName)
+
+	// Get the corresponding SDL text from current database metadata
+	currentDatabaseColumnSDL, exists := sdlChunks.columns[columnKey]
+	if !exists {
+		return false
+	}
+
+	// Normalize current column text for comparison
+	normalizedColumnText := strings.TrimSpace(columnText)
+
+	// If column text matches current database metadata SDL, skip the diff (no actual change needed)
+	return normalizedColumnText == currentDatabaseColumnSDL
+}
+
+// shouldSkipConstraintDiffForUsability checks if a constraint should skip diff comparison
+// by comparing against the pre-computed constraint SDL texts from current database metadata
+func (sdlChunks *currentDatabaseSDLChunks) shouldSkipConstraintDiffForUsability(constraintText string, schemaName, tableName, constraintName string) bool {
+	if sdlChunks == nil || len(sdlChunks.constraints) == 0 {
+		return false
+	}
+
+	// Build constraint key
+	constraintKey := fmt.Sprintf("%s.%s.%s", schemaName, tableName, constraintName)
+
+	// Get the corresponding SDL text from current database metadata
+	currentDatabaseConstraintSDL, exists := sdlChunks.constraints[constraintKey]
+	if !exists {
+		return false
+	}
+
+	// Normalize current constraint text for comparison
+	normalizedConstraintText := strings.TrimSpace(constraintText)
+
+	// If constraint text matches current database metadata SDL, skip the diff (no actual change needed)
+	return normalizedConstraintText == currentDatabaseConstraintSDL
+}
+
 // convertDatabaseSchemaToSDL converts a model.DatabaseSchema to SDL format string
 // This is used in initialization scenarios where previousUserSDLText is empty
 func convertDatabaseSchemaToSDL(dbSchema *model.DatabaseSchema) (string, error) {
@@ -2223,13 +2489,29 @@ func deleteConstraintFromAST(rewriter *antlr.TokenStreamRewriter, constraintAST 
 		return errors.New("unable to get constraint definition tokens")
 	}
 
+	// Find the actual deletion range including commas and whitespace
+	deleteStartIndex := startToken.GetTokenIndex()
+	deleteEndIndex := stopToken.GetTokenIndex()
+
 	// Strategy: Always try to remove the following comma first
 	// This handles cases where there are more constraints after this one
 	nextCommaIndex := -1
+	nextCommaEndIndex := -1
 	for i := stopToken.GetTokenIndex() + 1; i < rewriter.GetTokenStream().Size(); i++ {
 		token := rewriter.GetTokenStream().Get(i)
 		if token.GetTokenType() == parser.PostgreSQLParserCOMMA {
 			nextCommaIndex = i
+			// Look for whitespace after the comma to include in deletion
+			nextCommaEndIndex = i
+			for j := i + 1; j < rewriter.GetTokenStream().Size(); j++ {
+				nextToken := rewriter.GetTokenStream().Get(j)
+				// Include whitespace and newlines after the comma
+				if nextToken.GetChannel() != antlr.TokenDefaultChannel {
+					nextCommaEndIndex = j
+				} else {
+					break
+				}
+			}
 			break
 		}
 		// Skip whitespace and comments, but stop at other meaningful tokens
@@ -2240,16 +2522,28 @@ func deleteConstraintFromAST(rewriter *antlr.TokenStreamRewriter, constraintAST 
 	}
 
 	if nextCommaIndex != -1 {
-		// Found a following comma - remove constraint and the comma
-		rewriter.DeleteDefault(startToken.GetTokenIndex(), nextCommaIndex)
+		// Found a following comma - remove constraint, comma, and trailing whitespace
+		deleteEndIndex = nextCommaEndIndex
 	} else {
 		// No following comma found - this might be the last element
 		// Try to find a preceding comma to remove
 		prevCommaIndex := -1
+		prevCommaStartIndex := -1
 		for i := startToken.GetTokenIndex() - 1; i >= 0; i-- {
 			token := rewriter.GetTokenStream().Get(i)
 			if token.GetTokenType() == parser.PostgreSQLParserCOMMA {
 				prevCommaIndex = i
+				// Look for whitespace before the comma to include in deletion
+				prevCommaStartIndex = i
+				for j := i - 1; j >= 0; j-- {
+					prevToken := rewriter.GetTokenStream().Get(j)
+					// Include whitespace and newlines before the comma
+					if prevToken.GetChannel() != antlr.TokenDefaultChannel {
+						prevCommaStartIndex = j
+					} else {
+						break
+					}
+				}
 				break
 			}
 			// Skip whitespace and comments, but stop at other meaningful tokens
@@ -2259,13 +2553,24 @@ func deleteConstraintFromAST(rewriter *antlr.TokenStreamRewriter, constraintAST 
 		}
 
 		if prevCommaIndex != -1 {
-			// Found a preceding comma - remove it along with the constraint
-			rewriter.DeleteDefault(prevCommaIndex, stopToken.GetTokenIndex())
+			// Found a preceding comma - remove it along with leading whitespace and the constraint
+			deleteStartIndex = prevCommaStartIndex
 		} else {
 			// No comma found (single constraint case) - just remove the constraint
-			rewriter.DeleteDefault(startToken.GetTokenIndex(), stopToken.GetTokenIndex())
+			// But also clean up any trailing whitespace that might leave empty lines
+			for i := stopToken.GetTokenIndex() + 1; i < rewriter.GetTokenStream().Size(); i++ {
+				token := rewriter.GetTokenStream().Get(i)
+				if token.GetChannel() != antlr.TokenDefaultChannel {
+					deleteEndIndex = i
+				} else {
+					break
+				}
+			}
 		}
 	}
+
+	// Perform the deletion with the computed range
+	rewriter.DeleteDefault(deleteStartIndex, deleteEndIndex)
 
 	return nil
 }
