@@ -113,6 +113,7 @@ const columnList = computed((): DataTableColumn<TaskRun>[] => {
             key: "database",
             title: t("common.database"),
             width: 200,
+            resizable: true,
             render: (taskRun: TaskRun) => {
               const db = getDatabaseForTaskRun(taskRun);
               return db ? (
@@ -127,6 +128,8 @@ const columnList = computed((): DataTableColumn<TaskRun>[] => {
     {
       key: "detail",
       title: t("common.detail"),
+      ellipsis: true,
+      resizable: true,
       render: (taskRun: TaskRun) => {
         return <TaskRunComment taskRun={taskRun} />;
       },

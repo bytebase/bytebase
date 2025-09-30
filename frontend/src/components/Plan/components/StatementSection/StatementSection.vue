@@ -1,8 +1,5 @@
 <template>
-  <div
-    v-if="viewMode === 'EDITOR'"
-    class="flex-1 shrink min-h-0 max-h-[50vh] flex flex-col gap-y-2"
-  >
+  <div v-if="viewMode === 'EDITOR'" class="flex-1">
     <EditorView :key="editorViewKey" />
   </div>
   <ReleaseView v-else-if="viewMode === 'RELEASE'" />

@@ -95,8 +95,7 @@
 
     <div class="relative flex-1">
       <MonacoEditor
-        ref="monacoEditorRef"
-        class="w-full h-full min-h-[200px] border rounded overflow-hidden"
+        class="w-full h-full min-h-[200px] max-h-[50vh] border rounded overflow-hidden"
         :filename="filename"
         :content="state.statement"
         :language="language"
@@ -169,7 +168,7 @@ import { cloneDeep, includes, isEmpty } from "lodash-es";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention, BBModal } from "@/bbkit";
 import { MonacoEditor } from "@/components/MonacoEditor";
@@ -219,7 +218,6 @@ const { project } = useCurrentProjectV1();
 const { isCreating, plan, planCheckRuns, rollout, events, readonly } =
   usePlanContext();
 const selectedSpec = useSelectedSpec();
-const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
 const editorState = useEditorState();
 
 const state = reactive<LocalState>({

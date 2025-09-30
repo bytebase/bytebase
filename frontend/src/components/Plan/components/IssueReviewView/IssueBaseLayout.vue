@@ -1,7 +1,7 @@
 <template>
-  <div ref="containerRef" class="flex-1 flex w-full border-t -mt-px">
+  <div class="flex-1 flex w-full border-t -mt-px">
     <!-- Left Panel - Activity -->
-    <div class="flex-1 shrink p-4 space-y-4">
+    <div class="flex-1 shrink p-4 space-y-4 overflow-x-auto">
       <slot />
       <ActivitySection />
     </div>
@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, unref } from "vue";
+import { computed, unref } from "vue";
 import { provideIssueContext, useBaseIssueContext } from "@/components/IssueV1";
 import { Drawer } from "@/components/v2";
 import { extractUserId, useCurrentProjectV1, useCurrentUserV1 } from "@/store";
@@ -51,7 +51,6 @@ import { Sidebar } from "./Sidebar";
 const { project, ready } = useCurrentProjectV1();
 const { plan, issue, rollout } = usePlanContextWithIssue();
 const currentUser = useCurrentUserV1();
-const containerRef = ref<HTMLElement>();
 
 const {
   mode: sidebarMode,
