@@ -8,7 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	parser "github.com/bytebase/parser/postgresql"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -782,6 +785,126 @@ CREATE UNIQUE INDEX "users_email_key" ON ONLY "public"."users" ("email");`,
 			expectedSequenceChanges: 0,
 			description:             "When current SDL matches database metadata except for PK column quotes only (new vs old Bytebase format), should skip diff",
 		},
+		{
+			name: "fine_grained_column_level_usability_handling",
+			currentSDLText: `CREATE TABLE "public"."products" (
+    "id" integer DEFAULT nextval('products_id_seq'::regclass) NOT NULL,
+    "name" text NOT NULL,
+    "price" numeric(10,2)
+);`,
+			previousUserSDLText: `CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    price DECIMAL(10,2)
+);`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "products",
+									Columns: []*storepb.ColumnMetadata{
+										{
+											Name:     "id",
+											Type:     "integer",
+											Nullable: false,
+											Default:  "nextval('products_id_seq'::regclass)",
+										},
+										{
+											Name:     "name",
+											Type:     "text",
+											Nullable: false,
+										},
+										{
+											Name:     "price",
+											Type:     "numeric(10,2)",
+											Nullable: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedTableChanges:    0, // Should skip column-level changes because current columns match database metadata
+			expectedViewChanges:     0,
+			expectedFunctionChanges: 0,
+			expectedSequenceChanges: 0,
+			description:             "When individual columns match database metadata format, skip column-level diffs even if table format differs",
+		},
+		{
+			name: "fine_grained_constraint_level_usability_handling",
+			currentSDLText: `CREATE TABLE "public"."orders" (
+    "order_id" bigint DEFAULT nextval('orders_order_id_seq'::regclass) NOT NULL,
+    "customer_name" text NOT NULL,
+    CONSTRAINT "orders_pkey" PRIMARY KEY (order_id),
+    CONSTRAINT "orders_customer_name_check" CHECK ((length(customer_name) > 0))
+);`,
+			previousUserSDLText: `CREATE TABLE orders (
+    order_id BIGSERIAL PRIMARY KEY,
+    customer_name TEXT NOT NULL CHECK (length(customer_name) > 0)
+);`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "orders",
+									Columns: []*storepb.ColumnMetadata{
+										{
+											Name:     "order_id",
+											Type:     "bigint",
+											Nullable: false,
+											Default:  "nextval('orders_order_id_seq'::regclass)",
+										},
+										{
+											Name:     "customer_name",
+											Type:     "text",
+											Nullable: false,
+										},
+									},
+									Indexes: []*storepb.IndexMetadata{
+										{
+											Name:        "orders_pkey",
+											Unique:      true,
+											Primary:     true,
+											KeyLength:   []int64{},
+											Expressions: []string{"order_id"},
+										},
+									},
+									CheckConstraints: []*storepb.CheckConstraintMetadata{
+										{
+											Name:       "orders_customer_name_check",
+											Expression: "(length(customer_name) > 0)",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedTableChanges:    0, // Should skip constraint-level changes because current constraints match database metadata
+			expectedViewChanges:     0,
+			expectedFunctionChanges: 0,
+			expectedSequenceChanges: 0,
+			description:             "When individual constraints match database metadata format, skip constraint-level diffs even if table format differs",
+		},
 	}
 
 	for _, tt := range tests {
@@ -1122,6 +1245,398 @@ func TestApplyMinimalChangesToChunks_MultipleTableCorruption(t *testing.T) {
 						"Chunk with identifier '%s' should contain CREATE TABLE in a valid format but got: %s",
 						identifier, chunkText)
 				}
+			}
+		})
+	}
+}
+
+// TestProcessCheckConstraintChanges tests check constraint modify/create/drop logic
+func TestProcessCheckConstraintChanges(t *testing.T) {
+	tests := []struct {
+		name                string
+		currentSDL          string
+		previousSDL         string
+		expectedDrops       int
+		expectedCreates     int
+		expectedModifies    int // modify = drop + create
+		description         string
+	}{
+		{
+			name: "create_new_check_constraint",
+			currentSDL: `CREATE TABLE "test"."users" (
+    "id" integer NOT NULL,
+    "age" integer,
+    CONSTRAINT "users_age_check" CHECK (age > 0)
+);`,
+			previousSDL: `CREATE TABLE "test"."users" (
+    "id" integer NOT NULL,
+    "age" integer
+);`,
+			expectedDrops:       0,
+			expectedCreates:     1,
+			expectedModifies:    0,
+			description:         "Adding a new check constraint should create one CREATE operation",
+		},
+		{
+			name: "drop_check_constraint",
+			currentSDL: `CREATE TABLE "test"."users" (
+    "id" integer NOT NULL,
+    "age" integer
+);`,
+			previousSDL: `CREATE TABLE "test"."users" (
+    "id" integer NOT NULL,
+    "age" integer,
+    CONSTRAINT "users_age_check" CHECK (age > 0)
+);`,
+			expectedDrops:       1,
+			expectedCreates:     0,
+			expectedModifies:    0,
+			description:         "Removing a check constraint should create one DROP operation",
+		},
+		{
+			name: "modify_check_constraint",
+			currentSDL: `CREATE TABLE "test"."users" (
+    "id" integer NOT NULL,
+    "age" integer,
+    CONSTRAINT "users_age_check" CHECK (age >= 18)
+);`,
+			previousSDL: `CREATE TABLE "test"."users" (
+    "id" integer NOT NULL,
+    "age" integer,
+    CONSTRAINT "users_age_check" CHECK (age > 0)
+);`,
+			expectedDrops:       1,
+			expectedCreates:     1,
+			expectedModifies:    1,
+			description:         "Modifying a check constraint should create one DROP and one CREATE operation",
+		},
+		{
+			name: "multiple_constraint_operations",
+			currentSDL: `CREATE TABLE "test"."users" (
+    "id" integer NOT NULL,
+    "age" integer,
+    "name" text,
+    CONSTRAINT "users_age_check" CHECK (age >= 21),
+    CONSTRAINT "users_name_check" CHECK (length(name) > 0)
+);`,
+			previousSDL: `CREATE TABLE "test"."users" (
+    "id" integer NOT NULL,
+    "age" integer,
+    "email" text,
+    CONSTRAINT "users_age_check" CHECK (age > 0),
+    CONSTRAINT "users_email_check" CHECK (email LIKE '%@%')
+);`,
+			expectedDrops:       2, // drop old age_check + drop email_check
+			expectedCreates:     2, // create new age_check + create name_check
+			expectedModifies:    1, // modify age_check
+			description:         "Multiple operations: modify age_check, drop email_check, create name_check",
+		},
+		{
+			name: "no_changes",
+			currentSDL: `CREATE TABLE "test"."users" (
+    "id" integer NOT NULL,
+    "age" integer,
+    CONSTRAINT "users_age_check" CHECK (age > 0)
+);`,
+			previousSDL: `CREATE TABLE "test"."users" (
+    "id" integer NOT NULL,
+    "age" integer,
+    CONSTRAINT "users_age_check" CHECK (age > 0)
+);`,
+			expectedDrops:       0,
+			expectedCreates:     0,
+			expectedModifies:    0,
+			description:         "No changes should result in no operations",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Logf("Test description: %s", tt.description)
+
+			// Parse current and previous SDL
+			currentChunks, err := ChunkSDLText(tt.currentSDL)
+			require.NoError(t, err)
+			previousChunks, err := ChunkSDLText(tt.previousSDL)
+			require.NoError(t, err)
+
+			// Get table chunks
+			require.Len(t, currentChunks.Tables, 1, "Should have exactly one current table")
+			require.Len(t, previousChunks.Tables, 1, "Should have exactly one previous table")
+
+			var currentChunk, previousChunk *schema.SDLChunk
+			for _, chunk := range currentChunks.Tables {
+				currentChunk = chunk
+				break
+			}
+			for _, chunk := range previousChunks.Tables {
+				previousChunk = chunk
+				break
+			}
+
+			// Extract AST nodes
+			currentAST, ok := currentChunk.ASTNode.(*parser.CreatestmtContext)
+			require.True(t, ok, "Current chunk should be a CREATE TABLE statement")
+			previousAST, ok := previousChunk.ASTNode.(*parser.CreatestmtContext)
+			require.True(t, ok, "Previous chunk should be a CREATE TABLE statement")
+
+			// Process check constraint changes (no usability chunks needed for this test)
+			checkDiffs := processCheckConstraintChanges(previousAST, currentAST, nil, "test.users")
+
+			// Count operations
+			actualDrops := 0
+			actualCreates := 0
+			for _, diff := range checkDiffs {
+				switch diff.Action {
+				case schema.MetadataDiffActionDrop:
+					actualDrops++
+				case schema.MetadataDiffActionCreate:
+					actualCreates++
+				}
+			}
+
+			// Verify results
+			assert.Equal(t, tt.expectedDrops, actualDrops, "Number of DROP operations should match")
+			assert.Equal(t, tt.expectedCreates, actualCreates, "Number of CREATE operations should match")
+
+			// Log operations for debugging
+			t.Logf("Generated %d DROP and %d CREATE operations:", actualDrops, actualCreates)
+			for i, diff := range checkDiffs {
+				t.Logf("  %d. Action: %s", i+1, diff.Action)
+			}
+		})
+	}
+}
+
+// TestProcessForeignKeyChanges tests foreign key constraint modify/create/drop logic
+func TestProcessForeignKeyChanges(t *testing.T) {
+	tests := []struct {
+		name            string
+		currentSDL      string
+		previousSDL     string
+		expectedDrops   int
+		expectedCreates int
+		description     string
+	}{
+		{
+			name: "create_new_foreign_key",
+			currentSDL: `CREATE TABLE "test"."orders" (
+    "id" integer NOT NULL,
+    "user_id" integer,
+    CONSTRAINT "orders_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id)
+);`,
+			previousSDL: `CREATE TABLE "test"."orders" (
+    "id" integer NOT NULL,
+    "user_id" integer
+);`,
+			expectedDrops:   0,
+			expectedCreates: 1,
+			description:     "Adding a new foreign key should create one CREATE operation",
+		},
+		{
+			name: "drop_foreign_key",
+			currentSDL: `CREATE TABLE "test"."orders" (
+    "id" integer NOT NULL,
+    "user_id" integer
+);`,
+			previousSDL: `CREATE TABLE "test"."orders" (
+    "id" integer NOT NULL,
+    "user_id" integer,
+    CONSTRAINT "orders_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id)
+);`,
+			expectedDrops:   1,
+			expectedCreates: 0,
+			description:     "Removing a foreign key should create one DROP operation",
+		},
+		{
+			name: "modify_foreign_key",
+			currentSDL: `CREATE TABLE "test"."orders" (
+    "id" integer NOT NULL,
+    "user_id" integer,
+    CONSTRAINT "orders_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);`,
+			previousSDL: `CREATE TABLE "test"."orders" (
+    "id" integer NOT NULL,
+    "user_id" integer,
+    CONSTRAINT "orders_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id)
+);`,
+			expectedDrops:   1,
+			expectedCreates: 1,
+			description:     "Modifying a foreign key should create one DROP and one CREATE operation",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Logf("Test description: %s", tt.description)
+
+			// Parse current and previous SDL
+			currentChunks, err := ChunkSDLText(tt.currentSDL)
+			require.NoError(t, err)
+			previousChunks, err := ChunkSDLText(tt.previousSDL)
+			require.NoError(t, err)
+
+			// Get table chunks
+			require.Len(t, currentChunks.Tables, 1, "Should have exactly one current table")
+			require.Len(t, previousChunks.Tables, 1, "Should have exactly one previous table")
+
+			var currentChunk, previousChunk *schema.SDLChunk
+			for _, chunk := range currentChunks.Tables {
+				currentChunk = chunk
+				break
+			}
+			for _, chunk := range previousChunks.Tables {
+				previousChunk = chunk
+				break
+			}
+
+			// Extract AST nodes
+			currentAST, ok := currentChunk.ASTNode.(*parser.CreatestmtContext)
+			require.True(t, ok, "Current chunk should be a CREATE TABLE statement")
+			previousAST, ok := previousChunk.ASTNode.(*parser.CreatestmtContext)
+			require.True(t, ok, "Previous chunk should be a CREATE TABLE statement")
+
+			// Process foreign key changes
+			fkDiffs := processForeignKeyChanges(previousAST, currentAST, nil, "test.orders")
+
+			// Count operations
+			actualDrops := 0
+			actualCreates := 0
+			for _, diff := range fkDiffs {
+				switch diff.Action {
+				case schema.MetadataDiffActionDrop:
+					actualDrops++
+				case schema.MetadataDiffActionCreate:
+					actualCreates++
+				}
+			}
+
+			// Verify results
+			assert.Equal(t, tt.expectedDrops, actualDrops, "Number of DROP operations should match")
+			assert.Equal(t, tt.expectedCreates, actualCreates, "Number of CREATE operations should match")
+
+			// Log operations for debugging
+			t.Logf("Generated %d DROP and %d CREATE operations:", actualDrops, actualCreates)
+			for i, diff := range fkDiffs {
+				t.Logf("  %d. Action: %s", i+1, diff.Action)
+			}
+		})
+	}
+}
+
+// TestProcessUniqueConstraintChanges tests unique constraint modify/create/drop logic
+func TestProcessUniqueConstraintChanges(t *testing.T) {
+	tests := []struct {
+		name            string
+		currentSDL      string
+		previousSDL     string
+		expectedDrops   int
+		expectedCreates int
+		description     string
+	}{
+		{
+			name: "create_new_unique_constraint",
+			currentSDL: `CREATE TABLE "test"."users" (
+    "id" integer NOT NULL,
+    "email" text,
+    CONSTRAINT "users_email_key" UNIQUE (email)
+);`,
+			previousSDL: `CREATE TABLE "test"."users" (
+    "id" integer NOT NULL,
+    "email" text
+);`,
+			expectedDrops:   0,
+			expectedCreates: 1,
+			description:     "Adding a new unique constraint should create one CREATE operation",
+		},
+		{
+			name: "drop_unique_constraint",
+			currentSDL: `CREATE TABLE "test"."users" (
+    "id" integer NOT NULL,
+    "email" text
+);`,
+			previousSDL: `CREATE TABLE "test"."users" (
+    "id" integer NOT NULL,
+    "email" text,
+    CONSTRAINT "users_email_key" UNIQUE (email)
+);`,
+			expectedDrops:   1,
+			expectedCreates: 0,
+			description:     "Removing a unique constraint should create one DROP operation",
+		},
+		{
+			name: "modify_unique_constraint",
+			currentSDL: `CREATE TABLE "test"."users" (
+    "id" integer NOT NULL,
+    "email" text,
+    "username" text,
+    CONSTRAINT "users_email_username_key" UNIQUE (email, username)
+);`,
+			previousSDL: `CREATE TABLE "test"."users" (
+    "id" integer NOT NULL,
+    "email" text,
+    "username" text,
+    CONSTRAINT "users_email_username_key" UNIQUE (email)
+);`,
+			expectedDrops:   1,
+			expectedCreates: 1,
+			description:     "Modifying a unique constraint should create one DROP and one CREATE operation",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Logf("Test description: %s", tt.description)
+
+			// Parse current and previous SDL
+			currentChunks, err := ChunkSDLText(tt.currentSDL)
+			require.NoError(t, err)
+			previousChunks, err := ChunkSDLText(tt.previousSDL)
+			require.NoError(t, err)
+
+			// Get table chunks
+			require.Len(t, currentChunks.Tables, 1, "Should have exactly one current table")
+			require.Len(t, previousChunks.Tables, 1, "Should have exactly one previous table")
+
+			var currentChunk, previousChunk *schema.SDLChunk
+			for _, chunk := range currentChunks.Tables {
+				currentChunk = chunk
+				break
+			}
+			for _, chunk := range previousChunks.Tables {
+				previousChunk = chunk
+				break
+			}
+
+			// Extract AST nodes
+			currentAST, ok := currentChunk.ASTNode.(*parser.CreatestmtContext)
+			require.True(t, ok, "Current chunk should be a CREATE TABLE statement")
+			previousAST, ok := previousChunk.ASTNode.(*parser.CreatestmtContext)
+			require.True(t, ok, "Previous chunk should be a CREATE TABLE statement")
+
+			// Process unique constraint changes
+			ukDiffs := processUniqueConstraintChanges(previousAST, currentAST, nil, "test.users")
+
+			// Count operations
+			actualDrops := 0
+			actualCreates := 0
+			for _, diff := range ukDiffs {
+				switch diff.Action {
+				case schema.MetadataDiffActionDrop:
+					actualDrops++
+				case schema.MetadataDiffActionCreate:
+					actualCreates++
+				}
+			}
+
+			// Verify results
+			assert.Equal(t, tt.expectedDrops, actualDrops, "Number of DROP operations should match")
+			assert.Equal(t, tt.expectedCreates, actualCreates, "Number of CREATE operations should match")
+
+			// Log operations for debugging
+			t.Logf("Generated %d DROP and %d CREATE operations:", actualDrops, actualCreates)
+			for i, diff := range ukDiffs {
+				t.Logf("  %d. Action: %s", i+1, diff.Action)
 			}
 		})
 	}
