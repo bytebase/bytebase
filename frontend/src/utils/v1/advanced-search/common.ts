@@ -1,5 +1,4 @@
 import { cloneDeep, pullAt } from "lodash-es";
-import { computed } from "vue";
 
 export type SemanticIssueStatus = "OPEN" | "CLOSED";
 
