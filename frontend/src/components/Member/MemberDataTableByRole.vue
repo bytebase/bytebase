@@ -11,12 +11,14 @@
 </template>
 
 <script lang="tsx" setup>
+import { orderBy } from "lodash-es";
 import { Building2Icon, Trash2Icon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable, NTooltip, NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
+import { PresetRoleType } from "@/types";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { displayRoleTitle, isBindingPolicyExpired } from "@/utils";
@@ -193,7 +195,23 @@ const userListByRole = computed(() => {
     }
   }
 
-  return [...map.values()];
+  return orderBy(
+    [...map.values()],
+    [
+      (row) => (row.scope === "workspace" ? 0 : 1),
+      (row) => {
+        if (
+          Object.values(PresetRoleType).includes(row.name as PresetRoleType)
+        ) {
+          return Object.values(PresetRoleType).indexOf(
+            row.name as PresetRoleType
+          );
+        }
+        return Number.MAX_VALUE;
+      },
+    ],
+    ["asc", "asc"]
+  );
 });
 
 const rowClassName = (row: RoleRowData) => {
