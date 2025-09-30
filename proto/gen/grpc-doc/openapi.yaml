@@ -13990,10 +13990,8 @@ components:
                          Format: instances/{instance}/databases/{database}
                 databaseCreate:
                     $ref: '#/components/schemas/Task_DatabaseCreate'
-                databaseSchemaUpdate:
-                    $ref: '#/components/schemas/Task_DatabaseSchemaUpdate'
-                databaseDataUpdate:
-                    $ref: '#/components/schemas/Task_DatabaseDataUpdate'
+                databaseUpdate:
+                    $ref: '#/components/schemas/Task_DatabaseUpdate'
                 databaseDataExport:
                     $ref: '#/components/schemas/Task_DatabaseDataExport'
                 updateTime:
@@ -14247,15 +14245,7 @@ components:
                     description: |-
                         The zip password provide by users.
                          Leave it empty if no needs to encrypt the zip file.
-        Task_DatabaseDataUpdate:
-            type: object
-            properties:
-                sheet:
-                    type: string
-                    description: 'Format: projects/{project}/sheets/{sheet}'
-                schemaVersion:
-                    type: string
-        Task_DatabaseSchemaUpdate:
+        Task_DatabaseUpdate:
             type: object
             properties:
                 sheet:

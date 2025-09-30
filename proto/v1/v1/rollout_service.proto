@@ -403,13 +403,13 @@ message Task {
     GENERAL = 1;
     // use payload DatabaseCreate
     DATABASE_CREATE = 2;
-    // use payload DatabaseSchemaUpdate
+    // use payload DatabaseUpdate
     DATABASE_SCHEMA_UPDATE = 4;
-    // use payload DatabaseSchemaUpdate
+    // use payload DatabaseUpdate
     DATABASE_SCHEMA_UPDATE_SDL = 5;
-    // use payload DatabaseSchemaUpdate
+    // use payload DatabaseUpdate
     DATABASE_SCHEMA_UPDATE_GHOST = 9;
-    // use payload DatabaseDataUpdate
+    // use payload DatabaseUpdate
     DATABASE_DATA_UPDATE = 8;
     // use payload DatabaseDataExport
     DATABASE_EXPORT = 12;
@@ -422,8 +422,7 @@ message Task {
 
   oneof payload {
     DatabaseCreate database_create = 9;
-    DatabaseSchemaUpdate database_schema_update = 11;
-    DatabaseDataUpdate database_data_update = 12;
+    DatabaseUpdate database_update = 11;
     DatabaseDataExport database_data_export = 16;
   }
 
@@ -450,13 +449,7 @@ message Task {
     string environment = 7;
   }
 
-  message DatabaseSchemaUpdate {
-    // Format: projects/{project}/sheets/{sheet}
-    string sheet = 1;
-    string schema_version = 2;
-  }
-
-  message DatabaseDataUpdate {
+  message DatabaseUpdate {
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 1;
     string schema_version = 2;

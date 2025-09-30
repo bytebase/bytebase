@@ -157,10 +157,7 @@ export const extractSchemaVersionFromTask = (task: Task): string => {
   // The schema version is specified in the filename
   // parsed and stored to the payload.schemaVersion
   // fallback to empty if we can't read the field.
-  if (task.payload?.case === "databaseDataUpdate") {
-    return task.payload.value.schemaVersion ?? "";
-  }
-  if (task.payload?.case === "databaseSchemaUpdate") {
+  if (task.payload?.case === "databaseUpdate") {
     return task.payload.value.schemaVersion ?? "";
   }
   return "";
@@ -170,10 +167,7 @@ export const sheetNameOfTaskV1 = (task: Task): string => {
   if (task.payload?.case === "databaseCreate") {
     return task.payload.value.sheet ?? "";
   }
-  if (task.payload?.case === "databaseDataUpdate") {
-    return task.payload.value.sheet ?? "";
-  }
-  if (task.payload?.case === "databaseSchemaUpdate") {
+  if (task.payload?.case === "databaseUpdate") {
     return task.payload.value.sheet ?? "";
   }
   if (task.payload?.case === "databaseDataExport") {
@@ -185,9 +179,7 @@ export const sheetNameOfTaskV1 = (task: Task): string => {
 export const setSheetNameForTask = (task: Task, sheetName: string) => {
   if (task.payload?.case === "databaseCreate") {
     task.payload.value.sheet = sheetName;
-  } else if (task.payload?.case === "databaseDataUpdate") {
-    task.payload.value.sheet = sheetName;
-  } else if (task.payload?.case === "databaseSchemaUpdate") {
+  } else if (task.payload?.case === "databaseUpdate") {
     task.payload.value.sheet = sheetName;
   } else if (task.payload?.case === "databaseDataExport") {
     task.payload.value.sheet = sheetName;

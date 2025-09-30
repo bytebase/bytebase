@@ -596,16 +596,10 @@ export declare type Task = Message<"bytebase.v1.Task"> & {
     case: "databaseCreate";
   } | {
     /**
-     * @generated from field: bytebase.v1.Task.DatabaseSchemaUpdate database_schema_update = 11;
+     * @generated from field: bytebase.v1.Task.DatabaseUpdate database_update = 11;
      */
-    value: Task_DatabaseSchemaUpdate;
-    case: "databaseSchemaUpdate";
-  } | {
-    /**
-     * @generated from field: bytebase.v1.Task.DatabaseDataUpdate database_data_update = 12;
-     */
-    value: Task_DatabaseDataUpdate;
-    case: "databaseDataUpdate";
+    value: Task_DatabaseUpdate;
+    case: "databaseUpdate";
   } | {
     /**
      * @generated from field: bytebase.v1.Task.DatabaseDataExport database_data_export = 16;
@@ -693,9 +687,9 @@ export declare type Task_DatabaseCreate = Message<"bytebase.v1.Task.DatabaseCrea
 export declare const Task_DatabaseCreateSchema: GenMessage<Task_DatabaseCreate>;
 
 /**
- * @generated from message bytebase.v1.Task.DatabaseSchemaUpdate
+ * @generated from message bytebase.v1.Task.DatabaseUpdate
  */
-export declare type Task_DatabaseSchemaUpdate = Message<"bytebase.v1.Task.DatabaseSchemaUpdate"> & {
+export declare type Task_DatabaseUpdate = Message<"bytebase.v1.Task.DatabaseUpdate"> & {
   /**
    * Format: projects/{project}/sheets/{sheet}
    *
@@ -710,33 +704,10 @@ export declare type Task_DatabaseSchemaUpdate = Message<"bytebase.v1.Task.Databa
 };
 
 /**
- * Describes the message bytebase.v1.Task.DatabaseSchemaUpdate.
- * Use `create(Task_DatabaseSchemaUpdateSchema)` to create a new message.
+ * Describes the message bytebase.v1.Task.DatabaseUpdate.
+ * Use `create(Task_DatabaseUpdateSchema)` to create a new message.
  */
-export declare const Task_DatabaseSchemaUpdateSchema: GenMessage<Task_DatabaseSchemaUpdate>;
-
-/**
- * @generated from message bytebase.v1.Task.DatabaseDataUpdate
- */
-export declare type Task_DatabaseDataUpdate = Message<"bytebase.v1.Task.DatabaseDataUpdate"> & {
-  /**
-   * Format: projects/{project}/sheets/{sheet}
-   *
-   * @generated from field: string sheet = 1;
-   */
-  sheet: string;
-
-  /**
-   * @generated from field: string schema_version = 2;
-   */
-  schemaVersion: string;
-};
-
-/**
- * Describes the message bytebase.v1.Task.DatabaseDataUpdate.
- * Use `create(Task_DatabaseDataUpdateSchema)` to create a new message.
- */
-export declare const Task_DatabaseDataUpdateSchema: GenMessage<Task_DatabaseDataUpdate>;
+export declare const Task_DatabaseUpdateSchema: GenMessage<Task_DatabaseUpdate>;
 
 /**
  * @generated from message bytebase.v1.Task.DatabaseDataExport
@@ -852,28 +823,28 @@ export enum Task_Type {
   DATABASE_CREATE = 2,
 
   /**
-   * use payload DatabaseSchemaUpdate
+   * use payload DatabaseUpdate
    *
    * @generated from enum value: DATABASE_SCHEMA_UPDATE = 4;
    */
   DATABASE_SCHEMA_UPDATE = 4,
 
   /**
-   * use payload DatabaseSchemaUpdate
+   * use payload DatabaseUpdate
    *
    * @generated from enum value: DATABASE_SCHEMA_UPDATE_SDL = 5;
    */
   DATABASE_SCHEMA_UPDATE_SDL = 5,
 
   /**
-   * use payload DatabaseSchemaUpdate
+   * use payload DatabaseUpdate
    *
    * @generated from enum value: DATABASE_SCHEMA_UPDATE_GHOST = 9;
    */
   DATABASE_SCHEMA_UPDATE_GHOST = 9,
 
   /**
-   * use payload DatabaseDataUpdate
+   * use payload DatabaseUpdate
    *
    * @generated from enum value: DATABASE_DATA_UPDATE = 8;
    */
