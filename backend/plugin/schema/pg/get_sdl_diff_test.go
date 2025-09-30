@@ -537,10 +537,10 @@ func TestGetSDLDiff_UsabilityHandling(t *testing.T) {
 									},
 									Indexes: []*storepb.IndexMetadata{
 										{
-											Name:      "users_pkey",
-											Unique:    true,
-											Primary:   true,
-											KeyLength: []int64{},
+											Name:        "users_pkey",
+											Unique:      true,
+											Primary:     true,
+											KeyLength:   []int64{},
 											Expressions: []string{"id"},
 										},
 									},
@@ -561,8 +561,8 @@ func TestGetSDLDiff_UsabilityHandling(t *testing.T) {
 			description:             "When current SDL matches database metadata format, skip diff even if previous format was different",
 		},
 		{
-			name: "view_format_difference_but_same_definition",
-			currentSDLText: `CREATE VIEW "public"."user_view" AS SELECT users.id, users.name FROM public.users;`,
+			name:                "view_format_difference_but_same_definition",
+			currentSDLText:      `CREATE VIEW "public"."user_view" AS SELECT users.id, users.name FROM public.users;`,
 			previousUserSDLText: `CREATE VIEW user_view AS SELECT id, name FROM users;`,
 			currentSchema: model.NewDatabaseSchema(
 				&storepb.DatabaseSchemaMetadata{
@@ -626,10 +626,10 @@ func TestGetSDLDiff_UsabilityHandling(t *testing.T) {
 									},
 									Indexes: []*storepb.IndexMetadata{
 										{
-											Name:      "users_pkey",
-											Unique:    true,
-											Primary:   true,
-											KeyLength: []int64{},
+											Name:        "users_pkey",
+											Unique:      true,
+											Primary:     true,
+											KeyLength:   []int64{},
 											Expressions: []string{"id"},
 										},
 									},
@@ -928,7 +928,7 @@ CREATE UNIQUE INDEX "users_email_key" ON ONLY "public"."users" ("email");`,
 
 			// Log the detected changes for debugging
 			if len(diff.TableChanges) > 0 {
-				t.Logf("Detected table changes:")
+				t.Log("Detected table changes:")
 				for i, change := range diff.TableChanges {
 					t.Logf("  %d. Table: %s.%s, Action: %v", i+1, change.SchemaName, change.TableName, change.Action)
 				}
@@ -936,7 +936,6 @@ CREATE UNIQUE INDEX "users_email_key" ON ONLY "public"."users" ("email");`,
 		})
 	}
 }
-
 
 // TestShouldSkipChunkDiffForUsability tests the core usability logic
 func TestShouldSkipChunkDiffForUsability(t *testing.T) {
@@ -965,10 +964,10 @@ func TestShouldSkipChunkDiffForUsability(t *testing.T) {
 							},
 							Indexes: []*storepb.IndexMetadata{
 								{
-									Name:      "users_pkey",
-									Unique:    true,
-									Primary:   true,
-									KeyLength: []int64{},
+									Name:        "users_pkey",
+									Unique:      true,
+									Primary:     true,
+									KeyLength:   []int64{},
 									Expressions: []string{"id"},
 								},
 							},
@@ -984,12 +983,12 @@ func TestShouldSkipChunkDiffForUsability(t *testing.T) {
 	)
 
 	tests := []struct {
-		name           string
-		chunkText      string
-		chunkID        string
-		currentSchema  *model.DatabaseSchema
-		expectedSkip   bool
-		description    string
+		name          string
+		chunkText     string
+		chunkID       string
+		currentSchema *model.DatabaseSchema
+		expectedSkip  bool
+		description   string
 	}{
 		{
 			name: "matching_table_should_skip",
@@ -1047,7 +1046,6 @@ func TestShouldSkipChunkDiffForUsability(t *testing.T) {
 		})
 	}
 }
-
 
 // TestCurrentDatabaseSDLChunksPerformance validates that the current database SDL chunks provide performance benefits
 func TestCurrentDatabaseSDLChunksPerformance(t *testing.T) {
@@ -1181,13 +1179,14 @@ func TestApplyMinimalChangesToChunks_MultipleTableCorruption(t *testing.T) {
 			// Create mock schemas for applyMinimalChangesToChunks based on test case
 			var currentSchema, previousSchema *model.DatabaseSchema
 
-			if tc.name == "simple_constraint_deletion_test" {
-				currentSchema = createMockDatabaseSchema() // No constraints
+			switch tc.name {
+			case "simple_constraint_deletion_test":
+				currentSchema = createMockDatabaseSchema()                   // No constraints
 				previousSchema = createMockDatabaseSchemaWithoutTestColumn() // Has primary key constraint
-			} else if tc.name == "simple_column_deletion_test" {
+			case "simple_column_deletion_test":
 				currentSchema = createMockDatabaseSchemaForColumnDeletion() // Only has id column
-				previousSchema = createMockDatabaseSchema() // Has id and name columns
-			} else {
+				previousSchema = createMockDatabaseSchema()                 // Has id and name columns
+			default:
 				currentSchema = createMockDatabaseSchema()
 				previousSchema = createMockDatabaseSchemaWithoutTestColumn()
 			}
@@ -1227,7 +1226,7 @@ func TestApplyMinimalChangesToChunks_MultipleTableCorruption(t *testing.T) {
 
 					// Check various valid formats
 					formats := []string{
-						fmt.Sprintf(`CREATE TABLE "%s"."%s"`, schema, table),  // "schema"."table"
+						fmt.Sprintf(`CREATE TABLE "%s"."%s"`, schema, table), // "schema"."table"
 						fmt.Sprintf(`CREATE TABLE "%s"`, identifier),         // "schema.table"
 						fmt.Sprintf(`CREATE TABLE %s`, identifier),           // schema.table
 						fmt.Sprintf(`CREATE TABLE %s.%s`, schema, table),     // schema.table
@@ -1253,13 +1252,13 @@ func TestApplyMinimalChangesToChunks_MultipleTableCorruption(t *testing.T) {
 // TestProcessCheckConstraintChanges tests check constraint modify/create/drop logic
 func TestProcessCheckConstraintChanges(t *testing.T) {
 	tests := []struct {
-		name                string
-		currentSDL          string
-		previousSDL         string
-		expectedDrops       int
-		expectedCreates     int
-		expectedModifies    int // modify = drop + create
-		description         string
+		name             string
+		currentSDL       string
+		previousSDL      string
+		expectedDrops    int
+		expectedCreates  int
+		expectedModifies int // modify = drop + create
+		description      string
 	}{
 		{
 			name: "create_new_check_constraint",
@@ -1272,10 +1271,10 @@ func TestProcessCheckConstraintChanges(t *testing.T) {
     "id" integer NOT NULL,
     "age" integer
 );`,
-			expectedDrops:       0,
-			expectedCreates:     1,
-			expectedModifies:    0,
-			description:         "Adding a new check constraint should create one CREATE operation",
+			expectedDrops:    0,
+			expectedCreates:  1,
+			expectedModifies: 0,
+			description:      "Adding a new check constraint should create one CREATE operation",
 		},
 		{
 			name: "drop_check_constraint",
@@ -1288,10 +1287,10 @@ func TestProcessCheckConstraintChanges(t *testing.T) {
     "age" integer,
     CONSTRAINT "users_age_check" CHECK (age > 0)
 );`,
-			expectedDrops:       1,
-			expectedCreates:     0,
-			expectedModifies:    0,
-			description:         "Removing a check constraint should create one DROP operation",
+			expectedDrops:    1,
+			expectedCreates:  0,
+			expectedModifies: 0,
+			description:      "Removing a check constraint should create one DROP operation",
 		},
 		{
 			name: "modify_check_constraint",
@@ -1305,10 +1304,10 @@ func TestProcessCheckConstraintChanges(t *testing.T) {
     "age" integer,
     CONSTRAINT "users_age_check" CHECK (age > 0)
 );`,
-			expectedDrops:       1,
-			expectedCreates:     1,
-			expectedModifies:    1,
-			description:         "Modifying a check constraint should create one DROP and one CREATE operation",
+			expectedDrops:    1,
+			expectedCreates:  1,
+			expectedModifies: 1,
+			description:      "Modifying a check constraint should create one DROP and one CREATE operation",
 		},
 		{
 			name: "multiple_constraint_operations",
@@ -1326,10 +1325,10 @@ func TestProcessCheckConstraintChanges(t *testing.T) {
     CONSTRAINT "users_age_check" CHECK (age > 0),
     CONSTRAINT "users_email_check" CHECK (email LIKE '%@%')
 );`,
-			expectedDrops:       2, // drop old age_check + drop email_check
-			expectedCreates:     2, // create new age_check + create name_check
-			expectedModifies:    1, // modify age_check
-			description:         "Multiple operations: modify age_check, drop email_check, create name_check",
+			expectedDrops:    2, // drop old age_check + drop email_check
+			expectedCreates:  2, // create new age_check + create name_check
+			expectedModifies: 1, // modify age_check
+			description:      "Multiple operations: modify age_check, drop email_check, create name_check",
 		},
 		{
 			name: "no_changes",
@@ -1343,10 +1342,10 @@ func TestProcessCheckConstraintChanges(t *testing.T) {
     "age" integer,
     CONSTRAINT "users_age_check" CHECK (age > 0)
 );`,
-			expectedDrops:       0,
-			expectedCreates:     0,
-			expectedModifies:    0,
-			description:         "No changes should result in no operations",
+			expectedDrops:    0,
+			expectedCreates:  0,
+			expectedModifies: 0,
+			description:      "No changes should result in no operations",
 		},
 	}
 
@@ -1392,6 +1391,8 @@ func TestProcessCheckConstraintChanges(t *testing.T) {
 					actualDrops++
 				case schema.MetadataDiffActionCreate:
 					actualCreates++
+				default:
+					// Unknown action - should not happen in normal cases
 				}
 			}
 
@@ -1508,6 +1509,8 @@ func TestProcessForeignKeyChanges(t *testing.T) {
 					actualDrops++
 				case schema.MetadataDiffActionCreate:
 					actualCreates++
+				default:
+					// Unknown action - should not happen in normal cases
 				}
 			}
 
@@ -1626,6 +1629,8 @@ func TestProcessUniqueConstraintChanges(t *testing.T) {
 					actualDrops++
 				case schema.MetadataDiffActionCreate:
 					actualCreates++
+				default:
+					// Unknown action - should not happen in normal cases
 				}
 			}
 
@@ -1684,45 +1689,6 @@ func createMockDatabaseSchemaWithoutTestColumn() *model.DatabaseSchema {
 								IsConstraint: true,
 								Expressions:  []string{"id"},
 							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	return model.NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, false)
-}
-
-func createMockDatabaseSchemaIdentical() *model.DatabaseSchema {
-	// Create identical schema that matches the previousSDL in test data (without test_column)
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
-			{
-				Name: "company",
-				Tables: []*storepb.TableMetadata{
-					{
-						Name: "departments",
-						Columns: []*storepb.ColumnMetadata{
-							{Name: "id", Type: "integer", Nullable: false},
-							{Name: "name", Type: "character varying(100)", Nullable: false},
-							{Name: "budget", Type: "numeric(12,2)", Nullable: true},
-							{Name: "created_at", Type: "timestamp(6) without time zone", Nullable: true},
-							{Name: "updated_at", Type: "timestamp(6) without time zone", Nullable: true},
-						},
-					},
-					{
-						Name: "employees",
-						Columns: []*storepb.ColumnMetadata{
-							{Name: "id", Type: "integer", Nullable: false},
-							{Name: "first_name", Type: "character varying(50)", Nullable: false},
-							{Name: "last_name", Type: "character varying(50)", Nullable: false},
-							{Name: "email", Type: "character varying(100)", Nullable: false},
-							{Name: "department_id", Type: "integer", Nullable: false},
-							{Name: "salary", Type: "numeric(10,2)", Nullable: true},
-							{Name: "hire_date", Type: "date", Nullable: true},
-							{Name: "is_active", Type: "boolean", Nullable: true},
-							// Note: no test_column to match the previousSDL
 						},
 					},
 				},
