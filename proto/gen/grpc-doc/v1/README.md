@@ -631,8 +631,7 @@
     - [Task](#bytebase-v1-Task)
     - [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate)
     - [Task.DatabaseDataExport](#bytebase-v1-Task-DatabaseDataExport)
-    - [Task.DatabaseDataUpdate](#bytebase-v1-Task-DatabaseDataUpdate)
-    - [Task.DatabaseSchemaUpdate](#bytebase-v1-Task-DatabaseSchemaUpdate)
+    - [Task.DatabaseUpdate](#bytebase-v1-Task-DatabaseUpdate)
     - [TaskRun](#bytebase-v1-TaskRun)
     - [TaskRun.PriorBackupDetail](#bytebase-v1-TaskRun-PriorBackupDetail)
     - [TaskRun.PriorBackupDetail.Item](#bytebase-v1-TaskRun-PriorBackupDetail-Item)
@@ -10218,8 +10217,7 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | type | [Task.Type](#bytebase-v1-Task-Type) |  |  |
 | target | [string](#string) |  | Format: instances/{instance} if the task is DatabaseCreate. Format: instances/{instance}/databases/{database} |
 | database_create | [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate) |  |  |
-| database_schema_update | [Task.DatabaseSchemaUpdate](#bytebase-v1-Task-DatabaseSchemaUpdate) |  |  |
-| database_data_update | [Task.DatabaseDataUpdate](#bytebase-v1-Task-DatabaseDataUpdate) |  |  |
+| database_update | [Task.DatabaseUpdate](#bytebase-v1-Task-DatabaseUpdate) |  |  |
 | database_data_export | [Task.DatabaseDataExport](#bytebase-v1-Task-DatabaseDataExport) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The update_time is the update time of latest task run. If there are no task runs, it will be empty. |
 | run_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The run_time is the scheduled run time of latest task run. If there are no task runs or the task run is not scheduled, it will be empty. |
@@ -10268,25 +10266,9 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 
 
 
-<a name="bytebase-v1-Task-DatabaseDataUpdate"></a>
+<a name="bytebase-v1-Task-DatabaseUpdate"></a>
 
-### Task.DatabaseDataUpdate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
-| schema_version | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Task-DatabaseSchemaUpdate"></a>
-
-### Task.DatabaseSchemaUpdate
+### Task.DatabaseUpdate
 
 
 
@@ -10712,10 +10694,10 @@ Read from `pg_stat_activity`
 | TYPE_UNSPECIFIED | 0 |  |
 | GENERAL | 1 |  |
 | DATABASE_CREATE | 2 | use payload DatabaseCreate |
-| DATABASE_SCHEMA_UPDATE | 4 | use payload DatabaseSchemaUpdate |
-| DATABASE_SCHEMA_UPDATE_SDL | 5 | use payload DatabaseSchemaUpdate |
-| DATABASE_SCHEMA_UPDATE_GHOST | 9 | use payload DatabaseSchemaUpdate |
-| DATABASE_DATA_UPDATE | 8 | use payload DatabaseDataUpdate |
+| DATABASE_SCHEMA_UPDATE | 4 | use payload DatabaseUpdate |
+| DATABASE_SCHEMA_UPDATE_SDL | 5 | use payload DatabaseUpdate |
+| DATABASE_SCHEMA_UPDATE_GHOST | 9 | use payload DatabaseUpdate |
+| DATABASE_DATA_UPDATE | 8 | use payload DatabaseUpdate |
 | DATABASE_EXPORT | 12 | use payload DatabaseDataExport |
 
 

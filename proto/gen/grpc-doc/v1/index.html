@@ -2588,11 +2588,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Task.DatabaseDataUpdate"><span class="badge">M</span>Task.DatabaseDataUpdate</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Task.DatabaseSchemaUpdate"><span class="badge">M</span>Task.DatabaseSchemaUpdate</a>
+                  <a href="#bytebase.v1.Task.DatabaseUpdate"><span class="badge">M</span>Task.DatabaseUpdate</a>
                 </li>
               
                 <li>
@@ -28366,15 +28362,8 @@ Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
-                  <td>database_schema_update</td>
-                  <td><a href="#bytebase.v1.Task.DatabaseSchemaUpdate">Task.DatabaseSchemaUpdate</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database_data_update</td>
-                  <td><a href="#bytebase.v1.Task.DatabaseDataUpdate">Task.DatabaseDataUpdate</a></td>
+                  <td>database_update</td>
+                  <td><a href="#bytebase.v1.Task.DatabaseUpdate">Task.DatabaseUpdate</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -28524,38 +28513,7 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
 
         
       
-        <h3 id="bytebase.v1.Task.DatabaseDataUpdate">Task.DatabaseDataUpdate</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema_version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Task.DatabaseSchemaUpdate">Task.DatabaseSchemaUpdate</h3>
+        <h3 id="bytebase.v1.Task.DatabaseUpdate">Task.DatabaseUpdate</h3>
         <p></p>
 
         
@@ -29654,25 +29612,25 @@ The indexes of the executed commands. </p></td>
               <tr>
                 <td>DATABASE_SCHEMA_UPDATE</td>
                 <td>4</td>
-                <td><p>use payload DatabaseSchemaUpdate</p></td>
+                <td><p>use payload DatabaseUpdate</p></td>
               </tr>
             
               <tr>
                 <td>DATABASE_SCHEMA_UPDATE_SDL</td>
                 <td>5</td>
-                <td><p>use payload DatabaseSchemaUpdate</p></td>
+                <td><p>use payload DatabaseUpdate</p></td>
               </tr>
             
               <tr>
                 <td>DATABASE_SCHEMA_UPDATE_GHOST</td>
                 <td>9</td>
-                <td><p>use payload DatabaseSchemaUpdate</p></td>
+                <td><p>use payload DatabaseUpdate</p></td>
               </tr>
             
               <tr>
                 <td>DATABASE_DATA_UPDATE</td>
                 <td>8</td>
-                <td><p>use payload DatabaseDataUpdate</p></td>
+                <td><p>use payload DatabaseUpdate</p></td>
               </tr>
             
               <tr>

@@ -365,23 +365,7 @@ func (x *Task_DatabaseCreate) Equal(y *Task_DatabaseCreate) bool {
 	return true
 }
 
-func (x *Task_DatabaseSchemaUpdate) Equal(y *Task_DatabaseSchemaUpdate) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Sheet != y.Sheet {
-		return false
-	}
-	if x.SchemaVersion != y.SchemaVersion {
-		return false
-	}
-	return true
-}
-
-func (x *Task_DatabaseDataUpdate) Equal(y *Task_DatabaseDataUpdate) bool {
+func (x *Task_DatabaseUpdate) Equal(y *Task_DatabaseUpdate) bool {
 	if x == y {
 		return true
 	}
@@ -447,10 +431,7 @@ func (x *Task) Equal(y *Task) bool {
 	if !x.GetDatabaseCreate().Equal(y.GetDatabaseCreate()) {
 		return false
 	}
-	if !x.GetDatabaseSchemaUpdate().Equal(y.GetDatabaseSchemaUpdate()) {
-		return false
-	}
-	if !x.GetDatabaseDataUpdate().Equal(y.GetDatabaseDataUpdate()) {
+	if !x.GetDatabaseUpdate().Equal(y.GetDatabaseUpdate()) {
 		return false
 	}
 	if !x.GetDatabaseDataExport().Equal(y.GetDatabaseDataExport()) {

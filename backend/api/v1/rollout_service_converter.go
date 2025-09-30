@@ -761,8 +761,8 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
 		SkippedReason: task.Payload.GetSkippedReason(),
 		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
-		Payload: &v1pb.Task_DatabaseSchemaUpdate_{
-			DatabaseSchemaUpdate: &v1pb.Task_DatabaseSchemaUpdate{
+		Payload: &v1pb.Task_DatabaseUpdate_{
+			DatabaseUpdate: &v1pb.Task_DatabaseUpdate{
 				Sheet:         common.FormatSheet(project.ResourceID, int(task.Payload.GetSheetId())),
 				SchemaVersion: task.Payload.GetSchemaVersion(),
 			},
@@ -799,8 +799,8 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload:       nil,
 	}
-	v1pbTaskPayload := &v1pb.Task_DatabaseDataUpdate_{
-		DatabaseDataUpdate: &v1pb.Task_DatabaseDataUpdate{
+	v1pbTaskPayload := &v1pb.Task_DatabaseUpdate_{
+		DatabaseUpdate: &v1pb.Task_DatabaseUpdate{
 			Sheet:         common.FormatSheet(project.ResourceID, int(task.Payload.GetSheetId())),
 			SchemaVersion: task.Payload.GetSchemaVersion(),
 		},
