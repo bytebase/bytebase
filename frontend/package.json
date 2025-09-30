@@ -69,7 +69,7 @@
     "semver": "7.7.2",
     "slug": "9.1.0",
     "splitpanes": "3.2.0",
-    "sql-formatter": "15.6.2",
+    "sql-formatter": "15.6.9",
     "string-width": "^7.2.0",
     "tailwind-merge": "^3.3.0",
     "uuid": "11.1.0",
