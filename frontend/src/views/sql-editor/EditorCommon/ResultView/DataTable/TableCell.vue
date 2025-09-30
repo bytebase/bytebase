@@ -264,6 +264,10 @@ const handleClick = (e: MouseEvent) => {
   if (!allowSelect.value) {
     return;
   }
+  const selectedString = window.getSelection()?.toString();
+  if (selectedString) {
+    return;
+  }
   // If the user is holding the ctrl/cmd key, select the row.
   if (e.ctrlKey || e.metaKey) {
     selectRow(props.rowIndex);
