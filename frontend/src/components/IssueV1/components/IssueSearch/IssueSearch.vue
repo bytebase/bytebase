@@ -43,7 +43,7 @@ import { ref, computed } from "vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import TimeRange from "@/components/AdvancedSearch/TimeRange.vue";
 import type { SearchParams, SearchScopeId } from "@/utils";
-import { UIIssueFilterScopeIdList, useSearchScopeIdList } from "@/utils";
+import { UIIssueFilterScopeIdList } from "@/utils";
 import Status from "./Status.vue";
 import { useIssueSearchScopeOptions } from "./useIssueSearchScopeOptions";
 
@@ -67,14 +67,23 @@ defineEmits<{
   (event: "update:params", params: SearchParams): void;
 }>();
 
-const SearchScopeIdList = useSearchScopeIdList();
 const showTimeRange = ref(false);
 
-const allowedScopes = computed(() => {
+const allowedScopes = computed((): SearchScopeId[] => {
   if (props.overrideScopeIdList && props.overrideScopeIdList.length > 0) {
     return props.overrideScopeIdList;
   }
-  return [...UIIssueFilterScopeIdList, ...SearchScopeIdList.value];
+  return [
+    ...UIIssueFilterScopeIdList,
+    "creator",
+    "instance",
+    "database",
+    "status",
+    "taskType",
+    "issue-label",
+    "project",
+    "environment",
+  ];
 });
 
 const scopeOptions = useIssueSearchScopeOptions(

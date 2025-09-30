@@ -1,5 +1,4 @@
 import { cloneDeep, pullAt } from "lodash-es";
-import { computed } from "vue";
 
 export type SemanticIssueStatus = "OPEN" | "CLOSED";
 
@@ -43,11 +42,6 @@ export const AllSearchScopeIdList = [
   // rollout related search scopes.
   "stage",
 ] as const;
-export const useSearchScopeIdList = () => {
-  return computed(() => {
-    return AllSearchScopeIdList;
-  });
-};
 
 export type SearchScopeId =
   | (typeof AllSearchScopeIdList)[number]

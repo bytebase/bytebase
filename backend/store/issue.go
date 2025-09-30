@@ -86,6 +86,8 @@ type FindIssueMessage struct {
 	// Any of the task in the issue changes the database with InstanceID and DatabaseName.
 	InstanceID   *string
 	DatabaseName *string
+	// Should match the task environment.
+	EnvironmentID *string
 	// If specified, then it will only fetch "Limit" most recently updated issues
 	Limit  *int
 	Offset *int
@@ -325,6 +327,10 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		}
 		where = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.type = ANY($%d))", len(args)+1))
 		args = append(args, taskTypeStrings)
+	}
+	if v := find.EnvironmentID; v != nil {
+		where = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.environment = $%d)", len(args)+1))
+		args = append(args, *v)
 	}
 	limitOffsetClause := ""
 	if v := find.Limit; v != nil {

@@ -71,11 +71,11 @@ export const buildIssueFilter = (find: IssueFilter): string => {
   if (find.database) {
     filter.push(`database == "${find.database}"`);
   }
+  if (find.environment) {
+    filter.push(`environment == "${find.environment}"`);
+  }
   if (find.labels && find.labels.length > 0) {
     filter.push(`labels in [${find.labels.map((l) => `"${l}"`).join(",")}]`);
-  }
-  if (find.hasPipeline !== undefined) {
-    filter.push(`has_pipeline == "${find.hasPipeline}"`);
   }
   return filter.join(" && ");
 };

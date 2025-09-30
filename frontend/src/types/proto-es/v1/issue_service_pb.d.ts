@@ -107,14 +107,15 @@ export declare type ListIssuesRequest = Message<"bytebase.v1.ListIssuesRequest">
    * - task_type: support "==" operator, the value can be "DDL", "DML" or "DATA_EXPORT"
    * - instance: the instance full name in the "instances/{id}" format, support "==" operator.
    * - database: the database full name in the "instances/{id}/databases/{name}" format, support "==" operator.
+   * - environment: the database full name in the "environments/{name}" format, support "==" operator.
    * - labels: the issue labels, support "==" and "in" operator.
-   * - has_pipeline: the issue has pipeline or not, support "==" operator, the value should be "true" or "false".
    *
    * For example:
    * creator == "users/ed@bytebase.com" && status in ["OPEN", "DONE"]
    * status == "CANCELED" && type == "DATABASE_CHANGE"
    * instance == "instances/sample" && labels in ["label1", "label2"]
-   * has_pipeline == true && create_time >= "2025-01-02T15:04:05Z07:00"
+   * create_time >= "2025-01-02T15:04:05Z07:00"
+   * environment == "environments/test"
    *
    * @generated from field: string filter = 4;
    */

@@ -131,13 +131,17 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 					}
 					issueFind.InstanceID = &database.InstanceID
 					issueFind.DatabaseName = &database.DatabaseName
-				case "has_pipeline":
-					hasPipeline, ok := value.(bool)
+				case "environment":
+					environment, ok := value.(string)
 					if !ok {
-						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`"has_pipeline" should be bool`))
+						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse value %v to string", value))
 					}
-					if !hasPipeline {
-						issueFind.NoPipeline = true
+					if environment != "" {
+						environmentID, err := common.GetEnvironmentID(environment)
+						if err != nil {
+							return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid environment filter %q", value))
+						}
+						issueFind.EnvironmentID = &environmentID
 					}
 				case "status":
 					issueStatus, err := convertToAPIIssueStatus(v1pb.IssueStatus(v1pb.IssueStatus_value[value.(string)]))
