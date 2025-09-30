@@ -67,7 +67,6 @@ defineEmits<{
   (event: "update:params", params: SearchParams): void;
 }>();
 
-// const SearchScopeIdList = useSearchScopeIdList();
 const showTimeRange = ref(false);
 
 const allowedScopes = computed((): SearchScopeId[] => {

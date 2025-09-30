@@ -43,11 +43,6 @@ export const AllSearchScopeIdList = [
   // rollout related search scopes.
   "stage",
 ] as const;
-export const useSearchScopeIdList = () => {
-  return computed(() => {
-    return AllSearchScopeIdList;
-  });
-};
 
 export type SearchScopeId =
   | (typeof AllSearchScopeIdList)[number]
