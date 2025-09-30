@@ -23,7 +23,7 @@
 
     <!-- Project Labels Section -->
     <div>
-      <div class="font-medium mb-2">
+      <div class="font-medium">
         {{ $t("common.labels") }}
       </div>
       <div class="text-sm text-gray-500 mb-3">

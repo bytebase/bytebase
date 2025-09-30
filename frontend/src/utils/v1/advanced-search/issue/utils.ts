@@ -1,4 +1,10 @@
 import { useDatabaseV1Store } from "@/store";
+import {
+  environmentNamePrefix,
+  instanceNamePrefix,
+  userNamePrefix,
+  projectNamePrefix,
+} from "@/store";
 import type { IssueFilter } from "@/types";
 import { unknownDatabase } from "@/types";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
@@ -40,13 +46,13 @@ export const buildIssueFilterBySearchParams = (
   const filter: IssueFilter = {
     ...defaultFilter,
     query,
-    instance: getValueFromSearchParams(params, "instance", "instances/"),
+    instance: getValueFromSearchParams(params, "instance", instanceNamePrefix),
     database,
-    project: `projects/${projectScope?.value ?? "-"}`,
+    project: `${projectNamePrefix}${projectScope?.value ?? "-"}`,
     createdTsAfter: createdTsRange?.[0],
     createdTsBefore: createdTsRange?.[1],
     taskType: taskTypeScope?.value,
-    creator: getValueFromSearchParams(params, "creator", "users/"),
+    creator: getValueFromSearchParams(params, "creator", userNamePrefix),
     statusList:
       status === "OPEN"
         ? [IssueStatus.OPEN]
@@ -54,6 +60,11 @@ export const buildIssueFilterBySearchParams = (
           ? [IssueStatus.DONE, IssueStatus.CANCELED]
           : undefined,
     labels,
+    environment: getValueFromSearchParams(
+      params,
+      "environment",
+      environmentNamePrefix
+    ),
   };
   return filter;
 };

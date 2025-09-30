@@ -210,7 +210,7 @@
             {{ $t("project.settings.issue-related.max-retries.self") }}
           </span>
         </p>
-        <p class="mt-1 mb-3 text-sm text-gray-400">
+        <p class="mb-3 text-sm text-gray-400">
           {{ $t("project.settings.issue-related.max-retries.description") }}
         </p>
         <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
@@ -232,7 +232,7 @@
             {{ $t("project.settings.issue-related.ci-sampling-size.self") }}
           </span>
         </p>
-        <p class="mt-1 mb-3 text-sm text-gray-400">
+        <p class="mb-3 text-sm text-gray-400">
           {{
             $t("project.settings.issue-related.ci-sampling-size.description")
           }}
@@ -259,7 +259,7 @@
             }}
           </span>
         </p>
-        <p class="mt-1 mb-3 text-sm text-gray-400">
+        <p class="mb-3 text-sm text-gray-400">
           {{
             $t(
               "project.settings.issue-related.parallel_tasks_per_rollout.description"

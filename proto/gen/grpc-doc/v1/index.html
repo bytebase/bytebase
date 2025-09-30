@@ -11316,14 +11316,15 @@ Supported filters:
 - task_type: support &#34;==&#34; operator, the value can be &#34;DDL&#34;, &#34;DML&#34; or &#34;DATA_EXPORT&#34;
 - instance: the instance full name in the &#34;instances/{id}&#34; format, support &#34;==&#34; operator.
 - database: the database full name in the &#34;instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator.
+- environment: the database full name in the &#34;environments/{name}&#34; format, support &#34;==&#34; operator.
 - labels: the issue labels, support &#34;==&#34; and &#34;in&#34; operator.
-- has_pipeline: the issue has pipeline or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;.
 
 For example:
 creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#34;OPEN&#34;, &#34;DONE&#34;]
 status == &#34;CANCELED&#34; &amp;&amp; type == &#34;DATABASE_CHANGE&#34;
 instance == &#34;instances/sample&#34; &amp;&amp; labels in [&#34;label1&#34;, &#34;label2&#34;]
-has_pipeline == true &amp;&amp; create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; </p></td>
+create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34;
+environment == &#34;environments/test&#34; </p></td>
                 </tr>
               
                 <tr>

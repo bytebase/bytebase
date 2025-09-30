@@ -63,6 +63,7 @@ export interface IssueFilter {
   project: string;
   instance?: string;
   database?: string;
+  environment?: string;
   query: string;
   creator?: string;
   statusList?: IssueStatus[];
@@ -74,5 +75,4 @@ export interface IssueFilter {
   taskType?: string;
   // filter by labels, for example: labels = "feature & bug"
   labels?: string[];
-  hasPipeline?: boolean;
 }

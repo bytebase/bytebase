@@ -3,6 +3,7 @@ import {
   releaserCandidatesForIssue,
   useWrappedReviewStepsV1,
 } from "@/components/IssueV1/logic";
+import { userNamePrefix } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
 import { isUserIncludedInList } from "@/utils";
@@ -38,7 +39,7 @@ export const filterIssueByApprover = (
   // We support "approver:{email}" by now
   // Planning to support "approver:[{email_1}, {email_2}, ...]" and
   // "approver:roles/{role}" in the future
-  if (approver.startsWith("users/")) {
+  if (approver.startsWith(userNamePrefix)) {
     return currentStep.candidates.includes(approver);
   }
 
@@ -58,7 +59,7 @@ export const filterIssueByReleaser = (
   // We support "release:{email}" by now
   // Planning to support "release:[{email_1}, {email_2}, ...]" and
   // "release:roles/{role}" in the future
-  if (releaser.startsWith("users/")) {
+  if (releaser.startsWith(userNamePrefix)) {
     const candidates = releaserCandidatesForIssue(issue);
     return isUserIncludedInList(releaser, candidates);
   }
@@ -116,8 +117,8 @@ export const getIssueApprovalStatusFromSearchParams = (
 export const buildUIIssueFilterBySearchParams = (params: SearchParams) => {
   const uiIssueFilter: UIIssueFilter = {
     approval: getIssueApprovalStatusFromSearchParams(params),
-    approver: getValueFromSearchParams(params, "approver", "users/"),
-    releaser: getValueFromSearchParams(params, "releaser", "users/"),
+    approver: getValueFromSearchParams(params, "approver", userNamePrefix),
+    releaser: getValueFromSearchParams(params, "releaser", userNamePrefix),
   };
 
   return uiIssueFilter;
