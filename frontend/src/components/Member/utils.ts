@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { orderBy } from "lodash-es";
 import { extractGroupEmail, useGroupStore, useUserStore } from "@/store";
 import {
   extractUserId,
@@ -143,5 +144,19 @@ export const getMemberBindings = async ({
     }
   }
 
-  return [...memberMap.values()];
+  return orderBy(
+    [...memberMap.values()],
+    [
+      (binding) => (binding.group ? 0 : 1),
+      (binding) => {
+        if (binding.user) {
+          return extractUserId(binding.user.name);
+        }
+        if (binding.group) {
+          return extractGroupEmail(binding.group.name);
+        }
+      },
+    ],
+    ["asc", "desc"]
+  );
 };

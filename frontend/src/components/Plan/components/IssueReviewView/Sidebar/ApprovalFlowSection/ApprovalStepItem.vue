@@ -83,7 +83,7 @@ import {
   useProjectIamPolicyStore,
 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
-import { SYSTEM_BOT_EMAIL, groupBindingPrefix } from "@/types";
+import { SYSTEM_BOT_EMAIL, groupBindingPrefix, PresetRoleType } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { ApprovalNode_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
@@ -175,11 +175,11 @@ const roleName = computed((): string => {
   // Get role name from the first node in the step
   if (props.step.nodes?.[0]?.role) {
     const role = props.step.nodes[0].role;
-    if (role === "roles/projectOwner") {
+    if (role === PresetRoleType.PROJECT_OWNER) {
       return t("role.project-owner.self");
-    } else if (role === "roles/workspaceDBA") {
+    } else if (role === PresetRoleType.WORKSPACE_DBA) {
       return t("role.workspace-dba.self");
-    } else if (role === "roles/workspaceAdmin") {
+    } else if (role === PresetRoleType.WORKSPACE_ADMIN) {
       return t("role.workspace-admin.self");
     }
   }
