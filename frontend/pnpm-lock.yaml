@@ -279,8 +279,8 @@ importers:
         specifier: ^2.0.3
         version: 2.0.3
       '@types/semver':
-        specifier: 7.7.0
-        version: 7.7.0
+        specifier: 7.7.1
+        version: 7.7.1
       '@types/slug':
         specifier: 5.0.9
         version: 5.0.9
@@ -2170,8 +2170,8 @@ packages:
   '@types/scrollparent@2.0.3':
     resolution: {integrity: sha512-hnZEChVDSDCVngnl8j+Dq0/sOzRuoHyqqR5Wc1dF7TFsWO4uQtIKBkrzTb+lakIH+XrR8mlLMHfWR8hfjqc/WA==}
 
-  '@types/semver@7.7.0':
-    resolution: {integrity: sha512-k107IF4+Xr7UHjwDc7Cfd6PRQfbdkiRabXGRjo07b4WyPahFBZCZ1sE+BNxYIJPPg73UkfOsVOLwqVc/6ETrIA==}
+  '@types/semver@7.7.1':
+    resolution: {integrity: sha512-FmgJfu+MOcQ370SD0ev7EI8TlCAfKYU+B4m5T3yXc1CiRN94g/SZPtsCkk506aUDtlMnFZvasDwHHUcZUEaYuA==}
 
   '@types/slug@5.0.9':
     resolution: {integrity: sha512-6Yp8BSplP35Esa/wOG1wLNKiqXevpQTEF/RcL/NV6BBQaMmZh4YlDwCgrrFSoUE4xAGvnKd5c+lkQJmPrBAzfQ==}
@@ -7470,7 +7470,7 @@ snapshots:
 
   '@types/scrollparent@2.0.3': {}
 
-  '@types/semver@7.7.0': {}
+  '@types/semver@7.7.1': {}
 
   '@types/slug@5.0.9': {}
 
