@@ -134,7 +134,7 @@
     "prettier": "3.6.2",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
-    "rollup": "4.46.2",
+    "rollup": "4.52.3",
     "tailwindcss": "3.4.17",
     "ts-node": "^10.9.2",
     "typescript": "5.9.2",
