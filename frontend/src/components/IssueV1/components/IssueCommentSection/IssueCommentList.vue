@@ -1,7 +1,11 @@
 <template>
   <div class="flex flex-col">
     <ul>
-      <IssueCreatedCommentV1 :issue-comments="issueComments" :issue="issue" />
+      <IssueCreatedCommentV1
+        :issue-comments="issueComments"
+        :issue="issue"
+        @update-issue="handleUpdateIssue"
+      />
       <IssueCommentView
         class="group"
         v-for="(item, index) in issueComments"
@@ -243,6 +247,10 @@ const doUpdateComment = async () => {
 const allowUpdateComment = computed(() => {
   return state.editComment && state.editComment != state.activeComment!.comment;
 });
+
+const handleUpdateIssue = (updatedIssue: ComposedIssue) => {
+  Object.assign(issue.value, updatedIssue);
+};
 
 onMounted(() => {
   watch(

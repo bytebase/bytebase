@@ -125,7 +125,7 @@
     "eslint": "9.36.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.5.3",
-    "eslint-plugin-vue": "9.33.0",
+    "eslint-plugin-vue": "10.5.0",
     "events": "^3.3.0",
     "jquery": "3.7.1",
     "jsdom": "27.0.0",
