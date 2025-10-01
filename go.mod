@@ -7,10 +7,10 @@ go 1.25.1
 godebug x509negativeserial=1
 
 require (
-	cloud.google.com/go/bigquery v1.69.0
+	cloud.google.com/go/bigquery v1.70.0
 	cloud.google.com/go/cloudsqlconn v1.18.1
 	cloud.google.com/go/secretmanager v1.15.0
-	cloud.google.com/go/spanner v1.83.0
+	cloud.google.com/go/spanner v1.85.1
 	connectrpc.com/connect v1.18.1
 	connectrpc.com/cors v0.1.0
 	connectrpc.com/grpcreflect v1.3.0
@@ -103,7 +103,7 @@ require (
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/text v0.28.0
 	google.golang.org/api v0.247.0
-	google.golang.org/genproto v0.0.0-20250728155136-f173205681a0
+	google.golang.org/genproto v0.0.0-20250929231259-57b25ae835d4
 	google.golang.org/genproto/googleapis/api v0.0.0-20250929231259-57b25ae835d4
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250929231259-57b25ae835d4
 	google.golang.org/grpc v1.74.2
@@ -276,7 +276,7 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.121.2 // indirect
+	cloud.google.com/go v0.121.6 // indirect
 	cloud.google.com/go/compute/metadata v0.8.0 // indirect
 	cloud.google.com/go/iam v1.5.2 // indirect
 	cloud.google.com/go/longrunning v0.6.7 // indirect
