@@ -288,8 +288,8 @@ importers:
         specifier: 2.2.6
         version: 2.2.6
       '@types/uuid':
-        specifier: 10.0.0
-        version: 10.0.0
+        specifier: 11.0.0
+        version: 11.0.0
       '@vitejs/plugin-legacy':
         specifier: ^6.1.1
         version: 6.1.1(terser@5.39.0)(vite@6.3.6(@types/node@22.17.0)(jiti@1.21.7)(terser@5.39.0)(yaml@2.8.0))
@@ -2182,8 +2182,9 @@ packages:
   '@types/unist@3.0.3':
     resolution: {integrity: sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==}
 
-  '@types/uuid@10.0.0':
-    resolution: {integrity: sha512-7gqG38EyHgyP1S+7+xomFtL+ZNHcKv6DwNaCZmJmo1vgMugyF3TCnXVg4t1uk89mLNwnLtnY3TpOpCOyp1/xHQ==}
+  '@types/uuid@11.0.0':
+    resolution: {integrity: sha512-HVyk8nj2m+jcFRNazzqyVKiZezyhDKrGUA3jlEcg/nZ6Ms+qHwocba1Y/AaVaznJTAM9xpdFSh+ptbNrhOGvZA==}
+    deprecated: This is a stub types definition. uuid provides its own type definitions, so you do not need this installed.
 
   '@types/web-bluetooth@0.0.21':
     resolution: {integrity: sha512-oIQLCGWtcFZy2JW77j9k8nHzAOpqMHLQejDA48XXMWH6tjCQHz5RCFz1bzsmROyL6PUm+LLnUiI4BCn221inxA==}
@@ -7473,7 +7474,9 @@ snapshots:
 
   '@types/unist@3.0.3': {}
 
-  '@types/uuid@10.0.0': {}
+  '@types/uuid@11.0.0':
+    dependencies:
+      uuid: 11.1.0
 
   '@types/web-bluetooth@0.0.21': {}
 
