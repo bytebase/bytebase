@@ -5,7 +5,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 )
 
 const (
@@ -16,14 +16,11 @@ const (
 
 // Retry uses exponential backoff with timeout.
 func Retry(ctx context.Context, fn func() error) error {
-	b := backoff.WithMaxRetries(
-		backoff.NewExponentialBackOff(
-			backoff.WithMaxElapsedTime(timeout),
-			backoff.WithInitialInterval(initialInterval),
-		),
-		3,
-	)
-	b.Reset()
-	bWithContext := backoff.WithContext(b, ctx)
-	return backoff.Retry(fn, bWithContext)
+	b := backoff.NewExponentialBackOff()
+	b.InitialInterval = initialInterval
+
+	_, err := backoff.Retry(ctx, func() (struct{}, error) {
+		return struct{}{}, fn()
+	}, backoff.WithBackOff(b), backoff.WithMaxElapsedTime(timeout), backoff.WithMaxTries(3))
+	return err
 }
