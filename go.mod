@@ -100,7 +100,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.42.0
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621
-	golang.org/x/oauth2 v0.30.0
+	golang.org/x/oauth2 v0.31.0
 	golang.org/x/text v0.29.0
 	google.golang.org/api v0.247.0
 	google.golang.org/genproto v0.0.0-20250929231259-57b25ae835d4
