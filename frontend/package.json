@@ -146,7 +146,7 @@
     "vitest": "3.2.4",
     "vscode-oniguruma": "^2.0.1",
     "vscode-textmate": "^9.2.0",
-    "vue-component-type-helpers": "^2.2.10",
+    "vue-component-type-helpers": "^3.1.0",
     "vue-i18n": "11.1.10",
     "vue-router": "4.5.1",
     "vue-tsc": "3.1.0",
