@@ -120,7 +120,7 @@
     "@vue/test-utils": "2.4.6",
     "@vue/tsconfig": "0.7.0",
     "autoprefixer": "10.4.21",
-    "code-inspector-plugin": "^0.20.12",
+    "code-inspector-plugin": "^1.0.0",
     "dotenv": "^16.5.0",
     "eslint": "9.36.0",
     "eslint-config-prettier": "^10.1.5",
