@@ -5,7 +5,7 @@
         {{ $t("plan.options.self") }}
       </h3>
     </div>
-    <div class="space-y-4 w-full xl:max-w-[60vw]">
+    <div class="space-y-4 w-full">
       <InstanceRoleSection v-if="shouldShowInstanceRoleSection" />
       <TransactionModeSection v-if="shouldShowTransactionModeSection" />
       <IsolationLevelSection v-if="shouldShowIsolationLevelSection" />
