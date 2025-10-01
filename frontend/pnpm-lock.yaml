@@ -312,8 +312,8 @@ importers:
         specifier: 2.4.6
         version: 2.4.6
       '@vue/tsconfig':
-        specifier: 0.7.0
-        version: 0.7.0(typescript@5.9.3)(vue@3.5.22(typescript@5.9.3))
+        specifier: 0.8.1
+        version: 0.8.1(typescript@5.9.3)(vue@3.5.22(typescript@5.9.3))
       autoprefixer:
         specifier: 10.4.21
         version: 10.4.21(postcss@8.5.6)
@@ -1101,9 +1101,6 @@ packages:
   '@codingame/monaco-vscode-523730aa-81e6-55d7-9916-87ad537fe087-common@21.3.3':
     resolution: {integrity: sha512-G4MOgpsYQV1cWuCx0oav7d9hPRhxlOb3z1F2TaIQoW+wQ8ZunM0mBwgwUMxX6aemiw2WNXbo5IxaLaFomOE9pQ==}
 
-  '@codingame/monaco-vscode-5452e2b7-9081-5f95-839b-4ab3544ce28f-common@21.3.3':
-    resolution: {integrity: sha512-Fq+tzm/TRYF9shCuaRbAO0ycKQHlL2dob86XK3vkuk/kChS7+ec7awEiCN1zlFnYBaY6Ah+tG1sayAdGNV05Qg==}
-
   '@codingame/monaco-vscode-5452e2b7-9081-5f95-839b-4ab3544ce28f-common@21.3.4':
     resolution: {integrity: sha512-RsldZSc5/wwrpV62NgPfQ2bRA177pYZCH6yGrT2Di6JCfbK5tScDCvZ1CaeAdhc4xxWpJFmfY4gWmb84E4oejw==}
 
@@ -1391,9 +1388,6 @@ packages:
 
   '@codingame/monaco-vscode-eda30bac-0984-5b42-9362-c68996b85232-common@21.3.4':
     resolution: {integrity: sha512-q3o7x0tjxE4zBOjpCLRKAQI36B11CfU5xREzVZJkRp2nb6n++wgKgjjDu1FVuYHvtyuFas6Jiq4KSFYv/WiUEA==}
-
-  '@codingame/monaco-vscode-editor-api@21.3.3':
-    resolution: {integrity: sha512-PnoV/dLJ1Ytrs5tCpf4w0XZBWwMiguno6du1rZGrwGv30eDGoBvdx66kNr5QAu1WhcQXStJsc5Ryq9TdiuQmEQ==}
 
   '@codingame/monaco-vscode-editor-api@21.3.4':
     resolution: {integrity: sha512-ys2wogOyyX2lZeXzqf504+dhbARD+wx8dgftX8qr0XdzSCUwTj8OnJ8cUoqtUTpoT9b+UERdLbM2FKHKeS1ayw==}
@@ -2535,8 +2529,8 @@ packages:
   '@vue/test-utils@2.4.6':
     resolution: {integrity: sha512-FMxEjOpYNYiFe0GkaHsnJPXFHxQ6m4t8vI/ElPGpMWxZKpmRvQ33OIrvRXemy6yha03RxhOlQuy+gZMC3CQSow==}
 
-  '@vue/tsconfig@0.7.0':
-    resolution: {integrity: sha512-ku2uNz5MaZ9IerPPUyOHzyjhXoX2kVJaVf7hL315DC17vS6IiZRmmCPfggNbU16QTvM80+uYYy3eYJB59WCtvg==}
+  '@vue/tsconfig@0.8.1':
+    resolution: {integrity: sha512-aK7feIWPXFSUhsCP9PFqPyFOcz4ENkb8hZ2pneL6m2UjCkccvaOhC/5KCKluuBufvp2KzkbdA2W2pk20vLzu3g==}
     peerDependencies:
       typescript: 5.x
       vue: ^3.4.0
@@ -6187,11 +6181,6 @@ snapshots:
       '@codingame/monaco-vscode-api': 21.3.3
       '@codingame/monaco-vscode-caeb744c-8e3f-5c11-80fb-0f057d24d544-common': 21.3.3
 
-  '@codingame/monaco-vscode-5452e2b7-9081-5f95-839b-4ab3544ce28f-common@21.3.3':
-    dependencies:
-      '@codingame/monaco-vscode-0af61f78-dfc5-57ba-8d32-66268c8de38d-common': 21.3.3
-      '@codingame/monaco-vscode-api': 21.3.3
-
   '@codingame/monaco-vscode-5452e2b7-9081-5f95-839b-4ab3544ce28f-common@21.3.4':
     dependencies:
       '@codingame/monaco-vscode-0af61f78-dfc5-57ba-8d32-66268c8de38d-common': 21.3.4
@@ -6741,11 +6730,6 @@ snapshots:
       '@codingame/monaco-vscode-5e2c24a1-3217-55e8-bc90-521eaf7df5a6-common': 21.3.4
       '@codingame/monaco-vscode-622c0cca-d5fa-59b6-b730-0715afcf93ee-common': 21.3.4
       '@codingame/monaco-vscode-api': 21.3.4
-
-  '@codingame/monaco-vscode-editor-api@21.3.3':
-    dependencies:
-      '@codingame/monaco-vscode-5452e2b7-9081-5f95-839b-4ab3544ce28f-common': 21.3.3
-      '@codingame/monaco-vscode-api': 21.3.3
 
   '@codingame/monaco-vscode-editor-api@21.3.4':
     dependencies:
@@ -8183,7 +8167,7 @@ snapshots:
       js-beautify: 1.15.4
       vue-component-type-helpers: 2.2.12
 
-  '@vue/tsconfig@0.7.0(typescript@5.9.3)(vue@3.5.22(typescript@5.9.3))':
+  '@vue/tsconfig@0.8.1(typescript@5.9.3)(vue@3.5.22(typescript@5.9.3))':
     optionalDependencies:
       typescript: 5.9.3
       vue: 3.5.22(typescript@5.9.3)
@@ -9813,7 +9797,7 @@ snapshots:
     dependencies:
       '@codingame/monaco-vscode-api': 21.3.4
       '@codingame/monaco-vscode-configuration-service-override': 21.3.3
-      '@codingame/monaco-vscode-editor-api': 21.3.3
+      '@codingame/monaco-vscode-editor-api': 21.3.4
       '@codingame/monaco-vscode-editor-service-override': 21.3.3
       '@codingame/monaco-vscode-extension-api': 21.3.4
       '@codingame/monaco-vscode-extensions-service-override': 21.3.4
