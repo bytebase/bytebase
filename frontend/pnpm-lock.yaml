@@ -39,7 +39,7 @@ importers:
         version: 2.1.0(@bufbuild/protobuf@2.9.0)
       '@connectrpc/connect-web':
         specifier: ^2.0.2
-        version: 2.0.3(@bufbuild/protobuf@2.9.0)(@connectrpc/connect@2.1.0(@bufbuild/protobuf@2.9.0))
+        version: 2.1.0(@bufbuild/protobuf@2.9.0)(@connectrpc/connect@2.1.0(@bufbuild/protobuf@2.9.0))
       '@markdoc/markdoc':
         specifier: 0.5.2
         version: 0.5.2
@@ -1566,11 +1566,11 @@ packages:
   '@codingame/monaco-vscode-workbench-service-override@21.3.3':
     resolution: {integrity: sha512-6+tU/KALwgH977dnqqKvQ1gOztjF6sE7xyEy0sY2j8RvwMDxO9NkgTKf1IXXXIwvoBFxgb5YG3/xLUYPK0Wbjw==}
 
-  '@connectrpc/connect-web@2.0.3':
-    resolution: {integrity: sha512-w4LZ2Ci+NW/kcMoHnoczJgyGTmxuv/MQ+tTm2UNL40HimXKWYCAna/fV0AbHRnTiteiwEBpeSCaxF34MetzhAw==}
+  '@connectrpc/connect-web@2.1.0':
+    resolution: {integrity: sha512-4IBFeMeXS1RVtmmFE/MwH+vWq/5vDRKys70va+DAaWDh83Rdy0iUQOJbITUDzvonlY5as3vwfs5yy9Yp2miHSw==}
     peerDependencies:
-      '@bufbuild/protobuf': ^2.2.0
-      '@connectrpc/connect': 2.0.3
+      '@bufbuild/protobuf': ^2.7.0
+      '@connectrpc/connect': 2.1.0
 
   '@connectrpc/connect@2.1.0':
     resolution: {integrity: sha512-xhiwnYlJNHzmFsRw+iSPIwXR/xweTvTw8x5HiwWp10sbVtd4OpOXbRgE7V58xs1EC17fzusF1f5uOAy24OkBuA==}
@@ -7288,7 +7288,7 @@ snapshots:
       '@codingame/monaco-vscode-view-status-bar-service-override': 21.3.3
       '@codingame/monaco-vscode-view-title-bar-service-override': 21.3.3
 
-  '@connectrpc/connect-web@2.0.3(@bufbuild/protobuf@2.9.0)(@connectrpc/connect@2.1.0(@bufbuild/protobuf@2.9.0))':
+  '@connectrpc/connect-web@2.1.0(@bufbuild/protobuf@2.9.0)(@connectrpc/connect@2.1.0(@bufbuild/protobuf@2.9.0))':
     dependencies:
       '@bufbuild/protobuf': 2.9.0
       '@connectrpc/connect': 2.1.0(@bufbuild/protobuf@2.9.0)
