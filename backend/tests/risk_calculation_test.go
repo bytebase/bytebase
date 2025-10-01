@@ -82,7 +82,7 @@ func TestRiskLevelCalculation(t *testing.T) {
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 						Targets: []string{fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, dbName)},
 						Sheet:   sheet.Msg.Name,
-						Type:    v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+						Type:    v1pb.DatabaseChangeType_MIGRATE,
 					},
 				},
 			}},
@@ -211,7 +211,7 @@ func TestRiskLevelCalculationWithInvalidSQL(t *testing.T) {
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 						Targets: []string{fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, dbName)},
 						Sheet:   sheet.Msg.Name,
-						Type:    v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+						Type:    v1pb.DatabaseChangeType_MIGRATE,
 					},
 				},
 			}},

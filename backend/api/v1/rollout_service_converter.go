@@ -147,20 +147,20 @@ func convertToPlanSpecChangeDatabaseConfig(config *storepb.PlanConfig_Spec_Chang
 	}
 }
 
-func convertToPlanSpecChangeDatabaseConfigType(t storepb.PlanConfig_ChangeDatabaseConfig_Type) v1pb.Plan_ChangeDatabaseConfig_Type {
+func convertToPlanSpecChangeDatabaseConfigType(t storepb.PlanConfig_ChangeDatabaseConfig_Type) v1pb.DatabaseChangeType {
 	switch t {
 	case storepb.PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED:
-		return v1pb.Plan_ChangeDatabaseConfig_TYPE_UNSPECIFIED
+		return v1pb.DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE
+		return v1pb.DatabaseChangeType_MIGRATE
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
-		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE_SDL
+		return v1pb.DatabaseChangeType_MIGRATE_SDL
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST:
-		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST
+		return v1pb.DatabaseChangeType_MIGRATE_GHOST
 	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
-		return v1pb.Plan_ChangeDatabaseConfig_DATA
+		return v1pb.DatabaseChangeType_DATA
 	default:
-		return v1pb.Plan_ChangeDatabaseConfig_TYPE_UNSPECIFIED
+		return v1pb.DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED
 	}
 }
 

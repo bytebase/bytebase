@@ -1,4 +1,4 @@
-import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
+import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { Release_File_ChangeType } from "@/types/proto-es/v1/release_service_pb";
 
@@ -14,11 +14,11 @@ export const getSpecChangeType = (
       ? spec.config.value
       : undefined;
   switch (changeDatabaseConfig?.type) {
-    case Plan_ChangeDatabaseConfig_Type.MIGRATE:
+    case DatabaseChangeType.MIGRATE:
       return Release_File_ChangeType.DDL;
-    case Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST:
+    case DatabaseChangeType.MIGRATE_GHOST:
       return Release_File_ChangeType.DDL_GHOST;
-    case Plan_ChangeDatabaseConfig_Type.DATA:
+    case DatabaseChangeType.DATA:
       return Release_File_ChangeType.DML;
   }
   // Default to DDL if no type is specified.

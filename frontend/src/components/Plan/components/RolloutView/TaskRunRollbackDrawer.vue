@@ -139,10 +139,10 @@ import {
   useCurrentProjectV1,
   useSheetV1Store,
 } from "@/store";
+import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
   CreatePlanRequestSchema,
-  Plan_ChangeDatabaseConfig_Type,
   Plan_ChangeDatabaseConfigSchema,
   Plan_SpecSchema,
   PlanSchema,
@@ -313,7 +313,7 @@ const handleConfirm = async () => {
           case: "changeDatabaseConfig",
           value: create(Plan_ChangeDatabaseConfigSchema, {
             targets: [preview.task.target],
-            type: Plan_ChangeDatabaseConfig_Type.DATA,
+            type: DatabaseChangeType.DATA,
             sheet: sheet.name,
           }),
         },

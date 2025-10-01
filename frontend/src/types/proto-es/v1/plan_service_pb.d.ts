@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
-import type { ExportFormat, Position, State } from "./common_pb";
+import type { DatabaseChangeType, ExportFormat, Position, State } from "./common_pb";
 import type { ChangedResources } from "./database_service_pb";
 
 /**
@@ -488,9 +488,11 @@ export declare type Plan_ChangeDatabaseConfig = Message<"bytebase.v1.Plan.Change
   release: string;
 
   /**
-   * @generated from field: bytebase.v1.Plan.ChangeDatabaseConfig.Type type = 3;
+   * Type is the database change type.
+   *
+   * @generated from field: bytebase.v1.DatabaseChangeType type = 3;
    */
-  type: Plan_ChangeDatabaseConfig_Type;
+  type: DatabaseChangeType;
 
   /**
    * @generated from field: map<string, string> ghost_flags = 7;
@@ -510,51 +512,6 @@ export declare type Plan_ChangeDatabaseConfig = Message<"bytebase.v1.Plan.Change
  * Use `create(Plan_ChangeDatabaseConfigSchema)` to create a new message.
  */
 export declare const Plan_ChangeDatabaseConfigSchema: GenMessage<Plan_ChangeDatabaseConfig>;
-
-/**
- * Type is the database change type.
- *
- * @generated from enum bytebase.v1.Plan.ChangeDatabaseConfig.Type
- */
-export enum Plan_ChangeDatabaseConfig_Type {
-  /**
-   * @generated from enum value: TYPE_UNSPECIFIED = 0;
-   */
-  TYPE_UNSPECIFIED = 0,
-
-  /**
-   * Used for DDL changes including CREATE DATABASE.
-   *
-   * @generated from enum value: MIGRATE = 2;
-   */
-  MIGRATE = 2,
-
-  /**
-   * Used for schema changes via state-based schema migration including CREATE DATABASE.
-   *
-   * @generated from enum value: MIGRATE_SDL = 3;
-   */
-  MIGRATE_SDL = 3,
-
-  /**
-   * Used for DDL changes using gh-ost.
-   *
-   * @generated from enum value: MIGRATE_GHOST = 4;
-   */
-  MIGRATE_GHOST = 4,
-
-  /**
-   * Used for DML change.
-   *
-   * @generated from enum value: DATA = 6;
-   */
-  DATA = 6,
-}
-
-/**
- * Describes the enum bytebase.v1.Plan.ChangeDatabaseConfig.Type.
- */
-export declare const Plan_ChangeDatabaseConfig_TypeSchema: GenEnum<Plan_ChangeDatabaseConfig_Type>;
 
 /**
  * @generated from message bytebase.v1.Plan.ExportDataConfig

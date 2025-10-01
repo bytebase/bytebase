@@ -68,3 +68,16 @@ message Range {
   int32 start = 1;
   int32 end = 2;
 }
+
+// DatabaseChangeType is the database change type.
+enum DatabaseChangeType {
+  DATABASE_CHANGE_TYPE_UNSPECIFIED = 0;
+  // Used for DDL changes including CREATE DATABASE.
+  MIGRATE = 2;
+  // Used for schema changes via state-based schema migration including CREATE DATABASE.
+  MIGRATE_SDL = 3;
+  // Used for DDL changes using gh-ost.
+  MIGRATE_GHOST = 4;
+  // Used for DML change.
+  DATA = 6;
+}

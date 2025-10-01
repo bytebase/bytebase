@@ -75,11 +75,8 @@ import {
 import { usePlanStore } from "@/store/modules/v1/plan";
 import { buildPlanFindBySearchParams } from "@/store/modules/v1/plan";
 import { isValidDatabaseGroupName, SYSTEM_BOT_USER_NAME } from "@/types";
-import {
-  Plan_ChangeDatabaseConfig_Type,
-  type Plan,
-  type Plan_Spec,
-} from "@/types/proto-es/v1/plan_service_pb";
+import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
+import { type Plan, type Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import {
   extractDatabaseGroupName,
@@ -292,7 +289,7 @@ const allowToCreatePlan = computed(() => {
 const handleSpecCreated = async (spec: Plan_Spec) => {
   const template =
     spec.config?.case === "changeDatabaseConfig" &&
-    spec.config.value.type === Plan_ChangeDatabaseConfig_Type.DATA
+    spec.config.value.type === DatabaseChangeType.DATA
       ? "bb.issue.database.data.update"
       : "bb.issue.database.schema.update";
   const targets = targetsForSpec(spec);

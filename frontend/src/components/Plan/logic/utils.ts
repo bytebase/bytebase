@@ -4,11 +4,9 @@ import { planServiceClientConnect } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
 import { projectNamePrefix, useSheetV1Store } from "@/store";
 import { useProjectV1Store } from "@/store";
+import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
-import {
-  Plan_ChangeDatabaseConfig_Type,
-  UpdatePlanRequestSchema,
-} from "@/types/proto-es/v1/plan_service_pb";
+import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import { extractProjectResourceName, setSheetStatement } from "@/utils";
@@ -26,16 +24,16 @@ export const getSpecTitle = (spec: Plan_Spec): string => {
   } else if (spec.config?.case === "changeDatabaseConfig") {
     const changeType = spec.config.value.type;
     switch (changeType) {
-      case Plan_ChangeDatabaseConfig_Type.MIGRATE:
+      case DatabaseChangeType.MIGRATE:
         title = t("plan.spec.type.schema-change");
         break;
-      case Plan_ChangeDatabaseConfig_Type.MIGRATE_SDL:
+      case DatabaseChangeType.MIGRATE_SDL:
         title = "SDL";
         break;
-      case Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST:
+      case DatabaseChangeType.MIGRATE_GHOST:
         title = t("plan.spec.type.ghost-migration");
         break;
-      case Plan_ChangeDatabaseConfig_Type.DATA:
+      case DatabaseChangeType.DATA:
         title = t("plan.spec.type.data-change");
         break;
       default:

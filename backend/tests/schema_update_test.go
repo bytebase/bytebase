@@ -66,7 +66,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	sheet := sheetResp.Msg
 
 	// Create an issue that updates database schema.
-	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
+	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.DatabaseChangeType_MIGRATE)
 	a.NoError(err)
 
 	// Query schema.
@@ -86,7 +86,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	sheet = sheetResp.Msg
 
 	// Create an issue that updates database data.
-	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_DATA)
+	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.DatabaseChangeType_DATA)
 	a.NoError(err)
 
 	resp, err := ctl.databaseServiceClient.ListChangelogs(ctx, connect.NewRequest(&v1pb.ListChangelogsRequest{
@@ -327,7 +327,7 @@ CREATE TABLE "public"."book" (
 			ddlSheet := ddlSheetResp.Msg
 
 			// Create an issue that updates database schema.
-			err = ctl.changeDatabase(ctx, ctl.project, database, ddlSheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
+			err = ctl.changeDatabase(ctx, ctl.project, database, ddlSheet, v1pb.DatabaseChangeType_MIGRATE)
 			a.NoError(err)
 
 			latestSchemaResp, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
@@ -417,7 +417,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 							Targets: []string{database.Name},
 							Sheet:   sheet.Name,
-							Type:    v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+							Type:    v1pb.DatabaseChangeType_MIGRATE,
 						},
 					},
 				},

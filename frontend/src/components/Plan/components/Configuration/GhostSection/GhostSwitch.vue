@@ -37,8 +37,8 @@ import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { default as ErrorList } from "@/components/misc/ErrorList.vue";
 import { planServiceClientConnect } from "@/grpcweb";
 import { pushNotification } from "@/store";
+import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
 import { allowGhostForDatabase } from "./common";
 import { useGhostSettingContext } from "./context";
 
@@ -143,8 +143,8 @@ const toggleChecked = async (on: boolean) => {
     )
       return;
     selectedSpec.value.config.value.type = on
-      ? Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
-      : Plan_ChangeDatabaseConfig_Type.MIGRATE;
+      ? DatabaseChangeType.MIGRATE_GHOST
+      : DatabaseChangeType.MIGRATE;
   } else {
     const planPatch = cloneDeep(plan.value);
     const spec = (planPatch?.specs || []).find((spec) => {
@@ -158,8 +158,8 @@ const toggleChecked = async (on: boolean) => {
     }
 
     spec.config.value.type = on
-      ? Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
-      : Plan_ChangeDatabaseConfig_Type.MIGRATE;
+      ? DatabaseChangeType.MIGRATE_GHOST
+      : DatabaseChangeType.MIGRATE;
     const request = create(UpdatePlanRequestSchema, {
       plan: planPatch,
       updateMask: { paths: ["specs"] },

@@ -298,6 +298,66 @@ func (ExportFormat) EnumDescriptor() ([]byte, []int) {
 	return file_v1_common_proto_rawDescGZIP(), []int{3}
 }
 
+// DatabaseChangeType is the database change type.
+type DatabaseChangeType int32
+
+const (
+	DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED DatabaseChangeType = 0
+	// Used for DDL changes including CREATE DATABASE.
+	DatabaseChangeType_MIGRATE DatabaseChangeType = 2
+	// Used for schema changes via state-based schema migration including CREATE DATABASE.
+	DatabaseChangeType_MIGRATE_SDL DatabaseChangeType = 3
+	// Used for DDL changes using gh-ost.
+	DatabaseChangeType_MIGRATE_GHOST DatabaseChangeType = 4
+	// Used for DML change.
+	DatabaseChangeType_DATA DatabaseChangeType = 6
+)
+
+// Enum value maps for DatabaseChangeType.
+var (
+	DatabaseChangeType_name = map[int32]string{
+		0: "DATABASE_CHANGE_TYPE_UNSPECIFIED",
+		2: "MIGRATE",
+		3: "MIGRATE_SDL",
+		4: "MIGRATE_GHOST",
+		6: "DATA",
+	}
+	DatabaseChangeType_value = map[string]int32{
+		"DATABASE_CHANGE_TYPE_UNSPECIFIED": 0,
+		"MIGRATE":                          2,
+		"MIGRATE_SDL":                      3,
+		"MIGRATE_GHOST":                    4,
+		"DATA":                             6,
+	}
+)
+
+func (x DatabaseChangeType) Enum() *DatabaseChangeType {
+	p := new(DatabaseChangeType)
+	*p = x
+	return p
+}
+
+func (x DatabaseChangeType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (DatabaseChangeType) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_common_proto_enumTypes[4].Descriptor()
+}
+
+func (DatabaseChangeType) Type() protoreflect.EnumType {
+	return &file_v1_common_proto_enumTypes[4]
+}
+
+func (x DatabaseChangeType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use DatabaseChangeType.Descriptor instead.
+func (DatabaseChangeType) EnumDescriptor() ([]byte, []int) {
+	return file_v1_common_proto_rawDescGZIP(), []int{4}
+}
+
 // Position in a text expressed as zero-based line and zero-based column byte
 // offset.
 type Position struct {
@@ -467,7 +527,13 @@ const file_v1_common_proto_rawDesc = "" +
 	"\x03CSV\x10\x01\x12\b\n" +
 	"\x04JSON\x10\x02\x12\a\n" +
 	"\x03SQL\x10\x03\x12\b\n" +
-	"\x04XLSX\x10\x04B6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\x04XLSX\x10\x04*u\n" +
+	"\x12DatabaseChangeType\x12$\n" +
+	" DATABASE_CHANGE_TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
+	"\aMIGRATE\x10\x02\x12\x0f\n" +
+	"\vMIGRATE_SDL\x10\x03\x12\x11\n" +
+	"\rMIGRATE_GHOST\x10\x04\x12\b\n" +
+	"\x04DATA\x10\x06B6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_common_proto_rawDescOnce sync.Once
@@ -481,15 +547,16 @@ func file_v1_common_proto_rawDescGZIP() []byte {
 	return file_v1_common_proto_rawDescData
 }
 
-var file_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_v1_common_proto_goTypes = []any{
-	(State)(0),        // 0: bytebase.v1.State
-	(Engine)(0),       // 1: bytebase.v1.Engine
-	(VCSType)(0),      // 2: bytebase.v1.VCSType
-	(ExportFormat)(0), // 3: bytebase.v1.ExportFormat
-	(*Position)(nil),  // 4: bytebase.v1.Position
-	(*Range)(nil),     // 5: bytebase.v1.Range
+	(State)(0),              // 0: bytebase.v1.State
+	(Engine)(0),             // 1: bytebase.v1.Engine
+	(VCSType)(0),            // 2: bytebase.v1.VCSType
+	(ExportFormat)(0),       // 3: bytebase.v1.ExportFormat
+	(DatabaseChangeType)(0), // 4: bytebase.v1.DatabaseChangeType
+	(*Position)(nil),        // 5: bytebase.v1.Position
+	(*Range)(nil),           // 6: bytebase.v1.Range
 }
 var file_v1_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -509,7 +576,7 @@ func file_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_common_proto_rawDesc), len(file_v1_common_proto_rawDesc)),
-			NumEnums:      4,
+			NumEnums:      5,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,

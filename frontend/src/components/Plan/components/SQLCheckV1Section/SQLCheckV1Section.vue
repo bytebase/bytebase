@@ -96,8 +96,8 @@ import Drawer from "@/components/v2/Container/Drawer.vue";
 import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
 import { releaseServiceClientConnect } from "@/grpcweb";
 import { projectNamePrefix } from "@/store";
+import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import {
-  Plan_ChangeDatabaseConfig_Type,
   PlanCheckRun_Type,
   PlanCheckRun_Status,
   PlanCheckRun_Result_Status,
@@ -221,7 +221,7 @@ const runChecks = async () => {
             type: Release_File_Type.VERSIONED,
             statement: new TextEncoder().encode(statement),
             changeType:
-              config.type === Plan_ChangeDatabaseConfig_Type.DATA
+              config.type === DatabaseChangeType.DATA
                 ? Release_File_ChangeType.DML
                 : Release_File_ChangeType.DDL,
           },

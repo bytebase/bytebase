@@ -1,10 +1,8 @@
 import { isDBGroupChangeSpec } from "@/components/Plan/logic";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import {
-  Plan_ChangeDatabaseConfig_Type,
-  type Plan_Spec,
-} from "@/types/proto-es/v1/plan_service_pb";
+import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
+import { type Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { semverCompare } from "@/utils";
 
 export const GHOST_AVAILABLE_ENGINES = [Engine.MYSQL, Engine.MARIADB];
@@ -39,8 +37,8 @@ export const allowGhostForSpec = (spec: Plan_Spec | undefined) => {
   if (!config) return false;
 
   return [
-    Plan_ChangeDatabaseConfig_Type.MIGRATE,
-    Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST,
+    DatabaseChangeType.MIGRATE,
+    DatabaseChangeType.MIGRATE_GHOST,
   ].includes(config.type);
 };
 
@@ -57,10 +55,10 @@ export const getGhostEnabledForSpec = (
   if (!config) {
     return undefined;
   }
-  if (config.type === Plan_ChangeDatabaseConfig_Type.MIGRATE) {
+  if (config.type === DatabaseChangeType.MIGRATE) {
     return false;
   }
-  if (config.type === Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST) {
+  if (config.type === DatabaseChangeType.MIGRATE_GHOST) {
     return true;
   }
   return undefined;

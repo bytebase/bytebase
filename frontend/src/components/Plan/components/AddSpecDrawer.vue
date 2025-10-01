@@ -35,10 +35,7 @@
                   'border-blue-500 bg-blue-50': isMigrateSelected,
                 }"
               >
-                <NRadio
-                  :value="Plan_ChangeDatabaseConfig_Type.MIGRATE"
-                  class="w-full"
-                >
+                <NRadio :value="DatabaseChangeType.MIGRATE" class="w-full">
                   <div class="flex items-start space-x-3 w-full">
                     <FileDiffIcon
                       class="w-6 h-6 mt-1 flex-shrink-0"
@@ -63,10 +60,7 @@
                   'border-blue-500 bg-blue-50': isDataSelected,
                 }"
               >
-                <NRadio
-                  :value="Plan_ChangeDatabaseConfig_Type.DATA"
-                  class="w-full"
-                >
+                <NRadio :value="DatabaseChangeType.DATA" class="w-full">
                   <div class="flex items-start space-x-3 w-full">
                     <EditIcon
                       class="w-6 h-6 mt-1 flex-shrink-0"
@@ -236,11 +230,9 @@ import {
   batchGetOrFetchDatabases,
   pushNotification,
 } from "@/store";
+import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import {
-  Plan_ChangeDatabaseConfig_Type,
   Plan_ChangeDatabaseConfigSchema,
-} from "@/types/proto-es/v1/plan_service_pb";
-import {
   Plan_SpecSchema,
   type Plan_Spec,
 } from "@/types/proto-es/v1/plan_service_pb";
@@ -268,8 +260,8 @@ const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const dbCatalogStore = useDatabaseCatalogV1Store();
 
-const selectedChangeType: Ref<Plan_ChangeDatabaseConfig_Type> = ref(
-  Plan_ChangeDatabaseConfig_Type.MIGRATE
+const selectedChangeType: Ref<DatabaseChangeType> = ref(
+  DatabaseChangeType.MIGRATE
 );
 const isCreating = ref(false);
 const currentStep = ref(Step.SELECT_CHANGE_TYPE);
@@ -332,11 +324,9 @@ const isLastStep = computed(() => {
 
 const changeTypeTitle = computed(() => {
   if (currentStep.value !== Step.SELECT_CHANGE_TYPE) {
-    if (selectedChangeType.value === Plan_ChangeDatabaseConfig_Type.MIGRATE) {
+    if (selectedChangeType.value === DatabaseChangeType.MIGRATE) {
       return t("plan.schema-migration");
-    } else if (
-      selectedChangeType.value === Plan_ChangeDatabaseConfig_Type.DATA
-    ) {
+    } else if (selectedChangeType.value === DatabaseChangeType.DATA) {
       return t("plan.data-change");
     }
   }
@@ -344,18 +334,18 @@ const changeTypeTitle = computed(() => {
 });
 
 const isMigrateSelected = computed(() => {
-  return selectedChangeType.value === Plan_ChangeDatabaseConfig_Type.MIGRATE;
+  return selectedChangeType.value === DatabaseChangeType.MIGRATE;
 });
 
 const isDataSelected = computed(() => {
-  return selectedChangeType.value === Plan_ChangeDatabaseConfig_Type.DATA;
+  return selectedChangeType.value === DatabaseChangeType.DATA;
 });
 
 // Reset state when drawer opens
 watch(show, (newVal) => {
   if (newVal) {
     currentStep.value = Step.SELECT_CHANGE_TYPE;
-    selectedChangeType.value = Plan_ChangeDatabaseConfig_Type.MIGRATE;
+    selectedChangeType.value = DatabaseChangeType.MIGRATE;
     databaseSelectState.changeSource = "DATABASE";
     databaseSelectState.selectedDatabaseNameList = [];
     databaseSelectState.selectedDatabaseGroup = undefined;
@@ -561,7 +551,7 @@ const handleConfirm = async () => {
       `${project.value.name}/sheets/${sheetUID}`
     );
     localSheet.title =
-      selectedChangeType.value === Plan_ChangeDatabaseConfig_Type.MIGRATE
+      selectedChangeType.value === DatabaseChangeType.MIGRATE
         ? "Schema Migration"
         : "Data Change";
     if (statement) {
