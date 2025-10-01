@@ -113,7 +113,7 @@
     "@types/uuid": "11.0.0",
     "@vitejs/plugin-legacy": "^7.0.0",
     "@vitejs/plugin-vue": "6.0.1",
-    "@vitejs/plugin-vue-jsx": "4.2.0",
+    "@vitejs/plugin-vue-jsx": "5.1.1",
     "@vue/compiler-sfc": "3.5.22",
     "@vue/eslint-config-prettier": "10.2.0",
     "@vue/eslint-config-typescript": "^14.5.0",
