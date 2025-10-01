@@ -375,8 +375,8 @@ importers:
         specifier: ^11.0.5
         version: 11.0.5
       unplugin-icons:
-        specifier: 22.3.0
-        version: 22.3.0(@vue/compiler-sfc@3.5.22)
+        specifier: 22.4.1
+        version: 22.4.1(@vue/compiler-sfc@3.5.22)
       unplugin-vue-components:
         specifier: 29.1.0
         version: 29.1.0(@babel/parser@7.28.4)(vue@3.5.22(typescript@5.9.3))
@@ -4832,8 +4832,8 @@ packages:
     resolution: {integrity: sha512-CJ1QgKmNg3CwvAv/kOFmtnEN05f0D/cn9QntgNOQlQF9dgvVTHj3t+8JPdjqawCHk7V/KA+fbUqzZ9XWhcqPUg==}
     engines: {node: '>= 4.0.0'}
 
-  unplugin-icons@22.3.0:
-    resolution: {integrity: sha512-Q7c2RoVUn4LzFADT0H/oT5ApJgiWW+xTK7D5/hi6gYtObmAuEE6ebyvejvfbinJL8tH4wanoNjkWcmlqEsTcXg==}
+  unplugin-icons@22.4.1:
+    resolution: {integrity: sha512-4PlydmatS9j/6CES0rnCpJMNc9bWDoh4MoFe+a86RXsS1VUOdJ1/7J2cnnXBmm4BgJdxEsJp+9Ov4555k1qp0g==}
     peerDependencies:
       '@svgr/core': '>=7.0.0'
       '@svgx/core': ^1.0.1
@@ -10747,7 +10747,7 @@ snapshots:
 
   universalify@0.2.0: {}
 
-  unplugin-icons@22.3.0(@vue/compiler-sfc@3.5.22):
+  unplugin-icons@22.4.1(@vue/compiler-sfc@3.5.22):
     dependencies:
       '@antfu/install-pkg': 1.1.0
       '@iconify/utils': 3.0.2
