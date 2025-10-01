@@ -68,7 +68,6 @@ require (
 	github.com/labstack/echo-contrib v0.17.4
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/lestrrat-go/jwx/v2 v2.0.11
-	github.com/lestrrat-go/jwx/v3 v3.0.11
 	github.com/lib/pq v1.10.9
 	github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8
 	github.com/mattn/go-sqlite3 v1.14.32
