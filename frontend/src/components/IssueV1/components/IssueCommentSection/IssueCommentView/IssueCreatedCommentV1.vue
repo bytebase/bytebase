@@ -115,6 +115,10 @@ const props = defineProps<{
   issueComments: DistinctIssueComment[];
 }>();
 
+const emit = defineEmits<{
+  (event: "update-issue", issue: ComposedIssue): void;
+}>();
+
 const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
 const { project } = useCurrentProjectV1();
@@ -184,7 +188,11 @@ const saveEdit = async () => {
       });
       const response = await planServiceClientConnect.updatePlan(request);
       if (props.issue.planEntity) {
-        Object.assign(props.issue.planEntity, response);
+        const updatedIssue = {
+          ...props.issue,
+          planEntity: response,
+        };
+        emit("update-issue", updatedIssue);
       }
     } else {
       // Update issue description
@@ -196,7 +204,11 @@ const saveEdit = async () => {
         updateMask: { paths: ["description"] },
       });
       const response = await issueServiceClientConnect.updateIssue(request);
-      Object.assign(props.issue, response);
+      const updatedIssue = {
+        ...props.issue,
+        ...response,
+      };
+      emit("update-issue", updatedIssue);
     }
 
     cancelEdit();
