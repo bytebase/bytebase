@@ -86,7 +86,7 @@ require (
 	github.com/snowflakedb/gosnowflake v1.17.0
 	github.com/sourcegraph/conc v0.3.0
 	github.com/sourcegraph/jsonrpc2 v0.2.1
-	github.com/spf13/cobra v1.9.1
+	github.com/spf13/cobra v1.10.1
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.38.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.38.0
@@ -367,7 +367,7 @@ require (
 	github.com/siddontang/go v0.0.0-20180604090527-bdc77568d726 // indirect
 	github.com/siddontang/go-log v0.0.0-20190221022429-1e957dd83bed // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/tikv/client-go/v2 v2.0.8-0.20231116051730-1c2351c28173 // indirect
 	github.com/tikv/pd/client v0.0.0-20231127075044-9f4803d8bd05 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
