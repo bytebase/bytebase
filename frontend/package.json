@@ -26,7 +26,7 @@
     "@codingame/monaco-vscode-theme-service-override": "15.0.3",
     "@connectrpc/connect": "^2.0.2",
     "@connectrpc/connect-web": "^2.0.2",
-    "@markdoc/markdoc": "0.5.2",
+    "@markdoc/markdoc": "0.5.4",
     "@soerenmartius/vue3-clipboard": "0.1.2",
     "@tanstack/vue-table": "8.21.3",
     "@tanstack/vue-virtual": "^3.13.12",
