@@ -191,8 +191,8 @@ importers:
         specifier: 9.0.1
         version: 9.0.1
       vscode-ws-jsonrpc:
-        specifier: 3.4.0
-        version: 3.4.0
+        specifier: 3.5.0
+        version: 3.5.0
       vue:
         specifier: 3.5.18
         version: 3.5.18(typescript@5.9.3)
@@ -5040,10 +5040,6 @@ packages:
 
   vscode-uri@3.1.0:
     resolution: {integrity: sha512-/BpdSx+yCQGnCvecbyXdxHDkuk55/G3xwnC0GqY4gmQ3j+A+g8kzzgB4Nk/SINjqn6+waqw3EgbVF2QKExkRxQ==}
-
-  vscode-ws-jsonrpc@3.4.0:
-    resolution: {integrity: sha512-jkNZvX0LdHt4skPxMw/jFePr3jRCJU6ZmO28oPoQ7RwNSkwU3uN8mgtxACYEbOY68bYmi/b/uJzhxewKCz1P4w==}
-    engines: {node: '>=18.19.0', npm: '>=10.2.3'}
 
   vscode-ws-jsonrpc@3.5.0:
     resolution: {integrity: sha512-13ZDy7Od4AfEPK2HIfY3DtyRi4FVsvFql1yobVJrpIoHOKGGJpIjVvIJpMxkrHzCZzWlYlg+WEu2hrYkCTvM0Q==}
@@ -11120,10 +11116,6 @@ snapshots:
   vscode-textmate@9.2.0: {}
 
   vscode-uri@3.1.0: {}
-
-  vscode-ws-jsonrpc@3.4.0:
-    dependencies:
-      vscode-jsonrpc: 8.2.1
 
   vscode-ws-jsonrpc@3.5.0:
     dependencies:
