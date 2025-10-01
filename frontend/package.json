@@ -139,7 +139,7 @@
     "ts-node": "^10.9.2",
     "typescript": "5.9.2",
     "unified": "^11.0.5",
-    "unplugin-icons": "22.1.0",
+    "unplugin-icons": "22.3.0",
     "unplugin-vue-components": "28.7.0",
     "vite": "6.3.6",
     "vite-bundle-visualizer": "^1.2.1",
