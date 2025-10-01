@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/lestrrat-go/jwx/v3/jwk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -132,7 +132,7 @@ func newMockServer(t *testing.T, tls bool, userinfo []byte) *httptest.Server {
 	rs256, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(t, err)
 	mux.HandleFunc("/oauth/discovery/keys", func(w http.ResponseWriter, _ *http.Request) {
-		key, err := jwk.FromRaw(rs256.PublicKey)
+		key, err := jwk.Import(rs256.PublicKey)
 		require.NoError(t, err)
 
 		err = key.Set(jwk.KeyUsageKey, "sig")
