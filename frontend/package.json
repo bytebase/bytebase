@@ -140,7 +140,7 @@
     "typescript": "5.9.3",
     "unified": "^11.0.5",
     "unplugin-icons": "22.3.0",
-    "unplugin-vue-components": "28.7.0",
+    "unplugin-vue-components": "28.8.0",
     "vite": "6.3.6",
     "vite-bundle-visualizer": "^1.2.1",
     "vitest": "3.2.4",
