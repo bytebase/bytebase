@@ -93,9 +93,9 @@
       </template>
     </BBAttention>
 
-    <div class="relative flex-1">
+    <div class="relative flex-1 min-h-[200px] max-h-[50vh]">
       <MonacoEditor
-        class="w-full h-full min-h-[200px] max-h-[50vh] border rounded overflow-hidden"
+        class="w-full h-full min-h-[200px] border rounded overflow-hidden"
         :filename="filename"
         :content="state.statement"
         :language="language"
