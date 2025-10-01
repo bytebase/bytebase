@@ -26,7 +26,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.6.9
 	github.com/aws/aws-sdk-go-v2/service/licensemanager v1.36.6
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.39.6
-	github.com/beltran/gohive v1.8.0
+	github.com/beltran/gohive v1.8.1
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bytebase/cosmosdb-parser v0.0.0-20250317064006-c1dcb3ed4fa4
 	github.com/bytebase/doris-parser v0.0.0-20250512080703-bacdebf2f435
