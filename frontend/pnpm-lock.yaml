@@ -41,8 +41,8 @@ importers:
         specifier: ^2.0.2
         version: 2.0.3(@bufbuild/protobuf@2.9.0)(@connectrpc/connect@2.1.0(@bufbuild/protobuf@2.9.0))
       '@markdoc/markdoc':
-        specifier: 0.5.2
-        version: 0.5.2
+        specifier: 0.5.4
+        version: 0.5.4
       '@soerenmartius/vue3-clipboard':
         specifier: 0.1.2
         version: 0.1.2
@@ -1959,8 +1959,8 @@ packages:
   '@juggle/resize-observer@3.4.0':
     resolution: {integrity: sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==}
 
-  '@markdoc/markdoc@0.5.2':
-    resolution: {integrity: sha512-clrqWpJ3+S8PXigRE+zBIs6LVZYXaJ7JTDFq1CcCWc4xpoB2kz+9qRUQQ4vXtLUjQ8ige1BGdMruV6gM/2gloA==}
+  '@markdoc/markdoc@0.5.4':
+    resolution: {integrity: sha512-36YFNlqFk//gVNGm5xZaTWVwbAVF2AOmVjf1tiUrS6tCoD/YSkVy2E3CkAfhc5MlKcjparL/QFHCopxL4zRyaQ==}
     engines: {node: '>=14.7.0'}
     peerDependencies:
       '@types/react': '*'
@@ -7637,7 +7637,7 @@ snapshots:
 
   '@juggle/resize-observer@3.4.0': {}
 
-  '@markdoc/markdoc@0.5.2':
+  '@markdoc/markdoc@0.5.4':
     optionalDependencies:
       '@types/linkify-it': 3.0.5
       '@types/markdown-it': 12.2.3
