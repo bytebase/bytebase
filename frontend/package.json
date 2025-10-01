@@ -76,7 +76,7 @@
     "vdirs": "^0.1.8",
     "vscode": "npm:@codingame/monaco-vscode-extension-api@15.0.3",
     "vscode-languageclient": "9.0.1",
-    "vscode-ws-jsonrpc": "3.4.0",
+    "vscode-ws-jsonrpc": "3.5.0",
     "vue": "3.5.18",
     "vuedraggable": "^4.1.0",
     "vueuc": "0.4.65"
