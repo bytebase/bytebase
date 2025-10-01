@@ -39,6 +39,7 @@ require (
 	github.com/bytebase/trino-parser v0.0.0-20250502000119-9977709a63e8
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/cockroachdb/cockroachdb-parser v0.25.2
 	github.com/coreos/go-oidc v2.4.0+incompatible
 	github.com/databricks/databricks-sdk-go v0.85.0
@@ -143,7 +144,6 @@ require (
 	github.com/biogo/store v0.0.0-20201120204734-aad293a2328f // indirect
 	github.com/blevesearch/snowballstem v0.9.0 // indirect
 	github.com/boombuler/barcode v1.0.2 // indirect
-	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cloudfoundry/gosigar v1.3.6 // indirect
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
 	github.com/cockroachdb/errors v1.11.3 // indirect
