@@ -83,7 +83,7 @@ require (
 	github.com/segmentio/analytics-go v3.1.0+incompatible
 	github.com/shopspring/decimal v1.4.0
 	github.com/sijms/go-ora/v2 v2.8.24
-	github.com/snowflakedb/gosnowflake v1.14.1
+	github.com/snowflakedb/gosnowflake v1.17.0
 	github.com/sourcegraph/conc v0.3.0
 	github.com/sourcegraph/jsonrpc2 v0.2.1
 	github.com/spf13/cobra v1.9.1
@@ -131,7 +131,7 @@ require (
 	github.com/GoogleCloudPlatform/grpc-gcp-go/grpcgcp v1.5.3 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.27.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/apache/arrow-go/v18 v18.3.0 // indirect
+	github.com/apache/arrow-go/v18 v18.4.0 // indirect
 	github.com/apache/arrow/go/v15 v15.0.2 // indirect
 	github.com/apache/thrift v0.22.0 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.77 // indirect
@@ -206,7 +206,7 @@ require (
 	github.com/jcmturner/gokrb5/v8 v8.4.4 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/klauspost/asmfmt v1.3.2 // indirect
-	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.11 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
@@ -240,7 +240,7 @@ require (
 	github.com/shirou/gopsutil/v4 v4.25.5 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
-	github.com/stoewer/go-strcase v1.3.0 // indirect
+	github.com/stoewer/go-strcase v1.3.1 // indirect
 	github.com/tiancaiamao/gp v0.0.0-20221230034425-4025bc8a4d4a // indirect
 	github.com/tiendc/go-deepcopy v1.6.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
@@ -262,12 +262,12 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.36.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.36.0 // indirect
 	go.opentelemetry.io/otel/exporters/zipkin v1.36.0 // indirect
-	go.opentelemetry.io/otel/metric v1.36.0 // indirect
+	go.opentelemetry.io/otel/metric v1.37.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.36.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.36.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.6.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/mod v0.26.0 // indirect
+	golang.org/x/mod v0.27.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/term v0.34.0 // indirect
 	gonum.org/v1/gonum v0.16.0 // indirect
@@ -281,7 +281,7 @@ require (
 	cloud.google.com/go/iam v1.5.2 // indirect
 	cloud.google.com/go/longrunning v0.6.7 // indirect
 	github.com/ClickHouse/ch-go v0.66.0 // indirect
-	github.com/andybalholm/brotli v1.1.1 // indirect
+	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.10 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.9 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.9 // indirect
@@ -377,13 +377,13 @@ require (
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/otel v1.36.0 // indirect
-	go.opentelemetry.io/otel/trace v1.36.0 // indirect
+	go.opentelemetry.io/otel v1.37.0 // indirect
+	go.opentelemetry.io/otel/trace v1.37.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/net v0.43.0
 	golang.org/x/sync v0.16.0
 	golang.org/x/time v0.12.0 // indirect
-	golang.org/x/tools v0.35.0 // indirect
+	golang.org/x/tools v0.36.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 )
