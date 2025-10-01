@@ -219,6 +219,10 @@
               
               
                 <li>
+                  <a href="#bytebase.v1.DatabaseChangeType"><span class="badge">E</span>DatabaseChangeType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Engine"><span class="badge">E</span>Engine</a>
                 </li>
               
@@ -1913,10 +1917,6 @@
               
               
                 <li>
-                  <a href="#bytebase.v1.Plan.ChangeDatabaseConfig.Type"><span class="badge">E</span>Plan.ChangeDatabaseConfig.Type</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.PlanCheckRun.Result.Status"><span class="badge">E</span>PlanCheckRun.Result.Status</a>
                 </li>
               
@@ -3037,6 +3037,47 @@
         
       
 
+      
+        <h3 id="bytebase.v1.DatabaseChangeType">DatabaseChangeType</h3>
+        <p>DatabaseChangeType is the database change type.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>DATABASE_CHANGE_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MIGRATE</td>
+                <td>2</td>
+                <td><p>Used for DDL changes including CREATE DATABASE.</p></td>
+              </tr>
+            
+              <tr>
+                <td>MIGRATE_SDL</td>
+                <td>3</td>
+                <td><p>Used for schema changes via state-based schema migration including CREATE DATABASE.</p></td>
+              </tr>
+            
+              <tr>
+                <td>MIGRATE_GHOST</td>
+                <td>4</td>
+                <td><p>Used for DDL changes using gh-ost.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DATA</td>
+                <td>6</td>
+                <td><p>Used for DML change.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.v1.Engine">Engine</h3>
         <p></p>
@@ -20622,9 +20663,9 @@ Format: projects/{project}/releases/{release} </p></td>
               
                 <tr>
                   <td>type</td>
-                  <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig.Type">Plan.ChangeDatabaseConfig.Type</a></td>
+                  <td><a href="#bytebase.v1.DatabaseChangeType">DatabaseChangeType</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Type is the database change type. </p></td>
                 </tr>
               
                 <tr>
@@ -21346,47 +21387,6 @@ In this situation, `update_mask` is ignored. </p></td>
         
       
 
-      
-        <h3 id="bytebase.v1.Plan.ChangeDatabaseConfig.Type">Plan.ChangeDatabaseConfig.Type</h3>
-        <p>Type is the database change type.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE</td>
-                <td>2</td>
-                <td><p>Used for DDL changes including CREATE DATABASE.</p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE_SDL</td>
-                <td>3</td>
-                <td><p>Used for schema changes via state-based schema migration including CREATE DATABASE.</p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE_GHOST</td>
-                <td>4</td>
-                <td><p>Used for DDL changes using gh-ost.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATA</td>
-                <td>6</td>
-                <td><p>Used for DML change.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
         <h3 id="bytebase.v1.PlanCheckRun.Result.Status">PlanCheckRun.Result.Status</h3>
         <p></p>

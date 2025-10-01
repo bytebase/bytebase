@@ -15,6 +15,7 @@
     - [Position](#bytebase-v1-Position)
     - [Range](#bytebase-v1-Range)
   
+    - [DatabaseChangeType](#bytebase-v1-DatabaseChangeType)
     - [Engine](#bytebase-v1-Engine)
     - [ExportFormat](#bytebase-v1-ExportFormat)
     - [State](#bytebase-v1-State)
@@ -454,7 +455,6 @@
     - [SearchPlansResponse](#bytebase-v1-SearchPlansResponse)
     - [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest)
   
-    - [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type)
     - [PlanCheckRun.Result.Status](#bytebase-v1-PlanCheckRun-Result-Status)
     - [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status)
     - [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type)
@@ -792,6 +792,21 @@ offset.
 
 
  
+
+
+<a name="bytebase-v1-DatabaseChangeType"></a>
+
+### DatabaseChangeType
+DatabaseChangeType is the database change type.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DATABASE_CHANGE_TYPE_UNSPECIFIED | 0 |  |
+| MIGRATE | 2 | Used for DDL changes including CREATE DATABASE. |
+| MIGRATE_SDL | 3 | Used for schema changes via state-based schema migration including CREATE DATABASE. |
+| MIGRATE_GHOST | 4 | Used for DDL changes using gh-ost. |
+| DATA | 6 | Used for DML change. |
+
 
 
 <a name="bytebase-v1-Engine"></a>
@@ -7321,7 +7336,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | targets | [string](#string) | repeated | The list of targets. Multi-database format: [instances/{instance-id}/databases/{database-name}]. Single database group format: [projects/{project}/databaseGroups/{databaseGroup}]. |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | release | [string](#string) |  | The resource name of the release. Format: projects/{project}/releases/{release} |
-| type | [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type) |  |  |
+| type | [DatabaseChangeType](#bytebase-v1-DatabaseChangeType) |  | Type is the database change type. |
 | ghost_flags | [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
 
@@ -7614,21 +7629,6 @@ The plan&#39;s `name` field is used to identify the plan to update. Format: proj
 
 
  
-
-
-<a name="bytebase-v1-Plan-ChangeDatabaseConfig-Type"></a>
-
-### Plan.ChangeDatabaseConfig.Type
-Type is the database change type.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| MIGRATE | 2 | Used for DDL changes including CREATE DATABASE. |
-| MIGRATE_SDL | 3 | Used for schema changes via state-based schema migration including CREATE DATABASE. |
-| MIGRATE_GHOST | 4 | Used for DDL changes using gh-ost. |
-| DATA | 6 | Used for DML change. |
-
 
 
 <a name="bytebase-v1-PlanCheckRun-Result-Status"></a>

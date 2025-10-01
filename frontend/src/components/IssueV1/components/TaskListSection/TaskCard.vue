@@ -59,7 +59,7 @@ import { computed } from "vue";
 import { InstanceV1Name } from "@/components/v2";
 import { useCurrentProjectV1 } from "@/store";
 import { isValidDatabaseName } from "@/types";
-import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto-es/v1/plan_service_pb";
+import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Type, Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
@@ -99,7 +99,7 @@ const showGhostTag = computed(() => {
     const spec = specForTask(issue.value.planEntity, props.task);
     return (
       spec?.config?.case === "changeDatabaseConfig" &&
-      spec.config.value?.type === Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
+      spec.config.value?.type === DatabaseChangeType.MIGRATE_GHOST
     );
   }
   return props.task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST;

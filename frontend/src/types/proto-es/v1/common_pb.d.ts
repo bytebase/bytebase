@@ -294,3 +294,48 @@ export enum ExportFormat {
  */
 export declare const ExportFormatSchema: GenEnum<ExportFormat>;
 
+/**
+ * DatabaseChangeType is the database change type.
+ *
+ * @generated from enum bytebase.v1.DatabaseChangeType
+ */
+export enum DatabaseChangeType {
+  /**
+   * @generated from enum value: DATABASE_CHANGE_TYPE_UNSPECIFIED = 0;
+   */
+  DATABASE_CHANGE_TYPE_UNSPECIFIED = 0,
+
+  /**
+   * Used for DDL changes including CREATE DATABASE.
+   *
+   * @generated from enum value: MIGRATE = 2;
+   */
+  MIGRATE = 2,
+
+  /**
+   * Used for schema changes via state-based schema migration including CREATE DATABASE.
+   *
+   * @generated from enum value: MIGRATE_SDL = 3;
+   */
+  MIGRATE_SDL = 3,
+
+  /**
+   * Used for DDL changes using gh-ost.
+   *
+   * @generated from enum value: MIGRATE_GHOST = 4;
+   */
+  MIGRATE_GHOST = 4,
+
+  /**
+   * Used for DML change.
+   *
+   * @generated from enum value: DATA = 6;
+   */
+  DATA = 6,
+}
+
+/**
+ * Describes the enum bytebase.v1.DatabaseChangeType.
+ */
+export declare const DatabaseChangeTypeSchema: GenEnum<DatabaseChangeType>;
+

@@ -110,7 +110,7 @@ func TestFilterChangeHistoryByResources(t *testing.T) {
 		a.NoError(err)
 
 		// Create an issue that updates database schema.
-		err = ctl.changeDatabase(ctx, ctl.project, databaseResp.Msg, sheetResp.Msg, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
+		err = ctl.changeDatabase(ctx, ctl.project, databaseResp.Msg, sheetResp.Msg, v1pb.DatabaseChangeType_MIGRATE)
 		a.NoError(err)
 	}
 

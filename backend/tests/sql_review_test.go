@@ -479,7 +479,7 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 							Targets: []string{database.Name},
 							Sheet:   sheet.Msg.Name,
-							Type:    v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+							Type:    v1pb.DatabaseChangeType_MIGRATE,
 						},
 					},
 				},

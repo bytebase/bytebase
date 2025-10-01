@@ -313,18 +313,7 @@ message Plan {
     string release = 9 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];
 
     // Type is the database change type.
-    enum Type {
-      TYPE_UNSPECIFIED = 0;
-      // Used for DDL changes including CREATE DATABASE.
-      MIGRATE = 2;
-      // Used for schema changes via state-based schema migration including CREATE DATABASE.
-      MIGRATE_SDL = 3;
-      // Used for DDL changes using gh-ost.
-      MIGRATE_GHOST = 4;
-      // Used for DML change.
-      DATA = 6;
-    }
-    Type type = 3;
+    DatabaseChangeType type = 3;
 
     map<string, string> ghost_flags = 7;
 

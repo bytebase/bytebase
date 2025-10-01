@@ -5,13 +5,10 @@ import { targetsForSpec } from "@/components/Plan/logic";
 import { useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
-import {
-  Plan_ChangeDatabaseConfig_Type,
-  type Plan,
-  type Plan_Spec,
-} from "@/types/proto-es/v1/plan_service_pb";
+import { type Plan, type Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
@@ -73,9 +70,9 @@ export const provideIsolationLevelSettingContext = (refs: {
       return false;
     }
     return [
-      Plan_ChangeDatabaseConfig_Type.DATA,
-      Plan_ChangeDatabaseConfig_Type.MIGRATE,
-      Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST,
+      DatabaseChangeType.DATA,
+      DatabaseChangeType.MIGRATE,
+      DatabaseChangeType.MIGRATE_GHOST,
     ].includes(selectedSpec.value.config.value.type);
   });
 

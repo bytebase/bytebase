@@ -1423,15 +1423,15 @@ func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (storepb.Task_Type, error) {
 		return storepb.Task_DATABASE_CREATE, nil
 	case *v1pb.Plan_Spec_ChangeDatabaseConfig:
 		switch s.ChangeDatabaseConfig.Type {
-		case v1pb.Plan_ChangeDatabaseConfig_DATA:
+		case v1pb.DatabaseChangeType_DATA:
 			return storepb.Task_DATABASE_DATA_UPDATE, nil
-		case v1pb.Plan_ChangeDatabaseConfig_MIGRATE:
+		case v1pb.DatabaseChangeType_MIGRATE:
 			return storepb.Task_DATABASE_SCHEMA_UPDATE, nil
-		case v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST:
+		case v1pb.DatabaseChangeType_MIGRATE_GHOST:
 			return storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST, nil
-		case v1pb.Plan_ChangeDatabaseConfig_MIGRATE_SDL:
+		case v1pb.DatabaseChangeType_MIGRATE_SDL:
 			return storepb.Task_DATABASE_SCHEMA_UPDATE_SDL, nil
-		case v1pb.Plan_ChangeDatabaseConfig_TYPE_UNSPECIFIED:
+		case v1pb.DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED:
 			return storepb.Task_TASK_TYPE_UNSPECIFIED, errors.Errorf("unexpected unspecified change database config type")
 		default:
 			return storepb.Task_TASK_TYPE_UNSPECIFIED, errors.Errorf("invalid change database config type %s", s.ChangeDatabaseConfig.Type)

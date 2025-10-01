@@ -11778,12 +11778,13 @@ components:
                          Format: projects/{project}/releases/{release}
                 type:
                     enum:
-                        - TYPE_UNSPECIFIED
+                        - DATABASE_CHANGE_TYPE_UNSPECIFIED
                         - MIGRATE
                         - MIGRATE_SDL
                         - MIGRATE_GHOST
                         - DATA
                     type: string
+                    description: Type is the database change type.
                     format: enum
                 ghostFlags:
                     type: object

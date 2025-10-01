@@ -9,12 +9,14 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { IssueType } from "@/types";
-import { ExportFormat } from "@/types/proto-es/v1/common_pb";
+import {
+  DatabaseChangeType,
+  ExportFormat,
+} from "@/types/proto-es/v1/common_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
   PlanSchema,
   Plan_ChangeDatabaseConfigSchema,
-  Plan_ChangeDatabaseConfig_Type,
   Plan_ExportDataConfigSchema,
   Plan_SpecSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
@@ -163,8 +165,8 @@ const buildSpecForTargetsV1 = async (
           sheet,
           type:
             template === "bb.issue.database.data.update"
-              ? Plan_ChangeDatabaseConfig_Type.DATA
-              : Plan_ChangeDatabaseConfig_Type.MIGRATE,
+              ? DatabaseChangeType.DATA
+              : DatabaseChangeType.MIGRATE,
           enablePriorBackup:
             template === "bb.issue.database.data.update" &&
             project.autoEnableBackup,

@@ -235,7 +235,7 @@ func TestGitOpsRollout(t *testing.T) {
 							Targets: []string{
 								fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName),
 							},
-							Type: v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+							Type: v1pb.DatabaseChangeType_MIGRATE,
 						},
 					},
 				},
@@ -459,7 +459,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 								fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName),
 								fmt.Sprintf("%s/databases/%s", prodInstance.Name, databaseName),
 							},
-							Type: v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+							Type: v1pb.DatabaseChangeType_MIGRATE,
 						},
 					},
 				},
@@ -695,7 +695,7 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 							Targets: []string{
 								fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName),
 							},
-							Type: v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+							Type: v1pb.DatabaseChangeType_MIGRATE,
 						},
 					},
 				},
