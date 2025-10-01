@@ -31,3 +31,4 @@ jobs:
         with:
           version: v2.5.0
           args: --verbose -j 8 --timeout 30m --max-same-issues=30 --allow-parallel-runners
+          skip-cache: true
