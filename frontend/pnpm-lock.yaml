@@ -164,8 +164,8 @@ importers:
         specifier: 7.7.2
         version: 7.7.2
       slug:
-        specifier: 9.1.0
-        version: 9.1.0
+        specifier: 11.0.0
+        version: 11.0.0
       splitpanes:
         specifier: 4.0.4
         version: 4.0.4(vue@3.5.22(typescript@5.9.3))
@@ -4544,8 +4544,8 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
-  slug@9.1.0:
-    resolution: {integrity: sha512-ioOsCfzQSu+D6NZ8XMCR8IW9FgvF8W7Xzz56hBkB/ALvNaWeBs2MUvvPugq3GCrxfHPFeK6hAxGkY/WLnfX2Lg==}
+  slug@11.0.0:
+    resolution: {integrity: sha512-71pb27F9TII2dIweGr2ybS220IUZo1A9GKZ+e2q8rpUr24mejBb6fTaSStM0SE1ITUUOshilqZze8Yt1BKj+ew==}
     hasBin: true
 
   sortablejs@1.14.0:
@@ -10587,7 +10587,7 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
-  slug@9.1.0: {}
+  slug@11.0.0: {}
 
   sortablejs@1.14.0: {}
 
