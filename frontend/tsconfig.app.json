@@ -15,7 +15,7 @@
     "verbatimModuleSyntax": true,
     "baseUrl": ".",
     "lib": ["WebWorker", "ES2022"],
-    "types": ["unplugin-icons/types/vue", "vite/client"],
+    "types": ["unplugin-icons/types/vue3", "vite/client"],
     "jsx": "preserve",
     "jsxImportSource": "vue",
     "paths": {
