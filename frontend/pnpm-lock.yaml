@@ -200,8 +200,8 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0(vue@3.5.18(typescript@5.9.2))
       vueuc:
-        specifier: 0.4.64
-        version: 0.4.64(vue@3.5.18(typescript@5.9.2))
+        specifier: 0.4.65
+        version: 0.4.65(vue@3.5.18(typescript@5.9.2))
     devDependencies:
       '@codingame/esbuild-import-meta-url-plugin':
         specifier: ^1.0.3
@@ -4954,8 +4954,8 @@ packages:
     peerDependencies:
       vue: ^3.0.1
 
-  vueuc@0.4.64:
-    resolution: {integrity: sha512-wlJQj7fIwKK2pOEoOq4Aro8JdPOGpX8aWQhV8YkTW9OgWD2uj2O8ANzvSsIGjx7LTOc7QbS7sXdxHi6XvRnHPA==}
+  vueuc@0.4.65:
+    resolution: {integrity: sha512-lXuMl+8gsBmruudfxnMF9HW4be8rFziylXFu1VHVNbLVhRTXXV4njvpRuJapD/8q+oFEMSfQMH16E/85VoWRyQ==}
     peerDependencies:
       vue: ^3.0.11
 
@@ -9518,7 +9518,7 @@ snapshots:
       vdirs: 0.1.8(vue@3.5.18(typescript@5.9.2))
       vooks: 0.2.12(vue@3.5.18(typescript@5.9.2))
       vue: 3.5.18(typescript@5.9.2)
-      vueuc: 0.4.64(vue@3.5.18(typescript@5.9.2))
+      vueuc: 0.4.65(vue@3.5.18(typescript@5.9.2))
 
   nanoid@3.3.11: {}
 
@@ -10667,7 +10667,7 @@ snapshots:
       sortablejs: 1.14.0
       vue: 3.5.18(typescript@5.9.2)
 
-  vueuc@0.4.64(vue@3.5.18(typescript@5.9.2)):
+  vueuc@0.4.65(vue@3.5.18(typescript@5.9.2)):
     dependencies:
       '@css-render/vue3-ssr': 0.15.14(vue@3.5.18(typescript@5.9.2))
       '@juggle/resize-observer': 3.4.0
