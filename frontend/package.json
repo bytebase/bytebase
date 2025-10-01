@@ -107,7 +107,7 @@
     "@types/qrcode": "^1.5.5",
     "@types/qs": "6.14.0",
     "@types/scrollparent": "^2.0.3",
-    "@types/semver": "7.7.0",
+    "@types/semver": "7.7.1",
     "@types/slug": "5.0.9",
     "@types/splitpanes": "2.2.6",
     "@types/uuid": "10.0.0",
