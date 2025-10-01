@@ -294,8 +294,8 @@ importers:
         specifier: ^6.1.1
         version: 6.1.1(terser@5.39.0)(vite@6.3.6(@types/node@22.17.0)(jiti@1.21.7)(terser@5.39.0)(yaml@2.8.0))
       '@vitejs/plugin-vue':
-        specifier: 5.2.4
-        version: 5.2.4(vite@6.3.6(@types/node@22.17.0)(jiti@1.21.7)(terser@5.39.0)(yaml@2.8.0))(vue@3.5.18(typescript@5.9.2))
+        specifier: 6.0.1
+        version: 6.0.1(vite@6.3.6(@types/node@22.17.0)(jiti@1.21.7)(terser@5.39.0)(yaml@2.8.0))(vue@3.5.18(typescript@5.9.2))
       '@vitejs/plugin-vue-jsx':
         specifier: 4.2.0
         version: 4.2.0(vite@6.3.6(@types/node@22.17.0)(jiti@1.21.7)(terser@5.39.0)(yaml@2.8.0))(vue@3.5.18(typescript@5.9.2))
@@ -1839,8 +1839,8 @@ packages:
   '@popperjs/core@2.11.8':
     resolution: {integrity: sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==}
 
-  '@rolldown/pluginutils@1.0.0-beta.10':
-    resolution: {integrity: sha512-FeISF1RUTod5Kvt3yUXByrAPk5EfDWo/1BPv1ARBZ07weqx888SziPuWS6HUJU0YroGyQURjdIrkjWJP2zBFDQ==}
+  '@rolldown/pluginutils@1.0.0-beta.29':
+    resolution: {integrity: sha512-NIJgOsMjbxAXvoGq/X0gD7VPMQ8j9g0BiDaNjVNVjvl+iKXxL3Jre0v31RmBYeLEmkbj2s02v8vFTbUXi5XS2Q==}
 
   '@rollup/plugin-yaml@4.1.2':
     resolution: {integrity: sha512-RpupciIeZMUqhgFE97ba0s98mOFS7CWzN3EJNhJkqSv9XLlWYtwVdtE6cDw6ASOF/sZVFS7kRJXftaqM2Vakdw==}
@@ -2261,11 +2261,11 @@ packages:
       vite: ^5.0.0 || ^6.0.0
       vue: ^3.0.0
 
-  '@vitejs/plugin-vue@5.2.4':
-    resolution: {integrity: sha512-7Yx/SXSOcQq5HiiV3orevHUFn+pmMB4cgbEkDYgnkUWb0WfeQ/wa2yFv6D5ICiCQOVpjA7vYDXrC7AGO8yjDHA==}
-    engines: {node: ^18.0.0 || >=20.0.0}
+  '@vitejs/plugin-vue@6.0.1':
+    resolution: {integrity: sha512-+MaE752hU0wfPFJEUAIxqw18+20euHHdxVtMvbFcOEpjEyfqXH/5DCoTHiVJ0J29EhTJdoTkjEv5YBKU9dnoTw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
-      vite: ^5.0.0 || ^6.0.0
+      vite: ^5.0.0 || ^6.0.0 || ^7.0.0
       vue: ^3.2.25
 
   '@vitest/expect@3.2.4':
@@ -7146,7 +7146,7 @@ snapshots:
 
   '@popperjs/core@2.11.8': {}
 
-  '@rolldown/pluginutils@1.0.0-beta.10': {}
+  '@rolldown/pluginutils@1.0.0-beta.29': {}
 
   '@rollup/plugin-yaml@4.1.2(rollup@4.52.3)':
     dependencies:
@@ -7588,15 +7588,16 @@ snapshots:
     dependencies:
       '@babel/core': 7.27.4
       '@babel/plugin-transform-typescript': 7.27.1(@babel/core@7.27.4)
-      '@rolldown/pluginutils': 1.0.0-beta.10
+      '@rolldown/pluginutils': 1.0.0-beta.29
       '@vue/babel-plugin-jsx': 1.4.0(@babel/core@7.27.4)
       vite: 6.3.6(@types/node@22.17.0)(jiti@1.21.7)(terser@5.39.0)(yaml@2.8.0)
       vue: 3.5.18(typescript@5.9.2)
     transitivePeerDependencies:
       - supports-color
 
-  '@vitejs/plugin-vue@5.2.4(vite@6.3.6(@types/node@22.17.0)(jiti@1.21.7)(terser@5.39.0)(yaml@2.8.0))(vue@3.5.18(typescript@5.9.2))':
+  '@vitejs/plugin-vue@6.0.1(vite@6.3.6(@types/node@22.17.0)(jiti@1.21.7)(terser@5.39.0)(yaml@2.8.0))(vue@3.5.18(typescript@5.9.2))':
     dependencies:
+      '@rolldown/pluginutils': 1.0.0-beta.29
       vite: 6.3.6(@types/node@22.17.0)(jiti@1.21.7)(terser@5.39.0)(yaml@2.8.0)
       vue: 3.5.18(typescript@5.9.2)
 
