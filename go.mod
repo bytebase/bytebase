@@ -10,7 +10,7 @@ require (
 	cloud.google.com/go/bigquery v1.70.0
 	cloud.google.com/go/cloudsqlconn v1.18.1
 	cloud.google.com/go/secretmanager v1.15.0
-	cloud.google.com/go/spanner v1.85.1
+	cloud.google.com/go/spanner v1.86.0
 	connectrpc.com/connect v1.18.1
 	connectrpc.com/cors v0.1.0
 	connectrpc.com/grpcreflect v1.3.0
