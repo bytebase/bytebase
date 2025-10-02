@@ -47,7 +47,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/github/gh-ost v1.1.7
 	github.com/go-ego/gse v0.80.3
-	github.com/go-ldap/ldap/v3 v3.4.11
+	github.com/go-ldap/ldap/v3 v3.4.12
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/gocql/gocql v1.7.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
