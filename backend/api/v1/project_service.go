@@ -1736,4 +1736,3 @@ func validateMember(member string) error {
 	}
 	return errors.Errorf("invalid user %s", member)
 }
-

@@ -440,7 +440,7 @@ func TestListProjectFilter(t *testing.T) {
 	}
 }
 
-func TestValidateProjectLabels(t *testing.T) {
+func TestValidateLabels(t *testing.T) {
 	tests := []struct {
 		name    string
 		labels  map[string]string
@@ -524,7 +524,7 @@ func TestValidateProjectLabels(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateProjectLabels(tt.labels)
+			err := validateLabels(tt.labels)
 			if tt.wantErr {
 				assert.Error(t, err)
 				if tt.errMsg != "" {
