@@ -77,10 +77,6 @@ export const useUserStore = defineStore("user", () => {
     return user;
   };
 
-  const systemBotUser = computedAsync(() => {
-    return getOrFetchUserByIdentifier(SYSTEM_BOT_USER_NAME);
-  });
-
   const fetchCurrentUser = async () => {
     const response = await userServiceClientConnect.getCurrentUser({});
     setUser(response);
@@ -224,6 +220,10 @@ export const useUserStore = defineStore("user", () => {
     }
     return userMapByName.value.get(`${userNamePrefix}${id}`);
   };
+
+  const systemBotUser = computedAsync(() => {
+    return getOrFetchUserByIdentifier(SYSTEM_BOT_USER_NAME);
+  });
 
   return {
     allUser,
