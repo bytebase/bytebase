@@ -356,8 +356,11 @@ type Instance struct {
 	MysqlLowerCaseTableNames int32                  `protobuf:"varint,10,opt,name=mysql_lower_case_table_names,json=mysqlLowerCaseTableNames,proto3" json:"mysql_lower_case_table_names,omitempty"`
 	LastSyncTime             *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=last_sync_time,json=lastSyncTime,proto3" json:"last_sync_time,omitempty"`
 	Roles                    []*InstanceRole        `protobuf:"bytes,12,rep,name=roles,proto3" json:"roles,omitempty"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	// Labels are key-value pairs that can be attached to the instance.
+	// For example, { "org_group": "infrastructure", "environment": "production" }
+	Labels        map[string]string `protobuf:"bytes,13,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Instance) Reset() {
@@ -470,6 +473,13 @@ func (x *Instance) GetLastSyncTime() *timestamppb.Timestamp {
 func (x *Instance) GetRoles() []*InstanceRole {
 	if x != nil {
 		return x.Roles
+	}
+	return nil
+}
+
+func (x *Instance) GetLabels() map[string]string {
+	if x != nil {
+		return x.Labels
 	}
 	return nil
 }
@@ -1330,7 +1340,7 @@ type DataSource_AzureCredential struct {
 
 func (x *DataSource_AzureCredential) Reset() {
 	*x = DataSource_AzureCredential{}
-	mi := &file_store_instance_proto_msgTypes[6]
+	mi := &file_store_instance_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1342,7 +1352,7 @@ func (x *DataSource_AzureCredential) String() string {
 func (*DataSource_AzureCredential) ProtoMessage() {}
 
 func (x *DataSource_AzureCredential) ProtoReflect() protoreflect.Message {
-	mi := &file_store_instance_proto_msgTypes[6]
+	mi := &file_store_instance_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1400,7 +1410,7 @@ type DataSource_AWSCredential struct {
 
 func (x *DataSource_AWSCredential) Reset() {
 	*x = DataSource_AWSCredential{}
-	mi := &file_store_instance_proto_msgTypes[7]
+	mi := &file_store_instance_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1412,7 +1422,7 @@ func (x *DataSource_AWSCredential) String() string {
 func (*DataSource_AWSCredential) ProtoMessage() {}
 
 func (x *DataSource_AWSCredential) ProtoReflect() protoreflect.Message {
-	mi := &file_store_instance_proto_msgTypes[7]
+	mi := &file_store_instance_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1480,7 +1490,7 @@ type DataSource_GCPCredential struct {
 
 func (x *DataSource_GCPCredential) Reset() {
 	*x = DataSource_GCPCredential{}
-	mi := &file_store_instance_proto_msgTypes[8]
+	mi := &file_store_instance_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1492,7 +1502,7 @@ func (x *DataSource_GCPCredential) String() string {
 func (*DataSource_GCPCredential) ProtoMessage() {}
 
 func (x *DataSource_GCPCredential) ProtoReflect() protoreflect.Message {
-	mi := &file_store_instance_proto_msgTypes[8]
+	mi := &file_store_instance_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1532,7 +1542,7 @@ type DataSource_Address struct {
 
 func (x *DataSource_Address) Reset() {
 	*x = DataSource_Address{}
-	mi := &file_store_instance_proto_msgTypes[9]
+	mi := &file_store_instance_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1544,7 +1554,7 @@ func (x *DataSource_Address) String() string {
 func (*DataSource_Address) ProtoMessage() {}
 
 func (x *DataSource_Address) ProtoReflect() protoreflect.Message {
-	mi := &file_store_instance_proto_msgTypes[9]
+	mi := &file_store_instance_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1588,7 +1598,7 @@ type DataSourceExternalSecret_AppRoleAuthOption struct {
 
 func (x *DataSourceExternalSecret_AppRoleAuthOption) Reset() {
 	*x = DataSourceExternalSecret_AppRoleAuthOption{}
-	mi := &file_store_instance_proto_msgTypes[11]
+	mi := &file_store_instance_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1600,7 +1610,7 @@ func (x *DataSourceExternalSecret_AppRoleAuthOption) String() string {
 func (*DataSourceExternalSecret_AppRoleAuthOption) ProtoMessage() {}
 
 func (x *DataSourceExternalSecret_AppRoleAuthOption) ProtoReflect() protoreflect.Message {
-	mi := &file_store_instance_proto_msgTypes[11]
+	mi := &file_store_instance_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1648,7 +1658,7 @@ var File_store_instance_proto protoreflect.FileDescriptor
 
 const file_store_instance_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/instance.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\"\xbc\x04\n" +
+	"\x14store/instance.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\"\xb5\x05\n" +
 	"\bInstance\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12.\n" +
 	"\x06engine\x18\x02 \x01(\x0e2\x16.bytebase.store.EngineR\x06engine\x12\x1e\n" +
@@ -1664,7 +1674,11 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x1cmysql_lower_case_table_names\x18\n" +
 	" \x01(\x05R\x18mysqlLowerCaseTableNames\x12@\n" +
 	"\x0elast_sync_time\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\flastSyncTime\x122\n" +
-	"\x05roles\x18\f \x03(\v2\x1c.bytebase.store.InstanceRoleR\x05roles\"\xce\x01\n" +
+	"\x05roles\x18\f \x03(\v2\x1c.bytebase.store.InstanceRoleR\x05roles\x12<\n" +
+	"\x06labels\x18\r \x03(\v2$.bytebase.store.Instance.LabelsEntryR\x06labels\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xce\x01\n" +
 	"\fInstanceRole\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12.\n" +
 	"\x10connection_limit\x18\x02 \x01(\x05H\x00R\x0fconnectionLimit\x88\x01\x01\x12$\n" +
@@ -1828,7 +1842,7 @@ func file_store_instance_proto_rawDescGZIP() []byte {
 }
 
 var file_store_instance_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_store_instance_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_store_instance_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_store_instance_proto_goTypes = []any{
 	(DataSourceType)(0),                                        // 0: bytebase.store.DataSourceType
 	(DataSource_AuthenticationType)(0),                         // 1: bytebase.store.DataSource.AuthenticationType
@@ -1842,42 +1856,44 @@ var file_store_instance_proto_goTypes = []any{
 	(*SASLConfig)(nil),                                         // 9: bytebase.store.SASLConfig
 	(*KerberosConfig)(nil),                                     // 10: bytebase.store.KerberosConfig
 	(*DataSourceExternalSecret)(nil),                           // 11: bytebase.store.DataSourceExternalSecret
-	(*DataSource_AzureCredential)(nil),                         // 12: bytebase.store.DataSource.AzureCredential
-	(*DataSource_AWSCredential)(nil),                           // 13: bytebase.store.DataSource.AWSCredential
-	(*DataSource_GCPCredential)(nil),                           // 14: bytebase.store.DataSource.GCPCredential
-	(*DataSource_Address)(nil),                                 // 15: bytebase.store.DataSource.Address
-	nil,                                                        // 16: bytebase.store.DataSource.ExtraConnectionParametersEntry
-	(*DataSourceExternalSecret_AppRoleAuthOption)(nil),         // 17: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption
-	(Engine)(0),                                                // 18: bytebase.store.Engine
-	(*durationpb.Duration)(nil),                                // 19: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil),                              // 20: google.protobuf.Timestamp
+	nil,                                                        // 12: bytebase.store.Instance.LabelsEntry
+	(*DataSource_AzureCredential)(nil),                         // 13: bytebase.store.DataSource.AzureCredential
+	(*DataSource_AWSCredential)(nil),                           // 14: bytebase.store.DataSource.AWSCredential
+	(*DataSource_GCPCredential)(nil),                           // 15: bytebase.store.DataSource.GCPCredential
+	(*DataSource_Address)(nil),                                 // 16: bytebase.store.DataSource.Address
+	nil,                                                        // 17: bytebase.store.DataSource.ExtraConnectionParametersEntry
+	(*DataSourceExternalSecret_AppRoleAuthOption)(nil),         // 18: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption
+	(Engine)(0),                                                // 19: bytebase.store.Engine
+	(*durationpb.Duration)(nil),                                // 20: google.protobuf.Duration
+	(*timestamppb.Timestamp)(nil),                              // 21: google.protobuf.Timestamp
 }
 var file_store_instance_proto_depIdxs = []int32{
-	18, // 0: bytebase.store.Instance.engine:type_name -> bytebase.store.Engine
+	19, // 0: bytebase.store.Instance.engine:type_name -> bytebase.store.Engine
 	8,  // 1: bytebase.store.Instance.data_sources:type_name -> bytebase.store.DataSource
-	19, // 2: bytebase.store.Instance.sync_interval:type_name -> google.protobuf.Duration
-	20, // 3: bytebase.store.Instance.last_sync_time:type_name -> google.protobuf.Timestamp
+	20, // 2: bytebase.store.Instance.sync_interval:type_name -> google.protobuf.Duration
+	21, // 3: bytebase.store.Instance.last_sync_time:type_name -> google.protobuf.Timestamp
 	7,  // 4: bytebase.store.Instance.roles:type_name -> bytebase.store.InstanceRole
-	0,  // 5: bytebase.store.DataSource.type:type_name -> bytebase.store.DataSourceType
-	11, // 6: bytebase.store.DataSource.external_secret:type_name -> bytebase.store.DataSourceExternalSecret
-	1,  // 7: bytebase.store.DataSource.authentication_type:type_name -> bytebase.store.DataSource.AuthenticationType
-	12, // 8: bytebase.store.DataSource.azure_credential:type_name -> bytebase.store.DataSource.AzureCredential
-	13, // 9: bytebase.store.DataSource.aws_credential:type_name -> bytebase.store.DataSource.AWSCredential
-	14, // 10: bytebase.store.DataSource.gcp_credential:type_name -> bytebase.store.DataSource.GCPCredential
-	9,  // 11: bytebase.store.DataSource.sasl_config:type_name -> bytebase.store.SASLConfig
-	15, // 12: bytebase.store.DataSource.additional_addresses:type_name -> bytebase.store.DataSource.Address
-	2,  // 13: bytebase.store.DataSource.redis_type:type_name -> bytebase.store.DataSource.RedisType
-	16, // 14: bytebase.store.DataSource.extra_connection_parameters:type_name -> bytebase.store.DataSource.ExtraConnectionParametersEntry
-	10, // 15: bytebase.store.SASLConfig.krb_config:type_name -> bytebase.store.KerberosConfig
-	3,  // 16: bytebase.store.DataSourceExternalSecret.secret_type:type_name -> bytebase.store.DataSourceExternalSecret.SecretType
-	4,  // 17: bytebase.store.DataSourceExternalSecret.auth_type:type_name -> bytebase.store.DataSourceExternalSecret.AuthType
-	17, // 18: bytebase.store.DataSourceExternalSecret.app_role:type_name -> bytebase.store.DataSourceExternalSecret.AppRoleAuthOption
-	5,  // 19: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.type:type_name -> bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType
-	20, // [20:20] is the sub-list for method output_type
-	20, // [20:20] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	12, // 5: bytebase.store.Instance.labels:type_name -> bytebase.store.Instance.LabelsEntry
+	0,  // 6: bytebase.store.DataSource.type:type_name -> bytebase.store.DataSourceType
+	11, // 7: bytebase.store.DataSource.external_secret:type_name -> bytebase.store.DataSourceExternalSecret
+	1,  // 8: bytebase.store.DataSource.authentication_type:type_name -> bytebase.store.DataSource.AuthenticationType
+	13, // 9: bytebase.store.DataSource.azure_credential:type_name -> bytebase.store.DataSource.AzureCredential
+	14, // 10: bytebase.store.DataSource.aws_credential:type_name -> bytebase.store.DataSource.AWSCredential
+	15, // 11: bytebase.store.DataSource.gcp_credential:type_name -> bytebase.store.DataSource.GCPCredential
+	9,  // 12: bytebase.store.DataSource.sasl_config:type_name -> bytebase.store.SASLConfig
+	16, // 13: bytebase.store.DataSource.additional_addresses:type_name -> bytebase.store.DataSource.Address
+	2,  // 14: bytebase.store.DataSource.redis_type:type_name -> bytebase.store.DataSource.RedisType
+	17, // 15: bytebase.store.DataSource.extra_connection_parameters:type_name -> bytebase.store.DataSource.ExtraConnectionParametersEntry
+	10, // 16: bytebase.store.SASLConfig.krb_config:type_name -> bytebase.store.KerberosConfig
+	3,  // 17: bytebase.store.DataSourceExternalSecret.secret_type:type_name -> bytebase.store.DataSourceExternalSecret.SecretType
+	4,  // 18: bytebase.store.DataSourceExternalSecret.auth_type:type_name -> bytebase.store.DataSourceExternalSecret.AuthType
+	18, // 19: bytebase.store.DataSourceExternalSecret.app_role:type_name -> bytebase.store.DataSourceExternalSecret.AppRoleAuthOption
+	5,  // 20: bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.type:type_name -> bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType
+	21, // [21:21] is the sub-list for method output_type
+	21, // [21:21] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_store_instance_proto_init() }
@@ -1905,7 +1921,7 @@ func file_store_instance_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_instance_proto_rawDesc), len(file_store_instance_proto_rawDesc)),
 			NumEnums:      6,
-			NumMessages:   12,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -294,7 +293,7 @@ func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request
 	}
 
 	if req.Msg.Project != nil && req.Msg.Project.Labels != nil {
-		if err := validateProjectLabels(req.Msg.Project.Labels); err != nil {
+		if err := validateLabels(req.Msg.Project.Labels); err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 	}
@@ -452,7 +451,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 			projectSettings.ParallelTasksPerRollout = req.Msg.Project.ParallelTasksPerRollout
 			patch.Setting = projectSettings
 		case "labels":
-			if err := validateProjectLabels(req.Msg.Project.Labels); err != nil {
+			if err := validateLabels(req.Msg.Project.Labels); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
 			projectSettings := project.Setting
@@ -1738,27 +1737,3 @@ func validateMember(member string) error {
 	return errors.Errorf("invalid user %s", member)
 }
 
-// validateProjectLabels validates the project labels according to the requirements.
-func validateProjectLabels(labels map[string]string) error {
-	if len(labels) > 64 {
-		return errors.Errorf("maximum 64 labels allowed, got %d", len(labels))
-	}
-
-	// Key pattern: must start with lowercase letter, then lowercase letters, numbers, underscores, dashes (max 63 chars)
-	keyPattern := `^[a-z][a-z0-9_-]{0,62}$`
-	// Value pattern: letters, numbers, underscores, dashes (max 63 chars, can be empty)
-	valuePattern := `^[a-zA-Z0-9_-]{0,63}$`
-
-	keyRegex := regexp.MustCompile(keyPattern)
-	valueRegex := regexp.MustCompile(valuePattern)
-
-	for key, value := range labels {
-		if !keyRegex.MatchString(key) {
-			return errors.Errorf("invalid label key %q: must start with lowercase letter and contain only lowercase letters, numbers, underscores, and dashes (max 63 chars)", key)
-		}
-		if !valueRegex.MatchString(value) {
-			return errors.Errorf("invalid label value %q for key %q: must contain only letters, numbers, underscores, and dashes (max 63 chars)", value, key)
-		}
-	}
-	return nil
-}

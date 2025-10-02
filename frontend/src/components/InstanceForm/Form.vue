@@ -421,6 +421,20 @@
             />
           </template>
         </div>
+
+        <!-- Labels -->
+        <div class="sm:col-span-3 sm:col-start-1">
+          <label for="labels" class="textlabel">
+            {{ $t("common.labels") }}
+          </label>
+          <div class="mt-1">
+            <LabelListEditor
+              v-model:kv-list="labelKVList"
+              :readonly="!allowEdit"
+              :show-errors="false"
+            />
+          </div>
+        </div>
       </div>
 
       <!-- Connection Info -->
@@ -503,6 +517,7 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention, BBBetaBadge } from "@/bbkit";
 import { InstanceArchiveRestoreButton } from "@/components/Instance";
+import { LabelListEditor } from "@/components/Label";
 import RequiredStar from "@/components/RequiredStar.vue";
 import {
   EnvironmentSelect,
@@ -537,6 +552,8 @@ import {
   autoSubscriptionRoute,
   urlfy,
   supportedEngineV1List,
+  convertLabelsToKVList,
+  convertKVListToLabels,
 } from "@/utils";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import BigQueryHostInput from "./BigQueryHostInput.vue";
@@ -602,6 +619,16 @@ const resourceId = computed({
   },
   set(id) {
     basicInfo.value.name = `instances/${id}`;
+  },
+});
+
+// Convert labels to KVList format for LabelListEditor
+const labelKVList = computed({
+  get() {
+    return convertLabelsToKVList(basicInfo.value.labels, true /* sort */);
+  },
+  set(kvList) {
+    basicInfo.value.labels = convertKVListToLabels(kvList, false);
   },
 });
 

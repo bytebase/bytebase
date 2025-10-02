@@ -165,12 +165,23 @@ const selectedEngines = computed(() => {
     });
 });
 
+const selectedLabels = computed(() => {
+  return state.params.scopes
+    .filter((scope) => scope.id === "label")
+    .map((scope) => {
+      // Parse label value format "key:value"
+      const [key, ...valueParts] = scope.value.split(":");
+      return { key, value: valueParts.join(":") };
+    });
+});
+
 const filter = computed(() => ({
   environment: selectedEnvironment.value,
   host: selectedHost.value,
   port: selectedPort.value,
   query: state.params.query,
   engines: selectedEngines.value,
+  labels: selectedLabels.value,
 }));
 
 const showCreateInstanceDrawer = () => {
@@ -185,7 +196,7 @@ const showCreateInstanceDrawer = () => {
 
 const scopeOptions = computed((): ScopeOption[] => {
   return [
-    ...useCommonSearchScopeOptions(["environment", "engine"]).value,
+    ...useCommonSearchScopeOptions(["environment", "engine", "label"]).value,
     {
       id: "host",
       title: t("instance.advanced-search.scope.host.title"),
