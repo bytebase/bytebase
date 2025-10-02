@@ -398,6 +398,18 @@ func (x *Instance) Equal(y *Instance) bool {
 	if p, q := x.LastSyncTime, y.LastSyncTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
+	if len(x.Labels) != len(y.Labels) {
+		return false
+	}
+	for k := range x.Labels {
+		_, ok := y.Labels[k]
+		if !ok {
+			return false
+		}
+		if x.Labels[k] != y.Labels[k] {
+			return false
+		}
+	}
 	return true
 }
 

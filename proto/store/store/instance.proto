@@ -36,6 +36,10 @@ message Instance {
   google.protobuf.Timestamp last_sync_time = 11;
 
   repeated InstanceRole roles = 12;
+
+  // Labels are key-value pairs that can be attached to the instance.
+  // For example, { "org_group": "infrastructure", "environment": "production" }
+  map<string, string> labels = 13;
 }
 
 // InstanceRole is the API message for instance role.

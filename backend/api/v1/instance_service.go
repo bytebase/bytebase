@@ -88,6 +88,13 @@ func parseListInstanceFilter(filter string) (*store.ListResourceFilter, error) {
 	var positionalArgs []any
 
 	parseToSQL := func(variable, value any) (string, error) {
+		// Handle label filters like "labels.org_group"
+		if varStr, ok := variable.(string); ok {
+			if labelKey, ok := strings.CutPrefix(varStr, "labels."); ok {
+				return parseToLabelFilterSQL("instance.metadata", labelKey, value)
+			}
+		}
+
 		switch variable {
 		case "name":
 			positionalArgs = append(positionalArgs, value.(string))
@@ -142,6 +149,50 @@ func parseListInstanceFilter(filter string) (*store.ListResourceFilter, error) {
 		}
 	}
 
+	getSubConditionFromExpr := func(expr celast.Expr, getFilter func(expr celast.Expr) (string, error), join string) (string, error) {
+		var args []string
+		for _, arg := range expr.AsCall().Args() {
+			filter, err := getFilter(arg)
+			if err != nil {
+				return "", err
+			}
+			args = append(args, fmt.Sprintf("(%s)", filter))
+		}
+		return strings.Join(args, fmt.Sprintf(" %s ", join)), nil
+	}
+
+	parseToEngineSQL := func(expr celast.Expr, relation string) (string, error) {
+		variable, value := getVariableAndValueFromExpr(expr)
+		if variable != "engine" {
+			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`only "engine" support "engine in [xx]"/"!(engine in [xx])" operator`))
+		}
+		if value == nil {
+			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`empty value %v for "%s" operator`, value, relation))
+		}
+		list, ok := value.([]any)
+		if !ok {
+			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`expect list, got %T, hint: filter engine in ["xx"]`, value))
+		}
+		if len(list) == 0 {
+			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`empty value %v for "%s" operator`, value, relation))
+		}
+
+		var engineList []string
+		for _, raw := range list {
+			engine, ok := raw.(string)
+			if !ok {
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`expect string, got %T for engine %v`, raw, raw))
+			}
+			v1Engine, ok := v1pb.Engine_value[engine]
+			if !ok {
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid engine filter %q`, engine))
+			}
+			storeEngine := convertEngine(v1pb.Engine(v1Engine))
+			engineList = append(engineList, fmt.Sprintf("'%s'", storeEngine))
+		}
+		return fmt.Sprintf("instance.metadata->>'engine' %s (%s)", relation, strings.Join(engineList, ",")), nil
+	}
+
 	getFilter = func(expr celast.Expr) (string, error) {
 		switch expr.Kind() {
 		case celast.CallKind:
@@ -180,7 +231,13 @@ func parseListInstanceFilter(filter string) (*store.ListResourceFilter, error) {
 					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
 				}
 			case celoperators.In:
-				return parseToEngineSQL(expr, "IN")
+				variable, value := getVariableAndValueFromExpr(expr)
+				if variable == "engine" {
+					return parseToEngineSQL(expr, "IN")
+				} else if labelKey, ok := strings.CutPrefix(variable, "labels."); ok {
+					return parseToLabelFilterSQL("instance.metadata", labelKey, value)
+				}
+				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
 			case celoperators.LogicalNot:
 				args := expr.AsCall().Args()
 				if len(args) != 1 {
@@ -295,6 +352,10 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 
 	if err := s.instanceCountGuard(ctx); err != nil {
 		return nil, err
+	}
+
+	if err := validateLabels(req.Msg.Instance.Labels); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	instanceMessage, err := convertInstanceToInstanceMessage(req.Msg.InstanceId, req.Msg.Instance)
@@ -511,6 +572,11 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 			patch.Metadata.MaximumConnections = req.Msg.Instance.MaximumConnections
 		case "sync_databases":
 			patch.Metadata.SyncDatabases = req.Msg.Instance.SyncDatabases
+		case "labels":
+			if err := validateLabels(req.Msg.Instance.Labels); err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			}
+			patch.Metadata.Labels = req.Msg.Instance.Labels
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupported update_mask "%s"`, path))
 		}
@@ -1096,6 +1162,7 @@ func convertInstanceMessage(instance *store.InstanceMessage) *v1pb.Instance {
 		SyncDatabases:      instance.Metadata.GetSyncDatabases(),
 		Roles:              convertInstanceRoles(instance, instance.Metadata.GetRoles()),
 		LastSyncTime:       instance.Metadata.GetLastSyncTime(),
+		Labels:             instance.Metadata.GetLabels(),
 	}
 }
 
@@ -1154,6 +1221,7 @@ func convertInstanceToInstanceMessage(instanceID string, instance *v1pb.Instance
 			SyncInterval:       instance.GetSyncInterval(),
 			MaximumConnections: instance.GetMaximumConnections(),
 			SyncDatabases:      instance.GetSyncDatabases(),
+			Labels:             instance.GetLabels(),
 		},
 	}, nil
 }

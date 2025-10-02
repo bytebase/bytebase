@@ -82,6 +82,7 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
     maximumConnections: instance?.maximumConnections ?? 0,
     syncDatabases: instance?.syncDatabases ?? [],
     roles: instance?.roles ?? [],
+    labels: instance?.labels ?? {},
   };
 };
 

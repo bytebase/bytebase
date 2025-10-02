@@ -415,6 +415,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Instance.LabelsEntry"><span class="badge">M</span>Instance.LabelsEntry</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.InstanceResource"><span class="badge">M</span>InstanceResource</a>
                 </li>
               
@@ -5069,6 +5073,45 @@ Default empty, means sync all schemas &amp; databases. </p></td>
                   <td><p>The last time the instance was synced. </p></td>
                 </tr>
               
+                <tr>
+                  <td>labels</td>
+                  <td><a href="#bytebase.v1.Instance.LabelsEntry">Instance.LabelsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>Labels are key-value pairs that can be attached to the instance.
+For example, { &#34;org_group&#34;: &#34;infrastructure&#34;, &#34;environment&#34;: &#34;production&#34; } </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Instance.LabelsEntry">Instance.LabelsEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5320,6 +5363,7 @@ Supported filters:
 - host: the instance host, support &#34;==&#34; and &#34;.matches()&#34; operator.
 - port: the instance port, support &#34;==&#34; and &#34;.matches()&#34; operator.
 - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
+- labels.{key}: the instance label, support &#34;==&#34; and &#34;in&#34; operators.
 
 For example:
 name == &#34;sample instance&#34;
@@ -5336,6 +5380,8 @@ host == &#34;127.0.0.1&#34;
 host.matches(&#34;127.0&#34;)
 port == &#34;54321&#34;
 port.matches(&#34;543&#34;)
+labels.org_group == &#34;infrastructure&#34;
+labels.environment in [&#34;prod&#34;, &#34;production&#34;]
 project == &#34;projects/sample-project&#34;
 You can combine filter conditions like:
 name.matches(&#34;sample&#34;) &amp;&amp; environment == &#34;environments/test&#34;

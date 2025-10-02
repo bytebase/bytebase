@@ -77,6 +77,7 @@ export declare type ListInstancesRequest = Message<"bytebase.v1.ListInstancesReq
    * - host: the instance host, support "==" and ".matches()" operator.
    * - port: the instance port, support "==" and ".matches()" operator.
    * - project: the project full name in "projects/{id}" format, support "==" operator.
+   * - labels.{key}: the instance label, support "==" and "in" operators.
    *
    * For example:
    * name == "sample instance"
@@ -93,6 +94,8 @@ export declare type ListInstancesRequest = Message<"bytebase.v1.ListInstancesReq
    * host.matches("127.0")
    * port == "54321"
    * port.matches("543")
+   * labels.org_group == "infrastructure"
+   * labels.environment in ["prod", "production"]
    * project == "projects/sample-project"
    * You can combine filter conditions like:
    * name.matches("sample") && environment == "environments/test"
@@ -614,6 +617,14 @@ export declare type Instance = Message<"bytebase.v1.Instance"> & {
    * @generated from field: google.protobuf.Timestamp last_sync_time = 16;
    */
   lastSyncTime?: Timestamp;
+
+  /**
+   * Labels are key-value pairs that can be attached to the instance.
+   * For example, { "org_group": "infrastructure", "environment": "production" }
+   *
+   * @generated from field: map<string, string> labels = 17;
+   */
+  labels: { [key: string]: string };
 };
 
 /**

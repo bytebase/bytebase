@@ -28,6 +28,7 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { InstanceV1Name } from "@/components/v2";
+import { LabelsCell } from "@/components/v2/Model/cells";
 import { useEnvironmentV1Store } from "@/store";
 import { NULL_ENVIRONMENT_NAME } from "@/types";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
@@ -178,6 +179,15 @@ const columnList = computed((): InstanceDataTableColumn[] => {
         </NButton>
       ),
   };
+  const LABELS: InstanceDataTableColumn = {
+    key: "labels",
+    title: t("common.labels"),
+    resizable: true,
+    width: 300,
+    render: (instance) => (
+      <LabelsCell labels={instance.labels} showCount={3} placeholder="-" />
+    ),
+  };
   const LICENSE: InstanceDataTableColumn = {
     key: "instance",
     title: t("subscription.instance-assignment.license"),
@@ -186,9 +196,15 @@ const columnList = computed((): InstanceDataTableColumn[] => {
     render: (instance) => (instance.activation ? "Y" : ""),
   };
 
-  return [SELECTION, NAME, ENVIRONMENT, ADDRESS, EXTERNAL_LINK, LICENSE].filter(
-    (column) => !column.hide
-  );
+  return [
+    SELECTION,
+    NAME,
+    ENVIRONMENT,
+    ADDRESS,
+    LABELS,
+    EXTERNAL_LINK,
+    LICENSE,
+  ].filter((column) => !column.hide);
 });
 
 const handleDataSourceToggle = (e: MouseEvent, instance: Instance) => {

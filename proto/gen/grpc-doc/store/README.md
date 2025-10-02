@@ -143,6 +143,7 @@
     - [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret)
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption)
     - [Instance](#bytebase-store-Instance)
+    - [Instance.LabelsEntry](#bytebase-store-Instance-LabelsEntry)
     - [InstanceRole](#bytebase-store-InstanceRole)
     - [KerberosConfig](#bytebase-store-KerberosConfig)
     - [SASLConfig](#bytebase-store-SASLConfig)
@@ -2591,6 +2592,23 @@ Instance is the proto for instances.
 | mysql_lower_case_table_names | [int32](#int32) |  | The lower_case_table_names config for MySQL instances. It is used to determine whether the table names and database names are case sensitive. |
 | last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | roles | [InstanceRole](#bytebase-store-InstanceRole) | repeated |  |
+| labels | [Instance.LabelsEntry](#bytebase-store-Instance-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the instance. For example, { &#34;org_group&#34;: &#34;infrastructure&#34;, &#34;environment&#34;: &#34;production&#34; } |
+
+
+
+
+
+
+<a name="bytebase-store-Instance-LabelsEntry"></a>
+
+### Instance.LabelsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
 
 
 

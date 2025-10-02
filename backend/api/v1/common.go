@@ -47,6 +47,32 @@ func isValidResourceID(resourceID string) bool {
 	return resourceIDMatcher.MatchString(resourceID)
 }
 
+// validateLabels validates labels according to the requirements.
+// Labels must follow these rules:
+// - Maximum 64 labels allowed
+// - Keys must start with lowercase letter, then contain only lowercase letters, numbers, underscores, and dashes (max 63 chars)
+// - Values can contain letters, numbers, underscores, and dashes (max 63 chars, can be empty)
+func validateLabels(labels map[string]string) error {
+	if len(labels) > 64 {
+		return errors.Errorf("maximum 64 labels allowed, got %d", len(labels))
+	}
+	// Key pattern: must start with lowercase letter, then lowercase letters, numbers, underscores, dashes (max 63 chars)
+	keyPattern := `^[a-z][a-z0-9_-]{0,62}$`
+	// Value pattern: letters, numbers, underscores, dashes (max 63 chars, can be empty)
+	valuePattern := `^[a-zA-Z0-9_-]{0,63}$`
+	keyRegex := regexp.MustCompile(keyPattern)
+	valueRegex := regexp.MustCompile(valuePattern)
+	for key, value := range labels {
+		if !keyRegex.MatchString(key) {
+			return errors.Errorf("invalid label key %q: must start with lowercase letter and contain only lowercase letters, numbers, underscores, and dashes (max 63 chars)", key)
+		}
+		if !valueRegex.MatchString(value) {
+			return errors.Errorf("invalid label value %q for key %q: must contain only letters, numbers, underscores, and dashes (max 63 chars)", value, key)
+		}
+	}
+	return nil
+}
+
 // getEBNFTokens will parse the simple filter such as `project = "abc" | "def".` to {project: ["abc", "def"]} .
 func getEBNFTokens(filter, filterKey string) ([]string, error) {
 	grammar, err := ebnf.Parse("", strings.NewReader(filter))

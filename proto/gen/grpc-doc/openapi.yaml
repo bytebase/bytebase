@@ -980,6 +980,7 @@ paths:
                      - host: the instance host, support "==" and ".matches()" operator.
                      - port: the instance port, support "==" and ".matches()" operator.
                      - project: the project full name in "projects/{id}" format, support "==" operator.
+                     - labels.{key}: the instance label, support "==" and "in" operators.
 
                      For example:
                      name == "sample instance"
@@ -996,6 +997,8 @@ paths:
                      host.matches("127.0")
                      port == "54321"
                      port.matches("543")
+                     labels.org_group == "infrastructure"
+                     labels.environment in ["prod", "production"]
                      project == "projects/sample-project"
                      You can combine filter conditions like:
                      name.matches("sample") && environment == "environments/test"
@@ -10763,6 +10766,13 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/InstanceRole'
+                labels:
+                    type: object
+                    additionalProperties:
+                        type: string
+                    description: |-
+                        Labels are key-value pairs that can be attached to the instance.
+                         For example, { "org_group": "infrastructure", "environment": "production" }
             description: Instance is the proto for instances.
         InstanceResource:
             type: object

@@ -382,6 +382,9 @@ const doUpdate = async () => {
     if (!isEqual(instancePatch.syncDatabases, inst.syncDatabases)) {
       updateMask.push("sync_databases");
     }
+    if (!isEqual(instancePatch.labels, inst.labels)) {
+      updateMask.push("labels");
+    }
     if (updateMask.length === 0) {
       return;
     }
