@@ -38,7 +38,10 @@
           tooltip-mode="DISABLED-ONLY"
           :disabled="
             !selectedChangelogForRollback ||
-            getChangelogChangeType(selectedChangelogForRollback.type) !== 'DDL'
+            getChangelogChangeType(
+              selectedChangelogForRollback.type,
+              selectedChangelogForRollback.migrationType
+            ) !== 'DDL'
           "
           @click="rollback"
         >
@@ -136,6 +139,7 @@ import {
 import type { ComposedDatabase, Table, SearchChangeLogParams } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
+  Changelog_MigrationType,
   Changelog_Status,
   Changelog_Type,
   ChangelogView,
@@ -152,7 +156,7 @@ interface LocalState {
   selectedChangelogNames: string[];
   isExporting: boolean;
   selectedAffectedTables: Table[];
-  selectedChangeType?: Changelog_Type;
+  selectedChangeType?: Changelog_MigrationType;
 }
 
 const props = defineProps<{
@@ -178,7 +182,7 @@ const searchChangeLogParams = computed(
   (): SearchChangeLogParams => ({
     tables: state.selectedAffectedTables,
     types: state.selectedChangeType
-      ? [Changelog_Type[state.selectedChangeType]]
+      ? [Changelog_Type[Changelog_Type.MIGRATE]]
       : undefined,
   })
 );
@@ -287,8 +291,7 @@ const handleExportChangelogs = async () => {
       ).format("YYYY-MM-DDTHH-mm-ss");
       if (
         changelog.type === Changelog_Type.MIGRATE ||
-        changelog.type === Changelog_Type.MIGRATE_SDL ||
-        changelog.type === Changelog_Type.DATA
+        changelog.type === Changelog_Type.SDL
       ) {
         zip.file(`${filePathPrefix}.sql`, changelog.statement);
       } else if (changelog.type === Changelog_Type.BASELINE) {

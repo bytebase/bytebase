@@ -231,6 +231,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.MigrationType"><span class="badge">E</span>MigrationType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.State"><span class="badge">E</span>State</a>
                 </li>
               
@@ -763,6 +767,10 @@
               
               
                 <li>
+                  <a href="#bytebase.v1.Changelog.MigrationType"><span class="badge">E</span>Changelog.MigrationType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Changelog.Status"><span class="badge">E</span>Changelog.Status</a>
                 </li>
               
@@ -947,6 +955,10 @@
               
                 <li>
                   <a href="#bytebase.v1.ApprovalStep.Type"><span class="badge">E</span>ApprovalStep.Type</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Issue.ApprovalStatus"><span class="badge">E</span>Issue.ApprovalStatus</a>
                 </li>
               
                 <li>
@@ -2290,7 +2302,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Release.File.ChangeType"><span class="badge">E</span>Release.File.ChangeType</a>
+                  <a href="#bytebase.v1.Release.File.MigrationType"><span class="badge">E</span>Release.File.MigrationType</a>
                 </li>
               
                 <li>
@@ -3059,25 +3071,13 @@
               <tr>
                 <td>MIGRATE</td>
                 <td>2</td>
-                <td><p>Used for DDL changes including CREATE DATABASE.</p></td>
+                <td><p>Used for imperative schema migration including CREATE DATABASE.</p></td>
               </tr>
             
               <tr>
-                <td>MIGRATE_SDL</td>
+                <td>SDL</td>
                 <td>3</td>
-                <td><p>Used for schema changes via state-based schema migration including CREATE DATABASE.</p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE_GHOST</td>
-                <td>4</td>
-                <td><p>Used for DDL changes using gh-ost.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATA</td>
-                <td>6</td>
-                <td><p>Used for DML change.</p></td>
+                <td><p>Used for state-based declarative schema migration including CREATE DATABASE.</p></td>
               </tr>
             
           </tbody>
@@ -3286,6 +3286,41 @@
                 <td>XLSX</td>
                 <td>4</td>
                 <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.MigrationType">MigrationType</h3>
+        <p>MigrationType is the type for imperative schema migration.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MIGRATION_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL</td>
+                <td>1</td>
+                <td><p>Used for DDL changes.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DML</td>
+                <td>2</td>
+                <td><p>Used for DML changes.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GHOST</td>
+                <td>3</td>
+                <td><p>Used for DDL changes using gh-ost.</p></td>
               </tr>
             
           </tbody>
@@ -6682,6 +6717,13 @@ Or present but not found if deleted </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>migration_type</td>
+                  <td><a href="#bytebase.v1.Changelog.MigrationType">Changelog.MigrationType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -9659,6 +9701,41 @@ In this situation, `update_mask` is ignored. </p></td>
       
 
       
+        <h3 id="bytebase.v1.Changelog.MigrationType">Changelog.MigrationType</h3>
+        <p>MigrationType is the type for imperative schema migration.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MIGRATION_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL</td>
+                <td>1</td>
+                <td><p>Used for DDL changes.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DML</td>
+                <td>2</td>
+                <td><p>Used for DML changes.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GHOST</td>
+                <td>3</td>
+                <td><p>Used for DDL changes using gh-ost.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.Changelog.Status">Changelog.Status</h3>
         <p></p>
         <table class="enum-table">
@@ -9721,20 +9798,8 @@ In this situation, `update_mask` is ignored. </p></td>
               </tr>
             
               <tr>
-                <td>MIGRATE_SDL</td>
+                <td>SDL</td>
                 <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE_GHOST</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DATA</td>
-                <td>6</td>
                 <td><p></p></td>
               </tr>
             
@@ -10753,21 +10818,6 @@ Format: projects/{project}/issues/{issue} </p></td>
                 </tr>
               
                 <tr>
-                  <td>approval_finding_done</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If the value is `false`, it means that the backend is still finding matching approval templates.
-If `true`, approval_templates &amp; approvers &amp; approval_finding_error are available. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>approval_finding_error</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>creator</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -10854,6 +10904,20 @@ Keys are the following:
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>approval_status</td>
+                  <td><a href="#bytebase.v1.Issue.ApprovalStatus">Issue.ApprovalStatus</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>approval_status_error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Only populated when approval_status == ERROR </p></td>
                 </tr>
               
             </tbody>
@@ -11751,6 +11815,59 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>ANY</td>
                 <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.Issue.ApprovalStatus">Issue.ApprovalStatus</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>APPROVAL_STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CHECKING</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PENDING</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>APPROVED</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REJECTED</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SKIPPED</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ERROR</td>
+                <td>6</td>
                 <td><p></p></td>
               </tr>
             
@@ -20715,6 +20832,14 @@ Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
                 <tr>
+                  <td>migration_type</td>
+                  <td><a href="#bytebase.v1.MigrationType">MigrationType</a></td>
+                  <td></td>
+                  <td><p>migration_type is the migration type for imperative schema migration.
+It is only set when type is MIGRATE. </p></td>
+                </tr>
+              
+                <tr>
                   <td>ghost_flags</td>
                   <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry">Plan.ChangeDatabaseConfig.GhostFlagsEntry</a></td>
                   <td>repeated</td>
@@ -25392,11 +25517,11 @@ If the digest is not empty, it must be unique in the project. Otherwise, an ALRE
                 </tr>
               
                 <tr>
-                  <td>change_type</td>
-                  <td><a href="#bytebase.v1.Release.File.ChangeType">Release.File.ChangeType</a></td>
+                  <td>migration_type</td>
+                  <td><a href="#bytebase.v1.Release.File.MigrationType">Release.File.MigrationType</a></td>
                   <td></td>
-                  <td><p>The change type of the file.
-For versioned files, it is the change type of the file.
+                  <td><p>The migration type of the file.
+For versioned files, it is the migration type of the file.
 For declarative files, this field is always DDL, thus meaningless. </p></td>
                 </tr>
               
@@ -25654,7 +25779,7 @@ In this situation, `update_mask` is ignored. </p></td>
           </tbody>
         </table>
       
-        <h3 id="bytebase.v1.Release.File.ChangeType">Release.File.ChangeType</h3>
+        <h3 id="bytebase.v1.Release.File.MigrationType">Release.File.MigrationType</h3>
         <p></p>
         <table class="enum-table">
           <thead>
@@ -25663,7 +25788,7 @@ In this situation, `update_mask` is ignored. </p></td>
           <tbody>
             
               <tr>
-                <td>CHANGE_TYPE_UNSPECIFIED</td>
+                <td>MIGRATION_TYPE_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>
@@ -28016,8 +28141,8 @@ Supported filters:
 
 For example:
 creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; update_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34;
-task_type == &#34;DATABASE_SCHEMA_UPDATE&#34;
-task_type in [&#34;DATABASE_SCHEMA_UPDATE&#34;, &#34;DATABASE_DATA_UPDATE&#34;] </p></td>
+task_type == &#34;DATABASE_MIGRATE&#34;
+task_type in [&#34;DATABASE_MIGRATE&#34;, &#34;DATABASE_EXPORT&#34;] </p></td>
                 </tr>
               
             </tbody>
@@ -28581,6 +28706,20 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database_change_type</td>
+                  <td><a href="#bytebase.v1.DatabaseChangeType">DatabaseChangeType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>migration_type</td>
+                  <td><a href="#bytebase.v1.MigrationType">MigrationType</a></td>
+                  <td></td>
+                  <td><p>migration_type is only set when database_change_type is MIGRATE. </p></td>
                 </tr>
               
             </tbody>
@@ -29656,32 +29795,20 @@ The indexes of the executed commands. </p></td>
               </tr>
             
               <tr>
-                <td>DATABASE_SCHEMA_UPDATE</td>
-                <td>4</td>
+                <td>DATABASE_MIGRATE</td>
+                <td>3</td>
                 <td><p>use payload DatabaseUpdate</p></td>
               </tr>
             
               <tr>
-                <td>DATABASE_SCHEMA_UPDATE_SDL</td>
-                <td>5</td>
-                <td><p>use payload DatabaseUpdate</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_SCHEMA_UPDATE_GHOST</td>
-                <td>9</td>
-                <td><p>use payload DatabaseUpdate</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_DATA_UPDATE</td>
-                <td>8</td>
+                <td>DATABASE_SDL</td>
+                <td>6</td>
                 <td><p>use payload DatabaseUpdate</p></td>
               </tr>
             
               <tr>
                 <td>DATABASE_EXPORT</td>
-                <td>12</td>
+                <td>5</td>
                 <td><p>use payload DatabaseDataExport</p></td>
               </tr>
             

@@ -315,6 +315,10 @@ message Plan {
     // Type is the database change type.
     DatabaseChangeType type = 3;
 
+    // migration_type is the migration type for imperative schema migration.
+    // It is only set when type is MIGRATE.
+    MigrationType migration_type = 11;
+
     map<string, string> ghost_flags = 7;
 
     // If set, a backup of the modified data will be created automatically before any changes are applied.

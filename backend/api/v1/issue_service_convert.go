@@ -39,25 +39,25 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 	}
 
 	issueV1 := &v1pb.Issue{
-		Name:                 common.FormatIssue(issue.Project.ResourceID, issue.UID),
-		Title:                issue.Title,
-		Description:          issue.Description,
-		Type:                 convertToIssueType(issue.Type),
-		Status:               convertToIssueStatus(issue.Status),
-		Approvers:            nil,
-		ApprovalTemplates:    nil,
-		ApprovalFindingDone:  false,
-		ApprovalFindingError: "",
-		Creator:              common.FormatUserEmail(issue.Creator.Email),
-		CreateTime:           timestamppb.New(issue.CreatedAt),
-		UpdateTime:           timestamppb.New(issue.UpdatedAt),
-		Plan:                 "",
-		Rollout:              "",
-		GrantRequest:         convertedGrantRequest,
-		Releasers:            releasers,
-		RiskLevel:            v1pb.Issue_RISK_LEVEL_UNSPECIFIED,
-		TaskStatusCount:      issue.TaskStatusCount,
-		Labels:               issuePayload.Labels,
+		Name:                common.FormatIssue(issue.Project.ResourceID, issue.UID),
+		Title:               issue.Title,
+		Description:         issue.Description,
+		Type:                convertToIssueType(issue.Type),
+		Status:              convertToIssueStatus(issue.Status),
+		Approvers:           nil,
+		ApprovalTemplates:   nil,
+		Creator:             common.FormatUserEmail(issue.Creator.Email),
+		CreateTime:          timestamppb.New(issue.CreatedAt),
+		UpdateTime:          timestamppb.New(issue.UpdatedAt),
+		Plan:                "",
+		Rollout:             "",
+		GrantRequest:        convertedGrantRequest,
+		Releasers:           releasers,
+		RiskLevel:           v1pb.Issue_RISK_LEVEL_UNSPECIFIED,
+		TaskStatusCount:     issue.TaskStatusCount,
+		Labels:              issuePayload.Labels,
+		ApprovalStatus:      v1pb.Issue_APPROVAL_STATUS_UNSPECIFIED,
+		ApprovalStatusError: "",
 	}
 
 	if issue.PlanUID != nil {
@@ -68,8 +68,6 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 	}
 
 	if issuePayload.Approval != nil {
-		issueV1.ApprovalFindingDone = issuePayload.Approval.ApprovalFindingDone
-		issueV1.ApprovalFindingError = issuePayload.Approval.ApprovalFindingError
 		issueV1.RiskLevel = convertToIssueRiskLevel(issuePayload.Approval.RiskLevel)
 		for _, template := range issuePayload.Approval.ApprovalTemplates {
 			issueV1.ApprovalTemplates = append(issueV1.ApprovalTemplates, convertToApprovalTemplate(template))
@@ -83,9 +81,68 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 			convertedApprover.Principal = fmt.Sprintf("users/%s", user.Email)
 			issueV1.Approvers = append(issueV1.Approvers, convertedApprover)
 		}
+		issueV1.ApprovalStatus, issueV1.ApprovalStatusError = computeApprovalStatus(issuePayload.Approval)
 	}
 
 	return issueV1, nil
+}
+
+func computeApprovalStatus(approval *storepb.IssuePayloadApproval) (v1pb.Issue_ApprovalStatus, string) {
+	// If approval finding is not done, status is checking
+	if !approval.ApprovalFindingDone {
+		return v1pb.Issue_CHECKING, ""
+	}
+
+	// If there's an error finding approval, status is error
+	if approval.ApprovalFindingError != "" {
+		return v1pb.Issue_ERROR, approval.ApprovalFindingError
+	}
+
+	// If no approval templates, approval is skipped (not required)
+	if len(approval.ApprovalTemplates) == 0 {
+		return v1pb.Issue_SKIPPED, ""
+	}
+
+	// If no approvers are assigned yet, it's pending
+	if len(approval.Approvers) == 0 {
+		return v1pb.Issue_PENDING, ""
+	}
+
+	// Check approver statuses
+	hasRejected := false
+	hasPending := false
+	allApproved := true
+
+	for _, approver := range approval.Approvers {
+		switch approver.Status {
+		case storepb.IssuePayloadApproval_Approver_REJECTED:
+			hasRejected = true
+		case storepb.IssuePayloadApproval_Approver_PENDING:
+			hasPending = true
+			allApproved = false
+		case storepb.IssuePayloadApproval_Approver_APPROVED:
+			// Continue checking
+		default:
+			allApproved = false
+		}
+	}
+
+	// If any approver rejected, overall status is rejected
+	if hasRejected {
+		return v1pb.Issue_REJECTED, ""
+	}
+
+	// If all approvers approved, overall status is approved
+	if allApproved {
+		return v1pb.Issue_APPROVED, ""
+	}
+
+	// If there are pending approvers, overall status is pending
+	if hasPending {
+		return v1pb.Issue_PENDING, ""
+	}
+
+	return v1pb.Issue_APPROVAL_STATUS_UNSPECIFIED, ""
 }
 
 func (s *IssueService) convertToIssueReleasers(ctx context.Context, issue *store.IssueMessage) ([]string, error) {

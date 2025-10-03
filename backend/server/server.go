@@ -190,11 +190,9 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	s.taskSchedulerV2 = taskrun.NewSchedulerV2(stores, s.stateCfg, s.webhookManager, profile, s.licenseService)
 	s.taskSchedulerV2.Register(storepb.Task_DATABASE_CREATE, taskrun.NewDatabaseCreateExecutor(stores, s.dbFactory, s.schemaSyncer, s.stateCfg, profile))
-	s.taskSchedulerV2.Register(storepb.Task_DATABASE_SCHEMA_UPDATE, taskrun.NewSchemaUpdateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-	s.taskSchedulerV2.Register(storepb.Task_DATABASE_DATA_UPDATE, taskrun.NewDataUpdateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+	s.taskSchedulerV2.Register(storepb.Task_DATABASE_MIGRATE, taskrun.NewDatabaseMigrateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 	s.taskSchedulerV2.Register(storepb.Task_DATABASE_EXPORT, taskrun.NewDataExportExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-	s.taskSchedulerV2.Register(storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST, taskrun.NewSchemaUpdateGhostExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, s.profile))
-	s.taskSchedulerV2.Register(storepb.Task_DATABASE_SCHEMA_UPDATE_SDL, taskrun.NewSchemaDeclareExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+	s.taskSchedulerV2.Register(storepb.Task_DATABASE_SDL, taskrun.NewSchemaDeclareExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 
 	s.planCheckScheduler = plancheck.NewScheduler(stores, s.licenseService, s.stateCfg)
 	databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(stores, s.dbFactory)

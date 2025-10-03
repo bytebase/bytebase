@@ -17,7 +17,9 @@
           <div class="flex items-center space-x-2">
             <ChangelogStatusIcon :status="changelog.status" />
             <NTag round>
-              {{ getChangelogChangeType(changelog.type) }}
+              {{
+                getChangelogChangeType(changelog.type, changelog.migrationType)
+              }}
             </NTag>
             <NTag v-if="changelog.version" round>
               {{ $t("common.version") }} {{ changelog.version }}
@@ -225,7 +227,12 @@ const allowShowDiff = computed((): boolean => {
   if (!changelog.value) {
     return false;
   }
-  return getChangelogChangeType(changelog.value.type) === "DDL";
+  return (
+    getChangelogChangeType(
+      changelog.value.type,
+      changelog.value.migrationType
+    ) === "DDL"
+  );
 });
 
 watch(

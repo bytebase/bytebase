@@ -66,7 +66,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	sheet := sheetResp.Msg
 
 	// Create an issue that updates database schema.
-	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.DatabaseChangeType_MIGRATE)
+	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.MigrationType_DDL)
 	a.NoError(err)
 
 	// Query schema.
@@ -86,7 +86,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	sheet = sheetResp.Msg
 
 	// Create an issue that updates database data.
-	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.DatabaseChangeType_DATA)
+	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.MigrationType_DML)
 	a.NoError(err)
 
 	resp, err := ctl.databaseServiceClient.ListChangelogs(ctx, connect.NewRequest(&v1pb.ListChangelogsRequest{
@@ -97,28 +97,31 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	changelogs := resp.Msg.Changelogs
 	wantChangelogs := []*v1pb.Changelog{
 		{
-			Type:       v1pb.Changelog_DATA,
-			Status:     v1pb.Changelog_DONE,
-			Schema:     dumpedSchema,
-			PrevSchema: dumpedSchema,
-			Version:    "",
+			Type:          v1pb.Changelog_MIGRATE,
+			MigrationType: v1pb.Changelog_DML,
+			Status:        v1pb.Changelog_DONE,
+			Schema:        dumpedSchema,
+			PrevSchema:    dumpedSchema,
+			Version:       "",
 		},
 		{
-			Type:       v1pb.Changelog_MIGRATE,
-			Status:     v1pb.Changelog_DONE,
-			Schema:     dumpedSchema,
-			PrevSchema: "",
-			Version:    "",
+			Type:          v1pb.Changelog_MIGRATE,
+			MigrationType: v1pb.Changelog_DDL,
+			Status:        v1pb.Changelog_DONE,
+			Schema:        dumpedSchema,
+			PrevSchema:    "",
+			Version:       "",
 		},
 	}
 	a.Equal(len(wantChangelogs), len(changelogs))
 	for i, changelog := range changelogs {
 		got := &v1pb.Changelog{
-			Type:       changelog.Type,
-			Status:     changelog.Status,
-			Schema:     changelog.Schema,
-			PrevSchema: changelog.PrevSchema,
-			Version:    changelog.Version,
+			Type:          changelog.Type,
+			MigrationType: changelog.MigrationType,
+			Status:        changelog.Status,
+			Schema:        changelog.Schema,
+			PrevSchema:    changelog.PrevSchema,
+			Version:       changelog.Version,
 		}
 		want := wantChangelogs[i]
 		a.Equal(want, got)
@@ -327,7 +330,7 @@ CREATE TABLE "public"."book" (
 			ddlSheet := ddlSheetResp.Msg
 
 			// Create an issue that updates database schema.
-			err = ctl.changeDatabase(ctx, ctl.project, database, ddlSheet, v1pb.DatabaseChangeType_MIGRATE)
+			err = ctl.changeDatabase(ctx, ctl.project, database, ddlSheet, v1pb.MigrationType_DDL)
 			a.NoError(err)
 
 			latestSchemaResp, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{

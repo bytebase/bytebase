@@ -369,7 +369,7 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 		}
 
 		databaseKey := getDatabaseKey(task.InstanceID, *task.DatabaseName)
-		if isSequentialTask(task.Type) {
+		if isSequentialTask(task) {
 			if _, ok := minTaskIDForDatabase[databaseKey]; !ok {
 				minTaskIDForDatabase[databaseKey] = task.ID
 			} else if minTaskIDForDatabase[databaseKey] > task.ID {
@@ -396,7 +396,7 @@ func (s *SchedulerV2) scheduleRunningTaskRun(ctx context.Context, taskRun *store
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
 	}
-	if task.DatabaseName != nil && isSequentialTask(task.Type) {
+	if task.DatabaseName != nil && isSequentialTask(task) {
 		// Skip the task run if there is an ongoing migration on the database.
 		if taskUIDAny, ok := s.stateCfg.RunningDatabaseMigration.Load(getDatabaseKey(task.InstanceID, *task.DatabaseName)); ok {
 			if taskUID, ok := taskUIDAny.(int); ok {
@@ -998,15 +998,23 @@ func tasksSkippedOrDone(tasks []*store.TaskMessage) bool {
 }
 
 // isSequentialTask returns whether the task should be executed sequentially.
-func isSequentialTask(taskType storepb.Task_Type) bool {
+func isSequentialTask(task *store.TaskMessage) bool {
 	//exhaustive:enforce
-	switch taskType {
-	case storepb.Task_DATABASE_SCHEMA_UPDATE,
-		storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST,
-		storepb.Task_DATABASE_SCHEMA_UPDATE_SDL:
+	switch task.Type {
+	case storepb.Task_DATABASE_MIGRATE:
+		// DDL, GHOST, and MIGRATE_TYPE_UNSPECIFIED (treated as DDL) operations should be sequential
+		switch task.Payload.GetMigrateType() {
+		case storepb.Task_DDL, storepb.Task_GHOST, storepb.Task_MIGRATE_TYPE_UNSPECIFIED:
+			return true
+		case storepb.Task_DML:
+			return false
+		default:
+			return true
+		}
+	case storepb.Task_DATABASE_SDL:
+		// SDL operations should be sequential
 		return true
 	case storepb.Task_DATABASE_CREATE,
-		storepb.Task_DATABASE_DATA_UPDATE,
 		storepb.Task_DATABASE_EXPORT:
 		return false
 	case storepb.Task_TASK_TYPE_UNSPECIFIED:

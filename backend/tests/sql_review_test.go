@@ -477,9 +477,10 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 					Id: uuid.NewString(),
 					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-							Targets: []string{database.Name},
-							Sheet:   sheet.Msg.Name,
-							Type:    v1pb.DatabaseChangeType_MIGRATE,
+							Targets:       []string{database.Name},
+							Sheet:         sheet.Msg.Name,
+							Type:          v1pb.DatabaseChangeType_MIGRATE,
+							MigrationType: v1pb.MigrationType_DDL,
 						},
 					},
 				},

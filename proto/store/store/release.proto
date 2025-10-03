@@ -26,7 +26,7 @@ message ReleasePayload {
     string sheet_sha256 = 4;
     Type type = 5;
     string version = 6;
-    ChangeType change_type = 7;
+    MigrationType migration_type = 7;
 
     enum Type {
       TYPE_UNSPECIFIED = 0;
@@ -34,8 +34,8 @@ message ReleasePayload {
       DECLARATIVE = 2;
     }
 
-    enum ChangeType {
-      CHANGE_TYPE_UNSPECIFIED = 0;
+    enum MigrationType {
+      MIGRATION_TYPE_UNSPECIFIED = 0;
       DDL = 1;
       DDL_GHOST = 2;
       DML = 3;

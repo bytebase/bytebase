@@ -163,16 +163,17 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 					switch taskType {
 					case "DDL":
 						issueFind.TaskTypes = &[]storepb.Task_Type{
-							storepb.Task_DATABASE_SCHEMA_UPDATE,
-							storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST,
+							storepb.Task_DATABASE_MIGRATE,
+						}
+						issueFind.MigrateTypes = &[]storepb.Task_MigrateType{
+							storepb.Task_DDL,
 						}
 					case "DML":
 						issueFind.TaskTypes = &[]storepb.Task_Type{
-							storepb.Task_DATABASE_DATA_UPDATE,
+							storepb.Task_DATABASE_MIGRATE,
 						}
-					case "DATA_EXPORT":
-						issueFind.TaskTypes = &[]storepb.Task_Type{
-							storepb.Task_DATABASE_EXPORT,
+						issueFind.MigrateTypes = &[]storepb.Task_MigrateType{
+							storepb.Task_DML,
 						}
 					default:
 						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unknown value %q`, value))
@@ -1119,9 +1120,9 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	for _, path := range req.Msg.UpdateMask.Paths {
 		updateMasks[path] = true
 		switch path {
-		case "approval_finding_done":
-			if req.Msg.Issue.ApprovalFindingDone {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot set approval_finding_done to true"))
+		case "approval_status":
+			if req.Msg.Issue.ApprovalStatus != v1pb.Issue_CHECKING {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("can only set approval_status to CHECKING to trigger re-finding approval templates"))
 			}
 			payload := issue.Payload
 			if payload.Approval == nil {

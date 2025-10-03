@@ -67,10 +67,18 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
         -   Filenames do not need to follow any versioning format
         -   Files can be named for clarity and organization (e.g., `tables.sql`, `views.sql`, `indexes.sql`)
         -   Version is automatically generated from the current timestamp
-    -   **File Type Detection** (applies to versioned mode only):
-        -   **DDL (default)**: Standard schema change files (e.g., `v1.0_create_table.sql`)
-        -   **DML**: Data manipulation files with base filename ending with `dml` (e.g., `v1.0_insert_data_dml.sql`)
-        -   **DDL Ghost**: Schema changes using gh-ost with base filename ending with `ghost` (e.g., `v1.0_alter_table_ghost.sql`)
+    -   **Migration Type Detection** (applies to versioned mode only):
+        -   Migration type is specified using a comment at the top of the SQL file
+        -   Format: `-- migration-type: ghost`
+        -   The comment must appear before any SQL statements
+        -   Case insensitive (e.g., `Ghost`, `GHOST`, `ghost` all work)
+        -   Only `ghost` is supported for gh-ost migrations
+        -   Example:
+            ```sql
+            -- migration-type: ghost
+            ALTER TABLE large_table ADD COLUMN new_col VARCHAR(255);
+            ```
+        -   If no migration type is specified (or any other value), defaults to `MIGRATION_TYPE_UNSPECIFIED`
 
 -   **`--declarative`** (experimental): Use declarative mode for SQL schema management instead of versioned migrations.
     -   Treats SQL files as desired state definitions rather than incremental changes

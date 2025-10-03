@@ -96,7 +96,10 @@ import Drawer from "@/components/v2/Container/Drawer.vue";
 import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
 import { releaseServiceClientConnect } from "@/grpcweb";
 import { projectNamePrefix } from "@/store";
-import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
+import {
+  DatabaseChangeType,
+  MigrationType,
+} from "@/types/proto-es/v1/common_pb";
 import {
   PlanCheckRun_Type,
   PlanCheckRun_Status,
@@ -111,7 +114,7 @@ import {
   Release_File_Type,
 } from "@/types/proto-es/v1/release_service_pb";
 import {
-  Release_File_ChangeType,
+  Release_File_MigrationType,
   type CheckReleaseResponse_CheckResult,
 } from "@/types/proto-es/v1/release_service_pb";
 import { Advice_Status, type Advice } from "@/types/proto-es/v1/sql_service_pb";
@@ -220,10 +223,11 @@ const runChecks = async () => {
             version: "0",
             type: Release_File_Type.VERSIONED,
             statement: new TextEncoder().encode(statement),
-            changeType:
-              config.type === DatabaseChangeType.DATA
-                ? Release_File_ChangeType.DML
-                : Release_File_ChangeType.DDL,
+            migrationType:
+              config.type === DatabaseChangeType.MIGRATE &&
+              config.migrationType === MigrationType.DML
+                ? Release_File_MigrationType.DML
+                : Release_File_MigrationType.DDL,
           },
         ],
       },

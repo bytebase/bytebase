@@ -18,6 +18,7 @@
     - [DatabaseChangeType](#bytebase-v1-DatabaseChangeType)
     - [Engine](#bytebase-v1-Engine)
     - [ExportFormat](#bytebase-v1-ExportFormat)
+    - [MigrationType](#bytebase-v1-MigrationType)
     - [State](#bytebase-v1-State)
     - [VCSType](#bytebase-v1-VCSType)
   
@@ -154,6 +155,7 @@
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
     - [ViewMetadata](#bytebase-v1-ViewMetadata)
   
+    - [Changelog.MigrationType](#bytebase-v1-Changelog-MigrationType)
     - [Changelog.Status](#bytebase-v1-Changelog-Status)
     - [Changelog.Type](#bytebase-v1-Changelog-Type)
     - [ChangelogView](#bytebase-v1-ChangelogView)
@@ -202,6 +204,7 @@
   
     - [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type)
     - [ApprovalStep.Type](#bytebase-v1-ApprovalStep-Type)
+    - [Issue.ApprovalStatus](#bytebase-v1-Issue-ApprovalStatus)
     - [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status)
     - [Issue.RiskLevel](#bytebase-v1-Issue-RiskLevel)
     - [Issue.Type](#bytebase-v1-Issue-Type)
@@ -552,7 +555,7 @@
     - [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest)
   
     - [CheckReleaseResponse.RiskLevel](#bytebase-v1-CheckReleaseResponse-RiskLevel)
-    - [Release.File.ChangeType](#bytebase-v1-Release-File-ChangeType)
+    - [Release.File.MigrationType](#bytebase-v1-Release-File-MigrationType)
     - [Release.File.Type](#bytebase-v1-Release-File-Type)
   
     - [ReleaseService](#bytebase-v1-ReleaseService)
@@ -803,10 +806,8 @@ DatabaseChangeType is the database change type.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | DATABASE_CHANGE_TYPE_UNSPECIFIED | 0 |  |
-| MIGRATE | 2 | Used for DDL changes including CREATE DATABASE. |
-| MIGRATE_SDL | 3 | Used for schema changes via state-based schema migration including CREATE DATABASE. |
-| MIGRATE_GHOST | 4 | Used for DDL changes using gh-ost. |
-| DATA | 6 | Used for DML change. |
+| MIGRATE | 2 | Used for imperative schema migration including CREATE DATABASE. |
+| SDL | 3 | Used for state-based declarative schema migration including CREATE DATABASE. |
 
 
 
@@ -858,6 +859,20 @@ DatabaseChangeType is the database change type.
 | JSON | 2 |  |
 | SQL | 3 |  |
 | XLSX | 4 |  |
+
+
+
+<a name="bytebase-v1-MigrationType"></a>
+
+### MigrationType
+MigrationType is the type for imperative schema migration.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MIGRATION_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 | Used for DDL changes. |
+| DML | 2 | Used for DML changes. |
+| GHOST | 3 | Used for DDL changes using gh-ost. |
 
 
 
@@ -2175,6 +2190,7 @@ BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
 | revision | [string](#string) |  | Could be empty Or present but not found if deleted |
 | changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
 | type | [Changelog.Type](#bytebase-v1-Changelog-Type) |  |  |
+| migration_type | [Changelog.MigrationType](#bytebase-v1-Changelog-MigrationType) |  |  |
 
 
 
@@ -3167,6 +3183,20 @@ ViewMetadata is the metadata for views.
  
 
 
+<a name="bytebase-v1-Changelog-MigrationType"></a>
+
+### Changelog.MigrationType
+MigrationType is the type for imperative schema migration.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MIGRATION_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 | Used for DDL changes. |
+| DML | 2 | Used for DML changes. |
+| GHOST | 3 | Used for DDL changes using gh-ost. |
+
+
+
 <a name="bytebase-v1-Changelog-Status"></a>
 
 ### Changelog.Status
@@ -3191,9 +3221,7 @@ ViewMetadata is the metadata for views.
 | TYPE_UNSPECIFIED | 0 |  |
 | BASELINE | 1 |  |
 | MIGRATE | 2 |  |
-| MIGRATE_SDL | 3 |  |
-| MIGRATE_GHOST | 4 |  |
-| DATA | 6 |  |
+| SDL | 3 |  |
 
 
 
@@ -3544,8 +3572,6 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | status | [IssueStatus](#bytebase-v1-IssueStatus) |  |  |
 | approvers | [Issue.Approver](#bytebase-v1-Issue-Approver) | repeated |  |
 | approval_templates | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) | repeated |  |
-| approval_finding_done | [bool](#bool) |  | If the value is `false`, it means that the backend is still finding matching approval templates. If `true`, approval_templates &amp; approvers &amp; approval_finding_error are available. |
-| approval_finding_error | [string](#string) |  |  |
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
@@ -3556,6 +3582,8 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | risk_level | [Issue.RiskLevel](#bytebase-v1-Issue-RiskLevel) |  |  |
 | task_status_count | [Issue.TaskStatusCountEntry](#bytebase-v1-Issue-TaskStatusCountEntry) | repeated | The status count of the issue. Keys are the following: - NOT_STARTED - SKIPPED - PENDING - RUNNING - DONE - FAILED - CANCELED |
 | labels | [string](#string) | repeated |  |
+| approval_status | [Issue.ApprovalStatus](#bytebase-v1-Issue-ApprovalStatus) |  |  |
+| approval_status_error | [string](#string) |  | Only populated when approval_status == ERROR |
 
 
 
@@ -3935,6 +3963,23 @@ ANY means approving any node will proceed.
 | TYPE_UNSPECIFIED | 0 |  |
 | ALL | 1 |  |
 | ANY | 2 |  |
+
+
+
+<a name="bytebase-v1-Issue-ApprovalStatus"></a>
+
+### Issue.ApprovalStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| APPROVAL_STATUS_UNSPECIFIED | 0 |  |
+| CHECKING | 1 |  |
+| PENDING | 2 |  |
+| APPROVED | 3 |  |
+| REJECTED | 4 |  |
+| SKIPPED | 5 |  |
+| ERROR | 6 |  |
 
 
 
@@ -7355,6 +7400,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | release | [string](#string) |  | The resource name of the release. Format: projects/{project}/releases/{release} |
 | type | [DatabaseChangeType](#bytebase-v1-DatabaseChangeType) |  | Type is the database change type. |
+| migration_type | [MigrationType](#bytebase-v1-MigrationType) |  | migration_type is the migration type for imperative schema migration. It is only set when type is MIGRATE. |
 | ghost_flags | [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
 
@@ -9058,7 +9104,7 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 | path | [string](#string) |  | The path of the file. e.g. `2.2/V0001_create_table.sql`. |
 | type | [Release.File.Type](#bytebase-v1-Release-File-Type) |  | The type of the file. |
 | version | [string](#string) |  |  |
-| change_type | [Release.File.ChangeType](#bytebase-v1-Release-File-ChangeType) |  | The change type of the file. For versioned files, it is the change type of the file. For declarative files, this field is always DDL, thus meaningless. |
+| migration_type | [Release.File.MigrationType](#bytebase-v1-Release-File-MigrationType) |  | The migration type of the file. For versioned files, it is the migration type of the file. For declarative files, this field is always DDL, thus meaningless. |
 | sheet | [string](#string) |  | For inputs, we must either use `sheet` or `statement`. For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
 
 The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
@@ -9171,14 +9217,14 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 
 
 
-<a name="bytebase-v1-Release-File-ChangeType"></a>
+<a name="bytebase-v1-Release-File-MigrationType"></a>
 
-### Release.File.ChangeType
+### Release.File.MigrationType
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| CHANGE_TYPE_UNSPECIFIED | 0 |  |
+| MIGRATION_TYPE_UNSPECIFIED | 0 |  |
 | DDL | 1 |  |
 | DDL_GHOST | 2 |  |
 | DML | 3 |  |
@@ -10076,7 +10122,7 @@ When paginating, all other parameters provided to `ListRollouts` must match the 
 
 Supported filters: - creator: the rollout creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator. - update_time: rollout update time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - task_type: the task type, support &#34;==&#34; and &#34;in&#34; operators, check the Task.Type enum for the values.
 
-For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; update_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; task_type == &#34;DATABASE_SCHEMA_UPDATE&#34; task_type in [&#34;DATABASE_SCHEMA_UPDATE&#34;, &#34;DATABASE_DATA_UPDATE&#34;] |
+For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; update_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; task_type == &#34;DATABASE_MIGRATE&#34; task_type in [&#34;DATABASE_MIGRATE&#34;, &#34;DATABASE_EXPORT&#34;] |
 
 
 
@@ -10294,6 +10340,8 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | ----- | ---- | ----- | ----------- |
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | schema_version | [string](#string) |  |  |
+| database_change_type | [DatabaseChangeType](#bytebase-v1-DatabaseChangeType) |  |  |
+| migration_type | [MigrationType](#bytebase-v1-MigrationType) |  | migration_type is only set when database_change_type is MIGRATE. |
 
 
 
@@ -10712,11 +10760,9 @@ Read from `pg_stat_activity`
 | TYPE_UNSPECIFIED | 0 |  |
 | GENERAL | 1 |  |
 | DATABASE_CREATE | 2 | use payload DatabaseCreate |
-| DATABASE_SCHEMA_UPDATE | 4 | use payload DatabaseUpdate |
-| DATABASE_SCHEMA_UPDATE_SDL | 5 | use payload DatabaseUpdate |
-| DATABASE_SCHEMA_UPDATE_GHOST | 9 | use payload DatabaseUpdate |
-| DATABASE_DATA_UPDATE | 8 | use payload DatabaseUpdate |
-| DATABASE_EXPORT | 12 | use payload DatabaseDataExport |
+| DATABASE_MIGRATE | 3 | use payload DatabaseUpdate |
+| DATABASE_SDL | 6 | use payload DatabaseUpdate |
+| DATABASE_EXPORT | 5 | use payload DatabaseDataExport |
 
 
 

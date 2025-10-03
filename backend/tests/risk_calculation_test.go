@@ -121,19 +121,19 @@ func TestRiskLevelCalculation(t *testing.T) {
 		issue = issueGetResp.Msg
 
 		// Log the current state for debugging
-		t.Logf("Check %d: ApprovalFindingDone=%v, RiskLevel=%v, ApprovalFindingError='%s'",
-			i+1, issue.ApprovalFindingDone, issue.RiskLevel, issue.ApprovalFindingError)
+		t.Logf("Check %d: ApprovalStatus=%v, RiskLevel=%v, ApprovalStatusError='%s'",
+			i+1, issue.ApprovalStatus, issue.RiskLevel, issue.ApprovalStatusError)
 
 		// Check if approval finding is complete
-		if issue.ApprovalFindingDone {
+		if issue.ApprovalStatus != v1pb.Issue_CHECKING {
 			break
 		}
 	}
 
 	// Verify that the approval finding process completed successfully
 	a.NotNil(issue, "Issue should be retrievable")
-	a.True(issue.ApprovalFindingDone, "Approval finding should complete even without summary reports")
-	a.Empty(issue.ApprovalFindingError, "Approval finding should not have errors despite missing summary reports")
+	a.NotEqual(v1pb.Issue_CHECKING, issue.ApprovalStatus, "Approval finding should complete even without summary reports")
+	a.NotEqual(v1pb.Issue_ERROR, issue.ApprovalStatus, "Approval finding should not have errors despite missing summary reports")
 
 	a.Equal(v1pb.Issue_HIGH, issue.RiskLevel, "Issue risk level should be HIGH")
 }
@@ -246,19 +246,19 @@ func TestRiskLevelCalculationWithInvalidSQL(t *testing.T) {
 		issue = issueGetResp.Msg
 
 		// Log the current state for debugging
-		t.Logf("Check %d: ApprovalFindingDone=%v, RiskLevel=%v, ApprovalFindingError='%s'",
-			i+1, issue.ApprovalFindingDone, issue.RiskLevel, issue.ApprovalFindingError)
+		t.Logf("Check %d: ApprovalStatus=%v, RiskLevel=%v, ApprovalStatusError='%s'",
+			i+1, issue.ApprovalStatus, issue.RiskLevel, issue.ApprovalStatusError)
 
 		// Check if approval finding is complete
-		if issue.ApprovalFindingDone {
+		if issue.ApprovalStatus != v1pb.Issue_CHECKING {
 			break
 		}
 	}
 
 	// Verify that the approval finding process completed successfully despite invalid SQL
 	a.NotNil(issue, "Issue should be retrievable even with invalid SQL")
-	a.True(issue.ApprovalFindingDone, "Approval finding should complete even with invalid SQL")
-	a.Empty(issue.ApprovalFindingError, "Approval finding should not have errors despite invalid SQL")
+	a.NotEqual(v1pb.Issue_CHECKING, issue.ApprovalStatus, "Approval finding should complete even with invalid SQL")
+	a.NotEqual(v1pb.Issue_ERROR, issue.ApprovalStatus, "Approval finding should not have errors despite invalid SQL")
 
 	a.Equal(v1pb.Issue_HIGH, issue.RiskLevel, "Issue risk level should be HIGH")
 }

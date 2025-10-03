@@ -20,6 +20,7 @@ import type {
 import {
   ApprovalNode_Type,
   Issue_Approver_Status,
+  Issue_ApprovalStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { displayRoleTitle } from "@/utils";
 import { isUserIncludedInList } from "@/utils";
@@ -27,7 +28,11 @@ import type { ReviewContext } from "./context";
 
 export const extractReviewContext = (issue: MaybeRef<Issue>): ReviewContext => {
   const ready = computed(() => {
-    return unref(issue).approvalFindingDone ?? false;
+    const approvalStatus = unref(issue).approvalStatus;
+    return (
+      approvalStatus !== Issue_ApprovalStatus.CHECKING &&
+      approvalStatus !== Issue_ApprovalStatus.APPROVAL_STATUS_UNSPECIFIED
+    );
   });
   const flow = computed((): ReviewFlow => {
     if (!ready.value) return emptyFlow();
@@ -50,7 +55,7 @@ export const extractReviewContext = (issue: MaybeRef<Issue>): ReviewContext => {
     if (!ready.value) {
       return Issue_Approver_Status.PENDING;
     }
-    if (unref(issue).approvalFindingError) {
+    if (unref(issue).approvalStatusError) {
       return Issue_Approver_Status.PENDING;
     }
 
@@ -83,7 +88,7 @@ export const extractReviewContext = (issue: MaybeRef<Issue>): ReviewContext => {
     return status.value === Issue_Approver_Status.APPROVED;
   });
   const error = computed(() => {
-    return unref(issue).approvalFindingError;
+    return unref(issue).approvalStatusError;
   });
 
   return {

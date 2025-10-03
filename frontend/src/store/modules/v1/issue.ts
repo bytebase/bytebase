@@ -19,6 +19,7 @@ import type { ApprovalStep, Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   IssueStatus,
   ApprovalNode_Type,
+  Issue_ApprovalStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   extractProjectResourceName,
@@ -85,9 +86,9 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     const request = create(UpdateIssueRequestSchema, {
       issue: create(IssueSchema, {
         name,
-        approvalFindingDone: false,
+        approvalStatus: Issue_ApprovalStatus.CHECKING,
       }),
-      updateMask: { paths: ["approval_finding_done"] },
+      updateMask: { paths: ["approval_status"] },
     });
     await issueServiceClientConnect.updateIssue(request);
   };

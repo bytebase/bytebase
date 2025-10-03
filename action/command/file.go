@@ -51,11 +51,11 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 			return []*v1pb.Release_File{
 				{
 					// use file pattern as the path
-					Path:       w.FilePattern,
-					Type:       v1pb.Release_File_DECLARATIVE,
-					Version:    w.CurrentTime.Format(versionFormat),
-					ChangeType: v1pb.Release_File_DDL,
-					Statement:  contents,
+					Path:          w.FilePattern,
+					Type:          v1pb.Release_File_DECLARATIVE,
+					Version:       w.CurrentTime.Format(versionFormat),
+					MigrationType: v1pb.Release_File_DDL,
+					Statement:     contents,
 				},
 			}, hex.EncodeToString(h.Sum(nil)), nil
 		}
@@ -73,11 +73,11 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 				return nil, "", errors.Wrapf(err, "failed to write file content")
 			}
 			files = append(files, &v1pb.Release_File{
-				Path:       m,
-				Type:       v1pb.Release_File_DECLARATIVE,
-				Version:    w.CurrentTime.Format(versionFormat),
-				ChangeType: v1pb.Release_File_DDL,
-				Statement:  content,
+				Path:          m,
+				Type:          v1pb.Release_File_DECLARATIVE,
+				Version:       w.CurrentTime.Format(versionFormat),
+				MigrationType: v1pb.Release_File_DDL,
+				Statement:     content,
 			})
 		}
 		return files, hex.EncodeToString(h.Sum(nil)), nil
@@ -91,16 +91,9 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 		}
 
 		base := strings.TrimSuffix(filepath.Base(m), filepath.Ext(m))
-		var t v1pb.Release_File_ChangeType
-		switch {
-		case strings.HasSuffix(base, "dml"):
-			t = v1pb.Release_File_DML
-		case strings.HasSuffix(base, "ghost"):
-			t = v1pb.Release_File_DDL_GHOST
-		default:
-			// Default to DDL for files without recognized suffixes
-			t = v1pb.Release_File_DDL
-		}
+
+		// Extract migration type from SQL front matter comments
+		t := extractMigrationTypeFromContent(string(content))
 
 		version := extractVersion(base)
 		if version == "" {
@@ -115,11 +108,11 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 			return nil, "", errors.Wrapf(err, "failed to write file content")
 		}
 		files = append(files, &v1pb.Release_File{
-			Path:       m,
-			Type:       v1pb.Release_File_VERSIONED,
-			Version:    version,
-			ChangeType: t,
-			Statement:  content,
+			Path:          m,
+			Type:          v1pb.Release_File_VERSIONED,
+			Version:       version,
+			MigrationType: t,
+			Statement:     content,
 		})
 	}
 
@@ -137,4 +130,30 @@ func extractVersion(s string) string {
 
 	// Return the first capture group which contains just the version numbers
 	return matches[1]
+}
+
+var migrationTypeReg = regexp.MustCompile(`(?i)^--\s*migration-type:\s*(\w+)`)
+
+// extractMigrationTypeFromContent extracts migration type from SQL front matter comments.
+// Supported values: ghost
+// Example:
+//
+//	-- migration-type: ghost
+//	ALTER TABLE ...
+func extractMigrationTypeFromContent(content string) v1pb.Release_File_MigrationType {
+	lines := strings.Split(content, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		// Stop at first non-comment line
+		if line != "" && !strings.HasPrefix(line, "--") {
+			break
+		}
+		matches := migrationTypeReg.FindStringSubmatch(line)
+		if len(matches) >= 2 {
+			if strings.ToLower(matches[1]) == "ghost" {
+				return v1pb.Release_File_DDL_GHOST
+			}
+		}
+	}
+	return v1pb.Release_File_MIGRATION_TYPE_UNSPECIFIED
 }

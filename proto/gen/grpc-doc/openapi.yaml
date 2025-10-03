@@ -5508,8 +5508,8 @@ paths:
 
                      For example:
                      creator == "users/ed@bytebase.com" && update_time >= "2025-01-02T15:04:05Z07:00"
-                     task_type == "DATABASE_SCHEMA_UPDATE"
-                     task_type in ["DATABASE_SCHEMA_UPDATE", "DATABASE_DATA_UPDATE"]
+                     task_type == "DATABASE_MIGRATE"
+                     task_type in ["DATABASE_MIGRATE", "DATABASE_EXPORT"]
                   schema:
                     type: string
             responses:
@@ -9113,9 +9113,15 @@ components:
                         - TYPE_UNSPECIFIED
                         - BASELINE
                         - MIGRATE
-                        - MIGRATE_SDL
-                        - MIGRATE_GHOST
-                        - DATA
+                        - SDL
+                    type: string
+                    format: enum
+                migrationType:
+                    enum:
+                        - MIGRATION_TYPE_UNSPECIFIED
+                        - DDL
+                        - DML
+                        - GHOST
                     type: string
                     format: enum
         CheckConstraintMetadata:
@@ -11790,11 +11796,20 @@ components:
                     enum:
                         - DATABASE_CHANGE_TYPE_UNSPECIFIED
                         - MIGRATE
-                        - MIGRATE_SDL
-                        - MIGRATE_GHOST
-                        - DATA
+                        - SDL
                     type: string
                     description: Type is the database change type.
+                    format: enum
+                migrationType:
+                    enum:
+                        - MIGRATION_TYPE_UNSPECIFIED
+                        - DDL
+                        - DML
+                        - GHOST
+                    type: string
+                    description: |-
+                        migration_type is the migration type for imperative schema migration.
+                         It is only set when type is MIGRATE.
                     format: enum
                 ghostFlags:
                     type: object
@@ -12422,16 +12437,16 @@ components:
                     format: enum
                 version:
                     type: string
-                changeType:
+                migrationType:
                     enum:
-                        - CHANGE_TYPE_UNSPECIFIED
+                        - MIGRATION_TYPE_UNSPECIFIED
                         - DDL
                         - DDL_GHOST
                         - DML
                     type: string
                     description: |-
-                        The change type of the file.
-                         For versioned files, it is the change type of the file.
+                        The migration type of the file.
+                         For versioned files, it is the migration type of the file.
                          For declarative files, this field is always DDL, thus meaningless.
                     format: enum
                 sheet:
@@ -13987,10 +14002,8 @@ components:
                         - TYPE_UNSPECIFIED
                         - GENERAL
                         - DATABASE_CREATE
-                        - DATABASE_SCHEMA_UPDATE
-                        - DATABASE_SCHEMA_UPDATE_SDL
-                        - DATABASE_SCHEMA_UPDATE_GHOST
-                        - DATABASE_DATA_UPDATE
+                        - DATABASE_MIGRATE
+                        - DATABASE_SDL
                         - DATABASE_EXPORT
                     type: string
                     format: enum
@@ -14264,6 +14277,22 @@ components:
                     description: 'Format: projects/{project}/sheets/{sheet}'
                 schemaVersion:
                     type: string
+                databaseChangeType:
+                    enum:
+                        - DATABASE_CHANGE_TYPE_UNSPECIFIED
+                        - MIGRATE
+                        - SDL
+                    type: string
+                    format: enum
+                migrationType:
+                    enum:
+                        - MIGRATION_TYPE_UNSPECIFIED
+                        - DDL
+                        - DML
+                        - GHOST
+                    type: string
+                    description: migration_type is only set when database_change_type is MIGRATE.
+                    format: enum
         TessellationConfig:
             type: object
             properties:

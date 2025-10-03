@@ -1,7 +1,10 @@
 import { isDBGroupChangeSpec } from "@/components/Plan/logic";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
+import {
+  DatabaseChangeType,
+  MigrationType,
+} from "@/types/proto-es/v1/common_pb";
 import { type Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { semverCompare } from "@/utils";
 
@@ -36,10 +39,7 @@ export const allowGhostForSpec = (spec: Plan_Spec | undefined) => {
       : undefined;
   if (!config) return false;
 
-  return [
-    DatabaseChangeType.MIGRATE,
-    DatabaseChangeType.MIGRATE_GHOST,
-  ].includes(config.type);
+  return config.type === DatabaseChangeType.MIGRATE;
 };
 
 export const getGhostEnabledForSpec = (
@@ -56,10 +56,7 @@ export const getGhostEnabledForSpec = (
     return undefined;
   }
   if (config.type === DatabaseChangeType.MIGRATE) {
-    return false;
-  }
-  if (config.type === DatabaseChangeType.MIGRATE_GHOST) {
-    return true;
+    return config.migrationType === MigrationType.GHOST;
   }
   return undefined;
 };

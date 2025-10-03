@@ -51,6 +51,7 @@
     - [ChangedResources](#bytebase-store-ChangedResources)
     - [ChangelogPayload](#bytebase-store-ChangelogPayload)
   
+    - [ChangelogPayload.MigrationType](#bytebase-store-ChangelogPayload-MigrationType)
     - [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type)
   
 - [store/data_source.proto](#store_data_source-proto)
@@ -188,6 +189,7 @@
     - [PlanConfig.ExportDataConfig](#bytebase-store-PlanConfig-ExportDataConfig)
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
   
+    - [PlanConfig.ChangeDatabaseConfig.MigrateType](#bytebase-store-PlanConfig-ChangeDatabaseConfig-MigrateType)
     - [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type)
   
 - [store/plan_check_run.proto](#store_plan_check_run-proto)
@@ -244,7 +246,7 @@
     - [ReleasePayload.File](#bytebase-store-ReleasePayload-File)
     - [ReleasePayload.VCSSource](#bytebase-store-ReleasePayload-VCSSource)
   
-    - [ReleasePayload.File.ChangeType](#bytebase-store-ReleasePayload-File-ChangeType)
+    - [ReleasePayload.File.MigrationType](#bytebase-store-ReleasePayload-File-MigrationType)
     - [ReleasePayload.File.Type](#bytebase-store-ReleasePayload-File-Type)
   
 - [store/review_config.proto](#store_review_config-proto)
@@ -308,6 +310,7 @@
     - [Task.FlagsEntry](#bytebase-store-Task-FlagsEntry)
     - [TaskReleaseSource](#bytebase-store-TaskReleaseSource)
   
+    - [Task.MigrateType](#bytebase-store-Task-MigrateType)
     - [Task.Type](#bytebase-store-Task-Type)
   
 - [store/task_run.proto](#store_task_run-proto)
@@ -982,12 +985,27 @@ Metadata about the request.
 | version | [string](#string) |  |  |
 | type | [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type) |  |  |
 | git_commit | [string](#string) |  |  |
+| migration_type | [ChangelogPayload.MigrationType](#bytebase-store-ChangelogPayload-MigrationType) |  |  |
 
 
 
 
 
  
+
+
+<a name="bytebase-store-ChangelogPayload-MigrationType"></a>
+
+### ChangelogPayload.MigrationType
+MigrationType is the type for imperative schema migration.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MIGRATION_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 | Used for DDL changes. |
+| DML | 2 | Used for DML changes. |
+| GHOST | 3 | Used for DDL changes using gh-ost. |
+
 
 
 <a name="bytebase-store-ChangelogPayload-Type"></a>
@@ -1000,9 +1018,7 @@ Metadata about the request.
 | TYPE_UNSPECIFIED | 0 |  |
 | BASELINE | 1 |  |
 | MIGRATE | 2 |  |
-| MIGRATE_SDL | 3 |  |
-| MIGRATE_GHOST | 4 |  |
-| DATA | 6 |  |
+| SDL | 3 |  |
 
 
  
@@ -3091,6 +3107,7 @@ InstanceRole is the API message for instance role.
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | release | [string](#string) |  | The resource name of the release. Format: projects/{project}/releases/{release} |
 | type | [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type) |  |  |
+| migrate_type | [PlanConfig.ChangeDatabaseConfig.MigrateType](#bytebase-store-PlanConfig-ChangeDatabaseConfig-MigrateType) |  |  |
 | ghost_flags | [PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-store-PlanConfig-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
 
@@ -3207,6 +3224,21 @@ InstanceRole is the API message for instance role.
  
 
 
+<a name="bytebase-store-PlanConfig-ChangeDatabaseConfig-MigrateType"></a>
+
+### PlanConfig.ChangeDatabaseConfig.MigrateType
+MigrateType is the migration type for imperative schema migration.
+It is only set when type is MIGRATE.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MIGRATE_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 | Used for DDL changes. |
+| DML | 2 | Used for DML changes. |
+| GHOST | 3 | Used for DDL changes using gh-ost. |
+
+
+
 <a name="bytebase-store-PlanConfig-ChangeDatabaseConfig-Type"></a>
 
 ### PlanConfig.ChangeDatabaseConfig.Type
@@ -3215,10 +3247,8 @@ Type is the database change type.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| MIGRATE | 2 | Used for DDL changes including CREATE DATABASE. |
-| MIGRATE_SDL | 3 | Used for schema changes via state-based schema migration including CREATE DATABASE. |
-| MIGRATE_GHOST | 4 | Used for DDL changes using gh-ost. |
-| DATA | 6 | Used for DML change. |
+| MIGRATE | 2 | Used for imperative schema migration including CREATE DATABASE. |
+| SDL | 3 | Used for state-based declarative schema migration including CREATE DATABASE. |
 
 
  
@@ -3948,7 +3978,7 @@ QueryDataPolicy is the policy configuration for querying data.
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | type | [ReleasePayload.File.Type](#bytebase-store-ReleasePayload-File-Type) |  |  |
 | version | [string](#string) |  |  |
-| change_type | [ReleasePayload.File.ChangeType](#bytebase-store-ReleasePayload-File-ChangeType) |  |  |
+| migration_type | [ReleasePayload.File.MigrationType](#bytebase-store-ReleasePayload-File-MigrationType) |  |  |
 
 
 
@@ -3973,14 +4003,14 @@ QueryDataPolicy is the policy configuration for querying data.
  
 
 
-<a name="bytebase-store-ReleasePayload-File-ChangeType"></a>
+<a name="bytebase-store-ReleasePayload-File-MigrationType"></a>
 
-### ReleasePayload.File.ChangeType
+### ReleasePayload.File.MigrationType
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| CHANGE_TYPE_UNSPECIFIED | 0 |  |
+| MIGRATION_TYPE_UNSPECIFIED | 0 |  |
 | DDL | 1 |  |
 | DDL_GHOST | 2 |  |
 | DML | 3 |  |
@@ -4865,6 +4895,7 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | enable_prior_backup | [bool](#bool) |  |  |
 | flags | [Task.FlagsEntry](#bytebase-store-Task-FlagsEntry) | repeated | ghost flags. |
 | task_release_source | [TaskReleaseSource](#bytebase-store-TaskReleaseSource) |  |  |
+| migrate_type | [Task.MigrateType](#bytebase-store-Task-MigrateType) |  |  |
 | password | [string](#string) |  | Export data fields. |
 | format | [ExportFormat](#bytebase-store-ExportFormat) |  |  |
 
@@ -4906,6 +4937,20 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
  
 
 
+<a name="bytebase-store-Task-MigrateType"></a>
+
+### Task.MigrateType
+MigrateType is the database migration type.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MIGRATE_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 |  |
+| DML | 2 |  |
+| GHOST | 3 |  |
+
+
+
 <a name="bytebase-store-Task-Type"></a>
 
 ### Task.Type
@@ -4915,11 +4960,9 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | ---- | ------ | ----------- |
 | TASK_TYPE_UNSPECIFIED | 0 |  |
 | DATABASE_CREATE | 1 |  |
-| DATABASE_SCHEMA_UPDATE | 2 |  |
-| DATABASE_SCHEMA_UPDATE_GHOST | 3 |  |
-| DATABASE_DATA_UPDATE | 4 |  |
+| DATABASE_MIGRATE | 2 |  |
 | DATABASE_EXPORT | 5 |  |
-| DATABASE_SCHEMA_UPDATE_SDL | 6 |  |
+| DATABASE_SDL | 6 |  |
 
 
  

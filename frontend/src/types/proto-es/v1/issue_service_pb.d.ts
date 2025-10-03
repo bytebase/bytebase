@@ -447,19 +447,6 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
   approvalTemplates: ApprovalTemplate[];
 
   /**
-   * If the value is `false`, it means that the backend is still finding matching approval templates.
-   * If `true`, approval_templates & approvers & approval_finding_error are available.
-   *
-   * @generated from field: bool approval_finding_done = 11;
-   */
-  approvalFindingDone: boolean;
-
-  /**
-   * @generated from field: string approval_finding_error = 12;
-   */
-  approvalFindingError: string;
-
-  /**
    * Format: users/hello@world.com
    *
    * @generated from field: string creator = 14;
@@ -539,6 +526,18 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
    * @generated from field: repeated string labels = 23;
    */
   labels: string[];
+
+  /**
+   * @generated from field: bytebase.v1.Issue.ApprovalStatus approval_status = 24;
+   */
+  approvalStatus: Issue_ApprovalStatus;
+
+  /**
+   * Only populated when approval_status == ERROR
+   *
+   * @generated from field: string approval_status_error = 25;
+   */
+  approvalStatusError: string;
 };
 
 /**
@@ -661,6 +660,51 @@ export enum Issue_RiskLevel {
  * Describes the enum bytebase.v1.Issue.RiskLevel.
  */
 export declare const Issue_RiskLevelSchema: GenEnum<Issue_RiskLevel>;
+
+/**
+ * @generated from enum bytebase.v1.Issue.ApprovalStatus
+ */
+export enum Issue_ApprovalStatus {
+  /**
+   * @generated from enum value: APPROVAL_STATUS_UNSPECIFIED = 0;
+   */
+  APPROVAL_STATUS_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: CHECKING = 1;
+   */
+  CHECKING = 1,
+
+  /**
+   * @generated from enum value: PENDING = 2;
+   */
+  PENDING = 2,
+
+  /**
+   * @generated from enum value: APPROVED = 3;
+   */
+  APPROVED = 3,
+
+  /**
+   * @generated from enum value: REJECTED = 4;
+   */
+  REJECTED = 4,
+
+  /**
+   * @generated from enum value: SKIPPED = 5;
+   */
+  SKIPPED = 5,
+
+  /**
+   * @generated from enum value: ERROR = 6;
+   */
+  ERROR = 6,
+}
+
+/**
+ * Describes the enum bytebase.v1.Issue.ApprovalStatus.
+ */
+export declare const Issue_ApprovalStatusSchema: GenEnum<Issue_ApprovalStatus>;
 
 /**
  * @generated from message bytebase.v1.GrantRequest

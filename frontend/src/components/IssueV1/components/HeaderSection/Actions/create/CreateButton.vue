@@ -335,7 +335,7 @@ const runSQLCheckForIssue = async () => {
             version: "0",
             type: Release_File_Type.VERSIONED,
             statement: new TextEncoder().encode(statement),
-            changeType: getSpecChangeType(
+            migrationType: getSpecChangeType(
               specForTask(issue.value.planEntity, selectedTask.value)
             ),
           },

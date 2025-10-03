@@ -141,6 +141,7 @@ func convertToPlanSpecChangeDatabaseConfig(config *storepb.PlanConfig_Spec_Chang
 			Sheet:             c.Sheet,
 			Release:           c.Release,
 			Type:              convertToPlanSpecChangeDatabaseConfigType(c.Type),
+			MigrationType:     convertToPlanSpecMigrationType(c.MigrateType),
 			GhostFlags:        c.GhostFlags,
 			EnablePriorBackup: c.EnablePriorBackup,
 		},
@@ -153,14 +154,23 @@ func convertToPlanSpecChangeDatabaseConfigType(t storepb.PlanConfig_ChangeDataba
 		return v1pb.DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
 		return v1pb.DatabaseChangeType_MIGRATE
-	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
-		return v1pb.DatabaseChangeType_MIGRATE_SDL
-	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST:
-		return v1pb.DatabaseChangeType_MIGRATE_GHOST
-	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
-		return v1pb.DatabaseChangeType_DATA
+	case storepb.PlanConfig_ChangeDatabaseConfig_SDL:
+		return v1pb.DatabaseChangeType_SDL
 	default:
 		return v1pb.DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED
+	}
+}
+
+func convertToPlanSpecMigrationType(t storepb.PlanConfig_ChangeDatabaseConfig_MigrateType) v1pb.MigrationType {
+	switch t {
+	case storepb.PlanConfig_ChangeDatabaseConfig_DDL:
+		return v1pb.MigrationType_DDL
+	case storepb.PlanConfig_ChangeDatabaseConfig_GHOST:
+		return v1pb.MigrationType_GHOST
+	case storepb.PlanConfig_ChangeDatabaseConfig_DML:
+		return v1pb.MigrationType_DML
+	default:
+		return v1pb.MigrationType_MIGRATION_TYPE_UNSPECIFIED
 	}
 }
 
@@ -263,12 +273,38 @@ func convertPlanConfigCreateDatabaseConfig(c *v1pb.Plan_CreateDatabaseConfig) *s
 
 func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseConfig) *storepb.PlanConfig_Spec_ChangeDatabaseConfig {
 	c := config.ChangeDatabaseConfig
+
+	// Convert v1 DatabaseChangeType to store Type
+	var storeType storepb.PlanConfig_ChangeDatabaseConfig_Type
+	switch c.Type {
+	case v1pb.DatabaseChangeType_MIGRATE:
+		storeType = storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE
+	case v1pb.DatabaseChangeType_SDL:
+		storeType = storepb.PlanConfig_ChangeDatabaseConfig_SDL
+	default:
+		storeType = storepb.PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED
+	}
+
+	// Convert v1 MigrationType to store MigrateType
+	var storeMigrateType storepb.PlanConfig_ChangeDatabaseConfig_MigrateType
+	switch c.MigrationType {
+	case v1pb.MigrationType_DDL:
+		storeMigrateType = storepb.PlanConfig_ChangeDatabaseConfig_DDL
+	case v1pb.MigrationType_DML:
+		storeMigrateType = storepb.PlanConfig_ChangeDatabaseConfig_DML
+	case v1pb.MigrationType_GHOST:
+		storeMigrateType = storepb.PlanConfig_ChangeDatabaseConfig_GHOST
+	default:
+		storeMigrateType = storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_TYPE_UNSPECIFIED
+	}
+
 	return &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
 			Targets:           c.Targets,
 			Sheet:             c.Sheet,
 			Release:           c.Release,
-			Type:              storepb.PlanConfig_ChangeDatabaseConfig_Type(c.Type),
+			Type:              storeType,
+			MigrateType:       storeMigrateType,
 			GhostFlags:        c.GhostFlags,
 			EnablePriorBackup: c.EnablePriorBackup,
 		},
@@ -692,10 +728,18 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 	switch task.Type {
 	case storepb.Task_DATABASE_CREATE:
 		return convertToTaskFromDatabaseCreate(ctx, s, project, task)
-	case storepb.Task_DATABASE_SCHEMA_UPDATE, storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST, storepb.Task_DATABASE_SCHEMA_UPDATE_SDL:
+	case storepb.Task_DATABASE_MIGRATE:
+		// Handle DATABASE_MIGRATE based on migrate_type
+		switch task.Payload.GetMigrateType() {
+		case storepb.Task_DDL, storepb.Task_GHOST, storepb.Task_MIGRATE_TYPE_UNSPECIFIED:
+			return convertToTaskFromSchemaUpdate(ctx, s, project, task)
+		case storepb.Task_DML:
+			return convertToTaskFromDataUpdate(ctx, s, project, task)
+		default:
+			return nil, errors.Errorf("unsupported migrate type %v", task.Payload.GetMigrateType())
+		}
+	case storepb.Task_DATABASE_SDL:
 		return convertToTaskFromSchemaUpdate(ctx, s, project, task)
-	case storepb.Task_DATABASE_DATA_UPDATE:
-		return convertToTaskFromDataUpdate(ctx, s, project, task)
 	case storepb.Task_DATABASE_EXPORT:
 		return convertToTaskFromDatabaseDataExport(ctx, s, project, task)
 	case storepb.Task_TASK_TYPE_UNSPECIFIED:
@@ -716,7 +760,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PipelineID, stageID, task.ID),
 		SpecId:        task.Payload.GetSpecId(),
-		Type:          convertToTaskType(task.Type),
+		Type:          convertToTaskType(task),
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
 		SkippedReason: task.Payload.GetSkippedReason(),
 		Target:        common.FormatInstance(instance.ResourceID),
@@ -753,18 +797,40 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		return nil, errors.Errorf("database not found")
 	}
 
+	// Determine DatabaseChangeType and MigrationType based on task type
+	var databaseChangeType v1pb.DatabaseChangeType
+	var migrationType v1pb.MigrationType
+	switch task.Type {
+	case storepb.Task_DATABASE_MIGRATE:
+		databaseChangeType = v1pb.DatabaseChangeType_MIGRATE
+		switch task.Payload.GetMigrateType() {
+		case storepb.Task_DDL:
+			migrationType = v1pb.MigrationType_DDL
+		case storepb.Task_GHOST:
+			migrationType = v1pb.MigrationType_GHOST
+		default:
+			migrationType = v1pb.MigrationType_DDL
+		}
+	case storepb.Task_DATABASE_SDL:
+		databaseChangeType = v1pb.DatabaseChangeType_SDL
+	default:
+		databaseChangeType = v1pb.DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED
+	}
+
 	stageID := formatStageIDFromEnvironment(task.Environment)
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PipelineID, stageID, task.ID),
 		SpecId:        task.Payload.GetSpecId(),
-		Type:          convertToTaskType(task.Type),
+		Type:          convertToTaskType(task),
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
 		SkippedReason: task.Payload.GetSkippedReason(),
 		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseUpdate_{
 			DatabaseUpdate: &v1pb.Task_DatabaseUpdate{
-				Sheet:         common.FormatSheet(project.ResourceID, int(task.Payload.GetSheetId())),
-				SchemaVersion: task.Payload.GetSchemaVersion(),
+				Sheet:              common.FormatSheet(project.ResourceID, int(task.Payload.GetSheetId())),
+				SchemaVersion:      task.Payload.GetSchemaVersion(),
+				DatabaseChangeType: databaseChangeType,
+				MigrationType:      migrationType,
 			},
 		},
 	}
@@ -793,7 +859,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PipelineID, stageID, task.ID),
 		SpecId:        task.Payload.GetSpecId(),
-		Type:          convertToTaskType(task.Type),
+		Type:          convertToTaskType(task),
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
 		SkippedReason: task.Payload.GetSkippedReason(),
 		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
@@ -801,8 +867,10 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	}
 	v1pbTaskPayload := &v1pb.Task_DatabaseUpdate_{
 		DatabaseUpdate: &v1pb.Task_DatabaseUpdate{
-			Sheet:         common.FormatSheet(project.ResourceID, int(task.Payload.GetSheetId())),
-			SchemaVersion: task.Payload.GetSchemaVersion(),
+			Sheet:              common.FormatSheet(project.ResourceID, int(task.Payload.GetSheetId())),
+			SchemaVersion:      task.Payload.GetSchemaVersion(),
+			DatabaseChangeType: v1pb.DatabaseChangeType_MIGRATE,
+			MigrationType:      v1pb.MigrationType_DML,
 		},
 	}
 
@@ -841,7 +909,7 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 	v1pbTask := &v1pb.Task{
 		Name:    common.FormatTask(project.ResourceID, task.PipelineID, stageID, task.ID),
 		SpecId:  task.Payload.GetSpecId(),
-		Type:    convertToTaskType(task.Type),
+		Type:    convertToTaskType(task),
 		Status:  convertToTaskStatus(task.LatestTaskRunStatus, false),
 		Target:  targetDatabaseName,
 		Payload: &v1pbTaskPayload,
@@ -877,19 +945,15 @@ func convertToTaskStatus(latestTaskRunStatus storepb.TaskRun_Status, skipped boo
 	}
 }
 
-func convertToTaskType(taskType storepb.Task_Type) v1pb.Task_Type {
+func convertToTaskType(task *store.TaskMessage) v1pb.Task_Type {
 	//exhaustive:enforce
-	switch taskType {
+	switch task.Type {
 	case storepb.Task_DATABASE_CREATE:
 		return v1pb.Task_DATABASE_CREATE
-	case storepb.Task_DATABASE_SCHEMA_UPDATE:
-		return v1pb.Task_DATABASE_SCHEMA_UPDATE
-	case storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
-		return v1pb.Task_DATABASE_SCHEMA_UPDATE_GHOST
-	case storepb.Task_DATABASE_SCHEMA_UPDATE_SDL:
-		return v1pb.Task_DATABASE_SCHEMA_UPDATE_SDL
-	case storepb.Task_DATABASE_DATA_UPDATE:
-		return v1pb.Task_DATABASE_DATA_UPDATE
+	case storepb.Task_DATABASE_MIGRATE:
+		return v1pb.Task_DATABASE_MIGRATE
+	case storepb.Task_DATABASE_SDL:
+		return v1pb.Task_DATABASE_SDL
 	case storepb.Task_DATABASE_EXPORT:
 		return v1pb.Task_DATABASE_EXPORT
 	case storepb.Task_TASK_TYPE_UNSPECIFIED:
@@ -904,20 +968,30 @@ func convertToStoreTaskType(taskType v1pb.Task_Type) storepb.Task_Type {
 	switch taskType {
 	case v1pb.Task_DATABASE_CREATE:
 		return storepb.Task_DATABASE_CREATE
-	case v1pb.Task_DATABASE_SCHEMA_UPDATE:
-		return storepb.Task_DATABASE_SCHEMA_UPDATE
-	case v1pb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
-		return storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST
-	case v1pb.Task_DATABASE_SCHEMA_UPDATE_SDL:
-		return storepb.Task_DATABASE_SCHEMA_UPDATE_SDL
-	case v1pb.Task_DATABASE_DATA_UPDATE:
-		return storepb.Task_DATABASE_DATA_UPDATE
+	case v1pb.Task_DATABASE_MIGRATE:
+		return storepb.Task_DATABASE_MIGRATE
+	case v1pb.Task_DATABASE_SDL:
+		return storepb.Task_DATABASE_SDL
 	case v1pb.Task_DATABASE_EXPORT:
 		return storepb.Task_DATABASE_EXPORT
 	case v1pb.Task_TYPE_UNSPECIFIED, v1pb.Task_GENERAL:
 		return storepb.Task_TASK_TYPE_UNSPECIFIED
 	default:
 		return storepb.Task_TASK_TYPE_UNSPECIFIED
+	}
+}
+
+// getMigrateTypeFromMigrationType converts v1pb.MigrationType to storepb.Task_MigrateType
+func getMigrateTypeFromMigrationType(migrationType v1pb.MigrationType) storepb.Task_MigrateType {
+	switch migrationType {
+	case v1pb.MigrationType_DDL:
+		return storepb.Task_DDL
+	case v1pb.MigrationType_GHOST:
+		return storepb.Task_GHOST
+	case v1pb.MigrationType_DML:
+		return storepb.Task_DML
+	default:
+		return storepb.Task_MIGRATE_TYPE_UNSPECIFIED
 	}
 }
 

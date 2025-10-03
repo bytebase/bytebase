@@ -62,11 +62,9 @@ export const provideTransactionModeSettingContext = (refs: {
     if (selectedSpec.value.config?.case !== "changeDatabaseConfig") {
       return false;
     }
-    return [
-      DatabaseChangeType.DATA,
-      DatabaseChangeType.MIGRATE,
-      DatabaseChangeType.MIGRATE_GHOST,
-    ].includes(selectedSpec.value.config.value.type);
+    const config = selectedSpec.value.config.value;
+    // Show for all MIGRATE types (DDL, DML, Ghost), but not SDL
+    return config.type === DatabaseChangeType.MIGRATE;
   });
 
   const allowChange = computed(() => {

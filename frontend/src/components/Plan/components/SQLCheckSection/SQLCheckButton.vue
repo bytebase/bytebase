@@ -101,7 +101,7 @@ const advices = computed(() => {
   return checkResult.value?.results.flatMap((r) => r.advices);
 });
 
-const changeType = computed(() => getSpecChangeType(selectedSpec.value));
+const migrationType = computed(() => getSpecChangeType(selectedSpec.value));
 
 const statementErrors = asyncComputed(async () => {
   if (sheetStatement.value.length === 0) {
@@ -123,7 +123,7 @@ const runCheckInternal = async (statement: string) => {
           version: "0",
           type: Release_File_Type.VERSIONED,
           statement: new TextEncoder().encode(statement),
-          changeType: changeType.value,
+          migrationType: migrationType.value,
         },
       ],
     },

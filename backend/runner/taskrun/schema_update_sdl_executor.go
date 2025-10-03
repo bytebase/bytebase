@@ -137,7 +137,7 @@ func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, inst
 	changelogs, err := s.ListChangelogs(ctx, &store.FindChangelogMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
-		TypeList:     []string{storepb.ChangelogPayload_MIGRATE_SDL.String()}, // Only SDL migrations
+		TypeList:     []string{storepb.ChangelogPayload_SDL.String()}, // Only SDL migrations
 		Status:       &doneStatus,
 		Limit:        &limit, // Get only the most recent one
 		ShowFull:     false,  // We only need the PrevSyncHistoryUID and sheet reference
