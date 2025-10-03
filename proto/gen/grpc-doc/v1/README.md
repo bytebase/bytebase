@@ -204,6 +204,7 @@
   
     - [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type)
     - [ApprovalStep.Type](#bytebase-v1-ApprovalStep-Type)
+    - [Issue.ApprovalStatus](#bytebase-v1-Issue-ApprovalStatus)
     - [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status)
     - [Issue.RiskLevel](#bytebase-v1-Issue-RiskLevel)
     - [Issue.Type](#bytebase-v1-Issue-Type)
@@ -3571,8 +3572,6 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | status | [IssueStatus](#bytebase-v1-IssueStatus) |  |  |
 | approvers | [Issue.Approver](#bytebase-v1-Issue-Approver) | repeated |  |
 | approval_templates | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) | repeated |  |
-| approval_finding_done | [bool](#bool) |  | If the value is `false`, it means that the backend is still finding matching approval templates. If `true`, approval_templates &amp; approvers &amp; approval_finding_error are available. |
-| approval_finding_error | [string](#string) |  |  |
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
@@ -3583,6 +3582,8 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | risk_level | [Issue.RiskLevel](#bytebase-v1-Issue-RiskLevel) |  |  |
 | task_status_count | [Issue.TaskStatusCountEntry](#bytebase-v1-Issue-TaskStatusCountEntry) | repeated | The status count of the issue. Keys are the following: - NOT_STARTED - SKIPPED - PENDING - RUNNING - DONE - FAILED - CANCELED |
 | labels | [string](#string) | repeated |  |
+| approval_status | [Issue.ApprovalStatus](#bytebase-v1-Issue-ApprovalStatus) |  |  |
+| approval_status_error | [string](#string) |  | Only populated when approval_status == ERROR |
 
 
 
@@ -3962,6 +3963,23 @@ ANY means approving any node will proceed.
 | TYPE_UNSPECIFIED | 0 |  |
 | ALL | 1 |  |
 | ANY | 2 |  |
+
+
+
+<a name="bytebase-v1-Issue-ApprovalStatus"></a>
+
+### Issue.ApprovalStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| APPROVAL_STATUS_UNSPECIFIED | 0 |  |
+| CHECKING | 1 |  |
+| PENDING | 2 |  |
+| APPROVED | 3 |  |
+| REJECTED | 4 |  |
+| SKIPPED | 5 |  |
+| ERROR | 6 |  |
 
 
 

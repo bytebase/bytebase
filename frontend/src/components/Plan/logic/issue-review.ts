@@ -3,6 +3,7 @@ import type { ComputedRef, InjectionKey } from "vue";
 import { computed, inject, provide, unref } from "vue";
 import {
   Issue_Approver_Status,
+  Issue_ApprovalStatus,
   type Issue,
 } from "@/types/proto-es/v1/issue_service_pb";
 
@@ -22,10 +23,10 @@ export const provideIssueReviewContext = (
     if (!tempIssue) {
       return Issue_Approver_Status.PENDING;
     }
-    if (!tempIssue?.approvalFindingDone) {
+    if (tempIssue?.approvalStatus === Issue_ApprovalStatus.CHECKING) {
       return Issue_Approver_Status.PENDING;
     }
-    if (tempIssue?.approvalFindingError) {
+    if (tempIssue?.approvalStatus === Issue_ApprovalStatus.ERROR) {
       return Issue_Approver_Status.PENDING;
     }
 
@@ -56,7 +57,7 @@ export const provideIssueReviewContext = (
   });
 
   const error = computed(() => {
-    return unref(issue)?.approvalFindingError;
+    return unref(issue)?.approvalStatusError;
   });
 
   const context = {

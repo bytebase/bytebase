@@ -295,12 +295,6 @@ func (x *Issue) Equal(y *Issue) bool {
 			return false
 		}
 	}
-	if x.ApprovalFindingDone != y.ApprovalFindingDone {
-		return false
-	}
-	if x.ApprovalFindingError != y.ApprovalFindingError {
-		return false
-	}
 	if x.Creator != y.Creator {
 		return false
 	}
@@ -349,6 +343,12 @@ func (x *Issue) Equal(y *Issue) bool {
 		if x.Labels[i] != y.Labels[i] {
 			return false
 		}
+	}
+	if x.ApprovalStatus != y.ApprovalStatus {
+		return false
+	}
+	if x.ApprovalStatusError != y.ApprovalStatusError {
+		return false
 	}
 	return true
 }

@@ -8,7 +8,7 @@
 
     <div class="mt-2">
       <div
-        v-if="!issue.approvalFindingDone"
+        v-if="issue.approvalStatus === Issue_ApprovalStatus.CHECKING"
         class="flex items-center gap-x-2 text-sm text-control-placeholder"
       >
         <BBSpin :size="16" />
@@ -17,10 +17,10 @@
         </span>
       </div>
       <div
-        v-else-if="issue.approvalFindingError"
+        v-else-if="issue.approvalStatus === Issue_ApprovalStatus.ERROR"
         class="flex items-center gap-x-2"
       >
-        <span class="text-error text-sm">{{ issue.approvalFindingError }}</span>
+        <span class="text-error text-sm">{{ issue.approvalStatusError }}</span>
         <NButton
           size="tiny"
           :loading="retrying"
@@ -60,6 +60,7 @@ import { BBSpin } from "@/bbkit";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import { useIssueV1Store } from "@/store";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import { Issue_ApprovalStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import ApprovalStepItem from "./ApprovalStepItem.vue";
 import RiskLevelIcon from "./RiskLevelIcon.vue";

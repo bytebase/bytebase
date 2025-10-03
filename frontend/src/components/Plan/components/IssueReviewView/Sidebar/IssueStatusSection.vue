@@ -16,6 +16,7 @@ import { useI18n } from "vue-i18n";
 import {
   IssueStatus,
   Issue_Approver_Status,
+  Issue_ApprovalStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { useIssueReviewContext } from "../../../logic/";
@@ -31,7 +32,7 @@ const issueStatusText = computed(() => {
   const issueValue = props.issue;
 
   // Show review status instead of just "Open"
-  if (!issueValue.approvalFindingDone) {
+  if (issueValue.approvalStatus === Issue_ApprovalStatus.CHECKING) {
     return t("issue.table.open");
   }
 
@@ -59,7 +60,7 @@ const issueStatusTagType = computed(() => {
   switch (issueValue.status) {
     case IssueStatus.OPEN:
       // Show different colors based on review status
-      if (!issueValue.approvalFindingDone) {
+      if (issueValue.approvalStatus === Issue_ApprovalStatus.CHECKING) {
         return "info";
       }
 

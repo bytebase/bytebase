@@ -72,6 +72,7 @@ import {
   IssueSchema,
   IssueStatus,
   Issue_Approver_Status,
+  Issue_ApprovalStatus,
   Issue_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
@@ -231,7 +232,10 @@ const availableActions = computed(() => {
   }
 
   // Check for review actions
-  if (issueValue.approvalFindingDone && !reviewContext.done.value) {
+  if (
+    issueValue.approvalStatus !== Issue_ApprovalStatus.CHECKING &&
+    !reviewContext.done.value
+  ) {
     const issueCreator = extractUserId(issueValue.creator);
     const { approvers, approvalTemplates } = issueValue;
 
@@ -294,7 +298,10 @@ const availableActions = computed(() => {
   }
 
   // Check for rollout actions when rollout exists and has database creation tasks
-  if (rollout.value && issueValue.approvalFindingDone) {
+  if (
+    rollout.value &&
+    issueValue.approvalStatus !== Issue_ApprovalStatus.CHECKING
+  ) {
     // Different permission checks based on issue type
     // For export data issues: only the creator can run tasks
     // For other issues: need bb.taskRuns.create permission
