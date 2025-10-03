@@ -518,26 +518,45 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get task type from spec, err: %v", err))
 					}
-					if newTaskType != task.Type {
-						taskTypes := []storepb.Task_Type{
-							storepb.Task_DATABASE_SCHEMA_UPDATE,
-							storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST,
-							storepb.Task_DATABASE_DATA_UPDATE,
+
+					// Check if migrate_type changed for DATABASE_MIGRATE tasks
+					if newTaskType == storepb.Task_DATABASE_MIGRATE && task.Type == storepb.Task_DATABASE_MIGRATE {
+						// Get MigrationType from spec
+						if config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig); ok {
+							newMigrateType := getMigrateTypeFromMigrationType(config.ChangeDatabaseConfig.MigrationType)
+							if newMigrateType != task.Payload.GetMigrateType() {
+								taskPatch.MigrateType = &newMigrateType
+								doUpdate = true
+							}
 						}
-						if !slices.Contains(taskTypes, newTaskType) || !slices.Contains(taskTypes, task.Type) {
-							return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task types in %v are allowed to updated, and they are allowed to be changed to %v", taskTypes, taskTypes))
+					} else if newTaskType != task.Type {
+						// Task type changed - only allow within DATABASE_MIGRATE types or to/from DATABASE_SDL
+						if (newTaskType == storepb.Task_DATABASE_MIGRATE && task.Type == storepb.Task_DATABASE_SDL) ||
+							(newTaskType == storepb.Task_DATABASE_SDL && task.Type == storepb.Task_DATABASE_MIGRATE) {
+							// Allow DATABASE_MIGRATE <-> DATABASE_SDL conversion
+							if newTaskType == storepb.Task_DATABASE_MIGRATE {
+								if config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig); ok {
+									newMigrateType := getMigrateTypeFromMigrationType(config.ChangeDatabaseConfig.MigrationType)
+									taskPatch.MigrateType = &newMigrateType
+									doUpdate = true
+								}
+							}
+						} else {
+							return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot change task type from %v to %v", task.Type, newTaskType))
 						}
-						taskPatch.Type = &newTaskType
-						doUpdate = true
 					}
 
 					// Flags for gh-ost.
 					if err := func() error {
-						if newTaskType != storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST {
+						config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
+						if !ok {
+							return nil
+						}
+						if config.ChangeDatabaseConfig.Type != v1pb.DatabaseChangeType_MIGRATE || config.ChangeDatabaseConfig.MigrationType != v1pb.MigrationType_GHOST {
 							return nil
 						}
 
-						newFlags := spec.GetChangeDatabaseConfig().GetGhostFlags()
+						newFlags := config.ChangeDatabaseConfig.GetGhostFlags()
 						if _, err := ghost.GetUserFlags(newFlags); err != nil {
 							return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid ghost flags %q, error %v", newFlags, err))
 						}
@@ -554,11 +573,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 					// Prior Backup
 					func() {
-						if newTaskType != storepb.Task_DATABASE_DATA_UPDATE {
-							return
-						}
 						config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
 						if !ok {
+							return
+						}
+						if config.ChangeDatabaseConfig.Type != v1pb.DatabaseChangeType_MIGRATE || config.ChangeDatabaseConfig.MigrationType != v1pb.MigrationType_DML {
 							return
 						}
 
@@ -574,7 +593,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 					// Sheet
 					if err := func() error {
 						switch newTaskType {
-						case storepb.Task_DATABASE_SCHEMA_UPDATE, storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST, storepb.Task_DATABASE_DATA_UPDATE, storepb.Task_DATABASE_EXPORT:
+						case storepb.Task_DATABASE_MIGRATE, storepb.Task_DATABASE_SDL, storepb.Task_DATABASE_EXPORT:
 							var oldSheetName string
 							if newTaskType == storepb.Task_DATABASE_EXPORT {
 								config, ok := spec.Config.(*v1pb.Plan_Spec_ExportDataConfig)
@@ -1423,14 +1442,10 @@ func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (storepb.Task_Type, error) {
 		return storepb.Task_DATABASE_CREATE, nil
 	case *v1pb.Plan_Spec_ChangeDatabaseConfig:
 		switch s.ChangeDatabaseConfig.Type {
-		case v1pb.DatabaseChangeType_DATA:
-			return storepb.Task_DATABASE_DATA_UPDATE, nil
 		case v1pb.DatabaseChangeType_MIGRATE:
-			return storepb.Task_DATABASE_SCHEMA_UPDATE, nil
-		case v1pb.DatabaseChangeType_MIGRATE_GHOST:
-			return storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST, nil
-		case v1pb.DatabaseChangeType_MIGRATE_SDL:
-			return storepb.Task_DATABASE_SCHEMA_UPDATE_SDL, nil
+			return storepb.Task_DATABASE_MIGRATE, nil
+		case v1pb.DatabaseChangeType_SDL:
+			return storepb.Task_DATABASE_SDL, nil
 		case v1pb.DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED:
 			return storepb.Task_TASK_TYPE_UNSPECIFIED, errors.Errorf("unexpected unspecified change database config type")
 		default:

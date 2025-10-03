@@ -2,6 +2,10 @@ import { head, includes } from "lodash-es";
 import { t } from "@/plugins/i18n";
 import { extractUserId, useCurrentUserV1 } from "@/store";
 import type { ComposedIssue } from "@/types";
+import {
+  DatabaseChangeType,
+  MigrationType,
+} from "@/types/proto-es/v1/common_pb";
 import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
@@ -82,18 +86,25 @@ export const isTaskFinished = (task: Task): boolean => {
   return [Task_Status.DONE, Task_Status.SKIPPED].includes(task.status);
 };
 
-export const semanticTaskType = (type: Task_Type) => {
+export const semanticTaskType = (
+  type: Task_Type,
+  databaseChangeType?: DatabaseChangeType,
+  migrationType?: MigrationType
+) => {
   switch (type) {
     case Task_Type.DATABASE_CREATE:
       return t("db.create");
-    case Task_Type.DATABASE_DATA_UPDATE:
-      return "DML";
-    case Task_Type.DATABASE_SCHEMA_UPDATE:
-      return "DDL";
-    case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
+    case Task_Type.DATABASE_MIGRATE:
+      switch (migrationType) {
+        case MigrationType.DML:
+          return "DML";
+        case MigrationType.GHOST:
+          return "gh-ost";
+        default:
+          return "DDL";
+      }
+    case Task_Type.DATABASE_SDL:
       return "SDL";
-    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
-      return "gh-ost";
     case Task_Type.DATABASE_EXPORT:
       return "Export";
   }

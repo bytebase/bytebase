@@ -9,12 +9,15 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/postgresql"
+	"github.com/github/gh-ost/go/logic"
+	gomysql "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/ghost"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -25,11 +28,12 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
-// NewDataUpdateExecutor creates a data update (DML) task executor.
-func NewDataUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license *enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
-	return &DataUpdateExecutor{
+// NewDatabaseMigrateExecutor creates a database migration task executor.
+func NewDatabaseMigrateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license *enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
+	return &DatabaseMigrateExecutor{
 		store:        store,
 		dbFactory:    dbFactory,
 		license:      license,
@@ -39,8 +43,8 @@ func NewDataUpdateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, l
 	}
 }
 
-// DataUpdateExecutor is the data update (DML) task executor.
-type DataUpdateExecutor struct {
+// DatabaseMigrateExecutor is the database migration task executor.
+type DatabaseMigrateExecutor struct {
 	store        *store.Store
 	dbFactory    *dbfactory.DBFactory
 	license      *enterprise.LicenseService
@@ -49,8 +53,36 @@ type DataUpdateExecutor struct {
 	profile      *config.Profile
 }
 
-// RunOnce will run the data update (DML) task executor once.
-func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
+// RunOnce will run the database migration task executor once.
+func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
+	migrateType := task.Payload.GetMigrateType()
+
+	//exhaustive:enforce
+	switch migrateType {
+	case storepb.Task_DDL:
+		return exec.runDDLMigration(ctx, driverCtx, task, taskRunUID)
+	case storepb.Task_DML:
+		return exec.runDMLMigration(ctx, driverCtx, task, taskRunUID)
+	case storepb.Task_GHOST:
+		return exec.runGhostMigration(ctx, driverCtx, task, taskRunUID)
+	case storepb.Task_MIGRATE_TYPE_UNSPECIFIED:
+		return true, nil, errors.Errorf("migrate type is unspecified")
+	default:
+		return true, nil, errors.Errorf("unsupported migrate type: %v", migrateType)
+	}
+}
+
+func (exec *DatabaseMigrateExecutor) runDDLMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
+	sheetID := int(task.Payload.GetSheetId())
+	statement, err := exec.store.GetSheetStatementByID(ctx, sheetID)
+	if err != nil {
+		return true, nil, err
+	}
+
+	return runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, statement, task.Payload.GetSchemaVersion(), &sheetID)
+}
+
+func (exec *DatabaseMigrateExecutor) runDMLMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
 	sheetID := int(task.Payload.GetSheetId())
 	statement, err := exec.store.GetSheetStatementByID(ctx, sheetID)
 	if err != nil {
@@ -135,7 +167,107 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 	return terminated, result, err
 }
 
-func (exec *DataUpdateExecutor) shouldSkipBackupError(ctx context.Context, task *store.TaskMessage) (bool, error) {
+func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
+	sheetID := int(task.Payload.GetSheetId())
+	statement, err := exec.store.GetSheetStatementByID(ctx, sheetID)
+	if err != nil {
+		return true, nil, err
+	}
+	flags := task.Payload.GetFlags()
+
+	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+	if err != nil {
+		return true, nil, err
+	}
+	if instance == nil {
+		return true, nil, errors.Errorf("instance %s not found", task.InstanceID)
+	}
+	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
+	if err != nil {
+		return true, nil, err
+	}
+	if database == nil {
+		return true, nil, errors.Errorf("database not found")
+	}
+
+	execFunc := func(execCtx context.Context, execStatement string, driver db.Driver, _ db.ExecuteOptions) error {
+		// set buffer size to 1 to unblock the sender because there is no listener if the task is canceled.
+		migrationError := make(chan error, 1)
+
+		statement := strings.TrimSpace(execStatement)
+		// Trim trailing semicolons.
+		statement = strings.TrimRight(statement, ";")
+
+		tableName, err := ghost.GetTableNameFromStatement(statement)
+		if err != nil {
+			return err
+		}
+
+		adminDataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
+		if adminDataSource == nil {
+			return common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
+		}
+
+		migrationContext, err := ghost.NewMigrationContext(ctx, task.ID, database, adminDataSource, tableName, fmt.Sprintf("_%d", time.Now().Unix()), execStatement, false, flags, 10000000)
+		if err != nil {
+			return errors.Wrap(err, "failed to init migrationContext for gh-ost")
+		}
+		defer func() {
+			// Use migrationContext.Uuid as the tls_config_key by convention.
+			// We need to deregister it when gh-ost exits.
+			// https://github.com/bytebase/gh-ost2/pull/4
+			gomysql.DeregisterTLSConfig(migrationContext.Uuid)
+		}()
+
+		migrator := logic.NewMigrator(migrationContext, "bb")
+
+		defer func() {
+			if err := func() error {
+				ctx := context.Background()
+
+				// Use the backup database name of MySQL as the ghost database name.
+				ghostDBName := common.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
+				sql := fmt.Sprintf("DROP TABLE IF EXISTS `%s`.`%s`; DROP TABLE IF EXISTS `%s`.`%s`;",
+					ghostDBName,
+					migrationContext.GetGhostTableName(),
+					ghostDBName,
+					migrationContext.GetChangelogTableName(),
+				)
+
+				if _, err := driver.GetDB().ExecContext(ctx, sql); err != nil {
+					return errors.Wrapf(err, "failed to drop gh-ost temp tables")
+				}
+				return nil
+			}(); err != nil {
+				slog.Warn("failed to cleanup gh-ost temp tables", log.BBError(err))
+			}
+		}()
+
+		go func() {
+			if err := migrator.Migrate(); err != nil {
+				slog.Error("failed to run gh-ost migration", log.BBError(err))
+				migrationError <- err
+				return
+			}
+			migrationError <- nil
+		}()
+
+		select {
+		case err := <-migrationError:
+			if err != nil {
+				return err
+			}
+			return nil
+		case <-execCtx.Done():
+			migrationContext.PanicAbort <- errors.New("task canceled")
+			return errors.New("task canceled")
+		}
+	}
+
+	return runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, statement, task.Payload.GetSchemaVersion(), &sheetID, execFunc)
+}
+
+func (exec *DatabaseMigrateExecutor) shouldSkipBackupError(ctx context.Context, task *store.TaskMessage) (bool, error) {
 	pipeline, pipelineErr := exec.store.GetPipelineV2ByID(ctx, task.PipelineID)
 	if pipelineErr != nil {
 		return false, errors.Wrapf(pipelineErr, "failed to get pipeline %v", task.PipelineID)
@@ -153,7 +285,7 @@ func (exec *DataUpdateExecutor) shouldSkipBackupError(ctx context.Context, task 
 	return project.Setting.SkipBackupErrors, nil
 }
 
-func (exec *DataUpdateExecutor) backupData(
+func (exec *DatabaseMigrateExecutor) backupData(
 	ctx context.Context,
 	driverCtx context.Context,
 	originStatement string,
@@ -208,8 +340,8 @@ func (exec *DataUpdateExecutor) backupData(
 
 	tc := parserbase.TransformContext{
 		InstanceID:              instance.ResourceID,
-		GetDatabaseMetadataFunc: BuildGetDatabaseMetadataFunc(exec.store),
-		ListDatabaseNamesFunc:   BuildListDatabaseNamesFunc(exec.store),
+		GetDatabaseMetadataFunc: buildGetDatabaseMetadataFunc(exec.store),
+		ListDatabaseNamesFunc:   buildListDatabaseNamesFunc(exec.store),
 		IsCaseSensitive:         store.IsObjectCaseSensitive(instance),
 		DatabaseName:            database.DatabaseName,
 	}
@@ -349,7 +481,7 @@ func (exec *DataUpdateExecutor) backupData(
 	return priorBackupDetail, nil
 }
 
-func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) parserbase.GetDatabaseMetadataFunc {
+func buildGetDatabaseMetadataFunc(storeInstance *store.Store) parserbase.GetDatabaseMetadataFunc {
 	return func(ctx context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
 		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instanceID,
@@ -375,7 +507,7 @@ func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) parserbase.GetData
 	}
 }
 
-func BuildListDatabaseNamesFunc(storeInstance *store.Store) parserbase.ListDatabaseNamesFunc {
+func buildListDatabaseNamesFunc(storeInstance *store.Store) parserbase.ListDatabaseNamesFunc {
 	return func(ctx context.Context, instanceID string) ([]string, error) {
 		databases, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
 			InstanceID: &instanceID,

@@ -184,11 +184,9 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		storepb.Task_DATABASE_EXPORT,
 		storepb.Task_DATABASE_CREATE:
 		return nil, errors.Errorf("task type %s is unexpected", task.Type)
-	case
-		storepb.Task_DATABASE_DATA_UPDATE,
-		storepb.Task_DATABASE_SCHEMA_UPDATE,
-		storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST,
-		storepb.Task_DATABASE_SCHEMA_UPDATE_SDL:
+	case storepb.Task_DATABASE_MIGRATE,
+		storepb.Task_DATABASE_SDL:
+		// Valid type for migration context
 	default:
 		return nil, errors.Errorf("task type %s is unexpected", task.Type)
 	}
@@ -205,7 +203,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		mc.sheetName = common.FormatSheet(pipeline.ProjectID, sheet.UID)
 	}
 
-	if isChangeDatabaseTask(task.Type) {
+	if isChangeDatabaseTask(task) {
 		if f := task.Payload.GetTaskReleaseSource().GetFile(); f != "" {
 			project, release, _, err := common.GetProjectReleaseUIDFile(f)
 			if err != nil {
@@ -439,7 +437,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 	// however we can warn users not to unless they know
 	// what they are doing
 	if mc.version != "" {
-		if mc.task.Type == storepb.Task_DATABASE_SCHEMA_UPDATE_SDL {
+		if mc.task.Type == storepb.Task_DATABASE_SDL {
 			// Declarative case
 			list, err := stores.ListRevisions(ctx, &store.FindRevisionMessage{
 				InstanceID:   &mc.database.InstanceID,
@@ -486,7 +484,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 
 	// sync history
 	var syncHistoryPrevUID *int64
-	if needDump(mc.task.Type, mc.instance) {
+	if needDump(mc.task, mc.instance) {
 		opts.LogDatabaseSyncStart()
 		syncHistoryPrev, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
@@ -511,7 +509,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 			ChangedResources: mc.changeHistoryPayload.GetChangedResources(),
 			Sheet:            mc.sheetName,
 			Version:          mc.version,
-			Type:             convertTaskType(mc.task.Type),
+			Type:             convertTaskType(mc.task),
 			GitCommit:        mc.profile.GitCommit,
 		}})
 	if err != nil {
@@ -528,7 +526,7 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 		UID: mc.changelog,
 	}
 
-	if needDump(mc.task.Type, mc.instance) {
+	if needDump(mc.task, mc.instance) {
 		opts.LogDatabaseSyncStart()
 		syncHistory, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
@@ -555,7 +553,7 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 					Type:        storepb.RevisionPayload_VERSIONED,
 				},
 			}
-			if mc.task.Type == storepb.Task_DATABASE_SCHEMA_UPDATE_SDL {
+			if mc.task.Type == storepb.Task_DATABASE_SDL {
 				r.Payload.Type = storepb.RevisionPayload_DECLARATIVE
 			}
 			if mc.sheet != nil {
@@ -620,16 +618,22 @@ func shouldUpdateVersion(currentVersion, newVersion string) bool {
 	return current.LessThan(nv)
 }
 
-func convertTaskType(t storepb.Task_Type) storepb.ChangelogPayload_Type {
+func convertTaskType(t *store.TaskMessage) storepb.ChangelogPayload_Type {
 	//exhaustive:enforce
-	switch t {
-	case storepb.Task_DATABASE_DATA_UPDATE:
-		return storepb.ChangelogPayload_DATA
-	case storepb.Task_DATABASE_SCHEMA_UPDATE:
-		return storepb.ChangelogPayload_MIGRATE
-	case storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
-		return storepb.ChangelogPayload_MIGRATE_GHOST
-	case storepb.Task_DATABASE_SCHEMA_UPDATE_SDL:
+	switch t.Type {
+	case storepb.Task_DATABASE_MIGRATE:
+		// Determine changelog type based on migrate_type
+		switch t.Payload.GetMigrateType() {
+		case storepb.Task_DML:
+			return storepb.ChangelogPayload_DATA
+		case storepb.Task_DDL:
+			return storepb.ChangelogPayload_MIGRATE
+		case storepb.Task_GHOST:
+			return storepb.ChangelogPayload_MIGRATE_GHOST
+		default:
+			return storepb.ChangelogPayload_TYPE_UNSPECIFIED
+		}
+	case storepb.Task_DATABASE_SDL:
 		return storepb.ChangelogPayload_MIGRATE_SDL
 	case
 		storepb.Task_TASK_TYPE_UNSPECIFIED,
@@ -642,11 +646,12 @@ func convertTaskType(t storepb.Task_Type) storepb.ChangelogPayload_Type {
 }
 
 // isChangeDatabaseTask returns whether the task involves changing a database.
-func isChangeDatabaseTask(taskType storepb.Task_Type) bool {
-	switch taskType {
-	case storepb.Task_DATABASE_DATA_UPDATE,
-		storepb.Task_DATABASE_SCHEMA_UPDATE,
-		storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST:
+func isChangeDatabaseTask(task *store.TaskMessage) bool {
+	switch task.Type {
+	case storepb.Task_DATABASE_MIGRATE:
+		// All DATABASE_MIGRATE tasks involve changing a database except possibly UNSPECIFIED
+		return task.Payload.GetMigrateType() != storepb.Task_MIGRATE_TYPE_UNSPECIFIED
+	case storepb.Task_DATABASE_SDL:
 		return true
 	case storepb.Task_DATABASE_CREATE,
 		storepb.Task_DATABASE_EXPORT:
@@ -656,20 +661,17 @@ func isChangeDatabaseTask(taskType storepb.Task_Type) bool {
 	}
 }
 
-func needDump(taskType storepb.Task_Type, instance *store.InstanceMessage) bool {
+func needDump(task *store.TaskMessage, instance *store.InstanceMessage) bool {
 	// Skip dump for TiDB DML operations
-	if taskType == storepb.Task_DATABASE_DATA_UPDATE && instance.Metadata.GetEngine() == storepb.Engine_TIDB {
+	if task.Type == storepb.Task_DATABASE_MIGRATE && task.Payload.GetMigrateType() == storepb.Task_DML && instance.Metadata.GetEngine() == storepb.Engine_TIDB {
 		return false
 	}
 
 	//exhaustive:enforce
-	switch taskType {
-	case
-		storepb.Task_DATABASE_SCHEMA_UPDATE,
-		storepb.Task_DATABASE_SCHEMA_UPDATE_SDL,
-		storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST,
-		storepb.Task_DATABASE_CREATE,
-		storepb.Task_DATABASE_DATA_UPDATE:
+	switch task.Type {
+	case storepb.Task_DATABASE_MIGRATE,
+		storepb.Task_DATABASE_SDL,
+		storepb.Task_DATABASE_CREATE:
 		return true
 	case
 		storepb.Task_TASK_TYPE_UNSPECIFIED,

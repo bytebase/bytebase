@@ -12,6 +12,7 @@ import type { IssueType } from "@/types";
 import {
   DatabaseChangeType,
   ExportFormat,
+  MigrationType,
 } from "@/types/proto-es/v1/common_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
@@ -163,10 +164,11 @@ const buildSpecForTargetsV1 = async (
         value: createProto(Plan_ChangeDatabaseConfigSchema, {
           targets,
           sheet,
-          type:
+          type: DatabaseChangeType.MIGRATE,
+          migrationType:
             template === "bb.issue.database.data.update"
-              ? DatabaseChangeType.DATA
-              : DatabaseChangeType.MIGRATE,
+              ? MigrationType.DML
+              : MigrationType.DDL,
           enablePriorBackup:
             template === "bb.issue.database.data.update" &&
             project.autoEnableBackup,

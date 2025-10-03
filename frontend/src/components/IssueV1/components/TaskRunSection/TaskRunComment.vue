@@ -151,10 +151,8 @@ const commentLink = computed((): CommentLink => {
     }
   } else if (taskRun.status === TaskRun_Status.DONE) {
     switch (task.type) {
-      case Task_Type.DATABASE_SCHEMA_UPDATE:
-      case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
-      case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
-      case Task_Type.DATABASE_DATA_UPDATE: {
+      case Task_Type.DATABASE_MIGRATE:
+      case Task_Type.DATABASE_SDL: {
         if (taskRun.changelog === "") {
           return {
             title: "",

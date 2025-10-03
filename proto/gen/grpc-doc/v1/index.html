@@ -231,6 +231,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.MigrationType"><span class="badge">E</span>MigrationType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.State"><span class="badge">E</span>State</a>
                 </li>
               
@@ -3059,25 +3063,13 @@
               <tr>
                 <td>MIGRATE</td>
                 <td>2</td>
-                <td><p>Used for DDL changes including CREATE DATABASE.</p></td>
+                <td><p>Used for imperative schema migration including CREATE DATABASE.</p></td>
               </tr>
             
               <tr>
-                <td>MIGRATE_SDL</td>
+                <td>SDL</td>
                 <td>3</td>
-                <td><p>Used for schema changes via state-based schema migration including CREATE DATABASE.</p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE_GHOST</td>
-                <td>4</td>
-                <td><p>Used for DDL changes using gh-ost.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATA</td>
-                <td>6</td>
-                <td><p>Used for DML change.</p></td>
+                <td><p>Used for state-based declarative schema migration including CREATE DATABASE.</p></td>
               </tr>
             
           </tbody>
@@ -3286,6 +3278,41 @@
                 <td>XLSX</td>
                 <td>4</td>
                 <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.MigrationType">MigrationType</h3>
+        <p>MigrationType is the type for imperative schema migration.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MIGRATION_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL</td>
+                <td>1</td>
+                <td><p>Used for DDL changes.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DML</td>
+                <td>2</td>
+                <td><p>Used for DML changes.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GHOST</td>
+                <td>3</td>
+                <td><p>Used for DDL changes using gh-ost.</p></td>
               </tr>
             
           </tbody>
@@ -20715,6 +20742,14 @@ Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
                 <tr>
+                  <td>migration_type</td>
+                  <td><a href="#bytebase.v1.MigrationType">MigrationType</a></td>
+                  <td></td>
+                  <td><p>migration_type is the migration type for imperative schema migration.
+It is only set when type is MIGRATE. </p></td>
+                </tr>
+              
+                <tr>
                   <td>ghost_flags</td>
                   <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry">Plan.ChangeDatabaseConfig.GhostFlagsEntry</a></td>
                   <td>repeated</td>
@@ -28016,8 +28051,8 @@ Supported filters:
 
 For example:
 creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; update_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34;
-task_type == &#34;DATABASE_SCHEMA_UPDATE&#34;
-task_type in [&#34;DATABASE_SCHEMA_UPDATE&#34;, &#34;DATABASE_DATA_UPDATE&#34;] </p></td>
+task_type == &#34;DATABASE_MIGRATE&#34;
+task_type in [&#34;DATABASE_MIGRATE&#34;, &#34;DATABASE_EXPORT&#34;] </p></td>
                 </tr>
               
             </tbody>
@@ -28581,6 +28616,20 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database_change_type</td>
+                  <td><a href="#bytebase.v1.DatabaseChangeType">DatabaseChangeType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>migration_type</td>
+                  <td><a href="#bytebase.v1.MigrationType">MigrationType</a></td>
+                  <td></td>
+                  <td><p>migration_type is only set when database_change_type is MIGRATE. </p></td>
                 </tr>
               
             </tbody>
@@ -29656,32 +29705,20 @@ The indexes of the executed commands. </p></td>
               </tr>
             
               <tr>
-                <td>DATABASE_SCHEMA_UPDATE</td>
-                <td>4</td>
+                <td>DATABASE_MIGRATE</td>
+                <td>3</td>
                 <td><p>use payload DatabaseUpdate</p></td>
               </tr>
             
               <tr>
-                <td>DATABASE_SCHEMA_UPDATE_SDL</td>
-                <td>5</td>
-                <td><p>use payload DatabaseUpdate</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_SCHEMA_UPDATE_GHOST</td>
-                <td>9</td>
-                <td><p>use payload DatabaseUpdate</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_DATA_UPDATE</td>
-                <td>8</td>
+                <td>DATABASE_SDL</td>
+                <td>6</td>
                 <td><p>use payload DatabaseUpdate</p></td>
               </tr>
             
               <tr>
                 <td>DATABASE_EXPORT</td>
-                <td>12</td>
+                <td>5</td>
                 <td><p>use payload DatabaseDataExport</p></td>
               </tr>
             

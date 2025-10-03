@@ -25,7 +25,7 @@
           <!-- Step 1: Select Change Type -->
           <template v-if="currentStep === Step.SELECT_CHANGE_TYPE">
             <NRadioGroup
-              v-model:value="selectedChangeType"
+              v-model:value="selectedMigrationType"
               size="large"
               class="space-y-4 w-full"
             >
@@ -35,7 +35,7 @@
                   'border-blue-500 bg-blue-50': isMigrateSelected,
                 }"
               >
-                <NRadio :value="DatabaseChangeType.MIGRATE" class="w-full">
+                <NRadio :value="MigrationType.DDL" class="w-full">
                   <div class="flex items-start space-x-3 w-full">
                     <FileDiffIcon
                       class="w-6 h-6 mt-1 flex-shrink-0"
@@ -57,10 +57,10 @@
               <div
                 class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
                 :class="{
-                  'border-blue-500 bg-blue-50': isDataSelected,
+                  'border-blue-500 bg-blue-50': isDMLSelected,
                 }"
               >
-                <NRadio :value="DatabaseChangeType.DATA" class="w-full">
+                <NRadio :value="MigrationType.DML" class="w-full">
                   <div class="flex items-start space-x-3 w-full">
                     <EditIcon
                       class="w-6 h-6 mt-1 flex-shrink-0"
@@ -230,7 +230,10 @@ import {
   batchGetOrFetchDatabases,
   pushNotification,
 } from "@/store";
-import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
+import {
+  DatabaseChangeType,
+  MigrationType,
+} from "@/types/proto-es/v1/common_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
   Plan_SpecSchema,
@@ -260,9 +263,7 @@ const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const dbCatalogStore = useDatabaseCatalogV1Store();
 
-const selectedChangeType: Ref<DatabaseChangeType> = ref(
-  DatabaseChangeType.MIGRATE
-);
+const selectedMigrationType: Ref<MigrationType> = ref(MigrationType.DDL);
 const isCreating = ref(false);
 const currentStep = ref(Step.SELECT_CHANGE_TYPE);
 const isPreparingMetadata = ref(false);
@@ -286,12 +287,12 @@ const hasSelection = computed(() => {
 });
 
 const canSubmit = computed(() => {
-  return hasSelection.value && selectedChangeType.value;
+  return hasSelection.value && selectedMigrationType.value;
 });
 
 const canProceedToNextStep = computed(() => {
   if (currentStep.value === Step.SELECT_CHANGE_TYPE) {
-    return !!selectedChangeType.value;
+    return !!selectedMigrationType.value;
   }
   if (currentStep.value === Step.SELECT_TARGETS) {
     return hasSelection.value;
@@ -324,9 +325,9 @@ const isLastStep = computed(() => {
 
 const changeTypeTitle = computed(() => {
   if (currentStep.value !== Step.SELECT_CHANGE_TYPE) {
-    if (selectedChangeType.value === DatabaseChangeType.MIGRATE) {
+    if (selectedMigrationType.value === MigrationType.DDL) {
       return t("plan.schema-migration");
-    } else if (selectedChangeType.value === DatabaseChangeType.DATA) {
+    } else if (selectedMigrationType.value === MigrationType.DML) {
       return t("plan.data-change");
     }
   }
@@ -334,18 +335,18 @@ const changeTypeTitle = computed(() => {
 });
 
 const isMigrateSelected = computed(() => {
-  return selectedChangeType.value === DatabaseChangeType.MIGRATE;
+  return selectedMigrationType.value === MigrationType.DDL;
 });
 
-const isDataSelected = computed(() => {
-  return selectedChangeType.value === DatabaseChangeType.DATA;
+const isDMLSelected = computed(() => {
+  return selectedMigrationType.value === MigrationType.DML;
 });
 
 // Reset state when drawer opens
 watch(show, (newVal) => {
   if (newVal) {
     currentStep.value = Step.SELECT_CHANGE_TYPE;
-    selectedChangeType.value = DatabaseChangeType.MIGRATE;
+    selectedMigrationType.value = MigrationType.DDL;
     databaseSelectState.changeSource = "DATABASE";
     databaseSelectState.selectedDatabaseNameList = [];
     databaseSelectState.selectedDatabaseGroup = undefined;
@@ -415,7 +416,7 @@ const prepareDatabaseMetadata = async () => {
 const handleNextStep = async () => {
   if (
     currentStep.value === Step.SELECT_CHANGE_TYPE &&
-    selectedChangeType.value
+    selectedMigrationType.value
   ) {
     currentStep.value = Step.SELECT_TARGETS;
   } else if (currentStep.value === Step.SELECT_TARGETS && hasSelection.value) {
@@ -551,7 +552,7 @@ const handleConfirm = async () => {
       `${project.value.name}/sheets/${sheetUID}`
     );
     localSheet.title =
-      selectedChangeType.value === DatabaseChangeType.MIGRATE
+      selectedMigrationType.value === MigrationType.DDL
         ? "Schema Migration"
         : "Data Change";
     if (statement) {
@@ -565,7 +566,8 @@ const handleConfirm = async () => {
         case: "changeDatabaseConfig",
         value: createProto(Plan_ChangeDatabaseConfigSchema, {
           targets,
-          type: selectedChangeType.value,
+          type: DatabaseChangeType.MIGRATE,
+          migrationType: selectedMigrationType.value,
           sheet: localSheet.name,
         }),
       },

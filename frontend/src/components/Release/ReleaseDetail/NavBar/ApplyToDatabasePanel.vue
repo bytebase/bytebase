@@ -62,12 +62,17 @@ import { planServiceClientConnect } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store, useDBGroupStore } from "@/store";
 import { getProjectNameReleaseId } from "@/store/modules/v1/common";
+import {
+  DatabaseChangeType,
+  MigrationType,
+} from "@/types/proto-es/v1/common_pb";
 import { DatabaseGroupSchema } from "@/types/proto-es/v1/database_group_service_pb";
 import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import {
   PlanSchema,
   Plan_ChangeDatabaseConfigSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
+import { Release_File_ChangeType } from "@/types/proto-es/v1/release_service_pb";
 import { generateIssueTitle, issueV1Slug } from "@/utils";
 import { useReleaseDetailContext } from "../context";
 import { createIssueFromPlan } from "./utils";
@@ -115,6 +120,25 @@ const handleCreate = async () => {
       state.targetSelectState.selectedDatabaseGroup || ""
     )
   );
+
+  // Determine migration type from release files
+  let migrationType = MigrationType.DDL;
+  const firstFile = release.value.files?.[0];
+  if (firstFile) {
+    switch (firstFile.changeType) {
+      case Release_File_ChangeType.DML:
+        migrationType = MigrationType.DML;
+        break;
+      case Release_File_ChangeType.DDL_GHOST:
+        migrationType = MigrationType.GHOST;
+        break;
+      case Release_File_ChangeType.DDL:
+      default:
+        migrationType = MigrationType.DDL;
+        break;
+    }
+  }
+
   const newPlan = create(PlanSchema, {
     title: `Release "${release.value.title}"`,
     description: `Apply release "${release.value.title}" to selected databases.`,
@@ -129,6 +153,8 @@ const handleCreate = async () => {
                 ? state.targetSelectState.selectedDatabaseNameList
                 : [state.targetSelectState.selectedDatabaseGroup!]) || [],
             release: release.value.name,
+            type: DatabaseChangeType.MIGRATE,
+            migrationType,
           }),
         },
       },

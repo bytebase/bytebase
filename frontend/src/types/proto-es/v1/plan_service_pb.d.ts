@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
-import type { DatabaseChangeType, ExportFormat, Position, State } from "./common_pb";
+import type { DatabaseChangeType, ExportFormat, MigrationType, Position, State } from "./common_pb";
 import type { ChangedResources } from "./database_service_pb";
 
 /**
@@ -493,6 +493,14 @@ export declare type Plan_ChangeDatabaseConfig = Message<"bytebase.v1.Plan.Change
    * @generated from field: bytebase.v1.DatabaseChangeType type = 3;
    */
   type: DatabaseChangeType;
+
+  /**
+   * migration_type is the migration type for imperative schema migration.
+   * It is only set when type is MIGRATE.
+   *
+   * @generated from field: bytebase.v1.MigrationType migration_type = 11;
+   */
+  migrationType: MigrationType;
 
   /**
    * @generated from field: map<string, string> ghost_flags = 7;

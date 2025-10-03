@@ -211,8 +211,8 @@ message ListRolloutsRequest {
   //
   // For example:
   // creator == "users/ed@bytebase.com" && update_time >= "2025-01-02T15:04:05Z07:00"
-  // task_type == "DATABASE_SCHEMA_UPDATE"
-  // task_type in ["DATABASE_SCHEMA_UPDATE", "DATABASE_DATA_UPDATE"]
+  // task_type == "DATABASE_MIGRATE"
+  // task_type in ["DATABASE_MIGRATE", "DATABASE_EXPORT"]
   string filter = 4;
 }
 
@@ -404,15 +404,11 @@ message Task {
     // use payload DatabaseCreate
     DATABASE_CREATE = 2;
     // use payload DatabaseUpdate
-    DATABASE_SCHEMA_UPDATE = 4;
+    DATABASE_MIGRATE = 3;
     // use payload DatabaseUpdate
-    DATABASE_SCHEMA_UPDATE_SDL = 5;
-    // use payload DatabaseUpdate
-    DATABASE_SCHEMA_UPDATE_GHOST = 9;
-    // use payload DatabaseUpdate
-    DATABASE_DATA_UPDATE = 8;
+    DATABASE_SDL = 6;
     // use payload DatabaseDataExport
-    DATABASE_EXPORT = 12;
+    DATABASE_EXPORT = 5;
   }
   Type type = 6;
 
@@ -453,6 +449,9 @@ message Task {
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 1;
     string schema_version = 2;
+    DatabaseChangeType database_change_type = 3;
+    // migration_type is only set when database_change_type is MIGRATE.
+    MigrationType migration_type = 4;
   }
 
   message DatabaseDataExport {

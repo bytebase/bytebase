@@ -57,12 +57,7 @@ const shouldShowInstanceRoleSelect = computed(() => {
     return false;
   }
   // Only works for DDL/DML, exclude creating database and schema baseline.
-  if (
-    ![
-      Task_Type.DATABASE_SCHEMA_UPDATE,
-      Task_Type.DATABASE_DATA_UPDATE,
-    ].includes(selectedTask.value.type)
-  ) {
+  if (selectedTask.value.type !== Task_Type.DATABASE_MIGRATE) {
     return false;
   }
   return true;
@@ -76,12 +71,7 @@ const shouldShowTransactionModeToggle = computed(() => {
     return false;
   }
   // Only show for DDL/DML tasks
-  if (
-    ![
-      Task_Type.DATABASE_SCHEMA_UPDATE,
-      Task_Type.DATABASE_DATA_UPDATE,
-    ].includes(selectedTask.value.type)
-  ) {
+  if (selectedTask.value.type !== Task_Type.DATABASE_MIGRATE) {
     return false;
   }
   return true;

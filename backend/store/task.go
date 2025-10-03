@@ -84,6 +84,7 @@ type TaskPatch struct {
 	ExportFormat      *storepb.ExportFormat
 	ExportPassword    *string
 	EnablePriorBackup *bool
+	MigrateType       *storepb.Task_MigrateType
 
 	// Flags for gh-ost.
 	Flags *map[string]string
@@ -405,6 +406,9 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 	}
 	if v := patch.EnablePriorBackup; v != nil {
 		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('enablePriorBackup', $%d::BOOLEAN)`, len(args)+1)), append(args, *v)
+	}
+	if v := patch.MigrateType; v != nil {
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('migrateType', $%d::TEXT)`, len(args)+1)), append(args, v.String())
 	}
 	if v := patch.Flags; v != nil {
 		jsonb, err := json.Marshal(v)

@@ -33,10 +33,8 @@ export const PrimaryTaskRolloutActionList: TaskRolloutAction[] = [
 export const SecondaryTaskRolloutActionList: TaskRolloutAction[] = ["SKIP"];
 
 export const CancelableTaskTypeList: Task_Type[] = [
-  Task_Type.DATABASE_DATA_UPDATE,
-  Task_Type.DATABASE_SCHEMA_UPDATE,
-  Task_Type.DATABASE_SCHEMA_UPDATE_SDL,
-  Task_Type.DATABASE_SCHEMA_UPDATE_GHOST,
+  Task_Type.DATABASE_MIGRATE,
+  Task_Type.DATABASE_SDL,
 ];
 
 export const TaskRolloutActionMap: Record<Task_Status, TaskRolloutAction[]> = {

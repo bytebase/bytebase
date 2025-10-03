@@ -203,12 +203,7 @@ const rolloutSearchParams = computed(() => {
 
 const mergedRolloutFind = computed((): RolloutFind => {
   return buildRolloutFindBySearchParams(rolloutSearchParams.value, {
-    taskType: [
-      Task_Type.DATABASE_DATA_UPDATE,
-      Task_Type.DATABASE_SCHEMA_UPDATE,
-      Task_Type.DATABASE_SCHEMA_UPDATE_GHOST,
-      Task_Type.DATABASE_SCHEMA_UPDATE_SDL,
-    ],
+    taskType: [Task_Type.DATABASE_MIGRATE, Task_Type.DATABASE_SDL],
   });
 });
 

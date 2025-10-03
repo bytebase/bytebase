@@ -72,12 +72,19 @@ message Range {
 // DatabaseChangeType is the database change type.
 enum DatabaseChangeType {
   DATABASE_CHANGE_TYPE_UNSPECIFIED = 0;
-  // Used for DDL changes including CREATE DATABASE.
+  // Used for imperative schema migration including CREATE DATABASE.
   MIGRATE = 2;
-  // Used for schema changes via state-based schema migration including CREATE DATABASE.
-  MIGRATE_SDL = 3;
+  // Used for state-based declarative schema migration including CREATE DATABASE.
+  SDL = 3;
+}
+
+// MigrationType is the type for imperative schema migration.
+enum MigrationType {
+  MIGRATION_TYPE_UNSPECIFIED = 0;
+  // Used for DDL changes.
+  DDL = 1;
+  // Used for DML changes.
+  DML = 2;
   // Used for DDL changes using gh-ost.
-  MIGRATE_GHOST = 4;
-  // Used for DML change.
-  DATA = 6;
+  GHOST = 3;
 }

@@ -4,8 +4,7 @@ import { computed, inject, provide, ref } from "vue";
 import { targetsForSpec } from "@/components/Plan/logic";
 import { useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
-import { Engine } from "@/types/proto-es/v1/common_pb";
-import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
+import { DatabaseChangeType, Engine } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { type Plan, type Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
@@ -63,11 +62,9 @@ export const provideInstanceRoleSettingContext = (refs: {
     if (selectedSpec.value.config?.case !== "changeDatabaseConfig") {
       return false;
     }
-    return [
-      DatabaseChangeType.DATA,
-      DatabaseChangeType.MIGRATE,
-      DatabaseChangeType.MIGRATE_GHOST,
-    ].includes(selectedSpec.value.config.value.type);
+    const config = selectedSpec.value.config.value;
+    // Show for all MIGRATE types (DDL, DML, Ghost), but not SDL
+    return config.type === DatabaseChangeType.MIGRATE;
   });
 
   const allowChange = computed(() => {

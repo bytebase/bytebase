@@ -18,6 +18,7 @@
     - [DatabaseChangeType](#bytebase-v1-DatabaseChangeType)
     - [Engine](#bytebase-v1-Engine)
     - [ExportFormat](#bytebase-v1-ExportFormat)
+    - [MigrationType](#bytebase-v1-MigrationType)
     - [State](#bytebase-v1-State)
     - [VCSType](#bytebase-v1-VCSType)
   
@@ -803,10 +804,8 @@ DatabaseChangeType is the database change type.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | DATABASE_CHANGE_TYPE_UNSPECIFIED | 0 |  |
-| MIGRATE | 2 | Used for DDL changes including CREATE DATABASE. |
-| MIGRATE_SDL | 3 | Used for schema changes via state-based schema migration including CREATE DATABASE. |
-| MIGRATE_GHOST | 4 | Used for DDL changes using gh-ost. |
-| DATA | 6 | Used for DML change. |
+| MIGRATE | 2 | Used for imperative schema migration including CREATE DATABASE. |
+| SDL | 3 | Used for state-based declarative schema migration including CREATE DATABASE. |
 
 
 
@@ -858,6 +857,20 @@ DatabaseChangeType is the database change type.
 | JSON | 2 |  |
 | SQL | 3 |  |
 | XLSX | 4 |  |
+
+
+
+<a name="bytebase-v1-MigrationType"></a>
+
+### MigrationType
+MigrationType is the type for imperative schema migration.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MIGRATION_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 | Used for DDL changes. |
+| DML | 2 | Used for DML changes. |
+| GHOST | 3 | Used for DDL changes using gh-ost. |
 
 
 
@@ -7355,6 +7368,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | release | [string](#string) |  | The resource name of the release. Format: projects/{project}/releases/{release} |
 | type | [DatabaseChangeType](#bytebase-v1-DatabaseChangeType) |  | Type is the database change type. |
+| migration_type | [MigrationType](#bytebase-v1-MigrationType) |  | migration_type is the migration type for imperative schema migration. It is only set when type is MIGRATE. |
 | ghost_flags | [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
 
@@ -10076,7 +10090,7 @@ When paginating, all other parameters provided to `ListRollouts` must match the 
 
 Supported filters: - creator: the rollout creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator. - update_time: rollout update time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - task_type: the task type, support &#34;==&#34; and &#34;in&#34; operators, check the Task.Type enum for the values.
 
-For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; update_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; task_type == &#34;DATABASE_SCHEMA_UPDATE&#34; task_type in [&#34;DATABASE_SCHEMA_UPDATE&#34;, &#34;DATABASE_DATA_UPDATE&#34;] |
+For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; update_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; task_type == &#34;DATABASE_MIGRATE&#34; task_type in [&#34;DATABASE_MIGRATE&#34;, &#34;DATABASE_EXPORT&#34;] |
 
 
 
@@ -10294,6 +10308,8 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | ----- | ---- | ----- | ----------- |
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | schema_version | [string](#string) |  |  |
+| database_change_type | [DatabaseChangeType](#bytebase-v1-DatabaseChangeType) |  |  |
+| migration_type | [MigrationType](#bytebase-v1-MigrationType) |  | migration_type is only set when database_change_type is MIGRATE. |
 
 
 
@@ -10712,11 +10728,9 @@ Read from `pg_stat_activity`
 | TYPE_UNSPECIFIED | 0 |  |
 | GENERAL | 1 |  |
 | DATABASE_CREATE | 2 | use payload DatabaseCreate |
-| DATABASE_SCHEMA_UPDATE | 4 | use payload DatabaseUpdate |
-| DATABASE_SCHEMA_UPDATE_SDL | 5 | use payload DatabaseUpdate |
-| DATABASE_SCHEMA_UPDATE_GHOST | 9 | use payload DatabaseUpdate |
-| DATABASE_DATA_UPDATE | 8 | use payload DatabaseUpdate |
-| DATABASE_EXPORT | 12 | use payload DatabaseDataExport |
+| DATABASE_MIGRATE | 3 | use payload DatabaseUpdate |
+| DATABASE_SDL | 6 | use payload DatabaseUpdate |
+| DATABASE_EXPORT | 5 | use payload DatabaseDataExport |
 
 
 

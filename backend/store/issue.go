@@ -79,8 +79,9 @@ type FindIssueMessage struct {
 	CreatedAtAfter  *time.Time
 	Types           *[]storepb.Issue_Type
 
-	StatusList []storepb.Issue_Status
-	TaskTypes  *[]storepb.Task_Type
+	StatusList   []storepb.Issue_Status
+	TaskTypes    *[]storepb.Task_Type
+	MigrateTypes *[]storepb.Task_MigrateType
 	// Any of the task in the issue changes the instance with InstanceResourceID.
 	InstanceResourceID *string
 	// Any of the task in the issue changes the database with InstanceID and DatabaseName.
@@ -325,8 +326,18 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		for _, t := range *v {
 			taskTypeStrings = append(taskTypeStrings, t.String())
 		}
-		where = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.type = ANY($%d))", len(args)+1))
-		args = append(args, taskTypeStrings)
+		if find.MigrateTypes != nil && len(*find.MigrateTypes) > 0 {
+			// Filter by both task type and migrate type
+			migrateTypeStrings := make([]string, 0, len(*find.MigrateTypes))
+			for _, mt := range *find.MigrateTypes {
+				migrateTypeStrings = append(migrateTypeStrings, mt.String())
+			}
+			where = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.type = ANY($%d) AND task.payload->>'migrateType' = ANY($%d))", len(args)+1, len(args)+2))
+			args = append(args, taskTypeStrings, migrateTypeStrings)
+		} else {
+			where = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.type = ANY($%d))", len(args)+1))
+			args = append(args, taskTypeStrings)
+		}
 	}
 	if v := find.EnvironmentID; v != nil {
 		where = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.environment = $%d)", len(args)+1))
