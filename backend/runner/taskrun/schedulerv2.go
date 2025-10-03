@@ -1002,14 +1002,14 @@ func isSequentialTask(task *store.TaskMessage) bool {
 	//exhaustive:enforce
 	switch task.Type {
 	case storepb.Task_DATABASE_MIGRATE:
-		// DDL and GHOST operations should be sequential
+		// DDL, GHOST, and MIGRATE_TYPE_UNSPECIFIED (treated as DDL) operations should be sequential
 		switch task.Payload.GetMigrateType() {
-		case storepb.Task_DDL, storepb.Task_GHOST:
+		case storepb.Task_DDL, storepb.Task_GHOST, storepb.Task_MIGRATE_TYPE_UNSPECIFIED:
 			return true
 		case storepb.Task_DML:
 			return false
 		default:
-			return false
+			return true
 		}
 	case storepb.Task_DATABASE_SDL:
 		// SDL operations should be sequential

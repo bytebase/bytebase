@@ -91,17 +91,9 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 		}
 
 		base := strings.TrimSuffix(filepath.Base(m), filepath.Ext(m))
-		var t v1pb.Release_File_MigrationType
-		switch {
-		case strings.HasSuffix(base, "dml"):
-			t = v1pb.Release_File_DML
-		case strings.HasSuffix(base, "ghost"):
-			t = v1pb.Release_File_DDL_GHOST
-		case strings.HasSuffix(base, "ddl"):
-			t = v1pb.Release_File_DDL
-		default:
-			t = v1pb.Release_File_MIGRATION_TYPE_UNSPECIFIED
-		}
+
+		// Extract migration type from SQL front matter comments
+		t := extractMigrationTypeFromContent(string(content))
 
 		version := extractVersion(base)
 		if version == "" {
@@ -138,4 +130,30 @@ func extractVersion(s string) string {
 
 	// Return the first capture group which contains just the version numbers
 	return matches[1]
+}
+
+var migrationTypeReg = regexp.MustCompile(`(?i)^--\s*migration-type:\s*(\w+)`)
+
+// extractMigrationTypeFromContent extracts migration type from SQL front matter comments.
+// Supported values: ghost
+// Example:
+//
+//	-- migration-type: ghost
+//	ALTER TABLE ...
+func extractMigrationTypeFromContent(content string) v1pb.Release_File_MigrationType {
+	lines := strings.Split(content, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		// Stop at first non-comment line
+		if line != "" && !strings.HasPrefix(line, "--") {
+			break
+		}
+		matches := migrationTypeReg.FindStringSubmatch(line)
+		if len(matches) >= 2 {
+			if strings.ToLower(matches[1]) == "ghost" {
+				return v1pb.Release_File_DDL_GHOST
+			}
+		}
+	}
+	return v1pb.Release_File_MIGRATION_TYPE_UNSPECIFIED
 }
