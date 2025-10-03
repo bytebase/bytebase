@@ -75,10 +75,10 @@ func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName s
 			return err
 		}
 		issue := issueResp.Msg
-		if issue.ApprovalFindingError != "" {
-			return errors.Errorf("approval finding error: %v", issue.ApprovalFindingError)
+		if issue.ApprovalStatus == v1pb.Issue_ERROR {
+			return errors.Errorf("approval finding error: %v", issue.ApprovalStatusError)
 		}
-		if issue.ApprovalFindingDone {
+		if issue.ApprovalStatus != v1pb.Issue_CHECKING {
 			break
 		}
 	}
