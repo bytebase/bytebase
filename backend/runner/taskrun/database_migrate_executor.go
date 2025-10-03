@@ -66,9 +66,10 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 	case storepb.Task_GHOST:
 		return exec.runGhostMigration(ctx, driverCtx, task, taskRunUID)
 	case storepb.Task_MIGRATE_TYPE_UNSPECIFIED:
-		return true, nil, errors.Errorf("migrate type is unspecified")
+		// Execute SQL without backup, same as DDL
+		return exec.runDDLMigration(ctx, driverCtx, task, taskRunUID)
 	default:
-		return true, nil, errors.Errorf("unsupported migrate type: %v", migrateType)
+		return false, nil, errors.Errorf("unsupported migrate type: %v", migrateType)
 	}
 }
 
