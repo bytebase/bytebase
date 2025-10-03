@@ -160,6 +160,7 @@ func (s *DatabaseService) convertToChangelogs(d *store.DatabaseMessage, cs []*st
 }
 
 func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.ChangelogMessage) *v1pb.Changelog {
+	changelogType, migrationType := convertToChangelogTypeAndMigrationType(c.Payload.GetType(), c.Payload.GetMigrationType())
 	cl := &v1pb.Changelog{
 		Name:             common.FormatChangelog(d.InstanceID, d.DatabaseName, c.UID),
 		CreateTime:       timestamppb.New(c.CreatedAt),
@@ -176,7 +177,8 @@ func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.Ch
 		Version:          c.Payload.GetVersion(),
 		Revision:         "",
 		ChangedResources: convertToChangedResources(c.Payload.GetChangedResources()),
-		Type:             convertToChangelogType(c.Payload.GetType()),
+		Type:             changelogType,
+		MigrationType:    migrationType,
 	}
 
 	if sheet := c.Payload.GetSheet(); sheet != "" {
@@ -215,22 +217,28 @@ func convertToChangelogStatus(s store.ChangelogStatus) v1pb.Changelog_Status {
 	}
 }
 
-func convertToChangelogType(t storepb.ChangelogPayload_Type) v1pb.Changelog_Type {
+func convertToChangelogTypeAndMigrationType(t storepb.ChangelogPayload_Type, mt storepb.ChangelogPayload_MigrationType) (v1pb.Changelog_Type, v1pb.Changelog_MigrationType) {
 	//exhaustive:enforce
 	switch t {
 	case storepb.ChangelogPayload_BASELINE:
-		return v1pb.Changelog_BASELINE
-	case storepb.ChangelogPayload_DDL:
-		return v1pb.Changelog_DDL
-	case storepb.ChangelogPayload_DML:
-		return v1pb.Changelog_DML
+		return v1pb.Changelog_BASELINE, v1pb.Changelog_MIGRATION_TYPE_UNSPECIFIED
+	case storepb.ChangelogPayload_MIGRATE:
+		// For MIGRATE type, check the migration type
+		switch mt {
+		case storepb.ChangelogPayload_DDL:
+			return v1pb.Changelog_MIGRATE, v1pb.Changelog_DDL
+		case storepb.ChangelogPayload_DML:
+			return v1pb.Changelog_MIGRATE, v1pb.Changelog_DML
+		case storepb.ChangelogPayload_GHOST:
+			return v1pb.Changelog_MIGRATE, v1pb.Changelog_GHOST
+		default:
+			return v1pb.Changelog_MIGRATE, v1pb.Changelog_MIGRATION_TYPE_UNSPECIFIED
+		}
 	case storepb.ChangelogPayload_SDL:
-		return v1pb.Changelog_SDL
-	case storepb.ChangelogPayload_GHOST:
-		return v1pb.Changelog_GHOST
+		return v1pb.Changelog_SDL, v1pb.Changelog_MIGRATION_TYPE_UNSPECIFIED
 	case storepb.ChangelogPayload_TYPE_UNSPECIFIED:
-		return v1pb.Changelog_TYPE_UNSPECIFIED
+		return v1pb.Changelog_TYPE_UNSPECIFIED, v1pb.Changelog_MIGRATION_TYPE_UNSPECIFIED
 	default:
-		return v1pb.Changelog_TYPE_UNSPECIFIED
+		return v1pb.Changelog_TYPE_UNSPECIFIED, v1pb.Changelog_MIGRATION_TYPE_UNSPECIFIED
 	}
 }

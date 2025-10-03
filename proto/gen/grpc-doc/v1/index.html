@@ -767,6 +767,10 @@
               
               
                 <li>
+                  <a href="#bytebase.v1.Changelog.MigrationType"><span class="badge">E</span>Changelog.MigrationType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Changelog.Status"><span class="badge">E</span>Changelog.Status</a>
                 </li>
               
@@ -6709,6 +6713,13 @@ Or present but not found if deleted </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>migration_type</td>
+                  <td><a href="#bytebase.v1.Changelog.MigrationType">Changelog.MigrationType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -9686,6 +9697,41 @@ In this situation, `update_mask` is ignored. </p></td>
       
 
       
+        <h3 id="bytebase.v1.Changelog.MigrationType">Changelog.MigrationType</h3>
+        <p>MigrationType is the type for imperative schema migration.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MIGRATION_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL</td>
+                <td>1</td>
+                <td><p>Used for DDL changes.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DML</td>
+                <td>2</td>
+                <td><p>Used for DML changes.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GHOST</td>
+                <td>3</td>
+                <td><p>Used for DDL changes using gh-ost.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.Changelog.Status">Changelog.Status</h3>
         <p></p>
         <table class="enum-table">
@@ -9742,26 +9788,14 @@ In this situation, `update_mask` is ignored. </p></td>
               </tr>
             
               <tr>
-                <td>DDL</td>
+                <td>MIGRATE</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>DML</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>GHOST</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>SDL</td>
-                <td>5</td>
+                <td>3</td>
                 <td><p></p></td>
               </tr>
             

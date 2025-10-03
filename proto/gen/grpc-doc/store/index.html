@@ -363,6 +363,10 @@
               
               
                 <li>
+                  <a href="#bytebase.store.ChangelogPayload.MigrationType"><span class="badge">E</span>ChangelogPayload.MigrationType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.ChangelogPayload.Type"><span class="badge">E</span>ChangelogPayload.Type</a>
                 </li>
               
@@ -3023,6 +3027,13 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>migration_type</td>
+                  <td><a href="#bytebase.store.ChangelogPayload.MigrationType">ChangelogPayload.MigrationType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -3031,6 +3042,41 @@ Format: projects/{project}/sheets/{sheet} </p></td>
         
       
 
+      
+        <h3 id="bytebase.store.ChangelogPayload.MigrationType">ChangelogPayload.MigrationType</h3>
+        <p>MigrationType is the type for imperative schema migration.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MIGRATION_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL</td>
+                <td>1</td>
+                <td><p>Used for DDL changes.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DML</td>
+                <td>2</td>
+                <td><p>Used for DML changes.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GHOST</td>
+                <td>3</td>
+                <td><p>Used for DDL changes using gh-ost.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.store.ChangelogPayload.Type">ChangelogPayload.Type</h3>
         <p></p>
@@ -3053,26 +3099,14 @@ Format: projects/{project}/sheets/{sheet} </p></td>
               </tr>
             
               <tr>
-                <td>DDL</td>
+                <td>MIGRATE</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>DML</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>GHOST</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>SDL</td>
-                <td>5</td>
+                <td>3</td>
                 <td><p></p></td>
               </tr>
             

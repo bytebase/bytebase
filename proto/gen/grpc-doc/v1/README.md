@@ -155,6 +155,7 @@
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
     - [ViewMetadata](#bytebase-v1-ViewMetadata)
   
+    - [Changelog.MigrationType](#bytebase-v1-Changelog-MigrationType)
     - [Changelog.Status](#bytebase-v1-Changelog-Status)
     - [Changelog.Type](#bytebase-v1-Changelog-Type)
     - [ChangelogView](#bytebase-v1-ChangelogView)
@@ -2188,6 +2189,7 @@ BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
 | revision | [string](#string) |  | Could be empty Or present but not found if deleted |
 | changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
 | type | [Changelog.Type](#bytebase-v1-Changelog-Type) |  |  |
+| migration_type | [Changelog.MigrationType](#bytebase-v1-Changelog-MigrationType) |  |  |
 
 
 
@@ -3180,6 +3182,20 @@ ViewMetadata is the metadata for views.
  
 
 
+<a name="bytebase-v1-Changelog-MigrationType"></a>
+
+### Changelog.MigrationType
+MigrationType is the type for imperative schema migration.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MIGRATION_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 | Used for DDL changes. |
+| DML | 2 | Used for DML changes. |
+| GHOST | 3 | Used for DDL changes using gh-ost. |
+
+
+
 <a name="bytebase-v1-Changelog-Status"></a>
 
 ### Changelog.Status
@@ -3203,10 +3219,8 @@ ViewMetadata is the metadata for views.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | BASELINE | 1 |  |
-| DDL | 2 |  |
-| DML | 3 |  |
-| GHOST | 4 |  |
-| SDL | 5 |  |
+| MIGRATE | 2 |  |
+| SDL | 3 |  |
 
 
 

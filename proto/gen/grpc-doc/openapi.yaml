@@ -9112,10 +9112,16 @@ components:
                     enum:
                         - TYPE_UNSPECIFIED
                         - BASELINE
+                        - MIGRATE
+                        - SDL
+                    type: string
+                    format: enum
+                migrationType:
+                    enum:
+                        - MIGRATION_TYPE_UNSPECIFIED
                         - DDL
                         - DML
                         - GHOST
-                        - SDL
                     type: string
                     format: enum
         CheckConstraintMetadata:

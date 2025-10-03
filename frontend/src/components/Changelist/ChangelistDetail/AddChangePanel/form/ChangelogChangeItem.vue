@@ -3,7 +3,7 @@
     <div class="flex flex-row items-center gap-x-2">
       <NTag>
         <span class="inline-block w-[30px] text-center">
-          {{ getChangelogChangeType(changelog.type) }}
+          {{ getChangelogChangeType(changelog.type, changelog.migrationType) }}
         </span>
       </NTag>
       <div

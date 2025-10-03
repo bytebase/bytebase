@@ -1876,6 +1876,9 @@ func (x *Changelog) Equal(y *Changelog) bool {
 	if x.Type != y.Type {
 		return false
 	}
+	if x.MigrationType != y.MigrationType {
+		return false
+	}
 	return true
 }
 

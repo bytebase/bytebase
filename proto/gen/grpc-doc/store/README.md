@@ -51,6 +51,7 @@
     - [ChangedResources](#bytebase-store-ChangedResources)
     - [ChangelogPayload](#bytebase-store-ChangelogPayload)
   
+    - [ChangelogPayload.MigrationType](#bytebase-store-ChangelogPayload-MigrationType)
     - [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type)
   
 - [store/data_source.proto](#store_data_source-proto)
@@ -984,12 +985,27 @@ Metadata about the request.
 | version | [string](#string) |  |  |
 | type | [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type) |  |  |
 | git_commit | [string](#string) |  |  |
+| migration_type | [ChangelogPayload.MigrationType](#bytebase-store-ChangelogPayload-MigrationType) |  |  |
 
 
 
 
 
  
+
+
+<a name="bytebase-store-ChangelogPayload-MigrationType"></a>
+
+### ChangelogPayload.MigrationType
+MigrationType is the type for imperative schema migration.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MIGRATION_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 | Used for DDL changes. |
+| DML | 2 | Used for DML changes. |
+| GHOST | 3 | Used for DDL changes using gh-ost. |
+
 
 
 <a name="bytebase-store-ChangelogPayload-Type"></a>
@@ -1001,10 +1017,8 @@ Metadata about the request.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | BASELINE | 1 |  |
-| DDL | 2 |  |
-| DML | 3 |  |
-| GHOST | 4 |  |
-| SDL | 5 |  |
+| MIGRATE | 2 |  |
+| SDL | 3 |  |
 
 
  

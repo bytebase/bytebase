@@ -6,6 +6,7 @@ import type { ComposedDatabase } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { type AffectedTable, EmptyAffectedTable } from "@/types";
 import {
+  Changelog_MigrationType,
   Changelog_Type,
   ChangelogSchema,
 } from "@/types/proto-es/v1/database_service_pb";
@@ -108,15 +109,23 @@ export const mockLatestChangelog = (
   });
 };
 
-export const getChangelogChangeType = (type: Changelog_Type) => {
+export const getChangelogChangeType = (
+  type: Changelog_Type,
+  migrationType?: Changelog_MigrationType
+) => {
   switch (type) {
     case Changelog_Type.SDL:
       return "SDL";
-    case Changelog_Type.DDL:
-    case Changelog_Type.GHOST:
-      return "DDL";
-    case Changelog_Type.DML:
-      return "DML";
+    case Changelog_Type.MIGRATE:
+      switch (migrationType) {
+        case Changelog_MigrationType.DDL:
+        case Changelog_MigrationType.GHOST:
+          return "DDL";
+        case Changelog_MigrationType.DML:
+          return "DML";
+        default:
+          return "DDL";
+      }
     case Changelog_Type.BASELINE:
       return t("common.baseline");
     default:
