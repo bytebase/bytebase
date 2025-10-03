@@ -9,6 +9,10 @@ import {
 } from "@/store";
 import { useListCache } from "@/store/modules/v1/cache";
 import type { ComposedIssue } from "@/types";
+import {
+  DatabaseChangeType,
+  MigrationType,
+} from "@/types/proto-es/v1/common_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
@@ -35,8 +39,22 @@ const clearCache = (issue: ComposedIssue) => {
       case Task_Type.DATABASE_EXPORT:
       case Task_Type.TYPE_UNSPECIFIED:
         continue;
-      case Task_Type.DATABASE_DATA_UPDATE:
-        changelogStore.clearCache(database.name);
+      case Task_Type.DATABASE_MIGRATE:
+        // For DML tasks, clear the changelog cache
+        if (
+          task.payload?.case === "databaseUpdate" &&
+          task.payload.value.databaseChangeType ===
+            DatabaseChangeType.MIGRATE &&
+          task.payload.value.migrationType === MigrationType.DML
+        ) {
+          changelogStore.clearCache(database.name);
+        } else {
+          // For DDL/Ghost tasks, clear the schema cache
+          useDBSchemaV1Store().removeCache(database.name);
+        }
+        break;
+      case Task_Type.DATABASE_SDL:
+        useDBSchemaV1Store().removeCache(database.name);
         break;
       default:
         useDBSchemaV1Store().removeCache(database.name);

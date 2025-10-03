@@ -766,10 +766,16 @@ func getRiskSourceFromPlan(config *storepb.PlanConfig) store.RiskSource {
 			return store.RiskSourceDatabaseCreate
 		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 			switch v.ChangeDatabaseConfig.Type {
-			case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE, storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST, storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
+			case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
+				// For MIGRATE type, check the migrate type
+				switch v.ChangeDatabaseConfig.MigrateType {
+				case storepb.PlanConfig_ChangeDatabaseConfig_DML:
+					return store.RiskSourceDatabaseDataUpdate
+				default:
+					return store.RiskSourceDatabaseSchemaUpdate
+				}
+			case storepb.PlanConfig_ChangeDatabaseConfig_SDL:
 				return store.RiskSourceDatabaseSchemaUpdate
-			case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
-				return store.RiskSourceDatabaseDataUpdate
 			default:
 				return store.RiskSourceDatabaseSchemaUpdate
 			}

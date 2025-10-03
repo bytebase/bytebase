@@ -289,10 +289,8 @@ export const databaseForTask = (project: Project, task: Task) => {
       // The database is not created yet.
       // extract database info from the task's and payload's properties.
       return extractCoreDatabaseInfoFromDatabaseCreateTask(project, task);
-    case Task_Type.DATABASE_SCHEMA_UPDATE:
-    case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
-    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
-    case Task_Type.DATABASE_DATA_UPDATE:
+    case Task_Type.DATABASE_MIGRATE:
+    case Task_Type.DATABASE_SDL:
     case Task_Type.DATABASE_EXPORT:
       const db = useDatabaseV1Store().getDatabaseByName(task.target);
       if (!isValidDatabaseName(db.name)) {

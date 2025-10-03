@@ -300,64 +300,61 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 		if database.EffectiveEnvironmentID != nil {
 			env = *database.EffectiveEnvironmentID
 		}
-		taskCreate := &store.TaskMessage{
-			InstanceID:   database.InstanceID,
-			DatabaseName: &database.DatabaseName,
-			Environment:  env,
-			Type:         storepb.Task_DATABASE_SCHEMA_UPDATE,
-			Payload: &storepb.Task{
-				SpecId:  spec.Id,
-				SheetId: int32(sheetUID),
-			},
-		}
-		return []*store.TaskMessage{taskCreate}, nil
 
-	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST:
-		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
+		// Determine task migrate type from plan config migrate type
+		var taskMigrateType storepb.Task_MigrateType
+		var flags map[string]string
+		switch c.MigrateType {
+		case storepb.PlanConfig_ChangeDatabaseConfig_DDL:
+			taskMigrateType = storepb.Task_DDL
+		case storepb.PlanConfig_ChangeDatabaseConfig_DML:
+			taskMigrateType = storepb.Task_DML
+		case storepb.PlanConfig_ChangeDatabaseConfig_GHOST:
+			taskMigrateType = storepb.Task_GHOST
+			if _, err := ghost.GetUserFlags(c.GhostFlags); err != nil {
+				return nil, errors.Wrapf(err, "invalid ghost flags %q", c.GhostFlags)
+			}
+			flags = c.GhostFlags
+		default:
+			taskMigrateType = storepb.Task_DDL
 		}
-		if _, err := ghost.GetUserFlags(c.GhostFlags); err != nil {
-			return nil, errors.Wrapf(err, "invalid ghost flags %q", c.GhostFlags)
-		}
-		env := ""
-		if database.EffectiveEnvironmentID != nil {
-			env = *database.EffectiveEnvironmentID
-		}
-		taskCreate := &store.TaskMessage{
-			InstanceID:   database.InstanceID,
-			DatabaseName: &database.DatabaseName,
-			Environment:  env,
-			Type:         storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST,
-			Payload: &storepb.Task{
-				SpecId:  spec.Id,
-				SheetId: int32(sheetUID),
-				Flags:   c.GhostFlags,
-			},
-		}
-		return []*store.TaskMessage{taskCreate}, nil
 
-	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
-		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
-		}
-		env := ""
-		if database.EffectiveEnvironmentID != nil {
-			env = *database.EffectiveEnvironmentID
-		}
 		taskCreate := &store.TaskMessage{
 			InstanceID:   database.InstanceID,
 			DatabaseName: &database.DatabaseName,
 			Environment:  env,
-			Type:         storepb.Task_DATABASE_DATA_UPDATE,
+			Type:         storepb.Task_DATABASE_MIGRATE,
 			Payload: &storepb.Task{
 				SpecId:            spec.Id,
 				SheetId:           int32(sheetUID),
+				Flags:             flags,
 				EnablePriorBackup: c.EnablePriorBackup,
+				MigrateType:       taskMigrateType,
 			},
 		}
 		return []*store.TaskMessage{taskCreate}, nil
+
+	case storepb.PlanConfig_ChangeDatabaseConfig_SDL:
+		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
+		}
+		env := ""
+		if database.EffectiveEnvironmentID != nil {
+			env = *database.EffectiveEnvironmentID
+		}
+		taskCreate := &store.TaskMessage{
+			InstanceID:   database.InstanceID,
+			DatabaseName: &database.DatabaseName,
+			Environment:  env,
+			Type:         storepb.Task_DATABASE_SDL,
+			Payload: &storepb.Task{
+				SpecId:  spec.Id,
+				SheetId: int32(sheetUID),
+			},
+		}
+		return []*store.TaskMessage{taskCreate}, nil
+
 	default:
 		return nil, errors.Errorf("unsupported change database config type %q", c.Type)
 	}
@@ -434,15 +431,15 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 					return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q in release file %q", file.Sheet, file.Id)
 				}
 
-				// Determine task type based on file change type
-				var taskType storepb.Task_Type
+				// Determine migrate type based on file change type
+				var migrateType storepb.Task_MigrateType
 				switch file.ChangeType {
 				case storepb.ReleasePayload_File_DDL, storepb.ReleasePayload_File_CHANGE_TYPE_UNSPECIFIED:
-					taskType = storepb.Task_DATABASE_SCHEMA_UPDATE
+					migrateType = storepb.Task_DDL
 				case storepb.ReleasePayload_File_DDL_GHOST:
-					taskType = storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST
+					migrateType = storepb.Task_GHOST
 				case storepb.ReleasePayload_File_DML:
-					taskType = storepb.Task_DATABASE_DATA_UPDATE
+					migrateType = storepb.Task_DML
 				default:
 					return nil, errors.Errorf("unsupported release file change type %q", file.ChangeType)
 				}
@@ -452,17 +449,18 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 					SpecId:        spec.Id,
 					SheetId:       int32(sheetUID),
 					SchemaVersion: file.Version,
+					MigrateType:   migrateType,
 					TaskReleaseSource: &storepb.TaskReleaseSource{
 						File: common.FormatReleaseFile(c.Release, file.Id),
 					},
 				}
 
 				// Add ghost flags if this is a ghost migration
-				if taskType == storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST && c.GhostFlags != nil {
+				if migrateType == storepb.Task_GHOST && c.GhostFlags != nil {
 					payload.Flags = c.GhostFlags
 				}
 
-				if taskType == storepb.Task_DATABASE_DATA_UPDATE {
+				if migrateType == storepb.Task_DML {
 					payload.EnablePriorBackup = c.EnablePriorBackup
 				}
 
@@ -474,7 +472,7 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 					InstanceID:   database.InstanceID,
 					DatabaseName: &database.DatabaseName,
 					Environment:  env,
-					Type:         taskType,
+					Type:         storepb.Task_DATABASE_MIGRATE,
 					Payload:      payload,
 				}
 				taskCreates = append(taskCreates, taskCreate)
@@ -509,7 +507,7 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 					InstanceID:   database.InstanceID,
 					DatabaseName: &database.DatabaseName,
 					Environment:  env,
-					Type:         storepb.Task_DATABASE_SCHEMA_UPDATE_SDL,
+					Type:         storepb.Task_DATABASE_SDL,
 					Payload:      payload,
 				}
 				taskCreates = append(taskCreates, taskCreate)

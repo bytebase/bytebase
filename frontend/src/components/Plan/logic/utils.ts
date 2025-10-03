@@ -4,7 +4,10 @@ import { planServiceClientConnect } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
 import { projectNamePrefix, useSheetV1Store } from "@/store";
 import { useProjectV1Store } from "@/store";
-import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
+import {
+  DatabaseChangeType,
+  MigrationType,
+} from "@/types/proto-es/v1/common_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -22,22 +25,19 @@ export const getSpecTitle = (spec: Plan_Spec): string => {
   if (spec.config?.case === "createDatabaseConfig") {
     title = t("plan.spec.type.create-database");
   } else if (spec.config?.case === "changeDatabaseConfig") {
-    const changeType = spec.config.value.type;
-    switch (changeType) {
-      case DatabaseChangeType.MIGRATE:
-        title = t("plan.spec.type.schema-change");
-        break;
-      case DatabaseChangeType.MIGRATE_SDL:
-        title = "SDL";
-        break;
-      case DatabaseChangeType.MIGRATE_GHOST:
-        title = t("plan.spec.type.ghost-migration");
-        break;
-      case DatabaseChangeType.DATA:
+    const config = spec.config.value;
+    if (config.type === DatabaseChangeType.MIGRATE) {
+      if (config.migrationType === MigrationType.DML) {
         title = t("plan.spec.type.data-change");
-        break;
-      default:
-        title = t("plan.spec.type.database-change");
+      } else if (config.migrationType === MigrationType.GHOST) {
+        title = t("plan.spec.type.ghost-migration");
+      } else {
+        title = t("plan.spec.type.schema-change");
+      }
+    } else if (config.type === DatabaseChangeType.SDL) {
+      title = "SDL";
+    } else {
+      title = t("plan.spec.type.database-change");
     }
   } else if (spec.config?.case === "exportDataConfig") {
     title = t("plan.spec.type.export-data");

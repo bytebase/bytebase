@@ -163,16 +163,17 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 					switch taskType {
 					case "DDL":
 						issueFind.TaskTypes = &[]storepb.Task_Type{
-							storepb.Task_DATABASE_SCHEMA_UPDATE,
-							storepb.Task_DATABASE_SCHEMA_UPDATE_GHOST,
+							storepb.Task_DATABASE_MIGRATE,
+						}
+						issueFind.MigrateTypes = &[]storepb.Task_MigrateType{
+							storepb.Task_DDL,
 						}
 					case "DML":
 						issueFind.TaskTypes = &[]storepb.Task_Type{
-							storepb.Task_DATABASE_DATA_UPDATE,
+							storepb.Task_DATABASE_MIGRATE,
 						}
-					case "DATA_EXPORT":
-						issueFind.TaskTypes = &[]storepb.Task_Type{
-							storepb.Task_DATABASE_EXPORT,
+						issueFind.MigrateTypes = &[]storepb.Task_MigrateType{
+							storepb.Task_DML,
 						}
 					default:
 						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unknown value %q`, value))

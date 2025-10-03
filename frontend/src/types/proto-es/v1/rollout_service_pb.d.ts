@@ -6,7 +6,7 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import type { Message } from "@bufbuild/protobuf";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import type { Plan } from "./plan_service_pb";
-import type { ExportFormat, Position } from "./common_pb";
+import type { DatabaseChangeType, ExportFormat, MigrationType, Position } from "./common_pb";
 
 /**
  * Describes the file v1/rollout_service.proto.
@@ -217,8 +217,8 @@ export declare type ListRolloutsRequest = Message<"bytebase.v1.ListRolloutsReque
    *
    * For example:
    * creator == "users/ed@bytebase.com" && update_time >= "2025-01-02T15:04:05Z07:00"
-   * task_type == "DATABASE_SCHEMA_UPDATE"
-   * task_type in ["DATABASE_SCHEMA_UPDATE", "DATABASE_DATA_UPDATE"]
+   * task_type == "DATABASE_MIGRATE"
+   * task_type in ["DATABASE_MIGRATE", "DATABASE_EXPORT"]
    *
    * @generated from field: string filter = 4;
    */
@@ -701,6 +701,18 @@ export declare type Task_DatabaseUpdate = Message<"bytebase.v1.Task.DatabaseUpda
    * @generated from field: string schema_version = 2;
    */
   schemaVersion: string;
+
+  /**
+   * @generated from field: bytebase.v1.DatabaseChangeType database_change_type = 3;
+   */
+  databaseChangeType: DatabaseChangeType;
+
+  /**
+   * migration_type is only set when database_change_type is MIGRATE.
+   *
+   * @generated from field: bytebase.v1.MigrationType migration_type = 4;
+   */
+  migrationType: MigrationType;
 };
 
 /**
@@ -825,37 +837,23 @@ export enum Task_Type {
   /**
    * use payload DatabaseUpdate
    *
-   * @generated from enum value: DATABASE_SCHEMA_UPDATE = 4;
+   * @generated from enum value: DATABASE_MIGRATE = 3;
    */
-  DATABASE_SCHEMA_UPDATE = 4,
+  DATABASE_MIGRATE = 3,
 
   /**
    * use payload DatabaseUpdate
    *
-   * @generated from enum value: DATABASE_SCHEMA_UPDATE_SDL = 5;
+   * @generated from enum value: DATABASE_SDL = 6;
    */
-  DATABASE_SCHEMA_UPDATE_SDL = 5,
-
-  /**
-   * use payload DatabaseUpdate
-   *
-   * @generated from enum value: DATABASE_SCHEMA_UPDATE_GHOST = 9;
-   */
-  DATABASE_SCHEMA_UPDATE_GHOST = 9,
-
-  /**
-   * use payload DatabaseUpdate
-   *
-   * @generated from enum value: DATABASE_DATA_UPDATE = 8;
-   */
-  DATABASE_DATA_UPDATE = 8,
+  DATABASE_SDL = 6,
 
   /**
    * use payload DatabaseDataExport
    *
-   * @generated from enum value: DATABASE_EXPORT = 12;
+   * @generated from enum value: DATABASE_EXPORT = 5;
    */
-  DATABASE_EXPORT = 12,
+  DATABASE_EXPORT = 5,
 }
 
 /**

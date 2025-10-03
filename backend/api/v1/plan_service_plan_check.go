@@ -88,7 +88,13 @@ func getPlanCheckRunsFromSpec(ctx context.Context, s *store.Store, plan *store.P
 func getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ChangeDatabaseConfig) ([]*store.PlanCheckRunMessage, error) {
 	switch config.Type {
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
+		// Only DDL and DML migrate types are supported for database group targets
+		switch config.MigrateType {
+		case storepb.PlanConfig_ChangeDatabaseConfig_DDL:
+		case storepb.PlanConfig_ChangeDatabaseConfig_DML:
+		default:
+			return nil, errors.Errorf("unsupported migrate type %q for database group target", config.MigrateType)
+		}
 	default:
 		return nil, errors.Errorf("unsupported change database config type %q for database group target", config.Type)
 	}
@@ -185,7 +191,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Type:    store.PlanCheckDatabaseConnect,
 		Config: &storepb.PlanCheckRunConfig{
 			SheetUid:           int32(sheetUID),
-			ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
+			ChangeDatabaseType: convertToChangeDatabaseType(config.Type, config.MigrateType),
 			InstanceId:         instance.ResourceID,
 			DatabaseName:       database.DatabaseName,
 		},
@@ -197,7 +203,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Type:    store.PlanCheckDatabaseStatementAdvise,
 		Config: &storepb.PlanCheckRunConfig{
 			SheetUid:           int32(sheetUID),
-			ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
+			ChangeDatabaseType: convertToChangeDatabaseType(config.Type, config.MigrateType),
 			InstanceId:         instance.ResourceID,
 			DatabaseName:       database.DatabaseName,
 			EnablePriorBackup:  config.EnablePriorBackup,
@@ -209,19 +215,19 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Type:    store.PlanCheckDatabaseStatementSummaryReport,
 		Config: &storepb.PlanCheckRunConfig{
 			SheetUid:           int32(sheetUID),
-			ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
+			ChangeDatabaseType: convertToChangeDatabaseType(config.Type, config.MigrateType),
 			InstanceId:         instance.ResourceID,
 			DatabaseName:       database.DatabaseName,
 		},
 	})
-	if config.Type == storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST {
+	if config.Type == storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE && config.MigrateType == storepb.PlanConfig_ChangeDatabaseConfig_GHOST {
 		planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
 			PlanUID: plan.UID,
 			Status:  store.PlanCheckRunStatusRunning,
 			Type:    store.PlanCheckDatabaseGhostSync,
 			Config: &storepb.PlanCheckRunConfig{
 				SheetUid:           int32(sheetUID),
-				ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
+				ChangeDatabaseType: convertToChangeDatabaseType(config.Type, config.MigrateType),
 				InstanceId:         instance.ResourceID,
 				DatabaseName:       database.DatabaseName,
 				GhostFlags:         config.GhostFlags,
@@ -232,19 +238,24 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 	return planCheckRuns, nil
 }
 
-func convertToChangeDatabaseType(t storepb.PlanConfig_ChangeDatabaseConfig_Type) storepb.PlanCheckRunConfig_ChangeDatabaseType {
+func convertToChangeDatabaseType(t storepb.PlanConfig_ChangeDatabaseConfig_Type, migrateType storepb.PlanConfig_ChangeDatabaseConfig_MigrateType) storepb.PlanCheckRunConfig_ChangeDatabaseType {
 	switch t {
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-		return storepb.PlanCheckRunConfig_DDL
-	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST:
-		return storepb.PlanCheckRunConfig_DDL_GHOST
-	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
+		switch migrateType {
+		case storepb.PlanConfig_ChangeDatabaseConfig_DDL:
+			return storepb.PlanCheckRunConfig_DDL
+		case storepb.PlanConfig_ChangeDatabaseConfig_GHOST:
+			return storepb.PlanCheckRunConfig_DDL_GHOST
+		case storepb.PlanConfig_ChangeDatabaseConfig_DML:
+			return storepb.PlanCheckRunConfig_DML
+		default:
+			return storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED
+		}
+	case storepb.PlanConfig_ChangeDatabaseConfig_SDL:
 		return storepb.PlanCheckRunConfig_SDL
-	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
-		return storepb.PlanCheckRunConfig_DML
 	default:
+		return storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED
 	}
-	return storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED
 }
 
 func getSheetUIDsFromChangeDatabaseConfig(config *storepb.PlanConfig_ChangeDatabaseConfig) ([]int, error) {

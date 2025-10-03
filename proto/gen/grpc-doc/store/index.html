@@ -920,6 +920,10 @@
               
               
                 <li>
+                  <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.MigrateType"><span class="badge">E</span>PlanConfig.ChangeDatabaseConfig.MigrateType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.Type"><span class="badge">E</span>PlanConfig.ChangeDatabaseConfig.Type</a>
                 </li>
               
@@ -1410,6 +1414,10 @@
                   <a href="#bytebase.store.TaskReleaseSource"><span class="badge">M</span>TaskReleaseSource</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.store.Task.MigrateType"><span class="badge">E</span>Task.MigrateType</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.store.Task.Type"><span class="badge">E</span>Task.Type</a>
@@ -8743,6 +8751,13 @@ Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
                 <tr>
+                  <td>migrate_type</td>
+                  <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.MigrateType">PlanConfig.ChangeDatabaseConfig.MigrateType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>ghost_flags</td>
                   <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry">PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry</a></td>
                   <td>repeated</td>
@@ -9028,6 +9043,41 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
       
 
       
+        <h3 id="bytebase.store.PlanConfig.ChangeDatabaseConfig.MigrateType">PlanConfig.ChangeDatabaseConfig.MigrateType</h3>
+        <p>MigrateType is the migration type for imperative schema migration.</p><p>It is only set when type is MIGRATE.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MIGRATE_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL</td>
+                <td>1</td>
+                <td><p>Used for DDL changes.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DML</td>
+                <td>2</td>
+                <td><p>Used for DML changes.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GHOST</td>
+                <td>3</td>
+                <td><p>Used for DDL changes using gh-ost.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.store.PlanConfig.ChangeDatabaseConfig.Type">PlanConfig.ChangeDatabaseConfig.Type</h3>
         <p>Type is the database change type.</p>
         <table class="enum-table">
@@ -9045,25 +9095,13 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
               <tr>
                 <td>MIGRATE</td>
                 <td>2</td>
-                <td><p>Used for DDL changes including CREATE DATABASE.</p></td>
+                <td><p>Used for imperative schema migration including CREATE DATABASE.</p></td>
               </tr>
             
               <tr>
-                <td>MIGRATE_SDL</td>
+                <td>SDL</td>
                 <td>3</td>
-                <td><p>Used for schema changes via state-based schema migration including CREATE DATABASE.</p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE_GHOST</td>
-                <td>4</td>
-                <td><p>Used for DDL changes using gh-ost.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATA</td>
-                <td>6</td>
-                <td><p>Used for DML change.</p></td>
+                <td><p>Used for state-based declarative schema migration including CREATE DATABASE.</p></td>
               </tr>
             
           </tbody>
@@ -12749,6 +12787,13 @@ Default to this mode.</p></td>
                 </tr>
               
                 <tr>
+                  <td>migrate_type</td>
+                  <td><a href="#bytebase.store.Task.MigrateType">Task.MigrateType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>password</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -12826,6 +12871,41 @@ Default to this mode.</p></td>
       
 
       
+        <h3 id="bytebase.store.Task.MigrateType">Task.MigrateType</h3>
+        <p>MigrateType is the database migration type.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MIGRATE_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DML</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GHOST</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.store.Task.Type">Task.Type</h3>
         <p></p>
         <table class="enum-table">
@@ -12847,20 +12927,8 @@ Default to this mode.</p></td>
               </tr>
             
               <tr>
-                <td>DATABASE_SCHEMA_UPDATE</td>
+                <td>DATABASE_MIGRATE</td>
                 <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_SCHEMA_UPDATE_GHOST</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_DATA_UPDATE</td>
-                <td>4</td>
                 <td><p></p></td>
               </tr>
             
@@ -12871,7 +12939,7 @@ Default to this mode.</p></td>
               </tr>
             
               <tr>
-                <td>DATABASE_SCHEMA_UPDATE_SDL</td>
+                <td>DATABASE_SDL</td>
                 <td>6</td>
                 <td><p></p></td>
               </tr>

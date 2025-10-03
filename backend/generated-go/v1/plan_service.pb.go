@@ -1465,8 +1465,11 @@ type Plan_ChangeDatabaseConfig struct {
 	// Format: projects/{project}/releases/{release}
 	Release string `protobuf:"bytes,9,opt,name=release,proto3" json:"release,omitempty"`
 	// Type is the database change type.
-	Type       DatabaseChangeType `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.v1.DatabaseChangeType" json:"type,omitempty"`
-	GhostFlags map[string]string  `protobuf:"bytes,7,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Type DatabaseChangeType `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.v1.DatabaseChangeType" json:"type,omitempty"`
+	// migration_type is the migration type for imperative schema migration.
+	// It is only set when type is MIGRATE.
+	MigrationType MigrationType     `protobuf:"varint,11,opt,name=migration_type,json=migrationType,proto3,enum=bytebase.v1.MigrationType" json:"migration_type,omitempty"`
+	GhostFlags    map[string]string `protobuf:"bytes,7,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// If set, a backup of the modified data will be created automatically before any changes are applied.
 	EnablePriorBackup bool `protobuf:"varint,8,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -1529,6 +1532,13 @@ func (x *Plan_ChangeDatabaseConfig) GetType() DatabaseChangeType {
 		return x.Type
 	}
 	return DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED
+}
+
+func (x *Plan_ChangeDatabaseConfig) GetMigrationType() MigrationType {
+	if x != nil {
+		return x.MigrationType
+	}
+	return MigrationType_MIGRATION_TYPE_UNSPECIFIED
 }
 
 func (x *Plan_ChangeDatabaseConfig) GetGhostFlags() map[string]string {
@@ -2008,7 +2018,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x03\xe0A\x02R\x04plan\x12@\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xbc\x10\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xff\x10\n" +
 	"\x04Plan\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
@@ -2044,14 +2054,15 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\tcollation\x18\x05 \x01(\tB\x03\xe0A\x01R\tcollation\x12\x1d\n" +
 	"\acluster\x18\x06 \x01(\tB\x03\xe0A\x01R\acluster\x12\x19\n" +
 	"\x05owner\x18\a \x01(\tB\x03\xe0A\x01R\x05owner\x12%\n" +
-	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x1a\x84\x03\n" +
+	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x1a\xc7\x03\n" +
 	"\x14ChangeDatabaseConfig\x12\x18\n" +
 	"\atargets\x18\n" +
 	" \x03(\tR\atargets\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x123\n" +
 	"\arelease\x18\t \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ReleaseR\arelease\x123\n" +
-	"\x04type\x18\x03 \x01(\x0e2\x1f.bytebase.v1.DatabaseChangeTypeR\x04type\x12W\n" +
+	"\x04type\x18\x03 \x01(\x0e2\x1f.bytebase.v1.DatabaseChangeTypeR\x04type\x12A\n" +
+	"\x0emigration_type\x18\v \x01(\x0e2\x1a.bytebase.v1.MigrationTypeR\rmigrationType\x12W\n" +
 	"\vghost_flags\x18\a \x03(\v26.bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntryR\n" +
 	"ghostFlags\x12.\n" +
 	"\x13enable_prior_backup\x18\b \x01(\bR\x11enablePriorBackup\x1a=\n" +
@@ -2203,9 +2214,10 @@ var file_v1_plan_service_proto_goTypes = []any{
 	(State)(0),                                   // 30: bytebase.v1.State
 	(*timestamppb.Timestamp)(nil),                // 31: google.protobuf.Timestamp
 	(DatabaseChangeType)(0),                      // 32: bytebase.v1.DatabaseChangeType
-	(ExportFormat)(0),                            // 33: bytebase.v1.ExportFormat
-	(*ChangedResources)(nil),                     // 34: bytebase.v1.ChangedResources
-	(*Position)(nil),                             // 35: bytebase.v1.Position
+	(MigrationType)(0),                           // 33: bytebase.v1.MigrationType
+	(ExportFormat)(0),                            // 34: bytebase.v1.ExportFormat
+	(*ChangedResources)(nil),                     // 35: bytebase.v1.ChangedResources
+	(*Position)(nil),                             // 36: bytebase.v1.Position
 }
 var file_v1_plan_service_proto_depIdxs = []int32{
 	10, // 0: bytebase.v1.ListPlansResponse.plans:type_name -> bytebase.v1.Plan
@@ -2228,36 +2240,37 @@ var file_v1_plan_service_proto_depIdxs = []int32{
 	21, // 17: bytebase.v1.Plan.Spec.change_database_config:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig
 	22, // 18: bytebase.v1.Plan.Spec.export_data_config:type_name -> bytebase.v1.Plan.ExportDataConfig
 	32, // 19: bytebase.v1.Plan.ChangeDatabaseConfig.type:type_name -> bytebase.v1.DatabaseChangeType
-	24, // 20: bytebase.v1.Plan.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry
-	33, // 21: bytebase.v1.Plan.ExportDataConfig.format:type_name -> bytebase.v1.ExportFormat
-	25, // 22: bytebase.v1.Plan.Deployment.database_group_mappings:type_name -> bytebase.v1.Plan.Deployment.DatabaseGroupMapping
-	2,  // 23: bytebase.v1.PlanCheckRun.Result.status:type_name -> bytebase.v1.PlanCheckRun.Result.Status
-	27, // 24: bytebase.v1.PlanCheckRun.Result.sql_summary_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlSummaryReport
-	28, // 25: bytebase.v1.PlanCheckRun.Result.sql_review_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlReviewReport
-	34, // 26: bytebase.v1.PlanCheckRun.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.v1.ChangedResources
-	35, // 27: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.start_position:type_name -> bytebase.v1.Position
-	35, // 28: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.end_position:type_name -> bytebase.v1.Position
-	3,  // 29: bytebase.v1.PlanService.GetPlan:input_type -> bytebase.v1.GetPlanRequest
-	4,  // 30: bytebase.v1.PlanService.ListPlans:input_type -> bytebase.v1.ListPlansRequest
-	6,  // 31: bytebase.v1.PlanService.SearchPlans:input_type -> bytebase.v1.SearchPlansRequest
-	8,  // 32: bytebase.v1.PlanService.CreatePlan:input_type -> bytebase.v1.CreatePlanRequest
-	9,  // 33: bytebase.v1.PlanService.UpdatePlan:input_type -> bytebase.v1.UpdatePlanRequest
-	11, // 34: bytebase.v1.PlanService.ListPlanCheckRuns:input_type -> bytebase.v1.ListPlanCheckRunsRequest
-	13, // 35: bytebase.v1.PlanService.RunPlanChecks:input_type -> bytebase.v1.RunPlanChecksRequest
-	15, // 36: bytebase.v1.PlanService.BatchCancelPlanCheckRuns:input_type -> bytebase.v1.BatchCancelPlanCheckRunsRequest
-	10, // 37: bytebase.v1.PlanService.GetPlan:output_type -> bytebase.v1.Plan
-	5,  // 38: bytebase.v1.PlanService.ListPlans:output_type -> bytebase.v1.ListPlansResponse
-	7,  // 39: bytebase.v1.PlanService.SearchPlans:output_type -> bytebase.v1.SearchPlansResponse
-	10, // 40: bytebase.v1.PlanService.CreatePlan:output_type -> bytebase.v1.Plan
-	10, // 41: bytebase.v1.PlanService.UpdatePlan:output_type -> bytebase.v1.Plan
-	12, // 42: bytebase.v1.PlanService.ListPlanCheckRuns:output_type -> bytebase.v1.ListPlanCheckRunsResponse
-	14, // 43: bytebase.v1.PlanService.RunPlanChecks:output_type -> bytebase.v1.RunPlanChecksResponse
-	16, // 44: bytebase.v1.PlanService.BatchCancelPlanCheckRuns:output_type -> bytebase.v1.BatchCancelPlanCheckRunsResponse
-	37, // [37:45] is the sub-list for method output_type
-	29, // [29:37] is the sub-list for method input_type
-	29, // [29:29] is the sub-list for extension type_name
-	29, // [29:29] is the sub-list for extension extendee
-	0,  // [0:29] is the sub-list for field type_name
+	33, // 20: bytebase.v1.Plan.ChangeDatabaseConfig.migration_type:type_name -> bytebase.v1.MigrationType
+	24, // 21: bytebase.v1.Plan.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry
+	34, // 22: bytebase.v1.Plan.ExportDataConfig.format:type_name -> bytebase.v1.ExportFormat
+	25, // 23: bytebase.v1.Plan.Deployment.database_group_mappings:type_name -> bytebase.v1.Plan.Deployment.DatabaseGroupMapping
+	2,  // 24: bytebase.v1.PlanCheckRun.Result.status:type_name -> bytebase.v1.PlanCheckRun.Result.Status
+	27, // 25: bytebase.v1.PlanCheckRun.Result.sql_summary_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlSummaryReport
+	28, // 26: bytebase.v1.PlanCheckRun.Result.sql_review_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlReviewReport
+	35, // 27: bytebase.v1.PlanCheckRun.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.v1.ChangedResources
+	36, // 28: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.start_position:type_name -> bytebase.v1.Position
+	36, // 29: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.end_position:type_name -> bytebase.v1.Position
+	3,  // 30: bytebase.v1.PlanService.GetPlan:input_type -> bytebase.v1.GetPlanRequest
+	4,  // 31: bytebase.v1.PlanService.ListPlans:input_type -> bytebase.v1.ListPlansRequest
+	6,  // 32: bytebase.v1.PlanService.SearchPlans:input_type -> bytebase.v1.SearchPlansRequest
+	8,  // 33: bytebase.v1.PlanService.CreatePlan:input_type -> bytebase.v1.CreatePlanRequest
+	9,  // 34: bytebase.v1.PlanService.UpdatePlan:input_type -> bytebase.v1.UpdatePlanRequest
+	11, // 35: bytebase.v1.PlanService.ListPlanCheckRuns:input_type -> bytebase.v1.ListPlanCheckRunsRequest
+	13, // 36: bytebase.v1.PlanService.RunPlanChecks:input_type -> bytebase.v1.RunPlanChecksRequest
+	15, // 37: bytebase.v1.PlanService.BatchCancelPlanCheckRuns:input_type -> bytebase.v1.BatchCancelPlanCheckRunsRequest
+	10, // 38: bytebase.v1.PlanService.GetPlan:output_type -> bytebase.v1.Plan
+	5,  // 39: bytebase.v1.PlanService.ListPlans:output_type -> bytebase.v1.ListPlansResponse
+	7,  // 40: bytebase.v1.PlanService.SearchPlans:output_type -> bytebase.v1.SearchPlansResponse
+	10, // 41: bytebase.v1.PlanService.CreatePlan:output_type -> bytebase.v1.Plan
+	10, // 42: bytebase.v1.PlanService.UpdatePlan:output_type -> bytebase.v1.Plan
+	12, // 43: bytebase.v1.PlanService.ListPlanCheckRuns:output_type -> bytebase.v1.ListPlanCheckRunsResponse
+	14, // 44: bytebase.v1.PlanService.RunPlanChecks:output_type -> bytebase.v1.RunPlanChecksResponse
+	16, // 45: bytebase.v1.PlanService.BatchCancelPlanCheckRuns:output_type -> bytebase.v1.BatchCancelPlanCheckRunsResponse
+	38, // [38:46] is the sub-list for method output_type
+	30, // [30:38] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_v1_plan_service_proto_init() }

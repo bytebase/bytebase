@@ -58,6 +58,9 @@ func (x *Task) Equal(y *Task) bool {
 	if !x.TaskReleaseSource.Equal(y.TaskReleaseSource) {
 		return false
 	}
+	if x.MigrateType != y.MigrateType {
+		return false
+	}
 	if x.Password != y.Password {
 		return false
 	}

@@ -13,7 +13,11 @@ import { isDatabaseChangeSpec, targetsForSpec } from "@/components/Plan/logic";
 import { planServiceClientConnect } from "@/grpcweb";
 import { useCurrentUserV1, extractUserId, useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
-import { DatabaseChangeType, Engine } from "@/types/proto-es/v1/common_pb";
+import {
+  DatabaseChangeType,
+  Engine,
+  MigrationType,
+} from "@/types/proto-es/v1/common_pb";
 import { IssueStatus, type Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   UpdatePlanRequestSchema,
@@ -73,8 +77,16 @@ export const providePreBackupSettingContext = (refs: {
   const shouldShow = computed((): boolean => {
     if (
       !selectedSpec.value ||
-      selectedSpec.value.config?.case !== "changeDatabaseConfig" ||
-      selectedSpec.value.config.value.type !== DatabaseChangeType.DATA
+      selectedSpec.value.config?.case !== "changeDatabaseConfig"
+    ) {
+      return false;
+    }
+    const config = selectedSpec.value.config.value;
+    if (
+      !(
+        config.type === DatabaseChangeType.MIGRATE &&
+        config.migrationType === MigrationType.DML
+      )
     ) {
       return false;
     }

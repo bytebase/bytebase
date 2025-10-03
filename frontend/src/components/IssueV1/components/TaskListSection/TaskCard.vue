@@ -59,7 +59,10 @@ import { computed } from "vue";
 import { InstanceV1Name } from "@/components/v2";
 import { useCurrentProjectV1 } from "@/store";
 import { isValidDatabaseName } from "@/types";
-import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
+import {
+  DatabaseChangeType,
+  MigrationType,
+} from "@/types/proto-es/v1/common_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Type, Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
@@ -99,10 +102,18 @@ const showGhostTag = computed(() => {
     const spec = specForTask(issue.value.planEntity, props.task);
     return (
       spec?.config?.case === "changeDatabaseConfig" &&
-      spec.config.value?.type === DatabaseChangeType.MIGRATE_GHOST
+      spec.config.value?.type === DatabaseChangeType.MIGRATE &&
+      spec.config.value?.migrationType === MigrationType.GHOST
     );
   }
-  return props.task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST;
+  // Check if it's a MIGRATE task with GHOST type
+  return (
+    props.task.type === Task_Type.DATABASE_MIGRATE &&
+    props.task.payload?.case === "databaseUpdate" &&
+    props.task.payload.value.databaseChangeType ===
+      DatabaseChangeType.MIGRATE &&
+    props.task.payload.value.migrationType === MigrationType.GHOST
+  );
 });
 
 const taskClass = computed(() => {
