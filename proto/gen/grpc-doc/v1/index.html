@@ -958,6 +958,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Issue.ApprovalStatus"><span class="badge">E</span>Issue.ApprovalStatus</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Issue.Approver.Status"><span class="badge">E</span>Issue.Approver.Status</a>
                 </li>
               
@@ -10814,21 +10818,6 @@ Format: projects/{project}/issues/{issue} </p></td>
                 </tr>
               
                 <tr>
-                  <td>approval_finding_done</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If the value is `false`, it means that the backend is still finding matching approval templates.
-If `true`, approval_templates &amp; approvers &amp; approval_finding_error are available. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>approval_finding_error</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>creator</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -10915,6 +10904,20 @@ Keys are the following:
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>approval_status</td>
+                  <td><a href="#bytebase.v1.Issue.ApprovalStatus">Issue.ApprovalStatus</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>approval_status_error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Only populated when approval_status == ERROR </p></td>
                 </tr>
               
             </tbody>
@@ -11812,6 +11815,59 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>ANY</td>
                 <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.Issue.ApprovalStatus">Issue.ApprovalStatus</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>APPROVAL_STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CHECKING</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PENDING</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>APPROVED</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REJECTED</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SKIPPED</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ERROR</td>
+                <td>6</td>
                 <td><p></p></td>
               </tr>
             

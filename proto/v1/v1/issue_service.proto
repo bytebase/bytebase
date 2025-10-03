@@ -375,10 +375,7 @@ message Issue {
 
   repeated ApprovalTemplate approval_templates = 10;
 
-  // If the value is `false`, it means that the backend is still finding matching approval templates.
-  // If `true`, approval_templates & approvers & approval_finding_error are available.
-  bool approval_finding_done = 11;
-  string approval_finding_error = 12;
+  reserved 11, 12;
 
   // Format: users/hello@world.com
   string creator = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -430,6 +427,19 @@ message Issue {
   map<string, int32> task_status_count = 22;
 
   repeated string labels = 23;
+
+  enum ApprovalStatus {
+    APPROVAL_STATUS_UNSPECIFIED = 0;
+    CHECKING = 1;
+    PENDING = 2;
+    APPROVED = 3;
+    REJECTED = 4;
+    SKIPPED = 5;
+    ERROR = 6;
+  }
+  ApprovalStatus approval_status = 24 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Only populated when approval_status == ERROR
+  string approval_status_error = 25 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message GrantRequest {

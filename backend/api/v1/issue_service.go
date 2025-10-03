@@ -1120,9 +1120,9 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	for _, path := range req.Msg.UpdateMask.Paths {
 		updateMasks[path] = true
 		switch path {
-		case "approval_finding_done":
-			if req.Msg.Issue.ApprovalFindingDone {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot set approval_finding_done to true"))
+		case "approval_status":
+			if req.Msg.Issue.ApprovalStatus != v1pb.Issue_CHECKING {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("can only set approval_status to CHECKING to trigger re-finding approval templates"))
 			}
 			payload := issue.Payload
 			if payload.Approval == nil {
