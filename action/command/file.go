@@ -97,9 +97,10 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 			t = v1pb.Release_File_DML
 		case strings.HasSuffix(base, "ghost"):
 			t = v1pb.Release_File_DDL_GHOST
-		default:
-			// Default to DDL for files without recognized suffixes
+		case strings.HasSuffix(base, "ddl"):
 			t = v1pb.Release_File_DDL
+		default:
+			t = v1pb.Release_File_MIGRATION_TYPE_UNSPECIFIED
 		}
 
 		version := extractVersion(base)
