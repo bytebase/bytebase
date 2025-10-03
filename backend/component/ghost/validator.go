@@ -83,6 +83,10 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 	for rows.Next() {
 		var grant string
 		if err := rows.Scan(&grant); err != nil {
+			slog.Warn("failed to scan grant",
+				slog.String("host", adminDataSource.GetHost()),
+				slog.String("user", adminDataSource.GetUsername()),
+				slog.String("error", err.Error()))
 			continue
 		}
 		result.CurrentGrants = append(result.CurrentGrants, grant)
