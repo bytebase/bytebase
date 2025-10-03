@@ -107,6 +107,34 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 		return nil, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", statement)
 	}
 
+	// Validate binlog access before attempting migration
+	// This prevents retry storms and provides early feedback in plan checks
+	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+	if err != nil {
+		return []*storepb.PlanCheckRunResult_Result{
+			{
+				Status:  storepb.PlanCheckRunResult_Result_ERROR,
+				Title:   "Failed to connect to database",
+				Content: fmt.Sprintf("Cannot establish connection: %v", err),
+				Code:    common.Internal.Int32(),
+			},
+		}, nil
+	}
+	defer driver.Close(ctx)
+
+	validationResult := ghost.ValidateBinlogAccess(ctx, driver, adminDataSource)
+	if !validationResult.Valid {
+		title, content := validationResult.GetUserFriendlyError()
+		return []*storepb.PlanCheckRunResult_Result{
+			{
+				Status:  storepb.PlanCheckRunResult_Result_ERROR,
+				Title:   title,
+				Content: content,
+				Code:    common.Internal.Int32(),
+			},
+		}, nil
+	}
+
 	migrationContext, err := ghost.NewMigrationContext(ctx, rand.Intn(10000000), database, adminDataSource, tableName, fmt.Sprintf("_dryrun_%d", time.Now().Unix()), statement, true, config.GhostFlags, 20000000)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create migration context")
@@ -122,12 +150,14 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 
 	defer func() {
 		if err := func() error {
-			ctx := context.Background()
-			driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+			// Note: We're reusing the ctx from parent scope and creating a new driver
+			// because the original driver was already closed
+			cleanupCtx := context.Background()
+			cleanupDriver, err := e.dbFactory.GetAdminDatabaseDriver(cleanupCtx, instance, database, db.ConnectionContext{})
 			if err != nil {
-				return errors.Wrapf(err, "failed to get driver")
+				return errors.Wrapf(err, "failed to get driver for cleanup")
 			}
-			defer driver.Close(ctx)
+			defer cleanupDriver.Close(cleanupCtx)
 
 			// Use the backup database name of MySQL as the ghost database name.
 			ghostDBName := common.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
@@ -138,7 +168,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 				migrationContext.GetChangelogTableName(),
 			)
 
-			if _, err := driver.GetDB().ExecContext(ctx, sql); err != nil {
+			if _, err := cleanupDriver.GetDB().ExecContext(cleanupCtx, sql); err != nil {
 				return errors.Wrapf(err, "failed to drop gh-ost temp tables")
 			}
 			return nil

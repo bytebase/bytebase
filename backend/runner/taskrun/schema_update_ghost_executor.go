@@ -100,8 +100,10 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 		}()
 
 		// Pre-flight validation: Test binlog access before starting migration
-		if err := validateBinlogAccess(execCtx, driver, adminDataSource); err != nil {
-			return errors.Wrap(err, "pre-flight check failed: cannot access binlog. Please verify that the user has REPLICATION SLAVE privilege and authentication is correct")
+		validationResult := ghost.ValidateBinlogAccess(execCtx, driver, adminDataSource)
+		if !validationResult.Valid {
+			_, content := validationResult.GetUserFriendlyError()
+			return errors.Errorf("pre-flight check failed: %s", content)
 		}
 
 		migrator := logic.NewMigrator(migrationContext, "bb")
@@ -152,79 +154,3 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 	return runMigrationWithFunc(ctx, driverCtx, exec.s, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, statement, task.Payload.GetSchemaVersion(), &sheetID, execFunc)
 }
 
-// validateBinlogAccess tests whether the user has proper permissions for binlog replication
-func validateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource *storepb.DataSource) error {
-	// Test 1: Check if we can read the binary log status
-	// This requires REPLICATION CLIENT or SUPER privilege
-	if _, err := driver.GetDB().ExecContext(ctx, "SHOW MASTER STATUS"); err != nil {
-		// Try SHOW BINARY LOG STATUS for MySQL 8.2.0+ which replaced SHOW MASTER STATUS
-		if _, err2 := driver.GetDB().ExecContext(ctx, "SHOW BINARY LOG STATUS"); err2 != nil {
-			slog.Error("binlog access validation failed",
-				slog.String("host", adminDataSource.GetHost()),
-				slog.String("user", adminDataSource.GetUsername()),
-				log.BBError(err))
-			return errors.New("cannot access binary logs - SHOW MASTER STATUS/SHOW BINARY LOG STATUS failed")
-		}
-	}
-
-	// Test 2: Check if binary logging is enabled
-	var logBin string
-	row := driver.GetDB().QueryRowContext(ctx, "SELECT @@log_bin")
-	if err := row.Scan(&logBin); err != nil {
-		return errors.Wrap(err, "failed to check if binary logging is enabled")
-	}
-	if logBin != "1" && logBin != "ON" {
-		return errors.New("binary logging is not enabled on this MySQL instance")
-	}
-
-	// Test 3: Check if we have REPLICATION SLAVE privilege
-	// This is the critical permission for gh-ost to work
-	rows, err := driver.GetDB().QueryContext(ctx, "SHOW GRANTS")
-	if err != nil {
-		return errors.Wrap(err, "failed to check user grants")
-	}
-	defer rows.Close()
-
-	hasReplicationSlave := false
-	var grants []string
-	for rows.Next() {
-		var grant string
-		if err := rows.Scan(&grant); err != nil {
-			continue
-		}
-		grants = append(grants, grant)
-		if strings.Contains(strings.ToUpper(grant), "REPLICATION SLAVE") ||
-			strings.Contains(strings.ToUpper(grant), "ALL PRIVILEGES") {
-			hasReplicationSlave = true
-			break
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return errors.Wrap(err, "error reading grants")
-	}
-
-	if !hasReplicationSlave {
-		slog.Error("missing REPLICATION SLAVE privilege",
-			slog.String("host", adminDataSource.GetHost()),
-			slog.String("user", adminDataSource.GetUsername()),
-			slog.Any("grants", grants))
-		return errors.New("user does not have REPLICATION SLAVE privilege required for gh-ost")
-	}
-
-	// Test 4: Check binlog format (should be ROW or MIXED)
-	var binlogFormat string
-	row = driver.GetDB().QueryRowContext(ctx, "SELECT @@binlog_format")
-	if err := row.Scan(&binlogFormat); err != nil {
-		return errors.Wrap(err, "failed to check binlog format")
-	}
-	if strings.ToUpper(binlogFormat) == "STATEMENT" {
-		return errors.Errorf("binlog_format is STATEMENT, but gh-ost requires ROW or MIXED format")
-	}
-
-	slog.Info("binlog access validation passed",
-		slog.String("host", adminDataSource.GetHost()),
-		slog.String("user", adminDataSource.GetUsername()),
-		slog.String("binlog_format", binlogFormat))
-
-	return nil
-}
