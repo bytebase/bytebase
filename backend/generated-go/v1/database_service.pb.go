@@ -451,10 +451,10 @@ type Changelog_Type int32
 const (
 	Changelog_TYPE_UNSPECIFIED Changelog_Type = 0
 	Changelog_BASELINE         Changelog_Type = 1
-	Changelog_MIGRATE          Changelog_Type = 2
-	Changelog_MIGRATE_SDL      Changelog_Type = 3
-	Changelog_MIGRATE_GHOST    Changelog_Type = 4
-	Changelog_DATA             Changelog_Type = 6
+	Changelog_DDL              Changelog_Type = 2
+	Changelog_DML              Changelog_Type = 3
+	Changelog_GHOST            Changelog_Type = 4
+	Changelog_SDL              Changelog_Type = 5
 )
 
 // Enum value maps for Changelog_Type.
@@ -462,18 +462,18 @@ var (
 	Changelog_Type_name = map[int32]string{
 		0: "TYPE_UNSPECIFIED",
 		1: "BASELINE",
-		2: "MIGRATE",
-		3: "MIGRATE_SDL",
-		4: "MIGRATE_GHOST",
-		6: "DATA",
+		2: "DDL",
+		3: "DML",
+		4: "GHOST",
+		5: "SDL",
 	}
 	Changelog_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED": 0,
 		"BASELINE":         1,
-		"MIGRATE":          2,
-		"MIGRATE_SDL":      3,
-		"MIGRATE_GHOST":    4,
-		"DATA":             6,
+		"DDL":              2,
+		"DML":              3,
+		"GHOST":            4,
+		"SDL":              5,
 	}
 )
 
@@ -6401,7 +6401,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x1ebytebase.com/DatabaseChangelogR\x04name\x12.\n" +
 	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\x12\x1d\n" +
 	"\n" +
-	"sdl_format\x18\x03 \x01(\bR\tsdlFormat\"\xfc\x06\n" +
+	"sdl_format\x18\x03 \x01(\bR\tsdlFormat\"\xe7\x06\n" +
 	"\tChangelog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12;\n" +
 	"\vcreate_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
@@ -6428,14 +6428,14 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\aPENDING\x10\x01\x12\b\n" +
 	"\x04DONE\x10\x02\x12\n" +
 	"\n" +
-	"\x06FAILED\x10\x03\"e\n" +
+	"\x06FAILED\x10\x03\"P\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\f\n" +
-	"\bBASELINE\x10\x01\x12\v\n" +
-	"\aMIGRATE\x10\x02\x12\x0f\n" +
-	"\vMIGRATE_SDL\x10\x03\x12\x11\n" +
-	"\rMIGRATE_GHOST\x10\x04\x12\b\n" +
-	"\x04DATA\x10\x06:e\xeaAb\n" +
+	"\bBASELINE\x10\x01\x12\a\n" +
+	"\x03DDL\x10\x02\x12\a\n" +
+	"\x03DML\x10\x03\x12\t\n" +
+	"\x05GHOST\x10\x04\x12\a\n" +
+	"\x03SDL\x10\x05:e\xeaAb\n" +
 	"\x1ebytebase.com/DatabaseChangelog\x12@instances/{instance}/databases/{database}/changelogs/{changelog}\"\x97\x03\n" +
 	"\x16GetSchemaStringRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +

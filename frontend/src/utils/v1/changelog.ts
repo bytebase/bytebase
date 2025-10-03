@@ -110,12 +110,12 @@ export const mockLatestChangelog = (
 
 export const getChangelogChangeType = (type: Changelog_Type) => {
   switch (type) {
-    case Changelog_Type.MIGRATE_SDL:
+    case Changelog_Type.SDL:
       return "SDL";
-    case Changelog_Type.MIGRATE:
-    case Changelog_Type.MIGRATE_GHOST:
+    case Changelog_Type.DDL:
+    case Changelog_Type.GHOST:
       return "DDL";
-    case Changelog_Type.DATA:
+    case Changelog_Type.DML:
       return "DML";
     case Changelog_Type.BASELINE:
       return t("common.baseline");

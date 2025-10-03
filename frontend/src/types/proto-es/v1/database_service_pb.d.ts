@@ -3247,24 +3247,24 @@ export enum Changelog_Type {
   BASELINE = 1,
 
   /**
-   * @generated from enum value: MIGRATE = 2;
+   * @generated from enum value: DDL = 2;
    */
-  MIGRATE = 2,
+  DDL = 2,
 
   /**
-   * @generated from enum value: MIGRATE_SDL = 3;
+   * @generated from enum value: DML = 3;
    */
-  MIGRATE_SDL = 3,
+  DML = 3,
 
   /**
-   * @generated from enum value: MIGRATE_GHOST = 4;
+   * @generated from enum value: GHOST = 4;
    */
-  MIGRATE_GHOST = 4,
+  GHOST = 4,
 
   /**
-   * @generated from enum value: DATA = 6;
+   * @generated from enum value: SDL = 5;
    */
-  DATA = 6,
+  SDL = 5,
 }
 
 /**

@@ -97,14 +97,14 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	changelogs := resp.Msg.Changelogs
 	wantChangelogs := []*v1pb.Changelog{
 		{
-			Type:       v1pb.Changelog_DATA,
+			Type:       v1pb.Changelog_DML,
 			Status:     v1pb.Changelog_DONE,
 			Schema:     dumpedSchema,
 			PrevSchema: dumpedSchema,
 			Version:    "",
 		},
 		{
-			Type:       v1pb.Changelog_MIGRATE,
+			Type:       v1pb.Changelog_DDL,
 			Status:     v1pb.Changelog_DONE,
 			Schema:     dumpedSchema,
 			PrevSchema: "",

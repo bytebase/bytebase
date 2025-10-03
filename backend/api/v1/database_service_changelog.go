@@ -220,14 +220,14 @@ func convertToChangelogType(t storepb.ChangelogPayload_Type) v1pb.Changelog_Type
 	switch t {
 	case storepb.ChangelogPayload_BASELINE:
 		return v1pb.Changelog_BASELINE
-	case storepb.ChangelogPayload_MIGRATE:
-		return v1pb.Changelog_MIGRATE
-	case storepb.ChangelogPayload_MIGRATE_SDL:
-		return v1pb.Changelog_MIGRATE_SDL
-	case storepb.ChangelogPayload_MIGRATE_GHOST:
-		return v1pb.Changelog_MIGRATE_GHOST
-	case storepb.ChangelogPayload_DATA:
-		return v1pb.Changelog_DATA
+	case storepb.ChangelogPayload_DDL:
+		return v1pb.Changelog_DDL
+	case storepb.ChangelogPayload_DML:
+		return v1pb.Changelog_DML
+	case storepb.ChangelogPayload_SDL:
+		return v1pb.Changelog_SDL
+	case storepb.ChangelogPayload_GHOST:
+		return v1pb.Changelog_GHOST
 	case storepb.ChangelogPayload_TYPE_UNSPECIFIED:
 		return v1pb.Changelog_TYPE_UNSPECIFIED
 	default:

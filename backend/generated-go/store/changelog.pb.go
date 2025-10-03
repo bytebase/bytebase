@@ -26,10 +26,10 @@ type ChangelogPayload_Type int32
 const (
 	ChangelogPayload_TYPE_UNSPECIFIED ChangelogPayload_Type = 0
 	ChangelogPayload_BASELINE         ChangelogPayload_Type = 1
-	ChangelogPayload_MIGRATE          ChangelogPayload_Type = 2
-	ChangelogPayload_MIGRATE_SDL      ChangelogPayload_Type = 3
-	ChangelogPayload_MIGRATE_GHOST    ChangelogPayload_Type = 4
-	ChangelogPayload_DATA             ChangelogPayload_Type = 6
+	ChangelogPayload_DDL              ChangelogPayload_Type = 2
+	ChangelogPayload_DML              ChangelogPayload_Type = 3
+	ChangelogPayload_GHOST            ChangelogPayload_Type = 4
+	ChangelogPayload_SDL              ChangelogPayload_Type = 5
 )
 
 // Enum value maps for ChangelogPayload_Type.
@@ -37,18 +37,18 @@ var (
 	ChangelogPayload_Type_name = map[int32]string{
 		0: "TYPE_UNSPECIFIED",
 		1: "BASELINE",
-		2: "MIGRATE",
-		3: "MIGRATE_SDL",
-		4: "MIGRATE_GHOST",
-		6: "DATA",
+		2: "DDL",
+		3: "DML",
+		4: "GHOST",
+		5: "SDL",
 	}
 	ChangelogPayload_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED": 0,
 		"BASELINE":         1,
-		"MIGRATE":          2,
-		"MIGRATE_SDL":      3,
-		"MIGRATE_GHOST":    4,
-		"DATA":             6,
+		"DDL":              2,
+		"DML":              3,
+		"GHOST":            4,
+		"SDL":              5,
 	}
 )
 
@@ -582,7 +582,7 @@ var File_store_changelog_proto protoreflect.FileDescriptor
 
 const file_store_changelog_proto_rawDesc = "" +
 	"\n" +
-	"\x15store/changelog.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\x9f\x03\n" +
+	"\x15store/changelog.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\x8a\x03\n" +
 	"\x10ChangelogPayload\x12\x19\n" +
 	"\btask_run\x18\x01 \x01(\tR\ataskRun\x12\x14\n" +
 	"\x05issue\x18\x02 \x01(\tR\x05issue\x12\x1a\n" +
@@ -592,14 +592,14 @@ const file_store_changelog_proto_rawDesc = "" +
 	"\aversion\x18\x06 \x01(\tR\aversion\x129\n" +
 	"\x04type\x18\a \x01(\x0e2%.bytebase.store.ChangelogPayload.TypeR\x04type\x12\x1d\n" +
 	"\n" +
-	"git_commit\x18\b \x01(\tR\tgitCommit\"e\n" +
+	"git_commit\x18\b \x01(\tR\tgitCommit\"P\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\f\n" +
-	"\bBASELINE\x10\x01\x12\v\n" +
-	"\aMIGRATE\x10\x02\x12\x0f\n" +
-	"\vMIGRATE_SDL\x10\x03\x12\x11\n" +
-	"\rMIGRATE_GHOST\x10\x04\x12\b\n" +
-	"\x04DATA\x10\x06\"Y\n" +
+	"\bBASELINE\x10\x01\x12\a\n" +
+	"\x03DDL\x10\x02\x12\a\n" +
+	"\x03DML\x10\x03\x12\t\n" +
+	"\x05GHOST\x10\x04\x12\a\n" +
+	"\x03SDL\x10\x05\"Y\n" +
 	"\x10ChangedResources\x12E\n" +
 	"\tdatabases\x18\x01 \x03(\v2'.bytebase.store.ChangedResourceDatabaseR\tdatabases\"n\n" +
 	"\x17ChangedResourceDatabase\x12\x12\n" +

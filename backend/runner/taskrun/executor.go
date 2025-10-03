@@ -625,16 +625,16 @@ func convertTaskType(t *store.TaskMessage) storepb.ChangelogPayload_Type {
 		// Determine changelog type based on migrate_type
 		switch t.Payload.GetMigrateType() {
 		case storepb.Task_DML:
-			return storepb.ChangelogPayload_DATA
+			return storepb.ChangelogPayload_DML
 		case storepb.Task_DDL:
-			return storepb.ChangelogPayload_MIGRATE
+			return storepb.ChangelogPayload_DDL
 		case storepb.Task_GHOST:
-			return storepb.ChangelogPayload_MIGRATE_GHOST
+			return storepb.ChangelogPayload_GHOST
 		default:
 			return storepb.ChangelogPayload_TYPE_UNSPECIFIED
 		}
 	case storepb.Task_DATABASE_SDL:
-		return storepb.ChangelogPayload_MIGRATE_SDL
+		return storepb.ChangelogPayload_SDL
 	case
 		storepb.Task_TASK_TYPE_UNSPECIFIED,
 		storepb.Task_DATABASE_CREATE,

@@ -1001,10 +1001,10 @@ Metadata about the request.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | BASELINE | 1 |  |
-| MIGRATE | 2 |  |
-| MIGRATE_SDL | 3 |  |
-| MIGRATE_GHOST | 4 |  |
-| DATA | 6 |  |
+| DDL | 2 |  |
+| DML | 3 |  |
+| GHOST | 4 |  |
+| SDL | 5 |  |
 
 
  

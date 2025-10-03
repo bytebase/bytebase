@@ -286,9 +286,10 @@ const handleExportChangelogs = async () => {
           : new Date()
       ).format("YYYY-MM-DDTHH-mm-ss");
       if (
-        changelog.type === Changelog_Type.MIGRATE ||
-        changelog.type === Changelog_Type.MIGRATE_SDL ||
-        changelog.type === Changelog_Type.DATA
+        changelog.type === Changelog_Type.DDL ||
+        changelog.type === Changelog_Type.SDL ||
+        changelog.type === Changelog_Type.DML ||
+        changelog.type === Changelog_Type.GHOST
       ) {
         zip.file(`${filePathPrefix}.sql`, changelog.statement);
       } else if (changelog.type === Changelog_Type.BASELINE) {
