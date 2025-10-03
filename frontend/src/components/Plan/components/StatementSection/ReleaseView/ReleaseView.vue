@@ -76,7 +76,8 @@
               <div class="flex-1 min-w-0 mr-2">
                 <div class="font-medium truncate">{{ file.path }}</div>
                 <div class="text-gray-500">
-                  {{ file.version }} • {{ getChangeTypeText(file.changeType) }}
+                  {{ file.version }} •
+                  {{ getChangeTypeText(file.migrationType) }}
                 </div>
               </div>
               <div
@@ -159,7 +160,7 @@ import { useReleaseByName } from "@/store";
 import { isValidReleaseName, getDateForPbTimestampProtoEs } from "@/types";
 import { VCSType } from "@/types/proto-es/v1/common_pb";
 import { Release_File_Type } from "@/types/proto-es/v1/release_service_pb";
-import { Release_File_ChangeType } from "@/types/proto-es/v1/release_service_pb";
+import { Release_File_MigrationType } from "@/types/proto-es/v1/release_service_pb";
 import { useSelectedSpec } from "../../SpecDetailView/context";
 
 const { t } = useI18n();
@@ -193,18 +194,18 @@ const displayedFiles = computed(() => {
   return release.value.files.slice(0, maxDisplayedFiles);
 });
 
-const getChangeTypeText = (changeType: Release_File_ChangeType) => {
-  switch (changeType) {
-    case Release_File_ChangeType.DDL:
+const getChangeTypeText = (migrationType: Release_File_MigrationType) => {
+  switch (migrationType) {
+    case Release_File_MigrationType.DDL:
       return t("release.change-type.ddl");
-    case Release_File_ChangeType.DDL_GHOST:
+    case Release_File_MigrationType.DDL_GHOST:
       return t("release.change-type.ddl-ghost");
-    case Release_File_ChangeType.DML:
+    case Release_File_MigrationType.DML:
       return t("release.change-type.dml");
-    case Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED:
+    case Release_File_MigrationType.MIGRATION_TYPE_UNSPECIFIED:
       return t("release.change-type.unspecified");
     default:
-      changeType satisfies never;
+      migrationType satisfies never;
       return t("release.change-type.unspecified");
   }
 };

@@ -3,7 +3,7 @@
     v-if="show"
     :database="database"
     :get-statement="getStatement"
-    :change-type="Release_File_ChangeType.DDL"
+    :migration-type="Release_File_MigrationType.DDL"
     :button-props="{
       size: 'small',
     }"
@@ -16,7 +16,7 @@
 import { toRef } from "vue";
 import { SQLCheckButton } from "@/components/SQLCheck";
 import type { ComposedDatabase } from "@/types";
-import { Release_File_ChangeType } from "@/types/proto-es/v1/release_service_pb";
+import { Release_File_MigrationType } from "@/types/proto-es/v1/release_service_pb";
 import { useSchemaEditorSQLCheck } from "./useSchemaEditorSQLCheck";
 
 const props = defineProps<{

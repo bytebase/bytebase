@@ -114,7 +114,7 @@ import {
   Release_File_Type,
 } from "@/types/proto-es/v1/release_service_pb";
 import {
-  Release_File_ChangeType,
+  Release_File_MigrationType,
   type CheckReleaseResponse_CheckResult,
 } from "@/types/proto-es/v1/release_service_pb";
 import { Advice_Status, type Advice } from "@/types/proto-es/v1/sql_service_pb";
@@ -223,11 +223,11 @@ const runChecks = async () => {
             version: "0",
             type: Release_File_Type.VERSIONED,
             statement: new TextEncoder().encode(statement),
-            changeType:
+            migrationType:
               config.type === DatabaseChangeType.MIGRATE &&
               config.migrationType === MigrationType.DML
-                ? Release_File_ChangeType.DML
-                : Release_File_ChangeType.DDL,
+                ? Release_File_MigrationType.DML
+                : Release_File_MigrationType.DDL,
           },
         ],
       },

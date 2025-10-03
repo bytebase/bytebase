@@ -72,7 +72,7 @@ import {
   PlanSchema,
   Plan_ChangeDatabaseConfigSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import { Release_File_ChangeType } from "@/types/proto-es/v1/release_service_pb";
+import { Release_File_MigrationType } from "@/types/proto-es/v1/release_service_pb";
 import { generateIssueTitle, issueV1Slug } from "@/utils";
 import { useReleaseDetailContext } from "../context";
 import { createIssueFromPlan } from "./utils";
@@ -125,14 +125,14 @@ const handleCreate = async () => {
   let migrationType = MigrationType.DDL;
   const firstFile = release.value.files?.[0];
   if (firstFile) {
-    switch (firstFile.changeType) {
-      case Release_File_ChangeType.DML:
+    switch (firstFile.migrationType) {
+      case Release_File_MigrationType.DML:
         migrationType = MigrationType.DML;
         break;
-      case Release_File_ChangeType.DDL_GHOST:
+      case Release_File_MigrationType.DDL_GHOST:
         migrationType = MigrationType.GHOST;
         break;
-      case Release_File_ChangeType.DDL:
+      case Release_File_MigrationType.DDL:
       default:
         migrationType = MigrationType.DDL;
         break;

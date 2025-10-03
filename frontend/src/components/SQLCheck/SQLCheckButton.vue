@@ -82,7 +82,7 @@ import {
   CheckReleaseRequestSchema,
   CheckReleaseResponseSchema,
   Release_File_Type,
-  Release_File_ChangeType,
+  Release_File_MigrationType,
 } from "@/types/proto-es/v1/release_service_pb";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
 import {
@@ -107,7 +107,7 @@ const props = withDefaults(
     databaseMetadata?: DatabaseMetadata;
     buttonProps?: ButtonProps;
     buttonStyle?: VueStyle;
-    changeType?: Release_File_ChangeType;
+    migrationType?: Release_File_MigrationType;
     showCodeLocation?: boolean;
     ignoreIssueCreationRestriction?: boolean;
     adviceFilter?: (advices: Advice, index: number) => boolean;
@@ -160,7 +160,7 @@ const statementErrors = asyncComputed(async () => {
 }, []);
 
 const runCheckInternal = async (statement: string) => {
-  const { database, changeType } = props;
+  const { database, migrationType } = props;
   const request = create(CheckReleaseRequestSchema, {
     parent: database.project,
     release: {
@@ -170,8 +170,8 @@ const runCheckInternal = async (statement: string) => {
           version: "0",
           type: Release_File_Type.VERSIONED,
           statement: new TextEncoder().encode(statement),
-          // Default to DDL change type.
-          changeType: changeType || Release_File_ChangeType.DDL,
+          // Default to DDL migration type.
+          migrationType: migrationType || Release_File_MigrationType.DDL,
         },
       ],
     },
