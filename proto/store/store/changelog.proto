@@ -28,13 +28,23 @@ message ChangelogPayload {
     TYPE_UNSPECIFIED = 0;
     BASELINE = 1;
     MIGRATE = 2;
-    MIGRATE_SDL = 3;
-    MIGRATE_GHOST = 4;
-    DATA = 6;
+    SDL = 3;
   }
   Type type = 7;
 
   string git_commit = 8;
+
+  // MigrationType is the type for imperative schema migration.
+  enum MigrationType {
+    MIGRATION_TYPE_UNSPECIFIED = 0;
+    // Used for DDL changes.
+    DDL = 1;
+    // Used for DML changes.
+    DML = 2;
+    // Used for DDL changes using gh-ost.
+    GHOST = 3;
+  }
+  MigrationType migration_type = 9;
 }
 
 message ChangedResources {

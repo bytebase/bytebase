@@ -25,9 +25,9 @@
         :project-name="project.name"
         style="max-width: max-content"
       />
-      <NCheckboxGroup v-model:value="state.changelogTypes">
-        <NCheckbox :value="Changelog_Type.MIGRATE">DDL</NCheckbox>
-        <NCheckbox :value="Changelog_Type.DATA">DML</NCheckbox>
+      <NCheckboxGroup v-model:value="state.migrationTypes">
+        <NCheckbox :value="Changelog_MigrationType.DDL">DDL</NCheckbox>
+        <NCheckbox :value="Changelog_MigrationType.DML">DML</NCheckbox>
       </NCheckboxGroup>
     </div>
     <ChangelogDataTable
@@ -67,6 +67,7 @@ import {
 } from "@/types/proto-es/v1/changelist_service_pb";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
+  Changelog_MigrationType,
   Changelog_Status,
   Changelog_Type,
 } from "@/types/proto-es/v1/database_service_pb";
@@ -81,7 +82,7 @@ type LocalState = {
   databaseName: string | undefined;
   changelogList: Changelog[];
   affectedTable: AffectedTable;
-  changelogTypes: Changelog_Type[];
+  migrationTypes: Changelog_MigrationType[];
   detailChangelogName: string | undefined;
 };
 
@@ -95,7 +96,7 @@ const state = reactive<LocalState>({
   databaseName: undefined,
   changelogList: [],
   affectedTable: EmptyAffectedTable,
-  changelogTypes: [Changelog_Type.DATA, Changelog_Type.MIGRATE],
+  migrationTypes: [Changelog_MigrationType.DML, Changelog_MigrationType.DDL],
   detailChangelogName: undefined,
 });
 
@@ -108,7 +109,8 @@ const database = computed(() => {
 const filteredChangelogList = computed(() => {
   return state.changelogList.filter((changelog) => {
     return (
-      state.changelogTypes.includes(changelog.type) &&
+      changelog.type === Changelog_Type.MIGRATE &&
+      state.migrationTypes.includes(changelog.migrationType) &&
       changelog.status === Changelog_Status.DONE
     );
   });

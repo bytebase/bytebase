@@ -81,7 +81,8 @@ const columnList = computed(() => {
       title: t("changelog.change-type"),
       width: 96,
       resizable: true,
-      render: (changelog) => getChangelogChangeType(changelog.type),
+      render: (changelog) =>
+        getChangelogChangeType(changelog.type, changelog.migrationType),
     },
     {
       key: "issue",
@@ -191,8 +192,7 @@ const allowToSelectChangelog = (changelog: Changelog) => {
     changelog.status === Changelog_Status.DONE &&
     (changelog.type === Changelog_Type.BASELINE ||
       changelog.type === Changelog_Type.MIGRATE ||
-      changelog.type === Changelog_Type.MIGRATE_SDL ||
-      changelog.type === Changelog_Type.DATA)
+      changelog.type === Changelog_Type.SDL)
   );
 };
 </script>

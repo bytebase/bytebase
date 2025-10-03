@@ -446,7 +446,7 @@ func convertToReleaseFiles(ctx context.Context, s *store.Store, files []*storepb
 			Version:       f.Version,
 			Statement:     []byte(sheet.Statement),
 			StatementSize: sheet.Size,
-			ChangeType:    v1pb.Release_File_ChangeType(f.ChangeType),
+			MigrationType: v1pb.Release_File_MigrationType(f.MigrationType),
 		})
 	}
 	return v1Files, nil
@@ -484,13 +484,13 @@ func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Rele
 		}
 
 		rFiles = append(rFiles, &storepb.ReleasePayload_File{
-			Id:          f.Id,
-			Path:        f.Path,
-			Sheet:       f.Sheet,
-			SheetSha256: sheet.GetSha256Hex(),
-			Type:        storepb.ReleasePayload_File_Type(f.Type),
-			Version:     f.Version,
-			ChangeType:  storepb.ReleasePayload_File_ChangeType(f.ChangeType),
+			Id:            f.Id,
+			Path:          f.Path,
+			Sheet:         f.Sheet,
+			SheetSha256:   sheet.GetSha256Hex(),
+			Type:          storepb.ReleasePayload_File_Type(f.Type),
+			Version:       f.Version,
+			MigrationType: storepb.ReleasePayload_File_MigrationType(f.MigrationType),
 		})
 	}
 	return rFiles, nil

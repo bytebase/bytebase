@@ -155,6 +155,7 @@
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
     - [ViewMetadata](#bytebase-v1-ViewMetadata)
   
+    - [Changelog.MigrationType](#bytebase-v1-Changelog-MigrationType)
     - [Changelog.Status](#bytebase-v1-Changelog-Status)
     - [Changelog.Type](#bytebase-v1-Changelog-Type)
     - [ChangelogView](#bytebase-v1-ChangelogView)
@@ -553,7 +554,7 @@
     - [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest)
   
     - [CheckReleaseResponse.RiskLevel](#bytebase-v1-CheckReleaseResponse-RiskLevel)
-    - [Release.File.ChangeType](#bytebase-v1-Release-File-ChangeType)
+    - [Release.File.MigrationType](#bytebase-v1-Release-File-MigrationType)
     - [Release.File.Type](#bytebase-v1-Release-File-Type)
   
     - [ReleaseService](#bytebase-v1-ReleaseService)
@@ -2188,6 +2189,7 @@ BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
 | revision | [string](#string) |  | Could be empty Or present but not found if deleted |
 | changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
 | type | [Changelog.Type](#bytebase-v1-Changelog-Type) |  |  |
+| migration_type | [Changelog.MigrationType](#bytebase-v1-Changelog-MigrationType) |  |  |
 
 
 
@@ -3180,6 +3182,20 @@ ViewMetadata is the metadata for views.
  
 
 
+<a name="bytebase-v1-Changelog-MigrationType"></a>
+
+### Changelog.MigrationType
+MigrationType is the type for imperative schema migration.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MIGRATION_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 | Used for DDL changes. |
+| DML | 2 | Used for DML changes. |
+| GHOST | 3 | Used for DDL changes using gh-ost. |
+
+
+
 <a name="bytebase-v1-Changelog-Status"></a>
 
 ### Changelog.Status
@@ -3204,9 +3220,7 @@ ViewMetadata is the metadata for views.
 | TYPE_UNSPECIFIED | 0 |  |
 | BASELINE | 1 |  |
 | MIGRATE | 2 |  |
-| MIGRATE_SDL | 3 |  |
-| MIGRATE_GHOST | 4 |  |
-| DATA | 6 |  |
+| SDL | 3 |  |
 
 
 
@@ -9072,7 +9086,7 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 | path | [string](#string) |  | The path of the file. e.g. `2.2/V0001_create_table.sql`. |
 | type | [Release.File.Type](#bytebase-v1-Release-File-Type) |  | The type of the file. |
 | version | [string](#string) |  |  |
-| change_type | [Release.File.ChangeType](#bytebase-v1-Release-File-ChangeType) |  | The change type of the file. For versioned files, it is the change type of the file. For declarative files, this field is always DDL, thus meaningless. |
+| migration_type | [Release.File.MigrationType](#bytebase-v1-Release-File-MigrationType) |  | The migration type of the file. For versioned files, it is the migration type of the file. For declarative files, this field is always DDL, thus meaningless. |
 | sheet | [string](#string) |  | For inputs, we must either use `sheet` or `statement`. For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
 
 The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
@@ -9185,14 +9199,14 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 
 
 
-<a name="bytebase-v1-Release-File-ChangeType"></a>
+<a name="bytebase-v1-Release-File-MigrationType"></a>
 
-### Release.File.ChangeType
+### Release.File.MigrationType
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| CHANGE_TYPE_UNSPECIFIED | 0 |  |
+| MIGRATION_TYPE_UNSPECIFIED | 0 |  |
 | DDL | 1 |  |
 | DDL_GHOST | 2 |  |
 | DML | 3 |  |

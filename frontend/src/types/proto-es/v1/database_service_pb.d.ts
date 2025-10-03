@@ -3194,6 +3194,11 @@ export declare type Changelog = Message<"bytebase.v1.Changelog"> & {
    * @generated from field: bytebase.v1.Changelog.Type type = 17;
    */
   type: Changelog_Type;
+
+  /**
+   * @generated from field: bytebase.v1.Changelog.MigrationType migration_type = 18;
+   */
+  migrationType: Changelog_MigrationType;
 };
 
 /**
@@ -3252,25 +3257,53 @@ export enum Changelog_Type {
   MIGRATE = 2,
 
   /**
-   * @generated from enum value: MIGRATE_SDL = 3;
+   * @generated from enum value: SDL = 3;
    */
-  MIGRATE_SDL = 3,
-
-  /**
-   * @generated from enum value: MIGRATE_GHOST = 4;
-   */
-  MIGRATE_GHOST = 4,
-
-  /**
-   * @generated from enum value: DATA = 6;
-   */
-  DATA = 6,
+  SDL = 3,
 }
 
 /**
  * Describes the enum bytebase.v1.Changelog.Type.
  */
 export declare const Changelog_TypeSchema: GenEnum<Changelog_Type>;
+
+/**
+ * MigrationType is the type for imperative schema migration.
+ *
+ * @generated from enum bytebase.v1.Changelog.MigrationType
+ */
+export enum Changelog_MigrationType {
+  /**
+   * @generated from enum value: MIGRATION_TYPE_UNSPECIFIED = 0;
+   */
+  MIGRATION_TYPE_UNSPECIFIED = 0,
+
+  /**
+   * Used for DDL changes.
+   *
+   * @generated from enum value: DDL = 1;
+   */
+  DDL = 1,
+
+  /**
+   * Used for DML changes.
+   *
+   * @generated from enum value: DML = 2;
+   */
+  DML = 2,
+
+  /**
+   * Used for DDL changes using gh-ost.
+   *
+   * @generated from enum value: GHOST = 3;
+   */
+  GHOST = 3,
+}
+
+/**
+ * Describes the enum bytebase.v1.Changelog.MigrationType.
+ */
+export declare const Changelog_MigrationTypeSchema: GenEnum<Changelog_MigrationType>;
 
 /**
  * @generated from message bytebase.v1.GetSchemaStringRequest

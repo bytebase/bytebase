@@ -81,10 +81,10 @@ func TestGitOpsCheck(t *testing.T) {
 		Title: "GitOps Check Release v1.0",
 		Files: []*v1pb.Release_File{
 			{
-				Path:       "migrations/001__create_users_table.sql",
-				Type:       v1pb.Release_File_VERSIONED,
-				Version:    "001",
-				ChangeType: v1pb.Release_File_DDL,
+				Path:          "migrations/001__create_users_table.sql",
+				Type:          v1pb.Release_File_VERSIONED,
+				Version:       "001",
+				MigrationType: v1pb.Release_File_DDL,
 				Statement: []byte(`CREATE TABLE users (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
 					username TEXT NOT NULL UNIQUE,
@@ -93,11 +93,11 @@ func TestGitOpsCheck(t *testing.T) {
 				);`),
 			},
 			{
-				Path:       "migrations/002__add_email_index.sql",
-				Type:       v1pb.Release_File_VERSIONED,
-				Version:    "002",
-				ChangeType: v1pb.Release_File_DDL,
-				Statement:  []byte(`CREATE INDEX idx_users_email ON users(email);`),
+				Path:          "migrations/002__add_email_index.sql",
+				Type:          v1pb.Release_File_VERSIONED,
+				Version:       "002",
+				MigrationType: v1pb.Release_File_DDL,
+				Statement:     []byte(`CREATE INDEX idx_users_email ON users(email);`),
 			},
 		},
 	}
@@ -202,10 +202,10 @@ func TestGitOpsRollout(t *testing.T) {
 			Title: "GitOps Rollout Release v1.0",
 			Files: []*v1pb.Release_File{
 				{
-					Path:       "migrations/001__create_products_table.sql",
-					Type:       v1pb.Release_File_VERSIONED,
-					Version:    "001",
-					ChangeType: v1pb.Release_File_DDL,
+					Path:          "migrations/001__create_products_table.sql",
+					Type:          v1pb.Release_File_VERSIONED,
+					Version:       "001",
+					MigrationType: v1pb.Release_File_DDL,
 					Statement: []byte(`CREATE TABLE products (
 						id INTEGER PRIMARY KEY AUTOINCREMENT,
 						name TEXT NOT NULL,
@@ -408,30 +408,30 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 			Title: "GitOps Multi-Target Release v1.0",
 			Files: []*v1pb.Release_File{
 				{
-					Path:       "migrations/1.0.0__create_table_one.sql",
-					Type:       v1pb.Release_File_VERSIONED,
-					Version:    "1.0.0",
-					ChangeType: v1pb.Release_File_DDL,
+					Path:          "migrations/1.0.0__create_table_one.sql",
+					Type:          v1pb.Release_File_VERSIONED,
+					Version:       "1.0.0",
+					MigrationType: v1pb.Release_File_DDL,
 					Statement: []byte(`CREATE TABLE table_one (
 						id INTEGER PRIMARY KEY AUTOINCREMENT,
 						name TEXT NOT NULL
 					);`),
 				},
 				{
-					Path:       "migrations/1.0.1__create_table_two.sql",
-					Type:       v1pb.Release_File_VERSIONED,
-					Version:    "1.0.1",
-					ChangeType: v1pb.Release_File_DDL,
+					Path:          "migrations/1.0.1__create_table_two.sql",
+					Type:          v1pb.Release_File_VERSIONED,
+					Version:       "1.0.1",
+					MigrationType: v1pb.Release_File_DDL,
 					Statement: []byte(`CREATE TABLE table_two (
 						id INTEGER PRIMARY KEY AUTOINCREMENT,
 						value TEXT NOT NULL
 					);`),
 				},
 				{
-					Path:       "migrations/1.0.2__create_table_three.sql",
-					Type:       v1pb.Release_File_VERSIONED,
-					Version:    "1.0.2",
-					ChangeType: v1pb.Release_File_DDL,
+					Path:          "migrations/1.0.2__create_table_three.sql",
+					Type:          v1pb.Release_File_VERSIONED,
+					Version:       "1.0.2",
+					MigrationType: v1pb.Release_File_DDL,
 					Statement: []byte(`CREATE TABLE table_three (
 						id INTEGER PRIMARY KEY AUTOINCREMENT,
 						data TEXT NULL
@@ -661,10 +661,10 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 		Title: "Original Release v1.0.0",
 		Files: []*v1pb.Release_File{
 			{
-				Path:       "migrations/1.0.0__create_users_table.sql",
-				Type:       v1pb.Release_File_VERSIONED,
-				Version:    "1.0.0",
-				ChangeType: v1pb.Release_File_DDL,
+				Path:          "migrations/1.0.0__create_users_table.sql",
+				Type:          v1pb.Release_File_VERSIONED,
+				Version:       "1.0.0",
+				MigrationType: v1pb.Release_File_DDL,
 				Statement: []byte(`CREATE TABLE users (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
 					username TEXT NOT NULL,
@@ -736,10 +736,10 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 		Title: "Modified Release v1.0.0",
 		Files: []*v1pb.Release_File{
 			{
-				Path:       "migrations/1.0.0__create_users_table.sql",
-				Type:       v1pb.Release_File_VERSIONED,
-				Version:    "1.0.0",
-				ChangeType: v1pb.Release_File_DDL,
+				Path:          "migrations/1.0.0__create_users_table.sql",
+				Type:          v1pb.Release_File_VERSIONED,
+				Version:       "1.0.0",
+				MigrationType: v1pb.Release_File_DDL,
 				Statement: []byte(`CREATE TABLE users (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
 					username TEXT NOT NULL,

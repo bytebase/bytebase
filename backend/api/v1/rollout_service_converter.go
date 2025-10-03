@@ -731,7 +731,7 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 	case storepb.Task_DATABASE_MIGRATE:
 		// Handle DATABASE_MIGRATE based on migrate_type
 		switch task.Payload.GetMigrateType() {
-		case storepb.Task_DDL, storepb.Task_GHOST:
+		case storepb.Task_DDL, storepb.Task_GHOST, storepb.Task_MIGRATE_TYPE_UNSPECIFIED:
 			return convertToTaskFromSchemaUpdate(ctx, s, project, task)
 		case storepb.Task_DML:
 			return convertToTaskFromDataUpdate(ctx, s, project, task)

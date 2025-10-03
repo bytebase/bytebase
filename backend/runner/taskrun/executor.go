@@ -496,6 +496,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 	}
 
 	// create pending changelog
+	changelogType, migrationType := convertTaskType(mc.task)
 	changelogUID, err := stores.CreateChangelog(ctx, &store.ChangelogMessage{
 		InstanceID:         mc.database.InstanceID,
 		DatabaseName:       mc.database.DatabaseName,
@@ -509,8 +510,9 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 			ChangedResources: mc.changeHistoryPayload.GetChangedResources(),
 			Sheet:            mc.sheetName,
 			Version:          mc.version,
-			Type:             convertTaskType(mc.task),
+			Type:             changelogType,
 			GitCommit:        mc.profile.GitCommit,
+			MigrationType:    migrationType,
 		}})
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to create changelog")
@@ -618,30 +620,32 @@ func shouldUpdateVersion(currentVersion, newVersion string) bool {
 	return current.LessThan(nv)
 }
 
-func convertTaskType(t *store.TaskMessage) storepb.ChangelogPayload_Type {
+func convertTaskType(t *store.TaskMessage) (storepb.ChangelogPayload_Type, storepb.ChangelogPayload_MigrationType) {
 	//exhaustive:enforce
 	switch t.Type {
 	case storepb.Task_DATABASE_MIGRATE:
-		// Determine changelog type based on migrate_type
+		// Determine migration type based on migrate_type
 		switch t.Payload.GetMigrateType() {
 		case storepb.Task_DML:
-			return storepb.ChangelogPayload_DATA
+			return storepb.ChangelogPayload_MIGRATE, storepb.ChangelogPayload_DML
 		case storepb.Task_DDL:
-			return storepb.ChangelogPayload_MIGRATE
+			return storepb.ChangelogPayload_MIGRATE, storepb.ChangelogPayload_DDL
 		case storepb.Task_GHOST:
-			return storepb.ChangelogPayload_MIGRATE_GHOST
+			return storepb.ChangelogPayload_MIGRATE, storepb.ChangelogPayload_GHOST
+		case storepb.Task_MIGRATE_TYPE_UNSPECIFIED:
+			return storepb.ChangelogPayload_MIGRATE, storepb.ChangelogPayload_MIGRATION_TYPE_UNSPECIFIED
 		default:
-			return storepb.ChangelogPayload_TYPE_UNSPECIFIED
+			return storepb.ChangelogPayload_MIGRATE, storepb.ChangelogPayload_MIGRATION_TYPE_UNSPECIFIED
 		}
 	case storepb.Task_DATABASE_SDL:
-		return storepb.ChangelogPayload_MIGRATE_SDL
+		return storepb.ChangelogPayload_SDL, storepb.ChangelogPayload_MIGRATION_TYPE_UNSPECIFIED
 	case
 		storepb.Task_TASK_TYPE_UNSPECIFIED,
 		storepb.Task_DATABASE_CREATE,
 		storepb.Task_DATABASE_EXPORT:
-		return storepb.ChangelogPayload_TYPE_UNSPECIFIED
+		return storepb.ChangelogPayload_TYPE_UNSPECIFIED, storepb.ChangelogPayload_MIGRATION_TYPE_UNSPECIFIED
 	default:
-		return storepb.ChangelogPayload_TYPE_UNSPECIFIED
+		return storepb.ChangelogPayload_TYPE_UNSPECIFIED, storepb.ChangelogPayload_MIGRATION_TYPE_UNSPECIFIED
 	}
 }
 

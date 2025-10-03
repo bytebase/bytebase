@@ -767,6 +767,10 @@
               
               
                 <li>
+                  <a href="#bytebase.v1.Changelog.MigrationType"><span class="badge">E</span>Changelog.MigrationType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Changelog.Status"><span class="badge">E</span>Changelog.Status</a>
                 </li>
               
@@ -2294,7 +2298,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Release.File.ChangeType"><span class="badge">E</span>Release.File.ChangeType</a>
+                  <a href="#bytebase.v1.Release.File.MigrationType"><span class="badge">E</span>Release.File.MigrationType</a>
                 </li>
               
                 <li>
@@ -6709,6 +6713,13 @@ Or present but not found if deleted </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>migration_type</td>
+                  <td><a href="#bytebase.v1.Changelog.MigrationType">Changelog.MigrationType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -9686,6 +9697,41 @@ In this situation, `update_mask` is ignored. </p></td>
       
 
       
+        <h3 id="bytebase.v1.Changelog.MigrationType">Changelog.MigrationType</h3>
+        <p>MigrationType is the type for imperative schema migration.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MIGRATION_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL</td>
+                <td>1</td>
+                <td><p>Used for DDL changes.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DML</td>
+                <td>2</td>
+                <td><p>Used for DML changes.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GHOST</td>
+                <td>3</td>
+                <td><p>Used for DDL changes using gh-ost.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.Changelog.Status">Changelog.Status</h3>
         <p></p>
         <table class="enum-table">
@@ -9748,20 +9794,8 @@ In this situation, `update_mask` is ignored. </p></td>
               </tr>
             
               <tr>
-                <td>MIGRATE_SDL</td>
+                <td>SDL</td>
                 <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE_GHOST</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DATA</td>
-                <td>6</td>
                 <td><p></p></td>
               </tr>
             
@@ -25427,11 +25461,11 @@ If the digest is not empty, it must be unique in the project. Otherwise, an ALRE
                 </tr>
               
                 <tr>
-                  <td>change_type</td>
-                  <td><a href="#bytebase.v1.Release.File.ChangeType">Release.File.ChangeType</a></td>
+                  <td>migration_type</td>
+                  <td><a href="#bytebase.v1.Release.File.MigrationType">Release.File.MigrationType</a></td>
                   <td></td>
-                  <td><p>The change type of the file.
-For versioned files, it is the change type of the file.
+                  <td><p>The migration type of the file.
+For versioned files, it is the migration type of the file.
 For declarative files, this field is always DDL, thus meaningless. </p></td>
                 </tr>
               
@@ -25689,7 +25723,7 @@ In this situation, `update_mask` is ignored. </p></td>
           </tbody>
         </table>
       
-        <h3 id="bytebase.v1.Release.File.ChangeType">Release.File.ChangeType</h3>
+        <h3 id="bytebase.v1.Release.File.MigrationType">Release.File.MigrationType</h3>
         <p></p>
         <table class="enum-table">
           <thead>
@@ -25698,7 +25732,7 @@ In this situation, `update_mask` is ignored. </p></td>
           <tbody>
             
               <tr>
-                <td>CHANGE_TYPE_UNSPECIFIED</td>
+                <td>MIGRATION_TYPE_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>
