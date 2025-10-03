@@ -434,12 +434,14 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 				// Determine migrate type based on file change type
 				var migrateType storepb.Task_MigrateType
 				switch file.MigrationType {
-				case storepb.ReleasePayload_File_DDL, storepb.ReleasePayload_File_MIGRATION_TYPE_UNSPECIFIED:
+				case storepb.ReleasePayload_File_DDL:
 					migrateType = storepb.Task_DDL
 				case storepb.ReleasePayload_File_DDL_GHOST:
 					migrateType = storepb.Task_GHOST
 				case storepb.ReleasePayload_File_DML:
 					migrateType = storepb.Task_DML
+				case storepb.ReleasePayload_File_MIGRATION_TYPE_UNSPECIFIED:
+					migrateType = storepb.Task_MIGRATE_TYPE_UNSPECIFIED
 				default:
 					return nil, errors.Errorf("unsupported release file migration type %q", file.MigrationType)
 				}
