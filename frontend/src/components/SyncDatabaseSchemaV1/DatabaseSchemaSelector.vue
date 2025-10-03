@@ -85,7 +85,7 @@ import { ALLOWED_ENGINES, type ChangelogSourceSchema } from "./types";
 
 const ALLOWED_CHANGELOG_TYPES: Changelog_Type[] = [
   Changelog_Type.BASELINE,
-  Changelog_Type.MIGRATE,
+  Changelog_Type.DDL,
 ];
 
 const props = defineProps<{

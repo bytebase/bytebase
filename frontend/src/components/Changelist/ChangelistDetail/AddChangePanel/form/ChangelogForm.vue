@@ -26,8 +26,8 @@
         style="max-width: max-content"
       />
       <NCheckboxGroup v-model:value="state.changelogTypes">
-        <NCheckbox :value="Changelog_Type.MIGRATE">DDL</NCheckbox>
-        <NCheckbox :value="Changelog_Type.DATA">DML</NCheckbox>
+        <NCheckbox :value="Changelog_Type.DDL">DDL</NCheckbox>
+        <NCheckbox :value="Changelog_Type.DML">DML</NCheckbox>
       </NCheckboxGroup>
     </div>
     <ChangelogDataTable
@@ -95,7 +95,7 @@ const state = reactive<LocalState>({
   databaseName: undefined,
   changelogList: [],
   affectedTable: EmptyAffectedTable,
-  changelogTypes: [Changelog_Type.DATA, Changelog_Type.MIGRATE],
+  changelogTypes: [Changelog_Type.DML, Changelog_Type.DDL],
   detailChangelogName: undefined,
 });
 

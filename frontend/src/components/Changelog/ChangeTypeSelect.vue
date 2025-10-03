@@ -24,11 +24,11 @@ const emit = defineEmits<{
 const options = computed(() => {
   return [
     {
-      value: Changelog_Type.MIGRATE,
+      value: Changelog_Type.DDL,
       label: "DDL",
     },
     {
-      value: Changelog_Type.DATA,
+      value: Changelog_Type.DML,
       label: "DML",
     },
   ];
