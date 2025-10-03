@@ -88,10 +88,11 @@ func getPlanCheckRunsFromSpec(ctx context.Context, s *store.Store, plan *store.P
 func getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ChangeDatabaseConfig) ([]*store.PlanCheckRunMessage, error) {
 	switch config.Type {
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-		// Only DDL and DML migrate types are supported for database group targets
+		// Only DDL, DML, and MIGRATE_TYPE_UNSPECIFIED (treated as DDL) migrate types are supported for database group targets
 		switch config.MigrateType {
 		case storepb.PlanConfig_ChangeDatabaseConfig_DDL:
 		case storepb.PlanConfig_ChangeDatabaseConfig_DML:
+		case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_TYPE_UNSPECIFIED:
 		default:
 			return nil, errors.Errorf("unsupported migrate type %q for database group target", config.MigrateType)
 		}

@@ -46,9 +46,7 @@ type StatementAdviseExecutor struct {
 
 // Run will run the plan check statement advise executor once, and run its sub-advisors one-by-one.
 func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
-	if config.ChangeDatabaseType == storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED {
-		return nil, errors.Errorf("change database type is unspecified")
-	}
+	changeType := config.ChangeDatabaseType
 
 	sheetUID := int(config.SheetUid)
 	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
@@ -72,7 +70,6 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 	if err != nil {
 		return nil, err
 	}
-	changeType := config.ChangeDatabaseType
 	enablePriorBackup := config.EnablePriorBackup
 
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &config.InstanceId})

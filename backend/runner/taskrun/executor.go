@@ -653,8 +653,7 @@ func convertTaskType(t *store.TaskMessage) (storepb.ChangelogPayload_Type, store
 func isChangeDatabaseTask(task *store.TaskMessage) bool {
 	switch task.Type {
 	case storepb.Task_DATABASE_MIGRATE:
-		// All DATABASE_MIGRATE tasks involve changing a database except possibly UNSPECIFIED
-		return task.Payload.GetMigrateType() != storepb.Task_MIGRATE_TYPE_UNSPECIFIED
+		return true
 	case storepb.Task_DATABASE_SDL:
 		return true
 	case storepb.Task_DATABASE_CREATE,
