@@ -51,11 +51,11 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 			return []*v1pb.Release_File{
 				{
 					// use file pattern as the path
-					Path:       w.FilePattern,
-					Type:       v1pb.Release_File_DECLARATIVE,
-					Version:    w.CurrentTime.Format(versionFormat),
-					ChangeType: v1pb.Release_File_DDL,
-					Statement:  contents,
+					Path:          w.FilePattern,
+					Type:          v1pb.Release_File_DECLARATIVE,
+					Version:       w.CurrentTime.Format(versionFormat),
+					MigrationType: v1pb.Release_File_DDL,
+					Statement:     contents,
 				},
 			}, hex.EncodeToString(h.Sum(nil)), nil
 		}
@@ -73,11 +73,11 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 				return nil, "", errors.Wrapf(err, "failed to write file content")
 			}
 			files = append(files, &v1pb.Release_File{
-				Path:       m,
-				Type:       v1pb.Release_File_DECLARATIVE,
-				Version:    w.CurrentTime.Format(versionFormat),
-				ChangeType: v1pb.Release_File_DDL,
-				Statement:  content,
+				Path:          m,
+				Type:          v1pb.Release_File_DECLARATIVE,
+				Version:       w.CurrentTime.Format(versionFormat),
+				MigrationType: v1pb.Release_File_DDL,
+				Statement:     content,
 			})
 		}
 		return files, hex.EncodeToString(h.Sum(nil)), nil
@@ -91,7 +91,7 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 		}
 
 		base := strings.TrimSuffix(filepath.Base(m), filepath.Ext(m))
-		var t v1pb.Release_File_ChangeType
+		var t v1pb.Release_File_MigrationType
 		switch {
 		case strings.HasSuffix(base, "dml"):
 			t = v1pb.Release_File_DML
@@ -115,11 +115,11 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 			return nil, "", errors.Wrapf(err, "failed to write file content")
 		}
 		files = append(files, &v1pb.Release_File{
-			Path:       m,
-			Type:       v1pb.Release_File_VERSIONED,
-			Version:    version,
-			ChangeType: t,
-			Statement:  content,
+			Path:          m,
+			Type:          v1pb.Release_File_VERSIONED,
+			Version:       version,
+			MigrationType: t,
+			Statement:     content,
 		})
 	}
 

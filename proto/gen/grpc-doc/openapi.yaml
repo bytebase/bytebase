@@ -12437,16 +12437,16 @@ components:
                     format: enum
                 version:
                     type: string
-                changeType:
+                migrationType:
                     enum:
-                        - CHANGE_TYPE_UNSPECIFIED
+                        - MIGRATION_TYPE_UNSPECIFIED
                         - DDL
                         - DDL_GHOST
                         - DML
                     type: string
                     description: |-
-                        The change type of the file.
-                         For versioned files, it is the change type of the file.
+                        The migration type of the file.
+                         For versioned files, it is the migration type of the file.
                          For declarative files, this field is always DDL, thus meaningless.
                     format: enum
                 sheet:

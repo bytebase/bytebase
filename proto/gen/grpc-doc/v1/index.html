@@ -2298,7 +2298,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Release.File.ChangeType"><span class="badge">E</span>Release.File.ChangeType</a>
+                  <a href="#bytebase.v1.Release.File.MigrationType"><span class="badge">E</span>Release.File.MigrationType</a>
                 </li>
               
                 <li>
@@ -25461,11 +25461,11 @@ If the digest is not empty, it must be unique in the project. Otherwise, an ALRE
                 </tr>
               
                 <tr>
-                  <td>change_type</td>
-                  <td><a href="#bytebase.v1.Release.File.ChangeType">Release.File.ChangeType</a></td>
+                  <td>migration_type</td>
+                  <td><a href="#bytebase.v1.Release.File.MigrationType">Release.File.MigrationType</a></td>
                   <td></td>
-                  <td><p>The change type of the file.
-For versioned files, it is the change type of the file.
+                  <td><p>The migration type of the file.
+For versioned files, it is the migration type of the file.
 For declarative files, this field is always DDL, thus meaningless. </p></td>
                 </tr>
               
@@ -25723,7 +25723,7 @@ In this situation, `update_mask` is ignored. </p></td>
           </tbody>
         </table>
       
-        <h3 id="bytebase.v1.Release.File.ChangeType">Release.File.ChangeType</h3>
+        <h3 id="bytebase.v1.Release.File.MigrationType">Release.File.MigrationType</h3>
         <p></p>
         <table class="enum-table">
           <thead>
@@ -25732,7 +25732,7 @@ In this situation, `update_mask` is ignored. </p></td>
           <tbody>
             
               <tr>
-                <td>CHANGE_TYPE_UNSPECIFIED</td>
+                <td>MIGRATION_TYPE_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>

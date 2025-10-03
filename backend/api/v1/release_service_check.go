@@ -223,7 +223,7 @@ loop:
 				}
 
 				changeType := storepb.PlanCheckRunConfig_DDL
-				switch file.ChangeType {
+				switch file.MigrationType {
 				case v1pb.Release_File_DDL_GHOST:
 					changeType = storepb.PlanCheckRunConfig_DDL_GHOST
 				case v1pb.Release_File_DML:

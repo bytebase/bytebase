@@ -126,55 +126,55 @@ func (Release_File_Type) EnumDescriptor() ([]byte, []int) {
 	return file_v1_release_service_proto_rawDescGZIP(), []int{11, 0, 0}
 }
 
-type Release_File_ChangeType int32
+type Release_File_MigrationType int32
 
 const (
-	Release_File_CHANGE_TYPE_UNSPECIFIED Release_File_ChangeType = 0
-	Release_File_DDL                     Release_File_ChangeType = 1
-	Release_File_DDL_GHOST               Release_File_ChangeType = 2
-	Release_File_DML                     Release_File_ChangeType = 3
+	Release_File_MIGRATION_TYPE_UNSPECIFIED Release_File_MigrationType = 0
+	Release_File_DDL                        Release_File_MigrationType = 1
+	Release_File_DDL_GHOST                  Release_File_MigrationType = 2
+	Release_File_DML                        Release_File_MigrationType = 3
 )
 
-// Enum value maps for Release_File_ChangeType.
+// Enum value maps for Release_File_MigrationType.
 var (
-	Release_File_ChangeType_name = map[int32]string{
-		0: "CHANGE_TYPE_UNSPECIFIED",
+	Release_File_MigrationType_name = map[int32]string{
+		0: "MIGRATION_TYPE_UNSPECIFIED",
 		1: "DDL",
 		2: "DDL_GHOST",
 		3: "DML",
 	}
-	Release_File_ChangeType_value = map[string]int32{
-		"CHANGE_TYPE_UNSPECIFIED": 0,
-		"DDL":                     1,
-		"DDL_GHOST":               2,
-		"DML":                     3,
+	Release_File_MigrationType_value = map[string]int32{
+		"MIGRATION_TYPE_UNSPECIFIED": 0,
+		"DDL":                        1,
+		"DDL_GHOST":                  2,
+		"DML":                        3,
 	}
 )
 
-func (x Release_File_ChangeType) Enum() *Release_File_ChangeType {
-	p := new(Release_File_ChangeType)
+func (x Release_File_MigrationType) Enum() *Release_File_MigrationType {
+	p := new(Release_File_MigrationType)
 	*p = x
 	return p
 }
 
-func (x Release_File_ChangeType) String() string {
+func (x Release_File_MigrationType) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (Release_File_ChangeType) Descriptor() protoreflect.EnumDescriptor {
+func (Release_File_MigrationType) Descriptor() protoreflect.EnumDescriptor {
 	return file_v1_release_service_proto_enumTypes[2].Descriptor()
 }
 
-func (Release_File_ChangeType) Type() protoreflect.EnumType {
+func (Release_File_MigrationType) Type() protoreflect.EnumType {
 	return &file_v1_release_service_proto_enumTypes[2]
 }
 
-func (x Release_File_ChangeType) Number() protoreflect.EnumNumber {
+func (x Release_File_MigrationType) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use Release_File_ChangeType.Descriptor instead.
-func (Release_File_ChangeType) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use Release_File_MigrationType.Descriptor instead.
+func (Release_File_MigrationType) EnumDescriptor() ([]byte, []int) {
 	return file_v1_release_service_proto_rawDescGZIP(), []int{11, 0, 1}
 }
 
@@ -1023,10 +1023,10 @@ type Release_File struct {
 	// The type of the file.
 	Type    Release_File_Type `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.v1.Release_File_Type" json:"type,omitempty"`
 	Version string            `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
-	// The change type of the file.
-	// For versioned files, it is the change type of the file.
+	// The migration type of the file.
+	// For versioned files, it is the migration type of the file.
 	// For declarative files, this field is always DDL, thus meaningless.
-	ChangeType Release_File_ChangeType `protobuf:"varint,9,opt,name=change_type,json=changeType,proto3,enum=bytebase.v1.Release_File_ChangeType" json:"change_type,omitempty"`
+	MigrationType Release_File_MigrationType `protobuf:"varint,9,opt,name=migration_type,json=migrationType,proto3,enum=bytebase.v1.Release_File_MigrationType" json:"migration_type,omitempty"`
 	// For inputs, we must either use `sheet` or `statement`.
 	// For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
 	//
@@ -1101,11 +1101,11 @@ func (x *Release_File) GetVersion() string {
 	return ""
 }
 
-func (x *Release_File) GetChangeType() Release_File_ChangeType {
+func (x *Release_File) GetMigrationType() Release_File_MigrationType {
 	if x != nil {
-		return x.ChangeType
+		return x.MigrationType
 	}
-	return Release_File_CHANGE_TYPE_UNSPECIFIED
+	return Release_File_MIGRATION_TYPE_UNSPECIFIED
 }
 
 func (x *Release_File) GetSheet() string {
@@ -1254,7 +1254,7 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03LOW\x10\x01\x12\f\n" +
 	"\bMODERATE\x10\x02\x12\b\n" +
-	"\x04HIGH\x10\x03\"\xcf\a\n" +
+	"\x04HIGH\x10\x03\"\xde\a\n" +
 	"\aRelease\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12/\n" +
@@ -1265,14 +1265,13 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12-\n" +
 	"\x05state\x18\a \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12\x16\n" +
-	"\x06digest\x18\b \x01(\tR\x06digest\x1a\xea\x03\n" +
+	"\x06digest\x18\b \x01(\tR\x06digest\x1a\xf9\x03\n" +
 	"\x04File\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x122\n" +
 	"\x04type\x18\x05 \x01(\x0e2\x1e.bytebase.v1.Release.File.TypeR\x04type\x12\x18\n" +
-	"\aversion\x18\x06 \x01(\tR\aversion\x12E\n" +
-	"\vchange_type\x18\t \x01(\x0e2$.bytebase.v1.Release.File.ChangeTypeR\n" +
-	"changeType\x12-\n" +
+	"\aversion\x18\x06 \x01(\tR\aversion\x12N\n" +
+	"\x0emigration_type\x18\t \x01(\x0e2'.bytebase.v1.Release.File.MigrationTypeR\rmigrationType\x12-\n" +
 	"\x05sheet\x18\x03 \x01(\tB\x17\xfaA\x14\n" +
 	"\x12bytebase.com/SheetR\x05sheet\x12\x1c\n" +
 	"\tstatement\x18\a \x01(\fR\tstatement\x12&\n" +
@@ -1281,10 +1280,9 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tVERSIONED\x10\x01\x12\x0f\n" +
-	"\vDECLARATIVE\x10\x02\"J\n" +
-	"\n" +
-	"ChangeType\x12\x1b\n" +
-	"\x17CHANGE_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
+	"\vDECLARATIVE\x10\x02\"P\n" +
+	"\rMigrationType\x12\x1e\n" +
+	"\x1aMIGRATION_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03DDL\x10\x01\x12\r\n" +
 	"\tDDL_GHOST\x10\x02\x12\a\n" +
 	"\x03DML\x10\x03\x1aN\n" +
@@ -1321,7 +1319,7 @@ var file_v1_release_service_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_v1_release_service_proto_goTypes = []any{
 	(CheckReleaseResponse_RiskLevel)(0),      // 0: bytebase.v1.CheckReleaseResponse.RiskLevel
 	(Release_File_Type)(0),                   // 1: bytebase.v1.Release.File.Type
-	(Release_File_ChangeType)(0),             // 2: bytebase.v1.Release.File.ChangeType
+	(Release_File_MigrationType)(0),          // 2: bytebase.v1.Release.File.MigrationType
 	(*GetReleaseRequest)(nil),                // 3: bytebase.v1.GetReleaseRequest
 	(*ListReleasesRequest)(nil),              // 4: bytebase.v1.ListReleasesRequest
 	(*ListReleasesResponse)(nil),             // 5: bytebase.v1.ListReleasesResponse
@@ -1360,7 +1358,7 @@ var file_v1_release_service_proto_depIdxs = []int32{
 	21, // 12: bytebase.v1.CheckReleaseResponse.CheckResult.advices:type_name -> bytebase.v1.Advice
 	0,  // 13: bytebase.v1.CheckReleaseResponse.CheckResult.risk_level:type_name -> bytebase.v1.CheckReleaseResponse.RiskLevel
 	1,  // 14: bytebase.v1.Release.File.type:type_name -> bytebase.v1.Release.File.Type
-	2,  // 15: bytebase.v1.Release.File.change_type:type_name -> bytebase.v1.Release.File.ChangeType
+	2,  // 15: bytebase.v1.Release.File.migration_type:type_name -> bytebase.v1.Release.File.MigrationType
 	22, // 16: bytebase.v1.Release.VCSSource.vcs_type:type_name -> bytebase.v1.VCSType
 	3,  // 17: bytebase.v1.ReleaseService.GetRelease:input_type -> bytebase.v1.GetReleaseRequest
 	4,  // 18: bytebase.v1.ReleaseService.ListReleases:input_type -> bytebase.v1.ListReleasesRequest

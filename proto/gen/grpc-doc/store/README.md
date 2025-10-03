@@ -246,7 +246,7 @@
     - [ReleasePayload.File](#bytebase-store-ReleasePayload-File)
     - [ReleasePayload.VCSSource](#bytebase-store-ReleasePayload-VCSSource)
   
-    - [ReleasePayload.File.ChangeType](#bytebase-store-ReleasePayload-File-ChangeType)
+    - [ReleasePayload.File.MigrationType](#bytebase-store-ReleasePayload-File-MigrationType)
     - [ReleasePayload.File.Type](#bytebase-store-ReleasePayload-File-Type)
   
 - [store/review_config.proto](#store_review_config-proto)
@@ -3978,7 +3978,7 @@ QueryDataPolicy is the policy configuration for querying data.
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | type | [ReleasePayload.File.Type](#bytebase-store-ReleasePayload-File-Type) |  |  |
 | version | [string](#string) |  |  |
-| change_type | [ReleasePayload.File.ChangeType](#bytebase-store-ReleasePayload-File-ChangeType) |  |  |
+| migration_type | [ReleasePayload.File.MigrationType](#bytebase-store-ReleasePayload-File-MigrationType) |  |  |
 
 
 
@@ -4003,14 +4003,14 @@ QueryDataPolicy is the policy configuration for querying data.
  
 
 
-<a name="bytebase-store-ReleasePayload-File-ChangeType"></a>
+<a name="bytebase-store-ReleasePayload-File-MigrationType"></a>
 
-### ReleasePayload.File.ChangeType
+### ReleasePayload.File.MigrationType
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| CHANGE_TYPE_UNSPECIFIED | 0 |  |
+| MIGRATION_TYPE_UNSPECIFIED | 0 |  |
 | DDL | 1 |  |
 | DDL_GHOST | 2 |  |
 | DML | 3 |  |

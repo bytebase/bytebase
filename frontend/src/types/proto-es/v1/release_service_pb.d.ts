@@ -499,13 +499,13 @@ export declare type Release_File = Message<"bytebase.v1.Release.File"> & {
   version: string;
 
   /**
-   * The change type of the file.
-   * For versioned files, it is the change type of the file.
+   * The migration type of the file.
+   * For versioned files, it is the migration type of the file.
    * For declarative files, this field is always DDL, thus meaningless.
    *
-   * @generated from field: bytebase.v1.Release.File.ChangeType change_type = 9;
+   * @generated from field: bytebase.v1.Release.File.MigrationType migration_type = 9;
    */
-  changeType: Release_File_ChangeType;
+  migrationType: Release_File_MigrationType;
 
   /**
    * For inputs, we must either use `sheet` or `statement`.
@@ -572,13 +572,13 @@ export enum Release_File_Type {
 export declare const Release_File_TypeSchema: GenEnum<Release_File_Type>;
 
 /**
- * @generated from enum bytebase.v1.Release.File.ChangeType
+ * @generated from enum bytebase.v1.Release.File.MigrationType
  */
-export enum Release_File_ChangeType {
+export enum Release_File_MigrationType {
   /**
-   * @generated from enum value: CHANGE_TYPE_UNSPECIFIED = 0;
+   * @generated from enum value: MIGRATION_TYPE_UNSPECIFIED = 0;
    */
-  CHANGE_TYPE_UNSPECIFIED = 0,
+  MIGRATION_TYPE_UNSPECIFIED = 0,
 
   /**
    * @generated from enum value: DDL = 1;
@@ -597,9 +597,9 @@ export enum Release_File_ChangeType {
 }
 
 /**
- * Describes the enum bytebase.v1.Release.File.ChangeType.
+ * Describes the enum bytebase.v1.Release.File.MigrationType.
  */
-export declare const Release_File_ChangeTypeSchema: GenEnum<Release_File_ChangeType>;
+export declare const Release_File_MigrationTypeSchema: GenEnum<Release_File_MigrationType>;
 
 /**
  * @generated from message bytebase.v1.Release.VCSSource

@@ -287,10 +287,10 @@ message Release {
     // The type of the file.
     Type type = 5;
     string version = 6;
-    // The change type of the file.
-    // For versioned files, it is the change type of the file.
+    // The migration type of the file.
+    // For versioned files, it is the migration type of the file.
     // For declarative files, this field is always DDL, thus meaningless.
-    ChangeType change_type = 9;
+    MigrationType migration_type = 9;
 
     // For inputs, we must either use `sheet` or `statement`.
     // For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
@@ -311,8 +311,8 @@ message Release {
       DECLARATIVE = 2;
     }
 
-    enum ChangeType {
-      CHANGE_TYPE_UNSPECIFIED = 0;
+    enum MigrationType {
+      MIGRATION_TYPE_UNSPECIFIED = 0;
       DDL = 1;
       DDL_GHOST = 2;
       DML = 3;

@@ -71,55 +71,55 @@ func (ReleasePayload_File_Type) EnumDescriptor() ([]byte, []int) {
 	return file_store_release_proto_rawDescGZIP(), []int{0, 0, 0}
 }
 
-type ReleasePayload_File_ChangeType int32
+type ReleasePayload_File_MigrationType int32
 
 const (
-	ReleasePayload_File_CHANGE_TYPE_UNSPECIFIED ReleasePayload_File_ChangeType = 0
-	ReleasePayload_File_DDL                     ReleasePayload_File_ChangeType = 1
-	ReleasePayload_File_DDL_GHOST               ReleasePayload_File_ChangeType = 2
-	ReleasePayload_File_DML                     ReleasePayload_File_ChangeType = 3
+	ReleasePayload_File_MIGRATION_TYPE_UNSPECIFIED ReleasePayload_File_MigrationType = 0
+	ReleasePayload_File_DDL                        ReleasePayload_File_MigrationType = 1
+	ReleasePayload_File_DDL_GHOST                  ReleasePayload_File_MigrationType = 2
+	ReleasePayload_File_DML                        ReleasePayload_File_MigrationType = 3
 )
 
-// Enum value maps for ReleasePayload_File_ChangeType.
+// Enum value maps for ReleasePayload_File_MigrationType.
 var (
-	ReleasePayload_File_ChangeType_name = map[int32]string{
-		0: "CHANGE_TYPE_UNSPECIFIED",
+	ReleasePayload_File_MigrationType_name = map[int32]string{
+		0: "MIGRATION_TYPE_UNSPECIFIED",
 		1: "DDL",
 		2: "DDL_GHOST",
 		3: "DML",
 	}
-	ReleasePayload_File_ChangeType_value = map[string]int32{
-		"CHANGE_TYPE_UNSPECIFIED": 0,
-		"DDL":                     1,
-		"DDL_GHOST":               2,
-		"DML":                     3,
+	ReleasePayload_File_MigrationType_value = map[string]int32{
+		"MIGRATION_TYPE_UNSPECIFIED": 0,
+		"DDL":                        1,
+		"DDL_GHOST":                  2,
+		"DML":                        3,
 	}
 )
 
-func (x ReleasePayload_File_ChangeType) Enum() *ReleasePayload_File_ChangeType {
-	p := new(ReleasePayload_File_ChangeType)
+func (x ReleasePayload_File_MigrationType) Enum() *ReleasePayload_File_MigrationType {
+	p := new(ReleasePayload_File_MigrationType)
 	*p = x
 	return p
 }
 
-func (x ReleasePayload_File_ChangeType) String() string {
+func (x ReleasePayload_File_MigrationType) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (ReleasePayload_File_ChangeType) Descriptor() protoreflect.EnumDescriptor {
+func (ReleasePayload_File_MigrationType) Descriptor() protoreflect.EnumDescriptor {
 	return file_store_release_proto_enumTypes[1].Descriptor()
 }
 
-func (ReleasePayload_File_ChangeType) Type() protoreflect.EnumType {
+func (ReleasePayload_File_MigrationType) Type() protoreflect.EnumType {
 	return &file_store_release_proto_enumTypes[1]
 }
 
-func (x ReleasePayload_File_ChangeType) Number() protoreflect.EnumNumber {
+func (x ReleasePayload_File_MigrationType) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use ReleasePayload_File_ChangeType.Descriptor instead.
-func (ReleasePayload_File_ChangeType) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use ReleasePayload_File_MigrationType.Descriptor instead.
+func (ReleasePayload_File_MigrationType) EnumDescriptor() ([]byte, []int) {
 	return file_store_release_proto_rawDescGZIP(), []int{0, 0, 1}
 }
 
@@ -193,10 +193,10 @@ type ReleasePayload_File struct {
 	// Format: projects/{project}/sheets/{sheet}
 	Sheet string `protobuf:"bytes,3,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	// The SHA256 hash value of the sheet.
-	SheetSha256   string                         `protobuf:"bytes,4,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
-	Type          ReleasePayload_File_Type       `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.store.ReleasePayload_File_Type" json:"type,omitempty"`
-	Version       string                         `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
-	ChangeType    ReleasePayload_File_ChangeType `protobuf:"varint,7,opt,name=change_type,json=changeType,proto3,enum=bytebase.store.ReleasePayload_File_ChangeType" json:"change_type,omitempty"`
+	SheetSha256   string                            `protobuf:"bytes,4,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
+	Type          ReleasePayload_File_Type          `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.store.ReleasePayload_File_Type" json:"type,omitempty"`
+	Version       string                            `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
+	MigrationType ReleasePayload_File_MigrationType `protobuf:"varint,7,opt,name=migration_type,json=migrationType,proto3,enum=bytebase.store.ReleasePayload_File_MigrationType" json:"migration_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -273,11 +273,11 @@ func (x *ReleasePayload_File) GetVersion() string {
 	return ""
 }
 
-func (x *ReleasePayload_File) GetChangeType() ReleasePayload_File_ChangeType {
+func (x *ReleasePayload_File) GetMigrationType() ReleasePayload_File_MigrationType {
 	if x != nil {
-		return x.ChangeType
+		return x.MigrationType
 	}
-	return ReleasePayload_File_CHANGE_TYPE_UNSPECIFIED
+	return ReleasePayload_File_MIGRATION_TYPE_UNSPECIFIED
 }
 
 type ReleasePayload_VCSSource struct {
@@ -336,12 +336,12 @@ var File_store_release_proto protoreflect.FileDescriptor
 
 const file_store_release_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/release.proto\x12\x0ebytebase.store\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\"\xaf\x05\n" +
+	"\x13store/release.proto\x12\x0ebytebase.store\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\"\xbe\x05\n" +
 	"\x0eReleasePayload\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x129\n" +
 	"\x05files\x18\x02 \x03(\v2#.bytebase.store.ReleasePayload.FileR\x05files\x12G\n" +
 	"\n" +
-	"vcs_source\x18\x03 \x01(\v2(.bytebase.store.ReleasePayload.VCSSourceR\tvcsSource\x1a\xaf\x03\n" +
+	"vcs_source\x18\x03 \x01(\v2(.bytebase.store.ReleasePayload.VCSSourceR\tvcsSource\x1a\xbe\x03\n" +
 	"\x04File\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12-\n" +
@@ -349,16 +349,14 @@ const file_store_release_proto_rawDesc = "" +
 	"\x12bytebase.com/SheetR\x05sheet\x12!\n" +
 	"\fsheet_sha256\x18\x04 \x01(\tR\vsheetSha256\x12<\n" +
 	"\x04type\x18\x05 \x01(\x0e2(.bytebase.store.ReleasePayload.File.TypeR\x04type\x12\x18\n" +
-	"\aversion\x18\x06 \x01(\tR\aversion\x12O\n" +
-	"\vchange_type\x18\a \x01(\x0e2..bytebase.store.ReleasePayload.File.ChangeTypeR\n" +
-	"changeType\"<\n" +
+	"\aversion\x18\x06 \x01(\tR\aversion\x12X\n" +
+	"\x0emigration_type\x18\a \x01(\x0e21.bytebase.store.ReleasePayload.File.MigrationTypeR\rmigrationType\"<\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tVERSIONED\x10\x01\x12\x0f\n" +
-	"\vDECLARATIVE\x10\x02\"J\n" +
-	"\n" +
-	"ChangeType\x12\x1b\n" +
-	"\x17CHANGE_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
+	"\vDECLARATIVE\x10\x02\"P\n" +
+	"\rMigrationType\x12\x1e\n" +
+	"\x1aMIGRATION_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03DDL\x10\x01\x12\r\n" +
 	"\tDDL_GHOST\x10\x02\x12\a\n" +
 	"\x03DML\x10\x03\x1aQ\n" +
@@ -381,18 +379,18 @@ func file_store_release_proto_rawDescGZIP() []byte {
 var file_store_release_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_store_release_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_release_proto_goTypes = []any{
-	(ReleasePayload_File_Type)(0),       // 0: bytebase.store.ReleasePayload.File.Type
-	(ReleasePayload_File_ChangeType)(0), // 1: bytebase.store.ReleasePayload.File.ChangeType
-	(*ReleasePayload)(nil),              // 2: bytebase.store.ReleasePayload
-	(*ReleasePayload_File)(nil),         // 3: bytebase.store.ReleasePayload.File
-	(*ReleasePayload_VCSSource)(nil),    // 4: bytebase.store.ReleasePayload.VCSSource
-	(VCSType)(0),                        // 5: bytebase.store.VCSType
+	(ReleasePayload_File_Type)(0),          // 0: bytebase.store.ReleasePayload.File.Type
+	(ReleasePayload_File_MigrationType)(0), // 1: bytebase.store.ReleasePayload.File.MigrationType
+	(*ReleasePayload)(nil),                 // 2: bytebase.store.ReleasePayload
+	(*ReleasePayload_File)(nil),            // 3: bytebase.store.ReleasePayload.File
+	(*ReleasePayload_VCSSource)(nil),       // 4: bytebase.store.ReleasePayload.VCSSource
+	(VCSType)(0),                           // 5: bytebase.store.VCSType
 }
 var file_store_release_proto_depIdxs = []int32{
 	3, // 0: bytebase.store.ReleasePayload.files:type_name -> bytebase.store.ReleasePayload.File
 	4, // 1: bytebase.store.ReleasePayload.vcs_source:type_name -> bytebase.store.ReleasePayload.VCSSource
 	0, // 2: bytebase.store.ReleasePayload.File.type:type_name -> bytebase.store.ReleasePayload.File.Type
-	1, // 3: bytebase.store.ReleasePayload.File.change_type:type_name -> bytebase.store.ReleasePayload.File.ChangeType
+	1, // 3: bytebase.store.ReleasePayload.File.migration_type:type_name -> bytebase.store.ReleasePayload.File.MigrationType
 	5, // 4: bytebase.store.ReleasePayload.VCSSource.vcs_type:type_name -> bytebase.store.VCSType
 	5, // [5:5] is the sub-list for method output_type
 	5, // [5:5] is the sub-list for method input_type

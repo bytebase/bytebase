@@ -269,7 +269,7 @@ func (x *Release_File) Equal(y *Release_File) bool {
 	if x.Version != y.Version {
 		return false
 	}
-	if x.ChangeType != y.ChangeType {
+	if x.MigrationType != y.MigrationType {
 		return false
 	}
 	if x.Sheet != y.Sheet {
