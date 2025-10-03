@@ -2,6 +2,8 @@ package ghost
 
 import (
 	"context"
+	"log/slog"
+	"os"
 	"strconv"
 	"strings"
 
@@ -280,6 +282,21 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 	migrationContext.SetChunkSize(defaultConfig.chunkSize)
 	migrationContext.SetDMLBatchSize(defaultConfig.dmlBatchSize)
 	migrationContext.SetMaxLagMillisecondsThrottleThreshold(defaultConfig.maxLagMillisecondsThrottleThreshold)
+	// Check for environment variable to limit auth retries
+	if maxAuthRetries := os.Getenv("GHOST_MAX_AUTH_RETRIES"); maxAuthRetries != "" {
+		if retries, err := strconv.Atoi(maxAuthRetries); err == nil && retries > 0 {
+			migrationContext.MaxAuthFailures = retries
+			slog.Info("gh-ost auth retry limit set",
+				slog.Int("max_failures", migrationContext.MaxAuthFailures),
+				slog.String("source", "environment"))
+		}
+	} else {
+		// Default to 10 retries to prevent retry storms
+		migrationContext.MaxAuthFailures = 10
+		slog.Info("gh-ost auth retry limit set",
+			slog.Int("max_failures", migrationContext.MaxAuthFailures),
+			slog.String("source", "default"))
+	}
 	migrationContext.SetDefaultNumRetries(defaultConfig.defaultNumRetries)
 	migrationContext.ApplyCredentials()
 	if err := migrationContext.SetCutOverLockTimeoutSeconds(defaultConfig.cutoverLockTimeoutSeconds); err != nil {
