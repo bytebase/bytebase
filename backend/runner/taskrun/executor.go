@@ -632,8 +632,10 @@ func convertTaskType(t *store.TaskMessage) (storepb.ChangelogPayload_Type, store
 			return storepb.ChangelogPayload_MIGRATE, storepb.ChangelogPayload_DDL
 		case storepb.Task_GHOST:
 			return storepb.ChangelogPayload_MIGRATE, storepb.ChangelogPayload_GHOST
+		case storepb.Task_MIGRATE_TYPE_UNSPECIFIED:
+			return storepb.ChangelogPayload_MIGRATE, storepb.ChangelogPayload_MIGRATION_TYPE_UNSPECIFIED
 		default:
-			return storepb.ChangelogPayload_TYPE_UNSPECIFIED, storepb.ChangelogPayload_MIGRATION_TYPE_UNSPECIFIED
+			return storepb.ChangelogPayload_MIGRATE, storepb.ChangelogPayload_MIGRATION_TYPE_UNSPECIFIED
 		}
 	case storepb.Task_DATABASE_SDL:
 		return storepb.ChangelogPayload_SDL, storepb.ChangelogPayload_MIGRATION_TYPE_UNSPECIFIED
