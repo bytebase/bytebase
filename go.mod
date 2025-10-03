@@ -402,7 +402,7 @@ replace (
 	// fix potential security issue(CVE-2020-26160) introduced by indirect dependency.
 	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.6-0.20210809144907-32ab6a8243d7+incompatible
 	// Other fixes.
-	github.com/github/gh-ost => github.com/bytebase/gh-ost2 v1.1.7-0.20250310031106-33e16ca4b2e0
+	github.com/github/gh-ost => github.com/bytebase/gh-ost2 v1.1.7-0.20251002210738-35e5dddaad7c
 
 	github.com/jackc/pgx/v5 => github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767
 
