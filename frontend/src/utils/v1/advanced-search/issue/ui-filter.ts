@@ -5,7 +5,7 @@ import {
 } from "@/components/IssueV1/logic";
 import { userNamePrefix } from "@/store";
 import type { ComposedIssue } from "@/types";
-import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
+import { Issue_ApprovalStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { isUserIncludedInList } from "@/utils";
 import type { SearchParams } from "../common";
 import { getValueFromSearchParams } from "../common";
@@ -79,10 +79,13 @@ export const filterIssueByApprovalStatus = (
 
   const reviewContext = extractReviewContext(issue);
   if (status === "pending") {
-    return reviewContext.status.value === Issue_Approver_Status.PENDING;
+    return reviewContext.status.value === Issue_ApprovalStatus.PENDING;
   }
   if (status === "approved") {
-    return reviewContext.status.value === Issue_Approver_Status.APPROVED;
+    return (
+      reviewContext.status.value === Issue_ApprovalStatus.APPROVED ||
+      reviewContext.status.value === Issue_ApprovalStatus.SKIPPED
+    );
   }
 
   console.error(

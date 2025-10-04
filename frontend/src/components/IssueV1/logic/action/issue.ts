@@ -2,10 +2,7 @@ import type { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
 import { useCurrentUserV1, extractUserId } from "@/store";
 import type { ComposedIssue } from "@/types";
-import {
-  IssueStatus,
-  Issue_Approver_Status,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   flattenTaskV1List,
@@ -40,8 +37,7 @@ export const PossibleIssueStatusActionMap: Record<
 };
 
 export const getApplicableIssueStatusActionList = (
-  issue: ComposedIssue,
-  _reviewStatus?: Issue_Approver_Status
+  issue: ComposedIssue
 ): IssueStatusAction[] => {
   const list = PossibleIssueStatusActionMap[issue.status];
   return list.filter((action) => {
