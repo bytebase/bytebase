@@ -52,40 +52,13 @@ export const extractReviewContext = (issue: MaybeRef<Issue>): ReviewContext => {
     };
   });
   const status = computed(() => {
-    if (!ready.value) {
-      return Issue_Approver_Status.PENDING;
-    }
-    if (unref(issue).approvalStatusError) {
-      return Issue_Approver_Status.PENDING;
-    }
-
-    const { template, approvers } = flow.value;
-    const steps = template.flow?.steps ?? [];
-
-    if (steps.length === 0) {
-      // No review flow steps. That means need not manual review.
-      return Issue_Approver_Status.APPROVED;
-    }
-
-    if (
-      approvers.some((app) => app.status === Issue_Approver_Status.REJECTED)
-    ) {
-      // If any of the approvers down voted, the overall status should be 'REJECTED'
-      return Issue_Approver_Status.REJECTED;
-    }
-
-    // For an N-steps approval flow, we need exactly N upvote approvals to
-    // pass the entire flow.
-    const upVotes = approvers.filter(
-      (app) => app.status === Issue_Approver_Status.APPROVED
-    );
-    if (upVotes.length === steps.length) {
-      return Issue_Approver_Status.APPROVED;
-    }
-    return Issue_Approver_Status.PENDING;
+    return unref(issue).approvalStatus;
   });
   const done = computed(() => {
-    return status.value === Issue_Approver_Status.APPROVED;
+    return (
+      status.value === Issue_ApprovalStatus.APPROVED ||
+      status.value === Issue_ApprovalStatus.SKIPPED
+    );
   });
   const error = computed(() => {
     return unref(issue).approvalStatusError;

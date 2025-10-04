@@ -1,8 +1,6 @@
-import { head } from "lodash-es";
 import type { ComputedRef, InjectionKey } from "vue";
 import { computed, inject, provide, unref } from "vue";
 import {
-  Issue_Approver_Status,
   Issue_ApprovalStatus,
   type Issue,
 } from "@/types/proto-es/v1/issue_service_pb";
@@ -21,39 +19,16 @@ export const provideIssueReviewContext = (
   const status = computed(() => {
     const tempIssue = issue.value;
     if (!tempIssue) {
-      return Issue_Approver_Status.PENDING;
+      return Issue_ApprovalStatus.PENDING;
     }
-    if (tempIssue?.approvalStatus === Issue_ApprovalStatus.CHECKING) {
-      return Issue_Approver_Status.PENDING;
-    }
-    if (tempIssue?.approvalStatus === Issue_ApprovalStatus.ERROR) {
-      return Issue_Approver_Status.PENDING;
-    }
-
-    const { approvalTemplates, approvers } = tempIssue;
-    const steps = head(approvalTemplates)?.flow?.steps ?? [];
-    // No review flow steps. That means need not manual review.
-    if (steps.length === 0) {
-      return Issue_Approver_Status.APPROVED;
-    }
-    // If any of the approvers rejected, the overall status should be 'REJECTED'
-    if (
-      approvers.some((app) => app.status === Issue_Approver_Status.REJECTED)
-    ) {
-      return Issue_Approver_Status.REJECTED;
-    }
-
-    if (
-      approvers.length === steps.length &&
-      approvers.every((app) => app.status === Issue_Approver_Status.APPROVED)
-    ) {
-      return Issue_Approver_Status.APPROVED;
-    }
-    return Issue_Approver_Status.PENDING;
+    return tempIssue.approvalStatus;
   });
 
   const done = computed(() => {
-    return status.value === Issue_Approver_Status.APPROVED;
+    return (
+      status.value === Issue_ApprovalStatus.APPROVED ||
+      status.value === Issue_ApprovalStatus.SKIPPED
+    );
   });
 
   const error = computed(() => {

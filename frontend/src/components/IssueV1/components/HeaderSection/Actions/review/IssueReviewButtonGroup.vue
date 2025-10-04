@@ -31,7 +31,7 @@ import {
 import { useCurrentUserV1, extractUserId, useCurrentProjectV1 } from "@/store";
 import {
   IssueStatus,
-  Issue_Approver_Status,
+  Issue_ApprovalStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   isDatabaseChangeRelatedIssue,
@@ -76,16 +76,16 @@ const shouldShowApproveOrReject = computed(() => {
 });
 const shouldShowApprove = computed(() => {
   if (!shouldShowApproveOrReject.value) return false;
-  return status.value === Issue_Approver_Status.PENDING;
+  return status.value === Issue_ApprovalStatus.PENDING;
 });
 const shouldShowReject = computed(() => {
   if (!shouldShowApproveOrReject.value) return false;
-  return status.value === Issue_Approver_Status.PENDING;
+  return status.value === Issue_ApprovalStatus.PENDING;
 });
 const shouldShowReRequestReview = computed(() => {
   return (
     extractUserId(issue.value.creator) === currentUser.value.email &&
-    status.value === Issue_Approver_Status.REJECTED
+    status.value === Issue_ApprovalStatus.REJECTED
   );
 });
 const issueReviewActionList = computed(() => {
@@ -104,10 +104,7 @@ const issueReviewActionList = computed(() => {
 });
 
 const issueStatusActionList = computed(() => {
-  return getApplicableIssueStatusActionList(
-    issue.value,
-    reviewContext.status.value
-  );
+  return getApplicableIssueStatusActionList(issue.value);
 });
 const forceRolloutActionList = computed((): ExtraActionOption[] => {
   // If it's not a database change related issue, no force rollout actions.
