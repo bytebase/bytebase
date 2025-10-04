@@ -136,6 +136,10 @@ message DataSource {
     string obfuscated_secret_access_key = 4;
     string session_token = 5;
     string obfuscated_session_token = 6;
+    // ARN of IAM role to assume for cross-account access
+    string role_arn = 7;
+    // Optional external ID for additional security when assuming role
+    string external_id = 8;
   }
   message GCPCredential {
     string content = 1;

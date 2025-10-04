@@ -1404,8 +1404,12 @@ type DataSource_AWSCredential struct {
 	ObfuscatedSecretAccessKey string                 `protobuf:"bytes,4,opt,name=obfuscated_secret_access_key,json=obfuscatedSecretAccessKey,proto3" json:"obfuscated_secret_access_key,omitempty"`
 	SessionToken              string                 `protobuf:"bytes,5,opt,name=session_token,json=sessionToken,proto3" json:"session_token,omitempty"`
 	ObfuscatedSessionToken    string                 `protobuf:"bytes,6,opt,name=obfuscated_session_token,json=obfuscatedSessionToken,proto3" json:"obfuscated_session_token,omitempty"`
-	unknownFields             protoimpl.UnknownFields
-	sizeCache                 protoimpl.SizeCache
+	// ARN of IAM role to assume for cross-account access
+	RoleArn string `protobuf:"bytes,7,opt,name=role_arn,json=roleArn,proto3" json:"role_arn,omitempty"`
+	// Optional external ID for additional security when assuming role
+	ExternalId    string `protobuf:"bytes,8,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DataSource_AWSCredential) Reset() {
@@ -1476,6 +1480,20 @@ func (x *DataSource_AWSCredential) GetSessionToken() string {
 func (x *DataSource_AWSCredential) GetObfuscatedSessionToken() string {
 	if x != nil {
 		return x.ObfuscatedSessionToken
+	}
+	return ""
+}
+
+func (x *DataSource_AWSCredential) GetRoleArn() string {
+	if x != nil {
+		return x.RoleArn
+	}
+	return ""
+}
+
+func (x *DataSource_AWSCredential) GetExternalId() string {
+	if x != nil {
+		return x.ExternalId
 	}
 	return ""
 }
@@ -1688,7 +1706,7 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x11_connection_limitB\x0e\n" +
 	"\f_valid_untilB\f\n" +
 	"\n" +
-	"_attribute\"\xc3\x18\n" +
+	"_attribute\"\xff\x18\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x122\n" +
@@ -1747,14 +1765,17 @@ const file_store_instance_proto_rawDesc = "" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12#\n" +
 	"\rclient_secret\x18\x03 \x01(\tR\fclientSecret\x128\n" +
-	"\x18obfuscated_client_secret\x18\x04 \x01(\tR\x16obfuscatedClientSecret\x1a\xb8\x02\n" +
+	"\x18obfuscated_client_secret\x18\x04 \x01(\tR\x16obfuscatedClientSecret\x1a\xf4\x02\n" +
 	"\rAWSCredential\x12\"\n" +
 	"\raccess_key_id\x18\x01 \x01(\tR\vaccessKeyId\x127\n" +
 	"\x18obfuscated_access_key_id\x18\x02 \x01(\tR\x15obfuscatedAccessKeyId\x12*\n" +
 	"\x11secret_access_key\x18\x03 \x01(\tR\x0fsecretAccessKey\x12?\n" +
 	"\x1cobfuscated_secret_access_key\x18\x04 \x01(\tR\x19obfuscatedSecretAccessKey\x12#\n" +
 	"\rsession_token\x18\x05 \x01(\tR\fsessionToken\x128\n" +
-	"\x18obfuscated_session_token\x18\x06 \x01(\tR\x16obfuscatedSessionToken\x1aX\n" +
+	"\x18obfuscated_session_token\x18\x06 \x01(\tR\x16obfuscatedSessionToken\x12\x19\n" +
+	"\brole_arn\x18\a \x01(\tR\aroleArn\x12\x1f\n" +
+	"\vexternal_id\x18\b \x01(\tR\n" +
+	"externalId\x1aX\n" +
 	"\rGCPCredential\x12\x18\n" +
 	"\acontent\x18\x01 \x01(\tR\acontent\x12-\n" +
 	"\x12obfuscated_content\x18\x02 \x01(\tR\x11obfuscatedContent\x1a1\n" +

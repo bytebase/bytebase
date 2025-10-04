@@ -504,6 +504,12 @@ func (x *DataSource_AWSCredential) Equal(y *DataSource_AWSCredential) bool {
 	if x.SessionToken != y.SessionToken {
 		return false
 	}
+	if x.RoleArn != y.RoleArn {
+		return false
+	}
+	if x.ExternalId != y.ExternalId {
+		return false
+	}
 	return true
 }
 

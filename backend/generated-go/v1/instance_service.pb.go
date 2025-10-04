@@ -2481,8 +2481,12 @@ type DataSource_AWSCredential struct {
 	AccessKeyId     string                 `protobuf:"bytes,1,opt,name=access_key_id,json=accessKeyId,proto3" json:"access_key_id,omitempty"`
 	SecretAccessKey string                 `protobuf:"bytes,2,opt,name=secret_access_key,json=secretAccessKey,proto3" json:"secret_access_key,omitempty"`
 	SessionToken    string                 `protobuf:"bytes,3,opt,name=session_token,json=sessionToken,proto3" json:"session_token,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// ARN of IAM role to assume for cross-account access
+	RoleArn string `protobuf:"bytes,4,opt,name=role_arn,json=roleArn,proto3" json:"role_arn,omitempty"`
+	// Optional external ID for additional security when assuming role
+	ExternalId    string `protobuf:"bytes,5,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DataSource_AWSCredential) Reset() {
@@ -2532,6 +2536,20 @@ func (x *DataSource_AWSCredential) GetSecretAccessKey() string {
 func (x *DataSource_AWSCredential) GetSessionToken() string {
 	if x != nil {
 		return x.SessionToken
+	}
+	return ""
+}
+
+func (x *DataSource_AWSCredential) GetRoleArn() string {
+	if x != nil {
+		return x.RoleArn
+	}
+	return ""
+}
+
+func (x *DataSource_AWSCredential) GetExternalId() string {
+	if x != nil {
+		return x.ExternalId
 	}
 	return ""
 }
@@ -2764,7 +2782,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x15AUTH_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05TOKEN\x10\x01\x12\x12\n" +
 	"\x0eVAULT_APP_ROLE\x10\x02B\r\n" +
-	"\vauth_option\"\x87\x13\n" +
+	"\vauth_option\"\xcd\x13\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
@@ -2814,11 +2832,14 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x0fAzureCredential\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12(\n" +
-	"\rclient_secret\x18\x03 \x01(\tB\x03\xe0A\x04R\fclientSecret\x1a\x93\x01\n" +
+	"\rclient_secret\x18\x03 \x01(\tB\x03\xe0A\x04R\fclientSecret\x1a\xd9\x01\n" +
 	"\rAWSCredential\x12'\n" +
 	"\raccess_key_id\x18\x01 \x01(\tB\x03\xe0A\x04R\vaccessKeyId\x12/\n" +
 	"\x11secret_access_key\x18\x02 \x01(\tB\x03\xe0A\x04R\x0fsecretAccessKey\x12(\n" +
-	"\rsession_token\x18\x03 \x01(\tB\x03\xe0A\x04R\fsessionToken\x1a.\n" +
+	"\rsession_token\x18\x03 \x01(\tB\x03\xe0A\x04R\fsessionToken\x12\x1e\n" +
+	"\brole_arn\x18\x04 \x01(\tB\x03\xe0A\x04R\aroleArn\x12$\n" +
+	"\vexternal_id\x18\x05 \x01(\tB\x03\xe0A\x04R\n" +
+	"externalId\x1a.\n" +
 	"\rGCPCredential\x12\x1d\n" +
 	"\acontent\x18\x01 \x01(\tB\x03\xe0A\x04R\acontent\x1a1\n" +
 	"\aAddress\x12\x12\n" +
