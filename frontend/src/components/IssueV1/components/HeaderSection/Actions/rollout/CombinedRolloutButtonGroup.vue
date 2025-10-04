@@ -37,20 +37,11 @@ import RolloutActionButtonGroup from "./RolloutActionButtonGroup.vue";
 import type { RolloutAction } from "./common";
 
 const { t } = useI18n();
-const {
-  issue,
-  selectedStage,
-  selectedTask,
-  events,
-  releaserCandidates,
-  reviewContext,
-} = useIssueContext();
+const { issue, selectedStage, selectedTask, events, releaserCandidates } =
+  useIssueContext();
 
 const issueStatusActionList = computed(() => {
-  return getApplicableIssueStatusActionList(
-    issue.value,
-    reviewContext.status.value
-  );
+  return getApplicableIssueStatusActionList(issue.value);
 });
 
 const taskRolloutActionList = computed(() => {

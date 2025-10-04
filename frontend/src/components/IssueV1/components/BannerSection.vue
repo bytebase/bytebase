@@ -52,7 +52,7 @@ import dayjs from "dayjs";
 import { computed } from "vue";
 import {
   IssueStatus,
-  Issue_Approver_Status,
+  Issue_ApprovalStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { activeTaskInRollout, isDatabaseChangeRelatedIssue } from "@/utils";
@@ -67,13 +67,13 @@ const { status: reviewStatus } = reviewContext;
 const showPendingReview = computed(() => {
   if (isCreating.value) return false;
   if (issue.value.status !== IssueStatus.OPEN) return false;
-  return reviewStatus.value === Issue_Approver_Status.PENDING;
+  return reviewStatus.value === Issue_ApprovalStatus.PENDING;
 });
 
 const showRejectedReview = computed(() => {
   if (isCreating.value) return false;
   if (issue.value.status !== IssueStatus.OPEN) return false;
-  return reviewStatus.value === Issue_Approver_Status.REJECTED;
+  return reviewStatus.value === Issue_ApprovalStatus.REJECTED;
 });
 
 const showClosedBanner = computed(() => {
