@@ -171,7 +171,7 @@
           "
         />
         <label class="textlabel block mt-2">
-          {{ $t('instance.role-arn') }}
+          {{ $t("instance.role-arn") }}
         </label>
         <NInput
           v-model:value="
@@ -192,10 +192,10 @@
           "
         />
         <div class="text-sm text-gray-500 mt-1">
-          {{ $t('instance.role-arn-description') }}
+          {{ $t("instance.role-arn-description") }}
         </div>
         <label class="textlabel block mt-2">
-          {{ $t('instance.external-id') }}
+          {{ $t("instance.external-id") }}
         </label>
         <NInput
           v-model:value="
@@ -216,7 +216,7 @@
           "
         />
         <div class="text-sm text-gray-500 mt-1">
-          {{ $t('instance.external-id-description') }}
+          {{ $t("instance.external-id-description") }}
         </div>
       </div>
     </template>
