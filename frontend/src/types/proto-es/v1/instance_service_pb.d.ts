@@ -1131,6 +1131,20 @@ export declare type DataSource_AWSCredential = Message<"bytebase.v1.DataSource.A
    * @generated from field: string session_token = 3;
    */
   sessionToken: string;
+
+  /**
+   * ARN of IAM role to assume for cross-account access
+   *
+   * @generated from field: string role_arn = 4;
+   */
+  roleArn: string;
+
+  /**
+   * Optional external ID for additional security when assuming role
+   *
+   * @generated from field: string external_id = 5;
+   */
+  externalId: string;
 };
 
 /**

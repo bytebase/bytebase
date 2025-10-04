@@ -9736,6 +9736,14 @@ components:
                 sessionToken:
                     writeOnly: true
                     type: string
+                roleArn:
+                    writeOnly: true
+                    type: string
+                    description: ARN of IAM role to assume for cross-account access
+                externalId:
+                    writeOnly: true
+                    type: string
+                    description: Optional external ID for additional security when assuming role
         DataSource_Address:
             type: object
             properties:

@@ -136,6 +136,12 @@ message DataSource {
     string obfuscated_secret_access_key = 4;
     string session_token = 5;
     string obfuscated_session_token = 6;
+    // ARN of IAM role to assume for cross-account access.
+    // See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html
+    string role_arn = 7;
+    // Optional external ID for additional security when assuming role.
+    // See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html
+    string external_id = 8;
   }
   message GCPCredential {
     string content = 1;

@@ -237,6 +237,11 @@ func openWithOpenSearchClient(ctx context.Context, config db.ConnectionConfig, a
 			return nil, errors.Wrap(err, "failed to load AWS config")
 		}
 
+		// Handle cross-account role assumption if configured
+		if err := util.AssumeRoleIfNeeded(ctx, &awsCfg, config.ConnectionContext, config.DataSource.GetAwsCredential()); err != nil {
+			return nil, err
+		}
+
 		// Verify credentials are available
 		_, err = awsCfg.Credentials.Retrieve(ctx)
 		if err != nil {
@@ -316,7 +321,13 @@ func (d *Driver) Ping(_ context.Context) error {
 			// Check if it's an authentication or connection issue
 			errStr := err.Error()
 			if strings.Contains(errStr, "401") || strings.Contains(errStr, "403") {
-				return errors.Errorf("authentication failed: %v", err)
+				// Check if role assumption was attempted
+				if d.config.DataSource.GetAwsCredential() != nil &&
+					d.config.DataSource.GetAwsCredential().RoleArn != "" {
+					return errors.Errorf("authentication failed: unable to assume role %s: %v",
+						d.config.DataSource.GetAwsCredential().RoleArn, err)
+				}
+				return errors.Errorf("authentication failed (consider using cross-account role if accessing different AWS account): %v", err)
 			}
 			if strings.Contains(errStr, "404") {
 				return errors.Errorf("endpoint not found (check if path is correct): %v", err)

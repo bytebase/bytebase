@@ -555,6 +555,12 @@ message DataSource {
     string access_key_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
     string secret_access_key = 2 [(google.api.field_behavior) = INPUT_ONLY];
     string session_token = 3 [(google.api.field_behavior) = INPUT_ONLY];
+    // ARN of IAM role to assume for cross-account access.
+    // See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html
+    string role_arn = 4 [(google.api.field_behavior) = INPUT_ONLY];
+    // Optional external ID for additional security when assuming role.
+    // See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html
+    string external_id = 5 [(google.api.field_behavior) = INPUT_ONLY];
   }
   message GCPCredential {
     string content = 1 [(google.api.field_behavior) = INPUT_ONLY];

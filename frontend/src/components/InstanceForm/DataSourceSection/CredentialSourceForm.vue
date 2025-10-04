@@ -170,6 +170,54 @@
             }
           "
         />
+        <label class="textlabel block mt-2">
+          {{ $t("instance.role-arn") }}
+        </label>
+        <NInput
+          v-model:value="
+            (dataSource.iamExtension?.case === 'awsCredential'
+              ? dataSource.iamExtension.value
+              : {}
+            ).roleArn
+          "
+          class="mt-2 w-full"
+          :disabled="!allowEdit"
+          :placeholder="$t('instance.role-arn-placeholder')"
+          @update:value="
+            (val) => {
+              if (dataSource.iamExtension?.case === 'awsCredential') {
+                dataSource.iamExtension.value.roleArn = val;
+              }
+            }
+          "
+        />
+        <div class="text-sm text-gray-500 mt-1">
+          {{ $t("instance.role-arn-description") }}
+        </div>
+        <label class="textlabel block mt-2">
+          {{ $t("instance.external-id") }}
+        </label>
+        <NInput
+          v-model:value="
+            (dataSource.iamExtension?.case === 'awsCredential'
+              ? dataSource.iamExtension.value
+              : {}
+            ).externalId
+          "
+          class="mt-2 w-full"
+          :disabled="!allowEdit"
+          :placeholder="$t('instance.external-id-placeholder')"
+          @update:value="
+            (val) => {
+              if (dataSource.iamExtension?.case === 'awsCredential') {
+                dataSource.iamExtension.value.externalId = val;
+              }
+            }
+          "
+        />
+        <div class="text-sm text-gray-500 mt-1">
+          {{ $t("instance.external-id-description") }}
+        </div>
       </div>
     </template>
     <div
