@@ -15,8 +15,6 @@ import (
 	"time"
 
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/elastic/go-elasticsearch/v7"
 	opensearch "github.com/opensearch-project/opensearch-go/v4"
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
@@ -239,72 +237,14 @@ func openWithOpenSearchClient(ctx context.Context, config db.ConnectionConfig, a
 			return nil, errors.Wrap(err, "failed to load AWS config")
 		}
 
-		// Handle cross-account role assumption if role ARN is provided
-		if awsCredential := config.DataSource.GetAwsCredential(); awsCredential != nil && awsCredential.RoleArn != "" {
-			roleArn := awsCredential.RoleArn
-
-			// Create STS client with base credentials
-			stsClient := sts.NewFromConfig(awsCfg)
-
-			// Configure assume role provider
-			assumeRoleProvider := stscreds.NewAssumeRoleProvider(stsClient, roleArn,
-				func(o *stscreds.AssumeRoleOptions) {
-					// Generate descriptive session name for CloudTrail auditing
-					// Format: bytebase-{instance-id}-{timestamp}
-					instanceID := "unknown"
-					if config.ConnectionContext.InstanceID != "" {
-						// Sanitize instance ID to ensure valid session name (alphanumeric, =,.@-)
-						instanceID = strings.Map(func(r rune) rune {
-							if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' {
-								return r
-							}
-							return '-'
-						}, config.ConnectionContext.InstanceID)
-					}
-					o.RoleSessionName = fmt.Sprintf("bytebase-%s-%d", instanceID, time.Now().Unix())
-					o.Duration = 1 * time.Hour // Temporary credentials valid for 1 hour
-
-					// Add external ID if provided for additional security
-					if externalID := awsCredential.ExternalId; externalID != "" {
-						o.ExternalID = &externalID
-					}
-				})
-
-			// Update config with assumed role credentials
-			awsCfg.Credentials = assumeRoleProvider
+		// Handle cross-account role assumption if configured
+		if err := util.AssumeRoleIfNeeded(ctx, &awsCfg, config.ConnectionContext, config.DataSource.GetAwsCredential()); err != nil {
+			return nil, err
 		}
 
 		// Verify credentials are available
 		_, err = awsCfg.Credentials.Retrieve(ctx)
 		if err != nil {
-			// Provide context-specific error messages for role assumption failures
-			if awsCredential := config.DataSource.GetAwsCredential(); awsCredential != nil && awsCredential.RoleArn != "" {
-				errStr := err.Error()
-				roleArn := awsCredential.RoleArn
-
-				switch {
-				case strings.Contains(errStr, "AccessDenied"):
-					if awsCredential.ExternalId != "" {
-						return nil, errors.Errorf("failed to assume role %s: access denied (external ID configured: %s)", roleArn, awsCredential.ExternalId)
-					}
-					return nil, errors.Errorf("failed to assume role %s: access denied", roleArn)
-
-				case strings.Contains(errStr, "InvalidParameterValue") && strings.Contains(errStr, "ExternalId"):
-					return nil, errors.Errorf("failed to assume role %s: external ID mismatch", roleArn)
-
-				case strings.Contains(errStr, "NoSuchEntity") || strings.Contains(errStr, "not found"):
-					return nil, errors.Errorf("failed to assume role %s: role not found", roleArn)
-
-				case strings.Contains(errStr, "ExpiredToken") || strings.Contains(errStr, "TokenRefreshRequired"):
-					return nil, errors.Errorf("failed to assume role %s: base AWS credentials expired", roleArn)
-
-				case strings.Contains(errStr, "throttling") || strings.Contains(errStr, "TooManyRequests"):
-					return nil, errors.Errorf("failed to assume role %s: AWS API rate limit exceeded", roleArn)
-
-				default:
-					return nil, errors.Wrapf(err, "failed to assume role %s", roleArn)
-				}
-			}
 			return nil, errors.Wrap(err, "failed to retrieve AWS credentials")
 		}
 
