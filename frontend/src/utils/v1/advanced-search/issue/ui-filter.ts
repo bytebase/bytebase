@@ -1,7 +1,7 @@
 import {
-  extractReviewContext,
   releaserCandidatesForIssue,
   useWrappedReviewStepsV1,
+  extractReviewContext,
 } from "@/components/IssueV1/logic";
 import { userNamePrefix } from "@/store";
 import type { ComposedIssue } from "@/types";
@@ -77,14 +77,14 @@ export const filterIssueByApprovalStatus = (
 ) => {
   if (!status) return true;
 
-  const reviewContext = extractReviewContext(issue);
+  const approvalStatus = issue.approvalStatus;
   if (status === "pending") {
-    return reviewContext.status.value === Issue_ApprovalStatus.PENDING;
+    return approvalStatus === Issue_ApprovalStatus.PENDING;
   }
   if (status === "approved") {
     return (
-      reviewContext.status.value === Issue_ApprovalStatus.APPROVED ||
-      reviewContext.status.value === Issue_ApprovalStatus.SKIPPED
+      approvalStatus === Issue_ApprovalStatus.APPROVED ||
+      approvalStatus === Issue_ApprovalStatus.SKIPPED
     );
   }
 

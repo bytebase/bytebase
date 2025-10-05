@@ -44,10 +44,21 @@ import ReviewActionButton from "./ReviewActionButton.vue";
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
-const { issue, phase, reviewContext, events, selectedTask, selectedStage } =
-  useIssueContext();
+const { issue, phase, events, selectedTask, selectedStage } = useIssueContext();
 const { project } = useCurrentProjectV1();
-const { ready, status, done } = reviewContext;
+
+const approvalFlowReady = computed(() => {
+  const approvalStatus = issue.value.approvalStatus;
+  return approvalStatus !== Issue_ApprovalStatus.CHECKING;
+});
+
+const rolloutReady = computed(() => {
+  const approvalStatus = issue.value.approvalStatus;
+  return (
+    approvalStatus === Issue_ApprovalStatus.APPROVED ||
+    approvalStatus === Issue_ApprovalStatus.SKIPPED
+  );
+});
 
 const shouldShowApproveOrReject = computed(() => {
   if (
@@ -69,23 +80,23 @@ const shouldShowApproveOrReject = computed(() => {
     return false;
   }
 
-  if (!ready.value) return false;
-  if (done.value) return false;
+  if (!approvalFlowReady.value) return false;
+  if (rolloutReady.value) return false;
 
   return true;
 });
 const shouldShowApprove = computed(() => {
   if (!shouldShowApproveOrReject.value) return false;
-  return status.value === Issue_ApprovalStatus.PENDING;
+  return issue.value.approvalStatus === Issue_ApprovalStatus.PENDING;
 });
 const shouldShowReject = computed(() => {
   if (!shouldShowApproveOrReject.value) return false;
-  return status.value === Issue_ApprovalStatus.PENDING;
+  return issue.value.approvalStatus === Issue_ApprovalStatus.PENDING;
 });
 const shouldShowReRequestReview = computed(() => {
   return (
     extractUserId(issue.value.creator) === currentUser.value.email &&
-    status.value === Issue_ApprovalStatus.REJECTED
+    issue.value.approvalStatus === Issue_ApprovalStatus.REJECTED
   );
 });
 const issueReviewActionList = computed(() => {

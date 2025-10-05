@@ -1,6 +1,10 @@
 <template>
   <div class="flex flex-row items-center gap-x-2 overflow-hidden">
-    <template v-if="issue.status !== IssueStatus.OPEN || done || !ready">
+    <template
+      v-if="
+        issue.status !== IssueStatus.OPEN || rolloutReady || !approvalFlowReady
+      "
+    >
       <span>-</span>
     </template>
     <template v-else-if="currentStep?.status === 'REJECTED'">
@@ -51,16 +55,31 @@ import {
 import { useCurrentUserV1, useUserStore } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import { type ComposedIssue } from "@/types";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  IssueStatus,
+  Issue_ApprovalStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
 
 const props = defineProps<{
   issue: ComposedIssue;
 }>();
 
 const context = extractReviewContext(toRef(props, "issue"));
-const { ready, done } = context;
 const me = useCurrentUserV1();
 const userStore = useUserStore();
+
+const approvalFlowReady = computed(() => {
+  const approvalStatus = props.issue.approvalStatus;
+  return approvalStatus !== Issue_ApprovalStatus.CHECKING;
+});
+
+const rolloutReady = computed(() => {
+  const approvalStatus = props.issue.approvalStatus;
+  return (
+    approvalStatus === Issue_ApprovalStatus.APPROVED ||
+    approvalStatus === Issue_ApprovalStatus.SKIPPED
+  );
+});
 
 const wrappedSteps = useWrappedReviewStepsV1(toRef(props, "issue"), context);
 

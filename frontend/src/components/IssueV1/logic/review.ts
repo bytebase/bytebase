@@ -27,16 +27,17 @@ import { isUserIncludedInList } from "@/utils";
 import type { ReviewContext } from "./context";
 
 export const extractReviewContext = (issue: MaybeRef<Issue>): ReviewContext => {
-  const ready = computed(() => {
-    const approvalStatus = unref(issue).approvalStatus;
-    return (
-      approvalStatus !== Issue_ApprovalStatus.CHECKING &&
-      approvalStatus !== Issue_ApprovalStatus.APPROVAL_STATUS_UNSPECIFIED
-    );
-  });
   const flow = computed((): ReviewFlow => {
-    if (!ready.value) return emptyFlow();
-    const { approvalTemplates, approvers } = unref(issue);
+    const issueValue = unref(issue);
+    const approvalStatus = issueValue.approvalStatus;
+    if (
+      approvalStatus === Issue_ApprovalStatus.CHECKING ||
+      approvalStatus === Issue_ApprovalStatus.APPROVAL_STATUS_UNSPECIFIED
+    ) {
+      return emptyFlow();
+    }
+
+    const { approvalTemplates, approvers } = issueValue;
     if (approvalTemplates.length === 0) return emptyFlow();
 
     const rejectedIndex = approvers.findIndex(
@@ -51,25 +52,9 @@ export const extractReviewContext = (issue: MaybeRef<Issue>): ReviewContext => {
       currentStepIndex,
     };
   });
-  const status = computed(() => {
-    return unref(issue).approvalStatus;
-  });
-  const done = computed(() => {
-    return (
-      status.value === Issue_ApprovalStatus.APPROVED ||
-      status.value === Issue_ApprovalStatus.SKIPPED
-    );
-  });
-  const error = computed(() => {
-    return unref(issue).approvalStatusError;
-  });
 
   return {
-    ready,
     flow,
-    status,
-    done,
-    error,
   };
 };
 
@@ -93,13 +78,17 @@ export const useWrappedReviewStepsV1 = (
   });
 
   return computed(() => {
-    const { flow, done } = context;
+    const { flow } = context;
     const steps = flow.value.template.flow?.steps || [];
     const approvers = flow.value.approvers;
     const currentStepIndex = flow.value.currentStepIndex ?? -1;
+    const issueValue = unref(issue);
+    const rolloutReady =
+      issueValue.approvalStatus === Issue_ApprovalStatus.APPROVED ||
+      issueValue.approvalStatus === Issue_ApprovalStatus.SKIPPED;
 
     const statusOfStep = (index: number) => {
-      if (done.value) {
+      if (rolloutReady) {
         return "APPROVED";
       }
       if (index >= (steps?.length ?? 0)) {

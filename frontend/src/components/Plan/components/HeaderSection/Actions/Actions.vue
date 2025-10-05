@@ -50,7 +50,6 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useSpecsValidation } from "@/components/Plan/components/common";
 import { usePlanContext, usePlanCheckStatus } from "@/components/Plan/logic";
-import { useIssueReviewContext } from "@/components/Plan/logic/issue-review";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
 import { useEditorState } from "@/components/Plan/logic/useEditorState";
 import {
@@ -116,8 +115,6 @@ const {
   getOverallStatus: planCheckSummaryStatus,
   hasRunning: hasRunningPlanChecks,
 } = usePlanCheckStatus(plan);
-
-const reviewContext = useIssueReviewContext();
 
 // Policy for restricting issue creation when plan checks fail
 
@@ -232,9 +229,12 @@ const availableActions = computed(() => {
   }
 
   // Check for review actions
+  const rolloutReady =
+    issueValue.approvalStatus === Issue_ApprovalStatus.APPROVED ||
+    issueValue.approvalStatus === Issue_ApprovalStatus.SKIPPED;
   if (
     issueValue.approvalStatus !== Issue_ApprovalStatus.CHECKING &&
-    !reviewContext.done.value
+    !rolloutReady
   ) {
     const issueCreator = extractUserId(issueValue.creator);
     const { approvers, approvalTemplates } = issueValue;
@@ -289,7 +289,7 @@ const availableActions = computed(() => {
           [Task_Status.DONE, Task_Status.SKIPPED].includes(task.status)
         );
 
-      if (allTasksFinished && reviewContext.done.value) {
+      if (allTasksFinished && rolloutReady) {
         actions.push("ISSUE_STATUS_RESOLVE");
       }
     }

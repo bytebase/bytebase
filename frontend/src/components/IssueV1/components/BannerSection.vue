@@ -61,19 +61,18 @@ import {
   isUnfinishedResolvedTask as checkUnfinishedResolvedTask,
 } from "../logic";
 
-const { isCreating, issue, reviewContext } = useIssueContext();
-const { status: reviewStatus } = reviewContext;
+const { isCreating, issue } = useIssueContext();
 
 const showPendingReview = computed(() => {
   if (isCreating.value) return false;
   if (issue.value.status !== IssueStatus.OPEN) return false;
-  return reviewStatus.value === Issue_ApprovalStatus.PENDING;
+  return issue.value.approvalStatus === Issue_ApprovalStatus.PENDING;
 });
 
 const showRejectedReview = computed(() => {
   if (isCreating.value) return false;
   if (issue.value.status !== IssueStatus.OPEN) return false;
-  return reviewStatus.value === Issue_ApprovalStatus.REJECTED;
+  return issue.value.approvalStatus === Issue_ApprovalStatus.REJECTED;
 });
 
 const showClosedBanner = computed(() => {

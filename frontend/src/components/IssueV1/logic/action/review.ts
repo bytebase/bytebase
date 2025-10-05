@@ -9,6 +9,7 @@ import type { ComposedIssue } from "@/types";
 import {
   IssueStatus,
   Issue_Approver_Status,
+  Issue_ApprovalStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { isUserIncludedInList } from "@/utils";
 import type { ReviewContext } from "../context";
@@ -63,7 +64,12 @@ export const allowUserToApplyReviewAction = (
   context: ReviewContext,
   action: IssueReviewAction
 ) => {
-  const { ready, done, flow } = context;
+  const { flow } = context;
+  const approvalFlowReady =
+    issue.approvalStatus !== Issue_ApprovalStatus.CHECKING;
+  const rolloutReady =
+    issue.approvalStatus === Issue_ApprovalStatus.APPROVED ||
+    issue.approvalStatus === Issue_ApprovalStatus.SKIPPED;
 
   if (
     issue.status === IssueStatus.CANCELED ||
@@ -72,8 +78,8 @@ export const allowUserToApplyReviewAction = (
     return false;
   }
 
-  if (!ready.value) return false;
-  if (done.value) return false;
+  if (!approvalFlowReady) return false;
+  if (rolloutReady) return false;
 
   const me = useCurrentUserV1();
 
