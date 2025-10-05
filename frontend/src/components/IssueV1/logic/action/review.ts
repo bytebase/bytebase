@@ -1,12 +1,11 @@
 import type { ButtonProps } from "naive-ui";
-import type { ComputedRef } from "vue";
 import { t } from "@/plugins/i18n";
 import {
   candidatesOfApprovalStepV1,
   useCurrentUserV1,
   extractUserId,
 } from "@/store";
-import type { ComposedIssue, ReviewFlow } from "@/types";
+import type { ComposedIssue } from "@/types";
 import {
   IssueStatus,
   Issue_Approver_Status,
@@ -61,7 +60,6 @@ export const issueReviewActionButtonProps = (
 
 export const allowUserToApplyReviewAction = (
   issue: ComposedIssue,
-  flow: ComputedRef<ReviewFlow>,
   action: IssueReviewAction
 ) => {
   const approvalFlowReady =
@@ -83,9 +81,17 @@ export const allowUserToApplyReviewAction = (
   const me = useCurrentUserV1();
 
   if (action === "APPROVE" || action === "SEND_BACK") {
-    const index = flow.value.currentStepIndex;
-    const steps = flow.value.template.flow?.steps ?? [];
-    const step = steps[index];
+    const { approvalTemplates, approvers } = issue;
+    if (approvalTemplates.length === 0) return false;
+
+    const rejectedIndex = approvers.findIndex(
+      (ap) => ap.status === Issue_Approver_Status.REJECTED
+    );
+    const currentStepIndex =
+      rejectedIndex >= 0 ? rejectedIndex : approvers.length;
+
+    const steps = approvalTemplates[0].flow?.steps ?? [];
+    const step = steps[currentStepIndex];
     if (!step) return false;
     const candidates = candidatesOfApprovalStepV1(issue, step);
     return isUserIncludedInList(me.value.email, candidates);

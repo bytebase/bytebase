@@ -48,9 +48,7 @@
 import { computedAsync } from "@vueuse/core";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
-import { toRef } from "vue";
 import { BBAvatar } from "@/bbkit";
-import { extractReviewContext } from "@/components/IssueV1";
 import {
   candidatesOfApprovalStepV1,
   useCurrentUserV1,
@@ -68,13 +66,11 @@ const props = defineProps<{
   issue: ComposedIssue;
 }>();
 
-const flow = extractReviewContext(toRef(props, "issue"));
 const me = useCurrentUserV1();
 const userStore = useUserStore();
 
 const approvalFlowReady = computed(() => {
-  const approvalStatus = props.issue.approvalStatus;
-  return approvalStatus !== Issue_ApprovalStatus.CHECKING;
+  return props.issue.approvalStatus !== Issue_ApprovalStatus.CHECKING;
 });
 
 const rolloutReady = computed(() => {
@@ -89,7 +85,7 @@ const rejectedApprover = computedAsync(() => {
   if (props.issue.approvalStatus !== Issue_ApprovalStatus.REJECTED) {
     return undefined;
   }
-  const rejectedApproval = flow.value.approvers.find(
+  const rejectedApproval = props.issue.approvers.find(
     (ap) => ap.status === Issue_Approver_Status.REJECTED
   );
   if (!rejectedApproval?.principal) return undefined;
@@ -101,15 +97,18 @@ const currentApprover = computedAsync(() => {
     return undefined;
   }
 
-  const currentStepIndex = flow.value.approvers.length;
-  const steps = flow.value.template.flow?.steps || [];
+  const { approvalTemplates, approvers } = props.issue;
+  if (approvalTemplates.length === 0) return undefined;
+
+  const currentStepIndex = approvers.length;
+  const steps = approvalTemplates[0].flow?.steps || [];
   const step = steps[currentStepIndex];
   if (!step) return undefined;
 
   const candidates = candidatesOfApprovalStepV1(props.issue, step);
   const currentUserName = `${userNamePrefix}${me.value.email}`;
 
-  // Show currentUser if currentUser is one of the validate approver candidates.
+  // Show currentUser if currentUser is one of the valid approver candidates.
   if (candidates.includes(currentUserName)) return me.value;
 
   // Show the first approver candidate otherwise.

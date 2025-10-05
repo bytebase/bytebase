@@ -31,6 +31,7 @@ import {
 } from "@/components/IssueV1/logic";
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
+import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
 
 const props = defineProps<{
   action: IssueReviewAction;
@@ -41,30 +42,40 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { issue, reviewContext } = useIssueContext();
+const { issue } = useIssueContext();
 
 const errors = computed(() => {
-  const errors: ErrorItem[] = [];
+  if (allowUserToApplyReviewAction(issue.value, props.action)) {
+    return [];
+  }
 
-  if (!allowUserToApplyReviewAction(issue.value, reviewContext, props.action)) {
-    errors.push(t("issue.error.you-are-not-allowed-to-perform-this-action"));
-    const flow = reviewContext.value;
-    const index = flow.currentStepIndex;
-    const steps = flow.template.flow?.steps ?? [];
-    const step = steps[index];
-    if (step) {
-      for (let i = 0; i < step.nodes.length; i++) {
-        const node = step.nodes[i];
-        const roleTitle = displayReviewRoleTitle(node);
-        if (node) {
-          errors.push({
-            error: roleTitle,
-            indent: 1,
-          });
-        }
-      }
+  const errors: ErrorItem[] = [
+    t("issue.error.you-are-not-allowed-to-perform-this-action"),
+  ];
+
+  const { approvalTemplates, approvers } = issue.value;
+  if (approvalTemplates.length === 0) return errors;
+
+  const rejectedIndex = approvers.findIndex(
+    (ap) => ap.status === Issue_Approver_Status.REJECTED
+  );
+  const currentStepIndex =
+    rejectedIndex >= 0 ? rejectedIndex : approvers.length;
+
+  const steps = approvalTemplates[0].flow?.steps ?? [];
+  const step = steps[currentStepIndex];
+  if (!step) return errors;
+
+  for (const node of step.nodes) {
+    const roleTitle = displayReviewRoleTitle(node);
+    if (roleTitle) {
+      errors.push({
+        error: roleTitle,
+        indent: 1,
+      });
     }
   }
+
   return errors;
 });
 </script>
