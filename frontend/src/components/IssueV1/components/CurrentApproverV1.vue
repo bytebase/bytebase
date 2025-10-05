@@ -7,8 +7,10 @@
     >
       <span>-</span>
     </template>
-    <template v-else-if="currentStep?.status === 'REJECTED'">
-      <NTooltip :disabled="!currentStep.approver">
+    <template
+      v-else-if="issue.approvalStatus === Issue_ApprovalStatus.REJECTED"
+    >
+      <NTooltip :disabled="!rejectedApprover">
         <template #trigger>
           <div class="flex flex-row items-center gap-x-2">
             <div
@@ -25,7 +27,7 @@
           <i18n-t
             keypath="custom-approval.approval-flow.issue-review.review-sent-back-by"
           >
-            <template #user>{{ approverInCurrentStep?.title }}</template>
+            <template #user>{{ rejectedApprover?.title }}</template>
           </i18n-t>
         </template>
       </NTooltip>
@@ -46,31 +48,29 @@
 import { computedAsync } from "@vueuse/core";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
-import { toRef } from "vue";
 import { BBAvatar } from "@/bbkit";
 import {
-  extractReviewContext,
-  useWrappedReviewStepsV1,
-} from "@/components/IssueV1";
-import { useCurrentUserV1, useUserStore } from "@/store";
-import { userNamePrefix } from "@/store/modules/v1/common";
+  candidatesOfApprovalStepV1,
+  useCurrentUserV1,
+  userNamePrefix,
+  useUserStore,
+} from "@/store";
 import { type ComposedIssue } from "@/types";
 import {
   IssueStatus,
   Issue_ApprovalStatus,
+  Issue_Approver_Status,
 } from "@/types/proto-es/v1/issue_service_pb";
 
 const props = defineProps<{
   issue: ComposedIssue;
 }>();
 
-const context = extractReviewContext(toRef(props, "issue"));
 const me = useCurrentUserV1();
 const userStore = useUserStore();
 
 const approvalFlowReady = computed(() => {
-  const approvalStatus = props.issue.approvalStatus;
-  return approvalStatus !== Issue_ApprovalStatus.CHECKING;
+  return props.issue.approvalStatus !== Issue_ApprovalStatus.CHECKING;
 });
 
 const rolloutReady = computed(() => {
@@ -81,29 +81,38 @@ const rolloutReady = computed(() => {
   );
 });
 
-const wrappedSteps = useWrappedReviewStepsV1(toRef(props, "issue"), context);
-
-const currentStep = computed(() => {
-  return wrappedSteps.value.find(
-    (step) => step.status === "CURRENT" || step.status === "REJECTED"
-  );
-});
-
-const approverInCurrentStep = computedAsync(() => {
-  if (!currentStep.value?.approver) {
-    return;
+const rejectedApprover = computedAsync(() => {
+  if (props.issue.approvalStatus !== Issue_ApprovalStatus.REJECTED) {
+    return undefined;
   }
-  return userStore.getOrFetchUserByIdentifier(currentStep.value.approver);
+  const rejectedApproval = props.issue.approvers.find(
+    (ap) => ap.status === Issue_Approver_Status.REJECTED
+  );
+  if (!rejectedApproval?.principal) return undefined;
+  return userStore.getOrFetchUserByIdentifier(rejectedApproval.principal);
 });
 
 const currentApprover = computedAsync(() => {
-  if (!currentStep.value) return undefined;
-  const includeMyself = currentStep.value.candidates.includes(
-    `${userNamePrefix}${me.value.email}`
-  );
-  // Show currentUser if currentUser is one of the validate approver candidates.
-  if (includeMyself) return me.value;
+  if (props.issue.approvalStatus !== Issue_ApprovalStatus.PENDING) {
+    return undefined;
+  }
+
+  const { approvalTemplates, approvers } = props.issue;
+  if (approvalTemplates.length === 0) return undefined;
+
+  const currentStepIndex = approvers.length;
+  const steps = approvalTemplates[0].flow?.steps || [];
+  const step = steps[currentStepIndex];
+  if (!step) return undefined;
+
+  const candidates = candidatesOfApprovalStepV1(props.issue, step);
+  const currentUserName = `${userNamePrefix}${me.value.email}`;
+
+  // Show currentUser if currentUser is one of the valid approver candidates.
+  if (candidates.includes(currentUserName)) return me.value;
+
   // Show the first approver candidate otherwise.
-  return userStore.getOrFetchUserByIdentifier(currentStep.value.candidates[0]);
+  if (candidates.length === 0) return undefined;
+  return userStore.getOrFetchUserByIdentifier(candidates[0]);
 });
 </script>

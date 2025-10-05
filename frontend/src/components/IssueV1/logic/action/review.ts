@@ -12,7 +12,6 @@ import {
   Issue_ApprovalStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { isUserIncludedInList } from "@/utils";
-import type { ReviewContext } from "../context";
 
 export type IssueReviewAction = "APPROVE" | "SEND_BACK" | "RE_REQUEST";
 
@@ -61,10 +60,8 @@ export const issueReviewActionButtonProps = (
 
 export const allowUserToApplyReviewAction = (
   issue: ComposedIssue,
-  context: ReviewContext,
   action: IssueReviewAction
 ) => {
-  const { flow } = context;
   const approvalFlowReady =
     issue.approvalStatus !== Issue_ApprovalStatus.CHECKING;
   const rolloutReady =
@@ -84,9 +81,17 @@ export const allowUserToApplyReviewAction = (
   const me = useCurrentUserV1();
 
   if (action === "APPROVE" || action === "SEND_BACK") {
-    const index = flow.value.currentStepIndex;
-    const steps = flow.value.template.flow?.steps ?? [];
-    const step = steps[index];
+    const { approvalTemplates, approvers } = issue;
+    if (approvalTemplates.length === 0) return false;
+
+    const rejectedIndex = approvers.findIndex(
+      (ap) => ap.status === Issue_Approver_Status.REJECTED
+    );
+    const currentStepIndex =
+      rejectedIndex >= 0 ? rejectedIndex : approvers.length;
+
+    const steps = approvalTemplates[0].flow?.steps ?? [];
+    const step = steps[currentStepIndex];
     if (!step) return false;
     const candidates = candidatesOfApprovalStepV1(issue, step);
     return isUserIncludedInList(me.value.email, candidates);

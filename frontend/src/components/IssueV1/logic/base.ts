@@ -23,7 +23,6 @@ import {
 import type { IssueContext, IssueEvents, IssuePhase } from "./context";
 import { planCheckRunListForTask } from "./plan-check";
 import { releaserCandidatesForIssue } from "./releaser";
-import { extractReviewContext } from "./review";
 import { stageForTask } from "./utils";
 
 const state = {
@@ -130,7 +129,6 @@ export const useBaseIssueContext = (
   const releaserCandidates = computed(() => {
     return releaserCandidatesForIssue(issue.value);
   });
-  const reviewContext = extractReviewContext(issue);
 
   const phase = computed((): IssuePhase => {
     if (isCreating.value) return "CREATE";
@@ -174,7 +172,6 @@ export const useBaseIssueContext = (
     phase,
     events,
     releaserCandidates,
-    reviewContext,
     selectedStage,
     selectedTask,
     formatOnSave,

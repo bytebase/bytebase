@@ -1,9 +1,5 @@
-import {
-  releaserCandidatesForIssue,
-  useWrappedReviewStepsV1,
-  extractReviewContext,
-} from "@/components/IssueV1/logic";
-import { userNamePrefix } from "@/store";
+import { releaserCandidatesForIssue } from "@/components/IssueV1/logic";
+import { candidatesOfApprovalStepV1, userNamePrefix } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { Issue_ApprovalStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { isUserIncludedInList } from "@/utils";
@@ -31,16 +27,26 @@ export const filterIssueByApprover = (
 ) => {
   if (!approver) return true;
 
-  const reviewContext = extractReviewContext(issue);
-  const steps = useWrappedReviewStepsV1(issue, reviewContext);
+  // Only show issues that are pending approval
+  if (issue.approvalStatus !== Issue_ApprovalStatus.PENDING) {
+    return false;
+  }
 
-  const currentStep = steps.value.find((step) => step.status === "CURRENT");
-  if (!currentStep) return false;
+  const { approvalTemplates, approvers } = issue;
+  if (approvalTemplates.length === 0) return false;
+
+  const currentStepIndex = approvers.length;
+  const steps = approvalTemplates[0].flow?.steps || [];
+  const step = steps[currentStepIndex];
+  if (!step) return false;
+
+  const candidates = candidatesOfApprovalStepV1(issue, step);
+
   // We support "approver:{email}" by now
   // Planning to support "approver:[{email_1}, {email_2}, ...]" and
   // "approver:roles/{role}" in the future
   if (approver.startsWith(userNamePrefix)) {
-    return currentStep.candidates.includes(approver);
+    return candidates.includes(approver);
   }
 
   console.error(
