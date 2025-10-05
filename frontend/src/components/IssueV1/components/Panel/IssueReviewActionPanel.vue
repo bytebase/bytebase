@@ -104,7 +104,6 @@ import { useI18n } from "vue-i18n";
 import type { IssueReviewAction } from "@/components/IssueV1/logic";
 import {
   useIssueContext,
-  targetReviewStatusForReviewAction,
   issueReviewActionButtonProps,
   issueReviewActionDisplayName,
   planCheckRunSummaryForIssue,
@@ -118,7 +117,6 @@ import {
   RejectIssueRequestSchema,
   RequestIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
 import { databaseForTask } from "@/utils";
 import { ErrorList } from "../common";
 import CommonDrawer from "./CommonDrawer.vue";
@@ -218,20 +216,19 @@ const handleConfirm = async () => {
   if (!action) return;
   state.loading = true;
   try {
-    const status = targetReviewStatusForReviewAction(action);
-    if (status === Issue_Approver_Status.APPROVED) {
+    if (action === "APPROVE") {
       const request = create(ApproveIssueRequestSchema, {
         name: issue.value.name,
         comment: comment.value,
       });
       await issueServiceClientConnect.approveIssue(request);
-    } else if (status === Issue_Approver_Status.PENDING) {
+    } else if (action === "RE_REQUEST") {
       const request = create(RequestIssueRequestSchema, {
         name: issue.value.name,
         comment: comment.value,
       });
       await issueServiceClientConnect.requestIssue(request);
-    } else if (status === Issue_Approver_Status.REJECTED) {
+    } else if (action === "SEND_BACK") {
       const request = create(RejectIssueRequestSchema, {
         name: issue.value.name,
         comment: comment.value,
