@@ -79,8 +79,8 @@
           <NTooltip :disabled="confirmErrors.length === 0" placement="top">
             <template #trigger>
               <NButton
+                type="primary"
                 :disabled="confirmErrors.length > 0"
-                v-bind="confirmButtonProps"
                 @click="handleConfirm"
               >
                 {{ $t("common.confirm") }}
@@ -104,7 +104,6 @@ import { useI18n } from "vue-i18n";
 import type { IssueReviewAction } from "@/components/IssueV1/logic";
 import {
   useIssueContext,
-  issueReviewActionButtonProps,
   issueReviewActionDisplayName,
   planCheckRunSummaryForIssue,
 } from "@/components/IssueV1/logic";
@@ -200,15 +199,6 @@ const confirmErrors = computed(() => {
     errors.push(...planCheckErrors.value);
   }
   return errors;
-});
-
-const confirmButtonProps = computed(() => {
-  if (!props.action) return {};
-  const p = issueReviewActionButtonProps(props.action);
-  if (p.type === "default") {
-    p.type = "primary";
-  }
-  return p;
 });
 
 const handleConfirm = async () => {

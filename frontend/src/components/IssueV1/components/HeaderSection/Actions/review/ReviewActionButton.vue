@@ -5,7 +5,7 @@
         size="medium"
         tag="div"
         :disabled="errors.length > 0"
-        v-bind="issueReviewActionButtonProps(action)"
+        :type="action === 'SEND_BACK' ? 'default' : 'primary'"
         @click="$emit('perform-action', action)"
       >
         {{ issueReviewActionDisplayName(action) }}
@@ -24,7 +24,6 @@ import { useI18n } from "vue-i18n";
 import type { IssueReviewAction } from "@/components/IssueV1/logic";
 import {
   issueReviewActionDisplayName,
-  issueReviewActionButtonProps,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
