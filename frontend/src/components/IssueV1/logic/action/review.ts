@@ -1,18 +1,18 @@
 import type { ButtonProps } from "naive-ui";
+import type { ComputedRef } from "vue";
 import { t } from "@/plugins/i18n";
 import {
   candidatesOfApprovalStepV1,
   useCurrentUserV1,
   extractUserId,
 } from "@/store";
-import type { ComposedIssue } from "@/types";
+import type { ComposedIssue, ReviewFlow } from "@/types";
 import {
   IssueStatus,
   Issue_Approver_Status,
   Issue_ApprovalStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { isUserIncludedInList } from "@/utils";
-import type { ReviewContext } from "../context";
 
 export type IssueReviewAction = "APPROVE" | "SEND_BACK" | "RE_REQUEST";
 
@@ -61,10 +61,9 @@ export const issueReviewActionButtonProps = (
 
 export const allowUserToApplyReviewAction = (
   issue: ComposedIssue,
-  context: ReviewContext,
+  flow: ComputedRef<ReviewFlow>,
   action: IssueReviewAction
 ) => {
-  const { flow } = context;
   const approvalFlowReady =
     issue.approvalStatus !== Issue_ApprovalStatus.CHECKING;
   const rolloutReady =

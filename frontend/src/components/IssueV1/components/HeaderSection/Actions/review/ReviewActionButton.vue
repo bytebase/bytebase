@@ -48,7 +48,7 @@ const errors = computed(() => {
 
   if (!allowUserToApplyReviewAction(issue.value, reviewContext, props.action)) {
     errors.push(t("issue.error.you-are-not-allowed-to-perform-this-action"));
-    const flow = reviewContext.flow.value;
+    const flow = reviewContext.value;
     const index = flow.currentStepIndex;
     const steps = flow.template.flow?.steps ?? [];
     const step = steps[index];

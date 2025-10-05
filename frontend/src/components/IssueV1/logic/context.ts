@@ -22,12 +22,6 @@ export type IssueEvents = Emittery<{
   "perform-task-rollout-action": { action: TaskRolloutAction; tasks: Task[] };
 }>;
 
-export type ReviewContext = {
-  // The review flow.
-  // Now we have only one flow in an issue
-  flow: Ref<ReviewFlow>;
-};
-
 export type IssueContext = {
   // Basic fields
   isCreating: Ref<boolean>;
@@ -37,7 +31,7 @@ export type IssueContext = {
   allowChange: ComputedRef<boolean>;
 
   // review status
-  reviewContext: ReviewContext;
+  reviewContext: ComputedRef<ReviewFlow>;
   // The release candidates of the issue.
   // Format: users/{email}
   releaserCandidates: Ref<string[]>;
