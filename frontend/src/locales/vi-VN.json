@@ -959,7 +959,6 @@
       "off-tooltip": "Thực thi các câu lệnh riêng lẻ trong chế độ tự động commit. Các câu lệnh được commit ngay lập tức và không thể khôi phục nếu câu lệnh sau đó thất bại.",
       "execution-order-note": "Các câu lệnh không liên quan đến giao dịch sẽ được thực hiện cuối cùng."
     },
-    "waiting-earliest-allowed-time": "Sẽ chạy sau {time}",
     "batch-transition": {
       "not-allowed-tips": "Một số vấn đề đã chọn không thể {operation}",
       "resolve": "Giải quyết",

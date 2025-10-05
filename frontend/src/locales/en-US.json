@@ -959,7 +959,6 @@
       "off-tooltip": "Executes statements individually in auto-commit mode. Statements are committed immediately and cannot be rolled back if a later statement fails.",
       "execution-order-note": "Non-transactional statements will be executed last."
     },
-    "waiting-earliest-allowed-time": "Will run after {time}",
     "batch-transition": {
       "not-allowed-tips": "Some of selected issues cannot be {operation}",
       "resolve": "Resolve",
