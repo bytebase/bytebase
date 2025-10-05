@@ -19,14 +19,12 @@ import {
   Issue_ApprovalStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import { useIssueReviewContext } from "../../../logic/";
 
 const props = defineProps<{
   issue: Issue;
 }>();
 
 const { t } = useI18n();
-const reviewContext = useIssueReviewContext();
 
 const issueStatusText = computed(() => {
   const issueValue = props.issue;
@@ -36,7 +34,10 @@ const issueStatusText = computed(() => {
     return t("issue.table.open");
   }
 
-  const reviewStatus = reviewContext.done.value
+  const rolloutReady =
+    issueValue.approvalStatus === Issue_ApprovalStatus.APPROVED ||
+    issueValue.approvalStatus === Issue_ApprovalStatus.SKIPPED;
+  const reviewStatus = rolloutReady
     ? Issue_Approver_Status.APPROVED
     : issueValue.approvers.some(
           (app) => app.status === Issue_Approver_Status.REJECTED
@@ -64,7 +65,10 @@ const issueStatusTagType = computed(() => {
         return "info";
       }
 
-      const reviewStatus = reviewContext.done.value
+      const rolloutReady =
+        issueValue.approvalStatus === Issue_ApprovalStatus.APPROVED ||
+        issueValue.approvalStatus === Issue_ApprovalStatus.SKIPPED;
+      const reviewStatus = rolloutReady
         ? Issue_Approver_Status.APPROVED
         : issueValue.approvers.some(
               (app) => app.status === Issue_Approver_Status.REJECTED

@@ -24,7 +24,7 @@ export const provideIssueReviewContext = (
     return tempIssue.approvalStatus;
   });
 
-  const done = computed(() => {
+  const rolloutReady = computed(() => {
     return (
       status.value === Issue_ApprovalStatus.APPROVED ||
       status.value === Issue_ApprovalStatus.SKIPPED
@@ -36,7 +36,7 @@ export const provideIssueReviewContext = (
   });
 
   const context = {
-    done,
+    rolloutReady,
     error,
   };
 

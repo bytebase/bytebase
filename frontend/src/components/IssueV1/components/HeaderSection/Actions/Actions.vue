@@ -14,7 +14,10 @@
 import { asyncComputed } from "@vueuse/core";
 import { computed } from "vue";
 import { extractUserId, useCurrentUserV1 } from "@/store";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  IssueStatus,
+  Issue_ApprovalStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
 import { isGrantRequestIssue, checkRoleContainsAnyPermission } from "@/utils";
 import { useIssueContext } from "../../../logic";
 import { CreateButton } from "./create";
@@ -25,8 +28,14 @@ import { CombinedRolloutButtonGroup } from "./rollout";
 type ActionType = "CREATE" | "SQL-EDITOR" | "REVIEW" | "ROLLOUT";
 
 const currentUser = useCurrentUserV1();
-const { isCreating, issue, reviewContext } = useIssueContext();
-const { done: reviewDone } = reviewContext;
+const { isCreating, issue } = useIssueContext();
+const rolloutReady = computed(() => {
+  const approvalStatus = issue.value.approvalStatus;
+  return (
+    approvalStatus === Issue_ApprovalStatus.APPROVED ||
+    approvalStatus === Issue_ApprovalStatus.SKIPPED
+  );
+});
 
 const isFinishedGrantRequestIssueByCurrentUser = computed(() => {
   if (isCreating.value) return false;
@@ -50,7 +59,7 @@ const actionType = asyncComputed(async (): Promise<ActionType | undefined> => {
     return "REVIEW";
   }
 
-  if (reviewDone.value) {
+  if (rolloutReady.value) {
     return "ROLLOUT";
   }
 

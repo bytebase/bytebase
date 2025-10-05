@@ -4,7 +4,6 @@ import { v4 as uuidv4 } from "uuid";
 import type { InjectionKey, Ref, ComputedRef } from "vue";
 import { inject, provide } from "vue";
 import type { ComposedIssue, ReviewFlow } from "@/types";
-import type { Issue_ApprovalStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import type {
@@ -24,18 +23,9 @@ export type IssueEvents = Emittery<{
 }>;
 
 export type ReviewContext = {
-  // true if the approval flow is generated
-  ready: Ref<boolean>;
   // The review flow.
   // Now we have only one flow in an issue
   flow: Ref<ReviewFlow>;
-  // The overall status of the entire review flow
-  status: Ref<Issue_ApprovalStatus>;
-  // Whether the review flow is finished successfully.
-  // A shortcut to `status === Issue_ApprovalStatus.APPROVED`
-  done: Ref<boolean>;
-  // Whether the review finding has error.
-  error: Ref<string | undefined>;
 };
 
 export type IssueContext = {

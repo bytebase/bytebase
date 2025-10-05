@@ -328,7 +328,10 @@ import {
   useEnvironmentV1Store,
   usePolicyByParentAndType,
 } from "@/store";
-import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  Issue_Approver_Status,
+  Issue_ApprovalStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   PolicyType,
   RolloutPolicy_Checkers_PlanCheckEnforcement,
@@ -348,7 +351,6 @@ import type {
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractStageUID, isNullOrUndefined } from "@/utils";
 import { usePlanContextWithRollout, usePlanCheckStatus } from "../../logic";
-import { useIssueReviewContext } from "../../logic/issue-review";
 import PlanCheckStatusCount from "../PlanCheckStatusCount.vue";
 import TaskDatabaseName from "./TaskDatabaseName.vue";
 import { canRolloutTasks } from "./taskPermissions";
@@ -376,7 +378,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { issue, rollout, plan, taskRuns } = usePlanContextWithRollout();
-const reviewContext = useIssueReviewContext();
 const state = reactive<LocalState>({
   loading: false,
 });
@@ -389,7 +390,7 @@ const { statusSummary: planCheckStatus } = usePlanCheckStatus(plan);
 // Check issue approval status using the review context
 const issueApprovalStatus = computed(() => {
   if (!issue?.value) {
-    return { isApproved: true, hasIssue: false };
+    return { rolloutReady: true, hasIssue: false };
   }
 
   const currentIssue = issue.value;
@@ -397,11 +398,13 @@ const issueApprovalStatus = computed(() => {
 
   // Check if issue has approval template
   if (!approvalTemplate || (approvalTemplate.flow?.steps || []).length === 0) {
-    return { isApproved: true, hasIssue: true };
+    return { rolloutReady: true, hasIssue: true };
   }
 
-  // Use the review context to determine approval status
-  const isApproved = reviewContext.done.value;
+  // Use the approval status to determine if rollout is ready
+  const rolloutReady =
+    currentIssue.approvalStatus === Issue_ApprovalStatus.APPROVED ||
+    currentIssue.approvalStatus === Issue_ApprovalStatus.SKIPPED;
 
   // Determine the specific status (rejected vs pending)
   let status = "pending";
@@ -414,7 +417,7 @@ const issueApprovalStatus = computed(() => {
   }
 
   return {
-    isApproved,
+    rolloutReady,
     hasIssue: true,
     status,
   };
@@ -544,7 +547,7 @@ const validationErrors = computed(() => {
     if (
       requiresIssueApproval &&
       issueApprovalStatus.value.hasIssue &&
-      !issueApprovalStatus.value.isApproved
+      !issueApprovalStatus.value.rolloutReady
     ) {
       const isRejected = issueApprovalStatus.value.status === "rejected";
       errors.push(
@@ -592,7 +595,7 @@ const validationWarnings = computed(() => {
     if (
       !requiresIssueApproval &&
       issueApprovalStatus.value.hasIssue &&
-      !issueApprovalStatus.value.isApproved
+      !issueApprovalStatus.value.rolloutReady
     ) {
       const isRejected = issueApprovalStatus.value.status === "rejected";
       warnings.push(

@@ -6,6 +6,7 @@ import { useRoute, useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUIStateStore } from "@/store";
 import { emptyStage, emptyTask } from "@/types";
+import { Issue_ApprovalStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -134,7 +135,11 @@ export const useBaseIssueContext = (
   const phase = computed((): IssuePhase => {
     if (isCreating.value) return "CREATE";
 
-    return reviewContext.done.value ? "ROLLOUT" : "REVIEW";
+    const approvalStatus = issue.value.approvalStatus;
+    const rolloutReady =
+      approvalStatus === Issue_ApprovalStatus.APPROVED ||
+      approvalStatus === Issue_ApprovalStatus.SKIPPED;
+    return rolloutReady ? "ROLLOUT" : "REVIEW";
   });
 
   const formatOnSave = computed({
