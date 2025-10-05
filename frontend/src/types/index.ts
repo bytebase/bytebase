@@ -17,7 +17,6 @@ export * from "./notification";
 export * from "./oauth";
 export * from "./plan";
 export * from "./release";
-export * from "./review";
 export * from "./risk";
 export * from "./rollout";
 export * from "./semanticTypes";

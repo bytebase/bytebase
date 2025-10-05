@@ -77,7 +77,6 @@ import {
 import PollerProvider from "@/components/Plan/PollerProvider.vue";
 import { HeaderSection } from "@/components/Plan/components";
 import RefreshIndicator from "@/components/Plan/components/RefreshIndicator.vue";
-import { provideIssueReviewContext } from "@/components/Plan/logic/issue-review";
 import { provideSidebarContext } from "@/components/Plan/logic/sidebar";
 import { useNavigationGuard } from "@/components/Plan/logic/useNavigationGuard";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
@@ -166,8 +165,6 @@ providePlanContext({
   taskRuns,
   ...planBaseContext,
 });
-
-provideIssueReviewContext(computed(() => issue.value));
 
 provideSidebarContext(containerRef);
 

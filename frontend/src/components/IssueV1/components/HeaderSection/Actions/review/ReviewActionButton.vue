@@ -25,13 +25,23 @@ import type { IssueReviewAction } from "@/components/IssueV1/logic";
 import {
   issueReviewActionDisplayName,
   issueReviewActionButtonProps,
-  allowUserToApplyReviewAction,
   useIssueContext,
-  displayReviewRoleTitle,
 } from "@/components/IssueV1/logic";
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
-import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  candidatesOfApprovalStepV1,
+  extractUserId,
+  useCurrentUserV1,
+} from "@/store";
+import type { ComposedIssue } from "@/types";
+import {
+  ApprovalNode_Type,
+  Issue_ApprovalStatus,
+  Issue_Approver_Status,
+  IssueStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
+import { displayRoleTitle, isUserIncludedInList } from "@/utils";
 
 const props = defineProps<{
   action: IssueReviewAction;
@@ -67,15 +77,54 @@ const errors = computed(() => {
   if (!step) return errors;
 
   for (const node of step.nodes) {
-    const roleTitle = displayReviewRoleTitle(node);
-    if (roleTitle) {
-      errors.push({
-        error: roleTitle,
-        indent: 1,
-      });
+    if (node.type === ApprovalNode_Type.ANY_IN_GROUP && node.role) {
+      const roleTitle = displayRoleTitle(node.role);
+      if (roleTitle) {
+        errors.push({
+          error: roleTitle,
+          indent: 1,
+        });
+      }
     }
   }
 
   return errors;
 });
+
+const allowUserToApplyReviewAction = (
+  issue: ComposedIssue,
+  action: IssueReviewAction
+) => {
+  if (
+    issue.status === IssueStatus.CANCELED ||
+    issue.status === IssueStatus.DONE ||
+    issue.approvalStatus === Issue_ApprovalStatus.CHECKING ||
+    issue.approvalStatus === Issue_ApprovalStatus.APPROVED ||
+    issue.approvalStatus === Issue_ApprovalStatus.SKIPPED
+  ) {
+    return false;
+  }
+
+  const me = useCurrentUserV1();
+
+  if (action === "RE_REQUEST") {
+    return me.value.email === extractUserId(issue.creator);
+  }
+
+  const { approvalTemplates, approvers } = issue;
+  if (approvalTemplates.length === 0) return false;
+
+  const rejectedIndex = approvers.findIndex(
+    (ap) => ap.status === Issue_Approver_Status.REJECTED
+  );
+  const currentStepIndex =
+    rejectedIndex >= 0 ? rejectedIndex : approvers.length;
+
+  const steps = approvalTemplates[0].flow?.steps ?? [];
+  const step = steps[currentStepIndex];
+  if (!step) return false;
+
+  const candidates = candidatesOfApprovalStepV1(issue, step);
+  return isUserIncludedInList(me.value.email, candidates);
+};
 </script>
