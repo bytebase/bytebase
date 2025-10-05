@@ -36,19 +36,10 @@
     >
       {{ $t("issue.awaiting-rollout") }}
     </div>
-    <div
-      v-else-if="showEarliestAllowedTimeBanner"
-      class="h-8 w-full text-base font-medium bg-accent text-white flex justify-center items-center"
-    >
-      {{
-        $t("issue.waiting-earliest-allowed-time", { time: earliestAllowedTime })
-      }}
-    </div>
   </template>
 </template>
 
 <script lang="ts" setup>
-import dayjs from "dayjs";
 import { computed } from "vue";
 import {
   IssueStatus,
@@ -91,32 +82,6 @@ const showPendingRollout = computed(() => {
 
   const task = activeTaskInRollout(issue.value.rolloutEntity);
   return task.status === Task_Status.NOT_STARTED;
-});
-
-const showEarliestAllowedTimeBanner = computed(() => {
-  if (issue.value.status !== IssueStatus.OPEN) return false;
-  if (!isDatabaseChangeRelatedIssue(issue.value)) {
-    return false;
-  }
-
-  const task = activeTaskInRollout(issue.value.rolloutEntity);
-
-  if (task.status !== Task_Status.PENDING) {
-    return false;
-  }
-
-  // const now = Math.floor(Date.now() / 1000);
-  // return task.earliestAllowedTs > now;
-  return false; // todo
-});
-
-const earliestAllowedTime = computed(() => {
-  // const task = activeTaskInRollout(issue.value.rolloutEntity);
-  const tz = "UTC" + dayjs().format("ZZ");
-  return dayjs().format(`YYYY-MM-DD HH:mm:ss ${tz}`);
-  // return dayjs(task.earliestAllowedTs * 1000).format(
-  //   `YYYY-MM-DD HH:mm:ss ${tz}`
-  // );
 });
 
 const isUnfinishedResolvedIssue = computed(() => {
