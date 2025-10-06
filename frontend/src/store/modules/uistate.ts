@@ -2,7 +2,6 @@ import { isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
 import { useCurrentUserV1 } from "@/store";
-import { useDynamicLocalStorage } from "@/utils";
 
 export interface UIState {
   collapseStateByKey: Map<string, boolean>;
@@ -20,15 +19,6 @@ export const useUIStateStore = defineStore("uistate", () => {
     () => `ui.list.collapse.${currentUser.value.name}`
   );
   const INTRO_MODULE_KEY = computed(() => `ui.intro.${currentUser.value.name}`);
-  const EDITOR_FORMAT_MODULE_KEY = computed(
-    () => `ui.state.editor.format-statement-on-save.${currentUser.value.name}`
-  );
-
-  // default to false
-  const editorFormatStatementOnSave = useDynamicLocalStorage<boolean>(
-    EDITOR_FORMAT_MODULE_KEY,
-    false
-  );
 
   const getIntroStateByKey = (key: string): boolean => {
     return stateByKey(state.introStateByKey, INTRO_MODULE_KEY.value, key);
@@ -60,10 +50,6 @@ export const useUIStateStore = defineStore("uistate", () => {
     state.introStateByKey.set(key, newState);
   };
 
-  const setEditorFormatStatementOnSave = (value: boolean) => {
-    editorFormatStatementOnSave.value = value;
-  };
-
   const restoreState = () => {
     const storedCollapseState = localStorage.getItem(COLLAPSE_MODULE_KEY.value);
     const collapseState = storedCollapseState
@@ -91,9 +77,7 @@ export const useUIStateStore = defineStore("uistate", () => {
   return {
     saveIntroStateByKey,
     restoreState,
-    setEditorFormatStatementOnSave,
     getIntroStateByKey,
-    editorFormatStatementOnSave,
   };
 });
 

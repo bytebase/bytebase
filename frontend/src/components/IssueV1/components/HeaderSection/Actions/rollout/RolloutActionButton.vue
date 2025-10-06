@@ -26,6 +26,7 @@ import type {
 } from "@/components/IssueV1/logic";
 import {
   allowUserToApplyTaskRolloutAction,
+  releaserCandidatesForIssue,
   taskRolloutActionButtonProps,
   taskRolloutActionDisplayName,
   useIssueContext,
@@ -48,7 +49,11 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { issue, selectedTask, releaserCandidates } = useIssueContext();
+const { issue, selectedTask } = useIssueContext();
+
+const releaserCandidates = computed(() => {
+  return releaserCandidatesForIssue(issue.value);
+});
 
 const errors = asyncComputed(async () => {
   const errors: ErrorItem[] = [];

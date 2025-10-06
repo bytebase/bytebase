@@ -1,5 +1,4 @@
 import type Emittery from "emittery";
-import type { useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import type { InjectionKey, Ref, ComputedRef } from "vue";
 import { inject, provide } from "vue";
@@ -11,8 +10,6 @@ import type {
   IssueStatusAction,
   TaskRolloutAction,
 } from "./action";
-
-export type IssuePhase = "CREATE" | "REVIEW" | "ROLLOUT";
 
 export type IssueEvents = Emittery<{
   "status-changed": { eager: boolean };
@@ -27,23 +24,16 @@ export type IssueContext = {
   isCreating: Ref<boolean>;
   ready: Ref<boolean>;
   issue: Ref<ComposedIssue>;
-  phase: Ref<IssuePhase>;
   allowChange: ComputedRef<boolean>;
-
-  // The release candidates of the issue.
-  // Format: users/{email}
-  releaserCandidates: Ref<string[]>;
 
   // UI status
   selectedStage: Ref<Stage>;
   selectedTask: Ref<Task>;
-  formatOnSave: Ref<boolean>;
 
   // UI events
   events: IssueEvents;
 
   // misc
-  dialog: ReturnType<typeof useDialog>;
   reInitialize: (overrides?: Record<string, string>) => Promise<void>;
 
   // utility functions
@@ -58,16 +48,6 @@ export const useIssueContext = () => {
   return inject(KEY)!;
 };
 
-export const provideIssueContext = (
-  context: Partial<IssueContext>,
-  root = false
-) => {
-  if (!root) {
-    const parent = useIssueContext();
-    context = {
-      ...parent,
-      ...context,
-    };
-  }
+export const provideIssueContext = (context: Partial<IssueContext>) => {
   provide(KEY, context as IssueContext);
 };

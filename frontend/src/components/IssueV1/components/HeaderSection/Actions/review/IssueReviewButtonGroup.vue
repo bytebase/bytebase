@@ -44,20 +44,25 @@ import ReviewActionButton from "./ReviewActionButton.vue";
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
-const { issue, phase, events, selectedTask, selectedStage } = useIssueContext();
+const { issue, isCreating, events, selectedTask, selectedStage } =
+  useIssueContext();
 const { project } = useCurrentProjectV1();
 
 const shouldShowApproveOrReject = computed(() => {
   if (
     issue.value.status === IssueStatus.CANCELED ||
     issue.value.status === IssueStatus.DONE ||
-    phase.value !== "REVIEW" ||
-    issue.value.approvalStatus !== Issue_ApprovalStatus.PENDING
+    isCreating.value
   ) {
     return false;
   }
 
-  // Hide review actions if self-approval is disabled.
+  // Must be pending approval
+  if (issue.value.approvalStatus !== Issue_ApprovalStatus.PENDING) {
+    return false;
+  }
+
+  // Hide review actions if self-approval is disabled
   if (
     !project.value.allowSelfApproval &&
     currentUser.value.email === extractUserId(issue.value.creator)

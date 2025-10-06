@@ -58,7 +58,6 @@ import {
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import {
   databaseEngineForSpec,
   getLocalSheetByName,
@@ -76,8 +75,6 @@ import {
 } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSheetV1Store, useCurrentProjectV1 } from "@/store";
-import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
-import type { Engine } from "@/types/proto-es/v1/common_pb";
 import { CreateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueSchema, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { CreatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
@@ -99,17 +96,13 @@ import {
   getSheetStatement,
   hasPermissionToCreateChangeDatabaseIssueInProject,
   issueV1Slug,
-  setSheetStatement,
   sheetNameOfTaskV1,
   type Defer,
 } from "@/utils";
 
-const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
-
 const { t } = useI18n();
 const router = useRouter();
-const { isCreating, issue, formatOnSave, events, selectedTask } =
-  useIssueContext();
+const { isCreating, issue, events, selectedTask } = useIssueContext();
 const { project } = useCurrentProjectV1();
 const { resultMap: checkResultMap, upsertResult: upsertCheckResult } =
   usePlanSQLCheckContext();
@@ -230,7 +223,6 @@ const createSheets = async () => {
       const engine = await databaseEngineForSpec(spec);
       sheet.engine = engine;
       pendingCreateSheetMap.set(sheet.name, sheet);
-      await maybeFormatSQL(sheet, engine);
     }
   }
   const pendingCreateSheetList = Array.from(pendingCreateSheetMap.values());
@@ -265,28 +257,6 @@ const createPlan = async (title: string, description: string) => {
   });
   const response = await planServiceClientConnect.createPlan(request);
   return response;
-};
-
-const maybeFormatSQL = async (sheet: Sheet, engine: Engine) => {
-  if (!formatOnSave.value) {
-    return;
-  }
-  const language = languageOfEngineV1(engine);
-  if (language !== "sql") {
-    return;
-  }
-  const dialect = dialectOfEngineV1(engine);
-
-  const statement = getSheetStatement(sheet);
-  if (statement.length > MAX_FORMATTABLE_STATEMENT_SIZE) {
-    return;
-  }
-  const { error, data: formatted } = await formatSQL(statement, dialect);
-  if (error) {
-    return;
-  }
-
-  setSheetStatement(sheet, formatted);
 };
 
 const runSQLCheckForIssue = async () => {

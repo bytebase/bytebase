@@ -28,6 +28,7 @@ import {
   getApplicableIssueStatusActionList,
   getApplicableStageRolloutActionList,
   getApplicableTaskRolloutActionList,
+  releaserCandidatesForIssue,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
@@ -37,8 +38,11 @@ import RolloutActionButtonGroup from "./RolloutActionButtonGroup.vue";
 import type { RolloutAction } from "./common";
 
 const { t } = useI18n();
-const { issue, selectedStage, selectedTask, events, releaserCandidates } =
-  useIssueContext();
+const { issue, selectedStage, selectedTask, events } = useIssueContext();
+
+const releaserCandidates = computed(() => {
+  return releaserCandidatesForIssue(issue.value);
+});
 
 const issueStatusActionList = computed(() => {
   return getApplicableIssueStatusActionList(issue.value);

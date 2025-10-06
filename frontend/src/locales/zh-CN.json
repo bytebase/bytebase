@@ -945,7 +945,6 @@
       }
     },
     "new-issue": "@:common.new@:common.issue",
-    "format-on-save": "保存时格式化",
     "action-to-current-stage": "{action}当前阶段",
     "upload-sql": "上传 SQL",
     "statement-from-sheet-warning": "由于 SQL 文件过大，因此被截断以便显示，并且编辑功能已禁用。你可以上传新的 SQL 文件以将其覆盖。",
@@ -993,16 +992,6 @@
       "custom-date-placeholder": "选择到期日期和时间"
     },
     "review-sent-back": "审核被退回",
-    "update-statement": {
-      "self": "更新{type}",
-      "apply-current-change-to": "应用当前修改到",
-      "target": {
-        "selected-task": "选中的任务",
-        "selected-stage": "选中的阶段",
-        "all-tasks": "所有任务"
-      },
-      "current-change-will-apply-to-all-tasks-in-batch-mode": "在批量模式下，当前更改将应用于所有任务。"
-    },
     "action-anyway": "仍要{action}",
     "sql-check": {
       "sql-checks": "SQL 检查项",
