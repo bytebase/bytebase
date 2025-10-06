@@ -117,10 +117,6 @@ const defaultSearchParams = () => {
         id: "state",
         value: "ACTIVE",
       },
-      {
-        id: "creator",
-        value: me.value.email,
-      },
     ],
   };
   return params;
