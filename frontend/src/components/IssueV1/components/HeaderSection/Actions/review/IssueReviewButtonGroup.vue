@@ -47,23 +47,12 @@ const currentUser = useCurrentUserV1();
 const { issue, phase, events, selectedTask, selectedStage } = useIssueContext();
 const { project } = useCurrentProjectV1();
 
-const approvalFlowReady = computed(() => {
-  const approvalStatus = issue.value.approvalStatus;
-  return approvalStatus !== Issue_ApprovalStatus.CHECKING;
-});
-
-const rolloutReady = computed(() => {
-  const approvalStatus = issue.value.approvalStatus;
-  return (
-    approvalStatus === Issue_ApprovalStatus.APPROVED ||
-    approvalStatus === Issue_ApprovalStatus.SKIPPED
-  );
-});
-
 const shouldShowApproveOrReject = computed(() => {
   if (
     issue.value.status === IssueStatus.CANCELED ||
-    issue.value.status === IssueStatus.DONE
+    issue.value.status === IssueStatus.DONE ||
+    phase.value !== "REVIEW" ||
+    issue.value.approvalStatus !== Issue_ApprovalStatus.PENDING
   ) {
     return false;
   }
@@ -76,41 +65,24 @@ const shouldShowApproveOrReject = computed(() => {
     return false;
   }
 
-  if (phase.value !== "REVIEW") {
-    return false;
-  }
-
-  if (!approvalFlowReady.value) return false;
-  if (rolloutReady.value) return false;
-
   return true;
 });
-const shouldShowApprove = computed(() => {
-  if (!shouldShowApproveOrReject.value) return false;
-  return issue.value.approvalStatus === Issue_ApprovalStatus.PENDING;
-});
-const shouldShowReject = computed(() => {
-  if (!shouldShowApproveOrReject.value) return false;
-  return issue.value.approvalStatus === Issue_ApprovalStatus.PENDING;
-});
+
 const shouldShowReRequestReview = computed(() => {
   return (
     extractUserId(issue.value.creator) === currentUser.value.email &&
     issue.value.approvalStatus === Issue_ApprovalStatus.REJECTED
   );
 });
+
 const issueReviewActionList = computed(() => {
   const actionList: IssueReviewAction[] = [];
-  if (shouldShowReject.value) {
-    actionList.push("SEND_BACK");
-  }
-  if (shouldShowApprove.value) {
-    actionList.push("APPROVE");
+  if (shouldShowApproveOrReject.value) {
+    actionList.push("SEND_BACK", "APPROVE");
   }
   if (shouldShowReRequestReview.value) {
     actionList.push("RE_REQUEST");
   }
-
   return actionList;
 });
 

@@ -959,7 +959,6 @@
       "off-tooltip": "自動コミットモードで個別にステートメントを実行します。ステートメントは即座にコミットされ、後続のステートメントが失敗してもロールバックできません。",
       "execution-order-note": "非トランザクション ステートメントは最後に実行されます。"
     },
-    "waiting-earliest-allowed-time": "{time}の後に実行されます",
     "batch-transition": {
       "not-allowed-tips": "選択したイシューの一部を {operation} にすることはできません",
       "resolve": "仕上げる",
