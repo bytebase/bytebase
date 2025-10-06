@@ -1,12 +1,9 @@
 import Emittery from "emittery";
 import { first, isEqual } from "lodash-es";
-import { useDialog } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { useUIStateStore } from "@/store";
 import { emptyStage, emptyTask } from "@/types";
-import { Issue_ApprovalStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -20,9 +17,8 @@ import {
   extractTaskUID,
   extractStageUID,
 } from "@/utils";
-import type { IssueContext, IssueEvents, IssuePhase } from "./context";
+import type { IssueContext, IssueEvents } from "./context";
 import { planCheckRunListForTask } from "./plan-check";
-import { releaserCandidatesForIssue } from "./releaser";
 import { stageForTask } from "./utils";
 
 const state = {
@@ -36,10 +32,8 @@ export const useBaseIssueContext = (
   context: Pick<IssueContext, "isCreating" | "ready" | "issue">
 ): Partial<IssueContext> => {
   const { isCreating, issue } = context;
-  const uiStateStore = useUIStateStore();
   const route = useRoute();
   const router = useRouter();
-  const dialog = useDialog();
 
   const events: IssueEvents = new Emittery();
 
@@ -126,25 +120,6 @@ export const useBaseIssueContext = (
     });
   });
 
-  const releaserCandidates = computed(() => {
-    return releaserCandidatesForIssue(issue.value);
-  });
-
-  const phase = computed((): IssuePhase => {
-    if (isCreating.value) return "CREATE";
-
-    const approvalStatus = issue.value.approvalStatus;
-    const rolloutReady =
-      approvalStatus === Issue_ApprovalStatus.APPROVED ||
-      approvalStatus === Issue_ApprovalStatus.SKIPPED;
-    return rolloutReady ? "ROLLOUT" : "REVIEW";
-  });
-
-  const formatOnSave = computed({
-    get: () => uiStateStore.editorFormatStatementOnSave,
-    set: (value: boolean) => uiStateStore.setEditorFormatStatementOnSave(value),
-  });
-
   const planCheckRunMapForTask = ref<Map<string, PlanCheckRun[]>>(new Map());
 
   const getPlanCheckRunsForTask = (task: Task) => {
@@ -169,13 +144,9 @@ export const useBaseIssueContext = (
   );
 
   return {
-    phase,
     events,
-    releaserCandidates,
     selectedStage,
     selectedTask,
-    formatOnSave,
-    dialog,
     getPlanCheckRunsForTask,
   };
 };

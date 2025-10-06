@@ -72,17 +72,14 @@ const issueBaseContext = useBaseIssueContext({
   issue,
 });
 
-provideIssueContext(
-  {
-    isCreating,
-    issue,
-    ready,
-    reInitialize,
-    allowChange,
-    ...issueBaseContext,
-  },
-  true /* root */
-);
+provideIssueContext({
+  isCreating,
+  issue,
+  ready,
+  reInitialize,
+  allowChange,
+  ...issueBaseContext,
+});
 
 providePlanCheckRunContext(
   {

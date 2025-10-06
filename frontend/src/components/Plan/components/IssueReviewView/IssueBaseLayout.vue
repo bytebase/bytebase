@@ -91,14 +91,11 @@ const composedIssue = computed(() => {
   return composedIssue;
 });
 
-provideIssueContext(
-  {
-    isCreating: computed(() => false),
-    ready,
-    allowChange,
-    issue: composedIssue,
-    ...issueBaseContext,
-  },
-  true /* root */
-);
+provideIssueContext({
+  isCreating: computed(() => false),
+  ready,
+  allowChange,
+  issue: composedIssue,
+  ...issueBaseContext,
+});
 </script>
