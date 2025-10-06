@@ -18,10 +18,7 @@
       <CheckIcon />
     </template>
     <template v-else-if="hasRunningChecks">
-      <span
-        class="w-1.5 h-1.5 rounded-full bg-warning animate-pulse"
-        aria-hidden="true"
-      ></span>
+      <ClockIcon class="animate-spin" style="animation-duration: 2s" />
     </template>
   </span>
 </template>
@@ -31,6 +28,7 @@ import type { PropType } from "vue";
 import { computed } from "vue";
 import CheckIcon from "~icons/heroicons-solid/check";
 import XIcon from "~icons/heroicons-solid/x";
+import ClockIcon from "~icons/heroicons-outline/clock";
 import {
   PlanCheckRun_Result_Status,
   type Plan,
