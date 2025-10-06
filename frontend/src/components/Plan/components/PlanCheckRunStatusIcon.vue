@@ -1,31 +1,27 @@
 <template>
   <span
-    class="flex items-center justify-center rounded-full select-none overflow-hidden"
+    v-if="hasAnyChecks"
+    class="flex items-center justify-center select-none flex-shrink-0"
     :class="iconClass()"
   >
     <template v-if="planCheckRunStatus === PlanCheckRun_Result_Status.ERROR">
-      <span
-        class="h-2 w-2 rounded-full text-center pb-6 font-normal text-base"
-        aria-hidden="true"
-        >!</span
-      >
+      <XIcon />
     </template>
     <template
       v-else-if="planCheckRunStatus === PlanCheckRun_Result_Status.WARNING"
     >
-      <span
-        class="h-2 w-2 rounded-full text-center pb-6 font-normal text-base"
-        aria-hidden="true"
-        >!</span
-      >
+      <span class="text-xs font-bold" aria-hidden="true">!</span>
     </template>
     <template
       v-else-if="planCheckRunStatus === PlanCheckRun_Result_Status.SUCCESS"
     >
-      <heroicons-solid:check class="w-4 h-4" />
+      <CheckIcon />
     </template>
-    <template v-else>
-      <span class="h-3 w-3 bg-white rounded-full" aria-hidden="true"></span>
+    <template v-else-if="hasRunningChecks">
+      <span
+        class="w-2.5 h-2.5 rounded-full border-2 border-control"
+        aria-hidden="true"
+      ></span>
     </template>
   </span>
 </template>
@@ -33,6 +29,8 @@
 <script lang="ts" setup>
 import type { PropType } from "vue";
 import { computed } from "vue";
+import CheckIcon from "~icons/heroicons-solid/check";
+import XIcon from "~icons/heroicons-solid/x";
 import {
   PlanCheckRun_Result_Status,
   type Plan,
@@ -52,21 +50,23 @@ const props = defineProps({
   },
 });
 
-const { getOverallStatus: planCheckRunStatus } = usePlanCheckStatus(
-  computed(() => props.plan)
-);
+const {
+  getOverallStatus: planCheckRunStatus,
+  hasAnyStatus: hasAnyChecks,
+  hasRunning: hasRunningChecks,
+} = usePlanCheckStatus(computed(() => props.plan));
 
 const iconClass = () => {
-  const iconClass = props.size === "normal" ? "w-5 h-5" : "w-4 h-4";
+  const sizeClass = props.size === "normal" ? "w-4 h-4" : "w-3.5 h-3.5";
   switch (planCheckRunStatus.value) {
     case PlanCheckRun_Result_Status.ERROR:
-      return iconClass + " bg-error text-white";
+      return `${sizeClass} text-error`;
     case PlanCheckRun_Result_Status.WARNING:
-      return iconClass + " bg-warning text-white";
+      return `${sizeClass} text-warning`;
     case PlanCheckRun_Result_Status.SUCCESS:
-      return iconClass + " bg-success text-white";
+      return `${sizeClass} text-success`;
     default:
-      return iconClass + " bg-control text-white";
+      return `${sizeClass} text-warning`;
   }
 };
 </script>
