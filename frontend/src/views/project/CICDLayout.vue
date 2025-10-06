@@ -59,7 +59,14 @@
 
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
-import { CirclePlayIcon, FileDiffIcon, Layers2Icon } from "lucide-vue-next";
+import {
+  CirclePlayIcon,
+  FileDiffIcon,
+  Layers2Icon,
+  CheckCircle2Icon,
+  XCircleIcon,
+  ClockIcon,
+} from "lucide-vue-next";
 import { NSpin, NTab, NTabs, NTag } from "naive-ui";
 import { computed, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -92,7 +99,11 @@ import {
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  IssueStatus,
+  Issue_ApprovalStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractIssueUID,
   extractPlanUID,
@@ -237,13 +248,99 @@ const availableTabs = computed<TabKey[]>(() => {
   return tabs;
 });
 
+const approvalStatusInfo = computed(() => {
+  if (!issue.value) return null;
+
+  const approvalStatus = issue.value.approvalStatus;
+
+  // Approved or skipped - ready to rollout
+  if (
+    approvalStatus === Issue_ApprovalStatus.APPROVED ||
+    approvalStatus === Issue_ApprovalStatus.SKIPPED
+  ) {
+    return {
+      icon: CheckCircle2Icon,
+      class: "text-success",
+      ariaLabel: t("issue.approval.approved-and-waiting-for-rollout"),
+    };
+  }
+
+  // Rejected
+  if (approvalStatus === Issue_ApprovalStatus.REJECTED) {
+    return {
+      icon: XCircleIcon,
+      class: "text-error",
+      ariaLabel: t("issue.approval.rejected-error"),
+    };
+  }
+
+  // Pending
+  if (approvalStatus === Issue_ApprovalStatus.PENDING) {
+    return {
+      icon: ClockIcon,
+      class: "text-warning",
+      ariaLabel: t("issue.approval.pending-error"),
+    };
+  }
+
+  // Checking state - no indicator
+  return null;
+});
+
+const rolloutStatusInfo = computed(() => {
+  if (!rollout.value || rollout.value.stages.length === 0) return null;
+
+  // Collect all tasks from all stages
+  const allTasks = rollout.value.stages.flatMap((stage) => stage.tasks);
+
+  // No tasks means no status to show
+  if (allTasks.length === 0) return null;
+
+  // Check for failed or canceled tasks
+  const anyFailed = allTasks.some(
+    (task) =>
+      task.status === Task_Status.FAILED || task.status === Task_Status.CANCELED
+  );
+  if (anyFailed) {
+    return {
+      icon: XCircleIcon,
+      class: "text-error",
+    };
+  }
+
+  // Check if all tasks are done
+  const allDone = allTasks.every((task) => task.status === Task_Status.DONE);
+  if (allDone) {
+    return {
+      icon: CheckCircle2Icon,
+      class: "text-success",
+    };
+  }
+
+  // Tasks are still in progress - no indicator
+  return null;
+});
+
 const tabRender = (tab: TabKey) => {
+  const approvalStatusIcon = approvalStatusInfo.value?.icon;
+  const approvalStatusClass = approvalStatusInfo.value?.class;
+  const approvalStatusAriaLabel = approvalStatusInfo.value?.ariaLabel;
+  const rolloutStatusIcon = rolloutStatusInfo.value?.icon;
+  const rolloutStatusClass = rolloutStatusInfo.value?.class;
+
   switch (tab) {
     case TabKey.Issue:
       return (
         <div class="flex items-center gap-2">
           <Layers2Icon size={18} />
           <span>{t("common.overview")}</span>
+          {approvalStatusIcon && (
+            <approvalStatusIcon
+              size={16}
+              class={approvalStatusClass}
+              aria-label={approvalStatusAriaLabel}
+            />
+          )}
         </div>
       );
     case TabKey.Plan:
@@ -256,6 +353,13 @@ const tabRender = (tab: TabKey) => {
               {plan.value.specs.length}
             </NTag>
           )}
+          {!isCreating.value && approvalStatusIcon && (
+            <approvalStatusIcon
+              size={16}
+              class={approvalStatusClass}
+              aria-label={approvalStatusAriaLabel}
+            />
+          )}
         </div>
       );
     case TabKey.Rollout:
@@ -263,6 +367,9 @@ const tabRender = (tab: TabKey) => {
         <div class="flex items-center gap-2">
           <CirclePlayIcon size={18} />
           <span>{t("plan.navigator.rollout")}</span>
+          {rolloutStatusIcon && (
+            <rolloutStatusIcon size={16} class={rolloutStatusClass} />
+          )}
         </div>
       );
     default:

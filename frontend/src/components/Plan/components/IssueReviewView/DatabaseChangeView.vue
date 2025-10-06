@@ -76,13 +76,13 @@ import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanCheckRun_Result_Status } from "@/types/proto-es/v1/plan_service_pb";
 import { extractProjectResourceName, getStageStatus } from "@/utils";
-import { usePlanContextWithIssue } from "../..";
 import { usePlanContext, usePlanCheckStatus } from "../../logic";
 import ChecksDrawer from "../ChecksView/ChecksDrawer.vue";
 import PlanCheckStatusCount from "../PlanCheckStatusCount.vue";
 
-const { issue, rollout } = usePlanContextWithIssue();
-const { plan } = usePlanContext();
+// Use usePlanContext instead of usePlanContextWithIssue to handle plan creation
+// where issue doesn't exist yet
+const { plan, rollout, issue } = usePlanContext();
 const environmentStore = useEnvironmentV1Store();
 const router = useRouter();
 const { project } = useCurrentProjectV1();
@@ -93,7 +93,7 @@ const selectedResultStatus = ref<PlanCheckRun_Result_Status | undefined>(
 );
 
 const shouldShowOverview = computed(() => {
-  return issue.value.type === Issue_Type.DATABASE_CHANGE || rollout?.value;
+  return issue.value?.type === Issue_Type.DATABASE_CHANGE || rollout?.value;
 });
 
 const getEnvironmentEntity = (environmentName: string) => {
