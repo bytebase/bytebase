@@ -18,6 +18,7 @@ import { NPerformantEllipsis, NDataTable, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import PencilIcon from "~icons/heroicons-outline/pencil";
 import { BBAvatar } from "@/bbkit";
 import Timestamp from "@/components/misc/Timestamp.vue";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
@@ -45,10 +46,24 @@ const { enabledNewLayout } = useIssueLayoutVersion();
 const columnList = computed((): DataTableColumn<Plan>[] => {
   const columns: (DataTableColumn<Plan> & { hide?: boolean })[] = [
     {
-      key: "status",
+      key: "state-icon",
       title: "",
-      width: "36px",
-      render: (plan) => <PlanCheckRunStatusIcon plan={plan} />,
+      width: "24px",
+      render: (plan) => {
+        const showDraftIcon =
+          enabledNewLayout.value && plan.issue === "" && plan.rollout === "";
+        if (!showDraftIcon || plan.state === State.DELETED) {
+          return null;
+        }
+        return (
+          <span
+            class="flex items-center justify-center w-4 h-4 rounded-full border border-control-border text-control opacity-60"
+            title={t("common.draft")}
+          >
+            <PencilIcon class="w-3 h-3" />
+          </span>
+        );
+      },
     },
     {
       key: "title",
@@ -79,6 +94,7 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
             ) : (
               <span class="opacity-60 italic">{t("common.untitled")}</span>
             )}
+            <PlanCheckRunStatusIcon plan={plan} size="small" />
             {isDeleted && (
               <NTag type="warning" round size="small">
                 {t("common.closed")}
