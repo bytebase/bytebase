@@ -18,7 +18,7 @@
       <CheckIcon />
     </template>
     <template v-else-if="hasRunningChecks">
-      <span class="w-2 h-2 rounded-full bg-warning" aria-hidden="true"></span>
+      <span class="w-2 h-2 rounded-full bg-control" aria-hidden="true"></span>
     </template>
   </span>
 </template>
