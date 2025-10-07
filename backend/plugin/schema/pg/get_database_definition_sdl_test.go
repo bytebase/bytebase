@@ -637,9 +637,9 @@ $$;
 			},
 			expected: `CREATE SEQUENCE "public"."independent_seq";
 
-CREATE SEQUENCE "public"."order_seq" AS integer START WITH 1000 INCREMENT BY 10 MINVALUE 1000 MAXVALUE 999999 CYCLE;
-
 CREATE SEQUENCE "public"."user_id_seq";
+
+CREATE SEQUENCE "public"."order_seq" AS integer START WITH 1000 INCREMENT BY 10 MINVALUE 1000 MAXVALUE 999999 CYCLE;
 
 CREATE TABLE "public"."users" (
     "id" INTEGER DEFAULT nextval('user_id_seq'::regclass) NOT NULL,

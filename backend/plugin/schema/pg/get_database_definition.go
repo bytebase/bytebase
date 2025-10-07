@@ -112,22 +112,22 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 		}
 	}
 
-	// Mapping from table ID to sequence metadata.
-	// Construct none owner column sequences first.
-	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
+	// Write all sequences before tables to ensure they exist before any table references them.
+	// This prevents errors when a sequence owned by one table is referenced by another table
+	// that topological sort places first. Matches PostgreSQL's pg_dump behavior.
+	sequenceOwnershipMap := make(map[string][]*storepb.SequenceMetadata)
 	for _, schema := range metadata.Schemas {
 		for _, sequence := range schema.Sequences {
 			if sequence.SkipDump {
 				continue
 			}
-			if sequence.OwnerTable == "" || sequence.OwnerColumn == "" {
-				if err := writeCreateSequence(&buf, schema.Name, sequence); err != nil {
-					return "", err
-				}
-				continue
+			if err := writeCreateSequence(&buf, schema.Name, sequence); err != nil {
+				return "", err
 			}
-			tableID := getObjectID(schema.Name, sequence.OwnerTable)
-			sequenceMap[tableID] = append(sequenceMap[tableID], sequence)
+			if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
+				tableID := getObjectID(schema.Name, sequence.OwnerTable)
+				sequenceOwnershipMap[tableID] = append(sequenceOwnershipMap[tableID], sequence)
+			}
 		}
 	}
 
@@ -189,7 +189,7 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 			continue
 		}
 		if table, ok := tableMap[objectID]; ok {
-			if err := writeTable(&buf, getSchemaNameFromID(objectID), table, sequenceMap[objectID]); err != nil {
+			if err := writeTable(&buf, getSchemaNameFromID(objectID), table, sequenceOwnershipMap[objectID]); err != nil {
 				return "", err
 			}
 		}
@@ -331,21 +331,19 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		}
 	}
 
-	// Mapping from table ID to sequence metadata.
-	// Construct none owner column sequences first.
-	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
+	// Write all sequences before tables to ensure they exist before any table references them.
+	sequenceOwnershipMap := make(map[string][]*storepb.SequenceMetadata)
 	for _, sequence := range schema.Sequences {
 		if sequence.SkipDump {
 			continue
 		}
-		if sequence.OwnerTable == "" || sequence.OwnerColumn == "" {
-			if err := writeCreateSequence(&buf, schema.Name, sequence); err != nil {
-				return "", err
-			}
-			continue
+		if err := writeCreateSequence(&buf, schema.Name, sequence); err != nil {
+			return "", err
 		}
-		tableID := getObjectID(schema.Name, sequence.OwnerTable)
-		sequenceMap[tableID] = append(sequenceMap[tableID], sequence)
+		if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
+			tableID := getObjectID(schema.Name, sequence.OwnerTable)
+			sequenceOwnershipMap[tableID] = append(sequenceOwnershipMap[tableID], sequence)
+		}
 	}
 
 	// Construct tables, views and materialized views.
@@ -398,7 +396,7 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 			continue
 		}
 		if table, ok := tableMap[objectID]; ok {
-			if err := writeTable(&buf, getSchemaNameFromID(objectID), table, sequenceMap[objectID]); err != nil {
+			if err := writeTable(&buf, getSchemaNameFromID(objectID), table, sequenceOwnershipMap[objectID]); err != nil {
 				return "", err
 			}
 		}
@@ -1288,11 +1286,6 @@ func splitSequencesByIdentityOrNot(table *storepb.TableMetadata, sequences []*st
 
 func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) error {
 	generationTypes, identitySequences, nonIdentitySequences := splitSequencesByIdentityOrNot(table, sequences)
-	for _, sequence := range nonIdentitySequences {
-		if err := writeCreateSequence(out, schema, sequence); err != nil {
-			return err
-		}
-	}
 
 	if err := writeCreateTable(out, schema, table.Name, table.Columns, table.CheckConstraints); err != nil {
 		return err
@@ -2007,31 +2000,29 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 		}
 	}
 
-	// Mapping from table ID to sequence metadata for table-owned sequences
-	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
+	// Write all sequences before tables to ensure they exist before any table references them.
+	sequenceOwnershipMap := make(map[string][]*storepb.SequenceMetadata)
 
 	for _, schema := range metadata.Schemas {
 		if schema.SkipDump {
 			continue
 		}
 
-		// Write independent sequences first (not owned by any table)
 		for _, sequence := range schema.Sequences {
 			if sequence.SkipDump {
 				continue
 			}
-			if sequence.OwnerTable == "" || sequence.OwnerColumn == "" {
-				if err := writeSequenceSDL(&buf, schema.Name, sequence); err != nil {
-					return "", err
-				}
-				if _, err := buf.WriteString(";\n\n"); err != nil {
-					return "", err
-				}
-				continue
+			if err := writeSequenceSDL(&buf, schema.Name, sequence); err != nil {
+				return "", err
 			}
-			// Table-owned sequences will be handled with their tables
-			tableID := getObjectID(schema.Name, sequence.OwnerTable)
-			sequenceMap[tableID] = append(sequenceMap[tableID], sequence)
+			if _, err := buf.WriteString(";\n\n"); err != nil {
+				return "", err
+			}
+			// Track sequences with owners for later ownership establishment
+			if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
+				tableID := getObjectID(schema.Name, sequence.OwnerTable)
+				sequenceOwnershipMap[tableID] = append(sequenceOwnershipMap[tableID], sequence)
+			}
 		}
 	}
 
@@ -2040,28 +2031,10 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 			continue
 		}
 
-		// Write tables with their owned sequences
+		// Write tables (sequences are already written above)
 		for _, table := range schema.Tables {
 			if table.SkipDump {
 				continue
-			}
-
-			tableID := getObjectID(schema.Name, table.Name)
-			tableSequences := sequenceMap[tableID]
-
-			// Write table-owned sequences that are not identity sequences
-			if len(tableSequences) > 0 {
-				_, identitySequences, nonIdentitySequences := splitSequencesByIdentityOrNot(table, tableSequences)
-				for _, sequence := range nonIdentitySequences {
-					if err := writeSequenceSDL(&buf, schema.Name, sequence); err != nil {
-						return "", err
-					}
-					if _, err := buf.WriteString(";\n\n"); err != nil {
-						return "", err
-					}
-				}
-				// Identity sequences are handled as part of column definition
-				_ = identitySequences
 			}
 
 			// Write CREATE TABLE statement
