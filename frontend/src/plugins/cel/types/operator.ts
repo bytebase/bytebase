@@ -123,7 +123,6 @@ const OperatorList: Record<Factor, Operator[]> = {
 
   // Request query/export factors
   expiration_days: uniq([...EqualityOperatorList, ...CompareOperatorList]),
-  export_rows: uniq([...EqualityOperatorList, ...CompareOperatorList]),
   role: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
@@ -131,7 +130,6 @@ const OperatorList: Record<Factor, Operator[]> = {
   ]),
 
   // These factors don't have operator candidates for user selection.
-  "request.export_format": [],
   "request.row_limit": [],
   "resource.database": [],
   "resource.schema": [],

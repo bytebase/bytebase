@@ -2476,8 +2476,8 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | obfuscated_secret_access_key | [string](#string) |  |  |
 | session_token | [string](#string) |  |  |
 | obfuscated_session_token | [string](#string) |  |  |
-| role_arn | [string](#string) |  | ARN of IAM role to assume for cross-account access |
-| external_id | [string](#string) |  | Optional external ID for additional security when assuming role |
+| role_arn | [string](#string) |  | ARN of IAM role to assume for cross-account access. See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html |
+| external_id | [string](#string) |  | Optional external ID for additional security when assuming role. See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html |
 
 
 

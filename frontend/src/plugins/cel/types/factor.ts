@@ -9,7 +9,6 @@ export const NumberFactorList = [
 
   // Request query/export factors
   "expiration_days",
-  "export_rows",
 ] as const;
 export type NumberFactor = (typeof NumberFactorList)[number];
 
@@ -31,8 +30,6 @@ export const StringFactorList = [
   "resource.database",
   "resource.schema",
   "resource.table",
-  // Deprecated
-  "request.export_format",
 
   // Database/table group related factors
   "resource.environment_name", // using `environment.name`

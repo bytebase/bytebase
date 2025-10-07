@@ -112,7 +112,7 @@ export const RiskSourceFactorMap: Map<Risk_Source, Factor[]> = new Map([
   [Risk_Source.CREATE_DATABASE, [...commonFactorList, "database_name"]],
   [
     Risk_Source.DATA_EXPORT,
-    [...commonFactorList, ...schemaObjectNameFactorList, "export_rows"],
+    [...commonFactorList, ...schemaObjectNameFactorList],
   ],
   [
     Risk_Source.REQUEST_ROLE,
@@ -120,7 +120,6 @@ export const RiskSourceFactorMap: Map<Risk_Source, Factor[]> = new Map([
       "environment_id", // use `environment.resource_id` instead.
       "project_id", // use `project.resource_id` instead.
       "expiration_days",
-      "export_rows",
       "role",
     ],
   ],
@@ -302,7 +301,6 @@ export const getOptionConfigMap = (source: Risk_Source) => {
       case "resource.database":
       case "resource.schema":
       case "resource.table":
-      case "request.export_format":
       case "resource.environment_name":
       case "resource.instance_id":
       case "resource.database_name":
@@ -313,7 +311,6 @@ export const getOptionConfigMap = (source: Risk_Source) => {
       case "column_name":
       case "affected_rows":
       case "table_rows":
-      case "export_rows":
       case "request.row_limit":
       case "expiration_days":
       case "request.time":

@@ -682,7 +682,6 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 		args := map[string]any{
 			"project_id":      issue.Project.ResourceID,
 			"expiration_days": expirationDays,
-			"export_rows":     factors.ExportRows,
 			"role":            payload.GrantRequest.Role,
 		}
 		if len(factors.Databases) == 0 {

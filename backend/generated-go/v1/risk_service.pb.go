@@ -430,7 +430,6 @@ type Risk struct {
 	// schema_name: the schema name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
 	// table_name: the table name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
 	// sql_statement: the SQL statement, support "contains()", "matches()", "startsWith()", "endsWith()" operations.
-	// export_rows: export data count, support "==", "!=", "<", "<=", ">", ">=" operations.
 	// expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.
 	// role: the request role full name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
 	//
@@ -459,26 +458,6 @@ type Risk struct {
 	// database_name
 	// schema_name
 	// table_name
-	// export_rows
-	//
-	// When the risk source is REQUEST_QUERY, support following variables:
-	// environment_id
-	// project_id
-	// db_engine
-	// database_name
-	// schema_name
-	// table_name
-	// expiration_days
-	//
-	// When the risk source is REQUEST_EXPORT, support following variables:
-	// environment_id
-	// project_id
-	// db_engine
-	// database_name
-	// schema_name
-	// table_name
-	// expiration_days
-	// export_rows
 	//
 	// When the risk source is REQUEST_ROLE, support following variables:
 	// project_id
