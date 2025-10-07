@@ -8,20 +8,44 @@
     UPDATE test SET test.c1 = 7 WHERE test.b1 = 7;
   result:
     - statement: |-
-        SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
-          SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 1
+        -- Create backup table without IDENTITY columns
+        DECLARE @sql NVARCHAR(MAX);
+        DECLARE @cols NVARCHAR(MAX);
+
+        -- Get column list with IDENTITY columns cast to their base types
+        SELECT @cols = STRING_AGG(
+            CASE
+                WHEN COLUMNPROPERTY(OBJECT_ID('[db].[dbo].[test]'), c.name, 'IsIdentity') = 1
+                THEN 'CAST(' + QUOTENAME(c.name) + ' AS ' +
+                     TYPE_NAME(c.user_type_id) +
+                     CASE
+                         WHEN TYPE_NAME(c.user_type_id) IN ('varchar', 'char', 'nvarchar', 'nchar', 'varbinary', 'binary')
+                         THEN '(' + CASE WHEN c.max_length = -1 THEN 'MAX' ELSE CAST(c.max_length AS VARCHAR(10)) END + ')'
+                         WHEN TYPE_NAME(c.user_type_id) IN ('decimal', 'numeric')
+                         THEN '(' + CAST(c.precision AS VARCHAR(10)) + ',' + CAST(c.scale AS VARCHAR(10)) + ')'
+                         ELSE ''
+                     END + ') AS ' + QUOTENAME(c.name)
+                ELSE QUOTENAME(c.name)
+            END, ', ') WITHIN GROUP (ORDER BY c.column_id)
+        FROM sys.columns c
+        WHERE c.object_id = OBJECT_ID('[db].[dbo].[test]');
+
+        -- Create the backup table using the modified column list
+        SET @sql = 'SELECT ' + @cols + ' INTO [backupDB].[dbo].[rollback_test_db] FROM (  SELECT [db].[dbo].[test].* FROM test WHERE test.b1 = 1
           UNION
-          SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 2
+          SELECT [db].[dbo].[test].* FROM test WHERE test.b1 = 2
           UNION
-          SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 3
+          SELECT [db].[dbo].[test].* FROM test WHERE test.b1 = 3
           UNION
-          SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 4
+          SELECT [db].[dbo].[test].* FROM test WHERE test.b1 = 4
           UNION
-          SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 5
+          SELECT [db].[dbo].[test].* FROM test WHERE test.b1 = 5
           UNION
-          SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 6
+          SELECT [db].[dbo].[test].* FROM test WHERE test.b1 = 6
           UNION
-          SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 7) AS backup_table;
+          SELECT [db].[dbo].[test].* FROM test WHERE test.b1 = 7) AS backup_data';
+
+        EXEC sp_executesql @sql;
       sourceschema: dbo
       sourcetablename: test
       targettablename: rollback_test_db
@@ -37,8 +61,32 @@
     WHERE t_alias.c1 = 1;
   result:
     - statement: |-
-        SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
-          SELECT "t_alias".* FROM test AS t_alias WHERE t_alias.c1 = 1) AS backup_table;
+        -- Create backup table without IDENTITY columns
+        DECLARE @sql NVARCHAR(MAX);
+        DECLARE @cols NVARCHAR(MAX);
+
+        -- Get column list with IDENTITY columns cast to their base types
+        SELECT @cols = STRING_AGG(
+            CASE
+                WHEN COLUMNPROPERTY(OBJECT_ID('[db].[dbo].[test]'), c.name, 'IsIdentity') = 1
+                THEN 'CAST(' + QUOTENAME(c.name) + ' AS ' +
+                     TYPE_NAME(c.user_type_id) +
+                     CASE
+                         WHEN TYPE_NAME(c.user_type_id) IN ('varchar', 'char', 'nvarchar', 'nchar', 'varbinary', 'binary')
+                         THEN '(' + CASE WHEN c.max_length = -1 THEN 'MAX' ELSE CAST(c.max_length AS VARCHAR(10)) END + ')'
+                         WHEN TYPE_NAME(c.user_type_id) IN ('decimal', 'numeric')
+                         THEN '(' + CAST(c.precision AS VARCHAR(10)) + ',' + CAST(c.scale AS VARCHAR(10)) + ')'
+                         ELSE ''
+                     END + ') AS ' + QUOTENAME(c.name)
+                ELSE QUOTENAME(c.name)
+            END, ', ') WITHIN GROUP (ORDER BY c.column_id)
+        FROM sys.columns c
+        WHERE c.object_id = OBJECT_ID('[db].[dbo].[test]');
+
+        -- Create the backup table using the modified column list
+        SET @sql = 'SELECT ' + @cols + ' INTO [backupDB].[dbo].[rollback_test_db] FROM (  SELECT [t_alias].* FROM test AS t_alias WHERE t_alias.c1 = 1) AS backup_data';
+
+        EXEC sp_executesql @sql;
       sourceschema: dbo
       sourcetablename: test
       targettablename: rollback_test_db
@@ -55,8 +103,32 @@
     WHERE t_alias.c1 = 1;
   result:
     - statement: |-
-        SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
-          SELECT "t_alias".* FROM test AS t_alias WHERE t_alias.c1 = 1) AS backup_table;
+        -- Create backup table without IDENTITY columns
+        DECLARE @sql NVARCHAR(MAX);
+        DECLARE @cols NVARCHAR(MAX);
+
+        -- Get column list with IDENTITY columns cast to their base types
+        SELECT @cols = STRING_AGG(
+            CASE
+                WHEN COLUMNPROPERTY(OBJECT_ID('[db].[dbo].[test]'), c.name, 'IsIdentity') = 1
+                THEN 'CAST(' + QUOTENAME(c.name) + ' AS ' +
+                     TYPE_NAME(c.user_type_id) +
+                     CASE
+                         WHEN TYPE_NAME(c.user_type_id) IN ('varchar', 'char', 'nvarchar', 'nchar', 'varbinary', 'binary')
+                         THEN '(' + CASE WHEN c.max_length = -1 THEN 'MAX' ELSE CAST(c.max_length AS VARCHAR(10)) END + ')'
+                         WHEN TYPE_NAME(c.user_type_id) IN ('decimal', 'numeric')
+                         THEN '(' + CAST(c.precision AS VARCHAR(10)) + ',' + CAST(c.scale AS VARCHAR(10)) + ')'
+                         ELSE ''
+                     END + ') AS ' + QUOTENAME(c.name)
+                ELSE QUOTENAME(c.name)
+            END, ', ') WITHIN GROUP (ORDER BY c.column_id)
+        FROM sys.columns c
+        WHERE c.object_id = OBJECT_ID('[db].[dbo].[test]');
+
+        -- Create the backup table using the modified column list
+        SET @sql = 'SELECT ' + @cols + ' INTO [backupDB].[dbo].[rollback_test_db] FROM (  SELECT [t_alias].* FROM test AS t_alias WHERE t_alias.c1 = 1) AS backup_data';
+
+        EXEC sp_executesql @sql;
       sourceschema: dbo
       sourcetablename: test
       targettablename: rollback_test_db
@@ -72,8 +144,32 @@
     WHERE test.c1 = 1;
   result:
     - statement: |-
-        SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
-          SELECT "db"."dbo"."test".* FROM test JOIN test2 ON test.c1 = test2.c1 WHERE test.c1 = 1) AS backup_table;
+        -- Create backup table without IDENTITY columns
+        DECLARE @sql NVARCHAR(MAX);
+        DECLARE @cols NVARCHAR(MAX);
+
+        -- Get column list with IDENTITY columns cast to their base types
+        SELECT @cols = STRING_AGG(
+            CASE
+                WHEN COLUMNPROPERTY(OBJECT_ID('[db].[dbo].[test]'), c.name, 'IsIdentity') = 1
+                THEN 'CAST(' + QUOTENAME(c.name) + ' AS ' +
+                     TYPE_NAME(c.user_type_id) +
+                     CASE
+                         WHEN TYPE_NAME(c.user_type_id) IN ('varchar', 'char', 'nvarchar', 'nchar', 'varbinary', 'binary')
+                         THEN '(' + CASE WHEN c.max_length = -1 THEN 'MAX' ELSE CAST(c.max_length AS VARCHAR(10)) END + ')'
+                         WHEN TYPE_NAME(c.user_type_id) IN ('decimal', 'numeric')
+                         THEN '(' + CAST(c.precision AS VARCHAR(10)) + ',' + CAST(c.scale AS VARCHAR(10)) + ')'
+                         ELSE ''
+                     END + ') AS ' + QUOTENAME(c.name)
+                ELSE QUOTENAME(c.name)
+            END, ', ') WITHIN GROUP (ORDER BY c.column_id)
+        FROM sys.columns c
+        WHERE c.object_id = OBJECT_ID('[db].[dbo].[test]');
+
+        -- Create the backup table using the modified column list
+        SET @sql = 'SELECT ' + @cols + ' INTO [backupDB].[dbo].[rollback_test_db] FROM (  SELECT [db].[dbo].[test].* FROM test JOIN test2 ON test.c1 = test2.c1 WHERE test.c1 = 1) AS backup_data';
+
+        EXEC sp_executesql @sql;
       sourceschema: dbo
       sourcetablename: test
       targettablename: rollback_test_db
@@ -90,8 +186,32 @@
     WHERE test.c1 = 1;
   result:
     - statement: |-
-        SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
-          SELECT "db"."dbo"."test".* FROM test JOIN test2 ON test.c1 = test2.c1 WHERE test.c1 = 1) AS backup_table;
+        -- Create backup table without IDENTITY columns
+        DECLARE @sql NVARCHAR(MAX);
+        DECLARE @cols NVARCHAR(MAX);
+
+        -- Get column list with IDENTITY columns cast to their base types
+        SELECT @cols = STRING_AGG(
+            CASE
+                WHEN COLUMNPROPERTY(OBJECT_ID('[db].[dbo].[test]'), c.name, 'IsIdentity') = 1
+                THEN 'CAST(' + QUOTENAME(c.name) + ' AS ' +
+                     TYPE_NAME(c.user_type_id) +
+                     CASE
+                         WHEN TYPE_NAME(c.user_type_id) IN ('varchar', 'char', 'nvarchar', 'nchar', 'varbinary', 'binary')
+                         THEN '(' + CASE WHEN c.max_length = -1 THEN 'MAX' ELSE CAST(c.max_length AS VARCHAR(10)) END + ')'
+                         WHEN TYPE_NAME(c.user_type_id) IN ('decimal', 'numeric')
+                         THEN '(' + CAST(c.precision AS VARCHAR(10)) + ',' + CAST(c.scale AS VARCHAR(10)) + ')'
+                         ELSE ''
+                     END + ') AS ' + QUOTENAME(c.name)
+                ELSE QUOTENAME(c.name)
+            END, ', ') WITHIN GROUP (ORDER BY c.column_id)
+        FROM sys.columns c
+        WHERE c.object_id = OBJECT_ID('[db].[dbo].[test]');
+
+        -- Create the backup table using the modified column list
+        SET @sql = 'SELECT ' + @cols + ' INTO [backupDB].[dbo].[rollback_test_db] FROM (  SELECT [db].[dbo].[test].* FROM test JOIN test2 ON test.c1 = test2.c1 WHERE test.c1 = 1) AS backup_data';
+
+        EXEC sp_executesql @sql;
       sourceschema: dbo
       sourcetablename: test
       targettablename: rollback_test_db
@@ -106,8 +226,32 @@
     UPDATE test SET test.c1 = 2 WHERE test.c1 = 1;
   result:
     - statement: |-
-        SELECT * INTO "backupDB"."dbo"."rollback_test1_db" FROM (
-          SELECT "db"."dbo"."test1".* FROM test1 WHERE c1 = 1) AS backup_table;
+        -- Create backup table without IDENTITY columns
+        DECLARE @sql NVARCHAR(MAX);
+        DECLARE @cols NVARCHAR(MAX);
+
+        -- Get column list with IDENTITY columns cast to their base types
+        SELECT @cols = STRING_AGG(
+            CASE
+                WHEN COLUMNPROPERTY(OBJECT_ID('[db].[dbo].[test1]'), c.name, 'IsIdentity') = 1
+                THEN 'CAST(' + QUOTENAME(c.name) + ' AS ' +
+                     TYPE_NAME(c.user_type_id) +
+                     CASE
+                         WHEN TYPE_NAME(c.user_type_id) IN ('varchar', 'char', 'nvarchar', 'nchar', 'varbinary', 'binary')
+                         THEN '(' + CASE WHEN c.max_length = -1 THEN 'MAX' ELSE CAST(c.max_length AS VARCHAR(10)) END + ')'
+                         WHEN TYPE_NAME(c.user_type_id) IN ('decimal', 'numeric')
+                         THEN '(' + CAST(c.precision AS VARCHAR(10)) + ',' + CAST(c.scale AS VARCHAR(10)) + ')'
+                         ELSE ''
+                     END + ') AS ' + QUOTENAME(c.name)
+                ELSE QUOTENAME(c.name)
+            END, ', ') WITHIN GROUP (ORDER BY c.column_id)
+        FROM sys.columns c
+        WHERE c.object_id = OBJECT_ID('[db].[dbo].[test1]');
+
+        -- Create the backup table using the modified column list
+        SET @sql = 'SELECT ' + @cols + ' INTO [backupDB].[dbo].[rollback_test1_db] FROM (  SELECT [db].[dbo].[test1].* FROM test1 WHERE c1 = 1) AS backup_data';
+
+        EXEC sp_executesql @sql;
       sourceschema: dbo
       sourcetablename: test1
       targettablename: rollback_test1_db
@@ -118,8 +262,32 @@
         line: 1
         column: 30
     - statement: |-
-        SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
-          SELECT "db"."dbo"."test".* FROM test WHERE test.c1 = 1) AS backup_table;
+        -- Create backup table without IDENTITY columns
+        DECLARE @sql NVARCHAR(MAX);
+        DECLARE @cols NVARCHAR(MAX);
+
+        -- Get column list with IDENTITY columns cast to their base types
+        SELECT @cols = STRING_AGG(
+            CASE
+                WHEN COLUMNPROPERTY(OBJECT_ID('[db].[dbo].[test]'), c.name, 'IsIdentity') = 1
+                THEN 'CAST(' + QUOTENAME(c.name) + ' AS ' +
+                     TYPE_NAME(c.user_type_id) +
+                     CASE
+                         WHEN TYPE_NAME(c.user_type_id) IN ('varchar', 'char', 'nvarchar', 'nchar', 'varbinary', 'binary')
+                         THEN '(' + CASE WHEN c.max_length = -1 THEN 'MAX' ELSE CAST(c.max_length AS VARCHAR(10)) END + ')'
+                         WHEN TYPE_NAME(c.user_type_id) IN ('decimal', 'numeric')
+                         THEN '(' + CAST(c.precision AS VARCHAR(10)) + ',' + CAST(c.scale AS VARCHAR(10)) + ')'
+                         ELSE ''
+                     END + ') AS ' + QUOTENAME(c.name)
+                ELSE QUOTENAME(c.name)
+            END, ', ') WITHIN GROUP (ORDER BY c.column_id)
+        FROM sys.columns c
+        WHERE c.object_id = OBJECT_ID('[db].[dbo].[test]');
+
+        -- Create the backup table using the modified column list
+        SET @sql = 'SELECT ' + @cols + ' INTO [backupDB].[dbo].[rollback_test_db] FROM (  SELECT [db].[dbo].[test].* FROM test WHERE test.c1 = 1) AS backup_data';
+
+        EXEC sp_executesql @sql;
       sourceschema: dbo
       sourcetablename: test
       targettablename: rollback_test_db
@@ -132,8 +300,32 @@
 - input: DELETE FROM test WHERE c1 = 1;
   result:
     - statement: |-
-        SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
-          SELECT "db"."dbo"."test".* FROM test WHERE c1 = 1) AS backup_table;
+        -- Create backup table without IDENTITY columns
+        DECLARE @sql NVARCHAR(MAX);
+        DECLARE @cols NVARCHAR(MAX);
+
+        -- Get column list with IDENTITY columns cast to their base types
+        SELECT @cols = STRING_AGG(
+            CASE
+                WHEN COLUMNPROPERTY(OBJECT_ID('[db].[dbo].[test]'), c.name, 'IsIdentity') = 1
+                THEN 'CAST(' + QUOTENAME(c.name) + ' AS ' +
+                     TYPE_NAME(c.user_type_id) +
+                     CASE
+                         WHEN TYPE_NAME(c.user_type_id) IN ('varchar', 'char', 'nvarchar', 'nchar', 'varbinary', 'binary')
+                         THEN '(' + CASE WHEN c.max_length = -1 THEN 'MAX' ELSE CAST(c.max_length AS VARCHAR(10)) END + ')'
+                         WHEN TYPE_NAME(c.user_type_id) IN ('decimal', 'numeric')
+                         THEN '(' + CAST(c.precision AS VARCHAR(10)) + ',' + CAST(c.scale AS VARCHAR(10)) + ')'
+                         ELSE ''
+                     END + ') AS ' + QUOTENAME(c.name)
+                ELSE QUOTENAME(c.name)
+            END, ', ') WITHIN GROUP (ORDER BY c.column_id)
+        FROM sys.columns c
+        WHERE c.object_id = OBJECT_ID('[db].[dbo].[test]');
+
+        -- Create the backup table using the modified column list
+        SET @sql = 'SELECT ' + @cols + ' INTO [backupDB].[dbo].[rollback_test_db] FROM (  SELECT [db].[dbo].[test].* FROM test WHERE c1 = 1) AS backup_data';
+
+        EXEC sp_executesql @sql;
       sourceschema: dbo
       sourcetablename: test
       targettablename: rollback_test_db
@@ -146,8 +338,32 @@
 - input: UPDATE test SET c1 = 1 WHERE c1=2;
   result:
     - statement: |-
-        SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
-          SELECT "db"."dbo"."test".* FROM test WHERE c1=2) AS backup_table;
+        -- Create backup table without IDENTITY columns
+        DECLARE @sql NVARCHAR(MAX);
+        DECLARE @cols NVARCHAR(MAX);
+
+        -- Get column list with IDENTITY columns cast to their base types
+        SELECT @cols = STRING_AGG(
+            CASE
+                WHEN COLUMNPROPERTY(OBJECT_ID('[db].[dbo].[test]'), c.name, 'IsIdentity') = 1
+                THEN 'CAST(' + QUOTENAME(c.name) + ' AS ' +
+                     TYPE_NAME(c.user_type_id) +
+                     CASE
+                         WHEN TYPE_NAME(c.user_type_id) IN ('varchar', 'char', 'nvarchar', 'nchar', 'varbinary', 'binary')
+                         THEN '(' + CASE WHEN c.max_length = -1 THEN 'MAX' ELSE CAST(c.max_length AS VARCHAR(10)) END + ')'
+                         WHEN TYPE_NAME(c.user_type_id) IN ('decimal', 'numeric')
+                         THEN '(' + CAST(c.precision AS VARCHAR(10)) + ',' + CAST(c.scale AS VARCHAR(10)) + ')'
+                         ELSE ''
+                     END + ') AS ' + QUOTENAME(c.name)
+                ELSE QUOTENAME(c.name)
+            END, ', ') WITHIN GROUP (ORDER BY c.column_id)
+        FROM sys.columns c
+        WHERE c.object_id = OBJECT_ID('[db].[dbo].[test]');
+
+        -- Create the backup table using the modified column list
+        SET @sql = 'SELECT ' + @cols + ' INTO [backupDB].[dbo].[rollback_test_db] FROM (  SELECT [db].[dbo].[test].* FROM test WHERE c1=2) AS backup_data';
+
+        EXEC sp_executesql @sql;
       sourceschema: dbo
       sourcetablename: test
       targettablename: rollback_test_db
@@ -162,10 +378,34 @@
     UPDATE test SET test.c1 = 3 WHERE test.c1 = 5;
   result:
     - statement: |-
-        SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
-          SELECT "db"."dbo"."test".* FROM test WHERE test.c1 = 1
+        -- Create backup table without IDENTITY columns
+        DECLARE @sql NVARCHAR(MAX);
+        DECLARE @cols NVARCHAR(MAX);
+
+        -- Get column list with IDENTITY columns cast to their base types
+        SELECT @cols = STRING_AGG(
+            CASE
+                WHEN COLUMNPROPERTY(OBJECT_ID('[db].[dbo].[test]'), c.name, 'IsIdentity') = 1
+                THEN 'CAST(' + QUOTENAME(c.name) + ' AS ' +
+                     TYPE_NAME(c.user_type_id) +
+                     CASE
+                         WHEN TYPE_NAME(c.user_type_id) IN ('varchar', 'char', 'nvarchar', 'nchar', 'varbinary', 'binary')
+                         THEN '(' + CASE WHEN c.max_length = -1 THEN 'MAX' ELSE CAST(c.max_length AS VARCHAR(10)) END + ')'
+                         WHEN TYPE_NAME(c.user_type_id) IN ('decimal', 'numeric')
+                         THEN '(' + CAST(c.precision AS VARCHAR(10)) + ',' + CAST(c.scale AS VARCHAR(10)) + ')'
+                         ELSE ''
+                     END + ') AS ' + QUOTENAME(c.name)
+                ELSE QUOTENAME(c.name)
+            END, ', ') WITHIN GROUP (ORDER BY c.column_id)
+        FROM sys.columns c
+        WHERE c.object_id = OBJECT_ID('[db].[dbo].[test]');
+
+        -- Create the backup table using the modified column list
+        SET @sql = 'SELECT ' + @cols + ' INTO [backupDB].[dbo].[rollback_test_db] FROM (  SELECT [db].[dbo].[test].* FROM test WHERE test.c1 = 1
           UNION
-          SELECT "db"."dbo"."test".* FROM test WHERE test.c1 = 5) AS backup_table;
+          SELECT [db].[dbo].[test].* FROM test WHERE test.c1 = 5) AS backup_data';
+
+        EXEC sp_executesql @sql;
       sourceschema: dbo
       sourcetablename: test
       targettablename: rollback_test_db
@@ -175,3 +415,79 @@
       endposition:
         line: 2
         column: 45
+- input: DELETE FROM employees WHERE department_id = 10;
+  result:
+    - statement: |-
+        -- Create backup table without IDENTITY columns
+        DECLARE @sql NVARCHAR(MAX);
+        DECLARE @cols NVARCHAR(MAX);
+
+        -- Get column list with IDENTITY columns cast to their base types
+        SELECT @cols = STRING_AGG(
+            CASE
+                WHEN COLUMNPROPERTY(OBJECT_ID('[db].[dbo].[employees]'), c.name, 'IsIdentity') = 1
+                THEN 'CAST(' + QUOTENAME(c.name) + ' AS ' +
+                     TYPE_NAME(c.user_type_id) +
+                     CASE
+                         WHEN TYPE_NAME(c.user_type_id) IN ('varchar', 'char', 'nvarchar', 'nchar', 'varbinary', 'binary')
+                         THEN '(' + CASE WHEN c.max_length = -1 THEN 'MAX' ELSE CAST(c.max_length AS VARCHAR(10)) END + ')'
+                         WHEN TYPE_NAME(c.user_type_id) IN ('decimal', 'numeric')
+                         THEN '(' + CAST(c.precision AS VARCHAR(10)) + ',' + CAST(c.scale AS VARCHAR(10)) + ')'
+                         ELSE ''
+                     END + ') AS ' + QUOTENAME(c.name)
+                ELSE QUOTENAME(c.name)
+            END, ', ') WITHIN GROUP (ORDER BY c.column_id)
+        FROM sys.columns c
+        WHERE c.object_id = OBJECT_ID('[db].[dbo].[employees]');
+
+        -- Create the backup table using the modified column list
+        SET @sql = 'SELECT ' + @cols + ' INTO [backupDB].[dbo].[rollback_employees_db] FROM (  SELECT [db].[dbo].[employees].* FROM employees WHERE department_id = 10) AS backup_data';
+
+        EXEC sp_executesql @sql;
+      sourceschema: dbo
+      sourcetablename: employees
+      targettablename: rollback_employees_db
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 46
+- input: UPDATE positions SET title = 'Senior Engineer' WHERE position_id = 1;
+  result:
+    - statement: |-
+        -- Create backup table without IDENTITY columns
+        DECLARE @sql NVARCHAR(MAX);
+        DECLARE @cols NVARCHAR(MAX);
+
+        -- Get column list with IDENTITY columns cast to their base types
+        SELECT @cols = STRING_AGG(
+            CASE
+                WHEN COLUMNPROPERTY(OBJECT_ID('[db].[dbo].[positions]'), c.name, 'IsIdentity') = 1
+                THEN 'CAST(' + QUOTENAME(c.name) + ' AS ' +
+                     TYPE_NAME(c.user_type_id) +
+                     CASE
+                         WHEN TYPE_NAME(c.user_type_id) IN ('varchar', 'char', 'nvarchar', 'nchar', 'varbinary', 'binary')
+                         THEN '(' + CASE WHEN c.max_length = -1 THEN 'MAX' ELSE CAST(c.max_length AS VARCHAR(10)) END + ')'
+                         WHEN TYPE_NAME(c.user_type_id) IN ('decimal', 'numeric')
+                         THEN '(' + CAST(c.precision AS VARCHAR(10)) + ',' + CAST(c.scale AS VARCHAR(10)) + ')'
+                         ELSE ''
+                     END + ') AS ' + QUOTENAME(c.name)
+                ELSE QUOTENAME(c.name)
+            END, ', ') WITHIN GROUP (ORDER BY c.column_id)
+        FROM sys.columns c
+        WHERE c.object_id = OBJECT_ID('[db].[dbo].[positions]');
+
+        -- Create the backup table using the modified column list
+        SET @sql = 'SELECT ' + @cols + ' INTO [backupDB].[dbo].[rollback_positions_db] FROM (  SELECT [db].[dbo].[positions].* FROM positions WHERE position_id = 1) AS backup_data';
+
+        EXEC sp_executesql @sql;
+      sourceschema: dbo
+      sourcetablename: positions
+      targettablename: rollback_positions_db
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 68
