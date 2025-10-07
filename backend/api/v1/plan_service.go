@@ -1293,6 +1293,7 @@ func validateSpecs(specs []*v1pb.Plan_Spec) error {
 	configTypeCount := map[string]int{}
 	seenID := map[string]bool{}
 
+	var releaseCount, sheetCount int
 	for _, spec := range specs {
 		id := spec.GetId()
 		if id == "" {
@@ -1322,6 +1323,13 @@ func validateSpecs(specs []*v1pb.Plan_Spec) error {
 			if databaseTarget > 0 && databaseGroupTarget > 0 {
 				return errors.Errorf("found databaseTarget and databaseGroupTarget, expect only one kind")
 			}
+			// Track if this spec uses release or sheet.
+			if config.ChangeDatabaseConfig.Release != "" {
+				releaseCount++
+			}
+			if config.ChangeDatabaseConfig.Sheet != "" {
+				sheetCount++
+			}
 		case *v1pb.Plan_Spec_ExportDataConfig:
 			configTypeCount["export_data"]++
 		default:
@@ -1330,6 +1338,14 @@ func validateSpecs(specs []*v1pb.Plan_Spec) error {
 	}
 	if len(configTypeCount) > 1 {
 		return errors.Errorf("plan contains multiple types of spec configurations (%v), but each plan must contain only one type", len(configTypeCount))
+	}
+	// Disallow mixing ChangeDatabaseConfig specs with release and sheet.
+	if releaseCount > 0 && sheetCount > 0 {
+		return errors.Errorf("plan contains both release and sheet based change database configs, but each plan must use only one approach")
+	}
+	// Allow at most one ChangeDatabaseConfig with release.
+	if releaseCount > 1 {
+		return errors.Errorf("plan contains multiple change database configs with release, but only one is allowed")
 	}
 	return nil
 }
