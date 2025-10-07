@@ -54,8 +54,14 @@ export const isStringOperator = (op: Operator): op is StringOperator => {
 
 /// Define supported operators for each factor
 const OperatorList: Record<Factor, Operator[]> = {
-  affected_rows: uniq([...EqualityOperatorList, ...CompareOperatorList]),
-  table_rows: uniq([...EqualityOperatorList, ...CompareOperatorList]),
+  "statement.affected_rows": uniq([
+    ...EqualityOperatorList,
+    ...CompareOperatorList,
+  ]),
+  "statement.table_rows": uniq([
+    ...EqualityOperatorList,
+    ...CompareOperatorList,
+  ]),
 
   level: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
   source: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
@@ -99,17 +105,20 @@ const OperatorList: Record<Factor, Operator[]> = {
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
-  sql_type: uniq([
+  "statement.sql_type": uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
-  sql_statement: uniq([...StringOperatorList]),
+  "statement.text": uniq([...StringOperatorList]),
   "resource.classification_level": uniq([...CollectionOperatorList]),
 
   // Request query/export factors
-  expiration_days: uniq([...EqualityOperatorList, ...CompareOperatorList]),
-  role: uniq([
+  "request.expiration_days": uniq([
+    ...EqualityOperatorList,
+    ...CompareOperatorList,
+  ]),
+  "request.role": uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,

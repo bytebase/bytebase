@@ -248,7 +248,7 @@ loop:
 						"resource.database_name":  database.DatabaseName,
 						// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
 						"resource.db_engine": engine.String(),
-						"sql_statement":      statement,
+						"statement.text":     statement,
 					}
 					if database.EffectiveEnvironmentID != nil {
 						commonArgs["resource.environment_id"] = *database.EffectiveEnvironmentID

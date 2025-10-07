@@ -1,14 +1,14 @@
 export const NumberFactorList = [
   // Risk related factors
-  "affected_rows",
-  "table_rows",
+  "statement.affected_rows",
+  "statement.table_rows",
   "level",
 
   // Grant request issue related factors
   "request.row_limit",
 
   // Request query/export factors
-  "expiration_days",
+  "request.expiration_days",
 ] as const;
 export type NumberFactor = (typeof NumberFactorList)[number];
 
@@ -22,9 +22,9 @@ export const StringFactorList = [
   "resource.table_name",
   "resource.instance_id",
   "resource.db_engine",
-  "sql_type",
-  "sql_statement",
-  "role",
+  "statement.sql_type",
+  "statement.text",
+  "request.role",
 
   // Grant request issue related factors
   "resource.database",

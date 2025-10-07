@@ -469,7 +469,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 			"resource.database_name":  databaseName,
 			// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
 			"resource.db_engine": instance.Metadata.GetEngine().String(),
-			"sql_statement":      taskStatement,
+			"statement.text":     taskStatement,
 		}
 		risk, err := func() (int32, error) {
 			// The summary report is not always available.
@@ -680,9 +680,9 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 		}
 
 		args := map[string]any{
-			"resource.project_id": issue.Project.ResourceID,
-			"expiration_days":     expirationDays,
-			"role":                payload.GrantRequest.Role,
+			"resource.project_id":     issue.Project.ResourceID,
+			"request.expiration_days": expirationDays,
+			"request.role":            payload.GrantRequest.Role,
 		}
 		if len(factors.Databases) == 0 {
 			environments, err := r.store.GetEnvironmentSetting(ctx)

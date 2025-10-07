@@ -83,8 +83,8 @@ func CalculateRiskLevelWithOptionalSummaryReport(
 				}
 			}
 		}
-		args["affected_rows"] = summaryReport.AffectedRows
-		args["table_rows"] = tableRows
+		args["statement.affected_rows"] = summaryReport.AffectedRows
+		args["statement.table_rows"] = tableRows
 		var tableNames []string
 		for _, db := range summaryReport.GetChangedResources().GetDatabases() {
 			for _, schema := range db.GetSchemas() {
@@ -94,7 +94,7 @@ func CalculateRiskLevelWithOptionalSummaryReport(
 			}
 		}
 		for _, statementType := range summaryReport.StatementTypes {
-			args["sql_type"] = statementType
+			args["statement.sql_type"] = statementType
 			for _, tableName := range tableNames {
 				args["resource.table_name"] = tableName
 				out, _, err := prg.Eval(args)

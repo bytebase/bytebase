@@ -25,13 +25,13 @@ var RiskFactors = []cel.EnvOption{
 	cel.Variable("resource.schema_name", cel.StringType),
 	cel.Variable("resource.table_name", cel.StringType),
 
-	cel.Variable("affected_rows", cel.IntType),
-	cel.Variable("table_rows", cel.IntType),
-	cel.Variable("sql_type", cel.StringType),
-	cel.Variable("sql_statement", cel.StringType),
+	cel.Variable("statement.affected_rows", cel.IntType),
+	cel.Variable("statement.table_rows", cel.IntType),
+	cel.Variable("statement.sql_type", cel.StringType),
+	cel.Variable("statement.text", cel.StringType),
 
-	cel.Variable("expiration_days", cel.IntType),
-	cel.Variable("role", cel.StringType),
+	cel.Variable("request.expiration_days", cel.IntType),
+	cel.Variable("request.role", cel.StringType),
 }
 
 // ApprovalFactors are the variables when finding the approval template.

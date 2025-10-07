@@ -86,10 +86,10 @@ const schemaObjectNameFactorList: Factor[] = [
 ] as const;
 
 const migrationFactorList: Factor[] = [
-  "affected_rows",
-  "table_rows",
-  "sql_type",
-  "sql_statement",
+  "statement.affected_rows",
+  "statement.table_rows",
+  "statement.sql_type",
+  "statement.text",
 ] as const;
 
 export const RiskSourceFactorMap: Map<Risk_Source, Factor[]> = new Map([
@@ -122,8 +122,8 @@ export const RiskSourceFactorMap: Map<Risk_Source, Factor[]> = new Map([
     [
       "resource.environment_id",
       "resource.project_id",
-      "expiration_days",
-      "role",
+      "request.expiration_days",
+      "request.role",
     ],
   ],
 ]);
@@ -288,10 +288,10 @@ export const getOptionConfigMap = (source: Risk_Source) => {
       case "source":
         options = getSourceOptions();
         break;
-      case "sql_type":
+      case "statement.sql_type":
         options = getSQLTypeOptions(source);
         break;
-      case "role":
+      case "request.role":
         options = getRoleOptions();
         break;
       //
@@ -303,11 +303,11 @@ export const getOptionConfigMap = (source: Risk_Source) => {
       case "resource.database_name":
       case "resource.column_name":
       case "resource.classification_level":
-      case "affected_rows":
-      case "table_rows":
-      case "sql_statement":
+      case "statement.affected_rows":
+      case "statement.table_rows":
+      case "statement.text":
       case "request.row_limit":
-      case "expiration_days":
+      case "request.expiration_days":
       case "request.time":
         break;
       default:
@@ -327,8 +327,8 @@ export const factorSupportDropdown: Factor[] = [
   "resource.project_id",
   "resource.instance_id",
   "resource.db_engine",
-  "sql_type",
+  "statement.sql_type",
   "level",
   "source",
-  "role",
+  "request.role",
 ];
