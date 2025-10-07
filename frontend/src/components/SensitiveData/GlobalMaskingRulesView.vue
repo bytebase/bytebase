@@ -341,13 +341,13 @@ const onPolicyUpsert = async () => {
 
 const factorList = computed((): Factor[] => {
   const list: Factor[] = [
-    "environment_id", // using `environment.resource_id`
-    "project_id", // using `project.resource_id`
-    "instance_id", // using `instance.resource_id`
-    "database_name",
-    "table_name",
-    "column_name",
-    "classification_level",
+    "resource.environment_id",
+    "resource.project_id",
+    "resource.instance_id",
+    "resource.database_name",
+    "resource.table_name",
+    "resource.column_name",
+    "resource.classification_level",
   ];
 
   return list;
@@ -357,10 +357,10 @@ const factorOptionsMap = computed((): Map<Factor, OptionConfig> => {
   return factorList.value.reduce((map, factor) => {
     let options: SelectOption[] = [];
     switch (factor) {
-      case "environment_id":
+      case "resource.environment_id":
         options = getEnvironmentIdOptions();
         break;
-      case "instance_id":
+      case "resource.instance_id":
         const store = useInstanceV1Store();
         map.set(factor, {
           remote: true,
@@ -377,7 +377,7 @@ const factorOptionsMap = computed((): Map<Factor, OptionConfig> => {
           },
         });
         return map;
-      case "project_id":
+      case "resource.project_id":
         const projectStore = useProjectV1Store();
         map.set(factor, {
           remote: true,
@@ -394,7 +394,7 @@ const factorOptionsMap = computed((): Map<Factor, OptionConfig> => {
           },
         });
         return map;
-      case "classification_level":
+      case "resource.classification_level":
         options = getClassificationLevelOptions();
         break;
     }

@@ -48,14 +48,17 @@ export const getInstanceIdOptions = (instanceList: Instance[]) => {
 };
 
 export const factorSupportDropdown: Factor[] = [
-  "environment_id",
-  "instance_id",
-  "project_id",
-  "classification_level",
+  "resource.environment_id",
+  "resource.instance_id",
+  "resource.project_id",
+  "resource.classification_level",
 ];
 
 export const factorOperatorOverrideMap = new Map<Factor, Operator[]>([
-  ["project_id", uniq([...EqualityOperatorList, ...CollectionOperatorList])],
+  [
+    "resource.project_id",
+    uniq([...EqualityOperatorList, ...CollectionOperatorList]),
+  ],
 ]);
 
 export type MaskingType =

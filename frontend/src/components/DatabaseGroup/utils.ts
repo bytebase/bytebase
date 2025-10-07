@@ -11,13 +11,13 @@ import {
 import { getDefaultPagination } from "@/utils";
 
 export const FactorList: Factor[] = [
-  "resource.environment_name",
+  "resource.environment_id",
   "resource.database_name",
   "resource.instance_id",
 ];
 
 export const factorSupportDropdown: Factor[] = [
-  "resource.environment_name",
+  "resource.environment_id",
   "resource.instance_id",
 ];
 
@@ -25,7 +25,7 @@ export const getDatabaseGroupOptionConfigMap = () => {
   return FactorList.reduce((map, factor) => {
     let options: SelectOption[] = [];
     switch (factor) {
-      case "resource.environment_name":
+      case "resource.environment_id":
         options = getEnvironmentOptions();
         break;
       case "resource.instance_id":

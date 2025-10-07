@@ -258,14 +258,14 @@ type Binding struct {
 	//
 	// Support variables:
 	// resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by the "roles/sqlEditorUser" role, support "==" operator.
-	// resource.schema: the schema name, used by the "roles/sqlEditorUser" role, support "==" operator.
-	// resource.table: the table name, used by the "roles/sqlEditorUser" role, support "==" operator.
+	// resource.schema_name: the schema name, used by the "roles/sqlEditorUser" role, support "==" operator.
+	// resource.table_name: the table name, used by the "roles/sqlEditorUser" role, support "==" operator.
 	// request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`.
 	// request.row_limit: the maximum export rows, used by the "roles/sqlEditorUser" role. Only support "<=" operation.
 	//
 	// For example:
-	// resource.database == "instances/local-pg/databases/postgres" && resource.schema in ["public","another_schema"]
-	// resource.database == "instances/local-pg/databases/bytebase" && resource.schema == "public" && resource.table in ["audit_log"]
+	// resource.database == "instances/local-pg/databases/postgres" && resource.schema_name in ["public","another_schema"]
+	// resource.database == "instances/local-pg/databases/bytebase" && resource.schema_name == "public" && resource.table_name in ["audit_log"]
 	// request.time < timestamp("2025-04-26T11:24:48.655Z") && request.row_limit <= 1000
 	Condition *expr.Expr `protobuf:"bytes,3,opt,name=condition,proto3" json:"condition,omitempty"`
 	// The parsed expression of the condition.

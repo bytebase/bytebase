@@ -1429,11 +1429,11 @@ func (s *SQLService) accessCheck(
 		if span.Type == parserbase.Select {
 			for column := range span.SourceColumns {
 				attributes := map[string]any{
-					"request.time":      time.Now(),
-					"request.row_limit": limit,
-					"resource.database": common.FormatDatabase(instance.ResourceID, column.Database),
-					"resource.schema":   column.Schema,
-					"resource.table":    column.Table,
+					"request.time":         time.Now(),
+					"request.row_limit":    limit,
+					"resource.database":    common.FormatDatabase(instance.ResourceID, column.Database),
+					"resource.schema_name": column.Schema,
+					"resource.table_name":  column.Table,
 				}
 
 				databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
@@ -1471,10 +1471,10 @@ func (s *SQLService) accessCheck(
 				}
 				if !ok {
 					resource := attributes["resource.database"]
-					if schema, ok := attributes["resource.schema"]; ok && schema != "" {
+					if schema, ok := attributes["resource.schema_name"]; ok && schema != "" {
 						resource = fmt.Sprintf("%s/schemas/%s", resource, schema)
 					}
-					if table, ok := attributes["resource.table"]; ok && table != "" {
+					if table, ok := attributes["resource.table_name"]; ok && table != "" {
 						resource = fmt.Sprintf("%s/tables/%s", resource, table)
 					}
 					return connect.NewError(

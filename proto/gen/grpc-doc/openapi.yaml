@@ -8918,14 +8918,14 @@ components:
 
                          Support variables:
                          resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by the "roles/sqlEditorUser" role, support "==" operator.
-                         resource.schema: the schema name, used by the "roles/sqlEditorUser" role, support "==" operator.
-                         resource.table: the table name, used by the "roles/sqlEditorUser" role, support "==" operator.
+                         resource.schema_name: the schema name, used by the "roles/sqlEditorUser" role, support "==" operator.
+                         resource.table_name: the table name, used by the "roles/sqlEditorUser" role, support "==" operator.
                          request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`.
                          request.row_limit: the maximum export rows, used by the "roles/sqlEditorUser" role. Only support "<=" operation.
 
                          For example:
-                         resource.database == "instances/local-pg/databases/postgres" && resource.schema in ["public","another_schema"]
-                         resource.database == "instances/local-pg/databases/bytebase" && resource.schema == "public" && resource.table in ["audit_log"]
+                         resource.database == "instances/local-pg/databases/postgres" && resource.schema_name in ["public","another_schema"]
+                         resource.database == "instances/local-pg/databases/bytebase" && resource.schema_name == "public" && resource.table_name in ["audit_log"]
                          request.time < timestamp("2025-04-26T11:24:48.655Z") && request.row_limit <= 1000
                 parsedExpr:
                     readOnly: true
@@ -9864,13 +9864,15 @@ components:
                          The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
                          Support variables:
-                         resource.environment_name: the environment resource id. Support "==", "!=", "in [XX]", "!(in [xx])" operations.
+                         resource.environment_id: the environment resource id. Support "==", "!=", "in [XX]", "!(in [xx])" operations.
                          resource.instance_id: the instance resource id. Support "==", "!=", "in [XX]", "!(in [xx])", "contains", "matches", "startsWith", "endsWith" operations.
                          resource.database_name: the database name. Support "==", "!=", "in [XX]", "!(in [xx])", "contains", "matches", "startsWith", "endsWith" operations.
+                         resource.database_labels: the database labels. Support map access operations.
                          All variables should join with "&&" condition.
 
                          For example:
-                         resource.environment_name == "test" && resource.database_name.startsWith("sample_")
+                         resource.environment_id == "test" && resource.database_name.startsWith("sample_")
+                         resource.database_labels["tenant"] == "tenant1"
                 matchedDatabases:
                     readOnly: true
                     type: array
@@ -12710,15 +12712,15 @@ components:
                          All supported variables:
                          affected_rows: affected row count in the DDL/DML, support "==", "!=", "<", "<=", ">", ">=" operations.
                          table_rows: table row count number, support "==", "!=", "<", "<=", ">", ">=" operations.
-                         environment_id: the environment resource id, support "==", "!=", "in [xx]", "!(in [xx])" operations.
-                         project_id: the project resource id, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
-                         db_engine: the database engine type, support "==", "!=", "in [xx]", "!(in [xx])" operations. Check the Engine enum for the values.
+                         resource.environment_id: the environment resource id, support "==", "!=", "in [xx]", "!(in [xx])" operations.
+                         resource.project_id: the project resource id, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+                         resource.db_engine: the database engine type, support "==", "!=", "in [xx]", "!(in [xx])" operations. Check the Engine enum for the values.
                          sql_type: the SQL type, support "==", "!=", "in [xx]", "!(in [xx])" operations.
                           when the risk source is DDL, check https://github.com/bytebase/bytebase/blob/main/frontend/src/plugins/cel/types/values.ts#L70 for supported values.
                           when the risk source is DML, check https://github.com/bytebase/bytebase/blob/main/frontend/src/plugins/cel/types/values.ts#L71 for supported values.
-                         database_name: the database name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
-                         schema_name: the schema name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
-                         table_name: the table name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+                         resource.database_name: the database name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+                         resource.schema_name: the schema name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+                         resource.table_name: the table name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
                          sql_statement: the SQL statement, support "contains()", "matches()", "startsWith()", "endsWith()" operations.
                          expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.
                          role: the request role full name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
@@ -12726,31 +12728,31 @@ components:
                          When the risk source is DDL/DML, support following variables:
                          affected_rows
                          table_rows
-                         environment_id
-                         project_id
-                         db_engine
+                         resource.environment_id
+                         resource.project_id
+                         resource.db_engine
                          sql_type
-                         database_name
-                         schema_name
-                         table_name
+                         resource.database_name
+                         resource.schema_name
+                         resource.table_name
                          sql_statement
 
                          When the risk source is CREATE_DATABASE, support following variables:
-                         environment_id
-                         project_id
-                         db_engine
-                         database_name
+                         resource.environment_id
+                         resource.project_id
+                         resource.db_engine
+                         resource.database_name
 
                          When the risk source is DATA_EXPORT, support following variables:
-                         environment_id
-                         project_id
-                         db_engine
-                         database_name
-                         schema_name
-                         table_name
+                         resource.environment_id
+                         resource.project_id
+                         resource.db_engine
+                         resource.database_name
+                         resource.schema_name
+                         resource.table_name
 
                          When the risk source is REQUEST_ROLE, support following variables:
-                         project_id
+                         resource.project_id
                          expiration_days
                          role
         Role:

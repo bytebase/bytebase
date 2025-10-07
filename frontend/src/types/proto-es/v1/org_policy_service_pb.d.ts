@@ -613,13 +613,13 @@ export declare type MaskingRulePolicy_MaskingRule = Message<"bytebase.v1.Masking
    * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
    *
    * Support variables:
-   * environment_id: the environment resource id.
-   * project_id: the project resource id.
-   * instance_id: the instance resource id.
-   * database_name: the database name.
-   * table_name: the table name.
-   * column_name: the column name.
-   * classification_level: the classification level.
+   * resource.environment_id: the environment resource id.
+   * resource.project_id: the project resource id.
+   * resource.instance_id: the instance resource id.
+   * resource.database_name: the database name.
+   * resource.table_name: the table name.
+   * resource.column_name: the column name.
+   * resource.classification_level: the classification level.
    *
    * Each variable support following operations:
    * ==: the value equals the target.
@@ -628,10 +628,10 @@ export declare type MaskingRulePolicy_MaskingRule = Message<"bytebase.v1.Masking
    * !(in): the value not matches any of the targets.
    *
    * For example:
-   * environment_id == "test" && project_id == "sample-project"
-   * instance_id == "sample-instance" && database_name == "employee" && table_name in ["table1", "table2"]
-   * environment_id != "test" || !(project_id in ["poject1", "prject2"])
-   * instance_id == "sample-instance" && (database_name == "db1" || database_name == "db2")
+   * resource.environment_id == "test" && resource.project_id == "sample-project"
+   * resource.instance_id == "sample-instance" && resource.database_name == "employee" && resource.table_name in ["table1", "table2"]
+   * resource.environment_id != "test" || !(resource.project_id in ["poject1", "prject2"])
+   * resource.instance_id == "sample-instance" && (resource.database_name == "db1" || resource.database_name == "db2")
    *
    * @generated from field: google.type.Expr condition = 2;
    */

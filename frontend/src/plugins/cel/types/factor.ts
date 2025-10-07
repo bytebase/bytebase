@@ -15,33 +15,26 @@ export type NumberFactor = (typeof NumberFactorList)[number];
 export const StringFactorList = [
   // Risk related factors
   "source",
-  "environment_id", // using `environment.resource_id`
-  "project_id", // using `project.resource_id`
-  "database_name",
-  "schema_name",
-  "table_name",
-  "instance_id",
-  "db_engine",
+  "resource.environment_id",
+  "resource.project_id",
+  "resource.database_name",
+  "resource.schema_name",
+  "resource.table_name",
+  "resource.instance_id",
+  "resource.db_engine",
   "sql_type",
   "sql_statement",
   "role",
 
   // Grant request issue related factors
   "resource.database",
-  "resource.schema",
-  "resource.table",
-
-  // Database/table group related factors
-  "resource.environment_name", // using `environment.name`
-  "resource.instance_id", // using `instance.resourceId`
-  "resource.database_name",
+  "resource.schema_name",
   "resource.table_name",
+
   // Masking
   "resource.column_name",
-  "resource.schema_name",
   // Masking rule
-  "classification_level",
-  "column_name",
+  "resource.classification_level",
 ] as const;
 export type StringFactor = (typeof StringFactorList)[number];
 
