@@ -9710,10 +9710,6 @@ When the risk source is CREATE_DATABASE, support following variables: environmen
 
 When the risk source is DATA_EXPORT, support following variables: environment_id project_id db_engine database_name schema_name table_name
 
-When the risk source is REQUEST_QUERY, support following variables: environment_id project_id db_engine database_name schema_name table_name expiration_days
-
-When the risk source is REQUEST_EXPORT, support following variables: environment_id project_id db_engine database_name schema_name table_name expiration_days
-
 When the risk source is REQUEST_ROLE, support following variables: project_id expiration_days role |
 
 
