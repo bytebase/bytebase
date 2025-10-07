@@ -258,7 +258,7 @@ func (q *querySpanExtractor) extractTableSourceFromRangeFunction(node *pgquery.N
 }
 
 func (q *querySpanExtractor) extractTableSourceFromUDF(node *pgquery.Node_RangeFunction, schemaName string, funcName string) (base.TableSource, error) {
-	tableSource, err := q.findFunctionDefine(schemaName, funcName, node.RangeFunction.GetFunctions())
+	tableSource, err := q.findFunctionDefine(schemaName, funcName, len(node.RangeFunction.GetFunctions()))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find function: %s.%s", schemaName, funcName)
 	}
@@ -527,7 +527,7 @@ type functionDefinition struct {
 	metadata   *model.FunctionMetadata
 }
 
-func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, argumentList []*pgquery.Node) (base.TableSource, error) {
+func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, nArgs int) (base.TableSource, error) {
 	dbSchema, err := q.getDatabaseMetadata(q.defaultDatabase)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.defaultDatabase)
@@ -550,7 +550,7 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, arg
 		})
 	}
 
-	candidates, err := getFunctionCandidates(funcs, argumentList, funcName)
+	candidates, err := getFunctionCandidates(funcs, nArgs, funcName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get function candidates")
 	}
@@ -630,9 +630,7 @@ func buildFunctionDefinitionDetail(funcDef *functionDefinition) (*functionDefini
 }
 
 // getFunctionCandidates returns the function candidates for the function call.
-func getFunctionCandidates(functions []*functionDefinition, argumentList []*pgquery.Node, funcName string) ([]*functionDefinition, error) {
-	nargument := len(argumentList)
-
+func getFunctionCandidates(functions []*functionDefinition, nArgs int, funcName string) ([]*functionDefinition, error) {
 	// Filter by name only.
 	var nameFiltered []*functionDefinition
 	for _, function := range functions {
@@ -667,7 +665,7 @@ func getFunctionCandidates(functions []*functionDefinition, argumentList []*pgqu
 	for _, d := range detail {
 		// If there are no default and variadic parameters, the number of arguments must match the number of parameters.
 		if d.nDefaultParam == 0 && d.nVariadicParam == 0 {
-			if nargument == len(d.params) {
+			if nArgs == len(d.params) {
 				candidates = append(candidates, d.function)
 			}
 			continue
@@ -676,11 +674,11 @@ func getFunctionCandidates(functions []*functionDefinition, argumentList []*pgqu
 		// Default parameter matches 0 or 1 argument, and variadic parameter matches 0 or more arguments.
 		lbound := len(d.params) - d.nDefaultParam - d.nVariadicParam
 		ubound := len(d.params)
-		if d.nVariadicParam > 0 && ubound < nargument {
+		if d.nVariadicParam > 0 && ubound < nArgs {
 			// Hack to make variadic parameter match 0 or more arguments.
-			ubound = nargument
+			ubound = nArgs
 		}
-		if nargument >= lbound && nargument <= ubound {
+		if nArgs >= lbound && nArgs <= ubound {
 			candidates = append(candidates, d.function)
 		}
 	}
@@ -1521,7 +1519,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromUDF(node *pgquery.Node_Fu
 		return base.SourceColumnSet{}, nil
 	}
 	result := make(base.SourceColumnSet)
-	tableSource, err := q.findFunctionDefine(schemaName, funcName, node.FuncCall.Args)
+	tableSource, err := q.findFunctionDefine(schemaName, funcName, len(node.FuncCall.Args))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find function define for UDF: %s.%s", schemaName, funcName)
 	}

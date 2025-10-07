@@ -2,6 +2,7 @@ package pg
 
 import (
 	"context"
+	"strings"
 
 	pgparser "github.com/bytebase/parser/postgresql"
 
@@ -1007,7 +1008,7 @@ func (q *querySpanExtractor) extractTableSourceFromRelationExpr(relationExpr pgp
 	}
 
 	// Find the actual table schema with columns
-	tableSource, err := q.findTableSchemaNew(schemaName, tableName)
+	tableSource, err := q.findTableSchema(schemaName, tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -1501,16 +1502,45 @@ func (q *querySpanExtractor) extractSourceColumnSetFromNode(node antlr.ParseTree
 	case pgparser.IColumnrefContext:
 		// Handle column reference directly
 		return q.processColumnRef(ctx)
-
 	case pgparser.IFunc_exprContext:
 		// Handle function calls
 		// Process function arguments recursively
-		return q.extractSourceColumnSetFromFuncExpr(ctx)
-
+		argsResult, err := q.extractSourceColumnSetFromFuncExpr(ctx)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract from function expression")
+		}
+		if udfResult, err := q.extractSourceColumnSetFromUDF2(ctx); err == nil {
+			argsResult, _ = base.MergeSourceColumnSet(argsResult, udfResult)
+		}
+		return argsResult, nil
 	case pgparser.ISelect_with_parensContext:
-		// Handle subqueries with special context (for correlated subqueries)
-		return q.extractSourceColumnSetFromSubquery(ctx)
+		sourceColumnSet := make(base.SourceColumnSet)
+		// Subquery in SELECT fields is special.
+		// It can be the non-associated or associated subquery.
+		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
+		// So that the subquery can access the outer schema.
+		// The reason for new extractor is that we still need the current fromFieldList, overriding it is not expected.
+		subqueryExtractor := &querySpanExtractor{
+			ctx:                     q.ctx,
+			defaultDatabase:         q.defaultDatabase,
+			searchPath:              q.searchPath,
+			metaCache:               q.metaCache,
+			gCtx:                    q.gCtx,
+			ctes:                    q.ctes,
+			outerTableSources:       append(q.outerTableSources, q.tableSourcesFrom...),
+			tableSourcesFrom:        []base.TableSource{},
+			sourceColumnsInFunction: make(base.SourceColumnSet),
+		}
+		tableSource, err := subqueryExtractor.extractTableSourceFromSelectWithParens(ctx)
+		if err != nil {
+			return base.SourceColumnSet{}, errors.Wrapf(err, "failed to extract span result from subquery %s", ctx.GetText())
+		}
+		spanResult := tableSource.GetQuerySpanResult()
 
+		for _, field := range spanResult {
+			sourceColumnSet, _ = base.MergeSourceColumnSet(sourceColumnSet, field.SourceColumns)
+		}
+		return sourceColumnSet, nil
 	case pgparser.ICase_exprContext:
 		// Handle CASE expression - process all branches
 		if ctx.Case_arg() != nil && ctx.Case_arg().A_expr() != nil {
@@ -1698,31 +1728,35 @@ func (q *querySpanExtractor) processColumnRef(ctx pgparser.IColumnrefContext) (b
 	}
 
 	// Look up the column source
-	sources, ok := q.getFieldColumnSourceNew(schemaName, tableName, columnName)
-	if !ok {
-		// Try to find as a whole-table reference if column lookup failed
-		if schemaName == "" && tableName == "" {
-			// Simple column name, might be a table name for whole-row reference
-			tableSource := q.findTableInFromNew(columnName)
-			if tableSource != nil {
-				result := make(base.SourceColumnSet)
-				for _, column := range tableSource.GetQuerySpanResult() {
-					result, _ = base.MergeSourceColumnSet(result, column.SourceColumns)
+	sources, columnSourceOk := q.getFieldColumnSource(schemaName, tableName, columnName)
+	// The column ref in function call can be record type, such as row_to_json.
+	if !columnSourceOk {
+		if schemaName == "" {
+			tableSource := q.findTableInFrom(tableName, columnName)
+			if tableSource == nil {
+				return base.SourceColumnSet{}, &parsererror.ResourceNotFoundError{
+					Err:      errors.New("cannot find the column ref"),
+					Database: &q.defaultDatabase,
+					Schema:   &schemaName,
+					Table:    &tableName,
+					Column:   &columnName,
 				}
-				return result, nil
 			}
+			querySpanResult := tableSource.GetQuerySpanResult()
+			result := make(base.SourceColumnSet)
+			for _, span := range querySpanResult {
+				result, _ = base.MergeSourceColumnSet(result, span.SourceColumns)
+			}
+			return result, nil
 		}
-
-		// Column not found
-		return nil, &parsererror.ResourceNotFoundError{
+		return base.SourceColumnSet{}, &parsererror.ResourceNotFoundError{
+			Err:      errors.New("cannot find the column ref"),
 			Database: &q.defaultDatabase,
 			Schema:   &schemaName,
 			Table:    &tableName,
 			Column:   &columnName,
-			Err:      errors.New("column not found"),
 		}
 	}
-
 	return sources, nil
 }
 
@@ -2157,4 +2191,253 @@ func (q *querySpanExtractor) extractTableSourceFromNonRecursiveCTENew(cte pgpars
 	// TODO: Handle INSERT, UPDATE, DELETE in CTEs if needed
 
 	return nil, errors.New("failed to extract select from CTE")
+}
+
+func (q *querySpanExtractor) extractSourceColumnSetFromUDF2(funcExpr pgparser.IFunc_exprContext) (base.SourceColumnSet, error) {
+	schemaName, funcName, err := q.extractFunctionNameFromFuncExpr(funcExpr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract function name")
+	}
+	if schemaName == "" && IsSystemFunction(funcName, "") {
+		return base.SourceColumnSet{}, nil
+	}
+	nArgs, err := q.extractNFunctionArgsFromFuncExpr(funcExpr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract function args")
+	}
+
+	result := make(base.SourceColumnSet)
+	tableSource, err := q.findFunctionDefine(schemaName, funcName, nArgs)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find function definition for %s.%s/%d", schemaName, funcName, nArgs)
+	}
+	for _, span := range tableSource.GetQuerySpanResult() {
+		result, _ = base.MergeSourceColumnSet(result, span.SourceColumns)
+	}
+	return result, nil
+}
+
+func (q *querySpanExtractor) extractFunctionNameFromFuncExpr(funcExpr pgparser.IFunc_exprContext) (string, string, error) {
+	switch {
+	case funcExpr.Func_application() != nil:
+		funcName := funcExpr.Func_application().Func_name()
+		if funcName.Colid() != nil {
+			names := NormalizePostgreSQLFuncName(funcName)
+			switch len(names) {
+			case 2:
+				return names[0], names[1], nil
+			case 1:
+				return "", names[0], nil
+			default:
+				return "", "", errors.New("invalid function name")
+			}
+		}
+	case funcExpr.Json_aggregate_func() != nil:
+		if funcExpr.Json_aggregate_func().JSON_OBJECTAGG() != nil {
+			return "", "json_objectagg", nil
+		} else if funcExpr.Json_aggregate_func().JSON_ARRAYAGG() != nil {
+			return "", "json_arrayagg", nil
+		}
+	case funcExpr.Func_expr_common_subexpr() != nil:
+		// Builtin function, return the first token text as function name
+		if funcExpr.Func_expr_common_subexpr().GetStart() != nil {
+			return "", strings.ToLower(funcExpr.Func_expr_common_subexpr().GetStart().GetText()), nil
+		}
+	}
+	return "", "", errors.New("unable to extract function name")
+}
+
+func (q *querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr pgparser.IFunc_exprContext) (int, error) {
+	if funcExpr == nil {
+		return 0, nil
+	}
+
+	// This handles generic function calls like my_func(a, b).
+	if fa := funcExpr.Func_application(); fa != nil {
+		if fa.Func_arg_list() != nil {
+			return len(fa.Func_arg_list().AllFunc_arg_expr()), nil
+		}
+		// This handles cases like my_func(a) without a list rule.
+		if fa.Func_arg_expr() != nil {
+			return 1, nil
+		}
+		return 0, nil
+	}
+
+	// This handles JSON aggregate functions like JSON_AGG(expr).
+	if f := funcExpr.Json_aggregate_func(); f != nil {
+		// Based on Postgres grammar, these functions (JSON_AGG, JSONB_AGG, JSON_OBJECT_AGG, JSONB_OBJECT_AGG)
+		// typically take one or two main arguments. Returning 1 is a reasonable assumption for the primary expression argument.
+		return 1, nil
+	}
+
+	// This handles a large set of built-in functions with special syntax.
+	if f := funcExpr.Func_expr_common_subexpr(); f != nil {
+		// Functions with no parentheses have zero arguments (e.g., CURRENT_DATE, CURRENT_USER).
+		if f.OPEN_PAREN() == nil {
+			return 0, nil
+		}
+
+		// --- List-based Functions ---
+		// These functions take a variable number of arguments in a simple list.
+		if f.COALESCE() != nil || f.GREATEST() != nil || f.LEAST() != nil || f.XMLCONCAT() != nil {
+			if list := f.Expr_list(); list != nil {
+				return len(list.AllA_expr()), nil
+			}
+			return 0, nil
+		}
+
+		// --- Functions with Specific Keyword-based Syntax ---
+
+		if f.COLLATION() != nil { // COLLATION FOR (a_expr)
+			return 1, nil
+		}
+
+		if f.CURRENT_TIME() != nil || f.CURRENT_TIMESTAMP() != nil || f.LOCALTIME() != nil || f.LOCALTIMESTAMP() != nil {
+			// e.g., CURRENT_TIME(precision)
+			if f.Iconst() != nil {
+				return 1, nil
+			}
+			return 0, nil
+		}
+
+		if f.CAST() != nil || f.TREAT() != nil { // CAST(expr AS type), TREAT(expr AS type)
+			return 2, nil
+		}
+
+		if f.EXTRACT() != nil { // EXTRACT(field FROM source)
+			if f.Extract_list() != nil {
+				// extract_list contains 'extract_arg' and 'a_expr'.
+				return 2, nil
+			}
+			return 0, nil
+		}
+
+		if f.NORMALIZE() != nil { // NORMALIZE(string [, form])
+			count := 1 // 'string' argument is mandatory
+			if f.Unicode_normal_form() != nil {
+				count++
+			}
+			return count, nil
+		}
+
+		if f.OVERLAY() != nil { // OVERLAY(string PLACING new_substring FROM start [FOR count])
+			if list := f.Overlay_list(); list != nil {
+				return len(list.AllA_expr()), nil // Counts all expressions
+			}
+			return 0, nil
+		}
+
+		if f.POSITION() != nil { // POSITION(substring IN string)
+			if f.Position_list() != nil {
+				return 2, nil
+			}
+			return 0, nil
+		}
+
+		if f.SUBSTRING() != nil { // SUBSTRING(string [FROM start] [FOR count])
+			if list := f.Substr_list(); list != nil {
+				return len(list.AllA_expr()), nil
+			}
+			return 0, nil
+		}
+
+		if f.TRIM() != nil { // TRIM([LEADING|TRAILING|BOTH] [characters] FROM string)
+			if list := f.Trim_list(); list != nil {
+				count := 0
+				if list.A_expr() != nil { // The optional 'characters' argument
+					count++
+				}
+				if list.Expr_list() != nil { // The mandatory 'string' argument
+					count += len(list.Expr_list().AllA_expr())
+				}
+				return count, nil
+			}
+			return 0, nil
+		}
+
+		if f.NULLIF() != nil { // NULLIF(value1, value2)
+			return len(f.AllA_expr()), nil // Expects 2
+		}
+
+		// --- XML Functions ---
+		if f.XMLELEMENT() != nil {
+			count := 0
+			if f.Collabel() != nil {
+				count++
+			} // The element name
+			if f.Xml_attributes() != nil {
+				count += len(f.Xml_attributes().Xml_attribute_list().AllXml_attribute_el())
+			}
+			if f.Expr_list() != nil {
+				count += len(f.Expr_list().AllA_expr())
+			}
+			return count, nil
+		}
+		if f.XMLEXISTS() != nil {
+			return 2, nil
+		} // XMLEXISTS(xpath PASSING xml)
+		if f.XMLFOREST() != nil {
+			if list := f.Xml_attribute_list(); list != nil {
+				return len(list.AllXml_attribute_el()), nil
+			}
+			return 0, nil
+		}
+		if f.XMLPARSE() != nil { // XMLPARSE(DOCUMENT|CONTENT string_value [WHITESPACE option])
+			count := 1 // string_value
+			if f.Xml_whitespace_option() != nil {
+				count++
+			}
+			return count, nil
+		}
+		if f.XMLPI() != nil { // XMLPI(NAME target [, content])
+			count := 1 // target
+			if len(f.AllA_expr()) > 0 {
+				count++
+			}
+			return count, nil
+		}
+		if f.XMLROOT() != nil {
+			count := 2 // xml and version
+			if f.Opt_xml_root_standalone() != nil {
+				count++
+			}
+			return count, nil
+		}
+		if f.XMLSERIALIZE() != nil {
+			return 2, nil
+		} // XMLSERIALIZE(CONTENT value AS type)
+
+		// --- JSON Functions ---
+		if f.JSON_OBJECT() != nil {
+			if list := f.Func_arg_list(); list != nil {
+				return len(list.AllFunc_arg_expr()), nil
+			}
+			if list := f.Json_name_and_value_list(); list != nil {
+				return len(list.AllJson_name_and_value()), nil
+			}
+			return 0, nil
+		}
+		if f.JSON_ARRAY() != nil {
+			if list := f.Json_value_expr_list(); list != nil {
+				return len(list.AllJson_value_expr()), nil
+			}
+			if f.Select_no_parens() != nil {
+				return 1, nil
+			} // subquery
+			return 0, nil
+		}
+		if f.JSON() != nil || f.JSON_SCALAR() != nil || f.JSON_SERIALIZE() != nil {
+			return 1, nil
+		}
+		if f.MERGE_ACTION() != nil {
+			return 0, nil
+		}
+		if f.JSON_QUERY() != nil || f.JSON_EXISTS() != nil || f.JSON_VALUE() != nil {
+			count := 2 // json_value_expr, a_expr
+			return count, nil
+		}
+	}
+
+	return 0, nil
 }

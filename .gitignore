@@ -27,3 +27,5 @@ bytebase-build
 .idea
 
 .DS_Store
+
+parser
