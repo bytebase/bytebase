@@ -56,7 +56,7 @@ func TestRiskLevelCalculation(t *testing.T) {
 			Level:  300, // HIGH risk level
 			Active: true,
 			Condition: &expr.Expr{
-				Expression: `resource.environment_id == "environments/prod"`,
+				Expression: `resource.environment_id == "prod"`,
 			},
 		},
 	}))
@@ -183,7 +183,7 @@ func TestRiskLevelCalculationWithInvalidSQL(t *testing.T) {
 			Level:  300, // HIGH risk level
 			Active: true,
 			Condition: &expr.Expr{
-				Expression: `resource.environment_id == "environments/prod"`,
+				Expression: `resource.environment_id == "prod"`,
 			},
 		},
 	}))
