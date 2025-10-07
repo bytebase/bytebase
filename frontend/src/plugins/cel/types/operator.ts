@@ -131,7 +131,6 @@ const OperatorList: Record<Factor, Operator[]> = {
   ]),
 
   // These factors don't have operator candidates for user selection.
-  "request.export_format": [],
   "request.row_limit": [],
   "resource.database": [],
   "resource.schema": [],

@@ -31,8 +31,6 @@ export const StringFactorList = [
   "resource.database",
   "resource.schema",
   "resource.table",
-  // Deprecated
-  "request.export_format",
 
   // Database/table group related factors
   "resource.environment_name", // using `environment.name`

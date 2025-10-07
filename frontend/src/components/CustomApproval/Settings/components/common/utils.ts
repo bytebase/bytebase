@@ -302,7 +302,6 @@ export const getOptionConfigMap = (source: Risk_Source) => {
       case "resource.database":
       case "resource.schema":
       case "resource.table":
-      case "request.export_format":
       case "resource.environment_name":
       case "resource.instance_id":
       case "resource.database_name":
