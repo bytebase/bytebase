@@ -58,7 +58,7 @@ export const useRuleTemplates = () => {
           expr: wrapAsGroup({
             type: ExprType.Condition,
             operator: "_==_",
-            args: ["environment_id", prod.value.id],
+            args: ["resource.environment_id", prod.value.id],
           }),
           level: PresetRiskLevel.HIGH,
           source: Risk_Source.SOURCE_UNSPECIFIED,
@@ -74,7 +74,7 @@ export const useRuleTemplates = () => {
               {
                 type: ExprType.Condition,
                 operator: "_==_",
-                args: ["environment_id", prod.value.id],
+                args: ["resource.environment_id", prod.value.id],
               },
               {
                 type: ExprType.Condition,
@@ -99,7 +99,7 @@ export const useRuleTemplates = () => {
           expr: wrapAsGroup({
             type: ExprType.Condition,
             operator: "_==_",
-            args: ["environment_id", prod.value.id],
+            args: ["resource.environment_id", prod.value.id],
           }),
           level: PresetRiskLevel.MODERATE,
           source: Risk_Source.CREATE_DATABASE,
@@ -114,7 +114,7 @@ export const useRuleTemplates = () => {
         expr: wrapAsGroup({
           type: ExprType.Condition,
           operator: "_==_",
-          args: ["environment_id", dev.value.id],
+          args: ["resource.environment_id", dev.value.id],
         }),
         level: PresetRiskLevel.LOW,
         source: Risk_Source.SOURCE_UNSPECIFIED,

@@ -96,7 +96,7 @@ func CalculateRiskLevelWithOptionalSummaryReport(
 		for _, statementType := range summaryReport.StatementTypes {
 			args["sql_type"] = statementType
 			for _, tableName := range tableNames {
-				args["table_name"] = tableName
+				args["resource.table_name"] = tableName
 				out, _, err := prg.Eval(args)
 				if err != nil {
 					return 0, errors.Wrap(err, "failed to eval expression")

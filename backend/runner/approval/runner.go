@@ -463,13 +463,13 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 		}
 
 		commonArgs := map[string]any{
-			"environment_id": environmentID,
-			"project_id":     issue.Project.ResourceID,
-			"instance_id":    instance.ResourceID,
-			"database_name":  databaseName,
+			"resource.environment_id": environmentID,
+			"resource.project_id":     issue.Project.ResourceID,
+			"resource.instance_id":    instance.ResourceID,
+			"resource.database_name":  databaseName,
 			// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
-			"db_engine":     instance.Metadata.GetEngine().String(),
-			"sql_statement": taskStatement,
+			"resource.db_engine": instance.Metadata.GetEngine().String(),
+			"sql_statement":      taskStatement,
 		}
 		risk, err := func() (int32, error) {
 			// The summary report is not always available.
@@ -587,14 +587,14 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 					return 0, err
 				}
 				args := map[string]any{
-					"environment_id": "",
-					"project_id":     issue.Project.ResourceID,
-					"instance_id":    instance.ResourceID,
-					"database_name":  databaseName,
-					"db_engine":      instance.Metadata.GetEngine().String(),
+					"resource.environment_id": "",
+					"resource.project_id":     issue.Project.ResourceID,
+					"resource.instance_id":    instance.ResourceID,
+					"resource.database_name":  databaseName,
+					"resource.db_engine":      instance.Metadata.GetEngine().String(),
 				}
 				if environmentID != nil {
-					args["environment_id"] = *environmentID
+					args["resource.environment_id"] = *environmentID
 				}
 
 				vars, err := e.PartialVars(args)
@@ -680,9 +680,9 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 		}
 
 		args := map[string]any{
-			"project_id":      issue.Project.ResourceID,
-			"expiration_days": expirationDays,
-			"role":            payload.GrantRequest.Role,
+			"resource.project_id": issue.Project.ResourceID,
+			"expiration_days":     expirationDays,
+			"role":                payload.GrantRequest.Role,
 		}
 		if len(factors.Databases) == 0 {
 			environments, err := r.store.GetEnvironmentSetting(ctx)
@@ -690,7 +690,7 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 				return 0, store.RiskSourceUnknown, false, err
 			}
 			for _, environment := range environments.GetEnvironments() {
-				args["environment_id"] = environment.Id
+				args["resource.environment_id"] = environment.Id
 				vars, err := e.PartialVars(args)
 				if err != nil {
 					return 0, store.RiskSourceUnknown, false, err
@@ -707,9 +707,9 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 
 		for _, database := range databaseMap {
 			if database.EffectiveEnvironmentID != nil {
-				args["environment_id"] = *database.EffectiveEnvironmentID
+				args["resource.environment_id"] = *database.EffectiveEnvironmentID
 			} else {
-				args["environment_id"] = ""
+				args["resource.environment_id"] = ""
 			}
 			vars, err := e.PartialVars(args)
 			if err != nil {

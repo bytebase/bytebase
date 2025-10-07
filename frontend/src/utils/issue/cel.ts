@@ -322,7 +322,6 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
             }
             break;
           }
-          case "resource.schema":
           case "resource.schema_name": {
             const databaseResource =
               conditionExpression.databaseResources?.pop();
@@ -335,7 +334,6 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
             }
             break;
           }
-          case "resource.table":
           case "resource.table_name": {
             const databaseResource =
               conditionExpression.databaseResources?.pop();
@@ -408,12 +406,10 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
               databaseResource.databaseFullName = right;
               break;
             }
-            case "resource.schema":
             case "resource.schema_name": {
               databaseResource.schema = right;
               break;
             }
-            case "resource.table":
             case "resource.table_name": {
               databaseResource.table = right;
               break;

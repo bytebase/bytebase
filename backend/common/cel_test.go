@@ -79,7 +79,7 @@ func TestGetQueryExportFactors(t *testing.T) {
 		want       QueryExportFactors
 	}{
 		{
-			expression: "request.time < timestamp(\"2023-07-04T06:09:03.384Z\") && request.row_limit == 1000 && (resource.database == \"instances/postgres-sample/databases/employee\" && resource.schema == \"public\" && resource.table in [\"dept_manager\"])",
+			expression: "request.time < timestamp(\"2023-07-04T06:09:03.384Z\") && request.row_limit == 1000 && (resource.database == \"instances/postgres-sample/databases/employee\" && resource.schema_name == \"public\" && resource.table_name in [\"dept_manager\"])",
 			want: QueryExportFactors{
 				Databases: []string{"instances/postgres-sample/databases/employee"},
 			},
@@ -91,7 +91,7 @@ func TestGetQueryExportFactors(t *testing.T) {
 			},
 		},
 		{
-			expression: "request.time < timestamp(\"2023-08-02T07:33:45.686Z\") && (resource.database == \"instances/postgres-sample/databases/employee\" && resource.schema == \"public\" && resource.table in [\"dept_emp\",\"department\"])",
+			expression: "request.time < timestamp(\"2023-08-02T07:33:45.686Z\") && (resource.database == \"instances/postgres-sample/databases/employee\" && resource.schema_name == \"public\" && resource.table_name in [\"dept_emp\",\"department\"])",
 			want: QueryExportFactors{
 				Databases: []string{"instances/postgres-sample/databases/employee"},
 			},
@@ -101,7 +101,7 @@ func TestGetQueryExportFactors(t *testing.T) {
 			want:       QueryExportFactors{},
 		},
 		{
-			expression: "request.time < timestamp(\"2023-07-10T08:15:46.773Z\") && ((resource.database in [\"instances/postgres-sample/databases/blog\"]) || (resource.database == \"instances/postgres-sample/databases/employee\" && resource.schema in [\"public\"]))",
+			expression: "request.time < timestamp(\"2023-07-10T08:15:46.773Z\") && ((resource.database in [\"instances/postgres-sample/databases/blog\"]) || (resource.database == \"instances/postgres-sample/databases/employee\" && resource.schema_name in [\"public\"]))",
 			want: QueryExportFactors{
 				Databases: []string{"instances/postgres-sample/databases/blog", "instances/postgres-sample/databases/employee"},
 			},

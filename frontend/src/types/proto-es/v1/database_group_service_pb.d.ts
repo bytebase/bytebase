@@ -236,13 +236,15 @@ export declare type DatabaseGroup = Message<"bytebase.v1.DatabaseGroup"> & {
    * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
    *
    * Support variables:
-   * resource.environment_name: the environment resource id. Support "==", "!=", "in [XX]", "!(in [xx])" operations.
+   * resource.environment_id: the environment resource id. Support "==", "!=", "in [XX]", "!(in [xx])" operations.
    * resource.instance_id: the instance resource id. Support "==", "!=", "in [XX]", "!(in [xx])", "contains", "matches", "startsWith", "endsWith" operations.
    * resource.database_name: the database name. Support "==", "!=", "in [XX]", "!(in [xx])", "contains", "matches", "startsWith", "endsWith" operations.
+   * resource.database_labels: the database labels. Support map access operations.
    * All variables should join with "&&" condition.
    *
    * For example:
-   * resource.environment_name == "test" && resource.database_name.startsWith("sample_")
+   * resource.environment_id == "test" && resource.database_name.startsWith("sample_")
+   * resource.database_labels["tenant"] == "tenant1"
    *
    * @generated from field: google.type.Expr database_expr = 3;
    */

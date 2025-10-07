@@ -18,7 +18,7 @@ func TestCheckDatabaseGroupMatch(t *testing.T) {
 		match      bool
 	}{
 		{
-			expression: `resource.labels.unit == "gcp"`,
+			expression: `resource.database_labels.unit == "gcp"`,
 			database: &store.DatabaseMessage{
 				Metadata: &storepb.DatabaseMetadata{
 					Labels: map[string]string{
@@ -29,7 +29,7 @@ func TestCheckDatabaseGroupMatch(t *testing.T) {
 			match: true,
 		},
 		{
-			expression: `resource.labels.unit == "aws"`,
+			expression: `resource.database_labels.unit == "aws"`,
 			database: &store.DatabaseMessage{
 				Metadata: &storepb.DatabaseMetadata{
 					Labels: map[string]string{
@@ -40,7 +40,7 @@ func TestCheckDatabaseGroupMatch(t *testing.T) {
 			match: false,
 		},
 		{
-			expression: `has(resource.labels.unit) && resource.labels.unit == "aws"`,
+			expression: `has(resource.database_labels.unit) && resource.database_labels.unit == "aws"`,
 			database: &store.DatabaseMessage{
 				Metadata: &storepb.DatabaseMetadata{},
 			},

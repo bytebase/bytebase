@@ -60,34 +60,41 @@ const OperatorList: Record<Factor, Operator[]> = {
   level: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
   source: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
 
-  environment_id: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
-  instance_id: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
-  project_id: uniq([
+  "resource.environment_id": uniq([
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+  ]),
+  "resource.instance_id": uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
-  database_name: uniq([
+  "resource.project_id": uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
-  schema_name: uniq([
+  "resource.database_name": uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
-  table_name: uniq([
+  "resource.schema_name": uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
-  column_name: uniq([
+  "resource.table_name": uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
-  db_engine: uniq([
+  "resource.column_name": uniq([
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+    ...StringOperatorList,
+  ]),
+  "resource.db_engine": uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,
@@ -98,28 +105,7 @@ const OperatorList: Record<Factor, Operator[]> = {
     ...StringOperatorList,
   ]),
   sql_statement: uniq([...StringOperatorList]),
-  classification_level: uniq([...CollectionOperatorList]),
-
-  // Database group related fields.
-  "resource.environment_name": uniq([
-    ...EqualityOperatorList,
-    ...CollectionOperatorList,
-  ]),
-  "resource.instance_id": uniq([
-    ...EqualityOperatorList,
-    ...CollectionOperatorList,
-    ...StringOperatorList,
-  ]),
-  "resource.database_name": uniq([
-    ...EqualityOperatorList,
-    ...CollectionOperatorList,
-    ...StringOperatorList,
-  ]),
-  "resource.table_name": uniq([
-    ...EqualityOperatorList,
-    ...CollectionOperatorList,
-    ...StringOperatorList,
-  ]),
+  "resource.classification_level": uniq([...CollectionOperatorList]),
 
   // Request query/export factors
   expiration_days: uniq([...EqualityOperatorList, ...CompareOperatorList]),
@@ -132,10 +118,6 @@ const OperatorList: Record<Factor, Operator[]> = {
   // These factors don't have operator candidates for user selection.
   "request.row_limit": [],
   "resource.database": [],
-  "resource.schema": [],
-  "resource.table": [],
-  "resource.column_name": [],
-  "resource.schema_name": [],
   "request.time": [],
 };
 

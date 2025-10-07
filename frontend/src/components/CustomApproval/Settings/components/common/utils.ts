@@ -73,16 +73,16 @@ export const orderByLevelDesc = (a: Risk, b: Risk): number => {
 };
 
 const commonFactorList: Factor[] = [
-  "environment_id", // use `environment.resource_id` instead.
-  "project_id", // use `project.resource_id` instead.
-  "instance_id", // use `instance.resource_id` instead.
-  "db_engine",
+  "resource.environment_id",
+  "resource.project_id",
+  "resource.instance_id",
+  "resource.db_engine",
 ] as const;
 
 const schemaObjectNameFactorList: Factor[] = [
-  "database_name",
-  "schema_name",
-  "table_name",
+  "resource.database_name",
+  "resource.schema_name",
+  "resource.table_name",
 ] as const;
 
 const migrationFactorList: Factor[] = [
@@ -109,7 +109,10 @@ export const RiskSourceFactorMap: Map<Risk_Source, Factor[]> = new Map([
       ...migrationFactorList,
     ],
   ],
-  [Risk_Source.CREATE_DATABASE, [...commonFactorList, "database_name"]],
+  [
+    Risk_Source.CREATE_DATABASE,
+    [...commonFactorList, "resource.database_name"],
+  ],
   [
     Risk_Source.DATA_EXPORT,
     [...commonFactorList, ...schemaObjectNameFactorList],
@@ -117,8 +120,8 @@ export const RiskSourceFactorMap: Map<Risk_Source, Factor[]> = new Map([
   [
     Risk_Source.REQUEST_ROLE,
     [
-      "environment_id", // use `environment.resource_id` instead.
-      "project_id", // use `project.resource_id` instead.
+      "resource.environment_id",
+      "resource.project_id",
       "expiration_days",
       "role",
     ],
@@ -239,10 +242,10 @@ export const getOptionConfigMap = (source: Risk_Source) => {
   return factorList.reduce((map, factor) => {
     let options: SelectOption[] = [];
     switch (factor) {
-      case "environment_id":
+      case "resource.environment_id":
         options = getEnvironmentIdOptions();
         break;
-      case "project_id":
+      case "resource.project_id":
         const projectStore = useProjectV1Store();
         map.set(factor, {
           remote: true,
@@ -259,7 +262,7 @@ export const getOptionConfigMap = (source: Risk_Source) => {
           },
         });
         return map;
-      case "instance_id":
+      case "resource.instance_id":
         const store = useInstanceV1Store();
         map.set(factor, {
           remote: true,
@@ -276,7 +279,7 @@ export const getOptionConfigMap = (source: Risk_Source) => {
           },
         });
         return map;
-      case "db_engine":
+      case "resource.db_engine":
         options = getDBEndingOptions();
         break;
       case "level":
@@ -294,23 +297,15 @@ export const getOptionConfigMap = (source: Risk_Source) => {
       //
       // factors that don't need special handling
       //
-      case "database_name":
-      case "schema_name":
-      case "table_name":
-      case "sql_statement":
       case "resource.database":
-      case "resource.schema":
-      case "resource.table":
-      case "resource.environment_name":
-      case "resource.instance_id":
-      case "resource.database_name":
-      case "resource.table_name":
-      case "resource.column_name":
       case "resource.schema_name":
-      case "classification_level":
-      case "column_name":
+      case "resource.table_name":
+      case "resource.database_name":
+      case "resource.column_name":
+      case "resource.classification_level":
       case "affected_rows":
       case "table_rows":
+      case "sql_statement":
       case "request.row_limit":
       case "expiration_days":
       case "request.time":
@@ -328,10 +323,10 @@ export const getOptionConfigMap = (source: Risk_Source) => {
 };
 
 export const factorSupportDropdown: Factor[] = [
-  "environment_id",
-  "project_id",
-  "instance_id",
-  "db_engine",
+  "resource.environment_id",
+  "resource.project_id",
+  "resource.instance_id",
+  "resource.db_engine",
   "sql_type",
   "level",
   "source",

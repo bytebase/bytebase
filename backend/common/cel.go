@@ -16,14 +16,14 @@ const celLimit = 1024 * 1024
 
 // RiskFactors are the variables when evaluating the risk level.
 var RiskFactors = []cel.EnvOption{
-	cel.Variable("environment_id", cel.StringType), // use environment.resource_id
-	cel.Variable("project_id", cel.StringType),     // use project.resource_id
-	cel.Variable("instance_id", cel.StringType),    // use instance.resource_id
-	cel.Variable("db_engine", cel.StringType),
+	cel.Variable("resource.environment_id", cel.StringType),
+	cel.Variable("resource.project_id", cel.StringType),
+	cel.Variable("resource.instance_id", cel.StringType),
+	cel.Variable("resource.db_engine", cel.StringType),
 
-	cel.Variable("database_name", cel.StringType),
-	cel.Variable("schema_name", cel.StringType),
-	cel.Variable("table_name", cel.StringType),
+	cel.Variable("resource.database_name", cel.StringType),
+	cel.Variable("resource.schema_name", cel.StringType),
+	cel.Variable("resource.table_name", cel.StringType),
 
 	cel.Variable("affected_rows", cel.IntType),
 	cel.Variable("table_rows", cel.IntType),
@@ -43,10 +43,10 @@ var ApprovalFactors = []cel.EnvOption{
 
 // IAMPolicyConditionCELAttributes are the variables when evaluating IAM policy condition.
 var IAMPolicyConditionCELAttributes = []cel.EnvOption{
-	cel.Variable("resource.environment_name", cel.StringType),
+	cel.Variable("resource.environment_id", cel.StringType),
 	cel.Variable("resource.database", cel.StringType),
-	cel.Variable("resource.schema", cel.StringType),
-	cel.Variable("resource.table", cel.StringType),
+	cel.Variable("resource.schema_name", cel.StringType),
+	cel.Variable("resource.table_name", cel.StringType),
 	cel.Variable("request.row_limit", cel.IntType),
 	cel.Variable("request.time", cel.TimestampType),
 	cel.ParserExpressionSizeLimit(celLimit),
@@ -54,14 +54,14 @@ var IAMPolicyConditionCELAttributes = []cel.EnvOption{
 
 // MaskingRulePolicyCELAttributes are the variables when evaluating masking rule.
 var MaskingRulePolicyCELAttributes = []cel.EnvOption{
-	cel.Variable("environment_id", cel.StringType),
-	cel.Variable("project_id", cel.StringType),
-	cel.Variable("instance_id", cel.StringType),
-	cel.Variable("database_name", cel.StringType),
-	cel.Variable("schema_name", cel.StringType),
-	cel.Variable("table_name", cel.StringType),
-	cel.Variable("column_name", cel.StringType),
-	cel.Variable("classification_level", cel.StringType),
+	cel.Variable("resource.environment_id", cel.StringType),
+	cel.Variable("resource.project_id", cel.StringType),
+	cel.Variable("resource.instance_id", cel.StringType),
+	cel.Variable("resource.database_name", cel.StringType),
+	cel.Variable("resource.schema_name", cel.StringType),
+	cel.Variable("resource.table_name", cel.StringType),
+	cel.Variable("resource.column_name", cel.StringType),
+	cel.Variable("resource.classification_level", cel.StringType),
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
@@ -73,6 +73,15 @@ var MaskingExceptionPolicyCELAttributes = []cel.EnvOption{
 	cel.Variable("resource.schema_name", cel.StringType),
 	cel.Variable("resource.column_name", cel.StringType),
 	cel.Variable("request.time", cel.TimestampType),
+	cel.ParserExpressionSizeLimit(celLimit),
+}
+
+// DatabaseGroupCELAttributes are the variables when evaluating database group conditions.
+var DatabaseGroupCELAttributes = []cel.EnvOption{
+	cel.Variable("resource.environment_id", cel.StringType),
+	cel.Variable("resource.instance_id", cel.StringType),
+	cel.Variable("resource.database_name", cel.StringType),
+	cel.Variable("resource.database_labels", cel.MapType(cel.StringType, cel.StringType)),
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
@@ -120,9 +129,7 @@ func ConvertUnparsedApproval(expression *expr.Expr) (*exprproto.ParsedExpr, erro
 
 // ValidateGroupCELExpr validates group expr.
 func ValidateGroupCELExpr(expr string) (cel.Program, error) {
-	e, err := cel.NewEnv(
-		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
-	)
+	e, err := cel.NewEnv(DatabaseGroupCELAttributes...)
 	if err != nil {
 		return nil, err
 	}

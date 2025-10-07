@@ -201,12 +201,10 @@ func CheckDatabaseGroupMatch(ctx context.Context, expression string, database *s
 		effectiveEnvironmentID = *database.EffectiveEnvironmentID
 	}
 	res, _, err := prog.ContextEval(ctx, map[string]any{
-		"resource": map[string]any{
-			"database_name":    database.DatabaseName,
-			"environment_name": common.FormatEnvironment(effectiveEnvironmentID),
-			"instance_id":      database.InstanceID,
-			"labels":           database.Metadata.Labels,
-		},
+		"resource.database_name":   database.DatabaseName,
+		"resource.environment_id":  common.FormatEnvironment(effectiveEnvironmentID),
+		"resource.instance_id":     database.InstanceID,
+		"resource.database_labels": database.Metadata.Labels,
 	})
 	if err != nil {
 		return false, connect.NewError(connect.CodeInternal, err)
