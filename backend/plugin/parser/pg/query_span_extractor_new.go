@@ -526,12 +526,13 @@ func splitRecursiveCTEParts(selectNoParens pgparser.ISelect_no_parensContext) (
 				if i+1 < len(children) {
 					if nextToken, ok := children[i+1].(antlr.TerminalNode); ok {
 						nextType := nextToken.GetSymbol().GetTokenType()
-						if nextType == pgparser.PostgreSQLParserALL {
+						switch nextType {
+						case pgparser.PostgreSQLParserALL:
 							op.IsDistinct = false
-							i++ // Skip the ALL token
-						} else if nextType == pgparser.PostgreSQLParserDISTINCT {
+							i++
+						case pgparser.PostgreSQLParserDISTINCT:
 							op.IsDistinct = true
-							i++ // Skip the DISTINCT token
+							i++
 						}
 					}
 				}
@@ -546,12 +547,13 @@ func splitRecursiveCTEParts(selectNoParens pgparser.ISelect_no_parensContext) (
 				if i+1 < len(children) {
 					if nextToken, ok := children[i+1].(antlr.TerminalNode); ok {
 						nextType := nextToken.GetSymbol().GetTokenType()
-						if nextType == pgparser.PostgreSQLParserALL {
+						switch nextType {
+						case pgparser.PostgreSQLParserALL:
 							op.IsDistinct = false
-							i++ // Skip the ALL token
-						} else if nextType == pgparser.PostgreSQLParserDISTINCT {
+							i++
+						case pgparser.PostgreSQLParserDISTINCT:
 							op.IsDistinct = true
-							i++ // Skip the DISTINCT token
+							i++
 						}
 					}
 				}
@@ -565,12 +567,13 @@ func splitRecursiveCTEParts(selectNoParens pgparser.ISelect_no_parensContext) (
 				if i+1 < len(children) {
 					if nextToken, ok := children[i+1].(antlr.TerminalNode); ok {
 						nextType := nextToken.GetSymbol().GetTokenType()
-						if nextType == pgparser.PostgreSQLParserALL {
+						switch nextType {
+						case pgparser.PostgreSQLParserALL:
 							op.IsDistinct = false
-							i++ // Skip the ALL token
-						} else if nextType == pgparser.PostgreSQLParserDISTINCT {
+							i++
+						case pgparser.PostgreSQLParserDISTINCT:
 							op.IsDistinct = true
-							i++ // Skip the DISTINCT token
+							i++
 						}
 					}
 				}
@@ -1033,127 +1036,6 @@ func (q *querySpanExtractor) extractTableSourceFromRelationExpr(relationExpr pgp
 	return tableSource, nil
 }
 
-// findTableSchemaNew looks up table schema from CTEs or database metadata.
-func (q *querySpanExtractor) findTableSchemaNew(schemaName string, tableName string) (base.TableSource, error) {
-	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE.
-	// Loop CTEs in reversed order to find the closest matching CTE.
-	if schemaName == "" {
-		for i := len(q.ctes) - 1; i >= 0; i-- {
-			table := q.ctes[i]
-			if table.Name == tableName {
-				return table, nil
-			}
-		}
-	}
-
-	// Query database metadata
-	dbSchema, err := q.getDatabaseMetadata(q.defaultDatabase)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.defaultDatabase)
-	}
-	if dbSchema == nil {
-		return nil, &parsererror.ResourceNotFoundError{
-			Database: &q.defaultDatabase,
-		}
-	}
-
-	// Apply search path
-	searchPath := q.searchPath
-	if schemaName != "" {
-		searchPath = []string{schemaName}
-	}
-
-	// Search for different table types
-	tableSchemaName, table := dbSchema.SearchTable(searchPath, tableName)
-	viewSchemaName, view := dbSchema.SearchView(searchPath, tableName)
-	materializedViewSchemaName, materializedView := dbSchema.SearchMaterializedView(searchPath, tableName)
-	foreignTableSchemaName, foreignTable := dbSchema.SearchExternalTable(searchPath, tableName)
-	sequenceSchemaName, sequence := dbSchema.SearchSequence(searchPath, tableName)
-
-	if table == nil && view == nil && foreignTable == nil && materializedView == nil && sequence == nil {
-		return nil, &parsererror.ResourceNotFoundError{
-			Database: &q.defaultDatabase,
-			Schema:   &schemaName,
-			Table:    &tableName,
-		}
-	}
-
-	// Handle regular table
-	if table != nil {
-		var columns []string
-		for _, column := range table.GetColumns() {
-			columns = append(columns, column.Name)
-		}
-		return &base.PhysicalTable{
-			Server:   "",
-			Database: q.defaultDatabase,
-			Schema:   tableSchemaName,
-			Name:     table.GetProto().Name,
-			Columns:  columns,
-		}, nil
-	}
-
-	// Handle foreign/external table
-	if foreignTable != nil {
-		var columns []string
-		for _, column := range foreignTable.GetColumns() {
-			columns = append(columns, column.Name)
-		}
-		return &base.PhysicalTable{
-			Server:   "",
-			Database: q.defaultDatabase,
-			Schema:   foreignTableSchemaName,
-			Name:     foreignTable.GetProto().Name,
-			Columns:  columns,
-		}, nil
-	}
-
-	// Handle view
-	if view != nil && view.Definition != "" {
-		columns, err := q.getColumnsForView(view.Definition)
-		if err != nil {
-			return nil, err
-		}
-		return &base.PhysicalView{
-			Server:   "",
-			Database: q.defaultDatabase,
-			Schema:   viewSchemaName,
-			Name:     view.GetProto().Name,
-			Columns:  columns,
-		}, nil
-	}
-
-	// Handle materialized view
-	if materializedView != nil && materializedView.Definition != "" {
-		columns, err := q.getColumnsForMaterializedView(materializedView.Definition)
-		if err != nil {
-			return nil, err
-		}
-		return &base.PhysicalView{
-			Server:   "",
-			Database: q.defaultDatabase,
-			Schema:   materializedViewSchemaName,
-			Name:     materializedView.GetProto().Name,
-			Columns:  columns,
-		}, nil
-	}
-
-	// Handle sequence
-	if sequence != nil {
-		// The default columns for sequence in PostgreSQL.
-		columns := []string{"last_value", "log_cnt", "is_called"}
-		return &base.Sequence{
-			Server:   "",
-			Database: q.defaultDatabase,
-			Schema:   sequenceSchemaName,
-			Name:     sequence.GetProto().Name,
-			Columns:  columns,
-		}, nil
-	}
-
-	return nil, nil
-}
-
 // extractTableSourceFromJoinedTable extracts table source from a joined table
 func (q *querySpanExtractor) extractTableSourceFromJoinedTable(joinedTable pgparser.IJoined_tableContext) (base.TableSource, error) {
 	if joinedTable == nil {
@@ -1209,15 +1091,6 @@ func (q *querySpanExtractor) extractTableSourceFromFuncTable(funcTable pgparser.
 	// So we return an empty pseudo table that will be populated by the alias
 
 	return result, nil
-}
-
-// extractTableSourceFromValuesClause extracts table source from VALUES clause
-func (q *querySpanExtractor) extractTableSourceFromValuesClause(valuesClause pgparser.IValues_clauseContext) (base.TableSource, error) {
-	// TODO: Implement VALUES clause extraction
-	return &base.PseudoTable{
-		Name:    "",
-		Columns: []base.QuerySpanResult{},
-	}, nil
 }
 
 // applyAliasToTableSource applies an alias to a table source
@@ -1292,9 +1165,9 @@ func (q *querySpanExtractor) extractColumnsFromTargetList(targetList pgparser.IT
 
 	for _, targetEl := range targetList.AllTarget_el() {
 		// Check if this is a star expansion
-		if starCtx, ok := targetEl.(*pgparser.Target_starContext); ok {
+		if _, ok := targetEl.(*pgparser.Target_starContext); ok {
 			// Handle SELECT * or SELECT table.*
-			starColumns, err := q.handleStarExpansion(starCtx, fromFieldList)
+			starColumns, err := q.handleStarExpansion(fromFieldList)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to expand star")
 			}
@@ -1304,7 +1177,7 @@ func (q *querySpanExtractor) extractColumnsFromTargetList(targetList pgparser.IT
 
 		// Check if this is a labeled target (expression with optional alias)
 		if labelCtx, ok := targetEl.(*pgparser.Target_labelContext); ok {
-			column, err := q.handleTargetLabel(labelCtx, fromFieldList)
+			column, err := q.handleTargetLabel(labelCtx)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to process target element")
 			}
@@ -1317,7 +1190,7 @@ func (q *querySpanExtractor) extractColumnsFromTargetList(targetList pgparser.IT
 }
 
 // handleStarExpansion handles SELECT * expansion
-func (q *querySpanExtractor) handleStarExpansion(starCtx *pgparser.Target_starContext, fromFieldList []base.TableSource) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) handleStarExpansion(fromFieldList []base.TableSource) ([]base.QuerySpanResult, error) {
 	// Simple * - expand all columns from all tables in FROM clause
 	var result []base.QuerySpanResult
 	for _, tableSource := range fromFieldList {
@@ -1327,7 +1200,7 @@ func (q *querySpanExtractor) handleStarExpansion(starCtx *pgparser.Target_starCo
 }
 
 // handleTargetLabel handles a labeled target element (expression with optional alias)
-func (q *querySpanExtractor) handleTargetLabel(labelCtx *pgparser.Target_labelContext, fromFieldList []base.TableSource) (base.QuerySpanResult, error) {
+func (q *querySpanExtractor) handleTargetLabel(labelCtx *pgparser.Target_labelContext) (base.QuerySpanResult, error) {
 	// Get the expression
 	expr := labelCtx.A_expr()
 	if expr == nil {
@@ -1363,61 +1236,6 @@ func (q *querySpanExtractor) handleTargetLabel(labelCtx *pgparser.Target_labelCo
 		Name:          columnName,
 		SourceColumns: sourceColumns,
 	}, nil
-}
-
-// expandTableColumns expands all columns for a specific table
-func (q *querySpanExtractor) expandTableColumns(schemaName, tableName string, fromFieldList []base.TableSource) ([]base.QuerySpanResult, error) {
-	// First check in FROM clause tables
-	for _, tableSource := range fromFieldList {
-		if (schemaName == "" || schemaName == tableSource.GetSchemaName()) &&
-			tableName == tableSource.GetTableName() {
-			return tableSource.GetQuerySpanResult(), nil
-		}
-	}
-
-	// Then check in other available tables (CTEs, outer tables)
-	sources, ok := q.getAllTableColumnSourcesNew(schemaName, tableName)
-	if ok {
-		return sources, nil
-	}
-
-	return nil, &parsererror.ResourceNotFoundError{
-		Database: &q.defaultDatabase,
-		Schema:   &schemaName,
-		Table:    &tableName,
-		Err:      errors.New("table not found for star expansion"),
-	}
-}
-
-// getAllTableColumnSourcesNew returns all columns from a specific table.
-// It searches in CTEs, FROM clause, and outer tables.
-func (q *querySpanExtractor) getAllTableColumnSourcesNew(schemaName, tableName string) ([]base.QuerySpanResult, bool) {
-	// Search in FROM clause tables
-	for _, tableSource := range q.tableSourcesFrom {
-		if (schemaName == "" || schemaName == tableSource.GetSchemaName()) &&
-			tableName == tableSource.GetTableName() {
-			return tableSource.GetQuerySpanResult(), true
-		}
-	}
-
-	// Search in CTEs
-	if schemaName == "" {
-		for i := len(q.ctes) - 1; i >= 0; i-- {
-			if q.ctes[i].Name == tableName {
-				return q.ctes[i].Columns, true
-			}
-		}
-	}
-
-	// Search in outer tables (for correlated subqueries)
-	for _, tableSource := range q.outerTableSources {
-		if (schemaName == "" || schemaName == tableSource.GetSchemaName()) &&
-			tableName == tableSource.GetTableName() {
-			return tableSource.GetQuerySpanResult(), true
-		}
-	}
-
-	return nil, false
 }
 
 // extractFieldNameFromAExpr attempts to extract a meaningful column name from an expression.
@@ -2075,9 +1893,9 @@ func (q *querySpanExtractor) extractTableSourceFromSelectClause(ctx pgparser.ISe
 // handleTargetElement processes a single target element in SELECT list
 func (q *querySpanExtractor) handleTargetElement(target pgparser.ITarget_elContext, result *base.PseudoTable) error {
 	// Check if this is a star expansion
-	if starCtx, ok := target.(*pgparser.Target_starContext); ok {
+	if _, ok := target.(*pgparser.Target_starContext); ok {
 		// Handle SELECT * or SELECT table.*
-		starColumns, err := q.handleStarExpansion(starCtx, q.tableSourcesFrom)
+		starColumns, err := q.handleStarExpansion(q.tableSourcesFrom)
 		if err != nil {
 			return errors.Wrapf(err, "failed to expand star")
 		}
@@ -2087,7 +1905,7 @@ func (q *querySpanExtractor) handleTargetElement(target pgparser.ITarget_elConte
 
 	// Check if this is a labeled target (expression with optional alias)
 	if labelCtx, ok := target.(*pgparser.Target_labelContext); ok {
-		column, err := q.handleTargetLabel(labelCtx, q.tableSourcesFrom)
+		column, err := q.handleTargetLabel(labelCtx)
 		if err != nil {
 			return errors.Wrapf(err, "failed to process target element")
 		}
