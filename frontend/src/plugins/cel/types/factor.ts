@@ -9,7 +9,6 @@ export const NumberFactorList = [
 
   // Request query/export factors
   "expiration_days",
-  "export_rows",
 ] as const;
 export type NumberFactor = (typeof NumberFactorList)[number];
 

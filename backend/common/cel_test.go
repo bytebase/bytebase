@@ -81,15 +81,13 @@ func TestGetQueryExportFactors(t *testing.T) {
 		{
 			expression: "request.time < timestamp(\"2023-07-04T06:09:03.384Z\") && request.row_limit == 1000 && (resource.database == \"instances/postgres-sample/databases/employee\" && resource.schema == \"public\" && resource.table in [\"dept_manager\"])",
 			want: QueryExportFactors{
-				Databases:  []string{"instances/postgres-sample/databases/employee"},
-				ExportRows: 1000,
+				Databases: []string{"instances/postgres-sample/databases/employee"},
 			},
 		},
 		{
 			expression: "request.time < timestamp(\"2023-07-04T07:40:05.658Z\") && request.row_limit == 1000 && (resource.database in [\"instances/postgres-sample/databases/employee\"])",
 			want: QueryExportFactors{
-				Databases:  []string{"instances/postgres-sample/databases/employee"},
-				ExportRows: 1000,
+				Databases: []string{"instances/postgres-sample/databases/employee"},
 			},
 		},
 		{

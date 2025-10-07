@@ -1133,14 +1133,16 @@ export declare type DataSource_AWSCredential = Message<"bytebase.v1.DataSource.A
   sessionToken: string;
 
   /**
-   * ARN of IAM role to assume for cross-account access
+   * ARN of IAM role to assume for cross-account access.
+   * See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html
    *
    * @generated from field: string role_arn = 4;
    */
   roleArn: string;
 
   /**
-   * Optional external ID for additional security when assuming role
+   * Optional external ID for additional security when assuming role.
+   * See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html
    *
    * @generated from field: string external_id = 5;
    */

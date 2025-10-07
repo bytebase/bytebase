@@ -1404,9 +1404,11 @@ type DataSource_AWSCredential struct {
 	ObfuscatedSecretAccessKey string                 `protobuf:"bytes,4,opt,name=obfuscated_secret_access_key,json=obfuscatedSecretAccessKey,proto3" json:"obfuscated_secret_access_key,omitempty"`
 	SessionToken              string                 `protobuf:"bytes,5,opt,name=session_token,json=sessionToken,proto3" json:"session_token,omitempty"`
 	ObfuscatedSessionToken    string                 `protobuf:"bytes,6,opt,name=obfuscated_session_token,json=obfuscatedSessionToken,proto3" json:"obfuscated_session_token,omitempty"`
-	// ARN of IAM role to assume for cross-account access
+	// ARN of IAM role to assume for cross-account access.
+	// See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html
 	RoleArn string `protobuf:"bytes,7,opt,name=role_arn,json=roleArn,proto3" json:"role_arn,omitempty"`
-	// Optional external ID for additional security when assuming role
+	// Optional external ID for additional security when assuming role.
+	// See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html
 	ExternalId    string `protobuf:"bytes,8,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

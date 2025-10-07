@@ -4684,14 +4684,16 @@ For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p><
                   <td>role_arn</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>ARN of IAM role to assume for cross-account access </p></td>
+                  <td><p>ARN of IAM role to assume for cross-account access.
+See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html </p></td>
                 </tr>
               
                 <tr>
                   <td>external_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Optional external ID for additional security when assuming role </p></td>
+                  <td><p>Optional external ID for additional security when assuming role.
+See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html </p></td>
                 </tr>
               
             </tbody>
@@ -27119,7 +27121,6 @@ database_name: the database name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [x
 schema_name: the schema name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations.
 table_name: the table name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations.
 sql_statement: the SQL statement, support &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations.
-export_rows: export data count, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations.
 expiration_days: the role expiration days for the request, support &#34;==&#34;, &#34;!=&#34;, &#34;&lt;&#34;, &#34;&lt;=&#34;, &#34;&gt;&#34;, &#34;&gt;=&#34; operations.
 role: the request role full name, support &#34;==&#34;, &#34;!=&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34;, &#34;contains()&#34;, &#34;matches()&#34;, &#34;startsWith()&#34;, &#34;endsWith()&#34; operations.
 
@@ -27148,7 +27149,6 @@ db_engine
 database_name
 schema_name
 table_name
-export_rows
 
 When the risk source is REQUEST_QUERY, support following variables:
 environment_id
@@ -27167,7 +27167,6 @@ database_name
 schema_name
 table_name
 expiration_days
-export_rows
 
 When the risk source is REQUEST_ROLE, support following variables:
 project_id

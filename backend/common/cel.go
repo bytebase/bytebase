@@ -31,7 +31,6 @@ var RiskFactors = []cel.EnvOption{
 	cel.Variable("sql_statement", cel.StringType),
 
 	cel.Variable("expiration_days", cel.IntType),
-	cel.Variable("export_rows", cel.IntType),
 	cel.Variable("role", cel.StringType),
 }
 
@@ -189,8 +188,7 @@ func validateCELExpr(expression *expr.Expr, conditionCELAttributes []cel.EnvOpti
 
 // QueryExportFactors is the factors for query and export.
 type QueryExportFactors struct {
-	Databases  []string
-	ExportRows int64
+	Databases []string
 }
 
 // GetQueryExportFactors is used to get risk factors from query and export expressions.
@@ -225,9 +223,6 @@ func findField(callExpr *exprproto.Expr_Call, factors *QueryExportFactors) {
 	if len(callExpr.Args) == 2 {
 		idExpr := callExpr.Args[0].GetIdentExpr()
 		if idExpr != nil {
-			if idExpr.Name == "request.row_limit" {
-				factors.ExportRows = callExpr.Args[1].GetConstExpr().GetInt64Value()
-			}
 			if idExpr.Name == "resource.database" && callExpr.Function == "_==_" {
 				factors.Databases = append(factors.Databases, callExpr.Args[1].GetConstExpr().GetStringValue())
 			}
