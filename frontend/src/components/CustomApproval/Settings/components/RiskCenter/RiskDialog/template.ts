@@ -44,7 +44,7 @@ export const useRuleTemplates = () => {
         expr: wrapAsGroup({
           type: ExprType.Condition,
           operator: "_==_",
-          args: ["role", PresetRoleType.PROJECT_OWNER],
+          args: ["request.role", PresetRoleType.PROJECT_OWNER],
         }),
         level: PresetRiskLevel.HIGH,
         source: Risk_Source.REQUEST_ROLE,
@@ -79,12 +79,12 @@ export const useRuleTemplates = () => {
               {
                 type: ExprType.Condition,
                 operator: "_>_",
-                args: ["affected_rows", 10000],
+                args: ["statement.affected_rows", 10000],
               },
               {
                 type: ExprType.Condition,
                 operator: "@in",
-                args: ["sql_type", ["UPDATE", "DELETE"]],
+                args: ["statement.sql_type", ["UPDATE", "DELETE"]],
               },
             ],
           }),

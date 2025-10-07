@@ -18,6 +18,16 @@
 -- 10. resource.table -> resource.table_name (in IAM policies)
 -- 11. resource.labels -> resource.database_labels (in database groups)
 --
+-- Statement-related attribute changes (adding statement.* prefix):
+-- 12. affected_rows -> statement.affected_rows
+-- 13. table_rows -> statement.table_rows
+-- 14. sql_type -> statement.sql_type
+-- 15. sql_statement -> statement.text
+--
+-- Request-related attribute changes (adding request.* prefix):
+-- 16. expiration_days -> request.expiration_days
+-- 17. role -> request.role
+--
 -- Affected tables:
 -- - risk: Risk evaluation CEL expressions
 -- - db_group: Database group matching CEL expressions
@@ -26,8 +36,9 @@
 
 -- Update risk table expressions
 -- The risk.expression column stores CEL expressions in jsonb format with an "expression" field
--- We need to add resource.* prefix to attributes that didn't have it
+-- We need to add resource.*, statement.*, and request.* prefixes to attributes that didn't have it
 -- Using regexp_replace to match whole identifiers (not partial matches)
+-- Note: We must do sql_statement -> statement.text BEFORE sql_type -> statement.sql_type to avoid partial match issues
 UPDATE risk
 SET expression = jsonb_set(
     expression,
@@ -40,38 +51,71 @@ SET expression = jsonb_set(
                         regexp_replace(
                             regexp_replace(
                                 regexp_replace(
-                                    expression->>'expression',
-                                    '\m(environment_id)\M',
-                                    'resource.environment_id',
+                                    regexp_replace(
+                                        regexp_replace(
+                                            regexp_replace(
+                                                regexp_replace(
+                                                    regexp_replace(
+                                                        regexp_replace(
+                                                            expression->>'expression',
+                                                            '\m(environment_id)\M',
+                                                            'resource.environment_id',
+                                                            'g'
+                                                        ),
+                                                        '\m(project_id)\M',
+                                                        'resource.project_id',
+                                                        'g'
+                                                    ),
+                                                    '\m(instance_id)\M',
+                                                    'resource.instance_id',
+                                                    'g'
+                                                ),
+                                                '\m(db_engine)\M',
+                                                'resource.db_engine',
+                                                'g'
+                                            ),
+                                            '\m(database_name)\M',
+                                            'resource.database_name',
+                                            'g'
+                                        ),
+                                        '\m(schema_name)\M',
+                                        'resource.schema_name',
+                                        'g'
+                                    ),
+                                    '\m(table_name)\M',
+                                    'resource.table_name',
                                     'g'
                                 ),
-                                '\m(project_id)\M',
-                                'resource.project_id',
+                                '\m(affected_rows)\M',
+                                'statement.affected_rows',
                                 'g'
                             ),
-                            '\m(instance_id)\M',
-                            'resource.instance_id',
+                            '\m(table_rows)\M',
+                            'statement.table_rows',
                             'g'
                         ),
-                        '\m(db_engine)\M',
-                        'resource.db_engine',
+                        '\m(sql_statement)\M',
+                        'statement.text',
                         'g'
                     ),
-                    '\m(database_name)\M',
-                    'resource.database_name',
+                    '\m(sql_type)\M',
+                    'statement.sql_type',
                     'g'
                 ),
-                '\m(schema_name)\M',
-                'resource.schema_name',
+                '\m(expiration_days)\M',
+                'request.expiration_days',
                 'g'
             ),
-            '\m(table_name)\M',
-            'resource.table_name',
+            '\mrole\M',
+            'request.role',
             'g'
         )
     )
 )
-WHERE expression->>'expression' ~ '\m(environment_id|project_id|instance_id|db_engine|database_name|schema_name|table_name)\M';
+WHERE expression->>'expression' ~ '\m(environment_id|project_id|instance_id|db_engine|database_name|schema_name|table_name|affected_rows|table_rows|sql_statement|sql_type|expiration_days|role)\M'
+  AND expression->>'expression' !~ 'resource\.(environment_id|project_id|instance_id|db_engine|database_name|schema_name|table_name)'
+  AND expression->>'expression' !~ 'statement\.(affected_rows|table_rows|sql_type|text)'
+  AND expression->>'expression' !~ 'request\.(expiration_days|role)';
 
 -- Update database group expressions
 -- The db_group.expression column stores CEL expressions in jsonb format with an "expression" field

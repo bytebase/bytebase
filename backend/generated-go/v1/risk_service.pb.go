@@ -416,12 +416,12 @@ type Risk struct {
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 	//
 	// All supported variables:
-	// affected_rows: affected row count in the DDL/DML, support "==", "!=", "<", "<=", ">", ">=" operations.
-	// table_rows: table row count number, support "==", "!=", "<", "<=", ">", ">=" operations.
+	// statement.affected_rows: affected row count in the DDL/DML, support "==", "!=", "<", "<=", ">", ">=" operations.
+	// statement.table_rows: table row count number, support "==", "!=", "<", "<=", ">", ">=" operations.
 	// resource.environment_id: the environment resource id, support "==", "!=", "in [xx]", "!(in [xx])" operations.
 	// resource.project_id: the project resource id, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
 	// resource.db_engine: the database engine type, support "==", "!=", "in [xx]", "!(in [xx])" operations. Check the Engine enum for the values.
-	// sql_type: the SQL type, support "==", "!=", "in [xx]", "!(in [xx])" operations.
+	// statement.sql_type: the SQL type, support "==", "!=", "in [xx]", "!(in [xx])" operations.
 	//
 	//	when the risk source is DDL, check https://github.com/bytebase/bytebase/blob/main/frontend/src/plugins/cel/types/values.ts#L70 for supported values.
 	//	when the risk source is DML, check https://github.com/bytebase/bytebase/blob/main/frontend/src/plugins/cel/types/values.ts#L71 for supported values.
@@ -429,21 +429,21 @@ type Risk struct {
 	// resource.database_name: the database name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
 	// resource.schema_name: the schema name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
 	// resource.table_name: the table name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
-	// sql_statement: the SQL statement, support "contains()", "matches()", "startsWith()", "endsWith()" operations.
-	// expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.
-	// role: the request role full name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+	// statement.text: the SQL statement, support "contains()", "matches()", "startsWith()", "endsWith()" operations.
+	// request.expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.
+	// request.role: the request role full name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
 	//
 	// When the risk source is DDL/DML, support following variables:
-	// affected_rows
-	// table_rows
+	// statement.affected_rows
+	// statement.table_rows
 	// resource.environment_id
 	// resource.project_id
 	// resource.db_engine
-	// sql_type
+	// statement.sql_type
 	// resource.database_name
 	// resource.schema_name
 	// resource.table_name
-	// sql_statement
+	// statement.text
 	//
 	// When the risk source is CREATE_DATABASE, support following variables:
 	// resource.environment_id
@@ -461,8 +461,8 @@ type Risk struct {
 	//
 	// When the risk source is REQUEST_ROLE, support following variables:
 	// resource.project_id
-	// expiration_days
-	// role
+	// request.expiration_days
+	// request.role
 	Condition     *expr.Expr `protobuf:"bytes,8,opt,name=condition,proto3" json:"condition,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
