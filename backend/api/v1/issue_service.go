@@ -491,6 +491,14 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 }
 
 func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1pb.CreateIssueRequest) (*connect.Response[v1pb.Issue], error) {
+	// Check if approval workflow feature is enabled.
+	// In Community plan where this feature is disabled, grant requests would be automatically approved
+	// without any approval template, which is a security vulnerability.
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW); err != nil {
+		return nil, connect.NewError(connect.CodePermissionDenied,
+			errors.Errorf("role request requires approval workflow feature (available in paid plans)"))
+	}
+
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
