@@ -57,7 +57,7 @@ RUN apk add postgresql16
 
 # Install mongosh.
 RUN apk add --no-cache npm
-RUN npm install -g mongosh@2.5.8
+RUN npm install -g mongosh@2.5.0
 
 # The file indicates running in docker environment.
 RUN touch /etc/bb.env
