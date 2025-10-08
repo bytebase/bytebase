@@ -586,15 +586,16 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 				if err != nil {
 					return 0, err
 				}
-				args := map[string]any{
-					"resource.environment_id": "",
-					"resource.project_id":     issue.Project.ResourceID,
-					"resource.instance_id":    instance.ResourceID,
-					"resource.database_name":  databaseName,
-					"resource.db_engine":      instance.Metadata.GetEngine().String(),
-				}
+				envID := ""
 				if environmentID != nil {
-					args["resource.environment_id"] = *environmentID
+					envID = *environmentID
+				}
+				args := map[string]any{
+					common.CELAttributeResourceEnvironmentID: envID,
+					common.CELAttributeResourceProjectID:     issue.Project.ResourceID,
+					common.CELAttributeResourceInstanceID:    instance.ResourceID,
+					common.CELAttributeResourceDatabaseName:  databaseName,
+					common.CELAttributeResourceDBEngine:      instance.Metadata.GetEngine().String(),
 				}
 
 				vars, err := e.PartialVars(args)
@@ -680,9 +681,9 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 		}
 
 		args := map[string]any{
-			"resource.project_id":     issue.Project.ResourceID,
-			"request.expiration_days": expirationDays,
-			"request.role":            payload.GrantRequest.Role,
+			common.CELAttributeResourceProjectID:     issue.Project.ResourceID,
+			common.CELAttributeRequestExpirationDays: expirationDays,
+			common.CELAttributeRequestRole:           payload.GrantRequest.Role,
 		}
 		if len(factors.Databases) == 0 {
 			environments, err := r.store.GetEnvironmentSetting(ctx)
@@ -690,7 +691,7 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 				return 0, store.RiskSourceUnknown, false, err
 			}
 			for _, environment := range environments.GetEnvironments() {
-				args["resource.environment_id"] = environment.Id
+				args[common.CELAttributeResourceEnvironmentID] = environment.Id
 				vars, err := e.PartialVars(args)
 				if err != nil {
 					return 0, store.RiskSourceUnknown, false, err
@@ -707,9 +708,9 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 
 		for _, database := range databaseMap {
 			if database.EffectiveEnvironmentID != nil {
-				args["resource.environment_id"] = *database.EffectiveEnvironmentID
+				args[common.CELAttributeResourceEnvironmentID] = *database.EffectiveEnvironmentID
 			} else {
-				args["resource.environment_id"] = ""
+				args[common.CELAttributeResourceEnvironmentID] = ""
 			}
 			vars, err := e.PartialVars(args)
 			if err != nil {

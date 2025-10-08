@@ -241,17 +241,17 @@ loop:
 					checkResult.AffectedRows = summaryReport.AffectedRows
 					resp.AffectedRows += summaryReport.AffectedRows
 
-					commonArgs := map[string]any{
-						"resource.environment_id": "",
-						"resource.project_id":     database.ProjectID,
-						"resource.instance_id":    instance.ResourceID,
-						"resource.database_name":  database.DatabaseName,
-						// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
-						"resource.db_engine": engine.String(),
-						"statement.text":     statement,
-					}
+					environmentID := ""
 					if database.EffectiveEnvironmentID != nil {
-						commonArgs["resource.environment_id"] = *database.EffectiveEnvironmentID
+						environmentID = *database.EffectiveEnvironmentID
+					}
+					commonArgs := map[string]any{
+						common.CELAttributeResourceEnvironmentID: environmentID,
+						common.CELAttributeResourceProjectID:     database.ProjectID,
+						common.CELAttributeResourceInstanceID:    instance.ResourceID,
+						common.CELAttributeResourceDatabaseName:  database.DatabaseName,
+						common.CELAttributeResourceDBEngine:      engine.String(),
+						common.CELAttributeStatementText:         statement,
 					}
 					riskLevel, err := CalculateRiskLevelWithOptionalSummaryReport(ctx, risks, commonArgs, getRiskSourceFromChangeType(changeType), summaryReport)
 					if err != nil {
