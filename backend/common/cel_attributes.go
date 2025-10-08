@@ -1,3 +1,4 @@
+//nolint:revive
 package common
 
 // CEL attribute names for resource scope.
