@@ -56,8 +56,21 @@ RUN apk add postgresql16
 #RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
 
 # Install mongosh.
-RUN apk add --no-cache npm
-RUN npm install -g mongosh@2.5.8
+# Alpine's nodejs package may be too old, so we download mongosh binary directly
+RUN apk add --no-cache curl
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        MONGOSH_ARCH="x64"; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        MONGOSH_ARCH="arm64"; \
+    else \
+        echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi && \
+    curl -L https://downloads.mongodb.com/compass/mongosh-2.5.8-linux-${MONGOSH_ARCH}.tgz -o /tmp/mongosh.tgz && \
+    tar -xzf /tmp/mongosh.tgz -C /tmp && \
+    mv /tmp/mongosh-2.5.8-linux-${MONGOSH_ARCH}/bin/mongosh /usr/local/bin/ && \
+    mv /tmp/mongosh-2.5.8-linux-${MONGOSH_ARCH}/bin/mongosh_crypt_v1.so /usr/local/lib/ && \
+    rm -rf /tmp/mongosh*
 
 # The file indicates running in docker environment.
 RUN touch /etc/bb.env
