@@ -16,72 +16,72 @@ const celLimit = 1024 * 1024
 
 // RiskFactors are the variables when evaluating the risk level.
 var RiskFactors = []cel.EnvOption{
-	cel.Variable("resource.environment_id", cel.StringType),
-	cel.Variable("resource.project_id", cel.StringType),
-	cel.Variable("resource.instance_id", cel.StringType),
-	cel.Variable("resource.db_engine", cel.StringType),
+	cel.Variable(CELAttributeResourceEnvironmentID, cel.StringType),
+	cel.Variable(CELAttributeResourceProjectID, cel.StringType),
+	cel.Variable(CELAttributeResourceInstanceID, cel.StringType),
+	cel.Variable(CELAttributeResourceDBEngine, cel.StringType),
 
-	cel.Variable("resource.database_name", cel.StringType),
-	cel.Variable("resource.schema_name", cel.StringType),
-	cel.Variable("resource.table_name", cel.StringType),
+	cel.Variable(CELAttributeResourceDatabaseName, cel.StringType),
+	cel.Variable(CELAttributeResourceSchemaName, cel.StringType),
+	cel.Variable(CELAttributeResourceTableName, cel.StringType),
 
-	cel.Variable("statement.affected_rows", cel.IntType),
-	cel.Variable("statement.table_rows", cel.IntType),
-	cel.Variable("statement.sql_type", cel.StringType),
-	cel.Variable("statement.text", cel.StringType),
+	cel.Variable(CELAttributeStatementAffectedRows, cel.IntType),
+	cel.Variable(CELAttributeStatementTableRows, cel.IntType),
+	cel.Variable(CELAttributeStatementSQLType, cel.StringType),
+	cel.Variable(CELAttributeStatementText, cel.StringType),
 
-	cel.Variable("request.expiration_days", cel.IntType),
-	cel.Variable("request.role", cel.StringType),
+	cel.Variable(CELAttributeRequestExpirationDays, cel.IntType),
+	cel.Variable(CELAttributeRequestRole, cel.StringType),
 }
 
 // ApprovalFactors are the variables when finding the approval template.
 var ApprovalFactors = []cel.EnvOption{
-	cel.Variable("level", cel.IntType),
-	cel.Variable("source", cel.StringType),
+	cel.Variable(CELAttributeLevel, cel.IntType),
+	cel.Variable(CELAttributeSource, cel.StringType),
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
 // IAMPolicyConditionCELAttributes are the variables when evaluating IAM policy condition.
 var IAMPolicyConditionCELAttributes = []cel.EnvOption{
-	cel.Variable("resource.environment_id", cel.StringType),
-	cel.Variable("resource.database", cel.StringType),
-	cel.Variable("resource.schema_name", cel.StringType),
-	cel.Variable("resource.table_name", cel.StringType),
-	cel.Variable("request.row_limit", cel.IntType),
-	cel.Variable("request.time", cel.TimestampType),
+	cel.Variable(CELAttributeResourceEnvironmentID, cel.StringType),
+	cel.Variable(CELAttributeResourceDatabase, cel.StringType),
+	cel.Variable(CELAttributeResourceSchemaName, cel.StringType),
+	cel.Variable(CELAttributeResourceTableName, cel.StringType),
+	cel.Variable(CELAttributeRequestRowLimit, cel.IntType),
+	cel.Variable(CELAttributeRequestTime, cel.TimestampType),
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
 // MaskingRulePolicyCELAttributes are the variables when evaluating masking rule.
 var MaskingRulePolicyCELAttributes = []cel.EnvOption{
-	cel.Variable("resource.environment_id", cel.StringType),
-	cel.Variable("resource.project_id", cel.StringType),
-	cel.Variable("resource.instance_id", cel.StringType),
-	cel.Variable("resource.database_name", cel.StringType),
-	cel.Variable("resource.schema_name", cel.StringType),
-	cel.Variable("resource.table_name", cel.StringType),
-	cel.Variable("resource.column_name", cel.StringType),
-	cel.Variable("resource.classification_level", cel.StringType),
+	cel.Variable(CELAttributeResourceEnvironmentID, cel.StringType),
+	cel.Variable(CELAttributeResourceProjectID, cel.StringType),
+	cel.Variable(CELAttributeResourceInstanceID, cel.StringType),
+	cel.Variable(CELAttributeResourceDatabaseName, cel.StringType),
+	cel.Variable(CELAttributeResourceSchemaName, cel.StringType),
+	cel.Variable(CELAttributeResourceTableName, cel.StringType),
+	cel.Variable(CELAttributeResourceColumnName, cel.StringType),
+	cel.Variable(CELAttributeResourceClassificationLevel, cel.StringType),
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
 // MaskingExceptionPolicyCELAttributes are the variables when evaluating masking exception.
 var MaskingExceptionPolicyCELAttributes = []cel.EnvOption{
-	cel.Variable("resource.instance_id", cel.StringType),
-	cel.Variable("resource.database_name", cel.StringType),
-	cel.Variable("resource.table_name", cel.StringType),
-	cel.Variable("resource.schema_name", cel.StringType),
-	cel.Variable("resource.column_name", cel.StringType),
-	cel.Variable("request.time", cel.TimestampType),
+	cel.Variable(CELAttributeResourceInstanceID, cel.StringType),
+	cel.Variable(CELAttributeResourceDatabaseName, cel.StringType),
+	cel.Variable(CELAttributeResourceTableName, cel.StringType),
+	cel.Variable(CELAttributeResourceSchemaName, cel.StringType),
+	cel.Variable(CELAttributeResourceColumnName, cel.StringType),
+	cel.Variable(CELAttributeRequestTime, cel.TimestampType),
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
 // DatabaseGroupCELAttributes are the variables when evaluating database group conditions.
 var DatabaseGroupCELAttributes = []cel.EnvOption{
-	cel.Variable("resource.environment_id", cel.StringType),
-	cel.Variable("resource.instance_id", cel.StringType),
-	cel.Variable("resource.database_name", cel.StringType),
-	cel.Variable("resource.database_labels", cel.MapType(cel.StringType, cel.StringType)),
+	cel.Variable(CELAttributeResourceEnvironmentID, cel.StringType),
+	cel.Variable(CELAttributeResourceInstanceID, cel.StringType),
+	cel.Variable(CELAttributeResourceDatabaseName, cel.StringType),
+	cel.Variable(CELAttributeResourceDatabaseLabels, cel.MapType(cel.StringType, cel.StringType)),
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
@@ -230,10 +230,10 @@ func findField(callExpr *exprproto.Expr_Call, factors *QueryExportFactors) {
 	if len(callExpr.Args) == 2 {
 		idExpr := callExpr.Args[0].GetIdentExpr()
 		if idExpr != nil {
-			if idExpr.Name == "resource.database" && callExpr.Function == "_==_" {
+			if idExpr.Name == CELAttributeResourceDatabase && callExpr.Function == "_==_" {
 				factors.Databases = append(factors.Databases, callExpr.Args[1].GetConstExpr().GetStringValue())
 			}
-			if idExpr.Name == "resource.database" && callExpr.Function == "@in" {
+			if idExpr.Name == CELAttributeResourceDatabase && callExpr.Function == "@in" {
 				list := callExpr.Args[1].GetListExpr()
 				for _, element := range list.Elements {
 					factors.Databases = append(factors.Databases, element.GetConstExpr().GetStringValue())
@@ -250,7 +250,7 @@ func findField(callExpr *exprproto.Expr_Call, factors *QueryExportFactors) {
 
 func EvalBindingCondition(expr string, requestTime time.Time) (bool, error) {
 	input := map[string]any{
-		"request.time": requestTime,
+		CELAttributeRequestTime: requestTime,
 	}
 	return doEvalBindingCondition(expr, input)
 }

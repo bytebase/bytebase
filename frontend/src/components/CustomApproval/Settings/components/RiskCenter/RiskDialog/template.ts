@@ -6,6 +6,12 @@ import { t, te } from "@/plugins/i18n";
 import { useEnvironmentV1List } from "@/store";
 import { PresetRiskLevel, PresetRoleType } from "@/types";
 import { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
+import {
+  CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
+  CEL_ATTRIBUTE_REQUEST_ROLE,
+  CEL_ATTRIBUTE_STATEMENT_AFFECTED_ROWS,
+  CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
+} from "@/utils/cel-attributes";
 
 /*
 The risk for the production environment is considered to be high.
@@ -44,7 +50,7 @@ export const useRuleTemplates = () => {
         expr: wrapAsGroup({
           type: ExprType.Condition,
           operator: "_==_",
-          args: ["request.role", PresetRoleType.PROJECT_OWNER],
+          args: [CEL_ATTRIBUTE_REQUEST_ROLE, PresetRoleType.PROJECT_OWNER],
         }),
         level: PresetRiskLevel.HIGH,
         source: Risk_Source.REQUEST_ROLE,
@@ -58,7 +64,7 @@ export const useRuleTemplates = () => {
           expr: wrapAsGroup({
             type: ExprType.Condition,
             operator: "_==_",
-            args: ["resource.environment_id", prod.value.id],
+            args: [CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID, prod.value.id],
           }),
           level: PresetRiskLevel.HIGH,
           source: Risk_Source.SOURCE_UNSPECIFIED,
@@ -74,17 +80,17 @@ export const useRuleTemplates = () => {
               {
                 type: ExprType.Condition,
                 operator: "_==_",
-                args: ["resource.environment_id", prod.value.id],
+                args: [CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID, prod.value.id],
               },
               {
                 type: ExprType.Condition,
                 operator: "_>_",
-                args: ["statement.affected_rows", 10000],
+                args: [CEL_ATTRIBUTE_STATEMENT_AFFECTED_ROWS, 10000],
               },
               {
                 type: ExprType.Condition,
                 operator: "@in",
-                args: ["statement.sql_type", ["UPDATE", "DELETE"]],
+                args: [CEL_ATTRIBUTE_STATEMENT_SQL_TYPE, ["UPDATE", "DELETE"]],
               },
             ],
           }),
@@ -99,7 +105,7 @@ export const useRuleTemplates = () => {
           expr: wrapAsGroup({
             type: ExprType.Condition,
             operator: "_==_",
-            args: ["resource.environment_id", prod.value.id],
+            args: [CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID, prod.value.id],
           }),
           level: PresetRiskLevel.MODERATE,
           source: Risk_Source.CREATE_DATABASE,
@@ -114,7 +120,7 @@ export const useRuleTemplates = () => {
         expr: wrapAsGroup({
           type: ExprType.Condition,
           operator: "_==_",
-          args: ["resource.environment_id", dev.value.id],
+          args: [CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID, dev.value.id],
         }),
         level: PresetRiskLevel.LOW,
         source: Risk_Source.SOURCE_UNSPECIFIED,

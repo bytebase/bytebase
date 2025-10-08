@@ -16,6 +16,16 @@ import {
   displayRoleTitle,
   extractDatabaseResourceName,
 } from "@/utils";
+import {
+  CEL_ATTRIBUTE_REQUEST_TIME,
+  CEL_ATTRIBUTE_REQUEST_ROW_LIMIT,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE,
+  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
+  CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
+} from "@/utils/cel-attributes";
 
 interface DatabaseLevelCondition {
   database: string[];
@@ -207,11 +217,11 @@ export const stringifyConditionExpression = ({
   }
   if (expirationTimestampInMS) {
     expression.push(
-      `request.time < timestamp("${dayjs(expirationTimestampInMS).toISOString()}")`
+      `${CEL_ATTRIBUTE_REQUEST_TIME} < timestamp("${dayjs(expirationTimestampInMS).toISOString()}")`
     );
   }
   if (rowLimit) {
-    expression.push(`request.row_limit <= ${rowLimit}`);
+    expression.push(`${CEL_ATTRIBUTE_REQUEST_ROW_LIMIT} <= ${rowLimit}`);
   }
   return expression.join(" && ");
 };
@@ -230,17 +240,17 @@ const convertToCELString = (
       | TableLevelCondition
   ): string {
     if ("table" in condition) {
-      return `resource.database == "${
+      return `${CEL_ATTRIBUTE_RESOURCE_DATABASE} == "${
         condition.database
-      }" && resource.schema == "${
+      }" && ${CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME} == "${
         condition.schema
-      }" && resource.table in ${JSON.stringify(condition.table)}`;
+      }" && ${CEL_ATTRIBUTE_RESOURCE_TABLE_NAME} in ${JSON.stringify(condition.table)}`;
     } else if ("schema" in condition) {
-      return `resource.database == "${
+      return `${CEL_ATTRIBUTE_RESOURCE_DATABASE} == "${
         condition.database
-      }" && resource.schema in ${JSON.stringify(condition.schema)}`;
+      }" && ${CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME} in ${JSON.stringify(condition.schema)}`;
     } else {
-      return `resource.database in ${JSON.stringify(condition.database)}`;
+      return `${CEL_ATTRIBUTE_RESOURCE_DATABASE} in ${JSON.stringify(condition.database)}`;
     }
   }
 
@@ -313,7 +323,7 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
       const [property, values] = expr.args;
       if (typeof property === "string" && Array.isArray(values)) {
         switch (property) {
-          case "resource.database": {
+          case CEL_ATTRIBUTE_RESOURCE_DATABASE: {
             for (const value of values) {
               const databaseResource: DatabaseResource = {
                 databaseFullName: value as string,
@@ -322,7 +332,7 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
             }
             break;
           }
-          case "resource.schema_name": {
+          case CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME: {
             const databaseResource =
               conditionExpression.databaseResources?.pop();
             if (databaseResource) {
@@ -334,7 +344,7 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
             }
             break;
           }
-          case "resource.table_name": {
+          case CEL_ATTRIBUTE_RESOURCE_TABLE_NAME: {
             const databaseResource =
               conditionExpression.databaseResources?.pop();
             if (databaseResource) {
@@ -346,7 +356,7 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
             }
             break;
           }
-          case "resource.column_name": {
+          case CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME: {
             const databaseResource =
               conditionExpression.databaseResources?.pop();
             if (databaseResource) {
@@ -373,9 +383,9 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
             };
           }
           switch (left) {
-            case "resource.instance_id":
-            case "resource.database_name":
-            case "resource.database": {
+            case CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID:
+            case CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME:
+            case CEL_ATTRIBUTE_RESOURCE_DATABASE: {
               // should parse for next database.
               if (databaseResource.databaseFullName !== "") {
                 conditionExpression.databaseResources?.push({
@@ -388,33 +398,33 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
             }
           }
           switch (left) {
-            case "resource.instance_id": {
+            case CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID: {
               databaseResource.instanceResourceId = right;
               if (databaseResource.databaseResourceId) {
                 databaseResource.databaseFullName = `${instanceNamePrefix}${databaseResource.instanceResourceId}/${databaseNamePrefix}${databaseResource.databaseResourceId}`;
               }
               break;
             }
-            case "resource.database_name": {
+            case CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME: {
               databaseResource.databaseResourceId = right;
               if (databaseResource.instanceResourceId) {
                 databaseResource.databaseFullName = `${instanceNamePrefix}${databaseResource.instanceResourceId}/${databaseNamePrefix}${databaseResource.databaseResourceId}`;
               }
               break;
             }
-            case "resource.database": {
+            case CEL_ATTRIBUTE_RESOURCE_DATABASE: {
               databaseResource.databaseFullName = right;
               break;
             }
-            case "resource.schema_name": {
+            case CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME: {
               databaseResource.schema = right;
               break;
             }
-            case "resource.table_name": {
+            case CEL_ATTRIBUTE_RESOURCE_TABLE_NAME: {
               databaseResource.table = right;
               break;
             }
-            case "resource.column_name": {
+            case CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME: {
               if (right) {
                 databaseResource.columns = [right];
               }
@@ -424,20 +434,23 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
           conditionExpression.databaseResources?.push(databaseResource);
         } else if (typeof right === "number") {
           // Deprecated. Use _<=_ instead.
-          if (left === "request.row_limit") {
+          if (left === CEL_ATTRIBUTE_REQUEST_ROW_LIMIT) {
             conditionExpression.rowLimit = right;
           }
         }
       }
     } else if (expr.operator === "_<_") {
       const [left, right] = expr.args;
-      if (left === "request.time") {
+      if (left === CEL_ATTRIBUTE_REQUEST_TIME) {
         conditionExpression.expiredTime = (right as Date).toISOString();
       }
     } else if (expr.operator === "_<=_") {
       const [left, right] = expr.args;
-      if (left === "request.row_limit" && typeof right === "number") {
-        if (left === "request.row_limit") {
+      if (
+        left === CEL_ATTRIBUTE_REQUEST_ROW_LIMIT &&
+        typeof right === "number"
+      ) {
+        if (left === CEL_ATTRIBUTE_REQUEST_ROW_LIMIT) {
           conditionExpression.rowLimit = right;
         }
       }

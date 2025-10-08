@@ -83,8 +83,8 @@ func CalculateRiskLevelWithOptionalSummaryReport(
 				}
 			}
 		}
-		args["statement.affected_rows"] = summaryReport.AffectedRows
-		args["statement.table_rows"] = tableRows
+		args[common.CELAttributeStatementAffectedRows] = summaryReport.AffectedRows
+		args[common.CELAttributeStatementTableRows] = tableRows
 		var tableNames []string
 		for _, db := range summaryReport.GetChangedResources().GetDatabases() {
 			for _, schema := range db.GetSchemas() {
@@ -94,9 +94,9 @@ func CalculateRiskLevelWithOptionalSummaryReport(
 			}
 		}
 		for _, statementType := range summaryReport.StatementTypes {
-			args["statement.sql_type"] = statementType
+			args[common.CELAttributeStatementSQLType] = statementType
 			for _, tableName := range tableNames {
-				args["resource.table_name"] = tableName
+				args[common.CELAttributeResourceTableName] = tableName
 				out, _, err := prg.Eval(args)
 				if err != nil {
 					return 0, errors.Wrap(err, "failed to eval expression")
