@@ -135,55 +135,57 @@ WHERE expression->>'expression' LIKE '%resource.labels%';
 
 -- Update IAM policy conditions in policy table
 -- The policy.payload column stores IAM policies with bindings that may have condition expressions
--- We need to iterate through the bindings array and update each condition
+-- We need to update the expression field within condition objects
 -- Changes: resource.environment_name -> resource.environment_id
---          resource.schema -> resource.schema_name
---          resource.table -> resource.table_name
+--          resource.schema -> resource.schema_name (whole word match only, not resource.schema_name)
+--          resource.table -> resource.table_name (whole word match only, not resource.table_name)
 UPDATE policy
-SET payload = (
-    SELECT jsonb_set(
-        payload,
-        '{bindings}',
-        (
-            SELECT jsonb_agg(
-                CASE
-                    WHEN binding->>'condition' IS NOT NULL
-                    THEN jsonb_set(
-                        binding,
-                        '{condition}',
-                        to_jsonb(
-                            replace(
-                                replace(
-                                    replace(
-                                        binding->>'condition',
-                                        'resource.environment_name',
-                                        'resource.environment_id'
-                                    ),
-                                    'resource.schema',
-                                    'resource.schema_name'
+SET payload = jsonb_set(
+    payload,
+    '{bindings}',
+    (
+        SELECT jsonb_agg(
+            CASE
+                WHEN binding->'condition'->>'expression' IS NOT NULL
+                     AND (binding->'condition'->>'expression' ~ '\mresource\.environment_name\M'
+                          OR binding->'condition'->>'expression' ~ '\mresource\.schema\M'
+                          OR binding->'condition'->>'expression' ~ '\mresource\.table\M')
+                THEN jsonb_set(
+                    binding,
+                    '{condition,expression}',
+                    to_jsonb(
+                        regexp_replace(
+                            regexp_replace(
+                                regexp_replace(
+                                    binding->'condition'->>'expression',
+                                    '\mresource\.environment_name\M',
+                                    'resource.environment_id',
+                                    'g'
                                 ),
-                                'resource.table',
-                                'resource.table_name'
-                            )
+                                '\mresource\.schema\M',
+                                'resource.schema_name',
+                                'g'
+                            ),
+                            '\mresource\.table\M',
+                            'resource.table_name',
+                            'g'
                         )
                     )
-                    ELSE binding
-                END
-            )
-            FROM jsonb_array_elements(payload->'bindings') AS binding
+                )
+                ELSE binding
+            END
         )
+        FROM jsonb_array_elements(policy.payload->'bindings') AS binding
     )
-    FROM policy p2
-    WHERE p2.id = policy.id
 )
 WHERE type = 'IAM'
   AND payload->'bindings' IS NOT NULL
   AND EXISTS (
     SELECT 1
     FROM jsonb_array_elements(payload->'bindings') AS binding
-    WHERE binding->>'condition' LIKE '%resource.environment_name%'
-       OR binding->>'condition' LIKE '%resource.schema%'
-       OR binding->>'condition' LIKE '%resource.table%'
+    WHERE binding->'condition'->>'expression' ~ '\mresource\.environment_name\M'
+       OR binding->'condition'->>'expression' ~ '\mresource\.schema\M'
+       OR binding->'condition'->>'expression' ~ '\mresource\.table\M'
   );
 
 -- Update masking rule policies in policy table
