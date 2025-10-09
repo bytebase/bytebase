@@ -679,21 +679,20 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("Not allowed to run tasks"))
 	}
 
-	// Don't need to check if issue is approved if
-	// the user has bb.taskruns.create permission.
-	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionTaskRunsCreate, user, projectID)
+	// Get rollout policy to check rollout requirements
+	rolloutPolicy, err := GetValidRolloutPolicyForEnvironment(ctx, s.store, environmentToRun)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout policy, error: %v", err))
 	}
-	if !ok {
-		if issueN != nil {
-			approved, err := utils.CheckIssueApproved(issueN)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if the issue is approved, error: %v", err))
-			}
-			if !approved {
-				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot run the tasks because the issue is not approved"))
-			}
+
+	// Check if issue approval is required according to the rollout policy checkers
+	if rolloutPolicy.GetCheckers().GetRequiredIssueApproval() && issueN != nil {
+		approved, err := utils.CheckIssueApproved(issueN)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if the issue is approved, error: %v", err))
+		}
+		if !approved {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot run the tasks because issue approval is required but the issue is not approved"))
 		}
 	}
 
