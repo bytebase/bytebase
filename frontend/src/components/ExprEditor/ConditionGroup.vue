@@ -71,7 +71,6 @@
         />
         <Condition
           v-if="isConditionExpr(operand)"
-          :key="`${i}.${operand.args[0]}.${operand.operator}`"
           :expr="operand"
           @remove="removeCondition(operand)"
           @update="$emit('update')"

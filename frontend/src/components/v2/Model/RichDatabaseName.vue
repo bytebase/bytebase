@@ -1,10 +1,12 @@
 <template>
   <NPopover :disabled="!tooltip">
     <template #trigger>
-      <div class="flex flex-row justify-start items-center">
-        <div v-if="showProject">
-          <ProjectV1Name :project="database.projectEntity" :link="false" />
-        </div>
+      <div class="flex flex-row justify-start items-center gap-x-1">
+        <ProjectV1Name
+          v-if="showProject"
+          :project="database.projectEntity"
+          :link="false"
+        />
 
         <heroicons:chevron-right
           v-if="showProject && showArrow"
