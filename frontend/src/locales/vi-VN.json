@@ -2752,10 +2752,6 @@
       "self": "Người dùng Trình soạn thảo SQL",
       "description": "Quyền truy vấn dữ liệu cơ sở dữ liệu."
     },
-    "project-exporter": {
-      "self": "Người xuất dự án",
-      "description": "Quyền xuất dữ liệu cơ sở dữ liệu."
-    },
     "project-viewer": {
       "self": "Người xem dự án",
       "description": "Quyền chỉ đọc để xem thông tin cơ bản của dự án, truy cập cơ sở dữ liệu và bắt đầu các yêu cầu đặc quyền."

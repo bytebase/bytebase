@@ -2752,10 +2752,6 @@
       "self": "SQL Editor User",
       "description": "Permissions for querying database data."
     },
-    "project-exporter": {
-      "self": "Project Exporter",
-      "description": "Permissions for exporting database data."
-    },
     "project-viewer": {
       "self": "Project Viewer",
       "description": "Read-only permissions for viewing basic project information, accessing databases, and initiating privilege requests."

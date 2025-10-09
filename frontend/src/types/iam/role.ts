@@ -7,7 +7,6 @@ export enum PresetRoleType {
   PROJECT_OWNER = `${roleNamePrefix}projectOwner`,
   PROJECT_DEVELOPER = `${roleNamePrefix}projectDeveloper`,
   SQL_EDITOR_USER = `${roleNamePrefix}sqlEditorUser`,
-  PROJECT_EXPORTER = `${roleNamePrefix}projectExporter`,
   PROJECT_RELEASER = `${roleNamePrefix}projectReleaser`,
   PROJECT_VIEWER = `${roleNamePrefix}projectViewer`,
 }
@@ -24,7 +23,6 @@ export const PRESET_PROJECT_ROLES: string[] = [
   PresetRoleType.PROJECT_OWNER,
   PresetRoleType.PROJECT_DEVELOPER,
   PresetRoleType.SQL_EDITOR_USER,
-  PresetRoleType.PROJECT_EXPORTER,
   PresetRoleType.PROJECT_RELEASER,
   PresetRoleType.PROJECT_VIEWER,
 ];

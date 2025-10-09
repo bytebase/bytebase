@@ -2752,10 +2752,6 @@
       "self": "Usuario del editor SQL",
       "description": "El consultor del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
     },
-    "project-exporter": {
-      "self": "Exportador del proyecto",
-      "description": "El exportador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
-    },
     "project-viewer": {
       "self": "Espectador del proyecto",
       "description": "El espectador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
