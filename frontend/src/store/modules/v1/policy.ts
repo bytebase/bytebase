@@ -328,6 +328,12 @@ export const getEmptyRolloutPolicy = (
       value: create(RolloutPolicySchema, {
         automatic: false,
         roles: [],
+        checkers: {
+          requiredIssueApproval: true,
+          requiredStatusChecks: {
+            planCheckEnforcement: "ERROR_ONLY",
+          },
+        },
       }),
     },
   });
