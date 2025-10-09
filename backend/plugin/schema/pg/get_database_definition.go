@@ -177,7 +177,65 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 
 	orderedList, err := graph.TopologicalSort()
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get topological sort")
+		// If topological sort fails (e.g., due to circular dependencies),
+		// fall back to a safe dependency order: tables -> views -> materialized views -> functions
+		orderedList = make([]string, 0, len(functionMap)+len(tableMap)+len(viewMap)+len(materializedViewMap))
+
+		// Add tables first (sorted alphabetically within each category)
+		var tableIDs []string
+		for id := range tableMap {
+			tableIDs = append(tableIDs, id)
+		}
+		for i := 0; i < len(tableIDs); i++ {
+			for j := i + 1; j < len(tableIDs); j++ {
+				if tableIDs[i] > tableIDs[j] {
+					tableIDs[i], tableIDs[j] = tableIDs[j], tableIDs[i]
+				}
+			}
+		}
+		orderedList = append(orderedList, tableIDs...)
+
+		// Add views second
+		var viewIDs []string
+		for id := range viewMap {
+			viewIDs = append(viewIDs, id)
+		}
+		for i := 0; i < len(viewIDs); i++ {
+			for j := i + 1; j < len(viewIDs); j++ {
+				if viewIDs[i] > viewIDs[j] {
+					viewIDs[i], viewIDs[j] = viewIDs[j], viewIDs[i]
+				}
+			}
+		}
+		orderedList = append(orderedList, viewIDs...)
+
+		// Add materialized views third
+		var materializedViewIDs []string
+		for id := range materializedViewMap {
+			materializedViewIDs = append(materializedViewIDs, id)
+		}
+		for i := 0; i < len(materializedViewIDs); i++ {
+			for j := i + 1; j < len(materializedViewIDs); j++ {
+				if materializedViewIDs[i] > materializedViewIDs[j] {
+					materializedViewIDs[i], materializedViewIDs[j] = materializedViewIDs[j], materializedViewIDs[i]
+				}
+			}
+		}
+		orderedList = append(orderedList, materializedViewIDs...)
+
+		// Add functions last
+		var functionIDs []string
+		for id := range functionMap {
+			functionIDs = append(functionIDs, id)
+		}
+		for i := 0; i < len(functionIDs); i++ {
+			for j := i + 1; j < len(functionIDs); j++ {
+				if functionIDs[i] > functionIDs[j] {
+					functionIDs[i], functionIDs[j] = functionIDs[j], functionIDs[i]
+				}
+			}
+		}
+		orderedList = append(orderedList, functionIDs...)
 	}
 
 	// Construct functions, tables, views and materialized views in order.
@@ -386,7 +444,65 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 
 	orderedList, err := graph.TopologicalSort()
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get topological sort")
+		// If topological sort fails (e.g., due to circular dependencies),
+		// fall back to a safe dependency order: tables -> views -> materialized views -> functions
+		orderedList = make([]string, 0, len(functionMap)+len(tableMap)+len(viewMap)+len(materializedViewMap))
+
+		// Add tables first (sorted alphabetically within each category)
+		var tableIDs []string
+		for id := range tableMap {
+			tableIDs = append(tableIDs, id)
+		}
+		for i := 0; i < len(tableIDs); i++ {
+			for j := i + 1; j < len(tableIDs); j++ {
+				if tableIDs[i] > tableIDs[j] {
+					tableIDs[i], tableIDs[j] = tableIDs[j], tableIDs[i]
+				}
+			}
+		}
+		orderedList = append(orderedList, tableIDs...)
+
+		// Add views second
+		var viewIDs []string
+		for id := range viewMap {
+			viewIDs = append(viewIDs, id)
+		}
+		for i := 0; i < len(viewIDs); i++ {
+			for j := i + 1; j < len(viewIDs); j++ {
+				if viewIDs[i] > viewIDs[j] {
+					viewIDs[i], viewIDs[j] = viewIDs[j], viewIDs[i]
+				}
+			}
+		}
+		orderedList = append(orderedList, viewIDs...)
+
+		// Add materialized views third
+		var materializedViewIDs []string
+		for id := range materializedViewMap {
+			materializedViewIDs = append(materializedViewIDs, id)
+		}
+		for i := 0; i < len(materializedViewIDs); i++ {
+			for j := i + 1; j < len(materializedViewIDs); j++ {
+				if materializedViewIDs[i] > materializedViewIDs[j] {
+					materializedViewIDs[i], materializedViewIDs[j] = materializedViewIDs[j], materializedViewIDs[i]
+				}
+			}
+		}
+		orderedList = append(orderedList, materializedViewIDs...)
+
+		// Add functions last
+		var functionIDs []string
+		for id := range functionMap {
+			functionIDs = append(functionIDs, id)
+		}
+		for i := 0; i < len(functionIDs); i++ {
+			for j := i + 1; j < len(functionIDs); j++ {
+				if functionIDs[i] > functionIDs[j] {
+					functionIDs[i], functionIDs[j] = functionIDs[j], functionIDs[i]
+				}
+			}
+		}
+		orderedList = append(orderedList, functionIDs...)
 	}
 
 	// Construct functions, tables, views and materialized views in order.
