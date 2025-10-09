@@ -50,7 +50,7 @@
           >
             <div class="w-full flex flex-col justify-start items-start">
               <p class="mb-2">
-                {{ $t("issue.grant-request.export-rows") }}
+                {{ $t("issue.grant-request.query-rows") }}
               </p>
               <MaxRowCountSelect v-model:value="state.maxRowCount" />
             </div>

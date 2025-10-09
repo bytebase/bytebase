@@ -44,15 +44,16 @@
               />
             </div>
           </div>
-          <div
-            v-if="condition?.rowLimit"
-            class="w-full flex flex-col justify-start items-start"
-          >
+          <div class="w-full flex flex-col justify-start items-start">
             <span class="flex items-center textinfolabel mb-2">
-              {{ $t("issue.grant-request.export-rows") }}
+              {{ $t("issue.grant-request.query-rows") }}
             </span>
             <div class="flex flex-row justify-start items-start">
-              {{ condition?.rowLimit }}
+              {{
+                condition?.rowLimit
+                  ? condition.rowLimit
+                  : $t("issue.grant-request.unlimited-query-rows")
+              }}
             </div>
           </div>
           <div class="w-full flex flex-col justify-start items-start">

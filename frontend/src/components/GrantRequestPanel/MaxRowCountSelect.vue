@@ -1,17 +1,17 @@
 <template>
   <NPopselect
-    :value="value"
+    :value="value ?? 0"
     :options="options"
     trigger="click"
     placement="bottom-start"
     scrollable
-    @update:value="$emit('update:value', $event)"
+    @update:value="handleUpdateValue"
   >
     <NButton class="bb-overlay-stack-ignore-esc">
       {{
-        value
+        value !== undefined
           ? $t("common.rows.n-rows", { n: value })
-          : $t("issue.grant-request.select-export-rows")
+          : $t("issue.grant-request.unlimited-query-rows")
       }}
     </NButton>
     <template #action>
@@ -43,15 +43,15 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (event: "update:value", value: number): void;
+  (event: "update:value", value: number | undefined): void;
 }>();
 
 const { t } = useI18n();
 const policyStore = usePolicyV1Store();
 
 const rowCountOptions = computed(() => {
-  const list = [1, 100, 500, 1000, 5000, 10000, 100000].filter(
-    (num) => num <= policyStore.maximumResultRows
+  const list = [0, 1, 100, 500, 1000, 5000, 10000, 100000].filter(
+    (num) => num === 0 || num <= policyStore.maximumResultRows
   );
   if (
     policyStore.maximumResultRows !== Number.MAX_VALUE &&
@@ -64,10 +64,17 @@ const rowCountOptions = computed(() => {
 
 const options = computed((): SelectOption[] => {
   return rowCountOptions.value.map((n) => ({
-    label: t("common.rows.n-rows", { n }),
+    label:
+      n === 0
+        ? t("issue.grant-request.unlimited-query-rows")
+        : t("common.rows.n-rows", { n }),
     value: n,
   }));
 });
+
+const handleUpdateValue = (value: number) => {
+  emit("update:value", value === 0 ? undefined : value);
+};
 
 const handleInput = (value: number | null) => {
   const normalizedValue = minmax(
@@ -75,6 +82,6 @@ const handleInput = (value: number | null) => {
     first(rowCountOptions.value)!,
     last(rowCountOptions.value)!
   );
-  emit("update:value", normalizedValue);
+  emit("update:value", normalizedValue === 0 ? undefined : normalizedValue);
 };
 </script>
