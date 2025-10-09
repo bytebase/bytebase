@@ -18,7 +18,6 @@ import {
 } from "@/utils";
 import {
   CEL_ATTRIBUTE_REQUEST_TIME,
-  CEL_ATTRIBUTE_REQUEST_ROW_LIMIT,
   CEL_ATTRIBUTE_RESOURCE_DATABASE,
   CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
   CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
@@ -50,7 +49,6 @@ type DatabaseResourceCondition =
 export interface ConditionExpression {
   databaseResources?: DatabaseResource[];
   expiredTime?: string;
-  rowLimit?: number;
   exportFormat?: string;
 }
 
@@ -119,19 +117,16 @@ export const buildConditionExpr = ({
   description,
   expirationTimestampInMS,
   databaseResources,
-  rowLimit,
 }: {
   title?: string;
   role: string;
   description: string;
   expirationTimestampInMS?: number;
   databaseResources?: DatabaseResource[];
-  rowLimit?: number;
 }): ConditionExpr => {
   const expresson = stringifyConditionExpression({
     expirationTimestampInMS,
     databaseResources,
-    rowLimit,
   });
   return create(ConditionExprSchema, {
     title:
@@ -202,14 +197,12 @@ export const stringifyDatabaseResources = (resources: DatabaseResource[]) => {
   return cel;
 };
 
-export const stringifyConditionExpression = ({
+const stringifyConditionExpression = ({
   expirationTimestampInMS,
   databaseResources,
-  rowLimit,
 }: {
   expirationTimestampInMS?: number;
   databaseResources?: DatabaseResource[];
-  rowLimit?: number;
 }): string => {
   const expression: string[] = [];
   if (databaseResources !== undefined && databaseResources.length > 0) {
@@ -219,9 +212,6 @@ export const stringifyConditionExpression = ({
     expression.push(
       `${CEL_ATTRIBUTE_REQUEST_TIME} < timestamp("${dayjs(expirationTimestampInMS).toISOString()}")`
     );
-  }
-  if (rowLimit) {
-    expression.push(`${CEL_ATTRIBUTE_REQUEST_ROW_LIMIT} <= ${rowLimit}`);
   }
   return expression.join(" && ");
 };
@@ -432,27 +422,12 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
             }
           }
           conditionExpression.databaseResources?.push(databaseResource);
-        } else if (typeof right === "number") {
-          // Deprecated. Use _<=_ instead.
-          if (left === CEL_ATTRIBUTE_REQUEST_ROW_LIMIT) {
-            conditionExpression.rowLimit = right;
-          }
         }
       }
     } else if (expr.operator === "_<_") {
       const [left, right] = expr.args;
       if (left === CEL_ATTRIBUTE_REQUEST_TIME) {
         conditionExpression.expiredTime = (right as Date).toISOString();
-      }
-    } else if (expr.operator === "_<=_") {
-      const [left, right] = expr.args;
-      if (
-        left === CEL_ATTRIBUTE_REQUEST_ROW_LIMIT &&
-        typeof right === "number"
-      ) {
-        if (left === CEL_ATTRIBUTE_REQUEST_ROW_LIMIT) {
-          conditionExpression.rowLimit = right;
-        }
       }
     }
   }

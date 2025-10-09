@@ -58,15 +58,6 @@
         :include-cloumn="false"
       />
     </div>
-    <template v-if="roleSupportExport">
-      <div class="w-full flex flex-col justify-start items-start space-y-2">
-        <div class="flex items-center gap-x-1">
-          <span>{{ $t("issue.grant-request.query-rows") }}</span>
-          <RequiredStar />
-        </div>
-        <MaxRowCountSelect v-model:value="state.maxRowCount" />
-      </div>
-    </template>
 
     <div class="w-full flex flex-col gap-y-2">
       <div class="flex items-center gap-x-1">
@@ -90,7 +81,6 @@ import { NButton, NInput } from "naive-ui";
 import { computed, reactive, watch, ref } from "vue";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
-import MaxRowCountSelect from "@/components/GrantRequestPanel/MaxRowCountSelect.vue";
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { RoleSelect } from "@/components/v2/Select";
@@ -129,8 +119,6 @@ interface LocalState {
   expirationTimestampInMS?: number;
   // Querier and exporter options.
   databaseResources?: DatabaseResource[];
-  // Exporter options.
-  maxRowCount?: number;
   databaseId?: string;
 }
 
@@ -139,7 +127,6 @@ const getInitialState = (): LocalState => {
     role: props.binding.role,
     memberList: props.binding.members,
     reason: "",
-    maxRowCount: undefined,
     databaseResources: props.databaseResource
       ? [{ ...props.databaseResource }]
       : undefined,
@@ -157,17 +144,10 @@ watch(
     state.databaseResources = props.databaseResource
       ? [{ ...props.databaseResource }]
       : undefined;
-    state.maxRowCount = undefined;
   },
   {
     immediate: true,
   }
-);
-
-const roleSupportExport = computed(
-  () =>
-    state.role !== PresetRoleType.PROJECT_OWNER &&
-    checkRoleContainsAnyPermission(state.role, "bb.sql.select")
 );
 
 watch(
@@ -181,7 +161,6 @@ watch(
       role: state.role,
       description: state.reason,
       expirationTimestampInMS: state.expirationTimestampInMS,
-      rowLimit: state.maxRowCount,
       databaseResources: state.databaseResources,
     });
   },

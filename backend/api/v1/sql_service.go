@@ -271,7 +271,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 
 	for _, result := range results {
 		// AllowExport is a validate only check.
-		checkErr := s.accessCheck(ctx, instance, database, user, spans, int(result.RowsCount), request.Explain)
+		checkErr := s.accessCheck(ctx, instance, database, user, spans, request.Explain)
 		result.AllowExport = checkErr == nil
 	}
 
@@ -312,7 +312,7 @@ func getMaximumSQLResultLimit(
 	return value
 }
 
-type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, []*parserbase.QuerySpan, int, bool /* isExplain */) error
+type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, []*parserbase.QuerySpan, bool /* isExplain */) error
 
 func extractSourceTable(comment string) (string, string, string, error) {
 	pattern := `\((\w+),\s*(\w+)(?:,\s*(\w+))?\)`
@@ -479,7 +479,7 @@ func queryRetry(
 		}
 		if optionalAccessCheck != nil {
 			// Check query access
-			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Limit, queryContext.Explain); err != nil {
+			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Explain); err != nil {
 				return nil, nil, time.Duration(0), err
 			}
 			slog.Debug("optional access check", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
@@ -929,7 +929,7 @@ func DoExport(
 	}
 	if len(results) == 1 {
 		if optionalAccessCheck != nil {
-			if err := optionalAccessCheck(ctx, instance, database, user, spans, int(results[0].RowsCount), queryContext.Explain); err != nil {
+			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Explain); err != nil {
 				return nil, duration, err
 			}
 		}
@@ -1378,7 +1378,6 @@ func (s *SQLService) accessCheck(
 	database *store.DatabaseMessage,
 	user *store.UserMessage,
 	spans []*parserbase.QuerySpan,
-	limit int,
 	isExplain bool,
 ) error {
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
@@ -1430,7 +1429,6 @@ func (s *SQLService) accessCheck(
 			for column := range span.SourceColumns {
 				attributes := map[string]any{
 					common.CELAttributeRequestTime:        time.Now(),
-					common.CELAttributeRequestRowLimit:    limit,
 					common.CELAttributeResourceDatabase:   common.FormatDatabase(instance.ResourceID, column.Database),
 					common.CELAttributeResourceSchemaName: column.Schema,
 					common.CELAttributeResourceTableName:  column.Table,

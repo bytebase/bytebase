@@ -47,7 +47,6 @@ var IAMPolicyConditionCELAttributes = []cel.EnvOption{
 	cel.Variable(CELAttributeResourceDatabase, cel.StringType),
 	cel.Variable(CELAttributeResourceSchemaName, cel.StringType),
 	cel.Variable(CELAttributeResourceTableName, cel.StringType),
-	cel.Variable(CELAttributeRequestRowLimit, cel.IntType),
 	cel.Variable(CELAttributeRequestTime, cel.TimestampType),
 	cel.ParserExpressionSizeLimit(celLimit),
 }

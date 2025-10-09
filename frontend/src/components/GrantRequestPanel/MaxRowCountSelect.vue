@@ -1,6 +1,6 @@
 <template>
   <NPopselect
-    :value="value ?? 0"
+    :value="value"
     :options="options"
     trigger="click"
     placement="bottom-start"
@@ -8,11 +8,7 @@
     @update:value="handleUpdateValue"
   >
     <NButton class="bb-overlay-stack-ignore-esc">
-      {{
-        value !== undefined
-          ? $t("common.rows.n-rows", { n: value })
-          : $t("issue.grant-request.unlimited-query-rows")
-      }}
+      {{ $t("common.rows.n-rows", { n: value }) }}
     </NButton>
     <template #action>
       <div class="flex items-center justify-between gap-1">
@@ -39,19 +35,19 @@ import { usePolicyV1Store } from "@/store";
 import { minmax } from "@/utils";
 
 defineProps<{
-  value?: number;
+  value: number;
 }>();
 
 const emit = defineEmits<{
-  (event: "update:value", value: number | undefined): void;
+  (event: "update:value", value: number): void;
 }>();
 
 const { t } = useI18n();
 const policyStore = usePolicyV1Store();
 
 const rowCountOptions = computed(() => {
-  const list = [0, 1, 100, 500, 1000, 5000, 10000, 100000].filter(
-    (num) => num === 0 || num <= policyStore.maximumResultRows
+  const list = [1, 100, 500, 1000, 5000, 10000, 100000].filter(
+    (num) => num <= policyStore.maximumResultRows
   );
   if (
     policyStore.maximumResultRows !== Number.MAX_VALUE &&
@@ -64,16 +60,13 @@ const rowCountOptions = computed(() => {
 
 const options = computed((): SelectOption[] => {
   return rowCountOptions.value.map((n) => ({
-    label:
-      n === 0
-        ? t("issue.grant-request.unlimited-query-rows")
-        : t("common.rows.n-rows", { n }),
+    label: t("common.rows.n-rows", { n }),
     value: n,
   }));
 });
 
 const handleUpdateValue = (value: number) => {
-  emit("update:value", value === 0 ? undefined : value);
+  emit("update:value", value);
 };
 
 const handleInput = (value: number | null) => {
@@ -82,6 +75,6 @@ const handleInput = (value: number | null) => {
     first(rowCountOptions.value)!,
     last(rowCountOptions.value)!
   );
-  emit("update:value", normalizedValue === 0 ? undefined : normalizedValue);
+  emit("update:value", normalizedValue);
 };
 </script>
