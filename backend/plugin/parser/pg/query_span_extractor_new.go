@@ -927,43 +927,131 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef pgparser.IT
 		return nil, errors.New("nil table_ref")
 	}
 
+	var anchor base.TableSource
+	var err error
+
 	// Handle simple table reference (e.g., schema.table)
 	if tableRef.Relation_expr() != nil {
-		return q.extractTableSourceFromRelationExpr(tableRef.Relation_expr(), tableRef.Opt_alias_clause())
+		anchor, err = q.extractTableSourceFromRelationExpr(tableRef.Relation_expr(), tableRef.Opt_alias_clause())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract table source from relation_expr")
+		}
 	}
+
+	// Handle function tables (e.g., generate_series, unnest)
+	if tableRef.Func_table() != nil {
+		anchor, err = q.extractTableSourceFromFuncTable(tableRef.Func_table())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract table source from func_table")
+		}
+	}
+
+	// TODO(zp): Handle xmltable candidates.
 
 	// Handle subquery (SELECT in parentheses)
 	if tableRef.Select_with_parens() != nil {
-		subquerySource, err := q.extractTableSourceFromSelectWithParens(tableRef.Select_with_parens())
+		anchor, err = q.extractTableSourceFromSelectWithParens(tableRef.Select_with_parens())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract subquery")
 		}
 
 		// Apply alias if present
 		if tableRef.Opt_alias_clause() != nil {
-			return q.applyAliasToTableSource(subquerySource, tableRef.Opt_alias_clause())
+			anchor, err = q.applyAliasToTableSource(anchor, tableRef.Opt_alias_clause())
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to apply alias to subquery")
+			}
 		}
-		return subquerySource, nil
+	}
+
+	if tableRef.Table_ref() != nil {
+		anchor, err = q.extractTableSourceFromTableRef(tableRef.Table_ref())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract nested table_ref")
+		}
 	}
 
 	// Handle JOIN expressions
-	if tableRef.Joined_table(0) != nil {
-		return q.extractTableSourceFromJoinedTable(tableRef.Joined_table(0))
+	if len(tableRef.AllJoined_table()) != 0 {
+		joinedTables := tableRef.AllJoined_table()
+		for i, join := range joinedTables {
+			tableSource, err := q.extractTableSourceFromTableRef(join.Table_ref())
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to extract joined table in JOIN")
+			}
+			// According to the grammar:
+			// OPEN_PAREN table_ref joined_table? CLOSE_PAREN opt_alias_clause?
+			// ) joined_table*
+			// The alias appears beforethe second joined_table.
+			// Determine join type and conditions
+			naturalJoin := join.NATURAL() != nil
+			var usingColumns []string
+			if join.Join_qual() != nil && join.Join_qual().USING() != nil {
+				usingColumns = normalizePostgreSQLNameList(join.Join_qual().Name_list())
+			}
+			anchor, err = q.joinTableSources(anchor, tableSource, naturalJoin, usingColumns)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to join tables")
+			}
+			if i == 0 && tableRef.Opt_alias_clause() != nil {
+				anchor, err = q.applyAliasToTableSource(anchor, tableRef.Opt_alias_clause())
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to apply alias to table source")
+				}
+			}
+		}
 	}
 
-	// Handle function tables (e.g., generate_series, unnest)
-	if tableRef.Func_table() != nil {
-		return q.extractTableSourceFromFuncTable(tableRef.Func_table())
+	return anchor, nil
+}
+
+func (q *querySpanExtractor) joinTableSources(left, right base.TableSource, naturalJoin bool, usingColumn []string) (base.TableSource, error) {
+	leftSpanResult, rightSpanResult := left.GetQuerySpanResult(), right.GetQuerySpanResult()
+
+	result := new(base.PseudoTable)
+
+	if naturalJoin {
+		leftSpanResultIdx, rightSpanResultIdx := make(map[string]int, len(leftSpanResult)), make(map[string]int, len(rightSpanResult))
+		for i, spanResult := range leftSpanResult {
+			leftSpanResultIdx[spanResult.Name] = i
+		}
+		for i, spanResult := range rightSpanResult {
+			rightSpanResultIdx[spanResult.Name] = i
+		}
+
+		// NaturalJoin will merge the same column name field.
+		for idx, spanResult := range leftSpanResult {
+			if _, ok := rightSpanResultIdx[spanResult.Name]; ok {
+				spanResult.SourceColumns, _ = base.MergeSourceColumnSet(spanResult.SourceColumns, rightSpanResult[idx].SourceColumns)
+			}
+			result.Columns = append(result.Columns, spanResult)
+		}
+		for _, spanResult := range rightSpanResult {
+			if _, ok := leftSpanResultIdx[spanResult.Name]; !ok {
+				result.Columns = append(result.Columns, spanResult)
+			}
+		}
+	} else {
+		if len(usingColumn) > 0 {
+			// ... JOIN ... USING (...) will merge the column in USING.
+			usingMap := make(map[string]bool, len(usingColumn))
+			for _, using := range usingColumn {
+				usingMap[using] = true
+			}
+
+			result.Columns = append(result.Columns, leftSpanResult...)
+			for _, spanResult := range rightSpanResult {
+				if _, ok := usingMap[spanResult.Name]; !ok {
+					result.Columns = append(result.Columns, spanResult)
+				}
+			}
+		} else {
+			result.Columns = append(result.Columns, leftSpanResult...)
+			result.Columns = append(result.Columns, rightSpanResult...)
+		}
 	}
 
-	// If we have nested table_ref (for complex expressions)
-	allTableRefs := tableRef.AllTable_ref()
-	if len(allTableRefs) > 0 {
-		// Process the first table_ref recursively
-		return q.extractTableSourceFromTableRef(allTableRefs[0])
-	}
-
-	return nil, errors.New("unsupported table_ref type")
+	return result, nil
 }
 
 // extractTableSourceFromRelationExpr extracts table source from a relation expression (simple table)
@@ -1067,6 +1155,17 @@ func (q *querySpanExtractor) extractTableSourceFromFuncTable(funcTable pgparser.
 
 	if funcTable == nil {
 		return result, nil
+	}
+
+	if funcTable.Func_expr_windowless() != nil {
+		schemaName, funcName, err := q.extractFunctionNameFromFuncExprWindowless(funcTable.Func_expr_windowless())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract function name from func_expr_windowless")
+		}
+		if funcName == "" {
+			return nil, errors.Wrapf(err, "empty function name in func_expr_windowless")
+		}
+
 	}
 
 	// The actual column count and names will be determined by the alias
@@ -2033,6 +2132,36 @@ func (q *querySpanExtractor) extractSourceColumnSetFromUDF2(funcExpr pgparser.IF
 		result, _ = base.MergeSourceColumnSet(result, span.SourceColumns)
 	}
 	return result, nil
+}
+
+func (q *querySpanExtractor) extractFunctionNameFromFuncExprWindowless(funcExprWindowless pgparser.IFunc_expr_windowlessContext) (string, string, error) {
+	switch {
+	case funcExprWindowless.Func_application() != nil:
+		funcName := funcExprWindowless.Func_application().Func_name()
+		if funcName.Colid() != nil {
+			names := NormalizePostgreSQLFuncName(funcName)
+			switch len(names) {
+			case 2:
+				return names[0], names[1], nil
+			case 1:
+				return "", names[0], nil
+			default:
+				return "", "", errors.New("invalid function name")
+			}
+		}
+	case funcExprWindowless.Json_aggregate_func() != nil:
+		if funcExprWindowless.Json_aggregate_func().JSON_OBJECTAGG() != nil {
+			return "", "json_objectagg", nil
+		} else if funcExprWindowless.Json_aggregate_func().JSON_ARRAYAGG() != nil {
+			return "", "json_arrayagg", nil
+		}
+	case funcExprWindowless.Func_expr_common_subexpr() != nil:
+		// Builtin function, return the first token text as function name
+		if funcExprWindowless.Func_expr_common_subexpr().GetStart() != nil {
+			return "", strings.ToLower(funcExprWindowless.Func_expr_common_subexpr().GetStart().GetText()), nil
+		}
+	}
+	return "", "", errors.New("unable to extract function name")
 }
 
 func (q *querySpanExtractor) extractFunctionNameFromFuncExpr(funcExpr pgparser.IFunc_exprContext) (string, string, error) {

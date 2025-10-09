@@ -303,7 +303,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.38.6
 	github.com/aws/smithy-go v1.23.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bytebase/parser v0.0.0-20250917073136-73f6e68bd37b
+	github.com/bytebase/parser v0.0.0-20251009064156-dc48a505fc30
 	github.com/bytebase/partiql-parser v0.0.0-20240531101102-1962ff456f2c
 	github.com/bytebase/tsql-parser v0.0.0-20250704100832-7b20f2173b45
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
