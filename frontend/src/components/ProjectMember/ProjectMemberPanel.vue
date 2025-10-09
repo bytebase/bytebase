@@ -123,6 +123,7 @@ import {
   usePermissionStore,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
+  useSubscriptionV1Store,
   useWorkspaceV1Store,
 } from "@/store";
 import {
@@ -131,6 +132,7 @@ import {
   groupBindingPrefix,
 } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasProjectPermissionV2, isBindingPolicyExpired } from "@/utils";
 import GrantRequestPanel from "../GrantRequestPanel";
 import { SearchBox } from "../v2";
@@ -172,6 +174,7 @@ const state = reactive<LocalState>({
 
 const permissionStore = usePermissionStore();
 const workspaceStore = useWorkspaceV1Store();
+const subscriptionStore = useSubscriptionV1Store();
 
 const isProjectOwner = computed(() => {
   const roles = permissionStore.currentRoleListInProjectV1(props.project);
@@ -183,7 +186,13 @@ const allowEdit = computed(() => {
 });
 
 const shouldShowRequestRoleButton = computed(() => {
+  // Check if grant request feature is available (Enterprise plan only)
+  const hasRequestRoleFeature = subscriptionStore.hasFeature(
+    PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW
+  );
+
   return (
+    hasRequestRoleFeature &&
     !isProjectOwner.value &&
     hasProjectPermissionV2(props.project, "bb.issues.create")
   );
