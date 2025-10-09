@@ -2134,7 +2134,8 @@ func (q *querySpanExtractor) extractSourceColumnSetFromUDF2(funcExpr pgparser.IF
 	return result, nil
 }
 
-func (q *querySpanExtractor) extractFunctionNameFromFuncExprWindowless(funcExprWindowless pgparser.IFunc_expr_windowlessContext) (string, string, error) {
+func (q *querySpanExtractor) extractFunctionNameFromFuncExprWindowless(funcExprWindowless pgparser.IFunc_expr_windowlessContext) (string, string, []antlr.ParseTree, error) {
+
 	switch {
 	case funcExprWindowless.Func_application() != nil:
 		funcName := funcExprWindowless.Func_application().Func_name()
@@ -2387,4 +2388,46 @@ func (q *querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr pgparser.
 	}
 
 	return 0, nil
+}
+
+func getArgumentsFromFunctionExprWindowless(funcExprWindowless pgparser.IFunc_expr_windowlessContext) []antlr.ParseTree {
+	var result []antlr.ParseTree
+	if funcExprWindowless == nil {
+		return result
+	}
+	if fa := funcExprWindowless.Func_application(); fa != nil {
+		if fa.Func_arg_list() != nil {
+			for _, argExpr := range fa.Func_arg_list().AllFunc_arg_expr() {
+				result = append(result, argExpr)
+			}
+		}
+		if fa.Func_arg_expr() != nil {
+			result = append(result, fa.Func_arg_expr())
+		}
+		// TODO(zp): Handle *, ALL, DISTINCT if needed
+		return result
+	}
+	if f := funcExprWindowless.Func_expr_common_subexpr(); f != nil {
+		if f.COLLATION() != nil {
+			result = append(result, f.A_expr(0))
+		} else if f.CURRENT_DATE() != nil {
+			return result
+		} else if f.CURRENT_TIME() != nil || f.CURRENT_TIMESTAMP() != nil || f.LOCALTIME() != nil || f.LOCALTIMESTAMP() != nil {
+			if f.Iconst() != nil {
+				return append(result, f.Iconst())
+			}
+			return result
+		} else if f.CURRENT_ROLE() != nil || f.CURRENT_USER() != nil || f.SESSION_USER() != nil || f.USER() != nil || f.CURRENT_CATALOG() != nil || f.CURRENT_SCHEMA() != nil {
+			return result
+		} else if f.CAST() != nil {
+			result = append(result, f.A_expr(0))
+			return result
+		} else if f.EXTRACT() != nil {
+			if f.Extract_list() != nil {
+				
+			}
+		}
+	}
+
+	return result
 }
