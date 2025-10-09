@@ -97,42 +97,42 @@ func computeApprovalStatus(approval *storepb.IssuePayloadApproval) v1pb.Issue_Ap
 		return v1pb.Issue_SKIPPED
 	}
 
+	approvalTemplate := approval.GetApprovalTemplates()[0]
+	approvers := approval.GetApprovers()
+	totalSteps := len(approvalTemplate.GetFlow().GetSteps())
+
 	// If no approvers are assigned yet, it's pending
-	if len(approval.GetApprovers()) == 0 {
+	if len(approvers) == 0 {
 		return v1pb.Issue_PENDING
 	}
 
 	// Check approver statuses
-	hasPending := false
-	allApproved := true
-
-	for _, approver := range approval.GetApprovers() {
-		switch approver.GetStatus() {
-		case storepb.IssuePayloadApproval_Approver_REJECTED:
+	for _, approver := range approvers {
+		if approver.GetStatus() == storepb.IssuePayloadApproval_Approver_REJECTED {
 			// Short-circuit: if any approver rejected, overall status is rejected
 			return v1pb.Issue_REJECTED
-		case storepb.IssuePayloadApproval_Approver_PENDING:
-			hasPending = true
-			allApproved = false
-		case storepb.IssuePayloadApproval_Approver_APPROVED:
-			// Continue checking
-		default:
-			allApproved = false
 		}
 	}
 
-	// If all approvers approved, overall status is approved
-	if allApproved {
-		return v1pb.Issue_APPROVED
+	// Check if all steps are completed
+	// Each approver corresponds to one step in the approval flow
+	// All steps are approved if:
+	// 1. Number of approvers equals number of steps
+	// 2. All approvers have APPROVED status
+	if len(approvers) >= totalSteps {
+		allApproved := true
+		for _, approver := range approvers {
+			if approver.GetStatus() != storepb.IssuePayloadApproval_Approver_APPROVED {
+				allApproved = false
+				break
+			}
+		}
+		if allApproved {
+			return v1pb.Issue_APPROVED
+		}
 	}
 
-	// If there are pending approvers, overall status is pending
-	if hasPending {
-		return v1pb.Issue_PENDING
-	}
-
-	// Fallback: should not reach here in normal cases, but treat as pending
-	// This handles edge cases where approvers exist but none are in expected states
+	// Otherwise, approval is pending (more steps to complete or waiting for approvals)
 	return v1pb.Issue_PENDING
 }
 
