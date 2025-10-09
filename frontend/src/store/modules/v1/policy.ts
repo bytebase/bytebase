@@ -19,6 +19,7 @@ import {
   UpdatePolicyRequestSchema,
   DeletePolicyRequestSchema,
   RolloutPolicySchema,
+  RolloutPolicy_Checkers_PlanCheckEnforcement,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { useCurrentUserV1 } from "./auth";
 
@@ -331,7 +332,8 @@ export const getEmptyRolloutPolicy = (
         checkers: {
           requiredIssueApproval: true,
           requiredStatusChecks: {
-            planCheckEnforcement: "ERROR_ONLY",
+            planCheckEnforcement:
+              RolloutPolicy_Checkers_PlanCheckEnforcement.ERROR_ONLY,
           },
         },
       }),
