@@ -112,13 +112,19 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 		}
 	}
 
-	// Write all sequences before tables to ensure they exist before any table references them.
-	// This prevents errors when a sequence owned by one table is referenced by another table
-	// that topological sort places first. Matches PostgreSQL's pg_dump behavior.
+	// Create non-identity sequences before tables to prevent errors when tables reference
+	// sequences owned by other tables. Identity sequences are created via writeColumnIdentityGeneration.
 	sequenceOwnershipMap := make(map[string][]*storepb.SequenceMetadata)
 	for _, schema := range metadata.Schemas {
 		for _, sequence := range schema.Sequences {
 			if sequence.SkipDump {
+				continue
+			}
+			if isIdentitySequence(metadata, schema.Name, sequence) {
+				if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
+					tableID := getObjectID(schema.Name, sequence.OwnerTable)
+					sequenceOwnershipMap[tableID] = append(sequenceOwnershipMap[tableID], sequence)
+				}
 				continue
 			}
 			if err := writeCreateSequence(&buf, schema.Name, sequence); err != nil {
@@ -331,10 +337,18 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		}
 	}
 
-	// Write all sequences before tables to ensure they exist before any table references them.
+	// Create non-identity sequences before tables to prevent errors when tables reference
+	// sequences owned by other tables. Identity sequences are created via writeColumnIdentityGeneration.
 	sequenceOwnershipMap := make(map[string][]*storepb.SequenceMetadata)
 	for _, sequence := range schema.Sequences {
 		if sequence.SkipDump {
+			continue
+		}
+		if isIdentitySequenceInSchema(schema, sequence) {
+			if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
+				tableID := getObjectID(schema.Name, sequence.OwnerTable)
+				sequenceOwnershipMap[tableID] = append(sequenceOwnershipMap[tableID], sequence)
+			}
 			continue
 		}
 		if err := writeCreateSequence(&buf, schema.Name, sequence); err != nil {
@@ -1261,6 +1275,47 @@ func writeCreateTable(out io.Writer, schema string, tableName string, columns []
 
 	_, err := io.WriteString(out, "\n)")
 	return err
+}
+
+// isIdentitySequence checks if a sequence belongs to an identity column.
+func isIdentitySequence(metadata *storepb.DatabaseSchemaMetadata, schemaName string, sequence *storepb.SequenceMetadata) bool {
+	if sequence.OwnerTable == "" || sequence.OwnerColumn == "" {
+		return false
+	}
+	for _, schema := range metadata.Schemas {
+		if schema.Name != schemaName {
+			continue
+		}
+		for _, table := range schema.Tables {
+			if table.Name == sequence.OwnerTable {
+				for _, column := range table.Columns {
+					if column.Name == sequence.OwnerColumn {
+						return column.IdentityGeneration == storepb.ColumnMetadata_ALWAYS ||
+							column.IdentityGeneration == storepb.ColumnMetadata_BY_DEFAULT
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
+// isIdentitySequenceInSchema checks if a sequence belongs to an identity column within a single schema.
+func isIdentitySequenceInSchema(schema *storepb.SchemaMetadata, sequence *storepb.SequenceMetadata) bool {
+	if sequence.OwnerTable == "" || sequence.OwnerColumn == "" {
+		return false
+	}
+	for _, table := range schema.Tables {
+		if table.Name == sequence.OwnerTable {
+			for _, column := range table.Columns {
+				if column.Name == sequence.OwnerColumn {
+					return column.IdentityGeneration == storepb.ColumnMetadata_ALWAYS ||
+						column.IdentityGeneration == storepb.ColumnMetadata_BY_DEFAULT
+				}
+			}
+		}
+	}
+	return false
 }
 
 func splitSequencesByIdentityOrNot(table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) ([]storepb.ColumnMetadata_IdentityGeneration, []*storepb.SequenceMetadata, []*storepb.SequenceMetadata) {
