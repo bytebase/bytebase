@@ -174,25 +174,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		return false, nil
 	}
 
-	// SECURITY: Grant requests require Enterprise plan.
-	// This check is a defensive layer in case grant requests are created without proper feature check.
-	if issue.Type == storepb.Issue_GRANT_REQUEST {
-		if r.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_REQUEST_ROLE_WORKFLOW) != nil {
-			if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue,
-				storepb.Issue_CANCELED, r.store.GetSystemBotUser(ctx),
-				"Grant requests require approval workflow feature (available in Enterprise plan)"); err != nil {
-				return false, errors.Wrap(err, "failed to cancel grant request issue")
-			}
-			slog.Warn("Canceled grant request without approval workflow feature (available in Enterprise plan)",
-				slog.Int("issue", issue.UID),
-				slog.String("project", issue.Project.ResourceID))
-			return true, nil
-		}
-	}
-
-	// Auto-approve grant requests when no approval template is configured (Enterprise plan only).
-	// This maintains backward compatibility with existing behavior.
-	// TODO: Remove auto-approval for better security in a future release.
+	// Grant privilege and close issue similar to actions on issue approval.
 	if issue.Type == storepb.Issue_GRANT_REQUEST && approvalTemplate == nil {
 		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, issue, payload.GrantRequest); err != nil {
 			return false, err
