@@ -982,8 +982,8 @@
     "waiting-for-review": "等待审核",
     "issue-name": "工单名称",
     "grant-request": {
-      "export-rows": "最大导出行数",
-      "select-export-rows": "选择最大导出行数",
+      "query-rows": "最大查询行数",
+      "unlimited-query-rows": "无限制",
       "expired-at": "过期时间",
       "all-databases": "所有数据库",
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",

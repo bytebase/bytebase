@@ -982,8 +982,8 @@
     "waiting-for-review": "Đang chờ xem xét",
     "issue-name": "Tên vấn đề",
     "grant-request": {
-      "export-rows": "Số dòng xuất tối đa",
-      "select-export-rows": "Chọn số hàng xuất tối đa",
+      "query-rows": "Số hàng truy vấn tối đa",
+      "unlimited-query-rows": "Không giới hạn",
       "expired-at": "Hết hạn vào",
       "all-databases": "Tất cả",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",

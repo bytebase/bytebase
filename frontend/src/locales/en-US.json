@@ -982,8 +982,8 @@
     "waiting-for-review": "Waiting for review",
     "issue-name": "Issue name",
     "grant-request": {
-      "export-rows": "Max export rows",
-      "select-export-rows": "Select maximum export rows",
+      "query-rows": "Max query rows",
+      "unlimited-query-rows": "Unlimited",
       "expired-at": "Expired at",
       "all-databases": "All",
       "all-databases-tip": "All current and future databases in this project.",

@@ -61,7 +61,7 @@
     <template v-if="roleSupportExport">
       <div class="w-full flex flex-col justify-start items-start space-y-2">
         <div class="flex items-center gap-x-1">
-          <span>{{ $t("issue.grant-request.export-rows") }}</span>
+          <span>{{ $t("issue.grant-request.query-rows") }}</span>
           <RequiredStar />
         </div>
         <MaxRowCountSelect v-model:value="state.maxRowCount" />
@@ -139,7 +139,6 @@ const getInitialState = (): LocalState => {
     role: props.binding.role,
     memberList: props.binding.members,
     reason: "",
-    // Default to never expire.
     maxRowCount: undefined,
     databaseResources: props.databaseResource
       ? [{ ...props.databaseResource }]
@@ -198,11 +197,6 @@ defineExpose({
   allowConfirm: computed(() => {
     if (!state.role) {
       return false;
-    }
-    if (roleSupportExport.value) {
-      if (!state.maxRowCount) {
-        return false;
-      }
     }
     if (state.memberList.length <= 0) {
       return false;
