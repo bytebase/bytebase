@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -177,6 +178,12 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 		return nil
 	}
 
+	// Get rollout policy to check rollout requirements
+	rolloutPolicy, err := apiv1.GetValidRolloutPolicyForEnvironment(ctx, s.store, task.Environment)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get rollout policy for environment %s", task.Environment)
+	}
+
 	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		return err
@@ -185,47 +192,58 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 		if issue.Status != storepb.Issue_OPEN {
 			return nil
 		}
-		approved, err := utils.CheckIssueApproved(issue)
-		if err != nil {
-			return errors.Wrapf(err, "failed to check if the issue is approved")
-		}
-		if !approved {
-			return nil
+		// Check if issue approval is required according to the rollout policy checkers
+		if rolloutPolicy.GetCheckers().GetRequiredIssueApproval() {
+			approved, err := utils.CheckIssueApproved(issue)
+			if err != nil {
+				return errors.Wrapf(err, "failed to check if the issue is approved")
+			}
+			if !approved {
+				return nil
+			}
 		}
 	}
 
-	// the latest checks of the plan must pass
-	pass, err := func() (bool, error) {
-		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{PipelineID: &task.PipelineID})
-		if err != nil {
-			return false, errors.Wrapf(err, "failed to get plan")
-		}
-		if plan == nil {
-			return true, nil
-		}
-		latestRuns, err := s.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
-			PlanUID: &plan.UID,
-		})
-		if err != nil {
-			return false, errors.Wrapf(err, "failed to list latest plan check runs")
-		}
-		for _, run := range latestRuns {
-			if run.Status != store.PlanCheckRunStatusDone {
-				return false, nil
+	// Check the latest plan checks based on rollout policy enforcement level
+	planCheckEnforcement := rolloutPolicy.GetCheckers().GetRequiredStatusChecks().GetPlanCheckEnforcement()
+	if planCheckEnforcement != storepb.RolloutPolicy_Checkers_PLAN_CHECK_ENFORCEMENT_UNSPECIFIED {
+		pass, err := func() (bool, error) {
+			plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{PipelineID: &task.PipelineID})
+			if err != nil {
+				return false, errors.Wrapf(err, "failed to get plan")
 			}
-			for _, result := range run.Result.Results {
-				if result.Status != storepb.PlanCheckRunResult_Result_SUCCESS {
+			if plan == nil {
+				return true, nil
+			}
+			latestRuns, err := s.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
+				PlanUID: &plan.UID,
+			})
+			if err != nil {
+				return false, errors.Wrapf(err, "failed to list latest plan check runs")
+			}
+			for _, run := range latestRuns {
+				if run.Status != store.PlanCheckRunStatusDone {
 					return false, nil
 				}
+				for _, result := range run.Result.Results {
+					// Block on errors for both ERROR_ONLY and STRICT enforcement
+					if result.Status == storepb.PlanCheckRunResult_Result_ERROR {
+						return false, nil
+					}
+					// Block on warnings only for STRICT enforcement
+					if planCheckEnforcement == storepb.RolloutPolicy_Checkers_STRICT && result.Status == storepb.PlanCheckRunResult_Result_WARNING {
+						return false, nil
+					}
+				}
 			}
+			return true, nil
+		}()
+		if err != nil {
+			return errors.Wrapf(err, "failed to check if plan check passes")
 		}
-		return true, nil
-	}()
-	if err != nil {
-		return errors.Wrapf(err, "failed to check if plan check passes")
-	}
-	if !pass {
-		return nil
+		if !pass {
+			return nil
+		}
 	}
 
 	create := &store.TaskRunMessage{
