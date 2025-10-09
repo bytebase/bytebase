@@ -136,17 +136,17 @@ func (m *maskingLevelEvaluator) evaluateGlobalMaskingLevelOfColumn(
 	classificationLevel := getClassificationLevelOfColumn(columnConfig.GetClassification(), dataClassificationConfig)
 	for _, maskingRule := range m.maskingRules {
 		maskingRuleAttributes := map[string]any{
-			"resource.environment_id":       "",
-			"resource.project_id":           databaseMessage.ProjectID,
-			"resource.instance_id":          databaseMessage.InstanceID,
-			"resource.database_name":        databaseMessage.DatabaseName,
-			"resource.schema_name":          schemaName,
-			"resource.table_name":           tableName,
-			"resource.column_name":          columnName,
-			"resource.classification_level": classificationLevel,
+			common.CELAttributeResourceEnvironmentID:       "",
+			common.CELAttributeResourceProjectID:           databaseMessage.ProjectID,
+			common.CELAttributeResourceInstanceID:          databaseMessage.InstanceID,
+			common.CELAttributeResourceDatabaseName:        databaseMessage.DatabaseName,
+			common.CELAttributeResourceSchemaName:          schemaName,
+			common.CELAttributeResourceTableName:           tableName,
+			common.CELAttributeResourceColumnName:          columnName,
+			common.CELAttributeResourceClassificationLevel: classificationLevel,
 		}
 		if databaseMessage.EffectiveEnvironmentID != nil {
-			maskingRuleAttributes["resource.environment_id"] = *databaseMessage.EffectiveEnvironmentID
+			maskingRuleAttributes[common.CELAttributeResourceEnvironmentID] = *databaseMessage.EffectiveEnvironmentID
 		}
 		pass, err := evaluateMaskingRulePolicyCondition(maskingRule.Condition.Expression, maskingRuleAttributes)
 		if err != nil {

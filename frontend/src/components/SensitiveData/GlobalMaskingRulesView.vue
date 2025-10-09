@@ -128,6 +128,7 @@ import {
   getEnvironmentIdOptions,
   getProjectIdOptions,
 } from "@/components/CustomApproval/Settings/components/common";
+import { getDatabaseIdOptions } from "@/components/CustomApproval/Settings/components/common/utils";
 import { type OptionConfig } from "@/components/ExprEditor/context";
 import { useBodyLayoutContext } from "@/layouts/common";
 import type { Factor } from "@/plugins/cel";
@@ -137,6 +138,7 @@ import {
   usePolicyV1Store,
   useProjectV1Store,
   useInstanceV1Store,
+  useDatabaseV1Store,
 } from "@/store";
 import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { MaskingRulePolicy_MaskingRule } from "@/types/proto-es/v1/org_policy_service_pb";
@@ -154,6 +156,15 @@ import {
   hasWorkspacePermissionV2,
   getDefaultPagination,
 } from "@/utils";
+import {
+  CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
+  CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
+  CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
+  CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
+} from "@/utils/cel-attributes";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import { MiniActionButton } from "../v2";
 import MaskingRuleConfig from "./components/MaskingRuleConfig.vue";
@@ -341,13 +352,13 @@ const onPolicyUpsert = async () => {
 
 const factorList = computed((): Factor[] => {
   const list: Factor[] = [
-    "resource.environment_id",
-    "resource.project_id",
-    "resource.instance_id",
-    "resource.database_name",
-    "resource.table_name",
-    "resource.column_name",
-    "resource.classification_level",
+    CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
+    CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
+    CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
+    CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
+    CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+    CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
+    CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
   ];
 
   return list;
@@ -357,10 +368,10 @@ const factorOptionsMap = computed((): Map<Factor, OptionConfig> => {
   return factorList.value.reduce((map, factor) => {
     let options: SelectOption[] = [];
     switch (factor) {
-      case "resource.environment_id":
+      case CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID:
         options = getEnvironmentIdOptions();
         break;
-      case "resource.instance_id":
+      case CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID:
         const store = useInstanceV1Store();
         map.set(factor, {
           remote: true,
@@ -377,7 +388,7 @@ const factorOptionsMap = computed((): Map<Factor, OptionConfig> => {
           },
         });
         return map;
-      case "resource.project_id":
+      case CEL_ATTRIBUTE_RESOURCE_PROJECT_ID:
         const projectStore = useProjectV1Store();
         map.set(factor, {
           remote: true,
@@ -394,9 +405,28 @@ const factorOptionsMap = computed((): Map<Factor, OptionConfig> => {
           },
         });
         return map;
-      case "resource.classification_level":
+      case CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL:
         options = getClassificationLevelOptions();
         break;
+      case CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME: {
+        const dbStore = useDatabaseV1Store();
+        map.set(factor, {
+          remote: true,
+          options: [],
+          search: async (keyword: string) => {
+            return dbStore
+              .fetchDatabases({
+                pageSize: getDefaultPagination(),
+                parent: "workspaces/-",
+                filter: {
+                  query: keyword,
+                },
+              })
+              .then((resp) => getDatabaseIdOptions(resp.databases));
+          },
+        });
+        return map;
+      }
     }
     map.set(factor, {
       remote: false,

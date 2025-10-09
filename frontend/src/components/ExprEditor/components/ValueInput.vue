@@ -75,7 +75,7 @@ const factor = computed(() => {
   return props.expr.args[0];
 });
 
-const { factorSupportDropdown } = useExprEditorContext();
+const { optionConfigMap } = useExprEditorContext();
 
 const isNumberValue = computed(() => {
   if (isCompareOperator(operator.value)) return true;
@@ -96,12 +96,12 @@ const isArrayValue = computed(() => {
 });
 const inputType = computed((): InputType => {
   if (isArrayValue.value) {
-    return factorSupportDropdown.value.includes(factor.value)
+    return optionConfigMap.value.has(factor.value)
       ? "MULTI-SELECT"
       : "MULTI-INPUT";
   }
   if (isEqualityOperator(operator.value)) {
-    if (factorSupportDropdown.value.includes(factor.value)) {
+    if (optionConfigMap.value.has(factor.value)) {
       return "SINGLE-SELECT";
     }
   }

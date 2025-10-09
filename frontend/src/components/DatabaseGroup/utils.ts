@@ -1,34 +1,33 @@
 import type { SelectOption } from "naive-ui";
-import { getRenderOptionFunc } from "@/components/CustomApproval/Settings/components/common";
+import {
+  getDatabaseIdOptions,
+  getEnvironmentIdOptions,
+} from "@/components/CustomApproval/Settings/components/common";
 import { type OptionConfig } from "@/components/ExprEditor/context";
 import { getInstanceIdOptions } from "@/components/SensitiveData/components/utils";
 import type { Factor } from "@/plugins/cel";
-import {
-  environmentNamePrefix,
-  useEnvironmentV1Store,
-  useInstanceV1Store,
-} from "@/store";
+import { useInstanceV1Store, useDatabaseV1Store } from "@/store";
 import { getDefaultPagination } from "@/utils";
+import {
+  CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
+  CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
+} from "@/utils/cel-attributes";
 
 export const FactorList: Factor[] = [
-  "resource.environment_id",
-  "resource.database_name",
-  "resource.instance_id",
+  CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
 ];
 
-export const factorSupportDropdown: Factor[] = [
-  "resource.environment_id",
-  "resource.instance_id",
-];
-
-export const getDatabaseGroupOptionConfigMap = () => {
+export const getDatabaseGroupOptionConfigMap = (project: string) => {
   return FactorList.reduce((map, factor) => {
     let options: SelectOption[] = [];
     switch (factor) {
-      case "resource.environment_id":
-        options = getEnvironmentOptions();
+      case CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID:
+        options = getEnvironmentIdOptions();
         break;
-      case "resource.instance_id":
+      case CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID:
         const store = useInstanceV1Store();
         map.set(factor, {
           remote: true,
@@ -45,6 +44,24 @@ export const getDatabaseGroupOptionConfigMap = () => {
           },
         });
         return map;
+      case CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME:
+        const dbStore = useDatabaseV1Store();
+        map.set(factor, {
+          remote: true,
+          options: [],
+          search: async (keyword: string) => {
+            return dbStore
+              .fetchDatabases({
+                pageSize: getDefaultPagination(),
+                parent: project,
+                filter: {
+                  query: keyword,
+                },
+              })
+              .then((resp) => getDatabaseIdOptions(resp.databases));
+          },
+        });
+        return map;
     }
     map.set(factor, {
       remote: false,
@@ -52,20 +69,4 @@ export const getDatabaseGroupOptionConfigMap = () => {
     });
     return map;
   }, new Map<Factor, OptionConfig>());
-};
-
-const getEnvironmentOptions = () => {
-  const environmentList = useEnvironmentV1Store().getEnvironmentList();
-  return environmentList.map<SelectOption>((env) => {
-    const id = env.id;
-    const name = `${environmentNamePrefix}${id}`;
-    return {
-      label: id,
-      value: name,
-      render: getRenderOptionFunc({
-        name: name,
-        title: env.title,
-      }),
-    };
-  });
 };

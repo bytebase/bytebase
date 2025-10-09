@@ -1,7 +1,9 @@
 import { create } from "@bufbuild/protobuf";
 import { uniq } from "lodash-es";
 import type { SelectOption } from "naive-ui";
+import { h } from "vue";
 import { getRenderOptionFunc } from "@/components/CustomApproval/Settings/components/common";
+import { InstanceV1Name } from "@/components/v2";
 import type { Factor, Operator } from "@/plugins/cel";
 import { EqualityOperatorList, CollectionOperatorList } from "@/plugins/cel";
 import { useSettingV1Store } from "@/store";
@@ -12,6 +14,7 @@ import {
   AlgorithmSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { extractInstanceResourceName } from "@/utils";
+import { CEL_ATTRIBUTE_RESOURCE_PROJECT_ID } from "@/utils/cel-attributes";
 
 export const getClassificationLevelOptions = () => {
   const settingStore = useSettingV1Store();
@@ -42,21 +45,21 @@ export const getInstanceIdOptions = (instanceList: Instance[]) => {
     return {
       label: `${ins.title} (${instanceId})`,
       value: instanceId,
-      render: getRenderOptionFunc(ins),
+      render: getRenderOptionFunc({
+        name: ins.name,
+        title: () =>
+          h(InstanceV1Name, {
+            instance: ins,
+            link: false,
+          }),
+      }),
     };
   });
 };
 
-export const factorSupportDropdown: Factor[] = [
-  "resource.environment_id",
-  "resource.instance_id",
-  "resource.project_id",
-  "resource.classification_level",
-];
-
 export const factorOperatorOverrideMap = new Map<Factor, Operator[]>([
   [
-    "resource.project_id",
+    CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
     uniq([...EqualityOperatorList, ...CollectionOperatorList]),
   ],
 ]);

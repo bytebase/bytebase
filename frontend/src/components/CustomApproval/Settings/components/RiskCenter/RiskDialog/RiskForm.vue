@@ -54,7 +54,6 @@
             :expr="state.expr"
             :allow-admin="allowAdmin"
             :factor-list="getFactorList(state.risk.source)"
-            :factor-support-dropdown="factorSupportDropdown"
             :option-config-map="getOptionConfigMap(state.risk.source)"
             @update="$emit('update')"
           />
@@ -119,7 +118,6 @@ import {
 import {
   getFactorList,
   getOptionConfigMap,
-  factorSupportDropdown,
   RiskSourceFactorMap,
 } from "../../common/utils";
 import { useRiskCenterContext } from "../context";

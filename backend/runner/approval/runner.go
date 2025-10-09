@@ -298,8 +298,8 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 		}
 
 		out, _, err := prg.Eval(map[string]any{
-			"level":  riskLevel,
-			"source": apiv1.ConvertToV1Source(riskSource).String(),
+			common.CELAttributeLevel:  riskLevel,
+			common.CELAttributeSource: apiv1.ConvertToV1Source(riskSource).String(),
 		})
 		if err != nil {
 			return nil, err
@@ -463,13 +463,13 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 		}
 
 		commonArgs := map[string]any{
-			"resource.environment_id": environmentID,
-			"resource.project_id":     issue.Project.ResourceID,
-			"resource.instance_id":    instance.ResourceID,
-			"resource.database_name":  databaseName,
+			common.CELAttributeResourceEnvironmentID: environmentID,
+			common.CELAttributeResourceProjectID:     issue.Project.ResourceID,
+			common.CELAttributeResourceInstanceID:    instance.ResourceID,
+			common.CELAttributeResourceDatabaseName:  databaseName,
 			// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
-			"resource.db_engine": instance.Metadata.GetEngine().String(),
-			"statement.text":     taskStatement,
+			common.CELAttributeResourceDBEngine: instance.Metadata.GetEngine().String(),
+			common.CELAttributeStatementText:    taskStatement,
 		}
 		risk, err := func() (int32, error) {
 			// The summary report is not always available.

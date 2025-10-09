@@ -23,7 +23,6 @@
           :expr="state.expr"
           :allow-admin="!readonly"
           :factor-list="factorList"
-          :factor-support-dropdown="factorSupportDropdown"
           :option-config-map="optionConfigMap"
           :factor-operator-override-map="factorOperatorOverrideMap"
           @update="state.dirty = true"
@@ -109,7 +108,7 @@ import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
 } from "@/utils";
-import { factorSupportDropdown, factorOperatorOverrideMap } from "./utils";
+import { factorOperatorOverrideMap } from "./utils";
 
 export interface SemanticTypeSelectOption extends SelectOption {
   value: string;

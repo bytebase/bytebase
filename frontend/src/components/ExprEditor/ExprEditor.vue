@@ -16,7 +16,6 @@ const props = withDefaults(
     allowAdmin?: boolean;
     enableRawExpression?: boolean;
     factorList: Factor[];
-    factorSupportDropdown?: Factor[];
     optionConfigMap?: Map<Factor, OptionConfig>;
     factorOperatorOverrideMap?: Map<Factor, Operator[]>;
   }>(),
@@ -24,7 +23,6 @@ const props = withDefaults(
     allowAdmin: false,
     enableRawExpression: false,
     factorOperatorOverrideMap: undefined,
-    factorSupportDropdown: () => [],
     optionConfigMap: () => new Map(),
   }
 );
@@ -37,7 +35,6 @@ provideExprEditorContext({
   allowAdmin: toRef(props, "allowAdmin"),
   enableRawExpression: toRef(props, "enableRawExpression"),
   factorList: toRef(props, "factorList"),
-  factorSupportDropdown: toRef(props, "factorSupportDropdown"),
   optionConfigMap: toRef(props, "optionConfigMap"),
   factorOperatorOverrideMap: toRef(props, "factorOperatorOverrideMap"),
 });
