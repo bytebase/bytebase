@@ -261,12 +261,11 @@ type Binding struct {
 	// resource.schema_name: the schema name, used by the "roles/sqlEditorUser" role, support "==" operator.
 	// resource.table_name: the table name, used by the "roles/sqlEditorUser" role, support "==" operator.
 	// request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`.
-	// request.row_limit: the maximum export rows, used by the "roles/sqlEditorUser" role. Only support "<=" operation.
 	//
 	// For example:
 	// resource.database == "instances/local-pg/databases/postgres" && resource.schema_name in ["public","another_schema"]
 	// resource.database == "instances/local-pg/databases/bytebase" && resource.schema_name == "public" && resource.table_name in ["audit_log"]
-	// request.time < timestamp("2025-04-26T11:24:48.655Z") && request.row_limit <= 1000
+	// request.time < timestamp("2025-04-26T11:24:48.655Z")
 	Condition *expr.Expr `protobuf:"bytes,3,opt,name=condition,proto3" json:"condition,omitempty"`
 	// The parsed expression of the condition.
 	ParsedExpr    *v1alpha1.Expr `protobuf:"bytes,4,opt,name=parsed_expr,json=parsedExpr,proto3" json:"parsed_expr,omitempty"`

@@ -22,7 +22,6 @@ export const CEL_ATTRIBUTE_STATEMENT_TEXT = "statement.text";
 // CEL attribute names for request scope.
 export const CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS = "request.expiration_days";
 export const CEL_ATTRIBUTE_REQUEST_ROLE = "request.role";
-export const CEL_ATTRIBUTE_REQUEST_ROW_LIMIT = "request.row_limit";
 export const CEL_ATTRIBUTE_REQUEST_TIME = "request.time";
 
 // CEL attribute names for approval scope (deprecated, kept for backward compatibility).

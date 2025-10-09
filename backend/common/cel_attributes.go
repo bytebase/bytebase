@@ -45,8 +45,6 @@ const (
 	CELAttributeRequestExpirationDays = "request.expiration_days"
 	// CELAttributeRequestRole is the requested role.
 	CELAttributeRequestRole = "request.role"
-	// CELAttributeRequestRowLimit is the maximum number of rows requested.
-	CELAttributeRequestRowLimit = "request.row_limit"
 	// CELAttributeRequestTime is the timestamp of the request.
 	CELAttributeRequestTime = "request.time"
 )
