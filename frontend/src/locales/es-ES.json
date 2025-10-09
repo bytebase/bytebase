@@ -982,8 +982,6 @@
     "waiting-for-review": "Esperando revisión",
     "issue-name": "Nombre de la incidencia",
     "grant-request": {
-      "query-rows": "Máximo de filas de consulta",
-      "unlimited-query-rows": "Ilimitado",
       "expired-at": "tiempo de caducidad",
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
