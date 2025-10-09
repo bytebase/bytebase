@@ -26,7 +26,7 @@
     </div>
 
     <!-- Requirements Section -->
-    <div v-if="isDev()" class="flex flex-col gap-y-2">
+    <div class="flex flex-col gap-y-2">
       <div class="textlabel font-medium">
         {{ $t("policy.rollout.checkers.self") }}
       </div>
@@ -138,7 +138,6 @@ import {
   RolloutPolicy_Checkers_RequiredStatusChecksSchema,
   RolloutPolicy_Checkers_PlanCheckEnforcement,
 } from "@/types/proto-es/v1/org_policy_service_pb";
-import { isDev } from "@/utils";
 import { RoleSelect } from "../v2";
 
 const props = defineProps<{
