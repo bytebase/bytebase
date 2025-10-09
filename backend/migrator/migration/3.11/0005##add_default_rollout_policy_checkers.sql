@@ -3,18 +3,9 @@
 
 UPDATE policy
 SET payload = jsonb_set(
-    jsonb_set(
-        payload,
-        '{checkers}',
-        jsonb_build_object(
-            'requiredIssueApproval', true,
-            'requiredStatusChecks', jsonb_build_object(
-                'planCheckEnforcement', 'ERROR_ONLY'
-            )
-        )
-    ),
+    COALESCE(payload, '{}'::jsonb),
     '{checkers}',
-    payload->'checkers' || jsonb_build_object(
+    jsonb_build_object(
         'requiredIssueApproval', true,
         'requiredStatusChecks', jsonb_build_object(
             'planCheckEnforcement', 'ERROR_ONLY'
@@ -22,4 +13,4 @@ SET payload = jsonb_set(
     )
 )
 WHERE type = 'ROLLOUT'
-AND (payload->'checkers' IS NULL OR payload->'checkers' = '{}');
+AND (payload IS NULL OR payload->'checkers' IS NULL OR payload->'checkers' = '{}');
