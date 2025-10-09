@@ -186,13 +186,13 @@ const allowEdit = computed(() => {
 });
 
 const shouldShowRequestRoleButton = computed(() => {
-  // Check if approval workflow feature is available
-  const hasApprovalFeature = subscriptionStore.hasFeature(
-    PlanFeature.FEATURE_APPROVAL_WORKFLOW
+  // Check if grant request feature is available (Enterprise plan only)
+  const hasRequestRoleFeature = subscriptionStore.hasFeature(
+    PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW
   );
 
   return (
-    hasApprovalFeature &&
+    hasRequestRoleFeature &&
     !isProjectOwner.value &&
     hasProjectPermissionV2(props.project, "bb.issues.create")
   );

@@ -174,30 +174,32 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		return false, nil
 	}
 
-	// SECURITY: Grant requests should never auto-approve, even without approval template.
-	// After the API fix, grant requests can only be created in paid plans with approval workflow enabled.
-	// If no approval template exists (no rules configured), the grant request should wait for manual approval
-	// or require proper approval configuration, not auto-approve.
-	if issue.Type == storepb.Issue_GRANT_REQUEST && approvalTemplate == nil {
-		// In Community plan, this shouldn't happen due to API check, but cancel if it does
-		if r.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW) != nil {
+	// SECURITY: Grant requests require Enterprise plan.
+	// This check is a defensive layer in case grant requests are created without proper feature check.
+	if issue.Type == storepb.Issue_GRANT_REQUEST {
+		if r.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_REQUEST_ROLE_WORKFLOW) != nil {
 			if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue,
 				storepb.Issue_CANCELED, r.store.GetSystemBotUser(ctx),
-				"Grant requests require approval workflow feature"); err != nil {
+				"Grant requests require approval workflow feature (available in Enterprise plan)"); err != nil {
 				return false, errors.Wrap(err, "failed to cancel grant request issue")
 			}
-			slog.Warn("Canceled grant request without approval workflow feature",
+			slog.Warn("Canceled grant request without approval workflow feature (available in Enterprise plan)",
 				slog.Int("issue", issue.UID),
 				slog.String("project", issue.Project.ResourceID))
 			return true, nil
 		}
-		// In paid plan with no approval rules configured, don't auto-approve.
-		// Mark approval finding as done but don't grant the role.
-		// The issue will wait for manual approval.
-		slog.Info("Grant request created without approval template (no rules configured), waiting for manual approval",
-			slog.Int("issue", issue.UID),
-			slog.String("project", issue.Project.ResourceID))
-		// Fall through to set approval finding done below
+	}
+
+	// Auto-approve grant requests when no approval template is configured (Enterprise plan only).
+	// This maintains backward compatibility with existing behavior.
+	// TODO: Remove auto-approval for better security in a future release.
+	if issue.Type == storepb.Issue_GRANT_REQUEST && approvalTemplate == nil {
+		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, issue, payload.GrantRequest); err != nil {
+			return false, err
+		}
+		if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, storepb.Issue_DONE, r.store.GetSystemBotUser(ctx), ""); err != nil {
+			return false, errors.Wrap(err, "failed to update issue status")
+		}
 	}
 
 	payload.Approval = &storepb.IssuePayloadApproval{
