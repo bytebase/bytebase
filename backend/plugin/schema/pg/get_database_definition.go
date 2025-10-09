@@ -1277,6 +1277,12 @@ func writeCreateTable(out io.Writer, schema string, tableName string, columns []
 	return err
 }
 
+// isIdentityColumn checks if a column is an identity column.
+func isIdentityColumn(column *storepb.ColumnMetadata) bool {
+	return column.IdentityGeneration == storepb.ColumnMetadata_ALWAYS ||
+		column.IdentityGeneration == storepb.ColumnMetadata_BY_DEFAULT
+}
+
 // isIdentitySequence checks if a sequence belongs to an identity column.
 func isIdentitySequence(metadata *storepb.DatabaseSchemaMetadata, schemaName string, sequence *storepb.SequenceMetadata) bool {
 	if sequence.OwnerTable == "" || sequence.OwnerColumn == "" {
@@ -1290,8 +1296,7 @@ func isIdentitySequence(metadata *storepb.DatabaseSchemaMetadata, schemaName str
 			if table.Name == sequence.OwnerTable {
 				for _, column := range table.Columns {
 					if column.Name == sequence.OwnerColumn {
-						return column.IdentityGeneration == storepb.ColumnMetadata_ALWAYS ||
-							column.IdentityGeneration == storepb.ColumnMetadata_BY_DEFAULT
+						return isIdentityColumn(column)
 					}
 				}
 			}
@@ -1309,8 +1314,7 @@ func isIdentitySequenceInSchema(schema *storepb.SchemaMetadata, sequence *storep
 		if table.Name == sequence.OwnerTable {
 			for _, column := range table.Columns {
 				if column.Name == sequence.OwnerColumn {
-					return column.IdentityGeneration == storepb.ColumnMetadata_ALWAYS ||
-						column.IdentityGeneration == storepb.ColumnMetadata_BY_DEFAULT
+					return isIdentityColumn(column)
 				}
 			}
 		}
@@ -1328,7 +1332,7 @@ func splitSequencesByIdentityOrNot(table *storepb.TableMetadata, sequences []*st
 	var nonIdentitySequences []*storepb.SequenceMetadata
 	for _, sequence := range sequences {
 		if column, ok := columnMap[sequence.OwnerColumn]; ok {
-			if column.IdentityGeneration == storepb.ColumnMetadata_ALWAYS || column.IdentityGeneration == storepb.ColumnMetadata_BY_DEFAULT {
+			if isIdentityColumn(column) {
 				generationType = append(generationType, column.IdentityGeneration)
 				identitySequences = append(identitySequences, sequence)
 				continue
