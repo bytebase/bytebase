@@ -61,94 +61,6 @@ func TransformDMLToSelect(_ context.Context, _ base.TransformContext, statement 
 	return generateSQL(statementInfoList, targetDatabase, tablePrefix)
 }
 
-// generateBackupTableSQL creates backup table without IDENTITY properties
-// We use dynamic SQL to handle IDENTITY columns at runtime by casting them to their base types
-func generateBackupTableSQL(statementInfoList []statementInfo, table *TableReference, targetDatabase string, targetTable string) (string, error) {
-	// Since we can't easily determine IDENTITY columns at parse time,
-	// we'll use a dynamic SQL approach that handles them at runtime
-
-	var buf strings.Builder
-
-	// Create a more robust solution using dynamic SQL to handle IDENTITY columns
-	// This creates the backup table and removes IDENTITY properties
-	if _, err := buf.WriteString(fmt.Sprintf(`-- Create backup table without IDENTITY columns
-DECLARE @sql NVARCHAR(MAX);
-DECLARE @cols NVARCHAR(MAX);
-
--- Get column list with IDENTITY columns cast to their base types
-SELECT @cols = STRING_AGG(
-    CASE
-        WHEN COLUMNPROPERTY(OBJECT_ID('[%s].[%s].[%s]'), c.name, 'IsIdentity') = 1
-        THEN 'CAST(' + QUOTENAME(c.name) + ' AS ' +
-             TYPE_NAME(c.user_type_id) +
-             CASE
-                 WHEN TYPE_NAME(c.user_type_id) IN ('varchar', 'char', 'nvarchar', 'nchar', 'varbinary', 'binary')
-                 THEN '(' + CASE WHEN c.max_length = -1 THEN 'MAX' ELSE CAST(c.max_length AS VARCHAR(10)) END + ')'
-                 WHEN TYPE_NAME(c.user_type_id) IN ('decimal', 'numeric')
-                 THEN '(' + CAST(c.precision AS VARCHAR(10)) + ',' + CAST(c.scale AS VARCHAR(10)) + ')'
-                 ELSE ''
-             END + ') AS ' + QUOTENAME(c.name)
-        ELSE QUOTENAME(c.name)
-    END, ', ') WITHIN GROUP (ORDER BY c.column_id)
-FROM sys.columns c
-WHERE c.object_id = OBJECT_ID('[%s].[%s].[%s]');
-
--- Create the backup table using the modified column list
-SET @sql = 'SELECT ' + @cols + ' INTO [%s].[%s].[%s] FROM (`,
-		table.Database, table.Schema, table.Table,
-		table.Database, table.Schema, table.Table,
-		targetDatabase, defaultSchema, targetTable)); err != nil {
-		return "", errors.Wrap(err, "failed to write buffer")
-	}
-
-	// Add the SELECT statements
-	for i, item := range statementInfoList {
-		if i > 0 {
-			if _, err := buf.WriteString("\n  UNION\n"); err != nil {
-				return "", errors.Wrap(err, "failed to write buffer")
-			}
-		}
-		topClause, fromClause, err := extractSuffixSelectStatement(item.tree)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to extract suffix select statement")
-		}
-		if len(item.table.Alias) == 0 {
-			if _, err := buf.WriteString(fmt.Sprintf(`  SELECT [%s].[%s].[%s].* `,
-				item.table.Database, item.table.Schema, item.table.Table)); err != nil {
-				return "", errors.Wrap(err, "failed to write buffer")
-			}
-		} else {
-			if _, err := buf.WriteString(fmt.Sprintf(`  SELECT [%s].* `, item.table.Alias)); err != nil {
-				return "", errors.Wrap(err, "failed to write buffer")
-			}
-		}
-		if len(topClause) > 0 {
-			if _, err := buf.WriteString(topClause); err != nil {
-				return "", errors.Wrap(err, "failed to write buffer")
-			}
-			if _, err := buf.WriteString(" "); err != nil {
-				return "", errors.Wrap(err, "failed to write buffer")
-			}
-		}
-		if len(fromClause) > 0 {
-			// Escape single quotes in the FROM clause by doubling them for SQL Server
-			escapedFromClause := strings.ReplaceAll(fromClause, "'", "''")
-			if _, err := buf.WriteString(escapedFromClause); err != nil {
-				return "", errors.Wrap(err, "failed to write buffer")
-			}
-		}
-	}
-
-	if _, err := buf.WriteString(`) AS backup_data';
-
-EXEC sp_executesql @sql;`); err != nil {
-		return "", errors.Wrap(err, "failed to write buffer")
-	}
-
-	// The dynamic SQL creates and populates the table in one step
-	return buf.String(), nil
-}
-
 func generateSQL(statementInfoList []statementInfo, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
 	groupByTable := make(map[string][]statementInfo)
 	for _, item := range statementInfoList {
@@ -208,15 +120,48 @@ func generateSQLForTable(statementInfoList []statementInfo, targetDatabase strin
 
 	targetTable := fmt.Sprintf("%s_%s_%s", tablePrefix, table.Table, table.Database)
 	targetTable, _ = common.TruncateString(targetTable, maxTableNameLength)
-
-	// Generate dynamic SQL that handles IDENTITY columns at runtime
-	createSQL, err := generateBackupTableSQL(statementInfoList, table, targetDatabase, targetTable)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate backup table SQL")
+	var buf strings.Builder
+	if _, err := buf.WriteString(fmt.Sprintf(`SELECT * INTO [%s].[%s].[%s] FROM (`+"\n", targetDatabase, defaultSchema, targetTable)); err != nil {
+		return nil, errors.Wrap(err, "failed to write buffer")
 	}
-
+	for i, item := range statementInfoList {
+		if i > 0 {
+			if _, err := buf.WriteString("\n  UNION\n"); err != nil {
+				return nil, errors.Wrap(err, "failed to write buffer")
+			}
+		}
+		topClause, fromClause, err := extractSuffixSelectStatement(item.tree)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to extract suffix select statement")
+		}
+		if len(item.table.Alias) == 0 {
+			if _, err := buf.WriteString(fmt.Sprintf(`  SELECT [%s].[%s].[%s].* `, item.table.Database, item.table.Schema, item.table.Table)); err != nil {
+				return nil, errors.Wrap(err, "failed to write buffer")
+			}
+		} else {
+			if _, err := buf.WriteString(fmt.Sprintf(`  SELECT [%s].* `, item.table.Alias)); err != nil {
+				return nil, errors.Wrap(err, "failed to write buffer")
+			}
+		}
+		if len(topClause) > 0 {
+			if _, err := buf.WriteString(topClause); err != nil {
+				return nil, errors.Wrap(err, "failed to write buffer")
+			}
+			if _, err := buf.WriteString(" "); err != nil {
+				return nil, errors.Wrap(err, "failed to write buffer")
+			}
+		}
+		if len(fromClause) > 0 {
+			if _, err := buf.WriteString(fromClause); err != nil {
+				return nil, errors.Wrap(err, "failed to write buffer")
+			}
+		}
+	}
+	if _, err := buf.WriteString(") AS backup_table;"); err != nil {
+		return nil, errors.Wrap(err, "failed to write buffer")
+	}
 	return &base.BackupStatement{
-		Statement:       createSQL,
+		Statement:       buf.String(),
 		SourceSchema:    table.Schema,
 		SourceTableName: table.Table,
 		TargetTableName: targetTable,

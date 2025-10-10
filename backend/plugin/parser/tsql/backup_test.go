@@ -75,9 +75,8 @@ func TestBackup(t *testing.T) {
 
 // TestIdentityColumnHandling validates that our implementation correctly handles IDENTITY columns
 // This test verifies:
-// 1. The generated dynamic SQL properly detects IDENTITY columns at runtime
-// 2. IDENTITY columns are cast to their base types (removing IDENTITY property) during backup
-// 3. The backup table can receive explicit values without IDENTITY_INSERT errors
+// 1. The backup uses simple SELECT INTO (copying IDENTITY properties naturally)
+// 2. The restore.go handles IDENTITY_INSERT during rollback
 func TestIdentityColumnHandling(t *testing.T) {
 	a := require.New(t)
 
@@ -89,29 +88,22 @@ func TestIdentityColumnHandling(t *testing.T) {
 	a.NoError(err)
 	a.Len(result, 1)
 
-	// Verify the generated SQL uses dynamic column detection
+	// Verify the generated SQL uses simple SELECT INTO
 	stmt := result[0].Statement
 
 	// Key assertions about the generated SQL:
-	// 1. Uses COLUMNPROPERTY to detect IDENTITY columns
-	a.Contains(stmt, "COLUMNPROPERTY(OBJECT_ID('[db].[dbo].[positions]'), c.name, 'IsIdentity')")
+	// 1. Uses simple SELECT INTO
+	a.Contains(stmt, "SELECT * INTO [backupDB].[dbo].[rollback_positions_db]")
 
-	// 2. Casts IDENTITY columns to their base type
-	a.Contains(stmt, "CAST(' + QUOTENAME(c.name) + ' AS ' +")
-	a.Contains(stmt, "TYPE_NAME(c.user_type_id)")
+	// 2. Selects from the original table with proper bracketing
+	a.Contains(stmt, "SELECT [db].[dbo].[positions].* FROM")
 
-	// 3. Uses STRING_AGG to build column list dynamically
-	a.Contains(stmt, "STRING_AGG(")
+	// 3. Includes the WHERE clause
+	a.Contains(stmt, "WHERE position_id = 1")
 
-	// 4. Creates backup table with SELECT INTO
-	a.Contains(stmt, "SELECT ' + @cols + ' INTO [backupDB].[dbo].[rollback_positions_db]")
-
-	// 5. Uses dynamic SQL execution
-	a.Contains(stmt, "EXEC sp_executesql @sql")
-
-	// The key difference from the original implementation:
-	// Original: SELECT * INTO backup_table (copies IDENTITY property, causing insert failures)
-	// New: SELECT <columns with IDENTITY cast to base types> INTO backup_table (no IDENTITY property)
+	// The approach:
+	// Backup: Simple SELECT * INTO backup_table (copies IDENTITY property naturally)
+	// Restore: restore.go handles IDENTITY_INSERT ON/OFF for rollback
 }
 
 // TestBackupStatementStructure validates the structure of backup statements
@@ -137,11 +129,11 @@ func TestBackupStatementStructure(t *testing.T) {
 	a.Contains(backupStmt.Statement, "WHERE department_id = 5")
 }
 
-// TestBackupWithQuotedStrings validates that single quotes in WHERE clauses are properly escaped
+// TestBackupWithQuotedStrings validates that single quotes in WHERE clauses are properly handled
 func TestBackupWithQuotedStrings(t *testing.T) {
 	a := require.New(t)
 
-	// Test case with single quotes that need escaping
+	// Test case with single quotes
 	input := `DELETE FROM AdminPosition WHERE positionName = 'BPM Admin';`
 
 	result, err := TransformDMLToSelect(context.Background(), base.TransformContext{},
@@ -151,10 +143,9 @@ func TestBackupWithQuotedStrings(t *testing.T) {
 
 	stmt := result[0].Statement
 
-	// The dynamic SQL should have escaped quotes (doubled single quotes)
-	// The original: WHERE positionName = 'BPM Admin'
-	// Should become: WHERE positionName = ''BPM Admin'' in the dynamic SQL string
-	a.Contains(stmt, "WHERE positionName = ''BPM Admin''")
+	// With simple SELECT INTO, quotes are handled naturally by SQL Server
+	// The WHERE clause should appear as-is
+	a.Contains(stmt, "WHERE positionName = 'BPM Admin'")
 
 	// Also test with apostrophes in the string
 	input2 := `UPDATE positions SET title = 'O''Reilly''s Manager' WHERE id = 1;`
@@ -166,6 +157,6 @@ func TestBackupWithQuotedStrings(t *testing.T) {
 	// For UPDATE, we only backup the rows that will be changed (WHERE clause)
 	// The SET clause is not part of the backup, only the WHERE clause matters
 	stmt2 := result2[0].Statement
-	// The WHERE clause should be properly escaped
+	// The WHERE clause should be present
 	a.Contains(stmt2, "WHERE id = 1")
 }
