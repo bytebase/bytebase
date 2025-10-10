@@ -20,14 +20,10 @@
   
 - [store/approval.proto](#store_approval-proto)
     - [ApprovalFlow](#bytebase-store-ApprovalFlow)
-    - [ApprovalNode](#bytebase-store-ApprovalNode)
-    - [ApprovalStep](#bytebase-store-ApprovalStep)
     - [ApprovalTemplate](#bytebase-store-ApprovalTemplate)
     - [IssuePayloadApproval](#bytebase-store-IssuePayloadApproval)
     - [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver)
   
-    - [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type)
-    - [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type)
     - [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status)
     - [IssuePayloadApproval.RiskLevel](#bytebase-store-IssuePayloadApproval-RiskLevel)
   
@@ -564,39 +560,7 @@ offset.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| steps | [ApprovalStep](#bytebase-store-ApprovalStep) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-ApprovalNode"></a>
-
-### ApprovalNode
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type) |  |  |
-| role | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ApprovalStep"></a>
-
-### ApprovalStep
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type) |  |  |
-| nodes | [ApprovalNode](#bytebase-store-ApprovalNode) | repeated |  |
+| roles | [string](#string) | repeated |  |
 
 
 
@@ -629,7 +593,7 @@ IssuePayloadApproval records the approval template used and the approval history
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| approval_templates | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) | repeated |  |
+| approval_template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) |  |  |
 | approvers | [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver) | repeated |  |
 | approval_finding_done | [bool](#bool) |  | If the value is `false`, it means that the backend is still finding matching approval templates. If `true`, other fields are available. |
 | approval_finding_error | [string](#string) |  |  |
@@ -656,36 +620,6 @@ IssuePayloadApproval records the approval template used and the approval history
 
 
  
-
-
-<a name="bytebase-store-ApprovalNode-Type"></a>
-
-### ApprovalNode.Type
-Type of the ApprovalNode.
-type determines who should approve this node.
-ANY_IN_GROUP means the ApprovalNode can be approved by an user from our predefined user group.
-See GroupValue below for the predefined user groups.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| ANY_IN_GROUP | 1 |  |
-
-
-
-<a name="bytebase-store-ApprovalStep-Type"></a>
-
-### ApprovalStep.Type
-Type of the ApprovalStep
-ALL means every node must be approved to proceed.
-ANY means approving any node will proceed.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| ALL | 1 |  |
-| ANY | 2 |  |
-
 
 
 <a name="bytebase-store-IssuePayloadApproval-Approver-Status"></a>
@@ -4696,7 +4630,6 @@ QueryDataPolicy is the policy configuration for querying data.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| expression | [google.api.expr.v1alpha1.Expr](#google-api-expr-v1alpha1-Expr) |  |  |
 | template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) |  |  |
 | condition | [google.type.Expr](#google-type-Expr) |  |  |
 

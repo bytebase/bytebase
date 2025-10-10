@@ -32,15 +32,15 @@ export const filterIssueByApprover = (
     return false;
   }
 
-  const { approvalTemplates, approvers } = issue;
-  if (approvalTemplates.length === 0) return false;
+  const { approvalTemplate, approvers } = issue;
+  if (!approvalTemplate) return false;
 
-  const currentStepIndex = approvers.length;
-  const steps = approvalTemplates[0].flow?.steps || [];
-  const step = steps[currentStepIndex];
-  if (!step) return false;
+  const currentRoleIndex = approvers.length;
+  const roles = approvalTemplate.flow?.roles || [];
+  const role = roles[currentRoleIndex];
+  if (!role) return false;
 
-  const candidates = candidatesOfApprovalStepV1(issue, step);
+  const candidates = candidatesOfApprovalStepV1(issue, role);
 
   // We support "approver:{email}" by now
   // Planning to support "approver:[{email_1}, {email_2}, ...]" and

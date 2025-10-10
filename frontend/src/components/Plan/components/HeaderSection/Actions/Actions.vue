@@ -43,7 +43,6 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { head } from "lodash-es";
 import { useDialog } from "naive-ui";
 import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -237,7 +236,7 @@ const availableActions = computed(() => {
     !rolloutReady
   ) {
     const issueCreator = extractUserId(issueValue.creator);
-    const { approvers, approvalTemplates } = issueValue;
+    const { approvers, approvalTemplate } = issueValue;
 
     // Check if issue has been rejected
     const hasRejection = approvers.some(
@@ -249,19 +248,19 @@ const availableActions = computed(() => {
       actions.push("ISSUE_REVIEW_RE_REQUEST");
     } else {
       // Check if user can approve/reject
-      const steps = head(approvalTemplates)?.flow?.steps ?? [];
-      if (steps.length > 0) {
+      const roles = approvalTemplate?.flow?.roles ?? [];
+      if (roles.length > 0) {
         const rejectedIndex = approvers.findIndex(
           (ap) => ap.status === Issue_Approver_Status.REJECTED
         );
-        const currentStepIndex =
+        const currentRoleIndex =
           rejectedIndex >= 0 ? rejectedIndex : approvers.length;
-        const currentStep = steps[currentStepIndex];
+        const currentRole = roles[currentRoleIndex];
 
-        if (currentStep) {
+        if (currentRole) {
           const candidates = candidatesOfApprovalStepV1(
             issueValue,
-            currentStep
+            currentRole
           );
           if (isUserIncludedInList(currentUserEmail, candidates)) {
             if (hasRejection) {

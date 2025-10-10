@@ -918,16 +918,8 @@ func validateApprovalTemplate(template *v1pb.ApprovalTemplate) error {
 	if template.Flow == nil {
 		return errors.Errorf("approval template cannot be nil")
 	}
-	if len(template.Flow.Steps) == 0 {
-		return errors.Errorf("approval template cannot have 0 step")
-	}
-	for _, step := range template.Flow.Steps {
-		if step.Type != v1pb.ApprovalStep_ANY {
-			return errors.Errorf("invalid approval step type: %v", step.Type)
-		}
-		if len(step.Nodes) != 1 {
-			return errors.Errorf("expect 1 node in approval step, got: %v", len(step.Nodes))
-		}
+	if len(template.Flow.Roles) == 0 {
+		return errors.Errorf("approval template cannot have 0 role")
 	}
 	return nil
 }
@@ -1223,38 +1215,9 @@ func convertApprovalFlow(v1Flow *v1pb.ApprovalFlow) *storepb.ApprovalFlow {
 		return nil
 	}
 
-	storeFlow := &storepb.ApprovalFlow{}
-	for _, step := range v1Flow.Steps {
-		storeFlow.Steps = append(storeFlow.Steps, convertApprovalStep(step))
+	return &storepb.ApprovalFlow{
+		Roles: v1Flow.Roles,
 	}
-	return storeFlow
-}
-
-func convertApprovalStep(v1Step *v1pb.ApprovalStep) *storepb.ApprovalStep {
-	if v1Step == nil {
-		return nil
-	}
-
-	storeStep := &storepb.ApprovalStep{
-		Type: storepb.ApprovalStep_Type(v1Step.Type),
-	}
-	for _, node := range v1Step.Nodes {
-		storeStep.Nodes = append(storeStep.Nodes, convertApprovalNode(node))
-	}
-	return storeStep
-}
-
-func convertApprovalNode(v1Node *v1pb.ApprovalNode) *storepb.ApprovalNode {
-	if v1Node == nil {
-		return nil
-	}
-
-	storeNode := &storepb.ApprovalNode{
-		Type: storepb.ApprovalNode_Type(v1Node.Type),
-		Role: v1Node.Role,
-	}
-
-	return storeNode
 }
 
 func convertAppIMSetting(v1Setting *v1pb.AppIMSetting) *storepb.AppIMSetting {

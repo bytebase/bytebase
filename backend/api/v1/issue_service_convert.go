@@ -62,8 +62,8 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 
 	approval := issuePayload.GetApproval()
 	issueV1.RiskLevel = convertToIssueRiskLevel(approval.GetRiskLevel())
-	for _, template := range approval.GetApprovalTemplates() {
-		issueV1.ApprovalTemplates = append(issueV1.ApprovalTemplates, convertToApprovalTemplate(template))
+	if template := approval.GetApprovalTemplate(); template != nil {
+		issueV1.ApprovalTemplate = convertToApprovalTemplate(template)
 	}
 	for _, approver := range approval.GetApprovers() {
 		convertedApprover := &v1pb.Issue_Approver{Status: v1pb.Issue_Approver_Status(approver.GetStatus())}
@@ -92,14 +92,14 @@ func computeApprovalStatus(approval *storepb.IssuePayloadApproval) v1pb.Issue_Ap
 		return v1pb.Issue_ERROR
 	}
 
-	// If no approval templates, approval is skipped (not required)
-	if len(approval.GetApprovalTemplates()) == 0 {
+	// If no approval template, approval is skipped (not required)
+	if approval.GetApprovalTemplate() == nil {
 		return v1pb.Issue_SKIPPED
 	}
 
-	approvalTemplate := approval.GetApprovalTemplates()[0]
+	approvalTemplate := approval.GetApprovalTemplate()
 	approvers := approval.GetApprovers()
-	totalSteps := len(approvalTemplate.GetFlow().GetSteps())
+	totalSteps := len(approvalTemplate.GetFlow().GetRoles())
 
 	// If no approvers are assigned yet, it's pending
 	if len(approvers) == 0 {
@@ -249,28 +249,9 @@ func convertToApprovalTemplate(template *storepb.ApprovalTemplate) *v1pb.Approva
 }
 
 func convertToApprovalFlow(flow *storepb.ApprovalFlow) *v1pb.ApprovalFlow {
-	convertedFlow := &v1pb.ApprovalFlow{}
-	for _, step := range flow.Steps {
-		convertedFlow.Steps = append(convertedFlow.Steps, convertToApprovalStep(step))
+	return &v1pb.ApprovalFlow{
+		Roles: flow.Roles,
 	}
-	return convertedFlow
-}
-
-func convertToApprovalStep(step *storepb.ApprovalStep) *v1pb.ApprovalStep {
-	convertedStep := &v1pb.ApprovalStep{
-		Type: v1pb.ApprovalStep_Type(step.Type),
-	}
-	for _, node := range step.Nodes {
-		convertedStep.Nodes = append(convertedStep.Nodes, convertToApprovalNode(node))
-	}
-	return convertedStep
-}
-
-func convertToApprovalNode(node *storepb.ApprovalNode) *v1pb.ApprovalNode {
-	v1node := &v1pb.ApprovalNode{}
-	v1node.Type = v1pb.ApprovalNode_Type(node.Type)
-	v1node.Role = node.Role
-	return v1node
 }
 
 func convertToGrantRequest(ctx context.Context, s *store.Store, v *storepb.GrantRequest) (*v1pb.GrantRequest, error) {

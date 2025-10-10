@@ -312,10 +312,10 @@ const issueApprovalStatus = computed(() => {
   }
 
   const currentIssue = issue.value;
-  const approvalTemplate = head(currentIssue.approvalTemplates);
+  const approvalTemplate = currentIssue.approvalTemplate;
 
   // Check if issue has approval template
-  if (!approvalTemplate || (approvalTemplate.flow?.steps || []).length === 0) {
+  if (!approvalTemplate || (approvalTemplate.flow?.roles || []).length === 0) {
     return { isApproved: true, hasIssue: true };
   }
 
@@ -333,11 +333,7 @@ const issueApprovalStatus = computed(() => {
     (app) => app.status === Issue_Approver_Status.APPROVED
   ).length;
 
-  const requiredApprovalsCount =
-    approvalTemplate.flow?.steps?.reduce(
-      (count, step) => count + step.nodes.length,
-      0
-    ) || 0;
+  const requiredApprovalsCount = approvalTemplate.flow?.roles?.length || 0;
 
   const isApproved = approvedCount >= requiredApprovalsCount;
 

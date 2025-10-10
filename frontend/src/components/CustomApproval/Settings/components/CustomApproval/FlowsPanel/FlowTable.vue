@@ -66,7 +66,7 @@ const columns = computed((): DataTableColumn<LocalApprovalRule>[] => {
           class="!rounded !w-[var(--n-height)] !p-0"
           onClick={() => (state.viewFlow = rule.template.flow)}
         >
-          {rule.template.flow?.steps.length}
+          {rule.template.flow?.roles.length}
         </NButton>
       ),
     },

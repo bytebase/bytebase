@@ -15,10 +15,9 @@ import {
   SearchIssuesRequestSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import type { ApprovalStep, Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   IssueStatus,
-  ApprovalNode_Type,
   Issue_ApprovalStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -140,28 +139,17 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
 
 // candidatesOfApprovalStepV1 return user name list in users/{email} format.
 // The list could includs users/ALL_USERS_USER_EMAIL
-export const candidatesOfApprovalStepV1 = (
-  issue: Issue,
-  step: ApprovalStep
-) => {
+export const candidatesOfApprovalStepV1 = (issue: Issue, role: string) => {
   const project = useProjectV1Store().getProjectByName(
     `${projectNamePrefix}${extractProjectResourceName(issue.name)}`
   );
-  const candidates = step.nodes.flatMap((node) => {
-    const { type, role } = node;
-    if (type !== ApprovalNode_Type.ANY_IN_GROUP) return [];
-
-    const candidatesForRoles = (role: string) => {
-      const projectIamPolicyStore = useProjectIamPolicyStore();
-      const iamPolicy = projectIamPolicyStore.getProjectIamPolicy(project.name);
-      const memberMap = memberMapToRolesInProjectIAM(iamPolicy, role);
-      return [...memberMap.keys()];
-    };
-    if (role) {
-      return candidatesForRoles(role);
-    }
-    return [];
-  });
+  const candidatesForRoles = (role: string) => {
+    const projectIamPolicyStore = useProjectIamPolicyStore();
+    const iamPolicy = projectIamPolicyStore.getProjectIamPolicy(project.name);
+    const memberMap = memberMapToRolesInProjectIAM(iamPolicy, role);
+    return [...memberMap.keys()];
+  };
+  const candidates = role ? candidatesForRoles(role) : [];
 
   return uniq(
     candidates.filter((user) => {

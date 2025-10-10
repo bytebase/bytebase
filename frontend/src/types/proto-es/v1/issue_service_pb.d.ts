@@ -442,9 +442,9 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
   approvers: Issue_Approver[];
 
   /**
-   * @generated from field: repeated bytebase.v1.ApprovalTemplate approval_templates = 10;
+   * @generated from field: bytebase.v1.ApprovalTemplate approval_template = 10;
    */
-  approvalTemplates: ApprovalTemplate[];
+  approvalTemplate?: ApprovalTemplate;
 
   /**
    * Format: users/hello@world.com
@@ -776,9 +776,9 @@ export declare const ApprovalTemplateSchema: GenMessage<ApprovalTemplate>;
  */
 export declare type ApprovalFlow = Message<"bytebase.v1.ApprovalFlow"> & {
   /**
-   * @generated from field: repeated bytebase.v1.ApprovalStep steps = 1;
+   * @generated from field: repeated string roles = 1;
    */
-  steps: ApprovalStep[];
+  roles: string[];
 };
 
 /**
@@ -786,102 +786,6 @@ export declare type ApprovalFlow = Message<"bytebase.v1.ApprovalFlow"> & {
  * Use `create(ApprovalFlowSchema)` to create a new message.
  */
 export declare const ApprovalFlowSchema: GenMessage<ApprovalFlow>;
-
-/**
- * @generated from message bytebase.v1.ApprovalStep
- */
-export declare type ApprovalStep = Message<"bytebase.v1.ApprovalStep"> & {
-  /**
-   * @generated from field: bytebase.v1.ApprovalStep.Type type = 1;
-   */
-  type: ApprovalStep_Type;
-
-  /**
-   * @generated from field: repeated bytebase.v1.ApprovalNode nodes = 2;
-   */
-  nodes: ApprovalNode[];
-};
-
-/**
- * Describes the message bytebase.v1.ApprovalStep.
- * Use `create(ApprovalStepSchema)` to create a new message.
- */
-export declare const ApprovalStepSchema: GenMessage<ApprovalStep>;
-
-/**
- * Type of the ApprovalStep
- * ALL means every node must be approved to proceed.
- * ANY means approving any node will proceed.
- *
- * @generated from enum bytebase.v1.ApprovalStep.Type
- */
-export enum ApprovalStep_Type {
-  /**
-   * @generated from enum value: TYPE_UNSPECIFIED = 0;
-   */
-  TYPE_UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: ALL = 1;
-   */
-  ALL = 1,
-
-  /**
-   * @generated from enum value: ANY = 2;
-   */
-  ANY = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.ApprovalStep.Type.
- */
-export declare const ApprovalStep_TypeSchema: GenEnum<ApprovalStep_Type>;
-
-/**
- * @generated from message bytebase.v1.ApprovalNode
- */
-export declare type ApprovalNode = Message<"bytebase.v1.ApprovalNode"> & {
-  /**
-   * @generated from field: bytebase.v1.ApprovalNode.Type type = 1;
-   */
-  type: ApprovalNode_Type;
-
-  /**
-   * @generated from field: string role = 2;
-   */
-  role: string;
-};
-
-/**
- * Describes the message bytebase.v1.ApprovalNode.
- * Use `create(ApprovalNodeSchema)` to create a new message.
- */
-export declare const ApprovalNodeSchema: GenMessage<ApprovalNode>;
-
-/**
- * Type of the ApprovalNode.
- * type determines who should approve this node.
- * ANY_IN_GROUP means the ApprovalNode can be approved by an user from our predefined user group.
- * See GroupValue below for the predefined user groups.
- *
- * @generated from enum bytebase.v1.ApprovalNode.Type
- */
-export enum ApprovalNode_Type {
-  /**
-   * @generated from enum value: TYPE_UNSPECIFIED = 0;
-   */
-  TYPE_UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: ANY_IN_GROUP = 1;
-   */
-  ANY_IN_GROUP = 1,
-}
-
-/**
- * Describes the enum bytebase.v1.ApprovalNode.Type.
- */
-export declare const ApprovalNode_TypeSchema: GenEnum<ApprovalNode_Type>;
 
 /**
  * @generated from message bytebase.v1.ListIssueCommentsRequest

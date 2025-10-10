@@ -373,7 +373,7 @@ message Issue {
   }
   repeated Approver approvers = 9;
 
-  repeated ApprovalTemplate approval_templates = 10;
+  ApprovalTemplate approval_template = 10;
 
   reserved 11, 12;
 
@@ -468,35 +468,7 @@ message ApprovalTemplate {
 }
 
 message ApprovalFlow {
-  repeated ApprovalStep steps = 1;
-}
-
-message ApprovalStep {
-  // Type of the ApprovalStep
-  // ALL means every node must be approved to proceed.
-  // ANY means approving any node will proceed.
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    ALL = 1;
-    ANY = 2;
-  }
-  Type type = 1;
-
-  repeated ApprovalNode nodes = 2;
-}
-
-message ApprovalNode {
-  // Type of the ApprovalNode.
-  // type determines who should approve this node.
-  // ANY_IN_GROUP means the ApprovalNode can be approved by an user from our predefined user group.
-  // See GroupValue below for the predefined user groups.
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    ANY_IN_GROUP = 1;
-  }
-  Type type = 1;
-
-  string role = 2;
+  repeated string roles = 1;
 }
 
 message ListIssueCommentsRequest {

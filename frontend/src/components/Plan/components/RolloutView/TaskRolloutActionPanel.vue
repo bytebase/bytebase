@@ -302,7 +302,7 @@
 import { create } from "@bufbuild/protobuf";
 import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
-import { flatten, head } from "lodash-es";
+import { flatten } from "lodash-es";
 import {
   NAlert,
   NButton,
@@ -394,10 +394,10 @@ const issueApprovalStatus = computed(() => {
   }
 
   const currentIssue = issue.value;
-  const approvalTemplate = head(currentIssue.approvalTemplates);
+  const approvalTemplate = currentIssue.approvalTemplate;
 
   // Check if issue has approval template
-  if (!approvalTemplate || (approvalTemplate.flow?.steps || []).length === 0) {
+  if (!approvalTemplate || (approvalTemplate.flow?.roles || []).length === 0) {
     return { rolloutReady: true, hasIssue: true };
   }
 
