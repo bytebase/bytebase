@@ -40,12 +40,12 @@
   querySpan:
     type: 1
     results:
-        - name: t
+        - name: unnest
           sourcecolumns: []
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
-        - name: t
+        - name: unnest
           sourcecolumns: []
           isplainfield: false
           sourcefieldpaths: []
@@ -67,7 +67,7 @@
   querySpan:
     type: 1
     results:
-        - name: t
+        - name: unnest
           sourcecolumns: []
           isplainfield: false
           sourcefieldpaths: []

@@ -2,6 +2,7 @@ package pg
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	pgparser "github.com/bytebase/parser/postgresql"
@@ -940,7 +941,7 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef pgparser.IT
 
 	// Handle function tables (e.g., generate_series, unnest)
 	if tableRef.Func_table() != nil {
-		anchor, err = q.extractTableSourceFromFuncTable(tableRef.Func_table())
+		anchor, err = q.extractTableSourceFromFuncTable(tableRef.Func_table(), tableRef.Func_alias_clause())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract table source from func_table")
 		}
@@ -957,7 +958,7 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef pgparser.IT
 
 		// Apply alias if present
 		if tableRef.Opt_alias_clause() != nil {
-			anchor, err = q.applyAliasToTableSource(anchor, tableRef.Opt_alias_clause())
+			anchor, err = applyOptAliasClauseToTableSource(anchor, tableRef.Opt_alias_clause())
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to apply alias to subquery")
 			}
@@ -994,7 +995,7 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef pgparser.IT
 				return nil, errors.Wrapf(err, "failed to join tables")
 			}
 			if i == 0 && tableRef.Opt_alias_clause() != nil {
-				anchor, err = q.applyAliasToTableSource(anchor, tableRef.Opt_alias_clause())
+				anchor, err = applyOptAliasClauseToTableSource(anchor, tableRef.Opt_alias_clause())
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to apply alias to table source")
 				}
@@ -1144,8 +1145,31 @@ func (q *querySpanExtractor) extractTableSourceFromJoinedTable(joinedTable pgpar
 	}, nil
 }
 
+func (q *querySpanExtractor) extractTableSourceFromUDF2(funcExprWindowless pgparser.IFunc_expr_windowlessContext, funcAlias pgparser.IFunc_alias_clauseContext) (base.TableSource, error) {
+	if funcExprWindowless == nil {
+		return nil, errors.New("nil func_expr_windowless")
+	}
+
+	schemaName, funcName, args, err := q.extractFunctionElementFromFuncExprWindowless(funcExprWindowless)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract function element from func_expr_windowless")
+	}
+
+	tableSource, err := q.findFunctionDefine(schemaName, funcName, len(args))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find function definition for %s.%s with %d args", schemaName, funcName, len(args))
+	}
+	if funcAlias != nil {
+		tableSource, err = applyFuncAliasClauseToTableSource(tableSource, funcAlias)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to apply function alias clause")
+		}
+	}
+	return tableSource, nil
+}
+
 // extractTableSourceFromFuncTable extracts table source from a function table
-func (q *querySpanExtractor) extractTableSourceFromFuncTable(funcTable pgparser.IFunc_tableContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromFuncTable(funcTable pgparser.IFunc_tableContext, funcAlias pgparser.IFunc_alias_clauseContext) (base.TableSource, error) {
 	// Handle function tables like unnest, generate_series, etc.
 	// For now, return a pseudo table that will be populated with alias columns if present
 	result := &base.PseudoTable{
@@ -1167,8 +1191,9 @@ func (q *querySpanExtractor) extractTableSourceFromFuncTable(funcTable pgparser.
 		}
 		if schemaName == "" && IsSystemFunction(funcName, "") {
 			// If the schemaName is empty, we try to match the system function first.
+			return q.extractTableSourceFromSystemFunctionNew(funcName, args, funcAlias)
 		}
-
+		return q.extractTableSourceFromUDF2(funcTable.Func_expr_windowless(), funcAlias)
 	}
 
 	// The actual column count and names will be determined by the alias
@@ -1179,13 +1204,47 @@ func (q *querySpanExtractor) extractTableSourceFromFuncTable(funcTable pgparser.
 	if funcTable.ROWS() != nil && funcTable.Rowsfrom_list() != nil {
 		// Handle ROWS FROM (...)
 		// Each function in ROWS FROM produces columns
+		// ROWS FROM expands multiple functions in parallel, creating a single result set where the first row contains
+		// the first result from each function, the second row contains the second result from each function, and so on.
+		tableSource := &base.PseudoTable{
+			Columns: []base.QuerySpanResult{},
+		}
 		for _, item := range funcTable.Rowsfrom_list().AllRowsfrom_item() {
 			if item.Func_expr_windowless() != nil {
-				// Without analyzing the function, we can't determine the columns.
-				// The alias will provide the actual column names.
-				// So we do nothing here.
+				schemaName, funcName, args, err := q.extractFunctionElementFromFuncExprWindowless(funcTable.Func_expr_windowless())
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to extract function name from func_expr_windowless")
+				}
+				if funcName == "" {
+					return nil, errors.Wrapf(err, "empty function name in func_expr_windowless")
+				}
+				var t base.TableSource
+				if schemaName == "" && IsSystemFunction(funcName, "") {
+					// If the schemaName is empty, we try to match the system function first.
+					t, err = q.extractTableSourceFromSystemFunctionNew(funcName, args, nil)
+					if err != nil {
+						return nil, errors.Wrapf(err, "failed to extract table source from system function %s", funcName)
+					}
+				} else {
+					t, err = q.extractTableSourceFromUDF2(item.Func_expr_windowless(), nil)
+					if err != nil {
+						return nil, errors.Wrapf(err, "failed to extract table source from UDF %s", funcName)
+					}
+				}
+				if t != nil {
+					// Append columns from this function to the overall table source
+					tableSource.Columns = append(tableSource.Columns, t.GetQuerySpanResult()...)
+				}
 			}
 		}
+		if funcAlias != nil {
+			tableSource, err := applyFuncAliasClauseToTableSource(tableSource, funcAlias)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to apply function alias clause")
+			}
+			return tableSource, nil
+		}
+		return tableSource, nil
 	}
 
 	// For function tables, the columns are typically determined by:
@@ -1196,33 +1255,14 @@ func (q *querySpanExtractor) extractTableSourceFromFuncTable(funcTable pgparser.
 	return result, nil
 }
 
-// applyAliasToTableSource applies an alias to a table source
-func (q *querySpanExtractor) applyAliasToTableSource(source base.TableSource, aliasClause pgparser.IOpt_alias_clauseContext) (base.TableSource, error) {
-	if aliasClause == nil || aliasClause.Table_alias_clause() == nil {
-		return source, nil
-	}
-
-	// Use the existing normalization function
-	tableAlias := aliasClause.Table_alias_clause()
-	aliasName := ""
-	var colAliases []string
-
-	// Get table alias name
-	if tableAlias.Table_alias() != nil {
-		aliasName = normalizePostgreSQLTableAlias(tableAlias.Table_alias())
-	}
-
-	// Get column aliases if present
-	if tableAlias.Name_list() != nil {
-		for _, name := range tableAlias.Name_list().AllName() {
-			colAliases = append(colAliases, normalizePostgreSQLName(name))
-		}
-	}
-
+func applyAliasToTableSource(source base.TableSource, tableAliasName string, colAliases []string) (base.TableSource, error) {
 	// Create a pseudo table with the alias
 	pseudoTable := &base.PseudoTable{
-		Name:    aliasName,
+		Name:    source.GetTableName(),
 		Columns: source.GetQuerySpanResult(),
+	}
+	if tableAliasName != "" {
+		pseudoTable.Name = tableAliasName
 	}
 
 	// Apply column aliases if provided
@@ -1246,15 +1286,85 @@ func (q *querySpanExtractor) applyAliasToTableSource(source base.TableSource, al
 				pseudoTable.Columns[i].Name = alias
 			}
 		}
-	} else if len(pseudoTable.Columns) == 0 && aliasName != "" {
-		// For function tables with just a table alias and no columns, create a single column
-		pseudoTable.Columns = append(pseudoTable.Columns, base.QuerySpanResult{
-			Name:          aliasName,
-			SourceColumns: base.SourceColumnSet{},
-		})
+	}
+	return pseudoTable, nil
+}
+
+func applyTableAliasClauseToTableSource(source base.TableSource, tableAlias pgparser.ITable_alias_clauseContext) (base.TableSource, error) {
+	aliasName := ""
+	var colAliases []string
+
+	// Get table alias name
+	if tableAlias.Table_alias() != nil {
+		aliasName = normalizePostgreSQLTableAlias(tableAlias.Table_alias())
 	}
 
-	return pseudoTable, nil
+	// Get column aliases if present
+	if tableAlias.Name_list() != nil {
+		for _, name := range tableAlias.Name_list().AllName() {
+			colAliases = append(colAliases, normalizePostgreSQLName(name))
+		}
+	}
+
+	return applyAliasToTableSource(source, aliasName, colAliases)
+}
+
+func applyAliasClauseToTableSource(source base.TableSource, aliasClause pgparser.IAlias_clauseContext) (base.TableSource, error) {
+	if aliasClause == nil {
+		return source, nil
+	}
+
+	aliasName := ""
+	var colAliases []string
+
+	// Get table alias name
+	if aliasClause.Colid() != nil {
+		aliasName = NormalizePostgreSQLColid(aliasClause.Colid())
+	}
+
+	// Get column aliases if present
+	if aliasClause.Name_list() != nil {
+		for _, name := range aliasClause.Name_list().AllName() {
+			colAliases = append(colAliases, normalizePostgreSQLName(name))
+		}
+	}
+
+	return applyAliasToTableSource(source, aliasName, colAliases)
+}
+
+// applyAliasToTableSource applies an alias to a table source
+func applyOptAliasClauseToTableSource(source base.TableSource, aliasClause pgparser.IOpt_alias_clauseContext) (base.TableSource, error) {
+	if aliasClause == nil || aliasClause.Table_alias_clause() == nil {
+		return source, nil
+	}
+
+	return applyTableAliasClauseToTableSource(source, aliasClause.Table_alias_clause())
+}
+
+func applyFuncAliasClauseToTableSource(source base.TableSource, funcAlias pgparser.IFunc_alias_clauseContext) (base.TableSource, error) {
+	if funcAlias == nil {
+		return source, nil
+	}
+
+	if funcAlias.Alias_clause() != nil {
+		return applyAliasClauseToTableSource(source, funcAlias.Alias_clause())
+	}
+
+	aliasName := ""
+	if funcAlias.Colid() != nil {
+		aliasName = NormalizePostgreSQLColid(funcAlias.Colid())
+	}
+
+	var colAliases []string
+	if funcAlias.Tablefuncelementlist() != nil {
+		for _, name := range funcAlias.Tablefuncelementlist().AllTablefuncelement() {
+			if name.Colid() != nil {
+				colAliases = append(colAliases, NormalizePostgreSQLColid(name.Colid()))
+			}
+		}
+	}
+
+	return applyAliasToTableSource(source, aliasName, colAliases)
 }
 
 // extractColumnsFromTargetList processes the SELECT target list and returns the result columns.
@@ -2144,16 +2254,14 @@ func (q *querySpanExtractor) extractFunctionElementFromFuncExprWindowless(funcEx
 	switch {
 	case funcExprWindowless.Func_application() != nil:
 		funcName := funcExprWindowless.Func_application().Func_name()
-		if funcName.Colid() != nil {
-			names := NormalizePostgreSQLFuncName(funcName)
-			switch len(names) {
-			case 2:
-				return names[0], names[1], args, nil
-			case 1:
-				return "", names[0], args, nil
-			default:
-				return "", "", nil, errors.New("invalid function name")
-			}
+		names := NormalizePostgreSQLFuncName(funcName)
+		switch len(names) {
+		case 2:
+			return names[0], names[1], args, nil
+		case 1:
+			return "", names[0], args, nil
+		default:
+			return "", "", nil, errors.New("invalid function name")
 		}
 	case funcExprWindowless.Json_aggregate_func() != nil:
 		if funcExprWindowless.Json_aggregate_func().JSON_OBJECTAGG() != nil {
@@ -2564,4 +2672,187 @@ func getArgumentsFromJsonValueExprList(jsonValueExprList pgparser.IJson_value_ex
 		result = append(result, valueExpr)
 	}
 	return result
+}
+
+func (q *querySpanExtractor) extractTableSourceFromSystemFunctionNew(funcName string, args []antlr.ParseTree, alias pgparser.IFunc_alias_clauseContext) (base.TableSource, error) {
+	switch strings.ToLower(funcName) {
+	case generateSeries:
+		// https://neon.com/postgresql/postgresql-tutorial/postgresql-generate_series
+		tableSource := &base.PseudoTable{
+			Name: generateSeries,
+			Columns: []base.QuerySpanResult{
+				{
+					Name:          generateSeries,
+					SourceColumns: make(base.SourceColumnSet, 0),
+				},
+			},
+		}
+		return applyFuncAliasClauseToTableSource(tableSource, alias)
+	case generateSubscripts:
+		tableSource := &base.PseudoTable{
+			Name: generateSubscripts,
+			Columns: []base.QuerySpanResult{
+				{
+					Name:          generateSubscripts,
+					SourceColumns: make(base.SourceColumnSet, 0),
+				},
+			},
+		}
+		return applyFuncAliasClauseToTableSource(tableSource, alias)
+	case unnest:
+		tableSource := &base.PseudoTable{
+			Name:    unnest,
+			Columns: []base.QuerySpanResult{},
+		}
+		if alias == nil || (alias.Alias_clause() != nil && alias.Alias_clause().Name_list() == nil) {
+			for range args {
+				tableSource.Columns = append(tableSource.Columns, base.QuerySpanResult{
+					Name:          unnest,
+					SourceColumns: make(base.SourceColumnSet, 0),
+				})
+			}
+		}
+		return applyFuncAliasClauseToTableSource(tableSource, alias)
+	case jsonbEach, jsonEach, jsonbEachText, jsonEachText:
+		// Should be only called while jsonb_each act as table source.
+		// SELECT * FROM json_test, jsonb_each(jb) AS hh(key, value) WHERE id = 1;
+		var tableSource base.TableSource = &base.PseudoTable{
+			Name: "",
+			Columns: []base.QuerySpanResult{
+				{
+					Name:          "key",
+					SourceColumns: make(base.SourceColumnSet, 0),
+				},
+				{
+					Name:          "value",
+					SourceColumns: make(base.SourceColumnSet, 0),
+				},
+			},
+		}
+		tableSource, err := applyFuncAliasClauseToTableSource(tableSource, alias)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to apply alias clause to %s", funcName)
+		}
+
+		if len(args) == 0 {
+			return nil, errors.Errorf("unexpected empty args for function %s", funcName)
+		}
+		fieldArg := args[0]
+		set, err := q.extractSourceColumnSetFromNode(fieldArg)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract source columns from argument of %s", funcName)
+		}
+		for i := range tableSource.GetQuerySpanResult() {
+			tableSource.GetQuerySpanResult()[i].SourceColumns, _ = base.MergeSourceColumnSet(tableSource.GetQuerySpanResult()[i].SourceColumns, set)
+		}
+		return tableSource, nil
+	case jsonToRecordset, jsonbToRecordset:
+		if alias == nil {
+			return nil, &parsererror.TypeNotSupportedError{
+				Extra: fmt.Sprintf("function %s must explicitly define the structure of the record with an AS clause", funcName),
+				Type:  "function",
+				Name:  funcName,
+			}
+		}
+
+		sourceColumn := make(base.SourceColumnSet)
+		for _, arg := range args {
+			argSources, err := q.extractSourceColumnSetFromNode(arg)
+			if err != nil {
+				return nil, err
+			}
+			sourceColumn, _ = base.MergeSourceColumnSet(sourceColumn, argSources)
+		}
+
+		tableSource := &base.PseudoTable{
+			Name:    "",
+			Columns: []base.QuerySpanResult{},
+		}
+
+		tableName := ""
+		var columnNames []string
+		if alias.Colid() != nil {
+			tableName = NormalizePostgreSQLColid(alias.Colid())
+			if alias.Tablefuncelementlist() != nil {
+				for _, name := range alias.Tablefuncelementlist().AllTablefuncelement() {
+					if name.Colid() != nil {
+						columnNames = append(columnNames, NormalizePostgreSQLColid(name.Colid()))
+					}
+				}
+			}
+		} else if a := alias.Alias_clause(); a != nil {
+			// Get table alias name
+			if a.Colid() != nil {
+				tableName = NormalizePostgreSQLColid(a.Colid())
+			}
+
+			// Get column aliases if present
+			if a.Name_list() != nil {
+				for _, name := range a.Name_list().AllName() {
+					columnNames = append(columnNames, normalizePostgreSQLName(name))
+				}
+			}
+		}
+
+		for _, colName := range columnNames {
+			tableSource.Columns = append(tableSource.Columns, base.QuerySpanResult{
+				Name:          colName,
+				SourceColumns: sourceColumn,
+			})
+		}
+		tableSource.Name = tableName
+		return tableSource, nil
+	case jsonPopulateRecord, jsonbPopulateRecord, jsonPopulateRecordset, jsonbPopulateRecordset,
+		jsonToRecord, jsonbToRecord:
+		return nil, &parsererror.TypeNotSupportedError{
+			Extra: fmt.Sprintf("Unsupport function %s", funcName),
+			Type:  "function",
+			Name:  funcName,
+		}
+	default:
+		// For unknown functions, continue with the generic handling below
+		if alias == nil {
+			return nil, &parsererror.TypeNotSupportedError{
+				Extra: "Use system function result as the table source must have the alias clause to specify table and columns name",
+				Type:  "function",
+				Name:  funcName,
+			}
+		}
+
+		tableName := ""
+		var columnNames []string
+		if alias.Colid() != nil {
+			tableName = NormalizePostgreSQLColid(alias.Colid())
+			if alias.Tablefuncelementlist() != nil {
+				for _, name := range alias.Tablefuncelementlist().AllTablefuncelement() {
+					if name.Colid() != nil {
+						columnNames = append(columnNames, NormalizePostgreSQLColid(name.Colid()))
+					}
+				}
+			}
+		} else if a := alias.Alias_clause(); a != nil {
+			// Get table alias name
+			if a.Colid() != nil {
+				tableName = NormalizePostgreSQLColid(a.Colid())
+			}
+
+			// Get column aliases if present
+			if a.Name_list() != nil {
+				for _, name := range a.Name_list().AllName() {
+					columnNames = append(columnNames, normalizePostgreSQLName(name))
+				}
+			}
+		}
+		tableSource := &base.PseudoTable{
+			Name:    tableName,
+			Columns: []base.QuerySpanResult{},
+		}
+		for _, colName := range columnNames {
+			tableSource.Columns = append(tableSource.Columns, base.QuerySpanResult{
+				Name:          colName,
+				SourceColumns: make(base.SourceColumnSet, 0),
+			})
+		}
+		return tableSource, nil
+	}
 }
