@@ -2610,6 +2610,9 @@
       "select": "Select approval flow",
       "create-approval-flow": "Create approval flow",
       "edit-approval-flow": "Edit approval flow",
+      "built-in": "Built-in Flows",
+      "custom": "Custom Flows",
+      "no-custom-flows": "No custom approval flows created yet. Click 'Create Flow' to add one.",
       "node": {
         "nodes": "Approval nodes",
         "description": "Only one approval is required on this node when there are multiple approvers.",

@@ -34,7 +34,7 @@ import RuleSelect from "./RuleSelect.vue";
 
 type Row = {
   level: number;
-  rule: string | undefined; // LocalApprovalRule.uid
+  rule: string | undefined; // ApprovalTemplate.id
 };
 
 const props = defineProps<{

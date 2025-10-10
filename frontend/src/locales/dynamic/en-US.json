@@ -1,21 +1,11 @@
 {
   "custom-approval": {
-    "approval-flow": {
-      "node": {
-        "group": {
-          "WORKSPACE_OWNER": "Workspace Admin",
-          "WORKSPACE_DBA": "DBA",
-          "PROJECT_OWNER": "Project Owner",
-          "PROJECT_MEMBER": "Project Developer"
-        }
-      },
-      "presets": {
-        "owner-dba": "The system defines the approval process, first the project Owner approves, then the DBA approves.",
-        "owner": "The system defines the approval process and only needs the project Owner to approve it.",
-        "dba": "The system defines the approval process and only needs DBA approval.",
-        "admin": "The system defines the approval process and only needs Administrator approval.",
-        "owner-dba-admin": "The system defines the approval process, first the project Owner approves, then the DBA approves, and finally the Administrator approves."
-      }
+    "approval-flow-builtin": {
+      "project-owner": "The system defines the approval process and only needs the project Owner to approve it.",
+      "workspace-dba": "The system defines the approval process and only needs DBA approval.",
+      "workspace-admin": "The system defines the approval process and only needs Administrator approval.",
+      "project-owner-workspace-dba": "The system defines the approval process, first the project Owner approves, then the DBA approves.",
+      "project-owner-workspace-dba-workspace-admin": "The system defines the approval process, first the project Owner approves, then the DBA approves, and finally the Administrator approves."
     },
     "risk-rule": {
       "template": {

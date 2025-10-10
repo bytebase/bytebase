@@ -2610,6 +2610,9 @@
       "select": "Seleccionar flujo de aprobación",
       "create-approval-flow": "Crear flujo de aprobación",
       "edit-approval-flow": "Editar flujo de aprobación",
+      "built-in": "Flujos Integrados",
+      "custom": "Flujos Personalizados",
+      "no-custom-flows": "Aún no se han creado flujos de aprobación personalizados. Haga clic en 'Crear Flujo' para agregar uno.",
       "node": {
         "nodes": "Nodos de aprobación",
         "description": "Solo se requiere una aprobación en este nodo cuando hay múltiples aprobadores.",

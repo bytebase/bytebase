@@ -2610,6 +2610,9 @@
       "select": "Chọn quy trình phê duyệt",
       "create-approval-flow": "Tạo quy trình phê duyệt",
       "edit-approval-flow": "Chỉnh sửa quy trình phê duyệt",
+      "built-in": "Quy trình Tích hợp sẵn",
+      "custom": "Quy trình Tùy chỉnh",
+      "no-custom-flows": "Chưa có quy trình phê duyệt tùy chỉnh nào được tạo. Nhấp vào 'Tạo Quy trình' để thêm.",
       "node": {
         "nodes": "Nút phê duyệt",
         "description": "Chỉ cần một phê duyệt trên nút này khi có nhiều người phê duyệt.",

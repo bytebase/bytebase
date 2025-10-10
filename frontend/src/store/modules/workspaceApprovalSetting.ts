@@ -1,9 +1,20 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { defineStore } from "pinia";
+import { v4 as uuidv4 } from "uuid";
 import { ref } from "vue";
 import { settingServiceClientConnect } from "@/grpcweb";
-import { type LocalApprovalConfig, type LocalApprovalRule } from "@/types";
+import {
+  type LocalApprovalConfig,
+  type LocalApprovalRule,
+  getBuiltinFlow,
+  isBuiltinFlowId,
+} from "@/types";
+import type { ApprovalTemplate } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  ApprovalFlowSchema,
+  ApprovalTemplateSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import type { Setting } from "@/types/proto-es/v1/setting_service_pb";
 import {
@@ -16,7 +27,6 @@ import {
 import {
   resolveLocalApprovalConfig,
   buildWorkspaceApprovalSetting,
-  seedWorkspaceApprovalSetting,
 } from "@/utils";
 import { useGracefulRequest } from "./utils";
 
@@ -34,9 +44,6 @@ export const useWorkspaceApprovalSettingStore = defineStore(
     const setConfigSetting = async (setting: Setting) => {
       if (setting.value?.value?.case === "workspaceApprovalSettingValue") {
         const _config = setting.value.value.value;
-        if (_config.rules.length === 0) {
-          _config.rules.push(...seedWorkspaceApprovalSetting());
-        }
         config.value = await resolveLocalApprovalConfig(_config);
       }
     };
@@ -89,32 +96,96 @@ export const useWorkspaceApprovalSettingStore = defineStore(
     ) => {
       await useBackupAndUpdateConfig(async () => {
         const { rules } = config.value;
+
+        // Ensure new rule has an id (for custom rules, generate UUID if not provided)
+        if (!newRule.template.id) {
+          newRule.template.id = uuidv4();
+        }
+
         if (oldRule) {
           const index = rules.indexOf(oldRule);
           if (index >= 0) {
             rules[index] = newRule;
-            await updateConfig();
           }
         } else {
           rules.unshift(newRule);
-          await updateConfig();
         }
+
+        // Note: No explicit cleanup needed here.
+        // buildWorkspaceApprovalSetting will save:
+        // - All custom templates (even if unused)
+        // - Only used built-in templates
+        await updateConfig();
       });
     };
 
     const deleteRule = async (rule: LocalApprovalRule) => {
       await useBackupAndUpdateConfig(async () => {
         const { rules, parsed, unrecognized } = config.value;
-        config.value.parsed = parsed.filter((item) => item.rule !== rule.uid);
-        config.value.unrecognized = unrecognized.filter(
-          (item) => item.rule !== rule.uid
+
+        // Remove this template from parsed and unrecognized
+        config.value.parsed = parsed.filter(
+          (item) => item.rule !== rule.template.id
         );
+        config.value.unrecognized = unrecognized.filter(
+          (item) => item.rule !== rule.template.id
+        );
+
+        // Remove the template from rules
         const index = rules.indexOf(rule);
         if (index >= 0) {
           rules.splice(index, 1);
         }
+
+        // Note: No explicit cleanup needed here.
+        // buildWorkspaceApprovalSetting will save:
+        // - All custom templates (even if unused)
+        // - Only used built-in templates
         await updateConfig();
       });
+    };
+
+    // Helper: Ensure a template exists in the local cache for a given flow ID
+    // This is used for UI display and editing. The actual save is handled by buildWorkspaceApprovalSetting.
+    const getOrCreateTemplate = (flowId: string): LocalApprovalRule => {
+      const { rules } = config.value;
+
+      // Check if template already exists
+      const existingRule = rules.find((rule) => rule.template.id === flowId);
+      if (existingRule) {
+        return existingRule;
+      }
+
+      // Template doesn't exist, create it
+      let template: ApprovalTemplate;
+
+      if (isBuiltinFlowId(flowId)) {
+        // Built-in flow: get from constants
+        const builtinFlow = getBuiltinFlow(flowId);
+        if (!builtinFlow) {
+          throw new Error(`Unknown built-in flow: ${flowId}`);
+        }
+        template = create(ApprovalTemplateSchema, {
+          id: builtinFlow.id,
+          title: builtinFlow.title,
+          description: builtinFlow.description,
+          flow: create(ApprovalFlowSchema, {
+            roles: [...builtinFlow.roles],
+          }),
+        });
+      } else {
+        // Custom flow: should already exist, but create a placeholder if not
+        template = create(ApprovalTemplateSchema, {
+          id: flowId,
+          title: "Custom Flow",
+          description: "",
+          flow: create(ApprovalFlowSchema, { roles: [] }),
+        });
+      }
+
+      const newRule: LocalApprovalRule = { template };
+      rules.push(newRule);
+      return newRule;
     };
 
     const updateRuleFlow = async (
@@ -127,6 +198,13 @@ export const useWorkspaceApprovalSettingStore = defineStore(
         const index = parsed.findIndex(
           (item) => item.source == source && item.level === level
         );
+
+        // Ensure template exists in local cache (for UI display)
+        if (rule) {
+          getOrCreateTemplate(rule);
+        }
+
+        // Update or remove the parsed rule
         if (index >= 0) {
           if (rule) {
             parsed[index].rule = rule;
@@ -142,6 +220,11 @@ export const useWorkspaceApprovalSettingStore = defineStore(
             });
           }
         }
+
+        // Note: No explicit cleanup needed here.
+        // buildWorkspaceApprovalSetting will save:
+        // - All custom templates (even if unused)
+        // - Only used built-in templates
         await updateConfig();
       });
     };

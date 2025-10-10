@@ -37,6 +37,7 @@ import { computed, useAttrs } from "vue";
 import { useI18n } from "vue-i18n";
 import { SpinnerSelect } from "@/components/v2/Form";
 import { useWorkspaceApprovalSettingStore } from "@/store";
+import { BUILTIN_APPROVAL_FLOWS, isBuiltinFlowId } from "@/types";
 import type { VueClass, VueStyle } from "@/utils";
 import { useCustomApprovalContext } from "../context";
 
@@ -69,18 +70,57 @@ const selectAttrs = computed(() => ({
 }));
 
 const options = computed(() => {
-  const ruleOptions = store.config.rules.map<SelectOption>((rule) => ({
-    label: rule.template.title,
-    value: rule.uid,
-  }));
-  return [
-    { value: "", label: t("custom-approval.approval-flow.skip") },
-    ...ruleOptions,
+  // Custom flow options (filter out built-in flows that are in the database)
+  const customRuleOptions = store.config.rules
+    .filter((rule) => !isBuiltinFlowId(rule.template.id))
+    .map<SelectOption>((rule) => ({
+      label: rule.template.title,
+      value: rule.template.id,
+    }));
+
+  // Built-in flow options - only show most commonly used ones
+  const commonBuiltinFlows = [
+    "bb.project-owner",
+    "bb.workspace-dba",
+    "bb.project-owner-workspace-dba",
   ];
+
+  const builtinOptions = BUILTIN_APPROVAL_FLOWS.filter((flow) =>
+    commonBuiltinFlows.includes(flow.id)
+  ).map<SelectOption>((flow) => ({
+    label: flow.title,
+    value: flow.id,
+  }));
+
+  const options: SelectOption[] = [
+    { value: "", label: t("custom-approval.approval-flow.skip") },
+  ];
+
+  // Add custom flows group FIRST (most likely to be selected)
+  if (customRuleOptions.length > 0) {
+    options.push({
+      type: "group",
+      label: t("custom-approval.approval-flow.custom"),
+      key: "custom-group",
+      children: customRuleOptions,
+    } as SelectOption);
+  }
+
+  // Add built-in flows group SECOND (less commonly used)
+  if (builtinOptions.length > 0) {
+    options.push({
+      type: "group",
+      label: t("custom-approval.approval-flow.built-in"),
+      key: "builtin-group",
+      children: builtinOptions,
+    } as SelectOption);
+  }
+
+  return options;
 });
 
 const selectedRule = computed(() => {
-  return store.config.rules.find((rule) => rule.uid === props.value);
+  return store.config.rules.find((rule) => rule.template.id === props.value);
 });
 
 const toApprovalFlow = () => {
