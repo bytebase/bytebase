@@ -73,7 +73,7 @@ import {
   InstanceSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { defer, isValidSpannerHost } from "@/utils";
+import { defer, isValidSpannerHost, convertKVListToLabels } from "@/utils";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import {
   calcDataSourceUpdateMask,
@@ -106,6 +106,7 @@ const {
   allowEdit,
   allowCreate,
   basicInfo,
+  labelKVList,
   adminDataSource,
   readonlyDataSourceList,
   dataSourceEditState,
@@ -353,9 +354,11 @@ const doUpdate = async () => {
   const pendingRequestRunners: (() => Promise<any>)[] = [];
 
   const maybeQueueUpdateInstanceBasicInfo = () => {
+    const currentLabels = convertKVListToLabels(labelKVList.value, false);
     const instancePatch = create(InstanceSchema, {
       ...instance,
       ...basicInfo.value,
+      labels: currentLabels,
     });
     const updateMask: string[] = [];
     if (instancePatch.title !== inst.title) {
