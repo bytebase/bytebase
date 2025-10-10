@@ -299,7 +299,8 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 		}
 		return fmt.Sprintf(viewStmtFmt, tblName, createStmt), nil
 	default:
-		return "", errors.Errorf("unrecognized table type %q for database %q table %q", tblType, dbName, tblName)
+		slog.Debug("skip unsupported table type", slog.String("dbName", dbName), slog.String("tableName", tblName), slog.String("tableType", tblType))
+		return "", nil
 	}
 }
 
