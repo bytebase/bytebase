@@ -48,25 +48,26 @@ SET value = (
         (
             SELECT jsonb_agg(
                 jsonb_build_object(
-                    'condition', jsonb_build_object(
-                        'expression',
+                    'condition', (
                         CASE
+                            -- If expression exists, build condition with only the expression field
                             WHEN rule->'condition'->>'expression' IS NOT NULL THEN
-                                replace(
+                                jsonb_build_object(
+                                    'expression',
                                     replace(
                                         replace(
-                                            replace(rule->'condition'->>'expression', 'level == 100', 'level == "LOW"'),
-                                            'level == 200', 'level == "MODERATE"'
+                                            replace(
+                                                replace(rule->'condition'->>'expression', 'level == 100', 'level == "LOW"'),
+                                                'level == 200', 'level == "MODERATE"'
+                                            ),
+                                            'level == 300', 'level == "HIGH"'
                                         ),
-                                        'level == 300', 'level == "HIGH"'
-                                    ),
-                                    'level == 0', 'level == "RISK_LEVEL_UNSPECIFIED"'
+                                        'level == 0', 'level == "RISK_LEVEL_UNSPECIFIED"'
+                                    )
                                 )
-                            ELSE rule->'condition'->>'expression'
-                        END,
-                        'title', rule->'condition'->>'title',
-                        'description', rule->'condition'->>'description',
-                        'location', rule->'condition'->>'location'
+                            -- Otherwise, keep the original condition (likely empty object {})
+                            ELSE COALESCE(rule->'condition', '{}'::jsonb)
+                        END
                     ),
                     'template', rule->'template'
                 )
