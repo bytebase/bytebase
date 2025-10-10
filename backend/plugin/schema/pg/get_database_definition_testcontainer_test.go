@@ -77,6 +77,37 @@ CREATE TABLE items (
 `,
 		},
 		{
+			name: "owned_sequence_dependency_order",
+			ddl: `
+-- This reproduces the customer's reported issue
+-- Create a sequence that will be owned by a column
+CREATE SEQUENCE history_cost_changes_id_seq
+    AS bigint
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    MAXVALUE 9223372036854775807
+    NO CYCLE;
+
+-- Create table using the sequence in DEFAULT clause
+CREATE TABLE history_cost_changes (
+    id bigint DEFAULT nextval('history_cost_changes_id_seq'::regclass) NOT NULL PRIMARY KEY,
+    amount numeric(10,2),
+    description text,
+    created_at timestamp DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Make the sequence owned by the column (critical for reproducing the bug!)
+ALTER SEQUENCE history_cost_changes_id_seq OWNED BY history_cost_changes.id;
+
+-- Create another table that also references the same sequence (edge case)
+CREATE TABLE history_audit (
+    audit_id bigint DEFAULT nextval('history_cost_changes_id_seq'::regclass) NOT NULL,
+    change_type varchar(50)
+);
+`,
+		},
+		{
 			name: "views_and_functions",
 			ddl: `
 CREATE TABLE employees (
