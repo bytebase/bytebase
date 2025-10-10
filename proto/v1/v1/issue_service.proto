@@ -11,6 +11,7 @@ import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/expr.proto";
 import "v1/annotation.proto";
+import "v1/common.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
@@ -407,12 +408,6 @@ message Issue {
   // - users/{email}
   repeated string releasers = 20;
 
-  enum RiskLevel {
-    RISK_LEVEL_UNSPECIFIED = 0;
-    LOW = 1;
-    MODERATE = 2;
-    HIGH = 3;
-  }
   RiskLevel risk_level = 21;
 
   // The status count of the issue.

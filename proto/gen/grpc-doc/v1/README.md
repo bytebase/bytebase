@@ -19,6 +19,7 @@
     - [Engine](#bytebase-v1-Engine)
     - [ExportFormat](#bytebase-v1-ExportFormat)
     - [MigrationType](#bytebase-v1-MigrationType)
+    - [RiskLevel](#bytebase-v1-RiskLevel)
     - [State](#bytebase-v1-State)
     - [VCSType](#bytebase-v1-VCSType)
   
@@ -202,7 +203,6 @@
   
     - [Issue.ApprovalStatus](#bytebase-v1-Issue-ApprovalStatus)
     - [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status)
-    - [Issue.RiskLevel](#bytebase-v1-Issue-RiskLevel)
     - [Issue.Type](#bytebase-v1-Issue-Type)
     - [IssueComment.Approval.Status](#bytebase-v1-IssueComment-Approval-Status)
     - [IssueComment.TaskUpdate.Status](#bytebase-v1-IssueComment-TaskUpdate-Status)
@@ -869,6 +869,20 @@ MigrationType is the type for imperative schema migration.
 | DDL | 1 | Used for DDL changes. |
 | DML | 2 | Used for DML changes. |
 | GHOST | 3 | Used for DDL changes using gh-ost. |
+
+
+
+<a name="bytebase-v1-RiskLevel"></a>
+
+### RiskLevel
+RiskLevel is the risk level.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RISK_LEVEL_UNSPECIFIED | 0 |  |
+| LOW | 1 |  |
+| MODERATE | 2 |  |
+| HIGH | 3 |  |
 
 
 
@@ -3545,7 +3559,7 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | rollout | [string](#string) |  | The rollout associated with the issue. Can be empty. Format: projects/{project}/rollouts/{rollout} |
 | grant_request | [GrantRequest](#bytebase-v1-GrantRequest) |  | Used if the issue type is GRANT_REQUEST. |
 | releasers | [string](#string) | repeated | The releasers of the pending stage of the issue rollout, judging from the rollout policy. Format: - roles/workspaceOwner - roles/workspaceDBA - roles/projectOwner - roles/projectReleaser - users/{email} |
-| risk_level | [Issue.RiskLevel](#bytebase-v1-Issue-RiskLevel) |  |  |
+| risk_level | [RiskLevel](#bytebase-v1-RiskLevel) |  |  |
 | task_status_count | [Issue.TaskStatusCountEntry](#bytebase-v1-Issue-TaskStatusCountEntry) | repeated | The status count of the issue. Keys are the following: - NOT_STARTED - SKIPPED - PENDING - RUNNING - DONE - FAILED - CANCELED |
 | labels | [string](#string) | repeated |  |
 | approval_status | [Issue.ApprovalStatus](#bytebase-v1-Issue-ApprovalStatus) |  |  |
@@ -3930,20 +3944,6 @@ The issue&#39;s `name` field is used to identify the issue to update. Format: pr
 | PENDING | 1 |  |
 | APPROVED | 2 |  |
 | REJECTED | 3 |  |
-
-
-
-<a name="bytebase-v1-Issue-RiskLevel"></a>
-
-### Issue.RiskLevel
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| RISK_LEVEL_UNSPECIFIED | 0 |  |
-| LOW | 1 |  |
-| MODERATE | 2 |  |
-| HIGH | 3 |  |
 
 
 
@@ -9632,7 +9632,7 @@ When paginating, all other parameters provided to `LiskRisks` must match the cal
 | name | [string](#string) |  | Format: risks/{risk} |
 | source | [Risk.Source](#bytebase-v1-Risk-Source) |  |  |
 | title | [string](#string) |  |  |
-| level | [int32](#int32) |  |  |
+| level | [RiskLevel](#bytebase-v1-RiskLevel) |  |  |
 | active | [bool](#bool) |  |  |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with the risk. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 

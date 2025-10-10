@@ -53,7 +53,7 @@ func TestRiskLevelCalculation(t *testing.T) {
 		Risk: &v1pb.Risk{
 			Title:  "Production DDL Risk",
 			Source: v1pb.Risk_DDL,
-			Level:  300, // HIGH risk level
+			Level:  v1pb.RiskLevel_HIGH,
 			Active: true,
 			Condition: &expr.Expr{
 				Expression: `resource.environment_id == "prod"`,
@@ -135,7 +135,7 @@ func TestRiskLevelCalculation(t *testing.T) {
 	a.NotEqual(v1pb.Issue_CHECKING, issue.ApprovalStatus, "Approval finding should complete even without summary reports")
 	a.NotEqual(v1pb.Issue_ERROR, issue.ApprovalStatus, "Approval finding should not have errors despite missing summary reports")
 
-	a.Equal(v1pb.Issue_HIGH, issue.RiskLevel, "Issue risk level should be HIGH")
+	a.Equal(v1pb.RiskLevel_HIGH, issue.RiskLevel, "Issue risk level should be HIGH")
 }
 
 // TestRiskLevelCalculationWithInvalidSQL tests the fix for issue where
@@ -180,7 +180,7 @@ func TestRiskLevelCalculationWithInvalidSQL(t *testing.T) {
 		Risk: &v1pb.Risk{
 			Title:  "Production DDL Risk",
 			Source: v1pb.Risk_DDL,
-			Level:  300, // HIGH risk level
+			Level:  v1pb.RiskLevel_HIGH,
 			Active: true,
 			Condition: &expr.Expr{
 				Expression: `resource.environment_id == "prod"`,
@@ -260,5 +260,5 @@ func TestRiskLevelCalculationWithInvalidSQL(t *testing.T) {
 	a.NotEqual(v1pb.Issue_CHECKING, issue.ApprovalStatus, "Approval finding should complete even with invalid SQL")
 	a.NotEqual(v1pb.Issue_ERROR, issue.ApprovalStatus, "Approval finding should not have errors despite invalid SQL")
 
-	a.Equal(v1pb.Issue_HIGH, issue.RiskLevel, "Issue risk level should be HIGH")
+	a.Equal(v1pb.RiskLevel_HIGH, issue.RiskLevel, "Issue risk level should be HIGH")
 }

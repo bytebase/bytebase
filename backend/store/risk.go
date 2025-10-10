@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // RiskSource is the source of the risk.
@@ -34,7 +35,7 @@ const (
 // RiskMessage is the message for risks.
 type RiskMessage struct {
 	Source     RiskSource
-	Level      int32
+	Level      storepb.RiskLevel
 	Name       string
 	Active     bool
 	Expression *expr.Expr // *v1alpha1.ParsedExpr
@@ -47,7 +48,7 @@ type RiskMessage struct {
 type UpdateRiskMessage struct {
 	Name       *string
 	Active     *bool
-	Level      *int32
+	Level      *storepb.RiskLevel
 	Expression *expr.Expr
 	Source     *RiskSource
 }
@@ -73,10 +74,11 @@ func (s *Store) GetRisk(ctx context.Context, id int64) (*RiskMessage, error) {
 
 	var risk RiskMessage
 	var expressionBytes []byte
+	var levelStr string
 	if err := tx.QueryRowContext(ctx, query, id).Scan(
 		&risk.ID,
 		&risk.Source,
-		&risk.Level,
+		&levelStr,
 		&risk.Name,
 		&risk.Active,
 		&expressionBytes,
@@ -92,6 +94,12 @@ func (s *Store) GetRisk(ctx context.Context, id int64) (*RiskMessage, error) {
 		return nil, errors.Wrap(err, "failed to unmarshal")
 	}
 	risk.Expression = &expression
+	// Convert database string to enum
+	if value, ok := storepb.RiskLevel_value[levelStr]; ok {
+		risk.Level = storepb.RiskLevel(value)
+	} else {
+		risk.Level = storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED
+	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit")
@@ -136,10 +144,11 @@ func (s *Store) ListRisks(ctx context.Context) ([]*RiskMessage, error) {
 	for rows.Next() {
 		var risk RiskMessage
 		var expressionBytes []byte
+		var levelStr string
 		if err := rows.Scan(
 			&risk.ID,
 			&risk.Source,
-			&risk.Level,
+			&levelStr,
 			&risk.Name,
 			&risk.Active,
 			&expressionBytes,
@@ -151,6 +160,12 @@ func (s *Store) ListRisks(ctx context.Context) ([]*RiskMessage, error) {
 			return nil, errors.Wrap(err, "failed to unmarshal")
 		}
 		risk.Expression = &expression
+		// Convert database string to enum
+		if value, ok := storepb.RiskLevel_value[levelStr]; ok {
+			risk.Level = storepb.RiskLevel(value)
+		} else {
+			risk.Level = storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED
+		}
 
 		risks = append(risks, &risk)
 	}
@@ -190,7 +205,8 @@ func (s *Store) CreateRisk(ctx context.Context, risk *RiskMessage) (*RiskMessage
 	defer tx.Rollback()
 
 	var id int64
-	if err := tx.QueryRowContext(ctx, query, risk.Source, risk.Level, risk.Name, risk.Active, string(expressionBytes)).Scan(&id); err != nil {
+	// Convert enum to database string using .String() method
+	if err := tx.QueryRowContext(ctx, query, risk.Source, risk.Level.String(), risk.Name, risk.Active, string(expressionBytes)).Scan(&id); err != nil {
 		return nil, err
 	}
 
@@ -219,7 +235,8 @@ func (s *Store) UpdateRisk(ctx context.Context, patch *UpdateRiskMessage, id int
 		set, args = append(set, fmt.Sprintf("active = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Level; v != nil {
-		set, args = append(set, fmt.Sprintf("level = $%d", len(args)+1)), append(args, *v)
+		// Convert enum to database string using .String() method
+		set, args = append(set, fmt.Sprintf("level = $%d", len(args)+1)), append(args, v.String())
 	}
 	if v := patch.Source; v != nil {
 		set, args = append(set, fmt.Sprintf("source = $%d", len(args)+1)), append(args, *v)

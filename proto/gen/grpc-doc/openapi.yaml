@@ -12670,8 +12670,13 @@ components:
                 title:
                     type: string
                 level:
-                    type: integer
-                    format: int32
+                    enum:
+                        - RISK_LEVEL_UNSPECIFIED
+                        - LOW
+                        - MODERATE
+                        - HIGH
+                    type: string
+                    format: enum
                 active:
                     type: boolean
                 condition:

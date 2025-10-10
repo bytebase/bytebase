@@ -10,6 +10,7 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
 import "v1/annotation.proto";
+import "v1/common.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
@@ -148,7 +149,7 @@ message Risk {
   Source source = 3;
 
   string title = 4;
-  int32 level = 5;
+  RiskLevel level = 5;
   bool active = 7;
 
   // The condition that is associated with the risk.

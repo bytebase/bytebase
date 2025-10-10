@@ -301,6 +301,58 @@ func (ExportFormat) EnumDescriptor() ([]byte, []int) {
 	return file_store_common_proto_rawDescGZIP(), []int{3}
 }
 
+type RiskLevel int32
+
+const (
+	RiskLevel_RISK_LEVEL_UNSPECIFIED RiskLevel = 0
+	RiskLevel_LOW                    RiskLevel = 1
+	RiskLevel_MODERATE               RiskLevel = 2
+	RiskLevel_HIGH                   RiskLevel = 3
+)
+
+// Enum value maps for RiskLevel.
+var (
+	RiskLevel_name = map[int32]string{
+		0: "RISK_LEVEL_UNSPECIFIED",
+		1: "LOW",
+		2: "MODERATE",
+		3: "HIGH",
+	}
+	RiskLevel_value = map[string]int32{
+		"RISK_LEVEL_UNSPECIFIED": 0,
+		"LOW":                    1,
+		"MODERATE":               2,
+		"HIGH":                   3,
+	}
+)
+
+func (x RiskLevel) Enum() *RiskLevel {
+	p := new(RiskLevel)
+	*p = x
+	return p
+}
+
+func (x RiskLevel) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RiskLevel) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_common_proto_enumTypes[4].Descriptor()
+}
+
+func (RiskLevel) Type() protoreflect.EnumType {
+	return &file_store_common_proto_enumTypes[4]
+}
+
+func (x RiskLevel) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RiskLevel.Descriptor instead.
+func (RiskLevel) EnumDescriptor() ([]byte, []int) {
+	return file_store_common_proto_rawDescGZIP(), []int{4}
+}
+
 // Used internally for obfuscating the page token.
 type PageToken struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -526,7 +578,12 @@ const file_store_common_proto_rawDesc = "" +
 	"\x03CSV\x10\x01\x12\b\n" +
 	"\x04JSON\x10\x02\x12\a\n" +
 	"\x03SQL\x10\x03\x12\b\n" +
-	"\x04XLSX\x10\x04B\x14Z\x12generated-go/storeb\x06proto3"
+	"\x04XLSX\x10\x04*H\n" +
+	"\tRiskLevel\x12\x1a\n" +
+	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
+	"\x03LOW\x10\x01\x12\f\n" +
+	"\bMODERATE\x10\x02\x12\b\n" +
+	"\x04HIGH\x10\x03B\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
 	file_store_common_proto_rawDescOnce sync.Once
@@ -540,16 +597,17 @@ func file_store_common_proto_rawDescGZIP() []byte {
 	return file_store_common_proto_rawDescData
 }
 
-var file_store_common_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_store_common_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_store_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_common_proto_goTypes = []any{
 	(Engine)(0),       // 0: bytebase.store.Engine
 	(VCSType)(0),      // 1: bytebase.store.VCSType
 	(MaskingLevel)(0), // 2: bytebase.store.MaskingLevel
 	(ExportFormat)(0), // 3: bytebase.store.ExportFormat
-	(*PageToken)(nil), // 4: bytebase.store.PageToken
-	(*Position)(nil),  // 5: bytebase.store.Position
-	(*Range)(nil),     // 6: bytebase.store.Range
+	(RiskLevel)(0),    // 4: bytebase.store.RiskLevel
+	(*PageToken)(nil), // 5: bytebase.store.PageToken
+	(*Position)(nil),  // 6: bytebase.store.Position
+	(*Range)(nil),     // 7: bytebase.store.Range
 }
 var file_store_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -569,7 +627,7 @@ func file_store_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_common_proto_rawDesc), len(file_store_common_proto_rawDesc)),
-			NumEnums:      4,
+			NumEnums:      5,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,

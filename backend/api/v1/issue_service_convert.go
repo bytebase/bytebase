@@ -225,18 +225,18 @@ func convertToIssueStatus(status storepb.Issue_Status) v1pb.IssueStatus {
 	}
 }
 
-func convertToIssueRiskLevel(riskLevel storepb.IssuePayloadApproval_RiskLevel) v1pb.Issue_RiskLevel {
+func convertToIssueRiskLevel(riskLevel storepb.RiskLevel) v1pb.RiskLevel {
 	switch riskLevel {
-	case storepb.IssuePayloadApproval_RISK_LEVEL_UNSPECIFIED:
-		return v1pb.Issue_RISK_LEVEL_UNSPECIFIED
-	case storepb.IssuePayloadApproval_LOW:
-		return v1pb.Issue_LOW
-	case storepb.IssuePayloadApproval_MODERATE:
-		return v1pb.Issue_MODERATE
-	case storepb.IssuePayloadApproval_HIGH:
-		return v1pb.Issue_HIGH
+	case storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED:
+		return v1pb.RiskLevel_RISK_LEVEL_UNSPECIFIED
+	case storepb.RiskLevel_LOW:
+		return v1pb.RiskLevel_LOW
+	case storepb.RiskLevel_MODERATE:
+		return v1pb.RiskLevel_MODERATE
+	case storepb.RiskLevel_HIGH:
+		return v1pb.RiskLevel_HIGH
 	default:
-		return v1pb.Issue_RISK_LEVEL_UNSPECIFIED
+		return v1pb.RiskLevel_RISK_LEVEL_UNSPECIFIED
 	}
 }
 

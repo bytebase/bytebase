@@ -204,6 +204,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.RiskLevel"><span class="badge">E</span>RiskLevel</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.VCSType"><span class="badge">E</span>VCSType</a>
                 </li>
               
@@ -255,10 +259,6 @@
               
                 <li>
                   <a href="#bytebase.store.IssuePayloadApproval.Approver.Status"><span class="badge">E</span>IssuePayloadApproval.Approver.Status</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.IssuePayloadApproval.RiskLevel"><span class="badge">E</span>IssuePayloadApproval.RiskLevel</a>
                 </li>
               
               
@@ -1911,6 +1911,41 @@
           </tbody>
         </table>
       
+        <h3 id="bytebase.store.RiskLevel">RiskLevel</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>RISK_LEVEL_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>LOW</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MODERATE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>HIGH</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.store.VCSType">VCSType</h3>
         <p></p>
         <table class="enum-table">
@@ -2176,7 +2211,7 @@ If `true`, other fields are available. </p></td>
               
                 <tr>
                   <td>risk_level</td>
-                  <td><a href="#bytebase.store.IssuePayloadApproval.RiskLevel">IssuePayloadApproval.RiskLevel</a></td>
+                  <td><a href="#bytebase.store.RiskLevel">RiskLevel</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -2249,41 +2284,6 @@ If `true`, other fields are available. </p></td>
             
               <tr>
                 <td>REJECTED</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.IssuePayloadApproval.RiskLevel">IssuePayloadApproval.RiskLevel</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>RISK_LEVEL_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>LOW</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MODERATE</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>HIGH</td>
                 <td>3</td>
                 <td><p></p></td>
               </tr>

@@ -410,7 +410,7 @@ type Risk struct {
 	Name   string      `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Source Risk_Source `protobuf:"varint,3,opt,name=source,proto3,enum=bytebase.v1.Risk_Source" json:"source,omitempty"`
 	Title  string      `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	Level  int32       `protobuf:"varint,5,opt,name=level,proto3" json:"level,omitempty"`
+	Level  RiskLevel   `protobuf:"varint,5,opt,name=level,proto3,enum=bytebase.v1.RiskLevel" json:"level,omitempty"`
 	Active bool        `protobuf:"varint,7,opt,name=active,proto3" json:"active,omitempty"`
 	// The condition that is associated with the risk.
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
@@ -519,11 +519,11 @@ func (x *Risk) GetTitle() string {
 	return ""
 }
 
-func (x *Risk) GetLevel() int32 {
+func (x *Risk) GetLevel() RiskLevel {
 	if x != nil {
 		return x.Level
 	}
-	return 0
+	return RiskLevel_RISK_LEVEL_UNSPECIFIED
 }
 
 func (x *Risk) GetActive() bool {
@@ -544,7 +544,7 @@ var File_v1_risk_service_proto protoreflect.FileDescriptor
 
 const file_v1_risk_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15v1/risk_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\"N\n" +
+	"\x15v1/risk_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"N\n" +
 	"\x10ListRisksRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
@@ -564,12 +564,12 @@ const file_v1_risk_service_proto_rawDesc = "" +
 	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"B\n" +
 	"\x11DeleteRiskRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
-	"\x11bytebase.com/RiskR\x04name\"\xd9\x02\n" +
+	"\x11bytebase.com/RiskR\x04name\"\xf1\x02\n" +
 	"\x04Risk\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x120\n" +
 	"\x06source\x18\x03 \x01(\x0e2\x18.bytebase.v1.Risk.SourceR\x06source\x12\x14\n" +
-	"\x05title\x18\x04 \x01(\tR\x05title\x12\x14\n" +
-	"\x05level\x18\x05 \x01(\x05R\x05level\x12\x16\n" +
+	"\x05title\x18\x04 \x01(\tR\x05title\x12,\n" +
+	"\x05level\x18\x05 \x01(\x0e2\x16.bytebase.v1.RiskLevelR\x05level\x12\x16\n" +
 	"\x06active\x18\a \x01(\bR\x06active\x12/\n" +
 	"\tcondition\x18\b \x01(\v2\x11.google.type.ExprR\tcondition\"j\n" +
 	"\x06Source\x12\x16\n" +
@@ -614,8 +614,9 @@ var file_v1_risk_service_proto_goTypes = []any{
 	(*DeleteRiskRequest)(nil),     // 6: bytebase.v1.DeleteRiskRequest
 	(*Risk)(nil),                  // 7: bytebase.v1.Risk
 	(*fieldmaskpb.FieldMask)(nil), // 8: google.protobuf.FieldMask
-	(*expr.Expr)(nil),             // 9: google.type.Expr
-	(*emptypb.Empty)(nil),         // 10: google.protobuf.Empty
+	(RiskLevel)(0),                // 9: bytebase.v1.RiskLevel
+	(*expr.Expr)(nil),             // 10: google.type.Expr
+	(*emptypb.Empty)(nil),         // 11: google.protobuf.Empty
 }
 var file_v1_risk_service_proto_depIdxs = []int32{
 	7,  // 0: bytebase.v1.ListRisksResponse.risks:type_name -> bytebase.v1.Risk
@@ -623,22 +624,23 @@ var file_v1_risk_service_proto_depIdxs = []int32{
 	7,  // 2: bytebase.v1.UpdateRiskRequest.risk:type_name -> bytebase.v1.Risk
 	8,  // 3: bytebase.v1.UpdateRiskRequest.update_mask:type_name -> google.protobuf.FieldMask
 	0,  // 4: bytebase.v1.Risk.source:type_name -> bytebase.v1.Risk.Source
-	9,  // 5: bytebase.v1.Risk.condition:type_name -> google.type.Expr
-	1,  // 6: bytebase.v1.RiskService.ListRisks:input_type -> bytebase.v1.ListRisksRequest
-	3,  // 7: bytebase.v1.RiskService.CreateRisk:input_type -> bytebase.v1.CreateRiskRequest
-	4,  // 8: bytebase.v1.RiskService.GetRisk:input_type -> bytebase.v1.GetRiskRequest
-	5,  // 9: bytebase.v1.RiskService.UpdateRisk:input_type -> bytebase.v1.UpdateRiskRequest
-	6,  // 10: bytebase.v1.RiskService.DeleteRisk:input_type -> bytebase.v1.DeleteRiskRequest
-	2,  // 11: bytebase.v1.RiskService.ListRisks:output_type -> bytebase.v1.ListRisksResponse
-	7,  // 12: bytebase.v1.RiskService.CreateRisk:output_type -> bytebase.v1.Risk
-	7,  // 13: bytebase.v1.RiskService.GetRisk:output_type -> bytebase.v1.Risk
-	7,  // 14: bytebase.v1.RiskService.UpdateRisk:output_type -> bytebase.v1.Risk
-	10, // 15: bytebase.v1.RiskService.DeleteRisk:output_type -> google.protobuf.Empty
-	11, // [11:16] is the sub-list for method output_type
-	6,  // [6:11] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	9,  // 5: bytebase.v1.Risk.level:type_name -> bytebase.v1.RiskLevel
+	10, // 6: bytebase.v1.Risk.condition:type_name -> google.type.Expr
+	1,  // 7: bytebase.v1.RiskService.ListRisks:input_type -> bytebase.v1.ListRisksRequest
+	3,  // 8: bytebase.v1.RiskService.CreateRisk:input_type -> bytebase.v1.CreateRiskRequest
+	4,  // 9: bytebase.v1.RiskService.GetRisk:input_type -> bytebase.v1.GetRiskRequest
+	5,  // 10: bytebase.v1.RiskService.UpdateRisk:input_type -> bytebase.v1.UpdateRiskRequest
+	6,  // 11: bytebase.v1.RiskService.DeleteRisk:input_type -> bytebase.v1.DeleteRiskRequest
+	2,  // 12: bytebase.v1.RiskService.ListRisks:output_type -> bytebase.v1.ListRisksResponse
+	7,  // 13: bytebase.v1.RiskService.CreateRisk:output_type -> bytebase.v1.Risk
+	7,  // 14: bytebase.v1.RiskService.GetRisk:output_type -> bytebase.v1.Risk
+	7,  // 15: bytebase.v1.RiskService.UpdateRisk:output_type -> bytebase.v1.Risk
+	11, // 16: bytebase.v1.RiskService.DeleteRisk:output_type -> google.protobuf.Empty
+	12, // [12:17] is the sub-list for method output_type
+	7,  // [7:12] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_v1_risk_service_proto_init() }
@@ -647,6 +649,7 @@ func file_v1_risk_service_proto_init() {
 		return
 	}
 	file_v1_annotation_proto_init()
+	file_v1_common_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
