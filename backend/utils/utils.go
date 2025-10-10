@@ -193,7 +193,7 @@ func CheckDatabaseGroupMatch(ctx context.Context, expression string, database *s
 	}
 	res, _, err := prog.ContextEval(ctx, map[string]any{
 		common.CELAttributeResourceDatabaseName:   database.DatabaseName,
-		common.CELAttributeResourceEnvironmentID:  common.FormatEnvironment(effectiveEnvironmentID),
+		common.CELAttributeResourceEnvironmentID:  effectiveEnvironmentID,
 		common.CELAttributeResourceInstanceID:     database.InstanceID,
 		common.CELAttributeResourceDatabaseLabels: database.Metadata.Labels,
 	})

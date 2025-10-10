@@ -219,13 +219,13 @@ const updateDatabaseMatchingState = useDebounceFn(async () => {
     });
 
     state.matchingError = undefined;
+    state.databaseMatchLists = getInitialState();
     matchedDatabaseNameList.value = matchedDatabaseList;
     await Promise.all(
       state.databaseMatchLists.map((item) => loadMoreDatabase(item))
     );
   } catch (error) {
     state.matchingError = (error as ConnectError).message;
-    state.databaseMatchLists = getInitialState();
   } finally {
     state.loading = false;
   }
