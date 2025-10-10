@@ -1,6 +1,6 @@
 <template>
   <CommonNode
-    :text="target.procedure"
+    :text="(procedureMetadata?.signature || procedureMetadata?.name) ?? ''"
     :keyword="keyword"
     :highlight="true"
     :indent="0"
@@ -14,6 +14,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { ProcedureIcon } from "@/components/Icon";
+import { useDBSchemaV1Store } from "@/store";
 import type { TreeNode } from "../tree";
 import CommonNode from "./CommonNode.vue";
 
@@ -22,7 +23,17 @@ const props = defineProps<{
   keyword: string;
 }>();
 
+const dbSchema = useDBSchemaV1Store();
+
 const target = computed(
   () => (props.node as TreeNode<"procedure">).meta.target
+);
+
+const procedureMetadata = computed(
+  () =>
+    dbSchema.getSchemaMetadata({
+      database: target.value.database,
+      schema: target.value.schema,
+    }).procedures[target.value.position]
 );
 </script>
