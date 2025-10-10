@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package bytebase.store;
 
-import "google/api/expr/v1alpha1/syntax.proto";
 import "google/protobuf/duration.proto";
 import "google/type/expr.proto";
 import "store/approval.proto";
@@ -89,9 +88,8 @@ message Announcement {
 
 message WorkspaceApprovalSetting {
   message Rule {
-    google.api.expr.v1alpha1.Expr expression = 1;
-    ApprovalTemplate template = 2;
-    google.type.Expr condition = 3;
+    ApprovalTemplate template = 1;
+    google.type.Expr condition = 2;
   }
   repeated Rule rules = 1;
 }

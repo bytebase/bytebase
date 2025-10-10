@@ -252,7 +252,7 @@ message Announcement {
 
 message WorkspaceApprovalSetting {
   message Rule {
-    ApprovalTemplate template = 2;
+    ApprovalTemplate template = 1;
     // The condition that is associated with the rule.
     // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
     //
@@ -262,7 +262,7 @@ message WorkspaceApprovalSetting {
     //
     // For examples:
     // (source == "DML" && level == 200) || (source == "DDL" && level == 300)
-    google.type.Expr condition = 3;
+    google.type.Expr condition = 2;
   }
   repeated Rule rules = 1;
 }

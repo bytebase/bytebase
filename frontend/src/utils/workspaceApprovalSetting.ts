@@ -19,28 +19,12 @@ import { ExprSchema as CELExprSchema } from "@/types/proto-es/google/api/expr/v1
 import type { Expr as _Expr } from "@/types/proto-es/google/type/expr_pb";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type {
-  ApprovalNode as _ApprovalNode,
-  ApprovalStep as _ApprovalStep,
-} from "@/types/proto-es/v1/issue_service_pb";
-import {
-  ApprovalNode_Type as _ApprovalNode_Type,
-  ApprovalStep_Type as _ApprovalStep_Type,
-} from "@/types/proto-es/v1/issue_service_pb";
-import {
-  ApprovalNode_Type as ProtoEsApprovalNode_Type,
-  ApprovalStep_Type as ProtoEsApprovalStep_Type,
-} from "@/types/proto-es/v1/issue_service_pb";
-import type {
   ApprovalTemplate as _ProtoEsApprovalTemplate,
   ApprovalFlow as _ProtoEsApprovalFlow,
-  ApprovalStep as _ProtoEsApprovalStep,
-  ApprovalNode as _ProtoEsApprovalNode,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   ApprovalTemplateSchema as _ProtoEsApprovalTemplateSchema,
   ApprovalFlowSchema as _ProtoEsApprovalFlowSchema,
-  ApprovalStepSchema as ProtoEsApprovalStepSchema,
-  ApprovalNodeSchema as ProtoEsApprovalNodeSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import type {
@@ -59,14 +43,6 @@ import { displayRoleTitle } from "./role";
 
 export const approvalNodeRoleText = (role: string) => {
   return displayRoleTitle(role);
-};
-
-export const approvalNodeText = (node: _ProtoEsApprovalNode): string => {
-  const { role } = node;
-  if (role) {
-    return approvalNodeRoleText(role);
-  }
-  return "";
 };
 
 /*
@@ -324,17 +300,7 @@ export const seedWorkspaceApprovalSetting = () => {
         title,
         description,
         flow: {
-          steps: roles.map((role) =>
-            createProto(ProtoEsApprovalStepSchema, {
-              type: ProtoEsApprovalStep_Type.ANY,
-              nodes: [
-                createProto(ProtoEsApprovalNodeSchema, {
-                  type: ProtoEsApprovalNode_Type.ANY_IN_GROUP,
-                  role,
-                }),
-              ],
-            })
-          ),
+          roles,
         },
       },
     });

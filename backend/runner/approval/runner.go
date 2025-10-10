@@ -187,11 +187,8 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	payload.Approval = &storepb.IssuePayloadApproval{
 		ApprovalFindingDone: true,
 		RiskLevel:           riskLevel,
-		ApprovalTemplates:   nil,
+		ApprovalTemplate:    approvalTemplate,
 		Approvers:           nil,
-	}
-	if approvalTemplate != nil {
-		payload.Approval.ApprovalTemplates = []*storepb.ApprovalTemplate{approvalTemplate}
 	}
 
 	newApprovers, err := utils.HandleIncomingApprovalSteps(payload.Approval)
@@ -212,7 +209,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	}
 
 	if err := func() error {
-		if len(payload.Approval.ApprovalTemplates) != 0 {
+		if payload.Approval.ApprovalTemplate != nil {
 			return nil
 		}
 		if issue.PipelineUID == nil {
@@ -252,11 +249,11 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	}
 
 	func() {
-		if len(payload.Approval.ApprovalTemplates) != 1 {
+		if payload.Approval.ApprovalTemplate == nil {
 			return
 		}
-		approvalStep := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
-		if approvalStep == nil {
+		role := utils.FindNextPendingRole(payload.Approval.ApprovalTemplate, payload.Approval.Approvers)
+		if role == "" {
 			return
 		}
 		r.webhookManager.CreateEvent(ctx, &webhook.Event{
@@ -266,7 +263,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(issue.Project),
 			IssueApprovalCreate: &webhook.EventIssueApprovalCreate{
-				ApprovalStep: approvalStep,
+				Role: role,
 			},
 		})
 	}()

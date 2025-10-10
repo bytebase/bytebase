@@ -1,9 +1,6 @@
 <template>
   <div class="w-full flex flex-col p-4 gap-4">
-    <IssueStatusSection
-      v-if="issue.approvalTemplates.length > 0"
-      :issue="issue"
-    />
+    <IssueStatusSection v-if="issue.approvalTemplate" :issue="issue" />
 
     <ApprovalFlowSection :issue="issue" />
 

@@ -74,7 +74,7 @@ type EventIssueUpdate struct {
 }
 
 type EventIssueApprovalCreate struct {
-	ApprovalStep *storepb.ApprovalStep
+	Role string
 }
 
 type EventIssueRolloutReady struct {

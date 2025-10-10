@@ -2,34 +2,13 @@ import type {
   ApprovalFlow,
   ApprovalTemplate,
 } from "@/types/proto-es/v1/issue_service_pb";
-import {
-  ApprovalNode_Type,
-  ApprovalStep_Type,
-} from "@/types/proto-es/v1/issue_service_pb";
 
 const validateApprovalFlow = (flow: ApprovalFlow) => {
-  const SupportedStepTypes = new Set([
-    ApprovalStep_Type.ALL,
-    ApprovalStep_Type.ANY,
-  ]);
-
-  if (flow.steps.length === 0) {
+  if (flow.roles.length === 0) {
     return false;
   }
 
-  return flow.steps.every((step) => {
-    const { type, nodes } = step;
-    if (!SupportedStepTypes.has(type)) {
-      return false;
-    }
-    return nodes.every((node) => {
-      const { type, role } = node;
-      if (type !== ApprovalNode_Type.ANY_IN_GROUP) {
-        return false;
-      }
-      return !!role;
-    });
-  });
+  return flow.roles.every((role) => !!role);
 };
 
 export const validateApprovalTemplate = (

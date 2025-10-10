@@ -2056,7 +2056,7 @@ func (x *AppIMSetting_DingTalk) GetRobotCode() string {
 
 type WorkspaceApprovalSetting_Rule struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
-	Template *ApprovalTemplate      `protobuf:"bytes,2,opt,name=template,proto3" json:"template,omitempty"`
+	Template *ApprovalTemplate      `protobuf:"bytes,1,opt,name=template,proto3" json:"template,omitempty"`
 	// The condition that is associated with the rule.
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 	//
@@ -2066,7 +2066,7 @@ type WorkspaceApprovalSetting_Rule struct {
 	//
 	// For examples:
 	// (source == "DML" && level == 200) || (source == "DDL" && level == 300)
-	Condition     *expr.Expr `protobuf:"bytes,3,opt,name=condition,proto3" json:"condition,omitempty"`
+	Condition     *expr.Expr `protobuf:"bytes,2,opt,name=condition,proto3" json:"condition,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3090,8 +3090,8 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x18WorkspaceApprovalSetting\x12@\n" +
 	"\x05rules\x18\x01 \x03(\v2*.bytebase.v1.WorkspaceApprovalSetting.RuleR\x05rules\x1ar\n" +
 	"\x04Rule\x129\n" +
-	"\btemplate\x18\x02 \x01(\v2\x1d.bytebase.v1.ApprovalTemplateR\btemplate\x12/\n" +
-	"\tcondition\x18\x03 \x01(\v2\x11.google.type.ExprR\tcondition\"\xb2\x06\n" +
+	"\btemplate\x18\x01 \x01(\v2\x1d.bytebase.v1.ApprovalTemplateR\btemplate\x12/\n" +
+	"\tcondition\x18\x02 \x01(\v2\x11.google.type.ExprR\tcondition\"\xb2\x06\n" +
 	"\x15SchemaTemplateSetting\x12Y\n" +
 	"\x0ffield_templates\x18\x01 \x03(\v20.bytebase.v1.SchemaTemplateSetting.FieldTemplateR\x0efieldTemplates\x12P\n" +
 	"\fcolumn_types\x18\x02 \x03(\v2-.bytebase.v1.SchemaTemplateSetting.ColumnTypeR\vcolumnTypes\x12Y\n" +

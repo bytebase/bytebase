@@ -97,15 +97,15 @@ const currentApprover = computedAsync(() => {
     return undefined;
   }
 
-  const { approvalTemplates, approvers } = props.issue;
-  if (approvalTemplates.length === 0) return undefined;
+  const { approvalTemplate, approvers } = props.issue;
+  if (!approvalTemplate) return undefined;
 
-  const currentStepIndex = approvers.length;
-  const steps = approvalTemplates[0].flow?.steps || [];
-  const step = steps[currentStepIndex];
-  if (!step) return undefined;
+  const currentRoleIndex = approvers.length;
+  const roles = approvalTemplate.flow?.roles || [];
+  const role = roles[currentRoleIndex];
+  if (!role) return undefined;
 
-  const candidates = candidatesOfApprovalStepV1(props.issue, step);
+  const candidates = candidatesOfApprovalStepV1(props.issue, role);
   const currentUserName = `${userNamePrefix}${me.value.email}`;
 
   // Show currentUser if currentUser is one of the valid approver candidates.

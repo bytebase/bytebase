@@ -829,14 +829,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ApprovalNode"><span class="badge">M</span>ApprovalNode</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ApprovalStep"><span class="badge">M</span>ApprovalStep</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.ApprovalTemplate"><span class="badge">M</span>ApprovalTemplate</a>
                 </li>
               
@@ -948,14 +940,6 @@
                   <a href="#bytebase.v1.UpdateIssueRequest"><span class="badge">M</span>UpdateIssueRequest</a>
                 </li>
               
-              
-                <li>
-                  <a href="#bytebase.v1.ApprovalNode.Type"><span class="badge">E</span>ApprovalNode.Type</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ApprovalStep.Type"><span class="badge">E</span>ApprovalStep.Type</a>
-                </li>
               
                 <li>
                   <a href="#bytebase.v1.Issue.ApprovalStatus"><span class="badge">E</span>Issue.ApprovalStatus</a>
@@ -10429,70 +10413,8 @@ The API will default to the BASIC view.</p></td>
             <tbody>
               
                 <tr>
-                  <td>steps</td>
-                  <td><a href="#bytebase.v1.ApprovalStep">ApprovalStep</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ApprovalNode">ApprovalNode</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.ApprovalNode.Type">ApprovalNode.Type</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>role</td>
+                  <td>roles</td>
                   <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ApprovalStep">ApprovalStep</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.ApprovalStep.Type">ApprovalStep.Type</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>nodes</td>
-                  <td><a href="#bytebase.v1.ApprovalNode">ApprovalNode</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
@@ -10827,9 +10749,9 @@ Format: projects/{project}/issues/{issue} </p></td>
                 </tr>
               
                 <tr>
-                  <td>approval_templates</td>
+                  <td>approval_template</td>
                   <td><a href="#bytebase.v1.ApprovalTemplate">ApprovalTemplate</a></td>
-                  <td>repeated</td>
+                  <td></td>
                   <td><p> </p></td>
                 </tr>
               
@@ -11784,58 +11706,6 @@ In this situation, `update_mask` is ignored. </p></td>
         
       
 
-      
-        <h3 id="bytebase.v1.ApprovalNode.Type">ApprovalNode.Type</h3>
-        <p>Type of the ApprovalNode.</p><p>type determines who should approve this node.</p><p>ANY_IN_GROUP means the ApprovalNode can be approved by an user from our predefined user group.</p><p>See GroupValue below for the predefined user groups.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ANY_IN_GROUP</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.ApprovalStep.Type">ApprovalStep.Type</h3>
-        <p>Type of the ApprovalStep</p><p>ALL means every node must be approved to proceed.</p><p>ANY means approving any node will proceed.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ALL</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ANY</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
         <h3 id="bytebase.v1.Issue.ApprovalStatus">Issue.ApprovalStatus</h3>
         <p></p>

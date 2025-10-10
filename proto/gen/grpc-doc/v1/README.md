@@ -171,8 +171,6 @@
   
 - [v1/issue_service.proto](#v1_issue_service-proto)
     - [ApprovalFlow](#bytebase-v1-ApprovalFlow)
-    - [ApprovalNode](#bytebase-v1-ApprovalNode)
-    - [ApprovalStep](#bytebase-v1-ApprovalStep)
     - [ApprovalTemplate](#bytebase-v1-ApprovalTemplate)
     - [ApproveIssueRequest](#bytebase-v1-ApproveIssueRequest)
     - [BatchUpdateIssuesStatusRequest](#bytebase-v1-BatchUpdateIssuesStatusRequest)
@@ -202,8 +200,6 @@
     - [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest)
     - [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest)
   
-    - [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type)
-    - [ApprovalStep.Type](#bytebase-v1-ApprovalStep-Type)
     - [Issue.ApprovalStatus](#bytebase-v1-Issue-ApprovalStatus)
     - [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status)
     - [Issue.RiskLevel](#bytebase-v1-Issue-RiskLevel)
@@ -3393,39 +3389,7 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| steps | [ApprovalStep](#bytebase-v1-ApprovalStep) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ApprovalNode"></a>
-
-### ApprovalNode
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type) |  |  |
-| role | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ApprovalStep"></a>
-
-### ApprovalStep
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [ApprovalStep.Type](#bytebase-v1-ApprovalStep-Type) |  |  |
-| nodes | [ApprovalNode](#bytebase-v1-ApprovalNode) | repeated |  |
+| roles | [string](#string) | repeated |  |
 
 
 
@@ -3573,7 +3537,7 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | type | [Issue.Type](#bytebase-v1-Issue-Type) |  |  |
 | status | [IssueStatus](#bytebase-v1-IssueStatus) |  |  |
 | approvers | [Issue.Approver](#bytebase-v1-Issue-Approver) | repeated |  |
-| approval_templates | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) | repeated |  |
+| approval_template | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) |  |  |
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
@@ -3936,36 +3900,6 @@ The issue&#39;s `name` field is used to identify the issue to update. Format: pr
 
 
  
-
-
-<a name="bytebase-v1-ApprovalNode-Type"></a>
-
-### ApprovalNode.Type
-Type of the ApprovalNode.
-type determines who should approve this node.
-ANY_IN_GROUP means the ApprovalNode can be approved by an user from our predefined user group.
-See GroupValue below for the predefined user groups.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| ANY_IN_GROUP | 1 |  |
-
-
-
-<a name="bytebase-v1-ApprovalStep-Type"></a>
-
-### ApprovalStep.Type
-Type of the ApprovalStep
-ALL means every node must be approved to proceed.
-ANY means approving any node will proceed.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| ALL | 1 |  |
-| ANY | 2 |  |
-
 
 
 <a name="bytebase-v1-Issue-ApprovalStatus"></a>

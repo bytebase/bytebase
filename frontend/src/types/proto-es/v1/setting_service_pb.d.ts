@@ -711,7 +711,7 @@ export declare const WorkspaceApprovalSettingSchema: GenMessage<WorkspaceApprova
  */
 export declare type WorkspaceApprovalSetting_Rule = Message<"bytebase.v1.WorkspaceApprovalSetting.Rule"> & {
   /**
-   * @generated from field: bytebase.v1.ApprovalTemplate template = 2;
+   * @generated from field: bytebase.v1.ApprovalTemplate template = 1;
    */
   template?: ApprovalTemplate;
 
@@ -726,7 +726,7 @@ export declare type WorkspaceApprovalSetting_Rule = Message<"bytebase.v1.Workspa
    * For examples:
    * (source == "DML" && level == 200) || (source == "DDL" && level == 300)
    *
-   * @generated from field: google.type.Expr condition = 3;
+   * @generated from field: google.type.Expr condition = 2;
    */
   condition?: Expr;
 };

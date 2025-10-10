@@ -223,21 +223,14 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		}
 
 	case common.EventTypeIssueApprovalCreate:
-		pendingStep := e.IssueApprovalCreate.ApprovalStep
+		roleWithPrefix := e.IssueApprovalCreate.Role
 
 		title = "Issue approval needed"
 		titleZh = "工单待审批"
 
-		if len(pendingStep.Nodes) != 1 {
-			slog.Warn("Failed to post webhook event after changing the issue approval node status, pending step nodes length is not 1")
-			return nil, errors.Errorf("pending step nodes length is not 1, got %v", len(pendingStep.Nodes))
-		}
-
-		node := pendingStep.Nodes[0]
-
 		var usersGetter func(ctx context.Context) ([]*store.UserMessage, error)
 
-		role := strings.TrimPrefix(node.Role, "roles/")
+		role := strings.TrimPrefix(roleWithPrefix, "roles/")
 		usersGetter = getUsersFromRole(m.store, role, e.Project.ResourceID)
 
 		users, err := usersGetter(ctx)

@@ -8,7 +8,7 @@ export const emptyLocalApprovalRule = (): LocalApprovalRule => {
     uid: uuidv4(),
     template: createProto(ApprovalTemplateSchema, {
       flow: {
-        steps: [],
+        roles: [],
       },
     }),
   };

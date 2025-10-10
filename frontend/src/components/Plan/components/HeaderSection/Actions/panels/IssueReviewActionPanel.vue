@@ -79,7 +79,6 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { head } from "lodash-es";
 import { NButton, NCheckbox, NInput, NTooltip } from "naive-ui";
 import { computed, nextTick, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -259,12 +258,12 @@ const handleConfirm = async () => {
 
     // For ISSUE_REVIEW_APPROVE, check if this is the last approval needed
     if (action === "ISSUE_REVIEW_APPROVE") {
-      const { approvalTemplates, approvers } = issue.value;
-      const steps = head(approvalTemplates)?.flow?.steps ?? [];
+      const { approvalTemplate, approvers } = issue.value;
+      const roles = approvalTemplate?.flow?.roles ?? [];
 
       // Check if this approval will complete the review process
       const isLastApproval =
-        steps.length > 0 && approvers.length + 1 >= steps.length;
+        roles.length > 0 && approvers.length + 1 >= roles.length;
 
       if (rollout.value && isLastApproval) {
         // Rollout exists, redirect to rollout page

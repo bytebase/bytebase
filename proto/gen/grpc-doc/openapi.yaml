@@ -8452,35 +8452,10 @@ components:
         ApprovalFlow:
             type: object
             properties:
-                steps:
+                roles:
                     type: array
                     items:
-                        $ref: '#/components/schemas/ApprovalStep'
-        ApprovalNode:
-            type: object
-            properties:
-                type:
-                    enum:
-                        - TYPE_UNSPECIFIED
-                        - ANY_IN_GROUP
-                    type: string
-                    format: enum
-                role:
-                    type: string
-        ApprovalStep:
-            type: object
-            properties:
-                type:
-                    enum:
-                        - TYPE_UNSPECIFIED
-                        - ALL
-                        - ANY
-                    type: string
-                    format: enum
-                nodes:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ApprovalNode'
+                        type: string
         ApprovalTemplate:
             type: object
             properties:
@@ -11005,10 +10980,8 @@ components:
         IssuePayloadApproval:
             type: object
             properties:
-                approvalTemplates:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ApprovalTemplate'
+                approvalTemplate:
+                    $ref: '#/components/schemas/ApprovalTemplate'
                 approvers:
                     type: array
                     items:
@@ -14706,8 +14679,6 @@ components:
         WorkspaceApprovalSetting_Rule:
             type: object
             properties:
-                expression:
-                    $ref: '#/components/schemas/Expr'
                 template:
                     $ref: '#/components/schemas/ApprovalTemplate'
                 condition:
