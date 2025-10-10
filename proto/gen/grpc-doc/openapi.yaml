@@ -8459,6 +8459,12 @@ components:
         ApprovalTemplate:
             type: object
             properties:
+                id:
+                    type: string
+                    description: |-
+                        The unique identifier for the approval template.
+                         For built-in templates, use "bb." prefix (e.g., "bb.project-owner", "bb.workspace-dba").
+                         For custom templates, use a UUID or other unique identifier.
                 flow:
                     $ref: '#/components/schemas/ApprovalFlow'
                 title:

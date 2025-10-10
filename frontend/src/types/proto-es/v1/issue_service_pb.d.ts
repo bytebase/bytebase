@@ -721,6 +721,15 @@ export declare const GrantRequestSchema: GenMessage<GrantRequest>;
  */
 export declare type ApprovalTemplate = Message<"bytebase.v1.ApprovalTemplate"> & {
   /**
+   * The unique identifier for the approval template.
+   * For built-in templates, use "bb." prefix (e.g., "bb.project-owner", "bb.workspace-dba").
+   * For custom templates, use a UUID or other unique identifier.
+   *
+   * @generated from field: string id = 4;
+   */
+  id: string;
+
+  /**
    * @generated from field: bytebase.v1.ApprovalFlow flow = 1;
    */
   flow?: ApprovalFlow;

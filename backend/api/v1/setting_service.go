@@ -291,6 +291,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			payload.Rules = append(payload.Rules, &storepb.WorkspaceApprovalSetting_Rule{
 				Condition: rule.Condition,
 				Template: &storepb.ApprovalTemplate{
+					Id:          rule.Template.Id,
 					Flow:        flow,
 					Title:       rule.Template.Title,
 					Description: rule.Template.Description,

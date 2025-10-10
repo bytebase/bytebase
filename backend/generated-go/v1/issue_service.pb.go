@@ -1404,10 +1404,14 @@ func (x *GrantRequest) GetExpiration() *durationpb.Duration {
 }
 
 type ApprovalTemplate struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Flow          *ApprovalFlow          `protobuf:"bytes,1,opt,name=flow,proto3" json:"flow,omitempty"`
-	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The unique identifier for the approval template.
+	// For built-in templates, use "bb." prefix (e.g., "bb.project-owner", "bb.workspace-dba").
+	// For custom templates, use a UUID or other unique identifier.
+	Id            string        `protobuf:"bytes,4,opt,name=id,proto3" json:"id,omitempty"`
+	Flow          *ApprovalFlow `protobuf:"bytes,1,opt,name=flow,proto3" json:"flow,omitempty"`
+	Title         string        `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Description   string        `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1440,6 +1444,13 @@ func (x *ApprovalTemplate) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ApprovalTemplate.ProtoReflect.Descriptor instead.
 func (*ApprovalTemplate) Descriptor() ([]byte, []int) {
 	return file_v1_issue_service_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *ApprovalTemplate) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
 }
 
 func (x *ApprovalTemplate) GetFlow() *ApprovalFlow {
@@ -2493,8 +2504,9 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\tcondition\x18\x03 \x01(\v2\x11.google.type.ExprR\tcondition\x129\n" +
 	"\n" +
 	"expiration\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\n" +
-	"expiration\"y\n" +
-	"\x10ApprovalTemplate\x12-\n" +
+	"expiration\"\x89\x01\n" +
+	"\x10ApprovalTemplate\x12\x0e\n" +
+	"\x02id\x18\x04 \x01(\tR\x02id\x12-\n" +
 	"\x04flow\x18\x01 \x01(\v2\x19.bytebase.v1.ApprovalFlowR\x04flow\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\"$\n" +

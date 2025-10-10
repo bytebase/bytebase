@@ -36,6 +36,10 @@ message IssuePayloadApproval {
 }
 
 message ApprovalTemplate {
+  // The unique identifier for the approval template.
+  // For built-in templates, use "bb." prefix (e.g., "bb.project-owner", "bb.workspace-dba").
+  // For custom templates, use a UUID or other unique identifier.
+  string id = 4;
   ApprovalFlow flow = 1;
   string title = 2;
   string description = 3;

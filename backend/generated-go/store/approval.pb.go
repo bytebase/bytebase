@@ -154,10 +154,14 @@ func (x *IssuePayloadApproval) GetRiskLevel() RiskLevel {
 }
 
 type ApprovalTemplate struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Flow          *ApprovalFlow          `protobuf:"bytes,1,opt,name=flow,proto3" json:"flow,omitempty"`
-	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The unique identifier for the approval template.
+	// For built-in templates, use "bb." prefix (e.g., "bb.project-owner", "bb.workspace-dba").
+	// For custom templates, use a UUID or other unique identifier.
+	Id            string        `protobuf:"bytes,4,opt,name=id,proto3" json:"id,omitempty"`
+	Flow          *ApprovalFlow `protobuf:"bytes,1,opt,name=flow,proto3" json:"flow,omitempty"`
+	Title         string        `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Description   string        `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -190,6 +194,13 @@ func (x *ApprovalTemplate) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ApprovalTemplate.ProtoReflect.Descriptor instead.
 func (*ApprovalTemplate) Descriptor() ([]byte, []int) {
 	return file_store_approval_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ApprovalTemplate) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
 }
 
 func (x *ApprovalTemplate) GetFlow() *ApprovalFlow {
@@ -330,8 +341,9 @@ const file_store_approval_proto_rawDesc = "" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\f\n" +
 	"\bAPPROVED\x10\x02\x12\f\n" +
-	"\bREJECTED\x10\x03\"|\n" +
-	"\x10ApprovalTemplate\x120\n" +
+	"\bREJECTED\x10\x03\"\x8c\x01\n" +
+	"\x10ApprovalTemplate\x12\x0e\n" +
+	"\x02id\x18\x04 \x01(\tR\x02id\x120\n" +
 	"\x04flow\x18\x01 \x01(\v2\x1c.bytebase.store.ApprovalFlowR\x04flow\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\"$\n" +
