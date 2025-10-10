@@ -13,7 +13,7 @@
 -- 7. table_name -> resource.table_name
 --
 -- Attribute name changes (renaming for consistency):
--- 8. resource.environment_name -> resource.environment_id (in IAM policies)
+-- 8. resource.environment_name -> resource.environment_id (in IAM policies and database groups)
 -- 9. resource.schema -> resource.schema_name (in IAM policies)
 -- 10. resource.table -> resource.table_name (in IAM policies)
 -- 11. resource.labels -> resource.database_labels (in database groups)
@@ -119,6 +119,28 @@ WHERE expression->>'expression' ~ '\m(environment_id|project_id|instance_id|db_e
 
 -- Update database group expressions
 -- The db_group.expression column stores CEL expressions in jsonb format with an "expression" field
+-- Change resource.environment_name -> resource.environment_id and remove "environments/" prefix
+UPDATE db_group
+SET expression = jsonb_set(
+    expression,
+    '{expression}',
+    to_jsonb(
+        regexp_replace(
+            regexp_replace(
+                expression->>'expression',
+                'resource\.environment_name',
+                'resource.environment_id',
+                'g'
+            ),
+            '"environments/',
+            '"',
+            'g'
+        )
+    )
+)
+WHERE expression->>'expression' ~ 'resource\.environment_name';
+
+-- Update database group expressions - replace resource.labels with resource.database_labels
 UPDATE db_group
 SET expression = jsonb_set(
     expression,
