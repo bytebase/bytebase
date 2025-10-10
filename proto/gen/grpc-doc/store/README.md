@@ -11,6 +11,7 @@
     - [Engine](#bytebase-store-Engine)
     - [ExportFormat](#bytebase-store-ExportFormat)
     - [MaskingLevel](#bytebase-store-MaskingLevel)
+    - [RiskLevel](#bytebase-store-RiskLevel)
     - [VCSType](#bytebase-store-VCSType)
   
 - [store/advice.proto](#store_advice-proto)
@@ -25,7 +26,6 @@
     - [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver)
   
     - [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status)
-    - [IssuePayloadApproval.RiskLevel](#bytebase-store-IssuePayloadApproval-RiskLevel)
   
 - [store/audit_log.proto](#store_audit_log-proto)
     - [AuditLog](#bytebase-store-AuditLog)
@@ -473,6 +473,20 @@ offset.
 
 
 
+<a name="bytebase-store-RiskLevel"></a>
+
+### RiskLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RISK_LEVEL_UNSPECIFIED | 0 |  |
+| LOW | 1 |  |
+| MODERATE | 2 |  |
+| HIGH | 3 |  |
+
+
+
 <a name="bytebase-store-VCSType"></a>
 
 ### VCSType
@@ -597,7 +611,7 @@ IssuePayloadApproval records the approval template used and the approval history
 | approvers | [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver) | repeated |  |
 | approval_finding_done | [bool](#bool) |  | If the value is `false`, it means that the backend is still finding matching approval templates. If `true`, other fields are available. |
 | approval_finding_error | [string](#string) |  |  |
-| risk_level | [IssuePayloadApproval.RiskLevel](#bytebase-store-IssuePayloadApproval-RiskLevel) |  |  |
+| risk_level | [RiskLevel](#bytebase-store-RiskLevel) |  |  |
 
 
 
@@ -633,20 +647,6 @@ IssuePayloadApproval records the approval template used and the approval history
 | PENDING | 1 |  |
 | APPROVED | 2 |  |
 | REJECTED | 3 |  |
-
-
-
-<a name="bytebase-store-IssuePayloadApproval-RiskLevel"></a>
-
-### IssuePayloadApproval.RiskLevel
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| RISK_LEVEL_UNSPECIFIED | 0 |  |
-| LOW | 1 |  |
-| MODERATE | 2 |  |
-| HIGH | 3 |  |
 
 
  

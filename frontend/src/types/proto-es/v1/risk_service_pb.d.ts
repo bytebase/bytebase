@@ -5,6 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { EmptySchema, FieldMask } from "@bufbuild/protobuf/wkt";
+import type { RiskLevel } from "./common_pb";
 import type { Expr } from "../google/type/expr_pb";
 
 /**
@@ -184,9 +185,9 @@ export declare type Risk = Message<"bytebase.v1.Risk"> & {
   title: string;
 
   /**
-   * @generated from field: int32 level = 5;
+   * @generated from field: bytebase.v1.RiskLevel level = 5;
    */
-  level: number;
+  level: RiskLevel;
 
   /**
    * @generated from field: bool active = 7;

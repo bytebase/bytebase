@@ -363,3 +363,35 @@ export enum MigrationType {
  */
 export declare const MigrationTypeSchema: GenEnum<MigrationType>;
 
+/**
+ * RiskLevel is the risk level.
+ *
+ * @generated from enum bytebase.v1.RiskLevel
+ */
+export enum RiskLevel {
+  /**
+   * @generated from enum value: RISK_LEVEL_UNSPECIFIED = 0;
+   */
+  RISK_LEVEL_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: LOW = 1;
+   */
+  LOW = 1,
+
+  /**
+   * @generated from enum value: MODERATE = 2;
+   */
+  MODERATE = 2,
+
+  /**
+   * @generated from enum value: HIGH = 3;
+   */
+  HIGH = 3,
+}
+
+/**
+ * Describes the enum bytebase.v1.RiskLevel.
+ */
+export declare const RiskLevelSchema: GenEnum<RiskLevel>;
+

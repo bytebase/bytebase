@@ -235,6 +235,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.RiskLevel"><span class="badge">E</span>RiskLevel</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.State"><span class="badge">E</span>State</a>
                 </li>
               
@@ -947,10 +951,6 @@
               
                 <li>
                   <a href="#bytebase.v1.Issue.Approver.Status"><span class="badge">E</span>Issue.Approver.Status</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Issue.RiskLevel"><span class="badge">E</span>Issue.RiskLevel</a>
                 </li>
               
                 <li>
@@ -2282,10 +2282,6 @@
               
               
                 <li>
-                  <a href="#bytebase.v1.CheckReleaseResponse.RiskLevel"><span class="badge">E</span>CheckReleaseResponse.RiskLevel</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Release.File.MigrationType"><span class="badge">E</span>Release.File.MigrationType</a>
                 </li>
               
@@ -3305,6 +3301,41 @@
                 <td>GHOST</td>
                 <td>3</td>
                 <td><p>Used for DDL changes using gh-ost.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.RiskLevel">RiskLevel</h3>
+        <p>RiskLevel is the risk level.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>RISK_LEVEL_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>LOW</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MODERATE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>HIGH</td>
+                <td>3</td>
+                <td><p></p></td>
               </tr>
             
           </tbody>
@@ -10817,7 +10848,7 @@ Format:
               
                 <tr>
                   <td>risk_level</td>
-                  <td><a href="#bytebase.v1.Issue.RiskLevel">Issue.RiskLevel</a></td>
+                  <td><a href="#bytebase.v1.RiskLevel">RiskLevel</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -11788,41 +11819,6 @@ In this situation, `update_mask` is ignored. </p></td>
             
               <tr>
                 <td>REJECTED</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.Issue.RiskLevel">Issue.RiskLevel</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>RISK_LEVEL_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>LOW</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MODERATE</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>HIGH</td>
                 <td>3</td>
                 <td><p></p></td>
               </tr>
@@ -25061,7 +25057,7 @@ instances/{instance}/databases/{database} </p></td>
               
                 <tr>
                   <td>risk_level</td>
-                  <td><a href="#bytebase.v1.CheckReleaseResponse.RiskLevel">CheckReleaseResponse.RiskLevel</a></td>
+                  <td><a href="#bytebase.v1.RiskLevel">RiskLevel</a></td>
                   <td></td>
                   <td><p>The aggregated risk level of the check. </p></td>
                 </tr>
@@ -25114,7 +25110,7 @@ Should be a database. Format: instances/{instance}/databases/{database} </p></td
               
                 <tr>
                   <td>risk_level</td>
-                  <td><a href="#bytebase.v1.CheckReleaseResponse.RiskLevel">CheckReleaseResponse.RiskLevel</a></td>
+                  <td><a href="#bytebase.v1.RiskLevel">RiskLevel</a></td>
                   <td></td>
                   <td><p>The risk level of the statement on the target. </p></td>
                 </tr>
@@ -25630,41 +25626,6 @@ In this situation, `update_mask` is ignored. </p></td>
         
       
 
-      
-        <h3 id="bytebase.v1.CheckReleaseResponse.RiskLevel">CheckReleaseResponse.RiskLevel</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>RISK_LEVEL_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>LOW</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MODERATE</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>HIGH</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
         <h3 id="bytebase.v1.Release.File.MigrationType">Release.File.MigrationType</h3>
         <p></p>
@@ -26960,7 +26921,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
               
                 <tr>
                   <td>level</td>
-                  <td><a href="#int32">int32</a></td>
+                  <td><a href="#bytebase.v1.RiskLevel">RiskLevel</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>

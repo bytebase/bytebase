@@ -48,11 +48,11 @@ func WriteReleaseCheckToCodeQualityJSON(resp *v1pb.CheckReleaseResponse) error {
 	}
 	var riskDetail string
 	switch resp.RiskLevel {
-	case v1pb.CheckReleaseResponse_LOW:
+	case v1pb.RiskLevel_LOW:
 		riskDetail = "🟢 Low"
-	case v1pb.CheckReleaseResponse_MODERATE:
+	case v1pb.RiskLevel_MODERATE:
 		riskDetail = "🟡 Moderate"
-	case v1pb.CheckReleaseResponse_HIGH:
+	case v1pb.RiskLevel_HIGH:
 		riskDetail = "🔴 High"
 	default:
 		riskDetail = "⚪ None"

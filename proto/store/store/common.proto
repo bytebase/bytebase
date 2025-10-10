@@ -62,6 +62,13 @@ enum ExportFormat {
   XLSX = 4;
 }
 
+enum RiskLevel {
+  RISK_LEVEL_UNSPECIFIED = 0;
+  LOW = 1;
+  MODERATE = 2;
+  HIGH = 3;
+}
+
 // Position in a text expressed as zero-based line and zero-based column byte
 // offset.
 message Position {

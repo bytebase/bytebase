@@ -384,8 +384,8 @@ CREATE INDEX idx_worksheet_organizer_principal_id ON worksheet_organizer(princip
 CREATE TABLE risk (
     id bigserial PRIMARY KEY,
     source text NOT NULL CHECK (source LIKE 'bb.risk.%'),
-    -- how risky is the risk, the higher the riskier
-    level bigint NOT NULL,
+    -- Risk level: RISK_LEVEL_UNSPECIFIED, LOW, MODERATE, HIGH
+    level text NOT NULL,
     name text NOT NULL,
     active boolean NOT NULL,
     expression jsonb NOT NULL

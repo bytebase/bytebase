@@ -133,7 +133,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		return true, nil
 	}
 
-	approvalTemplate, riskLevel, done, err := func() (*storepb.ApprovalTemplate, storepb.IssuePayloadApproval_RiskLevel, bool, error) {
+	approvalTemplate, riskLevel, done, err := func() (*storepb.ApprovalTemplate, storepb.RiskLevel, bool, error) {
 		// no need to find if
 		// - feature is not enabled
 		if r.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW) != nil {
@@ -155,11 +155,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			return nil, 0, false, errors.Wrapf(err, "failed to get approval template, riskLevel: %v", riskLevel)
 		}
 
-		riskLevelEnum, err := convertRiskLevel(riskLevel)
-		if err != nil {
-			return nil, 0, false, errors.Wrap(err, "failed to convert risk level")
-		}
-		return approvalTemplate, riskLevelEnum, true, nil
+		return approvalTemplate, riskLevel, true, nil
 	}()
 	if err != nil {
 		if updateErr := updateIssueApprovalPayload(ctx, r.store, issue, &storepb.IssuePayloadApproval{
@@ -271,7 +267,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	return true, nil
 }
 
-func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, riskLevel int32, riskSource store.RiskSource) (*storepb.ApprovalTemplate, error) {
+func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, riskLevel storepb.RiskLevel, riskSource store.RiskSource) (*storepb.ApprovalTemplate, error) {
 	if len(approvalSetting.Rules) == 0 {
 		return nil, nil
 	}
@@ -295,7 +291,7 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 		}
 
 		out, _, err := prg.Eval(map[string]any{
-			common.CELAttributeLevel:  riskLevel,
+			common.CELAttributeLevel:  riskLevel.String(),
 			common.CELAttributeSource: apiv1.ConvertToV1Source(riskSource).String(),
 		})
 		if err != nil {
@@ -308,7 +304,7 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 	return nil, nil
 }
 
-func (r *Runner) getIssueRisk(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
+func (r *Runner) getIssueRisk(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage) (storepb.RiskLevel, store.RiskSource, bool, error) {
 	// sort by level DESC, higher risks go first.
 	slices.SortFunc(risks, func(a, b *store.RiskMessage) int {
 		if a.Level > b.Level {
@@ -327,27 +323,27 @@ func (r *Runner) getIssueRisk(ctx context.Context, issue *store.IssueMessage, ri
 	case storepb.Issue_DATABASE_EXPORT:
 		return r.getDatabaseDataExportIssueRisk(ctx, issue, risks)
 	default:
-		return 0, store.RiskSourceUnknown, false, errors.Errorf("unknown issue type %v", issue.Type)
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Errorf("unknown issue type %v", issue.Type)
 	}
 }
 
-func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
+func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage) (storepb.RiskLevel, store.RiskSource, bool, error) {
 	if issue.PlanUID == nil {
-		return 0, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
 	}
 	plan, err := r.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
 	if err != nil {
-		return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
 	}
 	if plan == nil {
-		return 0, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
 	// Conclude risk source from task types.
 	riskSource := getRiskSourceFromPlan(plan.Config)
 	// Cannot conclude risk source.
 	if riskSource == store.RiskSourceUnknown {
-		return 0, store.RiskSourceUnknown, true, nil
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, true, nil
 	}
 
 	planCheckRuns, err := r.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
@@ -355,7 +351,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 		Type:    &[]store.PlanCheckRunType{store.PlanCheckDatabaseStatementSummaryReport},
 	})
 	if err != nil {
-		return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to list plan check runs for plan %v", plan.UID)
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to list plan check runs for plan %v", plan.UID)
 	}
 	type Key struct {
 		InstanceID   string
@@ -372,7 +368,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 
 	// Get the max risk level of the same risk source.
 	// risks is sorted by level DESC, so we just need to return the 1st matched risk.
-	var maxRiskSourceRiskLevel int32
+	var maxRiskSourceRiskLevel storepb.RiskLevel
 	for _, risk := range risks {
 		if !risk.Active {
 			continue
@@ -405,26 +401,26 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 	// We have less than 5 planCheckRuns in total.
 	// We wait for all of them to finish.
 	if planCheckRunCount < common.MinimumCompletedPlanCheckRun && planCheckRunCount != planCheckRunDone {
-		return 0, store.RiskSourceUnknown, false, nil
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, nil
 	}
 	// We have 5 or more planCheckRuns in total.
 	// We need at least 5 completed plan check run.
 	if planCheckRunCount >= common.MinimumCompletedPlanCheckRun && planCheckRunDone < common.MinimumCompletedPlanCheckRun {
-		return 0, store.RiskSourceUnknown, false, nil
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, nil
 	}
 
 	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.sheetManager, r.dbFactory, plan.Config.GetSpecs(), plan.Config.GetDeployment(), issue.Project)
 	if err != nil {
-		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
 	}
 
-	var maxRiskLevel int32
+	var maxRiskLevel storepb.RiskLevel
 	for _, task := range pipelineCreate.Tasks {
 		instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 			ResourceID: &task.InstanceID,
 		})
 		if err != nil {
-			return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
+			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
 		}
 		if instance.Deleted {
 			continue
@@ -435,7 +431,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 		if sheetUID != 0 {
 			statement, err := r.store.GetSheetStatementByID(ctx, sheetUID)
 			if err != nil {
-				return 0, store.RiskSourceUnknown, true, errors.Wrapf(err, "failed to get statement in sheet %v", sheetUID)
+				return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, true, errors.Wrapf(err, "failed to get statement in sheet %v", sheetUID)
 			}
 			taskStatement = statement
 		}
@@ -451,7 +447,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 				DatabaseName: task.DatabaseName,
 			})
 			if err != nil {
-				return 0, store.RiskSourceUnknown, false, err
+				return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
 			}
 			databaseName = database.DatabaseName
 			if database.EffectiveEnvironmentID != nil {
@@ -468,13 +464,13 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 			common.CELAttributeResourceDBEngine: instance.Metadata.GetEngine().String(),
 			common.CELAttributeStatementText:    taskStatement,
 		}
-		risk, err := func() (int32, error) {
+		risk, err := func() (storepb.RiskLevel, error) {
 			// The summary report is not always available.
 			// Use the greatest risk.
-			var greatestRiskLevel int32
+			var greatestRiskLevel storepb.RiskLevel
 			riskLevel, err := apiv1.CalculateRiskLevelWithOptionalSummaryReport(ctx, risks, commonArgs, riskSource, nil)
 			if err != nil {
-				return 0, err
+				return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, err
 			}
 			if riskLevel > greatestRiskLevel {
 				greatestRiskLevel = riskLevel
@@ -491,7 +487,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 					}
 					riskLevel, err := apiv1.CalculateRiskLevelWithOptionalSummaryReport(ctx, risks, commonArgs, riskSource, report)
 					if err != nil {
-						return 0, err
+						return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, err
 					}
 					if riskLevel > greatestRiskLevel {
 						greatestRiskLevel = riskLevel
@@ -501,7 +497,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 			return greatestRiskLevel, nil
 		}()
 		if err != nil {
-			return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to evaluate risk expression for risk source %v", riskSource)
+			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to evaluate risk expression for risk source %v", riskSource)
 		}
 
 		if maxRiskLevel < risk {
@@ -515,31 +511,31 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 	return maxRiskLevel, riskSource, true, nil
 }
 
-func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
+func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage) (storepb.RiskLevel, store.RiskSource, bool, error) {
 	if issue.PlanUID == nil {
-		return 0, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
 	}
 	plan, err := r.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
 	if err != nil {
-		return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
 	}
 	if plan == nil {
-		return 0, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
 	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.sheetManager, r.dbFactory, plan.Config.GetSpecs(), plan.Config.GetDeployment(), issue.Project)
 	if err != nil {
-		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
 	}
 
 	riskSource := store.RiskSourceDatabaseDataExport
 
 	e, err := cel.NewEnv(common.RiskFactors...)
 	if err != nil {
-		return 0, store.RiskSourceUnknown, false, err
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
 	}
 
-	var maxRiskLevel int32
+	var maxRiskLevel storepb.RiskLevel
 	for _, task := range pipelineCreate.Tasks {
 		if task.Type != storepb.Task_DATABASE_EXPORT {
 			continue
@@ -548,7 +544,7 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 			ResourceID: &task.InstanceID,
 		})
 		if err != nil {
-			return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
+			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
 		}
 		if instance.Deleted {
 			continue
@@ -559,12 +555,12 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 			DatabaseName: task.DatabaseName,
 		})
 		if err != nil {
-			return 0, store.RiskSourceUnknown, false, err
+			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
 		}
 		databaseName := database.DatabaseName
 		environmentID := database.EffectiveEnvironmentID
 
-		risk, err := func() (int32, error) {
+		risk, err := func() (storepb.RiskLevel, error) {
 			for _, risk := range risks {
 				if !risk.Active {
 					continue
@@ -577,11 +573,11 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 				}
 				ast, issues := e.Parse(risk.Expression.Expression)
 				if issues != nil && issues.Err() != nil {
-					return 0, errors.Errorf("failed to parse expression: %v", issues.Err())
+					return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Errorf("failed to parse expression: %v", issues.Err())
 				}
 				prg, err := e.Program(ast, cel.EvalOptions(cel.OptPartialEval))
 				if err != nil {
-					return 0, err
+					return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, err
 				}
 				envID := ""
 				if environmentID != nil {
@@ -597,26 +593,26 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 
 				vars, err := e.PartialVars(args)
 				if err != nil {
-					return 0, errors.Wrapf(err, "failed to get vars")
+					return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to get vars")
 				}
 				out, _, err := prg.Eval(vars)
 				if err != nil {
-					return 0, errors.Wrapf(err, "failed to eval expression")
+					return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to eval expression")
 				}
 				if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
 					return risk.Level, nil
 				}
 			}
-			return 0, nil
+			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, nil
 		}()
 		if err != nil {
-			return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to evaluate risk expression for risk source %v", riskSource)
+			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to evaluate risk expression for risk source %v", riskSource)
 		}
 
 		if maxRiskLevel < risk {
 			maxRiskLevel = risk
 		}
-		if level, _ := convertRiskLevel(maxRiskLevel); level == storepb.IssuePayloadApproval_HIGH {
+		if maxRiskLevel == storepb.RiskLevel_HIGH {
 			return maxRiskLevel, riskSource, true, nil
 		}
 	}
@@ -624,25 +620,25 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 	return maxRiskLevel, riskSource, true, nil
 }
 
-func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
+func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage) (storepb.RiskLevel, store.RiskSource, bool, error) {
 	payload := issue.Payload
 	if payload.GrantRequest == nil {
-		return 0, store.RiskSourceUnknown, false, errors.New("grant request payload not found")
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.New("grant request payload not found")
 	}
 
-	// fast path, no risks so return the DEFAULT risk level "0"
+	// fast path, no risks so return the DEFAULT risk level
 	if len(risks) == 0 {
-		return 0, store.RiskRequestRole, true, nil
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskRequestRole, true, nil
 	}
 
 	e, err := cel.NewEnv(common.RiskFactors...)
 	if err != nil {
-		return 0, store.RiskSourceUnknown, false, err
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
 	}
 
 	factors, err := common.GetQueryExportFactors(payload.GetGrantRequest().GetCondition().GetExpression())
 	if err != nil {
-		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get query export factors")
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get query export factors")
 	}
 	// Default to max float64 if expiration is not set. AKA no expiration.
 	expirationDays := math.MaxFloat64
@@ -652,7 +648,7 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 
 	databaseMap, err := r.getDatabaseMap(ctx, factors.Databases)
 	if err != nil {
-		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to retrieve database map")
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to retrieve database map")
 	}
 
 	// Get the max risk level of the same risk source.
@@ -670,11 +666,11 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 
 		ast, issues := e.Parse(risk.Expression.Expression)
 		if issues != nil && issues.Err() != nil {
-			return 0, store.RiskSourceUnknown, false, errors.Errorf("failed to parse expression: %v", issues.Err())
+			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, errors.Errorf("failed to parse expression: %v", issues.Err())
 		}
 		prg, err := e.Program(ast, cel.EvalOptions(cel.OptPartialEval))
 		if err != nil {
-			return 0, store.RiskSourceUnknown, false, err
+			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
 		}
 
 		args := map[string]any{
@@ -685,17 +681,17 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 		if len(factors.Databases) == 0 {
 			environments, err := r.store.GetEnvironmentSetting(ctx)
 			if err != nil {
-				return 0, store.RiskSourceUnknown, false, err
+				return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
 			}
 			for _, environment := range environments.GetEnvironments() {
 				args[common.CELAttributeResourceEnvironmentID] = environment.Id
 				vars, err := e.PartialVars(args)
 				if err != nil {
-					return 0, store.RiskSourceUnknown, false, err
+					return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
 				}
 				out, _, err := prg.Eval(vars)
 				if err != nil {
-					return 0, store.RiskSourceUnknown, false, err
+					return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
 				}
 				if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
 					return risk.Level, store.RiskRequestRole, true, nil
@@ -711,11 +707,11 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 			}
 			vars, err := e.PartialVars(args)
 			if err != nil {
-				return 0, store.RiskSourceUnknown, false, err
+				return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
 			}
 			out, _, err := prg.Eval(vars)
 			if err != nil {
-				return 0, store.RiskSourceUnknown, false, err
+				return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskSourceUnknown, false, err
 			}
 			if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
 				return risk.Level, store.RiskRequestRole, true, nil
@@ -723,7 +719,7 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 		}
 	}
 
-	return 0, store.RiskRequestRole, true, nil
+	return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, store.RiskRequestRole, true, nil
 }
 
 func (r *Runner) getDatabaseMap(ctx context.Context, databases []string) (map[string]*store.DatabaseMessage, error) {
@@ -790,19 +786,4 @@ func updateIssueApprovalPayload(ctx context.Context, s *store.Store, issue *stor
 		return errors.Wrap(err, "failed to update issue payload")
 	}
 	return nil
-}
-
-func convertRiskLevel(riskLevel int32) (storepb.IssuePayloadApproval_RiskLevel, error) {
-	switch riskLevel {
-	case 0:
-		return storepb.IssuePayloadApproval_RISK_LEVEL_UNSPECIFIED, nil
-	case 100:
-		return storepb.IssuePayloadApproval_LOW, nil
-	case 200:
-		return storepb.IssuePayloadApproval_MODERATE, nil
-	case 300:
-		return storepb.IssuePayloadApproval_HIGH, nil
-	default:
-		return storepb.IssuePayloadApproval_RISK_LEVEL_UNSPECIFIED, errors.Errorf("unexpected risk level %d", riskLevel)
-	}
 }

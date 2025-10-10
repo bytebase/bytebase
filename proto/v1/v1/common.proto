@@ -88,3 +88,11 @@ enum MigrationType {
   // Used for DDL changes using gh-ost.
   GHOST = 3;
 }
+
+// RiskLevel is the risk level.
+enum RiskLevel {
+  RISK_LEVEL_UNSPECIFIED = 0;
+  LOW = 1;
+  MODERATE = 2;
+  HIGH = 3;
+}

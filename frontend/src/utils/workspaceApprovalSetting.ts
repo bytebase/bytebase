@@ -1,5 +1,5 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import { cloneDeep, isNumber } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import type { EqualityExpr, LogicalExpr, SimpleExpr } from "@/plugins/cel";
 import {
@@ -18,6 +18,7 @@ import type { Expr as CELExpr } from "@/types/proto-es/google/api/expr/v1alpha1/
 import { ExprSchema as CELExprSchema } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import type { Expr as _Expr } from "@/types/proto-es/google/type/expr_pb";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
+import { RiskLevel } from "@/types/proto-es/v1/common_pb";
 import type {
   ApprovalTemplate as _ProtoEsApprovalTemplate,
   ApprovalFlow as _ProtoEsApprovalFlow,
@@ -114,7 +115,7 @@ const resolveApprovalConfigRules = (rules: LocalApprovalRule[]) => {
     const source = resolveSourceExpr(args[0]);
     if (source === Risk_Source.SOURCE_UNSPECIFIED) return fail(expr, rule);
     const level = resolveLevelExpr(args[1]);
-    if (Number.isNaN(level)) return fail(expr, rule);
+    if (level === RiskLevel.RISK_LEVEL_UNSPECIFIED) return fail(expr, rule);
 
     // Found a correct (source, level) combination
     parsed.push({
@@ -230,21 +231,36 @@ const resolveSourceExpr = (expr: SimpleExpr): Risk_Source => {
   return source;
 };
 
-const resolveLevelExpr = (expr: SimpleExpr): number => {
-  if (!isConditionExpr(expr)) return Number.NaN;
+const resolveLevelExpr = (expr: SimpleExpr): RiskLevel => {
+  if (!isConditionExpr(expr)) return RiskLevel.RISK_LEVEL_UNSPECIFIED;
   const { operator, args } = expr;
-  if (operator !== "_==_") return Number.NaN;
-  if (!args || args.length !== 2) return Number.NaN;
+  if (operator !== "_==_") return RiskLevel.RISK_LEVEL_UNSPECIFIED;
+  if (!args || args.length !== 2) return RiskLevel.RISK_LEVEL_UNSPECIFIED;
   const factor = args[0];
-  if (factor !== "level") return Number.NaN;
+  if (factor !== "level") return RiskLevel.RISK_LEVEL_UNSPECIFIED;
   const level = args[1];
-  if (!isNumber(level)) return Number.NaN;
-  const supportedRiskLevelList = [
-    ...PresetRiskLevelList.map((item) => item.level),
-    DEFAULT_RISK_LEVEL,
-  ];
-  if (!supportedRiskLevelList.includes(level)) return Number.NaN;
-  return level;
+
+  // Handle string values (new format: "LOW", "MODERATE", "HIGH", "RISK_LEVEL_UNSPECIFIED")
+  if (typeof level === "string") {
+    const enumValue = RiskLevel[level as keyof typeof RiskLevel];
+    if (enumValue !== undefined) {
+      return enumValue;
+    }
+    return RiskLevel.RISK_LEVEL_UNSPECIFIED;
+  }
+
+  // Handle numeric values (legacy format or enum values)
+  if (typeof level === "number") {
+    const supportedRiskLevelList = [
+      ...PresetRiskLevelList.map((item) => item.level),
+      DEFAULT_RISK_LEVEL,
+    ];
+    if (supportedRiskLevelList.includes(level)) {
+      return level;
+    }
+  }
+
+  return RiskLevel.RISK_LEVEL_UNSPECIFIED;
 };
 
 const toMap = <T extends { rule: string }>(items: T[]): Map<string, T[]> => {
@@ -267,10 +283,12 @@ const buildParsedExpression = async (parsed: ParsedApprovalRule[]) => {
       operator: "_==_",
       args: ["source", Risk_Source[source]],
     };
+    // Convert RiskLevel enum to string name for CEL expression
+    // This generates: level == "LOW", level == "MODERATE", level == "HIGH"
     const levelExpr: EqualityExpr = {
       type: ExprType.Condition,
       operator: "_==_",
-      args: ["level", level],
+      args: ["level", RiskLevel[level]],
     };
     return {
       type: ExprType.ConditionGroup,

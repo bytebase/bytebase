@@ -5,6 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
+import type { RiskLevel } from "./common_pb";
 import type { Expr } from "../google/type/expr_pb";
 
 /**
@@ -503,9 +504,9 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
   releasers: string[];
 
   /**
-   * @generated from field: bytebase.v1.Issue.RiskLevel risk_level = 21;
+   * @generated from field: bytebase.v1.RiskLevel risk_level = 21;
    */
-  riskLevel: Issue_RiskLevel;
+  riskLevel: RiskLevel;
 
   /**
    * The status count of the issue.
@@ -630,36 +631,6 @@ export enum Issue_Type {
  * Describes the enum bytebase.v1.Issue.Type.
  */
 export declare const Issue_TypeSchema: GenEnum<Issue_Type>;
-
-/**
- * @generated from enum bytebase.v1.Issue.RiskLevel
- */
-export enum Issue_RiskLevel {
-  /**
-   * @generated from enum value: RISK_LEVEL_UNSPECIFIED = 0;
-   */
-  RISK_LEVEL_UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: LOW = 1;
-   */
-  LOW = 1,
-
-  /**
-   * @generated from enum value: MODERATE = 2;
-   */
-  MODERATE = 2,
-
-  /**
-   * @generated from enum value: HIGH = 3;
-   */
-  HIGH = 3,
-}
-
-/**
- * Describes the enum bytebase.v1.Issue.RiskLevel.
- */
-export declare const Issue_RiskLevelSchema: GenEnum<Issue_RiskLevel>;
 
 /**
  * @generated from enum bytebase.v1.Issue.ApprovalStatus

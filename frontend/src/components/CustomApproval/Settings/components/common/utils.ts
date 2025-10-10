@@ -20,10 +20,9 @@ import {
   useSupportedSourceList,
   type ComposedDatabase,
 } from "@/types";
-import { Engine } from "@/types/proto-es/v1/common_pb";
+import { Engine, RiskLevel } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import type { Risk } from "@/types/proto-es/v1/risk_service_pb";
-import { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
+import { type Risk, Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import {
   displayRoleTitle,
   engineNameV1,
@@ -68,15 +67,15 @@ export const sourceText = (source: Risk_Source) => {
   }
 };
 
-export const levelText = (level: number) => {
+export const levelText = (level: RiskLevel) => {
   switch (level) {
-    case 0:
+    case RiskLevel.RISK_LEVEL_UNSPECIFIED:
       return t("custom-approval.risk-rule.risk.risk-level.default");
-    case 100:
+    case RiskLevel.LOW:
       return t("custom-approval.risk-rule.risk.risk-level.low");
-    case 200:
+    case RiskLevel.MODERATE:
       return t("custom-approval.risk-rule.risk.risk-level.moderate");
-    case 300:
+    case RiskLevel.HIGH:
       return t("custom-approval.risk-rule.risk.risk-level.high");
     default:
       return String(level);

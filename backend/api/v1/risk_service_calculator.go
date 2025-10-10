@@ -20,9 +20,9 @@ func CalculateRiskLevelWithOptionalSummaryReport(
 	commonArgs map[string]any,
 	riskSource store.RiskSource,
 	summaryReport *storepb.PlanCheckRunResult_Result_SqlSummaryReport,
-) (int32, error) {
+) (storepb.RiskLevel, error) {
 	if riskSource == store.RiskSourceUnknown {
-		return 0, nil
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, nil
 	}
 
 	// Sort by level DESC, higher risks go first.
@@ -47,26 +47,26 @@ func CalculateRiskLevelWithOptionalSummaryReport(
 		}
 		e, err := cel.NewEnv(common.RiskFactors...)
 		if err != nil {
-			return 0, errors.Wrapf(err, "failed to create cel environment")
+			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to create cel environment")
 		}
 		ast, issues := e.Parse(risk.Expression.Expression)
 		if issues != nil && issues.Err() != nil {
-			return 0, errors.Errorf("failed to parse expression: %v", issues.Err())
+			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Errorf("failed to parse expression: %v", issues.Err())
 		}
 		prg, err := e.Program(ast, cel.EvalOptions(cel.OptPartialEval))
 		if err != nil {
-			return 0, errors.Wrap(err, "failed to create program")
+			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Wrap(err, "failed to create program")
 		}
 
 		args := map[string]any{}
 		maps.Copy(args, commonArgs)
 		vars, err := e.PartialVars(args)
 		if err != nil {
-			return 0, errors.Wrapf(err, "failed to get vars")
+			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to get vars")
 		}
 		out, _, err := prg.Eval(vars)
 		if err != nil {
-			return 0, errors.Wrapf(err, "failed to eval expression")
+			return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to eval expression")
 		}
 		if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
 			return risk.Level, nil
@@ -99,7 +99,7 @@ func CalculateRiskLevelWithOptionalSummaryReport(
 				args[common.CELAttributeResourceTableName] = tableName
 				out, _, err := prg.Eval(args)
 				if err != nil {
-					return 0, errors.Wrap(err, "failed to eval expression")
+					return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Wrap(err, "failed to eval expression")
 				}
 				if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
 					return risk.Level, nil
@@ -108,5 +108,5 @@ func CalculateRiskLevelWithOptionalSummaryReport(
 		}
 	}
 
-	return 0, nil
+	return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, nil
 }

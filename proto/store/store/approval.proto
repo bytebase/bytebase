@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "store/common.proto";
+
 option go_package = "generated-go/store";
 
 // IssuePayloadApproval is a part of the payload of an issue.
@@ -30,12 +32,6 @@ message IssuePayloadApproval {
 
   string approval_finding_error = 4;
 
-  enum RiskLevel {
-    RISK_LEVEL_UNSPECIFIED = 0;
-    LOW = 1;
-    MODERATE = 2;
-    HIGH = 3;
-  }
   RiskLevel risk_level = 5;
 }
 
