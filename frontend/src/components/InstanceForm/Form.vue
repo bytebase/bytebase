@@ -429,9 +429,10 @@
           </label>
           <div class="mt-1">
             <LabelListEditor
+              ref="labelListEditorRef"
               v-model:kv-list="labelKVList"
               :readonly="!allowEdit"
-              :show-errors="false"
+              :show-errors="true"
             />
           </div>
         </div>
@@ -552,8 +553,6 @@ import {
   autoSubscriptionRoute,
   urlfy,
   supportedEngineV1List,
-  convertLabelsToKVList,
-  convertKVListToLabels,
 } from "@/utils";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import BigQueryHostInput from "./BigQueryHostInput.vue";
@@ -584,6 +583,8 @@ const {
   allowCreate,
   resourceIdField,
   basicInfo,
+  labelListEditorRef,
+  labelKVList,
   adminDataSource,
   editingDataSource,
   testConnection,
@@ -619,16 +620,6 @@ const resourceId = computed({
   },
   set(id) {
     basicInfo.value.name = `instances/${id}`;
-  },
-});
-
-// Convert labels to KVList format for LabelListEditor
-const labelKVList = computed({
-  get() {
-    return convertLabelsToKVList(basicInfo.value.labels, true /* sort */);
-  },
-  set(kvList) {
-    basicInfo.value.labels = convertKVListToLabels(kvList, false);
   },
 });
 
