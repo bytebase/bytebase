@@ -99,12 +99,12 @@ SET value = (
             template->>'id' AS template_id,
             -- Merge multiple conditions for the same template using OR logic
             -- If there's only one condition, use it as-is
-            -- If there are multiple, wrap them in parentheses and join with ||
+            -- If there are multiple, join with || without extra parentheses
             CASE
                 WHEN COUNT(*) = 1 THEN
                     MAX(condition->>'expression')
                 ELSE
-                    '(' || string_agg('(' || (condition->>'expression') || ')', ' || ' ORDER BY condition->>'expression') || ')'
+                    string_agg(condition->>'expression', ' || ' ORDER BY condition->>'expression')
             END AS merged_expression
         FROM rules_with_ids
         GROUP BY template->>'id'
