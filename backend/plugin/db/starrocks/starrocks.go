@@ -29,8 +29,9 @@ import (
 )
 
 var (
-	baseTableType = "BASE TABLE"
-	viewTableType = "VIEW"
+	baseTableType  = "BASE TABLE"
+	viewTableType  = "VIEW"
+	systemViewType = "SYSTEM VIEW"
 
 	_ db.Driver = (*Driver)(nil)
 )

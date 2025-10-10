@@ -22,6 +22,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	crparser "github.com/bytebase/bytebase/backend/plugin/parser/cockroachdb"
+	"github.com/bytebase/bytebase/backend/plugin/parser/doris"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	partiqlparser "github.com/bytebase/bytebase/backend/plugin/parser/partiql"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
@@ -241,6 +242,8 @@ func syntaxCheck(dbType storepb.Engine, statement string) (any, []*storepb.Advic
 		return partiqlSyntaxCheck(statement)
 	case storepb.Engine_COCKROACHDB:
 		return cockroachdbSyntaxCheck(statement)
+	case storepb.Engine_DORIS:
+		return dorisSyntaxCheck(statement)
 	default:
 		// Return default advice for unsupported database types
 	}
@@ -253,6 +256,37 @@ func syntaxCheck(dbType storepb.Engine, statement string) (any, []*storepb.Advic
 			StartPosition: common.FirstLinePosition,
 		},
 	}
+}
+
+func dorisSyntaxCheck(statement string) (any, []*storepb.Advice) {
+	result, err := doris.ParseDorisSQL(statement)
+	if err != nil {
+		if syntaxErr, ok := err.(*base.SyntaxError); ok {
+			return nil, []*storepb.Advice{
+				{
+					Status:        storepb.Advice_WARNING,
+					Code:          StatementSyntaxErrorCode,
+					Title:         SyntaxErrorTitle,
+					Content:       syntaxErr.Message,
+					StartPosition: syntaxErr.Position,
+				},
+			}
+		}
+		return nil, []*storepb.Advice{
+			{
+				Status:        storepb.Advice_WARNING,
+				Code:          InternalErrorCode,
+				Title:         "Parse error",
+				Content:       err.Error(),
+				StartPosition: common.FirstLinePosition,
+			},
+		}
+	}
+
+	if result == nil {
+		return nil, nil
+	}
+	return result, nil
 }
 
 func cockroachdbSyntaxCheck(statement string) (any, []*storepb.Advice) {
