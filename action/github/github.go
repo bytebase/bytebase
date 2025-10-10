@@ -221,7 +221,7 @@ func formatRiskLevel(r v1pb.RiskLevel) string {
 		return "🟡 Moderate"
 	case v1pb.RiskLevel_HIGH:
 		return "🔴 High"
-	case v1pb.CheckReleaseResponse_RISK_LEVEL_UNSPECIFIED:
+	case v1pb.RiskLevel_RISK_LEVEL_UNSPECIFIED:
 		return "⚪ None"
 	default:
 		return "⚪ None"
