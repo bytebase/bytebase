@@ -2,8 +2,10 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 16.2
--- Dumped by pg_dump version 16.2
+\restrict uQwlm8d2TDQFk78h5V1ggn4GYM3YjpU9IYPF3SjUMjaQniDS2TDDpGeD3r8Xv5A
+
+-- Dumped from database version 16.10 (Homebrew)
+-- Dumped by pg_dump version 16.10 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -143,7 +145,7 @@ CREATE TABLE public.db_group (
     id bigint NOT NULL,
     project text NOT NULL,
     resource_id text NOT NULL,
-    placeholder text DEFAULT ''::text NOT NULL,
+    name text DEFAULT ''::text NOT NULL,
     expression jsonb DEFAULT '{}'::jsonb NOT NULL,
     payload jsonb DEFAULT '{}'::jsonb NOT NULL
 );
@@ -803,10 +805,10 @@ ALTER SEQUENCE public.revision_id_seq OWNED BY public.revision.id;
 CREATE TABLE public.risk (
     id bigint NOT NULL,
     source text NOT NULL,
-    level bigint NOT NULL,
     name text NOT NULL,
     active boolean NOT NULL,
     expression jsonb NOT NULL,
+    level text NOT NULL,
     CONSTRAINT risk_source_check CHECK ((source ~~ 'bb.risk.%'::text))
 );
 
@@ -1478,6 +1480,9 @@ INSERT INTO public.audit_log (id, created_at, payload) VALUES (185, '2025-06-09 
 INSERT INTO public.audit_log (id, created_at, payload) VALUES (186, '2025-09-09 11:25:51.338104+08', '{"user": "users/101", "method": "/bytebase.v1.AuthService/Login", "parent": "workspaces/a6b014b9-d0d4-4974-9be6-53ec61ea5f48", "latency": "0.092258458s", "request": "{\"email\":\"demo@example.com\",\"web\":true}", "resource": "demo@example.com", "response": "{\"user\":{\"name\":\"users/101\",\"email\":\"demo@example.com\",\"title\":\"Demo\",\"userType\":\"USER\"}}", "severity": "INFO", "requestMetadata": {"callerSuppliedUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"}}') ON CONFLICT DO NOTHING;
 INSERT INTO public.audit_log (id, created_at, payload) VALUES (187, '2025-09-09 11:27:04.928131+08', '{"user": "users/101", "method": "/bytebase.v1.DatabaseService/UpdateDatabase", "parent": "projects/hr", "latency": "0.045281250s", "request": "{\"database\":{\"name\":\"instances/prod-sample-instance/databases/hr_prod\",\"state\":\"ACTIVE\",\"successfulSyncTime\":\"2025-06-05T07:08:02.301195Z\",\"project\":\"projects/hr\",\"environment\":\"environments/prod\",\"effectiveEnvironment\":\"environments/prod\",\"instanceResource\":{\"title\":\"Prod Sample Instance\",\"engine\":\"POSTGRES\",\"engineVersion\":\"16.0.0\",\"dataSources\":[{\"id\":\"9af4f227-a55e-4e82-b7f5-c7193b5f405c\",\"type\":\"ADMIN\",\"username\":\"bbsample\",\"host\":\"/tmp\",\"port\":\"8084\",\"authenticationType\":\"PASSWORD\",\"redisType\":\"STANDALONE\"},{\"id\":\"e700ae12-173e-4f0d-8590-0414cf6a9405\",\"type\":\"READ_ONLY\",\"username\":\"bbsample\",\"host\":\"/tmp\",\"port\":\"8084\",\"authenticationType\":\"PASSWORD\",\"redisType\":\"STANDALONE\"}],\"activation\":true,\"name\":\"instances/prod-sample-instance\",\"environment\":\"environments/prod\"},\"backupAvailable\":true},\"updateMask\":\"drifted\"}", "resource": "instances/prod-sample-instance/databases/hr_prod", "response": "{\"name\":\"instances/prod-sample-instance/databases/hr_prod\",\"state\":\"ACTIVE\",\"successfulSyncTime\":\"2025-09-09T03:27:04.921330Z\",\"project\":\"projects/hr\",\"effectiveEnvironment\":\"environments/prod\",\"instanceResource\":{\"title\":\"Prod Sample Instance\",\"engine\":\"POSTGRES\",\"engineVersion\":\"16.0.0\",\"dataSources\":[{\"id\":\"9af4f227-a55e-4e82-b7f5-c7193b5f405c\",\"type\":\"ADMIN\",\"username\":\"bbsample\",\"host\":\"/tmp\",\"port\":\"8084\",\"authenticationType\":\"PASSWORD\",\"redisType\":\"STANDALONE\"},{\"id\":\"e700ae12-173e-4f0d-8590-0414cf6a9405\",\"type\":\"READ_ONLY\",\"username\":\"bbsample\",\"host\":\"/tmp\",\"port\":\"8084\",\"authenticationType\":\"PASSWORD\",\"redisType\":\"STANDALONE\"}],\"activation\":true,\"name\":\"instances/prod-sample-instance\",\"environment\":\"environments/prod\"},\"backupAvailable\":true}", "severity": "INFO", "requestMetadata": {"callerSuppliedUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"}}') ON CONFLICT DO NOTHING;
 INSERT INTO public.audit_log (id, created_at, payload) VALUES (188, '2025-09-09 11:27:11.850022+08', '{"user": "users/101", "method": "/bytebase.v1.DatabaseService/UpdateDatabase", "parent": "projects/hr", "latency": "0.049809208s", "request": "{\"database\":{\"name\":\"instances/test-sample-instance/databases/hr_test\",\"state\":\"ACTIVE\",\"successfulSyncTime\":\"2025-06-05T07:08:02.306591Z\",\"project\":\"projects/hr\",\"environment\":\"environments/test\",\"effectiveEnvironment\":\"environments/test\",\"instanceResource\":{\"title\":\"Test Sample Instance\",\"engine\":\"POSTGRES\",\"engineVersion\":\"16.0.0\",\"dataSources\":[{\"id\":\"a7f206f9-37c4-41ca-8b59-fcf4c6148105\",\"type\":\"ADMIN\",\"username\":\"bbsample\",\"host\":\"/tmp\",\"port\":\"8083\",\"authenticationType\":\"PASSWORD\",\"redisType\":\"STANDALONE\"}],\"activation\":true,\"name\":\"instances/test-sample-instance\",\"environment\":\"environments/test\"},\"backupAvailable\":true},\"updateMask\":\"drifted\"}", "resource": "instances/test-sample-instance/databases/hr_test", "response": "{\"name\":\"instances/test-sample-instance/databases/hr_test\",\"state\":\"ACTIVE\",\"successfulSyncTime\":\"2025-09-09T03:27:11.843520Z\",\"project\":\"projects/hr\",\"effectiveEnvironment\":\"environments/test\",\"instanceResource\":{\"title\":\"Test Sample Instance\",\"engine\":\"POSTGRES\",\"engineVersion\":\"16.0.0\",\"dataSources\":[{\"id\":\"a7f206f9-37c4-41ca-8b59-fcf4c6148105\",\"type\":\"ADMIN\",\"username\":\"bbsample\",\"host\":\"/tmp\",\"port\":\"8083\",\"authenticationType\":\"PASSWORD\",\"redisType\":\"STANDALONE\"}],\"activation\":true,\"name\":\"instances/test-sample-instance\",\"environment\":\"environments/test\"},\"backupAvailable\":true}", "severity": "INFO", "requestMetadata": {"callerSuppliedUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.audit_log (id, created_at, payload) VALUES (189, '2025-10-10 15:13:53.406615+08', '{"user": "users/101", "method": "/bytebase.v1.AuthService/Login", "parent": "workspaces/a6b014b9-d0d4-4974-9be6-53ec61ea5f48", "latency": "0.078084416s", "request": "{\"email\":\"demo@example.com\",\"web\":true}", "resource": "demo@example.com", "response": "{\"user\":{\"name\":\"users/101\",\"email\":\"demo@example.com\",\"title\":\"Demo\",\"userType\":\"USER\"}}", "severity": "INFO", "requestMetadata": {"callerSuppliedUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0"}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.audit_log (id, created_at, payload) VALUES (190, '2025-10-10 15:15:40.836602+08', '{"user": "users/101", "method": "/bytebase.v1.DatabaseService/UpdateDatabase", "parent": "projects/hr", "latency": "0.029922417s", "request": "{\"database\":{\"name\":\"instances/prod-sample-instance/databases/hr_prod\",\"state\":\"ACTIVE\",\"successfulSyncTime\":\"2025-10-10T07:14:57.127856Z\",\"project\":\"projects/hr\",\"environment\":\"environments/prod\",\"effectiveEnvironment\":\"environments/prod\",\"instanceResource\":{\"title\":\"Prod Sample Instance\",\"engine\":\"POSTGRES\",\"engineVersion\":\"16.0.0\",\"dataSources\":[{\"id\":\"9af4f227-a55e-4e82-b7f5-c7193b5f405c\",\"type\":\"ADMIN\",\"username\":\"bbsample\",\"host\":\"/tmp\",\"port\":\"8084\",\"authenticationType\":\"PASSWORD\",\"redisType\":\"STANDALONE\"},{\"id\":\"e700ae12-173e-4f0d-8590-0414cf6a9405\",\"type\":\"READ_ONLY\",\"username\":\"bbsample\",\"host\":\"/tmp\",\"port\":\"8084\",\"authenticationType\":\"PASSWORD\",\"redisType\":\"STANDALONE\"}],\"activation\":true,\"name\":\"instances/prod-sample-instance\",\"environment\":\"environments/prod\"},\"backupAvailable\":true},\"updateMask\":\"drifted\"}", "resource": "instances/prod-sample-instance/databases/hr_prod", "response": "{\"name\":\"instances/prod-sample-instance/databases/hr_prod\",\"state\":\"ACTIVE\",\"successfulSyncTime\":\"2025-10-10T07:15:40.832105Z\",\"project\":\"projects/hr\",\"effectiveEnvironment\":\"environments/prod\",\"instanceResource\":{\"title\":\"Prod Sample Instance\",\"engine\":\"POSTGRES\",\"engineVersion\":\"16.0.0\",\"dataSources\":[{\"id\":\"9af4f227-a55e-4e82-b7f5-c7193b5f405c\",\"type\":\"ADMIN\",\"username\":\"bbsample\",\"host\":\"/tmp\",\"port\":\"8084\",\"authenticationType\":\"PASSWORD\",\"redisType\":\"STANDALONE\"},{\"id\":\"e700ae12-173e-4f0d-8590-0414cf6a9405\",\"type\":\"READ_ONLY\",\"username\":\"bbsample\",\"host\":\"/tmp\",\"port\":\"8084\",\"authenticationType\":\"PASSWORD\",\"redisType\":\"STANDALONE\"}],\"activation\":true,\"name\":\"instances/prod-sample-instance\",\"environment\":\"environments/prod\"},\"backupAvailable\":true}", "severity": "INFO", "requestMetadata": {"callerSuppliedUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0"}}') ON CONFLICT DO NOTHING;
+INSERT INTO public.audit_log (id, created_at, payload) VALUES (191, '2025-10-10 15:15:45.142666+08', '{"user": "users/101", "method": "/bytebase.v1.DatabaseService/UpdateDatabase", "parent": "projects/hr", "latency": "0.037116417s", "request": "{\"database\":{\"name\":\"instances/test-sample-instance/databases/hr_test\",\"state\":\"ACTIVE\",\"successfulSyncTime\":\"2025-10-10T07:14:57.127853Z\",\"project\":\"projects/hr\",\"environment\":\"environments/test\",\"effectiveEnvironment\":\"environments/test\",\"instanceResource\":{\"title\":\"Test Sample Instance\",\"engine\":\"POSTGRES\",\"engineVersion\":\"16.0.0\",\"dataSources\":[{\"id\":\"a7f206f9-37c4-41ca-8b59-fcf4c6148105\",\"type\":\"ADMIN\",\"username\":\"bbsample\",\"host\":\"/tmp\",\"port\":\"8083\",\"authenticationType\":\"PASSWORD\",\"redisType\":\"STANDALONE\"}],\"activation\":true,\"name\":\"instances/test-sample-instance\",\"environment\":\"environments/test\"},\"backupAvailable\":true},\"updateMask\":\"drifted\"}", "resource": "instances/test-sample-instance/databases/hr_test", "response": "{\"name\":\"instances/test-sample-instance/databases/hr_test\",\"state\":\"ACTIVE\",\"successfulSyncTime\":\"2025-10-10T07:15:45.139052Z\",\"project\":\"projects/hr\",\"effectiveEnvironment\":\"environments/test\",\"instanceResource\":{\"title\":\"Test Sample Instance\",\"engine\":\"POSTGRES\",\"engineVersion\":\"16.0.0\",\"dataSources\":[{\"id\":\"a7f206f9-37c4-41ca-8b59-fcf4c6148105\",\"type\":\"ADMIN\",\"username\":\"bbsample\",\"host\":\"/tmp\",\"port\":\"8083\",\"authenticationType\":\"PASSWORD\",\"redisType\":\"STANDALONE\"}],\"activation\":true,\"name\":\"instances/test-sample-instance\",\"environment\":\"environments/test\"},\"backupAvailable\":true}", "severity": "INFO", "requestMetadata": {"callerSuppliedUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0"}}') ON CONFLICT DO NOTHING;
 
 
 --
@@ -1496,6 +1501,8 @@ INSERT INTO public.changelog (id, created_at, instance, db_name, status, prev_sy
 INSERT INTO public.changelog (id, created_at, instance, db_name, status, prev_sync_history_id, sync_history_id, payload) VALUES (104, '2025-06-09 10:21:07.596692+08', 'test-sample-instance', 'hr_test', 'DONE', 104, 104, '{"type": "BASELINE", "gitCommit": "unknown"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.changelog (id, created_at, instance, db_name, status, prev_sync_history_id, sync_history_id, payload) VALUES (105, '2025-09-09 11:27:04.925923+08', 'prod-sample-instance', 'hr_prod', 'DONE', 105, 105, '{"type": "BASELINE", "gitCommit": "unknown"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.changelog (id, created_at, instance, db_name, status, prev_sync_history_id, sync_history_id, payload) VALUES (106, '2025-09-09 11:27:11.848726+08', 'test-sample-instance', 'hr_test', 'DONE', 106, 106, '{"type": "BASELINE", "gitCommit": "unknown"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.changelog (id, created_at, instance, db_name, status, prev_sync_history_id, sync_history_id, payload) VALUES (107, '2025-10-10 15:15:40.835471+08', 'prod-sample-instance', 'hr_prod', 'DONE', 107, 107, '{"type": "BASELINE", "gitCommit": "unknown"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.changelog (id, created_at, instance, db_name, status, prev_sync_history_id, sync_history_id, payload) VALUES (108, '2025-10-10 15:15:45.142133+08', 'test-sample-instance', 'hr_test', 'DONE', 108, 108, '{"type": "BASELINE", "gitCommit": "unknown"}') ON CONFLICT DO NOTHING;
 
 
 --
@@ -1506,8 +1513,8 @@ INSERT INTO public.db (id, deleted, project, instance, name, environment, metada
 INSERT INTO public.db (id, deleted, project, instance, name, environment, metadata) VALUES (102, false, 'metadb', 'bytebase-meta', 'bb', NULL, '{"lastSyncTime": "2025-06-05T07:08:02.312662Z"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.db (id, deleted, project, instance, name, environment, metadata) VALUES (103, false, 'default', 'test-sample-instance', 'postgres', NULL, '{"lastSyncTime": "2025-06-05T07:08:02.313191Z"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.db (id, deleted, project, instance, name, environment, metadata) VALUES (101, false, 'default', 'bytebase-meta', 'postgres', NULL, '{"lastSyncTime": "2025-06-05T07:08:02.316233Z"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, deleted, project, instance, name, environment, metadata) VALUES (106, false, 'hr', 'prod-sample-instance', 'hr_prod', NULL, '{"lastSyncTime": "2025-09-09T03:27:04.921330Z", "backupAvailable": true}') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, deleted, project, instance, name, environment, metadata) VALUES (104, false, 'hr', 'test-sample-instance', 'hr_test', NULL, '{"lastSyncTime": "2025-09-09T03:27:11.843520Z", "backupAvailable": true}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, deleted, project, instance, name, environment, metadata) VALUES (106, false, 'hr', 'prod-sample-instance', 'hr_prod', NULL, '{"lastSyncTime": "2025-10-10T07:15:40.832105Z", "backupAvailable": true}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, deleted, project, instance, name, environment, metadata) VALUES (104, false, 'hr', 'test-sample-instance', 'hr_test', NULL, '{"lastSyncTime": "2025-10-10T07:15:45.139052Z", "backupAvailable": true}') ON CONFLICT DO NOTHING;
 
 
 --
@@ -2604,8 +2611,6 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
-SET default_tablespace = '''';
-
 CREATE SEQUENCE "public"."audit_id_seq"
     AS integer
 	START WITH 1
@@ -2613,6 +2618,16 @@ CREATE SEQUENCE "public"."audit_id_seq"
 	MINVALUE 1
 	MAXVALUE 2147483647
 	NO CYCLE;
+
+CREATE SEQUENCE "public"."employee_emp_no_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+SET default_tablespace = '''';
 
 CREATE TABLE "public"."audit" (
     "id" integer DEFAULT nextval(''public.audit_id_seq''::regclass) NOT NULL,
@@ -2624,7 +2639,7 @@ CREATE TABLE "public"."audit" (
 
 ALTER SEQUENCE "public"."audit_id_seq" OWNED BY "public"."audit"."id";
 
-ALTER TABLE ONLY "public"."audit" ADD CONSTRAINT "audit_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."audit" ADD CONSTRAINT "audit_pkey" PRIMARY KEY (id);
 
 CREATE INDEX "idx_audit_changed_at" ON ONLY "public"."audit" (changed_at);
 
@@ -2637,9 +2652,9 @@ CREATE TABLE "public"."department" (
     "dept_name" text NOT NULL
 );
 
-ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_pkey" PRIMARY KEY ("dept_no");
+ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_pkey" PRIMARY KEY (dept_no);
 
-ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_dept_name_key" UNIQUE ("dept_name");
+ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_dept_name_key" UNIQUE (dept_name);
 
 CREATE TABLE "public"."dept_emp" (
     "emp_no" integer NOT NULL,
@@ -2648,7 +2663,7 @@ CREATE TABLE "public"."dept_emp" (
     "to_date" date NOT NULL
 );
 
-ALTER TABLE ONLY "public"."dept_emp" ADD CONSTRAINT "dept_emp_pkey" PRIMARY KEY ("emp_no", "dept_no");
+ALTER TABLE ONLY "public"."dept_emp" ADD CONSTRAINT "dept_emp_pkey" PRIMARY KEY (emp_no, dept_no);
 
 CREATE TABLE "public"."dept_manager" (
     "emp_no" integer NOT NULL,
@@ -2657,15 +2672,7 @@ CREATE TABLE "public"."dept_manager" (
     "to_date" date NOT NULL
 );
 
-ALTER TABLE ONLY "public"."dept_manager" ADD CONSTRAINT "dept_manager_pkey" PRIMARY KEY ("emp_no", "dept_no");
-
-CREATE SEQUENCE "public"."employee_emp_no_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
+ALTER TABLE ONLY "public"."dept_manager" ADD CONSTRAINT "dept_manager_pkey" PRIMARY KEY (emp_no, dept_no);
 
 CREATE TABLE "public"."employee" (
     "emp_no" integer DEFAULT nextval(''public.employee_emp_no_seq''::regclass) NOT NULL,
@@ -2679,7 +2686,7 @@ CREATE TABLE "public"."employee" (
 
 ALTER SEQUENCE "public"."employee_emp_no_seq" OWNED BY "public"."employee"."emp_no";
 
-ALTER TABLE ONLY "public"."employee" ADD CONSTRAINT "employee_pkey" PRIMARY KEY ("emp_no");
+ALTER TABLE ONLY "public"."employee" ADD CONSTRAINT "employee_pkey" PRIMARY KEY (emp_no);
 
 CREATE INDEX "idx_employee_hire_date" ON ONLY "public"."employee" (hire_date);
 
@@ -2713,7 +2720,7 @@ CREATE TABLE "public"."salary" (
     "to_date" date NOT NULL
 );
 
-ALTER TABLE ONLY "public"."salary" ADD CONSTRAINT "salary_pkey" PRIMARY KEY ("emp_no", "from_date");
+ALTER TABLE ONLY "public"."salary" ADD CONSTRAINT "salary_pkey" PRIMARY KEY (emp_no, from_date);
 
 CREATE INDEX "idx_salary_amount" ON ONLY "public"."salary" (amount);
 
@@ -2724,7 +2731,7 @@ CREATE TABLE "public"."title" (
     "to_date" date
 );
 
-ALTER TABLE ONLY "public"."title" ADD CONSTRAINT "title_pkey" PRIMARY KEY ("emp_no", "title", "from_date");
+ALTER TABLE ONLY "public"."title" ADD CONSTRAINT "title_pkey" PRIMARY KEY (emp_no, title, from_date);
 
 CREATE VIEW "public"."dept_emp_latest_date" AS 
  SELECT emp_no,
@@ -2773,7 +2780,7 @@ ALTER TABLE "public"."title"
     REFERENCES "public"."employee" ("emp_no")
     ON DELETE CASCADE;
 
-', '{"schemas": [{"name": "public", "tables": [{"name": "employee", "columns": [{"name": "emp_no"}, {"name": "birth_date"}, {"name": "gender"}, {"name": "hire_date"}, {"name": "first_name", "classification": "1-2"}, {"name": "last_name", "classification": "1-2"}]}, {"name": "salary", "columns": [{"name": "amount", "semanticType": "bb.default"}, {"name": "emp_no"}, {"name": "from_date"}, {"name": "to_date"}]}]}]}', false) ON CONFLICT DO NOTHING;
+', '{"schemas": [{"name": "public", "tables": [{"name": "salary", "columns": [{"name": "to_date"}, {"name": "amount", "semanticType": "bb.default"}, {"name": "emp_no"}, {"name": "from_date"}]}, {"name": "employee", "columns": [{"name": "last_name", "classification": "1-2"}, {"name": "emp_no"}, {"name": "birth_date"}, {"name": "gender"}, {"name": "hire_date"}, {"name": "first_name", "classification": "1-2"}]}]}]}', false) ON CONFLICT DO NOTHING;
 INSERT INTO public.db_schema (id, instance, db_name, metadata, raw_dump, config, todo) VALUES (104, 'test-sample-instance', 'hr_test', '{"name":"hr_test","schemas":[{"name":"bbdataarchive","owner":"bbsample"},{"name":"public","tables":[{"name":"audit","columns":[{"name":"id","position":1,"default":"nextval(''public.audit_id_seq''::regclass)","type":"integer"},{"name":"operation","position":2,"type":"text"},{"name":"query","position":3,"nullable":true,"type":"text"},{"name":"user_name","position":4,"type":"text"},{"name":"changed_at","position":5,"default":"CURRENT_TIMESTAMP","nullable":true,"type":"timestamp(6) with time zone"}],"indexes":[{"name":"audit_pkey","expressions":["id"],"descending":[false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX audit_pkey ON public.audit USING btree (id);","isConstraint":true,"opclassNames":["int4_ops"],"opclassDefaults":[true]},{"name":"idx_audit_changed_at","expressions":["changed_at"],"descending":[false],"type":"btree","definition":"CREATE INDEX idx_audit_changed_at ON public.audit USING btree (changed_at);","opclassNames":["timestamptz_ops"],"opclassDefaults":[true]},{"name":"idx_audit_operation","expressions":["operation"],"descending":[false],"type":"btree","definition":"CREATE INDEX idx_audit_operation ON public.audit USING btree (operation);","opclassNames":["text_ops"],"opclassDefaults":[true]},{"name":"idx_audit_username","expressions":["user_name"],"descending":[false],"type":"btree","definition":"CREATE INDEX idx_audit_username ON public.audit USING btree (user_name);","opclassNames":["text_ops"],"opclassDefaults":[true]}],"dataSize":"8192","indexSize":"32768","owner":"bbsample"},{"name":"department","columns":[{"name":"dept_no","position":1,"type":"text"},{"name":"dept_name","position":2,"type":"text"}],"indexes":[{"name":"department_dept_name_key","expressions":["dept_name"],"descending":[false],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX department_dept_name_key ON public.department USING btree (dept_name);","isConstraint":true,"opclassNames":["text_ops"],"opclassDefaults":[true]},{"name":"department_pkey","expressions":["dept_no"],"descending":[false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX department_pkey ON public.department USING btree (dept_no);","isConstraint":true,"opclassNames":["text_ops"],"opclassDefaults":[true]}],"dataSize":"16384","indexSize":"32768","owner":"bbsample"},{"name":"dept_emp","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"dept_no","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"dept_emp_pkey","expressions":["emp_no","dept_no"],"descending":[false,false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX dept_emp_pkey ON public.dept_emp USING btree (emp_no, dept_no);","isConstraint":true,"opclassNames":["int4_ops","text_ops"],"opclassDefaults":[true,true]}],"rowCount":"1103","dataSize":"106496","indexSize":"57344","foreignKeys":[{"name":"dept_emp_dept_no_fkey","columns":["dept_no"],"referencedSchema":"public","referencedTable":"department","referencedColumns":["dept_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"dept_emp_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"},{"name":"dept_manager","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"dept_no","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"dept_manager_pkey","expressions":["emp_no","dept_no"],"descending":[false,false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX dept_manager_pkey ON public.dept_manager USING btree (emp_no, dept_no);","isConstraint":true,"opclassNames":["int4_ops","text_ops"],"opclassDefaults":[true,true]}],"dataSize":"16384","indexSize":"16384","foreignKeys":[{"name":"dept_manager_dept_no_fkey","columns":["dept_no"],"referencedSchema":"public","referencedTable":"department","referencedColumns":["dept_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"dept_manager_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"},{"name":"employee","columns":[{"name":"emp_no","position":1,"default":"nextval(''public.employee_emp_no_seq''::regclass)","type":"integer"},{"name":"birth_date","position":2,"type":"date"},{"name":"first_name","position":3,"type":"text"},{"name":"last_name","position":4,"type":"text"},{"name":"gender","position":5,"type":"text"},{"name":"hire_date","position":6,"type":"date"}],"indexes":[{"name":"employee_pkey","expressions":["emp_no"],"descending":[false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX employee_pkey ON public.employee USING btree (emp_no);","isConstraint":true,"opclassNames":["int4_ops"],"opclassDefaults":[true]},{"name":"idx_employee_hire_date","expressions":["hire_date"],"descending":[false],"type":"btree","definition":"CREATE INDEX idx_employee_hire_date ON public.employee USING btree (hire_date);","opclassNames":["date_ops"],"opclassDefaults":[true]}],"rowCount":"1000","dataSize":"98304","indexSize":"98304","checkConstraints":[{"name":"employee_gender_check","expression":"(gender = ANY (ARRAY[''M''::text, ''F''::text]))"}],"owner":"bbsample"},{"name":"salary","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"amount","position":2,"type":"integer"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"idx_salary_amount","expressions":["amount"],"descending":[false],"type":"btree","definition":"CREATE INDEX idx_salary_amount ON public.salary USING btree (amount);","opclassNames":["int4_ops"],"opclassDefaults":[true]},{"name":"salary_pkey","expressions":["emp_no","from_date"],"descending":[false,false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX salary_pkey ON public.salary USING btree (emp_no, from_date);","isConstraint":true,"opclassNames":["int4_ops","date_ops"],"opclassDefaults":[true,true]}],"rowCount":"9488","dataSize":"458752","indexSize":"548864","foreignKeys":[{"name":"salary_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample","triggers":[{"name":"salary_log_trigger","body":"CREATE TRIGGER salary_log_trigger AFTER DELETE OR UPDATE ON public.salary FOR EACH ROW EXECUTE FUNCTION public.log_dml_operations()"}]},{"name":"title","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"title","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"nullable":true,"type":"date"}],"indexes":[{"name":"title_pkey","expressions":["emp_no","title","from_date"],"descending":[false,false,false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX title_pkey ON public.title USING btree (emp_no, title, from_date);","isConstraint":true,"opclassNames":["int4_ops","text_ops","date_ops"],"opclassDefaults":[true,true,true]}],"rowCount":"1470","dataSize":"131072","indexSize":"73728","foreignKeys":[{"name":"title_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"}],"views":[{"name":"current_dept_emp","definition":" SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (public.dept_emp d\n     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));","dependencyColumns":[{"schema":"public","table":"dept_emp","column":"dept_no"},{"schema":"public","table":"dept_emp","column":"emp_no"},{"schema":"public","table":"dept_emp","column":"from_date"},{"schema":"public","table":"dept_emp","column":"to_date"},{"schema":"public","table":"dept_emp_latest_date","column":"emp_no"},{"schema":"public","table":"dept_emp_latest_date","column":"from_date"},{"schema":"public","table":"dept_emp_latest_date","column":"to_date"}],"columns":[{"name":"emp_no","position":1,"nullable":true,"type":"integer"},{"name":"dept_no","position":2,"nullable":true,"type":"text"},{"name":"from_date","position":3,"nullable":true,"type":"date"},{"name":"to_date","position":4,"nullable":true,"type":"date"}]},{"name":"dept_emp_latest_date","definition":" SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM public.dept_emp\n  GROUP BY emp_no;","dependencyColumns":[{"schema":"public","table":"dept_emp","column":"emp_no"},{"schema":"public","table":"dept_emp","column":"from_date"},{"schema":"public","table":"dept_emp","column":"to_date"}],"columns":[{"name":"emp_no","position":1,"nullable":true,"type":"integer"},{"name":"from_date","position":2,"nullable":true,"type":"date"},{"name":"to_date","position":3,"nullable":true,"type":"date"}]}],"functions":[{"name":"log_dml_operations","definition":"CREATE OR REPLACE FUNCTION public.log_dml_operations()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    IF (TG_OP = ''INSERT'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''INSERT'', current_query(), current_user);\n        RETURN NEW;\n    ELSIF (TG_OP = ''UPDATE'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''UPDATE'', current_query(), current_user);\n        RETURN NEW;\n    ELSIF (TG_OP = ''DELETE'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''DELETE'', current_query(), current_user);\n        RETURN OLD;\n    END IF;\n    RETURN NULL;\nEND;\n$function$\n","signature":"log_dml_operations()"}],"sequences":[{"name":"audit_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"audit","ownerColumn":"id"},{"name":"employee_emp_no_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"employee","ownerColumn":"emp_no"}],"owner":"pg_database_owner","comment":"standard public schema"}],"characterSet":"UTF8","collation":"en_US.UTF-8","owner":"bbsample","searchPath":"\"$user\", public"}', '
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -2786,8 +2793,6 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
-SET default_tablespace = '''';
-
 CREATE SEQUENCE "public"."audit_id_seq"
     AS integer
 	START WITH 1
@@ -2795,6 +2800,16 @@ CREATE SEQUENCE "public"."audit_id_seq"
 	MINVALUE 1
 	MAXVALUE 2147483647
 	NO CYCLE;
+
+CREATE SEQUENCE "public"."employee_emp_no_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+SET default_tablespace = '''';
 
 CREATE TABLE "public"."audit" (
     "id" integer DEFAULT nextval(''public.audit_id_seq''::regclass) NOT NULL,
@@ -2806,7 +2821,7 @@ CREATE TABLE "public"."audit" (
 
 ALTER SEQUENCE "public"."audit_id_seq" OWNED BY "public"."audit"."id";
 
-ALTER TABLE ONLY "public"."audit" ADD CONSTRAINT "audit_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."audit" ADD CONSTRAINT "audit_pkey" PRIMARY KEY (id);
 
 CREATE INDEX "idx_audit_changed_at" ON ONLY "public"."audit" (changed_at);
 
@@ -2819,9 +2834,9 @@ CREATE TABLE "public"."department" (
     "dept_name" text NOT NULL
 );
 
-ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_pkey" PRIMARY KEY ("dept_no");
+ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_pkey" PRIMARY KEY (dept_no);
 
-ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_dept_name_key" UNIQUE ("dept_name");
+ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_dept_name_key" UNIQUE (dept_name);
 
 CREATE TABLE "public"."dept_emp" (
     "emp_no" integer NOT NULL,
@@ -2830,7 +2845,7 @@ CREATE TABLE "public"."dept_emp" (
     "to_date" date NOT NULL
 );
 
-ALTER TABLE ONLY "public"."dept_emp" ADD CONSTRAINT "dept_emp_pkey" PRIMARY KEY ("emp_no", "dept_no");
+ALTER TABLE ONLY "public"."dept_emp" ADD CONSTRAINT "dept_emp_pkey" PRIMARY KEY (emp_no, dept_no);
 
 CREATE TABLE "public"."dept_manager" (
     "emp_no" integer NOT NULL,
@@ -2839,15 +2854,7 @@ CREATE TABLE "public"."dept_manager" (
     "to_date" date NOT NULL
 );
 
-ALTER TABLE ONLY "public"."dept_manager" ADD CONSTRAINT "dept_manager_pkey" PRIMARY KEY ("emp_no", "dept_no");
-
-CREATE SEQUENCE "public"."employee_emp_no_seq"
-    AS integer
-	START WITH 1
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 2147483647
-	NO CYCLE;
+ALTER TABLE ONLY "public"."dept_manager" ADD CONSTRAINT "dept_manager_pkey" PRIMARY KEY (emp_no, dept_no);
 
 CREATE TABLE "public"."employee" (
     "emp_no" integer DEFAULT nextval(''public.employee_emp_no_seq''::regclass) NOT NULL,
@@ -2861,7 +2868,7 @@ CREATE TABLE "public"."employee" (
 
 ALTER SEQUENCE "public"."employee_emp_no_seq" OWNED BY "public"."employee"."emp_no";
 
-ALTER TABLE ONLY "public"."employee" ADD CONSTRAINT "employee_pkey" PRIMARY KEY ("emp_no");
+ALTER TABLE ONLY "public"."employee" ADD CONSTRAINT "employee_pkey" PRIMARY KEY (emp_no);
 
 CREATE INDEX "idx_employee_hire_date" ON ONLY "public"."employee" (hire_date);
 
@@ -2895,7 +2902,7 @@ CREATE TABLE "public"."salary" (
     "to_date" date NOT NULL
 );
 
-ALTER TABLE ONLY "public"."salary" ADD CONSTRAINT "salary_pkey" PRIMARY KEY ("emp_no", "from_date");
+ALTER TABLE ONLY "public"."salary" ADD CONSTRAINT "salary_pkey" PRIMARY KEY (emp_no, from_date);
 
 CREATE INDEX "idx_salary_amount" ON ONLY "public"."salary" (amount);
 
@@ -2906,7 +2913,7 @@ CREATE TABLE "public"."title" (
     "to_date" date
 );
 
-ALTER TABLE ONLY "public"."title" ADD CONSTRAINT "title_pkey" PRIMARY KEY ("emp_no", "title", "from_date");
+ALTER TABLE ONLY "public"."title" ADD CONSTRAINT "title_pkey" PRIMARY KEY (emp_no, title, from_date);
 
 CREATE VIEW "public"."dept_emp_latest_date" AS 
  SELECT emp_no,
@@ -3031,13 +3038,30 @@ INSERT INTO public.instance_change_history (id, version) VALUES (145, '3.9.10') 
 INSERT INTO public.instance_change_history (id, version) VALUES (146, '3.10.0') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance_change_history (id, version) VALUES (147, '3.10.1') ON CONFLICT DO NOTHING;
 INSERT INTO public.instance_change_history (id, version) VALUES (148, '3.10.2') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (149, '3.10.3') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (150, '3.10.4') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (151, '3.10.5') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (152, '3.10.6') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (153, '3.10.7') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (154, '3.10.8') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (155, '3.11.0') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (156, '3.11.1') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (157, '3.11.2') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (158, '3.11.3') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (159, '3.11.4') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (160, '3.11.5') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (161, '3.11.6') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (162, '3.11.7') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (163, '3.11.8') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (164, '3.11.9') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, version) VALUES (165, '3.11.10') ON CONFLICT DO NOTHING;
 
 
 --
 -- Data for Name: issue; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.issue (id, creator_id, created_at, updated_at, project, plan_id, pipeline_id, name, status, type, description, payload, ts_vector) VALUES (101, 101, '2025-05-26 16:26:15.26631+08', '2025-05-26 16:26:16.121796+08', 'hr', 101, 101, '', 'OPEN', 'DATABASE_CHANGE', '', '{"labels": ["3.6.2", "feature"], "approval": {"riskLevel": "HIGH", "approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"role": "roles/projectOwner", "type": "ANY_IN_GROUP"}]}, {"type": "ANY", "nodes": [{"role": "roles/workspaceDBA", "type": "ANY_IN_GROUP"}]}]}, "title": "Project Owner -> Workspace DBA", "creatorId": 1, "description": "The system defines the approval process, first the project Owner approves, then the DBA approves."}], "approvalFindingDone": true}}', '''add'':3 ''column'':5 ''email'':4 ''employee'':7 ''here'':2 ''start'':1 ''table'':8 ''to'':6') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, creator_id, created_at, updated_at, project, plan_id, pipeline_id, name, status, type, description, payload, ts_vector) VALUES (101, 101, '2025-05-26 16:26:15.26631+08', '2025-05-26 16:26:16.121796+08', 'hr', 101, 101, '', 'OPEN', 'DATABASE_CHANGE', '', '{"labels": ["3.6.2", "feature"], "approval": {"riskLevel": "HIGH", "approvalTemplate": {"flow": {"roles": ["roles/projectOwner", "roles/workspaceDBA"]}, "title": "Project Owner -> Workspace DBA", "description": "The system defines the approval process, first the project Owner approves, then the DBA approves."}, "approvalFindingDone": true}}', '''add'':3 ''column'':5 ''email'':4 ''employee'':7 ''here'':2 ''start'':1 ''table'':8 ''to'':6') ON CONFLICT DO NOTHING;
 
 
 --
@@ -3057,7 +3081,7 @@ INSERT INTO public.pipeline (id, creator_id, created_at, project) VALUES (101, 1
 -- Data for Name: plan; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.plan (id, creator_id, created_at, updated_at, project, pipeline_id, name, description, config, deleted) VALUES (101, 101, '2025-05-26 16:26:15.250094+08', '2025-05-26 16:26:15.250094+08', 'hr', 101, '👉👉👉 [START HERE] Add email column to Employee table', '', '{"specs": [{"id": "036e8f34-05e6-4916-ba58-45c6a452fc60", "changeDatabaseConfig": {"type": "MIGRATE", "sheet": "projects/hr/sheets/101", "targets": ["instances/prod-sample-instance/databases/hr_prod", "instances/test-sample-instance/databases/hr_test"]}}], "deployment": {"environments": ["test", "prod"]}}', false) ON CONFLICT DO NOTHING;
+INSERT INTO public.plan (id, creator_id, created_at, updated_at, project, pipeline_id, name, description, config, deleted) VALUES (101, 101, '2025-05-26 16:26:15.250094+08', '2025-05-26 16:26:15.250094+08', 'hr', 101, '👉👉👉 [START HERE] Add email column to Employee table', '', '{"specs": [{"id": "036e8f34-05e6-4916-ba58-45c6a452fc60", "changeDatabaseConfig": {"type": "MIGRATE", "sheet": "projects/hr/sheets/101", "targets": ["instances/prod-sample-instance/databases/hr_prod", "instances/test-sample-instance/databases/hr_test"], "migrateType": "DDL"}}], "deployment": {"environments": ["test", "prod"]}}', false) ON CONFLICT DO NOTHING;
 
 
 --
@@ -3076,15 +3100,15 @@ INSERT INTO public.plan_check_run (id, created_at, updated_at, plan_id, status, 
 -- Data for Name: policy; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.policy (id, enforce, updated_at, resource_type, resource, type, payload, inherit_from_parent) VALUES (106, true, '2025-05-26 15:48:23.461198+08', 'WORKSPACE', '', 'MASKING_RULE', '{"rules": [{"id": "1f3018bb-f4ea-4daa-b4b3-6e32bce0d22e", "condition": {"expression": "classification_level in [\"2\", \"3\"]"}, "semanticType": "bb.default-partial"}, {"id": "e0743172-c9c7-43f8-9923-9a3c06012cee", "condition": {"expression": "classification_level in [\"4\"]"}, "semanticType": "bb.default"}]}', false) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, enforce, updated_at, resource_type, resource, type, payload, inherit_from_parent) VALUES (107, true, '2025-05-26 15:54:33.728664+08', 'PROJECT', 'projects/metadb', 'IAM', '{"bindings": [{"role": "roles/projectOwner", "members": ["users/101"], "condition": {}}, {"role": "roles/sqlEditorUser", "members": ["users/102", "users/103"], "condition": {"title": "SQL Editor User All databases"}}]}', false) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, enforce, updated_at, resource_type, resource, type, payload, inherit_from_parent) VALUES (103, true, '2025-05-26 16:07:29.784956+08', 'PROJECT', 'projects/hr', 'IAM', '{"bindings": [{"role": "roles/projectOwner", "members": ["users/101"], "condition": {}}, {"role": "roles/projectDeveloper", "members": ["users/102"], "condition": {"title": "Project Developer All databases"}}]}', false) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, enforce, updated_at, resource_type, resource, type, payload, inherit_from_parent) VALUES (101, true, '2025-05-26 16:10:00.958154+08', 'WORKSPACE', '', 'IAM', '{"bindings": [{"role": "roles/workspaceMember", "members": ["allUsers", "users/102", "users/105", "users/106", "groups/qa-group@example.com"], "condition": {}}, {"role": "roles/workspaceAdmin", "members": ["users/101", "users/104"], "condition": {}}, {"role": "roles/workspaceDBA", "members": ["users/103", "users/101"], "condition": {}}, {"role": "roles/qa-custom-role", "members": ["groups/qa-group@example.com"], "condition": {}}]}', false) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, enforce, updated_at, resource_type, resource, type, payload, inherit_from_parent) VALUES (110, true, '2025-05-26 16:23:40.12567+08', 'ENVIRONMENT', 'environments/prod', 'DATA_SOURCE_QUERY', '{"disallowDdl": true, "disallowDml": true}', false) ON CONFLICT DO NOTHING;
-INSERT INTO public.policy (id, enforce, updated_at, resource_type, resource, type, payload, inherit_from_parent) VALUES (111, true, '2025-05-26 16:23:40.136036+08', 'ENVIRONMENT', 'environments/prod', 'DISABLE_COPY_DATA', '{"active": true}', false) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, enforce, updated_at, resource_type, resource, type, payload, inherit_from_parent) VALUES (104, true, '2025-05-26 16:47:09.079713+08', 'ENVIRONMENT', 'environments/test', 'TAG', '{"tags": {"bb.tag.review_config": "reviewConfigs/sql-review-sample-policy"}}', false) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, enforce, updated_at, resource_type, resource, type, payload, inherit_from_parent) VALUES (105, true, '2025-05-26 16:47:09.079724+08', 'ENVIRONMENT', 'environments/prod', 'TAG', '{"tags": {"bb.tag.review_config": "reviewConfigs/sql-review-sample-policy"}}', false) ON CONFLICT DO NOTHING;
 INSERT INTO public.policy (id, enforce, updated_at, resource_type, resource, type, payload, inherit_from_parent) VALUES (112, true, '2025-09-09 11:16:27.935445+08', 'WORKSPACE', '', 'QUERY_DATA', '{"disableExport": false, "maximumResultRows": -1, "maximumResultSize": 104857600}', true) ON CONFLICT DO NOTHING;
+INSERT INTO public.policy (id, enforce, updated_at, resource_type, resource, type, payload, inherit_from_parent) VALUES (111, true, '2025-10-10 15:01:01.383813+08', 'ENVIRONMENT', 'environments/prod', 'QUERY_DATA', '{"disableCopyData": true}', false) ON CONFLICT DO NOTHING;
+INSERT INTO public.policy (id, enforce, updated_at, resource_type, resource, type, payload, inherit_from_parent) VALUES (106, true, '2025-05-26 15:48:23.461198+08', 'WORKSPACE', '', 'MASKING_RULE', '{"rules": [{"id": "1f3018bb-f4ea-4daa-b4b3-6e32bce0d22e", "condition": {"expression": "resource.classification_level in [\"2\", \"3\"]"}, "semanticType": "bb.default-partial"}, {"id": "e0743172-c9c7-43f8-9923-9a3c06012cee", "condition": {"expression": "resource.classification_level in [\"4\"]"}, "semanticType": "bb.default"}]}', false) ON CONFLICT DO NOTHING;
 
 
 --
@@ -3097,7 +3121,7 @@ INSERT INTO public.principal (id, deleted, created_at, type, name, email, passwo
 INSERT INTO public.principal (id, deleted, created_at, type, name, email, password_hash, phone, mfa_config, profile) VALUES (104, false, '2025-05-26 15:16:33.693169+08', 'SERVICE_ACCOUNT', 'API user', 'api@service.bytebase.com', '$2a$10$dm2.6B6YYbSDoKRDAmph2O4amsa4RDSiHjWpO2JfosO8ceP5vErj2', '', '{}', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, deleted, created_at, type, name, email, password_hash, phone, mfa_config, profile) VALUES (105, false, '2025-05-26 16:08:54.153568+08', 'END_USER', 'QA1', 'qa1@example.com', '$2a$10$ItgVGF7yA68QAlDPPykM.eDTXVYTVXdpqilNcVNGutI0XUExq2nZG', '', '{}', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.principal (id, deleted, created_at, type, name, email, password_hash, phone, mfa_config, profile) VALUES (106, false, '2025-05-26 16:09:14.423135+08', 'END_USER', 'QA2', 'qa2@example.com', '$2a$10$rUSSIn7pKKuRfBjrz1xdJud3kIY79zymiIuu4k8ufza7EO5Phqi76', '', '{}', '{}') ON CONFLICT DO NOTHING;
-INSERT INTO public.principal (id, deleted, created_at, type, name, email, password_hash, phone, mfa_config, profile) VALUES (101, false, '2025-05-26 14:48:06.299115+08', 'END_USER', 'Demo', 'demo@example.com', '$2a$10$rounVehKcCdUp3ykPl.K6.ebxXWOLxtcFEmDBHNQFcHK/pGTDUREy', '', '{}', '{"lastLoginTime": "2025-09-09T03:25:51.333995Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.principal (id, deleted, created_at, type, name, email, password_hash, phone, mfa_config, profile) VALUES (101, false, '2025-05-26 14:48:06.299115+08', 'END_USER', 'Demo', 'demo@example.com', '$2a$10$rounVehKcCdUp3ykPl.K6.ebxXWOLxtcFEmDBHNQFcHK/pGTDUREy', '', '{}', '{"lastLoginTime": "2025-10-10T07:13:53.403622Z"}') ON CONFLICT DO NOTHING;
 
 
 --
@@ -3194,9 +3218,9 @@ INSERT INTO public.review_config (id, enabled, name, payload) VALUES ('sql-revie
 -- Data for Name: risk; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.risk (id, source, level, name, active, expression) VALUES (101, 'bb.risk.database.schema.update', 300, ' ALTER column in production environment is high risk', true, '{"expression": "environment_id == \"prod\" && sql_type == \"ALTER_TABLE\""}') ON CONFLICT DO NOTHING;
-INSERT INTO public.risk (id, source, level, name, active, expression) VALUES (103, 'bb.risk.database.data.update', 300, 'Updated or deleted rows exceeds 100 in prod is high risk', true, '{"expression": "environment_id == \"prod\" && affected_rows > 100 && sql_type in [\"UPDATE\", \"DELETE\"]"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.risk (id, source, level, name, active, expression) VALUES (102, 'bb.risk.database.schema.update', 200, 'CREATE TABLE in production environment is moderate risk', true, '{"expression": "environment_id == \"prod\" && sql_type == \"CREATE_TABLE\""}') ON CONFLICT DO NOTHING;
+INSERT INTO public.risk (id, source, name, active, expression, level) VALUES (101, 'bb.risk.database.schema.update', ' ALTER column in production environment is high risk', true, '{"expression": "resource.environment_id == \"prod\" && statement.sql_type == \"ALTER_TABLE\""}', 'HIGH') ON CONFLICT DO NOTHING;
+INSERT INTO public.risk (id, source, name, active, expression, level) VALUES (103, 'bb.risk.database.data.update', 'Updated or deleted rows exceeds 100 in prod is high risk', true, '{"expression": "resource.environment_id == \"prod\" && statement.affected_rows > 100 && statement.sql_type in [\"UPDATE\", \"DELETE\"]"}', 'HIGH') ON CONFLICT DO NOTHING;
+INSERT INTO public.risk (id, source, name, active, expression, level) VALUES (102, 'bb.risk.database.schema.update', 'CREATE TABLE in production environment is moderate risk', true, '{"expression": "resource.environment_id == \"prod\" && statement.sql_type == \"CREATE_TABLE\""}', 'MODERATE') ON CONFLICT DO NOTHING;
 
 
 --
@@ -3222,7 +3246,7 @@ INSERT INTO public.setting (id, name, value) VALUES (113, 'ENVIRONMENT', '{"envi
 INSERT INTO public.setting (id, name, value) VALUES (128, 'SEMANTIC_TYPES', '{"types":[{"id":"bb.default", "title":"Default", "description":"Default type with full masking"}, {"id":"bb.default-partial", "title":"Default Partial", "description":"Default partial type with partial masking"}]}') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, name, value) VALUES (108, 'WATERMARK', '1') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, name, value) VALUES (110, 'DATA_CLASSIFICATION', '{"configs":[{"id":"e5680e79-e84b-486e-8cb2-76c984c3fac9", "title":"Classification Example", "levels":[{"id":"1", "title":"Level 1"}, {"id":"2", "title":"Level 2"}, {"id":"3", "title":"Level 3"}, {"id":"4", "title":"Level 4"}], "classification":{"1":{"id":"1", "title":"Basic"}, "1-1":{"id":"1-1", "title":"Basic", "levelId":"1"}, "1-2":{"id":"1-2", "title":"Contact", "levelId":"2"}, "1-3":{"id":"1-3", "title":"Health", "levelId":"4"}, "2":{"id":"2", "title":"Relationship"}, "2-1":{"id":"2-1", "title":"Social", "levelId":"1"}, "2-2":{"id":"2-2", "title":"Business", "levelId":"3"}}, "classificationFromConfig":true}]}') ON CONFLICT DO NOTHING;
-INSERT INTO public.setting (id, name, value) VALUES (111, 'WORKSPACE_APPROVAL', '{"rules": [{"template": {"flow": {"steps": [{"type": "ANY", "nodes": [{"role": "roles/projectOwner", "type": "ANY_IN_GROUP"}]}, {"type": "ANY", "nodes": [{"role": "roles/workspaceDBA", "type": "ANY_IN_GROUP"}]}]}, "title": "Project Owner -> Workspace DBA", "description": "The system defines the approval process, first the project Owner approves, then the DBA approves."}, "condition": {"expression": "source == \"DML\" && level == 300 || source == \"DDL\" && level == 300"}}, {"template": {"flow": {"steps": [{"type": "ANY", "nodes": [{"role": "roles/projectOwner", "type": "ANY_IN_GROUP"}]}]}, "title": "Project Owner", "description": "The system defines the approval process and only needs the project Owner to approve it."}, "condition": {"expression": "source == \"DML\" && level == 0 || source == \"DDL\" && level == 200 || source == \"DDL\" && level == 0 || source == \"DML\" && level == 200 || source == \"DATA_EXPORT\" && level == 0 || source == \"REQUEST_ROLE\" && level == 0 || source == \"CREATE_DATABASE\" && level == 0"}}, {"template": {"flow": {"steps": [{"type": "ANY", "nodes": [{"role": "roles/workspaceDBA", "type": "ANY_IN_GROUP"}]}]}, "title": "Workspace DBA", "description": "The system defines the approval process and only needs DBA approval."}, "condition": {}}, {"template": {"flow": {"steps": [{"type": "ANY", "nodes": [{"role": "roles/workspaceAdmin", "type": "ANY_IN_GROUP"}]}]}, "title": "Workspace Admin", "description": "The system defines the approval process and only needs Administrator approval."}, "condition": {}}, {"template": {"flow": {"steps": [{"type": "ANY", "nodes": [{"role": "roles/projectOwner", "type": "ANY_IN_GROUP"}]}, {"type": "ANY", "nodes": [{"role": "roles/workspaceDBA", "type": "ANY_IN_GROUP"}]}, {"type": "ANY", "nodes": [{"role": "roles/workspaceAdmin", "type": "ANY_IN_GROUP"}]}]}, "title": "Project Owner -> Workspace DBA -> Workspace Admin", "description": "The system defines the approval process, first the project Owner approves, then the DBA approves, and finally the Administrator approves."}, "condition": {}}]}') ON CONFLICT DO NOTHING;
+INSERT INTO public.setting (id, name, value) VALUES (111, 'WORKSPACE_APPROVAL', '{"rules": [{"template": {"flow": {"roles": ["roles/projectOwner", "roles/workspaceDBA"]}, "title": "Project Owner -> Workspace DBA", "description": "The system defines the approval process, first the project Owner approves, then the DBA approves."}, "condition": {"expression": "source == \"DML\" && level == \"HIGH\" || source == \"DDL\" && level == \"HIGH\""}}, {"template": {"flow": {"roles": ["roles/projectOwner"]}, "title": "Project Owner", "description": "The system defines the approval process and only needs the project Owner to approve it."}, "condition": {"expression": "source == \"DML\" && level == \"RISK_LEVEL_UNSPECIFIED\" || source == \"DDL\" && level == \"MODERATE\" || source == \"DDL\" && level == \"RISK_LEVEL_UNSPECIFIED\" || source == \"DML\" && level == \"MODERATE\" || source == \"DATA_EXPORT\" && level == \"RISK_LEVEL_UNSPECIFIED\" || source == \"REQUEST_ROLE\" && level == \"RISK_LEVEL_UNSPECIFIED\" || source == \"CREATE_DATABASE\" && level == \"RISK_LEVEL_UNSPECIFIED\""}}, {"template": {"flow": {"roles": ["roles/workspaceDBA"]}, "title": "Workspace DBA", "description": "The system defines the approval process and only needs DBA approval."}, "condition": {}}, {"template": {"flow": {"roles": ["roles/workspaceAdmin"]}, "title": "Workspace Admin", "description": "The system defines the approval process and only needs Administrator approval."}, "condition": {}}, {"template": {"flow": {"roles": ["roles/projectOwner", "roles/workspaceDBA", "roles/workspaceAdmin"]}, "title": "Project Owner -> Workspace DBA -> Workspace Admin", "description": "The system defines the approval process, first the project Owner approves, then the DBA approves, and finally the Administrator approves."}, "condition": {}}]}') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, name, value) VALUES (112, 'WORKSPACE_PROFILE', '{"externalUrl":"https://demo.bytebase.com","domains":["example.com"],"databaseChangeMode":"PIPELINE","enableMetricCollection":true}') ON CONFLICT DO NOTHING;
 
 
@@ -4310,14 +4334,378 @@ ALTER TABLE "public"."title"
     ON DELETE CASCADE;
 
 ') ON CONFLICT DO NOTHING;
+INSERT INTO public.sync_history (id, created_at, instance, db_name, metadata, raw_dump) VALUES (107, '2025-10-10 15:15:40.833999+08', 'prod-sample-instance', 'hr_prod', '{"name":"hr_prod","schemas":[{"name":"bbdataarchive","owner":"bbsample"},{"name":"public","tables":[{"name":"audit","columns":[{"name":"id","position":1,"default":"nextval(''public.audit_id_seq''::regclass)","type":"integer"},{"name":"operation","position":2,"type":"text"},{"name":"query","position":3,"nullable":true,"type":"text"},{"name":"user_name","position":4,"type":"text"},{"name":"changed_at","position":5,"default":"CURRENT_TIMESTAMP","nullable":true,"type":"timestamp(6) with time zone"}],"indexes":[{"name":"audit_pkey","expressions":["id"],"descending":[false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX audit_pkey ON public.audit USING btree (id);","isConstraint":true,"opclassNames":["int4_ops"],"opclassDefaults":[true]},{"name":"idx_audit_changed_at","expressions":["changed_at"],"descending":[false],"type":"btree","definition":"CREATE INDEX idx_audit_changed_at ON public.audit USING btree (changed_at);","opclassNames":["timestamptz_ops"],"opclassDefaults":[true]},{"name":"idx_audit_operation","expressions":["operation"],"descending":[false],"type":"btree","definition":"CREATE INDEX idx_audit_operation ON public.audit USING btree (operation);","opclassNames":["text_ops"],"opclassDefaults":[true]},{"name":"idx_audit_username","expressions":["user_name"],"descending":[false],"type":"btree","definition":"CREATE INDEX idx_audit_username ON public.audit USING btree (user_name);","opclassNames":["text_ops"],"opclassDefaults":[true]}],"dataSize":"8192","indexSize":"32768","owner":"bbsample"},{"name":"department","columns":[{"name":"dept_no","position":1,"type":"text"},{"name":"dept_name","position":2,"type":"text"}],"indexes":[{"name":"department_dept_name_key","expressions":["dept_name"],"descending":[false],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX department_dept_name_key ON public.department USING btree (dept_name);","isConstraint":true,"opclassNames":["text_ops"],"opclassDefaults":[true]},{"name":"department_pkey","expressions":["dept_no"],"descending":[false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX department_pkey ON public.department USING btree (dept_no);","isConstraint":true,"opclassNames":["text_ops"],"opclassDefaults":[true]}],"dataSize":"16384","indexSize":"32768","owner":"bbsample"},{"name":"dept_emp","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"dept_no","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"dept_emp_pkey","expressions":["emp_no","dept_no"],"descending":[false,false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX dept_emp_pkey ON public.dept_emp USING btree (emp_no, dept_no);","isConstraint":true,"opclassNames":["int4_ops","text_ops"],"opclassDefaults":[true,true]}],"rowCount":"1103","dataSize":"106496","indexSize":"57344","foreignKeys":[{"name":"dept_emp_dept_no_fkey","columns":["dept_no"],"referencedSchema":"public","referencedTable":"department","referencedColumns":["dept_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"dept_emp_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"},{"name":"dept_manager","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"dept_no","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"dept_manager_pkey","expressions":["emp_no","dept_no"],"descending":[false,false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX dept_manager_pkey ON public.dept_manager USING btree (emp_no, dept_no);","isConstraint":true,"opclassNames":["int4_ops","text_ops"],"opclassDefaults":[true,true]}],"dataSize":"16384","indexSize":"16384","foreignKeys":[{"name":"dept_manager_dept_no_fkey","columns":["dept_no"],"referencedSchema":"public","referencedTable":"department","referencedColumns":["dept_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"dept_manager_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"},{"name":"employee","columns":[{"name":"emp_no","position":1,"default":"nextval(''public.employee_emp_no_seq''::regclass)","type":"integer"},{"name":"birth_date","position":2,"type":"date"},{"name":"first_name","position":3,"type":"text"},{"name":"last_name","position":4,"type":"text"},{"name":"gender","position":5,"type":"text"},{"name":"hire_date","position":6,"type":"date"}],"indexes":[{"name":"employee_pkey","expressions":["emp_no"],"descending":[false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX employee_pkey ON public.employee USING btree (emp_no);","isConstraint":true,"opclassNames":["int4_ops"],"opclassDefaults":[true]},{"name":"idx_employee_hire_date","expressions":["hire_date"],"descending":[false],"type":"btree","definition":"CREATE INDEX idx_employee_hire_date ON public.employee USING btree (hire_date);","opclassNames":["date_ops"],"opclassDefaults":[true]}],"rowCount":"1000","dataSize":"98304","indexSize":"98304","checkConstraints":[{"name":"employee_gender_check","expression":"(gender = ANY (ARRAY[''M''::text, ''F''::text]))"}],"owner":"bbsample"},{"name":"salary","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"amount","position":2,"type":"integer"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"idx_salary_amount","expressions":["amount"],"descending":[false],"type":"btree","definition":"CREATE INDEX idx_salary_amount ON public.salary USING btree (amount);","opclassNames":["int4_ops"],"opclassDefaults":[true]},{"name":"salary_pkey","expressions":["emp_no","from_date"],"descending":[false,false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX salary_pkey ON public.salary USING btree (emp_no, from_date);","isConstraint":true,"opclassNames":["int4_ops","date_ops"],"opclassDefaults":[true,true]}],"rowCount":"9488","dataSize":"458752","indexSize":"548864","foreignKeys":[{"name":"salary_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample","triggers":[{"name":"salary_log_trigger","body":"CREATE TRIGGER salary_log_trigger AFTER DELETE OR UPDATE ON public.salary FOR EACH ROW EXECUTE FUNCTION public.log_dml_operations()"}]},{"name":"title","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"title","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"nullable":true,"type":"date"}],"indexes":[{"name":"title_pkey","expressions":["emp_no","title","from_date"],"descending":[false,false,false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX title_pkey ON public.title USING btree (emp_no, title, from_date);","isConstraint":true,"opclassNames":["int4_ops","text_ops","date_ops"],"opclassDefaults":[true,true,true]}],"rowCount":"1470","dataSize":"131072","indexSize":"73728","foreignKeys":[{"name":"title_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"}],"views":[{"name":"current_dept_emp","definition":" SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (public.dept_emp d\n     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));","dependencyColumns":[{"schema":"public","table":"dept_emp","column":"dept_no"},{"schema":"public","table":"dept_emp","column":"emp_no"},{"schema":"public","table":"dept_emp","column":"from_date"},{"schema":"public","table":"dept_emp","column":"to_date"},{"schema":"public","table":"dept_emp_latest_date","column":"emp_no"},{"schema":"public","table":"dept_emp_latest_date","column":"from_date"},{"schema":"public","table":"dept_emp_latest_date","column":"to_date"}],"columns":[{"name":"emp_no","position":1,"nullable":true,"type":"integer"},{"name":"dept_no","position":2,"nullable":true,"type":"text"},{"name":"from_date","position":3,"nullable":true,"type":"date"},{"name":"to_date","position":4,"nullable":true,"type":"date"}]},{"name":"dept_emp_latest_date","definition":" SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM public.dept_emp\n  GROUP BY emp_no;","dependencyColumns":[{"schema":"public","table":"dept_emp","column":"emp_no"},{"schema":"public","table":"dept_emp","column":"from_date"},{"schema":"public","table":"dept_emp","column":"to_date"}],"columns":[{"name":"emp_no","position":1,"nullable":true,"type":"integer"},{"name":"from_date","position":2,"nullable":true,"type":"date"},{"name":"to_date","position":3,"nullable":true,"type":"date"}]}],"functions":[{"name":"log_dml_operations","definition":"CREATE OR REPLACE FUNCTION public.log_dml_operations()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    IF (TG_OP = ''INSERT'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''INSERT'', current_query(), current_user);\n        RETURN NEW;\n    ELSIF (TG_OP = ''UPDATE'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''UPDATE'', current_query(), current_user);\n        RETURN NEW;\n    ELSIF (TG_OP = ''DELETE'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''DELETE'', current_query(), current_user);\n        RETURN OLD;\n    END IF;\n    RETURN NULL;\nEND;\n$function$\n","signature":"log_dml_operations()"}],"sequences":[{"name":"audit_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"audit","ownerColumn":"id"},{"name":"employee_emp_no_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"employee","ownerColumn":"emp_no"}],"owner":"pg_database_owner","comment":"standard public schema"}],"characterSet":"UTF8","collation":"en_US.UTF-8","owner":"bbsample","searchPath":"\"$user\", public"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE SEQUENCE "public"."audit_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE SEQUENCE "public"."employee_emp_no_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+SET default_tablespace = '''';
+
+CREATE TABLE "public"."audit" (
+    "id" integer DEFAULT nextval(''public.audit_id_seq''::regclass) NOT NULL,
+    "operation" text NOT NULL,
+    "query" text,
+    "user_name" text NOT NULL,
+    "changed_at" timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER SEQUENCE "public"."audit_id_seq" OWNED BY "public"."audit"."id";
+
+ALTER TABLE ONLY "public"."audit" ADD CONSTRAINT "audit_pkey" PRIMARY KEY (id);
+
+CREATE INDEX "idx_audit_changed_at" ON ONLY "public"."audit" (changed_at);
+
+CREATE INDEX "idx_audit_operation" ON ONLY "public"."audit" (operation);
+
+CREATE INDEX "idx_audit_username" ON ONLY "public"."audit" (user_name);
+
+CREATE TABLE "public"."department" (
+    "dept_no" text NOT NULL,
+    "dept_name" text NOT NULL
+);
+
+ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_pkey" PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_dept_name_key" UNIQUE (dept_name);
+
+CREATE TABLE "public"."dept_emp" (
+    "emp_no" integer NOT NULL,
+    "dept_no" text NOT NULL,
+    "from_date" date NOT NULL,
+    "to_date" date NOT NULL
+);
+
+ALTER TABLE ONLY "public"."dept_emp" ADD CONSTRAINT "dept_emp_pkey" PRIMARY KEY (emp_no, dept_no);
+
+CREATE TABLE "public"."dept_manager" (
+    "emp_no" integer NOT NULL,
+    "dept_no" text NOT NULL,
+    "from_date" date NOT NULL,
+    "to_date" date NOT NULL
+);
+
+ALTER TABLE ONLY "public"."dept_manager" ADD CONSTRAINT "dept_manager_pkey" PRIMARY KEY (emp_no, dept_no);
+
+CREATE TABLE "public"."employee" (
+    "emp_no" integer DEFAULT nextval(''public.employee_emp_no_seq''::regclass) NOT NULL,
+    "birth_date" date NOT NULL,
+    "first_name" text NOT NULL,
+    "last_name" text NOT NULL,
+    "gender" text NOT NULL,
+    "hire_date" date NOT NULL,
+    CONSTRAINT "employee_gender_check" CHECK (gender = ANY (ARRAY[''M''::text, ''F''::text]))
+);
+
+ALTER SEQUENCE "public"."employee_emp_no_seq" OWNED BY "public"."employee"."emp_no";
+
+ALTER TABLE ONLY "public"."employee" ADD CONSTRAINT "employee_pkey" PRIMARY KEY (emp_no);
+
+CREATE INDEX "idx_employee_hire_date" ON ONLY "public"."employee" (hire_date);
+
+CREATE OR REPLACE FUNCTION public.log_dml_operations()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    IF (TG_OP = ''INSERT'') THEN
+        INSERT INTO audit (operation, query, user_name)
+        VALUES (''INSERT'', current_query(), current_user);
+        RETURN NEW;
+    ELSIF (TG_OP = ''UPDATE'') THEN
+        INSERT INTO audit (operation, query, user_name)
+        VALUES (''UPDATE'', current_query(), current_user);
+        RETURN NEW;
+    ELSIF (TG_OP = ''DELETE'') THEN
+        INSERT INTO audit (operation, query, user_name)
+        VALUES (''DELETE'', current_query(), current_user);
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$function$
+;
+
+CREATE TABLE "public"."salary" (
+    "emp_no" integer NOT NULL,
+    "amount" integer NOT NULL,
+    "from_date" date NOT NULL,
+    "to_date" date NOT NULL
+);
+
+ALTER TABLE ONLY "public"."salary" ADD CONSTRAINT "salary_pkey" PRIMARY KEY (emp_no, from_date);
+
+CREATE INDEX "idx_salary_amount" ON ONLY "public"."salary" (amount);
+
+CREATE TABLE "public"."title" (
+    "emp_no" integer NOT NULL,
+    "title" text NOT NULL,
+    "from_date" date NOT NULL,
+    "to_date" date
+);
+
+ALTER TABLE ONLY "public"."title" ADD CONSTRAINT "title_pkey" PRIMARY KEY (emp_no, title, from_date);
+
+CREATE VIEW "public"."dept_emp_latest_date" AS 
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW "public"."current_dept_emp" AS 
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TRIGGER salary_log_trigger AFTER DELETE OR UPDATE ON public.salary FOR EACH ROW EXECUTE FUNCTION public.log_dml_operations();
+
+ALTER TABLE "public"."dept_emp"
+    ADD CONSTRAINT "dept_emp_dept_no_fkey" FOREIGN KEY ("dept_no")
+    REFERENCES "public"."department" ("dept_no")
+    ON DELETE CASCADE;
+
+ALTER TABLE "public"."dept_emp"
+    ADD CONSTRAINT "dept_emp_emp_no_fkey" FOREIGN KEY ("emp_no")
+    REFERENCES "public"."employee" ("emp_no")
+    ON DELETE CASCADE;
+
+ALTER TABLE "public"."dept_manager"
+    ADD CONSTRAINT "dept_manager_dept_no_fkey" FOREIGN KEY ("dept_no")
+    REFERENCES "public"."department" ("dept_no")
+    ON DELETE CASCADE;
+
+ALTER TABLE "public"."dept_manager"
+    ADD CONSTRAINT "dept_manager_emp_no_fkey" FOREIGN KEY ("emp_no")
+    REFERENCES "public"."employee" ("emp_no")
+    ON DELETE CASCADE;
+
+ALTER TABLE "public"."salary"
+    ADD CONSTRAINT "salary_emp_no_fkey" FOREIGN KEY ("emp_no")
+    REFERENCES "public"."employee" ("emp_no")
+    ON DELETE CASCADE;
+
+ALTER TABLE "public"."title"
+    ADD CONSTRAINT "title_emp_no_fkey" FOREIGN KEY ("emp_no")
+    REFERENCES "public"."employee" ("emp_no")
+    ON DELETE CASCADE;
+
+') ON CONFLICT DO NOTHING;
+INSERT INTO public.sync_history (id, created_at, instance, db_name, metadata, raw_dump) VALUES (108, '2025-10-10 15:15:45.141539+08', 'test-sample-instance', 'hr_test', '{"name":"hr_test","schemas":[{"name":"bbdataarchive","owner":"bbsample"},{"name":"public","tables":[{"name":"audit","columns":[{"name":"id","position":1,"default":"nextval(''public.audit_id_seq''::regclass)","type":"integer"},{"name":"operation","position":2,"type":"text"},{"name":"query","position":3,"nullable":true,"type":"text"},{"name":"user_name","position":4,"type":"text"},{"name":"changed_at","position":5,"default":"CURRENT_TIMESTAMP","nullable":true,"type":"timestamp(6) with time zone"}],"indexes":[{"name":"audit_pkey","expressions":["id"],"descending":[false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX audit_pkey ON public.audit USING btree (id);","isConstraint":true,"opclassNames":["int4_ops"],"opclassDefaults":[true]},{"name":"idx_audit_changed_at","expressions":["changed_at"],"descending":[false],"type":"btree","definition":"CREATE INDEX idx_audit_changed_at ON public.audit USING btree (changed_at);","opclassNames":["timestamptz_ops"],"opclassDefaults":[true]},{"name":"idx_audit_operation","expressions":["operation"],"descending":[false],"type":"btree","definition":"CREATE INDEX idx_audit_operation ON public.audit USING btree (operation);","opclassNames":["text_ops"],"opclassDefaults":[true]},{"name":"idx_audit_username","expressions":["user_name"],"descending":[false],"type":"btree","definition":"CREATE INDEX idx_audit_username ON public.audit USING btree (user_name);","opclassNames":["text_ops"],"opclassDefaults":[true]}],"dataSize":"8192","indexSize":"32768","owner":"bbsample"},{"name":"department","columns":[{"name":"dept_no","position":1,"type":"text"},{"name":"dept_name","position":2,"type":"text"}],"indexes":[{"name":"department_dept_name_key","expressions":["dept_name"],"descending":[false],"type":"btree","unique":true,"definition":"CREATE UNIQUE INDEX department_dept_name_key ON public.department USING btree (dept_name);","isConstraint":true,"opclassNames":["text_ops"],"opclassDefaults":[true]},{"name":"department_pkey","expressions":["dept_no"],"descending":[false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX department_pkey ON public.department USING btree (dept_no);","isConstraint":true,"opclassNames":["text_ops"],"opclassDefaults":[true]}],"dataSize":"16384","indexSize":"32768","owner":"bbsample"},{"name":"dept_emp","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"dept_no","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"dept_emp_pkey","expressions":["emp_no","dept_no"],"descending":[false,false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX dept_emp_pkey ON public.dept_emp USING btree (emp_no, dept_no);","isConstraint":true,"opclassNames":["int4_ops","text_ops"],"opclassDefaults":[true,true]}],"rowCount":"1103","dataSize":"106496","indexSize":"57344","foreignKeys":[{"name":"dept_emp_dept_no_fkey","columns":["dept_no"],"referencedSchema":"public","referencedTable":"department","referencedColumns":["dept_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"dept_emp_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"},{"name":"dept_manager","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"dept_no","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"dept_manager_pkey","expressions":["emp_no","dept_no"],"descending":[false,false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX dept_manager_pkey ON public.dept_manager USING btree (emp_no, dept_no);","isConstraint":true,"opclassNames":["int4_ops","text_ops"],"opclassDefaults":[true,true]}],"dataSize":"16384","indexSize":"16384","foreignKeys":[{"name":"dept_manager_dept_no_fkey","columns":["dept_no"],"referencedSchema":"public","referencedTable":"department","referencedColumns":["dept_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"},{"name":"dept_manager_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"},{"name":"employee","columns":[{"name":"emp_no","position":1,"default":"nextval(''public.employee_emp_no_seq''::regclass)","type":"integer"},{"name":"birth_date","position":2,"type":"date"},{"name":"first_name","position":3,"type":"text"},{"name":"last_name","position":4,"type":"text"},{"name":"gender","position":5,"type":"text"},{"name":"hire_date","position":6,"type":"date"}],"indexes":[{"name":"employee_pkey","expressions":["emp_no"],"descending":[false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX employee_pkey ON public.employee USING btree (emp_no);","isConstraint":true,"opclassNames":["int4_ops"],"opclassDefaults":[true]},{"name":"idx_employee_hire_date","expressions":["hire_date"],"descending":[false],"type":"btree","definition":"CREATE INDEX idx_employee_hire_date ON public.employee USING btree (hire_date);","opclassNames":["date_ops"],"opclassDefaults":[true]}],"rowCount":"1000","dataSize":"98304","indexSize":"98304","checkConstraints":[{"name":"employee_gender_check","expression":"(gender = ANY (ARRAY[''M''::text, ''F''::text]))"}],"owner":"bbsample"},{"name":"salary","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"amount","position":2,"type":"integer"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"type":"date"}],"indexes":[{"name":"idx_salary_amount","expressions":["amount"],"descending":[false],"type":"btree","definition":"CREATE INDEX idx_salary_amount ON public.salary USING btree (amount);","opclassNames":["int4_ops"],"opclassDefaults":[true]},{"name":"salary_pkey","expressions":["emp_no","from_date"],"descending":[false,false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX salary_pkey ON public.salary USING btree (emp_no, from_date);","isConstraint":true,"opclassNames":["int4_ops","date_ops"],"opclassDefaults":[true,true]}],"rowCount":"9488","dataSize":"458752","indexSize":"548864","foreignKeys":[{"name":"salary_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample","triggers":[{"name":"salary_log_trigger","body":"CREATE TRIGGER salary_log_trigger AFTER DELETE OR UPDATE ON public.salary FOR EACH ROW EXECUTE FUNCTION public.log_dml_operations()"}]},{"name":"title","columns":[{"name":"emp_no","position":1,"type":"integer"},{"name":"title","position":2,"type":"text"},{"name":"from_date","position":3,"type":"date"},{"name":"to_date","position":4,"nullable":true,"type":"date"}],"indexes":[{"name":"title_pkey","expressions":["emp_no","title","from_date"],"descending":[false,false,false],"type":"btree","unique":true,"primary":true,"definition":"CREATE UNIQUE INDEX title_pkey ON public.title USING btree (emp_no, title, from_date);","isConstraint":true,"opclassNames":["int4_ops","text_ops","date_ops"],"opclassDefaults":[true,true,true]}],"rowCount":"1470","dataSize":"131072","indexSize":"73728","foreignKeys":[{"name":"title_emp_no_fkey","columns":["emp_no"],"referencedSchema":"public","referencedTable":"employee","referencedColumns":["emp_no"],"onDelete":"CASCADE","onUpdate":"NO ACTION","matchType":"SIMPLE"}],"owner":"bbsample"}],"views":[{"name":"current_dept_emp","definition":" SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (public.dept_emp d\n     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));","dependencyColumns":[{"schema":"public","table":"dept_emp","column":"dept_no"},{"schema":"public","table":"dept_emp","column":"emp_no"},{"schema":"public","table":"dept_emp","column":"from_date"},{"schema":"public","table":"dept_emp","column":"to_date"},{"schema":"public","table":"dept_emp_latest_date","column":"emp_no"},{"schema":"public","table":"dept_emp_latest_date","column":"from_date"},{"schema":"public","table":"dept_emp_latest_date","column":"to_date"}],"columns":[{"name":"emp_no","position":1,"nullable":true,"type":"integer"},{"name":"dept_no","position":2,"nullable":true,"type":"text"},{"name":"from_date","position":3,"nullable":true,"type":"date"},{"name":"to_date","position":4,"nullable":true,"type":"date"}]},{"name":"dept_emp_latest_date","definition":" SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM public.dept_emp\n  GROUP BY emp_no;","dependencyColumns":[{"schema":"public","table":"dept_emp","column":"emp_no"},{"schema":"public","table":"dept_emp","column":"from_date"},{"schema":"public","table":"dept_emp","column":"to_date"}],"columns":[{"name":"emp_no","position":1,"nullable":true,"type":"integer"},{"name":"from_date","position":2,"nullable":true,"type":"date"},{"name":"to_date","position":3,"nullable":true,"type":"date"}]}],"functions":[{"name":"log_dml_operations","definition":"CREATE OR REPLACE FUNCTION public.log_dml_operations()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    IF (TG_OP = ''INSERT'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''INSERT'', current_query(), current_user);\n        RETURN NEW;\n    ELSIF (TG_OP = ''UPDATE'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''UPDATE'', current_query(), current_user);\n        RETURN NEW;\n    ELSIF (TG_OP = ''DELETE'') THEN\n        INSERT INTO audit (operation, query, user_name)\n        VALUES (''DELETE'', current_query(), current_user);\n        RETURN OLD;\n    END IF;\n    RETURN NULL;\nEND;\n$function$\n","signature":"log_dml_operations()"}],"sequences":[{"name":"audit_id_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"audit","ownerColumn":"id"},{"name":"employee_emp_no_seq","dataType":"integer","start":"1","minValue":"1","maxValue":"2147483647","increment":"1","cacheSize":"1","ownerTable":"employee","ownerColumn":"emp_no"}],"owner":"pg_database_owner","comment":"standard public schema"}],"characterSet":"UTF8","collation":"en_US.UTF-8","owner":"bbsample","searchPath":"\"$user\", public"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE SEQUENCE "public"."audit_id_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+CREATE SEQUENCE "public"."employee_emp_no_seq"
+    AS integer
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
+
+SET default_tablespace = '''';
+
+CREATE TABLE "public"."audit" (
+    "id" integer DEFAULT nextval(''public.audit_id_seq''::regclass) NOT NULL,
+    "operation" text NOT NULL,
+    "query" text,
+    "user_name" text NOT NULL,
+    "changed_at" timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER SEQUENCE "public"."audit_id_seq" OWNED BY "public"."audit"."id";
+
+ALTER TABLE ONLY "public"."audit" ADD CONSTRAINT "audit_pkey" PRIMARY KEY (id);
+
+CREATE INDEX "idx_audit_changed_at" ON ONLY "public"."audit" (changed_at);
+
+CREATE INDEX "idx_audit_operation" ON ONLY "public"."audit" (operation);
+
+CREATE INDEX "idx_audit_username" ON ONLY "public"."audit" (user_name);
+
+CREATE TABLE "public"."department" (
+    "dept_no" text NOT NULL,
+    "dept_name" text NOT NULL
+);
+
+ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_pkey" PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY "public"."department" ADD CONSTRAINT "department_dept_name_key" UNIQUE (dept_name);
+
+CREATE TABLE "public"."dept_emp" (
+    "emp_no" integer NOT NULL,
+    "dept_no" text NOT NULL,
+    "from_date" date NOT NULL,
+    "to_date" date NOT NULL
+);
+
+ALTER TABLE ONLY "public"."dept_emp" ADD CONSTRAINT "dept_emp_pkey" PRIMARY KEY (emp_no, dept_no);
+
+CREATE TABLE "public"."dept_manager" (
+    "emp_no" integer NOT NULL,
+    "dept_no" text NOT NULL,
+    "from_date" date NOT NULL,
+    "to_date" date NOT NULL
+);
+
+ALTER TABLE ONLY "public"."dept_manager" ADD CONSTRAINT "dept_manager_pkey" PRIMARY KEY (emp_no, dept_no);
+
+CREATE TABLE "public"."employee" (
+    "emp_no" integer DEFAULT nextval(''public.employee_emp_no_seq''::regclass) NOT NULL,
+    "birth_date" date NOT NULL,
+    "first_name" text NOT NULL,
+    "last_name" text NOT NULL,
+    "gender" text NOT NULL,
+    "hire_date" date NOT NULL,
+    CONSTRAINT "employee_gender_check" CHECK (gender = ANY (ARRAY[''M''::text, ''F''::text]))
+);
+
+ALTER SEQUENCE "public"."employee_emp_no_seq" OWNED BY "public"."employee"."emp_no";
+
+ALTER TABLE ONLY "public"."employee" ADD CONSTRAINT "employee_pkey" PRIMARY KEY (emp_no);
+
+CREATE INDEX "idx_employee_hire_date" ON ONLY "public"."employee" (hire_date);
+
+CREATE OR REPLACE FUNCTION public.log_dml_operations()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    IF (TG_OP = ''INSERT'') THEN
+        INSERT INTO audit (operation, query, user_name)
+        VALUES (''INSERT'', current_query(), current_user);
+        RETURN NEW;
+    ELSIF (TG_OP = ''UPDATE'') THEN
+        INSERT INTO audit (operation, query, user_name)
+        VALUES (''UPDATE'', current_query(), current_user);
+        RETURN NEW;
+    ELSIF (TG_OP = ''DELETE'') THEN
+        INSERT INTO audit (operation, query, user_name)
+        VALUES (''DELETE'', current_query(), current_user);
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$function$
+;
+
+CREATE TABLE "public"."salary" (
+    "emp_no" integer NOT NULL,
+    "amount" integer NOT NULL,
+    "from_date" date NOT NULL,
+    "to_date" date NOT NULL
+);
+
+ALTER TABLE ONLY "public"."salary" ADD CONSTRAINT "salary_pkey" PRIMARY KEY (emp_no, from_date);
+
+CREATE INDEX "idx_salary_amount" ON ONLY "public"."salary" (amount);
+
+CREATE TABLE "public"."title" (
+    "emp_no" integer NOT NULL,
+    "title" text NOT NULL,
+    "from_date" date NOT NULL,
+    "to_date" date
+);
+
+ALTER TABLE ONLY "public"."title" ADD CONSTRAINT "title_pkey" PRIMARY KEY (emp_no, title, from_date);
+
+CREATE VIEW "public"."dept_emp_latest_date" AS 
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW "public"."current_dept_emp" AS 
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TRIGGER salary_log_trigger AFTER DELETE OR UPDATE ON public.salary FOR EACH ROW EXECUTE FUNCTION public.log_dml_operations();
+
+ALTER TABLE "public"."dept_emp"
+    ADD CONSTRAINT "dept_emp_dept_no_fkey" FOREIGN KEY ("dept_no")
+    REFERENCES "public"."department" ("dept_no")
+    ON DELETE CASCADE;
+
+ALTER TABLE "public"."dept_emp"
+    ADD CONSTRAINT "dept_emp_emp_no_fkey" FOREIGN KEY ("emp_no")
+    REFERENCES "public"."employee" ("emp_no")
+    ON DELETE CASCADE;
+
+ALTER TABLE "public"."dept_manager"
+    ADD CONSTRAINT "dept_manager_dept_no_fkey" FOREIGN KEY ("dept_no")
+    REFERENCES "public"."department" ("dept_no")
+    ON DELETE CASCADE;
+
+ALTER TABLE "public"."dept_manager"
+    ADD CONSTRAINT "dept_manager_emp_no_fkey" FOREIGN KEY ("emp_no")
+    REFERENCES "public"."employee" ("emp_no")
+    ON DELETE CASCADE;
+
+ALTER TABLE "public"."salary"
+    ADD CONSTRAINT "salary_emp_no_fkey" FOREIGN KEY ("emp_no")
+    REFERENCES "public"."employee" ("emp_no")
+    ON DELETE CASCADE;
+
+ALTER TABLE "public"."title"
+    ADD CONSTRAINT "title_emp_no_fkey" FOREIGN KEY ("emp_no")
+    REFERENCES "public"."employee" ("emp_no")
+    ON DELETE CASCADE;
+
+') ON CONFLICT DO NOTHING;
 
 
 --
 -- Data for Name: task; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.task (id, pipeline_id, instance, db_name, type, payload, environment) VALUES (101, 101, 'test-sample-instance', 'hr_test', 'DATABASE_SCHEMA_UPDATE', '{"specId": "036e8f34-05e6-4916-ba58-45c6a452fc60", "sheetId": 101, "taskReleaseSource": {}}', 'test') ON CONFLICT DO NOTHING;
-INSERT INTO public.task (id, pipeline_id, instance, db_name, type, payload, environment) VALUES (102, 101, 'prod-sample-instance', 'hr_prod', 'DATABASE_SCHEMA_UPDATE', '{"specId": "ea634b72-91e0-48b5-9ab6-ecc8d9355ff8", "sheetId": 101, "taskReleaseSource": {}}', 'prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, pipeline_id, instance, db_name, type, payload, environment) VALUES (101, 101, 'test-sample-instance', 'hr_test', 'DATABASE_MIGRATE', '{"specId": "036e8f34-05e6-4916-ba58-45c6a452fc60", "sheetId": 101, "migrateType": "DDL", "taskReleaseSource": {}}', 'test') ON CONFLICT DO NOTHING;
+INSERT INTO public.task (id, pipeline_id, instance, db_name, type, payload, environment) VALUES (102, 101, 'prod-sample-instance', 'hr_prod', 'DATABASE_MIGRATE', '{"specId": "ea634b72-91e0-48b5-9ab6-ecc8d9355ff8", "sheetId": 101, "migrateType": "DDL", "taskReleaseSource": {}}', 'prod') ON CONFLICT DO NOTHING;
 
 
 --
@@ -4368,7 +4756,7 @@ ORDER BY
 -- Name: audit_log_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.audit_log_id_seq', 188, true);
+SELECT pg_catalog.setval('public.audit_log_id_seq', 191, true);
 
 
 --
@@ -4382,7 +4770,7 @@ SELECT pg_catalog.setval('public.changelist_id_seq', 101, false);
 -- Name: changelog_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.changelog_id_seq', 106, true);
+SELECT pg_catalog.setval('public.changelog_id_seq', 108, true);
 
 
 --
@@ -4403,7 +4791,7 @@ SELECT pg_catalog.setval('public.db_id_seq', 106, true);
 -- Name: db_schema_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.db_schema_id_seq', 118, true);
+SELECT pg_catalog.setval('public.db_schema_id_seq', 122, true);
 
 
 --
@@ -4424,7 +4812,7 @@ SELECT pg_catalog.setval('public.idp_id_seq', 101, false);
 -- Name: instance_change_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.instance_change_history_id_seq', 148, true);
+SELECT pg_catalog.setval('public.instance_change_history_id_seq', 165, true);
 
 
 --
@@ -4536,7 +4924,7 @@ SELECT pg_catalog.setval('public.role_id_seq', 101, true);
 -- Name: setting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.setting_id_seq', 141, true);
+SELECT pg_catalog.setval('public.setting_id_seq', 143, true);
 
 
 --
@@ -4550,7 +4938,7 @@ SELECT pg_catalog.setval('public.sheet_id_seq', 101, true);
 -- Name: sync_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.sync_history_id_seq', 106, true);
+SELECT pg_catalog.setval('public.sync_history_id_seq', 108, true);
 
 
 --
@@ -4915,13 +5303,6 @@ CREATE UNIQUE INDEX idx_changelist_project_name ON public.changelist USING btree
 --
 
 CREATE INDEX idx_changelog_instance_db_name ON public.changelog USING btree (instance, db_name);
-
-
---
--- Name: idx_db_group_unique_project_placeholder; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX idx_db_group_unique_project_placeholder ON public.db_group USING btree (project, placeholder);
 
 
 --
@@ -5492,4 +5873,6 @@ ALTER TABLE ONLY public.worksheet
 --
 -- PostgreSQL database dump complete
 --
+
+\unrestrict uQwlm8d2TDQFk78h5V1ggn4GYM3YjpU9IYPF3SjUMjaQniDS2TDDpGeD3r8Xv5A
 
