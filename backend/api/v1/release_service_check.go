@@ -534,17 +534,17 @@ func getRiskSourceFromChangeType(changeType storepb.PlanCheckRunConfig_ChangeDat
 	}
 }
 
-func convertRiskLevel(riskLevel storepb.RiskLevel) (v1pb.CheckReleaseResponse_RiskLevel, error) {
+func convertRiskLevel(riskLevel storepb.RiskLevel) (v1pb.RiskLevel, error) {
 	switch riskLevel {
 	case storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED:
-		return v1pb.CheckReleaseResponse_RISK_LEVEL_UNSPECIFIED, nil
+		return v1pb.RiskLevel_RISK_LEVEL_UNSPECIFIED, nil
 	case storepb.RiskLevel_LOW:
-		return v1pb.CheckReleaseResponse_LOW, nil
+		return v1pb.RiskLevel_LOW, nil
 	case storepb.RiskLevel_MODERATE:
-		return v1pb.CheckReleaseResponse_MODERATE, nil
+		return v1pb.RiskLevel_MODERATE, nil
 	case storepb.RiskLevel_HIGH:
-		return v1pb.CheckReleaseResponse_HIGH, nil
+		return v1pb.RiskLevel_HIGH, nil
 	default:
-		return v1pb.CheckReleaseResponse_RISK_LEVEL_UNSPECIFIED, errors.Errorf("unexpected risk level %v", riskLevel)
+		return v1pb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Errorf("unexpected risk level %v", riskLevel)
 	}
 }

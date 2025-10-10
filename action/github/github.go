@@ -213,13 +213,13 @@ func writeAnnotations(resp *v1pb.CheckReleaseResponse) error {
 	return nil
 }
 
-func formatRiskLevel(r v1pb.CheckReleaseResponse_RiskLevel) string {
+func formatRiskLevel(r v1pb.RiskLevel) string {
 	switch r {
-	case v1pb.CheckReleaseResponse_LOW:
+	case v1pb.RiskLevel_LOW:
 		return "🟢 Low"
-	case v1pb.CheckReleaseResponse_MODERATE:
+	case v1pb.RiskLevel_MODERATE:
 		return "🟡 Moderate"
-	case v1pb.CheckReleaseResponse_HIGH:
+	case v1pb.RiskLevel_HIGH:
 		return "🔴 High"
 	case v1pb.CheckReleaseResponse_RISK_LEVEL_UNSPECIFIED:
 		return "⚪ None"

@@ -25,58 +25,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type CheckReleaseResponse_RiskLevel int32
-
-const (
-	CheckReleaseResponse_RISK_LEVEL_UNSPECIFIED CheckReleaseResponse_RiskLevel = 0
-	CheckReleaseResponse_LOW                    CheckReleaseResponse_RiskLevel = 1
-	CheckReleaseResponse_MODERATE               CheckReleaseResponse_RiskLevel = 2
-	CheckReleaseResponse_HIGH                   CheckReleaseResponse_RiskLevel = 3
-)
-
-// Enum value maps for CheckReleaseResponse_RiskLevel.
-var (
-	CheckReleaseResponse_RiskLevel_name = map[int32]string{
-		0: "RISK_LEVEL_UNSPECIFIED",
-		1: "LOW",
-		2: "MODERATE",
-		3: "HIGH",
-	}
-	CheckReleaseResponse_RiskLevel_value = map[string]int32{
-		"RISK_LEVEL_UNSPECIFIED": 0,
-		"LOW":                    1,
-		"MODERATE":               2,
-		"HIGH":                   3,
-	}
-)
-
-func (x CheckReleaseResponse_RiskLevel) Enum() *CheckReleaseResponse_RiskLevel {
-	p := new(CheckReleaseResponse_RiskLevel)
-	*p = x
-	return p
-}
-
-func (x CheckReleaseResponse_RiskLevel) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (CheckReleaseResponse_RiskLevel) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_release_service_proto_enumTypes[0].Descriptor()
-}
-
-func (CheckReleaseResponse_RiskLevel) Type() protoreflect.EnumType {
-	return &file_v1_release_service_proto_enumTypes[0]
-}
-
-func (x CheckReleaseResponse_RiskLevel) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use CheckReleaseResponse_RiskLevel.Descriptor instead.
-func (CheckReleaseResponse_RiskLevel) EnumDescriptor() ([]byte, []int) {
-	return file_v1_release_service_proto_rawDescGZIP(), []int{10, 0}
-}
-
 type Release_File_Type int32
 
 const (
@@ -110,11 +58,11 @@ func (x Release_File_Type) String() string {
 }
 
 func (Release_File_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_release_service_proto_enumTypes[1].Descriptor()
+	return file_v1_release_service_proto_enumTypes[0].Descriptor()
 }
 
 func (Release_File_Type) Type() protoreflect.EnumType {
-	return &file_v1_release_service_proto_enumTypes[1]
+	return &file_v1_release_service_proto_enumTypes[0]
 }
 
 func (x Release_File_Type) Number() protoreflect.EnumNumber {
@@ -162,11 +110,11 @@ func (x Release_File_MigrationType) String() string {
 }
 
 func (Release_File_MigrationType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_release_service_proto_enumTypes[2].Descriptor()
+	return file_v1_release_service_proto_enumTypes[1].Descriptor()
 }
 
 func (Release_File_MigrationType) Type() protoreflect.EnumType {
-	return &file_v1_release_service_proto_enumTypes[2]
+	return &file_v1_release_service_proto_enumTypes[1]
 }
 
 func (x Release_File_MigrationType) Number() protoreflect.EnumNumber {
@@ -770,7 +718,7 @@ type CheckReleaseResponse struct {
 	// The affected rows of the check.
 	AffectedRows int64 `protobuf:"varint,2,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
 	// The aggregated risk level of the check.
-	RiskLevel     CheckReleaseResponse_RiskLevel `protobuf:"varint,3,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.v1.CheckReleaseResponse_RiskLevel" json:"risk_level,omitempty"`
+	RiskLevel     RiskLevel `protobuf:"varint,3,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.v1.RiskLevel" json:"risk_level,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -819,11 +767,11 @@ func (x *CheckReleaseResponse) GetAffectedRows() int64 {
 	return 0
 }
 
-func (x *CheckReleaseResponse) GetRiskLevel() CheckReleaseResponse_RiskLevel {
+func (x *CheckReleaseResponse) GetRiskLevel() RiskLevel {
 	if x != nil {
 		return x.RiskLevel
 	}
-	return CheckReleaseResponse_RISK_LEVEL_UNSPECIFIED
+	return RiskLevel_RISK_LEVEL_UNSPECIFIED
 }
 
 type Release struct {
@@ -944,7 +892,7 @@ type CheckReleaseResponse_CheckResult struct {
 	// The count of affected rows of the statement on the target.
 	AffectedRows int64 `protobuf:"varint,4,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
 	// The risk level of the statement on the target.
-	RiskLevel     CheckReleaseResponse_RiskLevel `protobuf:"varint,5,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.v1.CheckReleaseResponse_RiskLevel" json:"risk_level,omitempty"`
+	RiskLevel     RiskLevel `protobuf:"varint,5,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.v1.RiskLevel" json:"risk_level,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1007,11 +955,11 @@ func (x *CheckReleaseResponse_CheckResult) GetAffectedRows() int64 {
 	return 0
 }
 
-func (x *CheckReleaseResponse_CheckResult) GetRiskLevel() CheckReleaseResponse_RiskLevel {
+func (x *CheckReleaseResponse_CheckResult) GetRiskLevel() RiskLevel {
 	if x != nil {
 		return x.RiskLevel
 	}
-	return CheckReleaseResponse_RISK_LEVEL_UNSPECIFIED
+	return RiskLevel_RISK_LEVEL_UNSPECIFIED
 }
 
 type Release_File struct {
@@ -1237,24 +1185,19 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x123\n" +
 	"\arelease\x18\x02 \x01(\v2\x14.bytebase.v1.ReleaseB\x03\xe0A\x02R\arelease\x12\x18\n" +
-	"\atargets\x18\x03 \x03(\tR\atargets\"\xf6\x03\n" +
+	"\atargets\x18\x03 \x03(\tR\atargets\"\x82\x03\n" +
 	"\x14CheckReleaseResponse\x12G\n" +
 	"\aresults\x18\x01 \x03(\v2-.bytebase.v1.CheckReleaseResponse.CheckResultR\aresults\x12#\n" +
-	"\raffected_rows\x18\x02 \x01(\x03R\faffectedRows\x12J\n" +
+	"\raffected_rows\x18\x02 \x01(\x03R\faffectedRows\x125\n" +
 	"\n" +
-	"risk_level\x18\x03 \x01(\x0e2+.bytebase.v1.CheckReleaseResponse.RiskLevelR\triskLevel\x1a\xd9\x01\n" +
+	"risk_level\x18\x03 \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\x1a\xc4\x01\n" +
 	"\vCheckResult\x12\x12\n" +
 	"\x04file\x18\x01 \x01(\tR\x04file\x12\x16\n" +
 	"\x06target\x18\x02 \x01(\tR\x06target\x12-\n" +
 	"\aadvices\x18\x03 \x03(\v2\x13.bytebase.v1.AdviceR\aadvices\x12#\n" +
-	"\raffected_rows\x18\x04 \x01(\x03R\faffectedRows\x12J\n" +
+	"\raffected_rows\x18\x04 \x01(\x03R\faffectedRows\x125\n" +
 	"\n" +
-	"risk_level\x18\x05 \x01(\x0e2+.bytebase.v1.CheckReleaseResponse.RiskLevelR\triskLevel\"H\n" +
-	"\tRiskLevel\x12\x1a\n" +
-	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
-	"\x03LOW\x10\x01\x12\f\n" +
-	"\bMODERATE\x10\x02\x12\b\n" +
-	"\x04HIGH\x10\x03\"\xde\a\n" +
+	"risk_level\x18\x05 \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\"\xde\a\n" +
 	"\aRelease\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12/\n" +
@@ -1314,28 +1257,28 @@ func file_v1_release_service_proto_rawDescGZIP() []byte {
 	return file_v1_release_service_proto_rawDescData
 }
 
-var file_v1_release_service_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_v1_release_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_v1_release_service_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_v1_release_service_proto_goTypes = []any{
-	(CheckReleaseResponse_RiskLevel)(0),      // 0: bytebase.v1.CheckReleaseResponse.RiskLevel
-	(Release_File_Type)(0),                   // 1: bytebase.v1.Release.File.Type
-	(Release_File_MigrationType)(0),          // 2: bytebase.v1.Release.File.MigrationType
-	(*GetReleaseRequest)(nil),                // 3: bytebase.v1.GetReleaseRequest
-	(*ListReleasesRequest)(nil),              // 4: bytebase.v1.ListReleasesRequest
-	(*ListReleasesResponse)(nil),             // 5: bytebase.v1.ListReleasesResponse
-	(*SearchReleasesRequest)(nil),            // 6: bytebase.v1.SearchReleasesRequest
-	(*SearchReleasesResponse)(nil),           // 7: bytebase.v1.SearchReleasesResponse
-	(*CreateReleaseRequest)(nil),             // 8: bytebase.v1.CreateReleaseRequest
-	(*UpdateReleaseRequest)(nil),             // 9: bytebase.v1.UpdateReleaseRequest
-	(*DeleteReleaseRequest)(nil),             // 10: bytebase.v1.DeleteReleaseRequest
-	(*UndeleteReleaseRequest)(nil),           // 11: bytebase.v1.UndeleteReleaseRequest
-	(*CheckReleaseRequest)(nil),              // 12: bytebase.v1.CheckReleaseRequest
-	(*CheckReleaseResponse)(nil),             // 13: bytebase.v1.CheckReleaseResponse
-	(*Release)(nil),                          // 14: bytebase.v1.Release
-	(*CheckReleaseResponse_CheckResult)(nil), // 15: bytebase.v1.CheckReleaseResponse.CheckResult
-	(*Release_File)(nil),                     // 16: bytebase.v1.Release.File
-	(*Release_VCSSource)(nil),                // 17: bytebase.v1.Release.VCSSource
-	(*fieldmaskpb.FieldMask)(nil),            // 18: google.protobuf.FieldMask
+	(Release_File_Type)(0),                   // 0: bytebase.v1.Release.File.Type
+	(Release_File_MigrationType)(0),          // 1: bytebase.v1.Release.File.MigrationType
+	(*GetReleaseRequest)(nil),                // 2: bytebase.v1.GetReleaseRequest
+	(*ListReleasesRequest)(nil),              // 3: bytebase.v1.ListReleasesRequest
+	(*ListReleasesResponse)(nil),             // 4: bytebase.v1.ListReleasesResponse
+	(*SearchReleasesRequest)(nil),            // 5: bytebase.v1.SearchReleasesRequest
+	(*SearchReleasesResponse)(nil),           // 6: bytebase.v1.SearchReleasesResponse
+	(*CreateReleaseRequest)(nil),             // 7: bytebase.v1.CreateReleaseRequest
+	(*UpdateReleaseRequest)(nil),             // 8: bytebase.v1.UpdateReleaseRequest
+	(*DeleteReleaseRequest)(nil),             // 9: bytebase.v1.DeleteReleaseRequest
+	(*UndeleteReleaseRequest)(nil),           // 10: bytebase.v1.UndeleteReleaseRequest
+	(*CheckReleaseRequest)(nil),              // 11: bytebase.v1.CheckReleaseRequest
+	(*CheckReleaseResponse)(nil),             // 12: bytebase.v1.CheckReleaseResponse
+	(*Release)(nil),                          // 13: bytebase.v1.Release
+	(*CheckReleaseResponse_CheckResult)(nil), // 14: bytebase.v1.CheckReleaseResponse.CheckResult
+	(*Release_File)(nil),                     // 15: bytebase.v1.Release.File
+	(*Release_VCSSource)(nil),                // 16: bytebase.v1.Release.VCSSource
+	(*fieldmaskpb.FieldMask)(nil),            // 17: google.protobuf.FieldMask
+	(RiskLevel)(0),                           // 18: bytebase.v1.RiskLevel
 	(*timestamppb.Timestamp)(nil),            // 19: google.protobuf.Timestamp
 	(State)(0),                               // 20: bytebase.v1.State
 	(*Advice)(nil),                           // 21: bytebase.v1.Advice
@@ -1343,39 +1286,39 @@ var file_v1_release_service_proto_goTypes = []any{
 	(*emptypb.Empty)(nil),                    // 23: google.protobuf.Empty
 }
 var file_v1_release_service_proto_depIdxs = []int32{
-	14, // 0: bytebase.v1.ListReleasesResponse.releases:type_name -> bytebase.v1.Release
-	14, // 1: bytebase.v1.SearchReleasesResponse.releases:type_name -> bytebase.v1.Release
-	14, // 2: bytebase.v1.CreateReleaseRequest.release:type_name -> bytebase.v1.Release
-	14, // 3: bytebase.v1.UpdateReleaseRequest.release:type_name -> bytebase.v1.Release
-	18, // 4: bytebase.v1.UpdateReleaseRequest.update_mask:type_name -> google.protobuf.FieldMask
-	14, // 5: bytebase.v1.CheckReleaseRequest.release:type_name -> bytebase.v1.Release
-	15, // 6: bytebase.v1.CheckReleaseResponse.results:type_name -> bytebase.v1.CheckReleaseResponse.CheckResult
-	0,  // 7: bytebase.v1.CheckReleaseResponse.risk_level:type_name -> bytebase.v1.CheckReleaseResponse.RiskLevel
-	16, // 8: bytebase.v1.Release.files:type_name -> bytebase.v1.Release.File
-	17, // 9: bytebase.v1.Release.vcs_source:type_name -> bytebase.v1.Release.VCSSource
+	13, // 0: bytebase.v1.ListReleasesResponse.releases:type_name -> bytebase.v1.Release
+	13, // 1: bytebase.v1.SearchReleasesResponse.releases:type_name -> bytebase.v1.Release
+	13, // 2: bytebase.v1.CreateReleaseRequest.release:type_name -> bytebase.v1.Release
+	13, // 3: bytebase.v1.UpdateReleaseRequest.release:type_name -> bytebase.v1.Release
+	17, // 4: bytebase.v1.UpdateReleaseRequest.update_mask:type_name -> google.protobuf.FieldMask
+	13, // 5: bytebase.v1.CheckReleaseRequest.release:type_name -> bytebase.v1.Release
+	14, // 6: bytebase.v1.CheckReleaseResponse.results:type_name -> bytebase.v1.CheckReleaseResponse.CheckResult
+	18, // 7: bytebase.v1.CheckReleaseResponse.risk_level:type_name -> bytebase.v1.RiskLevel
+	15, // 8: bytebase.v1.Release.files:type_name -> bytebase.v1.Release.File
+	16, // 9: bytebase.v1.Release.vcs_source:type_name -> bytebase.v1.Release.VCSSource
 	19, // 10: bytebase.v1.Release.create_time:type_name -> google.protobuf.Timestamp
 	20, // 11: bytebase.v1.Release.state:type_name -> bytebase.v1.State
 	21, // 12: bytebase.v1.CheckReleaseResponse.CheckResult.advices:type_name -> bytebase.v1.Advice
-	0,  // 13: bytebase.v1.CheckReleaseResponse.CheckResult.risk_level:type_name -> bytebase.v1.CheckReleaseResponse.RiskLevel
-	1,  // 14: bytebase.v1.Release.File.type:type_name -> bytebase.v1.Release.File.Type
-	2,  // 15: bytebase.v1.Release.File.migration_type:type_name -> bytebase.v1.Release.File.MigrationType
+	18, // 13: bytebase.v1.CheckReleaseResponse.CheckResult.risk_level:type_name -> bytebase.v1.RiskLevel
+	0,  // 14: bytebase.v1.Release.File.type:type_name -> bytebase.v1.Release.File.Type
+	1,  // 15: bytebase.v1.Release.File.migration_type:type_name -> bytebase.v1.Release.File.MigrationType
 	22, // 16: bytebase.v1.Release.VCSSource.vcs_type:type_name -> bytebase.v1.VCSType
-	3,  // 17: bytebase.v1.ReleaseService.GetRelease:input_type -> bytebase.v1.GetReleaseRequest
-	4,  // 18: bytebase.v1.ReleaseService.ListReleases:input_type -> bytebase.v1.ListReleasesRequest
-	6,  // 19: bytebase.v1.ReleaseService.SearchReleases:input_type -> bytebase.v1.SearchReleasesRequest
-	8,  // 20: bytebase.v1.ReleaseService.CreateRelease:input_type -> bytebase.v1.CreateReleaseRequest
-	9,  // 21: bytebase.v1.ReleaseService.UpdateRelease:input_type -> bytebase.v1.UpdateReleaseRequest
-	10, // 22: bytebase.v1.ReleaseService.DeleteRelease:input_type -> bytebase.v1.DeleteReleaseRequest
-	11, // 23: bytebase.v1.ReleaseService.UndeleteRelease:input_type -> bytebase.v1.UndeleteReleaseRequest
-	12, // 24: bytebase.v1.ReleaseService.CheckRelease:input_type -> bytebase.v1.CheckReleaseRequest
-	14, // 25: bytebase.v1.ReleaseService.GetRelease:output_type -> bytebase.v1.Release
-	5,  // 26: bytebase.v1.ReleaseService.ListReleases:output_type -> bytebase.v1.ListReleasesResponse
-	7,  // 27: bytebase.v1.ReleaseService.SearchReleases:output_type -> bytebase.v1.SearchReleasesResponse
-	14, // 28: bytebase.v1.ReleaseService.CreateRelease:output_type -> bytebase.v1.Release
-	14, // 29: bytebase.v1.ReleaseService.UpdateRelease:output_type -> bytebase.v1.Release
+	2,  // 17: bytebase.v1.ReleaseService.GetRelease:input_type -> bytebase.v1.GetReleaseRequest
+	3,  // 18: bytebase.v1.ReleaseService.ListReleases:input_type -> bytebase.v1.ListReleasesRequest
+	5,  // 19: bytebase.v1.ReleaseService.SearchReleases:input_type -> bytebase.v1.SearchReleasesRequest
+	7,  // 20: bytebase.v1.ReleaseService.CreateRelease:input_type -> bytebase.v1.CreateReleaseRequest
+	8,  // 21: bytebase.v1.ReleaseService.UpdateRelease:input_type -> bytebase.v1.UpdateReleaseRequest
+	9,  // 22: bytebase.v1.ReleaseService.DeleteRelease:input_type -> bytebase.v1.DeleteReleaseRequest
+	10, // 23: bytebase.v1.ReleaseService.UndeleteRelease:input_type -> bytebase.v1.UndeleteReleaseRequest
+	11, // 24: bytebase.v1.ReleaseService.CheckRelease:input_type -> bytebase.v1.CheckReleaseRequest
+	13, // 25: bytebase.v1.ReleaseService.GetRelease:output_type -> bytebase.v1.Release
+	4,  // 26: bytebase.v1.ReleaseService.ListReleases:output_type -> bytebase.v1.ListReleasesResponse
+	6,  // 27: bytebase.v1.ReleaseService.SearchReleases:output_type -> bytebase.v1.SearchReleasesResponse
+	13, // 28: bytebase.v1.ReleaseService.CreateRelease:output_type -> bytebase.v1.Release
+	13, // 29: bytebase.v1.ReleaseService.UpdateRelease:output_type -> bytebase.v1.Release
 	23, // 30: bytebase.v1.ReleaseService.DeleteRelease:output_type -> google.protobuf.Empty
-	14, // 31: bytebase.v1.ReleaseService.UndeleteRelease:output_type -> bytebase.v1.Release
-	13, // 32: bytebase.v1.ReleaseService.CheckRelease:output_type -> bytebase.v1.CheckReleaseResponse
+	13, // 31: bytebase.v1.ReleaseService.UndeleteRelease:output_type -> bytebase.v1.Release
+	12, // 32: bytebase.v1.ReleaseService.CheckRelease:output_type -> bytebase.v1.CheckReleaseResponse
 	25, // [25:33] is the sub-list for method output_type
 	17, // [17:25] is the sub-list for method input_type
 	17, // [17:17] is the sub-list for extension type_name
@@ -1397,7 +1340,7 @@ func file_v1_release_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_release_service_proto_rawDesc), len(file_v1_release_service_proto_rawDesc)),
-			NumEnums:      3,
+			NumEnums:      2,
 			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,

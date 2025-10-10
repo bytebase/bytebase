@@ -5,8 +5,8 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { EmptySchema, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
+import type { RiskLevel, State, VCSType } from "./common_pb";
 import type { Advice } from "./sql_service_pb";
-import type { State, VCSType } from "./common_pb";
 
 /**
  * Describes the file v1/release_service.proto.
@@ -320,9 +320,9 @@ export declare type CheckReleaseResponse = Message<"bytebase.v1.CheckReleaseResp
   /**
    * The aggregated risk level of the check.
    *
-   * @generated from field: bytebase.v1.CheckReleaseResponse.RiskLevel risk_level = 3;
+   * @generated from field: bytebase.v1.RiskLevel risk_level = 3;
    */
-  riskLevel: CheckReleaseResponse_RiskLevel;
+  riskLevel: RiskLevel;
 };
 
 /**
@@ -367,9 +367,9 @@ export declare type CheckReleaseResponse_CheckResult = Message<"bytebase.v1.Chec
   /**
    * The risk level of the statement on the target.
    *
-   * @generated from field: bytebase.v1.CheckReleaseResponse.RiskLevel risk_level = 5;
+   * @generated from field: bytebase.v1.RiskLevel risk_level = 5;
    */
-  riskLevel: CheckReleaseResponse_RiskLevel;
+  riskLevel: RiskLevel;
 };
 
 /**
@@ -377,36 +377,6 @@ export declare type CheckReleaseResponse_CheckResult = Message<"bytebase.v1.Chec
  * Use `create(CheckReleaseResponse_CheckResultSchema)` to create a new message.
  */
 export declare const CheckReleaseResponse_CheckResultSchema: GenMessage<CheckReleaseResponse_CheckResult>;
-
-/**
- * @generated from enum bytebase.v1.CheckReleaseResponse.RiskLevel
- */
-export enum CheckReleaseResponse_RiskLevel {
-  /**
-   * @generated from enum value: RISK_LEVEL_UNSPECIFIED = 0;
-   */
-  RISK_LEVEL_UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: LOW = 1;
-   */
-  LOW = 1,
-
-  /**
-   * @generated from enum value: MODERATE = 2;
-   */
-  MODERATE = 2,
-
-  /**
-   * @generated from enum value: HIGH = 3;
-   */
-  HIGH = 3,
-}
-
-/**
- * Describes the enum bytebase.v1.CheckReleaseResponse.RiskLevel.
- */
-export declare const CheckReleaseResponse_RiskLevelSchema: GenEnum<CheckReleaseResponse_RiskLevel>;
 
 /**
  * @generated from message bytebase.v1.Release
