@@ -24,7 +24,6 @@ export const NumberFactorList = [
   // Risk related factors
   CEL_ATTRIBUTE_STATEMENT_AFFECTED_ROWS,
   CEL_ATTRIBUTE_STATEMENT_TABLE_ROWS,
-  CEL_ATTRIBUTE_LEVEL,
 
   // Request query/export factors
   CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
@@ -33,6 +32,7 @@ export type NumberFactor = (typeof NumberFactorList)[number];
 
 export const StringFactorList = [
   // Risk related factors
+  CEL_ATTRIBUTE_LEVEL,
   CEL_ATTRIBUTE_SOURCE,
   CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
   CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
