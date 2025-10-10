@@ -240,9 +240,13 @@ const resolveLevelExpr = (expr: SimpleExpr): RiskLevel => {
   if (factor !== "level") return RiskLevel.RISK_LEVEL_UNSPECIFIED;
   const level = args[1];
 
+  // Debug logging
+  console.log("[resolveLevelExpr] Parsing level:", level, "Type:", typeof level);
+
   // Handle string values (new format: "LOW", "MODERATE", "HIGH", "RISK_LEVEL_UNSPECIFIED")
   if (typeof level === "string") {
     const enumValue = RiskLevel[level as keyof typeof RiskLevel];
+    console.log("[resolveLevelExpr] String lookup:", level, "->", enumValue);
     if (enumValue !== undefined) {
       return enumValue;
     }
@@ -255,11 +259,13 @@ const resolveLevelExpr = (expr: SimpleExpr): RiskLevel => {
       ...PresetRiskLevelList.map((item) => item.level),
       DEFAULT_RISK_LEVEL,
     ];
+    console.log("[resolveLevelExpr] Numeric value:", level, "Supported:", supportedRiskLevelList);
     if (supportedRiskLevelList.includes(level)) {
       return level;
     }
   }
 
+  console.log("[resolveLevelExpr] Failed to parse, returning UNSPECIFIED");
   return RiskLevel.RISK_LEVEL_UNSPECIFIED;
 };
 
