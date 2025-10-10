@@ -141,7 +141,15 @@ func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*stor
 		return nil, errors.Wrapf(err, "failed to get policy")
 	}
 	if policy == nil {
-		return &storepb.RolloutPolicy{}, nil
+		// Return default rollout policy with checkers.
+		return &storepb.RolloutPolicy{
+			Checkers: &storepb.RolloutPolicy_Checkers{
+				RequiredIssueApproval: true,
+				RequiredStatusChecks: &storepb.RolloutPolicy_Checkers_RequiredStatusChecks{
+					PlanCheckEnforcement: storepb.RolloutPolicy_Checkers_ERROR_ONLY,
+				},
+			},
+		}, nil
 	}
 
 	p := &storepb.RolloutPolicy{}
