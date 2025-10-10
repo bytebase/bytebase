@@ -62,6 +62,7 @@ import { BBModal } from "@/bbkit";
 import PlanCheckRunDetail from "@/components/PlanCheckRun/PlanCheckRunDetail.vue";
 import { useProjectV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
+import { RiskLevel } from "@/types/proto-es/v1/common_pb";
 import {
   PlanCheckRunSchema,
   PlanCheckRun_ResultSchema,
@@ -70,7 +71,6 @@ import {
   PlanCheckRun_Status,
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
-import { RiskLevel } from "@/types/proto-es/v1/common_pb";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
 import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import type { Defer } from "@/utils";
