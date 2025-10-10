@@ -73,46 +73,54 @@ WHERE name = 'WORKSPACE_APPROVAL'
   );
 
 -- Update issue approval template in the issue table
--- The issue.payload JSONB column contains approvalTemplate (singleton, changed from array)
--- First, migrate existing approvalTemplates[0] to approvalTemplate
+-- The issue.payload JSONB column contains approval.approvalTemplates (array)
+-- Migrate to approval.approvalTemplate (singleton)
 UPDATE issue
 SET payload = jsonb_set(
-    payload - 'approvalTemplates',
-    '{approvalTemplate}',
+    payload,
+    '{approval}',
     (
-        SELECT jsonb_strip_nulls(
-            jsonb_build_object(
-                'title', (payload->'approvalTemplates'->0)->'title',
-                'description', (payload->'approvalTemplates'->0)->'description',
-                'flow', jsonb_build_object(
-                    'roles',
-                    COALESCE(
-                        (
-                            -- Extract all roles from steps[].nodes[].role
-                            SELECT jsonb_agg(node->>'role')
-                            FROM jsonb_array_elements((payload->'approvalTemplates'->0)->'flow'->'steps') AS step,
-                                 jsonb_array_elements(step->'nodes') AS node
-                            WHERE node->>'role' IS NOT NULL
-                        ),
-                        '[]'::jsonb
+        SELECT jsonb_set(
+            (payload->'approval')::jsonb - 'approvalTemplates',
+            '{approvalTemplate}',
+            jsonb_strip_nulls(
+                jsonb_build_object(
+                    'title', (payload->'approval'->'approvalTemplates'->0)->'title',
+                    'description', (payload->'approval'->'approvalTemplates'->0)->'description',
+                    'flow', jsonb_build_object(
+                        'roles',
+                        COALESCE(
+                            (
+                                -- Extract all roles from steps[].nodes[].role
+                                SELECT jsonb_agg(node->>'role')
+                                FROM jsonb_array_elements((payload->'approval'->'approvalTemplates'->0)->'flow'->'steps') AS step,
+                                     jsonb_array_elements(step->'nodes') AS node
+                                WHERE node->>'role' IS NOT NULL
+                            ),
+                            '[]'::jsonb
+                        )
                     )
                 )
             )
         )
     )
 )
-WHERE payload->'approvalTemplates' IS NOT NULL
-  AND jsonb_array_length(payload->'approvalTemplates') > 0
-  AND (payload->'approvalTemplates'->0)->'flow'->'steps' IS NOT NULL;
+WHERE payload->'approval'->'approvalTemplates' IS NOT NULL
+  AND jsonb_array_length(payload->'approval'->'approvalTemplates') > 0
+  AND (payload->'approval'->'approvalTemplates'->0)->'flow'->'steps' IS NOT NULL;
 
 -- Clean up: Remove orphaned approvalTemplates field from issues that weren't migrated
 -- (e.g., empty arrays, malformed data)
 UPDATE issue
-SET payload = payload - 'approvalTemplates'
-WHERE payload ? 'approvalTemplates'
-  AND NOT payload ? 'approvalTemplate'
+SET payload = jsonb_set(
+    payload,
+    '{approval}',
+    (payload->'approval')::jsonb - 'approvalTemplates'
+)
+WHERE payload->'approval' ? 'approvalTemplates'
+  AND NOT payload->'approval' ? 'approvalTemplate'
   AND (
-    jsonb_array_length(payload->'approvalTemplates') = 0
-    OR (payload->'approvalTemplates'->0) IS NULL
-    OR (payload->'approvalTemplates'->0)->'flow' IS NULL
+    jsonb_array_length(payload->'approval'->'approvalTemplates') = 0
+    OR (payload->'approval'->'approvalTemplates'->0) IS NULL
+    OR (payload->'approval'->'approvalTemplates'->0)->'flow' IS NULL
   );
