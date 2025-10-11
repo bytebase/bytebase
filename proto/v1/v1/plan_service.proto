@@ -61,7 +61,7 @@ service PlanService {
 
   // UpdatePlan updates the plan.
   // The plan creator and the user with bb.plans.update permission on the project can update the plan.
-  // Permissions required: bb.plans.update
+  // Permissions required: bb.plans.update (or creator)
   rpc UpdatePlan(UpdatePlanRequest) returns (Plan) {
     option (google.api.http) = {
       patch: "/v1/{plan.name=projects/*/plans/*}"

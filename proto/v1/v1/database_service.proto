@@ -37,7 +37,7 @@ service DatabaseService {
   }
 
   // Lists databases in a project, instance, or workspace.
-  // Permissions required: bb.databases.list
+  // Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
   rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
     option (google.api.http) = {
       get: "/v1/{parent=projects/*}/databases"
