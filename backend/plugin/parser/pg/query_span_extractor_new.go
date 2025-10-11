@@ -755,15 +755,9 @@ func (q *querySpanExtractor) extractTableSourceFromSimpleSelectPrimary(primary p
 	}
 
 	// Handle parenthesized SELECT
-	if primary.Select_with_parens() != nil {
-		selectWithParens := primary.Select_with_parens()
-		if selectWithParens.Select_no_parens() != nil {
-			return q.extractTableSourceFromSelectNoParens(selectWithParens.Select_no_parens())
-		}
-		if selectWithParens.Select_with_parens() != nil {
-			// Recursive parentheses
-			return q.extractTableSourceFromSelectWithParens(selectWithParens.Select_with_parens())
-		}
+	if s := primary.Select_with_parens(); s != nil {
+		selectNoParens := getSelectNoParensFromSelectWithParens(s)
+		return q.extractTableSourceFromSelectNoParens(selectNoParens)
 	}
 
 	// Default case
