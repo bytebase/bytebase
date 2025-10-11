@@ -95,13 +95,15 @@ const isArrayValue = computed(() => {
   return isCollectionOperator(operator.value);
 });
 const inputType = computed((): InputType => {
+  const optionConfig = optionConfigMap.value.get(factor.value);
+  const hasOption =
+    (optionConfig?.options.length ?? 0 > 0) || optionConfig?.remote;
+
   if (isArrayValue.value) {
-    return optionConfigMap.value.has(factor.value)
-      ? "MULTI-SELECT"
-      : "MULTI-INPUT";
+    return hasOption ? "MULTI-SELECT" : "MULTI-INPUT";
   }
   if (isEqualityOperator(operator.value)) {
-    if (optionConfigMap.value.has(factor.value)) {
+    if (hasOption) {
       return "SINGLE-SELECT";
     }
   }
