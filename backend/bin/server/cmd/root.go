@@ -165,6 +165,8 @@ func start() {
 
 	profile := activeProfile(flags.dataDir)
 
+	fmt.Printf("Starting Bytebase %s(%s)...\n", profile.Version, profile.GitCommit)
+
 	// A safety measure to prevent accidentally resetting user's actual data with demo data.
 	// For emebeded mode, we control where data is stored and we put demo data in a separate directory
 	// from the non-demo data.
