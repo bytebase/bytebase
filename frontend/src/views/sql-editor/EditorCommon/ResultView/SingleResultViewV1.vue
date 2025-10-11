@@ -558,7 +558,7 @@ const showVisualizeButton = computed((): boolean => {
 
 const visualizeExplain = () => {
   try {
-    const { params, result } = props;
+    const { result } = props;
     const { statement } = result;
     if (!statement) return;
 
