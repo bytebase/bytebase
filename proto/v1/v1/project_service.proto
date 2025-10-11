@@ -36,7 +36,7 @@ service ProjectService {
   }
 
   // Searches for projects with advanced filtering capabilities.
-  // Permissions required: None
+  // Permissions required: bb.projects.get (or project-level bb.projects.get for specific projects)
   rpc SearchProjects(SearchProjectsRequest) returns (SearchProjectsResponse) {
     option (google.api.http) = {
       post: "/v1/projects:search"

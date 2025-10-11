@@ -30,7 +30,7 @@ service WorksheetService {
   // - they are the creator of the worksheet;
   // - they have bb.worksheets.get permission on the workspace;
   // - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-  // Permissions required: None
+  // Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
   rpc GetWorksheet(GetWorksheetRequest) returns (Worksheet) {
     option (google.api.http) = {get: "/v1/{name=worksheets/*}"};
     option (google.api.method_signature) = "name";
@@ -40,7 +40,7 @@ service WorksheetService {
   // Search for worksheets.
   // This is used for finding my worksheets or worksheets shared by other people.
   // The sheet accessibility is the same as GetWorksheet().
-  // Permissions required: None
+  // Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
   rpc SearchWorksheets(SearchWorksheetsRequest) returns (SearchWorksheetsResponse) {
     option (google.api.http) = {
       post: "/v1/worksheets:search"
@@ -54,7 +54,7 @@ service WorksheetService {
   // - they are the creator of the worksheet;
   // - they have bb.worksheets.manage permission on the workspace;
   // - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-  // Permissions required: None
+  // Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)
   rpc UpdateWorksheet(UpdateWorksheetRequest) returns (Worksheet) {
     option (google.api.http) = {
       patch: "/v1/{worksheet.name=worksheets/*}"
@@ -66,7 +66,7 @@ service WorksheetService {
 
   // Update the organizer of a worksheet.
   // The access is the same as UpdateWorksheet method.
-  // Permissions required: None
+  // Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
   rpc UpdateWorksheetOrganizer(UpdateWorksheetOrganizerRequest) returns (WorksheetOrganizer) {
     option (google.api.http) = {
       patch: "/v1/{organizer.worksheet=worksheets/*}/organizer"
@@ -78,7 +78,7 @@ service WorksheetService {
 
   // Delete a worksheet.
   // The access is the same as UpdateWorksheet method.
-  // Permissions required: None
+  // Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)
   rpc DeleteWorksheet(DeleteWorksheetRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=worksheets/*}"};
     option (google.api.method_signature) = "name";

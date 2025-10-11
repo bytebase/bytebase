@@ -40,7 +40,7 @@ service SQLService {
   }
 
   // SearchQueryHistories searches query histories for the caller.
-  // Permissions required: None
+  // Permissions required: None (only returns caller's own query histories)
   rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
     option (google.api.http) = {
       post: "/v1/queryHistories:search"
@@ -103,7 +103,7 @@ service SQLService {
   }
 
   // Provides AI-powered SQL completion and generation.
-  // Permissions required: None
+  // Permissions required: None (authenticated users only, requires AI to be enabled)
   rpc AICompletion(AICompletionRequest) returns (AICompletionResponse) {
     option (google.api.http) = {
       post: "/v1/sql/aiCompletion"
