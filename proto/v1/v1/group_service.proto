@@ -53,8 +53,8 @@ service GroupService {
     option (bytebase.v1.audit) = true;
   }
 
-  // Updates a group. Group owners and users with bb.groups.update permission can update.
-  // Permissions required: bb.groups.update
+  // Updates a group. Group owners or users with bb.groups.update permission can update.
+  // Permissions required: bb.groups.update OR caller is group owner
   rpc UpdateGroup(UpdateGroupRequest) returns (Group) {
     option (google.api.http) = {
       patch: "/v1/{group.name=groups/*}"
@@ -66,8 +66,8 @@ service GroupService {
     option (bytebase.v1.audit) = true;
   }
 
-  // Deletes a group.
-  // Permissions required: bb.groups.delete
+  // Deletes a group. Group owners or users with bb.groups.delete permission can delete.
+  // Permissions required: bb.groups.delete OR caller is group owner
   rpc DeleteGroup(DeleteGroupRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=groups/*}"};
     option (google.api.method_signature) = "name";

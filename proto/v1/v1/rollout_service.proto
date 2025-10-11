@@ -94,8 +94,8 @@ service RolloutService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Executes multiple tasks in a rollout stage.
-  // Permissions required: None
+  // Executes multiple tasks in a rollout stage. Access controlled by issue approval status and caller's role as issue creator, project member, or releaser.
+  // Permissions required: None (custom authorization based on issue/rollout context)
   rpc BatchRunTasks(BatchRunTasksRequest) returns (BatchRunTasksResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchRun"
@@ -105,8 +105,8 @@ service RolloutService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
-  // Skips multiple tasks in a rollout stage.
-  // Permissions required: None
+  // Skips multiple tasks in a rollout stage. Access controlled by issue approval status and caller's role as issue creator, project member, or releaser.
+  // Permissions required: None (custom authorization based on issue/rollout context)
   rpc BatchSkipTasks(BatchSkipTasksRequest) returns (BatchSkipTasksResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchSkip"
@@ -116,8 +116,8 @@ service RolloutService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
-  // Cancels multiple running task executions.
-  // Permissions required: None
+  // Cancels multiple running task executions. Access controlled by issue approval status and caller's role as issue creator, project member, or releaser.
+  // Permissions required: None (custom authorization based on issue/rollout context)
   rpc BatchCancelTaskRuns(BatchCancelTaskRunsRequest) returns (BatchCancelTaskRunsResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns:batchCancel"

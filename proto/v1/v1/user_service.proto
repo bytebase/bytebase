@@ -53,10 +53,8 @@ service UserService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Create a user.
-  // When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
-  // Otherwise, any unauthenticated user can create a user.
-  // Permissions required: bb.users.create
+  // Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
+  // Permissions required: bb.users.create (only when Disallow Signup is enabled)
   rpc CreateUser(CreateUserRequest) returns (User) {
     option (google.api.http) = {
       post: "/v1/users"
@@ -68,8 +66,8 @@ service UserService {
     option (bytebase.v1.audit) = true;
   }
 
-  // Only the user itself and the user with bb.users.update permission on the workspace can update the user.
-  // Permissions required: None
+  // Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+  // Permissions required: bb.users.update (or self)
   rpc UpdateUser(UpdateUserRequest) returns (User) {
     option (google.api.http) = {
       patch: "/v1/{user.name=users/*}"
@@ -80,8 +78,7 @@ service UserService {
     option (bytebase.v1.audit) = true;
   }
 
-  // Only the user with bb.users.delete permission on the workspace can delete the user.
-  // The last remaining workspace admin cannot be deleted.
+  // Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted.
   // Permissions required: bb.users.delete
   rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=users/*}"};
@@ -90,7 +87,7 @@ service UserService {
     option (bytebase.v1.audit) = true;
   }
 
-  // Only the user with bb.users.undelete permission on the workspace can undelete the user.
+  // Restores a deleted user.
   // Permissions required: bb.users.undelete
   rpc UndeleteUser(UndeleteUserRequest) returns (User) {
     option (google.api.http) = {

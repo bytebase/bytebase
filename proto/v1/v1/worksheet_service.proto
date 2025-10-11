@@ -14,8 +14,8 @@ option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
 // WorksheetService manages SQL worksheets for query development.
 service WorksheetService {
-  // Create a personal worksheet used in SQL Editor.
-  // Permissions required: None
+  // Creates a personal worksheet used in SQL Editor. Any authenticated user can create their own worksheets.
+  // Permissions required: None (authenticated users only)
   rpc CreateWorksheet(CreateWorksheetRequest) returns (Worksheet) {
     option (google.api.http) = {
       post: "/v1/worksheets"

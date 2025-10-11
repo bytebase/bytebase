@@ -120,9 +120,8 @@ service IssueService {
     option (bytebase.v1.audit) = true;
   }
 
-  // ApproveIssue approves the issue.
-  // The access is based on approval flow.
-  // Permissions required: None
+  // Approves an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+  // Permissions required: None (determined by approval flow)
   rpc ApproveIssue(ApproveIssueRequest) returns (Issue) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*/issues/*}:approve"
@@ -132,9 +131,8 @@ service IssueService {
     option (bytebase.v1.audit) = true;
   }
 
-  // RejectIssue rejects the issue.
-  // The access is based on approval flow.
-  // Permissions required: None
+  // Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+  // Permissions required: None (determined by approval flow)
   rpc RejectIssue(RejectIssueRequest) returns (Issue) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*/issues/*}:reject"
@@ -144,9 +142,8 @@ service IssueService {
     option (bytebase.v1.audit) = true;
   }
 
-  // RequestIssue requests the issue.
-  // The access is based on approval flow.
-  // Permissions required: None
+  // Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+  // Permissions required: None (determined by approval flow)
   rpc RequestIssue(RequestIssueRequest) returns (Issue) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*/issues/*}:request"
