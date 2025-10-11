@@ -12,7 +12,9 @@ import "v1/annotation.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// GroupService manages user groups for organizing users and permissions.
 service GroupService {
+  // Gets a group by name.
   // Permissions required: bb.groups.get
   rpc GetGroup(GetGroupRequest) returns (Group) {
     option (google.api.http) = {get: "/v1/{name=groups/*}"};
@@ -21,7 +23,7 @@ service GroupService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Get the groups in batch.
+  // Gets multiple groups in a single request.
   // Permissions required: bb.groups.get
   rpc BatchGetGroups(BatchGetGroupsRequest) returns (BatchGetGroupsResponse) {
     option (google.api.http) = {get: "/v1/groups:batchGet"};
@@ -29,6 +31,7 @@ service GroupService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Lists all groups in the workspace.
   // Permissions required: bb.groups.list
   rpc ListGroups(ListGroupsRequest) returns (ListGroupsResponse) {
     option (google.api.http) = {get: "/v1/groups"};
@@ -37,6 +40,7 @@ service GroupService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Creates a new group.
   // Permissions required: bb.groups.create
   rpc CreateGroup(CreateGroupRequest) returns (Group) {
     option (google.api.http) = {
@@ -49,8 +53,7 @@ service GroupService {
     option (bytebase.v1.audit) = true;
   }
 
-  // UpdateGroup updates the group.
-  // Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
+  // Updates a group. Group owners and users with bb.groups.update permission can update.
   // Permissions required: bb.groups.update
   rpc UpdateGroup(UpdateGroupRequest) returns (Group) {
     option (google.api.http) = {
@@ -63,6 +66,7 @@ service GroupService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Deletes a group.
   // Permissions required: bb.groups.delete
   rpc DeleteGroup(DeleteGroupRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=groups/*}"};
@@ -73,6 +77,7 @@ service GroupService {
   }
 }
 
+// Request message for getting a group.
 message GetGroupRequest {
   // The name of the group to retrieve.
   // Format: groups/{email}
@@ -82,6 +87,7 @@ message GetGroupRequest {
   ];
 }
 
+// Request message for batch getting groups.
 message BatchGetGroupsRequest {
   // The group names to retrieve.
   // Format: groups/{email}
@@ -91,11 +97,13 @@ message BatchGetGroupsRequest {
   ];
 }
 
+// Response message for batch getting groups.
 message BatchGetGroupsResponse {
   // The groups from the specified request.
   repeated Group groups = 1;
 }
 
+// Request message for listing groups.
 message ListGroupsRequest {
   // The maximum number of groups to return. The service may return fewer than
   // this value.
@@ -129,6 +137,7 @@ message ListGroupsRequest {
   string filter = 3;
 }
 
+// Response message for listing groups.
 message ListGroupsResponse {
   // The groups from the specified request.
   repeated Group groups = 1;
@@ -138,6 +147,7 @@ message ListGroupsResponse {
   string next_page_token = 2;
 }
 
+// Request message for creating a group.
 message CreateGroupRequest {
   // The group to create.
   Group group = 1 [(google.api.field_behavior) = REQUIRED];
@@ -147,6 +157,7 @@ message CreateGroupRequest {
   string group_email = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
+// Request message for updating a group.
 message UpdateGroupRequest {
   // The group to update.
   //
@@ -162,6 +173,7 @@ message UpdateGroupRequest {
   bool allow_missing = 3;
 }
 
+// Request message for deleting a group.
 message DeleteGroupRequest {
   // The name of the group to delete.
   // Format: groups/{email}
@@ -171,21 +183,28 @@ message DeleteGroupRequest {
   ];
 }
 
+// A member of a group with a role.
 message GroupMember {
   // Member is the principal who belong to this group.
   //
   // Format: users/hello@world.com
   string member = 1;
 
+  // The role of a group member.
   enum Role {
+    // Unspecified role.
     ROLE_UNSPECIFIED = 0;
+    // Group owner.
     OWNER = 1;
+    // Group member.
     MEMBER = 2;
   }
 
+  // The member's role in the group.
   Role role = 2;
 }
 
+// A group of users within the workspace.
 message Group {
   option (google.api.resource) = {
     type: "bytebase.com/Group"
@@ -196,12 +215,15 @@ message Group {
   // Format: groups/{group}, group is an email.
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The display title of the group.
   string title = 2;
 
+  // The description of the group.
   string description = 3;
 
+  // The members of the group.
   repeated GroupMember members = 5;
 
-  // source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
+  // The source system where the group originated (e.g., Entra ID for SCIM sync).
   string source = 7;
 }

@@ -14,6 +14,7 @@ import "v1/iam_policy.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// ProjectService manages projects that group databases and changes.
 service ProjectService {
   // GetProject retrieves a project by name.
   // Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
@@ -25,6 +26,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Lists all projects in the workspace with optional filtering.
   // Permissions required: bb.projects.list
   rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
     option (google.api.http) = {get: "/v1/projects"};
@@ -33,6 +35,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Searches for projects with advanced filtering capabilities.
   // Permissions required: None
   rpc SearchProjects(SearchProjectsRequest) returns (SearchProjectsResponse) {
     option (google.api.http) = {
@@ -44,6 +47,7 @@ service ProjectService {
     // TODO(d): secure it.
   }
 
+  // Creates a new project in the workspace.
   // Permissions required: bb.projects.create
   rpc CreateProject(CreateProjectRequest) returns (Project) {
     option (google.api.http) = {
@@ -55,6 +59,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Updates an existing project's properties.
   // Permissions required: bb.projects.update
   rpc UpdateProject(UpdateProjectRequest) returns (Project) {
     option (google.api.http) = {
@@ -66,6 +71,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Deletes (soft-delete or purge) a project.
   // Permissions required: bb.projects.delete
   rpc DeleteProject(DeleteProjectRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*}"};
@@ -75,6 +81,7 @@ service ProjectService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Restores a soft-deleted project.
   // Permissions required: bb.projects.undelete
   rpc UndeleteProject(UndeleteProjectRequest) returns (Project) {
     option (google.api.http) = {
@@ -86,6 +93,7 @@ service ProjectService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Deletes multiple projects in a single operation.
   // Permissions required: bb.projects.delete
   rpc BatchDeleteProjects(BatchDeleteProjectsRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
@@ -97,6 +105,7 @@ service ProjectService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Retrieves the IAM policy for a project.
   // Permissions required: bb.projects.getIamPolicy
   rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy) {
     option (google.api.http) = {get: "/v1/{resource=projects/*}:getIamPolicy"};
@@ -112,6 +121,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Sets the IAM policy for a project.
   // Permissions required: bb.projects.setIamPolicy
   rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy) {
     option (google.api.http) = {
@@ -123,6 +133,7 @@ service ProjectService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Adds a webhook to a project for notifications.
   // Permissions required: bb.projects.update
   rpc AddWebhook(AddWebhookRequest) returns (Project) {
     option (google.api.http) = {
@@ -133,6 +144,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Updates an existing webhook configuration.
   // Permissions required: bb.projects.update
   rpc UpdateWebhook(UpdateWebhookRequest) returns (Project) {
     option (google.api.http) = {
@@ -144,6 +156,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Removes a webhook from a project.
   // Permissions required: bb.projects.update
   rpc RemoveWebhook(RemoveWebhookRequest) returns (Project) {
     option (google.api.http) = {
@@ -154,6 +167,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Tests a webhook by sending a test notification.
   // Permissions required: bb.projects.update
   rpc TestWebhook(TestWebhookRequest) returns (TestWebhookResponse) {
     option (google.api.http) = {
@@ -339,17 +353,25 @@ message BatchGetIamPolicyRequest {
 }
 
 message BatchGetIamPolicyResponse {
+  // Result for a single project's IAM policy.
   message PolicyResult {
+    // The project resource name.
     string project = 1;
 
+    // The IAM policy for the project.
     IamPolicy policy = 2;
   }
+  // The policy results for each requested project.
   repeated PolicyResult policy_results = 1;
 }
 
+// A label for categorizing and organizing issues.
 message Label {
+  // The label value/name.
   string value = 1;
+  // The color code for the label (e.g., hex color).
   string color = 2;
+  // The group this label belongs to.
   string group = 3;
 }
 
@@ -364,52 +386,57 @@ message Project {
   // Format: projects/{project}
   string name = 1;
 
+  // The lifecycle state of the project.
   State state = 3;
 
   // The title or name of a project. It's not unique within the workspace.
   string title = 4;
 
+  // The list of webhooks configured for the project.
   repeated Webhook webhooks = 11;
 
+  // The data classification configuration ID for the project.
   string data_classification_config_id = 12;
 
+  // Labels available for tagging issues in this project.
   repeated Label issue_labels = 13;
 
   // Force issue labels to be used when creating an issue.
   bool force_issue_labels = 14;
-  // Allow modifying statement after issue is created.
+  // Allow modifying SQL statements after issue is created.
   bool allow_modify_statement = 15;
-  // Enable auto resolve issue.
+  // Enable automatic issue resolution when tasks complete.
   bool auto_resolve_issue = 16;
-  // Enforce issue title created by user instead of generated by Bytebase.
+  // Enforce issue title to be created by user instead of generated by Bytebase.
   bool enforce_issue_title = 17;
 
-  // Whether to automatically enable backup.
+  // Whether to automatically enable backup for database changes.
   bool auto_enable_backup = 18;
 
-  // Whether to skip backup errors and continue the data migration.
+  // Whether to skip backup errors and continue with data migration.
   bool skip_backup_errors = 19;
 
-  // Whether to enable the database tenant mode for PostgreSQL.
-  // If enabled, the issue will be created with the prepend "set role <db_owner>" statement.
+  // Whether to enable database tenant mode for PostgreSQL.
+  // If enabled, issues will include "set role <db_owner>" statement.
   bool postgres_database_tenant_mode = 20;
 
-  // Whether to allow the issue creator to self-approve the issue.
+  // Whether to allow issue creators to self-approve their own issues.
   bool allow_self_approval = 21;
 
-  // Execution retry policy for the task run.
+  // Execution retry policy for task runs.
   ExecutionRetryPolicy execution_retry_policy = 22;
 
+  // Execution retry policy configuration.
   message ExecutionRetryPolicy {
-    // The maximum number of retries for the lock timeout issue.
+    // The maximum number of retries for lock timeout errors.
     int32 maximum_retries = 1;
   }
 
-  // The maximum databases of rows to sample during CI data validation.
-  // Without specification, sampling is disabled, resulting in a full validation.
+  // The maximum number of database rows to sample during CI data validation.
+  // Without specification, sampling is disabled, resulting in full validation.
   int32 ci_sampling_size = 23;
 
-  // The maximum number of parallel tasks to run during the rollout.
+  // The maximum number of parallel tasks allowed during rollout execution.
   int32 parallel_tasks_per_rollout = 24;
 
   // Labels are key-value pairs that can be attached to the project.
@@ -477,14 +504,23 @@ message Webhook {
   // format: projects/{project}/webhooks/{webhook}
   string name = 1;
 
+  // Webhook integration type.
   enum Type {
+    // Unspecified type.
     TYPE_UNSPECIFIED = 0;
+    // Slack integration.
     SLACK = 1;
+    // Discord integration.
     DISCORD = 2;
+    // Microsoft Teams integration.
     TEAMS = 3;
+    // DingTalk integration.
     DINGTALK = 4;
+    // Feishu integration.
     FEISHU = 5;
+    // WeCom (WeChat Work) integration.
     WECOM = 6;
+    // Lark integration.
     LARK = 8;
   }
   // type is the type of the webhook.
@@ -513,9 +549,12 @@ message Webhook {
   repeated Activity.Type notification_types = 5 [(google.api.field_behavior) = UNORDERED_LIST];
 }
 
+// Activity types for webhook notifications.
 // TODO(zp): move to activity later.
 message Activity {
+  // Activity type enumeration.
   enum Type {
+    // Unspecified type.
     TYPE_UNSPECIFIED = 0;
     // Notifications via webhooks.
     //

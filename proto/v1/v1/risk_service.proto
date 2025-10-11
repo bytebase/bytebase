@@ -14,7 +14,9 @@ import "v1/common.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// RiskService manages risk assessment rules for database changes.
 service RiskService {
+  // Lists all risk assessment rules.
   // Permissions required: bb.risks.list
   rpc ListRisks(ListRisksRequest) returns (ListRisksResponse) {
     option (google.api.http) = {get: "/v1/risks"};
@@ -23,6 +25,7 @@ service RiskService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Creates a new risk assessment rule.
   // Permissions required: bb.risks.create
   rpc CreateRisk(CreateRiskRequest) returns (Risk) {
     option (google.api.http) = {
@@ -35,6 +38,7 @@ service RiskService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Retrieves a risk assessment rule by name.
   // Permissions required: bb.risks.list
   rpc GetRisk(GetRiskRequest) returns (Risk) {
     option (google.api.http) = {get: "/v1/{name=risks/*}"};
@@ -43,6 +47,7 @@ service RiskService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Updates an existing risk assessment rule.
   // Permissions required: bb.risks.update
   rpc UpdateRisk(UpdateRiskRequest) returns (Risk) {
     option (google.api.http) = {
@@ -55,6 +60,7 @@ service RiskService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Deletes a risk assessment rule.
   // Permissions required: bb.risks.delete
   rpc DeleteRisk(DeleteRiskRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=risks/*}"};
@@ -65,18 +71,18 @@ service RiskService {
 }
 
 message ListRisksRequest {
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // The maximum number of risks to return. The service may return fewer than
   // this value.
   // If unspecified, at most 10 risks will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 1;
 
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // A page token, received from a previous `ListRisks` call.
   // Provide this to retrieve the subsequent page.
   //
-  // When paginating, all other parameters provided to `LiskRisks` must match
+  // When paginating, all other parameters provided to `ListRisks` must match
   // the call that provided the page token.
   string page_token = 2;
 }
@@ -148,8 +154,11 @@ message Risk {
   }
   Source source = 3;
 
+  // The title of the risk rule.
   string title = 4;
+  // The risk level assigned when this rule matches.
   RiskLevel level = 5;
+  // Whether the risk rule is active.
   bool active = 7;
 
   // The condition that is associated with the risk.

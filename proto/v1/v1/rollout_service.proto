@@ -13,7 +13,9 @@ import "v1/plan_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// RolloutService manages the execution of deployment plans.
 service RolloutService {
+  // Retrieves a rollout by name.
   // Permissions required: bb.rollouts.get
   rpc GetRollout(GetRolloutRequest) returns (Rollout) {
     option (google.api.http) = {get: "/v1/{name=projects/*/rollouts/*}"};
@@ -22,6 +24,7 @@ service RolloutService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Lists rollouts in a project.
   // Permissions required: bb.rollouts.list
   rpc ListRollouts(ListRolloutsRequest) returns (ListRolloutsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/rollouts"};
@@ -30,6 +33,7 @@ service RolloutService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Creates a new rollout from a plan.
   // Permissions required: bb.rollouts.create
   rpc CreateRollout(CreateRolloutRequest) returns (Rollout) {
     option (google.api.http) = {
@@ -42,6 +46,7 @@ service RolloutService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Previews the rollout that would be created from a plan.
   // Permissions required: bb.rollouts.preview
   rpc PreviewRollout(PreviewRolloutRequest) returns (Rollout) {
     option (google.api.http) = {
@@ -53,6 +58,7 @@ service RolloutService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Lists task run executions for a task.
   // Permissions required: bb.taskRuns.list
   rpc ListTaskRuns(ListTaskRunsRequest) returns (ListTaskRunsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns"};
@@ -61,6 +67,7 @@ service RolloutService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Retrieves a task run by name.
   // Permissions required: bb.taskRuns.list
   rpc GetTaskRun(GetTaskRunRequest) returns (TaskRun) {
     option (google.api.http) = {get: "/v1/{name=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}"};
@@ -69,6 +76,7 @@ service RolloutService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Retrieves execution logs for a task run.
   // Permissions required: bb.taskRuns.list
   rpc GetTaskRunLog(GetTaskRunLogRequest) returns (TaskRunLog) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/log"};
@@ -77,6 +85,7 @@ service RolloutService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Retrieves database session information for a running task.
   // Permissions required: bb.taskRuns.list
   rpc GetTaskRunSession(GetTaskRunSessionRequest) returns (TaskRunSession) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/session"};
@@ -85,6 +94,7 @@ service RolloutService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Executes multiple tasks in a rollout stage.
   // Permissions required: None
   rpc BatchRunTasks(BatchRunTasksRequest) returns (BatchRunTasksResponse) {
     option (google.api.http) = {
@@ -95,6 +105,7 @@ service RolloutService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Skips multiple tasks in a rollout stage.
   // Permissions required: None
   rpc BatchSkipTasks(BatchSkipTasksRequest) returns (BatchSkipTasksResponse) {
     option (google.api.http) = {
@@ -105,6 +116,7 @@ service RolloutService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Cancels multiple running task executions.
   // Permissions required: None
   rpc BatchCancelTaskRuns(BatchCancelTaskRunsRequest) returns (BatchCancelTaskRunsResponse) {
     option (google.api.http) = {
@@ -115,6 +127,7 @@ service RolloutService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Generates rollback SQL for a completed task run.
   // Permissions required: bb.taskRuns.list
   rpc PreviewTaskRunRollback(PreviewTaskRunRollbackRequest) returns (PreviewTaskRunRollbackResponse) {
     option (google.api.http) = {
@@ -135,6 +148,7 @@ message BatchRunTasksRequest {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   repeated string tasks = 2;
 
+  // The reason for running the tasks.
   string reason = 3;
 
   // The task run should run after run_time.
@@ -151,6 +165,7 @@ message BatchSkipTasksRequest {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   repeated string tasks = 2;
 
+  // The reason for skipping the tasks.
   string reason = 3;
 }
 
@@ -165,6 +180,7 @@ message BatchCancelTaskRunsRequest {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   repeated string task_runs = 2;
 
+  // The reason for canceling the task runs.
   string reason = 3;
 }
 
@@ -268,14 +284,14 @@ message ListTaskRunsRequest {
     (google.api.resource_reference) = {type: "bytebase.com/Task"}
   ];
 
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // The maximum number of taskRuns to return. The service may return fewer than
   // this value.
   // If unspecified, at most 10 taskRuns will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 2;
 
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // A page token, received from a previous `ListTaskRuns` call.
   // Provide this to retrieve the subsequent page.
   //
@@ -366,6 +382,7 @@ message Stage {
   // Format: environments/{environment} for valid environments, or "environments/-" for stages without environment or with deleted environments.
   string environment = 4;
 
+  // The tasks within this stage.
   repeated Task tasks = 5;
 }
 
@@ -385,29 +402,44 @@ message Task {
   string spec_id = 4;
 
   enum Status {
+    // Unspecified status.
     STATUS_UNSPECIFIED = 0;
+    // Task has not started and is awaiting its turn in the deployment sequence.
     NOT_STARTED = 1;
+    // Task is ready to run and waiting for approval or scheduled time.
     PENDING = 2;
+    // Task is currently executing.
     RUNNING = 3;
+    // Task completed successfully.
     DONE = 4;
+    // Task execution failed with errors.
     FAILED = 5;
+    // Task execution was canceled by a user.
     CANCELED = 6;
+    // Task was skipped and will not be executed.
     SKIPPED = 7;
   }
   // Status is the status of the task.
   Status status = 5;
+  // The reason why the task was skipped.
   string skipped_reason = 15;
 
   enum Type {
+    // Unspecified task type.
     TYPE_UNSPECIFIED = 0;
+    // General task for miscellaneous operations.
     GENERAL = 1;
-    // use payload DatabaseCreate
+    // Database creation task that creates a new database.
+    // Use payload DatabaseCreate.
     DATABASE_CREATE = 2;
-    // use payload DatabaseUpdate
+    // Database migration task that applies versioned schema changes.
+    // Use payload DatabaseUpdate.
     DATABASE_MIGRATE = 3;
-    // use payload DatabaseUpdate
+    // Database SDL (Schema Definition Language) task that synchronizes declarative schema.
+    // Use payload DatabaseUpdate.
     DATABASE_SDL = 6;
-    // use payload DatabaseDataExport
+    // Database export task that exports query results or table data.
+    // Use payload DatabaseDataExport.
     DATABASE_EXPORT = 5;
   }
   Type type = 6;
@@ -430,6 +462,7 @@ message Task {
   // If there are no task runs or the task run is not scheduled, it will be empty.
   optional google.protobuf.Timestamp run_time = 21 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // Payload for creating a new database.
   message DatabaseCreate {
     // The project owning the database.
     // Format: projects/{project}
@@ -440,20 +473,27 @@ message Task {
     string table = 3;
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 4;
+    // The character set for the database.
     string character_set = 5;
+    // The collation for the database.
     string collation = 6;
+    // The environment the database belongs to.
     string environment = 7;
   }
 
+  // Payload for updating a database schema.
   message DatabaseUpdate {
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 1;
+    // The target schema version after this update.
     string schema_version = 2;
+    // The type of database change (MIGRATE or SDL).
     DatabaseChangeType database_change_type = 3;
     // migration_type is only set when database_change_type is MIGRATE.
     MigrationType migration_type = 4;
   }
 
+  // Payload for exporting database data.
   message DatabaseDataExport {
     // The resource name of the target.
     // Format: instances/{instance-id}/databases/{database-name}
@@ -463,7 +503,7 @@ message Task {
     string sheet = 2;
     // The format of the exported file.
     ExportFormat format = 3;
-    // The zip password provide by users.
+    // The zip password provided by users.
     // Leave it empty if no needs to encrypt the zip file.
     optional string password = 4;
   }
@@ -480,44 +520,63 @@ message TaskRun {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string name = 1;
 
-  // Format: user/hello@world.com
+  // Format: users/hello@world.com
   string creator = 3;
   google.protobuf.Timestamp create_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp update_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   enum Status {
+    // Unspecified status.
     STATUS_UNSPECIFIED = 0;
+    // Task run is queued and waiting to start execution.
     PENDING = 1;
+    // Task run is currently executing.
     RUNNING = 2;
+    // Task run completed successfully.
     DONE = 3;
+    // Task run execution failed with errors.
     FAILED = 4;
+    // Task run execution was canceled by a user.
     CANCELED = 5;
   }
+  // The current execution status of the task run.
   Status status = 8;
 
   // Below are the results of a task run.
+  // Detailed information about the task run result.
   string detail = 9;
   // The resource name of the changelog.
   // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
   string changelog = 20 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The schema version after this task run completes.
   string schema_version = 11;
 
+  // The time when the task run started execution.
   google.protobuf.Timestamp start_time = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   enum ExportArchiveStatus {
+    // Unspecified export archive status.
     EXPORT_ARCHIVE_STATUS_UNSPECIFIED = 0;
+    // Export archive is ready for download.
     READY = 1;
+    // Export archive has been downloaded by the user.
     EXPORTED = 2;
   }
+  // The export archive status for data export tasks.
   ExportArchiveStatus export_archive_status = 16;
 
+  // Prior backup detail for rollback purposes.
   message PriorBackupDetail {
+    // A single backup table mapping.
     message Item {
+      // Table information.
       message Table {
         // The database information.
         // Format: instances/{instance}/databases/{database}
         string database = 1;
+        // The schema name.
         string schema = 2;
+        // The table name.
         string table = 3;
       }
 
@@ -525,24 +584,35 @@ message TaskRun {
       Table source_table = 1;
       // The target backup table information.
       Table target_table = 2;
+      // The start position in the SQL statement.
       Position start_position = 3;
+      // The end position in the SQL statement.
       Position end_position = 4;
     }
 
+    // The list of backed up tables.
     repeated Item items = 1;
   }
   // The prior backup detail that will be used to rollback the task run.
   PriorBackupDetail prior_backup_detail = 17;
 
+  // Information about task run scheduling.
   message SchedulerInfo {
+    // The time when the scheduling info was reported.
     google.protobuf.Timestamp report_time = 1;
 
+    // Information about why a task run is waiting.
     message WaitingCause {
+      // The reason the task run is waiting.
       oneof cause {
+        // Waiting due to connection limit reached.
         bool connection_limit = 1;
+        // Waiting for another task to complete.
         Task task = 2;
+        // Waiting due to parallel tasks limit.
         bool parallel_tasks_limit = 3;
       }
+      // Information about a blocking task.
       message Task {
         // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
         string task = 1;
@@ -550,8 +620,10 @@ message TaskRun {
         string issue = 2;
       }
     }
+    // The cause for the task run waiting.
     WaitingCause waiting_cause = 2;
   }
+  // Scheduling information about the task run.
   SchedulerInfo scheduler_info = 18 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Format: projects/{project}/sheets/{sheet}
@@ -571,40 +643,68 @@ message TaskRunLog {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log
   string name = 1;
 
+  // The log entries for this task run.
   repeated TaskRunLogEntry entries = 2;
 }
 
 message TaskRunLogEntry {
+  // The type of log entry.
   enum Type {
+    // Unspecified type.
     TYPE_UNSPECIFIED = 0;
+    // Schema dump operation.
     SCHEMA_DUMP = 1;
+    // Command execution.
     COMMAND_EXECUTE = 2;
+    // Database synchronization.
     DATABASE_SYNC = 3;
+    // Task run status update.
     TASK_RUN_STATUS_UPDATE = 4;
+    // Transaction control (BEGIN, COMMIT, ROLLBACK).
     TRANSACTION_CONTROL = 5;
+    // Prior backup operation.
     PRIOR_BACKUP = 6;
+    // Retry information.
     RETRY_INFO = 7;
+    // Schema diff computation.
     COMPUTE_DIFF = 8;
   }
+  // The type of this log entry.
   Type type = 1;
+  // The time when the log was recorded.
   google.protobuf.Timestamp log_time = 6;
+  // The deployment ID for this log entry.
   string deploy_id = 12;
+  // Schema dump details (if type is SCHEMA_DUMP).
   SchemaDump schema_dump = 2;
+  // Command execution details (if type is COMMAND_EXECUTE).
   CommandExecute command_execute = 3;
+  // Database sync details (if type is DATABASE_SYNC).
   DatabaseSync database_sync = 4;
+  // Task run status update details (if type is TASK_RUN_STATUS_UPDATE).
   TaskRunStatusUpdate task_run_status_update = 5;
+  // Transaction control details (if type is TRANSACTION_CONTROL).
   TransactionControl transaction_control = 7;
+  // Prior backup details (if type is PRIOR_BACKUP).
   PriorBackup prior_backup = 8;
+  // Retry information details (if type is RETRY_INFO).
   RetryInfo retry_info = 9;
+  // Compute diff details (if type is COMPUTE_DIFF).
   ComputeDiff compute_diff = 10;
 
+  // Schema dump operation details.
   message SchemaDump {
+    // When the schema dump started.
     google.protobuf.Timestamp start_time = 1;
+    // When the schema dump ended.
     google.protobuf.Timestamp end_time = 2;
+    // Error message if the schema dump failed.
     string error = 3;
   }
 
+  // Command execution details.
   message CommandExecute {
+    // When the command was logged.
     google.protobuf.Timestamp log_time = 1;
     // Either `command_indexes` or `statement` is set.
     // The indexes of the executed commands.
@@ -612,10 +712,15 @@ message TaskRunLogEntry {
     // The executed statement.
     string statement = 4;
 
+    // The response from executing the command.
     CommandResponse response = 3;
+    // Command execution response.
     message CommandResponse {
+      // When the response was logged.
       google.protobuf.Timestamp log_time = 1;
+      // Error message if command execution failed.
       string error = 2;
+      // Total affected rows.
       int64 affected_rows = 3;
       // `all_affected_rows` is the affected rows of each command.
       // `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
@@ -623,15 +728,23 @@ message TaskRunLogEntry {
     }
   }
 
+  // Database synchronization details.
   message DatabaseSync {
+    // When the database sync started.
     google.protobuf.Timestamp start_time = 1;
+    // When the database sync ended.
     google.protobuf.Timestamp end_time = 2;
+    // Error message if sync failed.
     string error = 3;
   }
 
+  // Task run status update details.
   message TaskRunStatusUpdate {
+    // The new status.
     Status status = 1;
+    // Internal status for task run execution.
     enum Status {
+      // Unspecified status.
       STATUS_UNSPECIFIED = 0;
       // the task run is ready to be executed by the scheduler
       RUNNING_WAITING = 1;
@@ -640,33 +753,54 @@ message TaskRunLogEntry {
     }
   }
 
+  // Transaction control operation details.
   message TransactionControl {
+    // Transaction control type.
     enum Type {
+      // Unspecified type.
       TYPE_UNSPECIFIED = 0;
+      // Begin transaction.
       BEGIN = 1;
+      // Commit transaction.
       COMMIT = 2;
+      // Rollback transaction.
       ROLLBACK = 3;
     }
+    // The type of transaction control.
     Type type = 1;
+    // Error message if the operation failed.
     string error = 2;
   }
 
+  // Prior backup operation details.
   message PriorBackup {
+    // When the backup started.
     google.protobuf.Timestamp start_time = 1;
+    // When the backup ended.
     google.protobuf.Timestamp end_time = 2;
+    // The backup details.
     TaskRun.PriorBackupDetail prior_backup_detail = 3;
+    // Error message if the backup failed.
     string error = 4;
   }
 
+  // Retry information for failed operations.
   message RetryInfo {
+    // The error that triggered the retry.
     string error = 1;
+    // Current retry attempt number.
     int32 retry_count = 2;
+    // Maximum number of retries allowed.
     int32 maximum_retries = 3;
   }
 
+  // Schema diff computation details.
   message ComputeDiff {
+    // When diff computation started.
     google.protobuf.Timestamp start_time = 1;
+    // When diff computation ended.
     google.protobuf.Timestamp end_time = 2;
+    // Error message if computation failed.
     string error = 3;
   }
 }
@@ -688,10 +822,13 @@ message TaskRunSession {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session
   string name = 1;
 
+  // Database-specific session information.
   oneof session {
+    // PostgreSQL session information.
     Postgres postgres = 2;
   }
 
+  // PostgreSQL session information.
   message Postgres {
     // `session` is the session of the task run executing commands.
     Session session = 1;
@@ -700,21 +837,35 @@ message TaskRunSession {
     // `blocked_sessions` are blocked by `session`.
     repeated Session blocked_sessions = 3;
 
-    // Read from `pg_stat_activity`
+    // PostgreSQL session information read from `pg_stat_activity`.
     message Session {
+      // Process ID of the session.
       string pid = 1;
+      // PIDs of sessions blocking this session.
       repeated string blocked_by_pids = 2;
+      // Current query being executed.
       string query = 3;
+      // Session state (active, idle, etc.).
       optional string state = 4;
+      // Wait event type if session is waiting.
       optional string wait_event_type = 5;
+      // Specific wait event if session is waiting.
       optional string wait_event = 6;
+      // Database name.
       optional string datname = 7;
+      // User name.
       optional string usename = 8;
+      // Application name.
       string application_name = 9;
+      // Client IP address.
       optional string client_addr = 10;
+      // Client port number.
       optional string client_port = 11;
+      // When the backend process started.
       google.protobuf.Timestamp backend_start = 12;
+      // When the current transaction started.
       optional google.protobuf.Timestamp xact_start = 13;
+      // When the current query started.
       optional google.protobuf.Timestamp query_start = 14;
     }
   }
@@ -729,5 +880,6 @@ message PreviewTaskRunRollbackRequest {
 }
 
 message PreviewTaskRunRollbackResponse {
+  // The rollback SQL statement that would undo the task run.
   string statement = 1;
 }

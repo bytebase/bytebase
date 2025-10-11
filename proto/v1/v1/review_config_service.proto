@@ -13,7 +13,9 @@ import "v1/org_policy_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// ReviewConfigService manages approval flow configurations.
 service ReviewConfigService {
+  // Creates a new SQL review configuration.
   // Permissions required: bb.reviewConfigs.create
   rpc CreateReviewConfig(CreateReviewConfigRequest) returns (ReviewConfig) {
     option (google.api.http) = {
@@ -25,6 +27,7 @@ service ReviewConfigService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Lists all SQL review configurations.
   // Permissions required: bb.reviewConfigs.list
   rpc ListReviewConfigs(ListReviewConfigsRequest) returns (ListReviewConfigsResponse) {
     option (google.api.http) = {get: "/v1/reviewConfigs"};
@@ -33,6 +36,7 @@ service ReviewConfigService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Retrieves a SQL review configuration by name.
   // Permissions required: bb.reviewConfigs.get
   rpc GetReviewConfig(GetReviewConfigRequest) returns (ReviewConfig) {
     option (google.api.http) = {get: "/v1/{name=reviewConfigs/*}"};
@@ -41,6 +45,7 @@ service ReviewConfigService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Updates a SQL review configuration.
   // Permissions required: bb.reviewConfigs.update
   rpc UpdateReviewConfig(UpdateReviewConfigRequest) returns (ReviewConfig) {
     option (google.api.http) = {
@@ -52,6 +57,7 @@ service ReviewConfigService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Deletes a SQL review configuration.
   // Permissions required: bb.reviewConfigs.delete
   rpc DeleteReviewConfig(DeleteReviewConfigRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=reviewConfigs/*}"};
@@ -62,14 +68,14 @@ service ReviewConfigService {
 }
 
 message ListReviewConfigsRequest {
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // The maximum number of sql review to return. The service may return fewer than
   // this value.
   // If unspecified, at most 10 sql review will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 1;
 
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // A page token, provide this to retrieve the subsequent page.
   //
   // When paginating, all other parameters provided to `ListReviewConfigs` must match
@@ -133,13 +139,16 @@ message ReviewConfig {
   // Format: reviewConfigs/{reviewConfig}
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The title of the review configuration.
   string title = 2;
 
+  // Whether the review configuration is enabled.
   bool enabled = 3;
 
+  // The SQL review rules to enforce.
   repeated SQLReviewRule rules = 7;
 
   // resources using the config.
-  // Format: {resurce}/{resource id}, for example, environments/test.
+  // Format: {resource}/{resource id}, for example, environments/test.
   repeated string resources = 8;
 }

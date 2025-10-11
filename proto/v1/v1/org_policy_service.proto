@@ -15,7 +15,9 @@ import "v1/common.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// OrgPolicyService manages organizational policies at various resource levels.
 service OrgPolicyService {
+  // Retrieves a policy by name.
   // Permissions required: bb.policies.get
   rpc GetPolicy(GetPolicyRequest) returns (Policy) {
     option (google.api.http) = {
@@ -31,6 +33,7 @@ service OrgPolicyService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Lists policies at a specified resource level.
   // Permissions required: bb.policies.list
   rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse) {
     option (google.api.http) = {
@@ -46,6 +49,7 @@ service OrgPolicyService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Creates a new organizational policy.
   // Permissions required: bb.policies.create
   rpc CreatePolicy(CreatePolicyRequest) returns (Policy) {
     option (google.api.http) = {
@@ -75,6 +79,7 @@ service OrgPolicyService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Updates an existing organizational policy.
   // Permissions required: bb.policies.update
   rpc UpdatePolicy(UpdatePolicyRequest) returns (Policy) {
     option (google.api.http) = {
@@ -104,6 +109,7 @@ service OrgPolicyService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Deletes an organizational policy.
   // Permissions required: bb.policies.delete
   rpc DeletePolicy(DeletePolicyRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
@@ -135,6 +141,7 @@ message CreatePolicyRequest {
   // The policy to create.
   Policy policy = 2 [(google.api.field_behavior) = REQUIRED];
 
+  // The type of policy to create.
   PolicyType type = 3;
 }
 
@@ -187,16 +194,17 @@ message ListPoliciesRequest {
     (google.api.resource_reference) = {child_type: "bytebase.com/Policy"}
   ];
 
+  // Filter by specific policy type.
   optional PolicyType policy_type = 2;
 
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // The maximum number of policies to return. The service may return fewer than
   // this value.
   // If unspecified, at most 10 policies will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 3;
 
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // A page token, received from a previous `ListPolicies` call.
   // Provide this to retrieve the subsequent page.
   //
@@ -237,10 +245,13 @@ message Policy {
   // Database resource name: instances/instance-id/databases/database-name.
   string name = 1;
 
+  // Whether this policy inherits from its parent resource.
   bool inherit_from_parent = 4;
 
+  // The type of policy.
   PolicyType type = 5;
 
+  // The policy configuration.
   oneof policy {
     RolloutPolicy rollout_policy = 19;
     MaskingRulePolicy masking_rule_policy = 17;
@@ -250,33 +261,50 @@ message Policy {
     QueryDataPolicy query_data_policy = 24;
   }
 
+  // Whether the policy is enforced.
   bool enforce = 13;
 
   // The resource type for the policy.
   PolicyResourceType resource_type = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
+// The type of organizational policy.
 enum PolicyType {
   reserved 2, 4, 6, 5, 7, 12, 15;
 
+  // Unspecified policy type.
   POLICY_TYPE_UNSPECIFIED = 0;
+  // Rollout deployment policy.
   ROLLOUT_POLICY = 11;
+  // Data masking rule policy.
   MASKING_RULE = 9;
+  // Data masking exception policy.
   MASKING_EXCEPTION = 10;
+  // Resource tag policy.
   TAG = 13;
+  // Data source query restrictions policy.
   DATA_SOURCE_QUERY = 14;
+  // Query data access policy.
   DATA_QUERY = 16;
 }
 
+// The resource type that a policy can be attached to.
 enum PolicyResourceType {
+  // Unspecified resource type.
   RESOURCE_TYPE_UNSPECIFIED = 0;
+  // Workspace-level policy.
   WORKSPACE = 1;
+  // Environment-level policy.
   ENVIRONMENT = 2;
+  // Project-level policy.
   PROJECT = 3;
 }
 
+// Rollout policy configuration.
 message RolloutPolicy {
+  // Whether rollout is automatic without manual approval.
   bool automatic = 1;
+  // The roles that can approve rollout execution.
   repeated string roles = 2;
   // Checkers that must pass before rollout execution.
   // These checks are performed in UI workflows only.
@@ -312,48 +340,62 @@ message QueryDataPolicy {
   // The query timeout duration.
   google.protobuf.Duration timeout = 1;
 
-  // Disable export data in the SQL editor
+  // Disable data export in the SQL editor.
   bool disable_export = 2;
 
-  // The size limit in bytes.
+  // The maximum result size limit in bytes.
   // The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
   int64 maximum_result_size = 3;
 
-  // The return rows limit.
+  // The maximum number of rows to return.
   // The default value is -1, means no limit.
   int32 maximum_result_rows = 4;
 
-  // Disable copying data.
+  // Disable copying query results.
   bool disable_copy_data = 5;
 }
 
-// The SQL review rules. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
+// SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
 message SQLReviewRule {
+  // The type of SQL review rule.
   string type = 1;
+  // The severity level of the rule.
   SQLReviewRuleLevel level = 2;
 
   // The payload is a JSON string that varies by rule type.
   string payload = 3;
+  // The database engine this rule applies to.
   Engine engine = 4;
+  // Additional comment for the rule.
   string comment = 5;
 }
 
+// The severity level for SQL review rules.
 enum SQLReviewRuleLevel {
+  // Unspecified level.
   LEVEL_UNSPECIFIED = 0;
+  // Rule violation is an error.
   ERROR = 1;
+  // Rule violation is a warning.
   WARNING = 2;
+  // Rule is disabled.
   DISABLED = 3;
 }
 
 // MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 message MaskingExceptionPolicy {
+  // An exception allowing specific users to access masked data.
   message MaskingException {
+    // The action that the exception permits.
     enum Action {
+      // Unspecified action.
       ACTION_UNSPECIFIED = 0;
+      // Allow querying sensitive data.
       QUERY = 1;
+      // Allow exporting sensitive data.
       EXPORT = 2;
     }
-    // action is the action that the user can access sensitive data.
+    // The action that the user can perform on sensitive data.
     Action action = 1;
 
     // Member is the principal who bind to this exception policy instance.
@@ -381,12 +423,15 @@ message MaskingExceptionPolicy {
     google.type.Expr condition = 4;
   }
 
+  // The list of masking exceptions.
   repeated MaskingException masking_exceptions = 1;
 }
 
+// Policy for configuring data masking rules.
 message MaskingRulePolicy {
+  // A rule that defines when and how to mask data.
   message MaskingRule {
-    // A unique identifier for a node in UUID format.
+    // A unique identifier for the rule in UUID format.
     string id = 1;
 
     // The condition for the masking rule.
@@ -414,26 +459,32 @@ message MaskingRulePolicy {
     // resource.instance_id == "sample-instance" && (resource.database_name == "db1" || resource.database_name == "db2")
     google.type.Expr condition = 2;
 
+    // The semantic type of data to mask (e.g., "SSN", "EMAIL").
     string semantic_type = 3;
   }
+  // The list of masking rules.
   repeated MaskingRule rules = 1;
 }
 
+// Policy for tagging resources with metadata.
 message TagPolicy {
   // tags is the key - value map for resources.
   // for example, the environment resource can have the sql review config tag, like "bb.tag.review_config": "reviewConfigs/{review config resource id}"
   map<string, string> tags = 1;
 }
 
-// DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.
+// Policy for controlling which data sources can be queried in the SQL editor.
 message DataSourceQueryPolicy {
+  // Restriction level for admin data source access.
   enum Restriction {
+    // Unspecified restriction.
     RESTRICTION_UNSPECIFIED = 0;
-    // Allow to query admin data sources when there is no read-only data source.
+    // Allow querying admin data sources when there is no read-only data source.
     FALLBACK = 1;
-    // Disallow to query admin data sources.
+    // Disallow querying admin data sources.
     DISALLOW = 2;
   }
+  // Restriction for admin data source queries.
   Restriction admin_data_source_restriction = 1;
 
   // Disallow running DDL statements in the SQL editor.

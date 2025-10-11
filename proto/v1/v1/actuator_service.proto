@@ -15,7 +15,9 @@ import "v1/user_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// ActuatorService manages system health and operational information.
 service ActuatorService {
+  // Gets system information and health status of the Bytebase instance.
   // Permissions required: None
   rpc GetActuatorInfo(GetActuatorInfoRequest) returns (ActuatorInfo) {
     option (google.api.http) = {get: "/v1/actuator/info"};
@@ -23,6 +25,7 @@ service ActuatorService {
     option (bytebase.v1.allow_without_credential) = true;
   }
 
+  // Updates system configuration settings for the Bytebase instance.
   // Permissions required: bb.settings.set
   rpc UpdateActuatorInfo(UpdateActuatorInfoRequest) returns (ActuatorInfo) {
     option (google.api.http) = {
@@ -34,6 +37,7 @@ service ActuatorService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Sets up sample data for demonstration and testing purposes.
   // Permissions required: bb.projects.create
   rpc SetupSample(SetupSampleRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
@@ -44,12 +48,14 @@ service ActuatorService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Clears the system cache to force data refresh.
   // Permissions required: None
   rpc DeleteCache(DeleteCacheRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/actuator/cache"};
     option (bytebase.v1.allow_without_credential) = true;
   }
 
+  // Gets custom branding resources such as logos.
   // Permissions required: None
   rpc GetResourcePackage(GetResourcePackageRequest) returns (ResourcePackage) {
     option (google.api.http) = {get: "/v1/actuator/resources"};
@@ -58,19 +64,22 @@ service ActuatorService {
   }
 }
 
-// The request message for getting the theme resource.
+// Request message for getting branding resources.
 message GetResourcePackageRequest {}
 
-// The theme resources.
+// Custom branding resources for the Bytebase instance.
 message ResourcePackage {
   // The branding logo.
   bytes logo = 1;
 }
 
+// Request message for setting up sample data.
 message SetupSampleRequest {}
 
+// Request message for getting actuator information.
 message GetActuatorInfoRequest {}
 
+// Request message for updating actuator information.
 message UpdateActuatorInfoRequest {
   // The actuator to update.
   ActuatorInfo actuator = 1 [(google.api.field_behavior) = REQUIRED];
@@ -83,73 +92,84 @@ message UpdateActuatorInfoRequest {
   bool allow_missing = 3;
 }
 
+// Request message for deleting cache.
 message DeleteCacheRequest {}
 
-// ServerInfo is the API message for server info.
+// System information and configuration for the Bytebase instance.
 // Actuator concept is similar to the Spring Boot Actuator.
 message ActuatorInfo {
-  // version is the bytebase's server version
+  // The Bytebase server version.
   string version = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // git_commit is the git commit hash of the build
+  // The git commit hash of the build.
   string git_commit = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // readonly flag means if the Bytebase is running in readonly mode.
+  // Whether the Bytebase instance is running in read-only mode.
   bool readonly = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // saas flag means if the Bytebase is running in SaaS mode, some features are not allowed to edit by users.
+  // Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users.
   bool saas = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // demo flag means if the Bytebase is running in demo mode.
+  // Whether the Bytebase instance is running in demo mode.
   bool demo = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // host is the Bytebase instance host.
+  // The host address of the Bytebase instance.
   string host = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // port is the Bytebase instance port.
+  // The port number of the Bytebase instance.
   string port = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // external_url is the URL where user or webhook callback visits Bytebase.
+  // The external URL where users or webhook callbacks access Bytebase.
   string external_url = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // need_admin_setup flag means the Bytebase instance doesn't have any end users.
+  // Whether the Bytebase instance requires initial admin setup.
   bool need_admin_setup = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // disallow_signup is the flag to disable self-service signup.
+  // Whether self-service user signup is disabled.
   bool disallow_signup = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // last_active_time is the service last active time in UTC Time Format, any API calls will refresh this value.
+  // The last time any API call was made, refreshed on each request.
   google.protobuf.Timestamp last_active_time = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // require_2fa is the flag to require 2FA for all users.
+  // Whether two-factor authentication is required for all users.
   bool require_2fa = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // workspace_id is the identifier for the workspace.
+  // The unique identifier for the workspace.
   string workspace_id = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // debug flag means if the debug mode is enabled.
+  // Whether debug mode is enabled.
   bool debug = 15;
 
+  // List of features that are not licensed.
   repeated string unlicensed_features = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // disallow_password_signin is the flag to disallow user signin with email&password. (except workspace admins)
+  // Whether password-based signin is disabled (except for workspace admins).
   bool disallow_password_signin = 20 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // Password complexity and restriction requirements.
   PasswordRestrictionSetting password_restriction = 21 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // docker flag means if the Bytebase instance is running in docker.
+  // Whether the Bytebase instance is running in Docker.
   bool docker = 22 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // User statistics by type and state.
   message StatUser {
+    // The type of user.
     UserType user_type = 1;
+    // The state of the user.
     State state = 2;
+    // The count of users matching this type and state.
     int32 count = 3;
   }
 
+  // Statistics about users in the system.
   repeated StatUser user_stats = 23 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The number of activated database instances.
   int32 activated_instance_count = 24 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The total number of database instances.
   int32 total_instance_count = 25 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // Whether sample data setup is enabled.
   bool enable_sample = 26 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

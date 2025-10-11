@@ -13,7 +13,9 @@ import "v1/annotation.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// ChangelistService manages changelists for grouping and organizing database changes.
 service ChangelistService {
+  // Creates a new changelist in a project.
   // Permissions required: bb.changelists.create
   rpc CreateChangelist(CreateChangelistRequest) returns (Changelist) {
     option (google.api.http) = {
@@ -25,6 +27,7 @@ service ChangelistService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Gets a changelist by name.
   // Permissions required: bb.changelists.get
   rpc GetChangelist(GetChangelistRequest) returns (Changelist) {
     option (google.api.http) = {get: "/v1/{name=projects/*/changelists/*}"};
@@ -33,6 +36,7 @@ service ChangelistService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Lists changelists in a project.
   // Permissions required: bb.changelists.list
   rpc ListChangelists(ListChangelistsRequest) returns (ListChangelistsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/changelists"};
@@ -41,6 +45,7 @@ service ChangelistService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Updates a changelist.
   // Permissions required: bb.changelists.update
   rpc UpdateChangelist(UpdateChangelistRequest) returns (Changelist) {
     option (google.api.http) = {
@@ -52,6 +57,7 @@ service ChangelistService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Deletes a changelist.
   // Permissions required: bb.changelists.delete
   rpc DeleteChangelist(DeleteChangelistRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/changelists/*}"};
@@ -61,6 +67,7 @@ service ChangelistService {
   }
 }
 
+// Request message for creating a changelist.
 message CreateChangelistRequest {
   // The parent resource where this changelist will be created.
   // Format: projects/{project}
@@ -80,6 +87,7 @@ message CreateChangelistRequest {
   string changelist_id = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
+// Request message for getting a changelist.
 message GetChangelistRequest {
   // The name of the changelist to retrieve.
   // Format: projects/{project}/changelists/{changelist}
@@ -89,6 +97,7 @@ message GetChangelistRequest {
   ];
 }
 
+// Request message for listing changelists.
 message ListChangelistsRequest {
   // The parent, which owns this collection of changelists.
   // Format: projects/{project}
@@ -97,14 +106,14 @@ message ListChangelistsRequest {
     (google.api.resource_reference) = {type: "bytebase.com/Project"}
   ];
 
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // The maximum number of databases to return. The service may return fewer than
   // this value.
   // If unspecified, at most 50 databases will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 2;
 
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // A page token, received from a previous `ListDatabases` call.
   // Provide this to retrieve the subsequent page.
   //
@@ -113,6 +122,7 @@ message ListChangelistsRequest {
   string page_token = 3;
 }
 
+// Response message for listing changelists.
 message ListChangelistsResponse {
   // The changelists from the specified request.
   repeated Changelist changelists = 1;
@@ -122,6 +132,7 @@ message ListChangelistsResponse {
   string next_page_token = 2;
 }
 
+// Request message for updating a changelist.
 message UpdateChangelistRequest {
   // The changelist to update.
   //
@@ -137,6 +148,7 @@ message UpdateChangelistRequest {
   bool allow_missing = 3;
 }
 
+// Request message for deleting a changelist.
 message DeleteChangelistRequest {
   // The name of the changelist to delete.
   // Format: projects/{project}/changelists/{changelist}
@@ -146,6 +158,7 @@ message DeleteChangelistRequest {
   ];
 }
 
+// A changelist groups multiple database changes together.
 message Changelist {
   option (google.api.resource) = {
     type: "bytebase.com/Changelist"
@@ -160,22 +173,25 @@ message Changelist {
     (google.api.field_behavior) = IMMUTABLE
   ];
 
+  // The description of the changelist.
   string description = 2;
 
   // The creator of the changelist.
   // Format: users/{email}
   string creator = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The last update time of the changelist.
+  // The last time the changelist was updated.
   google.protobuf.Timestamp update_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // A single change in a changelist.
   message Change {
-    // The name of a sheet.
+    // The sheet containing the SQL statement.
     string sheet = 1;
-    // The source of origin.
-    // 1) changelog: instances/{instance}/databases/{database}/changelogs/{changelog}.
-    // 2) raw SQL if empty.
+    // The source of this change.
+    // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+    // If empty, the change is from raw SQL.
     string source = 2;
   }
+  // The list of changes in this changelist.
   repeated Change changes = 7;
 }

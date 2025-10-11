@@ -14,6 +14,7 @@ import "v1/common.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// UserService manages user accounts and authentication.
 service UserService {
   // Get the user.
   // Any authenticated user can get the user.
@@ -234,16 +235,22 @@ message User {
   // Format: users/{user}. {user} is a system-generated unique ID.
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The lifecycle state of the user account.
   State state = 2;
 
+  // The email address of the user, used for login and notifications.
   string email = 3;
 
+  // The display title or full name of the user.
   string title = 4;
 
+  // The type of user account.
   UserType user_type = 5;
 
+  // The password for authentication. Only used during user creation or password updates.
   string password = 7 [(google.api.field_behavior) = INPUT_ONLY];
 
+  // The service key for service account authentication. Only used for service accounts.
   string service_key = 8 [(google.api.field_behavior) = INPUT_ONLY];
 
   // The mfa_enabled flag means if the user has enabled MFA.
@@ -260,12 +267,15 @@ message User {
   string phone = 12;
 
   message Profile {
+    // The last time the user successfully logged in.
     google.protobuf.Timestamp last_login_time = 1;
+    // The last time the user changed their password.
     google.protobuf.Timestamp last_change_password_time = 2;
     // source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
     string source = 3;
   }
 
+  // User profile metadata.
   Profile profile = 13;
 
   // The groups for the user.
@@ -274,8 +284,12 @@ message User {
 }
 
 enum UserType {
+  // Unspecified user type.
   USER_TYPE_UNSPECIFIED = 0;
+  // Regular human user account.
   USER = 1;
+  // System-managed bot account for automated operations.
   SYSTEM_BOT = 2;
+  // Service account for API integrations.
   SERVICE_ACCOUNT = 3;
 }

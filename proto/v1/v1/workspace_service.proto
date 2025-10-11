@@ -8,7 +8,9 @@ import "v1/iam_policy.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// WorkspaceService manages workspace-level operations and profile.
 service WorkspaceService {
+  // Retrieves IAM policy for the workspace.
   // Permissions required: bb.workspaces.getIamPolicy
   rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy) {
     option (google.api.http) = {get: "/v1/{resource=workspaces/*}:getIamPolicy"};
@@ -16,6 +18,7 @@ service WorkspaceService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Sets IAM policy for the workspace.
   // Permissions required: bb.workspaces.setIamPolicy
   rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy) {
     option (google.api.http) = {
