@@ -21,10 +21,13 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Changelist represents a collection of database changes that can be applied together.
 type Changelist struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Description   string                 `protobuf:"bytes,1,opt,name=description,proto3" json:"description,omitempty"`
-	Changes       []*Changelist_Change   `protobuf:"bytes,2,rep,name=changes,proto3" json:"changes,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Human-readable description of this changelist.
+	Description string `protobuf:"bytes,1,opt,name=description,proto3" json:"description,omitempty"`
+	// The list of changes in this changelist.
+	Changes       []*Changelist_Change `protobuf:"bytes,2,rep,name=changes,proto3" json:"changes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -73,13 +76,14 @@ func (x *Changelist) GetChanges() []*Changelist_Change {
 	return nil
 }
 
+// Change represents a single database modification within the changelist.
 type Changelist_Change struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name of a sheet.
+	// Resource name of the sheet containing the SQL statements.
 	Sheet string `protobuf:"bytes,1,opt,name=sheet,proto3" json:"sheet,omitempty"`
-	// The source of origin.
-	// 1) changes: instances/{instance}/databases/{database}/changelogs/{changelog}.
-	// 2) raw SQL if empty.
+	// The source where this change originated from.
+	// Format: instances/{instance}/databases/{database}/changelogs/{changelog} for changes from changelog.
+	// Empty for raw SQL changes.
 	Source        string `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

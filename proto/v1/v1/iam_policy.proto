@@ -43,7 +43,7 @@ message IamPolicy {
   repeated Binding bindings = 1;
 
   // The current etag of the policy.
-  // If an etag is provided and does not match the current etag of the poliy,
+  // If an etag is provided and does not match the current etag of the policy,
   // the call will be blocked and an ABORTED error will be returned.
   string etag = 2;
 }

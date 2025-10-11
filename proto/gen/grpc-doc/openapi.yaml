@@ -3720,9 +3720,9 @@ paths:
                   in: query
                   description: |-
                     Pagination is not currently implemented. This field is reserved for future use.
-                     The maximum number of databases to return. The service may return fewer than
+                     The maximum number of changelists to return. The service may return fewer than
                      this value.
-                     If unspecified, at most 50 databases will be returned.
+                     If unspecified, at most 50 changelists will be returned.
                      The maximum value is 1000; values above 1000 will be coerced to 1000.
                   schema:
                     type: integer
@@ -3731,10 +3731,10 @@ paths:
                   in: query
                   description: |-
                     Pagination is not currently implemented. This field is reserved for future use.
-                     A page token, received from a previous `ListDatabases` call.
+                     A page token, received from a previous `ListChangelists` call.
                      Provide this to retrieve the subsequent page.
 
-                     When paginating, all other parameters provided to `ListDatabases` must match
+                     When paginating, all other parameters provided to `ListChangelists` must match
                      the call that provided the page token.
                   schema:
                     type: string
@@ -6477,7 +6477,7 @@ paths:
                   description: |-
                     The list of fields to be updated.
                      Fields are specified relative to the sheet.
-                     (e.g. `title`, `statement`; *not* `sheet.title` or `sheet.statement`)
+                     (e.g., `title`, `statement`; *not* `sheet.title` or `sheet.statement`)
                      Only support update the following fields for now:
                      - `title`
                      - `statement`
@@ -6926,9 +6926,9 @@ paths:
                   in: query
                   description: |-
                     Pagination is not currently implemented. This field is reserved for future use.
-                     The maximum number of sql review to return. The service may return fewer than
+                     The maximum number of SQL review configs to return. The service may return fewer than
                      this value.
-                     If unspecified, at most 10 sql review will be returned.
+                     If unspecified, at most 10 SQL review configs will be returned.
                      The maximum value is 1000; values above 1000 will be coerced to 1000.
                   schema:
                     type: integer
@@ -8125,7 +8125,7 @@ paths:
                   description: |-
                     The list of fields to be updated.
                      Fields are specified relative to the worksheet.
-                     (e.g. `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`)
+                     (e.g., `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`)
                      Only support update the following fields for now:
                      - `title`
                      - `statement`
@@ -8831,6 +8831,8 @@ components:
                     type: array
                     items:
                         type: string
+                    description: List of role names that must approve, in order.
+            description: ApprovalFlow defines the sequence of approvals required.
         ApprovalTemplate:
             type: object
             properties:
@@ -8838,14 +8840,19 @@ components:
                     type: string
                     description: |-
                         The unique identifier for the approval template.
-                         For built-in templates, use "bb." prefix (e.g., "bb.project-owner", "bb.workspace-dba").
-                         For custom templates, use a UUID or other unique identifier.
+                         Built-in templates use "bb." prefix (e.g., "bb.project-owner", "bb.workspace-dba").
+                         Custom templates use a UUID or other unique identifier.
                 flow:
-                    $ref: '#/components/schemas/ApprovalFlow'
+                    allOf:
+                        - $ref: '#/components/schemas/ApprovalFlow'
+                    description: The approval workflow specification.
                 title:
                     type: string
+                    description: Human-readable title of the approval template.
                 description:
                     type: string
+                    description: Detailed description of when this template applies.
+            description: ApprovalTemplate defines the approval workflow and requirements for an issue.
         ApproveIssueRequest:
             required:
                 - name
@@ -9358,7 +9365,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Range'
-                    description: The ranges of sub-strings correspond to the statements on the sheet.
+                    description: The ranges of substrings correspond to the statements on the sheet.
         ChangedResourceProcedure:
             type: object
             properties:
@@ -9368,7 +9375,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Range'
-                    description: The ranges of sub-strings correspond to the statements on the sheet.
+                    description: The ranges of substrings correspond to the statements on the sheet.
         ChangedResourceSchema:
             type: object
             properties:
@@ -9397,12 +9404,12 @@ components:
                     type: string
                 tableRows:
                     type: string
-                    description: estimated row count of the table
+                    description: The estimated row count of the table.
                 ranges:
                     type: array
                     items:
                         $ref: '#/components/schemas/Range'
-                    description: The ranges of sub-strings correspond to the statements on the sheet.
+                    description: The ranges of substrings correspond to the statements on the sheet.
         ChangedResourceView:
             type: object
             properties:
@@ -9412,7 +9419,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Range'
-                    description: The ranges of sub-strings correspond to the statements on the sheet.
+                    description: The ranges of substrings correspond to the statements on the sheet.
         ChangedResources:
             type: object
             properties:
@@ -9425,16 +9432,21 @@ components:
             properties:
                 description:
                     type: string
+                    description: Human-readable description of this changelist.
                 changes:
                     type: array
                     items:
                         $ref: '#/components/schemas/Changelist_Change'
+                    description: The list of changes in this changelist.
+            description: Changelist represents a collection of database changes that can be applied together.
         Changelist_Change:
             type: object
             properties:
                 sheet:
                     type: string
-                    description: The sheet containing the SQL statement.
+                    description: |-
+                        The sheet containing the SQL statement.
+                         Format: projects/{project}/sheets/{sheet}
                 source:
                     type: string
                     description: |-
@@ -9932,7 +9944,7 @@ components:
                     type: string
                 useSsl:
                     type: boolean
-                    description: Use SSL to connect to the data source. By default, we use system default SSL configuration.
+                    description: Use SSL to connect to the data source. By default, we use the system's SSL configuration.
                 sslCa:
                     type: string
                 obfuscatedSslCa:
@@ -9962,7 +9974,7 @@ components:
                 srv:
                     type: boolean
                     description: |-
-                        srv, authentication_database and replica_set are used for MongoDB.
+                        srv, authentication_database, and replica_set are used for MongoDB.
                          srv is a boolean flag that indicates whether the host is a DNS SRV record.
                 authenticationDatabase:
                     type: string
@@ -10032,7 +10044,7 @@ components:
                     description: direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.
                 region:
                     type: string
-                    description: region is the location of where the DB is, works for AWS RDS. For example, us-east-1.
+                    description: Region is the location of the database, used for AWS RDS. For example, us-east-1.
                 warehouseId:
                     type: string
                     description: warehouse_id is used by Databricks.
@@ -10069,7 +10081,7 @@ components:
             properties:
                 secretType:
                     enum:
-                        - SAECRET_TYPE_UNSPECIFIED
+                        - SECRET_TYPE_UNSPECIFIED
                         - VAULT_KV_V2
                         - AWS_SECRETS_MANAGER
                         - GCP_SECRET_MANAGER
@@ -10302,7 +10314,7 @@ components:
                     type: boolean
                 drifted:
                     type: boolean
-                    description: The schema is drifted from the source of truth.
+                    description: The schema has drifted from the source of truth.
                 version:
                     type: string
                     description: The version of database schema.
@@ -10934,18 +10946,22 @@ components:
                 role:
                     type: string
                     description: |-
-                        The requested role.
+                        The role being requested for the user.
                          Format: roles/EXPORTER.
                 user:
                     type: string
                     description: |-
-                        The user to be granted.
+                        The user who will receive the role.
                          Format: users/{userUID}.
                 condition:
-                    $ref: '#/components/schemas/Expr'
+                    allOf:
+                        - $ref: '#/components/schemas/Expr'
+                    description: Optional conditional expression that limits when the grant applies.
                 expiration:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string
+                    description: Duration after which the grant automatically expires.
+            description: GrantRequest contains details for requesting database access permissions.
         GridLevel:
             type: object
             properties:
@@ -10985,7 +11001,7 @@ components:
                 member:
                     type: string
                     description: |-
-                        Member is the principal who belong to this group.
+                        Member is the principal who belongs to this group.
 
                          Format: users/{userUID}.
                 role:
@@ -11181,7 +11197,7 @@ components:
                 syncInterval:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string
-                    description: How often the instance is synced.
+                    description: The interval between automatic instance synchronizations.
                 maximumConnections:
                     type: integer
                     description: |-
@@ -11193,7 +11209,7 @@ components:
                     items:
                         type: string
                     description: |-
-                        Enable sync for following databases.
+                        Enable sync for the following databases.
                          Default empty, means sync all schemas & databases.
                 mysqlLowerCaseTableNames:
                     type: integer
@@ -11292,20 +11308,26 @@ components:
                     type: string
                     description: |-
                         The role attribute.
-                         For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
-                         For MySQL, it's the global privileges as GRANT statements, which means it only contains "GRANT ... ON *.* TO ...". Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html
+                         For PostgreSQL, it contains super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
+                         For MySQL, it is the global privileges as GRANT statements, which means it only contains "GRANT ... ON *.* TO ...". Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html
             description: InstanceRole is the API message for instance role.
         Issue:
             type: object
             properties:
                 approval:
-                    $ref: '#/components/schemas/IssuePayloadApproval'
+                    allOf:
+                        - $ref: '#/components/schemas/IssuePayloadApproval'
+                    description: Approval information for the issue workflow.
                 grantRequest:
-                    $ref: '#/components/schemas/GrantRequest'
+                    allOf:
+                        - $ref: '#/components/schemas/GrantRequest'
+                    description: Access grant request details if this is a grant request issue.
                 labels:
                     type: array
                     items:
                         type: string
+                    description: Labels attached to categorize and filter the issue.
+            description: Issue is the metadata for issues that track database operations and access requests.
         IssueComment:
             type: object
             properties:
@@ -11459,18 +11481,22 @@ components:
             type: object
             properties:
                 approvalTemplate:
-                    $ref: '#/components/schemas/ApprovalTemplate'
+                    allOf:
+                        - $ref: '#/components/schemas/ApprovalTemplate'
+                    description: The approval template being used for this issue.
                 approvers:
                     type: array
                     items:
                         $ref: '#/components/schemas/IssuePayloadApproval_Approver'
+                    description: List of approvers and their current status.
                 approvalFindingDone:
                     type: boolean
                     description: |-
-                        If the value is `false`, it means that the backend is still finding matching approval templates.
-                         If `true`, other fields are available.
+                        Whether the system has finished finding a matching approval template.
+                         False means the backend is still searching for matching templates.
                 approvalFindingError:
                     type: string
+                    description: Error message if approval template finding failed.
                 riskLevel:
                     enum:
                         - RISK_LEVEL_UNSPECIFIED
@@ -11478,10 +11504,9 @@ components:
                         - MODERATE
                         - HIGH
                     type: string
+                    description: The assessed risk level for this issue.
                     format: enum
-            description: |-
-                IssuePayloadApproval is a part of the payload of an issue.
-                 IssuePayloadApproval records the approval template used and the approval history.
+            description: IssuePayloadApproval records the approval template used and approval history for an issue.
         IssuePayloadApproval_Approver:
             type: object
             properties:
@@ -11492,24 +11517,28 @@ components:
                         - APPROVED
                         - REJECTED
                     type: string
-                    description: The new status.
+                    description: The current approval status.
                     format: enum
                 principalId:
                     type: integer
-                    description: The principal id of the approver.
+                    description: The ID of the principal who is the approver.
                     format: int32
+            description: Approver represents a user who can approve or reject an issue.
         Item_Table:
             type: object
             properties:
                 database:
                     type: string
                     description: |-
-                        The database information.
+                        The database containing the table.
                          Format: instances/{instance}/databases/{database}
                 schema:
                     type: string
+                    description: Schema name (for databases that support schemas).
                 table:
                     type: string
+                    description: Table name.
+            description: Table identifies a database table.
         KerberosConfig:
             type: object
             properties:
@@ -11534,12 +11563,12 @@ components:
                 host:
                     type: string
                     description: |-
-                        Host is the hostname or IP address of the LDAP server, e.g.
+                        Host is the hostname or IP address of the LDAP server, e.g.,
                          "ldap.example.com".
                 port:
                     type: integer
                     description: |-
-                        Port is the port number of the LDAP server, e.g. 389. When not set, the
+                        Port is the port number of the LDAP server, e.g., 389. When not set, the
                          default port of the corresponding security protocol will be used, i.e. 389
                          for StartTLS and 636 for LDAPS.
                     format: int32
@@ -11556,10 +11585,10 @@ components:
                     description: BindPassword is the password of the user to bind as a service account.
                 baseDn:
                     type: string
-                    description: BaseDN is the base DN to search for users, e.g. "ou=users,dc=example,dc=com".
+                    description: BaseDN is the base DN to search for users, e.g., "ou=users,dc=example,dc=com".
                 userFilter:
                     type: string
-                    description: UserFilter is the filter to search for users, e.g. "(uid=%s)".
+                    description: UserFilter is the filter to search for users, e.g., "(uid=%s)".
                 securityProtocol:
                     enum:
                         - SECURITY_PROTOCOL_UNSPECIFIED
@@ -11819,7 +11848,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ReviewConfig'
-                    description: The sql review from the specified request.
+                    description: The SQL review configs from the specified request.
                 nextPageToken:
                     type: string
                     description: |-
@@ -11960,7 +11989,7 @@ components:
                 user:
                     allOf:
                         - $ref: '#/components/schemas/User'
-                    description: The user of successful login.
+                    description: The user from the successful login.
         LogoutRequest:
             type: object
             properties: {}
@@ -12578,6 +12607,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/PriorBackupDetail_Item'
+                    description: List of backup operations performed.
+            description: PriorBackupDetail contains information about automatic backups created before migration.
         PriorBackupDetail_Item:
             type: object
             properties:
@@ -12605,6 +12636,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Label'
+                    description: Available labels that can be applied to issues in this project.
                 forceIssueLabels:
                     type: boolean
                     description: Force issue labels to be used when creating an issue.
@@ -12634,12 +12666,12 @@ components:
                 executionRetryPolicy:
                     allOf:
                         - $ref: '#/components/schemas/Project_ExecutionRetryPolicy'
-                    description: Execution retry policy for the task run.
+                    description: Configuration for automatic retry on task execution failures.
                 ciSamplingSize:
                     type: integer
                     description: |-
                         The maximum number of databases to sample during CI data validation.
-                         Without specification, sampling is disabled, resulting in a full validation.
+                         If not specified, sampling is disabled, resulting in a full validation.
                     format: int32
                 parallelTasksPerRollout:
                     type: integer
@@ -12657,6 +12689,7 @@ components:
                     description: |-
                         Whether to enforce SQL review checks to pass before issue creation.
                          If enabled, issues cannot be created when SQL review finds errors.
+            description: Project contains settings and configuration for a Bytebase project.
         Project_ExecutionRetryPolicy:
             type: object
             properties:
@@ -12912,7 +12945,7 @@ components:
                 name:
                     type: string
                     description: |-
-                        The name of the issue to add an rejection.
+                        The name of the issue to add a rejection.
                          Format: projects/{project}/issues/{issue}
                 comment:
                     type: string
@@ -12968,7 +13001,7 @@ components:
                     description: The unique identifier for the file.
                 path:
                     type: string
-                    description: The path of the file. e.g. `2.2/V0001_create_table.sql`.
+                    description: The path of the file. e.g., `2.2/V0001_create_table.sql`.
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
@@ -13028,7 +13061,7 @@ components:
                     format: enum
                 url:
                     type: string
-                    description: The url link to the e.g. GitHub commit or pull request.
+                    description: The url link to the e.g., GitHub commit or pull request.
             description: Version control system source information.
         RemoveDataSourceRequest:
             required:
@@ -13102,7 +13135,7 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/Position'
                     description: |-
-                        1-based Position of the SQL statement.
+                        1-based position of the SQL statement.
                          To supersede `line` and `column` above.
                 endPosition:
                     $ref: '#/components/schemas/Position'
@@ -13113,7 +13146,7 @@ components:
                     type: array
                     items:
                         type: string
-                    description: statement_types are the types of statements that are found in the sql.
+                    description: statement_types are the types of statements found in the SQL.
                 affectedRows:
                     type: string
                 changedResources:
@@ -13125,7 +13158,7 @@ components:
                     readOnly: true
                     type: string
                     description: |-
-                        The name of the sql review to retrieve.
+                        The name of the SQL review config.
                          Format: reviewConfigs/{reviewConfig}
                 title:
                     type: string
@@ -13143,8 +13176,8 @@ components:
                     items:
                         type: string
                     description: |-
-                        resources using the config.
-                         Format: {resource}/{resource id}, for example, environments/test.
+                        Resources using the config.
+                         Format: {resource}/{resource id}, e.g., environments/test.
         Revision:
             type: object
             properties:
@@ -13232,6 +13265,7 @@ components:
                         - DATA_EXPORT
                         - REQUEST_ROLE
                     type: string
+                    description: The source of the operation being assessed for risk.
                     format: enum
                 title:
                     type: string
@@ -13352,7 +13386,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Stage'
-                    description: stages and thus tasks of the rollout.
+                    description: Stages and thus tasks of the rollout.
                 creator:
                     readOnly: true
                     type: string
@@ -14219,7 +14253,7 @@ components:
                     type: string
                     description: |-
                         id is the environment id of the stage.
-                         e.g. "prod".
+                         e.g., "prod".
                          Use "-" when the stage has no environment or deleted environment.
                 environment:
                     type: string
@@ -14347,7 +14381,7 @@ components:
                     type: boolean
                     description: |-
                         When full sync is enabled, all databases in the instance will be synchronized. Otherwise, only
-                         the instance metadata (such as the database list) and any newly discovered instances will be synced.
+                         the instance metadata (such as the database list) and any newly discovered databases will be synced.
         SyncInstanceResponse:
             type: object
             properties:
@@ -14610,6 +14644,7 @@ components:
         TaskRun:
             type: object
             properties: {}
+            description: TaskRun represents an execution attempt of a task.
         TaskRunLog:
             type: object
             properties:
@@ -14799,10 +14834,10 @@ components:
                          Format: projects/{project}
                 database:
                     type: string
-                    description: database name
+                    description: Database name.
                 table:
                     type: string
-                    description: table name
+                    description: Table name.
                 sheet:
                     type: string
                     description: 'Format: projects/{project}/sheets/{sheet}'
@@ -14942,18 +14977,16 @@ components:
             properties:
                 name:
                     type: string
-                    description: The name is the name of the trigger.
+                    description: The name of the trigger.
                 event:
                     type: string
-                    description: |-
-                        The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
-                         TRUNCATE.
+                    description: The event that triggers this action, such as INSERT, UPDATE, DELETE, or TRUNCATE.
                 timing:
                     type: string
-                    description: The timing is the timing of the trigger, such as BEFORE, AFTER.
+                    description: The timing of when the trigger fires, such as BEFORE or AFTER.
                 body:
                     type: string
-                    description: The body is the body of the trigger.
+                    description: The body of the trigger.
                 sqlMode:
                     type: string
                 characterSetClient:
@@ -15335,7 +15368,7 @@ components:
                     type: array
                     items:
                         type: string
-                    description: The workspace domain, e.g. bytebase.com.
+                    description: The workspace domain, e.g., bytebase.com.
                 enforceIdentityDomain:
                     type: boolean
                     description: Only user and group from the domains can be created and login.

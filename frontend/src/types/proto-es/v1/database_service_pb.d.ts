@@ -1938,7 +1938,7 @@ export declare type ProcedureMetadata = Message<"bytebase.v1.ProcedureMetadata">
 
   /**
    * The signature is the name with the number and type of input arguments the
-   * function takes.
+   * procedure takes.
    *
    * @generated from field: string signature = 3;
    */

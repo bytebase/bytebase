@@ -22,17 +22,25 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Status represents the current execution state of a task run.
 type TaskRun_Status int32
 
 const (
 	TaskRun_STATUS_UNSPECIFIED TaskRun_Status = 0
-	TaskRun_PENDING            TaskRun_Status = 1
-	TaskRun_RUNNING            TaskRun_Status = 2
-	TaskRun_DONE               TaskRun_Status = 3
-	TaskRun_FAILED             TaskRun_Status = 4
-	TaskRun_CANCELED           TaskRun_Status = 5
-	TaskRun_NOT_STARTED        TaskRun_Status = 6
-	TaskRun_SKIPPED            TaskRun_Status = 7
+	// Task run is queued and waiting to execute.
+	TaskRun_PENDING TaskRun_Status = 1
+	// Task run is currently executing.
+	TaskRun_RUNNING TaskRun_Status = 2
+	// Task run completed successfully.
+	TaskRun_DONE TaskRun_Status = 3
+	// Task run encountered an error and failed.
+	TaskRun_FAILED TaskRun_Status = 4
+	// Task run was canceled by user or system.
+	TaskRun_CANCELED TaskRun_Status = 5
+	// Task run has not started yet.
+	TaskRun_NOT_STARTED TaskRun_Status = 6
+	// Task run was skipped and will not execute.
+	TaskRun_SKIPPED TaskRun_Status = 7
 )
 
 // Enum value maps for TaskRun_Status.
@@ -86,6 +94,7 @@ func (TaskRun_Status) EnumDescriptor() ([]byte, []int) {
 	return file_store_task_run_proto_rawDescGZIP(), []int{0, 0}
 }
 
+// TaskRun represents an execution attempt of a task.
 type TaskRun struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -122,18 +131,23 @@ func (*TaskRun) Descriptor() ([]byte, []int) {
 	return file_store_task_run_proto_rawDescGZIP(), []int{0}
 }
 
+// TaskRunResult contains the outcome and metadata from a task run execution.
 type TaskRunResult struct {
-	state  protoimpl.MessageState `protogen:"open.v1"`
-	Detail string                 `protobuf:"bytes,1,opt,name=detail,proto3" json:"detail,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Detailed execution information or error message.
+	Detail string `protobuf:"bytes,1,opt,name=detail,proto3" json:"detail,omitempty"`
+	// Resource name of the changelog entry created by this run.
 	// Format: instances/{instance}/databases/{database}/changelogs/{changelog}
 	Changelog string `protobuf:"bytes,8,opt,name=changelog,proto3" json:"changelog,omitempty"`
-	Version   string `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
-	// The following fields are used for error reporting.
+	// Schema version after the migration was applied.
+	Version string `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
+	// Starting position in the SQL statement where an error occurred.
 	StartPosition *Position `protobuf:"bytes,4,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
-	EndPosition   *Position `protobuf:"bytes,5,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
-	// The uid of the export archive.
+	// Ending position in the SQL statement where an error occurred.
+	EndPosition *Position `protobuf:"bytes,5,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
+	// UID of the export archive generated for export tasks.
 	ExportArchiveUid int32 `protobuf:"varint,6,opt,name=export_archive_uid,json=exportArchiveUid,proto3" json:"export_archive_uid,omitempty"`
-	// The prior backup detail that will be used to rollback the task run.
+	// Backup details that can be used to rollback changes.
 	PriorBackupDetail *PriorBackupDetail `protobuf:"bytes,7,opt,name=prior_backup_detail,json=priorBackupDetail,proto3" json:"prior_backup_detail,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -218,8 +232,10 @@ func (x *TaskRunResult) GetPriorBackupDetail() *PriorBackupDetail {
 	return nil
 }
 
+// PriorBackupDetail contains information about automatic backups created before migration.
 type PriorBackupDetail struct {
-	state         protoimpl.MessageState    `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// List of backup operations performed.
 	Items         []*PriorBackupDetail_Item `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -262,9 +278,12 @@ func (x *PriorBackupDetail) GetItems() []*PriorBackupDetail_Item {
 	return nil
 }
 
+// SchedulerInfo contains information about task scheduling and execution delays.
 type SchedulerInfo struct {
-	state         protoimpl.MessageState      `protogen:"open.v1"`
-	ReportTime    *timestamppb.Timestamp      `protobuf:"bytes,1,opt,name=report_time,json=reportTime,proto3" json:"report_time,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Timestamp when the scheduler reported this information.
+	ReportTime *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=report_time,json=reportTime,proto3" json:"report_time,omitempty"`
+	// Reason why the task run is currently waiting.
 	WaitingCause  *SchedulerInfo_WaitingCause `protobuf:"bytes,2,opt,name=waiting_cause,json=waitingCause,proto3" json:"waiting_cause,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -314,14 +333,17 @@ func (x *SchedulerInfo) GetWaitingCause() *SchedulerInfo_WaitingCause {
 	return nil
 }
 
+// Item represents a single backup operation for a table.
 type PriorBackupDetail_Item struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The original table information.
+	// The original table that was backed up.
 	SourceTable *PriorBackupDetail_Item_Table `protobuf:"bytes,1,opt,name=source_table,json=sourceTable,proto3" json:"source_table,omitempty"`
-	// The target backup table information.
-	TargetTable   *PriorBackupDetail_Item_Table `protobuf:"bytes,2,opt,name=target_table,json=targetTable,proto3" json:"target_table,omitempty"`
-	StartPosition *Position                     `protobuf:"bytes,3,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
-	EndPosition   *Position                     `protobuf:"bytes,4,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
+	// The backup table where data was copied.
+	TargetTable *PriorBackupDetail_Item_Table `protobuf:"bytes,2,opt,name=target_table,json=targetTable,proto3" json:"target_table,omitempty"`
+	// Starting position in SQL for this backup operation.
+	StartPosition *Position `protobuf:"bytes,3,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
+	// Ending position in SQL for this backup operation.
+	EndPosition   *Position `protobuf:"bytes,4,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -384,12 +406,15 @@ func (x *PriorBackupDetail_Item) GetEndPosition() *Position {
 	return nil
 }
 
+// Table identifies a database table.
 type PriorBackupDetail_Item_Table struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The database information.
+	// The database containing the table.
 	// Format: instances/{instance}/databases/{database}
-	Database      string `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"`
-	Schema        string `protobuf:"bytes,2,opt,name=schema,proto3" json:"schema,omitempty"`
+	Database string `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"`
+	// Schema name (for databases that support schemas).
+	Schema string `protobuf:"bytes,2,opt,name=schema,proto3" json:"schema,omitempty"`
+	// Table name.
 	Table         string `protobuf:"bytes,3,opt,name=table,proto3" json:"table,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -446,6 +471,7 @@ func (x *PriorBackupDetail_Item_Table) GetTable() string {
 	return ""
 }
 
+// WaitingCause indicates why a task run is waiting to execute.
 type SchedulerInfo_WaitingCause struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Cause:
@@ -527,14 +553,17 @@ type isSchedulerInfo_WaitingCause_Cause interface {
 }
 
 type SchedulerInfo_WaitingCause_ConnectionLimit struct {
+	// Task is waiting due to database connection limit.
 	ConnectionLimit bool `protobuf:"varint,1,opt,name=connection_limit,json=connectionLimit,proto3,oneof"`
 }
 
 type SchedulerInfo_WaitingCause_TaskUid struct {
+	// Task is waiting for another task to complete.
 	TaskUid int32 `protobuf:"varint,2,opt,name=task_uid,json=taskUid,proto3,oneof"`
 }
 
 type SchedulerInfo_WaitingCause_ParallelTasksLimit struct {
+	// Task is waiting due to parallel execution limit.
 	ParallelTasksLimit bool `protobuf:"varint,3,opt,name=parallel_tasks_limit,json=parallelTasksLimit,proto3,oneof"`
 }
 

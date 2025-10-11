@@ -52,7 +52,7 @@ message PlanCheckRunResult {
     message SqlSummaryReport {
       reserved 1;
 
-      // statement_types are the types of statements that are found in the sql.
+      // statement_types are the types of statements found in the SQL.
       repeated string statement_types = 2;
       int64 affected_rows = 3;
       ChangedResources changed_resources = 4;
@@ -62,7 +62,7 @@ message PlanCheckRunResult {
 
       int32 line = 1;
       int32 column = 2;
-      // 1-based Position of the SQL statement.
+      // 1-based position of the SQL statement.
       // To supersede `line` and `column` above.
       Position start_position = 8;
       Position end_position = 9;

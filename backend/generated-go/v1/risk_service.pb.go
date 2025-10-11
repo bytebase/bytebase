@@ -25,15 +25,21 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// The source of the database change for risk assessment.
 type Risk_Source int32
 
 const (
 	Risk_SOURCE_UNSPECIFIED Risk_Source = 0
-	Risk_DDL                Risk_Source = 1
-	Risk_DML                Risk_Source = 2
-	Risk_CREATE_DATABASE    Risk_Source = 3
-	Risk_DATA_EXPORT        Risk_Source = 6
-	Risk_REQUEST_ROLE       Risk_Source = 7
+	// Data Definition Language statements (CREATE, ALTER, DROP, etc.).
+	Risk_DDL Risk_Source = 1
+	// Data Manipulation Language statements (INSERT, UPDATE, DELETE, etc.).
+	Risk_DML Risk_Source = 2
+	// Database creation operations.
+	Risk_CREATE_DATABASE Risk_Source = 3
+	// Data export operations.
+	Risk_DATA_EXPORT Risk_Source = 6
+	// Role access requests.
+	Risk_REQUEST_ROLE Risk_Source = 7
 )
 
 // Enum value maps for Risk_Source.
@@ -407,7 +413,8 @@ func (x *DeleteRiskRequest) GetName() string {
 type Risk struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: risks/{risk}
-	Name   string      `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The source of the operation being assessed for risk.
 	Source Risk_Source `protobuf:"varint,3,opt,name=source,proto3,enum=bytebase.v1.Risk_Source" json:"source,omitempty"`
 	// The title of the risk rule.
 	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`

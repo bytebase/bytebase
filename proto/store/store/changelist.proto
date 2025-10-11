@@ -4,16 +4,20 @@ package bytebase.store;
 
 option go_package = "generated-go/store";
 
+// Changelist represents a collection of database changes that can be applied together.
 message Changelist {
+  // Human-readable description of this changelist.
   string description = 1;
 
+  // Change represents a single database modification within the changelist.
   message Change {
-    // The name of a sheet.
+    // Resource name of the sheet containing the SQL statements.
     string sheet = 1;
-    // The source of origin.
-    // 1) changes: instances/{instance}/databases/{database}/changelogs/{changelog}.
-    // 2) raw SQL if empty.
+    // The source where this change originated from.
+    // Format: instances/{instance}/databases/{database}/changelogs/{changelog} for changes from changelog.
+    // Empty for raw SQL changes.
     string source = 2;
   }
+  // The list of changes in this changelist.
   repeated Change changes = 2;
 }

@@ -107,9 +107,9 @@ type TaskRunLog_TaskRunStatusUpdate_Status int32
 
 const (
 	TaskRunLog_TaskRunStatusUpdate_STATUS_UNSPECIFIED TaskRunLog_TaskRunStatusUpdate_Status = 0
-	// the task run is ready to be executed by the scheduler
+	// The task run is ready to be executed by the scheduler.
 	TaskRunLog_TaskRunStatusUpdate_RUNNING_WAITING TaskRunLog_TaskRunStatusUpdate_Status = 1
-	// the task run is being executed by the scheduler
+	// The task run is being executed by the scheduler.
 	TaskRunLog_TaskRunStatusUpdate_RUNNING_RUNNING TaskRunLog_TaskRunStatusUpdate_Status = 2
 )
 

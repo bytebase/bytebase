@@ -174,7 +174,7 @@ export declare type LoginResponse = Message<"bytebase.v1.LoginResponse"> & {
   requireResetPassword: boolean;
 
   /**
-   * The user of successful login.
+   * The user from the successful login.
    *
    * @generated from field: bytebase.v1.User user = 4;
    */

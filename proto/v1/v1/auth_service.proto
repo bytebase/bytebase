@@ -90,7 +90,7 @@ message LoginResponse {
   // Whether user must reset password before continuing.
   bool require_reset_password = 3;
 
-  // The user of successful login.
+  // The user from the successful login.
   User user = 4;
 }
 

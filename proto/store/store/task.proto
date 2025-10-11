@@ -6,50 +6,72 @@ import "store/common.proto";
 
 option go_package = "generated-go/store";
 
+// Task is the metadata for database operation tasks.
 message Task {
+  // Type represents the type of database operation to perform.
   enum Type {
     TASK_TYPE_UNSPECIFIED = 0;
+    // Create a new database.
     DATABASE_CREATE = 1;
+    // Apply schema/data migrations to an existing database.
     DATABASE_MIGRATE = 2;
+    // Export data from a database.
     DATABASE_EXPORT = 5;
+    // Apply declarative schema changes (state-based migration).
     DATABASE_SDL = 6;
   }
 
-  // MigrateType is the database migration type.
+  // MigrateType is the database migration type for imperative migrations.
   enum MigrateType {
     MIGRATE_TYPE_UNSPECIFIED = 0;
+    // DDL changes (Data Definition Language) for schema modifications.
     DDL = 1;
+    // DML changes (Data Manipulation Language) for data modifications.
     DML = 2;
+    // Online schema migration using gh-ost tool.
     GHOST = 3;
   }
 
-  // common fields
+  // Whether the task was skipped during execution.
   bool skipped = 1;
+  // Reason why the task was skipped.
   string skipped_reason = 2;
+  // UUID that identifies the spec this task implements.
   string spec_id = 3;
+  // The sheet ID containing SQL statements for this task.
   int32 sheet_id = 4;
 
-  // Create database fields.
+  // The environment where the database will be created.
   string environment_id = 5;
+  // Name of the database to create.
   string database_name = 6;
+  // Optional table name to create (required for some databases like MongoDB).
   string table_name = 7;
+  // Character set for the new database.
   string character_set = 8;
+  // Collation for the new database.
   string collation = 9;
 
-  // Update database fields.
+  // Schema version after migration is applied.
   string schema_version = 10;
+  // Whether to create an automatic backup before applying changes.
   bool enable_prior_backup = 11;
-  // ghost flags.
+  // Configuration flags for gh-ost migration tool.
   map<string, string> flags = 12;
+  // Source information if task is created from a release.
   TaskReleaseSource task_release_source = 13;
+  // The type of migration (DDL, DML, or GHOST).
   MigrateType migrate_type = 16;
 
-  // Export data fields.
+  // Password to encrypt the exported data archive.
   string password = 14;
+  // Format of the exported data (SQL, CSV, JSON, etc).
   ExportFormat format = 15;
 }
 
+// TaskReleaseSource contains information about the release file this task originated from.
 message TaskReleaseSource {
+  // Resource name of the release file.
   // Format: projects/{project}/releases/{release}/files/{id}
   string file = 1;
 }

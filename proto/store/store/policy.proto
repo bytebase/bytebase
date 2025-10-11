@@ -68,10 +68,10 @@ message MaskingExceptionPolicy {
       QUERY = 1;
       EXPORT = 2;
     }
-    // action is the action that the user can access sensitive data.
+    // action is the action by which the user can access sensitive data.
     Action action = 1;
 
-    // Member is the principal who bind to this exception policy instance.
+    // Member is the principal who binds to this exception policy instance.
     //
     // Format: users/{userUID} or groups/{group email}
     string member = 4;
@@ -111,8 +111,8 @@ enum SQLReviewRuleLevel {
 }
 
 message TagPolicy {
-  // tags is the key - value map for resources.
-  // for example, the environment resource can have the sql review config tag, like "bb.tag.review_config": "reviewConfigs/{review config resource id}"
+  // tags is the key-value map for resources.
+  // For example, the environment resource can have the SQL review config tag, such as "bb.tag.review_config": "reviewConfigs/{review config resource id}".
   map<string, string> tags = 1;
 }
 
@@ -155,7 +155,7 @@ message QueryDataPolicy {
   // The query timeout duration.
   google.protobuf.Duration timeout = 1;
 
-  // Disable export data in the SQL editor
+  // Disable exporting data in the SQL editor.
   bool disable_export = 2;
 
   // The size limit in bytes.

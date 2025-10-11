@@ -21,6 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Engine represents the type of database system.
 type Engine int32
 
 const (
@@ -139,6 +140,7 @@ func (Engine) EnumDescriptor() ([]byte, []int) {
 	return file_store_common_proto_rawDescGZIP(), []int{0}
 }
 
+// VCSType represents the type of version control system.
 type VCSType int32
 
 const (
@@ -194,13 +196,17 @@ func (VCSType) EnumDescriptor() ([]byte, []int) {
 	return file_store_common_proto_rawDescGZIP(), []int{1}
 }
 
+// MaskingLevel represents the level of data masking applied to sensitive information.
 type MaskingLevel int32
 
 const (
 	MaskingLevel_MASKING_LEVEL_UNSPECIFIED MaskingLevel = 0
-	MaskingLevel_NONE                      MaskingLevel = 1
-	MaskingLevel_PARTIAL                   MaskingLevel = 2
-	MaskingLevel_FULL                      MaskingLevel = 3
+	// No masking applied.
+	MaskingLevel_NONE MaskingLevel = 1
+	// Partial masking (e.g., showing first/last characters).
+	MaskingLevel_PARTIAL MaskingLevel = 2
+	// Full masking (all characters masked).
+	MaskingLevel_FULL MaskingLevel = 3
 )
 
 // Enum value maps for MaskingLevel.
@@ -246,6 +252,7 @@ func (MaskingLevel) EnumDescriptor() ([]byte, []int) {
 	return file_store_common_proto_rawDescGZIP(), []int{2}
 }
 
+// ExportFormat represents the file format for exported data.
 type ExportFormat int32
 
 const (
@@ -301,6 +308,7 @@ func (ExportFormat) EnumDescriptor() ([]byte, []int) {
 	return file_store_common_proto_rawDescGZIP(), []int{3}
 }
 
+// RiskLevel represents the assessed risk level of a database operation.
 type RiskLevel int32
 
 const (
@@ -353,11 +361,13 @@ func (RiskLevel) EnumDescriptor() ([]byte, []int) {
 	return file_store_common_proto_rawDescGZIP(), []int{4}
 }
 
-// Used internally for obfuscating the page token.
+// PageToken is used internally for obfuscating pagination tokens.
 type PageToken struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
-	Offset        int32                  `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Maximum number of items to return.
+	Limit int32 `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
+	// Number of items to skip before starting to return results.
+	Offset        int32 `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -406,8 +416,7 @@ func (x *PageToken) GetOffset() int32 {
 	return 0
 }
 
-// Position in a text expressed as zero-based line and zero-based column byte
-// offset.
+// Position in a text expressed as zero-based line and column byte offset.
 type Position struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Line position in a text (zero-based).
@@ -462,10 +471,13 @@ func (x *Position) GetColumn() int32 {
 	return 0
 }
 
+// Range represents a span within a text or sequence.
 type Range struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Start         int32                  `protobuf:"varint,1,opt,name=start,proto3" json:"start,omitempty"`
-	End           int32                  `protobuf:"varint,2,opt,name=end,proto3" json:"end,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Start index (inclusive).
+	Start int32 `protobuf:"varint,1,opt,name=start,proto3" json:"start,omitempty"`
+	// End index (exclusive).
+	End           int32 `protobuf:"varint,2,opt,name=end,proto3" json:"end,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

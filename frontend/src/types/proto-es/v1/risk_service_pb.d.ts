@@ -175,6 +175,8 @@ export declare type Risk = Message<"bytebase.v1.Risk"> & {
   name: string;
 
   /**
+   * The source of the operation being assessed for risk.
+   *
    * @generated from field: bytebase.v1.Risk.Source source = 3;
    */
   source: Risk_Source;
@@ -263,6 +265,8 @@ export declare type Risk = Message<"bytebase.v1.Risk"> & {
 export declare const RiskSchema: GenMessage<Risk>;
 
 /**
+ * The source of the database change for risk assessment.
+ *
  * @generated from enum bytebase.v1.Risk.Source
  */
 export enum Risk_Source {
@@ -272,26 +276,36 @@ export enum Risk_Source {
   SOURCE_UNSPECIFIED = 0,
 
   /**
+   * Data Definition Language statements (CREATE, ALTER, DROP, etc.).
+   *
    * @generated from enum value: DDL = 1;
    */
   DDL = 1,
 
   /**
+   * Data Manipulation Language statements (INSERT, UPDATE, DELETE, etc.).
+   *
    * @generated from enum value: DML = 2;
    */
   DML = 2,
 
   /**
+   * Database creation operations.
+   *
    * @generated from enum value: CREATE_DATABASE = 3;
    */
   CREATE_DATABASE = 3,
 
   /**
+   * Data export operations.
+   *
    * @generated from enum value: DATA_EXPORT = 6;
    */
   DATA_EXPORT = 6,
 
   /**
+   * Role access requests.
+   *
    * @generated from enum value: REQUEST_ROLE = 7;
    */
   REQUEST_ROLE = 7,

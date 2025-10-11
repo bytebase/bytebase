@@ -3662,7 +3662,7 @@ type ProcedureMetadata struct {
 	// The definition is the definition of a procedure.
 	Definition string `protobuf:"bytes,2,opt,name=definition,proto3" json:"definition,omitempty"`
 	// The signature is the name with the number and type of input arguments the
-	// function takes.
+	// procedure takes.
 	Signature string `protobuf:"bytes,3,opt,name=signature,proto3" json:"signature,omitempty"`
 	// MySQL specific metadata.
 	CharacterSetClient  string `protobuf:"bytes,4,opt,name=character_set_client,json=characterSetClient,proto3" json:"character_set_client,omitempty"`

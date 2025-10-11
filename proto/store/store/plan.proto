@@ -95,8 +95,8 @@ message PlanConfig {
     string sheet = 2;
     // The format of the exported file.
     ExportFormat format = 3;
-    // The zip password provide by users.
-    // Leave it empty if no needs to encrypt the zip file.
+    // The zip password provided by users.
+    // Leave it empty if there is no need to encrypt the zip file.
     optional string password = 4;
   }
 

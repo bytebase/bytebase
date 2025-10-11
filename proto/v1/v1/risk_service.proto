@@ -144,14 +144,21 @@ message Risk {
   // Format: risks/{risk}
   string name = 1;
 
+  // The source of the database change for risk assessment.
   enum Source {
     SOURCE_UNSPECIFIED = 0;
+    // Data Definition Language statements (CREATE, ALTER, DROP, etc.).
     DDL = 1;
+    // Data Manipulation Language statements (INSERT, UPDATE, DELETE, etc.).
     DML = 2;
+    // Database creation operations.
     CREATE_DATABASE = 3;
+    // Data export operations.
     DATA_EXPORT = 6;
+    // Role access requests.
     REQUEST_ROLE = 7;
   }
+  // The source of the operation being assessed for risk.
   Source source = 3;
 
   // The title of the risk rule.

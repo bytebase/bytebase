@@ -337,7 +337,7 @@ type WorkspaceProfileSetting struct {
 	Announcement *Announcement `protobuf:"bytes,7,opt,name=announcement,proto3" json:"announcement,omitempty"`
 	// The max duration for role expired.
 	MaximumRoleExpiration *durationpb.Duration `protobuf:"bytes,8,opt,name=maximum_role_expiration,json=maximumRoleExpiration,proto3" json:"maximum_role_expiration,omitempty"`
-	// The workspace domain, e.g. bytebase.com.
+	// The workspace domain, e.g., bytebase.com.
 	Domains []string `protobuf:"bytes,9,rep,name=domains,proto3" json:"domains,omitempty"`
 	// Only user and group from the domains can be created and login.
 	EnforceIdentityDomain bool `protobuf:"varint,10,opt,name=enforce_identity_domain,json=enforceIdentityDomain,proto3" json:"enforce_identity_domain,omitempty"`
@@ -460,9 +460,9 @@ func (x *WorkspaceProfileSetting) GetEnableMetricCollection() bool {
 
 type Announcement struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The alert level of announcemnt
+	// The alert level of the announcement.
 	Level Announcement_AlertLevel `protobuf:"varint,1,opt,name=level,proto3,enum=bytebase.store.Announcement_AlertLevel" json:"level,omitempty"`
-	// The text of announcemnt
+	// The text of the announcement.
 	Text string `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
 	// The optional link, user can follow the link to check extra details
 	Link          string `protobuf:"bytes,3,opt,name=link,proto3" json:"link,omitempty"`
@@ -949,15 +949,15 @@ func (x *SCIMSetting) GetToken() string {
 
 type PasswordRestrictionSetting struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// min_length is the minimum length for password, should no less than 8.
+	// min_length is the minimum length for password, should be no less than 8.
 	MinLength int32 `protobuf:"varint,1,opt,name=min_length,json=minLength,proto3" json:"min_length,omitempty"`
-	// require_number requires the password must contains at least one number.
+	// require_number requires the password must contain at least one number.
 	RequireNumber bool `protobuf:"varint,2,opt,name=require_number,json=requireNumber,proto3" json:"require_number,omitempty"`
-	// require_letter requires the password must contains at least one letter, regardless of upper case or lower case
+	// require_letter requires the password must contain at least one letter, regardless of upper case or lower case
 	RequireLetter bool `protobuf:"varint,3,opt,name=require_letter,json=requireLetter,proto3" json:"require_letter,omitempty"`
-	// require_uppercase_letter requires the password must contains at least one upper case letter.
+	// require_uppercase_letter requires the password must contain at least one upper case letter.
 	RequireUppercaseLetter bool `protobuf:"varint,4,opt,name=require_uppercase_letter,json=requireUppercaseLetter,proto3" json:"require_uppercase_letter,omitempty"`
-	// require_uppercase_letter requires the password must contains at least one special character.
+	// require_special_character requires the password must contain at least one special character.
 	RequireSpecialCharacter bool `protobuf:"varint,5,opt,name=require_special_character,json=requireSpecialCharacter,proto3" json:"require_special_character,omitempty"`
 	// require_reset_password_for_first_login requires users to reset their password after the 1st login.
 	RequireResetPasswordForFirstLogin bool `protobuf:"varint,6,opt,name=require_reset_password_for_first_login,json=requireResetPasswordForFirstLogin,proto3" json:"require_reset_password_for_first_login,omitempty"`

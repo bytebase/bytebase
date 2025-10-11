@@ -346,7 +346,7 @@ message Rollout {
   // This field is output only and cannot be directly set.
   string title = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // stages and thus tasks of the rollout.
+  // Stages and thus tasks of the rollout.
   repeated Stage stages = 5;
 
   // Format: users/hello@world.com
@@ -374,7 +374,7 @@ message Stage {
   string name = 1;
 
   // id is the environment id of the stage.
-  // e.g. "prod".
+  // e.g., "prod".
   // Use "-" when the stage has no environment or deleted environment.
   string id = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
@@ -467,9 +467,9 @@ message Task {
     // The project owning the database.
     // Format: projects/{project}
     string project = 1;
-    // database name
+    // Database name.
     string database = 2;
-    // table name
+    // Table name.
     string table = 3;
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 4;
@@ -746,9 +746,9 @@ message TaskRunLogEntry {
     enum Status {
       // Unspecified status.
       STATUS_UNSPECIFIED = 0;
-      // the task run is ready to be executed by the scheduler
+      // The task run is ready to be executed by the scheduler.
       RUNNING_WAITING = 1;
-      // the task run is being executed by the scheduler
+      // The task run is being executed by the scheduler.
       RUNNING_RUNNING = 2;
     }
   }

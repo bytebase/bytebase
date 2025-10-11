@@ -21,13 +21,17 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Status represents the approver's decision state.
 type IssuePayloadApproval_Approver_Status int32
 
 const (
 	IssuePayloadApproval_Approver_STATUS_UNSPECIFIED IssuePayloadApproval_Approver_Status = 0
-	IssuePayloadApproval_Approver_PENDING            IssuePayloadApproval_Approver_Status = 1
-	IssuePayloadApproval_Approver_APPROVED           IssuePayloadApproval_Approver_Status = 2
-	IssuePayloadApproval_Approver_REJECTED           IssuePayloadApproval_Approver_Status = 3
+	// Approval is pending from this approver.
+	IssuePayloadApproval_Approver_PENDING IssuePayloadApproval_Approver_Status = 1
+	// Approver has approved the issue.
+	IssuePayloadApproval_Approver_APPROVED IssuePayloadApproval_Approver_Status = 2
+	// Approver has rejected the issue.
+	IssuePayloadApproval_Approver_REJECTED IssuePayloadApproval_Approver_Status = 3
 )
 
 // Enum value maps for IssuePayloadApproval_Approver_Status.
@@ -73,19 +77,22 @@ func (IssuePayloadApproval_Approver_Status) EnumDescriptor() ([]byte, []int) {
 	return file_store_approval_proto_rawDescGZIP(), []int{0, 0, 0}
 }
 
-// IssuePayloadApproval is a part of the payload of an issue.
-// IssuePayloadApproval records the approval template used and the approval history.
+// IssuePayloadApproval records the approval template used and approval history for an issue.
 type IssuePayloadApproval struct {
-	state            protoimpl.MessageState           `protogen:"open.v1"`
-	ApprovalTemplate *ApprovalTemplate                `protobuf:"bytes,1,opt,name=approval_template,json=approvalTemplate,proto3" json:"approval_template,omitempty"`
-	Approvers        []*IssuePayloadApproval_Approver `protobuf:"bytes,2,rep,name=approvers,proto3" json:"approvers,omitempty"`
-	// If the value is `false`, it means that the backend is still finding matching approval templates.
-	// If `true`, other fields are available.
-	ApprovalFindingDone  bool      `protobuf:"varint,3,opt,name=approval_finding_done,json=approvalFindingDone,proto3" json:"approval_finding_done,omitempty"`
-	ApprovalFindingError string    `protobuf:"bytes,4,opt,name=approval_finding_error,json=approvalFindingError,proto3" json:"approval_finding_error,omitempty"`
-	RiskLevel            RiskLevel `protobuf:"varint,5,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.store.RiskLevel" json:"risk_level,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The approval template being used for this issue.
+	ApprovalTemplate *ApprovalTemplate `protobuf:"bytes,1,opt,name=approval_template,json=approvalTemplate,proto3" json:"approval_template,omitempty"`
+	// List of approvers and their current status.
+	Approvers []*IssuePayloadApproval_Approver `protobuf:"bytes,2,rep,name=approvers,proto3" json:"approvers,omitempty"`
+	// Whether the system has finished finding a matching approval template.
+	// False means the backend is still searching for matching templates.
+	ApprovalFindingDone bool `protobuf:"varint,3,opt,name=approval_finding_done,json=approvalFindingDone,proto3" json:"approval_finding_done,omitempty"`
+	// Error message if approval template finding failed.
+	ApprovalFindingError string `protobuf:"bytes,4,opt,name=approval_finding_error,json=approvalFindingError,proto3" json:"approval_finding_error,omitempty"`
+	// The assessed risk level for this issue.
+	RiskLevel     RiskLevel `protobuf:"varint,5,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.store.RiskLevel" json:"risk_level,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *IssuePayloadApproval) Reset() {
@@ -153,15 +160,19 @@ func (x *IssuePayloadApproval) GetRiskLevel() RiskLevel {
 	return RiskLevel_RISK_LEVEL_UNSPECIFIED
 }
 
+// ApprovalTemplate defines the approval workflow and requirements for an issue.
 type ApprovalTemplate struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The unique identifier for the approval template.
-	// For built-in templates, use "bb." prefix (e.g., "bb.project-owner", "bb.workspace-dba").
-	// For custom templates, use a UUID or other unique identifier.
-	Id            string        `protobuf:"bytes,4,opt,name=id,proto3" json:"id,omitempty"`
-	Flow          *ApprovalFlow `protobuf:"bytes,1,opt,name=flow,proto3" json:"flow,omitempty"`
-	Title         string        `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Description   string        `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// Built-in templates use "bb." prefix (e.g., "bb.project-owner", "bb.workspace-dba").
+	// Custom templates use a UUID or other unique identifier.
+	Id string `protobuf:"bytes,4,opt,name=id,proto3" json:"id,omitempty"`
+	// The approval workflow specification.
+	Flow *ApprovalFlow `protobuf:"bytes,1,opt,name=flow,proto3" json:"flow,omitempty"`
+	// Human-readable title of the approval template.
+	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	// Detailed description of when this template applies.
+	Description   string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -224,9 +235,11 @@ func (x *ApprovalTemplate) GetDescription() string {
 	return ""
 }
 
+// ApprovalFlow defines the sequence of approvals required.
 type ApprovalFlow struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Roles         []string               `protobuf:"bytes,1,rep,name=roles,proto3" json:"roles,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// List of role names that must approve, in order.
+	Roles         []string `protobuf:"bytes,1,rep,name=roles,proto3" json:"roles,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -268,11 +281,12 @@ func (x *ApprovalFlow) GetRoles() []string {
 	return nil
 }
 
+// Approver represents a user who can approve or reject an issue.
 type IssuePayloadApproval_Approver struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The new status.
+	// The current approval status.
 	Status IssuePayloadApproval_Approver_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.store.IssuePayloadApproval_Approver_Status" json:"status,omitempty"`
-	// The principal id of the approver.
+	// The ID of the principal who is the approver.
 	PrincipalId   int32 `protobuf:"varint,2,opt,name=principal_id,json=principalId,proto3" json:"principal_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

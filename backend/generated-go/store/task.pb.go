@@ -21,14 +21,19 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Type represents the type of database operation to perform.
 type Task_Type int32
 
 const (
 	Task_TASK_TYPE_UNSPECIFIED Task_Type = 0
-	Task_DATABASE_CREATE       Task_Type = 1
-	Task_DATABASE_MIGRATE      Task_Type = 2
-	Task_DATABASE_EXPORT       Task_Type = 5
-	Task_DATABASE_SDL          Task_Type = 6
+	// Create a new database.
+	Task_DATABASE_CREATE Task_Type = 1
+	// Apply schema/data migrations to an existing database.
+	Task_DATABASE_MIGRATE Task_Type = 2
+	// Export data from a database.
+	Task_DATABASE_EXPORT Task_Type = 5
+	// Apply declarative schema changes (state-based migration).
+	Task_DATABASE_SDL Task_Type = 6
 )
 
 // Enum value maps for Task_Type.
@@ -76,14 +81,17 @@ func (Task_Type) EnumDescriptor() ([]byte, []int) {
 	return file_store_task_proto_rawDescGZIP(), []int{0, 0}
 }
 
-// MigrateType is the database migration type.
+// MigrateType is the database migration type for imperative migrations.
 type Task_MigrateType int32
 
 const (
 	Task_MIGRATE_TYPE_UNSPECIFIED Task_MigrateType = 0
-	Task_DDL                      Task_MigrateType = 1
-	Task_DML                      Task_MigrateType = 2
-	Task_GHOST                    Task_MigrateType = 3
+	// DDL changes (Data Definition Language) for schema modifications.
+	Task_DDL Task_MigrateType = 1
+	// DML changes (Data Manipulation Language) for data modifications.
+	Task_DML Task_MigrateType = 2
+	// Online schema migration using gh-ost tool.
+	Task_GHOST Task_MigrateType = 3
 )
 
 // Enum value maps for Task_MigrateType.
@@ -129,28 +137,40 @@ func (Task_MigrateType) EnumDescriptor() ([]byte, []int) {
 	return file_store_task_proto_rawDescGZIP(), []int{0, 1}
 }
 
+// Task is the metadata for database operation tasks.
 type Task struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// common fields
-	Skipped       bool   `protobuf:"varint,1,opt,name=skipped,proto3" json:"skipped,omitempty"`
+	// Whether the task was skipped during execution.
+	Skipped bool `protobuf:"varint,1,opt,name=skipped,proto3" json:"skipped,omitempty"`
+	// Reason why the task was skipped.
 	SkippedReason string `protobuf:"bytes,2,opt,name=skipped_reason,json=skippedReason,proto3" json:"skipped_reason,omitempty"`
-	SpecId        string `protobuf:"bytes,3,opt,name=spec_id,json=specId,proto3" json:"spec_id,omitempty"`
-	SheetId       int32  `protobuf:"varint,4,opt,name=sheet_id,json=sheetId,proto3" json:"sheet_id,omitempty"`
-	// Create database fields.
+	// UUID that identifies the spec this task implements.
+	SpecId string `protobuf:"bytes,3,opt,name=spec_id,json=specId,proto3" json:"spec_id,omitempty"`
+	// The sheet ID containing SQL statements for this task.
+	SheetId int32 `protobuf:"varint,4,opt,name=sheet_id,json=sheetId,proto3" json:"sheet_id,omitempty"`
+	// The environment where the database will be created.
 	EnvironmentId string `protobuf:"bytes,5,opt,name=environment_id,json=environmentId,proto3" json:"environment_id,omitempty"`
-	DatabaseName  string `protobuf:"bytes,6,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
-	TableName     string `protobuf:"bytes,7,opt,name=table_name,json=tableName,proto3" json:"table_name,omitempty"`
-	CharacterSet  string `protobuf:"bytes,8,opt,name=character_set,json=characterSet,proto3" json:"character_set,omitempty"`
-	Collation     string `protobuf:"bytes,9,opt,name=collation,proto3" json:"collation,omitempty"`
-	// Update database fields.
-	SchemaVersion     string `protobuf:"bytes,10,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
-	EnablePriorBackup bool   `protobuf:"varint,11,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
-	// ghost flags.
-	Flags             map[string]string  `protobuf:"bytes,12,rep,name=flags,proto3" json:"flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// Name of the database to create.
+	DatabaseName string `protobuf:"bytes,6,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
+	// Optional table name to create (required for some databases like MongoDB).
+	TableName string `protobuf:"bytes,7,opt,name=table_name,json=tableName,proto3" json:"table_name,omitempty"`
+	// Character set for the new database.
+	CharacterSet string `protobuf:"bytes,8,opt,name=character_set,json=characterSet,proto3" json:"character_set,omitempty"`
+	// Collation for the new database.
+	Collation string `protobuf:"bytes,9,opt,name=collation,proto3" json:"collation,omitempty"`
+	// Schema version after migration is applied.
+	SchemaVersion string `protobuf:"bytes,10,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
+	// Whether to create an automatic backup before applying changes.
+	EnablePriorBackup bool `protobuf:"varint,11,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
+	// Configuration flags for gh-ost migration tool.
+	Flags map[string]string `protobuf:"bytes,12,rep,name=flags,proto3" json:"flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// Source information if task is created from a release.
 	TaskReleaseSource *TaskReleaseSource `protobuf:"bytes,13,opt,name=task_release_source,json=taskReleaseSource,proto3" json:"task_release_source,omitempty"`
-	MigrateType       Task_MigrateType   `protobuf:"varint,16,opt,name=migrate_type,json=migrateType,proto3,enum=bytebase.store.Task_MigrateType" json:"migrate_type,omitempty"`
-	// Export data fields.
-	Password      string       `protobuf:"bytes,14,opt,name=password,proto3" json:"password,omitempty"`
+	// The type of migration (DDL, DML, or GHOST).
+	MigrateType Task_MigrateType `protobuf:"varint,16,opt,name=migrate_type,json=migrateType,proto3,enum=bytebase.store.Task_MigrateType" json:"migrate_type,omitempty"`
+	// Password to encrypt the exported data archive.
+	Password string `protobuf:"bytes,14,opt,name=password,proto3" json:"password,omitempty"`
+	// Format of the exported data (SQL, CSV, JSON, etc).
 	Format        ExportFormat `protobuf:"varint,15,opt,name=format,proto3,enum=bytebase.store.ExportFormat" json:"format,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -298,8 +318,10 @@ func (x *Task) GetFormat() ExportFormat {
 	return ExportFormat_FORMAT_UNSPECIFIED
 }
 
+// TaskReleaseSource contains information about the release file this task originated from.
 type TaskReleaseSource struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// Resource name of the release file.
 	// Format: projects/{project}/releases/{release}/files/{id}
 	File          string `protobuf:"bytes,1,opt,name=file,proto3" json:"file,omitempty"`
 	unknownFields protoimpl.UnknownFields

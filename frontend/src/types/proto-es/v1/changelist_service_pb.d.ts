@@ -87,9 +87,9 @@ export declare type ListChangelistsRequest = Message<"bytebase.v1.ListChangelist
 
   /**
    * Pagination is not currently implemented. This field is reserved for future use.
-   * The maximum number of databases to return. The service may return fewer than
+   * The maximum number of changelists to return. The service may return fewer than
    * this value.
-   * If unspecified, at most 50 databases will be returned.
+   * If unspecified, at most 50 changelists will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    *
    * @generated from field: int32 page_size = 2;
@@ -98,10 +98,10 @@ export declare type ListChangelistsRequest = Message<"bytebase.v1.ListChangelist
 
   /**
    * Pagination is not currently implemented. This field is reserved for future use.
-   * A page token, received from a previous `ListDatabases` call.
+   * A page token, received from a previous `ListChangelists` call.
    * Provide this to retrieve the subsequent page.
    *
-   * When paginating, all other parameters provided to `ListDatabases` must match
+   * When paginating, all other parameters provided to `ListChangelists` must match
    * the call that provided the page token.
    *
    * @generated from field: string page_token = 3;
@@ -261,6 +261,7 @@ export declare const ChangelistSchema: GenMessage<Changelist>;
 export declare type Changelist_Change = Message<"bytebase.v1.Changelist.Change"> & {
   /**
    * The sheet containing the SQL statement.
+   * Format: projects/{project}/sheets/{sheet}
    *
    * @generated from field: string sheet = 1;
    */

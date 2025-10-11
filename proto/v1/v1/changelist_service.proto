@@ -107,17 +107,17 @@ message ListChangelistsRequest {
   ];
 
   // Pagination is not currently implemented. This field is reserved for future use.
-  // The maximum number of databases to return. The service may return fewer than
+  // The maximum number of changelists to return. The service may return fewer than
   // this value.
-  // If unspecified, at most 50 databases will be returned.
+  // If unspecified, at most 50 changelists will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 2;
 
   // Pagination is not currently implemented. This field is reserved for future use.
-  // A page token, received from a previous `ListDatabases` call.
+  // A page token, received from a previous `ListChangelists` call.
   // Provide this to retrieve the subsequent page.
   //
-  // When paginating, all other parameters provided to `ListDatabases` must match
+  // When paginating, all other parameters provided to `ListChangelists` must match
   // the call that provided the page token.
   string page_token = 3;
 }
@@ -186,6 +186,7 @@ message Changelist {
   // A single change in a changelist.
   message Change {
     // The sheet containing the SQL statement.
+    // Format: projects/{project}/sheets/{sheet}
     string sheet = 1;
     // The source of this change.
     // Format: instances/{instance}/databases/{database}/changelogs/{changelog}

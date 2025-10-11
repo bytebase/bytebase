@@ -812,7 +812,7 @@ type SyncInstanceRequest struct {
 	// Format: instances/{instance}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// When full sync is enabled, all databases in the instance will be synchronized. Otherwise, only
-	// the instance metadata (such as the database list) and any newly discovered instances will be synced.
+	// the instance metadata (such as the database list) and any newly discovered databases will be synced.
 	EnableFullSync bool `protobuf:"varint,2,opt,name=enable_full_sync,json=enableFullSync,proto3" json:"enable_full_sync,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache

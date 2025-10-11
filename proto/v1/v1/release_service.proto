@@ -294,7 +294,7 @@ message Release {
   message File {
     // The unique identifier for the file.
     string id = 1;
-    // The path of the file. e.g. `2.2/V0001_create_table.sql`.
+    // The path of the file. e.g., `2.2/V0001_create_table.sql`.
     string path = 2;
     // The type of the file.
     Type type = 5;
@@ -345,7 +345,7 @@ message Release {
   message VCSSource {
     // The type of VCS.
     VCSType vcs_type = 1;
-    // The url link to the e.g. GitHub commit or pull request.
+    // The url link to the e.g., GitHub commit or pull request.
     string url = 2;
   }
 }

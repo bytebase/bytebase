@@ -1115,10 +1115,10 @@ func (x *OIDCIdentityProviderConfig) GetAuthEndpoint() string {
 // LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
 type LDAPIdentityProviderConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Host is the hostname or IP address of the LDAP server, e.g.
+	// Host is the hostname or IP address of the LDAP server, e.g.,
 	// "ldap.example.com".
 	Host string `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
-	// Port is the port number of the LDAP server, e.g. 389. When not set, the
+	// Port is the port number of the LDAP server, e.g., 389. When not set, the
 	// default port of the corresponding security protocol will be used, i.e. 389
 	// for StartTLS and 636 for LDAPS.
 	Port int32 `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
@@ -1129,9 +1129,9 @@ type LDAPIdentityProviderConfig struct {
 	BindDn string `protobuf:"bytes,4,opt,name=bind_dn,json=bindDn,proto3" json:"bind_dn,omitempty"`
 	// BindPassword is the password of the user to bind as a service account.
 	BindPassword string `protobuf:"bytes,5,opt,name=bind_password,json=bindPassword,proto3" json:"bind_password,omitempty"`
-	// BaseDN is the base DN to search for users, e.g. "ou=users,dc=example,dc=com".
+	// BaseDN is the base DN to search for users, e.g., "ou=users,dc=example,dc=com".
 	BaseDn string `protobuf:"bytes,6,opt,name=base_dn,json=baseDn,proto3" json:"base_dn,omitempty"`
-	// UserFilter is the filter to search for users, e.g. "(uid=%s)".
+	// UserFilter is the filter to search for users, e.g., "(uid=%s)".
 	UserFilter string `protobuf:"bytes,7,opt,name=user_filter,json=userFilter,proto3" json:"user_filter,omitempty"`
 	// SecurityProtocol is the security protocol to be used for establishing
 	// connections with the LDAP server.

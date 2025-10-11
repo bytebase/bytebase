@@ -984,7 +984,7 @@ type Release_File struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The unique identifier for the file.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	// The path of the file. e.g. `2.2/V0001_create_table.sql`.
+	// The path of the file. e.g., `2.2/V0001_create_table.sql`.
 	Path string `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
 	// The type of the file.
 	Type Release_File_Type `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.v1.Release_File_Type" json:"type,omitempty"`
@@ -1108,7 +1108,7 @@ type Release_VCSSource struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The type of VCS.
 	VcsType VCSType `protobuf:"varint,1,opt,name=vcs_type,json=vcsType,proto3,enum=bytebase.v1.VCSType" json:"vcs_type,omitempty"`
-	// The url link to the e.g. GitHub commit or pull request.
+	// The url link to the e.g., GitHub commit or pull request.
 	Url           string `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

@@ -65,7 +65,7 @@ export declare type UpdateWorksheetRequest = Message<"bytebase.v1.UpdateWorkshee
   /**
    * The list of fields to be updated.
    * Fields are specified relative to the worksheet.
-   * (e.g. `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`)
+   * (e.g., `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`)
    * Only support update the following fields for now:
    * - `title`
    * - `statement`

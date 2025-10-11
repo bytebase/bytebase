@@ -279,7 +279,7 @@ export declare type SyncInstanceRequest = Message<"bytebase.v1.SyncInstanceReque
 
   /**
    * When full sync is enabled, all databases in the instance will be synchronized. Otherwise, only
-   * the instance metadata (such as the database list) and any newly discovered instances will be synced.
+   * the instance metadata (such as the database list) and any newly discovered databases will be synced.
    *
    * @generated from field: bool enable_full_sync = 2;
    */

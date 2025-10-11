@@ -8,33 +8,48 @@ import "store/approval.proto";
 
 option go_package = "generated-go/store";
 
+// Issue is the metadata for issues that track database operations and access requests.
 message Issue {
+  // Type represents the category of issue.
   enum Type {
     ISSUE_TYPE_UNSPECIFIED = 0;
+    // Issue for database schema or data changes.
     DATABASE_CHANGE = 1;
+    // Issue requesting database access permissions.
     GRANT_REQUEST = 2;
+    // Issue for exporting data from databases.
     DATABASE_EXPORT = 3;
   }
 
+  // Status represents the current state of the issue.
   enum Status {
     ISSUE_STATUS_UNSPECIFIED = 0;
+    // Issue is open and pending action.
     OPEN = 1;
+    // Issue has been completed successfully.
     DONE = 2;
+    // Issue was canceled and will not be completed.
     CANCELED = 3;
   }
 
+  // Approval information for the issue workflow.
   IssuePayloadApproval approval = 1;
+  // Access grant request details if this is a grant request issue.
   GrantRequest grant_request = 2;
+  // Labels attached to categorize and filter the issue.
   repeated string labels = 3;
 }
 
+// GrantRequest contains details for requesting database access permissions.
 message GrantRequest {
-  // The requested role.
+  // The role being requested for the user.
   // Format: roles/EXPORTER.
   string role = 1;
-  // The user to be granted.
+  // The user who will receive the role.
   // Format: users/{userUID}.
   string user = 2;
+  // Optional conditional expression that limits when the grant applies.
   google.type.Expr condition = 3;
+  // Duration after which the grant automatically expires.
   google.protobuf.Duration expiration = 4;
 }

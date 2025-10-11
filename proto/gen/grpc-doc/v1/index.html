@@ -4027,7 +4027,7 @@ The role name is the unique name for the role. </p></td>
                   <td><a href="#string">string</a></td>
                   <td>optional</td>
                   <td><p>The role attribute.
-For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
+For PostgreSQL, it contains super_user, no_inherit, create_role, create_db, can_login, replication, and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
 For MySQL, it&#39;s the global privileges as GRANT statements, which means it only contains &#34;GRANT ... ON *.* TO ...&#34;. Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html </p></td>
                 </tr>
               
@@ -5577,7 +5577,7 @@ Format: instances/{instance} </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>When full sync is enabled, all databases in the instance will be synchronized. Otherwise, only
-the instance metadata (such as the database list) and any newly discovered instances will be synced. </p></td>
+the instance metadata (such as the database list) and any newly discovered databases will be synced. </p></td>
                 </tr>
               
             </tbody>
@@ -8602,7 +8602,7 @@ view. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The signature is the name with the number and type of input arguments the
-function takes. </p></td>
+procedure takes. </p></td>
                 </tr>
               
                 <tr>
@@ -10748,7 +10748,7 @@ Format: users/{email}. </p></td>
                   <td>condition</td>
                   <td><a href="#google.type.Expr">google.type.Expr</a></td>
                   <td></td>
-                  <td><p>The condition for the role. Same as the condtion in IAM Binding message. </p></td>
+                  <td><p>The condition for the role. Same as the condition in IAM Binding message. </p></td>
                 </tr>
               
                 <tr>
@@ -11542,7 +11542,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the issue to add an rejection.
+                  <td><p>The name of the issue to add a rejection.
 Format: projects/{project}/issues/{issue} </p></td>
                 </tr>
               
@@ -13893,7 +13893,7 @@ For examples:
                   <td>domains</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>The workspace domain, e.g. bytebase.com. </p></td>
+                  <td><p>The workspace domain, e.g., bytebase.com. </p></td>
                 </tr>
               
                 <tr>
@@ -15561,7 +15561,7 @@ A binding binds one or more project members to a single project role. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The current etag of the policy.
-If an etag is provided and does not match the current etag of the poliy,
+If an etag is provided and does not match the current etag of the policy,
 the call will be blocked and an ABORTED error will be returned. </p></td>
                 </tr>
               
@@ -16348,7 +16348,7 @@ Format: idps/{idp} </p></td>
                   <td>user</td>
                   <td><a href="#bytebase.v1.User">User</a></td>
                   <td></td>
-                  <td><p>The user of successful login. </p></td>
+                  <td><p>The user from the successful login. </p></td>
                 </tr>
               
             </tbody>
@@ -16721,7 +16721,8 @@ Format: users/{email} </p></td>
                   <td>sheet</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The sheet containing the SQL statement. </p></td>
+                  <td><p>The sheet containing the SQL statement.
+Format: projects/{project}/sheets/{sheet} </p></td>
                 </tr>
               
                 <tr>
@@ -16856,9 +16857,9 @@ Format: projects/{project} </p></td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p>Pagination is not currently implemented. This field is reserved for future use.
-The maximum number of databases to return. The service may return fewer than
+The maximum number of changelists to return. The service may return fewer than
 this value.
-If unspecified, at most 50 databases will be returned.
+If unspecified, at most 50 changelists will be returned.
 The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
                 </tr>
               
@@ -16867,10 +16868,10 @@ The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Pagination is not currently implemented. This field is reserved for future use.
-A page token, received from a previous `ListDatabases` call.
+A page token, received from a previous `ListChangelists` call.
 Provide this to retrieve the subsequent page.
 
-When paginating, all other parameters provided to `ListDatabases` must match
+When paginating, all other parameters provided to `ListChangelists` must match
 the call that provided the page token. </p></td>
                 </tr>
               
@@ -18348,7 +18349,7 @@ Format: idps/{idp} </p></td>
                   <td>host</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Host is the hostname or IP address of the LDAP server, e.g.
+                  <td><p>Host is the hostname or IP address of the LDAP server, e.g.,
 &#34;ldap.example.com&#34;. </p></td>
                 </tr>
               
@@ -18356,7 +18357,7 @@ Format: idps/{idp} </p></td>
                   <td>port</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>Port is the port number of the LDAP server, e.g. 389. When not set, the
+                  <td><p>Port is the port number of the LDAP server, e.g., 389. When not set, the
 default port of the corresponding security protocol will be used, i.e. 389
 for StartTLS and 636 for LDAPS. </p></td>
                 </tr>
@@ -18387,14 +18388,14 @@ search requests. </p></td>
                   <td>base_dn</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>BaseDN is the base DN to search for users, e.g. &#34;ou=users,dc=example,dc=com&#34;. </p></td>
+                  <td><p>BaseDN is the base DN to search for users, e.g., &#34;ou=users,dc=example,dc=com&#34;. </p></td>
                 </tr>
               
                 <tr>
                   <td>user_filter</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>UserFilter is the filter to search for users, e.g. &#34;(uid=%s)&#34;. </p></td>
+                  <td><p>UserFilter is the filter to search for users, e.g., &#34;(uid=%s)&#34;. </p></td>
                 </tr>
               
                 <tr>
@@ -25491,7 +25492,7 @@ If the digest is not empty, it must be unique in the project. Otherwise, an ALRE
                   <td>path</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The path of the file. e.g. `2.2/V0001_create_table.sql`. </p></td>
+                  <td><p>The path of the file. e.g., `2.2/V0001_create_table.sql`. </p></td>
                 </tr>
               
                 <tr>
@@ -25577,7 +25578,7 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td>url</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The url link to the e.g. GitHub commit or pull request. </p></td>
+                  <td><p>The url link to the e.g., GitHub commit or pull request. </p></td>
                 </tr>
               
             </tbody>
@@ -26000,7 +26001,7 @@ Permissions required: bb.releases.check</p></td>
                   <td>review_config</td>
                   <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
                   <td></td>
-                  <td><p>The sql review to create. </p></td>
+                  <td><p>The SQL review config to create. </p></td>
                 </tr>
               
             </tbody>
@@ -26024,7 +26025,7 @@ Permissions required: bb.releases.check</p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the sql review to delete.
+                  <td><p>The name of the SQL review config to delete.
 Format: reviewConfigs/{reviewConfig} </p></td>
                 </tr>
               
@@ -26049,7 +26050,7 @@ Format: reviewConfigs/{reviewConfig} </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the sql review to retrieve.
+                  <td><p>The name of the SQL review config to retrieve.
 Format: reviewConfigs/{reviewConfig} </p></td>
                 </tr>
               
@@ -26075,9 +26076,9 @@ Format: reviewConfigs/{reviewConfig} </p></td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p>Pagination is not currently implemented. This field is reserved for future use.
-The maximum number of sql review to return. The service may return fewer than
+The maximum number of SQL review configs to return. The service may return fewer than
 this value.
-If unspecified, at most 10 sql review will be returned.
+If unspecified, at most 10 SQL review configs will be returned.
 The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
                 </tr>
               
@@ -26113,7 +26114,7 @@ the call that provided the page token. </p></td>
                   <td>review_configs</td>
                   <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
                   <td>repeated</td>
-                  <td><p>The sql review from the specified request. </p></td>
+                  <td><p>The SQL review configs from the specified request. </p></td>
                 </tr>
               
                 <tr>
@@ -26145,7 +26146,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the sql review to retrieve.
+                  <td><p>The name of the SQL review config.
 Format: reviewConfigs/{reviewConfig} </p></td>
                 </tr>
               
@@ -26174,8 +26175,8 @@ Format: reviewConfigs/{reviewConfig} </p></td>
                   <td>resources</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>resources using the config.
-Format: {resource}/{resource id}, for example, environments/test. </p></td>
+                  <td><p>Resources using the config.
+Format: {resource}/{resource id}, e.g., environments/test. </p></td>
                 </tr>
               
             </tbody>
@@ -26199,9 +26200,9 @@ Format: {resource}/{resource id}, for example, environments/test. </p></td>
                   <td>review_config</td>
                   <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
                   <td></td>
-                  <td><p>The sql review to update.
+                  <td><p>The SQL review config to update.
 
-The name field is used to identify the sql review to update. </p></td>
+The name field is used to identify the SQL review config to update. </p></td>
                 </tr>
               
                 <tr>
@@ -27036,7 +27037,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td>source</td>
                   <td><a href="#bytebase.v1.Risk.Source">Risk.Source</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The source of the operation being assessed for risk. </p></td>
                 </tr>
               
                 <tr>
@@ -27167,7 +27168,7 @@ In this situation, `update_mask` is ignored. </p></td>
 
       
         <h3 id="bytebase.v1.Risk.Source">Risk.Source</h3>
-        <p></p>
+        <p>The source of the database change for risk assessment.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -27183,31 +27184,31 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>DDL</td>
                 <td>1</td>
-                <td><p></p></td>
+                <td><p>Data Definition Language statements (CREATE, ALTER, DROP, etc.).</p></td>
               </tr>
             
               <tr>
                 <td>DML</td>
                 <td>2</td>
-                <td><p></p></td>
+                <td><p>Data Manipulation Language statements (INSERT, UPDATE, DELETE, etc.).</p></td>
               </tr>
             
               <tr>
                 <td>CREATE_DATABASE</td>
                 <td>3</td>
-                <td><p></p></td>
+                <td><p>Database creation operations.</p></td>
               </tr>
             
               <tr>
                 <td>DATA_EXPORT</td>
                 <td>6</td>
-                <td><p></p></td>
+                <td><p>Data export operations.</p></td>
               </tr>
             
               <tr>
                 <td>REQUEST_ROLE</td>
                 <td>7</td>
-                <td><p></p></td>
+                <td><p>Role access requests.</p></td>
               </tr>
             
           </tbody>
@@ -28349,7 +28350,7 @@ This field is output only and cannot be directly set. </p></td>
                   <td>stages</td>
                   <td><a href="#bytebase.v1.Stage">Stage</a></td>
                   <td>repeated</td>
-                  <td><p>stages and thus tasks of the rollout. </p></td>
+                  <td><p>Stages and thus tasks of the rollout. </p></td>
                 </tr>
               
                 <tr>
@@ -28411,7 +28412,7 @@ Use &#34;-&#34; for {stage} when the stage has no environment or deleted environ
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>id is the environment id of the stage.
-e.g. &#34;prod&#34;.
+e.g., &#34;prod&#34;.
 Use &#34;-&#34; when the stage has no environment or deleted environment. </p></td>
                 </tr>
               
@@ -28557,14 +28558,14 @@ Format: projects/{project} </p></td>
                   <td>database</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>database name </p></td>
+                  <td><p>Database name. </p></td>
                 </tr>
               
                 <tr>
                   <td>table</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>table name </p></td>
+                  <td><p>Table name. </p></td>
                 </tr>
               
                 <tr>
@@ -29879,13 +29880,13 @@ Use payload DatabaseDataExport.</p></td>
               <tr>
                 <td>RUNNING_WAITING</td>
                 <td>1</td>
-                <td><p>the task run is ready to be executed by the scheduler</p></td>
+                <td><p>The task run is ready to be executed by the scheduler.</p></td>
               </tr>
             
               <tr>
                 <td>RUNNING_RUNNING</td>
                 <td>2</td>
-                <td><p>the task run is being executed by the scheduler</p></td>
+                <td><p>The task run is being executed by the scheduler.</p></td>
               </tr>
             
           </tbody>
@@ -30535,7 +30536,7 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td></td>
                   <td><p>The list of fields to be updated.
 Fields are specified relative to the sheet.
-(e.g. `title`, `statement`; *not* `sheet.title` or `sheet.statement`)
+(e.g., `title`, `statement`; *not* `sheet.title` or `sheet.statement`)
 Only support update the following fields for now:
 - `title`
 - `statement` </p></td>
@@ -31681,7 +31682,7 @@ Format: worksheets/{worksheet} </p></td>
                   <td></td>
                   <td><p>The list of fields to be updated.
 Fields are specified relative to the worksheet.
-(e.g. `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`)
+(e.g., `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`)
 Only support update the following fields for now:
 - `title`
 - `statement`

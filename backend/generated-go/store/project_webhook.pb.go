@@ -23,7 +23,7 @@ const (
 
 type ProjectWebhookPayload struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// if direct_message is set, the notification is sent directly
+	// If direct_message is set, the notification is sent directly
 	// to the persons and url will be ignored.
 	// IM integration setting should be set for this function to work.
 	DirectMessage bool `protobuf:"varint,1,opt,name=direct_message,json=directMessage,proto3" json:"direct_message,omitempty"`

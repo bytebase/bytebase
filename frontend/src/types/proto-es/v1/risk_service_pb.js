@@ -74,6 +74,8 @@ export const Risk_SourceSchema = /*@__PURE__*/
   enumDesc(file_v1_risk_service, 6, 0);
 
 /**
+ * The source of the database change for risk assessment.
+ *
  * @generated from enum bytebase.v1.Risk.Source
  */
 export const Risk_Source = /*@__PURE__*/
