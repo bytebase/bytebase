@@ -69,7 +69,7 @@ service UserService {
   }
 
   // Only the user itself and the user with bb.users.update permission on the workspace can update the user.
-  // Permissions required: bb.users.update
+  // Permissions required: None
   rpc UpdateUser(UpdateUserRequest) returns (User) {
     option (google.api.http) = {
       patch: "/v1/{user.name=users/*}"
