@@ -468,7 +468,7 @@ export declare type Release_File = Message<"bytebase.v1.Release.File"> & {
   id: string;
 
   /**
-   * The path of the file. e.g. `2.2/V0001_create_table.sql`.
+   * The path of the file. e.g., `2.2/V0001_create_table.sql`.
    *
    * @generated from field: string path = 2;
    */
@@ -623,7 +623,7 @@ export declare type Release_VCSSource = Message<"bytebase.v1.Release.VCSSource">
   vcsType: VCSType;
 
   /**
-   * The url link to the e.g. GitHub commit or pull request.
+   * The url link to the e.g., GitHub commit or pull request.
    *
    * @generated from field: string url = 2;
    */

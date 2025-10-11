@@ -72,7 +72,7 @@ func (GroupMember_Role) EnumDescriptor() ([]byte, []int) {
 
 type GroupMember struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Member is the principal who belong to this group.
+	// Member is the principal who belongs to this group.
 	//
 	// Format: users/{userUID}.
 	Member        string           `protobuf:"bytes,1,opt,name=member,proto3" json:"member,omitempty"`
@@ -128,7 +128,7 @@ func (x *GroupMember) GetRole() GroupMember_Role {
 type GroupPayload struct {
 	state   protoimpl.MessageState `protogen:"open.v1"`
 	Members []*GroupMember         `protobuf:"bytes,1,rep,name=members,proto3" json:"members,omitempty"`
-	// source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
+	// The source indicates where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
 	Source        string `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

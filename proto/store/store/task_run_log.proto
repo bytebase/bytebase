@@ -67,9 +67,9 @@ message TaskRunLog {
     Status status = 1;
     enum Status {
       STATUS_UNSPECIFIED = 0;
-      // the task run is ready to be executed by the scheduler
+      // The task run is ready to be executed by the scheduler.
       RUNNING_WAITING = 1;
-      // the task run is being executed by the scheduler
+      // The task run is being executed by the scheduler.
       RUNNING_RUNNING = 2;
     }
   }

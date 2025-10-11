@@ -13,7 +13,7 @@ message DatabaseMetadata {
   google.protobuf.Timestamp last_sync_time = 2;
   bool backup_available = 3;
   bool datashare = 4;
-  // The schema is drifted from the source of truth.
+  // The schema has drifted from the source of truth.
   bool drifted = 6;
   // The version of database schema.
   string version = 7;
@@ -23,22 +23,22 @@ message DatabaseMetadata {
 message DatabaseSchemaMetadata {
   string name = 1;
 
-  // The schemas is the list of schemas in a database.
+  // The list of schemas in a database.
   repeated SchemaMetadata schemas = 2;
 
-  // The character_set is the character set of a database.
+  // The character set of the database.
   string character_set = 3;
 
-  // The collation is the collation of a database.
+  // The collation of the database.
   string collation = 4;
 
-  // The extensions is the list of extensions in a database.
+  // The list of extensions in a database.
   repeated ExtensionMetadata extensions = 5;
 
   // The database belongs to a datashare.
   bool datashare = 6;
 
-  // The service name of the database. It's the Oracle specific concept.
+  // The service name of the database. It's an Oracle-specific concept.
   string service_name = 7;
 
   repeated LinkedDatabaseMetadata linked_databases = 8;
@@ -60,40 +60,38 @@ message LinkedDatabaseMetadata {
 // SchemaMetadata is the metadata for schemas.
 // This is the concept of schema in Postgres, but it's a no-op for MySQL.
 message SchemaMetadata {
-  // The name is the schema name.
+  // The schema name.
   // It is an empty string for databases without such concept such as MySQL.
   string name = 1;
 
-  // The tables is the list of tables in a schema.
+  // The list of tables in a schema.
   repeated TableMetadata tables = 2;
 
-  // The external_tables is the list of external tables in a schema.
+  // The list of external tables in a schema.
   repeated ExternalTableMetadata external_tables = 3;
 
-  // The views is the list of views in a schema.
+  // The list of views in a schema.
   repeated ViewMetadata views = 4;
 
-  // The functions is the list of functions in a schema.
+  // The list of functions in a schema.
   repeated FunctionMetadata functions = 5;
 
-  // The procedures is the list of procedures in a schema.
+  // The list of procedures in a schema.
   repeated ProcedureMetadata procedures = 6;
 
-  // The streams is the list of streams in a schema, currently, only used for
-  // Snowflake.
+  // The list of streams in a schema, currently only used for Snowflake.
   repeated StreamMetadata streams = 7;
 
-  // The routines is the list of routines in a schema, currently, only used for
-  // Snowflake.
+  // The list of tasks in a schema, currently only used for Snowflake.
   repeated TaskMetadata tasks = 8;
 
-  // The materialized_views is the list of materialized views in a schema.
+  // The list of materialized views in a schema.
   repeated MaterializedViewMetadata materialized_views = 9;
 
-  // The sequences is the list of sequences in a schema.
+  // The list of sequences in a schema.
   repeated SequenceMetadata sequences = 10;
 
-  // The packages is the list of packages in a schema.
+  // The list of packages in a schema.
   repeated PackageMetadata packages = 11;
 
   string owner = 12;
@@ -108,10 +106,10 @@ message SchemaMetadata {
 }
 
 message EnumTypeMetadata {
-  // The name of a type.
+  // The name of the enum type.
   string name = 1;
 
-  // The enum values of a type.
+  // The enum values of the type.
   repeated string values = 2;
 
   string comment = 3;
@@ -154,22 +152,22 @@ message SequenceMetadata {
   // The maximum value of a sequence.
   string max_value = 5;
 
-  // Increment value of a sequence.
+  // The increment value of a sequence.
   string increment = 6;
 
-  // Cycle is whether the sequence cycles.
+  // Whether the sequence cycles.
   bool cycle = 7;
 
   // Cache size of a sequence.
   string cache_size = 8;
 
-  // Last value of a sequence.
+  // The last value of a sequence.
   string last_value = 9;
 
-  // The owner table of the sequence.
+  // The table that owns the sequence.
   string owner_table = 10;
 
-  // The owner column of the sequence.
+  // The column that owns the sequence.
   string owner_column = 11;
 
   string comment = 12;
@@ -178,17 +176,16 @@ message SequenceMetadata {
 }
 
 message TriggerMetadata {
-  // The name is the name of the trigger.
+  // The name of the trigger.
   string name = 1;
 
-  // The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
-  // TRUNCATE.
+  // The event that triggers this action, such as INSERT, UPDATE, DELETE, or TRUNCATE.
   string event = 3;
 
-  // The timing is the timing of the trigger, such as BEFORE, AFTER.
+  // The timing of when the trigger fires, such as BEFORE or AFTER.
   string timing = 4;
 
-  // The body is the body of the trigger.
+  // The body of the trigger.
   string body = 5;
 
   string sql_mode = 6;
@@ -204,16 +201,16 @@ message TriggerMetadata {
 
 // RuleMetadata is the metadata for PostgreSQL rules.
 message RuleMetadata {
-  // The name is the name of the rule.
+  // The name of the rule.
   string name = 1;
 
-  // The event is the event type of the rule: SELECT, INSERT, UPDATE, or DELETE.
+  // The event type of the rule: SELECT, INSERT, UPDATE, or DELETE.
   string event = 2;
 
-  // The condition is the WHERE condition of the rule (optional).
+  // The WHERE condition of the rule (optional).
   string condition = 3;
 
-  // The action is the command(s) to execute when the rule fires.
+  // The command(s) to execute when the rule fires.
   string action = 4;
 
   // The is_instead indicates whether this is an INSTEAD rule.
@@ -222,16 +219,16 @@ message RuleMetadata {
   // The is_enabled indicates whether the rule is enabled.
   bool is_enabled = 6;
 
-  // The definition is the full CREATE RULE statement.
+  // The full CREATE RULE statement.
   string definition = 7;
 }
 
 message TaskMetadata {
-  // The name is the name of a task.
+  // The name of the task.
   string name = 1;
 
-  // The id is the snowflake-generated id of a task.
-  // Example: 01ad32a0-1bb6-5e93-0000-000000000001
+  // The Snowflake-generated ID of the task.
+  // Example: 01ad32a0-1bb6-5e93-0000-000000000001.
   string id = 2;
 
   // The owner of the task.
@@ -265,7 +262,7 @@ message TaskMetadata {
 }
 
 message StreamMetadata {
-  // The name is the name of a stream.
+  // The name of the stream.
   string name = 1;
 
   // The table_name is the name of the table/view that the stream is created on.
@@ -302,7 +299,7 @@ message StreamMetadata {
 
 // TableMetadata is the metadata for tables.
 message TableMetadata {
-  // The name is the name of a table.
+  // The name of the table.
   string name = 1;
 
   // The columns is the ordered list of columns in a table.
@@ -320,7 +317,7 @@ message TableMetadata {
   // The collation is the collation of a table.
   string collation = 5;
 
-  // The character set of table.
+  // The character set of the table.
   string charset = 17;
 
   // The row_count is the estimated number of rows of a table.
@@ -376,7 +373,7 @@ message TableMetadata {
 }
 
 message CheckConstraintMetadata {
-  // The name is the name of a check constraint.
+  // The name of the check constraint.
   string name = 1;
 
   // The expression is the expression of a check constraint.
@@ -384,7 +381,7 @@ message CheckConstraintMetadata {
 }
 
 message ExternalTableMetadata {
-  // The name is the name of a external table.
+  // The name of the external table.
   string name = 1;
 
   // The external_server_name is the name of the external server.
@@ -399,11 +396,11 @@ message ExternalTableMetadata {
 
 // TablePartitionMetadata is the metadata for table partitions.
 message TablePartitionMetadata {
-  // The name is the name of a table partition.
+  // The name of the table partition.
   string name = 1;
 
-  // Type is the type of a table partition, some database engines may not
-  // support all types. Only avilable for the following database engines now:
+  // The type is the type of a table partition. Some database engines may not
+  // support all types. Only available for the following database engines now:
   // MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY,
   // LINEAR_KEY
   // (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html) TiDB:
@@ -462,13 +459,13 @@ message TablePartitionMetadata {
 
 // ColumnMetadata is the metadata for columns.
 message ColumnMetadata {
-  // The name is the name of a column.
+  // The name of the column.
   string name = 1;
 
   // The position is the position in columns.
   int32 position = 2;
 
-  // The default value of column.
+  // The default value of the column.
   string default = 3;
   // Deprecated.
   bool default_null = 4;
@@ -559,7 +556,7 @@ message GenerationMetadata {
 
 // ViewMetadata is the metadata for views.
 message ViewMetadata {
-  // The name is the name of a view.
+  // The name of the view.
   string name = 1;
 
   // The definition is the definition of a view.
@@ -568,13 +565,13 @@ message ViewMetadata {
   // The comment is the comment of a view.
   string comment = 3;
 
-  // The dependency_columns is the list of dependency columns of a view.
+  // The list of dependency columns of a view.
   repeated DependencyColumn dependency_columns = 4;
 
-  // The columns is the ordered list of columns in a table.
+  // The ordered list of columns in the view.
   repeated ColumnMetadata columns = 5;
 
-  // The triggers is the list of triggers in a view.
+  // The list of triggers in the view.
   repeated TriggerMetadata triggers = 6;
 
   bool skip_dump = 7;
@@ -597,7 +594,7 @@ message DependencyColumn {
 
 // MaterializedViewMetadata is the metadata for materialized views.
 message MaterializedViewMetadata {
-  // The name is the name of a view.
+  // The name of the materialized view.
   string name = 1;
 
   // The definition is the definition of a view.
@@ -606,13 +603,13 @@ message MaterializedViewMetadata {
   // The comment is the comment of a view.
   string comment = 3;
 
-  // The dependency_columns is the list of dependency columns of a view.
+  // The list of dependency columns of the view.
   repeated DependencyColumn dependency_columns = 4;
 
-  // The columns is the ordered list of columns in a table.
+  // The ordered list of columns in the materialized view.
   repeated TriggerMetadata triggers = 5;
 
-  // The indexes is the list of indexes in a table.
+  // The list of indexes in the materialized view.
   repeated IndexMetadata indexes = 6;
 
   bool skip_dump = 7;
@@ -628,7 +625,7 @@ message DependencyTable {
 
 // FunctionMetadata is the metadata for functions.
 message FunctionMetadata {
-  // The name is the name of a function.
+  // The name of the function.
   string name = 1;
 
   // The definition is the definition of a function.
@@ -658,7 +655,7 @@ message FunctionMetadata {
 
 // ProcedureMetadata is the metadata for procedures.
 message ProcedureMetadata {
-  // The name is the name of a procedure.
+  // The name of the procedure.
   string name = 1;
 
   // The definition is the definition of a procedure.
@@ -684,7 +681,7 @@ message ProcedureMetadata {
 
 // PackageMetadata is the metadata for packages.
 message PackageMetadata {
-  // The name is the name of a package.
+  // The name of the package.
   string name = 1;
 
   // The definition is the definition of a package.
@@ -693,18 +690,18 @@ message PackageMetadata {
 
 // IndexMetadata is the metadata for indexes.
 message IndexMetadata {
-  // The name is the name of an index.
+  // The name of the index.
   string name = 1;
 
   // The expressions are the ordered columns or expressions of an index.
   // This could refer to a column or an expression.
   repeated string expressions = 2;
 
-  // The key_lengths are the ordered key lengths of an index.
-  // If the key length is not specified, it's -1.
+  // The ordered list of key lengths for the index.
+  // If the key length is not specified, it is -1.
   repeated int64 key_length = 9;
 
-  // The descending is the ordered descending of an index.
+  // The ordered list of descending flags for the index columns.
   repeated bool descending = 10;
 
   // The type is the type of an index.
@@ -843,10 +840,10 @@ message DimensionalConfig {
 
 // ExtensionMetadata is the metadata for extensions.
 message ExtensionMetadata {
-  // The name is the name of an extension.
+  // The name of the extension.
   string name = 1;
 
-  // The schema is the extension that is installed to. But the extension usage
+  // The schema where the extension is installed. However, the extension usage
   // is not limited to the schema.
   string schema = 2;
 
@@ -859,7 +856,7 @@ message ExtensionMetadata {
 
 // ForeignKeyMetadata is the metadata for foreign keys.
 message ForeignKeyMetadata {
-  // The name is the name of a foreign key.
+  // The name of the foreign key.
   string name = 1;
 
   // The columns are the ordered referencing columns of a foreign key.
@@ -907,7 +904,7 @@ message DatabaseConfig {
 }
 
 message SchemaCatalog {
-  // The name is the schema name.
+  // The schema name.
   // It is an empty string for databases without such concept such as MySQL.
   string name = 1;
 
@@ -916,7 +913,7 @@ message SchemaCatalog {
 }
 
 message TableCatalog {
-  // The name is the name of a table.
+  // The name of the table.
   string name = 1;
 
   // The column_configs is the ordered list of configs for columns in a table.
@@ -928,7 +925,7 @@ message TableCatalog {
 }
 
 message ColumnCatalog {
-  // The name is the name of a column.
+  // The name of the column.
   string name = 1;
 
   string semantic_type = 2;

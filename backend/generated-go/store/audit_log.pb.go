@@ -98,10 +98,10 @@ type AuditLog struct {
 	// - projects/{project}
 	// - workspaces/{workspace}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// e.g. /bytebase.v1.SQLService/Query
+	// Example: /bytebase.v1.SQLService/Query
 	Method string `protobuf:"bytes,2,opt,name=method,proto3" json:"method,omitempty"`
-	// resource name
-	// projects/{project}
+	// The resource name.
+	// Example: projects/{project}
 	Resource string `protobuf:"bytes,3,opt,name=resource,proto3" json:"resource,omitempty"`
 	// Format: users/{userUID}.
 	User     string            `protobuf:"bytes,4,opt,name=user,proto3" json:"user,omitempty"`
@@ -114,7 +114,7 @@ type AuditLog struct {
 	Status   *status.Status `protobuf:"bytes,8,opt,name=status,proto3" json:"status,omitempty"`
 	// The latency of the RPC.
 	Latency *durationpb.Duration `protobuf:"bytes,9,opt,name=latency,proto3" json:"latency,omitempty"`
-	// service-specific data about the request, response, and other activities.
+	// The service-specific data about the request, response, and other activities.
 	ServiceData *anypb.Any `protobuf:"bytes,10,opt,name=service_data,json=serviceData,proto3" json:"service_data,omitempty"`
 	// Metadata about the operation.
 	RequestMetadata *RequestMetadata `protobuf:"bytes,11,opt,name=request_metadata,json=requestMetadata,proto3" json:"request_metadata,omitempty"`

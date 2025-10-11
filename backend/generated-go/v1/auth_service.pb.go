@@ -308,7 +308,7 @@ type LoginResponse struct {
 	MfaTempToken *string `protobuf:"bytes,2,opt,name=mfa_temp_token,json=mfaTempToken,proto3,oneof" json:"mfa_temp_token,omitempty"`
 	// Whether user must reset password before continuing.
 	RequireResetPassword bool `protobuf:"varint,3,opt,name=require_reset_password,json=requireResetPassword,proto3" json:"require_reset_password,omitempty"`
-	// The user of successful login.
+	// The user from the successful login.
 	User          *User `protobuf:"bytes,4,opt,name=user,proto3" json:"user,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

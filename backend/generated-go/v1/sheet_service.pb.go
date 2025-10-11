@@ -288,7 +288,7 @@ type UpdateSheetRequest struct {
 	Sheet *Sheet `protobuf:"bytes,1,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	// The list of fields to be updated.
 	// Fields are specified relative to the sheet.
-	// (e.g. `title`, `statement`; *not* `sheet.title` or `sheet.statement`)
+	// (e.g., `title`, `statement`; *not* `sheet.title` or `sheet.statement`)
 	// Only support update the following fields for now:
 	// - `title`
 	// - `statement`

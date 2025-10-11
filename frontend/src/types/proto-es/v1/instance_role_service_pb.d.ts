@@ -150,7 +150,7 @@ export declare type InstanceRole = Message<"bytebase.v1.InstanceRole"> & {
 
   /**
    * The role attribute.
-   * For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
+   * For PostgreSQL, it contains super_user, no_inherit, create_role, create_db, can_login, replication, and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
    * For MySQL, it's the global privileges as GRANT statements, which means it only contains "GRANT ... ON *.* TO ...". Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html
    *
    * @generated from field: optional string attribute = 6;

@@ -418,9 +418,9 @@ func (x *ChangedResourceSchema) GetProcedures() []*ChangedResourceProcedure {
 type ChangedResourceTable struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// estimated row count of the table
+	// The estimated row count of the table.
 	TableRows int64 `protobuf:"varint,2,opt,name=table_rows,json=tableRows,proto3" json:"table_rows,omitempty"`
-	// The ranges of sub-strings correspond to the statements on the sheet.
+	// The ranges of substrings correspond to the statements on the sheet.
 	Ranges        []*Range `protobuf:"bytes,3,rep,name=ranges,proto3" json:"ranges,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -480,7 +480,7 @@ func (x *ChangedResourceTable) GetRanges() []*Range {
 type ChangedResourceView struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The ranges of sub-strings correspond to the statements on the sheet.
+	// The ranges of substrings correspond to the statements on the sheet.
 	Ranges        []*Range `protobuf:"bytes,2,rep,name=ranges,proto3" json:"ranges,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -533,7 +533,7 @@ func (x *ChangedResourceView) GetRanges() []*Range {
 type ChangedResourceFunction struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The ranges of sub-strings correspond to the statements on the sheet.
+	// The ranges of substrings correspond to the statements on the sheet.
 	Ranges        []*Range `protobuf:"bytes,2,rep,name=ranges,proto3" json:"ranges,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -586,7 +586,7 @@ func (x *ChangedResourceFunction) GetRanges() []*Range {
 type ChangedResourceProcedure struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The ranges of sub-strings correspond to the statements on the sheet.
+	// The ranges of substrings correspond to the statements on the sheet.
 	Ranges        []*Range `protobuf:"bytes,2,rep,name=ranges,proto3" json:"ranges,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

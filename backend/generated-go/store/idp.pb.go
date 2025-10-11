@@ -80,7 +80,7 @@ const (
 	// IN_PARAMS sends the "client_id" and "client_secret" in the POST body
 	// as application/x-www-form-urlencoded parameters.
 	OAuth2AuthStyle_IN_PARAMS OAuth2AuthStyle = 1
-	// IN_HEADER sends the client_id and client_password using HTTP Basic Authorization.
+	// IN_HEADER sends the client_id and client_secret using HTTP Basic Authorization.
 	// This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.
 	OAuth2AuthStyle_IN_HEADER OAuth2AuthStyle = 2
 )

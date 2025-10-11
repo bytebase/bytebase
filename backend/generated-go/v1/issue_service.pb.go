@@ -1047,7 +1047,7 @@ func (x *ApproveIssueRequest) GetComment() string {
 
 type RejectIssueRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name of the issue to add an rejection.
+	// The name of the issue to add a rejection.
 	// Format: projects/{project}/issues/{issue}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The comment explaining the rejection decision.
@@ -1385,7 +1385,7 @@ type GrantRequest struct {
 	// The user to be granted.
 	// Format: users/{email}.
 	User string `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
-	// The condition for the role. Same as the condtion in IAM Binding message.
+	// The condition for the role. Same as the condition in IAM Binding message.
 	Condition *expr.Expr `protobuf:"bytes,3,opt,name=condition,proto3" json:"condition,omitempty"`
 	// The duration for which the grant is valid.
 	Expiration    *durationpb.Duration `protobuf:"bytes,4,opt,name=expiration,proto3" json:"expiration,omitempty"`

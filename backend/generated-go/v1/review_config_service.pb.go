@@ -27,9 +27,9 @@ const (
 type ListReviewConfigsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Pagination is not currently implemented. This field is reserved for future use.
-	// The maximum number of sql review to return. The service may return fewer than
+	// The maximum number of SQL review configs to return. The service may return fewer than
 	// this value.
-	// If unspecified, at most 10 sql review will be returned.
+	// If unspecified, at most 10 SQL review configs will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	// Pagination is not currently implemented. This field is reserved for future use.
@@ -88,7 +88,7 @@ func (x *ListReviewConfigsRequest) GetPageToken() string {
 
 type ListReviewConfigsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The sql review from the specified request.
+	// The SQL review configs from the specified request.
 	ReviewConfigs []*ReviewConfig `protobuf:"bytes,1,rep,name=review_configs,json=reviewConfigs,proto3" json:"review_configs,omitempty"`
 	// A token, which can be sent as `page_token` to retrieve the next page.
 	// If this field is omitted, there are no subsequent pages.
@@ -143,7 +143,7 @@ func (x *ListReviewConfigsResponse) GetNextPageToken() string {
 
 type CreateReviewConfigRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The sql review to create.
+	// The SQL review config to create.
 	ReviewConfig  *ReviewConfig `protobuf:"bytes,1,opt,name=review_config,json=reviewConfig,proto3" json:"review_config,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -188,9 +188,9 @@ func (x *CreateReviewConfigRequest) GetReviewConfig() *ReviewConfig {
 
 type UpdateReviewConfigRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The sql review to update.
+	// The SQL review config to update.
 	//
-	// The name field is used to identify the sql review to update.
+	// The name field is used to identify the SQL review config to update.
 	ReviewConfig *ReviewConfig `protobuf:"bytes,1,opt,name=review_config,json=reviewConfig,proto3" json:"review_config,omitempty"`
 	// The list of fields to update.
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
@@ -254,7 +254,7 @@ func (x *UpdateReviewConfigRequest) GetAllowMissing() bool {
 
 type GetReviewConfigRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name of the sql review to retrieve.
+	// The name of the SQL review config to retrieve.
 	// Format: reviewConfigs/{reviewConfig}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -300,7 +300,7 @@ func (x *GetReviewConfigRequest) GetName() string {
 
 type DeleteReviewConfigRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name of the sql review to delete.
+	// The name of the SQL review config to delete.
 	// Format: reviewConfigs/{reviewConfig}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -346,7 +346,7 @@ func (x *DeleteReviewConfigRequest) GetName() string {
 
 type ReviewConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name of the sql review to retrieve.
+	// The name of the SQL review config.
 	// Format: reviewConfigs/{reviewConfig}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The title of the review configuration.
@@ -355,8 +355,8 @@ type ReviewConfig struct {
 	Enabled bool `protobuf:"varint,3,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	// The SQL review rules to enforce.
 	Rules []*SQLReviewRule `protobuf:"bytes,7,rep,name=rules,proto3" json:"rules,omitempty"`
-	// resources using the config.
-	// Format: {resource}/{resource id}, for example, environments/test.
+	// Resources using the config.
+	// Format: {resource}/{resource id}, e.g., environments/test.
 	Resources     []string `protobuf:"bytes,8,rep,name=resources,proto3" json:"resources,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

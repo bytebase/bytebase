@@ -15,11 +15,11 @@ message AuditLog {
   // - workspaces/{workspace}
   string parent = 1;
 
-  // e.g. /bytebase.v1.SQLService/Query
+  // Example: /bytebase.v1.SQLService/Query
   string method = 2;
 
-  // resource name
-  // projects/{project}
+  // The resource name.
+  // Example: projects/{project}
   string resource = 3;
 
   // Format: users/{userUID}.
@@ -39,7 +39,7 @@ message AuditLog {
   // The latency of the RPC.
   google.protobuf.Duration latency = 9;
 
-  // service-specific data about the request, response, and other activities.
+  // The service-specific data about the request, response, and other activities.
   google.protobuf.Any service_data = 10;
 
   // Metadata about the operation.

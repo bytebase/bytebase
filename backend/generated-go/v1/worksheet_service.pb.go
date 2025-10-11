@@ -180,7 +180,7 @@ type UpdateWorksheetRequest struct {
 	Worksheet *Worksheet `protobuf:"bytes,1,opt,name=worksheet,proto3" json:"worksheet,omitempty"`
 	// The list of fields to be updated.
 	// Fields are specified relative to the worksheet.
-	// (e.g. `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`)
+	// (e.g., `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`)
 	// Only support update the following fields for now:
 	// - `title`
 	// - `statement`

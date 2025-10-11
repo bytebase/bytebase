@@ -494,7 +494,7 @@ export declare const OIDCIdentityProviderConfigSchema: GenMessage<OIDCIdentityPr
  */
 export declare type LDAPIdentityProviderConfig = Message<"bytebase.v1.LDAPIdentityProviderConfig"> & {
   /**
-   * Host is the hostname or IP address of the LDAP server, e.g.
+   * Host is the hostname or IP address of the LDAP server, e.g.,
    * "ldap.example.com".
    *
    * @generated from field: string host = 1;
@@ -502,7 +502,7 @@ export declare type LDAPIdentityProviderConfig = Message<"bytebase.v1.LDAPIdenti
   host: string;
 
   /**
-   * Port is the port number of the LDAP server, e.g. 389. When not set, the
+   * Port is the port number of the LDAP server, e.g., 389. When not set, the
    * default port of the corresponding security protocol will be used, i.e. 389
    * for StartTLS and 636 for LDAPS.
    *
@@ -533,14 +533,14 @@ export declare type LDAPIdentityProviderConfig = Message<"bytebase.v1.LDAPIdenti
   bindPassword: string;
 
   /**
-   * BaseDN is the base DN to search for users, e.g. "ou=users,dc=example,dc=com".
+   * BaseDN is the base DN to search for users, e.g., "ou=users,dc=example,dc=com".
    *
    * @generated from field: string base_dn = 6;
    */
   baseDn: string;
 
   /**
-   * UserFilter is the filter to search for users, e.g. "(uid=%s)".
+   * UserFilter is the filter to search for users, e.g., "(uid=%s)".
    *
    * @generated from field: string user_filter = 7;
    */

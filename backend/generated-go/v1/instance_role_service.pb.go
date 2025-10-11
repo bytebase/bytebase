@@ -222,7 +222,7 @@ type InstanceRole struct {
 	// The expiration for the role's password.
 	ValidUntil *string `protobuf:"bytes,5,opt,name=valid_until,json=validUntil,proto3,oneof" json:"valid_until,omitempty"`
 	// The role attribute.
-	// For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
+	// For PostgreSQL, it contains super_user, no_inherit, create_role, create_db, can_login, replication, and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
 	// For MySQL, it's the global privileges as GRANT statements, which means it only contains "GRANT ... ON *.* TO ...". Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html
 	Attribute     *string `protobuf:"bytes,6,opt,name=attribute,proto3,oneof" json:"attribute,omitempty"`
 	unknownFields protoimpl.UnknownFields

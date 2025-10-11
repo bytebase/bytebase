@@ -197,7 +197,7 @@ type IamPolicy struct {
 	// A binding binds one or more project members to a single project role.
 	Bindings []*Binding `protobuf:"bytes,1,rep,name=bindings,proto3" json:"bindings,omitempty"`
 	// The current etag of the policy.
-	// If an etag is provided and does not match the current etag of the poliy,
+	// If an etag is provided and does not match the current etag of the policy,
 	// the call will be blocked and an ABORTED error will be returned.
 	Etag          string `protobuf:"bytes,2,opt,name=etag,proto3" json:"etag,omitempty"`
 	unknownFields protoimpl.UnknownFields

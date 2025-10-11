@@ -148,16 +148,16 @@ type ListChangelistsRequest struct {
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// Pagination is not currently implemented. This field is reserved for future use.
-	// The maximum number of databases to return. The service may return fewer than
+	// The maximum number of changelists to return. The service may return fewer than
 	// this value.
-	// If unspecified, at most 50 databases will be returned.
+	// If unspecified, at most 50 changelists will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	// Pagination is not currently implemented. This field is reserved for future use.
-	// A page token, received from a previous `ListDatabases` call.
+	// A page token, received from a previous `ListChangelists` call.
 	// Provide this to retrieve the subsequent page.
 	//
-	// When paginating, all other parameters provided to `ListDatabases` must match
+	// When paginating, all other parameters provided to `ListChangelists` must match
 	// the call that provided the page token.
 	PageToken     string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -475,6 +475,7 @@ func (x *Changelist) GetChanges() []*Changelist_Change {
 type Changelist_Change struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The sheet containing the SQL statement.
+	// Format: projects/{project}/sheets/{sheet}
 	Sheet string `protobuf:"bytes,1,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	// The source of this change.
 	// Format: instances/{instance}/databases/{database}/changelogs/{changelog}

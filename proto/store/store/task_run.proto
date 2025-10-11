@@ -7,66 +7,95 @@ import "store/common.proto";
 
 option go_package = "generated-go/store";
 
+// TaskRun represents an execution attempt of a task.
 message TaskRun {
+  // Status represents the current execution state of a task run.
   enum Status {
     STATUS_UNSPECIFIED = 0;
+    // Task run is queued and waiting to execute.
     PENDING = 1;
+    // Task run is currently executing.
     RUNNING = 2;
+    // Task run completed successfully.
     DONE = 3;
+    // Task run encountered an error and failed.
     FAILED = 4;
+    // Task run was canceled by user or system.
     CANCELED = 5;
+    // Task run has not started yet.
     NOT_STARTED = 6;
+    // Task run was skipped and will not execute.
     SKIPPED = 7;
   }
 }
 
+// TaskRunResult contains the outcome and metadata from a task run execution.
 message TaskRunResult {
+  // Detailed execution information or error message.
   string detail = 1;
+  // Resource name of the changelog entry created by this run.
   // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
   string changelog = 8;
+  // Schema version after the migration was applied.
   string version = 3;
 
-  // The following fields are used for error reporting.
+  // Starting position in the SQL statement where an error occurred.
   Position start_position = 4;
+  // Ending position in the SQL statement where an error occurred.
   Position end_position = 5;
 
-  // The uid of the export archive.
+  // UID of the export archive generated for export tasks.
   int32 export_archive_uid = 6;
 
-  // The prior backup detail that will be used to rollback the task run.
+  // Backup details that can be used to rollback changes.
   PriorBackupDetail prior_backup_detail = 7;
 }
 
+// PriorBackupDetail contains information about automatic backups created before migration.
 message PriorBackupDetail {
+  // Item represents a single backup operation for a table.
   message Item {
+    // Table identifies a database table.
     message Table {
-      // The database information.
+      // The database containing the table.
       // Format: instances/{instance}/databases/{database}
       string database = 1;
+      // Schema name (for databases that support schemas).
       string schema = 2;
+      // Table name.
       string table = 3;
     }
 
-    // The original table information.
+    // The original table that was backed up.
     Table source_table = 1;
-    // The target backup table information.
+    // The backup table where data was copied.
     Table target_table = 2;
+    // Starting position in SQL for this backup operation.
     Position start_position = 3;
+    // Ending position in SQL for this backup operation.
     Position end_position = 4;
   }
 
+  // List of backup operations performed.
   repeated Item items = 1;
 }
 
+// SchedulerInfo contains information about task scheduling and execution delays.
 message SchedulerInfo {
+  // Timestamp when the scheduler reported this information.
   google.protobuf.Timestamp report_time = 1;
 
+  // WaitingCause indicates why a task run is waiting to execute.
   message WaitingCause {
     oneof cause {
+      // Task is waiting due to database connection limit.
       bool connection_limit = 1;
+      // Task is waiting for another task to complete.
       int32 task_uid = 2;
+      // Task is waiting due to parallel execution limit.
       bool parallel_tasks_limit = 3;
     }
   }
+  // Reason why the task run is currently waiting.
   WaitingCause waiting_cause = 2;
 }

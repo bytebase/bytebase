@@ -985,7 +985,7 @@ type WorkspaceProfileSetting struct {
 	Announcement *Announcement `protobuf:"bytes,7,opt,name=announcement,proto3" json:"announcement,omitempty"`
 	// The max duration for role expired.
 	MaximumRoleExpiration *durationpb.Duration `protobuf:"bytes,8,opt,name=maximum_role_expiration,json=maximumRoleExpiration,proto3" json:"maximum_role_expiration,omitempty"`
-	// The workspace domain, e.g. bytebase.com.
+	// The workspace domain, e.g., bytebase.com.
 	Domains []string `protobuf:"bytes,9,rep,name=domains,proto3" json:"domains,omitempty"`
 	// Only user and group from the domains can be created and login.
 	EnforceIdentityDomain bool `protobuf:"varint,10,opt,name=enforce_identity_domain,json=enforceIdentityDomain,proto3" json:"enforce_identity_domain,omitempty"`

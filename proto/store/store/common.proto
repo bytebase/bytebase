@@ -4,12 +4,15 @@ package bytebase.store;
 
 option go_package = "generated-go/store";
 
-// Used internally for obfuscating the page token.
+// PageToken is used internally for obfuscating pagination tokens.
 message PageToken {
+  // Maximum number of items to return.
   int32 limit = 1;
+  // Number of items to skip before starting to return results.
   int32 offset = 2;
 }
 
+// Engine represents the type of database system.
 enum Engine {
   ENGINE_UNSPECIFIED = 0;
   CLICKHOUSE = 1;
@@ -39,6 +42,7 @@ enum Engine {
   CASSANDRA = 28;
 }
 
+// VCSType represents the type of version control system.
 enum VCSType {
   VCS_TYPE_UNSPECIFIED = 0;
   GITHUB = 1;
@@ -47,13 +51,18 @@ enum VCSType {
   AZURE_DEVOPS = 4;
 }
 
+// MaskingLevel represents the level of data masking applied to sensitive information.
 enum MaskingLevel {
   MASKING_LEVEL_UNSPECIFIED = 0;
+  // No masking applied.
   NONE = 1;
+  // Partial masking (e.g., showing first/last characters).
   PARTIAL = 2;
+  // Full masking (all characters masked).
   FULL = 3;
 }
 
+// ExportFormat represents the file format for exported data.
 enum ExportFormat {
   FORMAT_UNSPECIFIED = 0;
   CSV = 1;
@@ -62,6 +71,7 @@ enum ExportFormat {
   XLSX = 4;
 }
 
+// RiskLevel represents the assessed risk level of a database operation.
 enum RiskLevel {
   RISK_LEVEL_UNSPECIFIED = 0;
   LOW = 1;
@@ -69,8 +79,7 @@ enum RiskLevel {
   HIGH = 3;
 }
 
-// Position in a text expressed as zero-based line and zero-based column byte
-// offset.
+// Position in a text expressed as zero-based line and column byte offset.
 message Position {
   // Line position in a text (zero-based).
   int32 line = 1;
@@ -78,7 +87,10 @@ message Position {
   int32 column = 2;
 }
 
+// Range represents a span within a text or sequence.
 message Range {
+  // Start index (inclusive).
   int32 start = 1;
+  // End index (exclusive).
   int32 end = 2;
 }

@@ -1195,7 +1195,7 @@ InstanceRole is the API message for instance role.
 | password | [string](#string) | optional | The role password. |
 | connection_limit | [int32](#int32) | optional | The connection count limit for this role. |
 | valid_until | [string](#string) | optional | The expiration for the role&#39;s password. |
-| attribute | [string](#string) | optional | The role attribute. For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html For MySQL, it&#39;s the global privileges as GRANT statements, which means it only contains &#34;GRANT ... ON *.* TO ...&#34;. Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html |
+| attribute | [string](#string) | optional | The role attribute. For PostgreSQL, it contains super_user, no_inherit, create_role, create_db, can_login, replication, and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html For MySQL, it&#39;s the global privileges as GRANT statements, which means it only contains &#34;GRANT ... ON *.* TO ...&#34;. Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html |
 
 
 
@@ -1762,7 +1762,7 @@ For example: name == &#34;sample instance&#34; name.matches(&#34;sample&#34;) re
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of instance. Format: instances/{instance} |
-| enable_full_sync | [bool](#bool) |  | When full sync is enabled, all databases in the instance will be synchronized. Otherwise, only the instance metadata (such as the database list) and any newly discovered instances will be synced. |
+| enable_full_sync | [bool](#bool) |  | When full sync is enabled, all databases in the instance will be synchronized. Otherwise, only the instance metadata (such as the database list) and any newly discovered databases will be synced. |
 
 
 
@@ -2865,7 +2865,7 @@ ProcedureMetadata is the metadata for procedures.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a procedure. |
 | definition | [string](#string) |  | The definition is the definition of a procedure. |
-| signature | [string](#string) |  | The signature is the name with the number and type of input arguments the function takes. |
+| signature | [string](#string) |  | The signature is the name with the number and type of input arguments the procedure takes. |
 | character_set_client | [string](#string) |  | MySQL specific metadata. |
 | collation_connection | [string](#string) |  |  |
 | database_collation | [string](#string) |  |  |
@@ -3529,7 +3529,7 @@ DatabaseService manages databases and their schemas.
 | ----- | ---- | ----- | ----------- |
 | role | [string](#string) |  | The requested role. Format: roles/EXPORTER. |
 | user | [string](#string) |  | The user to be granted. Format: users/{email}. |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition for the role. Same as the condtion in IAM Binding message. |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition for the role. Same as the condition in IAM Binding message. |
 | expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for which the grant is valid. |
 
 
@@ -3816,7 +3816,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the issue to add an rejection. Format: projects/{project}/issues/{issue} |
+| name | [string](#string) |  | The name of the issue to add a rejection. Format: projects/{project}/issues/{issue} |
 | comment | [string](#string) |  | The comment explaining the rejection decision. |
 
 
@@ -4732,7 +4732,7 @@ For examples: (source == &#34;DML&#34; &amp;&amp; level == 200) || (source == &#
 | token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for token. |
 | announcement | [Announcement](#bytebase-v1-Announcement) |  | The setting of custom announcement |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max duration for role expired. |
-| domains | [string](#string) | repeated | The workspace domain, e.g. bytebase.com. |
+| domains | [string](#string) | repeated | The workspace domain, e.g., bytebase.com. |
 | enforce_identity_domain | [bool](#bool) |  | Only user and group from the domains can be created and login. |
 | database_change_mode | [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode) |  | The workspace database change mode. |
 | disallow_password_signin | [bool](#bool) |  | Whether to disallow password signin. (Except workspace admins) |
@@ -5316,7 +5316,7 @@ IAM policy that binds members to roles.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | bindings | [Binding](#bytebase-v1-Binding) | repeated | Collection of binding. A binding binds one or more project members to a single project role. |
-| etag | [string](#string) |  | The current etag of the policy. If an etag is provided and does not match the current etag of the poliy, the call will be blocked and an ABORTED error will be returned. |
+| etag | [string](#string) |  | The current etag of the policy. If an etag is provided and does not match the current etag of the policy, the call will be blocked and an ABORTED error will be returned. |
 
 
 
@@ -5611,7 +5611,7 @@ Context for identity provider authentication.
 | token | [string](#string) |  | Access token for authenticated requests. |
 | mfa_temp_token | [string](#string) | optional | Temporary token for MFA verification. |
 | require_reset_password | [bool](#bool) |  | Whether user must reset password before continuing. |
-| user | [User](#bytebase-v1-User) |  | The user of successful login. |
+| user | [User](#bytebase-v1-User) |  | The user from the successful login. |
 
 
 
@@ -5794,7 +5794,7 @@ A single change in a changelist.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | The sheet containing the SQL statement. |
+| sheet | [string](#string) |  | The sheet containing the SQL statement. Format: projects/{project}/sheets/{sheet} |
 | source | [string](#string) |  | The source of this change. Format: instances/{instance}/databases/{database}/changelogs/{changelog} If empty, the change is from raw SQL. |
 
 
@@ -5860,10 +5860,10 @@ Request message for listing changelists.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of changelists. Format: projects/{project} |
-| page_size | [int32](#int32) |  | Pagination is not currently implemented. This field is reserved for future use. The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 50 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Pagination is not currently implemented. This field is reserved for future use. A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | Pagination is not currently implemented. This field is reserved for future use. The maximum number of changelists to return. The service may return fewer than this value. If unspecified, at most 50 changelists will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Pagination is not currently implemented. This field is reserved for future use. A page token, received from a previous `ListChangelists` call. Provide this to retrieve the subsequent page.
 
-When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
+When paginating, all other parameters provided to `ListChangelists` must match the call that provided the page token. |
 
 
 
@@ -6449,13 +6449,13 @@ LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| host | [string](#string) |  | Host is the hostname or IP address of the LDAP server, e.g. &#34;ldap.example.com&#34;. |
-| port | [int32](#int32) |  | Port is the port number of the LDAP server, e.g. 389. When not set, the default port of the corresponding security protocol will be used, i.e. 389 for StartTLS and 636 for LDAPS. |
+| host | [string](#string) |  | Host is the hostname or IP address of the LDAP server, e.g., &#34;ldap.example.com&#34;. |
+| port | [int32](#int32) |  | Port is the port number of the LDAP server, e.g., 389. When not set, the default port of the corresponding security protocol will be used, i.e. 389 for StartTLS and 636 for LDAPS. |
 | skip_tls_verify | [bool](#bool) |  | SkipTLSVerify controls whether to skip TLS certificate verification. |
 | bind_dn | [string](#string) |  | BindDN is the DN of the user to bind as a service account to perform search requests. |
 | bind_password | [string](#string) |  | BindPassword is the password of the user to bind as a service account. |
-| base_dn | [string](#string) |  | BaseDN is the base DN to search for users, e.g. &#34;ou=users,dc=example,dc=com&#34;. |
-| user_filter | [string](#string) |  | UserFilter is the filter to search for users, e.g. &#34;(uid=%s)&#34;. |
+| base_dn | [string](#string) |  | BaseDN is the base DN to search for users, e.g., &#34;ou=users,dc=example,dc=com&#34;. |
+| user_filter | [string](#string) |  | UserFilter is the filter to search for users, e.g., &#34;(uid=%s)&#34;. |
 | security_protocol | [LDAPIdentityProviderConfig.SecurityProtocol](#bytebase-v1-LDAPIdentityProviderConfig-SecurityProtocol) |  | SecurityProtocol is the security protocol to be used for establishing connections with the LDAP server. |
 | field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  | FieldMapping is the mapping of the user attributes returned by the LDAP server. |
 
@@ -9037,7 +9037,7 @@ A SQL file in a release.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | The unique identifier for the file. |
-| path | [string](#string) |  | The path of the file. e.g. `2.2/V0001_create_table.sql`. |
+| path | [string](#string) |  | The path of the file. e.g., `2.2/V0001_create_table.sql`. |
 | type | [Release.File.Type](#bytebase-v1-Release-File-Type) |  | The type of the file. |
 | version | [string](#string) |  | The version identifier for the file. |
 | migration_type | [Release.File.MigrationType](#bytebase-v1-Release-File-MigrationType) |  | The migration type of the file. For versioned files, it is the migration type of the file. For declarative files, this field is always DDL, thus meaningless. |
@@ -9062,7 +9062,7 @@ Version control system source information.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | vcs_type | [VCSType](#bytebase-v1-VCSType) |  | The type of VCS. |
-| url | [string](#string) |  | The url link to the e.g. GitHub commit or pull request. |
+| url | [string](#string) |  | The url link to the e.g., GitHub commit or pull request. |
 
 
 
@@ -9205,7 +9205,7 @@ ReleaseService manages releases for coordinating deployments.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| review_config | [ReviewConfig](#bytebase-v1-ReviewConfig) |  | The sql review to create. |
+| review_config | [ReviewConfig](#bytebase-v1-ReviewConfig) |  | The SQL review config to create. |
 
 
 
@@ -9220,7 +9220,7 @@ ReleaseService manages releases for coordinating deployments.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the sql review to delete. Format: reviewConfigs/{reviewConfig} |
+| name | [string](#string) |  | The name of the SQL review config to delete. Format: reviewConfigs/{reviewConfig} |
 
 
 
@@ -9235,7 +9235,7 @@ ReleaseService manages releases for coordinating deployments.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the sql review to retrieve. Format: reviewConfigs/{reviewConfig} |
+| name | [string](#string) |  | The name of the SQL review config to retrieve. Format: reviewConfigs/{reviewConfig} |
 
 
 
@@ -9250,7 +9250,7 @@ ReleaseService manages releases for coordinating deployments.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | Pagination is not currently implemented. This field is reserved for future use. The maximum number of sql review to return. The service may return fewer than this value. If unspecified, at most 10 sql review will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_size | [int32](#int32) |  | Pagination is not currently implemented. This field is reserved for future use. The maximum number of SQL review configs to return. The service may return fewer than this value. If unspecified, at most 10 SQL review configs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Pagination is not currently implemented. This field is reserved for future use. A page token, provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListReviewConfigs` must match the call that provided the page token. |
@@ -9268,7 +9268,7 @@ When paginating, all other parameters provided to `ListReviewConfigs` must match
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| review_configs | [ReviewConfig](#bytebase-v1-ReviewConfig) | repeated | The sql review from the specified request. |
+| review_configs | [ReviewConfig](#bytebase-v1-ReviewConfig) | repeated | The SQL review configs from the specified request. |
 | next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
@@ -9284,11 +9284,11 @@ When paginating, all other parameters provided to `ListReviewConfigs` must match
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the sql review to retrieve. Format: reviewConfigs/{reviewConfig} |
+| name | [string](#string) |  | The name of the SQL review config. Format: reviewConfigs/{reviewConfig} |
 | title | [string](#string) |  | The title of the review configuration. |
 | enabled | [bool](#bool) |  | Whether the review configuration is enabled. |
 | rules | [SQLReviewRule](#bytebase-v1-SQLReviewRule) | repeated | The SQL review rules to enforce. |
-| resources | [string](#string) | repeated | resources using the config. Format: {resource}/{resource id}, for example, environments/test. |
+| resources | [string](#string) | repeated | Resources using the config. Format: {resource}/{resource id}, e.g., environments/test. |
 
 
 
@@ -9303,9 +9303,9 @@ When paginating, all other parameters provided to `ListReviewConfigs` must match
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| review_config | [ReviewConfig](#bytebase-v1-ReviewConfig) |  | The sql review to update.
+| review_config | [ReviewConfig](#bytebase-v1-ReviewConfig) |  | The SQL review config to update.
 
-The name field is used to identify the sql review to update. |
+The name field is used to identify the SQL review config to update. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 | allow_missing | [bool](#bool) |  | If set to true, and the config is not found, a new config will be created. In this situation, `update_mask` is ignored. |
 
@@ -9616,7 +9616,7 @@ When paginating, all other parameters provided to `ListRisks` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: risks/{risk} |
-| source | [Risk.Source](#bytebase-v1-Risk-Source) |  |  |
+| source | [Risk.Source](#bytebase-v1-Risk-Source) |  | The source of the operation being assessed for risk. |
 | title | [string](#string) |  | The title of the risk rule. |
 | level | [RiskLevel](#bytebase-v1-RiskLevel) |  | The risk level assigned when this rule matches. |
 | active | [bool](#bool) |  | Whether the risk rule is active. |
@@ -9661,16 +9661,16 @@ The risk&#39;s `name` field is used to identify the risk to update. Format: risk
 <a name="bytebase-v1-Risk-Source"></a>
 
 ### Risk.Source
-
+The source of the database change for risk assessment.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | SOURCE_UNSPECIFIED | 0 |  |
-| DDL | 1 |  |
-| DML | 2 |  |
-| CREATE_DATABASE | 3 |  |
-| DATA_EXPORT | 6 |  |
-| REQUEST_ROLE | 7 |  |
+| DDL | 1 | Data Definition Language statements (CREATE, ALTER, DROP, etc.). |
+| DML | 2 | Data Manipulation Language statements (INSERT, UPDATE, DELETE, etc.). |
+| CREATE_DATABASE | 3 | Database creation operations. |
+| DATA_EXPORT | 6 | Data export operations. |
+| REQUEST_ROLE | 7 | Role access requests. |
 
 
  
@@ -10155,7 +10155,7 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | name | [string](#string) |  | The resource name of the rollout. Format: projects/{project}/rollouts/{rollout} |
 | plan | [string](#string) |  | The plan that this rollout is based on. Format: projects/{project}/plans/{plan} |
 | title | [string](#string) |  | The title of the rollout, inherited from the associated plan. This field is output only and cannot be directly set. |
-| stages | [Stage](#bytebase-v1-Stage) | repeated | stages and thus tasks of the rollout. |
+| stages | [Stage](#bytebase-v1-Stage) | repeated | Stages and thus tasks of the rollout. |
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
@@ -10175,7 +10175,7 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage} Use &#34;-&#34; for {stage} when the stage has no environment or deleted environment. |
-| id | [string](#string) |  | id is the environment id of the stage. e.g. &#34;prod&#34;. Use &#34;-&#34; when the stage has no environment or deleted environment. |
+| id | [string](#string) |  | id is the environment id of the stage. e.g., &#34;prod&#34;. Use &#34;-&#34; when the stage has no environment or deleted environment. |
 | environment | [string](#string) |  | environment is the environment of the stage. Format: environments/{environment} for valid environments, or &#34;environments/-&#34; for stages without environment or with deleted environments. |
 | tasks | [Task](#bytebase-v1-Task) | repeated | The tasks within this stage. |
 
@@ -10218,8 +10218,8 @@ Payload for creating a new database.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | project | [string](#string) |  | The project owning the database. Format: projects/{project} |
-| database | [string](#string) |  | database name |
-| table | [string](#string) |  | table name |
+| database | [string](#string) |  | Database name. |
+| table | [string](#string) |  | Table name. |
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | character_set | [string](#string) |  | The character set for the database. |
 | collation | [string](#string) |  | The collation for the database. |
@@ -10721,8 +10721,8 @@ Internal status for task run execution.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | STATUS_UNSPECIFIED | 0 | Unspecified status. |
-| RUNNING_WAITING | 1 | the task run is ready to be executed by the scheduler |
-| RUNNING_RUNNING | 2 | the task run is being executed by the scheduler |
+| RUNNING_WAITING | 1 | The task run is ready to be executed by the scheduler. |
+| RUNNING_RUNNING | 2 | The task run is being executed by the scheduler. |
 
 
 
@@ -10922,7 +10922,7 @@ RolloutService manages the execution of deployment plans.
 | sheet | [Sheet](#bytebase-v1-Sheet) |  | The sheet to update.
 
 The sheet&#39;s `name` field is used to identify the sheet to update. Format: projects/{project}/sheets/{sheet} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the sheet. (e.g. `title`, `statement`; *not* `sheet.title` or `sheet.statement`) Only support update the following fields for now: - `title` - `statement` |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the sheet. (e.g., `title`, `statement`; *not* `sheet.title` or `sheet.statement`) Only support update the following fields for now: - `title` - `statement` |
 | allow_missing | [bool](#bool) |  | If set to true, and the sheet is not found, a new sheet will be created. In this situation, `update_mask` is ignored. |
 
 
@@ -11290,7 +11290,7 @@ The organizer&#39;s `worksheet` field is used to identify the worksheet. Format:
 | worksheet | [Worksheet](#bytebase-v1-Worksheet) |  | The worksheet to update.
 
 The worksheet&#39;s `name` field is used to identify the worksheet to update. Format: worksheets/{worksheet} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the worksheet. (e.g. `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`) Only support update the following fields for now: - `title` - `statement` - `starred` - `visibility` |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the worksheet. (e.g., `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`) Only support update the following fields for now: - `title` - `statement` - `starred` - `visibility` |
 
 
 

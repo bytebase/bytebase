@@ -84,7 +84,7 @@ export declare type IamPolicy = Message<"bytebase.v1.IamPolicy"> & {
 
   /**
    * The current etag of the policy.
-   * If an etag is provided and does not match the current etag of the poliy,
+   * If an etag is provided and does not match the current etag of the policy,
    * the call will be blocked and an ABORTED error will be returned.
    *
    * @generated from field: string etag = 2;

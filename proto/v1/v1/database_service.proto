@@ -992,7 +992,7 @@ message ProcedureMetadata {
   string definition = 2;
 
   // The signature is the name with the number and type of input arguments the
-  // function takes.
+  // procedure takes.
   string signature = 3;
 
   // MySQL specific metadata.

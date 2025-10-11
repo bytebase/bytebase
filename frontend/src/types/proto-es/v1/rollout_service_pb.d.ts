@@ -468,7 +468,7 @@ export declare type Rollout = Message<"bytebase.v1.Rollout"> & {
   title: string;
 
   /**
-   * stages and thus tasks of the rollout.
+   * Stages and thus tasks of the rollout.
    *
    * @generated from field: repeated bytebase.v1.Stage stages = 5;
    */
@@ -520,7 +520,7 @@ export declare type Stage = Message<"bytebase.v1.Stage"> & {
 
   /**
    * id is the environment id of the stage.
-   * e.g. "prod".
+   * e.g., "prod".
    * Use "-" when the stage has no environment or deleted environment.
    *
    * @generated from field: string id = 3;
@@ -656,14 +656,14 @@ export declare type Task_DatabaseCreate = Message<"bytebase.v1.Task.DatabaseCrea
   project: string;
 
   /**
-   * database name
+   * Database name.
    *
    * @generated from field: string database = 2;
    */
   database: string;
 
   /**
-   * table name
+   * Table name.
    *
    * @generated from field: string table = 3;
    */
@@ -1595,14 +1595,14 @@ export enum TaskRunLogEntry_TaskRunStatusUpdate_Status {
   STATUS_UNSPECIFIED = 0,
 
   /**
-   * the task run is ready to be executed by the scheduler
+   * The task run is ready to be executed by the scheduler.
    *
    * @generated from enum value: RUNNING_WAITING = 1;
    */
   RUNNING_WAITING = 1,
 
   /**
-   * the task run is being executed by the scheduler
+   * The task run is being executed by the scheduler.
    *
    * @generated from enum value: RUNNING_RUNNING = 2;
    */

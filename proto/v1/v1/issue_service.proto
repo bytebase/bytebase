@@ -323,7 +323,7 @@ message ApproveIssueRequest {
 }
 
 message RejectIssueRequest {
-  // The name of the issue to add an rejection.
+  // The name of the issue to add a rejection.
   // Format: projects/{project}/issues/{issue}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
@@ -480,7 +480,7 @@ message GrantRequest {
   // The user to be granted.
   // Format: users/{email}.
   string user = 2;
-  // The condition for the role. Same as the condtion in IAM Binding message.
+  // The condition for the role. Same as the condition in IAM Binding message.
   google.type.Expr condition = 3;
   // The duration for which the grant is valid.
   google.protobuf.Duration expiration = 4;

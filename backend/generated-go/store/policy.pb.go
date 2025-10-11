@@ -657,8 +657,8 @@ func (x *SQLReviewRule) GetComment() string {
 
 type TagPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// tags is the key - value map for resources.
-	// for example, the environment resource can have the sql review config tag, like "bb.tag.review_config": "reviewConfigs/{review config resource id}"
+	// tags is the key-value map for resources.
+	// For example, the environment resource can have the SQL review config tag, such as "bb.tag.review_config": "reviewConfigs/{review config resource id}".
 	Tags          map[string]string `protobuf:"bytes,1,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -873,7 +873,7 @@ type QueryDataPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The query timeout duration.
 	Timeout *durationpb.Duration `protobuf:"bytes,1,opt,name=timeout,proto3" json:"timeout,omitempty"`
-	// Disable export data in the SQL editor
+	// Disable exporting data in the SQL editor.
 	DisableExport bool `protobuf:"varint,2,opt,name=disable_export,json=disableExport,proto3" json:"disable_export,omitempty"`
 	// The size limit in bytes.
 	// The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
@@ -1116,9 +1116,9 @@ func (x *RolloutPolicy_Checkers_RequiredStatusChecks) GetPlanCheckEnforcement() 
 
 type MaskingExceptionPolicy_MaskingException struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// action is the action that the user can access sensitive data.
+	// action is the action by which the user can access sensitive data.
 	Action MaskingExceptionPolicy_MaskingException_Action `protobuf:"varint,1,opt,name=action,proto3,enum=bytebase.store.MaskingExceptionPolicy_MaskingException_Action" json:"action,omitempty"`
-	// Member is the principal who bind to this exception policy instance.
+	// Member is the principal who binds to this exception policy instance.
 	//
 	// Format: users/{userUID} or groups/{group email}
 	Member string `protobuf:"bytes,4,opt,name=member,proto3" json:"member,omitempty"`

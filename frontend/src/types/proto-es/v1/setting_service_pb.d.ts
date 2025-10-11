@@ -585,7 +585,7 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
   maximumRoleExpiration?: Duration;
 
   /**
-   * The workspace domain, e.g. bytebase.com.
+   * The workspace domain, e.g., bytebase.com.
    *
    * @generated from field: repeated string domains = 9;
    */

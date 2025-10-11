@@ -368,7 +368,7 @@ export declare const ApproveIssueRequestSchema: GenMessage<ApproveIssueRequest>;
  */
 export declare type RejectIssueRequest = Message<"bytebase.v1.RejectIssueRequest"> & {
   /**
-   * The name of the issue to add an rejection.
+   * The name of the issue to add a rejection.
    * Format: projects/{project}/issues/{issue}
    *
    * @generated from field: string name = 1;
@@ -758,7 +758,7 @@ export declare type GrantRequest = Message<"bytebase.v1.GrantRequest"> & {
   user: string;
 
   /**
-   * The condition for the role. Same as the condtion in IAM Binding message.
+   * The condition for the role. Same as the condition in IAM Binding message.
    *
    * @generated from field: google.type.Expr condition = 3;
    */

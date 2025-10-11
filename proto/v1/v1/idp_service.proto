@@ -283,10 +283,10 @@ message OIDCIdentityProviderConfig {
 
 // LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
 message LDAPIdentityProviderConfig {
-  // Host is the hostname or IP address of the LDAP server, e.g.
+  // Host is the hostname or IP address of the LDAP server, e.g.,
   // "ldap.example.com".
   string host = 1;
-  // Port is the port number of the LDAP server, e.g. 389. When not set, the
+  // Port is the port number of the LDAP server, e.g., 389. When not set, the
   // default port of the corresponding security protocol will be used, i.e. 389
   // for StartTLS and 636 for LDAPS.
   int32 port = 2;
@@ -297,9 +297,9 @@ message LDAPIdentityProviderConfig {
   string bind_dn = 4;
   // BindPassword is the password of the user to bind as a service account.
   string bind_password = 5;
-  // BaseDN is the base DN to search for users, e.g. "ou=users,dc=example,dc=com".
+  // BaseDN is the base DN to search for users, e.g., "ou=users,dc=example,dc=com".
   string base_dn = 6;
-  // UserFilter is the filter to search for users, e.g. "(uid=%s)".
+  // UserFilter is the filter to search for users, e.g., "(uid=%s)".
   string user_filter = 7;
   // SecurityProtocol is the security protocol to be used for establishing
   // connections with the LDAP server.

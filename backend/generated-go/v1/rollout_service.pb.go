@@ -362,9 +362,9 @@ type TaskRunLogEntry_TaskRunStatusUpdate_Status int32
 const (
 	// Unspecified status.
 	TaskRunLogEntry_TaskRunStatusUpdate_STATUS_UNSPECIFIED TaskRunLogEntry_TaskRunStatusUpdate_Status = 0
-	// the task run is ready to be executed by the scheduler
+	// The task run is ready to be executed by the scheduler.
 	TaskRunLogEntry_TaskRunStatusUpdate_RUNNING_WAITING TaskRunLogEntry_TaskRunStatusUpdate_Status = 1
-	// the task run is being executed by the scheduler
+	// The task run is being executed by the scheduler.
 	TaskRunLogEntry_TaskRunStatusUpdate_RUNNING_RUNNING TaskRunLogEntry_TaskRunStatusUpdate_Status = 2
 )
 
@@ -1335,7 +1335,7 @@ type Rollout struct {
 	// The title of the rollout, inherited from the associated plan.
 	// This field is output only and cannot be directly set.
 	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	// stages and thus tasks of the rollout.
+	// Stages and thus tasks of the rollout.
 	Stages []*Stage `protobuf:"bytes,5,rep,name=stages,proto3" json:"stages,omitempty"`
 	// Format: users/hello@world.com
 	Creator    string                 `protobuf:"bytes,6,opt,name=creator,proto3" json:"creator,omitempty"`
@@ -1440,7 +1440,7 @@ type Stage struct {
 	// Use "-" for {stage} when the stage has no environment or deleted environment.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// id is the environment id of the stage.
-	// e.g. "prod".
+	// e.g., "prod".
 	// Use "-" when the stage has no environment or deleted environment.
 	Id string `protobuf:"bytes,3,opt,name=id,proto3" json:"id,omitempty"`
 	// environment is the environment of the stage.
@@ -2254,9 +2254,9 @@ type Task_DatabaseCreate struct {
 	// The project owning the database.
 	// Format: projects/{project}
 	Project string `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
-	// database name
+	// Database name.
 	Database string `protobuf:"bytes,2,opt,name=database,proto3" json:"database,omitempty"`
-	// table name
+	// Table name.
 	Table string `protobuf:"bytes,3,opt,name=table,proto3" json:"table,omitempty"`
 	// Format: projects/{project}/sheets/{sheet}
 	Sheet string `protobuf:"bytes,4,opt,name=sheet,proto3" json:"sheet,omitempty"`
