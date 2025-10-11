@@ -1102,6 +1102,29 @@ func (q *querySpanExtractor) extractTableSourceFromRelationExpr(relationExpr pgp
 	return tableSource, nil
 }
 
+func (q *querySpanExtractor) extractTableSourceFromFuncExprWindowlessExpr(funcExpr pgparser.IFunc_exprContext, funcAlias pgparser.IFunc_alias_clauseContext) (base.TableSource, error) {
+	if funcExpr == nil {
+		return nil, errors.New("nil func_expr")
+	}
+
+	schemaName, funcName, args, err := q.extractFunctionElementFromFuncExpr(funcExpr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract function element from func_expr_windowless")
+	}
+
+	tableSource, err := q.findFunctionDefine(schemaName, funcName, len(args))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find function definition for %s.%s with %d args", schemaName, funcName, len(args))
+	}
+	if funcAlias != nil {
+		tableSource, err = applyFuncAliasClauseToTableSource(tableSource, funcAlias)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to apply function alias clause")
+		}
+	}
+	return tableSource, nil
+}
+
 func (q *querySpanExtractor) extractTableSourceFromUDF2(funcExprWindowless pgparser.IFunc_expr_windowlessContext, funcAlias pgparser.IFunc_alias_clauseContext) (base.TableSource, error) {
 	if funcExprWindowless == nil {
 		return nil, errors.New("nil func_expr_windowless")
@@ -1127,7 +1150,7 @@ func (q *querySpanExtractor) extractTableSourceFromUDF2(funcExprWindowless pgpar
 
 // extractTableSourceFromFuncTable extracts table source from a function table
 func (q *querySpanExtractor) extractTableSourceFromFuncTable(funcTable pgparser.IFunc_tableContext, funcAlias pgparser.IFunc_alias_clauseContext) (base.TableSource, error) {
-	// Handle function tables like unnest, generate_series, etc.
+	// Handle extractTableSourceFromFuncExprWindowlesst, generate_series, etc.
 	// For now, return a pseudo table that will be populated with alias columns if present
 	result := &base.PseudoTable{
 		Name:    "",
@@ -1160,7 +1183,7 @@ func (q *querySpanExtractor) extractTableSourceFromFuncTable(funcTable pgparser.
 	// Check if this is a ROWS FROM expression
 	if funcTable.ROWS() != nil && funcTable.Rowsfrom_list() != nil {
 		// Handle ROWS FROM (...)
-		// Each function in ROWS FROM produces columns
+		// Each functiextractTableSourceFromFuncExprWindowlessolumns
 		// ROWS FROM expands multiple functions in parallel, creating a single result set where the first row contains
 		// the first result from each function, the second row contains the second result from each function, and so on.
 		tableSource := &base.PseudoTable{
@@ -1793,6 +1816,9 @@ func (q *querySpanExtractor) extractSourceColumnSetFromFuncExpr(funcExpr pgparse
 				}
 			}
 		}
+		// The function call can be a UDF.
+		// If the function is a UDF, we should extract the source column set from the UDF.
+		// IF not, we skip it.
 	}
 
 	// Handle common subexpressions (COALESCE, GREATEST, LEAST, etc.)
