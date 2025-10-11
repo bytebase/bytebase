@@ -495,9 +495,6 @@ const handleExportBtnClick = async ({
   reject: (reason?: any) => void;
   resolve: (content: DownloadContent) => void;
 }) => {
-  // use props.params.statement which is the "snapshot" of the query statement
-  // not using props.result.statement because it might be rewritten by Query() API
-  const statement = props.params.statement;
   const admin = tabStore.currentTab?.mode === "ADMIN";
   const limit = options.limit ?? (admin ? 0 : editorStore.resultRowsLimit);
 
@@ -507,7 +504,7 @@ const handleExportBtnClick = async ({
         name: props.database.name,
         dataSourceId: props.params.connection.dataSourceId ?? "",
         format: options.format,
-        statement,
+        statement: props.result.statement,
         limit,
         admin,
         password: options.password,
@@ -562,7 +559,7 @@ const showVisualizeButton = computed((): boolean => {
 const visualizeExplain = () => {
   try {
     const { params, result } = props;
-    const { statement } = params;
+    const { statement } = result;
     if (!statement) return;
 
     const lines = result.rows.map((row) =>
