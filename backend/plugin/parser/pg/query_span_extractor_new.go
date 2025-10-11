@@ -673,7 +673,40 @@ func (q *querySpanExtractor) extractTableSourceFromSimpleSelectPrimary(primary p
 	}
 
 	// Handle VALUES clause
-	// TODO: Implement VALUES clause handling when needed
+	if v := primary.Values_clause(); v != nil {
+		columnNumber := len(v.AllExpr_list()[0].AllA_expr())
+		// Check other rows have the same number of columns
+		for _, exprList := range v.AllExpr_list()[1:] {
+			if len(exprList.AllA_expr()) != columnNumber {
+				return nil, errors.New("VALUES clause rows have different column counts")
+			}
+		}
+		columnSourceSets := make([]base.SourceColumnSet, columnNumber)
+		for i, exprList := range v.AllExpr_list() {
+			for j, expr := range exprList.AllA_expr() {
+				cols, err := q.extractSourceColumnSetFromAExpr(expr)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to extract columns from VALUES clause row %d, column %d", i, j)
+				}
+				columnSourceSets[j], _ = base.MergeSourceColumnSet(columnSourceSets[j], cols)
+			}
+		}
+		tableSource := &base.PseudoTable{
+			Name: "",
+			Columns: func() []base.QuerySpanResult {
+				var results []base.QuerySpanResult
+				for i, colSet := range columnSourceSets {
+					results = append(results, base.QuerySpanResult{
+						Name:          fmt.Sprintf("column%d", i+1),
+						SourceColumns: colSet,
+					})
+				}
+				return results
+			}(),
+		}
+
+		return tableSource, nil
+	}
 
 	// Handle TABLE clause (TABLE tablename)
 	// TODO: Implement TABLE clause handling when needed
