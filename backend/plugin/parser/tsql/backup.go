@@ -121,7 +121,7 @@ func generateSQLForTable(statementInfoList []statementInfo, targetDatabase strin
 	targetTable := fmt.Sprintf("%s_%s_%s", tablePrefix, table.Table, table.Database)
 	targetTable, _ = common.TruncateString(targetTable, maxTableNameLength)
 	var buf strings.Builder
-	if _, err := buf.WriteString(fmt.Sprintf(`SELECT * INTO "%s"."%s"."%s" FROM (`+"\n", targetDatabase, defaultSchema, targetTable)); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf(`SELECT * INTO [%s].[%s].[%s] FROM (`+"\n", targetDatabase, defaultSchema, targetTable)); err != nil {
 		return nil, errors.Wrap(err, "failed to write buffer")
 	}
 	for i, item := range statementInfoList {
@@ -135,11 +135,11 @@ func generateSQLForTable(statementInfoList []statementInfo, targetDatabase strin
 			return nil, errors.Wrap(err, "failed to extract suffix select statement")
 		}
 		if len(item.table.Alias) == 0 {
-			if _, err := buf.WriteString(fmt.Sprintf(`  SELECT "%s"."%s"."%s".* `, item.table.Database, item.table.Schema, item.table.Table)); err != nil {
+			if _, err := buf.WriteString(fmt.Sprintf(`  SELECT [%s].[%s].[%s].* `, item.table.Database, item.table.Schema, item.table.Table)); err != nil {
 				return nil, errors.Wrap(err, "failed to write buffer")
 			}
 		} else {
-			if _, err := buf.WriteString(fmt.Sprintf(`  SELECT "%s".* `, item.table.Alias)); err != nil {
+			if _, err := buf.WriteString(fmt.Sprintf(`  SELECT [%s].* `, item.table.Alias)); err != nil {
 				return nil, errors.Wrap(err, "failed to write buffer")
 			}
 		}
