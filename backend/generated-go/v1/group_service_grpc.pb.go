@@ -31,21 +31,26 @@ const (
 // GroupServiceClient is the client API for GroupService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// GroupService manages user groups for organizing users and permissions.
 type GroupServiceClient interface {
+	// Gets a group by name.
 	// Permissions required: bb.groups.get
 	GetGroup(ctx context.Context, in *GetGroupRequest, opts ...grpc.CallOption) (*Group, error)
-	// Get the groups in batch.
+	// Gets multiple groups in a single request.
 	// Permissions required: bb.groups.get
 	BatchGetGroups(ctx context.Context, in *BatchGetGroupsRequest, opts ...grpc.CallOption) (*BatchGetGroupsResponse, error)
+	// Lists all groups in the workspace.
 	// Permissions required: bb.groups.list
 	ListGroups(ctx context.Context, in *ListGroupsRequest, opts ...grpc.CallOption) (*ListGroupsResponse, error)
+	// Creates a new group.
 	// Permissions required: bb.groups.create
 	CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*Group, error)
-	// UpdateGroup updates the group.
-	// Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
-	// Permissions required: bb.groups.update
+	// Updates a group. Group owners or users with bb.groups.update permission can update.
+	// Permissions required: bb.groups.update OR caller is group owner
 	UpdateGroup(ctx context.Context, in *UpdateGroupRequest, opts ...grpc.CallOption) (*Group, error)
-	// Permissions required: bb.groups.delete
+	// Deletes a group. Group owners or users with bb.groups.delete permission can delete.
+	// Permissions required: bb.groups.delete OR caller is group owner
 	DeleteGroup(ctx context.Context, in *DeleteGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -120,21 +125,26 @@ func (c *groupServiceClient) DeleteGroup(ctx context.Context, in *DeleteGroupReq
 // GroupServiceServer is the server API for GroupService service.
 // All implementations must embed UnimplementedGroupServiceServer
 // for forward compatibility.
+//
+// GroupService manages user groups for organizing users and permissions.
 type GroupServiceServer interface {
+	// Gets a group by name.
 	// Permissions required: bb.groups.get
 	GetGroup(context.Context, *GetGroupRequest) (*Group, error)
-	// Get the groups in batch.
+	// Gets multiple groups in a single request.
 	// Permissions required: bb.groups.get
 	BatchGetGroups(context.Context, *BatchGetGroupsRequest) (*BatchGetGroupsResponse, error)
+	// Lists all groups in the workspace.
 	// Permissions required: bb.groups.list
 	ListGroups(context.Context, *ListGroupsRequest) (*ListGroupsResponse, error)
+	// Creates a new group.
 	// Permissions required: bb.groups.create
 	CreateGroup(context.Context, *CreateGroupRequest) (*Group, error)
-	// UpdateGroup updates the group.
-	// Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
-	// Permissions required: bb.groups.update
+	// Updates a group. Group owners or users with bb.groups.update permission can update.
+	// Permissions required: bb.groups.update OR caller is group owner
 	UpdateGroup(context.Context, *UpdateGroupRequest) (*Group, error)
-	// Permissions required: bb.groups.delete
+	// Deletes a group. Group owners or users with bb.groups.delete permission can delete.
+	// Permissions required: bb.groups.delete OR caller is group owner
 	DeleteGroup(context.Context, *DeleteGroupRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedGroupServiceServer()
 }

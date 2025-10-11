@@ -541,31 +541,43 @@ export declare type Instance = Message<"bytebase.v1.Instance"> & {
   name: string;
 
   /**
+   * The lifecycle state of the instance.
+   *
    * @generated from field: bytebase.v1.State state = 3;
    */
   state: State;
 
   /**
+   * The display title of the instance.
+   *
    * @generated from field: string title = 4;
    */
   title: string;
 
   /**
+   * The database engine type.
+   *
    * @generated from field: bytebase.v1.Engine engine = 5;
    */
   engine: Engine;
 
   /**
+   * The version of the database engine.
+   *
    * @generated from field: string engine_version = 6;
    */
   engineVersion: string;
 
   /**
+   * External URL to the database instance console.
+   *
    * @generated from field: string external_link = 7;
    */
   externalLink: string;
 
   /**
+   * Data source configurations for connecting to the instance.
+   *
    * @generated from field: repeated bytebase.v1.DataSource data_sources = 8;
    */
   dataSources: DataSource[];
@@ -579,11 +591,15 @@ export declare type Instance = Message<"bytebase.v1.Instance"> & {
   environment?: string;
 
   /**
+   * Whether the instance is activated for use.
+   *
    * @generated from field: bool activation = 10;
    */
   activation: boolean;
 
   /**
+   * Database roles available in this instance.
+   *
    * @generated from field: repeated bytebase.v1.InstanceRole roles = 12;
    */
   roles: InstanceRole[];
@@ -638,16 +654,22 @@ export declare const InstanceSchema: GenMessage<Instance>;
  */
 export declare type DataSourceExternalSecret = Message<"bytebase.v1.DataSourceExternalSecret"> & {
   /**
+   * The type of external secret store.
+   *
    * @generated from field: bytebase.v1.DataSourceExternalSecret.SecretType secret_type = 1;
    */
   secretType: DataSourceExternalSecret_SecretType;
 
   /**
+   * The URL of the external secret store.
+   *
    * @generated from field: string url = 2;
    */
   url: string;
 
   /**
+   * The authentication method for accessing the secret store.
+   *
    * @generated from field: bytebase.v1.DataSourceExternalSecret.AuthType auth_type = 3;
    */
   authType: DataSourceExternalSecret_AuthType;
@@ -657,12 +679,16 @@ export declare type DataSourceExternalSecret = Message<"bytebase.v1.DataSourceEx
    */
   authOption: {
     /**
+     * AppRole authentication configuration.
+     *
      * @generated from field: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption app_role = 4;
      */
     value: DataSourceExternalSecret_AppRoleAuthOption;
     case: "appRole";
   } | {
     /**
+     * Token for direct authentication.
+     *
      * @generated from field: string token = 5;
      */
     value: string;
@@ -702,6 +728,8 @@ export declare const DataSourceExternalSecretSchema: GenMessage<DataSourceExtern
  */
 export declare type DataSourceExternalSecret_AppRoleAuthOption = Message<"bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption"> & {
   /**
+   * The role ID for Vault AppRole authentication.
+   *
    * @generated from field: string role_id = 1;
    */
   roleId: string;
@@ -714,6 +742,8 @@ export declare type DataSourceExternalSecret_AppRoleAuthOption = Message<"byteba
   secretId: string;
 
   /**
+   * The type of secret for AppRole authentication.
+   *
    * @generated from field: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType type = 3;
    */
   type: DataSourceExternalSecret_AppRoleAuthOption_SecretType;
@@ -737,16 +767,22 @@ export declare const DataSourceExternalSecret_AppRoleAuthOptionSchema: GenMessag
  */
 export enum DataSourceExternalSecret_AppRoleAuthOption_SecretType {
   /**
+   * Unspecified secret type.
+   *
    * @generated from enum value: SECRET_TYPE_UNSPECIFIED = 0;
    */
   SECRET_TYPE_UNSPECIFIED = 0,
 
   /**
+   * Plain text secret.
+   *
    * @generated from enum value: PLAIN = 1;
    */
   PLAIN = 1,
 
   /**
+   * Secret from environment variable.
+   *
    * @generated from enum value: ENVIRONMENT = 2;
    */
   ENVIRONMENT = 2,
@@ -762,6 +798,8 @@ export declare const DataSourceExternalSecret_AppRoleAuthOption_SecretTypeSchema
  */
 export enum DataSourceExternalSecret_SecretType {
   /**
+   * Unspecified secret type.
+   *
    * @generated from enum value: SAECRET_TYPE_UNSPECIFIED = 0;
    */
   SAECRET_TYPE_UNSPECIFIED = 0,
@@ -798,6 +836,8 @@ export declare const DataSourceExternalSecret_SecretTypeSchema: GenEnum<DataSour
  */
 export enum DataSourceExternalSecret_AuthType {
   /**
+   * Unspecified authentication type.
+   *
    * @generated from enum value: AUTH_TYPE_UNSPECIFIED = 0;
    */
   AUTH_TYPE_UNSPECIFIED = 0,
@@ -827,21 +867,29 @@ export declare const DataSourceExternalSecret_AuthTypeSchema: GenEnum<DataSource
  */
 export declare type DataSource = Message<"bytebase.v1.DataSource"> & {
   /**
+   * The unique identifier for this data source.
+   *
    * @generated from field: string id = 1;
    */
   id: string;
 
   /**
+   * The type of data source (ADMIN or READ_ONLY).
+   *
    * @generated from field: bytebase.v1.DataSourceType type = 2;
    */
   type: DataSourceType;
 
   /**
+   * The username for database authentication.
+   *
    * @generated from field: string username = 3;
    */
   username: string;
 
   /**
+   * The password for database authentication.
+   *
    * @generated from field: string password = 4;
    */
   password: string;
@@ -854,16 +902,22 @@ export declare type DataSource = Message<"bytebase.v1.DataSource"> & {
   useSsl: boolean;
 
   /**
+   * The SSL certificate authority certificate.
+   *
    * @generated from field: string ssl_ca = 5;
    */
   sslCa: string;
 
   /**
+   * The SSL client certificate.
+   *
    * @generated from field: string ssl_cert = 6;
    */
   sslCert: string;
 
   /**
+   * The SSL client private key.
+   *
    * @generated from field: string ssl_key = 7;
    */
   sslKey: string;
@@ -880,16 +934,22 @@ export declare type DataSource = Message<"bytebase.v1.DataSource"> & {
   verifyTlsCertificate: boolean;
 
   /**
+   * The hostname or IP address of the database server.
+   *
    * @generated from field: string host = 8;
    */
   host: string;
 
   /**
+   * The port number of the database server.
+   *
    * @generated from field: string port = 9;
    */
   port: string;
 
   /**
+   * The name of the database to connect to.
+   *
    * @generated from field: string database = 10;
    */
   database: string;
@@ -1262,26 +1322,36 @@ export declare const DataSource_RedisTypeSchema: GenEnum<DataSource_RedisType>;
  */
 export declare type InstanceResource = Message<"bytebase.v1.InstanceResource"> & {
   /**
+   * The display title of the instance.
+   *
    * @generated from field: string title = 1;
    */
   title: string;
 
   /**
+   * The database engine type.
+   *
    * @generated from field: bytebase.v1.Engine engine = 2;
    */
   engine: Engine;
 
   /**
+   * The version of the database engine.
+   *
    * @generated from field: string engine_version = 3;
    */
   engineVersion: string;
 
   /**
+   * Data source configurations for the instance.
+   *
    * @generated from field: repeated bytebase.v1.DataSource data_sources = 4;
    */
   dataSources: DataSource[];
 
   /**
+   * Whether the instance is activated.
+   *
    * @generated from field: bool activation = 5;
    */
   activation: boolean;
@@ -1318,6 +1388,8 @@ export declare type SASLConfig = Message<"bytebase.v1.SASLConfig"> & {
    */
   mechanism: {
     /**
+     * Kerberos authentication configuration.
+     *
      * @generated from field: bytebase.v1.KerberosConfig krb_config = 1;
      */
     value: KerberosConfig;
@@ -1336,36 +1408,50 @@ export declare const SASLConfigSchema: GenMessage<SASLConfig>;
  */
 export declare type KerberosConfig = Message<"bytebase.v1.KerberosConfig"> & {
   /**
+   * The primary component of the Kerberos principal.
+   *
    * @generated from field: string primary = 1;
    */
   primary: string;
 
   /**
+   * The instance component of the Kerberos principal.
+   *
    * @generated from field: string instance = 2;
    */
   instance: string;
 
   /**
+   * The Kerberos realm.
+   *
    * @generated from field: string realm = 3;
    */
   realm: string;
 
   /**
+   * The keytab file contents for authentication.
+   *
    * @generated from field: bytes keytab = 4;
    */
   keytab: Uint8Array;
 
   /**
+   * The hostname of the Key Distribution Center (KDC).
+   *
    * @generated from field: string kdc_host = 5;
    */
   kdcHost: string;
 
   /**
+   * The port of the Key Distribution Center (KDC).
+   *
    * @generated from field: string kdc_port = 6;
    */
   kdcPort: string;
 
   /**
+   * The transport protocol for KDC communication (tcp or udp).
+   *
    * @generated from field: string kdc_transport_protocol = 7;
    */
   kdcTransportProtocol: string;
@@ -1382,16 +1468,22 @@ export declare const KerberosConfigSchema: GenMessage<KerberosConfig>;
  */
 export enum DataSourceType {
   /**
+   * Unspecified data source type.
+   *
    * @generated from enum value: DATA_SOURCE_UNSPECIFIED = 0;
    */
   DATA_SOURCE_UNSPECIFIED = 0,
 
   /**
+   * Admin data source with write permissions.
+   *
    * @generated from enum value: ADMIN = 1;
    */
   ADMIN = 1,
 
   /**
+   * Read-only data source for query operations.
+   *
    * @generated from enum value: READ_ONLY = 2;
    */
   READ_ONLY = 2,
@@ -1403,10 +1495,13 @@ export enum DataSourceType {
 export declare const DataSourceTypeSchema: GenEnum<DataSourceType>;
 
 /**
+ * InstanceService manages database instances and their connections.
+ *
  * @generated from service bytebase.v1.InstanceService
  */
 export declare const InstanceService: GenService<{
   /**
+   * Gets a database instance by name.
    * Permissions required: bb.instances.get
    *
    * @generated from rpc bytebase.v1.InstanceService.GetInstance
@@ -1417,6 +1512,7 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
+   * Lists all database instances.
    * Permissions required: bb.instances.list
    *
    * @generated from rpc bytebase.v1.InstanceService.ListInstances
@@ -1427,6 +1523,7 @@ export declare const InstanceService: GenService<{
     output: typeof ListInstancesResponseSchema;
   },
   /**
+   * Creates a new database instance.
    * Permissions required: bb.instances.create
    *
    * @generated from rpc bytebase.v1.InstanceService.CreateInstance
@@ -1437,6 +1534,7 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
+   * Updates a database instance.
    * Permissions required: bb.instances.update
    *
    * @generated from rpc bytebase.v1.InstanceService.UpdateInstance
@@ -1447,6 +1545,7 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
+   * Deletes or soft-deletes a database instance.
    * Permissions required: bb.instances.delete
    *
    * @generated from rpc bytebase.v1.InstanceService.DeleteInstance
@@ -1457,6 +1556,7 @@ export declare const InstanceService: GenService<{
     output: typeof EmptySchema;
   },
   /**
+   * Restores a soft-deleted database instance.
    * Permissions required: bb.instances.undelete
    *
    * @generated from rpc bytebase.v1.InstanceService.UndeleteInstance
@@ -1467,6 +1567,7 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
+   * Syncs database schemas and metadata from an instance.
    * Permissions required: bb.instances.sync
    *
    * @generated from rpc bytebase.v1.InstanceService.SyncInstance
@@ -1477,6 +1578,7 @@ export declare const InstanceService: GenService<{
     output: typeof SyncInstanceResponseSchema;
   },
   /**
+   * Lists all databases within an instance without creating them.
    * Permissions required: bb.instances.get
    *
    * @generated from rpc bytebase.v1.InstanceService.ListInstanceDatabase
@@ -1487,6 +1589,7 @@ export declare const InstanceService: GenService<{
     output: typeof ListInstanceDatabaseResponseSchema;
   },
   /**
+   * Syncs multiple instances in a single request.
    * Permissions required: bb.instances.sync
    *
    * @generated from rpc bytebase.v1.InstanceService.BatchSyncInstances
@@ -1497,6 +1600,7 @@ export declare const InstanceService: GenService<{
     output: typeof BatchSyncInstancesResponseSchema;
   },
   /**
+   * Updates multiple instances in a single request.
    * Permissions required: bb.instances.update
    *
    * @generated from rpc bytebase.v1.InstanceService.BatchUpdateInstances
@@ -1507,6 +1611,7 @@ export declare const InstanceService: GenService<{
     output: typeof BatchUpdateInstancesResponseSchema;
   },
   /**
+   * Adds a read-only data source to an instance.
    * Permissions required: bb.instances.update
    *
    * @generated from rpc bytebase.v1.InstanceService.AddDataSource
@@ -1517,6 +1622,7 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
+   * Removes a read-only data source from an instance.
    * Permissions required: bb.instances.update
    *
    * @generated from rpc bytebase.v1.InstanceService.RemoveDataSource
@@ -1527,6 +1633,7 @@ export declare const InstanceService: GenService<{
     output: typeof InstanceSchema;
   },
   /**
+   * Updates a data source configuration.
    * Permissions required: bb.instances.update
    *
    * @generated from rpc bytebase.v1.InstanceService.UpdateDataSource

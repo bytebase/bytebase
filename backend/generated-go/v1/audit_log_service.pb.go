@@ -26,17 +26,27 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Severity level for audit log entries.
 type AuditLog_Severity int32
 
 const (
-	AuditLog_DEFAULT   AuditLog_Severity = 0
-	AuditLog_DEBUG     AuditLog_Severity = 1
-	AuditLog_INFO      AuditLog_Severity = 2
-	AuditLog_NOTICE    AuditLog_Severity = 3
-	AuditLog_WARNING   AuditLog_Severity = 4
-	AuditLog_ERROR     AuditLog_Severity = 5
-	AuditLog_CRITICAL  AuditLog_Severity = 6
-	AuditLog_ALERT     AuditLog_Severity = 7
+	// Default severity level.
+	AuditLog_DEFAULT AuditLog_Severity = 0
+	// Debug-level information.
+	AuditLog_DEBUG AuditLog_Severity = 1
+	// Informational messages.
+	AuditLog_INFO AuditLog_Severity = 2
+	// Notable events.
+	AuditLog_NOTICE AuditLog_Severity = 3
+	// Warning conditions.
+	AuditLog_WARNING AuditLog_Severity = 4
+	// Error conditions.
+	AuditLog_ERROR AuditLog_Severity = 5
+	// Critical conditions.
+	AuditLog_CRITICAL AuditLog_Severity = 6
+	// Action must be taken immediately.
+	AuditLog_ALERT AuditLog_Severity = 7
+	// System is unusable.
 	AuditLog_EMERGENCY AuditLog_Severity = 8
 )
 
@@ -93,6 +103,7 @@ func (AuditLog_Severity) EnumDescriptor() ([]byte, []int) {
 	return file_v1_audit_log_service_proto_rawDescGZIP(), []int{4, 0}
 }
 
+// Request message for searching audit logs.
 type SearchAuditLogsRequest struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Parent string                 `protobuf:"bytes,5,opt,name=parent,proto3" json:"parent,omitempty"`
@@ -194,6 +205,7 @@ func (x *SearchAuditLogsRequest) GetPageToken() string {
 	return ""
 }
 
+// Response message for searching audit logs.
 type SearchAuditLogsResponse struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	AuditLogs []*AuditLog            `protobuf:"bytes,1,rep,name=audit_logs,json=auditLogs,proto3" json:"audit_logs,omitempty"`
@@ -249,6 +261,7 @@ func (x *SearchAuditLogsResponse) GetNextPageToken() string {
 	return ""
 }
 
+// Request message for exporting audit logs.
 type ExportAuditLogsRequest struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Parent string                 `protobuf:"bytes,4,opt,name=parent,proto3" json:"parent,omitempty"`
@@ -347,9 +360,11 @@ func (x *ExportAuditLogsRequest) GetPageToken() string {
 	return ""
 }
 
+// Response message for exporting audit logs.
 type ExportAuditLogsResponse struct {
-	state   protoimpl.MessageState `protogen:"open.v1"`
-	Content []byte                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The exported audit log content in the requested format.
+	Content []byte `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
 	// A token to retrieve next page of log entities.
 	// Pass this value in the page_token field in the subsequent call
 	// to retrieve the next page of log entities.
@@ -402,32 +417,38 @@ func (x *ExportAuditLogsResponse) GetNextPageToken() string {
 	return ""
 }
 
+// Audit log entry recording system activity or API call.
 type AuditLog struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the log.
 	// Formats:
 	// - projects/{project}/auditLogs/{uid}
 	// - workspaces/{workspace}/auditLogs/{uid}
-	Name       string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The timestamp when the audit log was created.
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
-	// Format: users/d@d.com
+	// The user who performed the action.
+	// Format: users/{email}
 	User string `protobuf:"bytes,3,opt,name=user,proto3" json:"user,omitempty"`
-	// e.g. `/bytebase.v1.SQLService/Query`, `bb.project.repository.push`
-	Method   string            `protobuf:"bytes,4,opt,name=method,proto3" json:"method,omitempty"`
+	// The method or action being audited.
+	// For example: /bytebase.v1.SQLService/Query or bb.project.repository.push
+	Method string `protobuf:"bytes,4,opt,name=method,proto3" json:"method,omitempty"`
+	// The severity level of this audit log entry.
 	Severity AuditLog_Severity `protobuf:"varint,5,opt,name=severity,proto3,enum=bytebase.v1.AuditLog_Severity" json:"severity,omitempty"`
-	// The associated resource.
+	// The resource associated with this audit log.
 	Resource string `protobuf:"bytes,6,opt,name=resource,proto3" json:"resource,omitempty"`
-	// JSON-encoded request.
+	// The request payload in JSON format.
 	Request string `protobuf:"bytes,7,opt,name=request,proto3" json:"request,omitempty"`
-	// JSON-encoded response.
-	// Some fields are omitted because they are too large or contain sensitive information.
-	Response string         `protobuf:"bytes,8,opt,name=response,proto3" json:"response,omitempty"`
-	Status   *status.Status `protobuf:"bytes,9,opt,name=status,proto3" json:"status,omitempty"`
-	// The latency of the RPC.
+	// The response payload in JSON format.
+	// Some fields may be omitted if they are too large or contain sensitive information.
+	Response string `protobuf:"bytes,8,opt,name=response,proto3" json:"response,omitempty"`
+	// The status of the operation.
+	Status *status.Status `protobuf:"bytes,9,opt,name=status,proto3" json:"status,omitempty"`
+	// The duration of the operation.
 	Latency *durationpb.Duration `protobuf:"bytes,10,opt,name=latency,proto3" json:"latency,omitempty"`
-	// service-specific data about the request, response, and other activities.
+	// Service-specific metadata about the request, response, and activities.
 	ServiceData *anypb.Any `protobuf:"bytes,11,opt,name=service_data,json=serviceData,proto3" json:"service_data,omitempty"`
-	// Metadata about the operation.
+	// Metadata about the request context.
 	RequestMetadata *RequestMetadata `protobuf:"bytes,12,opt,name=request_metadata,json=requestMetadata,proto3" json:"request_metadata,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -547,9 +568,11 @@ func (x *AuditLog) GetRequestMetadata() *RequestMetadata {
 	return nil
 }
 
+// Additional audit data specific to certain operations.
 type AuditData struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	PolicyDelta   *PolicyDelta           `protobuf:"bytes,1,opt,name=policy_delta,json=policyDelta,proto3" json:"policy_delta,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Changes to IAM policies.
+	PolicyDelta   *PolicyDelta `protobuf:"bytes,1,opt,name=policy_delta,json=policyDelta,proto3" json:"policy_delta,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -591,13 +614,13 @@ func (x *AuditData) GetPolicyDelta() *PolicyDelta {
 	return nil
 }
 
-// Metadata about the request.
+// Metadata about the incoming request.
 type RequestMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The IP address of the caller.
+	// The IP address of the request originator.
 	CallerIp string `protobuf:"bytes,1,opt,name=caller_ip,json=callerIp,proto3" json:"caller_ip,omitempty"`
-	// The user agent of the caller.
-	// This information is not authenticated and should be treated accordingly.
+	// The user agent string provided by the caller.
+	// This is supplied by the client and is not authenticated.
 	CallerSuppliedUserAgent string `protobuf:"bytes,2,opt,name=caller_supplied_user_agent,json=callerSuppliedUserAgent,proto3" json:"caller_supplied_user_agent,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache

@@ -53,14 +53,19 @@ const (
 
 // ChangelistServiceClient is a client for the bytebase.v1.ChangelistService service.
 type ChangelistServiceClient interface {
+	// Creates a new changelist in a project.
 	// Permissions required: bb.changelists.create
 	CreateChangelist(context.Context, *connect.Request[v1.CreateChangelistRequest]) (*connect.Response[v1.Changelist], error)
+	// Gets a changelist by name.
 	// Permissions required: bb.changelists.get
 	GetChangelist(context.Context, *connect.Request[v1.GetChangelistRequest]) (*connect.Response[v1.Changelist], error)
+	// Lists changelists in a project.
 	// Permissions required: bb.changelists.list
 	ListChangelists(context.Context, *connect.Request[v1.ListChangelistsRequest]) (*connect.Response[v1.ListChangelistsResponse], error)
+	// Updates a changelist.
 	// Permissions required: bb.changelists.update
 	UpdateChangelist(context.Context, *connect.Request[v1.UpdateChangelistRequest]) (*connect.Response[v1.Changelist], error)
+	// Deletes a changelist.
 	// Permissions required: bb.changelists.delete
 	DeleteChangelist(context.Context, *connect.Request[v1.DeleteChangelistRequest]) (*connect.Response[emptypb.Empty], error)
 }
@@ -145,14 +150,19 @@ func (c *changelistServiceClient) DeleteChangelist(ctx context.Context, req *con
 
 // ChangelistServiceHandler is an implementation of the bytebase.v1.ChangelistService service.
 type ChangelistServiceHandler interface {
+	// Creates a new changelist in a project.
 	// Permissions required: bb.changelists.create
 	CreateChangelist(context.Context, *connect.Request[v1.CreateChangelistRequest]) (*connect.Response[v1.Changelist], error)
+	// Gets a changelist by name.
 	// Permissions required: bb.changelists.get
 	GetChangelist(context.Context, *connect.Request[v1.GetChangelistRequest]) (*connect.Response[v1.Changelist], error)
+	// Lists changelists in a project.
 	// Permissions required: bb.changelists.list
 	ListChangelists(context.Context, *connect.Request[v1.ListChangelistsRequest]) (*connect.Response[v1.ListChangelistsResponse], error)
+	// Updates a changelist.
 	// Permissions required: bb.changelists.update
 	UpdateChangelist(context.Context, *connect.Request[v1.UpdateChangelistRequest]) (*connect.Response[v1.Changelist], error)
+	// Deletes a changelist.
 	// Permissions required: bb.changelists.delete
 	DeleteChangelist(context.Context, *connect.Request[v1.DeleteChangelistRequest]) (*connect.Response[emptypb.Empty], error)
 }

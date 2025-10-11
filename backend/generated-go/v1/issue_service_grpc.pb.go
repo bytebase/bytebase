@@ -36,37 +36,44 @@ const (
 // IssueServiceClient is the client API for IssueService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// IssueService manages issues for tracking database changes and tasks.
 type IssueServiceClient interface {
+	// Retrieves an issue by name.
 	// Permissions required: bb.issues.get
 	GetIssue(ctx context.Context, in *GetIssueRequest, opts ...grpc.CallOption) (*Issue, error)
+	// Creates a new issue for database changes or tasks.
 	// Permissions required: bb.issues.create
 	CreateIssue(ctx context.Context, in *CreateIssueRequest, opts ...grpc.CallOption) (*Issue, error)
+	// Lists issues in a project.
 	// Permissions required: bb.issues.list
 	ListIssues(ctx context.Context, in *ListIssuesRequest, opts ...grpc.CallOption) (*ListIssuesResponse, error)
 	// Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
 	// Permissions required: bb.issues.get
 	SearchIssues(ctx context.Context, in *SearchIssuesRequest, opts ...grpc.CallOption) (*SearchIssuesResponse, error)
+	// Updates an issue's properties such as title, description, or labels.
 	// Permissions required: bb.issues.update
 	UpdateIssue(ctx context.Context, in *UpdateIssueRequest, opts ...grpc.CallOption) (*Issue, error)
+	// Lists comments on an issue.
 	// Permissions required: bb.issueComments.list
 	ListIssueComments(ctx context.Context, in *ListIssueCommentsRequest, opts ...grpc.CallOption) (*ListIssueCommentsResponse, error)
+	// Adds a comment to an issue.
 	// Permissions required: bb.issueComments.create
 	CreateIssueComment(ctx context.Context, in *CreateIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error)
+	// Updates an existing issue comment.
 	// Permissions required: bb.issueComments.update
 	UpdateIssueComment(ctx context.Context, in *UpdateIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error)
+	// Updates the status of multiple issues in a single operation.
 	// Permissions required: bb.issues.update
 	BatchUpdateIssuesStatus(ctx context.Context, in *BatchUpdateIssuesStatusRequest, opts ...grpc.CallOption) (*BatchUpdateIssuesStatusResponse, error)
-	// ApproveIssue approves the issue.
-	// The access is based on approval flow.
-	// Permissions required: None
+	// Approves an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+	// Permissions required: None (determined by approval flow)
 	ApproveIssue(ctx context.Context, in *ApproveIssueRequest, opts ...grpc.CallOption) (*Issue, error)
-	// RejectIssue rejects the issue.
-	// The access is based on approval flow.
-	// Permissions required: None
+	// Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+	// Permissions required: None (determined by approval flow)
 	RejectIssue(ctx context.Context, in *RejectIssueRequest, opts ...grpc.CallOption) (*Issue, error)
-	// RequestIssue requests the issue.
-	// The access is based on approval flow.
-	// Permissions required: None
+	// Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+	// Permissions required: None (determined by approval flow)
 	RequestIssue(ctx context.Context, in *RequestIssueRequest, opts ...grpc.CallOption) (*Issue, error)
 }
 
@@ -201,37 +208,44 @@ func (c *issueServiceClient) RequestIssue(ctx context.Context, in *RequestIssueR
 // IssueServiceServer is the server API for IssueService service.
 // All implementations must embed UnimplementedIssueServiceServer
 // for forward compatibility.
+//
+// IssueService manages issues for tracking database changes and tasks.
 type IssueServiceServer interface {
+	// Retrieves an issue by name.
 	// Permissions required: bb.issues.get
 	GetIssue(context.Context, *GetIssueRequest) (*Issue, error)
+	// Creates a new issue for database changes or tasks.
 	// Permissions required: bb.issues.create
 	CreateIssue(context.Context, *CreateIssueRequest) (*Issue, error)
+	// Lists issues in a project.
 	// Permissions required: bb.issues.list
 	ListIssues(context.Context, *ListIssuesRequest) (*ListIssuesResponse, error)
 	// Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
 	// Permissions required: bb.issues.get
 	SearchIssues(context.Context, *SearchIssuesRequest) (*SearchIssuesResponse, error)
+	// Updates an issue's properties such as title, description, or labels.
 	// Permissions required: bb.issues.update
 	UpdateIssue(context.Context, *UpdateIssueRequest) (*Issue, error)
+	// Lists comments on an issue.
 	// Permissions required: bb.issueComments.list
 	ListIssueComments(context.Context, *ListIssueCommentsRequest) (*ListIssueCommentsResponse, error)
+	// Adds a comment to an issue.
 	// Permissions required: bb.issueComments.create
 	CreateIssueComment(context.Context, *CreateIssueCommentRequest) (*IssueComment, error)
+	// Updates an existing issue comment.
 	// Permissions required: bb.issueComments.update
 	UpdateIssueComment(context.Context, *UpdateIssueCommentRequest) (*IssueComment, error)
+	// Updates the status of multiple issues in a single operation.
 	// Permissions required: bb.issues.update
 	BatchUpdateIssuesStatus(context.Context, *BatchUpdateIssuesStatusRequest) (*BatchUpdateIssuesStatusResponse, error)
-	// ApproveIssue approves the issue.
-	// The access is based on approval flow.
-	// Permissions required: None
+	// Approves an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+	// Permissions required: None (determined by approval flow)
 	ApproveIssue(context.Context, *ApproveIssueRequest) (*Issue, error)
-	// RejectIssue rejects the issue.
-	// The access is based on approval flow.
-	// Permissions required: None
+	// Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+	// Permissions required: None (determined by approval flow)
 	RejectIssue(context.Context, *RejectIssueRequest) (*Issue, error)
-	// RequestIssue requests the issue.
-	// The access is based on approval flow.
-	// Permissions required: None
+	// Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+	// Permissions required: None (determined by approval flow)
 	RequestIssue(context.Context, *RequestIssueRequest) (*Issue, error)
 	mustEmbedUnimplementedIssueServiceServer()
 }

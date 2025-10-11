@@ -10,7 +10,9 @@ import "v1/annotation.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// InstanceRoleService manages database roles within instances.
 service InstanceRoleService {
+  // Gets a database role from an instance.
   // Permissions required: bb.instanceRoles.get
   rpc GetInstanceRole(GetInstanceRoleRequest) returns (InstanceRole) {
     option (google.api.http) = {get: "/v1/{name=instances/*/roles/*}"};
@@ -19,6 +21,7 @@ service InstanceRoleService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Lists all database roles in an instance.
   // Permissions required: bb.instanceRoles.list
   rpc ListInstanceRoles(ListInstanceRolesRequest) returns (ListInstanceRolesResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*}/roles"};

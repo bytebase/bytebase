@@ -30,15 +30,22 @@ const (
 // RevisionServiceClient is the client API for RevisionService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// RevisionService manages schema revision history.
 type RevisionServiceClient interface {
+	// Lists schema revisions for a database.
 	// Permissions required: bb.revisions.list
 	ListRevisions(ctx context.Context, in *ListRevisionsRequest, opts ...grpc.CallOption) (*ListRevisionsResponse, error)
+	// Retrieves a schema revision by name.
 	// Permissions required: bb.revisions.get
 	GetRevision(ctx context.Context, in *GetRevisionRequest, opts ...grpc.CallOption) (*Revision, error)
+	// Creates a new schema revision.
 	// Permissions required: bb.revisions.create
 	CreateRevision(ctx context.Context, in *CreateRevisionRequest, opts ...grpc.CallOption) (*Revision, error)
+	// Creates multiple schema revisions in a single operation.
 	// Permissions required: bb.revisions.create
 	BatchCreateRevisions(ctx context.Context, in *BatchCreateRevisionsRequest, opts ...grpc.CallOption) (*BatchCreateRevisionsResponse, error)
+	// Deletes a schema revision.
 	// Permissions required: bb.revisions.delete
 	DeleteRevision(ctx context.Context, in *DeleteRevisionRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
@@ -104,15 +111,22 @@ func (c *revisionServiceClient) DeleteRevision(ctx context.Context, in *DeleteRe
 // RevisionServiceServer is the server API for RevisionService service.
 // All implementations must embed UnimplementedRevisionServiceServer
 // for forward compatibility.
+//
+// RevisionService manages schema revision history.
 type RevisionServiceServer interface {
+	// Lists schema revisions for a database.
 	// Permissions required: bb.revisions.list
 	ListRevisions(context.Context, *ListRevisionsRequest) (*ListRevisionsResponse, error)
+	// Retrieves a schema revision by name.
 	// Permissions required: bb.revisions.get
 	GetRevision(context.Context, *GetRevisionRequest) (*Revision, error)
+	// Creates a new schema revision.
 	// Permissions required: bb.revisions.create
 	CreateRevision(context.Context, *CreateRevisionRequest) (*Revision, error)
+	// Creates multiple schema revisions in a single operation.
 	// Permissions required: bb.revisions.create
 	BatchCreateRevisions(context.Context, *BatchCreateRevisionsRequest) (*BatchCreateRevisionsResponse, error)
+	// Deletes a schema revision.
 	// Permissions required: bb.revisions.delete
 	DeleteRevision(context.Context, *DeleteRevisionRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedRevisionServiceServer()

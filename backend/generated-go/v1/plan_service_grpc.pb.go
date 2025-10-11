@@ -32,24 +32,32 @@ const (
 // PlanServiceClient is the client API for PlanService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// PlanService manages deployment plans for database changes.
 type PlanServiceClient interface {
+	// Retrieves a deployment plan by name.
 	// Permissions required: bb.plans.get
 	GetPlan(ctx context.Context, in *GetPlanRequest, opts ...grpc.CallOption) (*Plan, error)
+	// Lists deployment plans in a project.
 	// Permissions required: bb.plans.list
 	ListPlans(ctx context.Context, in *ListPlansRequest, opts ...grpc.CallOption) (*ListPlansResponse, error)
 	// Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
 	// Permissions required: bb.plans.get
 	SearchPlans(ctx context.Context, in *SearchPlansRequest, opts ...grpc.CallOption) (*SearchPlansResponse, error)
+	// Creates a new deployment plan.
 	// Permissions required: bb.plans.create
 	CreatePlan(ctx context.Context, in *CreatePlanRequest, opts ...grpc.CallOption) (*Plan, error)
 	// UpdatePlan updates the plan.
 	// The plan creator and the user with bb.plans.update permission on the project can update the plan.
-	// Permissions required: bb.plans.update
+	// Permissions required: bb.plans.update (or creator)
 	UpdatePlan(ctx context.Context, in *UpdatePlanRequest, opts ...grpc.CallOption) (*Plan, error)
+	// Lists plan check runs for a deployment plan.
 	// Permissions required: bb.planCheckRuns.list
 	ListPlanCheckRuns(ctx context.Context, in *ListPlanCheckRunsRequest, opts ...grpc.CallOption) (*ListPlanCheckRunsResponse, error)
+	// Executes validation checks on a deployment plan.
 	// Permissions required: bb.planCheckRuns.run
 	RunPlanChecks(ctx context.Context, in *RunPlanChecksRequest, opts ...grpc.CallOption) (*RunPlanChecksResponse, error)
+	// Cancels multiple plan check runs.
 	// Permissions required: bb.planCheckRuns.run
 	BatchCancelPlanCheckRuns(ctx context.Context, in *BatchCancelPlanCheckRunsRequest, opts ...grpc.CallOption) (*BatchCancelPlanCheckRunsResponse, error)
 }
@@ -145,24 +153,32 @@ func (c *planServiceClient) BatchCancelPlanCheckRuns(ctx context.Context, in *Ba
 // PlanServiceServer is the server API for PlanService service.
 // All implementations must embed UnimplementedPlanServiceServer
 // for forward compatibility.
+//
+// PlanService manages deployment plans for database changes.
 type PlanServiceServer interface {
+	// Retrieves a deployment plan by name.
 	// Permissions required: bb.plans.get
 	GetPlan(context.Context, *GetPlanRequest) (*Plan, error)
+	// Lists deployment plans in a project.
 	// Permissions required: bb.plans.list
 	ListPlans(context.Context, *ListPlansRequest) (*ListPlansResponse, error)
 	// Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
 	// Permissions required: bb.plans.get
 	SearchPlans(context.Context, *SearchPlansRequest) (*SearchPlansResponse, error)
+	// Creates a new deployment plan.
 	// Permissions required: bb.plans.create
 	CreatePlan(context.Context, *CreatePlanRequest) (*Plan, error)
 	// UpdatePlan updates the plan.
 	// The plan creator and the user with bb.plans.update permission on the project can update the plan.
-	// Permissions required: bb.plans.update
+	// Permissions required: bb.plans.update (or creator)
 	UpdatePlan(context.Context, *UpdatePlanRequest) (*Plan, error)
+	// Lists plan check runs for a deployment plan.
 	// Permissions required: bb.planCheckRuns.list
 	ListPlanCheckRuns(context.Context, *ListPlanCheckRunsRequest) (*ListPlanCheckRunsResponse, error)
+	// Executes validation checks on a deployment plan.
 	// Permissions required: bb.planCheckRuns.run
 	RunPlanChecks(context.Context, *RunPlanChecksRequest) (*RunPlanChecksResponse, error)
+	// Cancels multiple plan check runs.
 	// Permissions required: bb.planCheckRuns.run
 	BatchCancelPlanCheckRuns(context.Context, *BatchCancelPlanCheckRunsRequest) (*BatchCancelPlanCheckRunsResponse, error)
 	mustEmbedUnimplementedPlanServiceServer()

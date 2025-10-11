@@ -179,6 +179,8 @@ export const Webhook_TypeSchema = /*@__PURE__*/
   enumDesc(file_v1_project_service, 19, 0);
 
 /**
+ * Webhook integration type.
+ *
  * @generated from enum bytebase.v1.Webhook.Type
  */
 export const Webhook_Type = /*@__PURE__*/
@@ -198,12 +200,16 @@ export const Activity_TypeSchema = /*@__PURE__*/
   enumDesc(file_v1_project_service, 20, 0);
 
 /**
+ * Activity type enumeration.
+ *
  * @generated from enum bytebase.v1.Activity.Type
  */
 export const Activity_Type = /*@__PURE__*/
   tsEnum(Activity_TypeSchema);
 
 /**
+ * ProjectService manages projects that group databases and changes.
+ *
  * @generated from service bytebase.v1.ProjectService
  */
 export const ProjectService = /*@__PURE__*/

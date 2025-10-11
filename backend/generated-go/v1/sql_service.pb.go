@@ -30,8 +30,10 @@ type QueryOption_RedisRunCommandsOn int32
 const (
 	// UNSPECIFIED defaults to SINGLE_NODE.
 	QueryOption_REDIS_RUN_COMMANDS_ON_UNSPECIFIED QueryOption_RedisRunCommandsOn = 0
-	QueryOption_SINGLE_NODE                       QueryOption_RedisRunCommandsOn = 1
-	QueryOption_ALL_NODES                         QueryOption_RedisRunCommandsOn = 2
+	// Execute Redis commands on a single node in the cluster.
+	QueryOption_SINGLE_NODE QueryOption_RedisRunCommandsOn = 1
+	// Execute Redis commands on all nodes in the cluster for cluster-wide operations.
+	QueryOption_ALL_NODES QueryOption_RedisRunCommandsOn = 2
 )
 
 // Enum value maps for QueryOption_RedisRunCommandsOn.
@@ -78,14 +80,20 @@ func (QueryOption_RedisRunCommandsOn) EnumDescriptor() ([]byte, []int) {
 type QueryResult_Message_Level int32
 
 const (
-	// Unspecified.
+	// Unspecified message level.
 	QueryResult_Message_LEVEL_UNSPECIFIED QueryResult_Message_Level = 0
-	QueryResult_Message_INFO              QueryResult_Message_Level = 1
-	QueryResult_Message_WARNING           QueryResult_Message_Level = 2
-	QueryResult_Message_DEBUG             QueryResult_Message_Level = 3
-	QueryResult_Message_LOG               QueryResult_Message_Level = 4
-	QueryResult_Message_NOTICE            QueryResult_Message_Level = 5
-	QueryResult_Message_EXCEPTION         QueryResult_Message_Level = 6
+	// Informational message.
+	QueryResult_Message_INFO QueryResult_Message_Level = 1
+	// Warning message indicating potential issues.
+	QueryResult_Message_WARNING QueryResult_Message_Level = 2
+	// Debug message for development and troubleshooting.
+	QueryResult_Message_DEBUG QueryResult_Message_Level = 3
+	// General log message.
+	QueryResult_Message_LOG QueryResult_Message_Level = 4
+	// Notice message for important information.
+	QueryResult_Message_NOTICE QueryResult_Message_Level = 5
+	// Exception message indicating error conditions.
+	QueryResult_Message_EXCEPTION QueryResult_Message_Level = 6
 )
 
 // Enum value maps for QueryResult_Message_Level.
@@ -248,9 +256,12 @@ func (CheckRequest_ChangeType) EnumDescriptor() ([]byte, []int) {
 type QueryHistory_Type int32
 
 const (
+	// Unspecified query history type.
 	QueryHistory_TYPE_UNSPECIFIED QueryHistory_Type = 0
-	QueryHistory_QUERY            QueryHistory_Type = 1
-	QueryHistory_EXPORT           QueryHistory_Type = 2
+	// Query execution for data retrieval.
+	QueryHistory_QUERY QueryHistory_Type = 1
+	// Data export operation to file.
+	QueryHistory_EXPORT QueryHistory_Type = 2
 )
 
 // Enum value maps for QueryHistory_Type.
@@ -1829,7 +1840,7 @@ type SearchQueryHistoriesRequest struct {
 	// - database: the database full name in "instances/{id}/databases/{name}" format, support "==" operator.
 	// - instance: the instance full name in "instances/{id}" format, support "==" operator.
 	// - type: the type, should be "QUERY" or "EXPORT", support "==" operator.
-	// - statement: the SQL statemnt, support ".matches()" operator.
+	// - statement: the SQL statement, support ".matches()" operator.
 	//
 	// For example:
 	// project == "projects/{project}"

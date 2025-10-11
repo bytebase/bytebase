@@ -60,6 +60,8 @@ export const AuditLog_SeveritySchema = /*@__PURE__*/
   enumDesc(file_v1_audit_log_service, 4, 0);
 
 /**
+ * Severity level for audit log entries.
+ *
  * @generated from enum bytebase.v1.AuditLog.Severity
  */
 export const AuditLog_Severity = /*@__PURE__*/
@@ -80,6 +82,8 @@ export const RequestMetadataSchema = /*@__PURE__*/
   messageDesc(file_v1_audit_log_service, 6);
 
 /**
+ * AuditLogService manages audit logs for system activities and API calls.
+ *
  * @generated from service bytebase.v1.AuditLogService
  */
 export const AuditLogService = /*@__PURE__*/

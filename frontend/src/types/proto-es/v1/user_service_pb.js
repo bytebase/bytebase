@@ -107,6 +107,8 @@ export const UserType = /*@__PURE__*/
   tsEnum(UserTypeSchema);
 
 /**
+ * UserService manages user accounts and authentication.
+ *
  * @generated from service bytebase.v1.UserService
  */
 export const UserService = /*@__PURE__*/

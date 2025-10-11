@@ -318,6 +318,8 @@ export const TaskRunLogEntry_TaskRunStatusUpdate_StatusSchema = /*@__PURE__*/
   enumDesc(file_v1_rollout_service, 20, 3, 0);
 
 /**
+ * Internal status for task run execution.
+ *
  * @generated from enum bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.Status
  */
 export const TaskRunLogEntry_TaskRunStatusUpdate_Status = /*@__PURE__*/
@@ -337,6 +339,8 @@ export const TaskRunLogEntry_TransactionControl_TypeSchema = /*@__PURE__*/
   enumDesc(file_v1_rollout_service, 20, 4, 0);
 
 /**
+ * Transaction control type.
+ *
  * @generated from enum bytebase.v1.TaskRunLogEntry.TransactionControl.Type
  */
 export const TaskRunLogEntry_TransactionControl_Type = /*@__PURE__*/
@@ -370,6 +374,8 @@ export const TaskRunLogEntry_TypeSchema = /*@__PURE__*/
   enumDesc(file_v1_rollout_service, 20, 0);
 
 /**
+ * The type of log entry.
+ *
  * @generated from enum bytebase.v1.TaskRunLogEntry.Type
  */
 export const TaskRunLogEntry_Type = /*@__PURE__*/
@@ -418,6 +424,8 @@ export const PreviewTaskRunRollbackResponseSchema = /*@__PURE__*/
   messageDesc(file_v1_rollout_service, 24);
 
 /**
+ * RolloutService manages the execution of deployment plans.
+ *
  * @generated from service bytebase.v1.RolloutService
  */
 export const RolloutService = /*@__PURE__*/

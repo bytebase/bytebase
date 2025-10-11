@@ -9,6 +9,7 @@ import "google/type/expr.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// Request message for getting an IAM policy.
 message GetIamPolicyRequest {
   // The name of the resource to get the IAM policy.
   // Format: projects/{project}
@@ -19,6 +20,7 @@ message GetIamPolicyRequest {
   ];
 }
 
+// Request message for setting an IAM policy.
 message SetIamPolicyRequest {
   // The name of the resource to set the IAM policy.
   // Format: projects/{project}
@@ -34,6 +36,7 @@ message SetIamPolicyRequest {
   string etag = 3;
 }
 
+// IAM policy that binds members to roles.
 message IamPolicy {
   // Collection of binding.
   // A binding binds one or more project members to a single project role.
@@ -45,6 +48,7 @@ message IamPolicy {
   string etag = 2;
 }
 
+// Binding associates members with a role and optional conditions.
 message Binding {
   // The role that is assigned to the members.
   // Format: roles/{role}
@@ -76,19 +80,21 @@ message Binding {
   google.api.expr.v1alpha1.Expr parsed_expr = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// The difference delta between two policies.
+// Describes changes between two IAM policies.
 message PolicyDelta {
   // The delta for Bindings between two policies.
   repeated BindingDelta binding_deltas = 1;
 }
 
-// One delta entry for Binding. Each individual change (only one member in each
-// entry) to a binding will be a separate entry.
+// A single change to a binding.
 message BindingDelta {
-  // The type of action performed on a Binding in a policy.
+  // Type of action performed on a binding.
   enum Action {
+    // Unspecified action.
     ACTION_UNSPECIFIED = 0;
+    // Add a binding.
     ADD = 1;
+    // Remove a binding.
     REMOVE = 2;
   }
 

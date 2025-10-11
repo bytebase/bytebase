@@ -67,6 +67,8 @@ export const ReviewConfigSchema = /*@__PURE__*/
   messageDesc(file_v1_review_config_service, 6);
 
 /**
+ * ReviewConfigService manages approval flow configurations.
+ *
  * @generated from service bytebase.v1.ReviewConfigService
  */
 export const ReviewConfigService = /*@__PURE__*/

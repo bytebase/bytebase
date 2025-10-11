@@ -80,6 +80,8 @@ export const Risk_Source = /*@__PURE__*/
   tsEnum(Risk_SourceSchema);
 
 /**
+ * RiskService manages risk assessment rules for database changes.
+ *
  * @generated from service bytebase.v1.RiskService
  */
 export const RiskService = /*@__PURE__*/

@@ -54,20 +54,23 @@ const (
 
 // GroupServiceClient is a client for the bytebase.v1.GroupService service.
 type GroupServiceClient interface {
+	// Gets a group by name.
 	// Permissions required: bb.groups.get
 	GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.Group], error)
-	// Get the groups in batch.
+	// Gets multiple groups in a single request.
 	// Permissions required: bb.groups.get
 	BatchGetGroups(context.Context, *connect.Request[v1.BatchGetGroupsRequest]) (*connect.Response[v1.BatchGetGroupsResponse], error)
+	// Lists all groups in the workspace.
 	// Permissions required: bb.groups.list
 	ListGroups(context.Context, *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error)
+	// Creates a new group.
 	// Permissions required: bb.groups.create
 	CreateGroup(context.Context, *connect.Request[v1.CreateGroupRequest]) (*connect.Response[v1.Group], error)
-	// UpdateGroup updates the group.
-	// Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
-	// Permissions required: bb.groups.update
+	// Updates a group. Group owners or users with bb.groups.update permission can update.
+	// Permissions required: bb.groups.update OR caller is group owner
 	UpdateGroup(context.Context, *connect.Request[v1.UpdateGroupRequest]) (*connect.Response[v1.Group], error)
-	// Permissions required: bb.groups.delete
+	// Deletes a group. Group owners or users with bb.groups.delete permission can delete.
+	// Permissions required: bb.groups.delete OR caller is group owner
 	DeleteGroup(context.Context, *connect.Request[v1.DeleteGroupRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
@@ -163,20 +166,23 @@ func (c *groupServiceClient) DeleteGroup(ctx context.Context, req *connect.Reque
 
 // GroupServiceHandler is an implementation of the bytebase.v1.GroupService service.
 type GroupServiceHandler interface {
+	// Gets a group by name.
 	// Permissions required: bb.groups.get
 	GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.Group], error)
-	// Get the groups in batch.
+	// Gets multiple groups in a single request.
 	// Permissions required: bb.groups.get
 	BatchGetGroups(context.Context, *connect.Request[v1.BatchGetGroupsRequest]) (*connect.Response[v1.BatchGetGroupsResponse], error)
+	// Lists all groups in the workspace.
 	// Permissions required: bb.groups.list
 	ListGroups(context.Context, *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error)
+	// Creates a new group.
 	// Permissions required: bb.groups.create
 	CreateGroup(context.Context, *connect.Request[v1.CreateGroupRequest]) (*connect.Response[v1.Group], error)
-	// UpdateGroup updates the group.
-	// Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
-	// Permissions required: bb.groups.update
+	// Updates a group. Group owners or users with bb.groups.update permission can update.
+	// Permissions required: bb.groups.update OR caller is group owner
 	UpdateGroup(context.Context, *connect.Request[v1.UpdateGroupRequest]) (*connect.Response[v1.Group], error)
-	// Permissions required: bb.groups.delete
+	// Deletes a group. Group owners or users with bb.groups.delete permission can delete.
+	// Permissions required: bb.groups.delete OR caller is group owner
 	DeleteGroup(context.Context, *connect.Request[v1.DeleteGroupRequest]) (*connect.Response[emptypb.Empty], error)
 }
 

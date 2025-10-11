@@ -36,6 +36,8 @@ export declare type CreatePolicyRequest = Message<"bytebase.v1.CreatePolicyReque
   policy?: Policy;
 
   /**
+   * The type of policy to create.
+   *
    * @generated from field: bytebase.v1.PolicyType type = 3;
    */
   type: PolicyType;
@@ -142,12 +144,14 @@ export declare type ListPoliciesRequest = Message<"bytebase.v1.ListPoliciesReque
   parent: string;
 
   /**
+   * Filter by specific policy type.
+   *
    * @generated from field: optional bytebase.v1.PolicyType policy_type = 2;
    */
   policyType?: PolicyType;
 
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * The maximum number of policies to return. The service may return fewer than
    * this value.
    * If unspecified, at most 10 policies will be returned.
@@ -158,7 +162,7 @@ export declare type ListPoliciesRequest = Message<"bytebase.v1.ListPoliciesReque
   pageSize: number;
 
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * A page token, received from a previous `ListPolicies` call.
    * Provide this to retrieve the subsequent page.
    *
@@ -226,16 +230,22 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
   name: string;
 
   /**
+   * Whether this policy inherits from its parent resource.
+   *
    * @generated from field: bool inherit_from_parent = 4;
    */
   inheritFromParent: boolean;
 
   /**
+   * The type of policy.
+   *
    * @generated from field: bytebase.v1.PolicyType type = 5;
    */
   type: PolicyType;
 
   /**
+   * The policy configuration.
+   *
    * @generated from oneof bytebase.v1.Policy.policy
    */
   policy: {
@@ -277,6 +287,8 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
   } | { case: undefined; value?: undefined };
 
   /**
+   * Whether the policy is enforced.
+   *
    * @generated from field: bool enforce = 13;
    */
   enforce: boolean;
@@ -296,15 +308,21 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
 export declare const PolicySchema: GenMessage<Policy>;
 
 /**
+ * Rollout policy configuration.
+ *
  * @generated from message bytebase.v1.RolloutPolicy
  */
 export declare type RolloutPolicy = Message<"bytebase.v1.RolloutPolicy"> & {
   /**
+   * Whether rollout is automatic without manual approval.
+   *
    * @generated from field: bool automatic = 1;
    */
   automatic: boolean;
 
   /**
+   * The roles that can approve rollout execution.
+   *
    * @generated from field: repeated string roles = 2;
    */
   roles: string[];
@@ -412,14 +430,14 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
   timeout?: Duration;
 
   /**
-   * Disable export data in the SQL editor
+   * Disable data export in the SQL editor.
    *
    * @generated from field: bool disable_export = 2;
    */
   disableExport: boolean;
 
   /**
-   * The size limit in bytes.
+   * The maximum result size limit in bytes.
    * The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
    *
    * @generated from field: int64 maximum_result_size = 3;
@@ -427,7 +445,7 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
   maximumResultSize: bigint;
 
   /**
-   * The return rows limit.
+   * The maximum number of rows to return.
    * The default value is -1, means no limit.
    *
    * @generated from field: int32 maximum_result_rows = 4;
@@ -435,7 +453,7 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
   maximumResultRows: number;
 
   /**
-   * Disable copying data.
+   * Disable copying query results.
    *
    * @generated from field: bool disable_copy_data = 5;
    */
@@ -449,17 +467,21 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
 export declare const QueryDataPolicySchema: GenMessage<QueryDataPolicy>;
 
 /**
- * The SQL review rules. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
+ * SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
  *
  * @generated from message bytebase.v1.SQLReviewRule
  */
 export declare type SQLReviewRule = Message<"bytebase.v1.SQLReviewRule"> & {
   /**
+   * The type of SQL review rule.
+   *
    * @generated from field: string type = 1;
    */
   type: string;
 
   /**
+   * The severity level of the rule.
+   *
    * @generated from field: bytebase.v1.SQLReviewRuleLevel level = 2;
    */
   level: SQLReviewRuleLevel;
@@ -472,11 +494,15 @@ export declare type SQLReviewRule = Message<"bytebase.v1.SQLReviewRule"> & {
   payload: string;
 
   /**
+   * The database engine this rule applies to.
+   *
    * @generated from field: bytebase.v1.Engine engine = 4;
    */
   engine: Engine;
 
   /**
+   * Additional comment for the rule.
+   *
    * @generated from field: string comment = 5;
    */
   comment: string;
@@ -495,6 +521,8 @@ export declare const SQLReviewRuleSchema: GenMessage<SQLReviewRule>;
  */
 export declare type MaskingExceptionPolicy = Message<"bytebase.v1.MaskingExceptionPolicy"> & {
   /**
+   * The list of masking exceptions.
+   *
    * @generated from field: repeated bytebase.v1.MaskingExceptionPolicy.MaskingException masking_exceptions = 1;
    */
   maskingExceptions: MaskingExceptionPolicy_MaskingException[];
@@ -507,11 +535,13 @@ export declare type MaskingExceptionPolicy = Message<"bytebase.v1.MaskingExcepti
 export declare const MaskingExceptionPolicySchema: GenMessage<MaskingExceptionPolicy>;
 
 /**
+ * An exception allowing specific users to access masked data.
+ *
  * @generated from message bytebase.v1.MaskingExceptionPolicy.MaskingException
  */
 export declare type MaskingExceptionPolicy_MaskingException = Message<"bytebase.v1.MaskingExceptionPolicy.MaskingException"> & {
   /**
-   * action is the action that the user can access sensitive data.
+   * The action that the user can perform on sensitive data.
    *
    * @generated from field: bytebase.v1.MaskingExceptionPolicy.MaskingException.Action action = 1;
    */
@@ -557,20 +587,28 @@ export declare type MaskingExceptionPolicy_MaskingException = Message<"bytebase.
 export declare const MaskingExceptionPolicy_MaskingExceptionSchema: GenMessage<MaskingExceptionPolicy_MaskingException>;
 
 /**
+ * The action that the exception permits.
+ *
  * @generated from enum bytebase.v1.MaskingExceptionPolicy.MaskingException.Action
  */
 export enum MaskingExceptionPolicy_MaskingException_Action {
   /**
+   * Unspecified action.
+   *
    * @generated from enum value: ACTION_UNSPECIFIED = 0;
    */
   ACTION_UNSPECIFIED = 0,
 
   /**
+   * Allow querying sensitive data.
+   *
    * @generated from enum value: QUERY = 1;
    */
   QUERY = 1,
 
   /**
+   * Allow exporting sensitive data.
+   *
    * @generated from enum value: EXPORT = 2;
    */
   EXPORT = 2,
@@ -582,10 +620,14 @@ export enum MaskingExceptionPolicy_MaskingException_Action {
 export declare const MaskingExceptionPolicy_MaskingException_ActionSchema: GenEnum<MaskingExceptionPolicy_MaskingException_Action>;
 
 /**
+ * Policy for configuring data masking rules.
+ *
  * @generated from message bytebase.v1.MaskingRulePolicy
  */
 export declare type MaskingRulePolicy = Message<"bytebase.v1.MaskingRulePolicy"> & {
   /**
+   * The list of masking rules.
+   *
    * @generated from field: repeated bytebase.v1.MaskingRulePolicy.MaskingRule rules = 1;
    */
   rules: MaskingRulePolicy_MaskingRule[];
@@ -598,11 +640,13 @@ export declare type MaskingRulePolicy = Message<"bytebase.v1.MaskingRulePolicy">
 export declare const MaskingRulePolicySchema: GenMessage<MaskingRulePolicy>;
 
 /**
+ * A rule that defines when and how to mask data.
+ *
  * @generated from message bytebase.v1.MaskingRulePolicy.MaskingRule
  */
 export declare type MaskingRulePolicy_MaskingRule = Message<"bytebase.v1.MaskingRulePolicy.MaskingRule"> & {
   /**
-   * A unique identifier for a node in UUID format.
+   * A unique identifier for the rule in UUID format.
    *
    * @generated from field: string id = 1;
    */
@@ -638,6 +682,8 @@ export declare type MaskingRulePolicy_MaskingRule = Message<"bytebase.v1.Masking
   condition?: Expr;
 
   /**
+   * The semantic type of data to mask (e.g., "SSN", "EMAIL").
+   *
    * @generated from field: string semantic_type = 3;
    */
   semanticType: string;
@@ -650,6 +696,8 @@ export declare type MaskingRulePolicy_MaskingRule = Message<"bytebase.v1.Masking
 export declare const MaskingRulePolicy_MaskingRuleSchema: GenMessage<MaskingRulePolicy_MaskingRule>;
 
 /**
+ * Policy for tagging resources with metadata.
+ *
  * @generated from message bytebase.v1.TagPolicy
  */
 export declare type TagPolicy = Message<"bytebase.v1.TagPolicy"> & {
@@ -669,12 +717,14 @@ export declare type TagPolicy = Message<"bytebase.v1.TagPolicy"> & {
 export declare const TagPolicySchema: GenMessage<TagPolicy>;
 
 /**
- * DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.
+ * Policy for controlling which data sources can be queried in the SQL editor.
  *
  * @generated from message bytebase.v1.DataSourceQueryPolicy
  */
 export declare type DataSourceQueryPolicy = Message<"bytebase.v1.DataSourceQueryPolicy"> & {
   /**
+   * Restriction for admin data source queries.
+   *
    * @generated from field: bytebase.v1.DataSourceQueryPolicy.Restriction admin_data_source_restriction = 1;
    */
   adminDataSourceRestriction: DataSourceQueryPolicy_Restriction;
@@ -701,23 +751,27 @@ export declare type DataSourceQueryPolicy = Message<"bytebase.v1.DataSourceQuery
 export declare const DataSourceQueryPolicySchema: GenMessage<DataSourceQueryPolicy>;
 
 /**
+ * Restriction level for admin data source access.
+ *
  * @generated from enum bytebase.v1.DataSourceQueryPolicy.Restriction
  */
 export enum DataSourceQueryPolicy_Restriction {
   /**
+   * Unspecified restriction.
+   *
    * @generated from enum value: RESTRICTION_UNSPECIFIED = 0;
    */
   RESTRICTION_UNSPECIFIED = 0,
 
   /**
-   * Allow to query admin data sources when there is no read-only data source.
+   * Allow querying admin data sources when there is no read-only data source.
    *
    * @generated from enum value: FALLBACK = 1;
    */
   FALLBACK = 1,
 
   /**
-   * Disallow to query admin data sources.
+   * Disallow querying admin data sources.
    *
    * @generated from enum value: DISALLOW = 2;
    */
@@ -730,40 +784,56 @@ export enum DataSourceQueryPolicy_Restriction {
 export declare const DataSourceQueryPolicy_RestrictionSchema: GenEnum<DataSourceQueryPolicy_Restriction>;
 
 /**
+ * The type of organizational policy.
+ *
  * @generated from enum bytebase.v1.PolicyType
  */
 export enum PolicyType {
   /**
+   * Unspecified policy type.
+   *
    * @generated from enum value: POLICY_TYPE_UNSPECIFIED = 0;
    */
   POLICY_TYPE_UNSPECIFIED = 0,
 
   /**
+   * Rollout deployment policy.
+   *
    * @generated from enum value: ROLLOUT_POLICY = 11;
    */
   ROLLOUT_POLICY = 11,
 
   /**
+   * Data masking rule policy.
+   *
    * @generated from enum value: MASKING_RULE = 9;
    */
   MASKING_RULE = 9,
 
   /**
+   * Data masking exception policy.
+   *
    * @generated from enum value: MASKING_EXCEPTION = 10;
    */
   MASKING_EXCEPTION = 10,
 
   /**
+   * Resource tag policy.
+   *
    * @generated from enum value: TAG = 13;
    */
   TAG = 13,
 
   /**
+   * Data source query restrictions policy.
+   *
    * @generated from enum value: DATA_SOURCE_QUERY = 14;
    */
   DATA_SOURCE_QUERY = 14,
 
   /**
+   * Query data access policy.
+   *
    * @generated from enum value: DATA_QUERY = 16;
    */
   DATA_QUERY = 16,
@@ -775,25 +845,35 @@ export enum PolicyType {
 export declare const PolicyTypeSchema: GenEnum<PolicyType>;
 
 /**
+ * The resource type that a policy can be attached to.
+ *
  * @generated from enum bytebase.v1.PolicyResourceType
  */
 export enum PolicyResourceType {
   /**
+   * Unspecified resource type.
+   *
    * @generated from enum value: RESOURCE_TYPE_UNSPECIFIED = 0;
    */
   RESOURCE_TYPE_UNSPECIFIED = 0,
 
   /**
+   * Workspace-level policy.
+   *
    * @generated from enum value: WORKSPACE = 1;
    */
   WORKSPACE = 1,
 
   /**
+   * Environment-level policy.
+   *
    * @generated from enum value: ENVIRONMENT = 2;
    */
   ENVIRONMENT = 2,
 
   /**
+   * Project-level policy.
+   *
    * @generated from enum value: PROJECT = 3;
    */
   PROJECT = 3,
@@ -805,25 +885,35 @@ export enum PolicyResourceType {
 export declare const PolicyResourceTypeSchema: GenEnum<PolicyResourceType>;
 
 /**
+ * The severity level for SQL review rules.
+ *
  * @generated from enum bytebase.v1.SQLReviewRuleLevel
  */
 export enum SQLReviewRuleLevel {
   /**
+   * Unspecified level.
+   *
    * @generated from enum value: LEVEL_UNSPECIFIED = 0;
    */
   LEVEL_UNSPECIFIED = 0,
 
   /**
+   * Rule violation is an error.
+   *
    * @generated from enum value: ERROR = 1;
    */
   ERROR = 1,
 
   /**
+   * Rule violation is a warning.
+   *
    * @generated from enum value: WARNING = 2;
    */
   WARNING = 2,
 
   /**
+   * Rule is disabled.
+   *
    * @generated from enum value: DISABLED = 3;
    */
   DISABLED = 3,
@@ -835,10 +925,13 @@ export enum SQLReviewRuleLevel {
 export declare const SQLReviewRuleLevelSchema: GenEnum<SQLReviewRuleLevel>;
 
 /**
+ * OrgPolicyService manages organizational policies at various resource levels.
+ *
  * @generated from service bytebase.v1.OrgPolicyService
  */
 export declare const OrgPolicyService: GenService<{
   /**
+   * Retrieves a policy by name.
    * Permissions required: bb.policies.get
    *
    * @generated from rpc bytebase.v1.OrgPolicyService.GetPolicy
@@ -849,6 +942,7 @@ export declare const OrgPolicyService: GenService<{
     output: typeof PolicySchema;
   },
   /**
+   * Lists policies at a specified resource level.
    * Permissions required: bb.policies.list
    *
    * @generated from rpc bytebase.v1.OrgPolicyService.ListPolicies
@@ -859,6 +953,7 @@ export declare const OrgPolicyService: GenService<{
     output: typeof ListPoliciesResponseSchema;
   },
   /**
+   * Creates a new organizational policy.
    * Permissions required: bb.policies.create
    *
    * @generated from rpc bytebase.v1.OrgPolicyService.CreatePolicy
@@ -869,6 +964,7 @@ export declare const OrgPolicyService: GenService<{
     output: typeof PolicySchema;
   },
   /**
+   * Updates an existing organizational policy.
    * Permissions required: bb.policies.update
    *
    * @generated from rpc bytebase.v1.OrgPolicyService.UpdatePolicy
@@ -879,6 +975,7 @@ export declare const OrgPolicyService: GenService<{
     output: typeof PolicySchema;
   },
   /**
+   * Deletes an organizational policy.
    * Permissions required: bb.policies.delete
    *
    * @generated from rpc bytebase.v1.OrgPolicyService.DeletePolicy

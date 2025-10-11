@@ -14,7 +14,9 @@ import "v1/instance_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// DatabaseService manages databases and their schemas.
 service DatabaseService {
+  // Retrieves a database by name.
   // Permissions required: bb.databases.get
   rpc GetDatabase(GetDatabaseRequest) returns (Database) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*}"};
@@ -23,6 +25,7 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Retrieves multiple databases by their names.
   // Permissions required: bb.databases.get
   rpc BatchGetDatabases(BatchGetDatabasesRequest) returns (BatchGetDatabasesResponse) {
     option (google.api.http) = {
@@ -33,7 +36,8 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
-  // Permissions required: bb.databases.list
+  // Lists databases in a project, instance, or workspace.
+  // Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
   rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
     option (google.api.http) = {
       get: "/v1/{parent=projects/*}/databases"
@@ -47,6 +51,7 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Updates database properties such as labels and project assignment.
   // Permissions required: bb.databases.update
   rpc UpdateDatabase(UpdateDatabaseRequest) returns (Database) {
     option (google.api.http) = {
@@ -59,6 +64,7 @@ service DatabaseService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Updates multiple databases in a single batch operation.
   // Permissions required: bb.databases.update
   rpc BatchUpdateDatabases(BatchUpdateDatabasesRequest) returns (BatchUpdateDatabasesResponse) {
     option (google.api.http) = {
@@ -70,6 +76,7 @@ service DatabaseService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Synchronizes database schema from the instance.
   // Permissions required: bb.databases.sync
   rpc SyncDatabase(SyncDatabaseRequest) returns (SyncDatabaseResponse) {
     option (google.api.http) = {
@@ -80,6 +87,7 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Synchronizes multiple databases in a single batch operation.
   // Permissions required: bb.databases.sync
   rpc BatchSyncDatabases(BatchSyncDatabasesRequest) returns (BatchSyncDatabasesResponse) {
     option (google.api.http) = {
@@ -90,6 +98,7 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Retrieves database metadata including tables, columns, and indexes.
   // Permissions required: bb.databases.getSchema
   rpc GetDatabaseMetadata(GetDatabaseMetadataRequest) returns (DatabaseMetadata) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/metadata}"};
@@ -97,6 +106,7 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Retrieves database schema as DDL statements.
   // Permissions required: bb.databases.getSchema
   rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
@@ -104,6 +114,7 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Compares and generates migration statements between two schemas.
   // Permissions required: bb.databases.get
   rpc DiffSchema(DiffSchemaRequest) returns (DiffSchemaResponse) {
     option (google.api.http) = {
@@ -120,6 +131,7 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Lists migration history for a database.
   // Permissions required: bb.changelogs.list
   rpc ListChangelogs(ListChangelogsRequest) returns (ListChangelogsResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/changelogs"};
@@ -128,7 +140,8 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Permissions required: changelogs.get
+  // Retrieves a specific changelog entry.
+  // Permissions required: bb.changelogs.get
   rpc GetChangelog(GetChangelogRequest) returns (Changelog) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/changelogs/*}"};
     option (google.api.method_signature) = "name";
@@ -136,7 +149,8 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Permissions required: databases.getSchema
+  // Generates schema DDL for a database object.
+  // Permissions required: bb.databases.getSchema
   rpc GetSchemaString(GetSchemaStringRequest) returns (GetSchemaStringResponse) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schemaString}"};
     option (google.api.method_signature) = "name";
@@ -447,6 +461,7 @@ message DatabaseMetadata {
   // The extensions is the list of extensions in a database.
   repeated ExtensionMetadata extensions = 5;
 
+  // The owner of the database.
   string owner = 7;
 
   // The search_path is the search path of a PostgreSQL database.
@@ -489,15 +504,19 @@ message SchemaMetadata {
   // The packages is the list of packages in a schema.
   repeated PackageMetadata packages = 10;
 
+  // The owner of the schema.
   string owner = 11;
 
   // The sequences is the list of sequences in a schema, sorted by name.
   repeated SequenceMetadata sequences = 13;
 
+  // The events is the list of scheduled events in a schema.
   repeated EventMetadata events = 14;
 
+  // The enum_types is the list of user-defined enum types in a schema.
   repeated EnumTypeMetadata enum_types = 15;
 
+  // Whether to skip this schema during schema dump operations.
   bool skip_dump = 16;
 
   // The comment is the comment of a schema.
@@ -511,8 +530,10 @@ message EnumTypeMetadata {
   // The enum values of a type.
   repeated string values = 2;
 
+  // The comment describing the enum type.
   string comment = 3;
 
+  // Whether to skip this enum type during schema dump operations.
   bool skip_dump = 4;
 }
 
@@ -526,10 +547,13 @@ message EventMetadata {
   // The time zone of the event.
   string time_zone = 3;
 
+  // The SQL mode setting for the event.
   string sql_mode = 4;
 
+  // The character set used by the client creating the event.
   string character_set_client = 5;
 
+  // The collation used for the connection when creating the event.
   string collation_connection = 6;
 
   // The comment is the comment of an event.
@@ -570,8 +594,10 @@ message SequenceMetadata {
   // The owner column of the sequence.
   string owner_column = 11;
 
+  // The comment describing the sequence.
   string comment = 12;
 
+  // Whether to skip this sequence during schema dump operations.
   bool skip_dump = 13;
 }
 
@@ -589,14 +615,19 @@ message TriggerMetadata {
   // The body is the body of the trigger.
   string body = 5;
 
+  // The SQL mode setting for the trigger.
   string sql_mode = 6;
 
+  // The character set used by the client creating the trigger.
   string character_set_client = 7;
 
+  // The collation used for the connection when creating the trigger.
   string collation_connection = 8;
 
+  // The comment describing the trigger.
   string comment = 9;
 
+  // Whether to skip this trigger during schema dump operations.
   bool skip_dump = 10;
 }
 
@@ -665,14 +696,17 @@ message TableMetadata {
   // The check_constraints is the list of check constraints in a table.
   repeated CheckConstraintMetadata check_constraints = 16;
 
+  // The owner of the table.
   string owner = 18;
 
   // The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.
   // Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
   repeated string sorting_keys = 19;
 
+  // The triggers is the list of triggers associated with the table.
   repeated TriggerMetadata triggers = 20;
 
+  // Whether to skip this table during schema dump operations.
   bool skip_dump = 21;
 
   // https://docs.pingcap.com/tidb/stable/information-schema-tables/

@@ -31,17 +31,25 @@ const (
 // IdentityProviderServiceClient is the client API for IdentityProviderService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// IdentityProviderService manages external identity providers for SSO authentication.
 type IdentityProviderServiceClient interface {
+	// Gets an identity provider by name.
 	// Permissions required: bb.identityProviders.get
 	GetIdentityProvider(ctx context.Context, in *GetIdentityProviderRequest, opts ...grpc.CallOption) (*IdentityProvider, error)
+	// Lists all configured identity providers (public endpoint for login page).
 	// Permissions required: None
 	ListIdentityProviders(ctx context.Context, in *ListIdentityProvidersRequest, opts ...grpc.CallOption) (*ListIdentityProvidersResponse, error)
+	// Creates a new identity provider.
 	// Permissions required: bb.identityProviders.create
 	CreateIdentityProvider(ctx context.Context, in *CreateIdentityProviderRequest, opts ...grpc.CallOption) (*IdentityProvider, error)
+	// Updates an identity provider.
 	// Permissions required: bb.identityProviders.update
 	UpdateIdentityProvider(ctx context.Context, in *UpdateIdentityProviderRequest, opts ...grpc.CallOption) (*IdentityProvider, error)
+	// Deletes an identity provider.
 	// Permissions required: bb.identityProviders.delete
 	DeleteIdentityProvider(ctx context.Context, in *DeleteIdentityProviderRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Tests the connection and configuration of an identity provider.
 	// Permissions required: bb.identityProviders.update
 	TestIdentityProvider(ctx context.Context, in *TestIdentityProviderRequest, opts ...grpc.CallOption) (*TestIdentityProviderResponse, error)
 }
@@ -117,17 +125,25 @@ func (c *identityProviderServiceClient) TestIdentityProvider(ctx context.Context
 // IdentityProviderServiceServer is the server API for IdentityProviderService service.
 // All implementations must embed UnimplementedIdentityProviderServiceServer
 // for forward compatibility.
+//
+// IdentityProviderService manages external identity providers for SSO authentication.
 type IdentityProviderServiceServer interface {
+	// Gets an identity provider by name.
 	// Permissions required: bb.identityProviders.get
 	GetIdentityProvider(context.Context, *GetIdentityProviderRequest) (*IdentityProvider, error)
+	// Lists all configured identity providers (public endpoint for login page).
 	// Permissions required: None
 	ListIdentityProviders(context.Context, *ListIdentityProvidersRequest) (*ListIdentityProvidersResponse, error)
+	// Creates a new identity provider.
 	// Permissions required: bb.identityProviders.create
 	CreateIdentityProvider(context.Context, *CreateIdentityProviderRequest) (*IdentityProvider, error)
+	// Updates an identity provider.
 	// Permissions required: bb.identityProviders.update
 	UpdateIdentityProvider(context.Context, *UpdateIdentityProviderRequest) (*IdentityProvider, error)
+	// Deletes an identity provider.
 	// Permissions required: bb.identityProviders.delete
 	DeleteIdentityProvider(context.Context, *DeleteIdentityProviderRequest) (*emptypb.Empty, error)
+	// Tests the connection and configuration of an identity provider.
 	// Permissions required: bb.identityProviders.update
 	TestIdentityProvider(context.Context, *TestIdentityProviderRequest) (*TestIdentityProviderResponse, error)
 	mustEmbedUnimplementedIdentityProviderServiceServer()

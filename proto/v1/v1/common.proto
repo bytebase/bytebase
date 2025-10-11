@@ -4,54 +4,96 @@ package bytebase.v1;
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// Resource lifecycle state.
 enum State {
   STATE_UNSPECIFIED = 0;
+  // Resource is active and operational.
   ACTIVE = 1;
+  // Resource is soft-deleted but may be recoverable.
   DELETED = 2;
 }
 
+// Database engine type.
 enum Engine {
+  // Unspecified database engine.
   ENGINE_UNSPECIFIED = 0;
+  // ClickHouse columnar database.
   CLICKHOUSE = 1;
+  // MySQL relational database.
   MYSQL = 2;
+  // PostgreSQL relational database.
   POSTGRES = 3;
+  // Snowflake cloud data warehouse.
   SNOWFLAKE = 4;
+  // SQLite embedded database.
   SQLITE = 5;
+  // TiDB distributed SQL database.
   TIDB = 6;
+  // MongoDB document database.
   MONGODB = 7;
+  // Redis key-value store.
   REDIS = 8;
+  // Oracle relational database.
   ORACLE = 9;
+  // Google Cloud Spanner distributed database.
   SPANNER = 10;
+  // Microsoft SQL Server relational database.
   MSSQL = 11;
+  // Amazon Redshift data warehouse.
   REDSHIFT = 12;
+  // MariaDB relational database.
   MARIADB = 13;
+  // OceanBase distributed database.
   OCEANBASE = 14;
+  // StarRocks analytics database.
   STARROCKS = 18;
+  // Apache Doris analytics database.
   DORIS = 19;
+  // Apache Hive data warehouse.
   HIVE = 20;
+  // Elasticsearch search engine.
   ELASTICSEARCH = 21;
+  // Google BigQuery data warehouse.
   BIGQUERY = 22;
+  // Amazon DynamoDB NoSQL database.
   DYNAMODB = 23;
+  // Databricks lakehouse platform.
   DATABRICKS = 24;
+  // CockroachDB distributed SQL database.
   COCKROACHDB = 25;
+  // Azure Cosmos DB multi-model database.
   COSMOSDB = 26;
+  // Trino distributed SQL query engine.
   TRINO = 27;
+  // Apache Cassandra NoSQL database.
   CASSANDRA = 28;
 }
 
+// Version control system type.
 enum VCSType {
+  // Unspecified VCS type.
   VCS_TYPE_UNSPECIFIED = 0;
+  // GitHub version control platform.
   GITHUB = 1;
+  // GitLab version control platform.
   GITLAB = 2;
+  // Bitbucket version control platform.
   BITBUCKET = 3;
+  // Azure DevOps version control platform.
   AZURE_DEVOPS = 4;
 }
 
+// Data export format.
 enum ExportFormat {
+  // Unspecified export format.
   FORMAT_UNSPECIFIED = 0;
+  // Comma-separated values format.
   CSV = 1;
+  // JavaScript Object Notation format.
   JSON = 2;
+  // SQL statements format.
   SQL = 3;
+  // Microsoft Excel spreadsheet format.
   XLSX = 4;
 }
 
@@ -64,8 +106,11 @@ message Position {
   int32 column = 2;
 }
 
+// Range of positions in text or sequence.
 message Range {
+  // Start position (inclusive).
   int32 start = 1;
+  // End position (exclusive).
   int32 end = 2;
 }
 
@@ -91,8 +136,12 @@ enum MigrationType {
 
 // RiskLevel is the risk level.
 enum RiskLevel {
+  // Unspecified risk level.
   RISK_LEVEL_UNSPECIFIED = 0;
+  // Low risk operation.
   LOW = 1;
+  // Moderate risk operation.
   MODERATE = 2;
+  // High risk operation.
   HIGH = 3;
 }

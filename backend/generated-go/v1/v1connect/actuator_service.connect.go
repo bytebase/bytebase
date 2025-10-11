@@ -53,14 +53,19 @@ const (
 
 // ActuatorServiceClient is a client for the bytebase.v1.ActuatorService service.
 type ActuatorServiceClient interface {
+	// Gets system information and health status of the Bytebase instance.
 	// Permissions required: None
 	GetActuatorInfo(context.Context, *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
+	// Updates system configuration settings for the Bytebase instance.
 	// Permissions required: bb.settings.set
 	UpdateActuatorInfo(context.Context, *connect.Request[v1.UpdateActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
+	// Sets up sample data for demonstration and testing purposes.
 	// Permissions required: bb.projects.create
 	SetupSample(context.Context, *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error)
+	// Clears the system cache to force data refresh.
 	// Permissions required: None
 	DeleteCache(context.Context, *connect.Request[v1.DeleteCacheRequest]) (*connect.Response[emptypb.Empty], error)
+	// Gets custom branding resources such as logos.
 	// Permissions required: None
 	GetResourcePackage(context.Context, *connect.Request[v1.GetResourcePackageRequest]) (*connect.Response[v1.ResourcePackage], error)
 }
@@ -145,14 +150,19 @@ func (c *actuatorServiceClient) GetResourcePackage(ctx context.Context, req *con
 
 // ActuatorServiceHandler is an implementation of the bytebase.v1.ActuatorService service.
 type ActuatorServiceHandler interface {
+	// Gets system information and health status of the Bytebase instance.
 	// Permissions required: None
 	GetActuatorInfo(context.Context, *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
+	// Updates system configuration settings for the Bytebase instance.
 	// Permissions required: bb.settings.set
 	UpdateActuatorInfo(context.Context, *connect.Request[v1.UpdateActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
+	// Sets up sample data for demonstration and testing purposes.
 	// Permissions required: bb.projects.create
 	SetupSample(context.Context, *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error)
+	// Clears the system cache to force data refresh.
 	// Permissions required: None
 	DeleteCache(context.Context, *connect.Request[v1.DeleteCacheRequest]) (*connect.Response[emptypb.Empty], error)
+	// Gets custom branding resources such as logos.
 	// Permissions required: None
 	GetResourcePackage(context.Context, *connect.Request[v1.GetResourcePackageRequest]) (*connect.Response[v1.ResourcePackage], error)
 }

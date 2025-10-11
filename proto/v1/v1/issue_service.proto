@@ -15,7 +15,9 @@ import "v1/common.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// IssueService manages issues for tracking database changes and tasks.
 service IssueService {
+  // Retrieves an issue by name.
   // Permissions required: bb.issues.get
   rpc GetIssue(GetIssueRequest) returns (Issue) {
     option (google.api.http) = {get: "/v1/{name=projects/*/issues/*}"};
@@ -24,6 +26,7 @@ service IssueService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Creates a new issue for database changes or tasks.
   // Permissions required: bb.issues.create
   rpc CreateIssue(CreateIssueRequest) returns (Issue) {
     option (google.api.http) = {
@@ -37,6 +40,7 @@ service IssueService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Lists issues in a project.
   // Permissions required: bb.issues.list
   rpc ListIssues(ListIssuesRequest) returns (ListIssuesResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/issues"};
@@ -56,6 +60,7 @@ service IssueService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Updates an issue's properties such as title, description, or labels.
   // Permissions required: bb.issues.update
   rpc UpdateIssue(UpdateIssueRequest) returns (Issue) {
     option (google.api.http) = {
@@ -68,6 +73,7 @@ service IssueService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Lists comments on an issue.
   // Permissions required: bb.issueComments.list
   rpc ListIssueComments(ListIssueCommentsRequest) returns (ListIssueCommentsResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/issues/*}/issueComments"};
@@ -76,6 +82,7 @@ service IssueService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Adds a comment to an issue.
   // Permissions required: bb.issueComments.create
   rpc CreateIssueComment(CreateIssueCommentRequest) returns (IssueComment) {
     option (google.api.http) = {
@@ -88,6 +95,7 @@ service IssueService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Updates an existing issue comment.
   // Permissions required: bb.issueComments.update
   rpc UpdateIssueComment(UpdateIssueCommentRequest) returns (IssueComment) {
     option (google.api.http) = {
@@ -100,6 +108,7 @@ service IssueService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Updates the status of multiple issues in a single operation.
   // Permissions required: bb.issues.update
   rpc BatchUpdateIssuesStatus(BatchUpdateIssuesStatusRequest) returns (BatchUpdateIssuesStatusResponse) {
     option (google.api.http) = {
@@ -111,9 +120,8 @@ service IssueService {
     option (bytebase.v1.audit) = true;
   }
 
-  // ApproveIssue approves the issue.
-  // The access is based on approval flow.
-  // Permissions required: None
+  // Approves an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+  // Permissions required: None (determined by approval flow)
   rpc ApproveIssue(ApproveIssueRequest) returns (Issue) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*/issues/*}:approve"
@@ -123,9 +131,8 @@ service IssueService {
     option (bytebase.v1.audit) = true;
   }
 
-  // RejectIssue rejects the issue.
-  // The access is based on approval flow.
-  // Permissions required: None
+  // Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+  // Permissions required: None (determined by approval flow)
   rpc RejectIssue(RejectIssueRequest) returns (Issue) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*/issues/*}:reject"
@@ -135,9 +142,8 @@ service IssueService {
     option (bytebase.v1.audit) = true;
   }
 
-  // RequestIssue requests the issue.
-  // The access is based on approval flow.
-  // Permissions required: None
+  // Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+  // Permissions required: None (determined by approval flow)
   rpc RequestIssue(RequestIssueRequest) returns (Issue) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*/issues/*}:request"
@@ -156,6 +162,7 @@ message GetIssueRequest {
     (google.api.resource_reference) = {type: "bytebase.com/Issue"}
   ];
 
+  // If set to true, bypass cache and fetch the latest data.
   bool force = 2;
 }
 
@@ -298,6 +305,7 @@ message BatchUpdateIssuesStatusRequest {
   // The new status.
   IssueStatus status = 3;
 
+  // The reason for the status change.
   string reason = 4;
 }
 
@@ -310,6 +318,7 @@ message ApproveIssueRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Issue"}
   ];
+  // The comment explaining the approval decision.
   string comment = 2;
 }
 
@@ -320,6 +329,7 @@ message RejectIssueRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Issue"}
   ];
+  // The comment explaining the rejection decision.
   string comment = 2;
 }
 
@@ -330,6 +340,7 @@ message RequestIssueRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Issue"}
   ];
+  // The comment explaining the request.
   string comment = 2;
 }
 
@@ -345,25 +356,39 @@ message Issue {
   // Format: projects/{project}/issues/{issue}
   string name = 1;
 
+  // The title of the issue.
   string title = 3;
 
+  // The description of the issue.
   string description = 4;
 
+  // The type of issue.
   enum Type {
+    // Unspecified issue type.
     TYPE_UNSPECIFIED = 0;
+    // Database schema or data change.
     DATABASE_CHANGE = 1;
+    // Database access grant request.
     GRANT_REQUEST = 2;
+    // Database data export request.
     DATABASE_EXPORT = 3;
   }
   Type type = 5;
 
+  // The status of the issue.
   IssueStatus status = 6;
 
+  // Approvers and their approval status for the issue.
   message Approver {
+    // The approval status of an approver.
     enum Status {
+      // Unspecified status.
       STATUS_UNSPECIFIED = 0;
+      // Awaiting approval.
       PENDING = 1;
+      // Approved.
       APPROVED = 2;
+      // Rejected.
       REJECTED = 3;
     }
     // The new status.
@@ -374,6 +399,7 @@ message Issue {
   }
   repeated Approver approvers = 9;
 
+  // The approval template for the issue.
   ApprovalTemplate approval_template = 10;
 
   reserved 11, 12;
@@ -408,6 +434,7 @@ message Issue {
   // - users/{email}
   repeated string releasers = 20;
 
+  // The risk level of the issue.
   RiskLevel risk_level = 21;
 
   // The status count of the issue.
@@ -421,15 +448,24 @@ message Issue {
   // - CANCELED
   map<string, int32> task_status_count = 22;
 
+  // Labels attached to the issue for categorization and filtering.
   repeated string labels = 23;
 
+  // The overall approval status for the issue.
   enum ApprovalStatus {
+    // Unspecified approval status.
     APPROVAL_STATUS_UNSPECIFIED = 0;
+    // Approval checks are being evaluated.
     CHECKING = 1;
+    // Approval is pending.
     PENDING = 2;
+    // Issue has been approved.
     APPROVED = 3;
+    // Issue has been rejected.
     REJECTED = 4;
+    // Approval was skipped.
     SKIPPED = 5;
+    // Error occurred during approval evaluation.
     ERROR = 6;
   }
   ApprovalStatus approval_status = 24 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -446,13 +482,19 @@ message GrantRequest {
   string user = 2;
   // The condition for the role. Same as the condtion in IAM Binding message.
   google.type.Expr condition = 3;
+  // The duration for which the grant is valid.
   google.protobuf.Duration expiration = 4;
 }
 
+// The status of an issue.
 enum IssueStatus {
+  // Unspecified status.
   ISSUE_STATUS_UNSPECIFIED = 0;
+  // Issue is open and active.
   OPEN = 1;
+  // Issue is completed.
   DONE = 2;
+  // Issue is canceled.
   CANCELED = 3;
 }
 
@@ -461,12 +503,16 @@ message ApprovalTemplate {
   // For built-in templates, use "bb." prefix (e.g., "bb.project-owner", "bb.workspace-dba").
   // For custom templates, use a UUID or other unique identifier.
   string id = 4;
+  // The approval flow definition.
   ApprovalFlow flow = 1;
+  // The title of the approval template.
   string title = 2;
+  // The description of the approval template.
   string description = 3;
 }
 
 message ApprovalFlow {
+  // The roles required for approval in order.
   repeated string roles = 1;
 }
 
@@ -492,6 +538,7 @@ message ListIssueCommentsRequest {
 }
 
 message ListIssueCommentsResponse {
+  // The issue comments from the specified request.
   repeated IssueComment issue_comments = 1;
 
   // A token, which can be sent as `page_token` to retrieve the next page.
@@ -507,6 +554,7 @@ message CreateIssueCommentRequest {
     (google.api.resource_reference) = {type: "bytebase.com/Issue"}
   ];
 
+  // The comment to create.
   IssueComment issue_comment = 2;
 }
 
@@ -518,6 +566,7 @@ message UpdateIssueCommentRequest {
     (google.api.resource_reference) = {type: "bytebase.com/Issue"}
   ];
 
+  // The comment to update.
   IssueComment issue_comment = 2;
 
   // The list of fields to update.
@@ -528,12 +577,14 @@ message UpdateIssueCommentRequest {
   bool allow_missing = 4;
 }
 
+// A comment on an issue.
 message IssueComment {
   reserved 6;
 
   // Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid}
   string name = 1;
 
+  // The text content of the comment.
   string comment = 2;
 
   // TODO: use struct message instead.
@@ -546,25 +597,39 @@ message IssueComment {
   // Format: users/{email}
   string creator = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The event associated with this comment.
   oneof event {
+    // Approval event.
     Approval approval = 8;
+    // Issue update event.
     IssueUpdate issue_update = 9;
+    // Stage end event.
     StageEnd stage_end = 10;
+    // Task update event.
     TaskUpdate task_update = 11;
+    // Task prior backup event.
     TaskPriorBackup task_prior_backup = 12;
   }
 
+  // Approval event information.
   message Approval {
+    // The approval status.
     Status status = 1;
 
+    // Approval status values.
     enum Status {
+      // Unspecified status.
       STATUS_UNSPECIFIED = 0;
+      // Approval pending.
       PENDING = 1;
+      // Approved.
       APPROVED = 2;
+      // Rejected.
       REJECTED = 3;
     }
   }
 
+  // Issue update event information.
   message IssueUpdate {
     reserved 7, 8;
 
@@ -579,11 +644,15 @@ message IssueComment {
     repeated string to_labels = 10;
   }
 
+  // Stage end event information.
   message StageEnd {
+    // The stage that ended.
     string stage = 1;
   }
 
+  // Task update event information.
   message TaskUpdate {
+    // The tasks that were updated.
     repeated string tasks = 1;
     // Format: projects/{project}/sheets/{sheet}
     optional string from_sheet = 2;
@@ -591,26 +660,43 @@ message IssueComment {
     optional string to_sheet = 3;
     optional Status to_status = 6;
 
+    // Task status values.
     enum Status {
+      // Unspecified status.
       STATUS_UNSPECIFIED = 0;
+      // Task is pending.
       PENDING = 1;
+      // Task is running.
       RUNNING = 2;
+      // Task is done.
       DONE = 3;
+      // Task failed.
       FAILED = 4;
+      // Task was skipped.
       SKIPPED = 5;
+      // Task was canceled.
       CANCELED = 6;
     }
   }
 
+  // Task prior backup event information.
   message TaskPriorBackup {
+    // The task for which backup was performed.
     string task = 1;
+    // The tables that were backed up.
     repeated Table tables = 2;
+    // The original line number in the statement.
     optional int32 original_line = 3;
+    // The database that was backed up.
     string database = 4;
+    // Error message if backup failed.
     string error = 5;
 
+    // Table identification.
     message Table {
+      // The schema name.
       string schema = 1;
+      // The table name.
       string table = 2;
     }
   }

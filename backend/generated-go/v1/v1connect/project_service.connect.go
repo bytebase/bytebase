@@ -87,33 +87,46 @@ type ProjectServiceClient interface {
 	// Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
 	// Permissions required: bb.projects.get
 	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.Project], error)
+	// Lists all projects in the workspace with optional filtering.
 	// Permissions required: bb.projects.list
 	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
-	// Permissions required: None
+	// Searches for projects with advanced filtering capabilities.
+	// Permissions required: bb.projects.get (or project-level bb.projects.get for specific projects)
 	SearchProjects(context.Context, *connect.Request[v1.SearchProjectsRequest]) (*connect.Response[v1.SearchProjectsResponse], error)
+	// Creates a new project in the workspace.
 	// Permissions required: bb.projects.create
 	CreateProject(context.Context, *connect.Request[v1.CreateProjectRequest]) (*connect.Response[v1.Project], error)
+	// Updates an existing project's properties.
 	// Permissions required: bb.projects.update
 	UpdateProject(context.Context, *connect.Request[v1.UpdateProjectRequest]) (*connect.Response[v1.Project], error)
+	// Deletes (soft-delete or purge) a project.
 	// Permissions required: bb.projects.delete
 	DeleteProject(context.Context, *connect.Request[v1.DeleteProjectRequest]) (*connect.Response[emptypb.Empty], error)
+	// Restores a soft-deleted project.
 	// Permissions required: bb.projects.undelete
 	UndeleteProject(context.Context, *connect.Request[v1.UndeleteProjectRequest]) (*connect.Response[v1.Project], error)
+	// Deletes multiple projects in a single operation.
 	// Permissions required: bb.projects.delete
 	BatchDeleteProjects(context.Context, *connect.Request[v1.BatchDeleteProjectsRequest]) (*connect.Response[emptypb.Empty], error)
+	// Retrieves the IAM policy for a project.
 	// Permissions required: bb.projects.getIamPolicy
 	GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
-	// Deprecated.
-	// Permissions required: bb.projects.getIamPolicy
+	// Deprecated. No permission check implemented.
+	// Permissions required: None
 	BatchGetIamPolicy(context.Context, *connect.Request[v1.BatchGetIamPolicyRequest]) (*connect.Response[v1.BatchGetIamPolicyResponse], error)
+	// Sets the IAM policy for a project.
 	// Permissions required: bb.projects.setIamPolicy
 	SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
+	// Adds a webhook to a project for notifications.
 	// Permissions required: bb.projects.update
 	AddWebhook(context.Context, *connect.Request[v1.AddWebhookRequest]) (*connect.Response[v1.Project], error)
+	// Updates an existing webhook configuration.
 	// Permissions required: bb.projects.update
 	UpdateWebhook(context.Context, *connect.Request[v1.UpdateWebhookRequest]) (*connect.Response[v1.Project], error)
+	// Removes a webhook from a project.
 	// Permissions required: bb.projects.update
 	RemoveWebhook(context.Context, *connect.Request[v1.RemoveWebhookRequest]) (*connect.Response[v1.Project], error)
+	// Tests a webhook by sending a test notification.
 	// Permissions required: bb.projects.update
 	TestWebhook(context.Context, *connect.Request[v1.TestWebhookRequest]) (*connect.Response[v1.TestWebhookResponse], error)
 }
@@ -322,33 +335,46 @@ type ProjectServiceHandler interface {
 	// Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
 	// Permissions required: bb.projects.get
 	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.Project], error)
+	// Lists all projects in the workspace with optional filtering.
 	// Permissions required: bb.projects.list
 	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
-	// Permissions required: None
+	// Searches for projects with advanced filtering capabilities.
+	// Permissions required: bb.projects.get (or project-level bb.projects.get for specific projects)
 	SearchProjects(context.Context, *connect.Request[v1.SearchProjectsRequest]) (*connect.Response[v1.SearchProjectsResponse], error)
+	// Creates a new project in the workspace.
 	// Permissions required: bb.projects.create
 	CreateProject(context.Context, *connect.Request[v1.CreateProjectRequest]) (*connect.Response[v1.Project], error)
+	// Updates an existing project's properties.
 	// Permissions required: bb.projects.update
 	UpdateProject(context.Context, *connect.Request[v1.UpdateProjectRequest]) (*connect.Response[v1.Project], error)
+	// Deletes (soft-delete or purge) a project.
 	// Permissions required: bb.projects.delete
 	DeleteProject(context.Context, *connect.Request[v1.DeleteProjectRequest]) (*connect.Response[emptypb.Empty], error)
+	// Restores a soft-deleted project.
 	// Permissions required: bb.projects.undelete
 	UndeleteProject(context.Context, *connect.Request[v1.UndeleteProjectRequest]) (*connect.Response[v1.Project], error)
+	// Deletes multiple projects in a single operation.
 	// Permissions required: bb.projects.delete
 	BatchDeleteProjects(context.Context, *connect.Request[v1.BatchDeleteProjectsRequest]) (*connect.Response[emptypb.Empty], error)
+	// Retrieves the IAM policy for a project.
 	// Permissions required: bb.projects.getIamPolicy
 	GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
-	// Deprecated.
-	// Permissions required: bb.projects.getIamPolicy
+	// Deprecated. No permission check implemented.
+	// Permissions required: None
 	BatchGetIamPolicy(context.Context, *connect.Request[v1.BatchGetIamPolicyRequest]) (*connect.Response[v1.BatchGetIamPolicyResponse], error)
+	// Sets the IAM policy for a project.
 	// Permissions required: bb.projects.setIamPolicy
 	SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
+	// Adds a webhook to a project for notifications.
 	// Permissions required: bb.projects.update
 	AddWebhook(context.Context, *connect.Request[v1.AddWebhookRequest]) (*connect.Response[v1.Project], error)
+	// Updates an existing webhook configuration.
 	// Permissions required: bb.projects.update
 	UpdateWebhook(context.Context, *connect.Request[v1.UpdateWebhookRequest]) (*connect.Response[v1.Project], error)
+	// Removes a webhook from a project.
 	// Permissions required: bb.projects.update
 	RemoveWebhook(context.Context, *connect.Request[v1.RemoveWebhookRequest]) (*connect.Response[v1.Project], error)
+	// Tests a webhook by sending a test notification.
 	// Permissions required: bb.projects.update
 	TestWebhook(context.Context, *connect.Request[v1.TestWebhookRequest]) (*connect.Response[v1.TestWebhookResponse], error)
 }

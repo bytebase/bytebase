@@ -91,6 +91,8 @@ export const Worksheet_Visibility = /*@__PURE__*/
   tsEnum(Worksheet_VisibilitySchema);
 
 /**
+ * WorksheetService manages SQL worksheets for query development.
+ *
  * @generated from service bytebase.v1.WorksheetService
  */
 export const WorksheetService = /*@__PURE__*/

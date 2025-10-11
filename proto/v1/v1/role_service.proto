@@ -12,7 +12,9 @@ import "v1/annotation.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// RoleService manages workspace roles and permissions.
 service RoleService {
+  // Lists roles in the workspace.
   // Permissions required: bb.roles.list
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
     option (google.api.http) = {get: "/v1/roles"};
@@ -20,6 +22,7 @@ service RoleService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Retrieves a role by name.
   // Permissions required: bb.roles.get
   rpc GetRole(GetRoleRequest) returns (Role) {
     option (google.api.http) = {get: "/v1/{name=roles/*}"};
@@ -28,6 +31,7 @@ service RoleService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Creates a new custom role.
   // Permissions required: bb.roles.create
   rpc CreateRole(CreateRoleRequest) returns (Role) {
     option (google.api.http) = {
@@ -39,6 +43,7 @@ service RoleService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Updates a role's properties.
   // Permissions required: bb.roles.update
   rpc UpdateRole(UpdateRoleRequest) returns (Role) {
     option (google.api.http) = {
@@ -51,6 +56,7 @@ service RoleService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Deletes a custom role.
   // Permissions required: bb.roles.delete
   rpc DeleteRole(DeleteRoleRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=roles/*}"};
@@ -62,14 +68,14 @@ service RoleService {
 }
 
 message ListRolesRequest {
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // The maximum number of roles to return. The service may return fewer than
   // this value.
   // If unspecified, at most 10 reviews will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 1;
 
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // A page token, received from a previous `ListRoles` call.
   // Provide this to retrieve the subsequent page.
   //
@@ -79,6 +85,7 @@ message ListRolesRequest {
 }
 
 message ListRolesResponse {
+  // The roles from the specified request.
   repeated Role roles = 1;
 
   // A token, which can be sent as `page_token` to retrieve the next page.
@@ -87,6 +94,7 @@ message ListRolesResponse {
 }
 
 message CreateRoleRequest {
+  // The role to create.
   Role role = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The ID to use for the role, which will become the final component
@@ -107,13 +115,17 @@ message GetRoleRequest {
 }
 
 message UpdateRoleRequest {
-  Role role = 1;
+  // The role to update.
+  Role role = 1 [(google.api.field_behavior) = REQUIRED];
+  // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
   // If set to true, and the role is not found, a new role will be created.
+  // In this situation, `update_mask` is ignored.
   bool allow_missing = 3;
 }
 
 message DeleteRoleRequest {
+  // The name of the role to delete.
   // Format: roles/{role}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
@@ -121,23 +133,30 @@ message DeleteRoleRequest {
   ];
 }
 
+// Role defines a set of permissions that can be assigned to users.
 message Role {
   option (google.api.resource) = {
     type: "bytebase.com/Role"
     pattern: "roles/{role}"
   };
 
-  // Format: roles/{role}
+  // Resource name. Format: roles/{role}
   string name = 1;
+  // Human-readable title.
   string title = 2;
+  // Optional description of the role.
   string description = 3;
+  // List of permission identifiers granted by this role.
   repeated string permissions = 4;
 
   enum Type {
     TYPE_UNSPECIFIED = 0;
+    // System-defined role that cannot be modified.
     BUILT_IN = 1;
+    // User-defined role that can be modified.
     CUSTOM = 2;
   }
 
+  // Role type indicating if it's built-in or custom.
   Type type = 5;
 }

@@ -595,6 +595,8 @@ export const ChangelogView = /*@__PURE__*/
   tsEnum(ChangelogViewSchema);
 
 /**
+ * DatabaseService manages databases and their schemas.
+ *
  * @generated from service bytebase.v1.DatabaseService
  */
 export const DatabaseService = /*@__PURE__*/

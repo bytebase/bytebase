@@ -26,13 +26,13 @@ const (
 
 type ListReviewConfigsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// The maximum number of sql review to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 10 sql review will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// A page token, provide this to retrieve the subsequent page.
 	//
 	// When paginating, all other parameters provided to `ListReviewConfigs` must match
@@ -348,12 +348,15 @@ type ReviewConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the sql review to retrieve.
 	// Format: reviewConfigs/{reviewConfig}
-	Name    string           `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Title   string           `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Enabled bool             `protobuf:"varint,3,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	Rules   []*SQLReviewRule `protobuf:"bytes,7,rep,name=rules,proto3" json:"rules,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The title of the review configuration.
+	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	// Whether the review configuration is enabled.
+	Enabled bool `protobuf:"varint,3,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	// The SQL review rules to enforce.
+	Rules []*SQLReviewRule `protobuf:"bytes,7,rep,name=rules,proto3" json:"rules,omitempty"`
 	// resources using the config.
-	// Format: {resurce}/{resource id}, for example, environments/test.
+	// Format: {resource}/{resource id}, for example, environments/test.
 	Resources     []string `protobuf:"bytes,8,rep,name=resources,proto3" json:"resources,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

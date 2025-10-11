@@ -15,7 +15,9 @@ import "v1/database_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// SQLService executes SQL queries and manages query operations.
 service SQLService {
+  // Executes a read-only SQL query against a database.
   // Permissions required: bb.databases.get
   rpc Query(QueryRequest) returns (QueryResponse) {
     option (google.api.http) = {
@@ -27,6 +29,7 @@ service SQLService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Executes SQL with admin privileges via streaming connection.
   // Permissions required: bb.sql.admin
   rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
     // GRPC streaming / websocket requires GET method instead of POST.
@@ -37,7 +40,7 @@ service SQLService {
   }
 
   // SearchQueryHistories searches query histories for the caller.
-  // Permissions required: None
+  // Permissions required: None (only returns caller's own query histories)
   rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
     option (google.api.http) = {
       post: "/v1/queryHistories:search"
@@ -46,6 +49,7 @@ service SQLService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
+  // Exports query results to a file format.
   // Permissions required: bb.databases.get
   rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
@@ -66,6 +70,7 @@ service SQLService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Validates SQL statements against review rules.
   // Permissions required: bb.databases.check
   rpc Check(CheckRequest) returns (CheckResponse) {
     option (google.api.http) = {
@@ -76,6 +81,7 @@ service SQLService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Formats and normalizes SQL schema definitions.
   // Permissions required: None
   rpc Pretty(PrettyRequest) returns (PrettyResponse) {
     option (google.api.http) = {
@@ -85,6 +91,7 @@ service SQLService {
     option (bytebase.v1.allow_without_credential) = true;
   }
 
+  // Computes schema differences between two database metadata.
   // Permissions required: None
   rpc DiffMetadata(DiffMetadataRequest) returns (DiffMetadataResponse) {
     option (google.api.http) = {
@@ -95,7 +102,8 @@ service SQLService {
     // This is a util method requiring no authentication thus no authorization.
   }
 
-  // Permissions required: None
+  // Provides AI-powered SQL completion and generation.
+  // Permissions required: None (authenticated users only, requires AI to be enabled)
   rpc AICompletion(AICompletionRequest) returns (AICompletionResponse) {
     option (google.api.http) = {
       post: "/v1/sql/aiCompletion"
@@ -182,7 +190,9 @@ message QueryOption {
   enum RedisRunCommandsOn {
     // UNSPECIFIED defaults to SINGLE_NODE.
     REDIS_RUN_COMMANDS_ON_UNSPECIFIED = 0;
+    // Execute Redis commands on a single node in the cluster.
     SINGLE_NODE = 1;
+    // Execute Redis commands on all nodes in the cluster for cluster-wide operations.
     ALL_NODES = 2;
   }
   RedisRunCommandsOn redis_run_commands_on = 1;
@@ -241,13 +251,19 @@ message QueryResult {
 
   message Message {
     enum Level {
-      // Unspecified.
+      // Unspecified message level.
       LEVEL_UNSPECIFIED = 0;
+      // Informational message.
       INFO = 1;
+      // Warning message indicating potential issues.
       WARNING = 2;
+      // Debug message for development and troubleshooting.
       DEBUG = 3;
+      // General log message.
       LOG = 4;
+      // Notice message for important information.
       NOTICE = 5;
+      // Exception message indicating error conditions.
       EXCEPTION = 6;
     }
 
@@ -502,7 +518,7 @@ message SearchQueryHistoriesRequest {
   // - database: the database full name in "instances/{id}/databases/{name}" format, support "==" operator.
   // - instance: the instance full name in "instances/{id}" format, support "==" operator.
   // - type: the type, should be "QUERY" or "EXPORT", support "==" operator.
-  // - statement: the SQL statemnt, support ".matches()" operator.
+  // - statement: the SQL statement, support ".matches()" operator.
   //
   // For example:
   // project == "projects/{project}"
@@ -545,8 +561,11 @@ message QueryHistory {
   google.protobuf.Duration duration = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   enum Type {
+    // Unspecified query history type.
     TYPE_UNSPECIFIED = 0;
+    // Query execution for data retrieval.
     QUERY = 1;
+    // Data export operation to file.
     EXPORT = 2;
   }
 

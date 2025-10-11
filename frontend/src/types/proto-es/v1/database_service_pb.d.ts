@@ -624,6 +624,8 @@ export declare type DatabaseMetadata = Message<"bytebase.v1.DatabaseMetadata"> &
   extensions: ExtensionMetadata[];
 
   /**
+   * The owner of the database.
+   *
    * @generated from field: string owner = 7;
    */
   owner: string;
@@ -723,6 +725,8 @@ export declare type SchemaMetadata = Message<"bytebase.v1.SchemaMetadata"> & {
   packages: PackageMetadata[];
 
   /**
+   * The owner of the schema.
+   *
    * @generated from field: string owner = 11;
    */
   owner: string;
@@ -735,16 +739,22 @@ export declare type SchemaMetadata = Message<"bytebase.v1.SchemaMetadata"> & {
   sequences: SequenceMetadata[];
 
   /**
+   * The events is the list of scheduled events in a schema.
+   *
    * @generated from field: repeated bytebase.v1.EventMetadata events = 14;
    */
   events: EventMetadata[];
 
   /**
+   * The enum_types is the list of user-defined enum types in a schema.
+   *
    * @generated from field: repeated bytebase.v1.EnumTypeMetadata enum_types = 15;
    */
   enumTypes: EnumTypeMetadata[];
 
   /**
+   * Whether to skip this schema during schema dump operations.
+   *
    * @generated from field: bool skip_dump = 16;
    */
   skipDump: boolean;
@@ -782,11 +792,15 @@ export declare type EnumTypeMetadata = Message<"bytebase.v1.EnumTypeMetadata"> &
   values: string[];
 
   /**
+   * The comment describing the enum type.
+   *
    * @generated from field: string comment = 3;
    */
   comment: string;
 
   /**
+   * Whether to skip this enum type during schema dump operations.
+   *
    * @generated from field: bool skip_dump = 4;
    */
   skipDump: boolean;
@@ -824,16 +838,22 @@ export declare type EventMetadata = Message<"bytebase.v1.EventMetadata"> & {
   timeZone: string;
 
   /**
+   * The SQL mode setting for the event.
+   *
    * @generated from field: string sql_mode = 4;
    */
   sqlMode: string;
 
   /**
+   * The character set used by the client creating the event.
+   *
    * @generated from field: string character_set_client = 5;
    */
   characterSetClient: string;
 
   /**
+   * The collation used for the connection when creating the event.
+   *
    * @generated from field: string collation_connection = 6;
    */
   collationConnection: string;
@@ -934,11 +954,15 @@ export declare type SequenceMetadata = Message<"bytebase.v1.SequenceMetadata"> &
   ownerColumn: string;
 
   /**
+   * The comment describing the sequence.
+   *
    * @generated from field: string comment = 12;
    */
   comment: string;
 
   /**
+   * Whether to skip this sequence during schema dump operations.
+   *
    * @generated from field: bool skip_dump = 13;
    */
   skipDump: boolean;
@@ -984,26 +1008,36 @@ export declare type TriggerMetadata = Message<"bytebase.v1.TriggerMetadata"> & {
   body: string;
 
   /**
+   * The SQL mode setting for the trigger.
+   *
    * @generated from field: string sql_mode = 6;
    */
   sqlMode: string;
 
   /**
+   * The character set used by the client creating the trigger.
+   *
    * @generated from field: string character_set_client = 7;
    */
   characterSetClient: string;
 
   /**
+   * The collation used for the connection when creating the trigger.
+   *
    * @generated from field: string collation_connection = 8;
    */
   collationConnection: string;
 
   /**
+   * The comment describing the trigger.
+   *
    * @generated from field: string comment = 9;
    */
   comment: string;
 
   /**
+   * Whether to skip this trigger during schema dump operations.
+   *
    * @generated from field: bool skip_dump = 10;
    */
   skipDump: boolean;
@@ -1174,6 +1208,8 @@ export declare type TableMetadata = Message<"bytebase.v1.TableMetadata"> & {
   checkConstraints: CheckConstraintMetadata[];
 
   /**
+   * The owner of the table.
+   *
    * @generated from field: string owner = 18;
    */
   owner: string;
@@ -1187,11 +1223,15 @@ export declare type TableMetadata = Message<"bytebase.v1.TableMetadata"> & {
   sortingKeys: string[];
 
   /**
+   * The triggers is the list of triggers associated with the table.
+   *
    * @generated from field: repeated bytebase.v1.TriggerMetadata triggers = 20;
    */
   triggers: TriggerMetadata[];
 
   /**
+   * Whether to skip this table during schema dump operations.
+   *
    * @generated from field: bool skip_dump = 21;
    */
   skipDump: boolean;
@@ -3451,10 +3491,13 @@ export enum ChangelogView {
 export declare const ChangelogViewSchema: GenEnum<ChangelogView>;
 
 /**
+ * DatabaseService manages databases and their schemas.
+ *
  * @generated from service bytebase.v1.DatabaseService
  */
 export declare const DatabaseService: GenService<{
   /**
+   * Retrieves a database by name.
    * Permissions required: bb.databases.get
    *
    * @generated from rpc bytebase.v1.DatabaseService.GetDatabase
@@ -3465,6 +3508,7 @@ export declare const DatabaseService: GenService<{
     output: typeof DatabaseSchema$;
   },
   /**
+   * Retrieves multiple databases by their names.
    * Permissions required: bb.databases.get
    *
    * @generated from rpc bytebase.v1.DatabaseService.BatchGetDatabases
@@ -3475,7 +3519,8 @@ export declare const DatabaseService: GenService<{
     output: typeof BatchGetDatabasesResponseSchema;
   },
   /**
-   * Permissions required: bb.databases.list
+   * Lists databases in a project, instance, or workspace.
+   * Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
    *
    * @generated from rpc bytebase.v1.DatabaseService.ListDatabases
    */
@@ -3485,6 +3530,7 @@ export declare const DatabaseService: GenService<{
     output: typeof ListDatabasesResponseSchema;
   },
   /**
+   * Updates database properties such as labels and project assignment.
    * Permissions required: bb.databases.update
    *
    * @generated from rpc bytebase.v1.DatabaseService.UpdateDatabase
@@ -3495,6 +3541,7 @@ export declare const DatabaseService: GenService<{
     output: typeof DatabaseSchema$;
   },
   /**
+   * Updates multiple databases in a single batch operation.
    * Permissions required: bb.databases.update
    *
    * @generated from rpc bytebase.v1.DatabaseService.BatchUpdateDatabases
@@ -3505,6 +3552,7 @@ export declare const DatabaseService: GenService<{
     output: typeof BatchUpdateDatabasesResponseSchema;
   },
   /**
+   * Synchronizes database schema from the instance.
    * Permissions required: bb.databases.sync
    *
    * @generated from rpc bytebase.v1.DatabaseService.SyncDatabase
@@ -3515,6 +3563,7 @@ export declare const DatabaseService: GenService<{
     output: typeof SyncDatabaseResponseSchema;
   },
   /**
+   * Synchronizes multiple databases in a single batch operation.
    * Permissions required: bb.databases.sync
    *
    * @generated from rpc bytebase.v1.DatabaseService.BatchSyncDatabases
@@ -3525,6 +3574,7 @@ export declare const DatabaseService: GenService<{
     output: typeof BatchSyncDatabasesResponseSchema;
   },
   /**
+   * Retrieves database metadata including tables, columns, and indexes.
    * Permissions required: bb.databases.getSchema
    *
    * @generated from rpc bytebase.v1.DatabaseService.GetDatabaseMetadata
@@ -3535,6 +3585,7 @@ export declare const DatabaseService: GenService<{
     output: typeof DatabaseMetadataSchema;
   },
   /**
+   * Retrieves database schema as DDL statements.
    * Permissions required: bb.databases.getSchema
    *
    * @generated from rpc bytebase.v1.DatabaseService.GetDatabaseSchema
@@ -3545,6 +3596,7 @@ export declare const DatabaseService: GenService<{
     output: typeof DatabaseSchemaSchema;
   },
   /**
+   * Compares and generates migration statements between two schemas.
    * Permissions required: bb.databases.get
    *
    * @generated from rpc bytebase.v1.DatabaseService.DiffSchema
@@ -3555,6 +3607,7 @@ export declare const DatabaseService: GenService<{
     output: typeof DiffSchemaResponseSchema;
   },
   /**
+   * Lists migration history for a database.
    * Permissions required: bb.changelogs.list
    *
    * @generated from rpc bytebase.v1.DatabaseService.ListChangelogs
@@ -3565,7 +3618,8 @@ export declare const DatabaseService: GenService<{
     output: typeof ListChangelogsResponseSchema;
   },
   /**
-   * Permissions required: changelogs.get
+   * Retrieves a specific changelog entry.
+   * Permissions required: bb.changelogs.get
    *
    * @generated from rpc bytebase.v1.DatabaseService.GetChangelog
    */
@@ -3575,7 +3629,8 @@ export declare const DatabaseService: GenService<{
     output: typeof ChangelogSchema;
   },
   /**
-   * Permissions required: databases.getSchema
+   * Generates schema DDL for a database object.
+   * Permissions required: bb.databases.getSchema
    *
    * @generated from rpc bytebase.v1.DatabaseService.GetSchemaString
    */

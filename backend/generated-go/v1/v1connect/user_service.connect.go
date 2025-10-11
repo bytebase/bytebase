@@ -72,19 +72,16 @@ type UserServiceClient interface {
 	// Any authenticated user can list users.
 	// Permissions required: bb.users.list
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
-	// Create a user.
-	// When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
-	// Otherwise, any unauthenticated user can create a user.
-	// Permissions required: bb.users.create
+	// Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
+	// Permissions required: bb.users.create (only when Disallow Signup is enabled)
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.User], error)
-	// Only the user itself and the user with bb.users.update permission on the workspace can update the user.
-	// Permissions required: bb.users.update
+	// Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+	// Permissions required: bb.users.update (or self)
 	UpdateUser(context.Context, *connect.Request[v1.UpdateUserRequest]) (*connect.Response[v1.User], error)
-	// Only the user with bb.users.delete permission on the workspace can delete the user.
-	// The last remaining workspace admin cannot be deleted.
+	// Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted.
 	// Permissions required: bb.users.delete
 	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[emptypb.Empty], error)
-	// Only the user with bb.users.undelete permission on the workspace can undelete the user.
+	// Restores a deleted user.
 	// Permissions required: bb.users.undelete
 	UndeleteUser(context.Context, *connect.Request[v1.UndeleteUserRequest]) (*connect.Response[v1.User], error)
 }
@@ -220,19 +217,16 @@ type UserServiceHandler interface {
 	// Any authenticated user can list users.
 	// Permissions required: bb.users.list
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
-	// Create a user.
-	// When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
-	// Otherwise, any unauthenticated user can create a user.
-	// Permissions required: bb.users.create
+	// Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
+	// Permissions required: bb.users.create (only when Disallow Signup is enabled)
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.User], error)
-	// Only the user itself and the user with bb.users.update permission on the workspace can update the user.
-	// Permissions required: bb.users.update
+	// Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+	// Permissions required: bb.users.update (or self)
 	UpdateUser(context.Context, *connect.Request[v1.UpdateUserRequest]) (*connect.Response[v1.User], error)
-	// Only the user with bb.users.delete permission on the workspace can delete the user.
-	// The last remaining workspace admin cannot be deleted.
+	// Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted.
 	// Permissions required: bb.users.delete
 	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[emptypb.Empty], error)
-	// Only the user with bb.users.undelete permission on the workspace can undelete the user.
+	// Restores a deleted user.
 	// Permissions required: bb.users.undelete
 	UndeleteUser(context.Context, *connect.Request[v1.UndeleteUserRequest]) (*connect.Response[v1.User], error)
 }

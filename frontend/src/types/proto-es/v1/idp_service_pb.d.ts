@@ -16,6 +16,9 @@ export declare const file_v1_idp_service: GenFile;
  */
 export declare type GetIdentityProviderRequest = Message<"bytebase.v1.GetIdentityProviderRequest"> & {
   /**
+   * The name of the identity provider to retrieve.
+   * Format: idps/{idp}
+   *
    * @generated from field: string name = 1;
    */
   name: string;
@@ -32,7 +35,7 @@ export declare const GetIdentityProviderRequestSchema: GenMessage<GetIdentityPro
  */
 export declare type ListIdentityProvidersRequest = Message<"bytebase.v1.ListIdentityProvidersRequest"> & {
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * The maximum number of identity providers to return. The service may return fewer than
    * this value.
    * If unspecified, at most 10 will be returned.
@@ -43,7 +46,7 @@ export declare type ListIdentityProvidersRequest = Message<"bytebase.v1.ListIden
   pageSize: number;
 
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * A page token, received from a previous `ListIdentityProviders` call.
    * Provide this to retrieve the subsequent page.
    *
@@ -263,21 +266,29 @@ export declare type IdentityProvider = Message<"bytebase.v1.IdentityProvider"> &
   name: string;
 
   /**
+   * The display title of the identity provider.
+   *
    * @generated from field: string title = 4;
    */
   title: string;
 
   /**
+   * The domain for email matching when using this identity provider.
+   *
    * @generated from field: string domain = 5;
    */
   domain: string;
 
   /**
+   * The type of identity provider protocol.
+   *
    * @generated from field: bytebase.v1.IdentityProviderType type = 6;
    */
   type: IdentityProviderType;
 
   /**
+   * The configuration details for the identity provider.
+   *
    * @generated from field: bytebase.v1.IdentityProviderConfig config = 7;
    */
   config?: IdentityProviderConfig;
@@ -298,18 +309,24 @@ export declare type IdentityProviderConfig = Message<"bytebase.v1.IdentityProvid
    */
   config: {
     /**
+     * OAuth2 protocol configuration.
+     *
      * @generated from field: bytebase.v1.OAuth2IdentityProviderConfig oauth2_config = 1;
      */
     value: OAuth2IdentityProviderConfig;
     case: "oauth2Config";
   } | {
     /**
+     * OIDC protocol configuration.
+     *
      * @generated from field: bytebase.v1.OIDCIdentityProviderConfig oidc_config = 2;
      */
     value: OIDCIdentityProviderConfig;
     case: "oidcConfig";
   } | {
     /**
+     * LDAP protocol configuration.
+     *
      * @generated from field: bytebase.v1.LDAPIdentityProviderConfig ldap_config = 3;
      */
     value: LDAPIdentityProviderConfig;
@@ -330,46 +347,64 @@ export declare const IdentityProviderConfigSchema: GenMessage<IdentityProviderCo
  */
 export declare type OAuth2IdentityProviderConfig = Message<"bytebase.v1.OAuth2IdentityProviderConfig"> & {
   /**
+   * The authorization endpoint URL for OAuth2 flow.
+   *
    * @generated from field: string auth_url = 1;
    */
   authUrl: string;
 
   /**
+   * The token endpoint URL for exchanging authorization code.
+   *
    * @generated from field: string token_url = 2;
    */
   tokenUrl: string;
 
   /**
+   * The user information endpoint URL.
+   *
    * @generated from field: string user_info_url = 3;
    */
   userInfoUrl: string;
 
   /**
+   * The OAuth2 client identifier.
+   *
    * @generated from field: string client_id = 4;
    */
   clientId: string;
 
   /**
+   * The OAuth2 client secret for authentication.
+   *
    * @generated from field: string client_secret = 5;
    */
   clientSecret: string;
 
   /**
+   * The list of OAuth2 scopes to request.
+   *
    * @generated from field: repeated string scopes = 6;
    */
   scopes: string[];
 
   /**
+   * Mapping configuration for user attributes from OAuth2 response.
+   *
    * @generated from field: bytebase.v1.FieldMapping field_mapping = 7;
    */
   fieldMapping?: FieldMapping;
 
   /**
+   * Whether to skip TLS certificate verification.
+   *
    * @generated from field: bool skip_tls_verify = 8;
    */
   skipTlsVerify: boolean;
 
   /**
+   * The authentication style for client credentials.
+   *
    * @generated from field: bytebase.v1.OAuth2AuthStyle auth_style = 9;
    */
   authStyle: OAuth2AuthStyle;
@@ -388,16 +423,22 @@ export declare const OAuth2IdentityProviderConfigSchema: GenMessage<OAuth2Identi
  */
 export declare type OIDCIdentityProviderConfig = Message<"bytebase.v1.OIDCIdentityProviderConfig"> & {
   /**
+   * The OIDC issuer URL for the identity provider.
+   *
    * @generated from field: string issuer = 1;
    */
   issuer: string;
 
   /**
+   * The OIDC client identifier.
+   *
    * @generated from field: string client_id = 2;
    */
   clientId: string;
 
   /**
+   * The OIDC client secret for authentication.
+   *
    * @generated from field: string client_secret = 3;
    */
   clientSecret: string;
@@ -411,16 +452,22 @@ export declare type OIDCIdentityProviderConfig = Message<"bytebase.v1.OIDCIdenti
   scopes: string[];
 
   /**
+   * Mapping configuration for user attributes from OIDC claims.
+   *
    * @generated from field: bytebase.v1.FieldMapping field_mapping = 5;
    */
   fieldMapping?: FieldMapping;
 
   /**
+   * Whether to skip TLS certificate verification.
+   *
    * @generated from field: bool skip_tls_verify = 6;
    */
   skipTlsVerify: boolean;
 
   /**
+   * The authentication style for client credentials.
+   *
    * @generated from field: bytebase.v1.OAuth2AuthStyle auth_style = 7;
    */
   authStyle: OAuth2AuthStyle;
@@ -600,21 +647,29 @@ export declare const FieldMappingSchema: GenMessage<FieldMapping>;
  */
 export enum IdentityProviderType {
   /**
+   * Unspecified identity provider type.
+   *
    * @generated from enum value: IDENTITY_PROVIDER_TYPE_UNSPECIFIED = 0;
    */
   IDENTITY_PROVIDER_TYPE_UNSPECIFIED = 0,
 
   /**
+   * OAuth 2.0 authentication protocol.
+   *
    * @generated from enum value: OAUTH2 = 1;
    */
   OAUTH2 = 1,
 
   /**
+   * OpenID Connect authentication protocol.
+   *
    * @generated from enum value: OIDC = 2;
    */
   OIDC = 2,
 
   /**
+   * LDAP directory service authentication.
+   *
    * @generated from enum value: LDAP = 3;
    */
   LDAP = 3,
@@ -657,10 +712,13 @@ export enum OAuth2AuthStyle {
 export declare const OAuth2AuthStyleSchema: GenEnum<OAuth2AuthStyle>;
 
 /**
+ * IdentityProviderService manages external identity providers for SSO authentication.
+ *
  * @generated from service bytebase.v1.IdentityProviderService
  */
 export declare const IdentityProviderService: GenService<{
   /**
+   * Gets an identity provider by name.
    * Permissions required: bb.identityProviders.get
    *
    * @generated from rpc bytebase.v1.IdentityProviderService.GetIdentityProvider
@@ -671,6 +729,7 @@ export declare const IdentityProviderService: GenService<{
     output: typeof IdentityProviderSchema;
   },
   /**
+   * Lists all configured identity providers (public endpoint for login page).
    * Permissions required: None
    *
    * @generated from rpc bytebase.v1.IdentityProviderService.ListIdentityProviders
@@ -681,6 +740,7 @@ export declare const IdentityProviderService: GenService<{
     output: typeof ListIdentityProvidersResponseSchema;
   },
   /**
+   * Creates a new identity provider.
    * Permissions required: bb.identityProviders.create
    *
    * @generated from rpc bytebase.v1.IdentityProviderService.CreateIdentityProvider
@@ -691,6 +751,7 @@ export declare const IdentityProviderService: GenService<{
     output: typeof IdentityProviderSchema;
   },
   /**
+   * Updates an identity provider.
    * Permissions required: bb.identityProviders.update
    *
    * @generated from rpc bytebase.v1.IdentityProviderService.UpdateIdentityProvider
@@ -701,6 +762,7 @@ export declare const IdentityProviderService: GenService<{
     output: typeof IdentityProviderSchema;
   },
   /**
+   * Deletes an identity provider.
    * Permissions required: bb.identityProviders.delete
    *
    * @generated from rpc bytebase.v1.IdentityProviderService.DeleteIdentityProvider
@@ -711,6 +773,7 @@ export declare const IdentityProviderService: GenService<{
     output: typeof EmptySchema;
   },
   /**
+   * Tests the connection and configuration of an identity provider.
    * Permissions required: bb.identityProviders.update
    *
    * @generated from rpc bytebase.v1.IdentityProviderService.TestIdentityProvider

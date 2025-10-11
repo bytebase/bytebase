@@ -44,6 +44,8 @@ export const InstanceRoleSchema = /*@__PURE__*/
   messageDesc(file_v1_instance_role_service, 3);
 
 /**
+ * InstanceRoleService manages database roles within instances.
+ *
  * @generated from service bytebase.v1.InstanceRoleService
  */
 export const InstanceRoleService = /*@__PURE__*/

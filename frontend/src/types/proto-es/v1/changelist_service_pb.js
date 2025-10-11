@@ -73,6 +73,8 @@ export const Changelist_ChangeSchema = /*@__PURE__*/
   messageDesc(file_v1_changelist_service, 6, 0);
 
 /**
+ * ChangelistService manages changelists for grouping and organizing database changes.
+ *
  * @generated from service bytebase.v1.ChangelistService
  */
 export const ChangelistService = /*@__PURE__*/

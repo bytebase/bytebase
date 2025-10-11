@@ -28,10 +28,14 @@ const (
 type UserType int32
 
 const (
+	// Unspecified user type.
 	UserType_USER_TYPE_UNSPECIFIED UserType = 0
-	UserType_USER                  UserType = 1
-	UserType_SYSTEM_BOT            UserType = 2
-	UserType_SERVICE_ACCOUNT       UserType = 3
+	// Regular human user account.
+	UserType_USER UserType = 1
+	// System-managed bot account for automated operations.
+	UserType_SYSTEM_BOT UserType = 2
+	// Service account for API integrations.
+	UserType_SERVICE_ACCOUNT UserType = 3
 )
 
 // Enum value maps for UserType.
@@ -606,13 +610,19 @@ type User struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the user.
 	// Format: users/{user}. {user} is a system-generated unique ID.
-	Name       string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	State      State    `protobuf:"varint,2,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
-	Email      string   `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
-	Title      string   `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	UserType   UserType `protobuf:"varint,5,opt,name=user_type,json=userType,proto3,enum=bytebase.v1.UserType" json:"user_type,omitempty"`
-	Password   string   `protobuf:"bytes,7,opt,name=password,proto3" json:"password,omitempty"`
-	ServiceKey string   `protobuf:"bytes,8,opt,name=service_key,json=serviceKey,proto3" json:"service_key,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The lifecycle state of the user account.
+	State State `protobuf:"varint,2,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
+	// The email address of the user, used for login and notifications.
+	Email string `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
+	// The display title or full name of the user.
+	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	// The type of user account.
+	UserType UserType `protobuf:"varint,5,opt,name=user_type,json=userType,proto3,enum=bytebase.v1.UserType" json:"user_type,omitempty"`
+	// The password for authentication. Only used during user creation or password updates.
+	Password string `protobuf:"bytes,7,opt,name=password,proto3" json:"password,omitempty"`
+	// The service key for service account authentication. Only used for service accounts.
+	ServiceKey string `protobuf:"bytes,8,opt,name=service_key,json=serviceKey,proto3" json:"service_key,omitempty"`
 	// The mfa_enabled flag means if the user has enabled MFA.
 	MfaEnabled bool `protobuf:"varint,9,opt,name=mfa_enabled,json=mfaEnabled,proto3" json:"mfa_enabled,omitempty"`
 	// The mfa_secret is the temporary secret using in two phase verification.
@@ -621,7 +631,8 @@ type User struct {
 	RecoveryCodes []string `protobuf:"bytes,11,rep,name=recovery_codes,json=recoveryCodes,proto3" json:"recovery_codes,omitempty"`
 	// Should be a valid E.164 compliant phone number.
 	// Could be empty.
-	Phone   string        `protobuf:"bytes,12,opt,name=phone,proto3" json:"phone,omitempty"`
+	Phone string `protobuf:"bytes,12,opt,name=phone,proto3" json:"phone,omitempty"`
+	// User profile metadata.
 	Profile *User_Profile `protobuf:"bytes,13,opt,name=profile,proto3" json:"profile,omitempty"`
 	// The groups for the user.
 	// Format: groups/{email}
@@ -752,8 +763,10 @@ func (x *User) GetGroups() []string {
 }
 
 type User_Profile struct {
-	state                  protoimpl.MessageState `protogen:"open.v1"`
-	LastLoginTime          *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=last_login_time,json=lastLoginTime,proto3" json:"last_login_time,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The last time the user successfully logged in.
+	LastLoginTime *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=last_login_time,json=lastLoginTime,proto3" json:"last_login_time,omitempty"`
+	// The last time the user changed their password.
 	LastChangePasswordTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=last_change_password_time,json=lastChangePasswordTime,proto3" json:"last_change_password_time,omitempty"`
 	// source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
 	Source        string `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`

@@ -24,13 +24,16 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// The type of action performed on a Binding in a policy.
+// Type of action performed on a binding.
 type BindingDelta_Action int32
 
 const (
+	// Unspecified action.
 	BindingDelta_ACTION_UNSPECIFIED BindingDelta_Action = 0
-	BindingDelta_ADD                BindingDelta_Action = 1
-	BindingDelta_REMOVE             BindingDelta_Action = 2
+	// Add a binding.
+	BindingDelta_ADD BindingDelta_Action = 1
+	// Remove a binding.
+	BindingDelta_REMOVE BindingDelta_Action = 2
 )
 
 // Enum value maps for BindingDelta_Action.
@@ -74,6 +77,7 @@ func (BindingDelta_Action) EnumDescriptor() ([]byte, []int) {
 	return file_v1_iam_policy_proto_rawDescGZIP(), []int{5, 0}
 }
 
+// Request message for getting an IAM policy.
 type GetIamPolicyRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the resource to get the IAM policy.
@@ -121,6 +125,7 @@ func (x *GetIamPolicyRequest) GetResource() string {
 	return ""
 }
 
+// Request message for setting an IAM policy.
 type SetIamPolicyRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the resource to set the IAM policy.
@@ -185,6 +190,7 @@ func (x *SetIamPolicyRequest) GetEtag() string {
 	return ""
 }
 
+// IAM policy that binds members to roles.
 type IamPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Collection of binding.
@@ -242,6 +248,7 @@ func (x *IamPolicy) GetEtag() string {
 	return ""
 }
 
+// Binding associates members with a role and optional conditions.
 type Binding struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The role that is assigned to the members.
@@ -331,7 +338,7 @@ func (x *Binding) GetParsedExpr() *v1alpha1.Expr {
 	return nil
 }
 
-// The difference delta between two policies.
+// Describes changes between two IAM policies.
 type PolicyDelta struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The delta for Bindings between two policies.
@@ -377,8 +384,7 @@ func (x *PolicyDelta) GetBindingDeltas() []*BindingDelta {
 	return nil
 }
 
-// One delta entry for Binding. Each individual change (only one member in each
-// entry) to a binding will be a separate entry.
+// A single change to a binding.
 type BindingDelta struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The action that was performed on a Binding.

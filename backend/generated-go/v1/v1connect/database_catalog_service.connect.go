@@ -43,8 +43,10 @@ const (
 
 // DatabaseCatalogServiceClient is a client for the bytebase.v1.DatabaseCatalogService service.
 type DatabaseCatalogServiceClient interface {
+	// Gets the catalog metadata for a database.
 	// Permissions required: bb.databaseCatalogs.get
 	GetDatabaseCatalog(context.Context, *connect.Request[v1.GetDatabaseCatalogRequest]) (*connect.Response[v1.DatabaseCatalog], error)
+	// Updates catalog metadata such as classifications and labels.
 	// Permissions required: bb.databaseCatalogs.update
 	UpdateDatabaseCatalog(context.Context, *connect.Request[v1.UpdateDatabaseCatalogRequest]) (*connect.Response[v1.DatabaseCatalog], error)
 }
@@ -94,8 +96,10 @@ func (c *databaseCatalogServiceClient) UpdateDatabaseCatalog(ctx context.Context
 // DatabaseCatalogServiceHandler is an implementation of the bytebase.v1.DatabaseCatalogService
 // service.
 type DatabaseCatalogServiceHandler interface {
+	// Gets the catalog metadata for a database.
 	// Permissions required: bb.databaseCatalogs.get
 	GetDatabaseCatalog(context.Context, *connect.Request[v1.GetDatabaseCatalogRequest]) (*connect.Response[v1.DatabaseCatalog], error)
+	// Updates catalog metadata such as classifications and labels.
 	// Permissions required: bb.databaseCatalogs.update
 	UpdateDatabaseCatalog(context.Context, *connect.Request[v1.UpdateDatabaseCatalogRequest]) (*connect.Response[v1.DatabaseCatalog], error)
 }

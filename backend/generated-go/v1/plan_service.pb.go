@@ -27,12 +27,18 @@ const (
 type PlanCheckRun_Type int32
 
 const (
-	PlanCheckRun_TYPE_UNSPECIFIED                  PlanCheckRun_Type = 0
-	PlanCheckRun_DATABASE_STATEMENT_FAKE_ADVISE    PlanCheckRun_Type = 1
-	PlanCheckRun_DATABASE_STATEMENT_ADVISE         PlanCheckRun_Type = 3
+	// Unspecified check type.
+	PlanCheckRun_TYPE_UNSPECIFIED PlanCheckRun_Type = 0
+	// Fake advise check for testing purposes without executing against database.
+	PlanCheckRun_DATABASE_STATEMENT_FAKE_ADVISE PlanCheckRun_Type = 1
+	// SQL review check that analyzes statements against configured SQL review rules.
+	PlanCheckRun_DATABASE_STATEMENT_ADVISE PlanCheckRun_Type = 3
+	// Summary report check that generates impact analysis for the statements.
 	PlanCheckRun_DATABASE_STATEMENT_SUMMARY_REPORT PlanCheckRun_Type = 5
-	PlanCheckRun_DATABASE_CONNECT                  PlanCheckRun_Type = 6
-	PlanCheckRun_DATABASE_GHOST_SYNC               PlanCheckRun_Type = 7
+	// Connection check that verifies database connectivity.
+	PlanCheckRun_DATABASE_CONNECT PlanCheckRun_Type = 6
+	// Ghost sync check that validates gh-ost online schema change compatibility.
+	PlanCheckRun_DATABASE_GHOST_SYNC PlanCheckRun_Type = 7
 )
 
 // Enum value maps for PlanCheckRun_Type.
@@ -653,10 +659,13 @@ type Plan struct {
 	// The rollout associated with the plan.
 	// Can be empty.
 	// Format: projects/{project}/rollouts/{rollout}
-	Rollout     string       `protobuf:"bytes,15,opt,name=rollout,proto3" json:"rollout,omitempty"`
-	Title       string       `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	Description string       `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
-	Specs       []*Plan_Spec `protobuf:"bytes,14,rep,name=specs,proto3" json:"specs,omitempty"`
+	Rollout string `protobuf:"bytes,15,opt,name=rollout,proto3" json:"rollout,omitempty"`
+	// The title of the plan.
+	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	// The description of the plan.
+	Description string `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
+	// The deployment specs for the plan.
+	Specs []*Plan_Spec `protobuf:"bytes,14,rep,name=specs,proto3" json:"specs,omitempty"`
 	// Format: users/hello@world.com
 	Creator    string                 `protobuf:"bytes,8,opt,name=creator,proto3" json:"creator,omitempty"`
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
@@ -792,13 +801,13 @@ type ListPlanCheckRunsRequest struct {
 	// The parent, which owns this collection of plan check runs.
 	// Format: projects/{project}/plans/{plan}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// The maximum number of plan check runs to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 10 plan check runs will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// A page token, received from a previous `ListPlanCheckRuns` call.
 	// Provide this to retrieve the subsequent page.
 	//

@@ -24,17 +24,26 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Webhook integration type.
 type Webhook_Type int32
 
 const (
+	// Unspecified type.
 	Webhook_TYPE_UNSPECIFIED Webhook_Type = 0
-	Webhook_SLACK            Webhook_Type = 1
-	Webhook_DISCORD          Webhook_Type = 2
-	Webhook_TEAMS            Webhook_Type = 3
-	Webhook_DINGTALK         Webhook_Type = 4
-	Webhook_FEISHU           Webhook_Type = 5
-	Webhook_WECOM            Webhook_Type = 6
-	Webhook_LARK             Webhook_Type = 8
+	// Slack integration.
+	Webhook_SLACK Webhook_Type = 1
+	// Discord integration.
+	Webhook_DISCORD Webhook_Type = 2
+	// Microsoft Teams integration.
+	Webhook_TEAMS Webhook_Type = 3
+	// DingTalk integration.
+	Webhook_DINGTALK Webhook_Type = 4
+	// Feishu integration.
+	Webhook_FEISHU Webhook_Type = 5
+	// WeCom (WeChat Work) integration.
+	Webhook_WECOM Webhook_Type = 6
+	// Lark integration.
+	Webhook_LARK Webhook_Type = 8
 )
 
 // Enum value maps for Webhook_Type.
@@ -88,9 +97,11 @@ func (Webhook_Type) EnumDescriptor() ([]byte, []int) {
 	return file_v1_project_service_proto_rawDescGZIP(), []int{19, 0}
 }
 
+// Activity type enumeration.
 type Activity_Type int32
 
 const (
+	// Unspecified type.
 	Activity_TYPE_UNSPECIFIED Activity_Type = 0
 	// Notifications via webhooks.
 	//
@@ -863,7 +874,8 @@ func (x *BatchGetIamPolicyRequest) GetNames() []string {
 }
 
 type BatchGetIamPolicyResponse struct {
-	state         protoimpl.MessageState                    `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The policy results for each requested project.
 	PolicyResults []*BatchGetIamPolicyResponse_PolicyResult `protobuf:"bytes,1,rep,name=policy_results,json=policyResults,proto3" json:"policy_results,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -906,11 +918,15 @@ func (x *BatchGetIamPolicyResponse) GetPolicyResults() []*BatchGetIamPolicyRespo
 	return nil
 }
 
+// A label for categorizing and organizing issues.
 type Label struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Value         string                 `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
-	Color         string                 `protobuf:"bytes,2,opt,name=color,proto3" json:"color,omitempty"`
-	Group         string                 `protobuf:"bytes,3,opt,name=group,proto3" json:"group,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The label value/name.
+	Value string `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	// The color code for the label (e.g., hex color).
+	Color string `protobuf:"bytes,2,opt,name=color,proto3" json:"color,omitempty"`
+	// The group this label belongs to.
+	Group         string `protobuf:"bytes,3,opt,name=group,proto3" json:"group,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -970,36 +986,40 @@ type Project struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the project.
 	// Format: projects/{project}
-	Name  string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	State State  `protobuf:"varint,3,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The lifecycle state of the project.
+	State State `protobuf:"varint,3,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
 	// The title or name of a project. It's not unique within the workspace.
-	Title                      string     `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	Webhooks                   []*Webhook `protobuf:"bytes,11,rep,name=webhooks,proto3" json:"webhooks,omitempty"`
-	DataClassificationConfigId string     `protobuf:"bytes,12,opt,name=data_classification_config_id,json=dataClassificationConfigId,proto3" json:"data_classification_config_id,omitempty"`
-	IssueLabels                []*Label   `protobuf:"bytes,13,rep,name=issue_labels,json=issueLabels,proto3" json:"issue_labels,omitempty"`
+	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	// The list of webhooks configured for the project.
+	Webhooks []*Webhook `protobuf:"bytes,11,rep,name=webhooks,proto3" json:"webhooks,omitempty"`
+	// The data classification configuration ID for the project.
+	DataClassificationConfigId string `protobuf:"bytes,12,opt,name=data_classification_config_id,json=dataClassificationConfigId,proto3" json:"data_classification_config_id,omitempty"`
+	// Labels available for tagging issues in this project.
+	IssueLabels []*Label `protobuf:"bytes,13,rep,name=issue_labels,json=issueLabels,proto3" json:"issue_labels,omitempty"`
 	// Force issue labels to be used when creating an issue.
 	ForceIssueLabels bool `protobuf:"varint,14,opt,name=force_issue_labels,json=forceIssueLabels,proto3" json:"force_issue_labels,omitempty"`
-	// Allow modifying statement after issue is created.
+	// Allow modifying SQL statements after issue is created.
 	AllowModifyStatement bool `protobuf:"varint,15,opt,name=allow_modify_statement,json=allowModifyStatement,proto3" json:"allow_modify_statement,omitempty"`
-	// Enable auto resolve issue.
+	// Enable automatic issue resolution when tasks complete.
 	AutoResolveIssue bool `protobuf:"varint,16,opt,name=auto_resolve_issue,json=autoResolveIssue,proto3" json:"auto_resolve_issue,omitempty"`
-	// Enforce issue title created by user instead of generated by Bytebase.
+	// Enforce issue title to be created by user instead of generated by Bytebase.
 	EnforceIssueTitle bool `protobuf:"varint,17,opt,name=enforce_issue_title,json=enforceIssueTitle,proto3" json:"enforce_issue_title,omitempty"`
-	// Whether to automatically enable backup.
+	// Whether to automatically enable backup for database changes.
 	AutoEnableBackup bool `protobuf:"varint,18,opt,name=auto_enable_backup,json=autoEnableBackup,proto3" json:"auto_enable_backup,omitempty"`
-	// Whether to skip backup errors and continue the data migration.
+	// Whether to skip backup errors and continue with data migration.
 	SkipBackupErrors bool `protobuf:"varint,19,opt,name=skip_backup_errors,json=skipBackupErrors,proto3" json:"skip_backup_errors,omitempty"`
-	// Whether to enable the database tenant mode for PostgreSQL.
-	// If enabled, the issue will be created with the prepend "set role <db_owner>" statement.
+	// Whether to enable database tenant mode for PostgreSQL.
+	// If enabled, issues will include "set role <db_owner>" statement.
 	PostgresDatabaseTenantMode bool `protobuf:"varint,20,opt,name=postgres_database_tenant_mode,json=postgresDatabaseTenantMode,proto3" json:"postgres_database_tenant_mode,omitempty"`
-	// Whether to allow the issue creator to self-approve the issue.
+	// Whether to allow issue creators to self-approve their own issues.
 	AllowSelfApproval bool `protobuf:"varint,21,opt,name=allow_self_approval,json=allowSelfApproval,proto3" json:"allow_self_approval,omitempty"`
-	// Execution retry policy for the task run.
+	// Execution retry policy for task runs.
 	ExecutionRetryPolicy *Project_ExecutionRetryPolicy `protobuf:"bytes,22,opt,name=execution_retry_policy,json=executionRetryPolicy,proto3" json:"execution_retry_policy,omitempty"`
-	// The maximum databases of rows to sample during CI data validation.
-	// Without specification, sampling is disabled, resulting in a full validation.
+	// The maximum number of database rows to sample during CI data validation.
+	// Without specification, sampling is disabled, resulting in full validation.
 	CiSamplingSize int32 `protobuf:"varint,23,opt,name=ci_sampling_size,json=ciSamplingSize,proto3" json:"ci_sampling_size,omitempty"`
-	// The maximum number of parallel tasks to run during the rollout.
+	// The maximum number of parallel tasks allowed during rollout execution.
 	ParallelTasksPerRollout int32 `protobuf:"varint,24,opt,name=parallel_tasks_per_rollout,json=parallelTasksPerRollout,proto3" json:"parallel_tasks_per_rollout,omitempty"`
 	// Labels are key-value pairs that can be attached to the project.
 	// For example, { "environment": "production", "team": "backend" }
@@ -1539,6 +1559,7 @@ func (x *Webhook) GetNotificationTypes() []Activity_Type {
 	return nil
 }
 
+// Activity types for webhook notifications.
 // TODO(zp): move to activity later.
 type Activity struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1576,10 +1597,13 @@ func (*Activity) Descriptor() ([]byte, []int) {
 	return file_v1_project_service_proto_rawDescGZIP(), []int{20}
 }
 
+// Result for a single project's IAM policy.
 type BatchGetIamPolicyResponse_PolicyResult struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Project       string                 `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
-	Policy        *IamPolicy             `protobuf:"bytes,2,opt,name=policy,proto3" json:"policy,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The project resource name.
+	Project string `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
+	// The IAM policy for the project.
+	Policy        *IamPolicy `protobuf:"bytes,2,opt,name=policy,proto3" json:"policy,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1628,9 +1652,10 @@ func (x *BatchGetIamPolicyResponse_PolicyResult) GetPolicy() *IamPolicy {
 	return nil
 }
 
+// Execution retry policy configuration.
 type Project_ExecutionRetryPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The maximum number of retries for the lock timeout issue.
+	// The maximum number of retries for lock timeout errors.
 	MaximumRetries int32 `protobuf:"varint,1,opt,name=maximum_retries,json=maximumRetries,proto3" json:"maximum_retries,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache

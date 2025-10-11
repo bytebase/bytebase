@@ -25,12 +25,16 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// The type of migration file.
 type Release_File_Type int32
 
 const (
+	// Unspecified type.
 	Release_File_TYPE_UNSPECIFIED Release_File_Type = 0
-	Release_File_VERSIONED        Release_File_Type = 1
-	Release_File_DECLARATIVE      Release_File_Type = 2
+	// Versioned migration file with sequential version numbers.
+	Release_File_VERSIONED Release_File_Type = 1
+	// Declarative schema definition file describing desired state.
+	Release_File_DECLARATIVE Release_File_Type = 2
 )
 
 // Enum value maps for Release_File_Type.
@@ -74,13 +78,18 @@ func (Release_File_Type) EnumDescriptor() ([]byte, []int) {
 	return file_v1_release_service_proto_rawDescGZIP(), []int{11, 0, 0}
 }
 
+// The migration type for versioned files.
 type Release_File_MigrationType int32
 
 const (
+	// Unspecified migration type.
 	Release_File_MIGRATION_TYPE_UNSPECIFIED Release_File_MigrationType = 0
-	Release_File_DDL                        Release_File_MigrationType = 1
-	Release_File_DDL_GHOST                  Release_File_MigrationType = 2
-	Release_File_DML                        Release_File_MigrationType = 3
+	// DDL (Data Definition Language) migration.
+	Release_File_DDL Release_File_MigrationType = 1
+	// DDL migration using gh-ost for online schema changes.
+	Release_File_DDL_GHOST Release_File_MigrationType = 2
+	// DML (Data Manipulation Language) migration.
+	Release_File_DML Release_File_MigrationType = 3
 )
 
 // Enum value maps for Release_File_MigrationType.
@@ -250,8 +259,9 @@ func (x *ListReleasesRequest) GetShowDeleted() bool {
 }
 
 type ListReleasesResponse struct {
-	state    protoimpl.MessageState `protogen:"open.v1"`
-	Releases []*Release             `protobuf:"bytes,1,rep,name=releases,proto3" json:"releases,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The releases from the specified request.
+	Releases []*Release `protobuf:"bytes,1,rep,name=releases,proto3" json:"releases,omitempty"`
 	// A token, which can be sent as `page_token` to retrieve the next page.
 	// If this field is omitted, there are no subsequent pages.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
@@ -382,8 +392,9 @@ func (x *SearchReleasesRequest) GetDigest() string {
 }
 
 type SearchReleasesResponse struct {
-	state    protoimpl.MessageState `protogen:"open.v1"`
-	Releases []*Release             `protobuf:"bytes,1,rep,name=releases,proto3" json:"releases,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The releases matching the search criteria.
+	Releases []*Release `protobuf:"bytes,1,rep,name=releases,proto3" json:"releases,omitempty"`
 	// A token, which can be sent as `page_token` to retrieve the next page.
 	// If this field is omitted, there are no subsequent pages.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
@@ -713,9 +724,10 @@ func (x *CheckReleaseRequest) GetTargets() []string {
 }
 
 type CheckReleaseResponse struct {
-	state   protoimpl.MessageState              `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The check results for each file and target combination.
 	Results []*CheckReleaseResponse_CheckResult `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
-	// The affected rows of the check.
+	// The total affected rows across all checks.
 	AffectedRows int64 `protobuf:"varint,2,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
 	// The aggregated risk level of the check.
 	RiskLevel     RiskLevel `protobuf:"varint,3,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.v1.RiskLevel" json:"risk_level,omitempty"`
@@ -777,14 +789,18 @@ func (x *CheckReleaseResponse) GetRiskLevel() RiskLevel {
 type Release struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/releases/{release}
-	Name      string             `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Title     string             `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Files     []*Release_File    `protobuf:"bytes,3,rep,name=files,proto3" json:"files,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The title of the release.
+	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	// The SQL files included in the release.
+	Files []*Release_File `protobuf:"bytes,3,rep,name=files,proto3" json:"files,omitempty"`
+	// The version control source of the release.
 	VcsSource *Release_VCSSource `protobuf:"bytes,4,opt,name=vcs_source,json=vcsSource,proto3" json:"vcs_source,omitempty"`
 	// Format: users/hello@world.com
 	Creator    string                 `protobuf:"bytes,5,opt,name=creator,proto3" json:"creator,omitempty"`
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
-	State      State                  `protobuf:"varint,7,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
+	// The lifecycle state of the release.
+	State State `protobuf:"varint,7,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
 	// The digest of the release.
 	// The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease.
 	// Whether to provide digest and how to generate it is up to the user.
@@ -880,6 +896,7 @@ func (x *Release) GetDigest() string {
 	return ""
 }
 
+// Check result for a single release file on a target database.
 type CheckReleaseResponse_CheckResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The file path that is being checked.
@@ -962,6 +979,7 @@ func (x *CheckReleaseResponse_CheckResult) GetRiskLevel() RiskLevel {
 	return RiskLevel_RISK_LEVEL_UNSPECIFIED
 }
 
+// A SQL file in a release.
 type Release_File struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The unique identifier for the file.
@@ -969,8 +987,9 @@ type Release_File struct {
 	// The path of the file. e.g. `2.2/V0001_create_table.sql`.
 	Path string `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
 	// The type of the file.
-	Type    Release_File_Type `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.v1.Release_File_Type" json:"type,omitempty"`
-	Version string            `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
+	Type Release_File_Type `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.v1.Release_File_Type" json:"type,omitempty"`
+	// The version identifier for the file.
+	Version string `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
 	// The migration type of the file.
 	// For versioned files, it is the migration type of the file.
 	// For declarative files, this field is always DDL, thus meaningless.
@@ -1084,9 +1103,11 @@ func (x *Release_File) GetStatementSize() int64 {
 	return 0
 }
 
+// Version control system source information.
 type Release_VCSSource struct {
-	state   protoimpl.MessageState `protogen:"open.v1"`
-	VcsType VCSType                `protobuf:"varint,1,opt,name=vcs_type,json=vcsType,proto3,enum=bytebase.v1.VCSType" json:"vcs_type,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The type of VCS.
+	VcsType VCSType `protobuf:"varint,1,opt,name=vcs_type,json=vcsType,proto3,enum=bytebase.v1.VCSType" json:"vcs_type,omitempty"`
 	// The url link to the e.g. GitHub commit or pull request.
 	Url           string `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
 	unknownFields protoimpl.UnknownFields

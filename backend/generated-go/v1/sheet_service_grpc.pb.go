@@ -28,13 +28,19 @@ const (
 // SheetServiceClient is the client API for SheetService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// SheetService manages SQL scripts and saved queries.
 type SheetServiceClient interface {
+	// Creates a new SQL sheet.
 	// Permissions required: bb.sheets.create
 	CreateSheet(ctx context.Context, in *CreateSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
+	// Creates multiple SQL sheets in a single operation.
 	// Permissions required: bb.sheets.create
 	BatchCreateSheets(ctx context.Context, in *BatchCreateSheetsRequest, opts ...grpc.CallOption) (*BatchCreateSheetsResponse, error)
+	// Retrieves a SQL sheet by name.
 	// Permissions required: bb.sheets.get
 	GetSheet(ctx context.Context, in *GetSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
+	// Updates a SQL sheet's title or content.
 	// Permissions required: bb.sheets.update
 	UpdateSheet(ctx context.Context, in *UpdateSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
 }
@@ -90,13 +96,19 @@ func (c *sheetServiceClient) UpdateSheet(ctx context.Context, in *UpdateSheetReq
 // SheetServiceServer is the server API for SheetService service.
 // All implementations must embed UnimplementedSheetServiceServer
 // for forward compatibility.
+//
+// SheetService manages SQL scripts and saved queries.
 type SheetServiceServer interface {
+	// Creates a new SQL sheet.
 	// Permissions required: bb.sheets.create
 	CreateSheet(context.Context, *CreateSheetRequest) (*Sheet, error)
+	// Creates multiple SQL sheets in a single operation.
 	// Permissions required: bb.sheets.create
 	BatchCreateSheets(context.Context, *BatchCreateSheetsRequest) (*BatchCreateSheetsResponse, error)
+	// Retrieves a SQL sheet by name.
 	// Permissions required: bb.sheets.get
 	GetSheet(context.Context, *GetSheetRequest) (*Sheet, error)
+	// Updates a SQL sheet's title or content.
 	// Permissions required: bb.sheets.update
 	UpdateSheet(context.Context, *UpdateSheetRequest) (*Sheet, error)
 	mustEmbedUnimplementedSheetServiceServer()

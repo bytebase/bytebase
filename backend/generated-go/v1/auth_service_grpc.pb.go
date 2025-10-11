@@ -27,9 +27,13 @@ const (
 // AuthServiceClient is the client API for AuthService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// AuthService handles user authentication operations.
 type AuthServiceClient interface {
+	// Authenticates a user and returns access tokens.
 	// Permissions required: None
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
+	// Logs out the current user session.
 	// Permissions required: None
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
@@ -65,9 +69,13 @@ func (c *authServiceClient) Logout(ctx context.Context, in *LogoutRequest, opts 
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
+//
+// AuthService handles user authentication operations.
 type AuthServiceServer interface {
+	// Authenticates a user and returns access tokens.
 	// Permissions required: None
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
+	// Logs out the current user session.
 	// Permissions required: None
 	Logout(context.Context, *LogoutRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedAuthServiceServer()

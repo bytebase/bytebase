@@ -123,6 +123,8 @@ export const Release_File_TypeSchema = /*@__PURE__*/
   enumDesc(file_v1_release_service, 11, 0, 0);
 
 /**
+ * The type of migration file.
+ *
  * @generated from enum bytebase.v1.Release.File.Type
  */
 export const Release_File_Type = /*@__PURE__*/
@@ -135,6 +137,8 @@ export const Release_File_MigrationTypeSchema = /*@__PURE__*/
   enumDesc(file_v1_release_service, 11, 0, 1);
 
 /**
+ * The migration type for versioned files.
+ *
  * @generated from enum bytebase.v1.Release.File.MigrationType
  */
 export const Release_File_MigrationType = /*@__PURE__*/
@@ -148,6 +152,8 @@ export const Release_VCSSourceSchema = /*@__PURE__*/
   messageDesc(file_v1_release_service, 11, 1);
 
 /**
+ * ReleaseService manages releases for coordinating deployments.
+ *
  * @generated from service bytebase.v1.ReleaseService
  */
 export const ReleaseService = /*@__PURE__*/

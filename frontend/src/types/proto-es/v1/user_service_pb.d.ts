@@ -289,31 +289,43 @@ export declare type User = Message<"bytebase.v1.User"> & {
   name: string;
 
   /**
+   * The lifecycle state of the user account.
+   *
    * @generated from field: bytebase.v1.State state = 2;
    */
   state: State;
 
   /**
+   * The email address of the user, used for login and notifications.
+   *
    * @generated from field: string email = 3;
    */
   email: string;
 
   /**
+   * The display title or full name of the user.
+   *
    * @generated from field: string title = 4;
    */
   title: string;
 
   /**
+   * The type of user account.
+   *
    * @generated from field: bytebase.v1.UserType user_type = 5;
    */
   userType: UserType;
 
   /**
+   * The password for authentication. Only used during user creation or password updates.
+   *
    * @generated from field: string password = 7;
    */
   password: string;
 
   /**
+   * The service key for service account authentication. Only used for service accounts.
+   *
    * @generated from field: string service_key = 8;
    */
   serviceKey: string;
@@ -348,6 +360,8 @@ export declare type User = Message<"bytebase.v1.User"> & {
   phone: string;
 
   /**
+   * User profile metadata.
+   *
    * @generated from field: bytebase.v1.User.Profile profile = 13;
    */
   profile?: User_Profile;
@@ -372,11 +386,15 @@ export declare const UserSchema: GenMessage<User>;
  */
 export declare type User_Profile = Message<"bytebase.v1.User.Profile"> & {
   /**
+   * The last time the user successfully logged in.
+   *
    * @generated from field: google.protobuf.Timestamp last_login_time = 1;
    */
   lastLoginTime?: Timestamp;
 
   /**
+   * The last time the user changed their password.
+   *
    * @generated from field: google.protobuf.Timestamp last_change_password_time = 2;
    */
   lastChangePasswordTime?: Timestamp;
@@ -400,21 +418,29 @@ export declare const User_ProfileSchema: GenMessage<User_Profile>;
  */
 export enum UserType {
   /**
+   * Unspecified user type.
+   *
    * @generated from enum value: USER_TYPE_UNSPECIFIED = 0;
    */
   USER_TYPE_UNSPECIFIED = 0,
 
   /**
+   * Regular human user account.
+   *
    * @generated from enum value: USER = 1;
    */
   USER = 1,
 
   /**
+   * System-managed bot account for automated operations.
+   *
    * @generated from enum value: SYSTEM_BOT = 2;
    */
   SYSTEM_BOT = 2,
 
   /**
+   * Service account for API integrations.
+   *
    * @generated from enum value: SERVICE_ACCOUNT = 3;
    */
   SERVICE_ACCOUNT = 3,
@@ -426,6 +452,8 @@ export enum UserType {
 export declare const UserTypeSchema: GenEnum<UserType>;
 
 /**
+ * UserService manages user accounts and authentication.
+ *
  * @generated from service bytebase.v1.UserService
  */
 export declare const UserService: GenService<{
@@ -477,10 +505,8 @@ export declare const UserService: GenService<{
     output: typeof ListUsersResponseSchema;
   },
   /**
-   * Create a user.
-   * When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
-   * Otherwise, any unauthenticated user can create a user.
-   * Permissions required: bb.users.create
+   * Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
+   * Permissions required: bb.users.create (only when Disallow Signup is enabled)
    *
    * @generated from rpc bytebase.v1.UserService.CreateUser
    */
@@ -490,8 +516,8 @@ export declare const UserService: GenService<{
     output: typeof UserSchema;
   },
   /**
-   * Only the user itself and the user with bb.users.update permission on the workspace can update the user.
-   * Permissions required: bb.users.update
+   * Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+   * Permissions required: bb.users.update (or self)
    *
    * @generated from rpc bytebase.v1.UserService.UpdateUser
    */
@@ -501,8 +527,7 @@ export declare const UserService: GenService<{
     output: typeof UserSchema;
   },
   /**
-   * Only the user with bb.users.delete permission on the workspace can delete the user.
-   * The last remaining workspace admin cannot be deleted.
+   * Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted.
    * Permissions required: bb.users.delete
    *
    * @generated from rpc bytebase.v1.UserService.DeleteUser
@@ -513,7 +538,7 @@ export declare const UserService: GenService<{
     output: typeof EmptySchema;
   },
   /**
-   * Only the user with bb.users.undelete permission on the workspace can undelete the user.
+   * Restores a deleted user.
    * Permissions required: bb.users.undelete
    *
    * @generated from rpc bytebase.v1.UserService.UndeleteUser

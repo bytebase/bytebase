@@ -10,6 +10,7 @@ import "v1/annotation.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// SubscriptionService manages enterprise subscriptions and licensing.
 service SubscriptionService {
   // GetSubscription returns the current subscription.
   // If there is no license, we will return a free plan subscription without expiration time.
@@ -21,6 +22,7 @@ service SubscriptionService {
     option (bytebase.v1.allow_without_credential) = true;
   }
 
+  // Updates the enterprise license subscription.
   // Permissions required: bb.settings.set
   rpc UpdateSubscription(UpdateSubscriptionRequest) returns (Subscription) {
     option (google.api.http) = {
@@ -44,12 +46,16 @@ message UpdateSubscriptionRequest {
 }
 
 enum PlanType {
+  // Unspecified plan type.
   PLAN_TYPE_UNSPECIFIED = 0;
 
+  // Free plan with basic features and no cost.
   FREE = 1;
 
+  // Team plan with collaboration features for small to medium teams.
   TEAM = 2;
 
+  // Enterprise plan with advanced features and dedicated support.
   ENTERPRISE = 3;
 }
 

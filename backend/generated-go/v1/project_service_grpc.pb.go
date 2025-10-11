@@ -40,38 +40,53 @@ const (
 // ProjectServiceClient is the client API for ProjectService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// ProjectService manages projects that group databases and changes.
 type ProjectServiceClient interface {
 	// GetProject retrieves a project by name.
 	// Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
 	// Permissions required: bb.projects.get
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*Project, error)
+	// Lists all projects in the workspace with optional filtering.
 	// Permissions required: bb.projects.list
 	ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*ListProjectsResponse, error)
-	// Permissions required: None
+	// Searches for projects with advanced filtering capabilities.
+	// Permissions required: bb.projects.get (or project-level bb.projects.get for specific projects)
 	SearchProjects(ctx context.Context, in *SearchProjectsRequest, opts ...grpc.CallOption) (*SearchProjectsResponse, error)
+	// Creates a new project in the workspace.
 	// Permissions required: bb.projects.create
 	CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*Project, error)
+	// Updates an existing project's properties.
 	// Permissions required: bb.projects.update
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*Project, error)
+	// Deletes (soft-delete or purge) a project.
 	// Permissions required: bb.projects.delete
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Restores a soft-deleted project.
 	// Permissions required: bb.projects.undelete
 	UndeleteProject(ctx context.Context, in *UndeleteProjectRequest, opts ...grpc.CallOption) (*Project, error)
+	// Deletes multiple projects in a single operation.
 	// Permissions required: bb.projects.delete
 	BatchDeleteProjects(ctx context.Context, in *BatchDeleteProjectsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Retrieves the IAM policy for a project.
 	// Permissions required: bb.projects.getIamPolicy
 	GetIamPolicy(ctx context.Context, in *GetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
-	// Deprecated.
-	// Permissions required: bb.projects.getIamPolicy
+	// Deprecated. No permission check implemented.
+	// Permissions required: None
 	BatchGetIamPolicy(ctx context.Context, in *BatchGetIamPolicyRequest, opts ...grpc.CallOption) (*BatchGetIamPolicyResponse, error)
+	// Sets the IAM policy for a project.
 	// Permissions required: bb.projects.setIamPolicy
 	SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
+	// Adds a webhook to a project for notifications.
 	// Permissions required: bb.projects.update
 	AddWebhook(ctx context.Context, in *AddWebhookRequest, opts ...grpc.CallOption) (*Project, error)
+	// Updates an existing webhook configuration.
 	// Permissions required: bb.projects.update
 	UpdateWebhook(ctx context.Context, in *UpdateWebhookRequest, opts ...grpc.CallOption) (*Project, error)
+	// Removes a webhook from a project.
 	// Permissions required: bb.projects.update
 	RemoveWebhook(ctx context.Context, in *RemoveWebhookRequest, opts ...grpc.CallOption) (*Project, error)
+	// Tests a webhook by sending a test notification.
 	// Permissions required: bb.projects.update
 	TestWebhook(ctx context.Context, in *TestWebhookRequest, opts ...grpc.CallOption) (*TestWebhookResponse, error)
 }
@@ -237,38 +252,53 @@ func (c *projectServiceClient) TestWebhook(ctx context.Context, in *TestWebhookR
 // ProjectServiceServer is the server API for ProjectService service.
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility.
+//
+// ProjectService manages projects that group databases and changes.
 type ProjectServiceServer interface {
 	// GetProject retrieves a project by name.
 	// Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
 	// Permissions required: bb.projects.get
 	GetProject(context.Context, *GetProjectRequest) (*Project, error)
+	// Lists all projects in the workspace with optional filtering.
 	// Permissions required: bb.projects.list
 	ListProjects(context.Context, *ListProjectsRequest) (*ListProjectsResponse, error)
-	// Permissions required: None
+	// Searches for projects with advanced filtering capabilities.
+	// Permissions required: bb.projects.get (or project-level bb.projects.get for specific projects)
 	SearchProjects(context.Context, *SearchProjectsRequest) (*SearchProjectsResponse, error)
+	// Creates a new project in the workspace.
 	// Permissions required: bb.projects.create
 	CreateProject(context.Context, *CreateProjectRequest) (*Project, error)
+	// Updates an existing project's properties.
 	// Permissions required: bb.projects.update
 	UpdateProject(context.Context, *UpdateProjectRequest) (*Project, error)
+	// Deletes (soft-delete or purge) a project.
 	// Permissions required: bb.projects.delete
 	DeleteProject(context.Context, *DeleteProjectRequest) (*emptypb.Empty, error)
+	// Restores a soft-deleted project.
 	// Permissions required: bb.projects.undelete
 	UndeleteProject(context.Context, *UndeleteProjectRequest) (*Project, error)
+	// Deletes multiple projects in a single operation.
 	// Permissions required: bb.projects.delete
 	BatchDeleteProjects(context.Context, *BatchDeleteProjectsRequest) (*emptypb.Empty, error)
+	// Retrieves the IAM policy for a project.
 	// Permissions required: bb.projects.getIamPolicy
 	GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error)
-	// Deprecated.
-	// Permissions required: bb.projects.getIamPolicy
+	// Deprecated. No permission check implemented.
+	// Permissions required: None
 	BatchGetIamPolicy(context.Context, *BatchGetIamPolicyRequest) (*BatchGetIamPolicyResponse, error)
+	// Sets the IAM policy for a project.
 	// Permissions required: bb.projects.setIamPolicy
 	SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error)
+	// Adds a webhook to a project for notifications.
 	// Permissions required: bb.projects.update
 	AddWebhook(context.Context, *AddWebhookRequest) (*Project, error)
+	// Updates an existing webhook configuration.
 	// Permissions required: bb.projects.update
 	UpdateWebhook(context.Context, *UpdateWebhookRequest) (*Project, error)
+	// Removes a webhook from a project.
 	// Permissions required: bb.projects.update
 	RemoveWebhook(context.Context, *RemoveWebhookRequest) (*Project, error)
+	// Tests a webhook by sending a test notification.
 	// Permissions required: bb.projects.update
 	TestWebhook(context.Context, *TestWebhookRequest) (*TestWebhookResponse, error)
 	mustEmbedUnimplementedProjectServiceServer()

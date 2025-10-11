@@ -17,7 +17,9 @@ import "v1/issue_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// SettingService manages workspace-level settings and configurations.
 service SettingService {
+  // Lists all workspace settings.
   // Permissions required: bb.settings.list
   rpc ListSettings(ListSettingsRequest) returns (ListSettingsResponse) {
     option (google.api.http) = {get: "/v1/settings"};
@@ -26,6 +28,7 @@ service SettingService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Retrieves a workspace setting by name.
   // Permissions required: bb.settings.get
   rpc GetSetting(GetSettingRequest) returns (Setting) {
     option (google.api.http) = {get: "/v1/{name=settings/*}"};
@@ -34,6 +37,7 @@ service SettingService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Updates a workspace setting.
   // Permissions required: bb.settings.set
   rpc UpdateSetting(UpdateSettingRequest) returns (Setting) {
     option (google.api.http) = {
@@ -47,14 +51,14 @@ service SettingService {
 }
 
 message ListSettingsRequest {
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // The maximum number of settings to return. The service may return fewer than
   // this value.
   // If unspecified, at most 10 settings will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 1;
 
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // A page token, received from a previous `ListSettings` call.
   // Provide this to retrieve the subsequent page.
   //
@@ -135,7 +139,7 @@ message Setting {
   // For example, "settings/bb.branding.logo"
   string name = 1;
 
-  // The value of the setting.
+  // The configuration value of the setting.
   Value value = 2;
 }
 
@@ -240,10 +244,10 @@ message Announcement {
     CRITICAL = 3;
   }
 
-  // The alert level of announcemnt
+  // The alert level of announcement
   AlertLevel level = 1;
 
-  // The text of announcemnt
+  // The text of announcement
   string text = 2;
 
   // The optional link, user can follow the link to check extra details

@@ -30,15 +30,22 @@ const (
 // RiskServiceClient is the client API for RiskService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// RiskService manages risk assessment rules for database changes.
 type RiskServiceClient interface {
+	// Lists all risk assessment rules.
 	// Permissions required: bb.risks.list
 	ListRisks(ctx context.Context, in *ListRisksRequest, opts ...grpc.CallOption) (*ListRisksResponse, error)
+	// Creates a new risk assessment rule.
 	// Permissions required: bb.risks.create
 	CreateRisk(ctx context.Context, in *CreateRiskRequest, opts ...grpc.CallOption) (*Risk, error)
+	// Retrieves a risk assessment rule by name.
 	// Permissions required: bb.risks.list
 	GetRisk(ctx context.Context, in *GetRiskRequest, opts ...grpc.CallOption) (*Risk, error)
+	// Updates an existing risk assessment rule.
 	// Permissions required: bb.risks.update
 	UpdateRisk(ctx context.Context, in *UpdateRiskRequest, opts ...grpc.CallOption) (*Risk, error)
+	// Deletes a risk assessment rule.
 	// Permissions required: bb.risks.delete
 	DeleteRisk(ctx context.Context, in *DeleteRiskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
@@ -104,15 +111,22 @@ func (c *riskServiceClient) DeleteRisk(ctx context.Context, in *DeleteRiskReques
 // RiskServiceServer is the server API for RiskService service.
 // All implementations must embed UnimplementedRiskServiceServer
 // for forward compatibility.
+//
+// RiskService manages risk assessment rules for database changes.
 type RiskServiceServer interface {
+	// Lists all risk assessment rules.
 	// Permissions required: bb.risks.list
 	ListRisks(context.Context, *ListRisksRequest) (*ListRisksResponse, error)
+	// Creates a new risk assessment rule.
 	// Permissions required: bb.risks.create
 	CreateRisk(context.Context, *CreateRiskRequest) (*Risk, error)
+	// Retrieves a risk assessment rule by name.
 	// Permissions required: bb.risks.list
 	GetRisk(context.Context, *GetRiskRequest) (*Risk, error)
+	// Updates an existing risk assessment rule.
 	// Permissions required: bb.risks.update
 	UpdateRisk(context.Context, *UpdateRiskRequest) (*Risk, error)
+	// Deletes a risk assessment rule.
 	// Permissions required: bb.risks.delete
 	DeleteRisk(context.Context, *DeleteRiskRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedRiskServiceServer()

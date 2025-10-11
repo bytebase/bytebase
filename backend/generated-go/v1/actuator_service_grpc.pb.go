@@ -30,15 +30,22 @@ const (
 // ActuatorServiceClient is the client API for ActuatorService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// ActuatorService manages system health and operational information.
 type ActuatorServiceClient interface {
+	// Gets system information and health status of the Bytebase instance.
 	// Permissions required: None
 	GetActuatorInfo(ctx context.Context, in *GetActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error)
+	// Updates system configuration settings for the Bytebase instance.
 	// Permissions required: bb.settings.set
 	UpdateActuatorInfo(ctx context.Context, in *UpdateActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error)
+	// Sets up sample data for demonstration and testing purposes.
 	// Permissions required: bb.projects.create
 	SetupSample(ctx context.Context, in *SetupSampleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Clears the system cache to force data refresh.
 	// Permissions required: None
 	DeleteCache(ctx context.Context, in *DeleteCacheRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Gets custom branding resources such as logos.
 	// Permissions required: None
 	GetResourcePackage(ctx context.Context, in *GetResourcePackageRequest, opts ...grpc.CallOption) (*ResourcePackage, error)
 }
@@ -104,15 +111,22 @@ func (c *actuatorServiceClient) GetResourcePackage(ctx context.Context, in *GetR
 // ActuatorServiceServer is the server API for ActuatorService service.
 // All implementations must embed UnimplementedActuatorServiceServer
 // for forward compatibility.
+//
+// ActuatorService manages system health and operational information.
 type ActuatorServiceServer interface {
+	// Gets system information and health status of the Bytebase instance.
 	// Permissions required: None
 	GetActuatorInfo(context.Context, *GetActuatorInfoRequest) (*ActuatorInfo, error)
+	// Updates system configuration settings for the Bytebase instance.
 	// Permissions required: bb.settings.set
 	UpdateActuatorInfo(context.Context, *UpdateActuatorInfoRequest) (*ActuatorInfo, error)
+	// Sets up sample data for demonstration and testing purposes.
 	// Permissions required: bb.projects.create
 	SetupSample(context.Context, *SetupSampleRequest) (*emptypb.Empty, error)
+	// Clears the system cache to force data refresh.
 	// Permissions required: None
 	DeleteCache(context.Context, *DeleteCacheRequest) (*emptypb.Empty, error)
+	// Gets custom branding resources such as logos.
 	// Permissions required: None
 	GetResourcePackage(context.Context, *GetResourcePackageRequest) (*ResourcePackage, error)
 	mustEmbedUnimplementedActuatorServiceServer()

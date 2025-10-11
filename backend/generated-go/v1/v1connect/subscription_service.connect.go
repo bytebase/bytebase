@@ -48,6 +48,7 @@ type SubscriptionServiceClient interface {
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	// Permissions required: None
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
+	// Updates the enterprise license subscription.
 	// Permissions required: bb.settings.set
 	UpdateSubscription(context.Context, *connect.Request[v1.UpdateSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
 }
@@ -101,6 +102,7 @@ type SubscriptionServiceHandler interface {
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	// Permissions required: None
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
+	// Updates the enterprise license subscription.
 	// Permissions required: bb.settings.set
 	UpdateSubscription(context.Context, *connect.Request[v1.UpdateSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
 }

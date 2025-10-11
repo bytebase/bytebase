@@ -48,12 +48,16 @@ const (
 
 // SheetServiceClient is a client for the bytebase.v1.SheetService service.
 type SheetServiceClient interface {
+	// Creates a new SQL sheet.
 	// Permissions required: bb.sheets.create
 	CreateSheet(context.Context, *connect.Request[v1.CreateSheetRequest]) (*connect.Response[v1.Sheet], error)
+	// Creates multiple SQL sheets in a single operation.
 	// Permissions required: bb.sheets.create
 	BatchCreateSheets(context.Context, *connect.Request[v1.BatchCreateSheetsRequest]) (*connect.Response[v1.BatchCreateSheetsResponse], error)
+	// Retrieves a SQL sheet by name.
 	// Permissions required: bb.sheets.get
 	GetSheet(context.Context, *connect.Request[v1.GetSheetRequest]) (*connect.Response[v1.Sheet], error)
+	// Updates a SQL sheet's title or content.
 	// Permissions required: bb.sheets.update
 	UpdateSheet(context.Context, *connect.Request[v1.UpdateSheetRequest]) (*connect.Response[v1.Sheet], error)
 }
@@ -126,12 +130,16 @@ func (c *sheetServiceClient) UpdateSheet(ctx context.Context, req *connect.Reque
 
 // SheetServiceHandler is an implementation of the bytebase.v1.SheetService service.
 type SheetServiceHandler interface {
+	// Creates a new SQL sheet.
 	// Permissions required: bb.sheets.create
 	CreateSheet(context.Context, *connect.Request[v1.CreateSheetRequest]) (*connect.Response[v1.Sheet], error)
+	// Creates multiple SQL sheets in a single operation.
 	// Permissions required: bb.sheets.create
 	BatchCreateSheets(context.Context, *connect.Request[v1.BatchCreateSheetsRequest]) (*connect.Response[v1.BatchCreateSheetsResponse], error)
+	// Retrieves a SQL sheet by name.
 	// Permissions required: bb.sheets.get
 	GetSheet(context.Context, *connect.Request[v1.GetSheetRequest]) (*connect.Response[v1.Sheet], error)
+	// Updates a SQL sheet's title or content.
 	// Permissions required: bb.sheets.update
 	UpdateSheet(context.Context, *connect.Request[v1.UpdateSheetRequest]) (*connect.Response[v1.Sheet], error)
 }

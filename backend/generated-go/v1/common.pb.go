@@ -21,12 +21,15 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Resource lifecycle state.
 type State int32
 
 const (
 	State_STATE_UNSPECIFIED State = 0
-	State_ACTIVE            State = 1
-	State_DELETED           State = 2
+	// Resource is active and operational.
+	State_ACTIVE State = 1
+	// Resource is soft-deleted but may be recoverable.
+	State_DELETED State = 2
 )
 
 // Enum value maps for State.
@@ -70,35 +73,62 @@ func (State) EnumDescriptor() ([]byte, []int) {
 	return file_v1_common_proto_rawDescGZIP(), []int{0}
 }
 
+// Database engine type.
 type Engine int32
 
 const (
+	// Unspecified database engine.
 	Engine_ENGINE_UNSPECIFIED Engine = 0
-	Engine_CLICKHOUSE         Engine = 1
-	Engine_MYSQL              Engine = 2
-	Engine_POSTGRES           Engine = 3
-	Engine_SNOWFLAKE          Engine = 4
-	Engine_SQLITE             Engine = 5
-	Engine_TIDB               Engine = 6
-	Engine_MONGODB            Engine = 7
-	Engine_REDIS              Engine = 8
-	Engine_ORACLE             Engine = 9
-	Engine_SPANNER            Engine = 10
-	Engine_MSSQL              Engine = 11
-	Engine_REDSHIFT           Engine = 12
-	Engine_MARIADB            Engine = 13
-	Engine_OCEANBASE          Engine = 14
-	Engine_STARROCKS          Engine = 18
-	Engine_DORIS              Engine = 19
-	Engine_HIVE               Engine = 20
-	Engine_ELASTICSEARCH      Engine = 21
-	Engine_BIGQUERY           Engine = 22
-	Engine_DYNAMODB           Engine = 23
-	Engine_DATABRICKS         Engine = 24
-	Engine_COCKROACHDB        Engine = 25
-	Engine_COSMOSDB           Engine = 26
-	Engine_TRINO              Engine = 27
-	Engine_CASSANDRA          Engine = 28
+	// ClickHouse columnar database.
+	Engine_CLICKHOUSE Engine = 1
+	// MySQL relational database.
+	Engine_MYSQL Engine = 2
+	// PostgreSQL relational database.
+	Engine_POSTGRES Engine = 3
+	// Snowflake cloud data warehouse.
+	Engine_SNOWFLAKE Engine = 4
+	// SQLite embedded database.
+	Engine_SQLITE Engine = 5
+	// TiDB distributed SQL database.
+	Engine_TIDB Engine = 6
+	// MongoDB document database.
+	Engine_MONGODB Engine = 7
+	// Redis key-value store.
+	Engine_REDIS Engine = 8
+	// Oracle relational database.
+	Engine_ORACLE Engine = 9
+	// Google Cloud Spanner distributed database.
+	Engine_SPANNER Engine = 10
+	// Microsoft SQL Server relational database.
+	Engine_MSSQL Engine = 11
+	// Amazon Redshift data warehouse.
+	Engine_REDSHIFT Engine = 12
+	// MariaDB relational database.
+	Engine_MARIADB Engine = 13
+	// OceanBase distributed database.
+	Engine_OCEANBASE Engine = 14
+	// StarRocks analytics database.
+	Engine_STARROCKS Engine = 18
+	// Apache Doris analytics database.
+	Engine_DORIS Engine = 19
+	// Apache Hive data warehouse.
+	Engine_HIVE Engine = 20
+	// Elasticsearch search engine.
+	Engine_ELASTICSEARCH Engine = 21
+	// Google BigQuery data warehouse.
+	Engine_BIGQUERY Engine = 22
+	// Amazon DynamoDB NoSQL database.
+	Engine_DYNAMODB Engine = 23
+	// Databricks lakehouse platform.
+	Engine_DATABRICKS Engine = 24
+	// CockroachDB distributed SQL database.
+	Engine_COCKROACHDB Engine = 25
+	// Azure Cosmos DB multi-model database.
+	Engine_COSMOSDB Engine = 26
+	// Trino distributed SQL query engine.
+	Engine_TRINO Engine = 27
+	// Apache Cassandra NoSQL database.
+	Engine_CASSANDRA Engine = 28
 )
 
 // Enum value maps for Engine.
@@ -188,14 +218,20 @@ func (Engine) EnumDescriptor() ([]byte, []int) {
 	return file_v1_common_proto_rawDescGZIP(), []int{1}
 }
 
+// Version control system type.
 type VCSType int32
 
 const (
+	// Unspecified VCS type.
 	VCSType_VCS_TYPE_UNSPECIFIED VCSType = 0
-	VCSType_GITHUB               VCSType = 1
-	VCSType_GITLAB               VCSType = 2
-	VCSType_BITBUCKET            VCSType = 3
-	VCSType_AZURE_DEVOPS         VCSType = 4
+	// GitHub version control platform.
+	VCSType_GITHUB VCSType = 1
+	// GitLab version control platform.
+	VCSType_GITLAB VCSType = 2
+	// Bitbucket version control platform.
+	VCSType_BITBUCKET VCSType = 3
+	// Azure DevOps version control platform.
+	VCSType_AZURE_DEVOPS VCSType = 4
 )
 
 // Enum value maps for VCSType.
@@ -243,14 +279,20 @@ func (VCSType) EnumDescriptor() ([]byte, []int) {
 	return file_v1_common_proto_rawDescGZIP(), []int{2}
 }
 
+// Data export format.
 type ExportFormat int32
 
 const (
+	// Unspecified export format.
 	ExportFormat_FORMAT_UNSPECIFIED ExportFormat = 0
-	ExportFormat_CSV                ExportFormat = 1
-	ExportFormat_JSON               ExportFormat = 2
-	ExportFormat_SQL                ExportFormat = 3
-	ExportFormat_XLSX               ExportFormat = 4
+	// Comma-separated values format.
+	ExportFormat_CSV ExportFormat = 1
+	// JavaScript Object Notation format.
+	ExportFormat_JSON ExportFormat = 2
+	// SQL statements format.
+	ExportFormat_SQL ExportFormat = 3
+	// Microsoft Excel spreadsheet format.
+	ExportFormat_XLSX ExportFormat = 4
 )
 
 // Enum value maps for ExportFormat.
@@ -410,10 +452,14 @@ func (MigrationType) EnumDescriptor() ([]byte, []int) {
 type RiskLevel int32
 
 const (
+	// Unspecified risk level.
 	RiskLevel_RISK_LEVEL_UNSPECIFIED RiskLevel = 0
-	RiskLevel_LOW                    RiskLevel = 1
-	RiskLevel_MODERATE               RiskLevel = 2
-	RiskLevel_HIGH                   RiskLevel = 3
+	// Low risk operation.
+	RiskLevel_LOW RiskLevel = 1
+	// Moderate risk operation.
+	RiskLevel_MODERATE RiskLevel = 2
+	// High risk operation.
+	RiskLevel_HIGH RiskLevel = 3
 )
 
 // Enum value maps for RiskLevel.
@@ -515,10 +561,13 @@ func (x *Position) GetColumn() int32 {
 	return 0
 }
 
+// Range of positions in text or sequence.
 type Range struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Start         int32                  `protobuf:"varint,1,opt,name=start,proto3" json:"start,omitempty"`
-	End           int32                  `protobuf:"varint,2,opt,name=end,proto3" json:"end,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Start position (inclusive).
+	Start int32 `protobuf:"varint,1,opt,name=start,proto3" json:"start,omitempty"`
+	// End position (exclusive).
+	End           int32 `protobuf:"varint,2,opt,name=end,proto3" json:"end,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

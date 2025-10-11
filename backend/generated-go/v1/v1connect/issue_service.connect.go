@@ -71,36 +71,41 @@ const (
 
 // IssueServiceClient is a client for the bytebase.v1.IssueService service.
 type IssueServiceClient interface {
+	// Retrieves an issue by name.
 	// Permissions required: bb.issues.get
 	GetIssue(context.Context, *connect.Request[v1.GetIssueRequest]) (*connect.Response[v1.Issue], error)
+	// Creates a new issue for database changes or tasks.
 	// Permissions required: bb.issues.create
 	CreateIssue(context.Context, *connect.Request[v1.CreateIssueRequest]) (*connect.Response[v1.Issue], error)
+	// Lists issues in a project.
 	// Permissions required: bb.issues.list
 	ListIssues(context.Context, *connect.Request[v1.ListIssuesRequest]) (*connect.Response[v1.ListIssuesResponse], error)
 	// Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
 	// Permissions required: bb.issues.get
 	SearchIssues(context.Context, *connect.Request[v1.SearchIssuesRequest]) (*connect.Response[v1.SearchIssuesResponse], error)
+	// Updates an issue's properties such as title, description, or labels.
 	// Permissions required: bb.issues.update
 	UpdateIssue(context.Context, *connect.Request[v1.UpdateIssueRequest]) (*connect.Response[v1.Issue], error)
+	// Lists comments on an issue.
 	// Permissions required: bb.issueComments.list
 	ListIssueComments(context.Context, *connect.Request[v1.ListIssueCommentsRequest]) (*connect.Response[v1.ListIssueCommentsResponse], error)
+	// Adds a comment to an issue.
 	// Permissions required: bb.issueComments.create
 	CreateIssueComment(context.Context, *connect.Request[v1.CreateIssueCommentRequest]) (*connect.Response[v1.IssueComment], error)
+	// Updates an existing issue comment.
 	// Permissions required: bb.issueComments.update
 	UpdateIssueComment(context.Context, *connect.Request[v1.UpdateIssueCommentRequest]) (*connect.Response[v1.IssueComment], error)
+	// Updates the status of multiple issues in a single operation.
 	// Permissions required: bb.issues.update
 	BatchUpdateIssuesStatus(context.Context, *connect.Request[v1.BatchUpdateIssuesStatusRequest]) (*connect.Response[v1.BatchUpdateIssuesStatusResponse], error)
-	// ApproveIssue approves the issue.
-	// The access is based on approval flow.
-	// Permissions required: None
+	// Approves an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+	// Permissions required: None (determined by approval flow)
 	ApproveIssue(context.Context, *connect.Request[v1.ApproveIssueRequest]) (*connect.Response[v1.Issue], error)
-	// RejectIssue rejects the issue.
-	// The access is based on approval flow.
-	// Permissions required: None
+	// Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+	// Permissions required: None (determined by approval flow)
 	RejectIssue(context.Context, *connect.Request[v1.RejectIssueRequest]) (*connect.Response[v1.Issue], error)
-	// RequestIssue requests the issue.
-	// The access is based on approval flow.
-	// Permissions required: None
+	// Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+	// Permissions required: None (determined by approval flow)
 	RequestIssue(context.Context, *connect.Request[v1.RequestIssueRequest]) (*connect.Response[v1.Issue], error)
 }
 
@@ -268,36 +273,41 @@ func (c *issueServiceClient) RequestIssue(ctx context.Context, req *connect.Requ
 
 // IssueServiceHandler is an implementation of the bytebase.v1.IssueService service.
 type IssueServiceHandler interface {
+	// Retrieves an issue by name.
 	// Permissions required: bb.issues.get
 	GetIssue(context.Context, *connect.Request[v1.GetIssueRequest]) (*connect.Response[v1.Issue], error)
+	// Creates a new issue for database changes or tasks.
 	// Permissions required: bb.issues.create
 	CreateIssue(context.Context, *connect.Request[v1.CreateIssueRequest]) (*connect.Response[v1.Issue], error)
+	// Lists issues in a project.
 	// Permissions required: bb.issues.list
 	ListIssues(context.Context, *connect.Request[v1.ListIssuesRequest]) (*connect.Response[v1.ListIssuesResponse], error)
 	// Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
 	// Permissions required: bb.issues.get
 	SearchIssues(context.Context, *connect.Request[v1.SearchIssuesRequest]) (*connect.Response[v1.SearchIssuesResponse], error)
+	// Updates an issue's properties such as title, description, or labels.
 	// Permissions required: bb.issues.update
 	UpdateIssue(context.Context, *connect.Request[v1.UpdateIssueRequest]) (*connect.Response[v1.Issue], error)
+	// Lists comments on an issue.
 	// Permissions required: bb.issueComments.list
 	ListIssueComments(context.Context, *connect.Request[v1.ListIssueCommentsRequest]) (*connect.Response[v1.ListIssueCommentsResponse], error)
+	// Adds a comment to an issue.
 	// Permissions required: bb.issueComments.create
 	CreateIssueComment(context.Context, *connect.Request[v1.CreateIssueCommentRequest]) (*connect.Response[v1.IssueComment], error)
+	// Updates an existing issue comment.
 	// Permissions required: bb.issueComments.update
 	UpdateIssueComment(context.Context, *connect.Request[v1.UpdateIssueCommentRequest]) (*connect.Response[v1.IssueComment], error)
+	// Updates the status of multiple issues in a single operation.
 	// Permissions required: bb.issues.update
 	BatchUpdateIssuesStatus(context.Context, *connect.Request[v1.BatchUpdateIssuesStatusRequest]) (*connect.Response[v1.BatchUpdateIssuesStatusResponse], error)
-	// ApproveIssue approves the issue.
-	// The access is based on approval flow.
-	// Permissions required: None
+	// Approves an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+	// Permissions required: None (determined by approval flow)
 	ApproveIssue(context.Context, *connect.Request[v1.ApproveIssueRequest]) (*connect.Response[v1.Issue], error)
-	// RejectIssue rejects the issue.
-	// The access is based on approval flow.
-	// Permissions required: None
+	// Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+	// Permissions required: None (determined by approval flow)
 	RejectIssue(context.Context, *connect.Request[v1.RejectIssueRequest]) (*connect.Response[v1.Issue], error)
-	// RequestIssue requests the issue.
-	// The access is based on approval flow.
-	// Permissions required: None
+	// Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+	// Permissions required: None (determined by approval flow)
 	RequestIssue(context.Context, *connect.Request[v1.RequestIssueRequest]) (*connect.Response[v1.Issue], error)
 }
 

@@ -44,6 +44,8 @@ export declare type ListRevisionsRequest = Message<"bytebase.v1.ListRevisionsReq
   pageToken: string;
 
   /**
+   * Whether to include deleted revisions in the results.
+   *
    * @generated from field: bool show_deleted = 4;
    */
   showDeleted: boolean;
@@ -60,6 +62,8 @@ export declare const ListRevisionsRequestSchema: GenMessage<ListRevisionsRequest
  */
 export declare type ListRevisionsResponse = Message<"bytebase.v1.ListRevisionsResponse"> & {
   /**
+   * The revisions from the specified request.
+   *
    * @generated from field: repeated bytebase.v1.Revision revisions = 1;
    */
   revisions: Revision[];
@@ -235,6 +239,8 @@ export declare type Revision = Message<"bytebase.v1.Revision"> & {
   file: string;
 
   /**
+   * The schema version string for this revision.
+   *
    * @generated from field: string version = 8;
    */
   version: string;
@@ -262,6 +268,8 @@ export declare type Revision = Message<"bytebase.v1.Revision"> & {
   statement: string;
 
   /**
+   * The size of the statement in bytes.
+   *
    * @generated from field: int64 statement_size = 12;
    */
   statementSize: bigint;
@@ -300,20 +308,28 @@ export declare type Revision = Message<"bytebase.v1.Revision"> & {
 export declare const RevisionSchema: GenMessage<Revision>;
 
 /**
+ * The type of schema revision.
+ *
  * @generated from enum bytebase.v1.Revision.Type
  */
 export enum Revision_Type {
   /**
+   * Unspecified type.
+   *
    * @generated from enum value: TYPE_UNSPECIFIED = 0;
    */
   TYPE_UNSPECIFIED = 0,
 
   /**
+   * Versioned schema migration.
+   *
    * @generated from enum value: VERSIONED = 1;
    */
   VERSIONED = 1,
 
   /**
+   * Declarative schema definition.
+   *
    * @generated from enum value: DECLARATIVE = 2;
    */
   DECLARATIVE = 2,
@@ -325,10 +341,13 @@ export enum Revision_Type {
 export declare const Revision_TypeSchema: GenEnum<Revision_Type>;
 
 /**
+ * RevisionService manages schema revision history.
+ *
  * @generated from service bytebase.v1.RevisionService
  */
 export declare const RevisionService: GenService<{
   /**
+   * Lists schema revisions for a database.
    * Permissions required: bb.revisions.list
    *
    * @generated from rpc bytebase.v1.RevisionService.ListRevisions
@@ -339,6 +358,7 @@ export declare const RevisionService: GenService<{
     output: typeof ListRevisionsResponseSchema;
   },
   /**
+   * Retrieves a schema revision by name.
    * Permissions required: bb.revisions.get
    *
    * @generated from rpc bytebase.v1.RevisionService.GetRevision
@@ -349,6 +369,7 @@ export declare const RevisionService: GenService<{
     output: typeof RevisionSchema;
   },
   /**
+   * Creates a new schema revision.
    * Permissions required: bb.revisions.create
    *
    * @generated from rpc bytebase.v1.RevisionService.CreateRevision
@@ -359,6 +380,7 @@ export declare const RevisionService: GenService<{
     output: typeof RevisionSchema;
   },
   /**
+   * Creates multiple schema revisions in a single operation.
    * Permissions required: bb.revisions.create
    *
    * @generated from rpc bytebase.v1.RevisionService.BatchCreateRevisions
@@ -369,6 +391,7 @@ export declare const RevisionService: GenService<{
     output: typeof BatchCreateRevisionsResponseSchema;
   },
   /**
+   * Deletes a schema revision.
    * Permissions required: bb.revisions.delete
    *
    * @generated from rpc bytebase.v1.RevisionService.DeleteRevision

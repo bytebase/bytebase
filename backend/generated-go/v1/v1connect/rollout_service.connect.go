@@ -73,28 +73,40 @@ const (
 
 // RolloutServiceClient is a client for the bytebase.v1.RolloutService service.
 type RolloutServiceClient interface {
+	// Retrieves a rollout by name.
 	// Permissions required: bb.rollouts.get
 	GetRollout(context.Context, *connect.Request[v1.GetRolloutRequest]) (*connect.Response[v1.Rollout], error)
+	// Lists rollouts in a project.
 	// Permissions required: bb.rollouts.list
 	ListRollouts(context.Context, *connect.Request[v1.ListRolloutsRequest]) (*connect.Response[v1.ListRolloutsResponse], error)
+	// Creates a new rollout from a plan.
 	// Permissions required: bb.rollouts.create
 	CreateRollout(context.Context, *connect.Request[v1.CreateRolloutRequest]) (*connect.Response[v1.Rollout], error)
+	// Previews the rollout that would be created from a plan.
 	// Permissions required: bb.rollouts.preview
 	PreviewRollout(context.Context, *connect.Request[v1.PreviewRolloutRequest]) (*connect.Response[v1.Rollout], error)
+	// Lists task run executions for a task.
 	// Permissions required: bb.taskRuns.list
 	ListTaskRuns(context.Context, *connect.Request[v1.ListTaskRunsRequest]) (*connect.Response[v1.ListTaskRunsResponse], error)
+	// Retrieves a task run by name.
 	// Permissions required: bb.taskRuns.list
 	GetTaskRun(context.Context, *connect.Request[v1.GetTaskRunRequest]) (*connect.Response[v1.TaskRun], error)
+	// Retrieves execution logs for a task run.
 	// Permissions required: bb.taskRuns.list
 	GetTaskRunLog(context.Context, *connect.Request[v1.GetTaskRunLogRequest]) (*connect.Response[v1.TaskRunLog], error)
+	// Retrieves database session information for a running task.
 	// Permissions required: bb.taskRuns.list
 	GetTaskRunSession(context.Context, *connect.Request[v1.GetTaskRunSessionRequest]) (*connect.Response[v1.TaskRunSession], error)
-	// Permissions required: None
+	// Executes multiple tasks in a rollout stage.
+	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchRunTasks(context.Context, *connect.Request[v1.BatchRunTasksRequest]) (*connect.Response[v1.BatchRunTasksResponse], error)
-	// Permissions required: None
+	// Skips multiple tasks in a rollout stage.
+	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchSkipTasks(context.Context, *connect.Request[v1.BatchSkipTasksRequest]) (*connect.Response[v1.BatchSkipTasksResponse], error)
-	// Permissions required: None
+	// Cancels multiple running task executions.
+	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchCancelTaskRuns(context.Context, *connect.Request[v1.BatchCancelTaskRunsRequest]) (*connect.Response[v1.BatchCancelTaskRunsResponse], error)
+	// Generates rollback SQL for a completed task run.
 	// Permissions required: bb.taskRuns.list
 	PreviewTaskRunRollback(context.Context, *connect.Request[v1.PreviewTaskRunRollbackRequest]) (*connect.Response[v1.PreviewTaskRunRollbackResponse], error)
 }
@@ -263,28 +275,40 @@ func (c *rolloutServiceClient) PreviewTaskRunRollback(ctx context.Context, req *
 
 // RolloutServiceHandler is an implementation of the bytebase.v1.RolloutService service.
 type RolloutServiceHandler interface {
+	// Retrieves a rollout by name.
 	// Permissions required: bb.rollouts.get
 	GetRollout(context.Context, *connect.Request[v1.GetRolloutRequest]) (*connect.Response[v1.Rollout], error)
+	// Lists rollouts in a project.
 	// Permissions required: bb.rollouts.list
 	ListRollouts(context.Context, *connect.Request[v1.ListRolloutsRequest]) (*connect.Response[v1.ListRolloutsResponse], error)
+	// Creates a new rollout from a plan.
 	// Permissions required: bb.rollouts.create
 	CreateRollout(context.Context, *connect.Request[v1.CreateRolloutRequest]) (*connect.Response[v1.Rollout], error)
+	// Previews the rollout that would be created from a plan.
 	// Permissions required: bb.rollouts.preview
 	PreviewRollout(context.Context, *connect.Request[v1.PreviewRolloutRequest]) (*connect.Response[v1.Rollout], error)
+	// Lists task run executions for a task.
 	// Permissions required: bb.taskRuns.list
 	ListTaskRuns(context.Context, *connect.Request[v1.ListTaskRunsRequest]) (*connect.Response[v1.ListTaskRunsResponse], error)
+	// Retrieves a task run by name.
 	// Permissions required: bb.taskRuns.list
 	GetTaskRun(context.Context, *connect.Request[v1.GetTaskRunRequest]) (*connect.Response[v1.TaskRun], error)
+	// Retrieves execution logs for a task run.
 	// Permissions required: bb.taskRuns.list
 	GetTaskRunLog(context.Context, *connect.Request[v1.GetTaskRunLogRequest]) (*connect.Response[v1.TaskRunLog], error)
+	// Retrieves database session information for a running task.
 	// Permissions required: bb.taskRuns.list
 	GetTaskRunSession(context.Context, *connect.Request[v1.GetTaskRunSessionRequest]) (*connect.Response[v1.TaskRunSession], error)
-	// Permissions required: None
+	// Executes multiple tasks in a rollout stage.
+	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchRunTasks(context.Context, *connect.Request[v1.BatchRunTasksRequest]) (*connect.Response[v1.BatchRunTasksResponse], error)
-	// Permissions required: None
+	// Skips multiple tasks in a rollout stage.
+	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchSkipTasks(context.Context, *connect.Request[v1.BatchSkipTasksRequest]) (*connect.Response[v1.BatchSkipTasksResponse], error)
-	// Permissions required: None
+	// Cancels multiple running task executions.
+	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchCancelTaskRuns(context.Context, *connect.Request[v1.BatchCancelTaskRunsRequest]) (*connect.Response[v1.BatchCancelTaskRunsResponse], error)
+	// Generates rollback SQL for a completed task run.
 	// Permissions required: bb.taskRuns.list
 	PreviewTaskRunRollback(context.Context, *connect.Request[v1.PreviewTaskRunRollbackRequest]) (*connect.Response[v1.PreviewTaskRunRollbackResponse], error)
 }

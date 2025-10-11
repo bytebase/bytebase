@@ -123,6 +123,8 @@ export const Issue_Approver_StatusSchema = /*@__PURE__*/
   enumDesc(file_v1_issue_service, 12, 0, 0);
 
 /**
+ * The approval status of an approver.
+ *
  * @generated from enum bytebase.v1.Issue.Approver.Status
  */
 export const Issue_Approver_Status = /*@__PURE__*/
@@ -135,6 +137,8 @@ export const Issue_TypeSchema = /*@__PURE__*/
   enumDesc(file_v1_issue_service, 12, 0);
 
 /**
+ * The type of issue.
+ *
  * @generated from enum bytebase.v1.Issue.Type
  */
 export const Issue_Type = /*@__PURE__*/
@@ -147,6 +151,8 @@ export const Issue_ApprovalStatusSchema = /*@__PURE__*/
   enumDesc(file_v1_issue_service, 12, 1);
 
 /**
+ * The overall approval status for the issue.
+ *
  * @generated from enum bytebase.v1.Issue.ApprovalStatus
  */
 export const Issue_ApprovalStatus = /*@__PURE__*/
@@ -222,6 +228,8 @@ export const IssueComment_Approval_StatusSchema = /*@__PURE__*/
   enumDesc(file_v1_issue_service, 20, 0, 0);
 
 /**
+ * Approval status values.
+ *
  * @generated from enum bytebase.v1.IssueComment.Approval.Status
  */
 export const IssueComment_Approval_Status = /*@__PURE__*/
@@ -255,6 +263,8 @@ export const IssueComment_TaskUpdate_StatusSchema = /*@__PURE__*/
   enumDesc(file_v1_issue_service, 20, 3, 0);
 
 /**
+ * Task status values.
+ *
  * @generated from enum bytebase.v1.IssueComment.TaskUpdate.Status
  */
 export const IssueComment_TaskUpdate_Status = /*@__PURE__*/
@@ -281,12 +291,16 @@ export const IssueStatusSchema = /*@__PURE__*/
   enumDesc(file_v1_issue_service, 0);
 
 /**
+ * The status of an issue.
+ *
  * @generated from enum bytebase.v1.IssueStatus
  */
 export const IssueStatus = /*@__PURE__*/
   tsEnum(IssueStatusSchema);
 
 /**
+ * IssueService manages issues for tracking database changes and tasks.
+ *
  * @generated from service bytebase.v1.IssueService
  */
 export const IssueService = /*@__PURE__*/

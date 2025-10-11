@@ -10,7 +10,9 @@ import "v1/annotation.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// DatabaseCatalogService manages database schema metadata and classification.
 service DatabaseCatalogService {
+  // Gets the catalog metadata for a database.
   // Permissions required: bb.databaseCatalogs.get
   rpc GetDatabaseCatalog(GetDatabaseCatalogRequest) returns (DatabaseCatalog) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/catalog}"};
@@ -19,6 +21,7 @@ service DatabaseCatalogService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Updates catalog metadata such as classifications and labels.
   // Permissions required: bb.databaseCatalogs.update
   rpc UpdateDatabaseCatalog(UpdateDatabaseCatalogRequest) returns (DatabaseCatalog) {
     option (google.api.http) = {
@@ -32,6 +35,7 @@ service DatabaseCatalogService {
   }
 }
 
+// Request message for getting a database catalog.
 message GetDatabaseCatalogRequest {
   // The name of the database catalog to retrieve.
   // Format: instances/{instance}/databases/{database}/catalog
@@ -41,6 +45,7 @@ message GetDatabaseCatalogRequest {
   ];
 }
 
+// Request message for updating a database catalog.
 message UpdateDatabaseCatalogRequest {
   // The database catalog to update.
   //
@@ -53,6 +58,7 @@ message UpdateDatabaseCatalogRequest {
   bool allow_missing = 2;
 }
 
+// Catalog metadata for a database including schemas, tables, and columns.
 message DatabaseCatalog {
   option (google.api.resource) = {
     type: "bytebase.com/DatabaseCatalog"
@@ -63,63 +69,95 @@ message DatabaseCatalog {
   // Format: instances/{instance}/databases/{database}/catalog
   string name = 1;
 
+  // The schemas in the database.
   repeated SchemaCatalog schemas = 2;
 }
 
+// Schema metadata within a database.
 message SchemaCatalog {
+  // The schema name.
   string name = 1;
 
+  // The tables in the schema.
   repeated TableCatalog tables = 2;
 }
 
+// Table metadata within a schema.
 message TableCatalog {
+  // The table name.
   string name = 1;
 
+  // Column list for regular tables.
   message Columns {
+    // The columns in the table.
     repeated ColumnCatalog columns = 1;
   }
   oneof kind {
+    // Regular table columns.
     Columns columns = 2;
+    // Object schema for JSON/XML columns.
     ObjectSchema object_schema = 3;
   }
 
+  // The data classification level for this table.
   string classification = 4;
 }
 
+// Column metadata within a table.
 message ColumnCatalog {
+  // The column name.
   string name = 1;
 
+  // The semantic type describing the data purpose.
   string semantic_type = 2;
 
-  // The user labels for a column.
+  // User-defined labels for this column.
   map<string, string> labels = 3;
 
+  // The data classification level for this column.
   string classification = 4;
 
+  // Object schema for complex column types like JSON.
   optional ObjectSchema object_schema = 5;
 }
 
+// Schema definition for object-type columns.
 message ObjectSchema {
+  // Object schema data types.
   enum Type {
+    // Unspecified type.
     TYPE_UNSPECIFIED = 0;
+    // String type.
     STRING = 1;
+    // Number type.
     NUMBER = 2;
+    // Boolean type.
     BOOLEAN = 3;
+    // Object/struct type.
     OBJECT = 4;
+    // Array type.
     ARRAY = 5;
   }
+  // The data type of this object.
   Type type = 1;
 
+  // Structure type with named properties.
   message StructKind {
+    // Properties of the struct.
     map<string, ObjectSchema> properties = 1;
   }
+  // Array type with element schema.
   message ArrayKind {
+    // The schema of array elements.
     ObjectSchema kind = 1;
   }
   oneof kind {
+    // Struct schema.
     StructKind struct_kind = 2;
+    // Array schema.
     ArrayKind array_kind = 3;
   }
 
+  // The semantic type of this object.
   string semantic_type = 4;
 }
