@@ -2197,14 +2197,6 @@ func (q *querySpanExtractor) handleCommonTableExpr(cte pgparser.ICommon_table_ex
 	return nil
 }
 
-// extractTableSourceFromRecursiveCTENew handles recursive CTEs
-func (q *querySpanExtractor) extractTableSourceFromRecursiveCTENew(cte pgparser.ICommon_table_exprContext) (base.TableSource, error) {
-	// For recursive CTEs, we follow the simplified strategy:
-	// The last UNION/EXCEPT part is considered recursive
-	// TODO: Implement proper recursive CTE handling
-	return q.extractTableSourceFromNonRecursiveCTENew(cte)
-}
-
 // extractTableSourceFromNonRecursiveCTENew handles non-recursive CTEs
 func (q *querySpanExtractor) extractTableSourceFromNonRecursiveCTENew(cte pgparser.ICommon_table_exprContext) (base.TableSource, error) {
 	if cte.Preparablestmt() == nil {
