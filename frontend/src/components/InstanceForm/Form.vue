@@ -1,11 +1,11 @@
 <template>
   <div class="space-y-6 pb-2">
-    <div class="divide-y divide-block-border w-[850px]">
+    <div class="divide-y divide-block-border max-w-[850px]">
       <InstanceEngineRadioGrid
         v-if="isCreating"
         :engine="basicInfo.engine"
         :engine-list="supportedEngineV1List()"
-        class="w-full mb-6 grid-cols-4 gap-2"
+        class="w-full mb-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2"
         @update:engine="(newEngine: Engine) => changeInstanceEngine(newEngine)"
       >
         <template #suffix="{ engine }: { engine: Engine }">

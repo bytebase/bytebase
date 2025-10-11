@@ -54,7 +54,10 @@
       :drawer="true"
       @dismiss="state.showCreateDrawer = false"
     >
-      <DrawerContent :title="$t('quick-action.add-instance')">
+      <DrawerContent
+        :title="$t('quick-action.add-instance')"
+        class="w-[850px] max-w-[100vw]"
+      >
         <InstanceFormBody />
         <template #footer>
           <InstanceFormButtons :on-created="onInstanceCreated" />

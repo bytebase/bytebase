@@ -1,8 +1,8 @@
 <template>
-  <component :is="tag" class="flex items-center gap-x-2">
+  <component :is="tag" class="flex items-center gap-x-0.5">
     <EngineIcon :engine="engine" />
     {{ title }}
-    <span v-if="subtitle" class="text-xs opacity-70">
+    <span v-if="subtitle" class="!text-xs textinfolabel">
       {{ subtitle }}
     </span>
   </component>
