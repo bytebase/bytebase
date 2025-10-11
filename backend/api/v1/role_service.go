@@ -145,6 +145,21 @@ func (s *RoleService) UpdateRole(ctx context.Context, req *connect.Request[v1pb.
 	}
 	if role == nil {
 		if req.Msg.AllowMissing {
+			// When creating a missing role, we must verify the user has create permission.
+			// This check is required because the internal CreateRole call bypasses the
+			// ACL interceptor that would normally enforce bb.roles.create permission.
+			user, ok := GetUserFromContext(ctx)
+			if !ok {
+				return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
+			}
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionRolesCreate, user)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check create role permission"))
+			}
+			if !ok {
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied: user does not have permission %q", iam.PermissionRolesCreate))
+			}
+
 			return s.CreateRole(ctx, connect.NewRequest(&v1pb.CreateRoleRequest{
 				Role:   req.Msg.Role,
 				RoleId: roleID,
