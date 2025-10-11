@@ -56,23 +56,29 @@ const (
 
 // PlanServiceClient is a client for the bytebase.v1.PlanService service.
 type PlanServiceClient interface {
+	// Retrieves a deployment plan by name.
 	// Permissions required: bb.plans.get
 	GetPlan(context.Context, *connect.Request[v1.GetPlanRequest]) (*connect.Response[v1.Plan], error)
+	// Lists deployment plans in a project.
 	// Permissions required: bb.plans.list
 	ListPlans(context.Context, *connect.Request[v1.ListPlansRequest]) (*connect.Response[v1.ListPlansResponse], error)
 	// Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
 	// Permissions required: bb.plans.get
 	SearchPlans(context.Context, *connect.Request[v1.SearchPlansRequest]) (*connect.Response[v1.SearchPlansResponse], error)
+	// Creates a new deployment plan.
 	// Permissions required: bb.plans.create
 	CreatePlan(context.Context, *connect.Request[v1.CreatePlanRequest]) (*connect.Response[v1.Plan], error)
 	// UpdatePlan updates the plan.
 	// The plan creator and the user with bb.plans.update permission on the project can update the plan.
-	// Permissions required: bb.plans.update
+	// Permissions required: bb.plans.update (or creator)
 	UpdatePlan(context.Context, *connect.Request[v1.UpdatePlanRequest]) (*connect.Response[v1.Plan], error)
+	// Lists plan check runs for a deployment plan.
 	// Permissions required: bb.planCheckRuns.list
 	ListPlanCheckRuns(context.Context, *connect.Request[v1.ListPlanCheckRunsRequest]) (*connect.Response[v1.ListPlanCheckRunsResponse], error)
+	// Executes validation checks on a deployment plan.
 	// Permissions required: bb.planCheckRuns.run
 	RunPlanChecks(context.Context, *connect.Request[v1.RunPlanChecksRequest]) (*connect.Response[v1.RunPlanChecksResponse], error)
+	// Cancels multiple plan check runs.
 	// Permissions required: bb.planCheckRuns.run
 	BatchCancelPlanCheckRuns(context.Context, *connect.Request[v1.BatchCancelPlanCheckRunsRequest]) (*connect.Response[v1.BatchCancelPlanCheckRunsResponse], error)
 }
@@ -193,23 +199,29 @@ func (c *planServiceClient) BatchCancelPlanCheckRuns(ctx context.Context, req *c
 
 // PlanServiceHandler is an implementation of the bytebase.v1.PlanService service.
 type PlanServiceHandler interface {
+	// Retrieves a deployment plan by name.
 	// Permissions required: bb.plans.get
 	GetPlan(context.Context, *connect.Request[v1.GetPlanRequest]) (*connect.Response[v1.Plan], error)
+	// Lists deployment plans in a project.
 	// Permissions required: bb.plans.list
 	ListPlans(context.Context, *connect.Request[v1.ListPlansRequest]) (*connect.Response[v1.ListPlansResponse], error)
 	// Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
 	// Permissions required: bb.plans.get
 	SearchPlans(context.Context, *connect.Request[v1.SearchPlansRequest]) (*connect.Response[v1.SearchPlansResponse], error)
+	// Creates a new deployment plan.
 	// Permissions required: bb.plans.create
 	CreatePlan(context.Context, *connect.Request[v1.CreatePlanRequest]) (*connect.Response[v1.Plan], error)
 	// UpdatePlan updates the plan.
 	// The plan creator and the user with bb.plans.update permission on the project can update the plan.
-	// Permissions required: bb.plans.update
+	// Permissions required: bb.plans.update (or creator)
 	UpdatePlan(context.Context, *connect.Request[v1.UpdatePlanRequest]) (*connect.Response[v1.Plan], error)
+	// Lists plan check runs for a deployment plan.
 	// Permissions required: bb.planCheckRuns.list
 	ListPlanCheckRuns(context.Context, *connect.Request[v1.ListPlanCheckRunsRequest]) (*connect.Response[v1.ListPlanCheckRunsResponse], error)
+	// Executes validation checks on a deployment plan.
 	// Permissions required: bb.planCheckRuns.run
 	RunPlanChecks(context.Context, *connect.Request[v1.RunPlanChecksRequest]) (*connect.Response[v1.RunPlanChecksResponse], error)
+	// Cancels multiple plan check runs.
 	// Permissions required: bb.planCheckRuns.run
 	BatchCancelPlanCheckRuns(context.Context, *connect.Request[v1.BatchCancelPlanCheckRunsRequest]) (*connect.Response[v1.BatchCancelPlanCheckRunsResponse], error)
 }

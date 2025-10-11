@@ -13,6 +13,8 @@ import type { Expr as Expr$1 } from "../google/api/expr/v1alpha1/syntax_pb";
 export declare const file_v1_iam_policy: GenFile;
 
 /**
+ * Request message for getting an IAM policy.
+ *
  * @generated from message bytebase.v1.GetIamPolicyRequest
  */
 export declare type GetIamPolicyRequest = Message<"bytebase.v1.GetIamPolicyRequest"> & {
@@ -33,6 +35,8 @@ export declare type GetIamPolicyRequest = Message<"bytebase.v1.GetIamPolicyReque
 export declare const GetIamPolicyRequestSchema: GenMessage<GetIamPolicyRequest>;
 
 /**
+ * Request message for setting an IAM policy.
+ *
  * @generated from message bytebase.v1.SetIamPolicyRequest
  */
 export declare type SetIamPolicyRequest = Message<"bytebase.v1.SetIamPolicyRequest"> & {
@@ -65,6 +69,8 @@ export declare type SetIamPolicyRequest = Message<"bytebase.v1.SetIamPolicyReque
 export declare const SetIamPolicyRequestSchema: GenMessage<SetIamPolicyRequest>;
 
 /**
+ * IAM policy that binds members to roles.
+ *
  * @generated from message bytebase.v1.IamPolicy
  */
 export declare type IamPolicy = Message<"bytebase.v1.IamPolicy"> & {
@@ -93,6 +99,8 @@ export declare type IamPolicy = Message<"bytebase.v1.IamPolicy"> & {
 export declare const IamPolicySchema: GenMessage<IamPolicy>;
 
 /**
+ * Binding associates members with a role and optional conditions.
+ *
  * @generated from message bytebase.v1.Binding
  */
 export declare type Binding = Message<"bytebase.v1.Binding"> & {
@@ -149,7 +157,7 @@ export declare type Binding = Message<"bytebase.v1.Binding"> & {
 export declare const BindingSchema: GenMessage<Binding>;
 
 /**
- * The difference delta between two policies.
+ * Describes changes between two IAM policies.
  *
  * @generated from message bytebase.v1.PolicyDelta
  */
@@ -169,8 +177,7 @@ export declare type PolicyDelta = Message<"bytebase.v1.PolicyDelta"> & {
 export declare const PolicyDeltaSchema: GenMessage<PolicyDelta>;
 
 /**
- * One delta entry for Binding. Each individual change (only one member in each
- * entry) to a binding will be a separate entry.
+ * A single change to a binding.
  *
  * @generated from message bytebase.v1.BindingDelta
  */
@@ -212,22 +219,28 @@ export declare type BindingDelta = Message<"bytebase.v1.BindingDelta"> & {
 export declare const BindingDeltaSchema: GenMessage<BindingDelta>;
 
 /**
- * The type of action performed on a Binding in a policy.
+ * Type of action performed on a binding.
  *
  * @generated from enum bytebase.v1.BindingDelta.Action
  */
 export enum BindingDelta_Action {
   /**
+   * Unspecified action.
+   *
    * @generated from enum value: ACTION_UNSPECIFIED = 0;
    */
   ACTION_UNSPECIFIED = 0,
 
   /**
+   * Add a binding.
+   *
    * @generated from enum value: ADD = 1;
    */
   ADD = 1,
 
   /**
+   * Remove a binding.
+   *
    * @generated from enum value: REMOVE = 2;
    */
   REMOVE = 2,

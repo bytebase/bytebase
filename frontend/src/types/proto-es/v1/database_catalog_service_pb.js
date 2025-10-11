@@ -92,12 +92,16 @@ export const ObjectSchema_TypeSchema = /*@__PURE__*/
   enumDesc(file_v1_database_catalog_service, 6, 0);
 
 /**
+ * Object schema data types.
+ *
  * @generated from enum bytebase.v1.ObjectSchema.Type
  */
 export const ObjectSchema_Type = /*@__PURE__*/
   tsEnum(ObjectSchema_TypeSchema);
 
 /**
+ * DatabaseCatalogService manages database schema metadata and classification.
+ *
  * @generated from service bytebase.v1.DatabaseCatalogService
  */
 export const DatabaseCatalogService = /*@__PURE__*/

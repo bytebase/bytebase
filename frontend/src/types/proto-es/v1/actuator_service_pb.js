@@ -75,6 +75,8 @@ export const ActuatorInfo_StatUserSchema = /*@__PURE__*/
   messageDesc(file_v1_actuator_service, 6, 0);
 
 /**
+ * ActuatorService manages system health and operational information.
+ *
  * @generated from service bytebase.v1.ActuatorService
  */
 export const ActuatorService = /*@__PURE__*/

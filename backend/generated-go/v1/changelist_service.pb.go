@@ -25,6 +25,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Request message for creating a changelist.
 type CreateChangelistRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent resource where this changelist will be created.
@@ -93,6 +94,7 @@ func (x *CreateChangelistRequest) GetChangelistId() string {
 	return ""
 }
 
+// Request message for getting a changelist.
 type GetChangelistRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the changelist to retrieve.
@@ -139,18 +141,19 @@ func (x *GetChangelistRequest) GetName() string {
 	return ""
 }
 
+// Request message for listing changelists.
 type ListChangelistsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent, which owns this collection of changelists.
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// The maximum number of databases to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 50 databases will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// A page token, received from a previous `ListDatabases` call.
 	// Provide this to retrieve the subsequent page.
 	//
@@ -212,6 +215,7 @@ func (x *ListChangelistsRequest) GetPageToken() string {
 	return ""
 }
 
+// Response message for listing changelists.
 type ListChangelistsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The changelists from the specified request.
@@ -267,6 +271,7 @@ func (x *ListChangelistsResponse) GetNextPageToken() string {
 	return ""
 }
 
+// Request message for updating a changelist.
 type UpdateChangelistRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The changelist to update.
@@ -334,6 +339,7 @@ func (x *UpdateChangelistRequest) GetAllowMissing() bool {
 	return false
 }
 
+// Request message for deleting a changelist.
 type DeleteChangelistRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the changelist to delete.
@@ -380,19 +386,22 @@ func (x *DeleteChangelistRequest) GetName() string {
 	return ""
 }
 
+// A changelist groups multiple database changes together.
 type Changelist struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the changelist resource.
 	// Canonical parent is project.
 	// Format: projects/{project}/changelists/{changelist}
-	Name        string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The description of the changelist.
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	// The creator of the changelist.
 	// Format: users/{email}
 	Creator string `protobuf:"bytes,3,opt,name=creator,proto3" json:"creator,omitempty"`
-	// The last update time of the changelist.
-	UpdateTime    *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
-	Changes       []*Changelist_Change   `protobuf:"bytes,7,rep,name=changes,proto3" json:"changes,omitempty"`
+	// The last time the changelist was updated.
+	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
+	// The list of changes in this changelist.
+	Changes       []*Changelist_Change `protobuf:"bytes,7,rep,name=changes,proto3" json:"changes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -462,13 +471,14 @@ func (x *Changelist) GetChanges() []*Changelist_Change {
 	return nil
 }
 
+// A single change in a changelist.
 type Changelist_Change struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name of a sheet.
+	// The sheet containing the SQL statement.
 	Sheet string `protobuf:"bytes,1,opt,name=sheet,proto3" json:"sheet,omitempty"`
-	// The source of origin.
-	// 1) changelog: instances/{instance}/databases/{database}/changelogs/{changelog}.
-	// 2) raw SQL if empty.
+	// The source of this change.
+	// Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+	// If empty, the change is from raw SQL.
 	Source        string `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

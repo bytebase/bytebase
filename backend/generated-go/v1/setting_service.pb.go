@@ -327,13 +327,13 @@ func (AISetting_Provider) EnumDescriptor() ([]byte, []int) {
 
 type ListSettingsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// The maximum number of settings to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 10 settings will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// A page token, received from a previous `ListSettings` call.
 	// Provide this to retrieve the subsequent page.
 	//
@@ -614,7 +614,7 @@ type Setting struct {
 	// - `setting/{setting}`
 	// For example, "settings/bb.branding.logo"
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The value of the setting.
+	// The configuration value of the setting.
 	Value         *Value `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1108,9 +1108,9 @@ func (x *WorkspaceProfileSetting) GetEnableMetricCollection() bool {
 
 type Announcement struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The alert level of announcemnt
+	// The alert level of announcement
 	Level Announcement_AlertLevel `protobuf:"varint,1,opt,name=level,proto3,enum=bytebase.v1.Announcement_AlertLevel" json:"level,omitempty"`
-	// The text of announcemnt
+	// The text of announcement
 	Text string `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
 	// The optional link, user can follow the link to check extra details
 	Link          string `protobuf:"bytes,3,opt,name=link,proto3" json:"link,omitempty"`

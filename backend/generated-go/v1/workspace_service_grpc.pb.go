@@ -26,9 +26,13 @@ const (
 // WorkspaceServiceClient is the client API for WorkspaceService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// WorkspaceService manages workspace-level operations and profile.
 type WorkspaceServiceClient interface {
+	// Retrieves IAM policy for the workspace.
 	// Permissions required: bb.workspaces.getIamPolicy
 	GetIamPolicy(ctx context.Context, in *GetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
+	// Sets IAM policy for the workspace.
 	// Permissions required: bb.workspaces.setIamPolicy
 	SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
 }
@@ -64,9 +68,13 @@ func (c *workspaceServiceClient) SetIamPolicy(ctx context.Context, in *SetIamPol
 // WorkspaceServiceServer is the server API for WorkspaceService service.
 // All implementations must embed UnimplementedWorkspaceServiceServer
 // for forward compatibility.
+//
+// WorkspaceService manages workspace-level operations and profile.
 type WorkspaceServiceServer interface {
+	// Retrieves IAM policy for the workspace.
 	// Permissions required: bb.workspaces.getIamPolicy
 	GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error)
+	// Sets IAM policy for the workspace.
 	// Permissions required: bb.workspaces.setIamPolicy
 	SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error)
 	mustEmbedUnimplementedWorkspaceServiceServer()

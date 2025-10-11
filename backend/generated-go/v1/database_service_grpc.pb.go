@@ -37,32 +37,47 @@ const (
 // DatabaseServiceClient is the client API for DatabaseService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// DatabaseService manages databases and their schemas.
 type DatabaseServiceClient interface {
+	// Retrieves a database by name.
 	// Permissions required: bb.databases.get
 	GetDatabase(ctx context.Context, in *GetDatabaseRequest, opts ...grpc.CallOption) (*Database, error)
+	// Retrieves multiple databases by their names.
 	// Permissions required: bb.databases.get
 	BatchGetDatabases(ctx context.Context, in *BatchGetDatabasesRequest, opts ...grpc.CallOption) (*BatchGetDatabasesResponse, error)
-	// Permissions required: bb.databases.list
+	// Lists databases in a project, instance, or workspace.
+	// Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
 	ListDatabases(ctx context.Context, in *ListDatabasesRequest, opts ...grpc.CallOption) (*ListDatabasesResponse, error)
+	// Updates database properties such as labels and project assignment.
 	// Permissions required: bb.databases.update
 	UpdateDatabase(ctx context.Context, in *UpdateDatabaseRequest, opts ...grpc.CallOption) (*Database, error)
+	// Updates multiple databases in a single batch operation.
 	// Permissions required: bb.databases.update
 	BatchUpdateDatabases(ctx context.Context, in *BatchUpdateDatabasesRequest, opts ...grpc.CallOption) (*BatchUpdateDatabasesResponse, error)
+	// Synchronizes database schema from the instance.
 	// Permissions required: bb.databases.sync
 	SyncDatabase(ctx context.Context, in *SyncDatabaseRequest, opts ...grpc.CallOption) (*SyncDatabaseResponse, error)
+	// Synchronizes multiple databases in a single batch operation.
 	// Permissions required: bb.databases.sync
 	BatchSyncDatabases(ctx context.Context, in *BatchSyncDatabasesRequest, opts ...grpc.CallOption) (*BatchSyncDatabasesResponse, error)
+	// Retrieves database metadata including tables, columns, and indexes.
 	// Permissions required: bb.databases.getSchema
 	GetDatabaseMetadata(ctx context.Context, in *GetDatabaseMetadataRequest, opts ...grpc.CallOption) (*DatabaseMetadata, error)
+	// Retrieves database schema as DDL statements.
 	// Permissions required: bb.databases.getSchema
 	GetDatabaseSchema(ctx context.Context, in *GetDatabaseSchemaRequest, opts ...grpc.CallOption) (*DatabaseSchema, error)
+	// Compares and generates migration statements between two schemas.
 	// Permissions required: bb.databases.get
 	DiffSchema(ctx context.Context, in *DiffSchemaRequest, opts ...grpc.CallOption) (*DiffSchemaResponse, error)
+	// Lists migration history for a database.
 	// Permissions required: bb.changelogs.list
 	ListChangelogs(ctx context.Context, in *ListChangelogsRequest, opts ...grpc.CallOption) (*ListChangelogsResponse, error)
-	// Permissions required: changelogs.get
+	// Retrieves a specific changelog entry.
+	// Permissions required: bb.changelogs.get
 	GetChangelog(ctx context.Context, in *GetChangelogRequest, opts ...grpc.CallOption) (*Changelog, error)
-	// Permissions required: databases.getSchema
+	// Generates schema DDL for a database object.
+	// Permissions required: bb.databases.getSchema
 	GetSchemaString(ctx context.Context, in *GetSchemaStringRequest, opts ...grpc.CallOption) (*GetSchemaStringResponse, error)
 }
 
@@ -207,32 +222,47 @@ func (c *databaseServiceClient) GetSchemaString(ctx context.Context, in *GetSche
 // DatabaseServiceServer is the server API for DatabaseService service.
 // All implementations must embed UnimplementedDatabaseServiceServer
 // for forward compatibility.
+//
+// DatabaseService manages databases and their schemas.
 type DatabaseServiceServer interface {
+	// Retrieves a database by name.
 	// Permissions required: bb.databases.get
 	GetDatabase(context.Context, *GetDatabaseRequest) (*Database, error)
+	// Retrieves multiple databases by their names.
 	// Permissions required: bb.databases.get
 	BatchGetDatabases(context.Context, *BatchGetDatabasesRequest) (*BatchGetDatabasesResponse, error)
-	// Permissions required: bb.databases.list
+	// Lists databases in a project, instance, or workspace.
+	// Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
 	ListDatabases(context.Context, *ListDatabasesRequest) (*ListDatabasesResponse, error)
+	// Updates database properties such as labels and project assignment.
 	// Permissions required: bb.databases.update
 	UpdateDatabase(context.Context, *UpdateDatabaseRequest) (*Database, error)
+	// Updates multiple databases in a single batch operation.
 	// Permissions required: bb.databases.update
 	BatchUpdateDatabases(context.Context, *BatchUpdateDatabasesRequest) (*BatchUpdateDatabasesResponse, error)
+	// Synchronizes database schema from the instance.
 	// Permissions required: bb.databases.sync
 	SyncDatabase(context.Context, *SyncDatabaseRequest) (*SyncDatabaseResponse, error)
+	// Synchronizes multiple databases in a single batch operation.
 	// Permissions required: bb.databases.sync
 	BatchSyncDatabases(context.Context, *BatchSyncDatabasesRequest) (*BatchSyncDatabasesResponse, error)
+	// Retrieves database metadata including tables, columns, and indexes.
 	// Permissions required: bb.databases.getSchema
 	GetDatabaseMetadata(context.Context, *GetDatabaseMetadataRequest) (*DatabaseMetadata, error)
+	// Retrieves database schema as DDL statements.
 	// Permissions required: bb.databases.getSchema
 	GetDatabaseSchema(context.Context, *GetDatabaseSchemaRequest) (*DatabaseSchema, error)
+	// Compares and generates migration statements between two schemas.
 	// Permissions required: bb.databases.get
 	DiffSchema(context.Context, *DiffSchemaRequest) (*DiffSchemaResponse, error)
+	// Lists migration history for a database.
 	// Permissions required: bb.changelogs.list
 	ListChangelogs(context.Context, *ListChangelogsRequest) (*ListChangelogsResponse, error)
-	// Permissions required: changelogs.get
+	// Retrieves a specific changelog entry.
+	// Permissions required: bb.changelogs.get
 	GetChangelog(context.Context, *GetChangelogRequest) (*Changelog, error)
-	// Permissions required: databases.getSchema
+	// Generates schema DDL for a database object.
+	// Permissions required: bb.databases.getSchema
 	GetSchemaString(context.Context, *GetSchemaStringRequest) (*GetSchemaStringResponse, error)
 	mustEmbedUnimplementedDatabaseServiceServer()
 }

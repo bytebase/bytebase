@@ -31,36 +31,38 @@ const (
 // WorksheetServiceClient is the client API for WorksheetService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// WorksheetService manages SQL worksheets for query development.
 type WorksheetServiceClient interface {
-	// Create a personal worksheet used in SQL Editor.
-	// Permissions required: None
+	// Creates a personal worksheet used in SQL Editor. Any authenticated user can create their own worksheets.
+	// Permissions required: None (authenticated users only)
 	CreateWorksheet(ctx context.Context, in *CreateWorksheetRequest, opts ...grpc.CallOption) (*Worksheet, error)
 	// Get a worksheet by name.
 	// The users can access this method if,
 	// - they are the creator of the worksheet;
 	// - they have bb.worksheets.get permission on the workspace;
 	// - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-	// Permissions required: None
+	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
 	GetWorksheet(ctx context.Context, in *GetWorksheetRequest, opts ...grpc.CallOption) (*Worksheet, error)
 	// Search for worksheets.
 	// This is used for finding my worksheets or worksheets shared by other people.
 	// The sheet accessibility is the same as GetWorksheet().
-	// Permissions required: None
+	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
 	SearchWorksheets(ctx context.Context, in *SearchWorksheetsRequest, opts ...grpc.CallOption) (*SearchWorksheetsResponse, error)
 	// Update a worksheet.
 	// The users can access this method if,
 	// - they are the creator of the worksheet;
 	// - they have bb.worksheets.manage permission on the workspace;
 	// - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-	// Permissions required: None
+	// Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)
 	UpdateWorksheet(ctx context.Context, in *UpdateWorksheetRequest, opts ...grpc.CallOption) (*Worksheet, error)
 	// Update the organizer of a worksheet.
 	// The access is the same as UpdateWorksheet method.
-	// Permissions required: None
+	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
 	UpdateWorksheetOrganizer(ctx context.Context, in *UpdateWorksheetOrganizerRequest, opts ...grpc.CallOption) (*WorksheetOrganizer, error)
 	// Delete a worksheet.
 	// The access is the same as UpdateWorksheet method.
-	// Permissions required: None
+	// Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)
 	DeleteWorksheet(ctx context.Context, in *DeleteWorksheetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -135,36 +137,38 @@ func (c *worksheetServiceClient) DeleteWorksheet(ctx context.Context, in *Delete
 // WorksheetServiceServer is the server API for WorksheetService service.
 // All implementations must embed UnimplementedWorksheetServiceServer
 // for forward compatibility.
+//
+// WorksheetService manages SQL worksheets for query development.
 type WorksheetServiceServer interface {
-	// Create a personal worksheet used in SQL Editor.
-	// Permissions required: None
+	// Creates a personal worksheet used in SQL Editor. Any authenticated user can create their own worksheets.
+	// Permissions required: None (authenticated users only)
 	CreateWorksheet(context.Context, *CreateWorksheetRequest) (*Worksheet, error)
 	// Get a worksheet by name.
 	// The users can access this method if,
 	// - they are the creator of the worksheet;
 	// - they have bb.worksheets.get permission on the workspace;
 	// - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-	// Permissions required: None
+	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
 	GetWorksheet(context.Context, *GetWorksheetRequest) (*Worksheet, error)
 	// Search for worksheets.
 	// This is used for finding my worksheets or worksheets shared by other people.
 	// The sheet accessibility is the same as GetWorksheet().
-	// Permissions required: None
+	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
 	SearchWorksheets(context.Context, *SearchWorksheetsRequest) (*SearchWorksheetsResponse, error)
 	// Update a worksheet.
 	// The users can access this method if,
 	// - they are the creator of the worksheet;
 	// - they have bb.worksheets.manage permission on the workspace;
 	// - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-	// Permissions required: None
+	// Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)
 	UpdateWorksheet(context.Context, *UpdateWorksheetRequest) (*Worksheet, error)
 	// Update the organizer of a worksheet.
 	// The access is the same as UpdateWorksheet method.
-	// Permissions required: None
+	// Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
 	UpdateWorksheetOrganizer(context.Context, *UpdateWorksheetOrganizerRequest) (*WorksheetOrganizer, error)
 	// Delete a worksheet.
 	// The access is the same as UpdateWorksheet method.
-	// Permissions required: None
+	// Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)
 	DeleteWorksheet(context.Context, *DeleteWorksheetRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedWorksheetServiceServer()
 }

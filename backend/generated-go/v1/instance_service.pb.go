@@ -29,9 +29,12 @@ const (
 type DataSourceType int32
 
 const (
+	// Unspecified data source type.
 	DataSourceType_DATA_SOURCE_UNSPECIFIED DataSourceType = 0
-	DataSourceType_ADMIN                   DataSourceType = 1
-	DataSourceType_READ_ONLY               DataSourceType = 2
+	// Admin data source with write permissions.
+	DataSourceType_ADMIN DataSourceType = 1
+	// Read-only data source for query operations.
+	DataSourceType_READ_ONLY DataSourceType = 2
 )
 
 // Enum value maps for DataSourceType.
@@ -78,6 +81,7 @@ func (DataSourceType) EnumDescriptor() ([]byte, []int) {
 type DataSourceExternalSecret_SecretType int32
 
 const (
+	// Unspecified secret type.
 	DataSourceExternalSecret_SAECRET_TYPE_UNSPECIFIED DataSourceExternalSecret_SecretType = 0
 	// ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2
 	DataSourceExternalSecret_VAULT_KV_V2 DataSourceExternalSecret_SecretType = 1
@@ -133,6 +137,7 @@ func (DataSourceExternalSecret_SecretType) EnumDescriptor() ([]byte, []int) {
 type DataSourceExternalSecret_AuthType int32
 
 const (
+	// Unspecified authentication type.
 	DataSourceExternalSecret_AUTH_TYPE_UNSPECIFIED DataSourceExternalSecret_AuthType = 0
 	// ref: https://developer.hashicorp.com/vault/docs/auth/token
 	DataSourceExternalSecret_TOKEN DataSourceExternalSecret_AuthType = 1
@@ -184,9 +189,12 @@ func (DataSourceExternalSecret_AuthType) EnumDescriptor() ([]byte, []int) {
 type DataSourceExternalSecret_AppRoleAuthOption_SecretType int32
 
 const (
+	// Unspecified secret type.
 	DataSourceExternalSecret_AppRoleAuthOption_SECRET_TYPE_UNSPECIFIED DataSourceExternalSecret_AppRoleAuthOption_SecretType = 0
-	DataSourceExternalSecret_AppRoleAuthOption_PLAIN                   DataSourceExternalSecret_AppRoleAuthOption_SecretType = 1
-	DataSourceExternalSecret_AppRoleAuthOption_ENVIRONMENT             DataSourceExternalSecret_AppRoleAuthOption_SecretType = 2
+	// Plain text secret.
+	DataSourceExternalSecret_AppRoleAuthOption_PLAIN DataSourceExternalSecret_AppRoleAuthOption_SecretType = 1
+	// Secret from environment variable.
+	DataSourceExternalSecret_AppRoleAuthOption_ENVIRONMENT DataSourceExternalSecret_AppRoleAuthOption_SecretType = 2
 )
 
 // Enum value maps for DataSourceExternalSecret_AppRoleAuthOption_SecretType.
@@ -1378,18 +1386,26 @@ type Instance struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the instance.
 	// Format: instances/{instance}
-	Name          string        `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	State         State         `protobuf:"varint,3,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
-	Title         string        `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	Engine        Engine        `protobuf:"varint,5,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
-	EngineVersion string        `protobuf:"bytes,6,opt,name=engine_version,json=engineVersion,proto3" json:"engine_version,omitempty"`
-	ExternalLink  string        `protobuf:"bytes,7,opt,name=external_link,json=externalLink,proto3" json:"external_link,omitempty"`
-	DataSources   []*DataSource `protobuf:"bytes,8,rep,name=data_sources,json=dataSources,proto3" json:"data_sources,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The lifecycle state of the instance.
+	State State `protobuf:"varint,3,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
+	// The display title of the instance.
+	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	// The database engine type.
+	Engine Engine `protobuf:"varint,5,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
+	// The version of the database engine.
+	EngineVersion string `protobuf:"bytes,6,opt,name=engine_version,json=engineVersion,proto3" json:"engine_version,omitempty"`
+	// External URL to the database instance console.
+	ExternalLink string `protobuf:"bytes,7,opt,name=external_link,json=externalLink,proto3" json:"external_link,omitempty"`
+	// Data source configurations for connecting to the instance.
+	DataSources []*DataSource `protobuf:"bytes,8,rep,name=data_sources,json=dataSources,proto3" json:"data_sources,omitempty"`
 	// The environment resource.
 	// Format: environments/prod where prod is the environment resource ID.
-	Environment *string         `protobuf:"bytes,9,opt,name=environment,proto3,oneof" json:"environment,omitempty"`
-	Activation  bool            `protobuf:"varint,10,opt,name=activation,proto3" json:"activation,omitempty"`
-	Roles       []*InstanceRole `protobuf:"bytes,12,rep,name=roles,proto3" json:"roles,omitempty"`
+	Environment *string `protobuf:"bytes,9,opt,name=environment,proto3,oneof" json:"environment,omitempty"`
+	// Whether the instance is activated for use.
+	Activation bool `protobuf:"varint,10,opt,name=activation,proto3" json:"activation,omitempty"`
+	// Database roles available in this instance.
+	Roles []*InstanceRole `protobuf:"bytes,12,rep,name=roles,proto3" json:"roles,omitempty"`
 	// How often the instance is synced.
 	SyncInterval *durationpb.Duration `protobuf:"bytes,13,opt,name=sync_interval,json=syncInterval,proto3" json:"sync_interval,omitempty"`
 	// The maximum number of connections.
@@ -1543,10 +1559,13 @@ func (x *Instance) GetLabels() map[string]string {
 }
 
 type DataSourceExternalSecret struct {
-	state      protoimpl.MessageState              `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The type of external secret store.
 	SecretType DataSourceExternalSecret_SecretType `protobuf:"varint,1,opt,name=secret_type,json=secretType,proto3,enum=bytebase.v1.DataSourceExternalSecret_SecretType" json:"secret_type,omitempty"`
-	Url        string                              `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
-	AuthType   DataSourceExternalSecret_AuthType   `protobuf:"varint,3,opt,name=auth_type,json=authType,proto3,enum=bytebase.v1.DataSourceExternalSecret_AuthType" json:"auth_type,omitempty"`
+	// The URL of the external secret store.
+	Url string `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	// The authentication method for accessing the secret store.
+	AuthType DataSourceExternalSecret_AuthType `protobuf:"varint,3,opt,name=auth_type,json=authType,proto3,enum=bytebase.v1.DataSourceExternalSecret_AuthType" json:"auth_type,omitempty"`
 	// Types that are valid to be assigned to AuthOption:
 	//
 	//	*DataSourceExternalSecret_AppRole
@@ -1664,10 +1683,12 @@ type isDataSourceExternalSecret_AuthOption interface {
 }
 
 type DataSourceExternalSecret_AppRole struct {
+	// AppRole authentication configuration.
 	AppRole *DataSourceExternalSecret_AppRoleAuthOption `protobuf:"bytes,4,opt,name=app_role,json=appRole,proto3,oneof"`
 }
 
 type DataSourceExternalSecret_Token struct {
+	// Token for direct authentication.
 	Token string `protobuf:"bytes,5,opt,name=token,proto3,oneof"`
 }
 
@@ -1676,25 +1697,35 @@ func (*DataSourceExternalSecret_AppRole) isDataSourceExternalSecret_AuthOption()
 func (*DataSourceExternalSecret_Token) isDataSourceExternalSecret_AuthOption() {}
 
 type DataSource struct {
-	state    protoimpl.MessageState `protogen:"open.v1"`
-	Id       string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Type     DataSourceType         `protobuf:"varint,2,opt,name=type,proto3,enum=bytebase.v1.DataSourceType" json:"type,omitempty"`
-	Username string                 `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
-	Password string                 `protobuf:"bytes,4,opt,name=password,proto3" json:"password,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The unique identifier for this data source.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// The type of data source (ADMIN or READ_ONLY).
+	Type DataSourceType `protobuf:"varint,2,opt,name=type,proto3,enum=bytebase.v1.DataSourceType" json:"type,omitempty"`
+	// The username for database authentication.
+	Username string `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
+	// The password for database authentication.
+	Password string `protobuf:"bytes,4,opt,name=password,proto3" json:"password,omitempty"`
 	// Use SSL to connect to the data source. By default, we use system default SSL configuration.
-	UseSsl  bool   `protobuf:"varint,30,opt,name=use_ssl,json=useSsl,proto3" json:"use_ssl,omitempty"`
-	SslCa   string `protobuf:"bytes,5,opt,name=ssl_ca,json=sslCa,proto3" json:"ssl_ca,omitempty"`
+	UseSsl bool `protobuf:"varint,30,opt,name=use_ssl,json=useSsl,proto3" json:"use_ssl,omitempty"`
+	// The SSL certificate authority certificate.
+	SslCa string `protobuf:"bytes,5,opt,name=ssl_ca,json=sslCa,proto3" json:"ssl_ca,omitempty"`
+	// The SSL client certificate.
 	SslCert string `protobuf:"bytes,6,opt,name=ssl_cert,json=sslCert,proto3" json:"ssl_cert,omitempty"`
-	SslKey  string `protobuf:"bytes,7,opt,name=ssl_key,json=sslKey,proto3" json:"ssl_key,omitempty"`
+	// The SSL client private key.
+	SslKey string `protobuf:"bytes,7,opt,name=ssl_key,json=sslKey,proto3" json:"ssl_key,omitempty"`
 	// verify_tls_certificate enables TLS certificate verification for SSL connections.
 	// Default is false (no verification) for backward compatibility.
 	// Set to true for secure connections (recommended for production).
 	// Only set to false for development or when certificates cannot be properly
 	// validated (e.g., self-signed certs, VPN environments).
-	VerifyTlsCertificate bool   `protobuf:"varint,39,opt,name=verify_tls_certificate,json=verifyTlsCertificate,proto3" json:"verify_tls_certificate,omitempty"`
-	Host                 string `protobuf:"bytes,8,opt,name=host,proto3" json:"host,omitempty"`
-	Port                 string `protobuf:"bytes,9,opt,name=port,proto3" json:"port,omitempty"`
-	Database             string `protobuf:"bytes,10,opt,name=database,proto3" json:"database,omitempty"`
+	VerifyTlsCertificate bool `protobuf:"varint,39,opt,name=verify_tls_certificate,json=verifyTlsCertificate,proto3" json:"verify_tls_certificate,omitempty"`
+	// The hostname or IP address of the database server.
+	Host string `protobuf:"bytes,8,opt,name=host,proto3" json:"host,omitempty"`
+	// The port number of the database server.
+	Port string `protobuf:"bytes,9,opt,name=port,proto3" json:"port,omitempty"`
+	// The name of the database to connect to.
+	Database string `protobuf:"bytes,10,opt,name=database,proto3" json:"database,omitempty"`
 	// srv, authentication_database and replica_set are used for MongoDB.
 	// srv is a boolean flag that indicates whether the host is a DNS SRV record.
 	Srv bool `protobuf:"varint,11,opt,name=srv,proto3" json:"srv,omitempty"`
@@ -2093,12 +2124,17 @@ func (*DataSource_AwsCredential) isDataSource_IamExtension() {}
 func (*DataSource_GcpCredential) isDataSource_IamExtension() {}
 
 type InstanceResource struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Title         string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
-	Engine        Engine                 `protobuf:"varint,2,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
-	EngineVersion string                 `protobuf:"bytes,3,opt,name=engine_version,json=engineVersion,proto3" json:"engine_version,omitempty"`
-	DataSources   []*DataSource          `protobuf:"bytes,4,rep,name=data_sources,json=dataSources,proto3" json:"data_sources,omitempty"`
-	Activation    bool                   `protobuf:"varint,5,opt,name=activation,proto3" json:"activation,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The display title of the instance.
+	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
+	// The database engine type.
+	Engine Engine `protobuf:"varint,2,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
+	// The version of the database engine.
+	EngineVersion string `protobuf:"bytes,3,opt,name=engine_version,json=engineVersion,proto3" json:"engine_version,omitempty"`
+	// Data source configurations for the instance.
+	DataSources []*DataSource `protobuf:"bytes,4,rep,name=data_sources,json=dataSources,proto3" json:"data_sources,omitempty"`
+	// Whether the instance is activated.
+	Activation bool `protobuf:"varint,5,opt,name=activation,proto3" json:"activation,omitempty"`
 	// The name of the instance.
 	// Format: instances/{instance}
 	Name string `protobuf:"bytes,6,opt,name=name,proto3" json:"name,omitempty"`
@@ -2249,20 +2285,28 @@ type isSASLConfig_Mechanism interface {
 }
 
 type SASLConfig_KrbConfig struct {
+	// Kerberos authentication configuration.
 	KrbConfig *KerberosConfig `protobuf:"bytes,1,opt,name=krb_config,json=krbConfig,proto3,oneof"`
 }
 
 func (*SASLConfig_KrbConfig) isSASLConfig_Mechanism() {}
 
 type KerberosConfig struct {
-	state                protoimpl.MessageState `protogen:"open.v1"`
-	Primary              string                 `protobuf:"bytes,1,opt,name=primary,proto3" json:"primary,omitempty"`
-	Instance             string                 `protobuf:"bytes,2,opt,name=instance,proto3" json:"instance,omitempty"`
-	Realm                string                 `protobuf:"bytes,3,opt,name=realm,proto3" json:"realm,omitempty"`
-	Keytab               []byte                 `protobuf:"bytes,4,opt,name=keytab,proto3" json:"keytab,omitempty"`
-	KdcHost              string                 `protobuf:"bytes,5,opt,name=kdc_host,json=kdcHost,proto3" json:"kdc_host,omitempty"`
-	KdcPort              string                 `protobuf:"bytes,6,opt,name=kdc_port,json=kdcPort,proto3" json:"kdc_port,omitempty"`
-	KdcTransportProtocol string                 `protobuf:"bytes,7,opt,name=kdc_transport_protocol,json=kdcTransportProtocol,proto3" json:"kdc_transport_protocol,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The primary component of the Kerberos principal.
+	Primary string `protobuf:"bytes,1,opt,name=primary,proto3" json:"primary,omitempty"`
+	// The instance component of the Kerberos principal.
+	Instance string `protobuf:"bytes,2,opt,name=instance,proto3" json:"instance,omitempty"`
+	// The Kerberos realm.
+	Realm string `protobuf:"bytes,3,opt,name=realm,proto3" json:"realm,omitempty"`
+	// The keytab file contents for authentication.
+	Keytab []byte `protobuf:"bytes,4,opt,name=keytab,proto3" json:"keytab,omitempty"`
+	// The hostname of the Key Distribution Center (KDC).
+	KdcHost string `protobuf:"bytes,5,opt,name=kdc_host,json=kdcHost,proto3" json:"kdc_host,omitempty"`
+	// The port of the Key Distribution Center (KDC).
+	KdcPort string `protobuf:"bytes,6,opt,name=kdc_port,json=kdcPort,proto3" json:"kdc_port,omitempty"`
+	// The transport protocol for KDC communication (tcp or udp).
+	KdcTransportProtocol string `protobuf:"bytes,7,opt,name=kdc_transport_protocol,json=kdcTransportProtocol,proto3" json:"kdc_transport_protocol,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -2347,11 +2391,13 @@ func (x *KerberosConfig) GetKdcTransportProtocol() string {
 }
 
 type DataSourceExternalSecret_AppRoleAuthOption struct {
-	state  protoimpl.MessageState `protogen:"open.v1"`
-	RoleId string                 `protobuf:"bytes,1,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The role ID for Vault AppRole authentication.
+	RoleId string `protobuf:"bytes,1,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty"`
 	// the secret id for the role without ttl.
-	SecretId string                                                `protobuf:"bytes,2,opt,name=secret_id,json=secretId,proto3" json:"secret_id,omitempty"`
-	Type     DataSourceExternalSecret_AppRoleAuthOption_SecretType `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.v1.DataSourceExternalSecret_AppRoleAuthOption_SecretType" json:"type,omitempty"`
+	SecretId string `protobuf:"bytes,2,opt,name=secret_id,json=secretId,proto3" json:"secret_id,omitempty"`
+	// The type of secret for AppRole authentication.
+	Type DataSourceExternalSecret_AppRoleAuthOption_SecretType `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.v1.DataSourceExternalSecret_AppRoleAuthOption_SecretType" json:"type,omitempty"`
 	// The path where the approle auth method is mounted.
 	MountPath     string `protobuf:"bytes,4,opt,name=mount_path,json=mountPath,proto3" json:"mount_path,omitempty"`
 	unknownFields protoimpl.UnknownFields

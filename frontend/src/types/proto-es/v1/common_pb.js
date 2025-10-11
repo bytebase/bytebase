@@ -31,6 +31,8 @@ export const StateSchema = /*@__PURE__*/
   enumDesc(file_v1_common, 0);
 
 /**
+ * Resource lifecycle state.
+ *
  * @generated from enum bytebase.v1.State
  */
 export const State = /*@__PURE__*/
@@ -43,6 +45,8 @@ export const EngineSchema = /*@__PURE__*/
   enumDesc(file_v1_common, 1);
 
 /**
+ * Database engine type.
+ *
  * @generated from enum bytebase.v1.Engine
  */
 export const Engine = /*@__PURE__*/
@@ -55,6 +59,8 @@ export const VCSTypeSchema = /*@__PURE__*/
   enumDesc(file_v1_common, 2);
 
 /**
+ * Version control system type.
+ *
  * @generated from enum bytebase.v1.VCSType
  */
 export const VCSType = /*@__PURE__*/
@@ -67,6 +73,8 @@ export const ExportFormatSchema = /*@__PURE__*/
   enumDesc(file_v1_common, 3);
 
 /**
+ * Data export format.
+ *
  * @generated from enum bytebase.v1.ExportFormat
  */
 export const ExportFormat = /*@__PURE__*/

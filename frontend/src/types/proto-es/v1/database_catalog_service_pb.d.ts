@@ -11,6 +11,8 @@ import type { Message } from "@bufbuild/protobuf";
 export declare const file_v1_database_catalog_service: GenFile;
 
 /**
+ * Request message for getting a database catalog.
+ *
  * @generated from message bytebase.v1.GetDatabaseCatalogRequest
  */
 export declare type GetDatabaseCatalogRequest = Message<"bytebase.v1.GetDatabaseCatalogRequest"> & {
@@ -30,6 +32,8 @@ export declare type GetDatabaseCatalogRequest = Message<"bytebase.v1.GetDatabase
 export declare const GetDatabaseCatalogRequestSchema: GenMessage<GetDatabaseCatalogRequest>;
 
 /**
+ * Request message for updating a database catalog.
+ *
  * @generated from message bytebase.v1.UpdateDatabaseCatalogRequest
  */
 export declare type UpdateDatabaseCatalogRequest = Message<"bytebase.v1.UpdateDatabaseCatalogRequest"> & {
@@ -59,6 +63,8 @@ export declare type UpdateDatabaseCatalogRequest = Message<"bytebase.v1.UpdateDa
 export declare const UpdateDatabaseCatalogRequestSchema: GenMessage<UpdateDatabaseCatalogRequest>;
 
 /**
+ * Catalog metadata for a database including schemas, tables, and columns.
+ *
  * @generated from message bytebase.v1.DatabaseCatalog
  */
 export declare type DatabaseCatalog = Message<"bytebase.v1.DatabaseCatalog"> & {
@@ -71,6 +77,8 @@ export declare type DatabaseCatalog = Message<"bytebase.v1.DatabaseCatalog"> & {
   name: string;
 
   /**
+   * The schemas in the database.
+   *
    * @generated from field: repeated bytebase.v1.SchemaCatalog schemas = 2;
    */
   schemas: SchemaCatalog[];
@@ -83,15 +91,21 @@ export declare type DatabaseCatalog = Message<"bytebase.v1.DatabaseCatalog"> & {
 export declare const DatabaseCatalogSchema: GenMessage<DatabaseCatalog>;
 
 /**
+ * Schema metadata within a database.
+ *
  * @generated from message bytebase.v1.SchemaCatalog
  */
 export declare type SchemaCatalog = Message<"bytebase.v1.SchemaCatalog"> & {
   /**
+   * The schema name.
+   *
    * @generated from field: string name = 1;
    */
   name: string;
 
   /**
+   * The tables in the schema.
+   *
    * @generated from field: repeated bytebase.v1.TableCatalog tables = 2;
    */
   tables: TableCatalog[];
@@ -104,10 +118,14 @@ export declare type SchemaCatalog = Message<"bytebase.v1.SchemaCatalog"> & {
 export declare const SchemaCatalogSchema: GenMessage<SchemaCatalog>;
 
 /**
+ * Table metadata within a schema.
+ *
  * @generated from message bytebase.v1.TableCatalog
  */
 export declare type TableCatalog = Message<"bytebase.v1.TableCatalog"> & {
   /**
+   * The table name.
+   *
    * @generated from field: string name = 1;
    */
   name: string;
@@ -117,12 +135,16 @@ export declare type TableCatalog = Message<"bytebase.v1.TableCatalog"> & {
    */
   kind: {
     /**
+     * Regular table columns.
+     *
      * @generated from field: bytebase.v1.TableCatalog.Columns columns = 2;
      */
     value: TableCatalog_Columns;
     case: "columns";
   } | {
     /**
+     * Object schema for JSON/XML columns.
+     *
      * @generated from field: bytebase.v1.ObjectSchema object_schema = 3;
      */
     value: ObjectSchema;
@@ -130,6 +152,8 @@ export declare type TableCatalog = Message<"bytebase.v1.TableCatalog"> & {
   } | { case: undefined; value?: undefined };
 
   /**
+   * The data classification level for this table.
+   *
    * @generated from field: string classification = 4;
    */
   classification: string;
@@ -142,10 +166,14 @@ export declare type TableCatalog = Message<"bytebase.v1.TableCatalog"> & {
 export declare const TableCatalogSchema: GenMessage<TableCatalog>;
 
 /**
+ * Column list for regular tables.
+ *
  * @generated from message bytebase.v1.TableCatalog.Columns
  */
 export declare type TableCatalog_Columns = Message<"bytebase.v1.TableCatalog.Columns"> & {
   /**
+   * The columns in the table.
+   *
    * @generated from field: repeated bytebase.v1.ColumnCatalog columns = 1;
    */
   columns: ColumnCatalog[];
@@ -158,32 +186,42 @@ export declare type TableCatalog_Columns = Message<"bytebase.v1.TableCatalog.Col
 export declare const TableCatalog_ColumnsSchema: GenMessage<TableCatalog_Columns>;
 
 /**
+ * Column metadata within a table.
+ *
  * @generated from message bytebase.v1.ColumnCatalog
  */
 export declare type ColumnCatalog = Message<"bytebase.v1.ColumnCatalog"> & {
   /**
+   * The column name.
+   *
    * @generated from field: string name = 1;
    */
   name: string;
 
   /**
+   * The semantic type describing the data purpose.
+   *
    * @generated from field: string semantic_type = 2;
    */
   semanticType: string;
 
   /**
-   * The user labels for a column.
+   * User-defined labels for this column.
    *
    * @generated from field: map<string, string> labels = 3;
    */
   labels: { [key: string]: string };
 
   /**
+   * The data classification level for this column.
+   *
    * @generated from field: string classification = 4;
    */
   classification: string;
 
   /**
+   * Object schema for complex column types like JSON.
+   *
    * @generated from field: optional bytebase.v1.ObjectSchema object_schema = 5;
    */
   objectSchema?: ObjectSchema;
@@ -196,10 +234,14 @@ export declare type ColumnCatalog = Message<"bytebase.v1.ColumnCatalog"> & {
 export declare const ColumnCatalogSchema: GenMessage<ColumnCatalog>;
 
 /**
+ * Schema definition for object-type columns.
+ *
  * @generated from message bytebase.v1.ObjectSchema
  */
 export declare type ObjectSchema = Message<"bytebase.v1.ObjectSchema"> & {
   /**
+   * The data type of this object.
+   *
    * @generated from field: bytebase.v1.ObjectSchema.Type type = 1;
    */
   type: ObjectSchema_Type;
@@ -209,12 +251,16 @@ export declare type ObjectSchema = Message<"bytebase.v1.ObjectSchema"> & {
    */
   kind: {
     /**
+     * Struct schema.
+     *
      * @generated from field: bytebase.v1.ObjectSchema.StructKind struct_kind = 2;
      */
     value: ObjectSchema_StructKind;
     case: "structKind";
   } | {
     /**
+     * Array schema.
+     *
      * @generated from field: bytebase.v1.ObjectSchema.ArrayKind array_kind = 3;
      */
     value: ObjectSchema_ArrayKind;
@@ -222,6 +268,8 @@ export declare type ObjectSchema = Message<"bytebase.v1.ObjectSchema"> & {
   } | { case: undefined; value?: undefined };
 
   /**
+   * The semantic type of this object.
+   *
    * @generated from field: string semantic_type = 4;
    */
   semanticType: string;
@@ -234,10 +282,14 @@ export declare type ObjectSchema = Message<"bytebase.v1.ObjectSchema"> & {
 export declare const ObjectSchemaSchema: GenMessage<ObjectSchema>;
 
 /**
+ * Structure type with named properties.
+ *
  * @generated from message bytebase.v1.ObjectSchema.StructKind
  */
 export declare type ObjectSchema_StructKind = Message<"bytebase.v1.ObjectSchema.StructKind"> & {
   /**
+   * Properties of the struct.
+   *
    * @generated from field: map<string, bytebase.v1.ObjectSchema> properties = 1;
    */
   properties: { [key: string]: ObjectSchema };
@@ -250,10 +302,14 @@ export declare type ObjectSchema_StructKind = Message<"bytebase.v1.ObjectSchema.
 export declare const ObjectSchema_StructKindSchema: GenMessage<ObjectSchema_StructKind>;
 
 /**
+ * Array type with element schema.
+ *
  * @generated from message bytebase.v1.ObjectSchema.ArrayKind
  */
 export declare type ObjectSchema_ArrayKind = Message<"bytebase.v1.ObjectSchema.ArrayKind"> & {
   /**
+   * The schema of array elements.
+   *
    * @generated from field: bytebase.v1.ObjectSchema kind = 1;
    */
   kind?: ObjectSchema;
@@ -266,35 +322,49 @@ export declare type ObjectSchema_ArrayKind = Message<"bytebase.v1.ObjectSchema.A
 export declare const ObjectSchema_ArrayKindSchema: GenMessage<ObjectSchema_ArrayKind>;
 
 /**
+ * Object schema data types.
+ *
  * @generated from enum bytebase.v1.ObjectSchema.Type
  */
 export enum ObjectSchema_Type {
   /**
+   * Unspecified type.
+   *
    * @generated from enum value: TYPE_UNSPECIFIED = 0;
    */
   TYPE_UNSPECIFIED = 0,
 
   /**
+   * String type.
+   *
    * @generated from enum value: STRING = 1;
    */
   STRING = 1,
 
   /**
+   * Number type.
+   *
    * @generated from enum value: NUMBER = 2;
    */
   NUMBER = 2,
 
   /**
+   * Boolean type.
+   *
    * @generated from enum value: BOOLEAN = 3;
    */
   BOOLEAN = 3,
 
   /**
+   * Object/struct type.
+   *
    * @generated from enum value: OBJECT = 4;
    */
   OBJECT = 4,
 
   /**
+   * Array type.
+   *
    * @generated from enum value: ARRAY = 5;
    */
   ARRAY = 5,
@@ -306,10 +376,13 @@ export enum ObjectSchema_Type {
 export declare const ObjectSchema_TypeSchema: GenEnum<ObjectSchema_Type>;
 
 /**
+ * DatabaseCatalogService manages database schema metadata and classification.
+ *
  * @generated from service bytebase.v1.DatabaseCatalogService
  */
 export declare const DatabaseCatalogService: GenService<{
   /**
+   * Gets the catalog metadata for a database.
    * Permissions required: bb.databaseCatalogs.get
    *
    * @generated from rpc bytebase.v1.DatabaseCatalogService.GetDatabaseCatalog
@@ -320,6 +393,7 @@ export declare const DatabaseCatalogService: GenService<{
     output: typeof DatabaseCatalogSchema;
   },
   /**
+   * Updates catalog metadata such as classifications and labels.
    * Permissions required: bb.databaseCatalogs.update
    *
    * @generated from rpc bytebase.v1.DatabaseCatalogService.UpdateDatabaseCatalog

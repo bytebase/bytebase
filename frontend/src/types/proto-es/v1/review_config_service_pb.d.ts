@@ -17,7 +17,7 @@ export declare const file_v1_review_config_service: GenFile;
  */
 export declare type ListReviewConfigsRequest = Message<"bytebase.v1.ListReviewConfigsRequest"> & {
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * The maximum number of sql review to return. The service may return fewer than
    * this value.
    * If unspecified, at most 10 sql review will be returned.
@@ -28,7 +28,7 @@ export declare type ListReviewConfigsRequest = Message<"bytebase.v1.ListReviewCo
   pageSize: number;
 
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * A page token, provide this to retrieve the subsequent page.
    *
    * When paginating, all other parameters provided to `ListReviewConfigs` must match
@@ -175,23 +175,29 @@ export declare type ReviewConfig = Message<"bytebase.v1.ReviewConfig"> & {
   name: string;
 
   /**
+   * The title of the review configuration.
+   *
    * @generated from field: string title = 2;
    */
   title: string;
 
   /**
+   * Whether the review configuration is enabled.
+   *
    * @generated from field: bool enabled = 3;
    */
   enabled: boolean;
 
   /**
+   * The SQL review rules to enforce.
+   *
    * @generated from field: repeated bytebase.v1.SQLReviewRule rules = 7;
    */
   rules: SQLReviewRule[];
 
   /**
    * resources using the config.
-   * Format: {resurce}/{resource id}, for example, environments/test.
+   * Format: {resource}/{resource id}, for example, environments/test.
    *
    * @generated from field: repeated string resources = 8;
    */
@@ -205,10 +211,13 @@ export declare type ReviewConfig = Message<"bytebase.v1.ReviewConfig"> & {
 export declare const ReviewConfigSchema: GenMessage<ReviewConfig>;
 
 /**
+ * ReviewConfigService manages approval flow configurations.
+ *
  * @generated from service bytebase.v1.ReviewConfigService
  */
 export declare const ReviewConfigService: GenService<{
   /**
+   * Creates a new SQL review configuration.
    * Permissions required: bb.reviewConfigs.create
    *
    * @generated from rpc bytebase.v1.ReviewConfigService.CreateReviewConfig
@@ -219,6 +228,7 @@ export declare const ReviewConfigService: GenService<{
     output: typeof ReviewConfigSchema;
   },
   /**
+   * Lists all SQL review configurations.
    * Permissions required: bb.reviewConfigs.list
    *
    * @generated from rpc bytebase.v1.ReviewConfigService.ListReviewConfigs
@@ -229,6 +239,7 @@ export declare const ReviewConfigService: GenService<{
     output: typeof ListReviewConfigsResponseSchema;
   },
   /**
+   * Retrieves a SQL review configuration by name.
    * Permissions required: bb.reviewConfigs.get
    *
    * @generated from rpc bytebase.v1.ReviewConfigService.GetReviewConfig
@@ -239,6 +250,7 @@ export declare const ReviewConfigService: GenService<{
     output: typeof ReviewConfigSchema;
   },
   /**
+   * Updates a SQL review configuration.
    * Permissions required: bb.reviewConfigs.update
    *
    * @generated from rpc bytebase.v1.ReviewConfigService.UpdateReviewConfig
@@ -249,6 +261,7 @@ export declare const ReviewConfigService: GenService<{
     output: typeof ReviewConfigSchema;
   },
   /**
+   * Deletes a SQL review configuration.
    * Permissions required: bb.reviewConfigs.delete
    *
    * @generated from rpc bytebase.v1.ReviewConfigService.DeleteReviewConfig

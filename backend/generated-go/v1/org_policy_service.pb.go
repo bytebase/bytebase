@@ -26,16 +26,24 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// The type of organizational policy.
 type PolicyType int32
 
 const (
+	// Unspecified policy type.
 	PolicyType_POLICY_TYPE_UNSPECIFIED PolicyType = 0
-	PolicyType_ROLLOUT_POLICY          PolicyType = 11
-	PolicyType_MASKING_RULE            PolicyType = 9
-	PolicyType_MASKING_EXCEPTION       PolicyType = 10
-	PolicyType_TAG                     PolicyType = 13
-	PolicyType_DATA_SOURCE_QUERY       PolicyType = 14
-	PolicyType_DATA_QUERY              PolicyType = 16
+	// Rollout deployment policy.
+	PolicyType_ROLLOUT_POLICY PolicyType = 11
+	// Data masking rule policy.
+	PolicyType_MASKING_RULE PolicyType = 9
+	// Data masking exception policy.
+	PolicyType_MASKING_EXCEPTION PolicyType = 10
+	// Resource tag policy.
+	PolicyType_TAG PolicyType = 13
+	// Data source query restrictions policy.
+	PolicyType_DATA_SOURCE_QUERY PolicyType = 14
+	// Query data access policy.
+	PolicyType_DATA_QUERY PolicyType = 16
 )
 
 // Enum value maps for PolicyType.
@@ -87,13 +95,18 @@ func (PolicyType) EnumDescriptor() ([]byte, []int) {
 	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{0}
 }
 
+// The resource type that a policy can be attached to.
 type PolicyResourceType int32
 
 const (
+	// Unspecified resource type.
 	PolicyResourceType_RESOURCE_TYPE_UNSPECIFIED PolicyResourceType = 0
-	PolicyResourceType_WORKSPACE                 PolicyResourceType = 1
-	PolicyResourceType_ENVIRONMENT               PolicyResourceType = 2
-	PolicyResourceType_PROJECT                   PolicyResourceType = 3
+	// Workspace-level policy.
+	PolicyResourceType_WORKSPACE PolicyResourceType = 1
+	// Environment-level policy.
+	PolicyResourceType_ENVIRONMENT PolicyResourceType = 2
+	// Project-level policy.
+	PolicyResourceType_PROJECT PolicyResourceType = 3
 )
 
 // Enum value maps for PolicyResourceType.
@@ -139,13 +152,18 @@ func (PolicyResourceType) EnumDescriptor() ([]byte, []int) {
 	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{1}
 }
 
+// The severity level for SQL review rules.
 type SQLReviewRuleLevel int32
 
 const (
+	// Unspecified level.
 	SQLReviewRuleLevel_LEVEL_UNSPECIFIED SQLReviewRuleLevel = 0
-	SQLReviewRuleLevel_ERROR             SQLReviewRuleLevel = 1
-	SQLReviewRuleLevel_WARNING           SQLReviewRuleLevel = 2
-	SQLReviewRuleLevel_DISABLED          SQLReviewRuleLevel = 3
+	// Rule violation is an error.
+	SQLReviewRuleLevel_ERROR SQLReviewRuleLevel = 1
+	// Rule violation is a warning.
+	SQLReviewRuleLevel_WARNING SQLReviewRuleLevel = 2
+	// Rule is disabled.
+	SQLReviewRuleLevel_DISABLED SQLReviewRuleLevel = 3
 )
 
 // Enum value maps for SQLReviewRuleLevel.
@@ -243,12 +261,16 @@ func (RolloutPolicy_Checkers_PlanCheckEnforcement) EnumDescriptor() ([]byte, []i
 	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{7, 0, 0}
 }
 
+// The action that the exception permits.
 type MaskingExceptionPolicy_MaskingException_Action int32
 
 const (
+	// Unspecified action.
 	MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED MaskingExceptionPolicy_MaskingException_Action = 0
-	MaskingExceptionPolicy_MaskingException_QUERY              MaskingExceptionPolicy_MaskingException_Action = 1
-	MaskingExceptionPolicy_MaskingException_EXPORT             MaskingExceptionPolicy_MaskingException_Action = 2
+	// Allow querying sensitive data.
+	MaskingExceptionPolicy_MaskingException_QUERY MaskingExceptionPolicy_MaskingException_Action = 1
+	// Allow exporting sensitive data.
+	MaskingExceptionPolicy_MaskingException_EXPORT MaskingExceptionPolicy_MaskingException_Action = 2
 )
 
 // Enum value maps for MaskingExceptionPolicy_MaskingException_Action.
@@ -292,13 +314,15 @@ func (MaskingExceptionPolicy_MaskingException_Action) EnumDescriptor() ([]byte, 
 	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{10, 0, 0}
 }
 
+// Restriction level for admin data source access.
 type DataSourceQueryPolicy_Restriction int32
 
 const (
+	// Unspecified restriction.
 	DataSourceQueryPolicy_RESTRICTION_UNSPECIFIED DataSourceQueryPolicy_Restriction = 0
-	// Allow to query admin data sources when there is no read-only data source.
+	// Allow querying admin data sources when there is no read-only data source.
 	DataSourceQueryPolicy_FALLBACK DataSourceQueryPolicy_Restriction = 1
-	// Disallow to query admin data sources.
+	// Disallow querying admin data sources.
 	DataSourceQueryPolicy_DISALLOW DataSourceQueryPolicy_Restriction = 2
 )
 
@@ -352,7 +376,8 @@ type CreatePolicyRequest struct {
 	// Database resource name: instances/instance-id/databases/database-name.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The policy to create.
-	Policy        *Policy    `protobuf:"bytes,2,opt,name=policy,proto3" json:"policy,omitempty"`
+	Policy *Policy `protobuf:"bytes,2,opt,name=policy,proto3" json:"policy,omitempty"`
+	// The type of policy to create.
 	Type          PolicyType `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.v1.PolicyType" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -580,15 +605,16 @@ type ListPoliciesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent, which owns this collection of policies.
 	// Format: {resource type}/{resource id}
-	Parent     string      `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	// Filter by specific policy type.
 	PolicyType *PolicyType `protobuf:"varint,2,opt,name=policy_type,json=policyType,proto3,enum=bytebase.v1.PolicyType,oneof" json:"policy_type,omitempty"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// The maximum number of policies to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 10 policies will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// A page token, received from a previous `ListPolicies` call.
 	// Provide this to retrieve the subsequent page.
 	//
@@ -729,9 +755,13 @@ type Policy struct {
 	// Environment resource name: environments/environment-id.
 	// Instance resource name: instances/instance-id.
 	// Database resource name: instances/instance-id/databases/database-name.
-	Name              string     `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	InheritFromParent bool       `protobuf:"varint,4,opt,name=inherit_from_parent,json=inheritFromParent,proto3" json:"inherit_from_parent,omitempty"`
-	Type              PolicyType `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.v1.PolicyType" json:"type,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Whether this policy inherits from its parent resource.
+	InheritFromParent bool `protobuf:"varint,4,opt,name=inherit_from_parent,json=inheritFromParent,proto3" json:"inherit_from_parent,omitempty"`
+	// The type of policy.
+	Type PolicyType `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.v1.PolicyType" json:"type,omitempty"`
+	// The policy configuration.
+	//
 	// Types that are valid to be assigned to Policy:
 	//
 	//	*Policy_RolloutPolicy
@@ -740,8 +770,9 @@ type Policy struct {
 	//	*Policy_TagPolicy
 	//	*Policy_DataSourceQueryPolicy
 	//	*Policy_QueryDataPolicy
-	Policy  isPolicy_Policy `protobuf_oneof:"policy"`
-	Enforce bool            `protobuf:"varint,13,opt,name=enforce,proto3" json:"enforce,omitempty"`
+	Policy isPolicy_Policy `protobuf_oneof:"policy"`
+	// Whether the policy is enforced.
+	Enforce bool `protobuf:"varint,13,opt,name=enforce,proto3" json:"enforce,omitempty"`
 	// The resource type for the policy.
 	ResourceType  PolicyResourceType `protobuf:"varint,14,opt,name=resource_type,json=resourceType,proto3,enum=bytebase.v1.PolicyResourceType" json:"resource_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -914,10 +945,13 @@ func (*Policy_DataSourceQueryPolicy) isPolicy_Policy() {}
 
 func (*Policy_QueryDataPolicy) isPolicy_Policy() {}
 
+// Rollout policy configuration.
 type RolloutPolicy struct {
-	state     protoimpl.MessageState `protogen:"open.v1"`
-	Automatic bool                   `protobuf:"varint,1,opt,name=automatic,proto3" json:"automatic,omitempty"`
-	Roles     []string               `protobuf:"bytes,2,rep,name=roles,proto3" json:"roles,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Whether rollout is automatic without manual approval.
+	Automatic bool `protobuf:"varint,1,opt,name=automatic,proto3" json:"automatic,omitempty"`
+	// The roles that can approve rollout execution.
+	Roles []string `protobuf:"bytes,2,rep,name=roles,proto3" json:"roles,omitempty"`
 	// Checkers that must pass before rollout execution.
 	// These checks are performed in UI workflows only.
 	Checkers      *RolloutPolicy_Checkers `protobuf:"bytes,4,opt,name=checkers,proto3" json:"checkers,omitempty"`
@@ -981,15 +1015,15 @@ type QueryDataPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The query timeout duration.
 	Timeout *durationpb.Duration `protobuf:"bytes,1,opt,name=timeout,proto3" json:"timeout,omitempty"`
-	// Disable export data in the SQL editor
+	// Disable data export in the SQL editor.
 	DisableExport bool `protobuf:"varint,2,opt,name=disable_export,json=disableExport,proto3" json:"disable_export,omitempty"`
-	// The size limit in bytes.
+	// The maximum result size limit in bytes.
 	// The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
 	MaximumResultSize int64 `protobuf:"varint,3,opt,name=maximum_result_size,json=maximumResultSize,proto3" json:"maximum_result_size,omitempty"`
-	// The return rows limit.
+	// The maximum number of rows to return.
 	// The default value is -1, means no limit.
 	MaximumResultRows int32 `protobuf:"varint,4,opt,name=maximum_result_rows,json=maximumResultRows,proto3" json:"maximum_result_rows,omitempty"`
-	// Disable copying data.
+	// Disable copying query results.
 	DisableCopyData bool `protobuf:"varint,5,opt,name=disable_copy_data,json=disableCopyData,proto3" json:"disable_copy_data,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -1060,14 +1094,18 @@ func (x *QueryDataPolicy) GetDisableCopyData() bool {
 	return false
 }
 
-// The SQL review rules. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
+// SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
 type SQLReviewRule struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Type  string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	Level SQLReviewRuleLevel     `protobuf:"varint,2,opt,name=level,proto3,enum=bytebase.v1.SQLReviewRuleLevel" json:"level,omitempty"`
+	// The type of SQL review rule.
+	Type string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	// The severity level of the rule.
+	Level SQLReviewRuleLevel `protobuf:"varint,2,opt,name=level,proto3,enum=bytebase.v1.SQLReviewRuleLevel" json:"level,omitempty"`
 	// The payload is a JSON string that varies by rule type.
-	Payload       string `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
-	Engine        Engine `protobuf:"varint,4,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
+	Payload string `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
+	// The database engine this rule applies to.
+	Engine Engine `protobuf:"varint,4,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
+	// Additional comment for the rule.
 	Comment       string `protobuf:"bytes,5,opt,name=comment,proto3" json:"comment,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1140,7 +1178,8 @@ func (x *SQLReviewRule) GetComment() string {
 
 // MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 type MaskingExceptionPolicy struct {
-	state             protoimpl.MessageState                     `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The list of masking exceptions.
 	MaskingExceptions []*MaskingExceptionPolicy_MaskingException `protobuf:"bytes,1,rep,name=masking_exceptions,json=maskingExceptions,proto3" json:"masking_exceptions,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -1183,8 +1222,10 @@ func (x *MaskingExceptionPolicy) GetMaskingExceptions() []*MaskingExceptionPolic
 	return nil
 }
 
+// Policy for configuring data masking rules.
 type MaskingRulePolicy struct {
-	state         protoimpl.MessageState           `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The list of masking rules.
 	Rules         []*MaskingRulePolicy_MaskingRule `protobuf:"bytes,1,rep,name=rules,proto3" json:"rules,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1227,6 +1268,7 @@ func (x *MaskingRulePolicy) GetRules() []*MaskingRulePolicy_MaskingRule {
 	return nil
 }
 
+// Policy for tagging resources with metadata.
 type TagPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// tags is the key - value map for resources.
@@ -1273,9 +1315,10 @@ func (x *TagPolicy) GetTags() map[string]string {
 	return nil
 }
 
-// DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.
+// Policy for controlling which data sources can be queried in the SQL editor.
 type DataSourceQueryPolicy struct {
-	state                      protoimpl.MessageState            `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Restriction for admin data source queries.
 	AdminDataSourceRestriction DataSourceQueryPolicy_Restriction `protobuf:"varint,1,opt,name=admin_data_source_restriction,json=adminDataSourceRestriction,proto3,enum=bytebase.v1.DataSourceQueryPolicy_Restriction" json:"admin_data_source_restriction,omitempty"`
 	// Disallow running DDL statements in the SQL editor.
 	DisallowDdl bool `protobuf:"varint,2,opt,name=disallow_ddl,json=disallowDdl,proto3" json:"disallow_ddl,omitempty"`
@@ -1435,9 +1478,10 @@ func (x *RolloutPolicy_Checkers_RequiredStatusChecks) GetPlanCheckEnforcement() 
 	return RolloutPolicy_Checkers_PLAN_CHECK_ENFORCEMENT_UNSPECIFIED
 }
 
+// An exception allowing specific users to access masked data.
 type MaskingExceptionPolicy_MaskingException struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// action is the action that the user can access sensitive data.
+	// The action that the user can perform on sensitive data.
 	Action MaskingExceptionPolicy_MaskingException_Action `protobuf:"varint,1,opt,name=action,proto3,enum=bytebase.v1.MaskingExceptionPolicy_MaskingException_Action" json:"action,omitempty"`
 	// Member is the principal who bind to this exception policy instance.
 	//
@@ -1516,9 +1560,10 @@ func (x *MaskingExceptionPolicy_MaskingException) GetCondition() *expr.Expr {
 	return nil
 }
 
+// A rule that defines when and how to mask data.
 type MaskingRulePolicy_MaskingRule struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// A unique identifier for a node in UUID format.
+	// A unique identifier for the rule in UUID format.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// The condition for the masking rule.
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
@@ -1543,8 +1588,9 @@ type MaskingRulePolicy_MaskingRule struct {
 	// resource.instance_id == "sample-instance" && resource.database_name == "employee" && resource.table_name in ["table1", "table2"]
 	// resource.environment_id != "test" || !(resource.project_id in ["poject1", "prject2"])
 	// resource.instance_id == "sample-instance" && (resource.database_name == "db1" || resource.database_name == "db2")
-	Condition     *expr.Expr `protobuf:"bytes,2,opt,name=condition,proto3" json:"condition,omitempty"`
-	SemanticType  string     `protobuf:"bytes,3,opt,name=semantic_type,json=semanticType,proto3" json:"semantic_type,omitempty"`
+	Condition *expr.Expr `protobuf:"bytes,2,opt,name=condition,proto3" json:"condition,omitempty"`
+	// The semantic type of data to mask (e.g., "SSN", "EMAIL").
+	SemanticType  string `protobuf:"bytes,3,opt,name=semantic_type,json=semanticType,proto3" json:"semantic_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

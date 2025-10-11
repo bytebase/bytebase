@@ -24,9 +24,11 @@ const (
 )
 
 type LoginRequest struct {
-	state    protoimpl.MessageState `protogen:"open.v1"`
-	Email    string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Password string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// User's email address.
+	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	// User's password for authentication.
+	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 	// If web is set, we will set access token, refresh token, and user to the cookie.
 	Web bool `protobuf:"varint,3,opt,name=web,proto3" json:"web,omitempty"`
 	// The name of the identity provider.
@@ -130,6 +132,7 @@ func (x *LoginRequest) GetMfaTempToken() string {
 	return ""
 }
 
+// Context for identity provider authentication.
 type IdentityProviderContext struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Context:
@@ -201,10 +204,12 @@ type isIdentityProviderContext_Context interface {
 }
 
 type IdentityProviderContext_Oauth2Context struct {
+	// OAuth2 authentication context.
 	Oauth2Context *OAuth2IdentityProviderContext `protobuf:"bytes,1,opt,name=oauth2_context,json=oauth2Context,proto3,oneof"`
 }
 
 type IdentityProviderContext_OidcContext struct {
+	// OpenID Connect authentication context.
 	OidcContext *OIDCIdentityProviderContext `protobuf:"bytes,2,opt,name=oidc_context,json=oidcContext,proto3,oneof"`
 }
 
@@ -212,9 +217,11 @@ func (*IdentityProviderContext_Oauth2Context) isIdentityProviderContext_Context(
 
 func (*IdentityProviderContext_OidcContext) isIdentityProviderContext_Context() {}
 
+// OAuth2 authentication context.
 type OAuth2IdentityProviderContext struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Authorization code from OAuth2 provider.
+	Code          string `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -256,6 +263,7 @@ func (x *OAuth2IdentityProviderContext) GetCode() string {
 	return ""
 }
 
+// OpenID Connect authentication context.
 type OIDCIdentityProviderContext struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -293,10 +301,13 @@ func (*OIDCIdentityProviderContext) Descriptor() ([]byte, []int) {
 }
 
 type LoginResponse struct {
-	state                protoimpl.MessageState `protogen:"open.v1"`
-	Token                string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	MfaTempToken         *string                `protobuf:"bytes,2,opt,name=mfa_temp_token,json=mfaTempToken,proto3,oneof" json:"mfa_temp_token,omitempty"`
-	RequireResetPassword bool                   `protobuf:"varint,3,opt,name=require_reset_password,json=requireResetPassword,proto3" json:"require_reset_password,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Access token for authenticated requests.
+	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	// Temporary token for MFA verification.
+	MfaTempToken *string `protobuf:"bytes,2,opt,name=mfa_temp_token,json=mfaTempToken,proto3,oneof" json:"mfa_temp_token,omitempty"`
+	// Whether user must reset password before continuing.
+	RequireResetPassword bool `protobuf:"varint,3,opt,name=require_reset_password,json=requireResetPassword,proto3" json:"require_reset_password,omitempty"`
 	// The user of successful login.
 	User          *User `protobuf:"bytes,4,opt,name=user,proto3" json:"user,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -361,6 +372,7 @@ func (x *LoginResponse) GetUser() *User {
 	return nil
 }
 
+// Request to logout current user session.
 type LogoutRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields

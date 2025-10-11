@@ -57,6 +57,8 @@ export const LogoutRequestSchema = /*@__PURE__*/
   messageDesc(file_v1_auth_service, 5);
 
 /**
+ * AuthService handles user authentication operations.
+ *
  * @generated from service bytebase.v1.AuthService
  */
 export const AuthService = /*@__PURE__*/

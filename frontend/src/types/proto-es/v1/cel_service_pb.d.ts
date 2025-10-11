@@ -12,10 +12,14 @@ import type { Expr } from "../google/api/expr/v1alpha1/syntax_pb";
 export declare const file_v1_cel_service: GenFile;
 
 /**
+ * Request message for batch parsing CEL expressions.
+ *
  * @generated from message bytebase.v1.BatchParseRequest
  */
 export declare type BatchParseRequest = Message<"bytebase.v1.BatchParseRequest"> & {
   /**
+   * The CEL expression strings to parse.
+   *
    * @generated from field: repeated string expressions = 1;
    */
   expressions: string[];
@@ -28,10 +32,14 @@ export declare type BatchParseRequest = Message<"bytebase.v1.BatchParseRequest">
 export declare const BatchParseRequestSchema: GenMessage<BatchParseRequest>;
 
 /**
+ * Response message for batch parsing CEL expressions.
+ *
  * @generated from message bytebase.v1.BatchParseResponse
  */
 export declare type BatchParseResponse = Message<"bytebase.v1.BatchParseResponse"> & {
   /**
+   * The parsed CEL expressions as AST.
+   *
    * @generated from field: repeated google.api.expr.v1alpha1.Expr expressions = 1;
    */
   expressions: Expr[];
@@ -44,10 +52,14 @@ export declare type BatchParseResponse = Message<"bytebase.v1.BatchParseResponse
 export declare const BatchParseResponseSchema: GenMessage<BatchParseResponse>;
 
 /**
+ * Request message for batch deparsing CEL expressions.
+ *
  * @generated from message bytebase.v1.BatchDeparseRequest
  */
 export declare type BatchDeparseRequest = Message<"bytebase.v1.BatchDeparseRequest"> & {
   /**
+   * The CEL expression ASTs to deparse.
+   *
    * @generated from field: repeated google.api.expr.v1alpha1.Expr expressions = 1;
    */
   expressions: Expr[];
@@ -60,10 +72,14 @@ export declare type BatchDeparseRequest = Message<"bytebase.v1.BatchDeparseReque
 export declare const BatchDeparseRequestSchema: GenMessage<BatchDeparseRequest>;
 
 /**
+ * Response message for batch deparsing CEL expressions.
+ *
  * @generated from message bytebase.v1.BatchDeparseResponse
  */
 export declare type BatchDeparseResponse = Message<"bytebase.v1.BatchDeparseResponse"> & {
   /**
+   * The deparsed CEL expressions as strings.
+   *
    * @generated from field: repeated string expressions = 1;
    */
   expressions: string[];
@@ -76,10 +92,13 @@ export declare type BatchDeparseResponse = Message<"bytebase.v1.BatchDeparseResp
 export declare const BatchDeparseResponseSchema: GenMessage<BatchDeparseResponse>;
 
 /**
+ * CelService manages CEL (Common Expression Language) parsing and formatting operations.
+ *
  * @generated from service bytebase.v1.CelService
  */
 export declare const CelService: GenService<{
   /**
+   * Parses multiple CEL expression strings into AST representations.
    * Permissions required: None
    *
    * @generated from rpc bytebase.v1.CelService.BatchParse
@@ -90,6 +109,7 @@ export declare const CelService: GenService<{
     output: typeof BatchParseResponseSchema;
   },
   /**
+   * Converts multiple CEL AST representations back into expression strings.
    * Permissions required: None
    *
    * @generated from rpc bytebase.v1.CelService.BatchDeparse

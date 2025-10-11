@@ -81,6 +81,8 @@ export declare const ListReleasesRequestSchema: GenMessage<ListReleasesRequest>;
  */
 export declare type ListReleasesResponse = Message<"bytebase.v1.ListReleasesResponse"> & {
   /**
+   * The releases from the specified request.
+   *
    * @generated from field: repeated bytebase.v1.Release releases = 1;
    */
   releases: Release[];
@@ -150,6 +152,8 @@ export declare const SearchReleasesRequestSchema: GenMessage<SearchReleasesReque
  */
 export declare type SearchReleasesResponse = Message<"bytebase.v1.SearchReleasesResponse"> & {
   /**
+   * The releases matching the search criteria.
+   *
    * @generated from field: repeated bytebase.v1.Release releases = 1;
    */
   releases: Release[];
@@ -306,12 +310,14 @@ export declare const CheckReleaseRequestSchema: GenMessage<CheckReleaseRequest>;
  */
 export declare type CheckReleaseResponse = Message<"bytebase.v1.CheckReleaseResponse"> & {
   /**
+   * The check results for each file and target combination.
+   *
    * @generated from field: repeated bytebase.v1.CheckReleaseResponse.CheckResult results = 1;
    */
   results: CheckReleaseResponse_CheckResult[];
 
   /**
-   * The affected rows of the check.
+   * The total affected rows across all checks.
    *
    * @generated from field: int64 affected_rows = 2;
    */
@@ -332,6 +338,8 @@ export declare type CheckReleaseResponse = Message<"bytebase.v1.CheckReleaseResp
 export declare const CheckReleaseResponseSchema: GenMessage<CheckReleaseResponse>;
 
 /**
+ * Check result for a single release file on a target database.
+ *
  * @generated from message bytebase.v1.CheckReleaseResponse.CheckResult
  */
 export declare type CheckReleaseResponse_CheckResult = Message<"bytebase.v1.CheckReleaseResponse.CheckResult"> & {
@@ -390,16 +398,22 @@ export declare type Release = Message<"bytebase.v1.Release"> & {
   name: string;
 
   /**
+   * The title of the release.
+   *
    * @generated from field: string title = 2;
    */
   title: string;
 
   /**
+   * The SQL files included in the release.
+   *
    * @generated from field: repeated bytebase.v1.Release.File files = 3;
    */
   files: Release_File[];
 
   /**
+   * The version control source of the release.
+   *
    * @generated from field: bytebase.v1.Release.VCSSource vcs_source = 4;
    */
   vcsSource?: Release_VCSSource;
@@ -417,6 +431,8 @@ export declare type Release = Message<"bytebase.v1.Release"> & {
   createTime?: Timestamp;
 
   /**
+   * The lifecycle state of the release.
+   *
    * @generated from field: bytebase.v1.State state = 7;
    */
   state: State;
@@ -439,6 +455,8 @@ export declare type Release = Message<"bytebase.v1.Release"> & {
 export declare const ReleaseSchema: GenMessage<Release>;
 
 /**
+ * A SQL file in a release.
+ *
  * @generated from message bytebase.v1.Release.File
  */
 export declare type Release_File = Message<"bytebase.v1.Release.File"> & {
@@ -464,6 +482,8 @@ export declare type Release_File = Message<"bytebase.v1.Release.File"> & {
   type: Release_File_Type;
 
   /**
+   * The version identifier for the file.
+   *
    * @generated from field: string version = 6;
    */
   version: string;
@@ -517,20 +537,28 @@ export declare type Release_File = Message<"bytebase.v1.Release.File"> & {
 export declare const Release_FileSchema: GenMessage<Release_File>;
 
 /**
+ * The type of migration file.
+ *
  * @generated from enum bytebase.v1.Release.File.Type
  */
 export enum Release_File_Type {
   /**
+   * Unspecified type.
+   *
    * @generated from enum value: TYPE_UNSPECIFIED = 0;
    */
   TYPE_UNSPECIFIED = 0,
 
   /**
+   * Versioned migration file with sequential version numbers.
+   *
    * @generated from enum value: VERSIONED = 1;
    */
   VERSIONED = 1,
 
   /**
+   * Declarative schema definition file describing desired state.
+   *
    * @generated from enum value: DECLARATIVE = 2;
    */
   DECLARATIVE = 2,
@@ -542,25 +570,35 @@ export enum Release_File_Type {
 export declare const Release_File_TypeSchema: GenEnum<Release_File_Type>;
 
 /**
+ * The migration type for versioned files.
+ *
  * @generated from enum bytebase.v1.Release.File.MigrationType
  */
 export enum Release_File_MigrationType {
   /**
+   * Unspecified migration type.
+   *
    * @generated from enum value: MIGRATION_TYPE_UNSPECIFIED = 0;
    */
   MIGRATION_TYPE_UNSPECIFIED = 0,
 
   /**
+   * DDL (Data Definition Language) migration.
+   *
    * @generated from enum value: DDL = 1;
    */
   DDL = 1,
 
   /**
+   * DDL migration using gh-ost for online schema changes.
+   *
    * @generated from enum value: DDL_GHOST = 2;
    */
   DDL_GHOST = 2,
 
   /**
+   * DML (Data Manipulation Language) migration.
+   *
    * @generated from enum value: DML = 3;
    */
   DML = 3,
@@ -572,10 +610,14 @@ export enum Release_File_MigrationType {
 export declare const Release_File_MigrationTypeSchema: GenEnum<Release_File_MigrationType>;
 
 /**
+ * Version control system source information.
+ *
  * @generated from message bytebase.v1.Release.VCSSource
  */
 export declare type Release_VCSSource = Message<"bytebase.v1.Release.VCSSource"> & {
   /**
+   * The type of VCS.
+   *
    * @generated from field: bytebase.v1.VCSType vcs_type = 1;
    */
   vcsType: VCSType;
@@ -595,10 +637,13 @@ export declare type Release_VCSSource = Message<"bytebase.v1.Release.VCSSource">
 export declare const Release_VCSSourceSchema: GenMessage<Release_VCSSource>;
 
 /**
+ * ReleaseService manages releases for coordinating deployments.
+ *
  * @generated from service bytebase.v1.ReleaseService
  */
 export declare const ReleaseService: GenService<{
   /**
+   * Retrieves a release by name.
    * Permissions required: bb.releases.get
    *
    * @generated from rpc bytebase.v1.ReleaseService.GetRelease
@@ -609,6 +654,7 @@ export declare const ReleaseService: GenService<{
     output: typeof ReleaseSchema;
   },
   /**
+   * Lists releases in a project.
    * Permissions required: bb.releases.list
    *
    * @generated from rpc bytebase.v1.ReleaseService.ListReleases
@@ -619,6 +665,7 @@ export declare const ReleaseService: GenService<{
     output: typeof ListReleasesResponseSchema;
   },
   /**
+   * Searches releases by digest or other criteria.
    * Permissions required: bb.releases.get
    *
    * @generated from rpc bytebase.v1.ReleaseService.SearchReleases
@@ -629,6 +676,7 @@ export declare const ReleaseService: GenService<{
     output: typeof SearchReleasesResponseSchema;
   },
   /**
+   * Creates a new release with SQL files.
    * Permissions required: bb.releases.create
    *
    * @generated from rpc bytebase.v1.ReleaseService.CreateRelease
@@ -639,6 +687,7 @@ export declare const ReleaseService: GenService<{
     output: typeof ReleaseSchema;
   },
   /**
+   * Updates an existing release.
    * Permissions required: bb.releases.update
    *
    * @generated from rpc bytebase.v1.ReleaseService.UpdateRelease
@@ -649,6 +698,7 @@ export declare const ReleaseService: GenService<{
     output: typeof ReleaseSchema;
   },
   /**
+   * Deletes a release.
    * Permissions required: bb.releases.delete
    *
    * @generated from rpc bytebase.v1.ReleaseService.DeleteRelease
@@ -659,6 +709,7 @@ export declare const ReleaseService: GenService<{
     output: typeof EmptySchema;
   },
   /**
+   * Restores a deleted release.
    * Permissions required: bb.releases.undelete
    *
    * @generated from rpc bytebase.v1.ReleaseService.UndeleteRelease
@@ -669,6 +720,7 @@ export declare const ReleaseService: GenService<{
     output: typeof ReleaseSchema;
   },
   /**
+   * Validates a release by dry-running checks on target databases.
    * Permissions required: bb.releases.check
    *
    * @generated from rpc bytebase.v1.ReleaseService.CheckRelease

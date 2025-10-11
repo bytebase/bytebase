@@ -26,9 +26,13 @@ const (
 // AuditLogServiceClient is the client API for AuditLogService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// AuditLogService manages audit logs for system activities and API calls.
 type AuditLogServiceClient interface {
-	// Permissions required: None
+	// Searches audit logs with optional filtering and pagination.
+	// Permissions required: bb.auditLogs.search
 	SearchAuditLogs(ctx context.Context, in *SearchAuditLogsRequest, opts ...grpc.CallOption) (*SearchAuditLogsResponse, error)
+	// Exports audit logs in a specified format for external analysis.
 	// Permissions required: bb.auditLogs.export
 	ExportAuditLogs(ctx context.Context, in *ExportAuditLogsRequest, opts ...grpc.CallOption) (*ExportAuditLogsResponse, error)
 }
@@ -64,9 +68,13 @@ func (c *auditLogServiceClient) ExportAuditLogs(ctx context.Context, in *ExportA
 // AuditLogServiceServer is the server API for AuditLogService service.
 // All implementations must embed UnimplementedAuditLogServiceServer
 // for forward compatibility.
+//
+// AuditLogService manages audit logs for system activities and API calls.
 type AuditLogServiceServer interface {
-	// Permissions required: None
+	// Searches audit logs with optional filtering and pagination.
+	// Permissions required: bb.auditLogs.search
 	SearchAuditLogs(context.Context, *SearchAuditLogsRequest) (*SearchAuditLogsResponse, error)
+	// Exports audit logs in a specified format for external analysis.
 	// Permissions required: bb.auditLogs.export
 	ExportAuditLogs(context.Context, *ExportAuditLogsRequest) (*ExportAuditLogsResponse, error)
 	mustEmbedUnimplementedAuditLogServiceServer()

@@ -76,31 +76,44 @@ const (
 
 // DatabaseServiceClient is a client for the bytebase.v1.DatabaseService service.
 type DatabaseServiceClient interface {
+	// Retrieves a database by name.
 	// Permissions required: bb.databases.get
 	GetDatabase(context.Context, *connect.Request[v1.GetDatabaseRequest]) (*connect.Response[v1.Database], error)
+	// Retrieves multiple databases by their names.
 	// Permissions required: bb.databases.get
 	BatchGetDatabases(context.Context, *connect.Request[v1.BatchGetDatabasesRequest]) (*connect.Response[v1.BatchGetDatabasesResponse], error)
-	// Permissions required: bb.databases.list
+	// Lists databases in a project, instance, or workspace.
+	// Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
 	ListDatabases(context.Context, *connect.Request[v1.ListDatabasesRequest]) (*connect.Response[v1.ListDatabasesResponse], error)
+	// Updates database properties such as labels and project assignment.
 	// Permissions required: bb.databases.update
 	UpdateDatabase(context.Context, *connect.Request[v1.UpdateDatabaseRequest]) (*connect.Response[v1.Database], error)
+	// Updates multiple databases in a single batch operation.
 	// Permissions required: bb.databases.update
 	BatchUpdateDatabases(context.Context, *connect.Request[v1.BatchUpdateDatabasesRequest]) (*connect.Response[v1.BatchUpdateDatabasesResponse], error)
+	// Synchronizes database schema from the instance.
 	// Permissions required: bb.databases.sync
 	SyncDatabase(context.Context, *connect.Request[v1.SyncDatabaseRequest]) (*connect.Response[v1.SyncDatabaseResponse], error)
+	// Synchronizes multiple databases in a single batch operation.
 	// Permissions required: bb.databases.sync
 	BatchSyncDatabases(context.Context, *connect.Request[v1.BatchSyncDatabasesRequest]) (*connect.Response[v1.BatchSyncDatabasesResponse], error)
+	// Retrieves database metadata including tables, columns, and indexes.
 	// Permissions required: bb.databases.getSchema
 	GetDatabaseMetadata(context.Context, *connect.Request[v1.GetDatabaseMetadataRequest]) (*connect.Response[v1.DatabaseMetadata], error)
+	// Retrieves database schema as DDL statements.
 	// Permissions required: bb.databases.getSchema
 	GetDatabaseSchema(context.Context, *connect.Request[v1.GetDatabaseSchemaRequest]) (*connect.Response[v1.DatabaseSchema], error)
+	// Compares and generates migration statements between two schemas.
 	// Permissions required: bb.databases.get
 	DiffSchema(context.Context, *connect.Request[v1.DiffSchemaRequest]) (*connect.Response[v1.DiffSchemaResponse], error)
+	// Lists migration history for a database.
 	// Permissions required: bb.changelogs.list
 	ListChangelogs(context.Context, *connect.Request[v1.ListChangelogsRequest]) (*connect.Response[v1.ListChangelogsResponse], error)
-	// Permissions required: changelogs.get
+	// Retrieves a specific changelog entry.
+	// Permissions required: bb.changelogs.get
 	GetChangelog(context.Context, *connect.Request[v1.GetChangelogRequest]) (*connect.Response[v1.Changelog], error)
-	// Permissions required: databases.getSchema
+	// Generates schema DDL for a database object.
+	// Permissions required: bb.databases.getSchema
 	GetSchemaString(context.Context, *connect.Request[v1.GetSchemaStringRequest]) (*connect.Response[v1.GetSchemaStringResponse], error)
 }
 
@@ -280,31 +293,44 @@ func (c *databaseServiceClient) GetSchemaString(ctx context.Context, req *connec
 
 // DatabaseServiceHandler is an implementation of the bytebase.v1.DatabaseService service.
 type DatabaseServiceHandler interface {
+	// Retrieves a database by name.
 	// Permissions required: bb.databases.get
 	GetDatabase(context.Context, *connect.Request[v1.GetDatabaseRequest]) (*connect.Response[v1.Database], error)
+	// Retrieves multiple databases by their names.
 	// Permissions required: bb.databases.get
 	BatchGetDatabases(context.Context, *connect.Request[v1.BatchGetDatabasesRequest]) (*connect.Response[v1.BatchGetDatabasesResponse], error)
-	// Permissions required: bb.databases.list
+	// Lists databases in a project, instance, or workspace.
+	// Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
 	ListDatabases(context.Context, *connect.Request[v1.ListDatabasesRequest]) (*connect.Response[v1.ListDatabasesResponse], error)
+	// Updates database properties such as labels and project assignment.
 	// Permissions required: bb.databases.update
 	UpdateDatabase(context.Context, *connect.Request[v1.UpdateDatabaseRequest]) (*connect.Response[v1.Database], error)
+	// Updates multiple databases in a single batch operation.
 	// Permissions required: bb.databases.update
 	BatchUpdateDatabases(context.Context, *connect.Request[v1.BatchUpdateDatabasesRequest]) (*connect.Response[v1.BatchUpdateDatabasesResponse], error)
+	// Synchronizes database schema from the instance.
 	// Permissions required: bb.databases.sync
 	SyncDatabase(context.Context, *connect.Request[v1.SyncDatabaseRequest]) (*connect.Response[v1.SyncDatabaseResponse], error)
+	// Synchronizes multiple databases in a single batch operation.
 	// Permissions required: bb.databases.sync
 	BatchSyncDatabases(context.Context, *connect.Request[v1.BatchSyncDatabasesRequest]) (*connect.Response[v1.BatchSyncDatabasesResponse], error)
+	// Retrieves database metadata including tables, columns, and indexes.
 	// Permissions required: bb.databases.getSchema
 	GetDatabaseMetadata(context.Context, *connect.Request[v1.GetDatabaseMetadataRequest]) (*connect.Response[v1.DatabaseMetadata], error)
+	// Retrieves database schema as DDL statements.
 	// Permissions required: bb.databases.getSchema
 	GetDatabaseSchema(context.Context, *connect.Request[v1.GetDatabaseSchemaRequest]) (*connect.Response[v1.DatabaseSchema], error)
+	// Compares and generates migration statements between two schemas.
 	// Permissions required: bb.databases.get
 	DiffSchema(context.Context, *connect.Request[v1.DiffSchemaRequest]) (*connect.Response[v1.DiffSchemaResponse], error)
+	// Lists migration history for a database.
 	// Permissions required: bb.changelogs.list
 	ListChangelogs(context.Context, *connect.Request[v1.ListChangelogsRequest]) (*connect.Response[v1.ListChangelogsResponse], error)
-	// Permissions required: changelogs.get
+	// Retrieves a specific changelog entry.
+	// Permissions required: bb.changelogs.get
 	GetChangelog(context.Context, *connect.Request[v1.GetChangelogRequest]) (*connect.Response[v1.Changelog], error)
-	// Permissions required: databases.getSchema
+	// Generates schema DDL for a database object.
+	// Permissions required: bb.databases.getSchema
 	GetSchemaString(context.Context, *connect.Request[v1.GetSchemaStringRequest]) (*connect.Response[v1.GetSchemaStringResponse], error)
 }
 

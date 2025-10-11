@@ -26,9 +26,13 @@ const (
 // CelServiceClient is the client API for CelService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// CelService manages CEL (Common Expression Language) parsing and formatting operations.
 type CelServiceClient interface {
+	// Parses multiple CEL expression strings into AST representations.
 	// Permissions required: None
 	BatchParse(ctx context.Context, in *BatchParseRequest, opts ...grpc.CallOption) (*BatchParseResponse, error)
+	// Converts multiple CEL AST representations back into expression strings.
 	// Permissions required: None
 	BatchDeparse(ctx context.Context, in *BatchDeparseRequest, opts ...grpc.CallOption) (*BatchDeparseResponse, error)
 }
@@ -64,9 +68,13 @@ func (c *celServiceClient) BatchDeparse(ctx context.Context, in *BatchDeparseReq
 // CelServiceServer is the server API for CelService service.
 // All implementations must embed UnimplementedCelServiceServer
 // for forward compatibility.
+//
+// CelService manages CEL (Common Expression Language) parsing and formatting operations.
 type CelServiceServer interface {
+	// Parses multiple CEL expression strings into AST representations.
 	// Permissions required: None
 	BatchParse(context.Context, *BatchParseRequest) (*BatchParseResponse, error)
+	// Converts multiple CEL AST representations back into expression strings.
 	// Permissions required: None
 	BatchDeparse(context.Context, *BatchDeparseRequest) (*BatchDeparseResponse, error)
 	mustEmbedUnimplementedCelServiceServer()

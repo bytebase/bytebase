@@ -30,15 +30,22 @@ const (
 // ReviewConfigServiceClient is the client API for ReviewConfigService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// ReviewConfigService manages approval flow configurations.
 type ReviewConfigServiceClient interface {
+	// Creates a new SQL review configuration.
 	// Permissions required: bb.reviewConfigs.create
 	CreateReviewConfig(ctx context.Context, in *CreateReviewConfigRequest, opts ...grpc.CallOption) (*ReviewConfig, error)
+	// Lists all SQL review configurations.
 	// Permissions required: bb.reviewConfigs.list
 	ListReviewConfigs(ctx context.Context, in *ListReviewConfigsRequest, opts ...grpc.CallOption) (*ListReviewConfigsResponse, error)
+	// Retrieves a SQL review configuration by name.
 	// Permissions required: bb.reviewConfigs.get
 	GetReviewConfig(ctx context.Context, in *GetReviewConfigRequest, opts ...grpc.CallOption) (*ReviewConfig, error)
+	// Updates a SQL review configuration.
 	// Permissions required: bb.reviewConfigs.update
 	UpdateReviewConfig(ctx context.Context, in *UpdateReviewConfigRequest, opts ...grpc.CallOption) (*ReviewConfig, error)
+	// Deletes a SQL review configuration.
 	// Permissions required: bb.reviewConfigs.delete
 	DeleteReviewConfig(ctx context.Context, in *DeleteReviewConfigRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
@@ -104,15 +111,22 @@ func (c *reviewConfigServiceClient) DeleteReviewConfig(ctx context.Context, in *
 // ReviewConfigServiceServer is the server API for ReviewConfigService service.
 // All implementations must embed UnimplementedReviewConfigServiceServer
 // for forward compatibility.
+//
+// ReviewConfigService manages approval flow configurations.
 type ReviewConfigServiceServer interface {
+	// Creates a new SQL review configuration.
 	// Permissions required: bb.reviewConfigs.create
 	CreateReviewConfig(context.Context, *CreateReviewConfigRequest) (*ReviewConfig, error)
+	// Lists all SQL review configurations.
 	// Permissions required: bb.reviewConfigs.list
 	ListReviewConfigs(context.Context, *ListReviewConfigsRequest) (*ListReviewConfigsResponse, error)
+	// Retrieves a SQL review configuration by name.
 	// Permissions required: bb.reviewConfigs.get
 	GetReviewConfig(context.Context, *GetReviewConfigRequest) (*ReviewConfig, error)
+	// Updates a SQL review configuration.
 	// Permissions required: bb.reviewConfigs.update
 	UpdateReviewConfig(context.Context, *UpdateReviewConfigRequest) (*ReviewConfig, error)
+	// Deletes a SQL review configuration.
 	// Permissions required: bb.reviewConfigs.delete
 	DeleteReviewConfig(context.Context, *DeleteReviewConfigRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedReviewConfigServiceServer()

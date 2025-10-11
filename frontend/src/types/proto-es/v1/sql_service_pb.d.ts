@@ -198,11 +198,15 @@ export enum QueryOption_RedisRunCommandsOn {
   REDIS_RUN_COMMANDS_ON_UNSPECIFIED = 0,
 
   /**
+   * Execute Redis commands on a single node in the cluster.
+   *
    * @generated from enum value: SINGLE_NODE = 1;
    */
   SINGLE_NODE = 1,
 
   /**
+   * Execute Redis commands on all nodes in the cluster for cluster-wide operations.
+   *
    * @generated from enum value: ALL_NODES = 2;
    */
   ALL_NODES = 2,
@@ -430,38 +434,50 @@ export declare const QueryResult_MessageSchema: GenMessage<QueryResult_Message>;
  */
 export enum QueryResult_Message_Level {
   /**
-   * Unspecified.
+   * Unspecified message level.
    *
    * @generated from enum value: LEVEL_UNSPECIFIED = 0;
    */
   LEVEL_UNSPECIFIED = 0,
 
   /**
+   * Informational message.
+   *
    * @generated from enum value: INFO = 1;
    */
   INFO = 1,
 
   /**
+   * Warning message indicating potential issues.
+   *
    * @generated from enum value: WARNING = 2;
    */
   WARNING = 2,
 
   /**
+   * Debug message for development and troubleshooting.
+   *
    * @generated from enum value: DEBUG = 3;
    */
   DEBUG = 3,
 
   /**
+   * General log message.
+   *
    * @generated from enum value: LOG = 4;
    */
   LOG = 4,
 
   /**
+   * Notice message for important information.
+   *
    * @generated from enum value: NOTICE = 5;
    */
   NOTICE = 5,
 
   /**
+   * Exception message indicating error conditions.
+   *
    * @generated from enum value: EXCEPTION = 6;
    */
   EXCEPTION = 6,
@@ -1139,7 +1155,7 @@ export declare type SearchQueryHistoriesRequest = Message<"bytebase.v1.SearchQue
    * - database: the database full name in "instances/{id}/databases/{name}" format, support "==" operator.
    * - instance: the instance full name in "instances/{id}" format, support "==" operator.
    * - type: the type, should be "QUERY" or "EXPORT", support "==" operator.
-   * - statement: the SQL statemnt, support ".matches()" operator.
+   * - statement: the SQL statement, support ".matches()" operator.
    *
    * For example:
    * project == "projects/{project}"
@@ -1250,16 +1266,22 @@ export declare const QueryHistorySchema: GenMessage<QueryHistory>;
  */
 export enum QueryHistory_Type {
   /**
+   * Unspecified query history type.
+   *
    * @generated from enum value: TYPE_UNSPECIFIED = 0;
    */
   TYPE_UNSPECIFIED = 0,
 
   /**
+   * Query execution for data retrieval.
+   *
    * @generated from enum value: QUERY = 1;
    */
   QUERY = 1,
 
   /**
+   * Data export operation to file.
+   *
    * @generated from enum value: EXPORT = 2;
    */
   EXPORT = 2,
@@ -1377,10 +1399,13 @@ export declare type AICompletionResponse_Candidate_Content_Part = Message<"byteb
 export declare const AICompletionResponse_Candidate_Content_PartSchema: GenMessage<AICompletionResponse_Candidate_Content_Part>;
 
 /**
+ * SQLService executes SQL queries and manages query operations.
+ *
  * @generated from service bytebase.v1.SQLService
  */
 export declare const SQLService: GenService<{
   /**
+   * Executes a read-only SQL query against a database.
    * Permissions required: bb.databases.get
    *
    * @generated from rpc bytebase.v1.SQLService.Query
@@ -1391,6 +1416,7 @@ export declare const SQLService: GenService<{
     output: typeof QueryResponseSchema;
   },
   /**
+   * Executes SQL with admin privileges via streaming connection.
    * Permissions required: bb.sql.admin
    *
    * @generated from rpc bytebase.v1.SQLService.AdminExecute
@@ -1402,7 +1428,7 @@ export declare const SQLService: GenService<{
   },
   /**
    * SearchQueryHistories searches query histories for the caller.
-   * Permissions required: None
+   * Permissions required: None (only returns caller's own query histories)
    *
    * @generated from rpc bytebase.v1.SQLService.SearchQueryHistories
    */
@@ -1412,6 +1438,7 @@ export declare const SQLService: GenService<{
     output: typeof SearchQueryHistoriesResponseSchema;
   },
   /**
+   * Exports query results to a file format.
    * Permissions required: bb.databases.get
    *
    * @generated from rpc bytebase.v1.SQLService.Export
@@ -1422,6 +1449,7 @@ export declare const SQLService: GenService<{
     output: typeof ExportResponseSchema;
   },
   /**
+   * Validates SQL statements against review rules.
    * Permissions required: bb.databases.check
    *
    * @generated from rpc bytebase.v1.SQLService.Check
@@ -1432,6 +1460,7 @@ export declare const SQLService: GenService<{
     output: typeof CheckResponseSchema;
   },
   /**
+   * Formats and normalizes SQL schema definitions.
    * Permissions required: None
    *
    * @generated from rpc bytebase.v1.SQLService.Pretty
@@ -1442,6 +1471,7 @@ export declare const SQLService: GenService<{
     output: typeof PrettyResponseSchema;
   },
   /**
+   * Computes schema differences between two database metadata.
    * Permissions required: None
    *
    * @generated from rpc bytebase.v1.SQLService.DiffMetadata
@@ -1452,7 +1482,8 @@ export declare const SQLService: GenService<{
     output: typeof DiffMetadataResponseSchema;
   },
   /**
-   * Permissions required: None
+   * Provides AI-powered SQL completion and generation.
+   * Permissions required: None (authenticated users only, requires AI to be enabled)
    *
    * @generated from rpc bytebase.v1.SQLService.AICompletion
    */

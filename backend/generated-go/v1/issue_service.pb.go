@@ -26,13 +26,18 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// The status of an issue.
 type IssueStatus int32
 
 const (
+	// Unspecified status.
 	IssueStatus_ISSUE_STATUS_UNSPECIFIED IssueStatus = 0
-	IssueStatus_OPEN                     IssueStatus = 1
-	IssueStatus_DONE                     IssueStatus = 2
-	IssueStatus_CANCELED                 IssueStatus = 3
+	// Issue is open and active.
+	IssueStatus_OPEN IssueStatus = 1
+	// Issue is completed.
+	IssueStatus_DONE IssueStatus = 2
+	// Issue is canceled.
+	IssueStatus_CANCELED IssueStatus = 3
 )
 
 // Enum value maps for IssueStatus.
@@ -78,13 +83,18 @@ func (IssueStatus) EnumDescriptor() ([]byte, []int) {
 	return file_v1_issue_service_proto_rawDescGZIP(), []int{0}
 }
 
+// The type of issue.
 type Issue_Type int32
 
 const (
+	// Unspecified issue type.
 	Issue_TYPE_UNSPECIFIED Issue_Type = 0
-	Issue_DATABASE_CHANGE  Issue_Type = 1
-	Issue_GRANT_REQUEST    Issue_Type = 2
-	Issue_DATABASE_EXPORT  Issue_Type = 3
+	// Database schema or data change.
+	Issue_DATABASE_CHANGE Issue_Type = 1
+	// Database access grant request.
+	Issue_GRANT_REQUEST Issue_Type = 2
+	// Database data export request.
+	Issue_DATABASE_EXPORT Issue_Type = 3
 )
 
 // Enum value maps for Issue_Type.
@@ -130,16 +140,24 @@ func (Issue_Type) EnumDescriptor() ([]byte, []int) {
 	return file_v1_issue_service_proto_rawDescGZIP(), []int{12, 0}
 }
 
+// The overall approval status for the issue.
 type Issue_ApprovalStatus int32
 
 const (
+	// Unspecified approval status.
 	Issue_APPROVAL_STATUS_UNSPECIFIED Issue_ApprovalStatus = 0
-	Issue_CHECKING                    Issue_ApprovalStatus = 1
-	Issue_PENDING                     Issue_ApprovalStatus = 2
-	Issue_APPROVED                    Issue_ApprovalStatus = 3
-	Issue_REJECTED                    Issue_ApprovalStatus = 4
-	Issue_SKIPPED                     Issue_ApprovalStatus = 5
-	Issue_ERROR                       Issue_ApprovalStatus = 6
+	// Approval checks are being evaluated.
+	Issue_CHECKING Issue_ApprovalStatus = 1
+	// Approval is pending.
+	Issue_PENDING Issue_ApprovalStatus = 2
+	// Issue has been approved.
+	Issue_APPROVED Issue_ApprovalStatus = 3
+	// Issue has been rejected.
+	Issue_REJECTED Issue_ApprovalStatus = 4
+	// Approval was skipped.
+	Issue_SKIPPED Issue_ApprovalStatus = 5
+	// Error occurred during approval evaluation.
+	Issue_ERROR Issue_ApprovalStatus = 6
 )
 
 // Enum value maps for Issue_ApprovalStatus.
@@ -191,13 +209,18 @@ func (Issue_ApprovalStatus) EnumDescriptor() ([]byte, []int) {
 	return file_v1_issue_service_proto_rawDescGZIP(), []int{12, 1}
 }
 
+// The approval status of an approver.
 type Issue_Approver_Status int32
 
 const (
+	// Unspecified status.
 	Issue_Approver_STATUS_UNSPECIFIED Issue_Approver_Status = 0
-	Issue_Approver_PENDING            Issue_Approver_Status = 1
-	Issue_Approver_APPROVED           Issue_Approver_Status = 2
-	Issue_Approver_REJECTED           Issue_Approver_Status = 3
+	// Awaiting approval.
+	Issue_Approver_PENDING Issue_Approver_Status = 1
+	// Approved.
+	Issue_Approver_APPROVED Issue_Approver_Status = 2
+	// Rejected.
+	Issue_Approver_REJECTED Issue_Approver_Status = 3
 )
 
 // Enum value maps for Issue_Approver_Status.
@@ -243,13 +266,18 @@ func (Issue_Approver_Status) EnumDescriptor() ([]byte, []int) {
 	return file_v1_issue_service_proto_rawDescGZIP(), []int{12, 0, 0}
 }
 
+// Approval status values.
 type IssueComment_Approval_Status int32
 
 const (
+	// Unspecified status.
 	IssueComment_Approval_STATUS_UNSPECIFIED IssueComment_Approval_Status = 0
-	IssueComment_Approval_PENDING            IssueComment_Approval_Status = 1
-	IssueComment_Approval_APPROVED           IssueComment_Approval_Status = 2
-	IssueComment_Approval_REJECTED           IssueComment_Approval_Status = 3
+	// Approval pending.
+	IssueComment_Approval_PENDING IssueComment_Approval_Status = 1
+	// Approved.
+	IssueComment_Approval_APPROVED IssueComment_Approval_Status = 2
+	// Rejected.
+	IssueComment_Approval_REJECTED IssueComment_Approval_Status = 3
 )
 
 // Enum value maps for IssueComment_Approval_Status.
@@ -295,16 +323,24 @@ func (IssueComment_Approval_Status) EnumDescriptor() ([]byte, []int) {
 	return file_v1_issue_service_proto_rawDescGZIP(), []int{20, 0, 0}
 }
 
+// Task status values.
 type IssueComment_TaskUpdate_Status int32
 
 const (
+	// Unspecified status.
 	IssueComment_TaskUpdate_STATUS_UNSPECIFIED IssueComment_TaskUpdate_Status = 0
-	IssueComment_TaskUpdate_PENDING            IssueComment_TaskUpdate_Status = 1
-	IssueComment_TaskUpdate_RUNNING            IssueComment_TaskUpdate_Status = 2
-	IssueComment_TaskUpdate_DONE               IssueComment_TaskUpdate_Status = 3
-	IssueComment_TaskUpdate_FAILED             IssueComment_TaskUpdate_Status = 4
-	IssueComment_TaskUpdate_SKIPPED            IssueComment_TaskUpdate_Status = 5
-	IssueComment_TaskUpdate_CANCELED           IssueComment_TaskUpdate_Status = 6
+	// Task is pending.
+	IssueComment_TaskUpdate_PENDING IssueComment_TaskUpdate_Status = 1
+	// Task is running.
+	IssueComment_TaskUpdate_RUNNING IssueComment_TaskUpdate_Status = 2
+	// Task is done.
+	IssueComment_TaskUpdate_DONE IssueComment_TaskUpdate_Status = 3
+	// Task failed.
+	IssueComment_TaskUpdate_FAILED IssueComment_TaskUpdate_Status = 4
+	// Task was skipped.
+	IssueComment_TaskUpdate_SKIPPED IssueComment_TaskUpdate_Status = 5
+	// Task was canceled.
+	IssueComment_TaskUpdate_CANCELED IssueComment_TaskUpdate_Status = 6
 )
 
 // Enum value maps for IssueComment_TaskUpdate_Status.
@@ -360,8 +396,9 @@ type GetIssueRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the issue to retrieve.
 	// Format: projects/{project}/issues/{issue}
-	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Force         bool   `protobuf:"varint,2,opt,name=force,proto3" json:"force,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// If set to true, bypass cache and fetch the latest data.
+	Force         bool `protobuf:"varint,2,opt,name=force,proto3" json:"force,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -852,8 +889,9 @@ type BatchUpdateIssuesStatusRequest struct {
 	// Format: projects/{project}/issues/{issue}
 	Issues []string `protobuf:"bytes,2,rep,name=issues,proto3" json:"issues,omitempty"`
 	// The new status.
-	Status        IssueStatus `protobuf:"varint,3,opt,name=status,proto3,enum=bytebase.v1.IssueStatus" json:"status,omitempty"`
-	Reason        string      `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
+	Status IssueStatus `protobuf:"varint,3,opt,name=status,proto3,enum=bytebase.v1.IssueStatus" json:"status,omitempty"`
+	// The reason for the status change.
+	Reason        string `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -956,7 +994,8 @@ type ApproveIssueRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the issue to add an approver.
 	// Format: projects/{project}/issues/{issue}
-	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The comment explaining the approval decision.
 	Comment       string `protobuf:"bytes,2,opt,name=comment,proto3" json:"comment,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1010,7 +1049,8 @@ type RejectIssueRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the issue to add an rejection.
 	// Format: projects/{project}/issues/{issue}
-	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The comment explaining the rejection decision.
 	Comment       string `protobuf:"bytes,2,opt,name=comment,proto3" json:"comment,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1064,7 +1104,8 @@ type RequestIssueRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the issue to request a issue.
 	// Format: projects/{project}/issues/{issue}
-	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The comment explaining the request.
 	Comment       string `protobuf:"bytes,2,opt,name=comment,proto3" json:"comment,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1118,12 +1159,16 @@ type Issue struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the issue.
 	// Format: projects/{project}/issues/{issue}
-	Name             string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Title            string            `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
-	Description      string            `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
-	Type             Issue_Type        `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.v1.Issue_Type" json:"type,omitempty"`
-	Status           IssueStatus       `protobuf:"varint,6,opt,name=status,proto3,enum=bytebase.v1.IssueStatus" json:"status,omitempty"`
-	Approvers        []*Issue_Approver `protobuf:"bytes,9,rep,name=approvers,proto3" json:"approvers,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The title of the issue.
+	Title string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	// The description of the issue.
+	Description string     `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	Type        Issue_Type `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.v1.Issue_Type" json:"type,omitempty"`
+	// The status of the issue.
+	Status    IssueStatus       `protobuf:"varint,6,opt,name=status,proto3,enum=bytebase.v1.IssueStatus" json:"status,omitempty"`
+	Approvers []*Issue_Approver `protobuf:"bytes,9,rep,name=approvers,proto3" json:"approvers,omitempty"`
+	// The approval template for the issue.
 	ApprovalTemplate *ApprovalTemplate `protobuf:"bytes,10,opt,name=approval_template,json=approvalTemplate,proto3" json:"approval_template,omitempty"`
 	// Format: users/hello@world.com
 	Creator    string                 `protobuf:"bytes,14,opt,name=creator,proto3" json:"creator,omitempty"`
@@ -1147,7 +1192,8 @@ type Issue struct {
 	// - roles/projectOwner
 	// - roles/projectReleaser
 	// - users/{email}
-	Releasers []string  `protobuf:"bytes,20,rep,name=releasers,proto3" json:"releasers,omitempty"`
+	Releasers []string `protobuf:"bytes,20,rep,name=releasers,proto3" json:"releasers,omitempty"`
+	// The risk level of the issue.
 	RiskLevel RiskLevel `protobuf:"varint,21,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.v1.RiskLevel" json:"risk_level,omitempty"`
 	// The status count of the issue.
 	// Keys are the following:
@@ -1158,9 +1204,10 @@ type Issue struct {
 	// - DONE
 	// - FAILED
 	// - CANCELED
-	TaskStatusCount map[string]int32     `protobuf:"bytes,22,rep,name=task_status_count,json=taskStatusCount,proto3" json:"task_status_count,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
-	Labels          []string             `protobuf:"bytes,23,rep,name=labels,proto3" json:"labels,omitempty"`
-	ApprovalStatus  Issue_ApprovalStatus `protobuf:"varint,24,opt,name=approval_status,json=approvalStatus,proto3,enum=bytebase.v1.Issue_ApprovalStatus" json:"approval_status,omitempty"`
+	TaskStatusCount map[string]int32 `protobuf:"bytes,22,rep,name=task_status_count,json=taskStatusCount,proto3" json:"task_status_count,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	// Labels attached to the issue for categorization and filtering.
+	Labels         []string             `protobuf:"bytes,23,rep,name=labels,proto3" json:"labels,omitempty"`
+	ApprovalStatus Issue_ApprovalStatus `protobuf:"varint,24,opt,name=approval_status,json=approvalStatus,proto3,enum=bytebase.v1.Issue_ApprovalStatus" json:"approval_status,omitempty"`
 	// Only populated when approval_status == ERROR
 	ApprovalStatusError string `protobuf:"bytes,25,opt,name=approval_status_error,json=approvalStatusError,proto3" json:"approval_status_error,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -1339,7 +1386,8 @@ type GrantRequest struct {
 	// Format: users/{email}.
 	User string `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
 	// The condition for the role. Same as the condtion in IAM Binding message.
-	Condition     *expr.Expr           `protobuf:"bytes,3,opt,name=condition,proto3" json:"condition,omitempty"`
+	Condition *expr.Expr `protobuf:"bytes,3,opt,name=condition,proto3" json:"condition,omitempty"`
+	// The duration for which the grant is valid.
 	Expiration    *durationpb.Duration `protobuf:"bytes,4,opt,name=expiration,proto3" json:"expiration,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1408,10 +1456,13 @@ type ApprovalTemplate struct {
 	// The unique identifier for the approval template.
 	// For built-in templates, use "bb." prefix (e.g., "bb.project-owner", "bb.workspace-dba").
 	// For custom templates, use a UUID or other unique identifier.
-	Id            string        `protobuf:"bytes,4,opt,name=id,proto3" json:"id,omitempty"`
-	Flow          *ApprovalFlow `protobuf:"bytes,1,opt,name=flow,proto3" json:"flow,omitempty"`
-	Title         string        `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Description   string        `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Id string `protobuf:"bytes,4,opt,name=id,proto3" json:"id,omitempty"`
+	// The approval flow definition.
+	Flow *ApprovalFlow `protobuf:"bytes,1,opt,name=flow,proto3" json:"flow,omitempty"`
+	// The title of the approval template.
+	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	// The description of the approval template.
+	Description   string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1475,8 +1526,9 @@ func (x *ApprovalTemplate) GetDescription() string {
 }
 
 type ApprovalFlow struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Roles         []string               `protobuf:"bytes,1,rep,name=roles,proto3" json:"roles,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The roles required for approval in order.
+	Roles         []string `protobuf:"bytes,1,rep,name=roles,proto3" json:"roles,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1589,8 +1641,9 @@ func (x *ListIssueCommentsRequest) GetPageToken() string {
 }
 
 type ListIssueCommentsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	IssueComments []*IssueComment        `protobuf:"bytes,1,rep,name=issue_comments,json=issueComments,proto3" json:"issue_comments,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The issue comments from the specified request.
+	IssueComments []*IssueComment `protobuf:"bytes,1,rep,name=issue_comments,json=issueComments,proto3" json:"issue_comments,omitempty"`
 	// A token, which can be sent as `page_token` to retrieve the next page.
 	// If this field is omitted, there are no subsequent pages.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
@@ -1646,7 +1699,8 @@ type CreateIssueCommentRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The issue name
 	// Format: projects/{project}/issues/{issue}
-	Parent        string        `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	// The comment to create.
 	IssueComment  *IssueComment `protobuf:"bytes,2,opt,name=issue_comment,json=issueComment,proto3" json:"issue_comment,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1700,7 +1754,8 @@ type UpdateIssueCommentRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The issue name
 	// Format: projects/{project}/issues/{issue}
-	Parent       string        `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	// The comment to update.
 	IssueComment *IssueComment `protobuf:"bytes,2,opt,name=issue_comment,json=issueComment,proto3" json:"issue_comment,omitempty"`
 	// The list of fields to update.
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,3,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
@@ -1769,10 +1824,12 @@ func (x *UpdateIssueCommentRequest) GetAllowMissing() bool {
 	return false
 }
 
+// A comment on an issue.
 type IssueComment struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid}
-	Name    string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The text content of the comment.
 	Comment string `protobuf:"bytes,2,opt,name=comment,proto3" json:"comment,omitempty"`
 	// TODO: use struct message instead.
 	Payload    string                 `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
@@ -1780,6 +1837,8 @@ type IssueComment struct {
 	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
 	// Format: users/{email}
 	Creator string `protobuf:"bytes,7,opt,name=creator,proto3" json:"creator,omitempty"`
+	// The event associated with this comment.
+	//
 	// Types that are valid to be assigned to Event:
 	//
 	//	*IssueComment_Approval_
@@ -1921,22 +1980,27 @@ type isIssueComment_Event interface {
 }
 
 type IssueComment_Approval_ struct {
+	// Approval event.
 	Approval *IssueComment_Approval `protobuf:"bytes,8,opt,name=approval,proto3,oneof"`
 }
 
 type IssueComment_IssueUpdate_ struct {
+	// Issue update event.
 	IssueUpdate *IssueComment_IssueUpdate `protobuf:"bytes,9,opt,name=issue_update,json=issueUpdate,proto3,oneof"`
 }
 
 type IssueComment_StageEnd_ struct {
+	// Stage end event.
 	StageEnd *IssueComment_StageEnd `protobuf:"bytes,10,opt,name=stage_end,json=stageEnd,proto3,oneof"`
 }
 
 type IssueComment_TaskUpdate_ struct {
+	// Task update event.
 	TaskUpdate *IssueComment_TaskUpdate `protobuf:"bytes,11,opt,name=task_update,json=taskUpdate,proto3,oneof"`
 }
 
 type IssueComment_TaskPriorBackup_ struct {
+	// Task prior backup event.
 	TaskPriorBackup *IssueComment_TaskPriorBackup `protobuf:"bytes,12,opt,name=task_prior_backup,json=taskPriorBackup,proto3,oneof"`
 }
 
@@ -1950,6 +2014,7 @@ func (*IssueComment_TaskUpdate_) isIssueComment_Event() {}
 
 func (*IssueComment_TaskPriorBackup_) isIssueComment_Event() {}
 
+// Approvers and their approval status for the issue.
 type Issue_Approver struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The new status.
@@ -2004,8 +2069,10 @@ func (x *Issue_Approver) GetPrincipal() string {
 	return ""
 }
 
+// Approval event information.
 type IssueComment_Approval struct {
-	state         protoimpl.MessageState       `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The approval status.
 	Status        IssueComment_Approval_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.v1.IssueComment_Approval_Status" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2048,6 +2115,7 @@ func (x *IssueComment_Approval) GetStatus() IssueComment_Approval_Status {
 	return IssueComment_Approval_STATUS_UNSPECIFIED
 }
 
+// Issue update event information.
 type IssueComment_IssueUpdate struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	FromTitle       *string                `protobuf:"bytes,1,opt,name=from_title,json=fromTitle,proto3,oneof" json:"from_title,omitempty"`
@@ -2148,9 +2216,11 @@ func (x *IssueComment_IssueUpdate) GetToLabels() []string {
 	return nil
 }
 
+// Stage end event information.
 type IssueComment_StageEnd struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Stage         string                 `protobuf:"bytes,1,opt,name=stage,proto3" json:"stage,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The stage that ended.
+	Stage         string `protobuf:"bytes,1,opt,name=stage,proto3" json:"stage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2192,9 +2262,11 @@ func (x *IssueComment_StageEnd) GetStage() string {
 	return ""
 }
 
+// Task update event information.
 type IssueComment_TaskUpdate struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Tasks []string               `protobuf:"bytes,1,rep,name=tasks,proto3" json:"tasks,omitempty"`
+	// The tasks that were updated.
+	Tasks []string `protobuf:"bytes,1,rep,name=tasks,proto3" json:"tasks,omitempty"`
 	// Format: projects/{project}/sheets/{sheet}
 	FromSheet *string `protobuf:"bytes,2,opt,name=from_sheet,json=fromSheet,proto3,oneof" json:"from_sheet,omitempty"`
 	// Format: projects/{project}/sheets/{sheet}
@@ -2262,13 +2334,19 @@ func (x *IssueComment_TaskUpdate) GetToStatus() IssueComment_TaskUpdate_Status {
 	return IssueComment_TaskUpdate_STATUS_UNSPECIFIED
 }
 
+// Task prior backup event information.
 type IssueComment_TaskPriorBackup struct {
-	state         protoimpl.MessageState                `protogen:"open.v1"`
-	Task          string                                `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
-	Tables        []*IssueComment_TaskPriorBackup_Table `protobuf:"bytes,2,rep,name=tables,proto3" json:"tables,omitempty"`
-	OriginalLine  *int32                                `protobuf:"varint,3,opt,name=original_line,json=originalLine,proto3,oneof" json:"original_line,omitempty"`
-	Database      string                                `protobuf:"bytes,4,opt,name=database,proto3" json:"database,omitempty"`
-	Error         string                                `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The task for which backup was performed.
+	Task string `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
+	// The tables that were backed up.
+	Tables []*IssueComment_TaskPriorBackup_Table `protobuf:"bytes,2,rep,name=tables,proto3" json:"tables,omitempty"`
+	// The original line number in the statement.
+	OriginalLine *int32 `protobuf:"varint,3,opt,name=original_line,json=originalLine,proto3,oneof" json:"original_line,omitempty"`
+	// The database that was backed up.
+	Database string `protobuf:"bytes,4,opt,name=database,proto3" json:"database,omitempty"`
+	// Error message if backup failed.
+	Error         string `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2338,10 +2416,13 @@ func (x *IssueComment_TaskPriorBackup) GetError() string {
 	return ""
 }
 
+// Table identification.
 type IssueComment_TaskPriorBackup_Table struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Schema        string                 `protobuf:"bytes,1,opt,name=schema,proto3" json:"schema,omitempty"`
-	Table         string                 `protobuf:"bytes,2,opt,name=table,proto3" json:"table,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The schema name.
+	Schema string `protobuf:"bytes,1,opt,name=schema,proto3" json:"schema,omitempty"`
+	// The table name.
+	Table         string `protobuf:"bytes,2,opt,name=table,proto3" json:"table,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

@@ -63,7 +63,7 @@ export const BindingDelta_ActionSchema = /*@__PURE__*/
   enumDesc(file_v1_iam_policy, 5, 0);
 
 /**
- * The type of action performed on a Binding in a policy.
+ * Type of action performed on a binding.
  *
  * @generated from enum bytebase.v1.BindingDelta.Action
  */

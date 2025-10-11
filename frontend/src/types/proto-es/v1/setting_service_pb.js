@@ -350,6 +350,8 @@ export const DatabaseChangeMode = /*@__PURE__*/
   tsEnum(DatabaseChangeModeSchema);
 
 /**
+ * SettingService manages workspace-level settings and configurations.
+ *
  * @generated from service bytebase.v1.SettingService
  */
 export const SettingService = /*@__PURE__*/

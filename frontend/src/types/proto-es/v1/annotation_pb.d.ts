@@ -11,23 +11,27 @@ import type { MethodOptions } from "@bufbuild/protobuf/wkt";
 export declare const file_v1_annotation: GenFile;
 
 /**
+ * Authorization method for RPC calls.
+ *
  * @generated from enum bytebase.v1.AuthMethod
  */
 export enum AuthMethod {
   /**
+   * Unspecified authorization method.
+   *
    * @generated from enum value: AUTH_METHOD_UNSPECIFIED = 0;
    */
   AUTH_METHOD_UNSPECIFIED = 0,
 
   /**
-   * IAM uses the standard IAM authorization check on the organizational resources.
+   * Standard IAM authorization check on organizational resources.
    *
    * @generated from enum value: IAM = 1;
    */
   IAM = 1,
 
   /**
-   * Custom authorization method.
+   * Custom authorization logic.
    *
    * @generated from enum value: CUSTOM = 2;
    */
@@ -40,21 +44,29 @@ export enum AuthMethod {
 export declare const AuthMethodSchema: GenEnum<AuthMethod>;
 
 /**
+ * Whether the method allows access without authentication credentials.
+ *
  * @generated from extension: bool allow_without_credential = 100000;
  */
 export declare const allow_without_credential: GenExtension<MethodOptions, boolean>;
 
 /**
+ * The permission required to call this method.
+ *
  * @generated from extension: string permission = 100001;
  */
 export declare const permission: GenExtension<MethodOptions, string>;
 
 /**
+ * The authorization method to use for this RPC.
+ *
  * @generated from extension: bytebase.v1.AuthMethod auth_method = 100002;
  */
 export declare const auth_method: GenExtension<MethodOptions, AuthMethod>;
 
 /**
+ * Whether to audit calls to this method.
+ *
  * @generated from extension: bool audit = 100003;
  */
 export declare const audit: GenExtension<MethodOptions, boolean>;

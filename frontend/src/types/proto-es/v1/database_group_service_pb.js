@@ -80,12 +80,16 @@ export const DatabaseGroupViewSchema = /*@__PURE__*/
   enumDesc(file_v1_database_group_service, 0);
 
 /**
+ * View options for database group responses.
+ *
  * @generated from enum bytebase.v1.DatabaseGroupView
  */
 export const DatabaseGroupView = /*@__PURE__*/
   tsEnum(DatabaseGroupViewSchema);
 
 /**
+ * DatabaseGroupService manages database groups for organizing databases by criteria.
+ *
  * @generated from service bytebase.v1.DatabaseGroupService
  */
 export const DatabaseGroupService = /*@__PURE__*/

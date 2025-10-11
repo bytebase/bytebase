@@ -25,7 +25,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// The request message for getting the theme resource.
+// Request message for getting branding resources.
 type GetResourcePackageRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -62,7 +62,7 @@ func (*GetResourcePackageRequest) Descriptor() ([]byte, []int) {
 	return file_v1_actuator_service_proto_rawDescGZIP(), []int{0}
 }
 
-// The theme resources.
+// Custom branding resources for the Bytebase instance.
 type ResourcePackage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The branding logo.
@@ -108,6 +108,7 @@ func (x *ResourcePackage) GetLogo() []byte {
 	return nil
 }
 
+// Request message for setting up sample data.
 type SetupSampleRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -144,6 +145,7 @@ func (*SetupSampleRequest) Descriptor() ([]byte, []int) {
 	return file_v1_actuator_service_proto_rawDescGZIP(), []int{2}
 }
 
+// Request message for getting actuator information.
 type GetActuatorInfoRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -180,6 +182,7 @@ func (*GetActuatorInfoRequest) Descriptor() ([]byte, []int) {
 	return file_v1_actuator_service_proto_rawDescGZIP(), []int{3}
 }
 
+// Request message for updating actuator information.
 type UpdateActuatorInfoRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The actuator to update.
@@ -244,6 +247,7 @@ func (x *UpdateActuatorInfoRequest) GetAllowMissing() bool {
 	return false
 }
 
+// Request message for deleting cache.
 type DeleteCacheRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -280,50 +284,56 @@ func (*DeleteCacheRequest) Descriptor() ([]byte, []int) {
 	return file_v1_actuator_service_proto_rawDescGZIP(), []int{5}
 }
 
-// ServerInfo is the API message for server info.
+// System information and configuration for the Bytebase instance.
 // Actuator concept is similar to the Spring Boot Actuator.
 type ActuatorInfo struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// version is the bytebase's server version
+	// The Bytebase server version.
 	Version string `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
-	// git_commit is the git commit hash of the build
+	// The git commit hash of the build.
 	GitCommit string `protobuf:"bytes,2,opt,name=git_commit,json=gitCommit,proto3" json:"git_commit,omitempty"`
-	// readonly flag means if the Bytebase is running in readonly mode.
+	// Whether the Bytebase instance is running in read-only mode.
 	Readonly bool `protobuf:"varint,3,opt,name=readonly,proto3" json:"readonly,omitempty"`
-	// saas flag means if the Bytebase is running in SaaS mode, some features are not allowed to edit by users.
+	// Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users.
 	Saas bool `protobuf:"varint,4,opt,name=saas,proto3" json:"saas,omitempty"`
-	// demo flag means if the Bytebase is running in demo mode.
+	// Whether the Bytebase instance is running in demo mode.
 	Demo bool `protobuf:"varint,5,opt,name=demo,proto3" json:"demo,omitempty"`
-	// host is the Bytebase instance host.
+	// The host address of the Bytebase instance.
 	Host string `protobuf:"bytes,6,opt,name=host,proto3" json:"host,omitempty"`
-	// port is the Bytebase instance port.
+	// The port number of the Bytebase instance.
 	Port string `protobuf:"bytes,7,opt,name=port,proto3" json:"port,omitempty"`
-	// external_url is the URL where user or webhook callback visits Bytebase.
+	// The external URL where users or webhook callbacks access Bytebase.
 	ExternalUrl string `protobuf:"bytes,8,opt,name=external_url,json=externalUrl,proto3" json:"external_url,omitempty"`
-	// need_admin_setup flag means the Bytebase instance doesn't have any end users.
+	// Whether the Bytebase instance requires initial admin setup.
 	NeedAdminSetup bool `protobuf:"varint,9,opt,name=need_admin_setup,json=needAdminSetup,proto3" json:"need_admin_setup,omitempty"`
-	// disallow_signup is the flag to disable self-service signup.
+	// Whether self-service user signup is disabled.
 	DisallowSignup bool `protobuf:"varint,10,opt,name=disallow_signup,json=disallowSignup,proto3" json:"disallow_signup,omitempty"`
-	// last_active_time is the service last active time in UTC Time Format, any API calls will refresh this value.
+	// The last time any API call was made, refreshed on each request.
 	LastActiveTime *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=last_active_time,json=lastActiveTime,proto3" json:"last_active_time,omitempty"`
-	// require_2fa is the flag to require 2FA for all users.
+	// Whether two-factor authentication is required for all users.
 	Require_2Fa bool `protobuf:"varint,12,opt,name=require_2fa,json=require2fa,proto3" json:"require_2fa,omitempty"`
-	// workspace_id is the identifier for the workspace.
+	// The unique identifier for the workspace.
 	WorkspaceId string `protobuf:"bytes,13,opt,name=workspace_id,json=workspaceId,proto3" json:"workspace_id,omitempty"`
-	// debug flag means if the debug mode is enabled.
-	Debug              bool     `protobuf:"varint,15,opt,name=debug,proto3" json:"debug,omitempty"`
+	// Whether debug mode is enabled.
+	Debug bool `protobuf:"varint,15,opt,name=debug,proto3" json:"debug,omitempty"`
+	// List of features that are not licensed.
 	UnlicensedFeatures []string `protobuf:"bytes,19,rep,name=unlicensed_features,json=unlicensedFeatures,proto3" json:"unlicensed_features,omitempty"`
-	// disallow_password_signin is the flag to disallow user signin with email&password. (except workspace admins)
-	DisallowPasswordSignin bool                        `protobuf:"varint,20,opt,name=disallow_password_signin,json=disallowPasswordSignin,proto3" json:"disallow_password_signin,omitempty"`
-	PasswordRestriction    *PasswordRestrictionSetting `protobuf:"bytes,21,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
-	// docker flag means if the Bytebase instance is running in docker.
-	Docker                 bool                     `protobuf:"varint,22,opt,name=docker,proto3" json:"docker,omitempty"`
-	UserStats              []*ActuatorInfo_StatUser `protobuf:"bytes,23,rep,name=user_stats,json=userStats,proto3" json:"user_stats,omitempty"`
-	ActivatedInstanceCount int32                    `protobuf:"varint,24,opt,name=activated_instance_count,json=activatedInstanceCount,proto3" json:"activated_instance_count,omitempty"`
-	TotalInstanceCount     int32                    `protobuf:"varint,25,opt,name=total_instance_count,json=totalInstanceCount,proto3" json:"total_instance_count,omitempty"`
-	EnableSample           bool                     `protobuf:"varint,26,opt,name=enable_sample,json=enableSample,proto3" json:"enable_sample,omitempty"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	// Whether password-based signin is disabled (except for workspace admins).
+	DisallowPasswordSignin bool `protobuf:"varint,20,opt,name=disallow_password_signin,json=disallowPasswordSignin,proto3" json:"disallow_password_signin,omitempty"`
+	// Password complexity and restriction requirements.
+	PasswordRestriction *PasswordRestrictionSetting `protobuf:"bytes,21,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
+	// Whether the Bytebase instance is running in Docker.
+	Docker bool `protobuf:"varint,22,opt,name=docker,proto3" json:"docker,omitempty"`
+	// Statistics about users in the system.
+	UserStats []*ActuatorInfo_StatUser `protobuf:"bytes,23,rep,name=user_stats,json=userStats,proto3" json:"user_stats,omitempty"`
+	// The number of activated database instances.
+	ActivatedInstanceCount int32 `protobuf:"varint,24,opt,name=activated_instance_count,json=activatedInstanceCount,proto3" json:"activated_instance_count,omitempty"`
+	// The total number of database instances.
+	TotalInstanceCount int32 `protobuf:"varint,25,opt,name=total_instance_count,json=totalInstanceCount,proto3" json:"total_instance_count,omitempty"`
+	// Whether sample data setup is enabled.
+	EnableSample  bool `protobuf:"varint,26,opt,name=enable_sample,json=enableSample,proto3" json:"enable_sample,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ActuatorInfo) Reset() {
@@ -510,11 +520,15 @@ func (x *ActuatorInfo) GetEnableSample() bool {
 	return false
 }
 
+// User statistics by type and state.
 type ActuatorInfo_StatUser struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserType      UserType               `protobuf:"varint,1,opt,name=user_type,json=userType,proto3,enum=bytebase.v1.UserType" json:"user_type,omitempty"`
-	State         State                  `protobuf:"varint,2,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
-	Count         int32                  `protobuf:"varint,3,opt,name=count,proto3" json:"count,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The type of user.
+	UserType UserType `protobuf:"varint,1,opt,name=user_type,json=userType,proto3,enum=bytebase.v1.UserType" json:"user_type,omitempty"`
+	// The state of the user.
+	State State `protobuf:"varint,2,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
+	// The count of users matching this type and state.
+	Count         int32 `protobuf:"varint,3,opt,name=count,proto3" json:"count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

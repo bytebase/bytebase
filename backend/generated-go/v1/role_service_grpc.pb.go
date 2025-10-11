@@ -30,15 +30,22 @@ const (
 // RoleServiceClient is the client API for RoleService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// RoleService manages workspace roles and permissions.
 type RoleServiceClient interface {
+	// Lists roles in the workspace.
 	// Permissions required: bb.roles.list
 	ListRoles(ctx context.Context, in *ListRolesRequest, opts ...grpc.CallOption) (*ListRolesResponse, error)
+	// Retrieves a role by name.
 	// Permissions required: bb.roles.get
 	GetRole(ctx context.Context, in *GetRoleRequest, opts ...grpc.CallOption) (*Role, error)
+	// Creates a new custom role.
 	// Permissions required: bb.roles.create
 	CreateRole(ctx context.Context, in *CreateRoleRequest, opts ...grpc.CallOption) (*Role, error)
+	// Updates a role's properties.
 	// Permissions required: bb.roles.update
 	UpdateRole(ctx context.Context, in *UpdateRoleRequest, opts ...grpc.CallOption) (*Role, error)
+	// Deletes a custom role.
 	// Permissions required: bb.roles.delete
 	DeleteRole(ctx context.Context, in *DeleteRoleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
@@ -104,15 +111,22 @@ func (c *roleServiceClient) DeleteRole(ctx context.Context, in *DeleteRoleReques
 // RoleServiceServer is the server API for RoleService service.
 // All implementations must embed UnimplementedRoleServiceServer
 // for forward compatibility.
+//
+// RoleService manages workspace roles and permissions.
 type RoleServiceServer interface {
+	// Lists roles in the workspace.
 	// Permissions required: bb.roles.list
 	ListRoles(context.Context, *ListRolesRequest) (*ListRolesResponse, error)
+	// Retrieves a role by name.
 	// Permissions required: bb.roles.get
 	GetRole(context.Context, *GetRoleRequest) (*Role, error)
+	// Creates a new custom role.
 	// Permissions required: bb.roles.create
 	CreateRole(context.Context, *CreateRoleRequest) (*Role, error)
+	// Updates a role's properties.
 	// Permissions required: bb.roles.update
 	UpdateRole(context.Context, *UpdateRoleRequest) (*Role, error)
+	// Deletes a custom role.
 	// Permissions required: bb.roles.delete
 	DeleteRole(context.Context, *DeleteRoleRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedRoleServiceServer()

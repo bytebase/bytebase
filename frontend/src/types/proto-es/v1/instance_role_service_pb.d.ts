@@ -165,10 +165,13 @@ export declare type InstanceRole = Message<"bytebase.v1.InstanceRole"> & {
 export declare const InstanceRoleSchema: GenMessage<InstanceRole>;
 
 /**
+ * InstanceRoleService manages database roles within instances.
+ *
  * @generated from service bytebase.v1.InstanceRoleService
  */
 export declare const InstanceRoleService: GenService<{
   /**
+   * Gets a database role from an instance.
    * Permissions required: bb.instanceRoles.get
    *
    * @generated from rpc bytebase.v1.InstanceRoleService.GetInstanceRole
@@ -179,6 +182,7 @@ export declare const InstanceRoleService: GenService<{
     output: typeof InstanceRoleSchema;
   },
   /**
+   * Lists all database roles in an instance.
    * Permissions required: bb.instanceRoles.list
    *
    * @generated from rpc bytebase.v1.InstanceRoleService.ListInstanceRoles

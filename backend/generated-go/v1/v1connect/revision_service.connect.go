@@ -53,14 +53,19 @@ const (
 
 // RevisionServiceClient is a client for the bytebase.v1.RevisionService service.
 type RevisionServiceClient interface {
+	// Lists schema revisions for a database.
 	// Permissions required: bb.revisions.list
 	ListRevisions(context.Context, *connect.Request[v1.ListRevisionsRequest]) (*connect.Response[v1.ListRevisionsResponse], error)
+	// Retrieves a schema revision by name.
 	// Permissions required: bb.revisions.get
 	GetRevision(context.Context, *connect.Request[v1.GetRevisionRequest]) (*connect.Response[v1.Revision], error)
+	// Creates a new schema revision.
 	// Permissions required: bb.revisions.create
 	CreateRevision(context.Context, *connect.Request[v1.CreateRevisionRequest]) (*connect.Response[v1.Revision], error)
+	// Creates multiple schema revisions in a single operation.
 	// Permissions required: bb.revisions.create
 	BatchCreateRevisions(context.Context, *connect.Request[v1.BatchCreateRevisionsRequest]) (*connect.Response[v1.BatchCreateRevisionsResponse], error)
+	// Deletes a schema revision.
 	// Permissions required: bb.revisions.delete
 	DeleteRevision(context.Context, *connect.Request[v1.DeleteRevisionRequest]) (*connect.Response[emptypb.Empty], error)
 }
@@ -145,14 +150,19 @@ func (c *revisionServiceClient) DeleteRevision(ctx context.Context, req *connect
 
 // RevisionServiceHandler is an implementation of the bytebase.v1.RevisionService service.
 type RevisionServiceHandler interface {
+	// Lists schema revisions for a database.
 	// Permissions required: bb.revisions.list
 	ListRevisions(context.Context, *connect.Request[v1.ListRevisionsRequest]) (*connect.Response[v1.ListRevisionsResponse], error)
+	// Retrieves a schema revision by name.
 	// Permissions required: bb.revisions.get
 	GetRevision(context.Context, *connect.Request[v1.GetRevisionRequest]) (*connect.Response[v1.Revision], error)
+	// Creates a new schema revision.
 	// Permissions required: bb.revisions.create
 	CreateRevision(context.Context, *connect.Request[v1.CreateRevisionRequest]) (*connect.Response[v1.Revision], error)
+	// Creates multiple schema revisions in a single operation.
 	// Permissions required: bb.revisions.create
 	BatchCreateRevisions(context.Context, *connect.Request[v1.BatchCreateRevisionsRequest]) (*connect.Response[v1.BatchCreateRevisionsResponse], error)
+	// Deletes a schema revision.
 	// Permissions required: bb.revisions.delete
 	DeleteRevision(context.Context, *connect.Request[v1.DeleteRevisionRequest]) (*connect.Response[emptypb.Empty], error)
 }

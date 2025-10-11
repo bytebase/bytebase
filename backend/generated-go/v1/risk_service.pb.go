@@ -85,17 +85,17 @@ func (Risk_Source) EnumDescriptor() ([]byte, []int) {
 
 type ListRisksRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// The maximum number of risks to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 10 risks will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// A page token, received from a previous `ListRisks` call.
 	// Provide this to retrieve the subsequent page.
 	//
-	// When paginating, all other parameters provided to `LiskRisks` must match
+	// When paginating, all other parameters provided to `ListRisks` must match
 	// the call that provided the page token.
 	PageToken     string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -409,9 +409,12 @@ type Risk struct {
 	// Format: risks/{risk}
 	Name   string      `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Source Risk_Source `protobuf:"varint,3,opt,name=source,proto3,enum=bytebase.v1.Risk_Source" json:"source,omitempty"`
-	Title  string      `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	Level  RiskLevel   `protobuf:"varint,5,opt,name=level,proto3,enum=bytebase.v1.RiskLevel" json:"level,omitempty"`
-	Active bool        `protobuf:"varint,7,opt,name=active,proto3" json:"active,omitempty"`
+	// The title of the risk rule.
+	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	// The risk level assigned when this rule matches.
+	Level RiskLevel `protobuf:"varint,5,opt,name=level,proto3,enum=bytebase.v1.RiskLevel" json:"level,omitempty"`
+	// Whether the risk rule is active.
+	Active bool `protobuf:"varint,7,opt,name=active,proto3" json:"active,omitempty"`
 	// The condition that is associated with the risk.
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 	//

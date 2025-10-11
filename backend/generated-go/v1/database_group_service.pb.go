@@ -25,6 +25,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// View options for database group responses.
 type DatabaseGroupView int32
 
 const (
@@ -78,18 +79,19 @@ func (DatabaseGroupView) EnumDescriptor() ([]byte, []int) {
 	return file_v1_database_group_service_proto_rawDescGZIP(), []int{0}
 }
 
+// Request message for listing database groups.
 type ListDatabaseGroupsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent resource whose database groups are to be listed.
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// The maximum number of database groups to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 50 database groups will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// A page token, received from a previous `ListDatabaseGroups` call.
 	// Provide this to retrieve the subsequent page.
 	//
@@ -160,11 +162,13 @@ func (x *ListDatabaseGroupsRequest) GetView() DatabaseGroupView {
 	return DatabaseGroupView_DATABASE_GROUP_VIEW_UNSPECIFIED
 }
 
+// Response message for listing database groups.
 type ListDatabaseGroupsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// database_groups is the list of database groups.
+	// The database groups from the specified request.
 	DatabaseGroups []*DatabaseGroup `protobuf:"bytes,1,rep,name=database_groups,json=databaseGroups,proto3" json:"database_groups,omitempty"`
-	// Not used. A token, which can be sent as `page_token` to retrieve the next page.
+	// Pagination is not currently implemented. This field is reserved for future use.
+	// A token, which can be sent as `page_token` to retrieve the next page.
 	// If this field is omitted, there are no subsequent pages.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -215,6 +219,7 @@ func (x *ListDatabaseGroupsResponse) GetNextPageToken() string {
 	return ""
 }
 
+// Request message for getting a database group.
 type GetDatabaseGroupRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the database group to retrieve.
@@ -270,6 +275,7 @@ func (x *GetDatabaseGroupRequest) GetView() DatabaseGroupView {
 	return DatabaseGroupView_DATABASE_GROUP_VIEW_UNSPECIFIED
 }
 
+// Request message for creating a database group.
 type CreateDatabaseGroupRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent resource where this database group will be created.
@@ -347,6 +353,7 @@ func (x *CreateDatabaseGroupRequest) GetValidateOnly() bool {
 	return false
 }
 
+// Request message for updating a database group.
 type UpdateDatabaseGroupRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The database group to update.
@@ -414,6 +421,7 @@ func (x *UpdateDatabaseGroupRequest) GetAllowMissing() bool {
 	return false
 }
 
+// Request message for deleting a database group.
 type DeleteDatabaseGroupRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the database group to delete.
@@ -460,6 +468,7 @@ func (x *DeleteDatabaseGroupRequest) GetName() string {
 	return ""
 }
 
+// A group of databases matched by expressions.
 type DatabaseGroup struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the database group.
@@ -545,6 +554,7 @@ func (x *DatabaseGroup) GetMatchedDatabases() []*DatabaseGroup_Database {
 	return nil
 }
 
+// A database within a database group.
 type DatabaseGroup_Database struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The resource name of the database.

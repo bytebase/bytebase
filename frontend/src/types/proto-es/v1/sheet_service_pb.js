@@ -88,6 +88,8 @@ export const SheetCommandSchema = /*@__PURE__*/
   messageDesc(file_v1_sheet_service, 7);
 
 /**
+ * SheetService manages SQL scripts and saved queries.
+ *
  * @generated from service bytebase.v1.SheetService
  */
 export const SheetService = /*@__PURE__*/

@@ -296,6 +296,8 @@ export const AICompletionResponse_Candidate_Content_PartSchema = /*@__PURE__*/
   messageDesc(file_v1_sql_service, 22, 0, 0, 0);
 
 /**
+ * SQLService executes SQL queries and manages query operations.
+ *
  * @generated from service bytebase.v1.SQLService
  */
 export const SQLService = /*@__PURE__*/

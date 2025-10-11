@@ -18,7 +18,7 @@ export declare const file_v1_risk_service: GenFile;
  */
 export declare type ListRisksRequest = Message<"bytebase.v1.ListRisksRequest"> & {
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * The maximum number of risks to return. The service may return fewer than
    * this value.
    * If unspecified, at most 10 risks will be returned.
@@ -29,11 +29,11 @@ export declare type ListRisksRequest = Message<"bytebase.v1.ListRisksRequest"> &
   pageSize: number;
 
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * A page token, received from a previous `ListRisks` call.
    * Provide this to retrieve the subsequent page.
    *
-   * When paginating, all other parameters provided to `LiskRisks` must match
+   * When paginating, all other parameters provided to `ListRisks` must match
    * the call that provided the page token.
    *
    * @generated from field: string page_token = 2;
@@ -180,16 +180,22 @@ export declare type Risk = Message<"bytebase.v1.Risk"> & {
   source: Risk_Source;
 
   /**
+   * The title of the risk rule.
+   *
    * @generated from field: string title = 4;
    */
   title: string;
 
   /**
+   * The risk level assigned when this rule matches.
+   *
    * @generated from field: bytebase.v1.RiskLevel level = 5;
    */
   level: RiskLevel;
 
   /**
+   * Whether the risk rule is active.
+   *
    * @generated from field: bool active = 7;
    */
   active: boolean;
@@ -297,10 +303,13 @@ export enum Risk_Source {
 export declare const Risk_SourceSchema: GenEnum<Risk_Source>;
 
 /**
+ * RiskService manages risk assessment rules for database changes.
+ *
  * @generated from service bytebase.v1.RiskService
  */
 export declare const RiskService: GenService<{
   /**
+   * Lists all risk assessment rules.
    * Permissions required: bb.risks.list
    *
    * @generated from rpc bytebase.v1.RiskService.ListRisks
@@ -311,6 +320,7 @@ export declare const RiskService: GenService<{
     output: typeof ListRisksResponseSchema;
   },
   /**
+   * Creates a new risk assessment rule.
    * Permissions required: bb.risks.create
    *
    * @generated from rpc bytebase.v1.RiskService.CreateRisk
@@ -321,6 +331,7 @@ export declare const RiskService: GenService<{
     output: typeof RiskSchema;
   },
   /**
+   * Retrieves a risk assessment rule by name.
    * Permissions required: bb.risks.list
    *
    * @generated from rpc bytebase.v1.RiskService.GetRisk
@@ -331,6 +342,7 @@ export declare const RiskService: GenService<{
     output: typeof RiskSchema;
   },
   /**
+   * Updates an existing risk assessment rule.
    * Permissions required: bb.risks.update
    *
    * @generated from rpc bytebase.v1.RiskService.UpdateRisk
@@ -341,6 +353,7 @@ export declare const RiskService: GenService<{
     output: typeof RiskSchema;
   },
   /**
+   * Deletes a risk assessment rule.
    * Permissions required: bb.risks.delete
    *
    * @generated from rpc bytebase.v1.RiskService.DeleteRisk

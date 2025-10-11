@@ -1732,7 +1732,8 @@ type DatabaseMetadata struct {
 	Collation string `protobuf:"bytes,4,opt,name=collation,proto3" json:"collation,omitempty"`
 	// The extensions is the list of extensions in a database.
 	Extensions []*ExtensionMetadata `protobuf:"bytes,5,rep,name=extensions,proto3" json:"extensions,omitempty"`
-	Owner      string               `protobuf:"bytes,7,opt,name=owner,proto3" json:"owner,omitempty"`
+	// The owner of the database.
+	Owner string `protobuf:"bytes,7,opt,name=owner,proto3" json:"owner,omitempty"`
 	// The search_path is the search path of a PostgreSQL database.
 	SearchPath    string `protobuf:"bytes,8,opt,name=search_path,json=searchPath,proto3" json:"search_path,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1845,12 +1846,16 @@ type SchemaMetadata struct {
 	MaterializedViews []*MaterializedViewMetadata `protobuf:"bytes,9,rep,name=materialized_views,json=materializedViews,proto3" json:"materialized_views,omitempty"`
 	// The packages is the list of packages in a schema.
 	Packages []*PackageMetadata `protobuf:"bytes,10,rep,name=packages,proto3" json:"packages,omitempty"`
-	Owner    string             `protobuf:"bytes,11,opt,name=owner,proto3" json:"owner,omitempty"`
+	// The owner of the schema.
+	Owner string `protobuf:"bytes,11,opt,name=owner,proto3" json:"owner,omitempty"`
 	// The sequences is the list of sequences in a schema, sorted by name.
 	Sequences []*SequenceMetadata `protobuf:"bytes,13,rep,name=sequences,proto3" json:"sequences,omitempty"`
-	Events    []*EventMetadata    `protobuf:"bytes,14,rep,name=events,proto3" json:"events,omitempty"`
+	// The events is the list of scheduled events in a schema.
+	Events []*EventMetadata `protobuf:"bytes,14,rep,name=events,proto3" json:"events,omitempty"`
+	// The enum_types is the list of user-defined enum types in a schema.
 	EnumTypes []*EnumTypeMetadata `protobuf:"bytes,15,rep,name=enum_types,json=enumTypes,proto3" json:"enum_types,omitempty"`
-	SkipDump  bool                `protobuf:"varint,16,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
+	// Whether to skip this schema during schema dump operations.
+	SkipDump bool `protobuf:"varint,16,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
 	// The comment is the comment of a schema.
 	Comment       string `protobuf:"bytes,17,opt,name=comment,proto3" json:"comment,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -2004,9 +2009,11 @@ type EnumTypeMetadata struct {
 	// The name of a type.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The enum values of a type.
-	Values        []string `protobuf:"bytes,2,rep,name=values,proto3" json:"values,omitempty"`
-	Comment       string   `protobuf:"bytes,3,opt,name=comment,proto3" json:"comment,omitempty"`
-	SkipDump      bool     `protobuf:"varint,4,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
+	Values []string `protobuf:"bytes,2,rep,name=values,proto3" json:"values,omitempty"`
+	// The comment describing the enum type.
+	Comment string `protobuf:"bytes,3,opt,name=comment,proto3" json:"comment,omitempty"`
+	// Whether to skip this enum type during schema dump operations.
+	SkipDump      bool `protobuf:"varint,4,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2076,9 +2083,12 @@ type EventMetadata struct {
 	// The schedule of the event.
 	Definition string `protobuf:"bytes,2,opt,name=definition,proto3" json:"definition,omitempty"`
 	// The time zone of the event.
-	TimeZone            string `protobuf:"bytes,3,opt,name=time_zone,json=timeZone,proto3" json:"time_zone,omitempty"`
-	SqlMode             string `protobuf:"bytes,4,opt,name=sql_mode,json=sqlMode,proto3" json:"sql_mode,omitempty"`
-	CharacterSetClient  string `protobuf:"bytes,5,opt,name=character_set_client,json=characterSetClient,proto3" json:"character_set_client,omitempty"`
+	TimeZone string `protobuf:"bytes,3,opt,name=time_zone,json=timeZone,proto3" json:"time_zone,omitempty"`
+	// The SQL mode setting for the event.
+	SqlMode string `protobuf:"bytes,4,opt,name=sql_mode,json=sqlMode,proto3" json:"sql_mode,omitempty"`
+	// The character set used by the client creating the event.
+	CharacterSetClient string `protobuf:"bytes,5,opt,name=character_set_client,json=characterSetClient,proto3" json:"character_set_client,omitempty"`
+	// The collation used for the connection when creating the event.
 	CollationConnection string `protobuf:"bytes,6,opt,name=collation_connection,json=collationConnection,proto3" json:"collation_connection,omitempty"`
 	// The comment is the comment of an event.
 	Comment       string `protobuf:"bytes,7,opt,name=comment,proto3" json:"comment,omitempty"`
@@ -2188,9 +2198,11 @@ type SequenceMetadata struct {
 	// The owner table of the sequence.
 	OwnerTable string `protobuf:"bytes,10,opt,name=owner_table,json=ownerTable,proto3" json:"owner_table,omitempty"`
 	// The owner column of the sequence.
-	OwnerColumn   string `protobuf:"bytes,11,opt,name=owner_column,json=ownerColumn,proto3" json:"owner_column,omitempty"`
-	Comment       string `protobuf:"bytes,12,opt,name=comment,proto3" json:"comment,omitempty"`
-	SkipDump      bool   `protobuf:"varint,13,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
+	OwnerColumn string `protobuf:"bytes,11,opt,name=owner_column,json=ownerColumn,proto3" json:"owner_column,omitempty"`
+	// The comment describing the sequence.
+	Comment string `protobuf:"bytes,12,opt,name=comment,proto3" json:"comment,omitempty"`
+	// Whether to skip this sequence during schema dump operations.
+	SkipDump      bool `protobuf:"varint,13,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2326,14 +2338,19 @@ type TriggerMetadata struct {
 	// The timing is the timing of the trigger, such as BEFORE, AFTER.
 	Timing string `protobuf:"bytes,4,opt,name=timing,proto3" json:"timing,omitempty"`
 	// The body is the body of the trigger.
-	Body                string `protobuf:"bytes,5,opt,name=body,proto3" json:"body,omitempty"`
-	SqlMode             string `protobuf:"bytes,6,opt,name=sql_mode,json=sqlMode,proto3" json:"sql_mode,omitempty"`
-	CharacterSetClient  string `protobuf:"bytes,7,opt,name=character_set_client,json=characterSetClient,proto3" json:"character_set_client,omitempty"`
+	Body string `protobuf:"bytes,5,opt,name=body,proto3" json:"body,omitempty"`
+	// The SQL mode setting for the trigger.
+	SqlMode string `protobuf:"bytes,6,opt,name=sql_mode,json=sqlMode,proto3" json:"sql_mode,omitempty"`
+	// The character set used by the client creating the trigger.
+	CharacterSetClient string `protobuf:"bytes,7,opt,name=character_set_client,json=characterSetClient,proto3" json:"character_set_client,omitempty"`
+	// The collation used for the connection when creating the trigger.
 	CollationConnection string `protobuf:"bytes,8,opt,name=collation_connection,json=collationConnection,proto3" json:"collation_connection,omitempty"`
-	Comment             string `protobuf:"bytes,9,opt,name=comment,proto3" json:"comment,omitempty"`
-	SkipDump            bool   `protobuf:"varint,10,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// The comment describing the trigger.
+	Comment string `protobuf:"bytes,9,opt,name=comment,proto3" json:"comment,omitempty"`
+	// Whether to skip this trigger during schema dump operations.
+	SkipDump      bool `protobuf:"varint,10,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TriggerMetadata) Reset() {
@@ -2537,12 +2554,15 @@ type TableMetadata struct {
 	Partitions []*TablePartitionMetadata `protobuf:"bytes,15,rep,name=partitions,proto3" json:"partitions,omitempty"`
 	// The check_constraints is the list of check constraints in a table.
 	CheckConstraints []*CheckConstraintMetadata `protobuf:"bytes,16,rep,name=check_constraints,json=checkConstraints,proto3" json:"check_constraints,omitempty"`
-	Owner            string                     `protobuf:"bytes,18,opt,name=owner,proto3" json:"owner,omitempty"`
+	// The owner of the table.
+	Owner string `protobuf:"bytes,18,opt,name=owner,proto3" json:"owner,omitempty"`
 	// The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.
 	// Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
-	SortingKeys []string           `protobuf:"bytes,19,rep,name=sorting_keys,json=sortingKeys,proto3" json:"sorting_keys,omitempty"`
-	Triggers    []*TriggerMetadata `protobuf:"bytes,20,rep,name=triggers,proto3" json:"triggers,omitempty"`
-	SkipDump    bool               `protobuf:"varint,21,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
+	SortingKeys []string `protobuf:"bytes,19,rep,name=sorting_keys,json=sortingKeys,proto3" json:"sorting_keys,omitempty"`
+	// The triggers is the list of triggers associated with the table.
+	Triggers []*TriggerMetadata `protobuf:"bytes,20,rep,name=triggers,proto3" json:"triggers,omitempty"`
+	// Whether to skip this table during schema dump operations.
+	SkipDump bool `protobuf:"varint,21,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
 	// https://docs.pingcap.com/tidb/stable/information-schema-tables/
 	ShardingInfo string `protobuf:"bytes,22,opt,name=sharding_info,json=shardingInfo,proto3" json:"sharding_info,omitempty"`
 	// https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes

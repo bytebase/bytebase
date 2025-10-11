@@ -38,31 +38,46 @@ const (
 // InstanceServiceClient is the client API for InstanceService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// InstanceService manages database instances and their connections.
 type InstanceServiceClient interface {
+	// Gets a database instance by name.
 	// Permissions required: bb.instances.get
 	GetInstance(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
+	// Lists all database instances.
 	// Permissions required: bb.instances.list
 	ListInstances(ctx context.Context, in *ListInstancesRequest, opts ...grpc.CallOption) (*ListInstancesResponse, error)
+	// Creates a new database instance.
 	// Permissions required: bb.instances.create
 	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
+	// Updates a database instance.
 	// Permissions required: bb.instances.update
 	UpdateInstance(ctx context.Context, in *UpdateInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
+	// Deletes or soft-deletes a database instance.
 	// Permissions required: bb.instances.delete
 	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Restores a soft-deleted database instance.
 	// Permissions required: bb.instances.undelete
 	UndeleteInstance(ctx context.Context, in *UndeleteInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
+	// Syncs database schemas and metadata from an instance.
 	// Permissions required: bb.instances.sync
 	SyncInstance(ctx context.Context, in *SyncInstanceRequest, opts ...grpc.CallOption) (*SyncInstanceResponse, error)
+	// Lists all databases within an instance without creating them.
 	// Permissions required: bb.instances.get
 	ListInstanceDatabase(ctx context.Context, in *ListInstanceDatabaseRequest, opts ...grpc.CallOption) (*ListInstanceDatabaseResponse, error)
+	// Syncs multiple instances in a single request.
 	// Permissions required: bb.instances.sync
 	BatchSyncInstances(ctx context.Context, in *BatchSyncInstancesRequest, opts ...grpc.CallOption) (*BatchSyncInstancesResponse, error)
+	// Updates multiple instances in a single request.
 	// Permissions required: bb.instances.update
 	BatchUpdateInstances(ctx context.Context, in *BatchUpdateInstancesRequest, opts ...grpc.CallOption) (*BatchUpdateInstancesResponse, error)
+	// Adds a read-only data source to an instance.
 	// Permissions required: bb.instances.update
 	AddDataSource(ctx context.Context, in *AddDataSourceRequest, opts ...grpc.CallOption) (*Instance, error)
+	// Removes a read-only data source from an instance.
 	// Permissions required: bb.instances.update
 	RemoveDataSource(ctx context.Context, in *RemoveDataSourceRequest, opts ...grpc.CallOption) (*Instance, error)
+	// Updates a data source configuration.
 	// Permissions required: bb.instances.update
 	UpdateDataSource(ctx context.Context, in *UpdateDataSourceRequest, opts ...grpc.CallOption) (*Instance, error)
 }
@@ -208,31 +223,46 @@ func (c *instanceServiceClient) UpdateDataSource(ctx context.Context, in *Update
 // InstanceServiceServer is the server API for InstanceService service.
 // All implementations must embed UnimplementedInstanceServiceServer
 // for forward compatibility.
+//
+// InstanceService manages database instances and their connections.
 type InstanceServiceServer interface {
+	// Gets a database instance by name.
 	// Permissions required: bb.instances.get
 	GetInstance(context.Context, *GetInstanceRequest) (*Instance, error)
+	// Lists all database instances.
 	// Permissions required: bb.instances.list
 	ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error)
+	// Creates a new database instance.
 	// Permissions required: bb.instances.create
 	CreateInstance(context.Context, *CreateInstanceRequest) (*Instance, error)
+	// Updates a database instance.
 	// Permissions required: bb.instances.update
 	UpdateInstance(context.Context, *UpdateInstanceRequest) (*Instance, error)
+	// Deletes or soft-deletes a database instance.
 	// Permissions required: bb.instances.delete
 	DeleteInstance(context.Context, *DeleteInstanceRequest) (*emptypb.Empty, error)
+	// Restores a soft-deleted database instance.
 	// Permissions required: bb.instances.undelete
 	UndeleteInstance(context.Context, *UndeleteInstanceRequest) (*Instance, error)
+	// Syncs database schemas and metadata from an instance.
 	// Permissions required: bb.instances.sync
 	SyncInstance(context.Context, *SyncInstanceRequest) (*SyncInstanceResponse, error)
+	// Lists all databases within an instance without creating them.
 	// Permissions required: bb.instances.get
 	ListInstanceDatabase(context.Context, *ListInstanceDatabaseRequest) (*ListInstanceDatabaseResponse, error)
+	// Syncs multiple instances in a single request.
 	// Permissions required: bb.instances.sync
 	BatchSyncInstances(context.Context, *BatchSyncInstancesRequest) (*BatchSyncInstancesResponse, error)
+	// Updates multiple instances in a single request.
 	// Permissions required: bb.instances.update
 	BatchUpdateInstances(context.Context, *BatchUpdateInstancesRequest) (*BatchUpdateInstancesResponse, error)
+	// Adds a read-only data source to an instance.
 	// Permissions required: bb.instances.update
 	AddDataSource(context.Context, *AddDataSourceRequest) (*Instance, error)
+	// Removes a read-only data source from an instance.
 	// Permissions required: bb.instances.update
 	RemoveDataSource(context.Context, *RemoveDataSourceRequest) (*Instance, error)
+	// Updates a data source configuration.
 	// Permissions required: bb.instances.update
 	UpdateDataSource(context.Context, *UpdateDataSourceRequest) (*Instance, error)
 	mustEmbedUnimplementedInstanceServiceServer()

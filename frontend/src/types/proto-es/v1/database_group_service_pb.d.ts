@@ -13,6 +13,8 @@ import type { Expr } from "../google/type/expr_pb";
 export declare const file_v1_database_group_service: GenFile;
 
 /**
+ * Request message for listing database groups.
+ *
  * @generated from message bytebase.v1.ListDatabaseGroupsRequest
  */
 export declare type ListDatabaseGroupsRequest = Message<"bytebase.v1.ListDatabaseGroupsRequest"> & {
@@ -25,7 +27,7 @@ export declare type ListDatabaseGroupsRequest = Message<"bytebase.v1.ListDatabas
   parent: string;
 
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * The maximum number of database groups to return. The service may return fewer than
    * this value.
    * If unspecified, at most 50 database groups will be returned.
@@ -36,7 +38,7 @@ export declare type ListDatabaseGroupsRequest = Message<"bytebase.v1.ListDatabas
   pageSize: number;
 
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * A page token, received from a previous `ListDatabaseGroups` call.
    * Provide this to retrieve the subsequent page.
    *
@@ -62,18 +64,21 @@ export declare type ListDatabaseGroupsRequest = Message<"bytebase.v1.ListDatabas
 export declare const ListDatabaseGroupsRequestSchema: GenMessage<ListDatabaseGroupsRequest>;
 
 /**
+ * Response message for listing database groups.
+ *
  * @generated from message bytebase.v1.ListDatabaseGroupsResponse
  */
 export declare type ListDatabaseGroupsResponse = Message<"bytebase.v1.ListDatabaseGroupsResponse"> & {
   /**
-   * database_groups is the list of database groups.
+   * The database groups from the specified request.
    *
    * @generated from field: repeated bytebase.v1.DatabaseGroup database_groups = 1;
    */
   databaseGroups: DatabaseGroup[];
 
   /**
-   * Not used. A token, which can be sent as `page_token` to retrieve the next page.
+   * Pagination is not currently implemented. This field is reserved for future use.
+   * A token, which can be sent as `page_token` to retrieve the next page.
    * If this field is omitted, there are no subsequent pages.
    *
    * @generated from field: string next_page_token = 2;
@@ -88,6 +93,8 @@ export declare type ListDatabaseGroupsResponse = Message<"bytebase.v1.ListDataba
 export declare const ListDatabaseGroupsResponseSchema: GenMessage<ListDatabaseGroupsResponse>;
 
 /**
+ * Request message for getting a database group.
+ *
  * @generated from message bytebase.v1.GetDatabaseGroupRequest
  */
 export declare type GetDatabaseGroupRequest = Message<"bytebase.v1.GetDatabaseGroupRequest"> & {
@@ -114,6 +121,8 @@ export declare type GetDatabaseGroupRequest = Message<"bytebase.v1.GetDatabaseGr
 export declare const GetDatabaseGroupRequestSchema: GenMessage<GetDatabaseGroupRequest>;
 
 /**
+ * Request message for creating a database group.
+ *
  * @generated from message bytebase.v1.CreateDatabaseGroupRequest
  */
 export declare type CreateDatabaseGroupRequest = Message<"bytebase.v1.CreateDatabaseGroupRequest"> & {
@@ -158,6 +167,8 @@ export declare type CreateDatabaseGroupRequest = Message<"bytebase.v1.CreateData
 export declare const CreateDatabaseGroupRequestSchema: GenMessage<CreateDatabaseGroupRequest>;
 
 /**
+ * Request message for updating a database group.
+ *
  * @generated from message bytebase.v1.UpdateDatabaseGroupRequest
  */
 export declare type UpdateDatabaseGroupRequest = Message<"bytebase.v1.UpdateDatabaseGroupRequest"> & {
@@ -194,6 +205,8 @@ export declare type UpdateDatabaseGroupRequest = Message<"bytebase.v1.UpdateData
 export declare const UpdateDatabaseGroupRequestSchema: GenMessage<UpdateDatabaseGroupRequest>;
 
 /**
+ * Request message for deleting a database group.
+ *
  * @generated from message bytebase.v1.DeleteDatabaseGroupRequest
  */
 export declare type DeleteDatabaseGroupRequest = Message<"bytebase.v1.DeleteDatabaseGroupRequest"> & {
@@ -213,6 +226,8 @@ export declare type DeleteDatabaseGroupRequest = Message<"bytebase.v1.DeleteData
 export declare const DeleteDatabaseGroupRequestSchema: GenMessage<DeleteDatabaseGroupRequest>;
 
 /**
+ * A group of databases matched by expressions.
+ *
  * @generated from message bytebase.v1.DatabaseGroup
  */
 export declare type DatabaseGroup = Message<"bytebase.v1.DatabaseGroup"> & {
@@ -265,6 +280,8 @@ export declare type DatabaseGroup = Message<"bytebase.v1.DatabaseGroup"> & {
 export declare const DatabaseGroupSchema: GenMessage<DatabaseGroup>;
 
 /**
+ * A database within a database group.
+ *
  * @generated from message bytebase.v1.DatabaseGroup.Database
  */
 export declare type DatabaseGroup_Database = Message<"bytebase.v1.DatabaseGroup.Database"> & {
@@ -284,6 +301,8 @@ export declare type DatabaseGroup_Database = Message<"bytebase.v1.DatabaseGroup.
 export declare const DatabaseGroup_DatabaseSchema: GenMessage<DatabaseGroup_Database>;
 
 /**
+ * View options for database group responses.
+ *
  * @generated from enum bytebase.v1.DatabaseGroupView
  */
 export enum DatabaseGroupView {
@@ -316,10 +335,13 @@ export enum DatabaseGroupView {
 export declare const DatabaseGroupViewSchema: GenEnum<DatabaseGroupView>;
 
 /**
+ * DatabaseGroupService manages database groups for organizing databases by criteria.
+ *
  * @generated from service bytebase.v1.DatabaseGroupService
  */
 export declare const DatabaseGroupService: GenService<{
   /**
+   * Lists database groups in a project.
    * Permissions required: bb.projects.get
    *
    * @generated from rpc bytebase.v1.DatabaseGroupService.ListDatabaseGroups
@@ -330,6 +352,7 @@ export declare const DatabaseGroupService: GenService<{
     output: typeof ListDatabaseGroupsResponseSchema;
   },
   /**
+   * Gets a database group by name.
    * Permissions required: bb.projects.get
    *
    * @generated from rpc bytebase.v1.DatabaseGroupService.GetDatabaseGroup
@@ -340,6 +363,7 @@ export declare const DatabaseGroupService: GenService<{
     output: typeof DatabaseGroupSchema;
   },
   /**
+   * Creates a new database group.
    * Permissions required: bb.projects.update
    *
    * @generated from rpc bytebase.v1.DatabaseGroupService.CreateDatabaseGroup
@@ -350,6 +374,7 @@ export declare const DatabaseGroupService: GenService<{
     output: typeof DatabaseGroupSchema;
   },
   /**
+   * Updates a database group.
    * Permissions required: bb.projects.update
    *
    * @generated from rpc bytebase.v1.DatabaseGroupService.UpdateDatabaseGroup
@@ -360,6 +385,7 @@ export declare const DatabaseGroupService: GenService<{
     output: typeof DatabaseGroupSchema;
   },
   /**
+   * Deletes a database group.
    * Permissions required: bb.projects.update
    *
    * @generated from rpc bytebase.v1.DatabaseGroupService.DeleteDatabaseGroup

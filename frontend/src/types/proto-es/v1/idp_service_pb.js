@@ -158,6 +158,8 @@ export const OAuth2AuthStyle = /*@__PURE__*/
   tsEnum(OAuth2AuthStyleSchema);
 
 /**
+ * IdentityProviderService manages external identity providers for SSO authentication.
+ *
  * @generated from service bytebase.v1.IdentityProviderService
  */
 export const IdentityProviderService = /*@__PURE__*/

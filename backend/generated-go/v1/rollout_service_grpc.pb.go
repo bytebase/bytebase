@@ -36,29 +36,43 @@ const (
 // RolloutServiceClient is the client API for RolloutService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// RolloutService manages the execution of deployment plans.
 type RolloutServiceClient interface {
+	// Retrieves a rollout by name.
 	// Permissions required: bb.rollouts.get
 	GetRollout(ctx context.Context, in *GetRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
+	// Lists rollouts in a project.
 	// Permissions required: bb.rollouts.list
 	ListRollouts(ctx context.Context, in *ListRolloutsRequest, opts ...grpc.CallOption) (*ListRolloutsResponse, error)
+	// Creates a new rollout from a plan.
 	// Permissions required: bb.rollouts.create
 	CreateRollout(ctx context.Context, in *CreateRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
+	// Previews the rollout that would be created from a plan.
 	// Permissions required: bb.rollouts.preview
 	PreviewRollout(ctx context.Context, in *PreviewRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
+	// Lists task run executions for a task.
 	// Permissions required: bb.taskRuns.list
 	ListTaskRuns(ctx context.Context, in *ListTaskRunsRequest, opts ...grpc.CallOption) (*ListTaskRunsResponse, error)
+	// Retrieves a task run by name.
 	// Permissions required: bb.taskRuns.list
 	GetTaskRun(ctx context.Context, in *GetTaskRunRequest, opts ...grpc.CallOption) (*TaskRun, error)
+	// Retrieves execution logs for a task run.
 	// Permissions required: bb.taskRuns.list
 	GetTaskRunLog(ctx context.Context, in *GetTaskRunLogRequest, opts ...grpc.CallOption) (*TaskRunLog, error)
+	// Retrieves database session information for a running task.
 	// Permissions required: bb.taskRuns.list
 	GetTaskRunSession(ctx context.Context, in *GetTaskRunSessionRequest, opts ...grpc.CallOption) (*TaskRunSession, error)
-	// Permissions required: None
+	// Executes multiple tasks in a rollout stage.
+	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchRunTasks(ctx context.Context, in *BatchRunTasksRequest, opts ...grpc.CallOption) (*BatchRunTasksResponse, error)
-	// Permissions required: None
+	// Skips multiple tasks in a rollout stage.
+	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchSkipTasks(ctx context.Context, in *BatchSkipTasksRequest, opts ...grpc.CallOption) (*BatchSkipTasksResponse, error)
-	// Permissions required: None
+	// Cancels multiple running task executions.
+	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchCancelTaskRuns(ctx context.Context, in *BatchCancelTaskRunsRequest, opts ...grpc.CallOption) (*BatchCancelTaskRunsResponse, error)
+	// Generates rollback SQL for a completed task run.
 	// Permissions required: bb.taskRuns.list
 	PreviewTaskRunRollback(ctx context.Context, in *PreviewTaskRunRollbackRequest, opts ...grpc.CallOption) (*PreviewTaskRunRollbackResponse, error)
 }
@@ -194,29 +208,43 @@ func (c *rolloutServiceClient) PreviewTaskRunRollback(ctx context.Context, in *P
 // RolloutServiceServer is the server API for RolloutService service.
 // All implementations must embed UnimplementedRolloutServiceServer
 // for forward compatibility.
+//
+// RolloutService manages the execution of deployment plans.
 type RolloutServiceServer interface {
+	// Retrieves a rollout by name.
 	// Permissions required: bb.rollouts.get
 	GetRollout(context.Context, *GetRolloutRequest) (*Rollout, error)
+	// Lists rollouts in a project.
 	// Permissions required: bb.rollouts.list
 	ListRollouts(context.Context, *ListRolloutsRequest) (*ListRolloutsResponse, error)
+	// Creates a new rollout from a plan.
 	// Permissions required: bb.rollouts.create
 	CreateRollout(context.Context, *CreateRolloutRequest) (*Rollout, error)
+	// Previews the rollout that would be created from a plan.
 	// Permissions required: bb.rollouts.preview
 	PreviewRollout(context.Context, *PreviewRolloutRequest) (*Rollout, error)
+	// Lists task run executions for a task.
 	// Permissions required: bb.taskRuns.list
 	ListTaskRuns(context.Context, *ListTaskRunsRequest) (*ListTaskRunsResponse, error)
+	// Retrieves a task run by name.
 	// Permissions required: bb.taskRuns.list
 	GetTaskRun(context.Context, *GetTaskRunRequest) (*TaskRun, error)
+	// Retrieves execution logs for a task run.
 	// Permissions required: bb.taskRuns.list
 	GetTaskRunLog(context.Context, *GetTaskRunLogRequest) (*TaskRunLog, error)
+	// Retrieves database session information for a running task.
 	// Permissions required: bb.taskRuns.list
 	GetTaskRunSession(context.Context, *GetTaskRunSessionRequest) (*TaskRunSession, error)
-	// Permissions required: None
+	// Executes multiple tasks in a rollout stage.
+	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchRunTasks(context.Context, *BatchRunTasksRequest) (*BatchRunTasksResponse, error)
-	// Permissions required: None
+	// Skips multiple tasks in a rollout stage.
+	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchSkipTasks(context.Context, *BatchSkipTasksRequest) (*BatchSkipTasksResponse, error)
-	// Permissions required: None
+	// Cancels multiple running task executions.
+	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchCancelTaskRuns(context.Context, *BatchCancelTaskRunsRequest) (*BatchCancelTaskRunsResponse, error)
+	// Generates rollback SQL for a completed task run.
 	// Permissions required: bb.taskRuns.list
 	PreviewTaskRunRollback(context.Context, *PreviewTaskRunRollbackRequest) (*PreviewTaskRunRollbackResponse, error)
 	mustEmbedUnimplementedRolloutServiceServer()
