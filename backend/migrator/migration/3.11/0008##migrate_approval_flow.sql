@@ -31,6 +31,15 @@
 -- - "flow.steps" and "flow.nodes" in the old structure
 -- - "flow.roles" in the new structure
 
+-- Fix corrupted WORKSPACE_APPROVAL settings with null rules
+-- This fixes a bug from 3.7/0001##approval_template_creator.sql where jsonb_agg()
+-- returned NULL when processing empty rules arrays, resulting in {"rules": null}.
+-- Remove the rules field entirely, leaving an empty object {}.
+UPDATE setting
+SET value = (value::jsonb - 'rules')::text
+WHERE name = 'WORKSPACE_APPROVAL'
+  AND jsonb_typeof(value::jsonb->'rules') = 'null';
+
 -- Update workspace approval settings in the setting table
 -- The setting.value is stored as text containing JSON
 UPDATE setting
@@ -49,10 +58,12 @@ SET value = (
                             COALESCE(
                                 (
                                     -- Extract all roles from steps[].nodes[].role
+                                    -- Only process if nodes is actually an array to avoid "cannot extract elements from a scalar" error
                                     SELECT jsonb_agg(node->>'role')
                                     FROM jsonb_array_elements(rule->'template'->'flow'->'steps') AS step,
                                          jsonb_array_elements(step->'nodes') AS node
                                     WHERE node->>'role' IS NOT NULL
+                                      AND jsonb_typeof(step->'nodes') = 'array'
                                 ),
                                 '[]'::jsonb
                             )
@@ -66,10 +77,12 @@ SET value = (
 )
 WHERE name = 'WORKSPACE_APPROVAL'
   AND value::jsonb->'rules' IS NOT NULL
+  AND jsonb_typeof(value::jsonb->'rules') = 'array'
   AND EXISTS (
     SELECT 1
     FROM jsonb_array_elements((value::jsonb)->'rules') AS rule
     WHERE rule->'template'->'flow'->'steps' IS NOT NULL
+      AND jsonb_typeof(rule->'template'->'flow'->'steps') = 'array'
   );
 
 -- Update issue approval template in the issue table
@@ -92,10 +105,12 @@ SET payload = jsonb_set(
                         COALESCE(
                             (
                                 -- Extract all roles from steps[].nodes[].role
+                                -- Only process if nodes is actually an array to avoid "cannot extract elements from a scalar" error
                                 SELECT jsonb_agg(node->>'role')
                                 FROM jsonb_array_elements((payload->'approval'->'approvalTemplates'->0)->'flow'->'steps') AS step,
                                      jsonb_array_elements(step->'nodes') AS node
                                 WHERE node->>'role' IS NOT NULL
+                                  AND jsonb_typeof(step->'nodes') = 'array'
                             ),
                             '[]'::jsonb
                         )
@@ -106,8 +121,10 @@ SET payload = jsonb_set(
     )
 )
 WHERE payload->'approval'->'approvalTemplates' IS NOT NULL
+  AND jsonb_typeof(payload->'approval'->'approvalTemplates') = 'array'
   AND jsonb_array_length(payload->'approval'->'approvalTemplates') > 0
-  AND (payload->'approval'->'approvalTemplates'->0)->'flow'->'steps' IS NOT NULL;
+  AND (payload->'approval'->'approvalTemplates'->0)->'flow'->'steps' IS NOT NULL
+  AND jsonb_typeof((payload->'approval'->'approvalTemplates'->0)->'flow'->'steps') = 'array';
 
 -- Clean up: Remove orphaned approvalTemplates field from issues that weren't migrated
 -- (e.g., empty arrays, malformed data)
