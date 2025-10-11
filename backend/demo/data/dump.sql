@@ -2,8 +2,6 @@
 -- PostgreSQL database dump
 --
 
-\restrict uQwlm8d2TDQFk78h5V1ggn4GYM3YjpU9IYPF3SjUMjaQniDS2TDDpGeD3r8Xv5A
-
 -- Dumped from database version 16.10 (Homebrew)
 -- Dumped by pg_dump version 16.10 (Homebrew)
 
@@ -5873,6 +5871,3 @@ ALTER TABLE ONLY public.worksheet
 --
 -- PostgreSQL database dump complete
 --
-
-\unrestrict uQwlm8d2TDQFk78h5V1ggn4GYM3YjpU9IYPF3SjUMjaQniDS2TDDpGeD3r8Xv5A
-
