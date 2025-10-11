@@ -1,9 +1,7 @@
 <template>
   <div v-if="visible">
     <template v-if="readonly || !state.manualEdit">
-      <div
-        class="textinfolabel text-sm gap-x-1 flex items-start flex-col sm:items-center sm:flex-row"
-      >
+      <div class="textinfolabel text-sm gap-x-1 flex items-start flex-wrap">
         <div class="gap-x-1 flex items-center">
           {{ $t("resource-id.self", { resource: resourceName }) }}:
           <div

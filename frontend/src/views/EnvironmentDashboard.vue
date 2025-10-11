@@ -74,8 +74,11 @@
       @create="doCreate"
       @cancel="state.showCreateModal = false"
     >
-      <DrawerContent :title="$t('environment.create')">
-        <EnvironmentFormBody class="w-[36rem]" />
+      <DrawerContent
+        :title="$t('environment.create')"
+        class="w-[36rem] max-w-[100vw]"
+      >
+        <EnvironmentFormBody />
         <template #footer>
           <EnvironmentFormButtons />
         </template>
