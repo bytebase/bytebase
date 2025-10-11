@@ -880,56 +880,6 @@ func (q *querySpanExtractor) applySetOperator(left, right base.TableSource, op S
 	}, nil
 }
 
-// mergeSimpleSelectIntersects combines multiple simple_select_intersect nodes with UNION operations.
-// This is used to process the base or recursive parts of a CTE that may contain multiple queries.
-// Deprecated: Use mergeSimpleSelectIntersectsWithOperators instead.
-func (q *querySpanExtractor) mergeSimpleSelectIntersects(parts []pgparser.ISimple_select_intersectContext, isUnionAll bool) (base.TableSource, error) {
-	if len(parts) == 0 {
-		return nil, errors.New("no parts to merge")
-	}
-
-	// Start with the first part
-	result, err := q.extractTableSourceFromSimpleSelectIntersect(parts[0])
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to extract first simple_select_intersect")
-	}
-
-	// Merge remaining parts with UNION semantics
-	for i := 1; i < len(parts); i++ {
-		nextResult, err := q.extractTableSourceFromSimpleSelectIntersect(parts[i])
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to extract simple_select_intersect %d", i)
-		}
-
-		// Merge with UNION/UNION ALL semantics
-		leftQuerySpanResult := result.GetQuerySpanResult()
-		rightQuerySpanResult := nextResult.GetQuerySpanResult()
-
-		if len(leftQuerySpanResult) != len(rightQuerySpanResult) {
-			return nil, errors.Errorf("UNION requires same number of columns: %d vs %d at position %d",
-				len(leftQuerySpanResult), len(rightQuerySpanResult), i)
-		}
-
-		var mergedColumns []base.QuerySpanResult
-		for j, leftCol := range leftQuerySpanResult {
-			rightCol := rightQuerySpanResult[j]
-			// For UNION, we combine source columns from both sides
-			mergedSourceColumns, _ := base.MergeSourceColumnSet(leftCol.SourceColumns, rightCol.SourceColumns)
-			mergedColumns = append(mergedColumns, base.QuerySpanResult{
-				Name:          leftCol.Name, // Use the name from the first query
-				SourceColumns: mergedSourceColumns,
-			})
-		}
-
-		result = &base.PseudoTable{
-			Name:    "",
-			Columns: mergedColumns,
-		}
-	}
-
-	return result, nil
-}
-
 // extractTableSourceFromFromClause processes the FROM clause and returns all table sources
 func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause pgparser.IFrom_clauseContext) ([]base.TableSource, error) {
 	if fromClause == nil || fromClause.From_list() == nil {
@@ -1150,26 +1100,6 @@ func (q *querySpanExtractor) extractTableSourceFromRelationExpr(relationExpr pgp
 	}
 
 	return tableSource, nil
-}
-
-// extractTableSourceFromJoinedTable extracts table source from a joined table
-func (q *querySpanExtractor) extractTableSourceFromJoinedTable(joinedTable pgparser.IJoined_tableContext) (base.TableSource, error) {
-	if joinedTable == nil {
-		return nil, errors.New("nil joined_table")
-	}
-
-	// TODO: Implement proper JOIN handling
-	// The actual implementation would need to:
-	// 1. Extract left and right table references
-	// 2. Handle different join types (INNER, LEFT, RIGHT, FULL, CROSS)
-	// 3. Process JOIN conditions (ON clause, USING clause, NATURAL)
-	// 4. Merge columns appropriately based on join type
-
-	// For now, return a placeholder
-	return &base.PseudoTable{
-		Name:    "",
-		Columns: []base.QuerySpanResult{},
-	}, nil
 }
 
 func (q *querySpanExtractor) extractTableSourceFromUDF2(funcExprWindowless pgparser.IFunc_expr_windowlessContext, funcAlias pgparser.IFunc_alias_clauseContext) (base.TableSource, error) {
@@ -1844,68 +1774,6 @@ func (q *querySpanExtractor) findTableInFromNew(tableName string) base.TableSour
 	return nil
 }
 
-// getFieldColumnSourceNew looks up the source columns for a specific field.
-func (q *querySpanExtractor) getFieldColumnSourceNew(schemaName, tableName, columnName string) (base.SourceColumnSet, bool) {
-	// Helper function to find column in a table source
-	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
-		if tableSource == nil {
-			return nil, false
-		}
-		if schemaName != "" && schemaName != tableSource.GetSchemaName() {
-			return nil, false
-		}
-		if tableName != "" && tableName != tableSource.GetTableName() {
-			return nil, false
-		}
-
-		querySpanResult := tableSource.GetQuerySpanResult()
-		for _, field := range querySpanResult {
-			if field.Name == columnName {
-				return field.SourceColumns, true
-			}
-		}
-		return nil, false
-	}
-
-	// Search in FROM clause tables
-	for _, tableSource := range q.tableSourcesFrom {
-		if sources, ok := findInTableSource(tableSource); ok {
-			return sources, true
-		}
-	}
-
-	// Search in CTEs
-	if schemaName == "" && tableName == "" {
-		for i := len(q.ctes) - 1; i >= 0; i-- {
-			for _, column := range q.ctes[i].Columns {
-				if column.Name == columnName {
-					return column.SourceColumns, true
-				}
-			}
-		}
-	} else if schemaName == "" {
-		for i := len(q.ctes) - 1; i >= 0; i-- {
-			if q.ctes[i].Name == tableName {
-				for _, column := range q.ctes[i].Columns {
-					if column.Name == columnName {
-						return column.SourceColumns, true
-					}
-				}
-				break
-			}
-		}
-	}
-
-	// Search in outer tables (for correlated subqueries)
-	for _, tableSource := range q.outerTableSources {
-		if sources, ok := findInTableSource(tableSource); ok {
-			return sources, true
-		}
-	}
-
-	return nil, false
-}
-
 // extractSourceColumnSetFromFuncExpr extracts source columns from a function expression
 func (q *querySpanExtractor) extractSourceColumnSetFromFuncExpr(funcExpr pgparser.IFunc_exprContext) (base.SourceColumnSet, error) {
 	result := make(base.SourceColumnSet)
@@ -1949,72 +1817,6 @@ func (q *querySpanExtractor) extractSourceColumnSetFromFuncExpr(funcExpr pgparse
 	return result, nil
 }
 
-// extractSourceColumnSetFromCaseExpr extracts source columns from a CASE expression
-func (q *querySpanExtractor) extractSourceColumnSetFromCaseExpr(caseExpr pgparser.ICase_exprContext) (base.SourceColumnSet, error) {
-	result := make(base.SourceColumnSet)
-
-	// Handle the CASE expression's test expression (CASE expr WHEN ...)
-	if caseExpr.Case_arg() != nil && caseExpr.Case_arg().A_expr() != nil {
-		argSources, err := q.extractSourceColumnSetFromAExpr(caseExpr.Case_arg().A_expr())
-		if err != nil {
-			return nil, err
-		}
-		result, _ = base.MergeSourceColumnSet(result, argSources)
-	}
-
-	// Handle WHEN clauses
-	if caseExpr.When_clause_list() != nil {
-		// TODO: Extract source columns from when clauses.
-		// Need to understand the structure better.
-		// For now, do nothing.
-	}
-
-	// Handle ELSE clause
-	if caseExpr.Case_default() != nil && caseExpr.Case_default().A_expr() != nil {
-		elseSources, err := q.extractSourceColumnSetFromAExpr(caseExpr.Case_default().A_expr())
-		if err != nil {
-			return nil, err
-		}
-		result, _ = base.MergeSourceColumnSet(result, elseSources)
-	}
-
-	return result, nil
-}
-
-// extractSourceColumnSetFromSubquery extracts source columns from a subquery
-func (q *querySpanExtractor) extractSourceColumnSetFromSubquery(subquery pgparser.ISelect_with_parensContext) (base.SourceColumnSet, error) {
-	// Create a new extractor for the subquery with current FROM tables as outer context
-	subqueryExtractor := &querySpanExtractor{
-		defaultDatabase:   q.defaultDatabase,
-		searchPath:        q.searchPath,
-		ctes:              q.ctes,
-		outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
-		tableSourcesFrom:  []base.TableSource{},
-	}
-
-	// Extract table source from the subquery
-	var tableSource base.TableSource
-	var err error
-
-	if subquery.Select_no_parens() != nil {
-		tableSource, err = subqueryExtractor.extractTableSourceFromSelectNoParensNew(subquery.Select_no_parens())
-	} else if subquery.Select_with_parens() != nil {
-		tableSource, err = subqueryExtractor.extractTableSourceFromSelectWithParensNew(subquery.Select_with_parens())
-	}
-
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract table source from subquery")
-	}
-
-	// Collect all source columns from the subquery result
-	result := make(base.SourceColumnSet)
-	for _, column := range tableSource.GetQuerySpanResult() {
-		result, _ = base.MergeSourceColumnSet(result, column.SourceColumns)
-	}
-
-	return result, nil
-}
-
 func getSelectNoParensFromSelectStmt(selectstmt pgparser.ISelectstmtContext) pgparser.ISelect_no_parensContext {
 	if selectstmt == nil {
 		return nil
@@ -2049,25 +1851,6 @@ func getSelectNoParensFromSelectWithParens(selectWithParens pgparser.ISelect_wit
 	}
 
 	return nil
-}
-
-// extractTableSourceFromSelectWithParensNew handles SELECT with parentheses.
-func (q *querySpanExtractor) extractTableSourceFromSelectWithParensNew(ctx pgparser.ISelect_with_parensContext) (base.TableSource, error) {
-	if ctx == nil {
-		return nil, errors.New("select_with_parens context is nil")
-	}
-
-	// Handle direct select_no_parens
-	if ctx.Select_no_parens() != nil {
-		return q.extractTableSourceFromSelectNoParensNew(ctx.Select_no_parens())
-	}
-
-	// Handle nested select_with_parens
-	if ctx.Select_with_parens() != nil {
-		return q.extractTableSourceFromSelectWithParensNew(ctx.Select_with_parens())
-	}
-
-	return nil, errors.New("no select clause found in select_with_parens")
 }
 
 // extractTableSourceFromSelectNoParensNew handles SELECT without parentheses.
