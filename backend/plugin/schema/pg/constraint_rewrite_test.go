@@ -685,7 +685,7 @@ func TestConstraintRewriteOperations(t *testing.T) {
 			}
 
 			// Apply constraint changes
-			err = applyTableChangesToChunk(chunk, tc.currentTable, tc.previousTable)
+			err = applyTableChangesToChunk(chunk, tc.currentTable, tc.previousTable, nil)
 			if tc.expectedSDL == "" {
 				// For cases where we don't specify expected SDL, we just want to ensure no error
 				assert.NoError(t, err, "applyTableChangesToChunk should not return error")
@@ -762,7 +762,7 @@ func TestConstraintModificationOperations(t *testing.T) {
 			}
 
 			// Apply constraint changes
-			err = applyTableChangesToChunk(chunk, tc.currentTable, tc.previousTable)
+			err = applyTableChangesToChunk(chunk, tc.currentTable, tc.previousTable, nil)
 			assert.NoError(t, err, "applyTableChangesToChunk should not return error")
 			assert.NotNil(t, chunk.ASTNode, "Chunk AST node should not be nil after modification")
 			t.Logf("Test case '%s' passed: %s", tc.name, tc.description)

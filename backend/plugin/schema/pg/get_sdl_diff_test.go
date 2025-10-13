@@ -328,11 +328,13 @@ func TestGetSDLDiff_MinimalChangesScenario(t *testing.T) {
 
 func TestApplyMinimalChangesToChunks(t *testing.T) {
 	tests := []struct {
-		name                string
-		previousUserSDLText string
-		currentSchema       *model.DatabaseSchema
-		previousSchema      *model.DatabaseSchema
-		expectedTables      []string
+		name                  string
+		previousUserSDLText   string
+		currentSchema         *model.DatabaseSchema
+		previousSchema        *model.DatabaseSchema
+		expectedTables        []string
+		shouldContainSerial   bool
+		shouldContainIdentity bool
 	}{
 		{
 			name: "add_new_table_to_existing_chunks",
@@ -393,7 +395,168 @@ func TestApplyMinimalChangesToChunks(t *testing.T) {
 				storepb.Engine_POSTGRES,
 				false,
 			),
-			expectedTables: []string{"public.users", "public.posts"},
+			expectedTables:      []string{"public.users", "public.posts"},
+			shouldContainSerial: false,
+		},
+		{
+			name: "add_table_with_serial_column",
+			previousUserSDLText: `CREATE TABLE users (
+				id SERIAL PRIMARY KEY,
+				name TEXT NOT NULL
+			);`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer", Nullable: false},
+										{Name: "name", Type: "text", Nullable: false},
+									},
+								},
+								{
+									Name: "products",
+									Columns: []*storepb.ColumnMetadata{
+										{
+											Name:     "id",
+											Type:     "bigint",
+											Nullable: false,
+											Default:  "nextval('products_id_seq'::regclass)",
+										},
+										{Name: "name", Type: "text", Nullable: false},
+									},
+								},
+							},
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "products_id_seq",
+									DataType:    "bigint",
+									Start:       "1",
+									Increment:   "1",
+									MinValue:    "1",
+									MaxValue:    "9223372036854775807",
+									Cycle:       false,
+									OwnerTable:  "products",
+									OwnerColumn: "id",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer", Nullable: false},
+										{Name: "name", Type: "text", Nullable: false},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedTables:      []string{"public.users", "public.products"},
+			shouldContainSerial: true,
+		},
+		{
+			name: "add_table_with_identity_column",
+			previousUserSDLText: `CREATE TABLE users (
+				id SERIAL PRIMARY KEY,
+				name TEXT NOT NULL
+			);`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer", Nullable: false},
+										{Name: "name", Type: "text", Nullable: false},
+									},
+								},
+								{
+									Name: "orders",
+									Columns: []*storepb.ColumnMetadata{
+										{
+											Name:               "id",
+											Type:               "integer",
+											Nullable:           false,
+											IdentityGeneration: storepb.ColumnMetadata_BY_DEFAULT,
+										},
+										{Name: "total", Type: "numeric(10,2)", Nullable: false},
+									},
+								},
+							},
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "orders_id_seq",
+									DataType:    "integer",
+									Start:       "1",
+									Increment:   "1",
+									MinValue:    "1",
+									MaxValue:    "2147483647",
+									Cycle:       false,
+									OwnerTable:  "orders",
+									OwnerColumn: "id",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			previousSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{Name: "id", Type: "integer", Nullable: false},
+										{Name: "name", Type: "text", Nullable: false},
+									},
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedTables:        []string{"public.users", "public.orders"},
+			shouldContainIdentity: true,
 		},
 		{
 			name: "multi_schema_with_same_table_names",
@@ -483,6 +646,19 @@ func TestApplyMinimalChangesToChunks(t *testing.T) {
 				text := chunk.GetText()
 				require.NotEmpty(t, text)
 				require.Contains(t, strings.ToUpper(text), "CREATE TABLE")
+
+				// Check for serial if expected (only for products table)
+				if tt.shouldContainSerial && expectedTable == "public.products" {
+					upperText := strings.ToUpper(text)
+					require.Contains(t, upperText, "SERIAL", "Expected serial type in products table")
+				}
+
+				// Check for identity if expected (only for orders table)
+				if tt.shouldContainIdentity && expectedTable == "public.orders" {
+					upperText := strings.ToUpper(text)
+					require.Contains(t, upperText, "GENERATED", "Expected GENERATED keyword in orders table")
+					require.Contains(t, upperText, "AS IDENTITY", "Expected AS IDENTITY in orders table")
+				}
 			}
 		})
 	}
@@ -1723,4 +1899,548 @@ func createMockDatabaseSchemaForColumnDeletion() *model.DatabaseSchema {
 	}
 
 	return model.NewDatabaseSchema(metadata, nil, nil, storepb.Engine_POSTGRES, false)
+}
+
+// TestGetSDLDiff_SerialAndIdentityColumns tests serial and identity column handling in SDL diff
+func TestGetSDLDiff_SerialAndIdentityColumns(t *testing.T) {
+	tests := []struct {
+		name                 string
+		currentSDLText       string
+		previousUserSDLText  string
+		currentSchema        *model.DatabaseSchema
+		expectedTableChanges int
+		description          string
+	}{
+		{
+			name: "serial_column_format_difference_should_skip",
+			currentSDLText: `CREATE TABLE "public"."users" (
+    "id" serial,
+    "name" text NOT NULL
+);`,
+			previousUserSDLText: `CREATE TABLE public.users (
+    id integer NOT NULL DEFAULT nextval('users_id_seq'::regclass),
+    name TEXT NOT NULL
+);`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{
+											Name:     "id",
+											Type:     "integer",
+											Nullable: false,
+											Default:  "nextval('users_id_seq'::regclass)",
+										},
+										{
+											Name:     "name",
+											Type:     "text",
+											Nullable: false,
+										},
+									},
+								},
+							},
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "users_id_seq",
+									DataType:    "integer",
+									Start:       "1",
+									Increment:   "1",
+									MinValue:    "1",
+									MaxValue:    "2147483647",
+									Cycle:       false,
+									OwnerTable:  "users",
+									OwnerColumn: "id",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedTableChanges: 0,
+			description:          "Serial vs expanded nextval format should not create diff when representing same structure",
+		},
+		{
+			name: "bigserial_column_format_difference_should_skip",
+			currentSDLText: `CREATE TABLE "public"."orders" (
+    "order_id" bigserial,
+    "customer_name" text NOT NULL
+);`,
+			previousUserSDLText: `CREATE TABLE public.orders (
+    order_id bigint NOT NULL DEFAULT nextval('orders_order_id_seq'::regclass),
+    customer_name TEXT NOT NULL
+);`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "orders",
+									Columns: []*storepb.ColumnMetadata{
+										{
+											Name:     "order_id",
+											Type:     "bigint",
+											Nullable: false,
+											Default:  "nextval('orders_order_id_seq'::regclass)",
+										},
+										{
+											Name:     "customer_name",
+											Type:     "text",
+											Nullable: false,
+										},
+									},
+								},
+							},
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "orders_order_id_seq",
+									DataType:    "bigint",
+									Start:       "1",
+									Increment:   "1",
+									MinValue:    "1",
+									MaxValue:    "9223372036854775807",
+									Cycle:       false,
+									OwnerTable:  "orders",
+									OwnerColumn: "order_id",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedTableChanges: 0,
+			description:          "Bigserial vs expanded bigint+nextval format should not create diff",
+		},
+		{
+			name: "smallserial_column_format_difference_should_skip",
+			currentSDLText: `CREATE TABLE "public"."items" (
+    "item_id" smallserial,
+    "item_name" text NOT NULL
+);`,
+			previousUserSDLText: `CREATE TABLE public.items (
+    item_id smallint NOT NULL DEFAULT nextval('items_item_id_seq'::regclass),
+    item_name TEXT NOT NULL
+);`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "items",
+									Columns: []*storepb.ColumnMetadata{
+										{
+											Name:     "item_id",
+											Type:     "smallint",
+											Nullable: false,
+											Default:  "nextval('items_item_id_seq'::regclass)",
+										},
+										{
+											Name:     "item_name",
+											Type:     "text",
+											Nullable: false,
+										},
+									},
+								},
+							},
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "items_item_id_seq",
+									DataType:    "smallint",
+									Start:       "1",
+									Increment:   "1",
+									MinValue:    "1",
+									MaxValue:    "32767",
+									Cycle:       false,
+									OwnerTable:  "items",
+									OwnerColumn: "item_id",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedTableChanges: 0,
+			description:          "Smallserial vs expanded smallint+nextval format should not create diff",
+		},
+		{
+			name: "identity_always_format_difference_should_skip",
+			currentSDLText: `CREATE TABLE "public"."products" (
+    "id" bigint GENERATED ALWAYS AS IDENTITY,
+    "name" text NOT NULL
+);`,
+			previousUserSDLText: `CREATE TABLE public.products (
+    id bigint NOT NULL,
+    name TEXT NOT NULL
+);`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "products",
+									Columns: []*storepb.ColumnMetadata{
+										{
+											Name:               "id",
+											Type:               "bigint",
+											Nullable:           false,
+											IdentityGeneration: storepb.ColumnMetadata_ALWAYS,
+										},
+										{
+											Name:     "name",
+											Type:     "text",
+											Nullable: false,
+										},
+									},
+								},
+							},
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "products_id_seq",
+									DataType:    "bigint",
+									Start:       "1",
+									Increment:   "1",
+									MinValue:    "1",
+									MaxValue:    "9223372036854775807",
+									Cycle:       false,
+									OwnerTable:  "products",
+									OwnerColumn: "id",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedTableChanges: 0,
+			description:          "GENERATED ALWAYS AS IDENTITY vs plain bigint should not create diff when metadata matches",
+		},
+		{
+			name: "identity_by_default_with_options_format_difference_should_skip",
+			currentSDLText: `CREATE TABLE "public"."invoices" (
+    "id" integer GENERATED BY DEFAULT AS IDENTITY (START WITH 100 INCREMENT BY 5),
+    "amount" numeric(10,2) NOT NULL
+);`,
+			previousUserSDLText: `CREATE TABLE public.invoices (
+    id integer NOT NULL,
+    amount DECIMAL(10,2) NOT NULL
+);`,
+			currentSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "invoices",
+									Columns: []*storepb.ColumnMetadata{
+										{
+											Name:               "id",
+											Type:               "integer",
+											Nullable:           false,
+											IdentityGeneration: storepb.ColumnMetadata_BY_DEFAULT,
+										},
+										{
+											Name:     "amount",
+											Type:     "numeric(10,2)",
+											Nullable: false,
+										},
+									},
+								},
+							},
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "invoices_id_seq",
+									DataType:    "integer",
+									Start:       "100",
+									Increment:   "5",
+									MinValue:    "1",
+									MaxValue:    "2147483647",
+									Cycle:       false,
+									OwnerTable:  "invoices",
+									OwnerColumn: "id",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			expectedTableChanges: 0,
+			description:          "GENERATED BY DEFAULT AS IDENTITY with options should not create diff when metadata matches",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Logf("Test description: %s", tt.description)
+
+			// Call GetSDLDiff
+			diff, err := GetSDLDiff(tt.currentSDLText, tt.previousUserSDLText, tt.currentSchema, nil)
+			require.NoError(t, err)
+			require.NotNil(t, diff)
+
+			// Check the number of table changes
+			require.Equal(t, tt.expectedTableChanges, len(diff.TableChanges),
+				"Expected %d table changes but got %d", tt.expectedTableChanges, len(diff.TableChanges))
+
+			// Log the detected changes for debugging
+			if len(diff.TableChanges) > 0 {
+				t.Log("Detected table changes:")
+				for i, change := range diff.TableChanges {
+					t.Logf("  %d. Table: %s.%s, Action: %v", i+1, change.SchemaName, change.TableName, change.Action)
+				}
+			}
+		})
+	}
+}
+
+// TestConvertDatabaseSchemaToSDL_SerialAndIdentitySequences tests that serial and identity sequences
+// are properly merged into column definitions and not generated separately
+func TestConvertDatabaseSchemaToSDL_SerialAndIdentitySequences(t *testing.T) {
+	tests := []struct {
+		name                     string
+		dbSchema                 *model.DatabaseSchema
+		shouldContainSerial      bool
+		shouldContainIdentity    bool
+		shouldNotContainSequence []string
+		shouldNotContainNextval  bool
+		description              string
+	}{
+		{
+			name: "serial_column_should_not_generate_separate_sequence",
+			dbSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "users",
+									Columns: []*storepb.ColumnMetadata{
+										{
+											Name:     "id",
+											Type:     "integer",
+											Nullable: false,
+											Default:  "nextval('users_id_seq'::regclass)",
+										},
+										{
+											Name:     "name",
+											Type:     "text",
+											Nullable: false,
+										},
+									},
+								},
+							},
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "users_id_seq",
+									DataType:    "integer",
+									Start:       "1",
+									Increment:   "1",
+									MinValue:    "1",
+									MaxValue:    "2147483647",
+									Cycle:       false,
+									OwnerTable:  "users",
+									OwnerColumn: "id",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			shouldContainSerial:      true,
+			shouldNotContainSequence: []string{"users_id_seq"},
+			shouldNotContainNextval:  true,
+			description:              "Serial column should use serial type and not generate separate sequence",
+		},
+		{
+			name: "identity_column_should_not_generate_separate_sequence",
+			dbSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "products",
+									Columns: []*storepb.ColumnMetadata{
+										{
+											Name:               "id",
+											Type:               "bigint",
+											Nullable:           false,
+											IdentityGeneration: storepb.ColumnMetadata_ALWAYS,
+										},
+										{
+											Name:     "name",
+											Type:     "text",
+											Nullable: false,
+										},
+									},
+								},
+							},
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "products_id_seq",
+									DataType:    "bigint",
+									Start:       "1",
+									Increment:   "1",
+									MinValue:    "1",
+									MaxValue:    "9223372036854775807",
+									Cycle:       false,
+									OwnerTable:  "products",
+									OwnerColumn: "id",
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			shouldContainIdentity:    true,
+			shouldNotContainSequence: []string{"products_id_seq"},
+			description:              "Identity column should use GENERATED AS IDENTITY and not generate separate sequence",
+		},
+		{
+			name: "independent_sequence_should_still_be_generated",
+			dbSchema: model.NewDatabaseSchema(
+				&storepb.DatabaseSchemaMetadata{
+					Name: "test_db",
+					Schemas: []*storepb.SchemaMetadata{
+						{
+							Name: "public",
+							Tables: []*storepb.TableMetadata{
+								{
+									Name: "orders",
+									Columns: []*storepb.ColumnMetadata{
+										{
+											Name:     "id",
+											Type:     "integer",
+											Nullable: false,
+											Default:  "nextval('orders_id_seq'::regclass)",
+										},
+									},
+								},
+							},
+							Sequences: []*storepb.SequenceMetadata{
+								{
+									Name:        "orders_id_seq",
+									DataType:    "integer",
+									Start:       "1",
+									Increment:   "1",
+									MinValue:    "1",
+									MaxValue:    "2147483647",
+									Cycle:       false,
+									OwnerTable:  "orders",
+									OwnerColumn: "id",
+								},
+								{
+									Name:       "independent_seq",
+									DataType:   "integer",
+									Start:      "1",
+									Increment:  "1",
+									MinValue:   "1",
+									MaxValue:   "2147483647",
+									Cycle:      false,
+									OwnerTable: "", // No owner - independent sequence
+								},
+							},
+						},
+					},
+				},
+				nil,
+				nil,
+				storepb.Engine_POSTGRES,
+				false,
+			),
+			shouldContainSerial:      true,
+			shouldNotContainSequence: []string{"orders_id_seq"},
+			description:              "Independent sequence (not owned by column) should still be generated separately",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Logf("Test description: %s", tt.description)
+
+			// Convert database schema to SDL
+			result, err := convertDatabaseSchemaToSDL(tt.dbSchema)
+			require.NoError(t, err)
+			require.NotEmpty(t, result)
+
+			t.Logf("Generated SDL:\n%s", result)
+
+			// Check for serial type if expected
+			if tt.shouldContainSerial {
+				require.Contains(t, result, "serial", "SDL should contain serial type")
+			}
+
+			// Check for identity syntax if expected
+			if tt.shouldContainIdentity {
+				require.Contains(t, result, "GENERATED", "SDL should contain GENERATED keyword")
+				require.Contains(t, result, "AS IDENTITY", "SDL should contain AS IDENTITY")
+			}
+
+			// Check that specified sequences are NOT generated separately
+			for _, seqName := range tt.shouldNotContainSequence {
+				// The sequence name should not appear in a CREATE SEQUENCE statement
+				require.NotContains(t, result, fmt.Sprintf(`CREATE SEQUENCE "%s"`, seqName),
+					"SDL should not contain separate CREATE SEQUENCE for %s", seqName)
+				require.NotContains(t, result, fmt.Sprintf(`CREATE SEQUENCE "public"."%s"`, seqName),
+					"SDL should not contain separate CREATE SEQUENCE for public.%s", seqName)
+			}
+
+			// Check that nextval is not used if shouldNotContainNextval is true
+			if tt.shouldNotContainNextval {
+				require.NotContains(t, result, "nextval", "SDL should not contain nextval() when using serial")
+			}
+
+			// Check that independent sequences ARE generated (if present)
+			if strings.Contains(tt.description, "independent") {
+				require.Contains(t, result, "independent_seq", "SDL should contain independent sequence")
+				require.Contains(t, result, "CREATE SEQUENCE", "SDL should have CREATE SEQUENCE for independent sequence")
+			}
+		})
+	}
 }

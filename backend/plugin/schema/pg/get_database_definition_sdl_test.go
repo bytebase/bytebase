@@ -637,12 +637,10 @@ $$;
 			},
 			expected: `CREATE SEQUENCE "public"."independent_seq";
 
-CREATE SEQUENCE "public"."user_id_seq";
-
 CREATE SEQUENCE "public"."order_seq" AS integer START WITH 1000 INCREMENT BY 10 MINVALUE 1000 MAXVALUE 999999 CYCLE;
 
 CREATE TABLE "public"."users" (
-    "id" INTEGER DEFAULT nextval('user_id_seq'::regclass) NOT NULL,
+    "id" serial,
     "name" VARCHAR(255) NOT NULL
 );
 
@@ -654,6 +652,196 @@ CREATE TABLE "public"."users" (
 				Schemas: []*storepb.SchemaMetadata{},
 			},
 			expected: "",
+		},
+		{
+			name: "Serial columns should use serial types",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Sequences: []*storepb.SequenceMetadata{
+							{
+								Name:        "users_id_seq",
+								DataType:    "bigint",
+								Start:       "1",
+								Increment:   "1",
+								MinValue:    "1",
+								MaxValue:    "9223372036854775807",
+								Cycle:       false,
+								OwnerTable:  "users",
+								OwnerColumn: "id",
+							},
+							{
+								Name:        "products_id_seq",
+								DataType:    "integer",
+								Start:       "1",
+								Increment:   "1",
+								MinValue:    "1",
+								MaxValue:    "2147483647",
+								Cycle:       false,
+								OwnerTable:  "products",
+								OwnerColumn: "id",
+							},
+							{
+								Name:        "orders_id_seq",
+								DataType:    "smallint",
+								Start:       "1",
+								Increment:   "1",
+								MinValue:    "1",
+								MaxValue:    "32767",
+								Cycle:       false,
+								OwnerTable:  "orders",
+								OwnerColumn: "id",
+							},
+						},
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "users",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "bigint",
+										Nullable: false,
+										Default:  "nextval('users_id_seq'::regclass)",
+									},
+									{
+										Name:     "name",
+										Type:     "VARCHAR(255)",
+										Nullable: false,
+									},
+								},
+							},
+							{
+								Name: "products",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "integer",
+										Nullable: false,
+										Default:  "nextval('products_id_seq'::regclass)",
+									},
+									{
+										Name:     "name",
+										Type:     "VARCHAR(255)",
+										Nullable: false,
+									},
+								},
+							},
+							{
+								Name: "orders",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "smallint",
+										Nullable: false,
+										Default:  "nextval('orders_id_seq'::regclass)",
+									},
+									{
+										Name:     "user_id",
+										Type:     "INTEGER",
+										Nullable: false,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE TABLE "public"."users" (
+    "id" bigserial,
+    "name" VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE "public"."products" (
+    "id" serial,
+    "name" VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE "public"."orders" (
+    "id" smallserial,
+    "user_id" INTEGER NOT NULL
+);
+
+`,
+		},
+		{
+			name: "Identity columns should use GENERATED AS IDENTITY syntax",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Sequences: []*storepb.SequenceMetadata{
+							{
+								Name:        "users_id_seq",
+								DataType:    "bigint",
+								Start:       "1",
+								Increment:   "1",
+								MinValue:    "1",
+								MaxValue:    "9223372036854775807",
+								Cycle:       false,
+								OwnerTable:  "users",
+								OwnerColumn: "id",
+							},
+							{
+								Name:        "products_id_seq",
+								DataType:    "integer",
+								Start:       "100",
+								Increment:   "5",
+								MinValue:    "1",
+								MaxValue:    "2147483647",
+								Cycle:       false,
+								OwnerTable:  "products",
+								OwnerColumn: "id",
+							},
+						},
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "users",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:               "id",
+										Type:               "bigint",
+										Nullable:           false,
+										IdentityGeneration: storepb.ColumnMetadata_ALWAYS,
+									},
+									{
+										Name:     "name",
+										Type:     "VARCHAR(255)",
+										Nullable: false,
+									},
+								},
+							},
+							{
+								Name: "products",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:               "id",
+										Type:               "integer",
+										Nullable:           false,
+										IdentityGeneration: storepb.ColumnMetadata_BY_DEFAULT,
+									},
+									{
+										Name:     "name",
+										Type:     "VARCHAR(255)",
+										Nullable: false,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE TABLE "public"."users" (
+    "id" bigint GENERATED ALWAYS AS IDENTITY,
+    "name" VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE "public"."products" (
+    "id" integer GENERATED BY DEFAULT AS IDENTITY (START WITH 100 INCREMENT BY 5),
+    "name" VARCHAR(255) NOT NULL
+);
+
+`,
 		},
 	}
 
