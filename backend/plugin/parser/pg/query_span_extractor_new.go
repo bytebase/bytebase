@@ -1817,15 +1817,18 @@ func (q *querySpanExtractor) extractSourceColumnSetFromFuncExpr(funcExpr pgparse
 
 	// Handle common subexpressions (COALESCE, GREATEST, LEAST, etc.)
 	if funcExpr.Func_expr_common_subexpr() != nil {
-		subexpr := funcExpr.Func_expr_common_subexpr()
-		// Extract from expression list
-		if subexpr.Expr_list() != nil {
-			for _, expr := range subexpr.Expr_list().AllA_expr() {
-				exprSources, err := q.extractSourceColumnSetFromAExpr(expr)
+		// Recursive extract all nodes in common subexpr
+		for i := 0; i < funcExpr.Func_expr_common_subexpr().GetChildCount(); i++ {
+			if child, ok := funcExpr.Func_expr_common_subexpr().GetChild(i).(antlr.ParseTree); ok {
+				// Skip terminal nodes
+				if _, isTerminal := child.(antlr.TerminalNode); isTerminal {
+					continue
+				}
+				childSources, err := q.extractSourceColumnSetFromNode(child)
 				if err != nil {
 					return nil, err
 				}
-				result, _ = base.MergeSourceColumnSet(result, exprSources)
+				result, _ = base.MergeSourceColumnSet(result, childSources)
 			}
 		}
 		// Handle XML functions that may have additional expressions
