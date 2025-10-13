@@ -36,6 +36,7 @@ type AuditDataTableColumn = DataTableColumn<AuditLog> & {
   hide?: boolean;
 };
 
+// The registry is used to decode anypb protobuf messages to JSON.
 const registry = createRegistry(
   file_google_rpc_error_details,
   file_v1_plan_service
