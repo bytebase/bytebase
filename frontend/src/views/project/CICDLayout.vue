@@ -62,7 +62,9 @@
           </NTabs>
 
           <div class="flex-1 flex">
-            <router-view />
+            <KeepAlive>
+              <router-view />
+            </KeepAlive>
           </div>
         </div>
       </PollerProvider>
@@ -162,10 +164,12 @@ const planBaseContext = useBasePlanContext({
 });
 const { enabledNewLayout } = useIssueLayoutVersion();
 const isLoading = ref(true);
+const isInitialLoad = ref(true);
 const containerRef = ref<HTMLElement>();
 
 const ready = computed(() => {
-  return !isInitializing.value && !!plan.value && !isLoading.value;
+  // Only show loading spinner during initial load, not during tab navigation
+  return !isInitialLoad.value && !!plan.value;
 });
 
 const shouldShowNavigation = computed(() => {
@@ -201,6 +205,11 @@ watch(
       return;
     }
 
+    // Mark initial load as complete once data is loaded
+    if (isInitialLoad.value) {
+      isInitialLoad.value = false;
+    }
+
     // Redirect all non-changeDatabaseConfig plans to the legacy issue page.
     // Including export data plans.
     if (
@@ -223,8 +232,7 @@ watch(
     } else {
       isLoading.value = false;
     }
-  },
-  { once: true }
+  }
 );
 
 const tabKey = computed(() => {
