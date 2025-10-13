@@ -3,6 +3,7 @@ package pg
 import (
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -200,13 +201,7 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 		for id := range tableMap {
 			tableIDs = append(tableIDs, id)
 		}
-		for i := 0; i < len(tableIDs); i++ {
-			for j := i + 1; j < len(tableIDs); j++ {
-				if tableIDs[i] > tableIDs[j] {
-					tableIDs[i], tableIDs[j] = tableIDs[j], tableIDs[i]
-				}
-			}
-		}
+		slices.Sort(tableIDs)
 		orderedList = append(orderedList, tableIDs...)
 
 		// Add views second
@@ -214,13 +209,7 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 		for id := range viewMap {
 			viewIDs = append(viewIDs, id)
 		}
-		for i := 0; i < len(viewIDs); i++ {
-			for j := i + 1; j < len(viewIDs); j++ {
-				if viewIDs[i] > viewIDs[j] {
-					viewIDs[i], viewIDs[j] = viewIDs[j], viewIDs[i]
-				}
-			}
-		}
+		slices.Sort(viewIDs)
 		orderedList = append(orderedList, viewIDs...)
 
 		// Add materialized views third
@@ -228,13 +217,7 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 		for id := range materializedViewMap {
 			materializedViewIDs = append(materializedViewIDs, id)
 		}
-		for i := 0; i < len(materializedViewIDs); i++ {
-			for j := i + 1; j < len(materializedViewIDs); j++ {
-				if materializedViewIDs[i] > materializedViewIDs[j] {
-					materializedViewIDs[i], materializedViewIDs[j] = materializedViewIDs[j], materializedViewIDs[i]
-				}
-			}
-		}
+		slices.Sort(materializedViewIDs)
 		orderedList = append(orderedList, materializedViewIDs...)
 
 		// Add functions last
@@ -242,13 +225,7 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 		for id := range functionMap {
 			functionIDs = append(functionIDs, id)
 		}
-		for i := 0; i < len(functionIDs); i++ {
-			for j := i + 1; j < len(functionIDs); j++ {
-				if functionIDs[i] > functionIDs[j] {
-					functionIDs[i], functionIDs[j] = functionIDs[j], functionIDs[i]
-				}
-			}
-		}
+		slices.Sort(functionIDs)
 		orderedList = append(orderedList, functionIDs...)
 	}
 
@@ -481,13 +458,7 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		for id := range tableMap {
 			tableIDs = append(tableIDs, id)
 		}
-		for i := 0; i < len(tableIDs); i++ {
-			for j := i + 1; j < len(tableIDs); j++ {
-				if tableIDs[i] > tableIDs[j] {
-					tableIDs[i], tableIDs[j] = tableIDs[j], tableIDs[i]
-				}
-			}
-		}
+		slices.Sort(tableIDs)
 		orderedList = append(orderedList, tableIDs...)
 
 		// Add views second
@@ -495,13 +466,7 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		for id := range viewMap {
 			viewIDs = append(viewIDs, id)
 		}
-		for i := 0; i < len(viewIDs); i++ {
-			for j := i + 1; j < len(viewIDs); j++ {
-				if viewIDs[i] > viewIDs[j] {
-					viewIDs[i], viewIDs[j] = viewIDs[j], viewIDs[i]
-				}
-			}
-		}
+		slices.Sort(viewIDs)
 		orderedList = append(orderedList, viewIDs...)
 
 		// Add materialized views third
@@ -509,13 +474,7 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		for id := range materializedViewMap {
 			materializedViewIDs = append(materializedViewIDs, id)
 		}
-		for i := 0; i < len(materializedViewIDs); i++ {
-			for j := i + 1; j < len(materializedViewIDs); j++ {
-				if materializedViewIDs[i] > materializedViewIDs[j] {
-					materializedViewIDs[i], materializedViewIDs[j] = materializedViewIDs[j], materializedViewIDs[i]
-				}
-			}
-		}
+		slices.Sort(materializedViewIDs)
 		orderedList = append(orderedList, materializedViewIDs...)
 
 		// Add functions last
@@ -523,13 +482,7 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		for id := range functionMap {
 			functionIDs = append(functionIDs, id)
 		}
-		for i := 0; i < len(functionIDs); i++ {
-			for j := i + 1; j < len(functionIDs); j++ {
-				if functionIDs[i] > functionIDs[j] {
-					functionIDs[i], functionIDs[j] = functionIDs[j], functionIDs[i]
-				}
-			}
-		}
+		slices.Sort(functionIDs)
 		orderedList = append(orderedList, functionIDs...)
 	}
 
