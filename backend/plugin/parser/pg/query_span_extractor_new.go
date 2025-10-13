@@ -899,6 +899,7 @@ func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause pgparse
 	return fromFieldList, nil
 }
 
+
 // extractTableSourceFromTableRef extracts table source from a table reference in FROM clause
 func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef pgparser.ITable_refContext) (base.TableSource, error) {
 	if tableRef == nil {
@@ -914,6 +915,12 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef pgparser.IT
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract table source from relation_expr")
 		}
+		if tableRef.Opt_alias_clause() != nil {
+			anchor, err = applyOptAliasClauseToTableSource(anchor, tableRef.Opt_alias_clause())
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to apply alias to relation_expr")
+			}
+		}
 	}
 
 	// Handle function tables (e.g., generate_series, unnest)
@@ -921,6 +928,12 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef pgparser.IT
 		anchor, err = q.extractTableSourceFromFuncTable(tableRef.Func_table(), tableRef.Func_alias_clause())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract table source from func_table")
+		}
+		if tableRef.Func_alias_clause() != nil {
+			anchor, err = applyFuncAliasClauseToTableSource(anchor, tableRef.Func_alias_clause())
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to apply alias to func_table")
+			}
 		}
 	}
 
@@ -947,6 +960,12 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef pgparser.IT
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract nested table_ref")
 		}
+		if len(tableRef.AllJoined_table()) == 0 && tableRef.Opt_alias_clause() != nil {
+			anchor, err = applyOptAliasClauseToTableSource(anchor, tableRef.Opt_alias_clause())
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to apply alias to nested table_ref")
+			}
+		}
 	}
 
 	q.tableSourcesFrom = append(q.tableSourcesFrom, anchor)
@@ -962,7 +981,7 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef pgparser.IT
 			// According to the grammar:
 			// OPEN_PAREN table_ref joined_table? CLOSE_PAREN opt_alias_clause?
 			// ) joined_table*
-			// The alias appears beforethe second joined_table.
+			// The alias appears before the second joined_table.
 			// Determine join type and conditions
 			naturalJoin := join.NATURAL() != nil
 			var usingColumns []string
@@ -973,7 +992,7 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef pgparser.IT
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to join tables")
 			}
-			if i == 0 && tableRef.Opt_alias_clause() != nil {
+			if i == 0 && tableRef.Opt_alias_clause() != nil && tableRef.Table_ref() != nil {
 				anchor, err = applyOptAliasClauseToTableSource(anchor, tableRef.Opt_alias_clause())
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to apply alias to table source")
