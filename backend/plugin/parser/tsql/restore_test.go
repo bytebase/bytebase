@@ -92,6 +92,11 @@ func TestRestoreIdentityHandling(t *testing.T) {
 	a.Contains(restoreSQL, "SET IDENTITY_INSERT [db].[dbo].[positions] ON")
 	a.Contains(restoreSQL, "SET IDENTITY_INSERT [db].[dbo].[positions] OFF")
 	a.Contains(restoreSQL, "EXEC('DBCC CHECKIDENT (''[db].[dbo].[positions]'', RESEED)')")
+
+	// Verify the INSERT statement uses explicit column list, not SELECT *
+	// This is required by SQL Server when IDENTITY_INSERT is ON
+	a.Contains(restoreSQL, "INSERT INTO [db].[dbo].[positions] ([position_id], [title])")
+	a.NotContains(restoreSQL, "SELECT * FROM")
 }
 
 func TestRestore(t *testing.T) {

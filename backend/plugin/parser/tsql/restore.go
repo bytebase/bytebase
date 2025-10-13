@@ -143,15 +143,31 @@ func (g *generator) EnterDelete_statement(ctx *parser.Delete_statementContext) {
 
 		if hasIdentity {
 			// For tables with IDENTITY columns, we need to enable IDENTITY_INSERT
-			g.result = fmt.Sprintf(`SET IDENTITY_INSERT [%s].[%s].[%s] ON;
-INSERT INTO [%s].[%s].[%s] SELECT * FROM [%s].[dbo].[%s];
-SET IDENTITY_INSERT [%s].[%s].[%s] OFF;
-EXEC('DBCC CHECKIDENT (''[%s].[%s].[%s]'', RESEED)');`,
-				g.originalDatabase, g.originalSchema, g.originalTable,
-				g.originalDatabase, g.originalSchema, g.originalTable,
-				g.backupDatabase, g.backupTable,
-				g.originalDatabase, g.originalSchema, g.originalTable,
+			// and use explicit column lists
+			var buf strings.Builder
+
+			// Build column list
+			var columnList strings.Builder
+			for i, column := range g.table.GetColumns() {
+				if i > 0 {
+					columnList.WriteString(", ")
+				}
+				fmt.Fprintf(&columnList, "[%s]", column.Name)
+			}
+
+			fmt.Fprintf(&buf, "SET IDENTITY_INSERT [%s].[%s].[%s] ON;\n",
 				g.originalDatabase, g.originalSchema, g.originalTable)
+			fmt.Fprintf(&buf, "INSERT INTO [%s].[%s].[%s] (%s) SELECT %s FROM [%s].[dbo].[%s];\n",
+				g.originalDatabase, g.originalSchema, g.originalTable,
+				columnList.String(),
+				columnList.String(),
+				g.backupDatabase, g.backupTable)
+			fmt.Fprintf(&buf, "SET IDENTITY_INSERT [%s].[%s].[%s] OFF;\n",
+				g.originalDatabase, g.originalSchema, g.originalTable)
+			fmt.Fprintf(&buf, "EXEC('DBCC CHECKIDENT (''[%s].[%s].[%s]'', RESEED)');",
+				g.originalDatabase, g.originalSchema, g.originalTable)
+
+			g.result = buf.String()
 		} else {
 			// Simple INSERT for tables without IDENTITY columns
 			g.result = fmt.Sprintf(`INSERT INTO [%s].[%s].[%s] SELECT * FROM [%s].[dbo].[%s];`,
