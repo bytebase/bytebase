@@ -891,7 +891,7 @@
   querySpan:
     type: 1
     results:
-        - name: ?column?
+        - name: json_object
           sourcecolumns:
             - server: ""
               database: db
@@ -933,7 +933,7 @@
   querySpan:
     type: 1
     results:
-        - name: ?column?
+        - name: json_array
           sourcecolumns:
             - server: ""
               database: db
