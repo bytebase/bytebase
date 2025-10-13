@@ -949,6 +949,8 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef pgparser.IT
 		}
 	}
 
+	q.tableSourcesFrom = append(q.tableSourcesFrom, anchor)
+
 	// Handle JOIN expressions
 	if len(tableRef.AllJoined_table()) != 0 {
 		joinedTables := tableRef.AllJoined_table()
@@ -1831,6 +1833,15 @@ func (q *querySpanExtractor) extractSourceColumnSetFromFuncExpr(funcExpr pgparse
 	}
 
 	// TODO: Handle window functions if needed
+
+	filterClause := funcExpr.Filter_clause()
+	if filterClause != nil {
+		r, err := q.extractSourceColumnSetFromNode(filterClause)
+		if err != nil {
+			return nil, err
+		}
+		result, _ = base.MergeSourceColumnSet(result, r)
+	}
 	return result, nil
 }
 
