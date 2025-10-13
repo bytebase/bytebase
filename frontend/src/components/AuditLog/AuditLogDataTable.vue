@@ -10,7 +10,8 @@
 </template>
 
 <script lang="tsx" setup>
-import { fromBinary } from "@bufbuild/protobuf";
+import { file_google_rpc_error_details } from "@buf/googleapis_googleapis.bufbuild_es/google/rpc/error_details_pb";
+import { createRegistry, fromBinary, toJsonString } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
 import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
@@ -19,11 +20,13 @@ import BBAvatar from "@/bbkit/BBAvatar.vue";
 import { useProjectV1Store, useUserStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getDateForPbTimestampProtoEs } from "@/types";
+import { StatusSchema } from "@/types/proto-es/google/rpc/status_pb";
 import type { AuditLog } from "@/types/proto-es/v1/audit_log_service_pb";
 import {
   AuditDataSchema,
   AuditLog_Severity,
 } from "@/types/proto-es/v1/audit_log_service_pb";
+import { file_v1_plan_service } from "@/types/proto-es/v1/plan_service_pb";
 import { SettingSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { humanizeDurationV1 } from "@/utils";
 import { extractProjectResourceName } from "@/utils";
@@ -32,6 +35,12 @@ import JSONStringView from "./JSONStringView.vue";
 type AuditDataTableColumn = DataTableColumn<AuditLog> & {
   hide?: boolean;
 };
+
+// The registry is used to decode anypb protobuf messages to JSON.
+const registry = createRegistry(
+  file_google_rpc_error_details,
+  file_v1_plan_service
+);
 
 const props = withDefaults(
   defineProps<{
@@ -140,7 +149,11 @@ const columnList = computed((): AuditDataTableColumn[] => {
         title: t("audit-log.table.status"),
         render: (auditLog) =>
           auditLog.status ? (
-            <JSONStringView jsonString={JSON.stringify(auditLog.status)} />
+            <JSONStringView
+              jsonString={toJsonString(StatusSchema, auditLog.status, {
+                registry: registry,
+              })}
+            />
           ) : (
             "-"
           ),
