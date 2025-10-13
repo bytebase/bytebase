@@ -46,6 +46,7 @@ import { DropdownItemWithErrorList } from "@/components/IssueV1/components/commo
 import { useCurrentUserV1, extractUserId } from "@/store";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
+  Task_Status,
   Task_Type,
   TaskRun_ExportArchiveStatus,
   TaskRun_Status,
@@ -80,16 +81,6 @@ const isExportPlan = computed(() => {
 });
 
 const shouldShowExportDownload = computed(() => {
-  const exportTasks =
-    rollout.value?.stages
-      .flatMap((stage) => stage.tasks)
-      .filter((task) => {
-        return task.type === Task_Type.DATABASE_EXPORT;
-      }) || [];
-
-  // Must have export data tasks
-  if (exportTasks.length === 0) return false;
-
   // Must have an issue
   if (!issue?.value) return false;
 
@@ -100,6 +91,25 @@ const shouldShowExportDownload = computed(() => {
 
   // Current user must be the issue creator
   if (currentUser.value.email !== extractUserId(issue.value.creator)) {
+    return false;
+  }
+
+  const exportTasks =
+    rollout.value?.stages
+      .flatMap((stage) => stage.tasks)
+      .filter((task) => {
+        return task.type === Task_Type.DATABASE_EXPORT;
+      }) || [];
+
+  // Must have export data tasks
+  if (exportTasks.length === 0) return false;
+
+  // Check if all export tasks have done or skipped status
+  if (
+    !exportTasks.every((task) =>
+      [Task_Status.DONE, Task_Status.SKIPPED].includes(task.status)
+    )
+  ) {
     return false;
   }
 
@@ -125,8 +135,8 @@ const shouldShowExportDownload = computed(() => {
     exportTaskRuns.some(
       (taskRun) =>
         taskRun.status !== TaskRun_Status.DONE ||
-        (taskRun.exportArchiveStatus !== TaskRun_ExportArchiveStatus.READY &&
-          taskRun.exportArchiveStatus !== TaskRun_ExportArchiveStatus.EXPORTED)
+        taskRun.exportArchiveStatus ===
+          TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED
     )
   ) {
     return false;

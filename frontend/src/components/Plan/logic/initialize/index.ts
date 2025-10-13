@@ -15,12 +15,7 @@ import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import { GetRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { emptyPlan } from "@/types/v1/issue/plan";
-import {
-  extractIssueUID,
-  extractPlanUID,
-  extractRolloutUID,
-  issueV1Slug,
-} from "@/utils";
+import { issueV1Slug } from "@/utils";
 import { createPlanSkeleton } from "./create";
 
 export * from "./create";
@@ -200,30 +195,6 @@ export function useInitializePlan(
         return;
       }
       const url = route.fullPath;
-
-      // Check if we're navigating between tabs of the same plan/issue/rollout
-      // If data is already loaded, skip the refetch entirely to prevent flickering
-      const currentPlanName = plan.value.name;
-      const currentPlanUid = extractPlanUID(currentPlanName);
-
-      const isTabNavigation =
-        currentPlanName &&
-        (uid === currentPlanUid || // Direct plan tab navigation
-          (uid.startsWith("issue:") &&
-            plan.value.issue &&
-            uid.substring(6) === extractIssueUID(plan.value.issue)) || // Issue tab navigation
-          (uid.startsWith("rollout:") &&
-            plan.value.rollout &&
-            uid.substring(8) === extractRolloutUID(plan.value.rollout))); // Rollout tab navigation
-
-      // If we're just switching tabs within the same plan/issue/rollout, skip refetch
-      if (isTabNavigation) {
-        // Mark as not initializing to ensure UI is ready
-        isInitializing.value = false;
-        return;
-      }
-
-      // Otherwise, perform the full fetch with loading state
       isInitializing.value = true;
 
       try {
