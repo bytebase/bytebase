@@ -1127,8 +1127,6 @@ func (q *querySpanExtractor) extractTableSourceFromUDF2(funcExprWindowless pgpar
 
 // extractTableSourceFromFuncTable extracts table source from a function table
 func (q *querySpanExtractor) extractTableSourceFromFuncTable(funcTable pgparser.IFunc_tableContext, funcAlias pgparser.IFunc_alias_clauseContext) (base.TableSource, error) {
-	// Handle function tables like unnest, generate_series, etc.
-	// For now, return a pseudo table that will be populated with alias columns if present
 	result := &base.PseudoTable{
 		Name:    "",
 		Columns: []base.QuerySpanResult{},
@@ -1398,7 +1396,7 @@ func (q *querySpanExtractor) handleTargetLabel(labelCtx *pgparser.Target_labelCo
 		columnName, err = q.extractFieldNameFromAExpr(expr)
 		if err != nil || columnName == "" {
 			// Use default unknown column name
-			columnName = "?column?"
+			columnName = pgUnknownFieldName
 		}
 	}
 
@@ -1412,7 +1410,7 @@ func (q *querySpanExtractor) handleTargetLabel(labelCtx *pgparser.Target_labelCo
 // Returns "?column?" if no meaningful name can be derived.
 func (q *querySpanExtractor) extractFieldNameFromAExpr(expr pgparser.IA_exprContext) (string, error) {
 	if expr == nil {
-		return "?column?", nil
+		return pgUnknownFieldName, nil
 	}
 
 	// Try to find a column reference in the expression
@@ -1422,7 +1420,7 @@ func (q *querySpanExtractor) extractFieldNameFromAExpr(expr pgparser.IA_exprCont
 	}
 
 	// Default to unknown column name for other expression types
-	return "?column?", nil
+	return "?column?pgUnknownFieldName", nil
 }
 
 // findColumnNameInExpression recursively searches for a column name in an expression
@@ -1448,6 +1446,26 @@ func (q *querySpanExtractor) findColumnNameInExpression(node antlr.ParseTree) st
 			// Simple column name
 			return colName
 		}
+	}
+
+	switch ctx := node.(type) {
+	case pgparser.IColumnrefContext:
+		if ctx.Colid() != nil {
+			return NormalizePostgreSQLColid(ctx.Colid())
+		}
+	case pgparser.IFunc_exprContext:
+		// return the function name as the column name
+		_, funcName, _, err := q.extractFunctionElementFromFuncExpr(ctx)
+		if err == nil && funcName != "" {
+			return funcName
+		}
+		return pgUnknownFieldName
+	case pgparser.IFunc_expr_windowlessContext:
+		_, funcName, _, err := q.extractFunctionElementFromFuncExprWindowless(ctx)
+		if err == nil && funcName != "" {
+			return funcName
+		}
+		return pgUnknownFieldName
 	}
 
 	// Recursively search children
@@ -1813,7 +1831,6 @@ func (q *querySpanExtractor) extractSourceColumnSetFromFuncExpr(funcExpr pgparse
 	}
 
 	// TODO: Handle window functions if needed
-
 	return result, nil
 }
 
@@ -2051,6 +2068,35 @@ func (q *querySpanExtractor) extractSourceColumnSetFromUDF2(funcExpr pgparser.IF
 	return result, nil
 }
 
+func (q *querySpanExtractor) extractFunctionElementFromFuncExpr(funcExpr pgparser.IFunc_exprContext) (string, string, []antlr.ParseTree, error) {
+	args := getArgumentsFromFunctionExpr(funcExpr)
+	switch {
+	case funcExpr.Func_application() != nil:
+		funcName := funcExpr.Func_application().Func_name()
+		names := NormalizePostgreSQLFuncName(funcName)
+		switch len(names) {
+		case 2:
+			return names[0], names[1], args, nil
+		case 1:
+			return "", names[0], args, nil
+		default:
+			return "", "", nil, errors.New("invalid function name")
+		}
+	case funcExpr.Json_aggregate_func() != nil:
+		if funcExpr.Json_aggregate_func().JSON_OBJECTAGG() != nil {
+			return "", "json_objectagg", args, nil
+		} else if funcExpr.Json_aggregate_func().JSON_ARRAYAGG() != nil {
+			return "", "json_arrayagg", args, nil
+		}
+	case funcExpr.Func_expr_common_subexpr() != nil:
+		// Builtin function, return the first token text as function name
+		if funcExpr.Func_expr_common_subexpr().GetStart() != nil {
+			return "", strings.ToLower(funcExpr.Func_expr_common_subexpr().GetStart().GetText()), args, nil
+		}
+	}
+	return "", "", nil, errors.New("unable to extract function name")
+}
+
 func (q *querySpanExtractor) extractFunctionElementFromFuncExprWindowless(funcExprWindowless pgparser.IFunc_expr_windowlessContext) (string, string, []antlr.ParseTree, error) {
 	args := getArgumentsFromFunctionExprWindowless(funcExprWindowless)
 	switch {
@@ -2094,6 +2140,16 @@ func (q *querySpanExtractor) extractFunctionNameFromFuncExpr(funcExpr pgparser.I
 			default:
 				return "", "", errors.New("invalid function name")
 			}
+		} else if t := funcName.Type_function_name(); t != nil {
+			// No indirection, just a simple function name
+			s := t.GetText()
+			if t.Identifier() != nil {
+				s = normalizePostgreSQLIdentifier(t.Identifier())
+			}
+			return "", s, nil
+		} else {
+			// Builtin function without schema
+			return "", strings.ToLower(funcName.GetText()), nil
 		}
 	case funcExpr.Json_aggregate_func() != nil:
 		if funcExpr.Json_aggregate_func().JSON_OBJECTAGG() != nil {
@@ -2303,6 +2359,144 @@ func (q *querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr pgparser.
 	}
 
 	return 0, nil
+}
+
+func getArgumentsFromFunctionExpr(funcExpr pgparser.IFunc_exprContext) []antlr.ParseTree {
+	var result []antlr.ParseTree
+	if funcExpr == nil {
+		return result
+	}
+	if fa := funcExpr.Func_application(); fa != nil {
+		if fa.Func_arg_list() != nil {
+			result = append(result, getArgumentsFromFuncArgList(fa.Func_arg_list())...)
+		}
+		if fa.Func_arg_expr() != nil {
+			result = append(result, fa.Func_arg_expr())
+		}
+		// TODO(zp): Handle *, ALL, DISTINCT if needed
+		return result
+	}
+	if f := funcExpr.Func_expr_common_subexpr(); f != nil {
+		if f.COLLATION() != nil {
+			result = append(result, f.A_expr(0))
+		} else if f.CURRENT_DATE() != nil {
+			// No arguments
+		} else if f.CURRENT_TIME() != nil || f.CURRENT_TIMESTAMP() != nil || f.LOCALTIME() != nil || f.LOCALTIMESTAMP() != nil {
+			if f.Iconst() != nil {
+				result = append(result, f.Iconst())
+			}
+		} else if f.CURRENT_ROLE() != nil || f.CURRENT_USER() != nil || f.SESSION_USER() != nil || f.USER() != nil || f.CURRENT_CATALOG() != nil || f.CURRENT_SCHEMA() != nil {
+			// No arguments
+		} else if f.CAST() != nil || f.TREAT() != nil {
+			result = append(result, f.A_expr(0))
+		} else if f.EXTRACT() != nil {
+			if f.Extract_list() != nil {
+				result = append(result, f.Extract_list().A_expr())
+			}
+		} else if f.NORMALIZE() != nil {
+			result = append(result, f.A_expr(0))
+		} else if f.OVERLAY() != nil {
+			if list := f.Overlay_list(); list != nil {
+				for _, expr := range list.AllA_expr() {
+					result = append(result, expr)
+				}
+			}
+		} else if f.POSITION() != nil {
+			if list := f.Position_list(); list != nil {
+				for _, child := range list.GetChildren() {
+					if expr, ok := child.(pgparser.IA_exprContext); ok {
+						result = append(result, expr)
+					}
+				}
+			}
+		} else if f.SUBSTRING() != nil {
+			if list := f.Substr_list(); list != nil {
+				for _, expr := range list.AllA_expr() {
+					result = append(result, expr)
+				}
+			}
+		} else if f.TRIM() != nil {
+			if list := f.Trim_list(); list != nil {
+				if list.A_expr() != nil {
+					result = append(result, list.A_expr())
+				}
+				if list.Expr_list() != nil {
+					for _, expr := range list.Expr_list().AllA_expr() {
+						result = append(result, expr)
+					}
+				}
+			}
+		} else if f.NULLIF() != nil {
+			for _, expr := range f.AllA_expr() {
+				result = append(result, expr)
+			}
+		} else if f.COALESCE() != nil || f.GREATEST() != nil || f.LEAST() != nil {
+			if f.Expr_list() != nil {
+				for _, expr := range f.Expr_list().AllA_expr() {
+					result = append(result, expr)
+				}
+			}
+		} else if f.XMLELEMENT() != nil {
+			if f.Expr_list() != nil {
+				for _, expr := range f.Expr_list().AllA_expr() {
+					result = append(result, expr)
+				}
+			}
+		} else if f.XMLEXISTS() != nil {
+			for _, expr := range f.AllA_expr() {
+				result = append(result, expr)
+			}
+		} else if f.XMLFOREST() != nil {
+			if list := f.Xml_attribute_list(); list != nil {
+				for _, attr := range list.AllXml_attribute_el() {
+					result = append(result, attr.A_expr())
+				}
+			}
+		} else if f.XMLPARSE() != nil {
+			result = append(result, f.A_expr(0))
+		} else if f.XMLPI() != nil {
+			if len(f.AllA_expr()) > 0 {
+				result = append(result, f.A_expr(0))
+			}
+		} else if f.XMLROOT() != nil {
+			result = append(result, f.A_expr(0))
+		} else if f.XMLSERIALIZE() != nil {
+			result = append(result, f.A_expr(0))
+		} else if f.JSON_OBJECT() != nil {
+			if list := f.Func_arg_list(); list != nil {
+				result = append(result, getArgumentsFromFuncArgList(list)...)
+			}
+			if list := f.Json_name_and_value_list(); list != nil {
+				result = append(result, getArgumentsFromJsonNameAndValueList(list)...)
+			}
+			if list := f.Json_value_expr_list(); list != nil {
+				result = append(result, getArgumentsFromJsonValueExprList(list)...)
+			}
+		} else if f.JSON_ARRAY() != nil {
+			if list := f.Json_value_expr_list(); list != nil {
+				result = append(result, getArgumentsFromJsonValueExprList(list)...)
+			}
+			if list := f.Select_no_parens(); list != nil {
+				result = append(result, list)
+			}
+		} else if f.JSON() != nil {
+			result = append(result, f.Json_value_expr())
+		} else if f.JSON_SCALAR() != nil {
+			result = append(result, f.A_expr(0))
+		} else if f.JSON_SERIALIZE() != nil {
+			result = append(result, f.Json_value_expr())
+		} else if f.JSON_QUERY() != nil {
+			result = append(result, f.Json_value_expr())
+			result = append(result, f.A_expr(0))
+		} else if f.JSON_EXISTS() != nil {
+			result = append(result, f.Json_value_expr())
+			result = append(result, f.A_expr(0))
+		} else if f.JSON_VALUE() != nil {
+			result = append(result, f.Json_value_expr())
+			result = append(result, f.A_expr(0))
+		}
+	}
+	return result
 }
 
 func getArgumentsFromFunctionExprWindowless(funcExprWindowless pgparser.IFunc_expr_windowlessContext) []antlr.ParseTree {
