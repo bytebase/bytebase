@@ -404,11 +404,15 @@ const showReadyForRollout = computed(() => {
     return false;
   }
 
-  // Don't show for rollouts with database creation tasks
-  const hasDatabaseCreationTasks = rollout.value.stages.some((stage) =>
-    stage.tasks.some((task) => task.type === Task_Type.DATABASE_CREATE)
+  // Don't show for rollouts with database creation/export tasks
+  const hasDatabaseCreateOrExportTasks = rollout.value.stages.some((stage) =>
+    stage.tasks.some(
+      (task) =>
+        task.type === Task_Type.DATABASE_CREATE ||
+        task.type === Task_Type.DATABASE_EXPORT
+    )
   );
-  if (hasDatabaseCreationTasks) {
+  if (hasDatabaseCreateOrExportTasks) {
     return false;
   }
 
