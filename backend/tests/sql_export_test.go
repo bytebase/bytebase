@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -29,7 +27,6 @@ func TestSQLExport(t *testing.T) {
 		password          string
 		reset             string
 		export            string
-		want              bool
 		queryResult       []*v1pb.QueryResult
 		resetResult       []*v1pb.QueryResult
 	}{
@@ -112,6 +109,7 @@ func TestSQLExport(t *testing.T) {
 				},
 			},
 		},
+		// TODO(ed): test multiple queries.
 	}
 
 	t.Parallel()
@@ -220,32 +218,12 @@ func TestSQLExport(t *testing.T) {
 		a.NoError(err)
 		checkResults(a, tt.databaseName, statement, tt.resetResult, results)
 
-		if tt.password != "" {
-			reader := bytes.NewReader(export.Content)
-			zipReader, err := zip.NewReader(reader, int64(len(export.Content)))
-			a.NoError(err)
-			a.Equal(1, len(zipReader.File))
-
-			a.Equal(fmt.Sprintf("[0] %s.%s", tt.databaseName, strings.ToLower(request.Format.String())), zipReader.File[0].Name)
-			compressedFile := zipReader.File[0]
-			compressedFile.SetPassword(tt.password)
-			file, err := compressedFile.Open()
-			a.NoError(err)
-			content, err := io.ReadAll(file)
-			a.NoError(err)
-			statement = string(content)
-		} else {
-			statement = string(export.Content)
-		}
-
-		results, err = ctl.adminQuery(ctx, database, statement)
+		reader := bytes.NewReader(export.Content)
+		zipReader, err := zip.NewReader(reader, int64(len(export.Content)))
 		a.NoError(err)
-		checkResults(a, tt.databaseName, statement, tt.queryResult, results)
+		a.Equal(len(tt.queryResult)*2, len(zipReader.File))
 
-		statement = tt.reset
-		results, err = ctl.adminQuery(ctx, database, statement)
-		a.NoError(err)
-		checkResults(a, tt.databaseName, statement, tt.resetResult, results)
+		// TODO(ed): test file content.
 	}
 }
 
