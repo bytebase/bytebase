@@ -11,11 +11,15 @@
 -- Changes:
 -- - Remove " && request.row_limit <operator> <number>" patterns from condition expressions
 -- - Remove "request.row_limit <operator> <number> && " patterns from condition expressions
+-- - Remove standalone "request.row_limit <operator> <number>" when it's the only condition
 -- - Supported operators: <, >, <=, >=, ==, !=
 --
--- Example transformation:
+-- Example transformations:
 -- Before: "request.time < timestamp(\"2025-10-18T06:05:51.000Z\") && request.row_limit <= 5000"
 -- After:  "request.time < timestamp(\"2025-10-18T06:05:51.000Z\")"
+--
+-- Before: "request.row_limit <= 500"
+-- After:  ""
 --
 -- Affected table:
 -- - policy (type='IAM', resource_type='PROJECT'): IAM policy condition expressions for SQL Editor User role
@@ -36,16 +40,22 @@ SET payload = (
                         binding,
                         '{condition,expression}',
                         to_jsonb(
-                            -- Remove " && request.row_limit <operator> <number>" pattern
+                            -- Remove standalone "request.row_limit <operator> <number>" pattern (when it's the only condition)
                             regexp_replace(
-                                -- Remove "request.row_limit <operator> <number> && " pattern
+                                -- Remove " && request.row_limit <operator> <number>" pattern
                                 regexp_replace(
-                                    binding->'condition'->>'expression',
-                                    'request\.row_limit\s*(<=|>=|<|>|==|!=)\s*\d+\s*&&\s*',
+                                    -- Remove "request.row_limit <operator> <number> && " pattern
+                                    regexp_replace(
+                                        binding->'condition'->>'expression',
+                                        'request\.row_limit\s*(<=|>=|<|>|==|!=)\s*\d+\s*&&\s*',
+                                        '',
+                                        'g'
+                                    ),
+                                    '\s*&&\s*request\.row_limit\s*(<=|>=|<|>|==|!=)\s*\d+',
                                     '',
                                     'g'
                                 ),
-                                '\s*&&\s*request\.row_limit\s*(<=|>=|<|>|==|!=)\s*\d+',
+                                '^\s*request\.row_limit\s*(<=|>=|<|>|==|!=)\s*\d+\s*$',
                                 '',
                                 'g'
                             )
