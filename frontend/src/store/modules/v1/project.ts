@@ -298,7 +298,7 @@ export const useProjectByName = (name: MaybeRef<string>) => {
 export const useCurrentProjectV1 = () => {
   const route = useRoute();
   const projectName = computed(() =>
-    route.params.projectId
+    route?.params.projectId
       ? `${projectNamePrefix}${route.params.projectId}`
       : unknownProject().name
   );

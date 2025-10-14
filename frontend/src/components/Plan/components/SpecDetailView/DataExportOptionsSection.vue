@@ -7,9 +7,7 @@
     <div class="space-y-3">
       <!-- Export Format -->
       <div class="flex items-center gap-4">
-        <span class="text-sm min-w-[100px]">{{
-          $t("export-data.export-format")
-        }}</span>
+        <span class="text-sm">{{ $t("export-data.export-format") }}</span>
         <ExportFormatSelector
           v-model:format="exportFormat"
           :editable="isCreating"
@@ -17,15 +15,10 @@
       </div>
 
       <!-- Password Protection -->
-      <div class="flex items-center gap-4 min-h-7">
-        <span class="text-sm min-w-[100px]">{{
-          $t("export-data.password-optional")
-        }}</span>
-        <ExportPasswordInputer
-          v-model:password="exportPassword"
-          :editable="isCreating"
-        />
-      </div>
+      <ExportPasswordInputer
+        v-model:password="exportPassword"
+        :editable="isCreating"
+      />
     </div>
   </div>
 </template>

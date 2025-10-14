@@ -815,7 +815,7 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %d has no task", rollout.ID))
 	}
 
-	contents := []*exportData{}
+	pendingEncrypts := []*encryptContent{}
 	targetTaskRunStatus := []storepb.TaskRun_Status{storepb.TaskRun_DONE}
 
 	for _, task := range tasks {
@@ -841,16 +841,34 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 		if exportArchive == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("export not found or expired, please request a new export"))
 		}
-		contents = append(contents, &exportData{
-			Content:  exportArchive.Bytes,
-			Database: task.GetDatabaseName(),
-		})
+
+		// The exportArchive.Bytes should be a zip without password. We will read it and append all files into the pendingEncrypts,
+		// then create a new file zip for them.
+		zipReader, err := zip.NewReader(bytes.NewReader(exportArchive.Bytes), int64(len(exportArchive.Bytes)))
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to read export archive: %v", err))
+		}
+
+		for _, file := range zipReader.File {
+			rc, err := file.Open()
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to open file %s in archive: %v", file.Name, err))
+			}
+
+			content, err := io.ReadAll(rc)
+			rc.Close()
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to read file %s: %v", file.Name, err))
+			}
+
+			pendingEncrypts = append(pendingEncrypts, &encryptContent{
+				Content: content,
+				Name:    file.Name,
+			})
+		}
 	}
 
-	encryptedBytes, err := doEncrypt(contents, &v1pb.ExportRequest{
-		Password: tasks[0].Payload.GetPassword(),
-		Format:   v1pb.ExportFormat(tasks[0].Payload.GetFormat()),
-	})
+	encryptedBytes, err := doEncrypt(pendingEncrypts, tasks[0].Payload.GetPassword())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to encrypt data: %v", err))
 	}
@@ -923,21 +941,6 @@ func DoExport(
 	if queryErr != nil {
 		return nil, duration, queryErr
 	}
-	// only return the last result
-	if len(results) > 1 {
-		results = results[len(results)-1:]
-	}
-	if len(results) == 1 {
-		if optionalAccessCheck != nil {
-			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Explain); err != nil {
-				return nil, duration, err
-			}
-		}
-	}
-
-	if results[0].GetError() != "" {
-		return nil, duration, errors.New(results[0].GetError())
-	}
 
 	if licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
 		masker := NewQueryResultMasker(stores)
@@ -946,76 +949,74 @@ func DoExport(
 		}
 	}
 
-	result := results[0]
-	var content []byte
-	switch request.Format {
-	case v1pb.ExportFormat_CSV:
-		content, err = exportCSV(result)
-		if err != nil {
-			return nil, duration, err
+	pendingEncryptContents := []*encryptContent{}
+	for i, result := range results {
+		if result.GetError() != "" {
+			slog.Error("failed to query result",
+				slog.String("instance", database.InstanceID),
+				slog.String("database", database.DatabaseName),
+				slog.String("project", database.ProjectID),
+				slog.String("query_error", result.GetError()),
+			)
+			continue
 		}
-	case v1pb.ExportFormat_JSON:
-		content, err = exportJSON(result)
+
+		content, err := formatExport(ctx, stores, instance, database, result, request)
 		if err != nil {
-			return nil, duration, err
+			slog.Error("failed to format export",
+				log.BBError(err),
+				slog.String("instance", database.InstanceID),
+				slog.String("database", database.DatabaseName),
+				slog.String("project", database.ProjectID),
+			)
+			continue
 		}
-	case v1pb.ExportFormat_SQL:
-		resourceList, err := getResources(ctx, stores, instance.Metadata.GetEngine(), database.DatabaseName, request.Statement, instance)
-		if err != nil {
-			return nil, 0, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to extract resource list: %v", err))
-		}
-		statementPrefix, err := getSQLStatementPrefix(instance.Metadata.GetEngine(), resourceList, result.ColumnNames)
-		if err != nil {
-			return nil, 0, err
-		}
-		content, err = exportSQL(instance.Metadata.GetEngine(), statementPrefix, result)
-		if err != nil {
-			return nil, duration, err
-		}
-	case v1pb.ExportFormat_XLSX:
-		content, err = exportXLSX(result)
-		if err != nil {
-			return nil, duration, err
-		}
-	default:
-		return nil, duration, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported export format: %s", request.Format.String()))
+		filename := fmt.Sprintf("%s/%s/statement-%d", database.InstanceID, database.DatabaseName, i+1)
+		pendingEncryptContents = append(
+			pendingEncryptContents,
+			&encryptContent{
+				Name:    fmt.Sprintf("%s.%s", filename, strings.ToLower(request.Format.String())),
+				Content: content,
+			},
+			&encryptContent{
+				Name:    fmt.Sprintf("%s.sql", filename),
+				Content: []byte(result.Statement),
+			},
+		)
 	}
 
-	if request.Password == "" {
-		return content, duration, nil
+	if len(pendingEncryptContents) == 0 {
+		return nil, duration, errors.Errorf("empty export data for database %s", database.DatabaseName)
 	}
-	encryptedBytes, err := doEncrypt([]*exportData{
-		{
-			Database: database.DatabaseName,
-			Content:  content,
-		},
-	}, request)
+
+	// we will save both query result and statement into the result, so we always zip files.
+	encryptedBytes, err := doEncrypt(pendingEncryptContents, request.GetPassword())
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "failed to encrypt data")
+		return nil, duration, errors.Wrap(err, "failed to encrypt data")
 	}
 	return encryptedBytes, duration, nil
 }
 
-type exportData struct {
-	Database string
-	Content  []byte
+type encryptContent struct {
+	Name    string
+	Content []byte
 }
 
-func doEncrypt(exports []*exportData, request *v1pb.ExportRequest) ([]byte, error) {
+func doEncrypt(exports []*encryptContent, password string) ([]byte, error) {
 	var b bytes.Buffer
 	fzip := io.Writer(&b)
 
 	zipw := zip.NewWriter(fzip)
 	defer zipw.Close()
 
-	for i, export := range exports {
+	for _, export := range exports {
 		fh := &zip.FileHeader{
-			Name:   fmt.Sprintf("[%d] %s.%s", i, export.Database, strings.ToLower(request.Format.String())),
+			Name:   export.Name,
 			Method: zip.Deflate,
 		}
 		fh.ModifiedDate, fh.ModifiedTime = timeToMsDosTime(time.Now())
-		if request.Password != "" {
-			fh.SetPassword(request.Password)
+		if password != "" {
+			fh.SetPassword(password)
 		}
 		writer, err := zipw.CreateHeader(fh)
 		if err != nil {
@@ -1031,6 +1032,40 @@ func doEncrypt(exports []*exportData, request *v1pb.ExportRequest) ([]byte, erro
 	}
 
 	return b.Bytes(), nil
+}
+
+func formatExport(
+	ctx context.Context,
+	stores *store.Store,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	result *v1pb.QueryResult,
+	request *v1pb.ExportRequest,
+) ([]byte, error) {
+	var content []byte
+	var err error
+	switch request.Format {
+	case v1pb.ExportFormat_CSV:
+		content, err = exportCSV(result)
+	case v1pb.ExportFormat_JSON:
+		content, err = exportJSON(result)
+	case v1pb.ExportFormat_SQL:
+		resourceList, err := getResources(ctx, stores, instance.Metadata.GetEngine(), database.DatabaseName, request.Statement, instance)
+		if err != nil {
+			return nil, errors.Errorf("failed to extract resource list: %v", err)
+		}
+		statementPrefix, err := getSQLStatementPrefix(instance.Metadata.GetEngine(), resourceList, result.ColumnNames)
+		if err != nil {
+			return nil, err
+		}
+		content, err = exportSQL(instance.Metadata.GetEngine(), statementPrefix, result)
+	case v1pb.ExportFormat_XLSX:
+		content, err = exportXLSX(result)
+	default:
+		return nil, errors.Errorf("unsupported export format: %s", request.Format.String())
+	}
+
+	return content, err
 }
 
 // timeToMsDosTime converts a time.Time to an MS-DOS date and time.

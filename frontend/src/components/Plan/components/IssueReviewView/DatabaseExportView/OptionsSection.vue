@@ -37,15 +37,10 @@
       </div>
 
       <!-- Password Protection Display/Edit -->
-      <div class="flex items-center gap-4 min-h-7">
-        <span class="text-sm">
-          {{ $t("export-data.password-optional") }}
-        </span>
-        <ExportPasswordInputer
-          v-model:password="editableConfig.password"
-          :editable="optionsEditable"
-        />
-      </div>
+      <ExportPasswordInputer
+        v-model:password="editableConfig.password"
+        :editable="optionsEditable"
+      />
     </div>
   </div>
 </template>

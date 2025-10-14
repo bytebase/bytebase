@@ -155,11 +155,11 @@ const handleExport = async ({
 }: {
   options: ExportOption;
   reject: (reason?: unknown) => void;
-  resolve: (content: DownloadContent) => void;
+  resolve: (content: DownloadContent[]) => void;
 }) => {
   let pageToken = "";
   let i = 0;
-  const contents: DownloadContent = [];
+  const contents: DownloadContent[] = [];
 
   try {
     while (i === 0 || pageToken !== "") {
@@ -173,7 +173,7 @@ const handleExport = async ({
       pageToken = nextPageToken;
       contents.push({
         content,
-        filename: `audit-log.file${i}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}`,
+        filename: `audit-log.file${i}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.${ExportFormat[options.format].toLowerCase()}`,
       });
     }
     resolve(contents);
