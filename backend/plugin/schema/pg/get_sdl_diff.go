@@ -21,14 +21,23 @@ func init() {
 }
 
 func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previousSchema *model.DatabaseSchema) (*schema.MetadataDiff, error) {
+	generatedSDL, err := convertDatabaseSchemaToSDL(currentSchema)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert current schema to SDL format for initialization")
+	}
+
 	// Check for initialization scenario: previousUserSDLText is empty
 	if strings.TrimSpace(previousUserSDLText) == "" && currentSchema != nil {
 		// Initialization scenario: convert currentSchema to SDL format as baseline
-		generatedSDL, err := convertDatabaseSchemaToSDL(currentSchema)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to convert current schema to SDL format for initialization")
-		}
 		previousUserSDLText = generatedSDL
+	}
+
+	// Only skip processing if both current SDL and generated SDL match
+	// AND there is actually a current schema to compare against.
+	// If currentSchema is nil, we must process the diff to detect drops from previous SDL.
+	if currentSchema != nil && strings.TrimSpace(currentSDLText) == strings.TrimSpace(generatedSDL) {
+		// No changes detected between current SDL and database schema
+		return &schema.MetadataDiff{}, nil
 	}
 
 	currentChunks, err := ChunkSDLText(currentSDLText)
@@ -1635,13 +1644,30 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 		}
 	}
 
+	// Build sequences map: schema.table -> sequences for that table
+	tableSequencesMap := make(map[string][]*storepb.SequenceMetadata)
+	for _, schema := range currentMetadata.Schemas {
+		schemaName := schema.Name
+		if schemaName == "" {
+			schemaName = "public"
+		}
+		for _, sequence := range schema.Sequences {
+			if sequence.OwnerTable != "" {
+				tableKey := schemaName + "." + sequence.OwnerTable
+				tableSequencesMap[tableKey] = append(tableSequencesMap[tableKey], sequence)
+			}
+		}
+	}
+
 	// Process table additions: add new tables to chunks
 	for tableKey, currentTable := range currentTables {
 		if _, exists := previousTables[tableKey]; !exists {
 			// Table was added - generate SDL for the new table and parse it to AST
 			var buf strings.Builder
 			schemaName, _ := parseIdentifier(tableKey)
-			err := writeCreateTableSDL(&buf, schemaName, currentTable)
+			// Get sequences for this table
+			tableSequences := tableSequencesMap[tableKey]
+			err := writeCreateTableSDL(&buf, schemaName, currentTable, tableSequences)
 			if err != nil {
 				return errors.Wrapf(err, "failed to generate SDL for new table %s", tableKey)
 			}
@@ -1680,8 +1706,10 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 			// Table exists in both schemas - check for column differences
 			if existingKey, chunkExists := existingChunkKeys[tableKey]; chunkExists {
 				if chunk := previousChunks.Tables[existingKey]; chunk != nil {
+					// Get sequences for this table
+					tableSequences := tableSequencesMap[tableKey]
 					// Apply both column and constraint changes to the existing chunk using a single rewriter
-					err := applyTableChangesToChunk(chunk, currentTable, previousTable)
+					err := applyTableChangesToChunk(chunk, currentTable, previousTable, tableSequences)
 					if err != nil {
 						return errors.Wrapf(err, "failed to apply table changes to table %s", tableKey)
 					}
@@ -1725,7 +1753,7 @@ func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema
 
 // applyTableChangesToChunk applies minimal column and constraint changes to an existing CREATE TABLE chunk
 // by working with the individual chunk's SQL text instead of the full script's tokenStream
-func applyTableChangesToChunk(chunk *schema.SDLChunk, currentTable, previousTable *storepb.TableMetadata) error {
+func applyTableChangesToChunk(chunk *schema.SDLChunk, currentTable, previousTable *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) error {
 	if chunk == nil || chunk.ASTNode == nil || currentTable == nil || previousTable == nil {
 		return nil
 	}
@@ -1767,7 +1795,7 @@ func applyTableChangesToChunk(chunk *schema.SDLChunk, currentTable, previousTabl
 	rewriter := antlr.NewTokenStreamRewriter(tokenStream)
 
 	// Apply column changes using the rewriter
-	err = applyColumnChanges(rewriter, createStmt, currentTable, previousTable)
+	err = applyColumnChanges(rewriter, createStmt, currentTable, previousTable, sequences)
 	if err != nil {
 		return errors.Wrapf(err, "failed to apply column changes")
 	}
@@ -1804,7 +1832,7 @@ func applyTableChangesToChunk(chunk *schema.SDLChunk, currentTable, previousTabl
 }
 
 // applyColumnChanges applies column changes using the provided rewriter without parsing SQL
-func applyColumnChanges(rewriter *antlr.TokenStreamRewriter, createStmt *parser.CreatestmtContext, currentTable, previousTable *storepb.TableMetadata) error {
+func applyColumnChanges(rewriter *antlr.TokenStreamRewriter, createStmt *parser.CreatestmtContext, currentTable, previousTable *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) error {
 	// Create column maps for efficient lookups
 	currentColumns := make(map[string]*storepb.ColumnMetadata)
 	previousColumns := make(map[string]*storepb.ColumnMetadata)
@@ -1839,7 +1867,7 @@ func applyColumnChanges(rewriter *antlr.TokenStreamRewriter, createStmt *parser.
 				// Column exists in both - check if modified
 				if !columnsEqual(currentCol, previousCol) {
 					columnDef := existingColumnDefs.Map[columnName]
-					err := modifyColumnInAST(rewriter, columnDef.ASTNode, currentCol)
+					err := modifyColumnInAST(rewriter, columnDef.ASTNode, currentCol, currentTable.Name, sequences)
 					if err != nil {
 						return errors.Wrapf(err, "failed to modify column %s", columnName)
 					}
@@ -1852,7 +1880,7 @@ func applyColumnChanges(rewriter *antlr.TokenStreamRewriter, createStmt *parser.
 	for _, currentCol := range currentTable.Columns {
 		if _, exists := previousColumns[currentCol.Name]; !exists {
 			// Column was added
-			err := addColumnToAST(rewriter, createStmt, currentCol)
+			err := addColumnToAST(rewriter, createStmt, currentCol, currentTable.Name, sequences)
 			if err != nil {
 				return errors.Wrapf(err, "failed to add column %s", currentCol.Name)
 			}
@@ -2178,7 +2206,7 @@ func deleteColumnFromAST(rewriter *antlr.TokenStreamRewriter, columnDef parser.I
 }
 
 // modifyColumnInAST modifies an existing column definition using token rewriter
-func modifyColumnInAST(rewriter *antlr.TokenStreamRewriter, columnDef parser.IColumnDefContext, newColumn *storepb.ColumnMetadata) error {
+func modifyColumnInAST(rewriter *antlr.TokenStreamRewriter, columnDef parser.IColumnDefContext, newColumn *storepb.ColumnMetadata, tableName string, sequences []*storepb.SequenceMetadata) error {
 	if columnDef == nil || newColumn == nil {
 		return errors.New("column definition or new column metadata is nil")
 	}
@@ -2190,7 +2218,7 @@ func modifyColumnInAST(rewriter *antlr.TokenStreamRewriter, columnDef parser.ICo
 	}
 
 	// Generate new column definition SDL
-	newColumnSDL := generateColumnSDL(newColumn)
+	newColumnSDL := generateColumnSDL(newColumn, tableName, sequences)
 
 	// Replace the entire column definition
 	rewriter.ReplaceDefault(startToken.GetTokenIndex(), stopToken.GetTokenIndex(), newColumnSDL)
@@ -2199,7 +2227,7 @@ func modifyColumnInAST(rewriter *antlr.TokenStreamRewriter, columnDef parser.ICo
 }
 
 // addColumnToAST adds a new column definition to the CREATE TABLE statement
-func addColumnToAST(rewriter *antlr.TokenStreamRewriter, createStmt *parser.CreatestmtContext, newColumn *storepb.ColumnMetadata) error {
+func addColumnToAST(rewriter *antlr.TokenStreamRewriter, createStmt *parser.CreatestmtContext, newColumn *storepb.ColumnMetadata, tableName string, sequences []*storepb.SequenceMetadata) error {
 	if createStmt == nil || newColumn == nil {
 		return errors.New("create statement or new column metadata is nil")
 	}
@@ -2216,7 +2244,7 @@ func addColumnToAST(rewriter *antlr.TokenStreamRewriter, createStmt *parser.Crea
 				token := rewriter.GetTokenStream().Get(i)
 				if token.GetTokenType() == parser.PostgreSQLParserOPEN_PAREN {
 					// Found opening parenthesis, insert new column after it
-					newColumnSDL := "\n    " + generateColumnSDL(newColumn) + "\n"
+					newColumnSDL := "\n    " + generateColumnSDL(newColumn, tableName, sequences) + "\n"
 					rewriter.InsertAfterDefault(i, newColumnSDL)
 					return nil
 				}
@@ -2235,7 +2263,7 @@ func addColumnToAST(rewriter *antlr.TokenStreamRewriter, createStmt *parser.Crea
 	}
 
 	// Generate new column definition SDL with leading comma and proper indentation
-	newColumnSDL := ",\n    " + generateColumnSDL(newColumn)
+	newColumnSDL := ",\n    " + generateColumnSDL(newColumn, tableName, sequences)
 
 	// Insert after the last column
 	rewriter.InsertAfterDefault(stopToken.GetTokenIndex(), newColumnSDL)
@@ -2244,13 +2272,13 @@ func addColumnToAST(rewriter *antlr.TokenStreamRewriter, createStmt *parser.Crea
 }
 
 // generateColumnSDL generates SDL text for a single column definition using the extracted writeColumnSDL function
-func generateColumnSDL(column *storepb.ColumnMetadata) string {
+func generateColumnSDL(column *storepb.ColumnMetadata, tableName string, sequences []*storepb.SequenceMetadata) string {
 	if column == nil {
 		return ""
 	}
 
 	var buf strings.Builder
-	err := writeColumnSDL(&buf, column)
+	err := writeColumnSDL(&buf, column, tableName, sequences)
 	if err != nil {
 		// If there's an error writing to the buffer, return empty string
 		// This should rarely happen since we're writing to a strings.Builder
