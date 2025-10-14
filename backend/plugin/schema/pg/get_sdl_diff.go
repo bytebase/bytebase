@@ -32,7 +32,10 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 		previousUserSDLText = generatedSDL
 	}
 
-	if strings.TrimSpace(currentSDLText) == strings.TrimSpace(generatedSDL) {
+	// Only skip processing if both current SDL and generated SDL match
+	// AND there is actually a current schema to compare against.
+	// If currentSchema is nil, we must process the diff to detect drops from previous SDL.
+	if currentSchema != nil && strings.TrimSpace(currentSDLText) == strings.TrimSpace(generatedSDL) {
 		// No changes detected between current SDL and database schema
 		return &schema.MetadataDiff{}, nil
 	}

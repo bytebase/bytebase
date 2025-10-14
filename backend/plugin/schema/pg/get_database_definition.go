@@ -2375,11 +2375,12 @@ func extractSequenceNameFromNextval(defaultValue string) string {
 		return ""
 	}
 
-	if defaultValue[startIdx] == '\'' {
+	switch defaultValue[startIdx] {
+	case '\'':
 		quoteChar = '\''
-	} else if defaultValue[startIdx] == '"' {
+	case '"':
 		quoteChar = '"'
-	} else {
+	default:
 		return ""
 	}
 
