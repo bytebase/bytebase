@@ -493,7 +493,7 @@ const handleExportBtnClick = async ({
 }: {
   options: ExportOption;
   reject: (reason?: any) => void;
-  resolve: (content: DownloadContent) => void;
+  resolve: (content: DownloadContent[]) => void;
 }) => {
   const admin = tabStore.currentTab?.mode === "ADMIN";
   const limit = options.limit ?? (admin ? 0 : editorStore.resultRowsLimit);
@@ -515,7 +515,8 @@ const handleExportBtnClick = async ({
     resolve([
       {
         content,
-        filename: `${props.database.databaseName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}`,
+        // the download file is always zip file.
+        filename: `${props.database.databaseName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
       },
     ]);
   } catch (e) {

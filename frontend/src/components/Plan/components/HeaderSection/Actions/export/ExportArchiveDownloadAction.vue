@@ -35,8 +35,6 @@ import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import { usePlanContext } from "@/components/Plan/logic";
 import { useSQLStore } from "@/store";
-import { ExportFormat } from "@/types/proto-es/v1/common_pb";
-import type { Plan_ExportDataConfig } from "@/types/proto-es/v1/plan_service_pb";
 import {
   TaskRun_ExportArchiveStatus,
   type TaskRun,
@@ -48,7 +46,7 @@ interface LocalState {
   isExporting: boolean;
 }
 
-const { plan, rollout, taskRuns, events } = usePlanContext();
+const { rollout, taskRuns, events } = usePlanContext();
 const state = reactive<LocalState>({
   isExporting: false,
 });
@@ -75,13 +73,6 @@ const isExported = computed(() => {
   );
 });
 
-const exportDataConfig = computed((): Plan_ExportDataConfig | undefined => {
-  const spec = plan.value.specs.find(
-    (spec) => spec.config?.case === "exportDataConfig"
-  );
-  return spec?.config?.value as Plan_ExportDataConfig;
-});
-
 const downloadExportArchive = async () => {
   if (!rollout.value) return;
 
@@ -92,45 +83,24 @@ const downloadExportArchive = async () => {
         name: `${rollout.value.name}/stages/-`,
       })
     );
-    const fileType = getExportFileType(exportDataConfig.value);
     const buffer = content.buffer.slice(
       content.byteOffset,
       content.byteOffset + content.byteLength
     ) as ArrayBuffer;
     const blob = new Blob([buffer], {
-      type: fileType,
+      type: "application/zip", // the download file is always zip file.
     });
     const url = window.URL.createObjectURL(blob);
 
     const formattedDateString = dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss");
-    const filename = `export-data-${formattedDateString}`;
+    const filename = `export-data-${formattedDateString}.zip`;
     const link = document.createElement("a");
-    link.download = `${filename}.zip`;
+    link.download = filename;
     link.href = url;
     link.click();
     events.emit("status-changed", { eager: true });
   } finally {
     state.isExporting = false;
-  }
-};
-
-const getExportFileType = (exportDataConfig?: Plan_ExportDataConfig) => {
-  if (!exportDataConfig) return "application/zip";
-
-  if (exportDataConfig.password) {
-    return "application/zip";
-  }
-  switch (exportDataConfig.format) {
-    case ExportFormat.CSV:
-      return "text/csv";
-    case ExportFormat.JSON:
-      return "application/json";
-    case ExportFormat.SQL:
-      return "application/sql";
-    case ExportFormat.XLSX:
-      return "application/vnd.ms-excel";
-    default:
-      return "application/zip";
   }
 };
 </script>

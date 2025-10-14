@@ -148,10 +148,10 @@ interface LocalState {
   showModal: boolean;
 }
 
-export type DownloadContent = Array<{
+export type DownloadContent = {
   content: Uint8Array;
   filename: string;
-}>;
+};
 
 export interface ExportOption {
   limit: number;
@@ -190,7 +190,7 @@ const emit = defineEmits<{
   (
     event: "export",
     option: {
-      resolve: (content: DownloadContent) => void;
+      resolve: (content: DownloadContent[]) => void;
       reject: (reason?: any) => void;
       options: ExportOption;
     }
@@ -289,15 +289,15 @@ const doExport = () => {
   state.isRequesting = true;
   const options = { ...formData.value };
 
-  new Promise<DownloadContent>((resolve, reject) => {
+  new Promise<DownloadContent[]>((resolve, reject) => {
     return emit("export", {
       resolve,
       reject,
       options,
     });
   })
-    .then((content: DownloadContent) => {
-      return doDownload(content, options);
+    .then((content: DownloadContent[]) => {
+      return doDownload(content, options.format);
     })
     .then(() => {
       pushNotification({
@@ -321,10 +321,6 @@ const doExport = () => {
     });
 };
 
-const downloadFileAsZip = (options: ExportOption) => {
-  return !!options.password;
-};
-
 const getExportFileType = (format: ExportFormat) => {
   switch (format) {
     case ExportFormat.CSV:
@@ -339,63 +335,44 @@ const getExportFileType = (format: ExportFormat) => {
 };
 
 const convertSingleFile = async (
-  content: Uint8Array,
-  options: ExportOption
+  { content, filename }: DownloadContent,
+  format: ExportFormat
 ) => {
-  const isZip = downloadFileAsZip(options);
-  const fileType = isZip
-    ? "application/zip"
-    : getExportFileType(options.format);
+  const isZip = filename.endsWith(".zip");
+  const fileType = isZip ? "application/zip" : getExportFileType(format);
 
   // Create Blob from Uint8Array
   const buffer = content.buffer.slice(
     content.byteOffset,
     content.byteOffset + content.byteLength
   ) as ArrayBuffer; // TypeScript 5.9.2 requires explicit ArrayBuffer type
-  let blob = new Blob([buffer], {
+  return new Blob([buffer], {
     type: fileType,
   });
-  if (options.format === ExportFormat.JSON) {
-    const text = await blob.text();
-    const formatted = JSON.stringify(JSON.parse(text), null, 2);
-    blob = new Blob([formatted], {
-      type: fileType,
-    });
-  }
-  return blob;
 };
 
 const doDownloadSingleFile = async (
-  {
-    content,
-    filename,
-  }: {
-    content: Uint8Array;
-    filename: string;
-  },
-  options: ExportOption
+  content: DownloadContent,
+  format: ExportFormat
 ) => {
-  const blob = await convertSingleFile(content, options);
-  const isZip = downloadFileAsZip(options);
+  const blob = await convertSingleFile(content, format);
   const url = window.URL.createObjectURL(blob);
 
-  const fileFormat = ExportFormat[options.format].toLowerCase();
   const link = document.createElement("a");
-  link.download = `${filename}.${isZip ? "zip" : fileFormat}`;
+  link.download = content.filename;
   link.href = url;
   link.click();
 };
 
-const doDownload = async (content: DownloadContent, options: ExportOption) => {
+const doDownload = async (content: DownloadContent[], format: ExportFormat) => {
   if (content.length === 1) {
-    return doDownloadSingleFile(content[0], options);
+    return doDownloadSingleFile(content[0], format);
   }
 
-  const fileFormat = ExportFormat[options.format].toLowerCase();
   const zip = new JSZip();
   for (const c of content) {
-    const blob = await convertSingleFile(c.content, options);
-    zip.file(`${c.filename}.${fileFormat}`, blob);
+    const blob = await convertSingleFile(c, format);
+    zip.file(c.filename, blob);
   }
 
   const zipFile = await zip.generateAsync({ type: "blob" });

@@ -22,7 +22,7 @@
                 projectId: getProjectName(project.name),
               },
             }"
-            class="textinfolabel normal-link"
+            class="textinfolabel normal-link flex items-center gap-x-2"
           >
             {{ $t("project.settings.issue-related.labels.configure-labels") }}
             <ExternalLinkIcon class="w-4 h-auto inline-block" />
