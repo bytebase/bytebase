@@ -25,6 +25,7 @@ func configureEchoRouters(
 	profile *config.Profile,
 ) {
 	e.Use(recoverMiddleware)
+	e.Use(securityHeadersMiddleware)
 
 	if profile.Mode == common.ReleaseModeDev {
 		e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
@@ -90,6 +91,35 @@ func recoverMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 				c.Error(err)
 			}
 		}()
+		return next(c)
+	}
+}
+
+func securityHeadersMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		// Allow popups to maintain window.opener for OAuth flows
+		c.Response().Header().Set("Cross-Origin-Opener-Policy", "same-origin-allow-popups")
+		// Prevent being embedded in iframes from different origins
+		c.Response().Header().Set("X-Frame-Options", "SAMEORIGIN")
+		// Prevent MIME-type sniffing
+		c.Response().Header().Set("X-Content-Type-Options", "nosniff")
+		// Force HTTPS in production (only if request is already HTTPS)
+		if c.Request().TLS != nil || c.Request().Header.Get("X-Forwarded-Proto") == "https" {
+			// max-age=31536000 (1 year), includeSubDomains for all subdomains
+			c.Response().Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		}
+		// Content Security Policy - strict, no unsafe-inline
+		csp := "default-src 'self'; " +
+			"script-src 'self'; " +
+			"style-src 'self'; " +
+			"img-src 'self' data: blob:; " +
+			"connect-src 'self' ws: wss:; " +
+			"font-src 'self'; " +
+			"object-src 'none'; " +
+			"base-uri 'self'; " +
+			"form-action 'self'; " +
+			"frame-ancestors 'self'"
+		c.Response().Header().Set("Content-Security-Policy", csp)
 		return next(c)
 	}
 }

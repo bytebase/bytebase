@@ -6,6 +6,7 @@ module.exports = {
   printWidth: 80,
   plugins: [require.resolve("@trivago/prettier-plugin-sort-imports")],
   importOrder: [
+    "^[.]/init$",
     "<BUILTIN_MODULES>",
     "<THIRD_PARTY_MODULES>",
     "^@/(.+)",
