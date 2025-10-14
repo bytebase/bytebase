@@ -9,7 +9,8 @@ import (
 type queryTypeListener struct {
 	*parser.BaseDorisSQLListener
 
-	result base.QueryType
+	allSystems bool
+	result     base.QueryType
 }
 
 func (l *queryTypeListener) EnterSingleStatement(ctx *parser.SingleStatementContext) {
@@ -24,7 +25,12 @@ func (l *queryTypeListener) EnterSingleStatement(ctx *parser.SingleStatementCont
 
 	switch {
 	case s.QueryStatement() != nil:
-		l.result = base.Select
+		// If all tables are system tables, we should return SelectInfoSchema.
+		if l.allSystems {
+			l.result = base.SelectInfoSchema
+		} else {
+			l.result = base.Select
+		}
 	case s.InsertStatement() != nil, s.UpdateStatement() != nil, s.DeleteStatement() != nil:
 		l.result = base.DML
 	case s.ShowAlterStatement() != nil,
