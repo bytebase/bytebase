@@ -121,10 +121,59 @@ type generator struct {
 	err     error
 }
 
+// hasIdentityColumn checks if the table has any IDENTITY columns
+func (g *generator) hasIdentityColumn() bool {
+	if g.table == nil {
+		return false
+	}
+	for _, col := range g.table.GetColumns() {
+		if col.IsIdentity {
+			return true
+		}
+	}
+	return false
+}
+
 func (g *generator) EnterDelete_statement(ctx *parser.Delete_statementContext) {
 	if IsTopLevel(ctx.GetParent()) && g.isFirst {
 		g.isFirst = false
-		g.result = fmt.Sprintf(`INSERT INTO [%s].[%s].[%s] SELECT * FROM [%s].[dbo].[%s];`, g.originalDatabase, g.originalSchema, g.originalTable, g.backupDatabase, g.backupTable)
+
+		// Check if the table has IDENTITY columns
+		hasIdentity := g.hasIdentityColumn()
+
+		if hasIdentity {
+			// For tables with IDENTITY columns, we need to enable IDENTITY_INSERT
+			// and use explicit column lists
+			var buf strings.Builder
+
+			// Build column list
+			var columnList strings.Builder
+			for i, column := range g.table.GetColumns() {
+				if i > 0 {
+					columnList.WriteString(", ")
+				}
+				fmt.Fprintf(&columnList, "[%s]", column.Name)
+			}
+
+			fmt.Fprintf(&buf, "SET IDENTITY_INSERT [%s].[%s].[%s] ON;\n",
+				g.originalDatabase, g.originalSchema, g.originalTable)
+			fmt.Fprintf(&buf, "INSERT INTO [%s].[%s].[%s] (%s) SELECT %s FROM [%s].[dbo].[%s];\n",
+				g.originalDatabase, g.originalSchema, g.originalTable,
+				columnList.String(),
+				columnList.String(),
+				g.backupDatabase, g.backupTable)
+			fmt.Fprintf(&buf, "SET IDENTITY_INSERT [%s].[%s].[%s] OFF;\n",
+				g.originalDatabase, g.originalSchema, g.originalTable)
+			fmt.Fprintf(&buf, "EXEC('DBCC CHECKIDENT (''[%s].[%s].[%s]'', RESEED)');",
+				g.originalDatabase, g.originalSchema, g.originalTable)
+
+			g.result = buf.String()
+		} else {
+			// Simple INSERT for tables without IDENTITY columns
+			g.result = fmt.Sprintf(`INSERT INTO [%s].[%s].[%s] SELECT * FROM [%s].[dbo].[%s];`,
+				g.originalDatabase, g.originalSchema, g.originalTable,
+				g.backupDatabase, g.backupTable)
+		}
 	}
 }
 
@@ -179,6 +228,19 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 		}
 
 		var buf strings.Builder
+
+		// Check if the table has IDENTITY columns
+		hasIdentity := g.hasIdentityColumn()
+
+		if hasIdentity {
+			// Enable IDENTITY_INSERT for MERGE statement
+			if _, err := fmt.Fprintf(&buf, "SET IDENTITY_INSERT [%s].[%s].[%s] ON;\n",
+				g.originalDatabase, g.originalSchema, g.originalTable); err != nil {
+				g.err = err
+				return
+			}
+		}
+
 		if _, err := fmt.Fprintf(&buf, "MERGE INTO [%s].[%s].[%s] AS t\nUSING [%s].[dbo].[%s] AS b\n  ON", g.originalDatabase, g.originalSchema, g.originalTable, g.backupDatabase, g.backupTable); err != nil {
 			g.err = err
 			return
@@ -247,6 +309,17 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 			g.err = err
 			return
 		}
+
+		// Check if we need to disable IDENTITY_INSERT and reseed
+		if hasIdentity {
+			if _, err := fmt.Fprintf(&buf, "\n\nSET IDENTITY_INSERT [%s].[%s].[%s] OFF;\nEXEC('DBCC CHECKIDENT (''[%s].[%s].[%s]'', RESEED)');",
+				g.originalDatabase, g.originalSchema, g.originalTable,
+				g.originalDatabase, g.originalSchema, g.originalTable); err != nil {
+				g.err = err
+				return
+			}
+		}
+
 		g.result = buf.String()
 	}
 }
