@@ -116,8 +116,9 @@ import { State } from "@/types/proto-es/v1/common_pb";
 import {
   IssueStatus,
   Issue_ApprovalStatus,
+  Issue_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   activeTaskInRollout,
   extractIssueUID,
@@ -375,6 +376,9 @@ const showReadyForRollout = computed(() => {
   // Only show for OPEN issues
   if (!issue.value || issue.value.status !== IssueStatus.OPEN) return false;
 
+  // Only show for database change issues
+  if (issue.value.type !== Issue_Type.DATABASE_CHANGE) return false;
+
   // Check if issue is approved
   if (
     issue.value.approvalStatus !== Issue_ApprovalStatus.APPROVED &&
@@ -385,6 +389,22 @@ const showReadyForRollout = computed(() => {
 
   // Hide if on rollout tab
   if (tabKey.value === TabKey.Rollout) {
+    return false;
+  }
+
+  if (!rollout.value) {
+    return false;
+  }
+
+  // Don't show for rollouts with database creation/export tasks
+  const hasDatabaseCreateOrExportTasks = rollout.value.stages.some((stage) =>
+    stage.tasks.some(
+      (task) =>
+        task.type === Task_Type.DATABASE_CREATE ||
+        task.type === Task_Type.DATABASE_EXPORT
+    )
+  );
+  if (hasDatabaseCreateOrExportTasks) {
     return false;
   }
 
