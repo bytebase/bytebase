@@ -226,6 +226,41 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, util.FormatErrorWithQuery(err, viewQuery)
 	}
 
+	// Query materialized view info.
+	// For Doris, we use the mv_infos() table-valued function to get materialized view information.
+	// Sync materialized views are part of the base table and don't need special handling.
+	materializedViewMap := make(map[db.TableKey]*storepb.MaterializedViewMetadata)
+
+	// Only query materialized views for Doris
+	if d.dbType == storepb.Engine_DORIS {
+		// Use mv_infos() table-valued function to get materialized view information
+		// https://doris.apache.org/docs/sql-manual/sql-functions/table-valued-functions/mv_infos
+		materializedViewQuery := fmt.Sprintf(`SELECT Name, QuerySql FROM mv_infos("database"="%s")`, d.databaseName)
+		materializedViewRows, err := d.db.QueryContext(ctx, materializedViewQuery)
+		if err != nil {
+			// mv_infos() might not be available in older Doris versions, log and continue
+			slog.Debug("failed to query materialized views using mv_infos(), might not be supported in this version", log.BBError(err))
+		} else {
+			defer materializedViewRows.Close()
+			for materializedViewRows.Next() {
+				materializedView := &storepb.MaterializedViewMetadata{}
+				if err := materializedViewRows.Scan(
+					&materializedView.Name,
+					&materializedView.Definition,
+				); err != nil {
+					return nil, err
+				}
+				key := db.TableKey{Schema: "", Table: materializedView.Name}
+				materializedViewMap[key] = materializedView
+				slog.Debug("found materialized view", slog.String("name", materializedView.Name), slog.String("database", d.databaseName))
+			}
+			if err := materializedViewRows.Err(); err != nil {
+				return nil, util.FormatErrorWithQuery(err, materializedViewQuery)
+			}
+			slog.Debug("total materialized views found", slog.Int("count", len(materializedViewMap)), slog.String("database", d.databaseName))
+		}
+	}
+
 	// Query table info.
 	tableQuery := fmt.Sprintf(`
 		SELECT
@@ -270,27 +305,42 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		key := db.TableKey{Schema: "", Table: tableName}
 		switch tableType {
 		case baseTableType:
-			tableMetadata := &storepb.TableMetadata{
-				Name:          tableName,
-				Columns:       columnMap[key],
-				Engine:        engine,
-				Collation:     collation,
-				RowCount:      rowCount,
-				DataSize:      dataSize,
-				IndexSize:     indexSize,
-				DataFree:      dataFree,
-				CreateOptions: createOptions,
-				Comment:       comment,
+			// Check if this is actually a materialized view (for Doris)
+			// In Doris, materialized views appear as BASE TABLE in information_schema.TABLES
+			if materializedView, ok := materializedViewMap[key]; ok {
+				slog.Debug("identified BASE TABLE as materialized view", slog.String("name", tableName), slog.String("database", d.databaseName))
+				materializedView.Comment = comment
+				schemaMetadata.MaterializedViews = append(schemaMetadata.MaterializedViews, materializedView)
+			} else {
+				slog.Debug("adding BASE TABLE as regular table", slog.String("name", tableName), slog.String("database", d.databaseName))
+				tableMetadata := &storepb.TableMetadata{
+					Name:          tableName,
+					Columns:       columnMap[key],
+					Engine:        engine,
+					Collation:     collation,
+					RowCount:      rowCount,
+					DataSize:      dataSize,
+					IndexSize:     indexSize,
+					DataFree:      dataFree,
+					CreateOptions: createOptions,
+					Comment:       comment,
+				}
+				if tableCollation.Valid {
+					tableMetadata.Collation = tableCollation.String
+				}
+				// TODO(d): add index information whenever it is available.
+				schemaMetadata.Tables = append(schemaMetadata.Tables, tableMetadata)
 			}
-			if tableCollation.Valid {
-				tableMetadata.Collation = tableCollation.String
-			}
-			// TODO(d): add index information whenever it is available.
-			schemaMetadata.Tables = append(schemaMetadata.Tables, tableMetadata)
 		case viewTableType:
 			if view, ok := viewMap[key]; ok {
 				view.Comment = comment
 				schemaMetadata.Views = append(schemaMetadata.Views, view)
+			}
+		case materializedViewType:
+			// For databases that properly set TABLE_TYPE = 'MATERIALIZED VIEW'
+			if materializedView, ok := materializedViewMap[key]; ok {
+				materializedView.Comment = comment
+				schemaMetadata.MaterializedViews = append(schemaMetadata.MaterializedViews, materializedView)
 			}
 		default:
 			// Skip unknown table types (e.g., SYSTEM VIEW, TEMPORARY, etc.)

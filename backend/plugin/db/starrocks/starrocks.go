@@ -29,8 +29,9 @@ import (
 )
 
 var (
-	baseTableType = "BASE TABLE"
-	viewTableType = "VIEW"
+	baseTableType        = "BASE TABLE"
+	viewTableType        = "VIEW"
+	materializedViewType = "MATERIALIZED VIEW"
 
 	_ db.Driver = (*Driver)(nil)
 )
