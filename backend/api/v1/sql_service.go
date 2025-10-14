@@ -1042,13 +1042,11 @@ func formatExport(
 	result *v1pb.QueryResult,
 	request *v1pb.ExportRequest,
 ) ([]byte, error) {
-	var content []byte
-	var err error
 	switch request.Format {
 	case v1pb.ExportFormat_CSV:
-		content, err = exportCSV(result)
+		return exportCSV(result)
 	case v1pb.ExportFormat_JSON:
-		content, err = exportJSON(result)
+		return exportJSON(result)
 	case v1pb.ExportFormat_SQL:
 		resourceList, err := getResources(ctx, stores, instance.Metadata.GetEngine(), database.DatabaseName, request.Statement, instance)
 		if err != nil {
@@ -1058,14 +1056,12 @@ func formatExport(
 		if err != nil {
 			return nil, err
 		}
-		content, err = exportSQL(instance.Metadata.GetEngine(), statementPrefix, result)
+		return exportSQL(instance.Metadata.GetEngine(), statementPrefix, result)
 	case v1pb.ExportFormat_XLSX:
-		content, err = exportXLSX(result)
+		return exportXLSX(result)
 	default:
 		return nil, errors.Errorf("unsupported export format: %s", request.Format.String())
 	}
-
-	return content, err
 }
 
 // timeToMsDosTime converts a time.Time to an MS-DOS date and time.

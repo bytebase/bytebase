@@ -346,10 +346,9 @@ const convertSingleFile = async (
     content.byteOffset,
     content.byteOffset + content.byteLength
   ) as ArrayBuffer; // TypeScript 5.9.2 requires explicit ArrayBuffer type
-  let blob = new Blob([buffer], {
+  return new Blob([buffer], {
     type: fileType,
   });
-  return blob;
 };
 
 const doDownloadSingleFile = async (
