@@ -2,4 +2,4 @@
 // This is necessary for compatibility with certain dependencies that expect a global object
 
 // Redefine global to use globalThis for compatibility
-(global as any) = globalThis;
+(globalThis as any).global = globalThis;
