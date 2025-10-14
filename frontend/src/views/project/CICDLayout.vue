@@ -62,9 +62,11 @@
           </NTabs>
 
           <div class="flex-1 flex">
-            <KeepAlive>
-              <router-view />
-            </KeepAlive>
+            <router-view v-slot="{ Component }">
+              <keep-alive>
+                <component :is="Component" />
+              </keep-alive>
+            </router-view>
           </div>
         </div>
       </PollerProvider>
@@ -170,7 +172,7 @@ const containerRef = ref<HTMLElement>();
 
 const ready = computed(() => {
   // Only show loading spinner during initial load, not during tab navigation
-  return !isInitialLoad.value && !!plan.value;
+  return !isInitialLoad.value && !!plan.value && !isInitializing.value;
 });
 
 const shouldShowNavigation = computed(() => {
