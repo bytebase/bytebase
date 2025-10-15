@@ -109,17 +109,17 @@ func securityHeadersMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			c.Response().Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 		}
 		// Content Security Policy - strict, no unsafe-inline
-		csp := "default-src 'self'; " +
-			"script-src 'self'; " +
-			"style-src 'self'; " +
-			"img-src 'self' data: blob:; " +
-			"connect-src 'self' ws: wss:; " +
-			"font-src 'self'; " +
-			"object-src 'none'; " +
-			"base-uri 'self'; " +
-			"form-action 'self'; " +
-			"frame-ancestors 'self'"
-		c.Response().Header().Set("Content-Security-Policy", csp)
+		// csp := "default-src 'self'; " +
+		// 	"script-src 'self'; " +
+		// 	"style-src 'self'; " +
+		// 	"img-src 'self' data: blob:; " +
+		// 	"connect-src 'self' ws: wss:; " +
+		// 	"font-src 'self'; " +
+		// 	"object-src 'none'; " +
+		// 	"base-uri 'self'; " +
+		// 	"form-action 'self'; " +
+		// 	"frame-ancestors 'self'"
+		// c.Response().Header().Set("Content-Security-Policy", csp)
 		return next(c)
 	}
 }
