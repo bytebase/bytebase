@@ -62,7 +62,7 @@ import {
 } from "@/store";
 import type { SQLDialect, SQLEditorQueryParams, SQLEditorTab } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
-import { Advice_Status, type Advice } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Level, type Advice } from "@/types/proto-es/v1/sql_service_pb";
 import {
   nextAnimationFrame,
   useInstanceV1EditorLanguage,
@@ -351,7 +351,7 @@ const updateAdvices = (
       source.unshift(advice.title);
     }
     return {
-      severity: advice.status === Advice_Status.ERROR ? "ERROR" : "WARNING",
+      severity: advice.status === Advice_Level.ERROR ? "ERROR" : "WARNING",
       message: advice.content,
       source: source.join(" "),
       startLineNumber: startLine,

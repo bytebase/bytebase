@@ -66,9 +66,9 @@ import {
 } from "@/types/proto-es/v1/release_service_pb";
 import {
   AdviceSchema,
-  Advice_Status as ProtoESAdvice_Status,
+  Advice_Level as ProtoESAdvice_Level,
 } from "@/types/proto-es/v1/sql_service_pb";
-import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import type { Defer, VueStyle } from "@/utils";
 import { defer } from "@/utils";
 import { useSpecSheet } from "../StatementSection/useSpecSheet";
@@ -157,7 +157,7 @@ const runChecks = async () => {
           advices: errors.map((err) =>
             create(AdviceSchema, {
               title: "Pre check",
-              status: ProtoESAdvice_Status.WARNING,
+              status: ProtoESAdvice_Level.WARNING,
               content: err,
             })
           ),
@@ -191,8 +191,8 @@ const onPanelClose = () => {
 const hasError = computed(() => {
   return advices.value?.some(
     (advice) =>
-      advice.status === Advice_Status.ERROR ||
-      advice.status === Advice_Status.WARNING
+      advice.status === Advice_Level.ERROR ||
+      advice.status === Advice_Level.WARNING
   );
 });
 </script>

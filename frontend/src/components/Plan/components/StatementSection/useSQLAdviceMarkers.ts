@@ -1,12 +1,9 @@
 import { maxBy } from "lodash-es";
 import { computed, type Ref } from "vue";
 import type { AdviceOption } from "@/components/MonacoEditor";
-import {
-  PlanCheckRun_Result_Status,
-  PlanCheckRun_Type,
-} from "@/types/proto-es/v1/plan_service_pb";
+import { PlanCheckRun_Type } from "@/types/proto-es/v1/plan_service_pb";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
-import { Advice_Status, type Advice } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Level, type Advice } from "@/types/proto-es/v1/sql_service_pb";
 import { extractPlanCheckRunUID } from "@/utils";
 
 export const useSQLAdviceMarkers = (
@@ -23,7 +20,7 @@ export const useSQLAdviceMarkers = (
         const column = advice.startPosition?.column ?? Number.MAX_SAFE_INTEGER;
         const code = advice.code;
         return {
-          severity: advice.status === Advice_Status.ERROR ? "ERROR" : "WARNING",
+          severity: advice.status === Advice_Level.ERROR ? "ERROR" : "WARNING",
           message: advice.content,
           source: `${advice.title} (${code}) L${line}:C${column}`,
           startLineNumber: line,
@@ -59,8 +56,8 @@ const getLatestAdviceOptions = (planCheckRuns: PlanCheckRun[]) => {
   return resultList
     .filter(
       (result) =>
-        result.status === PlanCheckRun_Result_Status.ERROR ||
-        result.status === PlanCheckRun_Result_Status.WARNING
+        result.status === Advice_Level.ERROR ||
+        result.status === Advice_Level.WARNING
     )
     .filter(
       (result) =>
@@ -77,10 +74,7 @@ const getLatestAdviceOptions = (planCheckRuns: PlanCheckRun[]) => {
         sqlReviewReport?.startPosition?.column ?? Number.MAX_SAFE_INTEGER;
       const code = result.code;
       return {
-        severity:
-          result.status === PlanCheckRun_Result_Status.ERROR
-            ? "ERROR"
-            : "WARNING",
+        severity: result.status === Advice_Level.ERROR ? "ERROR" : "WARNING",
         message: result.content,
         source: `${result.title} (${code}) L${line}:C${column}`,
         startLineNumber: line,

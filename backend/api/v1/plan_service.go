@@ -871,11 +871,11 @@ func (*PlanService) parsePlanCheckRunFilter(filter string, find *store.FindPlanC
 						return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("result_status value must be a string"))
 					}
 					// Convert v1pb result status to store result status
-					v1ResultStatus := v1pb.PlanCheckRun_Result_Status_value[resultStatusStr]
+					v1ResultStatus := v1pb.Advice_Level_value[resultStatusStr]
 					if v1ResultStatus == 0 && resultStatusStr != "STATUS_UNSPECIFIED" {
 						return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid result_status value: %s", resultStatusStr))
 					}
-					storeResultStatus := convertToStoreResultStatus(v1pb.PlanCheckRun_Result_Status(v1ResultStatus))
+					storeResultStatus := convertToStoreResultStatus(v1pb.Advice_Level(v1ResultStatus))
 					if find.ResultStatus == nil {
 						find.ResultStatus = &[]storepb.Advice_Status{}
 					}
@@ -927,11 +927,11 @@ func (*PlanService) parsePlanCheckRunFilter(filter string, find *store.FindPlanC
 							return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("result_status value must be a string"))
 						}
 						// Convert v1pb result status to store result status
-						v1ResultStatus := v1pb.PlanCheckRun_Result_Status_value[resultStatusStr]
+						v1ResultStatus := v1pb.Advice_Level_value[resultStatusStr]
 						if v1ResultStatus == 0 && resultStatusStr != "STATUS_UNSPECIFIED" {
 							return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid result_status value: %s", resultStatusStr))
 						}
-						storeResultStatus := convertToStoreResultStatus(v1pb.PlanCheckRun_Result_Status(v1ResultStatus))
+						storeResultStatus := convertToStoreResultStatus(v1pb.Advice_Level(v1ResultStatus))
 						*find.ResultStatus = append(*find.ResultStatus, storeResultStatus)
 					}
 				default:
@@ -965,14 +965,14 @@ func convertToStorePlanCheckRunStatus(status v1pb.PlanCheckRun_Status) store.Pla
 	}
 }
 
-// convertToStoreResultStatus converts v1pb.PlanCheckRun_Result_Status to storepb.Advice_Status.
-func convertToStoreResultStatus(status v1pb.PlanCheckRun_Result_Status) storepb.Advice_Status {
+// convertToStoreResultStatus converts v1pb.Advice_Status to storepb.Advice_Status.
+func convertToStoreResultStatus(status v1pb.Advice_Level) storepb.Advice_Status {
 	switch status {
-	case v1pb.PlanCheckRun_Result_ERROR:
+	case v1pb.Advice_ERROR:
 		return storepb.Advice_ERROR
-	case v1pb.PlanCheckRun_Result_WARNING:
+	case v1pb.Advice_WARNING:
 		return storepb.Advice_WARNING
-	case v1pb.PlanCheckRun_Result_SUCCESS:
+	case v1pb.Advice_SUCCESS:
 		return storepb.Advice_SUCCESS
 	default:
 		return storepb.Advice_STATUS_UNSPECIFIED

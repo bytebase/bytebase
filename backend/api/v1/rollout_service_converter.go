@@ -431,18 +431,18 @@ func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1p
 	return resultV1
 }
 
-func convertToPlanCheckRunResultStatus(status storepb.Advice_Status) v1pb.PlanCheckRun_Result_Status {
+func convertToPlanCheckRunResultStatus(status storepb.Advice_Status) v1pb.Advice_Level {
 	switch status {
 	case storepb.Advice_STATUS_UNSPECIFIED:
-		return v1pb.PlanCheckRun_Result_STATUS_UNSPECIFIED
+		return v1pb.Advice_ADVICE_LEVEL_UNSPECIFIED
 	case storepb.Advice_SUCCESS:
-		return v1pb.PlanCheckRun_Result_SUCCESS
+		return v1pb.Advice_SUCCESS
 	case storepb.Advice_WARNING:
-		return v1pb.PlanCheckRun_Result_WARNING
+		return v1pb.Advice_WARNING
 	case storepb.Advice_ERROR:
-		return v1pb.PlanCheckRun_Result_ERROR
+		return v1pb.Advice_ERROR
 	default:
-		return v1pb.PlanCheckRun_Result_STATUS_UNSPECIFIED
+		return v1pb.Advice_ADVICE_LEVEL_UNSPECIFIED
 	}
 }
 

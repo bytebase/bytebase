@@ -74,9 +74,9 @@ import {
   Issue_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
-import { PlanCheckRun_Result_Status } from "@/types/proto-es/v1/plan_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Type, Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import {
   isUserIncludedInList,
   hasProjectPermissionV2,
@@ -337,7 +337,7 @@ const primaryAction = computed((): ActionConfig | undefined => {
 
     // Check plan check status and policy restrictions
     const planChecksFailed =
-      planCheckSummaryStatus.value === PlanCheckRun_Result_Status.ERROR;
+      planCheckSummaryStatus.value === Advice_Level.ERROR;
     const isRestrictedByPolicy =
       planChecksFailed && (project.value.enforceSqlReview || false);
     const hasRunningChecks = hasRunningPlanChecks.value;

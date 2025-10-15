@@ -108,7 +108,7 @@ func buildCommentMessage(resp *v1pb.CheckReleaseResponse) string {
 				warningCount++
 			case v1pb.Advice_ERROR:
 				errorCount++
-			case v1pb.Advice_STATUS_UNSPECIFIED, v1pb.Advice_SUCCESS:
+			case v1pb.Advice_ADVICE_LEVEL_UNSPECIFIED, v1pb.Advice_SUCCESS:
 				// No action needed
 			default:
 				// Ignore unknown advice statuses
@@ -146,7 +146,7 @@ func buildCommentMessage(resp *v1pb.CheckReleaseResponse) string {
 				warningCount++
 			case v1pb.Advice_ERROR:
 				errorCount++
-			case v1pb.Advice_STATUS_UNSPECIFIED, v1pb.Advice_SUCCESS:
+			case v1pb.Advice_ADVICE_LEVEL_UNSPECIFIED, v1pb.Advice_SUCCESS:
 				// No action needed
 			default:
 				// Ignore unknown advice statuses

@@ -254,7 +254,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 				Code:    int32(advisor.StatementSyntaxError),
 				Content: syntaxErr.Message,
 				Title:   "Syntax error",
-				Status:  v1pb.PlanCheckRun_Result_ERROR,
+				Status:  v1pb.Advice_ERROR,
 				Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
 					SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
 						Line:   int32(syntaxErr.Position.GetLine()),
@@ -1569,7 +1569,7 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 				Code:    int32(advisor.StatementSyntaxError),
 				Content: syntaxErr.Message,
 				Title:   "Syntax error",
-				Status:  v1pb.PlanCheckRun_Result_ERROR,
+				Status:  v1pb.Advice_ERROR,
 				Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
 					SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
 						Line:   int32(syntaxErr.Position.GetLine()),
@@ -1827,7 +1827,7 @@ func convertToV1Advice(advice *storepb.Advice) *v1pb.Advice {
 	}
 }
 
-func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Status {
+func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Level {
 	switch status {
 	case storepb.Advice_SUCCESS:
 		return v1pb.Advice_SUCCESS
@@ -1836,7 +1836,7 @@ func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Status {
 	case storepb.Advice_ERROR:
 		return v1pb.Advice_ERROR
 	default:
-		return v1pb.Advice_STATUS_UNSPECIFIED
+		return v1pb.Advice_ADVICE_LEVEL_UNSPECIFIED
 	}
 }
 

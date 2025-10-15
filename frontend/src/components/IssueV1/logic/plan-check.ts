@@ -1,12 +1,10 @@
 import { sheetNameForSpec } from "@/components/Plan";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import type { ComposedIssue } from "@/types";
-import {
-  PlanCheckRun_Result_Status,
-  type Plan_Spec,
-} from "@/types/proto-es/v1/plan_service_pb";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { databaseForTask } from "@/utils";
 import { specForTask, useIssueContext, projectOfIssue } from ".";
 
@@ -41,8 +39,8 @@ export const planCheckStatusForTask = (task: Task) => {
     const summary = planCheckRunSummaryForCheckRunList(
       getPlanCheckRunsForTask(task)
     );
-    if (summary.errorCount > 0) return PlanCheckRun_Result_Status.ERROR;
-    if (summary.warnCount > 0) return PlanCheckRun_Result_Status.WARNING;
+    if (summary.errorCount > 0) return Advice_Level.ERROR;
+    if (summary.warnCount > 0) return Advice_Level.WARNING;
   }
   return undefined;
 };

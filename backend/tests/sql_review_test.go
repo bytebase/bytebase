@@ -31,7 +31,7 @@ import (
 var (
 	noSQLReviewPolicy = []*v1pb.PlanCheckRun_Result{
 		{
-			Status: v1pb.PlanCheckRun_Result_SUCCESS,
+			Status: v1pb.Advice_SUCCESS,
 			Title:  "OK",
 		},
 	}
@@ -495,7 +495,7 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 	if wait {
 		a.NotNil(result)
 		a.Len(result.Results, 1)
-		a.Equal(v1pb.PlanCheckRun_Result_SUCCESS, result.Results[0].Status)
+		a.Equal(v1pb.Advice_SUCCESS, result.Results[0].Status)
 		issue, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 			Parent: project.Name,
 			Issue: &v1pb.Issue{

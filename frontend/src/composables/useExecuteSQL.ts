@@ -42,7 +42,7 @@ import {
 } from "@/types/proto-es/v1/sql_service_pb";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
 import {
-  Advice_Status,
+  Advice_Level,
   QueryOptionSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -149,17 +149,17 @@ const useExecuteSQL = () => {
     let adviceStatus: "SUCCESS" | "ERROR" | "WARNING" = "SUCCESS";
     let adviceNotifyMessage = "";
     for (const advice of advices) {
-      if (advice.status === Advice_Status.SUCCESS) {
+      if (advice.status === Advice_Level.SUCCESS) {
         continue;
       }
 
-      if (advice.status === Advice_Status.ERROR) {
+      if (advice.status === Advice_Level.ERROR) {
         adviceStatus = "ERROR";
       } else if (adviceStatus !== "ERROR") {
         adviceStatus = "WARNING";
       }
 
-      adviceNotifyMessage += `${Advice_Status[advice.status]}: ${
+      adviceNotifyMessage += `${Advice_Level[advice.status]}: ${
         advice.title
       }\n`;
       if (advice.content) {
@@ -389,7 +389,7 @@ const useExecuteSQL = () => {
     ) {
       const { advices } = checkResult;
       const errorAdvice = advices.find(
-        (advice) => advice.status === Advice_Status.ERROR
+        (advice) => advice.status === Advice_Level.ERROR
       );
       if (errorAdvice) {
         notifyAdvices(advices);

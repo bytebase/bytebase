@@ -80,10 +80,8 @@ import {
   pushNotification,
   extractUserId,
 } from "@/store";
-import {
-  PlanCheckRun_Result_Status,
-  RunPlanChecksRequestSchema,
-} from "@/types/proto-es/v1/plan_service_pb";
+import { RunPlanChecksRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import {
   planCheckRunListForSpec,
@@ -107,9 +105,7 @@ const { sheet } = useSpecSheet(selectedSpec);
 
 const isRunningChecks = ref(false);
 const showChecksDrawer = ref(false);
-const selectedResultStatus = ref<PlanCheckRun_Result_Status>(
-  PlanCheckRun_Result_Status.SUCCESS
-);
+const selectedResultStatus = ref<Advice_Level>(Advice_Level.SUCCESS);
 
 const shouldShow = computed(() => {
   return planSpecHasPlanChecks(selectedSpec.value);
@@ -181,7 +177,7 @@ const runChecks = async () => {
   }
 };
 
-const openChecksDrawer = (status: PlanCheckRun_Result_Status) => {
+const openChecksDrawer = (status: Advice_Level) => {
   selectedResultStatus.value = status;
   showChecksDrawer.value = true;
 };

@@ -16,13 +16,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import type { PlanCheckRun_Result_Status } from "@/types/proto-es/v1/plan_service_pb";
+import type { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { usePlanContext } from "../../logic";
 import { useResourcePoller } from "../../logic/poller";
 import ChecksView from "./ChecksView.vue";
 
 defineProps<{
-  status: PlanCheckRun_Result_Status;
+  status: Advice_Level;
 }>();
 
 const { planCheckRuns } = usePlanContext();

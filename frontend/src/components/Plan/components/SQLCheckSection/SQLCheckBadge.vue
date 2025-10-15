@@ -38,7 +38,7 @@ import { computed, ref } from "vue";
 import { TaskSpinner } from "@/components/IssueV1/components/common";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
-import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { usePlanSQLCheckContext } from "./context";
 
 const props = defineProps<{
@@ -58,10 +58,10 @@ const status = computed(() => {
   if (isRunning) {
     return "RUNNING";
   }
-  if (advices.some((adv) => adv.status === Advice_Status.ERROR)) {
+  if (advices.some((adv) => adv.status === Advice_Level.ERROR)) {
     return "ERROR";
   }
-  if (advices.some((adv) => adv.status === Advice_Status.WARNING)) {
+  if (advices.some((adv) => adv.status === Advice_Level.WARNING)) {
     return "WARNING";
   }
   return "SUCCESS";

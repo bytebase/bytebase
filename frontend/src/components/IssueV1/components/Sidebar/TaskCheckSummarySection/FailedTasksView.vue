@@ -34,11 +34,9 @@
 import { NTag, NPopover } from "naive-ui";
 import { computed } from "vue";
 import { useIssueContext, projectOfIssue } from "@/components/IssueV1";
-import {
-  PlanCheckRun_Result_Status,
-  type PlanCheckRun,
-} from "@/types/proto-es/v1/plan_service_pb";
+import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { databaseForTask } from "@/utils";
 import { flattenTaskV1List } from "@/utils";
 
@@ -54,7 +52,7 @@ const failedTasks = computed(() => {
   const tempList: Task[] = [];
   props.taskSummaryReportMap.forEach((planCheckRun, taskId) => {
     for (const result of planCheckRun.results) {
-      if (result.status === PlanCheckRun_Result_Status.ERROR) {
+      if (result.status === Advice_Level.ERROR) {
         tempList.push(tasks.value.find((task) => task.name === taskId) as Task);
         break;
       }
@@ -69,7 +67,7 @@ const failedMessageOfTask = (task: string) => {
   const taskSummaryReport = props.taskSummaryReportMap.get(task);
   if (!taskSummaryReport) return "";
   const failedResults = taskSummaryReport.results.filter(
-    (result) => result.status === PlanCheckRun_Result_Status.ERROR
+    (result) => result.status === Advice_Level.ERROR
   );
   return failedResults.map((result) => result.content).join("\n");
 };

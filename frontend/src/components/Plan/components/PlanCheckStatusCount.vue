@@ -17,7 +17,7 @@
         <div
           v-if="statusSummary.error > 0"
           class="flex items-center gap-1 text-error"
-          :class="getItemClass(PlanCheckRun_Result_Status.ERROR)"
+          :class="getItemClass(Advice_Level.ERROR)"
           @click="handleClick('error')"
         >
           <XCircleIcon :class="iconSizeClass" />
@@ -27,7 +27,7 @@
         <div
           v-if="statusSummary.warning > 0"
           class="flex items-center gap-1 text-warning"
-          :class="getItemClass(PlanCheckRun_Result_Status.WARNING)"
+          :class="getItemClass(Advice_Level.WARNING)"
           @click="handleClick('warning')"
         >
           <AlertCircleIcon :class="iconSizeClass" />
@@ -37,7 +37,7 @@
         <div
           v-if="statusSummary.success > 0"
           class="flex items-center gap-1 text-success"
-          :class="getItemClass(PlanCheckRun_Result_Status.SUCCESS)"
+          :class="getItemClass(Advice_Level.SUCCESS)"
           @click="handleClick('success')"
         >
           <CheckCircleIcon :class="iconSizeClass" />
@@ -57,10 +57,8 @@ import {
   LoaderIcon,
 } from "lucide-vue-next";
 import { computed, type PropType } from "vue";
-import {
-  PlanCheckRun_Result_Status,
-  type Plan,
-} from "@/types/proto-es/v1/plan_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { usePlanCheckStatus } from "../logic";
 import PlanCheckRunStatusIcon from "./PlanCheckRunStatusIcon.vue";
 
@@ -89,13 +87,13 @@ const props = defineProps({
     default: false,
   },
   selectedStatus: {
-    type: Number as PropType<PlanCheckRun_Result_Status | undefined>,
+    type: Number as PropType<Advice_Level | undefined>,
     default: undefined,
   },
 });
 
 const emit = defineEmits<{
-  click: [status: PlanCheckRun_Result_Status];
+  click: [status: Advice_Level];
 }>();
 
 const { statusSummary, hasAnyStatus } = usePlanCheckStatus(
@@ -110,15 +108,15 @@ const handleClick = (statusType: "error" | "warning" | "success") => {
   if (!props.clickable) return;
 
   const statusMap = {
-    error: PlanCheckRun_Result_Status.ERROR,
-    warning: PlanCheckRun_Result_Status.WARNING,
-    success: PlanCheckRun_Result_Status.SUCCESS,
+    error: Advice_Level.ERROR,
+    warning: Advice_Level.WARNING,
+    success: Advice_Level.SUCCESS,
   };
 
   emit("click", statusMap[statusType]);
 };
 
-const getItemClass = (status: PlanCheckRun_Result_Status) => {
+const getItemClass = (status: Advice_Level) => {
   const classes: string[] = [];
 
   if (props.clickable) {

@@ -85,10 +85,7 @@ import {
   Release_File_MigrationType,
 } from "@/types/proto-es/v1/release_service_pb";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
-import {
-  AdviceSchema,
-  Advice_Status,
-} from "@/types/proto-es/v1/sql_service_pb";
+import { AdviceSchema, Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import type { Defer, VueStyle } from "@/utils";
 import { defer } from "@/utils";
 import ErrorList from "../misc/ErrorList.vue";
@@ -205,7 +202,7 @@ const runChecks = async () => {
           advices: errors.map((err) =>
             create(AdviceSchema, {
               title: "Pre check",
-              status: Advice_Status.WARNING,
+              status: Advice_Level.WARNING,
               content: err,
             })
           ),
@@ -239,8 +236,8 @@ const onPanelClose = () => {
 const hasError = computed(() => {
   return filteredAdvices.value?.some(
     (advice) =>
-      advice.status === Advice_Status.ERROR ||
-      advice.status === Advice_Status.WARNING
+      advice.status === Advice_Level.ERROR ||
+      advice.status === Advice_Level.WARNING
   );
 });
 

@@ -4,17 +4,13 @@
     class="flex items-center justify-center select-none flex-shrink-0"
     :class="iconClass()"
   >
-    <template v-if="planCheckRunStatus === PlanCheckRun_Result_Status.ERROR">
+    <template v-if="planCheckRunStatus === Advice_Level.ERROR">
       <XIcon />
     </template>
-    <template
-      v-else-if="planCheckRunStatus === PlanCheckRun_Result_Status.WARNING"
-    >
+    <template v-else-if="planCheckRunStatus === Advice_Level.WARNING">
       <span class="text-xs font-bold" aria-hidden="true">!</span>
     </template>
-    <template
-      v-else-if="planCheckRunStatus === PlanCheckRun_Result_Status.SUCCESS"
-    >
+    <template v-else-if="planCheckRunStatus === Advice_Level.SUCCESS">
       <CheckIcon />
     </template>
     <template v-else-if="hasRunningChecks">
@@ -31,10 +27,8 @@ import type { PropType } from "vue";
 import { computed } from "vue";
 import CheckIcon from "~icons/heroicons-solid/check";
 import XIcon from "~icons/heroicons-solid/x";
-import {
-  PlanCheckRun_Result_Status,
-  type Plan,
-} from "@/types/proto-es/v1/plan_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { usePlanCheckStatus } from "../logic";
 
 export type SizeType = "small" | "normal";
@@ -59,11 +53,11 @@ const {
 const iconClass = () => {
   const sizeClass = props.size === "normal" ? "w-4 h-4" : "w-3.5 h-3.5";
   switch (planCheckRunStatus.value) {
-    case PlanCheckRun_Result_Status.ERROR:
+    case Advice_Level.ERROR:
       return `${sizeClass} text-error`;
-    case PlanCheckRun_Result_Status.WARNING:
+    case Advice_Level.WARNING:
       return `${sizeClass} text-warning`;
-    case PlanCheckRun_Result_Status.SUCCESS:
+    case Advice_Level.SUCCESS:
       return `${sizeClass} text-success`;
     default:
       return `${sizeClass} text-warning`;

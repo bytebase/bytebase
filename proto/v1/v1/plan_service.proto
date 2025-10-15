@@ -11,6 +11,7 @@ import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/database_service.proto";
+import "v1/sql_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
@@ -490,13 +491,7 @@ message PlanCheckRun {
   google.protobuf.Timestamp create_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   message Result {
-    enum Status {
-      STATUS_UNSPECIFIED = 0;
-      ERROR = 1;
-      WARNING = 2;
-      SUCCESS = 3;
-    }
-    Status status = 1;
+    Advice.Level status = 1;
     string title = 2;
     string content = 3;
     int32 code = 4;

@@ -145,56 +145,60 @@ func (QueryResult_Message_Level) EnumDescriptor() ([]byte, []int) {
 	return file_v1_sql_service_proto_rawDescGZIP(), []int{5, 1, 0}
 }
 
-type Advice_Status int32
+// Level represents the severity level of the advice.
+type Advice_Level int32
 
 const (
-	// Unspecified.
-	Advice_STATUS_UNSPECIFIED Advice_Status = 0
-	Advice_SUCCESS            Advice_Status = 1
-	Advice_WARNING            Advice_Status = 2
-	Advice_ERROR              Advice_Status = 3
+	// Unspecified advice level.
+	Advice_ADVICE_LEVEL_UNSPECIFIED Advice_Level = 0
+	// Success status indicating the check passed without issues.
+	Advice_SUCCESS Advice_Level = 1
+	// Warning status indicating potential issues that should be reviewed.
+	Advice_WARNING Advice_Level = 2
+	// Error status indicating critical issues that must be addressed.
+	Advice_ERROR Advice_Level = 3
 )
 
-// Enum value maps for Advice_Status.
+// Enum value maps for Advice_Level.
 var (
-	Advice_Status_name = map[int32]string{
-		0: "STATUS_UNSPECIFIED",
+	Advice_Level_name = map[int32]string{
+		0: "ADVICE_LEVEL_UNSPECIFIED",
 		1: "SUCCESS",
 		2: "WARNING",
 		3: "ERROR",
 	}
-	Advice_Status_value = map[string]int32{
-		"STATUS_UNSPECIFIED": 0,
-		"SUCCESS":            1,
-		"WARNING":            2,
-		"ERROR":              3,
+	Advice_Level_value = map[string]int32{
+		"ADVICE_LEVEL_UNSPECIFIED": 0,
+		"SUCCESS":                  1,
+		"WARNING":                  2,
+		"ERROR":                    3,
 	}
 )
 
-func (x Advice_Status) Enum() *Advice_Status {
-	p := new(Advice_Status)
+func (x Advice_Level) Enum() *Advice_Level {
+	p := new(Advice_Level)
 	*p = x
 	return p
 }
 
-func (x Advice_Status) String() string {
+func (x Advice_Level) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (Advice_Status) Descriptor() protoreflect.EnumDescriptor {
+func (Advice_Level) Descriptor() protoreflect.EnumDescriptor {
 	return file_v1_sql_service_proto_enumTypes[2].Descriptor()
 }
 
-func (Advice_Status) Type() protoreflect.EnumType {
+func (Advice_Level) Type() protoreflect.EnumType {
 	return &file_v1_sql_service_proto_enumTypes[2]
 }
 
-func (x Advice_Status) Number() protoreflect.EnumNumber {
+func (x Advice_Level) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use Advice_Status.Descriptor instead.
-func (Advice_Status) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use Advice_Level.Descriptor instead.
+func (Advice_Level) EnumDescriptor() ([]byte, []int) {
 	return file_v1_sql_service_proto_rawDescGZIP(), []int{9, 0}
 }
 
@@ -1204,8 +1208,8 @@ func (*RowValue_TimestampTzValue) isRowValue_Kind() {}
 
 type Advice struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The advice status.
-	Status Advice_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.v1.Advice_Status" json:"status,omitempty"`
+	// The advice level.
+	Status Advice_Level `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.v1.Advice_Level" json:"status,omitempty"`
 	// The advice code.
 	Code int32 `protobuf:"varint,2,opt,name=code,proto3" json:"code,omitempty"`
 	// The advice title.
@@ -1250,11 +1254,11 @@ func (*Advice) Descriptor() ([]byte, []int) {
 	return file_v1_sql_service_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *Advice) GetStatus() Advice_Status {
+func (x *Advice) GetStatus() Advice_Level {
 	if x != nil {
 		return x.Status
 	}
-	return Advice_STATUS_UNSPECIFIED
+	return Advice_ADVICE_LEVEL_UNSPECIFIED
 }
 
 func (x *Advice) GetCode() int32 {
@@ -2823,16 +2827,16 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x04zone\x18\x02 \x01(\tR\x04zone\x12\x16\n" +
 	"\x06offset\x18\x03 \x01(\x05R\x06offset\x12\x1a\n" +
 	"\baccuracy\x18\x04 \x01(\x05R\baccuracyB\x06\n" +
-	"\x04kind\"\xd1\x02\n" +
-	"\x06Advice\x122\n" +
-	"\x06status\x18\x01 \x01(\x0e2\x1a.bytebase.v1.Advice.StatusR\x06status\x12\x12\n" +
+	"\x04kind\"\xd5\x02\n" +
+	"\x06Advice\x121\n" +
+	"\x06status\x18\x01 \x01(\x0e2\x19.bytebase.v1.Advice.LevelR\x06status\x12\x12\n" +
 	"\x04code\x18\x02 \x01(\x05R\x04code\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12\x18\n" +
 	"\acontent\x18\x04 \x01(\tR\acontent\x12<\n" +
 	"\x0estart_position\x18\b \x01(\v2\x15.bytebase.v1.PositionR\rstartPosition\x128\n" +
-	"\fend_position\x18\t \x01(\v2\x15.bytebase.v1.PositionR\vendPosition\"E\n" +
-	"\x06Status\x12\x16\n" +
-	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
+	"\fend_position\x18\t \x01(\v2\x15.bytebase.v1.PositionR\vendPosition\"J\n" +
+	"\x05Level\x12\x1c\n" +
+	"\x18ADVICE_LEVEL_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aSUCCESS\x10\x01\x12\v\n" +
 	"\aWARNING\x10\x02\x12\t\n" +
 	"\x05ERROR\x10\x03J\x04\b\a\x10\bJ\x04\b\x05\x10\x06J\x04\b\x06\x10\a\"\xaf\x02\n" +
@@ -2949,7 +2953,7 @@ var file_v1_sql_service_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_v1_sql_service_proto_goTypes = []any{
 	(QueryOption_RedisRunCommandsOn)(0),                 // 0: bytebase.v1.QueryOption.RedisRunCommandsOn
 	(QueryResult_Message_Level)(0),                      // 1: bytebase.v1.QueryResult.Message.Level
-	(Advice_Status)(0),                                  // 2: bytebase.v1.Advice.Status
+	(Advice_Level)(0),                                   // 2: bytebase.v1.Advice.Level
 	(CheckRequest_ChangeType)(0),                        // 3: bytebase.v1.CheckRequest.ChangeType
 	(QueryHistory_Type)(0),                              // 4: bytebase.v1.QueryHistory.Type
 	(*AdminExecuteRequest)(nil),                         // 5: bytebase.v1.AdminExecuteRequest
@@ -3008,7 +3012,7 @@ var file_v1_sql_service_proto_depIdxs = []int32{
 	38, // 11: bytebase.v1.RowValue.value_value:type_name -> google.protobuf.Value
 	30, // 12: bytebase.v1.RowValue.timestamp_value:type_name -> bytebase.v1.RowValue.Timestamp
 	31, // 13: bytebase.v1.RowValue.timestamp_tz_value:type_name -> bytebase.v1.RowValue.TimestampTZ
-	2,  // 14: bytebase.v1.Advice.status:type_name -> bytebase.v1.Advice.Status
+	2,  // 14: bytebase.v1.Advice.status:type_name -> bytebase.v1.Advice.Level
 	39, // 15: bytebase.v1.Advice.start_position:type_name -> bytebase.v1.Position
 	39, // 16: bytebase.v1.Advice.end_position:type_name -> bytebase.v1.Position
 	40, // 17: bytebase.v1.ExportRequest.format:type_name -> bytebase.v1.ExportFormat
