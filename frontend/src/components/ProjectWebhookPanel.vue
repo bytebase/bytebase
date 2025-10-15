@@ -18,9 +18,9 @@
   </div>
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { PlusIcon } from "lucide-vue-next";
-import { NButton, NDataTable } from "naive-ui";
+import { NButton, NDataTable, NTag } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
@@ -83,11 +83,17 @@ const columnList = computed((): DataTableColumn<Webhook>[] => {
           return Activity_Type[activity] || `ACTIVITY_${activity}`;
         });
 
-        return list.join(", ");
+        return (
+          <div class="flex flex-wrap gap-2">
+            {list.map((title) => (
+              <NTag size="small">{title}</NTag>
+            ))}
+          </div>
+        );
       },
     },
     {
-      key: "view",
+      key: "actions",
       title: "",
       width: "5rem",
       render: (webhook) =>
