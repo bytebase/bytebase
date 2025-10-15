@@ -30,7 +30,8 @@ func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statement,
 	}
 	extractor := newQuerySpanExtractor(database, searchPath, gCtx)
 
-	querySpan, err := extractor.getQuerySpan(ctx, statement)
+	// Use the new ANTLR-based implementation
+	querySpan, err := extractor.getQuerySpanNew(ctx, statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span from statement: %s", statement)
 	}

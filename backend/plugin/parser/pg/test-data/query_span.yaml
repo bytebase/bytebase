@@ -40,12 +40,12 @@
   querySpan:
     type: 1
     results:
-        - name: t
+        - name: unnest
           sourcecolumns: []
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
-        - name: t
+        - name: unnest
           sourcecolumns: []
           isplainfield: false
           sourcefieldpaths: []
@@ -67,7 +67,7 @@
   querySpan:
     type: 1
     results:
-        - name: t
+        - name: unnest
           sourcecolumns: []
           isplainfield: false
           sourcefieldpaths: []
@@ -891,7 +891,7 @@
   querySpan:
     type: 1
     results:
-        - name: ?column?
+        - name: json_object
           sourcecolumns:
             - server: ""
               database: db
@@ -933,7 +933,7 @@
   querySpan:
     type: 1
     results:
-        - name: ?column?
+        - name: json_array
           sourcecolumns:
             - server: ""
               database: db
@@ -2112,7 +2112,7 @@
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
-        - name: ?column?
+        - name: a
           sourcecolumns:
             - server: ""
               database: db
@@ -2127,7 +2127,7 @@
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
-        - name: ?column?
+        - name: b
           sourcecolumns:
             - server: ""
               database: db

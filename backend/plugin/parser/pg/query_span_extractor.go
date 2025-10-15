@@ -17,7 +17,7 @@ import (
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 
-	pgparser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/parser/postgresql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -44,6 +44,7 @@ const (
 
 // querySpanExtractor is the extractor to extract the query span from the given pgquery.RawStmt.
 type querySpanExtractor struct {
+	*postgresql.BasePostgreSQLParserListener
 	ctx             context.Context
 	defaultDatabase string
 	searchPath      []string
@@ -70,6 +71,11 @@ type querySpanExtractor struct {
 
 	// variables are variables declared in the function.
 	variables map[string]*base.QuerySpanResult
+
+	err error
+
+	// resultTableSource is used to store the extracted table source from ANTLR parsing
+	resultTableSource base.TableSource
 }
 
 // newQuerySpanExtractor creates a new query span extractor, the databaseMetadata and the ast are in the read guard.
@@ -86,7 +92,6 @@ func newQuerySpanExtractor(defaultDatabase string, searchPath []string, gCtx bas
 	}
 }
 
-// nolint: unused
 func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.DatabaseMetadata, error) {
 	if meta, ok := q.metaCache[database]; ok {
 		return meta, nil
@@ -102,18 +107,33 @@ func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.Databa
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 
-	// Our querySpanExtractor is based on the pg_query_go library, which does not support listening to or walking the AST.
-	// We separate the logic for querying spans and accessing data.
-	// The second one is achieved using ParseToJson, which is simpler.
-	accessTables, err := q.getAccessTables(stmt)
+	// Parse the statement by using ANTLR first to get the access span.
+	root, err := ParsePostgreSQL(stmt)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get access columns from statement: %s", stmt)
+		return nil, err
 	}
+
+	accessTableExtractor := &accessTableExtractor{
+		defaultDatabase:     q.defaultDatabase,
+		searchPath:          q.searchPath,
+		getDatabaseMetadata: q.gCtx.GetDatabaseMetadataFunc,
+		ctx:                 ctx,
+		instanceID:          q.gCtx.InstanceID,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(accessTableExtractor, root.Tree)
+	if accessTableExtractor.err != nil {
+		return nil, errors.Wrapf(accessTableExtractor.err, "failed to extract query span from statement: %s", stmt)
+	}
+	accessesMap := make(base.SourceColumnSet)
+	for _, resource := range accessTableExtractor.accessTables {
+		accessesMap[resource] = true
+	}
+
 	// We do not support simultaneous access to the system table and the user table
 	// because we do not synchronize the schema of the system table.
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
 	// As a result, we exclude getting query span results for accessing only the system table.
-	allSystems, mixed := isMixedQuery(accessTables)
+	allSystems, mixed := isMixedQuery(accessesMap)
 	if mixed {
 		return nil, base.MixUserSystemTablesError
 	}
@@ -127,7 +147,15 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	}
 	ast := res.Stmts[0]
 
-	queryType, isExplainAnalyze := getQueryType(ast.Stmt, allSystems)
+	queryTypeListener := &queryTypeListener{
+		result:     base.QueryTypeUnknown,
+		allSystems: allSystems,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(queryTypeListener, root.Tree)
+	if queryTypeListener.err != nil {
+		return nil, errors.Wrapf(queryTypeListener.err, "failed to get query type from statement: %s", stmt)
+	}
+	queryType, isExplainAnalyze := queryTypeListener.result, queryTypeListener.isExplainAnalyze
 	if queryType != base.Select {
 		return &base.QuerySpan{
 			Type:          queryType,
@@ -140,7 +168,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	if isExplainAnalyze {
 		return &base.QuerySpan{
 			Type:          queryType,
-			SourceColumns: accessTables,
+			SourceColumns: accessesMap,
 			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
@@ -150,14 +178,14 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		var functionNotSupported *parsererror.FunctionNotSupportedError
 		if errors.As(err, &functionNotSupported) {
 			// Sadly, getAccessTables() returns nil for resources not found.
-			if len(accessTables) == 0 {
-				accessTables[base.ColumnResource{
+			if len(accessesMap) == 0 {
+				accessesMap[base.ColumnResource{
 					Database: q.defaultDatabase,
 				}] = true
 			}
 			return &base.QuerySpan{
 				Type:          base.Select,
-				SourceColumns: accessTables,
+				SourceColumns: accessesMap,
 				Results:       []base.QuerySpanResult{},
 				NotFoundError: functionNotSupported,
 			}, nil
@@ -165,14 +193,14 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		var resourceNotFound *parsererror.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
 			// Sadly, getAccessTables() returns nil for resources not found.
-			if len(accessTables) == 0 {
-				accessTables[base.ColumnResource{
+			if len(accessesMap) == 0 {
+				accessesMap[base.ColumnResource{
 					Database: q.defaultDatabase,
 				}] = true
 			}
 			return &base.QuerySpan{
 				Type:          base.Select,
-				SourceColumns: accessTables,
+				SourceColumns: accessesMap,
 				Results:       []base.QuerySpanResult{},
 				NotFoundError: resourceNotFound,
 			}, nil
@@ -183,12 +211,12 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 
 	// merge the source columns in the function to the access tables.
 	for source := range q.sourceColumnsInFunction {
-		accessTables[source] = true
+		accessesMap[source] = true
 	}
 
 	return &base.QuerySpan{
 		Type:          base.Select,
-		SourceColumns: accessTables,
+		SourceColumns: accessesMap,
 		Results:       tableSource.GetQuerySpanResult(),
 	}, nil
 }
@@ -235,7 +263,7 @@ func (q *querySpanExtractor) extractTableSourceFromRangeFunction(node *pgquery.N
 }
 
 func (q *querySpanExtractor) extractTableSourceFromUDF(node *pgquery.Node_RangeFunction, schemaName string, funcName string) (base.TableSource, error) {
-	tableSource, err := q.findFunctionDefine(schemaName, funcName, node.RangeFunction.GetFunctions())
+	tableSource, err := q.findFunctionDefine(schemaName, funcName, len(node.RangeFunction.GetFunctions()))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find function: %s.%s", schemaName, funcName)
 	}
@@ -504,7 +532,7 @@ type functionDefinition struct {
 	metadata   *model.FunctionMetadata
 }
 
-func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, argumentList []*pgquery.Node) (base.TableSource, error) {
+func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, nArgs int) (base.TableSource, error) {
 	dbSchema, err := q.getDatabaseMetadata(q.defaultDatabase)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.defaultDatabase)
@@ -527,7 +555,7 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, arg
 		})
 	}
 
-	candidates, err := getFunctionCandidates(funcs, argumentList, funcName)
+	candidates, err := getFunctionCandidates(funcs, nArgs, funcName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get function candidates")
 	}
@@ -607,9 +635,7 @@ func buildFunctionDefinitionDetail(funcDef *functionDefinition) (*functionDefini
 }
 
 // getFunctionCandidates returns the function candidates for the function call.
-func getFunctionCandidates(functions []*functionDefinition, argumentList []*pgquery.Node, funcName string) ([]*functionDefinition, error) {
-	nargument := len(argumentList)
-
+func getFunctionCandidates(functions []*functionDefinition, nArgs int, funcName string) ([]*functionDefinition, error) {
 	// Filter by name only.
 	var nameFiltered []*functionDefinition
 	for _, function := range functions {
@@ -644,7 +670,7 @@ func getFunctionCandidates(functions []*functionDefinition, argumentList []*pgqu
 	for _, d := range detail {
 		// If there are no default and variadic parameters, the number of arguments must match the number of parameters.
 		if d.nDefaultParam == 0 && d.nVariadicParam == 0 {
-			if nargument == len(d.params) {
+			if nArgs == len(d.params) {
 				candidates = append(candidates, d.function)
 			}
 			continue
@@ -653,11 +679,11 @@ func getFunctionCandidates(functions []*functionDefinition, argumentList []*pgqu
 		// Default parameter matches 0 or 1 argument, and variadic parameter matches 0 or more arguments.
 		lbound := len(d.params) - d.nDefaultParam - d.nVariadicParam
 		ubound := len(d.params)
-		if d.nVariadicParam > 0 && ubound < nargument {
+		if d.nVariadicParam > 0 && ubound < nArgs {
 			// Hack to make variadic parameter match 0 or more arguments.
-			ubound = nargument
+			ubound = nArgs
 		}
-		if nargument >= lbound && nargument <= ubound {
+		if nArgs >= lbound && nArgs <= ubound {
 			candidates = append(candidates, d.function)
 		}
 	}
@@ -805,7 +831,7 @@ func (q *querySpanExtractor) extractTableSourceFromComplexPLPGSQL(name string, c
 }
 
 type plpgSQLListener struct {
-	*pgparser.BasePostgreSQLParserListener
+	*postgresql.BasePostgreSQLParserListener
 	q *querySpanExtractor
 
 	variables map[string]*base.QuerySpanResult
@@ -814,18 +840,18 @@ type plpgSQLListener struct {
 	err  error
 }
 
-func (l *plpgSQLListener) EnterFunc_as(ctx *pgparser.Func_asContext) {
+func (l *plpgSQLListener) EnterFunc_as(ctx *postgresql.Func_asContext) {
 	antlr.ParseTreeWalkerDefault.Walk(l, ctx.Definition)
 }
 
-func (l *plpgSQLListener) EnterDecl_statement(ctx *pgparser.Decl_statementContext) {
+func (l *plpgSQLListener) EnterDecl_statement(ctx *postgresql.Decl_statementContext) {
 	vName := normalizePostgreSQLAnyIdentifier(ctx.Decl_varname().Any_identifier())
 	l.variables[vName] = &base.QuerySpanResult{
 		SourceColumns: base.SourceColumnSet{},
 	}
 }
 
-func (l *plpgSQLListener) EnterStmt_assign(ctx *pgparser.Stmt_assignContext) {
+func (l *plpgSQLListener) EnterStmt_assign(ctx *postgresql.Stmt_assignContext) {
 	names := NormalizePostgreSQLAnyName(ctx.Assign_var().Any_name())
 	if len(names) != 1 {
 		return
@@ -860,7 +886,7 @@ func (l *plpgSQLListener) EnterStmt_assign(ctx *pgparser.Stmt_assignContext) {
 	}
 }
 
-func (l *plpgSQLListener) EnterStmt_return(ctx *pgparser.Stmt_returnContext) {
+func (l *plpgSQLListener) EnterStmt_return(ctx *postgresql.Stmt_returnContext) {
 	if ctx.QUERY() == nil {
 		return
 	}
@@ -1498,7 +1524,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromUDF(node *pgquery.Node_Fu
 		return base.SourceColumnSet{}, nil
 	}
 	result := make(base.SourceColumnSet)
-	tableSource, err := q.findFunctionDefine(schemaName, funcName, node.FuncCall.Args)
+	tableSource, err := q.findFunctionDefine(schemaName, funcName, len(node.FuncCall.Args))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find function define for UDF: %s.%s", schemaName, funcName)
 	}
@@ -2113,152 +2139,6 @@ func pgExtractFieldName(node *pgquery.Node) (string, error) {
 		return "grouping", nil
 	}
 	return pgUnknownFieldName, nil
-}
-
-func (q *querySpanExtractor) getAccessTables(sql string) (base.SourceColumnSet, error) {
-	jsonText, err := pgquery.ParseToJSON(sql)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse sql to json")
-	}
-
-	var jsonData map[string]any
-
-	if err := json.Unmarshal([]byte(jsonText), &jsonData); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal json")
-	}
-
-	accessesMap := make(base.SourceColumnSet)
-
-	result, err := q.getRangeVarsFromJSONRecursive(jsonData, q.defaultDatabase)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get range vars from json")
-	}
-	for _, resource := range result {
-		accessesMap[resource] = true
-	}
-
-	return accessesMap, nil
-}
-
-func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]any, currentDatabase string) ([]base.ColumnResource, error) {
-	var result []base.ColumnResource
-	if jsonData["RangeVar"] != nil {
-		resource := base.ColumnResource{
-			Server:   "",
-			Database: currentDatabase,
-			Schema:   "",
-			Table:    "",
-			Column:   "",
-		}
-
-		rangeVar, ok := jsonData["RangeVar"].(map[string]any)
-		if !ok {
-			return nil, errors.Errorf("failed to convert range var")
-		}
-		if rangeVar["schemaname"] != nil {
-			schema, ok := rangeVar["schemaname"].(string)
-			if !ok {
-				return nil, errors.Errorf("failed to convert schemaname")
-			}
-			resource.Schema = schema
-		}
-		if rangeVar["relname"] != nil {
-			table, ok := rangeVar["relname"].(string)
-			if !ok {
-				return nil, errors.Errorf("failed to convert relname")
-			}
-			resource.Table = table
-		}
-
-		// This is a false-positive behavior, the table we found may not be the table the query actually accesses.
-		// For example, the query is `WITH t1 AS (SELECT 1) SELECT * FROM t1` and we have a physical table `t1` in the database exactly,
-		// what we found is the physical table `t1`, but the query actually accesses the CTE `t1`.
-		// We do this because we do not have too much time to implement the real behavior.
-		// XXX(rebelice/zp): Can we pass more information here to make this function know the context and then
-		// figure out whether the table is the table the query actually accesses?
-
-		// Bytebase do not sync the system objects, so we skip finding for system objects in the metadata.
-		if !isSystemResource(resource) {
-			searchPath := q.searchPath
-			if resource.Schema != "" {
-				searchPath = []string{resource.Schema}
-			}
-
-			databaseMetadata, err := q.getDatabaseMetadata(currentDatabase)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", currentDatabase)
-			}
-			// Access pseudo table or table/view we do not sync, return directly.
-			if databaseMetadata == nil {
-				return nil, nil
-			}
-			schemaName, name := databaseMetadata.SearchObject(searchPath, resource.Table)
-			if schemaName == "" && name == "" {
-				return nil, nil
-			}
-			resource.Schema = schemaName
-		}
-		result = append(result, resource)
-	}
-
-	for _, value := range jsonData {
-		switch v := value.(type) {
-		case map[string]any:
-			resources, err := q.getRangeVarsFromJSONRecursive(v, currentDatabase)
-			if err != nil {
-				return nil, err
-			}
-			result = append(result, resources...)
-		case []any:
-			for _, item := range v {
-				if m, ok := item.(map[string]any); ok {
-					resources, err := q.getRangeVarsFromJSONRecursive(m, currentDatabase)
-					if err != nil {
-						return nil, err
-					}
-					result = append(result, resources...)
-				}
-			}
-		}
-	}
-
-	return result, nil
-}
-
-// isMixedQuery checks whether the query accesses the user table and system table at the same time.
-func isMixedQuery(m base.SourceColumnSet) (bool, bool) {
-	hasSystem, hasUser := false, false
-	for table := range m {
-		if isSystemResource(table) {
-			hasSystem = true
-		} else {
-			hasUser = true
-		}
-	}
-
-	if hasSystem && hasUser {
-		return false, true
-	}
-
-	return !hasUser && hasSystem, false
-}
-
-func isSystemResource(resource base.ColumnResource) bool {
-	// User can access the system table/view by name directly without database/schema name.
-	// For example: `SELECT * FROM pg_database`, which will access the system table `pg_database`.
-	// Additionally, user can create a table/view with the same name with system table/view and access them
-	// by specify the schema name, for example:
-	// `CREATE TABLE pg_database(id INT); SELECT * FROM public.pg_database;` which will access the user table `pg_database`.
-	if IsSystemSchema(resource.Schema) {
-		return true
-	}
-	if resource.Schema == "" && IsSystemView(resource.Table) {
-		return true
-	}
-	if resource.Schema == "" && IsSystemTable(resource.Table) {
-		return true
-	}
-	return false
 }
 
 func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {

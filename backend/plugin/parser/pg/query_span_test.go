@@ -54,12 +54,12 @@ func TestGetQuerySpan(t *testing.T) {
 				GetDatabaseMetadataFunc: databaseMetadataGetter,
 				ListDatabaseNamesFunc:   databaseNameLister,
 			}, tc.Statement, tc.DefaultDatabase, "", false)
-			a.NoError(err)
+			a.NoErrorf(err, "idx: %d statement: %s", i, tc.Statement)
 			resultYaml := result.ToYaml()
 			if record {
 				testCases[i].QuerySpan = resultYaml
 			} else {
-				a.Equal(tc.QuerySpan, resultYaml, "statement: %s", tc.Statement)
+				a.Equal(tc.QuerySpan, resultYaml, "idx: %d statement: %s", i, tc.Statement)
 			}
 		}
 
