@@ -200,6 +200,10 @@
                   <a href="#v1%2fannotation.proto-extensions"><span class="badge">X</span>File-level Extensions</a>
                 </li>
               
+                <li>
+                  <a href="#v1%2fannotation.proto-extensions"><span class="badge">X</span>File-level Extensions</a>
+                </li>
+              
               
             </ul>
           </li>
@@ -2924,6 +2928,17 @@
             <tr><td>Extension</td><td>Type</td><td>Base</td><td>Number</td><td>Description</td></tr>
           </thead>
           <tbody>
+            
+              <tr>
+                <td>allow_missing_requires</td>
+                <td><a href="#string">string</a></td>
+                <td><a href="#google.protobuf.MethodOptions">.google.protobuf.MethodOptions</a></td>
+                <td>100004</td>
+                <td><p>When a method supports allow_missing and may create resources,
+this specifies the additional permission required when allow_missing=true.
+Example: UpdateRole with allow_missing requires both bb.roles.update
+(from permission) and bb.roles.create (from allow_missing_requires).</p></td>
+              </tr>
             
               <tr>
                 <td>allow_without_credential</td>
@@ -16999,7 +17014,8 @@ Permissions required: bb.changelists.list</p></td>
                 <td><a href="#bytebase.v1.UpdateChangelistRequest">UpdateChangelistRequest</a></td>
                 <td><a href="#bytebase.v1.Changelist">Changelist</a></td>
                 <td><p>Updates a changelist.
-Permissions required: bb.changelists.update</p></td>
+Permissions required: bb.changelists.update
+When allow_missing=true, also requires: bb.changelists.create</p></td>
               </tr>
             
               <tr>
@@ -17483,7 +17499,8 @@ Permissions required: bb.projects.update</p></td>
                 <td><a href="#bytebase.v1.UpdateDatabaseGroupRequest">UpdateDatabaseGroupRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
                 <td><p>Updates a database group.
-Permissions required: bb.projects.update</p></td>
+Permissions required: bb.projects.update
+When allow_missing=true, also requires: bb.projects.update</p></td>
               </tr>
             
               <tr>
@@ -18005,7 +18022,8 @@ Permissions required: bb.groups.create</p></td>
                 <td><a href="#bytebase.v1.UpdateGroupRequest">UpdateGroupRequest</a></td>
                 <td><a href="#bytebase.v1.Group">Group</a></td>
                 <td><p>Updates a group. Group owners or users with bb.groups.update permission can update.
-Permissions required: bb.groups.update OR caller is group owner</p></td>
+Permissions required: bb.groups.update OR caller is group owner
+When allow_missing=true, also requires: bb.groups.create</p></td>
               </tr>
             
               <tr>
@@ -18976,7 +18994,8 @@ Permissions required: bb.identityProviders.create</p></td>
                 <td><a href="#bytebase.v1.UpdateIdentityProviderRequest">UpdateIdentityProviderRequest</a></td>
                 <td><a href="#bytebase.v1.IdentityProvider">IdentityProvider</a></td>
                 <td><p>Updates an identity provider.
-Permissions required: bb.identityProviders.update</p></td>
+Permissions required: bb.identityProviders.update
+When allow_missing=true, also requires: bb.identityProviders.create</p></td>
               </tr>
             
               <tr>
@@ -25850,7 +25869,8 @@ Permissions required: bb.releases.create</p></td>
                 <td><a href="#bytebase.v1.UpdateReleaseRequest">UpdateReleaseRequest</a></td>
                 <td><a href="#bytebase.v1.Release">Release</a></td>
                 <td><p>Updates an existing release.
-Permissions required: bb.releases.update</p></td>
+Permissions required: bb.releases.update
+When allow_missing=true, also requires: bb.releases.create</p></td>
               </tr>
             
               <tr>
@@ -26270,7 +26290,8 @@ Permissions required: bb.reviewConfigs.get</p></td>
                 <td><a href="#bytebase.v1.UpdateReviewConfigRequest">UpdateReviewConfigRequest</a></td>
                 <td><a href="#bytebase.v1.ReviewConfig">ReviewConfig</a></td>
                 <td><p>Updates a SQL review configuration.
-Permissions required: bb.reviewConfigs.update</p></td>
+Permissions required: bb.reviewConfigs.update
+When allow_missing=true, also requires: bb.reviewConfigs.create</p></td>
               </tr>
             
               <tr>
@@ -27255,7 +27276,8 @@ Permissions required: bb.risks.list</p></td>
                 <td><a href="#bytebase.v1.UpdateRiskRequest">UpdateRiskRequest</a></td>
                 <td><a href="#bytebase.v1.Risk">Risk</a></td>
                 <td><p>Updates an existing risk assessment rule.
-Permissions required: bb.risks.update</p></td>
+Permissions required: bb.risks.update
+When allow_missing=true, also requires: bb.risks.create</p></td>
               </tr>
             
               <tr>
@@ -27666,7 +27688,8 @@ Permissions required: bb.roles.create</p></td>
                 <td><a href="#bytebase.v1.UpdateRoleRequest">UpdateRoleRequest</a></td>
                 <td><a href="#bytebase.v1.Role">Role</a></td>
                 <td><p>Updates a role&#39;s properties.
-Permissions required: bb.roles.update</p></td>
+Permissions required: bb.roles.update
+When allow_missing=true, also requires: bb.roles.create</p></td>
               </tr>
             
               <tr>

@@ -67,6 +67,7 @@ type IdentityProviderServiceClient interface {
 	CreateIdentityProvider(context.Context, *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error)
 	// Updates an identity provider.
 	// Permissions required: bb.identityProviders.update
+	// When allow_missing=true, also requires: bb.identityProviders.create
 	UpdateIdentityProvider(context.Context, *connect.Request[v1.UpdateIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error)
 	// Deletes an identity provider.
 	// Permissions required: bb.identityProviders.delete
@@ -180,6 +181,7 @@ type IdentityProviderServiceHandler interface {
 	CreateIdentityProvider(context.Context, *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error)
 	// Updates an identity provider.
 	// Permissions required: bb.identityProviders.update
+	// When allow_missing=true, also requires: bb.identityProviders.create
 	UpdateIdentityProvider(context.Context, *connect.Request[v1.UpdateIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error)
 	// Deletes an identity provider.
 	// Permissions required: bb.identityProviders.delete

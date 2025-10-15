@@ -44,6 +44,7 @@ type ReviewConfigServiceClient interface {
 	GetReviewConfig(ctx context.Context, in *GetReviewConfigRequest, opts ...grpc.CallOption) (*ReviewConfig, error)
 	// Updates a SQL review configuration.
 	// Permissions required: bb.reviewConfigs.update
+	// When allow_missing=true, also requires: bb.reviewConfigs.create
 	UpdateReviewConfig(ctx context.Context, in *UpdateReviewConfigRequest, opts ...grpc.CallOption) (*ReviewConfig, error)
 	// Deletes a SQL review configuration.
 	// Permissions required: bb.reviewConfigs.delete
@@ -125,6 +126,7 @@ type ReviewConfigServiceServer interface {
 	GetReviewConfig(context.Context, *GetReviewConfigRequest) (*ReviewConfig, error)
 	// Updates a SQL review configuration.
 	// Permissions required: bb.reviewConfigs.update
+	// When allow_missing=true, also requires: bb.reviewConfigs.create
 	UpdateReviewConfig(context.Context, *UpdateReviewConfigRequest) (*ReviewConfig, error)
 	// Deletes a SQL review configuration.
 	// Permissions required: bb.reviewConfigs.delete

@@ -64,6 +64,7 @@ type ChangelistServiceClient interface {
 	ListChangelists(context.Context, *connect.Request[v1.ListChangelistsRequest]) (*connect.Response[v1.ListChangelistsResponse], error)
 	// Updates a changelist.
 	// Permissions required: bb.changelists.update
+	// When allow_missing=true, also requires: bb.changelists.create
 	UpdateChangelist(context.Context, *connect.Request[v1.UpdateChangelistRequest]) (*connect.Response[v1.Changelist], error)
 	// Deletes a changelist.
 	// Permissions required: bb.changelists.delete
@@ -161,6 +162,7 @@ type ChangelistServiceHandler interface {
 	ListChangelists(context.Context, *connect.Request[v1.ListChangelistsRequest]) (*connect.Response[v1.ListChangelistsResponse], error)
 	// Updates a changelist.
 	// Permissions required: bb.changelists.update
+	// When allow_missing=true, also requires: bb.changelists.create
 	UpdateChangelist(context.Context, *connect.Request[v1.UpdateChangelistRequest]) (*connect.Response[v1.Changelist], error)
 	// Deletes a changelist.
 	// Permissions required: bb.changelists.delete

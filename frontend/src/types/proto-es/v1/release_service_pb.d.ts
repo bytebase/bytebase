@@ -689,6 +689,7 @@ export declare const ReleaseService: GenService<{
   /**
    * Updates an existing release.
    * Permissions required: bb.releases.update
+   * When allow_missing=true, also requires: bb.releases.create
    *
    * @generated from rpc bytebase.v1.ReleaseService.UpdateRelease
    */

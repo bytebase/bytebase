@@ -64,6 +64,7 @@ type DatabaseGroupServiceClient interface {
 	CreateDatabaseGroup(context.Context, *connect.Request[v1.CreateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
 	// Updates a database group.
 	// Permissions required: bb.projects.update
+	// When allow_missing=true, also requires: bb.projects.update
 	UpdateDatabaseGroup(context.Context, *connect.Request[v1.UpdateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
 	// Deletes a database group.
 	// Permissions required: bb.projects.update
@@ -161,6 +162,7 @@ type DatabaseGroupServiceHandler interface {
 	CreateDatabaseGroup(context.Context, *connect.Request[v1.CreateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
 	// Updates a database group.
 	// Permissions required: bb.projects.update
+	// When allow_missing=true, also requires: bb.projects.update
 	UpdateDatabaseGroup(context.Context, *connect.Request[v1.UpdateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
 	// Deletes a database group.
 	// Permissions required: bb.projects.update

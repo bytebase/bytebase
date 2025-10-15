@@ -84,6 +84,32 @@ func (c *aclStreamingConn) Receive(msg any) error {
 	return c.StreamingHandlerConn.Receive(msg)
 }
 
+// hasAllowMissingEnabled checks if the request has allow_missing field set to true.
+// Uses proto reflection to handle different request types generically.
+func hasAllowMissingEnabled(request any) bool {
+	if request == nil {
+		return false
+	}
+
+	pm, ok := request.(proto.Message)
+	if !ok {
+		return false
+	}
+
+	mr := pm.ProtoReflect()
+	fd := mr.Descriptor().Fields().ByName("allow_missing")
+	if fd == nil {
+		return false
+	}
+
+	// Check if field is a bool and get its value
+	if fd.Kind() != protoreflect.BoolKind {
+		return false
+	}
+
+	return mr.Get(fd).Bool()
+}
+
 func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMethod string) error {
 	defer func() {
 		if r := recover(); r != nil {
@@ -123,6 +149,24 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 	}
 	if !ok {
 		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied for method %q, user does not have permission %q, extra %v", fullMethod, authContext.Permission, extra))
+	}
+
+	// Check allow_missing secondary permission if applicable
+	// This handles Update methods that can create resources via allow_missing=true
+	allowMissingPerm, err := auth.GetAllowMissingRequiredPermission(fullMethod)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get allow_missing permission requirement"))
+	}
+
+	if allowMissingPerm != "" && hasAllowMissingEnabled(request) {
+		// User is attempting create-or-update, verify create permission
+		hasCreatePerm, err := in.iamManager.CheckPermission(ctx, iam.Permission(allowMissingPerm), user)
+		if err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check %s permission", allowMissingPerm))
+		}
+		if !hasCreatePerm {
+			return connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied: allow_missing=true requires both %s and %s", authContext.Permission, allowMissingPerm))
+		}
 	}
 
 	return nil

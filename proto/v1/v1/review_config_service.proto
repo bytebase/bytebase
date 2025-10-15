@@ -47,6 +47,7 @@ service ReviewConfigService {
 
   // Updates a SQL review configuration.
   // Permissions required: bb.reviewConfigs.update
+  // When allow_missing=true, also requires: bb.reviewConfigs.create
   rpc UpdateReviewConfig(UpdateReviewConfigRequest) returns (ReviewConfig) {
     option (google.api.http) = {
       patch: "/v1/{review_config.name=reviewConfigs/*}"
@@ -54,6 +55,7 @@ service ReviewConfigService {
     };
     option (google.api.method_signature) = "review_config,update_mask";
     option (bytebase.v1.permission) = "bb.reviewConfigs.update";
+    option (bytebase.v1.allow_missing_requires) = "bb.reviewConfigs.create";
     option (bytebase.v1.auth_method) = IAM;
   }
 

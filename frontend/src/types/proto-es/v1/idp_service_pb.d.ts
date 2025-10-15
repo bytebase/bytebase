@@ -753,6 +753,7 @@ export declare const IdentityProviderService: GenService<{
   /**
    * Updates an identity provider.
    * Permissions required: bb.identityProviders.update
+   * When allow_missing=true, also requires: bb.identityProviders.create
    *
    * @generated from rpc bytebase.v1.IdentityProviderService.UpdateIdentityProvider
    */

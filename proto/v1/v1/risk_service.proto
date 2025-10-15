@@ -49,6 +49,7 @@ service RiskService {
 
   // Updates an existing risk assessment rule.
   // Permissions required: bb.risks.update
+  // When allow_missing=true, also requires: bb.risks.create
   rpc UpdateRisk(UpdateRiskRequest) returns (Risk) {
     option (google.api.http) = {
       patch: "/v1/{risk.name=risks/*}"
@@ -56,6 +57,7 @@ service RiskService {
     };
     option (google.api.method_signature) = "risk,update_mask";
     option (bytebase.v1.permission) = "bb.risks.update";
+    option (bytebase.v1.allow_missing_requires) = "bb.risks.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }

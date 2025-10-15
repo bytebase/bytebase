@@ -574,13 +574,13 @@ const file_v1_changelist_service_proto_rawDesc = "" +
 	"\x06Change\x12\x14\n" +
 	"\x05sheet\x18\x01 \x01(\tR\x05sheet\x12\x16\n" +
 	"\x06source\x18\x02 \x01(\tR\x06source:I\xeaAF\n" +
-	"\x17bytebase.com/Changelist\x12+projects/{project}/changelists/{changelist}2\x8f\a\n" +
+	"\x17bytebase.com/Changelist\x12+projects/{project}/changelists/{changelist}2\xa9\a\n" +
 	"\x11ChangelistService\x12\xbb\x01\n" +
 	"\x10CreateChangelist\x12$.bytebase.v1.CreateChangelistRequest\x1a\x17.bytebase.v1.Changelist\"h\xdaA\x11parent,changelist\x8a\xea0\x15bb.changelists.create\x90\xea0\x01\x82\xd3\xe4\x93\x021:\n" +
 	"changelist\"#/v1/{parent=projects/*}/changelists\x12\x99\x01\n" +
 	"\rGetChangelist\x12!.bytebase.v1.GetChangelistRequest\x1a\x17.bytebase.v1.Changelist\"L\xdaA\x04name\x8a\xea0\x12bb.changelists.get\x90\xea0\x01\x82\xd3\xe4\x93\x02%\x12#/v1/{name=projects/*/changelists/*}\x12\xad\x01\n" +
-	"\x0fListChangelists\x12#.bytebase.v1.ListChangelistsRequest\x1a$.bytebase.v1.ListChangelistsResponse\"O\xdaA\x06parent\x8a\xea0\x13bb.changelists.list\x90\xea0\x01\x82\xd3\xe4\x93\x02%\x12#/v1/{parent=projects/*}/changelists\x12\xcb\x01\n" +
-	"\x10UpdateChangelist\x12$.bytebase.v1.UpdateChangelistRequest\x1a\x17.bytebase.v1.Changelist\"x\xdaA\x16changelist,update_mask\x8a\xea0\x15bb.changelists.update\x90\xea0\x01\x82\xd3\xe4\x93\x02<:\n" +
+	"\x0fListChangelists\x12#.bytebase.v1.ListChangelistsRequest\x1a$.bytebase.v1.ListChangelistsResponse\"O\xdaA\x06parent\x8a\xea0\x13bb.changelists.list\x90\xea0\x01\x82\xd3\xe4\x93\x02%\x12#/v1/{parent=projects/*}/changelists\x12\xe5\x01\n" +
+	"\x10UpdateChangelist\x12$.bytebase.v1.UpdateChangelistRequest\x1a\x17.bytebase.v1.Changelist\"\x91\x01\xdaA\x16changelist,update_mask\x8a\xea0\x15bb.changelists.update\x90\xea0\x01\xa2\xea0\x15bb.changelists.create\x82\xd3\xe4\x93\x02<:\n" +
 	"changelist2./v1/{changelist.name=projects/*/changelists/*}\x12\xa1\x01\n" +
 	"\x10DeleteChangelist\x12$.bytebase.v1.DeleteChangelistRequest\x1a\x16.google.protobuf.Empty\"O\xdaA\x04name\x8a\xea0\x15bb.changelists.delete\x90\xea0\x01\x82\xd3\xe4\x93\x02%*#/v1/{name=projects/*/changelists/*}B6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
 

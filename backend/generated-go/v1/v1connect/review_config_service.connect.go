@@ -64,6 +64,7 @@ type ReviewConfigServiceClient interface {
 	GetReviewConfig(context.Context, *connect.Request[v1.GetReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error)
 	// Updates a SQL review configuration.
 	// Permissions required: bb.reviewConfigs.update
+	// When allow_missing=true, also requires: bb.reviewConfigs.create
 	UpdateReviewConfig(context.Context, *connect.Request[v1.UpdateReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error)
 	// Deletes a SQL review configuration.
 	// Permissions required: bb.reviewConfigs.delete
@@ -161,6 +162,7 @@ type ReviewConfigServiceHandler interface {
 	GetReviewConfig(context.Context, *connect.Request[v1.GetReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error)
 	// Updates a SQL review configuration.
 	// Permissions required: bb.reviewConfigs.update
+	// When allow_missing=true, also requires: bb.reviewConfigs.create
 	UpdateReviewConfig(context.Context, *connect.Request[v1.UpdateReviewConfigRequest]) (*connect.Response[v1.ReviewConfig], error)
 	// Deletes a SQL review configuration.
 	// Permissions required: bb.reviewConfigs.delete

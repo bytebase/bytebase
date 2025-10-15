@@ -59,6 +59,7 @@ type RiskServiceClient interface {
 	GetRisk(context.Context, *connect.Request[v1.GetRiskRequest]) (*connect.Response[v1.Risk], error)
 	// Updates an existing risk assessment rule.
 	// Permissions required: bb.risks.update
+	// When allow_missing=true, also requires: bb.risks.create
 	UpdateRisk(context.Context, *connect.Request[v1.UpdateRiskRequest]) (*connect.Response[v1.Risk], error)
 	// Deletes a risk assessment rule.
 	// Permissions required: bb.risks.delete
@@ -156,6 +157,7 @@ type RiskServiceHandler interface {
 	GetRisk(context.Context, *connect.Request[v1.GetRiskRequest]) (*connect.Response[v1.Risk], error)
 	// Updates an existing risk assessment rule.
 	// Permissions required: bb.risks.update
+	// When allow_missing=true, also requires: bb.risks.create
 	UpdateRisk(context.Context, *connect.Request[v1.UpdateRiskRequest]) (*connect.Response[v1.Risk], error)
 	// Deletes a risk assessment rule.
 	// Permissions required: bb.risks.delete

@@ -358,6 +358,7 @@ export declare const RiskService: GenService<{
   /**
    * Updates an existing risk assessment rule.
    * Permissions required: bb.risks.update
+   * When allow_missing=true, also requires: bb.risks.create
    *
    * @generated from rpc bytebase.v1.RiskService.UpdateRisk
    */

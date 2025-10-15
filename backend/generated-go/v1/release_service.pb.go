@@ -1253,15 +1253,15 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\tVCSSource\x12/\n" +
 	"\bvcs_type\x18\x01 \x01(\x0e2\x14.bytebase.v1.VCSTypeR\avcsType\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03url:@\xeaA=\n" +
-	"\x14bytebase.com/Release\x12%projects/{project}/releases/{release}2\xa2\n" +
+	"\x14bytebase.com/Release\x12%projects/{project}/releases/{release}2\xb8\n" +
 	"\n" +
 	"\x0eReleaseService\x12\x8a\x01\n" +
 	"\n" +
 	"GetRelease\x12\x1e.bytebase.v1.GetReleaseRequest\x1a\x14.bytebase.v1.Release\"F\xdaA\x04name\x8a\xea0\x0fbb.releases.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\"\x12 /v1/{name=projects/*/releases/*}\x12\x9e\x01\n" +
 	"\fListReleases\x12 .bytebase.v1.ListReleasesRequest\x1a!.bytebase.v1.ListReleasesResponse\"I\xdaA\x06parent\x8a\xea0\x10bb.releases.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\"\x12 /v1/{parent=projects/*}/releases\x12\xaa\x01\n" +
 	"\x0eSearchReleases\x12\".bytebase.v1.SearchReleasesRequest\x1a#.bytebase.v1.SearchReleasesResponse\"O\xdaA\x06parent\x8a\xea0\x0fbb.releases.get\x90\xea0\x01\x82\xd3\xe4\x93\x02)\x12'/v1/{parent=projects/*}/releases:search\x12\xa6\x01\n" +
-	"\rCreateRelease\x12!.bytebase.v1.CreateReleaseRequest\x1a\x14.bytebase.v1.Release\"\\\xdaA\x0eparent,release\x8a\xea0\x12bb.releases.create\x90\xea0\x01\x82\xd3\xe4\x93\x02+:\arelease\" /v1/{parent=projects/*}/releases\x12\xb3\x01\n" +
-	"\rUpdateRelease\x12!.bytebase.v1.UpdateReleaseRequest\x1a\x14.bytebase.v1.Release\"i\xdaA\x13release,update_mask\x8a\xea0\x12bb.releases.update\x90\xea0\x01\x82\xd3\xe4\x93\x023:\arelease2(/v1/{release.name=projects/*/releases/*}\x12\x95\x01\n" +
+	"\rCreateRelease\x12!.bytebase.v1.CreateReleaseRequest\x1a\x14.bytebase.v1.Release\"\\\xdaA\x0eparent,release\x8a\xea0\x12bb.releases.create\x90\xea0\x01\x82\xd3\xe4\x93\x02+:\arelease\" /v1/{parent=projects/*}/releases\x12\xc9\x01\n" +
+	"\rUpdateRelease\x12!.bytebase.v1.UpdateReleaseRequest\x1a\x14.bytebase.v1.Release\"\x7f\xdaA\x13release,update_mask\x8a\xea0\x12bb.releases.update\x90\xea0\x01\xa2\xea0\x12bb.releases.create\x82\xd3\xe4\x93\x023:\arelease2(/v1/{release.name=projects/*/releases/*}\x12\x95\x01\n" +
 	"\rDeleteRelease\x12!.bytebase.v1.DeleteReleaseRequest\x1a\x16.google.protobuf.Empty\"I\xdaA\x04name\x8a\xea0\x12bb.releases.delete\x90\xea0\x01\x82\xd3\xe4\x93\x02\"* /v1/{name=projects/*/releases/*}\x12\x9b\x01\n" +
 	"\x0fUndeleteRelease\x12#.bytebase.v1.UndeleteReleaseRequest\x1a\x14.bytebase.v1.Release\"M\x8a\xea0\x14bb.releases.undelete\x90\xea0\x01\x82\xd3\xe4\x93\x02+\")/v1/{name=projects/*/releases/*}:undelete\x12\x9f\x01\n" +
 	"\fCheckRelease\x12 .bytebase.v1.CheckReleaseRequest\x1a!.bytebase.v1.CheckReleaseResponse\"J\x8a\xea0\x11bb.releases.check\x90\xea0\x01\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{parent=projects/*}/releases:checkB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"

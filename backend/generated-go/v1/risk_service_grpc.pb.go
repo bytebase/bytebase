@@ -44,6 +44,7 @@ type RiskServiceClient interface {
 	GetRisk(ctx context.Context, in *GetRiskRequest, opts ...grpc.CallOption) (*Risk, error)
 	// Updates an existing risk assessment rule.
 	// Permissions required: bb.risks.update
+	// When allow_missing=true, also requires: bb.risks.create
 	UpdateRisk(ctx context.Context, in *UpdateRiskRequest, opts ...grpc.CallOption) (*Risk, error)
 	// Deletes a risk assessment rule.
 	// Permissions required: bb.risks.delete
@@ -125,6 +126,7 @@ type RiskServiceServer interface {
 	GetRisk(context.Context, *GetRiskRequest) (*Risk, error)
 	// Updates an existing risk assessment rule.
 	// Permissions required: bb.risks.update
+	// When allow_missing=true, also requires: bb.risks.create
 	UpdateRisk(context.Context, *UpdateRiskRequest) (*Risk, error)
 	// Deletes a risk assessment rule.
 	// Permissions required: bb.risks.delete

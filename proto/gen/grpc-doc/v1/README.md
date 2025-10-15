@@ -10,6 +10,7 @@
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
+    - [File-level Extensions](#v1_annotation-proto-extensions)
   
 - [v1/common.proto](#v1_common-proto)
     - [Position](#bytebase-v1-Position)
@@ -740,6 +741,7 @@ Authorization method for RPC calls.
 ### File-level Extensions
 | Extension | Type | Base | Number | Description |
 | --------- | ---- | ---- | ------ | ----------- |
+| allow_missing_requires | string | .google.protobuf.MethodOptions | 100004 | When a method supports allow_missing and may create resources, this specifies the additional permission required when allow_missing=true. Example: UpdateRole with allow_missing requires both bb.roles.update (from permission) and bb.roles.create (from allow_missing_requires). |
 | allow_without_credential | bool | .google.protobuf.MethodOptions | 100000 | Whether the method allows access without authentication credentials. |
 | audit | bool | .google.protobuf.MethodOptions | 100003 | Whether to audit calls to this method. |
 | auth_method | AuthMethod | .google.protobuf.MethodOptions | 100002 | The authorization method to use for this RPC. |
@@ -5921,7 +5923,7 @@ ChangelistService manages changelists for grouping and organizing database chang
 | CreateChangelist | [CreateChangelistRequest](#bytebase-v1-CreateChangelistRequest) | [Changelist](#bytebase-v1-Changelist) | Creates a new changelist in a project. Permissions required: bb.changelists.create |
 | GetChangelist | [GetChangelistRequest](#bytebase-v1-GetChangelistRequest) | [Changelist](#bytebase-v1-Changelist) | Gets a changelist by name. Permissions required: bb.changelists.get |
 | ListChangelists | [ListChangelistsRequest](#bytebase-v1-ListChangelistsRequest) | [ListChangelistsResponse](#bytebase-v1-ListChangelistsResponse) | Lists changelists in a project. Permissions required: bb.changelists.list |
-| UpdateChangelist | [UpdateChangelistRequest](#bytebase-v1-UpdateChangelistRequest) | [Changelist](#bytebase-v1-Changelist) | Updates a changelist. Permissions required: bb.changelists.update |
+| UpdateChangelist | [UpdateChangelistRequest](#bytebase-v1-UpdateChangelistRequest) | [Changelist](#bytebase-v1-Changelist) | Updates a changelist. Permissions required: bb.changelists.update When allow_missing=true, also requires: bb.changelists.create |
 | DeleteChangelist | [DeleteChangelistRequest](#bytebase-v1-DeleteChangelistRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a changelist. Permissions required: bb.changelists.delete |
 
  
@@ -6107,7 +6109,7 @@ DatabaseGroupService manages database groups for organizing databases by criteri
 | ListDatabaseGroups | [ListDatabaseGroupsRequest](#bytebase-v1-ListDatabaseGroupsRequest) | [ListDatabaseGroupsResponse](#bytebase-v1-ListDatabaseGroupsResponse) | Lists database groups in a project. Permissions required: bb.projects.get |
 | GetDatabaseGroup | [GetDatabaseGroupRequest](#bytebase-v1-GetDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Gets a database group by name. Permissions required: bb.projects.get |
 | CreateDatabaseGroup | [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Creates a new database group. Permissions required: bb.projects.update |
-| UpdateDatabaseGroup | [UpdateDatabaseGroupRequest](#bytebase-v1-UpdateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Updates a database group. Permissions required: bb.projects.update |
+| UpdateDatabaseGroup | [UpdateDatabaseGroupRequest](#bytebase-v1-UpdateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Updates a database group. Permissions required: bb.projects.update When allow_missing=true, also requires: bb.projects.update |
 | DeleteDatabaseGroup | [DeleteDatabaseGroupRequest](#bytebase-v1-DeleteDatabaseGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a database group. Permissions required: bb.projects.update |
 
  
@@ -6322,7 +6324,7 @@ GroupService manages user groups for organizing users and permissions.
 | BatchGetGroups | [BatchGetGroupsRequest](#bytebase-v1-BatchGetGroupsRequest) | [BatchGetGroupsResponse](#bytebase-v1-BatchGetGroupsResponse) | Gets multiple groups in a single request. Permissions required: bb.groups.get |
 | ListGroups | [ListGroupsRequest](#bytebase-v1-ListGroupsRequest) | [ListGroupsResponse](#bytebase-v1-ListGroupsResponse) | Lists all groups in the workspace. Permissions required: bb.groups.list |
 | CreateGroup | [CreateGroupRequest](#bytebase-v1-CreateGroupRequest) | [Group](#bytebase-v1-Group) | Creates a new group. Permissions required: bb.groups.create |
-| UpdateGroup | [UpdateGroupRequest](#bytebase-v1-UpdateGroupRequest) | [Group](#bytebase-v1-Group) | Updates a group. Group owners or users with bb.groups.update permission can update. Permissions required: bb.groups.update OR caller is group owner |
+| UpdateGroup | [UpdateGroupRequest](#bytebase-v1-UpdateGroupRequest) | [Group](#bytebase-v1-Group) | Updates a group. Group owners or users with bb.groups.update permission can update. Permissions required: bb.groups.update OR caller is group owner When allow_missing=true, also requires: bb.groups.create |
 | DeleteGroup | [DeleteGroupRequest](#bytebase-v1-DeleteGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a group. Group owners or users with bb.groups.delete permission can delete. Permissions required: bb.groups.delete OR caller is group owner |
 
  
@@ -6697,7 +6699,7 @@ IdentityProviderService manages external identity providers for SSO authenticati
 | GetIdentityProvider | [GetIdentityProviderRequest](#bytebase-v1-GetIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Gets an identity provider by name. Permissions required: bb.identityProviders.get |
 | ListIdentityProviders | [ListIdentityProvidersRequest](#bytebase-v1-ListIdentityProvidersRequest) | [ListIdentityProvidersResponse](#bytebase-v1-ListIdentityProvidersResponse) | Lists all configured identity providers (public endpoint for login page). Permissions required: None |
 | CreateIdentityProvider | [CreateIdentityProviderRequest](#bytebase-v1-CreateIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Creates a new identity provider. Permissions required: bb.identityProviders.create |
-| UpdateIdentityProvider | [UpdateIdentityProviderRequest](#bytebase-v1-UpdateIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Updates an identity provider. Permissions required: bb.identityProviders.update |
+| UpdateIdentityProvider | [UpdateIdentityProviderRequest](#bytebase-v1-UpdateIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Updates an identity provider. Permissions required: bb.identityProviders.update When allow_missing=true, also requires: bb.identityProviders.create |
 | DeleteIdentityProvider | [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an identity provider. Permissions required: bb.identityProviders.delete |
 | TestIdentityProvider | [TestIdentityProviderRequest](#bytebase-v1-TestIdentityProviderRequest) | [TestIdentityProviderResponse](#bytebase-v1-TestIdentityProviderResponse) | Tests the connection and configuration of an identity provider. Permissions required: bb.identityProviders.update |
 
@@ -9181,7 +9183,7 @@ ReleaseService manages releases for coordinating deployments.
 | ListReleases | [ListReleasesRequest](#bytebase-v1-ListReleasesRequest) | [ListReleasesResponse](#bytebase-v1-ListReleasesResponse) | Lists releases in a project. Permissions required: bb.releases.list |
 | SearchReleases | [SearchReleasesRequest](#bytebase-v1-SearchReleasesRequest) | [SearchReleasesResponse](#bytebase-v1-SearchReleasesResponse) | Searches releases by digest or other criteria. Permissions required: bb.releases.get |
 | CreateRelease | [CreateReleaseRequest](#bytebase-v1-CreateReleaseRequest) | [Release](#bytebase-v1-Release) | Creates a new release with SQL files. Permissions required: bb.releases.create |
-| UpdateRelease | [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest) | [Release](#bytebase-v1-Release) | Updates an existing release. Permissions required: bb.releases.update |
+| UpdateRelease | [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest) | [Release](#bytebase-v1-Release) | Updates an existing release. Permissions required: bb.releases.update When allow_missing=true, also requires: bb.releases.create |
 | DeleteRelease | [DeleteReleaseRequest](#bytebase-v1-DeleteReleaseRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a release. Permissions required: bb.releases.delete |
 | UndeleteRelease | [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest) | [Release](#bytebase-v1-Release) | Restores a deleted release. Permissions required: bb.releases.undelete |
 | CheckRelease | [CheckReleaseRequest](#bytebase-v1-CheckReleaseRequest) | [CheckReleaseResponse](#bytebase-v1-CheckReleaseResponse) | Validates a release by dry-running checks on target databases. Permissions required: bb.releases.check |
@@ -9330,7 +9332,7 @@ ReviewConfigService manages approval flow configurations.
 | CreateReviewConfig | [CreateReviewConfigRequest](#bytebase-v1-CreateReviewConfigRequest) | [ReviewConfig](#bytebase-v1-ReviewConfig) | Creates a new SQL review configuration. Permissions required: bb.reviewConfigs.create |
 | ListReviewConfigs | [ListReviewConfigsRequest](#bytebase-v1-ListReviewConfigsRequest) | [ListReviewConfigsResponse](#bytebase-v1-ListReviewConfigsResponse) | Lists all SQL review configurations. Permissions required: bb.reviewConfigs.list |
 | GetReviewConfig | [GetReviewConfigRequest](#bytebase-v1-GetReviewConfigRequest) | [ReviewConfig](#bytebase-v1-ReviewConfig) | Retrieves a SQL review configuration by name. Permissions required: bb.reviewConfigs.get |
-| UpdateReviewConfig | [UpdateReviewConfigRequest](#bytebase-v1-UpdateReviewConfigRequest) | [ReviewConfig](#bytebase-v1-ReviewConfig) | Updates a SQL review configuration. Permissions required: bb.reviewConfigs.update |
+| UpdateReviewConfig | [UpdateReviewConfigRequest](#bytebase-v1-UpdateReviewConfigRequest) | [ReviewConfig](#bytebase-v1-ReviewConfig) | Updates a SQL review configuration. Permissions required: bb.reviewConfigs.update When allow_missing=true, also requires: bb.reviewConfigs.create |
 | DeleteReviewConfig | [DeleteReviewConfigRequest](#bytebase-v1-DeleteReviewConfigRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a SQL review configuration. Permissions required: bb.reviewConfigs.delete |
 
  
@@ -9688,7 +9690,7 @@ RiskService manages risk assessment rules for database changes.
 | ListRisks | [ListRisksRequest](#bytebase-v1-ListRisksRequest) | [ListRisksResponse](#bytebase-v1-ListRisksResponse) | Lists all risk assessment rules. Permissions required: bb.risks.list |
 | CreateRisk | [CreateRiskRequest](#bytebase-v1-CreateRiskRequest) | [Risk](#bytebase-v1-Risk) | Creates a new risk assessment rule. Permissions required: bb.risks.create |
 | GetRisk | [GetRiskRequest](#bytebase-v1-GetRiskRequest) | [Risk](#bytebase-v1-Risk) | Retrieves a risk assessment rule by name. Permissions required: bb.risks.list |
-| UpdateRisk | [UpdateRiskRequest](#bytebase-v1-UpdateRiskRequest) | [Risk](#bytebase-v1-Risk) | Updates an existing risk assessment rule. Permissions required: bb.risks.update |
+| UpdateRisk | [UpdateRiskRequest](#bytebase-v1-UpdateRiskRequest) | [Risk](#bytebase-v1-Risk) | Updates an existing risk assessment rule. Permissions required: bb.risks.update When allow_missing=true, also requires: bb.risks.create |
 | DeleteRisk | [DeleteRiskRequest](#bytebase-v1-DeleteRiskRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a risk assessment rule. Permissions required: bb.risks.delete |
 
  
@@ -9849,7 +9851,7 @@ RoleService manages workspace roles and permissions.
 | ListRoles | [ListRolesRequest](#bytebase-v1-ListRolesRequest) | [ListRolesResponse](#bytebase-v1-ListRolesResponse) | Lists roles in the workspace. Permissions required: bb.roles.list |
 | GetRole | [GetRoleRequest](#bytebase-v1-GetRoleRequest) | [Role](#bytebase-v1-Role) | Retrieves a role by name. Permissions required: bb.roles.get |
 | CreateRole | [CreateRoleRequest](#bytebase-v1-CreateRoleRequest) | [Role](#bytebase-v1-Role) | Creates a new custom role. Permissions required: bb.roles.create |
-| UpdateRole | [UpdateRoleRequest](#bytebase-v1-UpdateRoleRequest) | [Role](#bytebase-v1-Role) | Updates a role&#39;s properties. Permissions required: bb.roles.update |
+| UpdateRole | [UpdateRoleRequest](#bytebase-v1-UpdateRoleRequest) | [Role](#bytebase-v1-Role) | Updates a role&#39;s properties. Permissions required: bb.roles.update When allow_missing=true, also requires: bb.roles.create |
 | DeleteRole | [DeleteRoleRequest](#bytebase-v1-DeleteRoleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a custom role. Permissions required: bb.roles.delete |
 
  

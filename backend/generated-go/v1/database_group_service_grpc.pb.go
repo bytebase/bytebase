@@ -44,6 +44,7 @@ type DatabaseGroupServiceClient interface {
 	CreateDatabaseGroup(ctx context.Context, in *CreateDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
 	// Updates a database group.
 	// Permissions required: bb.projects.update
+	// When allow_missing=true, also requires: bb.projects.update
 	UpdateDatabaseGroup(ctx context.Context, in *UpdateDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
 	// Deletes a database group.
 	// Permissions required: bb.projects.update
@@ -125,6 +126,7 @@ type DatabaseGroupServiceServer interface {
 	CreateDatabaseGroup(context.Context, *CreateDatabaseGroupRequest) (*DatabaseGroup, error)
 	// Updates a database group.
 	// Permissions required: bb.projects.update
+	// When allow_missing=true, also requires: bb.projects.update
 	UpdateDatabaseGroup(context.Context, *UpdateDatabaseGroupRequest) (*DatabaseGroup, error)
 	// Deletes a database group.
 	// Permissions required: bb.projects.update

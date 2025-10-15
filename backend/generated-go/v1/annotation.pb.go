@@ -108,6 +108,14 @@ var file_v1_annotation_proto_extTypes = []protoimpl.ExtensionInfo{
 		Tag:           "varint,100003,opt,name=audit",
 		Filename:      "v1/annotation.proto",
 	},
+	{
+		ExtendedType:  (*descriptorpb.MethodOptions)(nil),
+		ExtensionType: (*string)(nil),
+		Field:         100004,
+		Name:          "bytebase.v1.allow_missing_requires",
+		Tag:           "bytes,100004,opt,name=allow_missing_requires",
+		Filename:      "v1/annotation.proto",
+	},
 }
 
 // Extension fields to descriptorpb.MethodOptions.
@@ -128,6 +136,13 @@ var (
 	//
 	// optional bool audit = 100003;
 	E_Audit = &file_v1_annotation_proto_extTypes[3]
+	// When a method supports allow_missing and may create resources,
+	// this specifies the additional permission required when allow_missing=true.
+	// Example: UpdateRole with allow_missing requires both bb.roles.update
+	// (from permission) and bb.roles.create (from allow_missing_requires).
+	//
+	// optional string allow_missing_requires = 100004;
+	E_AllowMissingRequires = &file_v1_annotation_proto_extTypes[4]
 )
 
 var File_v1_annotation_proto protoreflect.FileDescriptor
@@ -147,7 +162,8 @@ const file_v1_annotation_proto_rawDesc = "" +
 	"permission:Z\n" +
 	"\vauth_method\x12\x1e.google.protobuf.MethodOptions\x18\xa2\x8d\x06 \x01(\x0e2\x17.bytebase.v1.AuthMethodR\n" +
 	"authMethod:6\n" +
-	"\x05audit\x12\x1e.google.protobuf.MethodOptions\x18\xa3\x8d\x06 \x01(\bR\x05auditB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
+	"\x05audit\x12\x1e.google.protobuf.MethodOptions\x18\xa3\x8d\x06 \x01(\bR\x05audit:V\n" +
+	"\x16allow_missing_requires\x12\x1e.google.protobuf.MethodOptions\x18\xa4\x8d\x06 \x01(\tR\x14allowMissingRequiresB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
 
 var (
 	file_v1_annotation_proto_rawDescOnce sync.Once
@@ -171,11 +187,12 @@ var file_v1_annotation_proto_depIdxs = []int32{
 	1, // 1: bytebase.v1.permission:extendee -> google.protobuf.MethodOptions
 	1, // 2: bytebase.v1.auth_method:extendee -> google.protobuf.MethodOptions
 	1, // 3: bytebase.v1.audit:extendee -> google.protobuf.MethodOptions
-	0, // 4: bytebase.v1.auth_method:type_name -> bytebase.v1.AuthMethod
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	4, // [4:5] is the sub-list for extension type_name
-	0, // [0:4] is the sub-list for extension extendee
+	1, // 4: bytebase.v1.allow_missing_requires:extendee -> google.protobuf.MethodOptions
+	0, // 5: bytebase.v1.auth_method:type_name -> bytebase.v1.AuthMethod
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	5, // [5:6] is the sub-list for extension type_name
+	0, // [0:5] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
 }
 
@@ -191,7 +208,7 @@ func file_v1_annotation_proto_init() {
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_annotation_proto_rawDesc), len(file_v1_annotation_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   0,
-			NumExtensions: 4,
+			NumExtensions: 5,
 			NumServices:   0,
 		},
 		GoTypes:           file_v1_annotation_proto_goTypes,

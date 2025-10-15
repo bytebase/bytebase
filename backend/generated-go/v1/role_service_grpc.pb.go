@@ -44,6 +44,7 @@ type RoleServiceClient interface {
 	CreateRole(ctx context.Context, in *CreateRoleRequest, opts ...grpc.CallOption) (*Role, error)
 	// Updates a role's properties.
 	// Permissions required: bb.roles.update
+	// When allow_missing=true, also requires: bb.roles.create
 	UpdateRole(ctx context.Context, in *UpdateRoleRequest, opts ...grpc.CallOption) (*Role, error)
 	// Deletes a custom role.
 	// Permissions required: bb.roles.delete
@@ -125,6 +126,7 @@ type RoleServiceServer interface {
 	CreateRole(context.Context, *CreateRoleRequest) (*Role, error)
 	// Updates a role's properties.
 	// Permissions required: bb.roles.update
+	// When allow_missing=true, also requires: bb.roles.create
 	UpdateRole(context.Context, *UpdateRoleRequest) (*Role, error)
 	// Deletes a custom role.
 	// Permissions required: bb.roles.delete

@@ -48,6 +48,7 @@ type GroupServiceClient interface {
 	CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*Group, error)
 	// Updates a group. Group owners or users with bb.groups.update permission can update.
 	// Permissions required: bb.groups.update OR caller is group owner
+	// When allow_missing=true, also requires: bb.groups.create
 	UpdateGroup(ctx context.Context, in *UpdateGroupRequest, opts ...grpc.CallOption) (*Group, error)
 	// Deletes a group. Group owners or users with bb.groups.delete permission can delete.
 	// Permissions required: bb.groups.delete OR caller is group owner
@@ -142,6 +143,7 @@ type GroupServiceServer interface {
 	CreateGroup(context.Context, *CreateGroupRequest) (*Group, error)
 	// Updates a group. Group owners or users with bb.groups.update permission can update.
 	// Permissions required: bb.groups.update OR caller is group owner
+	// When allow_missing=true, also requires: bb.groups.create
 	UpdateGroup(context.Context, *UpdateGroupRequest) (*Group, error)
 	// Deletes a group. Group owners or users with bb.groups.delete permission can delete.
 	// Permissions required: bb.groups.delete OR caller is group owner

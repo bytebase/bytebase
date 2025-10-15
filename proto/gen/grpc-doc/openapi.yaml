@@ -704,6 +704,7 @@ paths:
             description: |-
                 Updates a group. Group owners or users with bb.groups.update permission can update.
                  Permissions required: bb.groups.update OR caller is group owner
+                 When allow_missing=true, also requires: bb.groups.create
             operationId: GroupService_UpdateGroup
             parameters:
                 - name: group
@@ -946,6 +947,7 @@ paths:
             description: |-
                 Updates an identity provider.
                  Permissions required: bb.identityProviders.update
+                 When allow_missing=true, also requires: bb.identityProviders.create
             operationId: IdentityProviderService_UpdateIdentityProvider
             parameters:
                 - name: idp
@@ -3864,6 +3866,7 @@ paths:
             description: |-
                 Updates a changelist.
                  Permissions required: bb.changelists.update
+                 When allow_missing=true, also requires: bb.changelists.create
             operationId: ChangelistService_UpdateChangelist
             parameters:
                 - name: project
@@ -4098,6 +4101,7 @@ paths:
             description: |-
                 Updates a database group.
                  Permissions required: bb.projects.update
+                 When allow_missing=true, also requires: bb.projects.update
             operationId: DatabaseGroupService_UpdateDatabaseGroup
             parameters:
                 - name: project
@@ -5553,6 +5557,7 @@ paths:
             description: |-
                 Updates an existing release.
                  Permissions required: bb.releases.update
+                 When allow_missing=true, also requires: bb.releases.create
             operationId: ReleaseService_UpdateRelease
             parameters:
                 - name: project
@@ -7040,6 +7045,7 @@ paths:
             description: |-
                 Updates a SQL review configuration.
                  Permissions required: bb.reviewConfigs.update
+                 When allow_missing=true, also requires: bb.reviewConfigs.create
             operationId: ReviewConfigService_UpdateReviewConfig
             parameters:
                 - name: reviewConfig
@@ -7208,6 +7214,7 @@ paths:
             description: |-
                 Updates an existing risk assessment rule.
                  Permissions required: bb.risks.update
+                 When allow_missing=true, also requires: bb.risks.create
             operationId: RiskService_UpdateRisk
             parameters:
                 - name: risk
@@ -7387,6 +7394,7 @@ paths:
             description: |-
                 Updates a role's properties.
                  Permissions required: bb.roles.update
+                 When allow_missing=true, also requires: bb.roles.create
             operationId: RoleService_UpdateRole
             parameters:
                 - name: role

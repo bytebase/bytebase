@@ -252,6 +252,7 @@ export declare const ReviewConfigService: GenService<{
   /**
    * Updates a SQL review configuration.
    * Permissions required: bb.reviewConfigs.update
+   * When allow_missing=true, also requires: bb.reviewConfigs.create
    *
    * @generated from rpc bytebase.v1.ReviewConfigService.UpdateReviewConfig
    */

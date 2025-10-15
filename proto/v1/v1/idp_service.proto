@@ -47,6 +47,7 @@ service IdentityProviderService {
 
   // Updates an identity provider.
   // Permissions required: bb.identityProviders.update
+  // When allow_missing=true, also requires: bb.identityProviders.create
   rpc UpdateIdentityProvider(UpdateIdentityProviderRequest) returns (IdentityProvider) {
     option (google.api.http) = {
       patch: "/v1/{identity_provider.name=idps/*}"
@@ -54,6 +55,7 @@ service IdentityProviderService {
     };
     option (google.api.method_signature) = "identity_provider,update_mask";
     option (bytebase.v1.permission) = "bb.identityProviders.update";
+    option (bytebase.v1.allow_missing_requires) = "bb.identityProviders.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }

@@ -45,6 +45,7 @@ service RoleService {
 
   // Updates a role's properties.
   // Permissions required: bb.roles.update
+  // When allow_missing=true, also requires: bb.roles.create
   rpc UpdateRole(UpdateRoleRequest) returns (Role) {
     option (google.api.http) = {
       patch: "/v1/{role.name=roles/*}"
@@ -52,6 +53,7 @@ service RoleService {
     };
     option (google.api.method_signature) = "role,update_mask";
     option (bytebase.v1.permission) = "bb.roles.update";
+    option (bytebase.v1.allow_missing_requires) = "bb.roles.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }

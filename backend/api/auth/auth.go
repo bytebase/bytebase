@@ -369,3 +369,36 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 		Audit:                  audit,
 	}, nil
 }
+
+// GetAllowMissingRequiredPermission extracts the allow_missing_requires annotation
+// from the proto method descriptor. Returns empty string if not set.
+func GetAllowMissingRequiredPermission(fullMethod string) (string, error) {
+	methodTokens := strings.Split(fullMethod, "/")
+	if len(methodTokens) != 3 {
+		return "", errs.Errorf("invalid full method name %q", fullMethod)
+	}
+	rd, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(methodTokens[1]))
+	if err != nil {
+		return "", errs.Wrapf(err, "invalid registry service descriptor, full method name %q", fullMethod)
+	}
+	sd, ok := rd.(protoreflect.ServiceDescriptor)
+	if !ok {
+		return "", errs.Errorf("invalid service descriptor, full method name %q", fullMethod)
+	}
+	md := sd.Methods().ByName(protoreflect.Name(methodTokens[2]))
+	if md == nil {
+		return "", errs.Errorf("method not found, full method name %q", fullMethod)
+	}
+
+	// Extract allow_missing_requires annotation
+	if proto.HasExtension(md.Options(), v1pb.E_AllowMissingRequires) {
+		permissionAny := proto.GetExtension(md.Options(), v1pb.E_AllowMissingRequires)
+		permission, ok := permissionAny.(string)
+		if !ok {
+			return "", errs.Errorf("invalid allow_missing_requires extension, full method name %q", fullMethod)
+		}
+		return permission, nil
+	}
+
+	return "", nil
+}

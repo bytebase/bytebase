@@ -1421,13 +1421,13 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\x0fOAuth2AuthStyle\x12!\n" +
 	"\x1dOAUTH2_AUTH_STYLE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tIN_PARAMS\x10\x01\x12\r\n" +
-	"\tIN_HEADER\x10\x022\xbd\b\n" +
+	"\tIN_HEADER\x10\x022\xdc\b\n" +
 	"\x17IdentityProviderService\x12\x9f\x01\n" +
 	"\x13GetIdentityProvider\x12'.bytebase.v1.GetIdentityProviderRequest\x1a\x1d.bytebase.v1.IdentityProvider\"@\xdaA\x04name\x8a\xea0\x18bb.identityProviders.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/{name=idps/*}\x12\x87\x01\n" +
 	"\x15ListIdentityProviders\x12).bytebase.v1.ListIdentityProvidersRequest\x1a*.bytebase.v1.ListIdentityProvidersResponse\"\x17\xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02\n" +
 	"\x12\b/v1/idps\x12\xb2\x01\n" +
-	"\x16CreateIdentityProvider\x12*.bytebase.v1.CreateIdentityProviderRequest\x1a\x1d.bytebase.v1.IdentityProvider\"M\xdaA\x00\x8a\xea0\x1bbb.identityProviders.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1d:\x11identity_provider\"\b/v1/idps\x12\xeb\x01\n" +
-	"\x16UpdateIdentityProvider\x12*.bytebase.v1.UpdateIdentityProviderRequest\x1a\x1d.bytebase.v1.IdentityProvider\"\x85\x01\xdaA\x1didentity_provider,update_mask\x8a\xea0\x1bbb.identityProviders.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x028:\x11identity_provider2#/v1/{identity_provider.name=idps/*}\x12\xa5\x01\n" +
+	"\x16CreateIdentityProvider\x12*.bytebase.v1.CreateIdentityProviderRequest\x1a\x1d.bytebase.v1.IdentityProvider\"M\xdaA\x00\x8a\xea0\x1bbb.identityProviders.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1d:\x11identity_provider\"\b/v1/idps\x12\x8a\x02\n" +
+	"\x16UpdateIdentityProvider\x12*.bytebase.v1.UpdateIdentityProviderRequest\x1a\x1d.bytebase.v1.IdentityProvider\"\xa4\x01\xdaA\x1didentity_provider,update_mask\x8a\xea0\x1bbb.identityProviders.update\x90\xea0\x01\x98\xea0\x01\xa2\xea0\x1bbb.identityProviders.create\x82\xd3\xe4\x93\x028:\x11identity_provider2#/v1/{identity_provider.name=idps/*}\x12\xa5\x01\n" +
 	"\x16DeleteIdentityProvider\x12*.bytebase.v1.DeleteIdentityProviderRequest\x1a\x16.google.protobuf.Empty\"G\xdaA\x04name\x8a\xea0\x1bbb.identityProviders.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x13*\x11/v1/{name=idps/*}\x12\xaa\x01\n" +
 	"\x14TestIdentityProvider\x12(.bytebase.v1.TestIdentityProviderRequest\x1a).bytebase.v1.TestIdentityProviderResponse\"=\x8a\xea0\x1bbb.identityProviders.update\x90\xea0\x01\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/idps/*:testB6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
 

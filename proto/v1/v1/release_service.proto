@@ -58,6 +58,7 @@ service ReleaseService {
 
   // Updates an existing release.
   // Permissions required: bb.releases.update
+  // When allow_missing=true, also requires: bb.releases.create
   rpc UpdateRelease(UpdateReleaseRequest) returns (Release) {
     option (google.api.http) = {
       patch: "/v1/{release.name=projects/*/releases/*}"
@@ -65,6 +66,7 @@ service ReleaseService {
     };
     option (google.api.method_signature) = "release,update_mask";
     option (bytebase.v1.permission) = "bb.releases.update";
+    option (bytebase.v1.allow_missing_requires) = "bb.releases.create";
     option (bytebase.v1.auth_method) = IAM;
   }
 
