@@ -39,8 +39,8 @@ const isDateDisabled = (ts: number) => {
 };
 
 const handleUpdate = (values: [number, number] | null) => {
-  const from = values ? dayjs(values[0]).startOf("day") : null;
-  const to = values ? dayjs(values[1]).endOf("day") : null;
+  const from = values ? dayjs(values[0]) : null;
+  const to = values ? dayjs(values[1]) : null;
   const updated = upsertScope({
     params: props.params,
     scopes: {
