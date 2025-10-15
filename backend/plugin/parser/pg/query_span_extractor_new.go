@@ -1876,7 +1876,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromUDF2(funcExpr pgparser.IF
 	return result, nil
 }
 
-func (q *querySpanExtractor) extractFunctionElementFromFuncExpr(funcExpr pgparser.IFunc_exprContext) (string, string, []antlr.ParseTree, error) {
+func (*querySpanExtractor) extractFunctionElementFromFuncExpr(funcExpr pgparser.IFunc_exprContext) (string, string, []antlr.ParseTree, error) {
 	args := getArgumentsFromFunctionExpr(funcExpr)
 	switch {
 	case funcExpr.Func_application() != nil:
@@ -1901,11 +1901,12 @@ func (q *querySpanExtractor) extractFunctionElementFromFuncExpr(funcExpr pgparse
 		if funcExpr.Func_expr_common_subexpr().GetStart() != nil {
 			return "", strings.ToLower(funcExpr.Func_expr_common_subexpr().GetStart().GetText()), args, nil
 		}
+	default:
 	}
 	return "", "", nil, errors.New("unable to extract function name")
 }
 
-func (q *querySpanExtractor) extractFunctionElementFromFuncExprWindowless(funcExprWindowless pgparser.IFunc_expr_windowlessContext) (string, string, []antlr.ParseTree, error) {
+func (*querySpanExtractor) extractFunctionElementFromFuncExprWindowless(funcExprWindowless pgparser.IFunc_expr_windowlessContext) (string, string, []antlr.ParseTree, error) {
 	args := getArgumentsFromFunctionExprWindowless(funcExprWindowless)
 	switch {
 	case funcExprWindowless.Func_application() != nil:
@@ -1930,11 +1931,12 @@ func (q *querySpanExtractor) extractFunctionElementFromFuncExprWindowless(funcEx
 		if funcExprWindowless.Func_expr_common_subexpr().GetStart() != nil {
 			return "", strings.ToLower(funcExprWindowless.Func_expr_common_subexpr().GetStart().GetText()), args, nil
 		}
+	default:
 	}
 	return "", "", nil, errors.New("unable to extract function name")
 }
 
-func (q *querySpanExtractor) extractFunctionNameFromFuncExpr(funcExpr pgparser.IFunc_exprContext) (string, string, error) {
+func (*querySpanExtractor) extractFunctionNameFromFuncExpr(funcExpr pgparser.IFunc_exprContext) (string, string, error) {
 	switch {
 	case funcExpr.Func_application() != nil:
 		funcName := funcExpr.Func_application().Func_name()
@@ -1970,11 +1972,12 @@ func (q *querySpanExtractor) extractFunctionNameFromFuncExpr(funcExpr pgparser.I
 		if funcExpr.Func_expr_common_subexpr().GetStart() != nil {
 			return "", strings.ToLower(funcExpr.Func_expr_common_subexpr().GetStart().GetText()), nil
 		}
+	default:
 	}
 	return "", "", errors.New("unable to extract function name")
 }
 
-func (q *querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr pgparser.IFunc_exprContext) int {
+func (*querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr pgparser.IFunc_exprContext) int {
 	if funcExpr == nil {
 		return 0
 	}
@@ -2187,14 +2190,10 @@ func getArgumentsFromFunctionExpr(funcExpr pgparser.IFunc_exprContext) []antlr.P
 	if f := funcExpr.Func_expr_common_subexpr(); f != nil {
 		if f.COLLATION() != nil {
 			result = append(result, f.A_expr(0))
-		} else if f.CURRENT_DATE() != nil {
-			// No arguments
 		} else if f.CURRENT_TIME() != nil || f.CURRENT_TIMESTAMP() != nil || f.LOCALTIME() != nil || f.LOCALTIMESTAMP() != nil {
 			if f.Iconst() != nil {
 				result = append(result, f.Iconst())
 			}
-		} else if f.CURRENT_ROLE() != nil || f.CURRENT_USER() != nil || f.SESSION_USER() != nil || f.USER() != nil || f.CURRENT_CATALOG() != nil || f.CURRENT_SCHEMA() != nil {
-			// No arguments
 		} else if f.CAST() != nil || f.TREAT() != nil {
 			result = append(result, f.A_expr(0))
 		} else if f.EXTRACT() != nil {
@@ -2325,14 +2324,10 @@ func getArgumentsFromFunctionExprWindowless(funcExprWindowless pgparser.IFunc_ex
 	if f := funcExprWindowless.Func_expr_common_subexpr(); f != nil {
 		if f.COLLATION() != nil {
 			result = append(result, f.A_expr(0))
-		} else if f.CURRENT_DATE() != nil {
-			// No arguments
 		} else if f.CURRENT_TIME() != nil || f.CURRENT_TIMESTAMP() != nil || f.LOCALTIME() != nil || f.LOCALTIMESTAMP() != nil {
 			if f.Iconst() != nil {
 				result = append(result, f.Iconst())
 			}
-		} else if f.CURRENT_ROLE() != nil || f.CURRENT_USER() != nil || f.SESSION_USER() != nil || f.USER() != nil || f.CURRENT_CATALOG() != nil || f.CURRENT_SCHEMA() != nil {
-			// No arguments
 		} else if f.CAST() != nil || f.TREAT() != nil {
 			result = append(result, f.A_expr(0))
 		} else if f.EXTRACT() != nil {
