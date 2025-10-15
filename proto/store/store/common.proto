@@ -88,8 +88,6 @@ enum MigrationType {
   DML = 2;
   // Online schema migration using gh-ost tool.
   GHOST = 3;
-  // DDL changes using gh-ost tool (alternative naming).
-  DDL_GHOST = 4;
 }
 
 // SchemaChangeType represents the strategy for schema changes.

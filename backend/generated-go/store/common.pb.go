@@ -372,8 +372,6 @@ const (
 	MigrationType_DML MigrationType = 2
 	// Online schema migration using gh-ost tool.
 	MigrationType_GHOST MigrationType = 3
-	// DDL changes using gh-ost tool (alternative naming).
-	MigrationType_DDL_GHOST MigrationType = 4
 )
 
 // Enum value maps for MigrationType.
@@ -383,14 +381,12 @@ var (
 		1: "DDL",
 		2: "DML",
 		3: "GHOST",
-		4: "DDL_GHOST",
 	}
 	MigrationType_value = map[string]int32{
 		"MIGRATION_TYPE_UNSPECIFIED": 0,
 		"DDL":                        1,
 		"DML":                        2,
 		"GHOST":                      3,
-		"DDL_GHOST":                  4,
 	}
 )
 
@@ -707,13 +703,12 @@ const file_store_common_proto_rawDesc = "" +
 	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03LOW\x10\x01\x12\f\n" +
 	"\bMODERATE\x10\x02\x12\b\n" +
-	"\x04HIGH\x10\x03*[\n" +
+	"\x04HIGH\x10\x03*L\n" +
 	"\rMigrationType\x12\x1e\n" +
 	"\x1aMIGRATION_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03DDL\x10\x01\x12\a\n" +
 	"\x03DML\x10\x02\x12\t\n" +
-	"\x05GHOST\x10\x03\x12\r\n" +
-	"\tDDL_GHOST\x10\x04*V\n" +
+	"\x05GHOST\x10\x03*V\n" +
 	"\x10SchemaChangeType\x12\"\n" +
 	"\x1eSCHEMA_CHANGE_TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tVERSIONED\x10\x01\x12\x0f\n" +

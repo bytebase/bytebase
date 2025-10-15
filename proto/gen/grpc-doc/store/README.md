@@ -467,7 +467,6 @@ MigrationType represents the type of database migration.
 | DDL | 1 | DDL changes (Data Definition Language) for schema modifications. |
 | DML | 2 | DML changes (Data Manipulation Language) for data modifications. |
 | GHOST | 3 | Online schema migration using gh-ost tool. |
-| DDL_GHOST | 4 | DDL changes using gh-ost tool (alternative naming). |
 
 
 
