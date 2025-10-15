@@ -218,6 +218,11 @@ func getRDSConnectionPassword(ctx context.Context, conf db.ConnectionConfig) (st
 		return "", errors.Wrap(err, "load aws config failed")
 	}
 
+	// Handle cross-account role assumption if configured
+	if err := util.AssumeRoleIfNeeded(ctx, &cfg, conf.ConnectionContext, conf.DataSource.GetAwsCredential()); err != nil {
+		return "", err
+	}
+
 	dbEndpoint := fmt.Sprintf("%s:%s", conf.DataSource.Host, conf.DataSource.Port)
 	authenticationToken, err := auth.BuildAuthToken(
 		ctx, dbEndpoint, conf.DataSource.GetRegion(), conf.DataSource.Username, cfg.Credentials)

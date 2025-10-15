@@ -186,6 +186,11 @@ func (d *Driver) getRDSConnection(ctx context.Context, connCfg db.ConnectionConf
 		return "", errors.Wrap(err, "load aws config failed")
 	}
 
+	// Handle cross-account role assumption if configured
+	if err := util.AssumeRoleIfNeeded(ctx, &cfg, connCfg.ConnectionContext, connCfg.DataSource.GetAwsCredential()); err != nil {
+		return "", err
+	}
+
 	authenticationToken, err := auth.BuildAuthToken(
 		ctx, dbEndpoint, connCfg.DataSource.GetRegion(), connCfg.DataSource.Username, cfg.Credentials)
 	if err != nil {
