@@ -748,7 +748,7 @@ func exportJSON(result *v1pb.QueryResult) ([]byte, error) {
 		return nil, err
 	}
 
-	var data interface{}
+	var data any
 	err := json.Unmarshal(buf.Bytes(), &data)
 	if err != nil {
 		return nil, errors.Errorf("failed to unmarshalling JSON with error: %v", err)

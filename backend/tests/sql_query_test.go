@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 func TestSQLAdminQuery(t *testing.T) {
