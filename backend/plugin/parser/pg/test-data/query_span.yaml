@@ -2112,7 +2112,7 @@
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
-        - name: ?column?
+        - name: a
           sourcecolumns:
             - server: ""
               database: db
@@ -2127,7 +2127,7 @@
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
-        - name: ?column?
+        - name: b
           sourcecolumns:
             - server: ""
               database: db
