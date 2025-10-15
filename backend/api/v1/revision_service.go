@@ -166,6 +166,10 @@ func (s *RevisionService) CreateRevision(
 		}
 	}
 
+	if request.Revision.Type == v1pb.Revision_TYPE_UNSPECIFIED {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("revision.type cannot be TYPE_UNSPECIFIED"))
+	}
+
 	if (request.Revision.Release == "") != (request.Revision.File == "") {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("revision.release and revision.file must be set or unset"))
 	}
