@@ -47,6 +47,19 @@ func init() {
 	db.Register(storepb.Engine_OCEANBASE, newDriver)
 }
 
+// validateMySQLExtraConnectionParameters validates that no dangerous parameters are present.
+func validateMySQLExtraConnectionParameters(params map[string]string) error {
+	for key := range params {
+		// Normalize key to lowercase for case-insensitive comparison
+		normalizedKey := strings.ToLower(strings.TrimSpace(key))
+		if normalizedKey == "allowallfiles" {
+			// Disables file allowlist for LOAD DATA LOCAL INFILE and allows all files (might be insecure)
+			return errors.Errorf("connection parameter %q is not allowed for security reasons", key)
+		}
+	}
+	return nil
+}
+
 // Driver is the MySQL driver.
 type Driver struct {
 	dbType       storepb.Engine
@@ -106,6 +119,9 @@ func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error)
 	}
 
 	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
+	if err := validateMySQLExtraConnectionParameters(connCfg.DataSource.GetExtraConnectionParameters()); err != nil {
+		return "", err
+	}
 	for key, value := range connCfg.DataSource.GetExtraConnectionParameters() {
 		params = append(params, fmt.Sprintf("%s=%s", key, value))
 	}
