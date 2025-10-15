@@ -40,11 +40,100 @@ func (l *queryValidateListener) EnterSingleStatement(ctx *parser.SingleStatement
 		return
 	}
 
-	if ctx.Statement() == nil {
+	stmt := ctx.Statement()
+	if stmt == nil {
 		return
 	}
 
-	if ctx.Statement().QueryStatement() == nil {
-		l.valid = false
+	// Allow SELECT queries and SHOW statements
+	if stmt.QueryStatement() != nil {
+		return
 	}
+
+	// Check for SHOW statements
+	if stmt.ShowAlterStatement() != nil ||
+		stmt.ShowAnalyzeStatement() != nil ||
+		stmt.ShowAuthenticationStatement() != nil ||
+		stmt.ShowAuthorStatement() != nil ||
+		stmt.ShowBackendBlackListStatement() != nil ||
+		stmt.ShowBackendsStatement() != nil ||
+		stmt.ShowBackupStatement() != nil ||
+		stmt.ShowBaselinePlanStatement() != nil ||
+		stmt.ShowBrokerStatement() != nil ||
+		stmt.ShowCatalogsStatement() != nil ||
+		stmt.ShowCharsetStatement() != nil ||
+		stmt.ShowClustersStatement() != nil ||
+		stmt.ShowCollationStatement() != nil ||
+		stmt.ShowColumnStatement() != nil ||
+		stmt.ShowComputeNodesStatement() != nil ||
+		stmt.ShowCreateDbStatement() != nil ||
+		stmt.ShowCreateExternalCatalogStatement() != nil ||
+		stmt.ShowCreateGroupProviderStatement() != nil ||
+		stmt.ShowCreateRoutineLoadStatement() != nil ||
+		stmt.ShowCreateSecurityIntegrationStatement() != nil ||
+		stmt.ShowCreateTableStatement() != nil ||
+		stmt.ShowDataCacheRulesStatement() != nil ||
+		stmt.ShowDataDistributionStmt() != nil ||
+		stmt.ShowDataStmt() != nil ||
+		stmt.ShowDatabasesStatement() != nil ||
+		stmt.ShowDeleteStatement() != nil ||
+		stmt.ShowDictionaryStatement() != nil ||
+		stmt.ShowDynamicPartitionStatement() != nil ||
+		stmt.ShowEnginesStatement() != nil ||
+		stmt.ShowEventsStatement() != nil ||
+		stmt.ShowExportStatement() != nil ||
+		stmt.ShowFailPointStatement() != nil ||
+		stmt.ShowFrontendsStatement() != nil ||
+		stmt.ShowFunctionsStatement() != nil ||
+		stmt.ShowGrantsStatement() != nil ||
+		stmt.ShowGroupProvidersStatement() != nil ||
+		stmt.ShowHistogramMetaStatement() != nil ||
+		stmt.ShowIndexStatement() != nil ||
+		stmt.ShowLoadStatement() != nil ||
+		stmt.ShowLoadWarningsStatement() != nil ||
+		stmt.ShowMaterializedViewsStatement() != nil ||
+		stmt.ShowNodesStatement() != nil ||
+		stmt.ShowOpenTableStatement() != nil ||
+		stmt.ShowPartitionsStatement() != nil ||
+		stmt.ShowPipeStatement() != nil ||
+		stmt.ShowPlanAdvisorStatement() != nil ||
+		stmt.ShowPluginsStatement() != nil ||
+		stmt.ShowPrivilegesStatement() != nil ||
+		stmt.ShowProcStatement() != nil ||
+		stmt.ShowProcedureStatement() != nil ||
+		stmt.ShowProcesslistStatement() != nil ||
+		stmt.ShowProfilelistStatement() != nil ||
+		stmt.ShowRepositoriesStatement() != nil ||
+		stmt.ShowResourceGroupStatement() != nil ||
+		stmt.ShowResourceGroupUsageStatement() != nil ||
+		stmt.ShowResourceStatement() != nil ||
+		stmt.ShowRestoreStatement() != nil ||
+		stmt.ShowRolesStatement() != nil ||
+		stmt.ShowRoutineLoadStatement() != nil ||
+		stmt.ShowRoutineLoadTaskStatement() != nil ||
+		stmt.ShowRunningQueriesStatement() != nil ||
+		stmt.ShowSecurityIntegrationStatement() != nil ||
+		stmt.ShowSmallFilesStatement() != nil ||
+		stmt.ShowSnapshotStatement() != nil ||
+		stmt.ShowSqlBlackListStatement() != nil ||
+		stmt.ShowStatsMetaStatement() != nil ||
+		stmt.ShowStatusStatement() != nil ||
+		stmt.ShowStorageVolumesStatement() != nil ||
+		stmt.ShowStreamLoadStatement() != nil ||
+		stmt.ShowTableStatement() != nil ||
+		stmt.ShowTableStatusStatement() != nil ||
+		stmt.ShowTabletStatement() != nil ||
+		stmt.ShowTemporaryTablesStatement() != nil ||
+		stmt.ShowTransactionStatement() != nil ||
+		stmt.ShowTriggersStatement() != nil ||
+		stmt.ShowUserPropertyStatement() != nil ||
+		stmt.ShowUserStatement() != nil ||
+		stmt.ShowVariablesStatement() != nil ||
+		stmt.ShowWarehousesStatement() != nil ||
+		stmt.ShowWarningStatement() != nil ||
+		stmt.ShowWhiteListStatement() != nil {
+		return
+	}
+
+	l.valid = false
 }
