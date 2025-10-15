@@ -13,11 +13,7 @@
       <div class="flex flex-col gap-y-4">
         <!-- Steps indicator -->
         <NSteps :current="currentStep">
-          <NStep>
-            <template #title>
-              <span class="text-base lg:text-lg">{{ changeTypeTitle }}</span>
-            </template>
-          </NStep>
+          <NStep :title="changeTypeTitle" />
           <NStep :title="$t('plan.select-targets')" />
           <NStep
             v-if="shouldShowSchemaEditor"
