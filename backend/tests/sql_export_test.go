@@ -4,112 +4,143 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
 	"github.com/alexmullins/zip"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/testing/protocmp"
-	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 func TestSQLExport(t *testing.T) {
 	tests := []struct {
-		databaseName      string
-		dbType            storepb.Engine
-		prepareStatements string
-		query             string
-		password          string
-		reset             string
-		export            string
-		queryResult       []*v1pb.QueryResult
-		resetResult       []*v1pb.QueryResult
+		databaseName     string
+		dbType           storepb.Engine
+		prepareStatement string
+		exportTests      []struct {
+			format    v1pb.ExportFormat
+			statement string
+			password  string
+			results   []struct {
+				statement string
+				content   string
+			}
+		}
 	}{
 		{
-			databaseName:      "Test1",
-			dbType:            storepb.Engine_MYSQL,
-			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY, name VARCHAR(64), gender BIT(1), height BIT(8));",
-			query:             "INSERT INTO Test1.tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
-			reset:             "DELETE FROM tbl;",
-			export:            "SELECT * FROM Test1.tbl;",
-			password:          "123",
-			queryResult: []*v1pb.QueryResult{
+			databaseName: "Test1",
+			dbType:       storepb.Engine_MYSQL,
+			prepareStatement: `
+			CREATE TABLE tbl(id INT PRIMARY KEY, name VARCHAR(64), gender BIT(1), height BIT(8));
+			INSERT INTO Test1.tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');
+			`,
+			exportTests: []struct {
+				format    v1pb.ExportFormat
+				statement string
+				password  string
+				results   []struct {
+					statement string
+					content   string
+				}
+			}{
 				{
-					ColumnNames:     []string{"Affected Rows"},
-					ColumnTypeNames: []string{"INT"},
-					Rows: []*v1pb.QueryRow{
+					format:    v1pb.ExportFormat_JSON,
+					password:  "123",
+					statement: "SELECT * FROM Test1.tbl;",
+					results: []struct {
+						statement string
+						content   string
+					}{
 						{
-							Values: []*v1pb.RowValue{
-								{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}},
-							},
+							statement: "SELECT * FROM Test1.tbl;",
+							content: `[
+  {
+    "gender": "0b00000000",
+    "height": "0b01111111",
+    "id": 1,
+    "name": "Alice"
+  }
+]`,
 						},
 					},
-					Statement:   "INSERT INTO Test1.tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
-					RowsCount:   1,
-					AllowExport: true,
 				},
-			},
-			resetResult: []*v1pb.QueryResult{
 				{
-					ColumnNames:     []string{"Affected Rows"},
-					ColumnTypeNames: []string{"INT"},
-					Rows: []*v1pb.QueryRow{
+					format:    v1pb.ExportFormat_CSV,
+					statement: "SELECT * FROM Test1.tbl;",
+					results: []struct {
+						statement string
+						content   string
+					}{
 						{
-							Values: []*v1pb.RowValue{
-								{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}},
-							},
+							statement: "SELECT * FROM Test1.tbl;",
+							content:   "id,name,gender,height\n1,\"Alice\",\"\x00\",\"\x7f\"",
 						},
 					},
-					RowsCount:   1,
-					AllowExport: true,
 				},
 			},
 		},
 		{
-			databaseName:      "Test2",
-			dbType:            storepb.Engine_POSTGRES,
-			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY, name VARCHAR(64), gender BIT(1), height BIT(8));",
-			query:             "INSERT INTO tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
-			reset:             "DELETE FROM tbl;",
-			export:            "SELECT * FROM tbl;",
-			password:          "",
-			queryResult: []*v1pb.QueryResult{
+			databaseName:     "Test2",
+			dbType:           storepb.Engine_POSTGRES,
+			prepareStatement: "CREATE TABLE tbl(id INT PRIMARY KEY);",
+			exportTests: []struct {
+				format    v1pb.ExportFormat
+				statement string
+				password  string
+				results   []struct {
+					statement string
+					content   string
+				}
+			}{
 				{
-					ColumnNames:     []string{"Affected Rows"},
-					ColumnTypeNames: []string{"INT"},
-					Rows: []*v1pb.QueryRow{
+					format: v1pb.ExportFormat_JSON,
+					statement: `
+					SELECT 1;
+					SELECT 2;
+					`,
+					results: []struct {
+						statement string
+						content   string
+					}{
 						{
-							Values: []*v1pb.RowValue{
-								{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}},
-							},
+							statement: "SELECT 1;",
+							content: `[
+  {
+    "?column?": 1
+  }
+]`,
+						},
+						{
+							statement: "SELECT 2;",
+							content: `[
+  {
+    "?column?": 2
+  }
+]`,
 						},
 					},
-					RowsCount:   1,
-					AllowExport: true,
 				},
-			},
-			resetResult: []*v1pb.QueryResult{
 				{
-					ColumnNames:     []string{"Affected Rows"},
-					ColumnTypeNames: []string{"INT"},
-					Rows: []*v1pb.QueryRow{
+					format:    v1pb.ExportFormat_CSV,
+					statement: "SELECT 1;",
+					results: []struct {
+						statement string
+						content   string
+					}{
 						{
-							Values: []*v1pb.RowValue{
-								{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}},
-							},
+							statement: "SELECT 1;",
+							content:   "?column?\n1",
 						},
 					},
-					RowsCount:   1,
-					AllowExport: true,
 				},
 			},
 		},
-		// TODO(ed): test multiple queries.
 	}
 
 	t.Parallel()
@@ -173,6 +204,9 @@ func TestSQLExport(t *testing.T) {
 		err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, tt.databaseName, databaseOwner)
 		a.NoError(err)
 
+		instanceID, err := common.GetInstanceID(instance.Name)
+		a.NoError(err)
+
 		databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
 			Name: fmt.Sprintf("%s/databases/%s", instance.Name, tt.databaseName),
 		}))
@@ -183,7 +217,7 @@ func TestSQLExport(t *testing.T) {
 			Parent: ctl.project.Name,
 			Sheet: &v1pb.Sheet{
 				Title:   "prepareStatements",
-				Content: []byte(tt.prepareStatements),
+				Content: []byte(tt.prepareStatement),
 			},
 		}))
 		a.NoError(err)
@@ -196,44 +230,44 @@ func TestSQLExport(t *testing.T) {
 		err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.MigrationType_DDL)
 		a.NoError(err)
 
-		statement := tt.query
-		results, err := ctl.adminQuery(ctx, database, statement)
-		a.NoError(err)
-		checkResults(a, tt.databaseName, statement, tt.queryResult, results)
+		for _, exportTest := range tt.exportTests {
+			request := &v1pb.ExportRequest{
+				Name:         database.Name,
+				Format:       exportTest.format,
+				Statement:    exportTest.statement,
+				Password:     exportTest.password,
+				DataSourceId: dataSource.Id,
+			}
+			exportResp, err := ctl.sqlServiceClient.Export(ctx, connect.NewRequest(request))
+			a.NoError(err)
+			export := exportResp.Msg
 
-		request := &v1pb.ExportRequest{
-			Name:         database.Name,
-			Format:       v1pb.ExportFormat_SQL,
-			Limit:        1,
-			Statement:    tt.export,
-			Password:     tt.password,
-			DataSourceId: dataSource.Id,
+			reader := bytes.NewReader(export.Content)
+			zipReader, err := zip.NewReader(reader, int64(len(export.Content)))
+			a.NoError(err)
+
+			a.Equal(len(exportTest.results)*2, len(zipReader.File))
+
+			for i, compressedFile := range zipReader.File {
+				if exportTest.password != "" {
+					compressedFile.SetPassword(exportTest.password)
+				}
+
+				expectFilenamePrefix := fmt.Sprintf("%s/%s/statement-%d", instanceID, tt.databaseName, (i/2)+1)
+				a.True(strings.HasPrefix(compressedFile.Name, expectFilenamePrefix))
+				expectResult := exportTest.results[i/2]
+
+				file, err := compressedFile.Open()
+				a.NoError(err)
+				content, err := io.ReadAll(file)
+				a.NoError(err)
+				if compressedFile.Name == fmt.Sprintf("%s.sql", expectFilenamePrefix) {
+					a.Equal(strings.TrimSpace(expectResult.statement), strings.TrimSpace(string(content)))
+				} else {
+					a.Equal(fmt.Sprintf("%s.result.%s", expectFilenamePrefix, strings.ToLower(request.Format.String())), compressedFile.Name)
+					a.Equal(expectResult.content, string(content))
+				}
+			}
 		}
-		exportResp, err := ctl.sqlServiceClient.Export(ctx, connect.NewRequest(request))
-		a.NoError(err)
-		export := exportResp.Msg
-
-		statement = tt.reset
-		results, err = ctl.adminQuery(ctx, database, statement)
-		a.NoError(err)
-		checkResults(a, tt.databaseName, statement, tt.resetResult, results)
-
-		reader := bytes.NewReader(export.Content)
-		zipReader, err := zip.NewReader(reader, int64(len(export.Content)))
-		a.NoError(err)
-		a.Equal(len(tt.queryResult)*2, len(zipReader.File))
-
-		// TODO(ed): test file content.
-	}
-}
-
-func checkResults(a *require.Assertions, databaseName string, query string, affectedRows []*v1pb.QueryResult, results []*v1pb.QueryResult) {
-	a.Equal(len(affectedRows), len(results))
-	for idx, result := range results {
-		a.Equal("", result.Error, "database %s: %s", databaseName, query)
-		result.Latency = nil
-		affectedRows[idx].Statement = query
-		diff := cmp.Diff(affectedRows[idx], result, protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
-		a.Empty(diff, "database %s: %s", databaseName, query)
 	}
 }

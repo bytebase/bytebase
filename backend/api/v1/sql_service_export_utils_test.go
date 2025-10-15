@@ -263,7 +263,11 @@ func TestExportJSON(t *testing.T) {
 					},
 				},
 			},
-			want: "[{\"a\":\"0b00000101\"}]",
+			want: `[
+  {
+    "a": "0b00000101"
+  }
+]`,
 		},
 		{
 			result: &v1pb.QueryResult{
@@ -287,7 +291,14 @@ func TestExportJSON(t *testing.T) {
 					},
 				},
 			},
-			want: "[{\"id\":1,\"name\":\"Alice\",\"email\":\"a@bytebase.com\",\"age\":20}]",
+			want: `[
+  {
+    "age": 20,
+    "email": "a@bytebase.com",
+    "id": 1,
+    "name": "Alice"
+  }
+]`,
 		},
 	}
 
