@@ -63,7 +63,7 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 		return exec.runDDLMigration(ctx, driverCtx, task, taskRunUID)
 	case storepb.MigrationType_DML:
 		return exec.runDMLMigration(ctx, driverCtx, task, taskRunUID)
-	case storepb.MigrationType_GHOST:
+	case storepb.MigrationType_GHOST, storepb.MigrationType_DDL_GHOST:
 		return exec.runGhostMigration(ctx, driverCtx, task, taskRunUID)
 	case storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED:
 		// Execute SQL without backup, same as DDL
