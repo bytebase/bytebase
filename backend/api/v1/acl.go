@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"log/slog"
-	"reflect"
 	"regexp"
 	"strings"
 
@@ -85,40 +84,30 @@ func (c *aclStreamingConn) Receive(msg any) error {
 	return c.StreamingHandlerConn.Receive(msg)
 }
 
-// hasAllowMissingEnabled checks if the request has AllowMissing field set to true.
-// Uses reflection to handle different request types generically.
+// hasAllowMissingEnabled checks if the request has allow_missing field set to true.
+// Uses proto reflection to handle different request types generically.
 func hasAllowMissingEnabled(request any) bool {
 	if request == nil {
 		return false
 	}
 
-	v := reflect.ValueOf(request)
-
-	// Dereference pointer if needed
-	if v.Kind() == reflect.Ptr {
-		if v.IsNil() {
-			return false
-		}
-		v = v.Elem()
-	}
-
-	// Must be a struct to have fields
-	if v.Kind() != reflect.Struct {
+	pm, ok := request.(proto.Message)
+	if !ok {
 		return false
 	}
 
-	// Look for AllowMissing field
-	field := v.FieldByName("AllowMissing")
-	if !field.IsValid() {
+	mr := pm.ProtoReflect()
+	fd := mr.Descriptor().Fields().ByName("allow_missing")
+	if fd == nil {
 		return false
 	}
 
-	// Check if it's a bool and is true
-	if field.Kind() == reflect.Bool {
-		return field.Bool()
+	// Check if field is a bool and get its value
+	if fd.Kind() != protoreflect.BoolKind {
+		return false
 	}
 
-	return false
+	return mr.Get(fd).Bool()
 }
 
 func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMethod string) error {
