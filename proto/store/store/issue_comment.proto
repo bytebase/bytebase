@@ -2,6 +2,10 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "store/approval.proto";
+import "store/issue.proto";
+import "store/task_run.proto";
+
 option go_package = "generated-go/store";
 
 message IssueCommentPayload {
@@ -16,14 +20,7 @@ message IssueCommentPayload {
   }
 
   message Approval {
-    Status status = 1;
-
-    enum Status {
-      STATUS_UNSPECIFIED = 0;
-      PENDING = 1;
-      APPROVED = 2;
-      REJECTED = 3;
-    }
+    IssuePayloadApproval.Approver.Status status = 1;
   }
 
   message IssueUpdate {
@@ -31,17 +28,10 @@ message IssueCommentPayload {
     optional string to_title = 2;
     optional string from_description = 3;
     optional string to_description = 4;
-    optional IssueStatus from_status = 5;
-    optional IssueStatus to_status = 6;
+    optional Issue.Status from_status = 5;
+    optional Issue.Status to_status = 6;
     repeated string from_labels = 7;
     repeated string to_labels = 8;
-
-    enum IssueStatus {
-      ISSUE_STATUS_UNSPECIFIED = 0;
-      OPEN = 1;
-      DONE = 2;
-      CANCELED = 3;
-    }
   }
 
   message StageEnd {
@@ -54,17 +44,7 @@ message IssueCommentPayload {
     optional string from_sheet = 2;
     // Format: projects/{project}/sheets/{sheet}
     optional string to_sheet = 3;
-    optional Status to_status = 6;
-
-    enum Status {
-      STATUS_UNSPECIFIED = 0;
-      PENDING = 1;
-      RUNNING = 2;
-      DONE = 3;
-      FAILED = 4;
-      SKIPPED = 5;
-      CANCELED = 6;
-    }
+    optional TaskRun.Status to_status = 6;
   }
 
   message TaskPriorBackup {

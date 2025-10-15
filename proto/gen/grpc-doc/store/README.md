@@ -11,7 +11,9 @@
     - [Engine](#bytebase-store-Engine)
     - [ExportFormat](#bytebase-store-ExportFormat)
     - [MaskingLevel](#bytebase-store-MaskingLevel)
+    - [MigrationType](#bytebase-store-MigrationType)
     - [RiskLevel](#bytebase-store-RiskLevel)
+    - [SchemaChangeType](#bytebase-store-SchemaChangeType)
     - [VCSType](#bytebase-store-VCSType)
   
 - [store/advice.proto](#store_advice-proto)
@@ -47,7 +49,6 @@
     - [ChangedResources](#bytebase-store-ChangedResources)
     - [ChangelogPayload](#bytebase-store-ChangelogPayload)
   
-    - [ChangelogPayload.MigrationType](#bytebase-store-ChangelogPayload-MigrationType)
     - [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type)
   
 - [store/database.proto](#store_database-proto)
@@ -105,9 +106,6 @@
     - [TablePartitionMetadata.Type](#bytebase-store-TablePartitionMetadata-Type)
     - [TaskMetadata.State](#bytebase-store-TaskMetadata-State)
   
-- [store/db_group.proto](#store_db_group-proto)
-    - [DatabaseGroupPayload](#bytebase-store-DatabaseGroupPayload)
-  
 - [store/export_archive.proto](#store_export_archive-proto)
     - [ExportArchivePayload](#bytebase-store-ExportArchivePayload)
   
@@ -161,6 +159,17 @@
     - [Issue.Status](#bytebase-store-Issue-Status)
     - [Issue.Type](#bytebase-store-Issue-Type)
   
+- [store/task_run.proto](#store_task_run-proto)
+    - [PriorBackupDetail](#bytebase-store-PriorBackupDetail)
+    - [PriorBackupDetail.Item](#bytebase-store-PriorBackupDetail-Item)
+    - [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table)
+    - [SchedulerInfo](#bytebase-store-SchedulerInfo)
+    - [SchedulerInfo.WaitingCause](#bytebase-store-SchedulerInfo-WaitingCause)
+    - [TaskRun](#bytebase-store-TaskRun)
+    - [TaskRunResult](#bytebase-store-TaskRunResult)
+  
+    - [TaskRun.Status](#bytebase-store-TaskRun-Status)
+  
 - [store/issue_comment.proto](#store_issue_comment-proto)
     - [IssueCommentPayload](#bytebase-store-IssueCommentPayload)
     - [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval)
@@ -169,10 +178,6 @@
     - [IssueCommentPayload.TaskPriorBackup](#bytebase-store-IssueCommentPayload-TaskPriorBackup)
     - [IssueCommentPayload.TaskPriorBackup.Table](#bytebase-store-IssueCommentPayload-TaskPriorBackup-Table)
     - [IssueCommentPayload.TaskUpdate](#bytebase-store-IssueCommentPayload-TaskUpdate)
-  
-    - [IssueCommentPayload.Approval.Status](#bytebase-store-IssueCommentPayload-Approval-Status)
-    - [IssueCommentPayload.IssueUpdate.IssueStatus](#bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus)
-    - [IssueCommentPayload.TaskUpdate.Status](#bytebase-store-IssueCommentPayload-TaskUpdate-Status)
   
 - [store/plan.proto](#store_plan-proto)
     - [PlanConfig](#bytebase-store-PlanConfig)
@@ -184,7 +189,6 @@
     - [PlanConfig.ExportDataConfig](#bytebase-store-PlanConfig-ExportDataConfig)
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
   
-    - [PlanConfig.ChangeDatabaseConfig.MigrateType](#bytebase-store-PlanConfig-ChangeDatabaseConfig-MigrateType)
     - [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type)
   
 - [store/plan_check_run.proto](#store_plan_check_run-proto)
@@ -196,7 +200,6 @@
     - [PlanCheckRunResult.Result.SqlSummaryReport](#bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport)
   
     - [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType)
-    - [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status)
   
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
@@ -241,16 +244,11 @@
     - [ReleasePayload.File](#bytebase-store-ReleasePayload-File)
     - [ReleasePayload.VCSSource](#bytebase-store-ReleasePayload-VCSSource)
   
-    - [ReleasePayload.File.MigrationType](#bytebase-store-ReleasePayload-File-MigrationType)
-    - [ReleasePayload.File.Type](#bytebase-store-ReleasePayload-File-Type)
-  
 - [store/review_config.proto](#store_review_config-proto)
     - [ReviewConfigPayload](#bytebase-store-ReviewConfigPayload)
   
 - [store/revision.proto](#store_revision-proto)
     - [RevisionPayload](#bytebase-store-RevisionPayload)
-  
-    - [RevisionPayload.Type](#bytebase-store-RevisionPayload-Type)
   
 - [store/role.proto](#store_role-proto)
     - [RolePermissions](#bytebase-store-RolePermissions)
@@ -297,7 +295,6 @@
     - [SettingName](#bytebase-store-SettingName)
   
 - [store/sheet.proto](#store_sheet-proto)
-    - [SheetCommand](#bytebase-store-SheetCommand)
     - [SheetPayload](#bytebase-store-SheetPayload)
   
 - [store/task.proto](#store_task-proto)
@@ -305,19 +302,7 @@
     - [Task.FlagsEntry](#bytebase-store-Task-FlagsEntry)
     - [TaskReleaseSource](#bytebase-store-TaskReleaseSource)
   
-    - [Task.MigrateType](#bytebase-store-Task-MigrateType)
     - [Task.Type](#bytebase-store-Task-Type)
-  
-- [store/task_run.proto](#store_task_run-proto)
-    - [PriorBackupDetail](#bytebase-store-PriorBackupDetail)
-    - [PriorBackupDetail.Item](#bytebase-store-PriorBackupDetail-Item)
-    - [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table)
-    - [SchedulerInfo](#bytebase-store-SchedulerInfo)
-    - [SchedulerInfo.WaitingCause](#bytebase-store-SchedulerInfo-WaitingCause)
-    - [TaskRun](#bytebase-store-TaskRun)
-    - [TaskRunResult](#bytebase-store-TaskRunResult)
-  
-    - [TaskRun.Status](#bytebase-store-TaskRun-Status)
   
 - [store/task_run_log.proto](#store_task_run_log-proto)
     - [TaskRunLog](#bytebase-store-TaskRunLog)
@@ -471,6 +456,21 @@ MaskingLevel represents the level of data masking applied to sensitive informati
 
 
 
+<a name="bytebase-store-MigrationType"></a>
+
+### MigrationType
+MigrationType represents the type of database migration.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MIGRATION_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 | DDL changes (Data Definition Language) for schema modifications. |
+| DML | 2 | DML changes (Data Manipulation Language) for data modifications. |
+| GHOST | 3 | Online schema migration using gh-ost tool. |
+| DDL_GHOST | 4 | DDL changes using gh-ost tool (alternative naming). |
+
+
+
 <a name="bytebase-store-RiskLevel"></a>
 
 ### RiskLevel
@@ -482,6 +482,19 @@ RiskLevel represents the assessed risk level of a database operation.
 | LOW | 1 |  |
 | MODERATE | 2 |  |
 | HIGH | 3 |  |
+
+
+
+<a name="bytebase-store-SchemaChangeType"></a>
+
+### SchemaChangeType
+SchemaChangeType represents the strategy for schema changes.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SCHEMA_CHANGE_TYPE_UNSPECIFIED | 0 |  |
+| VERSIONED | 1 | Versioned migration with explicit migration scripts. |
+| DECLARATIVE | 2 | Declarative schema definition (state-based). |
 
 
 
@@ -539,11 +552,11 @@ VCSType represents the type of version control system.
 <a name="bytebase-store-Advice-Status"></a>
 
 ### Advice.Status
-
+Status represents the result status of the advice.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 | Unspecified status. |
+| STATUS_UNSPECIFIED | 0 |  |
 | SUCCESS | 1 |  |
 | WARNING | 2 |  |
 | ERROR | 3 |  |
@@ -917,27 +930,13 @@ Change represents a single database modification within the changelist.
 | version | [string](#string) |  |  |
 | type | [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type) |  |  |
 | git_commit | [string](#string) |  |  |
-| migration_type | [ChangelogPayload.MigrationType](#bytebase-store-ChangelogPayload-MigrationType) |  |  |
+| migration_type | [MigrationType](#bytebase-store-MigrationType) |  |  |
 
 
 
 
 
  
-
-
-<a name="bytebase-store-ChangelogPayload-MigrationType"></a>
-
-### ChangelogPayload.MigrationType
-MigrationType is the type for imperative schema migration.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MIGRATION_TYPE_UNSPECIFIED | 0 |  |
-| DDL | 1 | Used for DDL changes. |
-| DML | 2 | Used for DML changes. |
-| GHOST | 3 | Used for DDL changes using gh-ost. |
-
 
 
 <a name="bytebase-store-ChangelogPayload-Type"></a>
@@ -2011,32 +2010,6 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 
 
 
-<a name="store_db_group-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/db_group.proto
-
-
-
-<a name="bytebase-store-DatabaseGroupPayload"></a>
-
-### DatabaseGroupPayload
-
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
 <a name="store_export_archive-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -2804,6 +2777,154 @@ Type represents the category of issue.
 
 
 
+<a name="store_task_run-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/task_run.proto
+
+
+
+<a name="bytebase-store-PriorBackupDetail"></a>
+
+### PriorBackupDetail
+PriorBackupDetail contains information about automatic backups created before migration.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| items | [PriorBackupDetail.Item](#bytebase-store-PriorBackupDetail-Item) | repeated | List of backup operations performed. |
+
+
+
+
+
+
+<a name="bytebase-store-PriorBackupDetail-Item"></a>
+
+### PriorBackupDetail.Item
+Item represents a single backup operation for a table.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| source_table | [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table) |  | The original table that was backed up. |
+| target_table | [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table) |  | The backup table where data was copied. |
+| start_position | [Position](#bytebase-store-Position) |  | Starting position in SQL for this backup operation. |
+| end_position | [Position](#bytebase-store-Position) |  | Ending position in SQL for this backup operation. |
+
+
+
+
+
+
+<a name="bytebase-store-PriorBackupDetail-Item-Table"></a>
+
+### PriorBackupDetail.Item.Table
+Table identifies a database table.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database | [string](#string) |  | The database containing the table. Format: instances/{instance}/databases/{database} |
+| schema | [string](#string) |  | Schema name (for databases that support schemas). |
+| table | [string](#string) |  | Table name. |
+
+
+
+
+
+
+<a name="bytebase-store-SchedulerInfo"></a>
+
+### SchedulerInfo
+SchedulerInfo contains information about task scheduling and execution delays.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| report_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Timestamp when the scheduler reported this information. |
+| waiting_cause | [SchedulerInfo.WaitingCause](#bytebase-store-SchedulerInfo-WaitingCause) |  | Reason why the task run is currently waiting. |
+
+
+
+
+
+
+<a name="bytebase-store-SchedulerInfo-WaitingCause"></a>
+
+### SchedulerInfo.WaitingCause
+WaitingCause indicates why a task run is waiting to execute.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| connection_limit | [bool](#bool) |  | Task is waiting due to database connection limit. |
+| task_uid | [int32](#int32) |  | Task is waiting for another task to complete. |
+| parallel_tasks_limit | [bool](#bool) |  | Task is waiting due to parallel execution limit. |
+
+
+
+
+
+
+<a name="bytebase-store-TaskRun"></a>
+
+### TaskRun
+TaskRun represents an execution attempt of a task.
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunResult"></a>
+
+### TaskRunResult
+TaskRunResult contains the outcome and metadata from a task run execution.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| detail | [string](#string) |  | Detailed execution information or error message. |
+| changelog | [string](#string) |  | Resource name of the changelog entry created by this run. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
+| version | [string](#string) |  | Schema version after the migration was applied. |
+| start_position | [Position](#bytebase-store-Position) |  | Starting position in the SQL statement where an error occurred. |
+| end_position | [Position](#bytebase-store-Position) |  | Ending position in the SQL statement where an error occurred. |
+| export_archive_uid | [int32](#int32) |  | UID of the export archive generated for export tasks. |
+| prior_backup_detail | [PriorBackupDetail](#bytebase-store-PriorBackupDetail) |  | Backup details that can be used to rollback changes. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-TaskRun-Status"></a>
+
+### TaskRun.Status
+Status represents the current execution state of a task run.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 | Task run is queued and waiting to execute. |
+| RUNNING | 2 | Task run is currently executing. |
+| DONE | 3 | Task run completed successfully. |
+| FAILED | 4 | Task run encountered an error and failed. |
+| CANCELED | 5 | Task run was canceled by user or system. |
+| NOT_STARTED | 6 | Task run has not started yet. |
+| SKIPPED | 7 | Task run was skipped and will not execute. |
+
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="store_issue_comment-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -2839,7 +2960,7 @@ Type represents the category of issue.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| status | [IssueCommentPayload.Approval.Status](#bytebase-store-IssueCommentPayload-Approval-Status) |  |  |
+| status | [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status) |  |  |
 
 
 
@@ -2858,8 +2979,8 @@ Type represents the category of issue.
 | to_title | [string](#string) | optional |  |
 | from_description | [string](#string) | optional |  |
 | to_description | [string](#string) | optional |  |
-| from_status | [IssueCommentPayload.IssueUpdate.IssueStatus](#bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus) | optional |  |
-| to_status | [IssueCommentPayload.IssueUpdate.IssueStatus](#bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus) | optional |  |
+| from_status | [Issue.Status](#bytebase-store-Issue-Status) | optional |  |
+| to_status | [Issue.Status](#bytebase-store-Issue-Status) | optional |  |
 | from_labels | [string](#string) | repeated |  |
 | to_labels | [string](#string) | repeated |  |
 
@@ -2929,58 +3050,13 @@ Type represents the category of issue.
 | tasks | [string](#string) | repeated |  |
 | from_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
 | to_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
-| to_status | [IssueCommentPayload.TaskUpdate.Status](#bytebase-store-IssueCommentPayload-TaskUpdate-Status) | optional |  |
+| to_status | [TaskRun.Status](#bytebase-store-TaskRun-Status) | optional |  |
 
 
 
 
 
  
-
-
-<a name="bytebase-store-IssueCommentPayload-Approval-Status"></a>
-
-### IssueCommentPayload.Approval.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| PENDING | 1 |  |
-| APPROVED | 2 |  |
-| REJECTED | 3 |  |
-
-
-
-<a name="bytebase-store-IssueCommentPayload-IssueUpdate-IssueStatus"></a>
-
-### IssueCommentPayload.IssueUpdate.IssueStatus
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ISSUE_STATUS_UNSPECIFIED | 0 |  |
-| OPEN | 1 |  |
-| DONE | 2 |  |
-| CANCELED | 3 |  |
-
-
-
-<a name="bytebase-store-IssueCommentPayload-TaskUpdate-Status"></a>
-
-### IssueCommentPayload.TaskUpdate.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| PENDING | 1 |  |
-| RUNNING | 2 |  |
-| DONE | 3 |  |
-| FAILED | 4 |  |
-| SKIPPED | 5 |  |
-| CANCELED | 6 |  |
-
 
  
 
@@ -3025,7 +3101,7 @@ Type represents the category of issue.
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | release | [string](#string) |  | The resource name of the release. Format: projects/{project}/releases/{release} |
 | type | [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type) |  |  |
-| migrate_type | [PlanConfig.ChangeDatabaseConfig.MigrateType](#bytebase-store-PlanConfig-ChangeDatabaseConfig-MigrateType) |  |  |
+| migrate_type | [MigrationType](#bytebase-store-MigrationType) |  | The migration type for imperative schema migration. It is only set when type is MIGRATE. |
 | ghost_flags | [PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-store-PlanConfig-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
 
@@ -3142,21 +3218,6 @@ Type represents the category of issue.
  
 
 
-<a name="bytebase-store-PlanConfig-ChangeDatabaseConfig-MigrateType"></a>
-
-### PlanConfig.ChangeDatabaseConfig.MigrateType
-MigrateType is the migration type for imperative schema migration.
-It is only set when type is MIGRATE.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MIGRATE_TYPE_UNSPECIFIED | 0 |  |
-| DDL | 1 | Used for DDL changes. |
-| DML | 2 | Used for DML changes. |
-| GHOST | 3 | Used for DDL changes using gh-ost. |
-
-
-
 <a name="bytebase-store-PlanConfig-ChangeDatabaseConfig-Type"></a>
 
 ### PlanConfig.ChangeDatabaseConfig.Type
@@ -3245,7 +3306,7 @@ Type is the database change type.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| status | [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status) |  |  |
+| status | [Advice.Status](#bytebase-store-Advice-Status) |  |  |
 | title | [string](#string) |  |  |
 | content | [string](#string) |  |  |
 | code | [int32](#int32) |  |  |
@@ -3297,7 +3358,8 @@ Type is the database change type.
 <a name="bytebase-store-PlanCheckRunConfig-ChangeDatabaseType"></a>
 
 ### PlanCheckRunConfig.ChangeDatabaseType
-
+ChangeDatabaseType extends MigrationType with additional execution contexts.
+Note: DDL, DML, and DDL_GHOST values align with MigrationType enum values.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -3307,20 +3369,6 @@ Type is the database change type.
 | SDL | 3 |  |
 | DDL_GHOST | 4 |  |
 | SQL_EDITOR | 5 |  |
-
-
-
-<a name="bytebase-store-PlanCheckRunResult-Result-Status"></a>
-
-### PlanCheckRunResult.Result.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| ERROR | 1 |  |
-| WARNING | 2 |  |
-| SUCCESS | 3 |  |
 
 
  
@@ -3894,9 +3942,9 @@ ExecutionRetryPolicy defines retry behavior for failed task executions.
 | path | [string](#string) |  | The path of the file, e.g., `2.2/V0001_create_table.sql`. |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
-| type | [ReleasePayload.File.Type](#bytebase-store-ReleasePayload-File-Type) |  |  |
+| type | [SchemaChangeType](#bytebase-store-SchemaChangeType) |  |  |
 | version | [string](#string) |  |  |
-| migration_type | [ReleasePayload.File.MigrationType](#bytebase-store-ReleasePayload-File-MigrationType) |  |  |
+| migration_type | [MigrationType](#bytebase-store-MigrationType) |  |  |
 
 
 
@@ -3919,33 +3967,6 @@ ExecutionRetryPolicy defines retry behavior for failed task executions.
 
 
  
-
-
-<a name="bytebase-store-ReleasePayload-File-MigrationType"></a>
-
-### ReleasePayload.File.MigrationType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MIGRATION_TYPE_UNSPECIFIED | 0 |  |
-| DDL | 1 |  |
-| DDL_GHOST | 2 |  |
-| DML | 3 |  |
-
-
-
-<a name="bytebase-store-ReleasePayload-File-Type"></a>
-
-### ReleasePayload.File.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| VERSIONED | 1 |  |
-| DECLARATIVE | 2 |  |
-
 
  
 
@@ -4006,26 +4027,13 @@ ExecutionRetryPolicy defines retry behavior for failed task executions.
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | task_run | [string](#string) |  | The task run associated with the revision. Can be empty. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
-| type | [RevisionPayload.Type](#bytebase-store-RevisionPayload-Type) |  | The type of the revision. |
+| type | [SchemaChangeType](#bytebase-store-SchemaChangeType) |  | The type of the revision. |
 
 
 
 
 
  
-
-
-<a name="bytebase-store-RevisionPayload-Type"></a>
-
-### RevisionPayload.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| VERSIONED | 1 |  |
-| DECLARATIVE | 2 |  |
-
 
  
 
@@ -4743,22 +4751,6 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 
 
 
-<a name="bytebase-store-SheetCommand"></a>
-
-### SheetCommand
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| start | [int32](#int32) |  |  |
-| end | [int32](#int32) |  |  |
-
-
-
-
-
-
 <a name="bytebase-store-SheetPayload"></a>
 
 ### SheetPayload
@@ -4768,7 +4760,7 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | engine | [Engine](#bytebase-store-Engine) |  | The SQL dialect. |
-| commands | [SheetCommand](#bytebase-store-SheetCommand) | repeated | The start and end position of each command in the sheet statement. |
+| commands | [Range](#bytebase-store-Range) | repeated | The start and end position of each command in the sheet statement. |
 
 
 
@@ -4812,7 +4804,7 @@ Task is the metadata for database operation tasks.
 | enable_prior_backup | [bool](#bool) |  | Whether to create an automatic backup before applying changes. |
 | flags | [Task.FlagsEntry](#bytebase-store-Task-FlagsEntry) | repeated | Configuration flags for gh-ost migration tool. |
 | task_release_source | [TaskReleaseSource](#bytebase-store-TaskReleaseSource) |  | Source information if task is created from a release. |
-| migrate_type | [Task.MigrateType](#bytebase-store-Task-MigrateType) |  | The type of migration (DDL, DML, or GHOST). |
+| migrate_type | [MigrationType](#bytebase-store-MigrationType) |  | The type of migration (DDL, DML, or GHOST). |
 | password | [string](#string) |  | Password to encrypt the exported data archive. |
 | format | [ExportFormat](#bytebase-store-ExportFormat) |  | Format of the exported data (SQL, CSV, JSON, etc). |
 
@@ -4854,20 +4846,6 @@ TaskReleaseSource contains information about the release file this task originat
  
 
 
-<a name="bytebase-store-Task-MigrateType"></a>
-
-### Task.MigrateType
-MigrateType is the database migration type for imperative migrations.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MIGRATE_TYPE_UNSPECIFIED | 0 |  |
-| DDL | 1 | DDL changes (Data Definition Language) for schema modifications. |
-| DML | 2 | DML changes (Data Manipulation Language) for data modifications. |
-| GHOST | 3 | Online schema migration using gh-ost tool. |
-
-
-
 <a name="bytebase-store-Task-Type"></a>
 
 ### Task.Type
@@ -4880,154 +4858,6 @@ Type represents the type of database operation to perform.
 | DATABASE_MIGRATE | 2 | Apply schema/data migrations to an existing database. |
 | DATABASE_EXPORT | 5 | Export data from a database. |
 | DATABASE_SDL | 6 | Apply declarative schema changes (state-based migration). |
-
-
- 
-
- 
-
- 
-
-
-
-<a name="store_task_run-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/task_run.proto
-
-
-
-<a name="bytebase-store-PriorBackupDetail"></a>
-
-### PriorBackupDetail
-PriorBackupDetail contains information about automatic backups created before migration.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| items | [PriorBackupDetail.Item](#bytebase-store-PriorBackupDetail-Item) | repeated | List of backup operations performed. |
-
-
-
-
-
-
-<a name="bytebase-store-PriorBackupDetail-Item"></a>
-
-### PriorBackupDetail.Item
-Item represents a single backup operation for a table.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| source_table | [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table) |  | The original table that was backed up. |
-| target_table | [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table) |  | The backup table where data was copied. |
-| start_position | [Position](#bytebase-store-Position) |  | Starting position in SQL for this backup operation. |
-| end_position | [Position](#bytebase-store-Position) |  | Ending position in SQL for this backup operation. |
-
-
-
-
-
-
-<a name="bytebase-store-PriorBackupDetail-Item-Table"></a>
-
-### PriorBackupDetail.Item.Table
-Table identifies a database table.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database | [string](#string) |  | The database containing the table. Format: instances/{instance}/databases/{database} |
-| schema | [string](#string) |  | Schema name (for databases that support schemas). |
-| table | [string](#string) |  | Table name. |
-
-
-
-
-
-
-<a name="bytebase-store-SchedulerInfo"></a>
-
-### SchedulerInfo
-SchedulerInfo contains information about task scheduling and execution delays.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| report_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Timestamp when the scheduler reported this information. |
-| waiting_cause | [SchedulerInfo.WaitingCause](#bytebase-store-SchedulerInfo-WaitingCause) |  | Reason why the task run is currently waiting. |
-
-
-
-
-
-
-<a name="bytebase-store-SchedulerInfo-WaitingCause"></a>
-
-### SchedulerInfo.WaitingCause
-WaitingCause indicates why a task run is waiting to execute.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| connection_limit | [bool](#bool) |  | Task is waiting due to database connection limit. |
-| task_uid | [int32](#int32) |  | Task is waiting for another task to complete. |
-| parallel_tasks_limit | [bool](#bool) |  | Task is waiting due to parallel execution limit. |
-
-
-
-
-
-
-<a name="bytebase-store-TaskRun"></a>
-
-### TaskRun
-TaskRun represents an execution attempt of a task.
-
-
-
-
-
-
-<a name="bytebase-store-TaskRunResult"></a>
-
-### TaskRunResult
-TaskRunResult contains the outcome and metadata from a task run execution.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| detail | [string](#string) |  | Detailed execution information or error message. |
-| changelog | [string](#string) |  | Resource name of the changelog entry created by this run. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
-| version | [string](#string) |  | Schema version after the migration was applied. |
-| start_position | [Position](#bytebase-store-Position) |  | Starting position in the SQL statement where an error occurred. |
-| end_position | [Position](#bytebase-store-Position) |  | Ending position in the SQL statement where an error occurred. |
-| export_archive_uid | [int32](#int32) |  | UID of the export archive generated for export tasks. |
-| prior_backup_detail | [PriorBackupDetail](#bytebase-store-PriorBackupDetail) |  | Backup details that can be used to rollback changes. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-TaskRun-Status"></a>
-
-### TaskRun.Status
-Status represents the current execution state of a task run.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| PENDING | 1 | Task run is queued and waiting to execute. |
-| RUNNING | 2 | Task run is currently executing. |
-| DONE | 3 | Task run completed successfully. |
-| FAILED | 4 | Task run encountered an error and failed. |
-| CANCELED | 5 | Task run was canceled by user or system. |
-| NOT_STARTED | 6 | Task run has not started yet. |
-| SKIPPED | 7 | Task run was skipped and will not execute. |
 
 
  

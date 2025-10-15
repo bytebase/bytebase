@@ -59,7 +59,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 	if sheet.Size > common.MaxSheetCheckSize {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
-				Status:  storepb.PlanCheckRunResult_Result_WARNING,
+				Status:  storepb.Advice_WARNING,
 				Code:    common.SizeExceeded.Int32(),
 				Title:   "Report for large SQL is not supported",
 				Content: "",
@@ -81,7 +81,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 	if !common.EngineSupportStatementReport(instance.Metadata.GetEngine()) {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
-				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+				Status:  storepb.Advice_SUCCESS,
 				Code:    common.Ok.Int32(),
 				Title:   fmt.Sprintf("Statement report is not supported for %s", instance.Metadata.GetEngine()),
 				Content: "",
@@ -103,7 +103,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 		advice := syntaxAdvices[0]
 		return []*storepb.PlanCheckRunResult_Result{
 			{
-				Status:  storepb.PlanCheckRunResult_Result_ERROR,
+				Status:  storepb.Advice_ERROR,
 				Title:   advice.Title,
 				Content: advice.Content,
 				Code:    advice.Code,
@@ -120,7 +120,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 	}
 
 	planCheckRunResult := &storepb.PlanCheckRunResult_Result{
-		Status: storepb.PlanCheckRunResult_Result_SUCCESS,
+		Status: storepb.Advice_SUCCESS,
 		Code:   common.Ok.Int32(),
 		Title:  "OK",
 	}

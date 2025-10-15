@@ -263,7 +263,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 				continue
 			}
 			for _, result := range run.Result.Results {
-				if result.Status != storepb.PlanCheckRunResult_Result_SUCCESS {
+				if result.Status != storepb.Advice_SUCCESS {
 					continue
 				}
 				if report := result.GetSqlSummaryReport(); report != nil {
@@ -443,7 +443,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 				InstanceID:   &mc.database.InstanceID,
 				DatabaseName: &mc.database.DatabaseName,
 				Limit:        common.NewP(1),
-				Type:         common.NewP(storepb.RevisionPayload_DECLARATIVE),
+				Type:         common.NewP(storepb.SchemaChangeType_DECLARATIVE),
 			})
 			if err != nil {
 				return false, errors.Wrapf(err, "failed to list revisions")
@@ -469,7 +469,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 				InstanceID:   &mc.database.InstanceID,
 				DatabaseName: &mc.database.DatabaseName,
 				Version:      &mc.version,
-				Type:         common.NewP(storepb.RevisionPayload_VERSIONED),
+				Type:         common.NewP(storepb.SchemaChangeType_VERSIONED),
 			})
 			if err != nil {
 				return false, errors.Wrapf(err, "failed to list revisions")
@@ -552,11 +552,11 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 					Sheet:       "",
 					SheetSha256: "",
 					TaskRun:     mc.taskRunName,
-					Type:        storepb.RevisionPayload_VERSIONED,
+					Type:        storepb.SchemaChangeType_VERSIONED,
 				},
 			}
 			if mc.task.Type == storepb.Task_DATABASE_SDL {
-				r.Payload.Type = storepb.RevisionPayload_DECLARATIVE
+				r.Payload.Type = storepb.SchemaChangeType_DECLARATIVE
 			}
 			if mc.sheet != nil {
 				r.Payload.Sheet = mc.sheetName
@@ -620,32 +620,32 @@ func shouldUpdateVersion(currentVersion, newVersion string) bool {
 	return current.LessThan(nv)
 }
 
-func convertTaskType(t *store.TaskMessage) (storepb.ChangelogPayload_Type, storepb.ChangelogPayload_MigrationType) {
+func convertTaskType(t *store.TaskMessage) (storepb.ChangelogPayload_Type, storepb.MigrationType) {
 	//exhaustive:enforce
 	switch t.Type {
 	case storepb.Task_DATABASE_MIGRATE:
 		// Determine migration type based on migrate_type
 		switch t.Payload.GetMigrateType() {
-		case storepb.Task_DML:
-			return storepb.ChangelogPayload_MIGRATE, storepb.ChangelogPayload_DML
-		case storepb.Task_DDL:
-			return storepb.ChangelogPayload_MIGRATE, storepb.ChangelogPayload_DDL
-		case storepb.Task_GHOST:
-			return storepb.ChangelogPayload_MIGRATE, storepb.ChangelogPayload_GHOST
-		case storepb.Task_MIGRATE_TYPE_UNSPECIFIED:
-			return storepb.ChangelogPayload_MIGRATE, storepb.ChangelogPayload_MIGRATION_TYPE_UNSPECIFIED
+		case storepb.MigrationType_DML:
+			return storepb.ChangelogPayload_MIGRATE, storepb.MigrationType_DML
+		case storepb.MigrationType_DDL:
+			return storepb.ChangelogPayload_MIGRATE, storepb.MigrationType_DDL
+		case storepb.MigrationType_GHOST:
+			return storepb.ChangelogPayload_MIGRATE, storepb.MigrationType_GHOST
+		case storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED:
+			return storepb.ChangelogPayload_MIGRATE, storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED
 		default:
-			return storepb.ChangelogPayload_MIGRATE, storepb.ChangelogPayload_MIGRATION_TYPE_UNSPECIFIED
+			return storepb.ChangelogPayload_MIGRATE, storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED
 		}
 	case storepb.Task_DATABASE_SDL:
-		return storepb.ChangelogPayload_SDL, storepb.ChangelogPayload_MIGRATION_TYPE_UNSPECIFIED
+		return storepb.ChangelogPayload_SDL, storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED
 	case
 		storepb.Task_TASK_TYPE_UNSPECIFIED,
 		storepb.Task_DATABASE_CREATE,
 		storepb.Task_DATABASE_EXPORT:
-		return storepb.ChangelogPayload_TYPE_UNSPECIFIED, storepb.ChangelogPayload_MIGRATION_TYPE_UNSPECIFIED
+		return storepb.ChangelogPayload_TYPE_UNSPECIFIED, storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED
 	default:
-		return storepb.ChangelogPayload_TYPE_UNSPECIFIED, storepb.ChangelogPayload_MIGRATION_TYPE_UNSPECIFIED
+		return storepb.ChangelogPayload_TYPE_UNSPECIFIED, storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED
 	}
 }
 
@@ -666,7 +666,7 @@ func isChangeDatabaseTask(task *store.TaskMessage) bool {
 
 func needDump(task *store.TaskMessage, instance *store.InstanceMessage) bool {
 	// Skip dump for TiDB DML operations
-	if task.Type == storepb.Task_DATABASE_MIGRATE && task.Payload.GetMigrateType() == storepb.Task_DML && instance.Metadata.GetEngine() == storepb.Engine_TIDB {
+	if task.Type == storepb.Task_DATABASE_MIGRATE && task.Payload.GetMigrateType() == storepb.MigrationType_DML && instance.Metadata.GetEngine() == storepb.Engine_TIDB {
 		return false
 	}
 

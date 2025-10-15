@@ -365,39 +365,39 @@ func convertToIssueCommentEventStageEnd(e *storepb.IssueCommentPayload_StageEnd_
 	}
 }
 
-func convertToIssueCommentPayloadIssueUpdateIssueStatus(s *v1pb.IssueStatus) *storepb.IssueCommentPayload_IssueUpdate_IssueStatus {
+func convertToIssueCommentPayloadIssueUpdateIssueStatus(s *v1pb.IssueStatus) *storepb.Issue_Status {
 	if s == nil {
 		return nil
 	}
-	var is storepb.IssueCommentPayload_IssueUpdate_IssueStatus
+	var is storepb.Issue_Status
 	switch *s {
 	case v1pb.IssueStatus_CANCELED:
-		is = storepb.IssueCommentPayload_IssueUpdate_CANCELED
+		is = storepb.Issue_CANCELED
 	case v1pb.IssueStatus_DONE:
-		is = storepb.IssueCommentPayload_IssueUpdate_DONE
+		is = storepb.Issue_DONE
 	case v1pb.IssueStatus_OPEN:
-		is = storepb.IssueCommentPayload_IssueUpdate_OPEN
+		is = storepb.Issue_OPEN
 	case v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED:
-		is = storepb.IssueCommentPayload_IssueUpdate_ISSUE_STATUS_UNSPECIFIED
+		is = storepb.Issue_ISSUE_STATUS_UNSPECIFIED
 	default:
-		is = storepb.IssueCommentPayload_IssueUpdate_ISSUE_STATUS_UNSPECIFIED
+		is = storepb.Issue_ISSUE_STATUS_UNSPECIFIED
 	}
 	return &is
 }
 
-func convertToIssueCommentEventIssueUpdateStatus(s *storepb.IssueCommentPayload_IssueUpdate_IssueStatus) *v1pb.IssueStatus {
+func convertToIssueCommentEventIssueUpdateStatus(s *storepb.Issue_Status) *v1pb.IssueStatus {
 	if s == nil {
 		return nil
 	}
 	var is v1pb.IssueStatus
 	switch *s {
-	case storepb.IssueCommentPayload_IssueUpdate_CANCELED:
+	case storepb.Issue_CANCELED:
 		is = v1pb.IssueStatus_CANCELED
-	case storepb.IssueCommentPayload_IssueUpdate_DONE:
+	case storepb.Issue_DONE:
 		is = v1pb.IssueStatus_DONE
-	case storepb.IssueCommentPayload_IssueUpdate_OPEN:
+	case storepb.Issue_OPEN:
 		is = v1pb.IssueStatus_OPEN
-	case storepb.IssueCommentPayload_IssueUpdate_ISSUE_STATUS_UNSPECIFIED:
+	case storepb.Issue_ISSUE_STATUS_UNSPECIFIED:
 		is = v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED
 	default:
 		is = v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED
@@ -405,15 +405,15 @@ func convertToIssueCommentEventIssueUpdateStatus(s *storepb.IssueCommentPayload_
 	return &is
 }
 
-func convertToIssueCommentEventApprovalStatus(s storepb.IssueCommentPayload_Approval_Status) v1pb.IssueComment_Approval_Status {
+func convertToIssueCommentEventApprovalStatus(s storepb.IssuePayloadApproval_Approver_Status) v1pb.IssueComment_Approval_Status {
 	switch s {
-	case storepb.IssueCommentPayload_Approval_APPROVED:
+	case storepb.IssuePayloadApproval_Approver_APPROVED:
 		return v1pb.IssueComment_Approval_APPROVED
-	case storepb.IssueCommentPayload_Approval_PENDING:
+	case storepb.IssuePayloadApproval_Approver_PENDING:
 		return v1pb.IssueComment_Approval_PENDING
-	case storepb.IssueCommentPayload_Approval_REJECTED:
+	case storepb.IssuePayloadApproval_Approver_REJECTED:
 		return v1pb.IssueComment_Approval_REJECTED
-	case storepb.IssueCommentPayload_Approval_STATUS_UNSPECIFIED:
+	case storepb.IssuePayloadApproval_Approver_STATUS_UNSPECIFIED:
 		return v1pb.IssueComment_Approval_STATUS_UNSPECIFIED
 	default:
 		return v1pb.IssueComment_Approval_STATUS_UNSPECIFIED
@@ -431,26 +431,26 @@ func convertToIssueCommentEventTaskUpdate(u *storepb.IssueCommentPayload_TaskUpd
 	}
 }
 
-func convertToIssueCommentEventTaskUpdateStatus(s *storepb.IssueCommentPayload_TaskUpdate_Status) *v1pb.IssueComment_TaskUpdate_Status {
+func convertToIssueCommentEventTaskUpdateStatus(s *storepb.TaskRun_Status) *v1pb.IssueComment_TaskUpdate_Status {
 	if s == nil {
 		return nil
 	}
 	var r v1pb.IssueComment_TaskUpdate_Status
 	//exhaustive:enforce
 	switch *s {
-	case storepb.IssueCommentPayload_TaskUpdate_DONE:
+	case storepb.TaskRun_DONE:
 		r = v1pb.IssueComment_TaskUpdate_DONE
-	case storepb.IssueCommentPayload_TaskUpdate_CANCELED:
+	case storepb.TaskRun_CANCELED:
 		r = v1pb.IssueComment_TaskUpdate_CANCELED
-	case storepb.IssueCommentPayload_TaskUpdate_FAILED:
+	case storepb.TaskRun_FAILED:
 		r = v1pb.IssueComment_TaskUpdate_FAILED
-	case storepb.IssueCommentPayload_TaskUpdate_PENDING:
+	case storepb.TaskRun_PENDING:
 		r = v1pb.IssueComment_TaskUpdate_PENDING
-	case storepb.IssueCommentPayload_TaskUpdate_RUNNING:
+	case storepb.TaskRun_RUNNING:
 		r = v1pb.IssueComment_TaskUpdate_RUNNING
-	case storepb.IssueCommentPayload_TaskUpdate_SKIPPED:
+	case storepb.TaskRun_SKIPPED:
 		r = v1pb.IssueComment_TaskUpdate_SKIPPED
-	case storepb.IssueCommentPayload_TaskUpdate_STATUS_UNSPECIFIED:
+	case storepb.TaskRun_STATUS_UNSPECIFIED:
 		r = v1pb.IssueComment_TaskUpdate_STATUS_UNSPECIFIED
 	default:
 		r = v1pb.IssueComment_TaskUpdate_STATUS_UNSPECIFIED

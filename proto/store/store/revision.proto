@@ -3,6 +3,7 @@ syntax = "proto3";
 package bytebase.store;
 
 import "google/api/resource.proto";
+import "store/common.proto";
 
 option go_package = "generated-go/store";
 
@@ -27,11 +28,5 @@ message RevisionPayload {
   string task_run = 5 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
 
   // The type of the revision.
-  Type type = 6;
-
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    VERSIONED = 1;
-    DECLARATIVE = 2;
-  }
+  SchemaChangeType type = 6;
 }

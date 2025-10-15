@@ -204,7 +204,15 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.MigrationType"><span class="badge">E</span>MigrationType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.RiskLevel"><span class="badge">E</span>RiskLevel</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.SchemaChangeType"><span class="badge">E</span>SchemaChangeType</a>
                 </li>
               
                 <li>
@@ -345,10 +353,6 @@
                   <a href="#bytebase.store.ChangelogPayload"><span class="badge">M</span>ChangelogPayload</a>
                 </li>
               
-              
-                <li>
-                  <a href="#bytebase.store.ChangelogPayload.MigrationType"><span class="badge">E</span>ChangelogPayload.MigrationType</a>
-                </li>
               
                 <li>
                   <a href="#bytebase.store.ChangelogPayload.Type"><span class="badge">E</span>ChangelogPayload.Type</a>
@@ -580,21 +584,6 @@
         
           
           <li>
-            <a href="#store%2fdb_group.proto">store/db_group.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.DatabaseGroupPayload"><span class="badge">M</span>DatabaseGroupPayload</a>
-                </li>
-              
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
             <a href="#store%2fexport_archive.proto">store/export_archive.proto</a>
             <ul>
               
@@ -809,6 +798,49 @@
         
           
           <li>
+            <a href="#store%2ftask_run.proto">store/task_run.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.PriorBackupDetail"><span class="badge">M</span>PriorBackupDetail</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PriorBackupDetail.Item"><span class="badge">M</span>PriorBackupDetail.Item</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PriorBackupDetail.Item.Table"><span class="badge">M</span>PriorBackupDetail.Item.Table</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.SchedulerInfo"><span class="badge">M</span>SchedulerInfo</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.SchedulerInfo.WaitingCause"><span class="badge">M</span>SchedulerInfo.WaitingCause</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TaskRun"><span class="badge">M</span>TaskRun</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TaskRunResult"><span class="badge">M</span>TaskRunResult</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.TaskRun.Status"><span class="badge">E</span>TaskRun.Status</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2fissue_comment.proto">store/issue_comment.proto</a>
             <ul>
               
@@ -840,18 +872,6 @@
                   <a href="#bytebase.store.IssueCommentPayload.TaskUpdate"><span class="badge">M</span>IssueCommentPayload.TaskUpdate</a>
                 </li>
               
-              
-                <li>
-                  <a href="#bytebase.store.IssueCommentPayload.Approval.Status"><span class="badge">E</span>IssueCommentPayload.Approval.Status</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.IssueCommentPayload.IssueUpdate.IssueStatus"><span class="badge">E</span>IssueCommentPayload.IssueUpdate.IssueStatus</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.IssueCommentPayload.TaskUpdate.Status"><span class="badge">E</span>IssueCommentPayload.TaskUpdate.Status</a>
-                </li>
               
               
               
@@ -897,10 +917,6 @@
               
               
                 <li>
-                  <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.MigrateType"><span class="badge">E</span>PlanConfig.ChangeDatabaseConfig.MigrateType</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.Type"><span class="badge">E</span>PlanConfig.ChangeDatabaseConfig.Type</a>
                 </li>
               
@@ -941,10 +957,6 @@
               
                 <li>
                   <a href="#bytebase.store.PlanCheckRunConfig.ChangeDatabaseType"><span class="badge">E</span>PlanCheckRunConfig.ChangeDatabaseType</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanCheckRunResult.Result.Status"><span class="badge">E</span>PlanCheckRunResult.Result.Status</a>
                 </li>
               
               
@@ -1130,14 +1142,6 @@
                 </li>
               
               
-                <li>
-                  <a href="#bytebase.store.ReleasePayload.File.MigrationType"><span class="badge">E</span>ReleasePayload.File.MigrationType</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ReleasePayload.File.Type"><span class="badge">E</span>ReleasePayload.File.Type</a>
-                </li>
-              
               
               
             </ul>
@@ -1167,10 +1171,6 @@
                   <a href="#bytebase.store.RevisionPayload"><span class="badge">M</span>RevisionPayload</a>
                 </li>
               
-              
-                <li>
-                  <a href="#bytebase.store.RevisionPayload.Type"><span class="badge">E</span>RevisionPayload.Type</a>
-                </li>
               
               
               
@@ -1361,10 +1361,6 @@
             <ul>
               
                 <li>
-                  <a href="#bytebase.store.SheetCommand"><span class="badge">M</span>SheetCommand</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.SheetPayload"><span class="badge">M</span>SheetPayload</a>
                 </li>
               
@@ -1393,54 +1389,7 @@
               
               
                 <li>
-                  <a href="#bytebase.store.Task.MigrateType"><span class="badge">E</span>Task.MigrateType</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.Task.Type"><span class="badge">E</span>Task.Type</a>
-                </li>
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
-            <a href="#store%2ftask_run.proto">store/task_run.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.PriorBackupDetail"><span class="badge">M</span>PriorBackupDetail</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PriorBackupDetail.Item"><span class="badge">M</span>PriorBackupDetail.Item</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PriorBackupDetail.Item.Table"><span class="badge">M</span>PriorBackupDetail.Item.Table</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.SchedulerInfo"><span class="badge">M</span>SchedulerInfo</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.SchedulerInfo.WaitingCause"><span class="badge">M</span>SchedulerInfo.WaitingCause</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.TaskRun"><span class="badge">M</span>TaskRun</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.TaskRunResult"><span class="badge">M</span>TaskRunResult</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.store.TaskRun.Status"><span class="badge">E</span>TaskRun.Status</a>
                 </li>
               
               
@@ -1900,6 +1849,47 @@
           </tbody>
         </table>
       
+        <h3 id="bytebase.store.MigrationType">MigrationType</h3>
+        <p>MigrationType represents the type of database migration.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MIGRATION_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL</td>
+                <td>1</td>
+                <td><p>DDL changes (Data Definition Language) for schema modifications.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DML</td>
+                <td>2</td>
+                <td><p>DML changes (Data Manipulation Language) for data modifications.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GHOST</td>
+                <td>3</td>
+                <td><p>Online schema migration using gh-ost tool.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL_GHOST</td>
+                <td>4</td>
+                <td><p>DDL changes using gh-ost tool (alternative naming).</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.store.RiskLevel">RiskLevel</h3>
         <p>RiskLevel represents the assessed risk level of a database operation.</p>
         <table class="enum-table">
@@ -1930,6 +1920,35 @@
                 <td>HIGH</td>
                 <td>3</td>
                 <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.SchemaChangeType">SchemaChangeType</h3>
+        <p>SchemaChangeType represents the strategy for schema changes.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SCHEMA_CHANGE_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>VERSIONED</td>
+                <td>1</td>
+                <td><p>Versioned migration with explicit migration scripts.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DECLARATIVE</td>
+                <td>2</td>
+                <td><p>Declarative schema definition (state-based).</p></td>
               </tr>
             
           </tbody>
@@ -2051,7 +2070,7 @@ TODO: use range instead. </p></td>
 
       
         <h3 id="bytebase.store.Advice.Status">Advice.Status</h3>
-        <p></p>
+        <p>Status represents the result status of the advice.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -2061,7 +2080,7 @@ TODO: use range instead. </p></td>
               <tr>
                 <td>STATUS_UNSPECIFIED</td>
                 <td>0</td>
-                <td><p>Unspecified status.</p></td>
+                <td><p></p></td>
               </tr>
             
               <tr>
@@ -2897,7 +2916,7 @@ Format: projects/{project}/sheets/{sheet} </p></td>
               
                 <tr>
                   <td>migration_type</td>
-                  <td><a href="#bytebase.store.ChangelogPayload.MigrationType">ChangelogPayload.MigrationType</a></td>
+                  <td><a href="#bytebase.store.MigrationType">MigrationType</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -2910,41 +2929,6 @@ Format: projects/{project}/sheets/{sheet} </p></td>
         
       
 
-      
-        <h3 id="bytebase.store.ChangelogPayload.MigrationType">ChangelogPayload.MigrationType</h3>
-        <p>MigrationType is the type for imperative schema migration.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>MIGRATION_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DDL</td>
-                <td>1</td>
-                <td><p>Used for DDL changes.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DML</td>
-                <td>2</td>
-                <td><p>Used for DML changes.</p></td>
-              </tr>
-            
-              <tr>
-                <td>GHOST</td>
-                <td>3</td>
-                <td><p>Used for DDL changes using gh-ost.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
         <h3 id="bytebase.store.ChangelogPayload.Type">ChangelogPayload.Type</h3>
         <p></p>
@@ -6100,27 +6084,6 @@ Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID
     
       
       <div class="file-heading">
-        <h2 id="store/db_group.proto">store/db_group.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.DatabaseGroupPayload">DatabaseGroupPayload</h3>
-        <p></p>
-
-        
-
-        
-      
-
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
         <h2 id="store/export_archive.proto">store/export_archive.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -8128,6 +8091,330 @@ Format: users/{userUID}. </p></td>
     
       
       <div class="file-heading">
+        <h2 id="store/task_run.proto">store/task_run.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.PriorBackupDetail">PriorBackupDetail</h3>
+        <p>PriorBackupDetail contains information about automatic backups created before migration.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>items</td>
+                  <td><a href="#bytebase.store.PriorBackupDetail.Item">PriorBackupDetail.Item</a></td>
+                  <td>repeated</td>
+                  <td><p>List of backup operations performed. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PriorBackupDetail.Item">PriorBackupDetail.Item</h3>
+        <p>Item represents a single backup operation for a table.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>source_table</td>
+                  <td><a href="#bytebase.store.PriorBackupDetail.Item.Table">PriorBackupDetail.Item.Table</a></td>
+                  <td></td>
+                  <td><p>The original table that was backed up. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>target_table</td>
+                  <td><a href="#bytebase.store.PriorBackupDetail.Item.Table">PriorBackupDetail.Item.Table</a></td>
+                  <td></td>
+                  <td><p>The backup table where data was copied. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>start_position</td>
+                  <td><a href="#bytebase.store.Position">Position</a></td>
+                  <td></td>
+                  <td><p>Starting position in SQL for this backup operation. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_position</td>
+                  <td><a href="#bytebase.store.Position">Position</a></td>
+                  <td></td>
+                  <td><p>Ending position in SQL for this backup operation. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PriorBackupDetail.Item.Table">PriorBackupDetail.Item.Table</h3>
+        <p>Table identifies a database table.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The database containing the table.
+Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schema</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Schema name (for databases that support schemas). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>table</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Table name. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.SchedulerInfo">SchedulerInfo</h3>
+        <p>SchedulerInfo contains information about task scheduling and execution delays.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>report_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>Timestamp when the scheduler reported this information. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>waiting_cause</td>
+                  <td><a href="#bytebase.store.SchedulerInfo.WaitingCause">SchedulerInfo.WaitingCause</a></td>
+                  <td></td>
+                  <td><p>Reason why the task run is currently waiting. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.SchedulerInfo.WaitingCause">SchedulerInfo.WaitingCause</h3>
+        <p>WaitingCause indicates why a task run is waiting to execute.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>connection_limit</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Task is waiting due to database connection limit. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>task_uid</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Task is waiting for another task to complete. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>parallel_tasks_limit</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Task is waiting due to parallel execution limit. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.TaskRun">TaskRun</h3>
+        <p>TaskRun represents an execution attempt of a task.</p>
+
+        
+
+        
+      
+        <h3 id="bytebase.store.TaskRunResult">TaskRunResult</h3>
+        <p>TaskRunResult contains the outcome and metadata from a task run execution.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>detail</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Detailed execution information or error message. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>changelog</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Resource name of the changelog entry created by this run.
+Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Schema version after the migration was applied. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>start_position</td>
+                  <td><a href="#bytebase.store.Position">Position</a></td>
+                  <td></td>
+                  <td><p>Starting position in the SQL statement where an error occurred. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_position</td>
+                  <td><a href="#bytebase.store.Position">Position</a></td>
+                  <td></td>
+                  <td><p>Ending position in the SQL statement where an error occurred. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>export_archive_uid</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>UID of the export archive generated for export tasks. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>prior_backup_detail</td>
+                  <td><a href="#bytebase.store.PriorBackupDetail">PriorBackupDetail</a></td>
+                  <td></td>
+                  <td><p>Backup details that can be used to rollback changes. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.store.TaskRun.Status">TaskRun.Status</h3>
+        <p>Status represents the current execution state of a task run.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PENDING</td>
+                <td>1</td>
+                <td><p>Task run is queued and waiting to execute.</p></td>
+              </tr>
+            
+              <tr>
+                <td>RUNNING</td>
+                <td>2</td>
+                <td><p>Task run is currently executing.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DONE</td>
+                <td>3</td>
+                <td><p>Task run completed successfully.</p></td>
+              </tr>
+            
+              <tr>
+                <td>FAILED</td>
+                <td>4</td>
+                <td><p>Task run encountered an error and failed.</p></td>
+              </tr>
+            
+              <tr>
+                <td>CANCELED</td>
+                <td>5</td>
+                <td><p>Task run was canceled by user or system.</p></td>
+              </tr>
+            
+              <tr>
+                <td>NOT_STARTED</td>
+                <td>6</td>
+                <td><p>Task run has not started yet.</p></td>
+              </tr>
+            
+              <tr>
+                <td>SKIPPED</td>
+                <td>7</td>
+                <td><p>Task run was skipped and will not execute.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
         <h2 id="store/issue_comment.proto">store/issue_comment.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -8204,7 +8491,7 @@ Format: users/{userUID}. </p></td>
               
                 <tr>
                   <td>status</td>
-                  <td><a href="#bytebase.store.IssueCommentPayload.Approval.Status">IssueCommentPayload.Approval.Status</a></td>
+                  <td><a href="#bytebase.store.IssuePayloadApproval.Approver.Status">IssuePayloadApproval.Approver.Status</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -8256,14 +8543,14 @@ Format: users/{userUID}. </p></td>
               
                 <tr>
                   <td>from_status</td>
-                  <td><a href="#bytebase.store.IssueCommentPayload.IssueUpdate.IssueStatus">IssueCommentPayload.IssueUpdate.IssueStatus</a></td>
+                  <td><a href="#bytebase.store.Issue.Status">Issue.Status</a></td>
                   <td>optional</td>
                   <td><p> </p></td>
                 </tr>
               
                 <tr>
                   <td>to_status</td>
-                  <td><a href="#bytebase.store.IssueCommentPayload.IssueUpdate.IssueStatus">IssueCommentPayload.IssueUpdate.IssueStatus</a></td>
+                  <td><a href="#bytebase.store.Issue.Status">Issue.Status</a></td>
                   <td>optional</td>
                   <td><p> </p></td>
                 </tr>
@@ -8429,7 +8716,7 @@ Format: users/{userUID}. </p></td>
               
                 <tr>
                   <td>to_status</td>
-                  <td><a href="#bytebase.store.IssueCommentPayload.TaskUpdate.Status">IssueCommentPayload.TaskUpdate.Status</a></td>
+                  <td><a href="#bytebase.store.TaskRun.Status">TaskRun.Status</a></td>
                   <td>optional</td>
                   <td><p> </p></td>
                 </tr>
@@ -8442,129 +8729,6 @@ Format: users/{userUID}. </p></td>
         
       
 
-      
-        <h3 id="bytebase.store.IssueCommentPayload.Approval.Status">IssueCommentPayload.Approval.Status</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PENDING</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>APPROVED</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>REJECTED</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.IssueCommentPayload.IssueUpdate.IssueStatus">IssueCommentPayload.IssueUpdate.IssueStatus</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>ISSUE_STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>OPEN</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DONE</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CANCELED</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.IssueCommentPayload.TaskUpdate.Status">IssueCommentPayload.TaskUpdate.Status</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PENDING</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>RUNNING</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DONE</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>FAILED</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SKIPPED</td>
-                <td>5</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CANCELED</td>
-                <td>6</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
 
       
@@ -8653,9 +8817,10 @@ Format: projects/{project}/releases/{release} </p></td>
               
                 <tr>
                   <td>migrate_type</td>
-                  <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.MigrateType">PlanConfig.ChangeDatabaseConfig.MigrateType</a></td>
+                  <td><a href="#bytebase.store.MigrationType">MigrationType</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The migration type for imperative schema migration.
+It is only set when type is MIGRATE. </p></td>
                 </tr>
               
                 <tr>
@@ -8944,41 +9109,6 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
       
 
       
-        <h3 id="bytebase.store.PlanConfig.ChangeDatabaseConfig.MigrateType">PlanConfig.ChangeDatabaseConfig.MigrateType</h3>
-        <p>MigrateType is the migration type for imperative schema migration.</p><p>It is only set when type is MIGRATE.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>MIGRATE_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DDL</td>
-                <td>1</td>
-                <td><p>Used for DDL changes.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DML</td>
-                <td>2</td>
-                <td><p>Used for DML changes.</p></td>
-              </tr>
-            
-              <tr>
-                <td>GHOST</td>
-                <td>3</td>
-                <td><p>Used for DDL changes using gh-ost.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
         <h3 id="bytebase.store.PlanConfig.ChangeDatabaseConfig.Type">PlanConfig.ChangeDatabaseConfig.Type</h3>
         <p>Type is the database change type.</p>
         <table class="enum-table">
@@ -9181,7 +9311,7 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
               
                 <tr>
                   <td>status</td>
-                  <td><a href="#bytebase.store.PlanCheckRunResult.Result.Status">PlanCheckRunResult.Result.Status</a></td>
+                  <td><a href="#bytebase.store.Advice.Status">Advice.Status</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -9315,7 +9445,7 @@ To supersede `line` and `column` above. </p></td>
 
       
         <h3 id="bytebase.store.PlanCheckRunConfig.ChangeDatabaseType">PlanCheckRunConfig.ChangeDatabaseType</h3>
-        <p></p>
+        <p>ChangeDatabaseType extends MigrationType with additional execution contexts.</p><p>Note: DDL, DML, and DDL_GHOST values align with MigrationType enum values.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -9355,41 +9485,6 @@ To supersede `line` and `column` above. </p></td>
               <tr>
                 <td>SQL_EDITOR</td>
                 <td>5</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.PlanCheckRunResult.Result.Status">PlanCheckRunResult.Result.Status</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ERROR</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>WARNING</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SUCCESS</td>
-                <td>3</td>
                 <td><p></p></td>
               </tr>
             
@@ -10583,7 +10678,7 @@ Format: projects/{project}/sheets/{sheet} </p></td>
               
                 <tr>
                   <td>type</td>
-                  <td><a href="#bytebase.store.ReleasePayload.File.Type">ReleasePayload.File.Type</a></td>
+                  <td><a href="#bytebase.store.SchemaChangeType">SchemaChangeType</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -10597,7 +10692,7 @@ Format: projects/{project}/sheets/{sheet} </p></td>
               
                 <tr>
                   <td>migration_type</td>
-                  <td><a href="#bytebase.store.ReleasePayload.File.MigrationType">ReleasePayload.File.MigrationType</a></td>
+                  <td><a href="#bytebase.store.MigrationType">MigrationType</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -10641,70 +10736,6 @@ Format: projects/{project}/sheets/{sheet} </p></td>
         
       
 
-      
-        <h3 id="bytebase.store.ReleasePayload.File.MigrationType">ReleasePayload.File.MigrationType</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>MIGRATION_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DDL</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DDL_GHOST</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DML</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.ReleasePayload.File.Type">ReleasePayload.File.Type</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>VERSIONED</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DECLARATIVE</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
 
       
@@ -10808,7 +10839,7 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRu
               
                 <tr>
                   <td>type</td>
-                  <td><a href="#bytebase.store.RevisionPayload.Type">RevisionPayload.Type</a></td>
+                  <td><a href="#bytebase.store.SchemaChangeType">SchemaChangeType</a></td>
                   <td></td>
                   <td><p>The type of the revision. </p></td>
                 </tr>
@@ -10821,35 +10852,6 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRu
         
       
 
-      
-        <h3 id="bytebase.store.RevisionPayload.Type">RevisionPayload.Type</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>VERSIONED</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DECLARATIVE</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
 
       
@@ -12503,37 +12505,6 @@ Default to this mode.</p></td>
       <p></p>
 
       
-        <h3 id="bytebase.store.SheetCommand">SheetCommand</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>start</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>end</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.SheetPayload">SheetPayload</h3>
         <p></p>
 
@@ -12553,7 +12524,7 @@ Default to this mode.</p></td>
               
                 <tr>
                   <td>commands</td>
-                  <td><a href="#bytebase.store.SheetCommand">SheetCommand</a></td>
+                  <td><a href="#bytebase.store.Range">Range</a></td>
                   <td>repeated</td>
                   <td><p>The start and end position of each command in the sheet statement. </p></td>
                 </tr>
@@ -12682,7 +12653,7 @@ Default to this mode.</p></td>
               
                 <tr>
                   <td>migrate_type</td>
-                  <td><a href="#bytebase.store.Task.MigrateType">Task.MigrateType</a></td>
+                  <td><a href="#bytebase.store.MigrationType">MigrationType</a></td>
                   <td></td>
                   <td><p>The type of migration (DDL, DML, or GHOST). </p></td>
                 </tr>
@@ -12766,41 +12737,6 @@ Format: projects/{project}/releases/{release}/files/{id} </p></td>
       
 
       
-        <h3 id="bytebase.store.Task.MigrateType">Task.MigrateType</h3>
-        <p>MigrateType is the database migration type for imperative migrations.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>MIGRATE_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DDL</td>
-                <td>1</td>
-                <td><p>DDL changes (Data Definition Language) for schema modifications.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DML</td>
-                <td>2</td>
-                <td><p>DML changes (Data Manipulation Language) for data modifications.</p></td>
-              </tr>
-            
-              <tr>
-                <td>GHOST</td>
-                <td>3</td>
-                <td><p>Online schema migration using gh-ost tool.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
         <h3 id="bytebase.store.Task.Type">Task.Type</h3>
         <p>Type represents the type of database operation to perform.</p>
         <table class="enum-table">
@@ -12837,330 +12773,6 @@ Format: projects/{project}/releases/{release}/files/{id} </p></td>
                 <td>DATABASE_SDL</td>
                 <td>6</td>
                 <td><p>Apply declarative schema changes (state-based migration).</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
-        <h2 id="store/task_run.proto">store/task_run.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.PriorBackupDetail">PriorBackupDetail</h3>
-        <p>PriorBackupDetail contains information about automatic backups created before migration.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>items</td>
-                  <td><a href="#bytebase.store.PriorBackupDetail.Item">PriorBackupDetail.Item</a></td>
-                  <td>repeated</td>
-                  <td><p>List of backup operations performed. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PriorBackupDetail.Item">PriorBackupDetail.Item</h3>
-        <p>Item represents a single backup operation for a table.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>source_table</td>
-                  <td><a href="#bytebase.store.PriorBackupDetail.Item.Table">PriorBackupDetail.Item.Table</a></td>
-                  <td></td>
-                  <td><p>The original table that was backed up. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>target_table</td>
-                  <td><a href="#bytebase.store.PriorBackupDetail.Item.Table">PriorBackupDetail.Item.Table</a></td>
-                  <td></td>
-                  <td><p>The backup table where data was copied. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>start_position</td>
-                  <td><a href="#bytebase.store.Position">Position</a></td>
-                  <td></td>
-                  <td><p>Starting position in SQL for this backup operation. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>end_position</td>
-                  <td><a href="#bytebase.store.Position">Position</a></td>
-                  <td></td>
-                  <td><p>Ending position in SQL for this backup operation. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PriorBackupDetail.Item.Table">PriorBackupDetail.Item.Table</h3>
-        <p>Table identifies a database table.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The database containing the table.
-Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Schema name (for databases that support schemas). </p></td>
-                </tr>
-              
-                <tr>
-                  <td>table</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Table name. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.SchedulerInfo">SchedulerInfo</h3>
-        <p>SchedulerInfo contains information about task scheduling and execution delays.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>report_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>Timestamp when the scheduler reported this information. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>waiting_cause</td>
-                  <td><a href="#bytebase.store.SchedulerInfo.WaitingCause">SchedulerInfo.WaitingCause</a></td>
-                  <td></td>
-                  <td><p>Reason why the task run is currently waiting. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.SchedulerInfo.WaitingCause">SchedulerInfo.WaitingCause</h3>
-        <p>WaitingCause indicates why a task run is waiting to execute.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>connection_limit</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Task is waiting due to database connection limit. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>task_uid</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>Task is waiting for another task to complete. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>parallel_tasks_limit</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Task is waiting due to parallel execution limit. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.TaskRun">TaskRun</h3>
-        <p>TaskRun represents an execution attempt of a task.</p>
-
-        
-
-        
-      
-        <h3 id="bytebase.store.TaskRunResult">TaskRunResult</h3>
-        <p>TaskRunResult contains the outcome and metadata from a task run execution.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>detail</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Detailed execution information or error message. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>changelog</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Resource name of the changelog entry created by this run.
-Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Schema version after the migration was applied. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>start_position</td>
-                  <td><a href="#bytebase.store.Position">Position</a></td>
-                  <td></td>
-                  <td><p>Starting position in the SQL statement where an error occurred. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>end_position</td>
-                  <td><a href="#bytebase.store.Position">Position</a></td>
-                  <td></td>
-                  <td><p>Ending position in the SQL statement where an error occurred. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>export_archive_uid</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>UID of the export archive generated for export tasks. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>prior_backup_detail</td>
-                  <td><a href="#bytebase.store.PriorBackupDetail">PriorBackupDetail</a></td>
-                  <td></td>
-                  <td><p>Backup details that can be used to rollback changes. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-        <h3 id="bytebase.store.TaskRun.Status">TaskRun.Status</h3>
-        <p>Status represents the current execution state of a task run.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PENDING</td>
-                <td>1</td>
-                <td><p>Task run is queued and waiting to execute.</p></td>
-              </tr>
-            
-              <tr>
-                <td>RUNNING</td>
-                <td>2</td>
-                <td><p>Task run is currently executing.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DONE</td>
-                <td>3</td>
-                <td><p>Task run completed successfully.</p></td>
-              </tr>
-            
-              <tr>
-                <td>FAILED</td>
-                <td>4</td>
-                <td><p>Task run encountered an error and failed.</p></td>
-              </tr>
-            
-              <tr>
-                <td>CANCELED</td>
-                <td>5</td>
-                <td><p>Task run was canceled by user or system.</p></td>
-              </tr>
-            
-              <tr>
-                <td>NOT_STARTED</td>
-                <td>6</td>
-                <td><p>Task run has not started yet.</p></td>
-              </tr>
-            
-              <tr>
-                <td>SKIPPED</td>
-                <td>7</td>
-                <td><p>Task run was skipped and will not execute.</p></td>
               </tr>
             
           </tbody>

@@ -90,9 +90,9 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Con
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
 		// Only DDL, DML, and MIGRATE_TYPE_UNSPECIFIED (treated as DDL) migrate types are supported for database group targets
 		switch config.MigrateType {
-		case storepb.PlanConfig_ChangeDatabaseConfig_DDL:
-		case storepb.PlanConfig_ChangeDatabaseConfig_DML:
-		case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_TYPE_UNSPECIFIED:
+		case storepb.MigrationType_DDL:
+		case storepb.MigrationType_DML:
+		case storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED:
 		default:
 			return nil, errors.Errorf("unsupported migrate type %q for database group target", config.MigrateType)
 		}
@@ -221,7 +221,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 			DatabaseName:       database.DatabaseName,
 		},
 	})
-	if config.Type == storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE && config.MigrateType == storepb.PlanConfig_ChangeDatabaseConfig_GHOST {
+	if config.Type == storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE && config.MigrateType == storepb.MigrationType_GHOST {
 		planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
 			PlanUID: plan.UID,
 			Status:  store.PlanCheckRunStatusRunning,
@@ -239,15 +239,15 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 	return planCheckRuns, nil
 }
 
-func convertToChangeDatabaseType(t storepb.PlanConfig_ChangeDatabaseConfig_Type, migrateType storepb.PlanConfig_ChangeDatabaseConfig_MigrateType) storepb.PlanCheckRunConfig_ChangeDatabaseType {
+func convertToChangeDatabaseType(t storepb.PlanConfig_ChangeDatabaseConfig_Type, migrateType storepb.MigrationType) storepb.PlanCheckRunConfig_ChangeDatabaseType {
 	switch t {
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
 		switch migrateType {
-		case storepb.PlanConfig_ChangeDatabaseConfig_DDL:
+		case storepb.MigrationType_DDL:
 			return storepb.PlanCheckRunConfig_DDL
-		case storepb.PlanConfig_ChangeDatabaseConfig_GHOST:
+		case storepb.MigrationType_GHOST:
 			return storepb.PlanCheckRunConfig_DDL_GHOST
-		case storepb.PlanConfig_ChangeDatabaseConfig_DML:
+		case storepb.MigrationType_DML:
 			return storepb.PlanCheckRunConfig_DML
 		default:
 			return storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED

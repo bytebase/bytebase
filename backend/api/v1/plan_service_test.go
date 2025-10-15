@@ -64,8 +64,8 @@ func TestParsePlanCheckRunFilter(t *testing.T) {
 			name:   "result_status equals SUCCESS",
 			filter: `result_status == "SUCCESS"`,
 			want: &store.FindPlanCheckRunMessage{
-				ResultStatus: &[]storepb.PlanCheckRunResult_Result_Status{
-					storepb.PlanCheckRunResult_Result_SUCCESS,
+				ResultStatus: &[]storepb.Advice_Status{
+					storepb.Advice_SUCCESS,
 				},
 			},
 		},
@@ -73,8 +73,8 @@ func TestParsePlanCheckRunFilter(t *testing.T) {
 			name:   "result_status equals ERROR",
 			filter: `result_status == "ERROR"`,
 			want: &store.FindPlanCheckRunMessage{
-				ResultStatus: &[]storepb.PlanCheckRunResult_Result_Status{
-					storepb.PlanCheckRunResult_Result_ERROR,
+				ResultStatus: &[]storepb.Advice_Status{
+					storepb.Advice_ERROR,
 				},
 			},
 		},
@@ -82,8 +82,8 @@ func TestParsePlanCheckRunFilter(t *testing.T) {
 			name:   "result_status equals WARNING",
 			filter: `result_status == "WARNING"`,
 			want: &store.FindPlanCheckRunMessage{
-				ResultStatus: &[]storepb.PlanCheckRunResult_Result_Status{
-					storepb.PlanCheckRunResult_Result_WARNING,
+				ResultStatus: &[]storepb.Advice_Status{
+					storepb.Advice_WARNING,
 				},
 			},
 		},
@@ -91,9 +91,9 @@ func TestParsePlanCheckRunFilter(t *testing.T) {
 			name:   "result_status in list",
 			filter: `result_status in ["SUCCESS", "WARNING"]`,
 			want: &store.FindPlanCheckRunMessage{
-				ResultStatus: &[]storepb.PlanCheckRunResult_Result_Status{
-					storepb.PlanCheckRunResult_Result_SUCCESS,
-					storepb.PlanCheckRunResult_Result_WARNING,
+				ResultStatus: &[]storepb.Advice_Status{
+					storepb.Advice_SUCCESS,
+					storepb.Advice_WARNING,
 				},
 			},
 		},
@@ -102,8 +102,8 @@ func TestParsePlanCheckRunFilter(t *testing.T) {
 			filter: `status == "DONE" && result_status == "SUCCESS"`,
 			want: &store.FindPlanCheckRunMessage{
 				Status: &[]store.PlanCheckRunStatus{store.PlanCheckRunStatusDone},
-				ResultStatus: &[]storepb.PlanCheckRunResult_Result_Status{
-					storepb.PlanCheckRunResult_Result_SUCCESS,
+				ResultStatus: &[]storepb.Advice_Status{
+					storepb.Advice_SUCCESS,
 				},
 			},
 		},
@@ -115,8 +115,8 @@ func TestParsePlanCheckRunFilter(t *testing.T) {
 					store.PlanCheckRunStatusDone,
 					store.PlanCheckRunStatusFailed,
 				},
-				ResultStatus: &[]storepb.PlanCheckRunResult_Result_Status{
-					storepb.PlanCheckRunResult_Result_ERROR,
+				ResultStatus: &[]storepb.Advice_Status{
+					storepb.Advice_ERROR,
 				},
 			},
 		},

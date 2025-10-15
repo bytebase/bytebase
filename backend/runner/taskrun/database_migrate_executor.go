@@ -59,13 +59,13 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 
 	//exhaustive:enforce
 	switch migrateType {
-	case storepb.Task_DDL:
+	case storepb.MigrationType_DDL:
 		return exec.runDDLMigration(ctx, driverCtx, task, taskRunUID)
-	case storepb.Task_DML:
+	case storepb.MigrationType_DML:
 		return exec.runDMLMigration(ctx, driverCtx, task, taskRunUID)
-	case storepb.Task_GHOST:
+	case storepb.MigrationType_GHOST:
 		return exec.runGhostMigration(ctx, driverCtx, task, taskRunUID)
-	case storepb.Task_MIGRATE_TYPE_UNSPECIFIED:
+	case storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED:
 		// Execute SQL without backup, same as DDL
 		return exec.runDDLMigration(ctx, driverCtx, task, taskRunUID)
 	default:

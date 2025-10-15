@@ -31,7 +31,7 @@ type FindRevisionMessage struct {
 	UID          *int64
 	InstanceID   *string
 	DatabaseName *string
-	Type         *storepb.RevisionPayload_Type
+	Type         *storepb.SchemaChangeType
 
 	Version  *string
 	Versions *[]string

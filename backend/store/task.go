@@ -84,7 +84,7 @@ type TaskPatch struct {
 	ExportFormat      *storepb.ExportFormat
 	ExportPassword    *string
 	EnablePriorBackup *bool
-	MigrateType       *storepb.Task_MigrateType
+	MigrateType       *storepb.MigrationType
 
 	// Flags for gh-ost.
 	Flags *map[string]string

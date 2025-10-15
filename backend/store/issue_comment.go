@@ -128,7 +128,7 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 	return issueComments, nil
 }
 
-func (s *Store) CreateIssueCommentTaskUpdateStatus(ctx context.Context, issueUID int, tasks []string, status storepb.IssueCommentPayload_TaskUpdate_Status, creatorUID int, comment string) error {
+func (s *Store) CreateIssueCommentTaskUpdateStatus(ctx context.Context, issueUID int, tasks []string, status storepb.TaskRun_Status, creatorUID int, comment string) error {
 	create := &IssueCommentMessage{
 		IssueUID: issueUID,
 		Payload: &storepb.IssueCommentPayload{

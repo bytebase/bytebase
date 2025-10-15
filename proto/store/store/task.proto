@@ -21,17 +21,6 @@ message Task {
     DATABASE_SDL = 6;
   }
 
-  // MigrateType is the database migration type for imperative migrations.
-  enum MigrateType {
-    MIGRATE_TYPE_UNSPECIFIED = 0;
-    // DDL changes (Data Definition Language) for schema modifications.
-    DDL = 1;
-    // DML changes (Data Manipulation Language) for data modifications.
-    DML = 2;
-    // Online schema migration using gh-ost tool.
-    GHOST = 3;
-  }
-
   // Whether the task was skipped during execution.
   bool skipped = 1;
   // Reason why the task was skipped.
@@ -61,7 +50,7 @@ message Task {
   // Source information if task is created from a release.
   TaskReleaseSource task_release_source = 13;
   // The type of migration (DDL, DML, or GHOST).
-  MigrateType migrate_type = 16;
+  MigrationType migrate_type = 16;
 
   // Password to encrypt the exported data archive.
   string password = 14;

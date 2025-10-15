@@ -302,21 +302,21 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 		}
 
 		// Determine task migrate type from plan config migrate type
-		var taskMigrateType storepb.Task_MigrateType
+		var taskMigrateType storepb.MigrationType
 		var flags map[string]string
 		switch c.MigrateType {
-		case storepb.PlanConfig_ChangeDatabaseConfig_DDL:
-			taskMigrateType = storepb.Task_DDL
-		case storepb.PlanConfig_ChangeDatabaseConfig_DML:
-			taskMigrateType = storepb.Task_DML
-		case storepb.PlanConfig_ChangeDatabaseConfig_GHOST:
-			taskMigrateType = storepb.Task_GHOST
+		case storepb.MigrationType_DDL:
+			taskMigrateType = storepb.MigrationType_DDL
+		case storepb.MigrationType_DML:
+			taskMigrateType = storepb.MigrationType_DML
+		case storepb.MigrationType_GHOST:
+			taskMigrateType = storepb.MigrationType_GHOST
 			if _, err := ghost.GetUserFlags(c.GhostFlags); err != nil {
 				return nil, errors.Wrapf(err, "invalid ghost flags %q", c.GhostFlags)
 			}
 			flags = c.GhostFlags
 		default:
-			taskMigrateType = storepb.Task_DDL
+			taskMigrateType = storepb.MigrationType_DDL
 		}
 
 		taskCreate := &store.TaskMessage{
@@ -400,9 +400,9 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 		appliedVersions := make(map[string]string) // version -> sha256
 		for _, revision := range revisions {
 			switch revision.Payload.Type {
-			case storepb.RevisionPayload_VERSIONED:
+			case storepb.SchemaChangeType_VERSIONED:
 				appliedVersions[revision.Version] = revision.Payload.SheetSha256
-			case storepb.RevisionPayload_DECLARATIVE:
+			case storepb.SchemaChangeType_DECLARATIVE:
 				v, err := model.NewVersion(revision.Version)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to parse revision version %q", revision.Version)
@@ -417,7 +417,7 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 
 		for _, file := range release.Payload.Files {
 			switch file.Type {
-			case storepb.ReleasePayload_File_VERSIONED:
+			case storepb.SchemaChangeType_VERSIONED:
 				// Skip if this version has already been applied
 				if _, ok := appliedVersions[file.Version]; ok {
 					// Skip files that have been applied with the same content
@@ -432,16 +432,16 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 				}
 
 				// Determine migrate type based on file change type
-				var migrateType storepb.Task_MigrateType
+				var migrateType storepb.MigrationType
 				switch file.MigrationType {
-				case storepb.ReleasePayload_File_DDL:
-					migrateType = storepb.Task_DDL
-				case storepb.ReleasePayload_File_DDL_GHOST:
-					migrateType = storepb.Task_GHOST
-				case storepb.ReleasePayload_File_DML:
-					migrateType = storepb.Task_DML
-				case storepb.ReleasePayload_File_MIGRATION_TYPE_UNSPECIFIED:
-					migrateType = storepb.Task_MIGRATE_TYPE_UNSPECIFIED
+				case storepb.MigrationType_DDL:
+					migrateType = storepb.MigrationType_DDL
+				case storepb.MigrationType_GHOST:
+					migrateType = storepb.MigrationType_GHOST
+				case storepb.MigrationType_DML:
+					migrateType = storepb.MigrationType_DML
+				case storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED:
+					migrateType = storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED
 				default:
 					return nil, errors.Errorf("unsupported release file migration type %q", file.MigrationType)
 				}
@@ -458,11 +458,11 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 				}
 
 				// Add ghost flags if this is a ghost migration
-				if migrateType == storepb.Task_GHOST && c.GhostFlags != nil {
+				if migrateType == storepb.MigrationType_GHOST && c.GhostFlags != nil {
 					payload.Flags = c.GhostFlags
 				}
 
-				if migrateType == storepb.Task_DML {
+				if migrateType == storepb.MigrationType_DML {
 					payload.EnablePriorBackup = c.EnablePriorBackup
 				}
 
@@ -478,7 +478,7 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 					Payload:      payload,
 				}
 				taskCreates = append(taskCreates, taskCreate)
-			case storepb.ReleasePayload_File_DECLARATIVE:
+			case storepb.SchemaChangeType_DECLARATIVE:
 				// skip if applied revisions contain an equal or higher version than the declarative file
 				v, err := model.NewVersion(file.Version)
 				if err != nil {

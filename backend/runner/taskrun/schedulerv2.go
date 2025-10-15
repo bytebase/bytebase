@@ -227,11 +227,11 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 				}
 				for _, result := range run.Result.Results {
 					// Block on errors for both ERROR_ONLY and STRICT enforcement
-					if result.Status == storepb.PlanCheckRunResult_Result_ERROR {
+					if result.Status == storepb.Advice_ERROR {
 						return false, nil
 					}
 					// Block on warnings only for STRICT enforcement
-					if planCheckEnforcement == storepb.RolloutPolicy_Checkers_STRICT && result.Status == storepb.PlanCheckRunResult_Result_WARNING {
+					if planCheckEnforcement == storepb.RolloutPolicy_Checkers_STRICT && result.Status == storepb.Advice_WARNING {
 						return false, nil
 					}
 				}
@@ -261,7 +261,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 
 	if issue != nil {
 		tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.Environment, taskUID)}
-		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_PENDING, common.SystemBotID, ""); err != nil {
+		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.TaskRun_PENDING, common.SystemBotID, ""); err != nil {
 			slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 		}
 	}
@@ -673,7 +673,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 				return nil
 			}
 			tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.Environment, task.ID)}
-			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_FAILED, common.SystemBotID, "")
+			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.TaskRun_FAILED, common.SystemBotID, "")
 		}(); err != nil {
 			slog.Warn("failed to create issue comment", log.BBError(err))
 		}
@@ -717,7 +717,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 				return nil
 			}
 			tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.Environment, task.ID)}
-			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.IssueCommentPayload_TaskUpdate_DONE, common.SystemBotID, "")
+			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.TaskRun_DONE, common.SystemBotID, "")
 		}(); err != nil {
 			slog.Warn("failed to create issue comment", log.BBError(err))
 		}
@@ -924,8 +924,8 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 							return errors.Wrapf(err, "failed to update issue status")
 						}
 
-						fromStatus := storepb.IssueCommentPayload_IssueUpdate_IssueStatus(storepb.IssueCommentPayload_IssueUpdate_IssueStatus_value[issueN.Status.String()])
-						toStatus := storepb.IssueCommentPayload_IssueUpdate_IssueStatus(storepb.IssueCommentPayload_IssueUpdate_IssueStatus_value[updatedIssue.Status.String()])
+						fromStatus := storepb.Issue_Status(storepb.Issue_Status_value[issueN.Status.String()])
+						toStatus := storepb.Issue_Status(storepb.Issue_Status_value[updatedIssue.Status.String()])
 						if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 							IssueUID: issueN.UID,
 							Payload: &storepb.IssueCommentPayload{
@@ -1022,9 +1022,9 @@ func isSequentialTask(task *store.TaskMessage) bool {
 	case storepb.Task_DATABASE_MIGRATE:
 		// DDL, GHOST, and MIGRATE_TYPE_UNSPECIFIED (treated as DDL) operations should be sequential
 		switch task.Payload.GetMigrateType() {
-		case storepb.Task_DDL, storepb.Task_GHOST, storepb.Task_MIGRATE_TYPE_UNSPECIFIED:
+		case storepb.MigrationType_DDL, storepb.MigrationType_GHOST, storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED:
 			return true
-		case storepb.Task_DML:
+		case storepb.MigrationType_DML:
 			return false
 		default:
 			return true

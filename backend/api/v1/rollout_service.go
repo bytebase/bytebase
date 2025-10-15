@@ -724,7 +724,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 	}
 
 	if issueN != nil {
-		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issueN.UID, request.Tasks, storepb.IssueCommentPayload_TaskUpdate_PENDING, user.ID, request.Reason); err != nil {
+		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issueN.UID, request.Tasks, storepb.TaskRun_PENDING, user.ID, request.Reason); err != nil {
 			slog.Warn("failed to create issue comment", "issueUID", issueN.UID, log.BBError(err))
 		}
 	}
@@ -825,7 +825,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 	}
 
 	if issueN != nil {
-		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issueN.UID, request.Tasks, storepb.IssueCommentPayload_TaskUpdate_SKIPPED, user.ID, request.Reason); err != nil {
+		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issueN.UID, request.Tasks, storepb.TaskRun_SKIPPED, user.ID, request.Reason); err != nil {
 			slog.Warn("failed to create issue comment", "issueUID", issueN.UID, log.BBError(err))
 		}
 	}
@@ -944,7 +944,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 	}
 
 	if issueN != nil {
-		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issueN.UID, taskNames, storepb.IssueCommentPayload_TaskUpdate_CANCELED, user.ID, request.Reason); err != nil {
+		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issueN.UID, taskNames, storepb.TaskRun_CANCELED, user.ID, request.Reason); err != nil {
 			slog.Warn("failed to create issue comment", "issueUID", issueN.UID, log.BBError(err))
 		}
 	}

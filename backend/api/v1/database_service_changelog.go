@@ -217,7 +217,7 @@ func convertToChangelogStatus(s store.ChangelogStatus) v1pb.Changelog_Status {
 	}
 }
 
-func convertToChangelogTypeAndMigrationType(t storepb.ChangelogPayload_Type, mt storepb.ChangelogPayload_MigrationType) (v1pb.Changelog_Type, v1pb.Changelog_MigrationType) {
+func convertToChangelogTypeAndMigrationType(t storepb.ChangelogPayload_Type, mt storepb.MigrationType) (v1pb.Changelog_Type, v1pb.Changelog_MigrationType) {
 	//exhaustive:enforce
 	switch t {
 	case storepb.ChangelogPayload_BASELINE:
@@ -225,11 +225,11 @@ func convertToChangelogTypeAndMigrationType(t storepb.ChangelogPayload_Type, mt 
 	case storepb.ChangelogPayload_MIGRATE:
 		// For MIGRATE type, check the migration type
 		switch mt {
-		case storepb.ChangelogPayload_DDL:
+		case storepb.MigrationType_DDL:
 			return v1pb.Changelog_MIGRATE, v1pb.Changelog_DDL
-		case storepb.ChangelogPayload_DML:
+		case storepb.MigrationType_DML:
 			return v1pb.Changelog_MIGRATE, v1pb.Changelog_DML
-		case storepb.ChangelogPayload_GHOST:
+		case storepb.MigrationType_GHOST:
 			return v1pb.Changelog_MIGRATE, v1pb.Changelog_GHOST
 		default:
 			return v1pb.Changelog_MIGRATE, v1pb.Changelog_MIGRATION_TYPE_UNSPECIFIED

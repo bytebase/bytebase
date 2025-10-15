@@ -21,6 +21,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// ChangeDatabaseType extends MigrationType with additional execution contexts.
+// Note: DDL, DML, and DDL_GHOST values align with MigrationType enum values.
 type PlanCheckRunConfig_ChangeDatabaseType int32
 
 const (
@@ -77,58 +79,6 @@ func (x PlanCheckRunConfig_ChangeDatabaseType) Number() protoreflect.EnumNumber 
 // Deprecated: Use PlanCheckRunConfig_ChangeDatabaseType.Descriptor instead.
 func (PlanCheckRunConfig_ChangeDatabaseType) EnumDescriptor() ([]byte, []int) {
 	return file_store_plan_check_run_proto_rawDescGZIP(), []int{0, 0}
-}
-
-type PlanCheckRunResult_Result_Status int32
-
-const (
-	PlanCheckRunResult_Result_STATUS_UNSPECIFIED PlanCheckRunResult_Result_Status = 0
-	PlanCheckRunResult_Result_ERROR              PlanCheckRunResult_Result_Status = 1
-	PlanCheckRunResult_Result_WARNING            PlanCheckRunResult_Result_Status = 2
-	PlanCheckRunResult_Result_SUCCESS            PlanCheckRunResult_Result_Status = 3
-)
-
-// Enum value maps for PlanCheckRunResult_Result_Status.
-var (
-	PlanCheckRunResult_Result_Status_name = map[int32]string{
-		0: "STATUS_UNSPECIFIED",
-		1: "ERROR",
-		2: "WARNING",
-		3: "SUCCESS",
-	}
-	PlanCheckRunResult_Result_Status_value = map[string]int32{
-		"STATUS_UNSPECIFIED": 0,
-		"ERROR":              1,
-		"WARNING":            2,
-		"SUCCESS":            3,
-	}
-)
-
-func (x PlanCheckRunResult_Result_Status) Enum() *PlanCheckRunResult_Result_Status {
-	p := new(PlanCheckRunResult_Result_Status)
-	*p = x
-	return p
-}
-
-func (x PlanCheckRunResult_Result_Status) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (PlanCheckRunResult_Result_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_plan_check_run_proto_enumTypes[1].Descriptor()
-}
-
-func (PlanCheckRunResult_Result_Status) Type() protoreflect.EnumType {
-	return &file_store_plan_check_run_proto_enumTypes[1]
-}
-
-func (x PlanCheckRunResult_Result_Status) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use PlanCheckRunResult_Result_Status.Descriptor instead.
-func (PlanCheckRunResult_Result_Status) EnumDescriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1, 0, 0}
 }
 
 type PlanCheckRunConfig struct {
@@ -279,11 +229,11 @@ func (x *PlanCheckRunResult) GetError() string {
 }
 
 type PlanCheckRunResult_Result struct {
-	state   protoimpl.MessageState           `protogen:"open.v1"`
-	Status  PlanCheckRunResult_Result_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.store.PlanCheckRunResult_Result_Status" json:"status,omitempty"`
-	Title   string                           `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Content string                           `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
-	Code    int32                            `protobuf:"varint,4,opt,name=code,proto3" json:"code,omitempty"`
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Status  Advice_Status          `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.store.Advice_Status" json:"status,omitempty"`
+	Title   string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Content string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
+	Code    int32                  `protobuf:"varint,4,opt,name=code,proto3" json:"code,omitempty"`
 	// Types that are valid to be assigned to Report:
 	//
 	//	*PlanCheckRunResult_Result_SqlSummaryReport_
@@ -323,11 +273,11 @@ func (*PlanCheckRunResult_Result) Descriptor() ([]byte, []int) {
 	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1, 0}
 }
 
-func (x *PlanCheckRunResult_Result) GetStatus() PlanCheckRunResult_Result_Status {
+func (x *PlanCheckRunResult_Result) GetStatus() Advice_Status {
 	if x != nil {
 		return x.Status
 	}
-	return PlanCheckRunResult_Result_STATUS_UNSPECIFIED
+	return Advice_STATUS_UNSPECIFIED
 }
 
 func (x *PlanCheckRunResult_Result) GetTitle() string {
@@ -527,7 +477,7 @@ var File_store_plan_check_run_proto protoreflect.FileDescriptor
 
 const file_store_plan_check_run_proto_rawDesc = "" +
 	"\n" +
-	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x15store/changelog.proto\x1a\x12store/common.proto\"\xe8\x04\n" +
+	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x15store/changelog.proto\x1a\x12store/common.proto\"\xe8\x04\n" +
 	"\x12PlanCheckRunConfig\x12\x1b\n" +
 	"\tsheet_uid\x18\x01 \x01(\x05R\bsheetUid\x12g\n" +
 	"\x14change_database_type\x18\x02 \x01(\x0e25.bytebase.store.PlanCheckRunConfig.ChangeDatabaseTypeR\x12changeDatabaseType\x12\x1f\n" +
@@ -549,12 +499,12 @@ const file_store_plan_check_run_proto_rawDesc = "" +
 	"\tDDL_GHOST\x10\x04\x12\x0e\n" +
 	"\n" +
 	"SQL_EDITOR\x10\x05B\x15\n" +
-	"\x13_database_group_uid\"\xb0\a\n" +
+	"\x13_database_group_uid\"\xd6\x06\n" +
 	"\x12PlanCheckRunResult\x12C\n" +
 	"\aresults\x18\x01 \x03(\v2).bytebase.store.PlanCheckRunResult.ResultR\aresults\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xbe\x06\n" +
-	"\x06Result\x12H\n" +
-	"\x06status\x18\x01 \x01(\x0e20.bytebase.store.PlanCheckRunResult.Result.StatusR\x06status\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xe4\x05\n" +
+	"\x06Result\x125\n" +
+	"\x06status\x18\x01 \x01(\x0e2\x1d.bytebase.store.Advice.StatusR\x06status\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x12\x12\n" +
 	"\x04code\x18\x04 \x01(\x05R\x04code\x12j\n" +
@@ -568,12 +518,7 @@ const file_store_plan_check_run_proto_rawDesc = "" +
 	"\x04line\x18\x01 \x01(\x05R\x04line\x12\x16\n" +
 	"\x06column\x18\x02 \x01(\x05R\x06column\x12?\n" +
 	"\x0estart_position\x18\b \x01(\v2\x18.bytebase.store.PositionR\rstartPosition\x12;\n" +
-	"\fend_position\x18\t \x01(\v2\x18.bytebase.store.PositionR\vendPositionJ\x04\b\x03\x10\x04J\x04\b\x04\x10\x05\"E\n" +
-	"\x06Status\x12\x16\n" +
-	"\x12STATUS_UNSPECIFIED\x10\x00\x12\t\n" +
-	"\x05ERROR\x10\x01\x12\v\n" +
-	"\aWARNING\x10\x02\x12\v\n" +
-	"\aSUCCESS\x10\x03B\b\n" +
+	"\fend_position\x18\t \x01(\v2\x18.bytebase.store.PositionR\vendPositionJ\x04\b\x03\x10\x04J\x04\b\x04\x10\x05B\b\n" +
 	"\x06reportB\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
@@ -588,27 +533,27 @@ func file_store_plan_check_run_proto_rawDescGZIP() []byte {
 	return file_store_plan_check_run_proto_rawDescData
 }
 
-var file_store_plan_check_run_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_store_plan_check_run_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_plan_check_run_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_store_plan_check_run_proto_goTypes = []any{
-	(PlanCheckRunConfig_ChangeDatabaseType)(0),         // 0: bytebase.store.PlanCheckRunConfig.ChangeDatabaseType
-	(PlanCheckRunResult_Result_Status)(0),              // 1: bytebase.store.PlanCheckRunResult.Result.Status
-	(*PlanCheckRunConfig)(nil),                         // 2: bytebase.store.PlanCheckRunConfig
-	(*PlanCheckRunResult)(nil),                         // 3: bytebase.store.PlanCheckRunResult
-	nil,                                                // 4: bytebase.store.PlanCheckRunConfig.GhostFlagsEntry
-	(*PlanCheckRunResult_Result)(nil),                  // 5: bytebase.store.PlanCheckRunResult.Result
-	(*PlanCheckRunResult_Result_SqlSummaryReport)(nil), // 6: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
-	(*PlanCheckRunResult_Result_SqlReviewReport)(nil),  // 7: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
-	(*ChangedResources)(nil),                           // 8: bytebase.store.ChangedResources
-	(*Position)(nil),                                   // 9: bytebase.store.Position
+	(PlanCheckRunConfig_ChangeDatabaseType)(0), // 0: bytebase.store.PlanCheckRunConfig.ChangeDatabaseType
+	(*PlanCheckRunConfig)(nil),                 // 1: bytebase.store.PlanCheckRunConfig
+	(*PlanCheckRunResult)(nil),                 // 2: bytebase.store.PlanCheckRunResult
+	nil,                                        // 3: bytebase.store.PlanCheckRunConfig.GhostFlagsEntry
+	(*PlanCheckRunResult_Result)(nil),          // 4: bytebase.store.PlanCheckRunResult.Result
+	(*PlanCheckRunResult_Result_SqlSummaryReport)(nil), // 5: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
+	(*PlanCheckRunResult_Result_SqlReviewReport)(nil),  // 6: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
+	(Advice_Status)(0),       // 7: bytebase.store.Advice.Status
+	(*ChangedResources)(nil), // 8: bytebase.store.ChangedResources
+	(*Position)(nil),         // 9: bytebase.store.Position
 }
 var file_store_plan_check_run_proto_depIdxs = []int32{
 	0, // 0: bytebase.store.PlanCheckRunConfig.change_database_type:type_name -> bytebase.store.PlanCheckRunConfig.ChangeDatabaseType
-	4, // 1: bytebase.store.PlanCheckRunConfig.ghost_flags:type_name -> bytebase.store.PlanCheckRunConfig.GhostFlagsEntry
-	5, // 2: bytebase.store.PlanCheckRunResult.results:type_name -> bytebase.store.PlanCheckRunResult.Result
-	1, // 3: bytebase.store.PlanCheckRunResult.Result.status:type_name -> bytebase.store.PlanCheckRunResult.Result.Status
-	6, // 4: bytebase.store.PlanCheckRunResult.Result.sql_summary_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
-	7, // 5: bytebase.store.PlanCheckRunResult.Result.sql_review_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
+	3, // 1: bytebase.store.PlanCheckRunConfig.ghost_flags:type_name -> bytebase.store.PlanCheckRunConfig.GhostFlagsEntry
+	4, // 2: bytebase.store.PlanCheckRunResult.results:type_name -> bytebase.store.PlanCheckRunResult.Result
+	7, // 3: bytebase.store.PlanCheckRunResult.Result.status:type_name -> bytebase.store.Advice.Status
+	5, // 4: bytebase.store.PlanCheckRunResult.Result.sql_summary_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
+	6, // 5: bytebase.store.PlanCheckRunResult.Result.sql_review_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
 	8, // 6: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.store.ChangedResources
 	9, // 7: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.start_position:type_name -> bytebase.store.Position
 	9, // 8: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.end_position:type_name -> bytebase.store.Position
@@ -624,6 +569,7 @@ func file_store_plan_check_run_proto_init() {
 	if File_store_plan_check_run_proto != nil {
 		return
 	}
+	file_store_advice_proto_init()
 	file_store_changelog_proto_init()
 	file_store_common_proto_init()
 	file_store_plan_check_run_proto_msgTypes[0].OneofWrappers = []any{}
@@ -636,7 +582,7 @@ func file_store_plan_check_run_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_plan_check_run_proto_rawDesc), len(file_store_plan_check_run_proto_rawDesc)),
-			NumEnums:      2,
+			NumEnums:      1,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,

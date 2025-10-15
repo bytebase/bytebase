@@ -23,19 +23,3 @@ func (x *SheetPayload) Equal(y *SheetPayload) bool {
 	}
 	return true
 }
-
-func (x *SheetCommand) Equal(y *SheetCommand) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Start != y.Start {
-		return false
-	}
-	if x.End != y.End {
-		return false
-	}
-	return true
-}

@@ -86,7 +86,7 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 	for _, run := range planCheckRuns {
 		p.PlanCheckRunStatusCount[string(run.Status)]++
 		for _, result := range run.Result.Results {
-			p.PlanCheckRunStatusCount[storepb.PlanCheckRunResult_Result_Status_name[int32(result.Status)]]++
+			p.PlanCheckRunStatusCount[storepb.Advice_Status_name[int32(result.Status)]]++
 		}
 	}
 	return p, nil
@@ -161,13 +161,13 @@ func convertToPlanSpecChangeDatabaseConfigType(t storepb.PlanConfig_ChangeDataba
 	}
 }
 
-func convertToPlanSpecMigrationType(t storepb.PlanConfig_ChangeDatabaseConfig_MigrateType) v1pb.MigrationType {
+func convertToPlanSpecMigrationType(t storepb.MigrationType) v1pb.MigrationType {
 	switch t {
-	case storepb.PlanConfig_ChangeDatabaseConfig_DDL:
+	case storepb.MigrationType_DDL:
 		return v1pb.MigrationType_DDL
-	case storepb.PlanConfig_ChangeDatabaseConfig_GHOST:
+	case storepb.MigrationType_GHOST:
 		return v1pb.MigrationType_GHOST
-	case storepb.PlanConfig_ChangeDatabaseConfig_DML:
+	case storepb.MigrationType_DML:
 		return v1pb.MigrationType_DML
 	default:
 		return v1pb.MigrationType_MIGRATION_TYPE_UNSPECIFIED
@@ -286,16 +286,16 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 	}
 
 	// Convert v1 MigrationType to store MigrateType
-	var storeMigrateType storepb.PlanConfig_ChangeDatabaseConfig_MigrateType
+	var storeMigrateType storepb.MigrationType
 	switch c.MigrationType {
 	case v1pb.MigrationType_DDL:
-		storeMigrateType = storepb.PlanConfig_ChangeDatabaseConfig_DDL
+		storeMigrateType = storepb.MigrationType_DDL
 	case v1pb.MigrationType_DML:
-		storeMigrateType = storepb.PlanConfig_ChangeDatabaseConfig_DML
+		storeMigrateType = storepb.MigrationType_DML
 	case v1pb.MigrationType_GHOST:
-		storeMigrateType = storepb.PlanConfig_ChangeDatabaseConfig_GHOST
+		storeMigrateType = storepb.MigrationType_GHOST
 	default:
-		storeMigrateType = storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_TYPE_UNSPECIFIED
+		storeMigrateType = storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED
 	}
 
 	return &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
@@ -431,15 +431,15 @@ func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1p
 	return resultV1
 }
 
-func convertToPlanCheckRunResultStatus(status storepb.PlanCheckRunResult_Result_Status) v1pb.PlanCheckRun_Result_Status {
+func convertToPlanCheckRunResultStatus(status storepb.Advice_Status) v1pb.PlanCheckRun_Result_Status {
 	switch status {
-	case storepb.PlanCheckRunResult_Result_STATUS_UNSPECIFIED:
+	case storepb.Advice_STATUS_UNSPECIFIED:
 		return v1pb.PlanCheckRun_Result_STATUS_UNSPECIFIED
-	case storepb.PlanCheckRunResult_Result_SUCCESS:
+	case storepb.Advice_SUCCESS:
 		return v1pb.PlanCheckRun_Result_SUCCESS
-	case storepb.PlanCheckRunResult_Result_WARNING:
+	case storepb.Advice_WARNING:
 		return v1pb.PlanCheckRun_Result_WARNING
-	case storepb.PlanCheckRunResult_Result_ERROR:
+	case storepb.Advice_ERROR:
 		return v1pb.PlanCheckRun_Result_ERROR
 	default:
 		return v1pb.PlanCheckRun_Result_STATUS_UNSPECIFIED
@@ -731,9 +731,9 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 	case storepb.Task_DATABASE_MIGRATE:
 		// Handle DATABASE_MIGRATE based on migrate_type
 		switch task.Payload.GetMigrateType() {
-		case storepb.Task_DDL, storepb.Task_GHOST, storepb.Task_MIGRATE_TYPE_UNSPECIFIED:
+		case storepb.MigrationType_DDL, storepb.MigrationType_GHOST, storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED:
 			return convertToTaskFromSchemaUpdate(ctx, s, project, task)
-		case storepb.Task_DML:
+		case storepb.MigrationType_DML:
 			return convertToTaskFromDataUpdate(ctx, s, project, task)
 		default:
 			return nil, errors.Errorf("unsupported migrate type %v", task.Payload.GetMigrateType())
@@ -804,9 +804,9 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	case storepb.Task_DATABASE_MIGRATE:
 		databaseChangeType = v1pb.DatabaseChangeType_MIGRATE
 		switch task.Payload.GetMigrateType() {
-		case storepb.Task_DDL:
+		case storepb.MigrationType_DDL:
 			migrationType = v1pb.MigrationType_DDL
-		case storepb.Task_GHOST:
+		case storepb.MigrationType_GHOST:
 			migrationType = v1pb.MigrationType_GHOST
 		default:
 			migrationType = v1pb.MigrationType_DDL
@@ -981,17 +981,17 @@ func convertToStoreTaskType(taskType v1pb.Task_Type) storepb.Task_Type {
 	}
 }
 
-// getMigrateTypeFromMigrationType converts v1pb.MigrationType to storepb.Task_MigrateType
-func getMigrateTypeFromMigrationType(migrationType v1pb.MigrationType) storepb.Task_MigrateType {
+// getMigrateTypeFromMigrationType converts v1pb.MigrationType to storepb.MigrationType
+func getMigrateTypeFromMigrationType(migrationType v1pb.MigrationType) storepb.MigrationType {
 	switch migrationType {
 	case v1pb.MigrationType_DDL:
-		return storepb.Task_DDL
+		return storepb.MigrationType_DDL
 	case v1pb.MigrationType_GHOST:
-		return storepb.Task_GHOST
+		return storepb.MigrationType_GHOST
 	case v1pb.MigrationType_DML:
-		return storepb.Task_DML
+		return storepb.MigrationType_DML
 	default:
-		return storepb.Task_MIGRATE_TYPE_UNSPECIFIED
+		return storepb.MigrationType_MIGRATION_TYPE_UNSPECIFIED
 	}
 }
 

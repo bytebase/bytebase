@@ -488,9 +488,9 @@ func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Rele
 			Path:          f.Path,
 			Sheet:         f.Sheet,
 			SheetSha256:   sheet.GetSha256Hex(),
-			Type:          storepb.ReleasePayload_File_Type(f.Type),
+			Type:          storepb.SchemaChangeType(f.Type),
 			Version:       f.Version,
-			MigrationType: storepb.ReleasePayload_File_MigrationType(f.MigrationType),
+			MigrationType: storepb.MigrationType(f.MigrationType),
 		})
 	}
 	return rFiles, nil

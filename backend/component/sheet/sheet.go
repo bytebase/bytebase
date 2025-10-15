@@ -88,7 +88,7 @@ func (sm *Manager) BatchCreateSheets(ctx context.Context, sheets []*store.SheetM
 	return sheets, nil
 }
 
-func getSheetCommands(engine storepb.Engine, statement string) []*storepb.SheetCommand {
+func getSheetCommands(engine storepb.Engine, statement string) []*storepb.Range {
 	// Burnout for large SQL.
 	if len(statement) > common.MaxSheetCheckSize {
 		return nil
@@ -106,7 +106,7 @@ func getSheetCommands(engine storepb.Engine, statement string) []*storepb.SheetC
 	}
 }
 
-func getSheetCommandsGeneral(engine storepb.Engine, statement string) []*storepb.SheetCommand {
+func getSheetCommandsGeneral(engine storepb.Engine, statement string) []*storepb.Range {
 	singleSQLs, err := base.SplitMultiSQL(engine, statement)
 	if err != nil {
 		if !strings.Contains(err.Error(), "not supported") {
@@ -119,11 +119,11 @@ func getSheetCommandsGeneral(engine storepb.Engine, statement string) []*storepb
 		return nil
 	}
 
-	var sheetCommands []*storepb.SheetCommand
+	var sheetCommands []*storepb.Range
 	p := 0
 	for _, s := range singleSQLs {
 		np := p + len(s.Text)
-		sheetCommands = append(sheetCommands, &storepb.SheetCommand{
+		sheetCommands = append(sheetCommands, &storepb.Range{
 			Start: int32(p),
 			End:   int32(np),
 		})
@@ -132,7 +132,7 @@ func getSheetCommandsGeneral(engine storepb.Engine, statement string) []*storepb
 	return sheetCommands
 }
 
-func getSheetCommandsFromByteOffset(engine storepb.Engine, statement string) []*storepb.SheetCommand {
+func getSheetCommandsFromByteOffset(engine storepb.Engine, statement string) []*storepb.Range {
 	singleSQLs, err := base.SplitMultiSQL(engine, statement)
 	if err != nil {
 		if !strings.Contains(err.Error(), "not supported") {
@@ -144,9 +144,9 @@ func getSheetCommandsFromByteOffset(engine storepb.Engine, statement string) []*
 		return nil
 	}
 
-	var sheetCommands []*storepb.SheetCommand
+	var sheetCommands []*storepb.Range
 	for _, s := range singleSQLs {
-		sheetCommands = append(sheetCommands, &storepb.SheetCommand{
+		sheetCommands = append(sheetCommands, &storepb.Range{
 			Start: int32(s.ByteOffsetStart),
 			End:   int32(s.ByteOffsetEnd),
 		})
@@ -154,15 +154,15 @@ func getSheetCommandsFromByteOffset(engine storepb.Engine, statement string) []*
 	return sheetCommands
 }
 
-func getSheetCommandsForMSSQL(statement string) []*storepb.SheetCommand {
-	var sheetCommands []*storepb.SheetCommand
+func getSheetCommandsForMSSQL(statement string) []*storepb.Range {
+	var sheetCommands []*storepb.Range
 
 	batch := tsqlbatch.NewBatcher(statement)
 	for {
 		command, err := batch.Next()
 		if err == io.EOF {
 			b := batch.Batch()
-			sheetCommands = append(sheetCommands, &storepb.SheetCommand{
+			sheetCommands = append(sheetCommands, &storepb.Range{
 				Start: int32(b.Start),
 				End:   int32(b.End),
 			})
@@ -179,7 +179,7 @@ func getSheetCommandsForMSSQL(statement string) []*storepb.SheetCommand {
 		switch command.(type) {
 		case *tsqlbatch.GoCommand:
 			b := batch.Batch()
-			sheetCommands = append(sheetCommands, &storepb.SheetCommand{
+			sheetCommands = append(sheetCommands, &storepb.Range{
 				Start: int32(b.Start),
 				End:   int32(b.End),
 			})

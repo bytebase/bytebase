@@ -361,6 +361,118 @@ func (RiskLevel) EnumDescriptor() ([]byte, []int) {
 	return file_store_common_proto_rawDescGZIP(), []int{4}
 }
 
+// MigrationType represents the type of database migration.
+type MigrationType int32
+
+const (
+	MigrationType_MIGRATION_TYPE_UNSPECIFIED MigrationType = 0
+	// DDL changes (Data Definition Language) for schema modifications.
+	MigrationType_DDL MigrationType = 1
+	// DML changes (Data Manipulation Language) for data modifications.
+	MigrationType_DML MigrationType = 2
+	// Online schema migration using gh-ost tool.
+	MigrationType_GHOST MigrationType = 3
+	// DDL changes using gh-ost tool (alternative naming).
+	MigrationType_DDL_GHOST MigrationType = 4
+)
+
+// Enum value maps for MigrationType.
+var (
+	MigrationType_name = map[int32]string{
+		0: "MIGRATION_TYPE_UNSPECIFIED",
+		1: "DDL",
+		2: "DML",
+		3: "GHOST",
+		4: "DDL_GHOST",
+	}
+	MigrationType_value = map[string]int32{
+		"MIGRATION_TYPE_UNSPECIFIED": 0,
+		"DDL":                        1,
+		"DML":                        2,
+		"GHOST":                      3,
+		"DDL_GHOST":                  4,
+	}
+)
+
+func (x MigrationType) Enum() *MigrationType {
+	p := new(MigrationType)
+	*p = x
+	return p
+}
+
+func (x MigrationType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MigrationType) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_common_proto_enumTypes[5].Descriptor()
+}
+
+func (MigrationType) Type() protoreflect.EnumType {
+	return &file_store_common_proto_enumTypes[5]
+}
+
+func (x MigrationType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MigrationType.Descriptor instead.
+func (MigrationType) EnumDescriptor() ([]byte, []int) {
+	return file_store_common_proto_rawDescGZIP(), []int{5}
+}
+
+// SchemaChangeType represents the strategy for schema changes.
+type SchemaChangeType int32
+
+const (
+	SchemaChangeType_SCHEMA_CHANGE_TYPE_UNSPECIFIED SchemaChangeType = 0
+	// Versioned migration with explicit migration scripts.
+	SchemaChangeType_VERSIONED SchemaChangeType = 1
+	// Declarative schema definition (state-based).
+	SchemaChangeType_DECLARATIVE SchemaChangeType = 2
+)
+
+// Enum value maps for SchemaChangeType.
+var (
+	SchemaChangeType_name = map[int32]string{
+		0: "SCHEMA_CHANGE_TYPE_UNSPECIFIED",
+		1: "VERSIONED",
+		2: "DECLARATIVE",
+	}
+	SchemaChangeType_value = map[string]int32{
+		"SCHEMA_CHANGE_TYPE_UNSPECIFIED": 0,
+		"VERSIONED":                      1,
+		"DECLARATIVE":                    2,
+	}
+)
+
+func (x SchemaChangeType) Enum() *SchemaChangeType {
+	p := new(SchemaChangeType)
+	*p = x
+	return p
+}
+
+func (x SchemaChangeType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SchemaChangeType) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_common_proto_enumTypes[6].Descriptor()
+}
+
+func (SchemaChangeType) Type() protoreflect.EnumType {
+	return &file_store_common_proto_enumTypes[6]
+}
+
+func (x SchemaChangeType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SchemaChangeType.Descriptor instead.
+func (SchemaChangeType) EnumDescriptor() ([]byte, []int) {
+	return file_store_common_proto_rawDescGZIP(), []int{6}
+}
+
 // PageToken is used internally for obfuscating pagination tokens.
 type PageToken struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -595,7 +707,17 @@ const file_store_common_proto_rawDesc = "" +
 	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03LOW\x10\x01\x12\f\n" +
 	"\bMODERATE\x10\x02\x12\b\n" +
-	"\x04HIGH\x10\x03B\x14Z\x12generated-go/storeb\x06proto3"
+	"\x04HIGH\x10\x03*[\n" +
+	"\rMigrationType\x12\x1e\n" +
+	"\x1aMIGRATION_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
+	"\x03DDL\x10\x01\x12\a\n" +
+	"\x03DML\x10\x02\x12\t\n" +
+	"\x05GHOST\x10\x03\x12\r\n" +
+	"\tDDL_GHOST\x10\x04*V\n" +
+	"\x10SchemaChangeType\x12\"\n" +
+	"\x1eSCHEMA_CHANGE_TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
+	"\tVERSIONED\x10\x01\x12\x0f\n" +
+	"\vDECLARATIVE\x10\x02B\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
 	file_store_common_proto_rawDescOnce sync.Once
@@ -609,17 +731,19 @@ func file_store_common_proto_rawDescGZIP() []byte {
 	return file_store_common_proto_rawDescData
 }
 
-var file_store_common_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
+var file_store_common_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
 var file_store_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_common_proto_goTypes = []any{
-	(Engine)(0),       // 0: bytebase.store.Engine
-	(VCSType)(0),      // 1: bytebase.store.VCSType
-	(MaskingLevel)(0), // 2: bytebase.store.MaskingLevel
-	(ExportFormat)(0), // 3: bytebase.store.ExportFormat
-	(RiskLevel)(0),    // 4: bytebase.store.RiskLevel
-	(*PageToken)(nil), // 5: bytebase.store.PageToken
-	(*Position)(nil),  // 6: bytebase.store.Position
-	(*Range)(nil),     // 7: bytebase.store.Range
+	(Engine)(0),           // 0: bytebase.store.Engine
+	(VCSType)(0),          // 1: bytebase.store.VCSType
+	(MaskingLevel)(0),     // 2: bytebase.store.MaskingLevel
+	(ExportFormat)(0),     // 3: bytebase.store.ExportFormat
+	(RiskLevel)(0),        // 4: bytebase.store.RiskLevel
+	(MigrationType)(0),    // 5: bytebase.store.MigrationType
+	(SchemaChangeType)(0), // 6: bytebase.store.SchemaChangeType
+	(*PageToken)(nil),     // 7: bytebase.store.PageToken
+	(*Position)(nil),      // 8: bytebase.store.Position
+	(*Range)(nil),         // 9: bytebase.store.Range
 }
 var file_store_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -639,7 +763,7 @@ func file_store_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_common_proto_rawDesc), len(file_store_common_proto_rawDesc)),
-			NumEnums:      5,
+			NumEnums:      7,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,

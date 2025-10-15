@@ -59,7 +59,7 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 	if sheet.Size > common.MaxSheetCheckSize {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
-				Status:  storepb.PlanCheckRunResult_Result_WARNING,
+				Status:  storepb.Advice_WARNING,
 				Code:    common.SizeExceeded.Int32(),
 				Title:   "Large SQL review policy is disabled",
 				Content: "",
@@ -82,7 +82,7 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 	if !common.EngineSupportStatementAdvise(instance.Metadata.GetEngine()) {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
-				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+				Status:  storepb.Advice_SUCCESS,
 				Code:    common.Ok.Int32(),
 				Title:   fmt.Sprintf("Statement advise is not supported for %s", instance.Metadata.GetEngine()),
 				Content: "",
@@ -106,7 +106,7 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 	if len(results) == 0 {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
-				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+				Status:  storepb.Advice_SUCCESS,
 				Title:   "OK",
 				Content: "",
 				Code:    common.Ok.Int32(),
@@ -194,14 +194,14 @@ func (e *StatementAdviseExecutor) runReview(
 
 	var results []*storepb.PlanCheckRunResult_Result
 	for _, advice := range adviceList {
-		status := storepb.PlanCheckRunResult_Result_SUCCESS
+		status := storepb.Advice_SUCCESS
 		switch advice.Status {
 		case storepb.Advice_SUCCESS:
 			continue
 		case storepb.Advice_WARNING:
-			status = storepb.PlanCheckRunResult_Result_WARNING
+			status = storepb.Advice_WARNING
 		case storepb.Advice_ERROR:
-			status = storepb.PlanCheckRunResult_Result_ERROR
+			status = storepb.Advice_ERROR
 		default:
 			// Other status types
 		}
@@ -225,7 +225,7 @@ func (e *StatementAdviseExecutor) runReview(
 	if len(results) == 0 {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
-				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+				Status:  storepb.Advice_SUCCESS,
 				Title:   "OK",
 				Content: "",
 				Code:    common.Ok.Int32(),
