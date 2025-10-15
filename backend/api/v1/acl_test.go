@@ -218,3 +218,87 @@ func TestToSnakeCase(t *testing.T) {
 		require.Equal(t, tt.want, got, tt.input)
 	}
 }
+
+func TestHasAllowMissingEnabled(t *testing.T) {
+	tests := []struct {
+		name    string
+		request any
+		want    bool
+	}{
+		{
+			name: "AllowMissing true",
+			request: &v1pb.UpdateRoleRequest{
+				AllowMissing: true,
+			},
+			want: true,
+		},
+		{
+			name: "AllowMissing false",
+			request: &v1pb.UpdateRoleRequest{
+				AllowMissing: false,
+			},
+			want: false,
+		},
+		{
+			name: "No AllowMissing field",
+			request: &v1pb.GetRoleRequest{
+				Name: "roles/test",
+			},
+			want: false,
+		},
+		{
+			name:    "Nil request",
+			request: nil,
+			want:    false,
+		},
+		{
+			name: "UpdateGroupRequest with AllowMissing true",
+			request: &v1pb.UpdateGroupRequest{
+				AllowMissing: true,
+			},
+			want: true,
+		},
+		{
+			name: "UpdateReviewConfigRequest with AllowMissing true",
+			request: &v1pb.UpdateReviewConfigRequest{
+				AllowMissing: true,
+			},
+			want: true,
+		},
+		{
+			name: "UpdateIdentityProviderRequest with AllowMissing false",
+			request: &v1pb.UpdateIdentityProviderRequest{
+				AllowMissing: false,
+			},
+			want: false,
+		},
+		{
+			name: "UpdateChangelistRequest with AllowMissing true",
+			request: &v1pb.UpdateChangelistRequest{
+				AllowMissing: true,
+			},
+			want: true,
+		},
+		{
+			name: "UpdateRiskRequest with AllowMissing true",
+			request: &v1pb.UpdateRiskRequest{
+				AllowMissing: true,
+			},
+			want: true,
+		},
+		{
+			name: "UpdateReleaseRequest with AllowMissing false",
+			request: &v1pb.UpdateReleaseRequest{
+				AllowMissing: false,
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := hasAllowMissingEnabled(tt.request)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
