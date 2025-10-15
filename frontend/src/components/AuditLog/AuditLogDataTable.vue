@@ -13,12 +13,17 @@
 import { file_google_rpc_error_details } from "@buf/googleapis_googleapis.bufbuild_es/google/rpc/error_details_pb";
 import { createRegistry, fromBinary, toJsonString } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
-import { NDataTable, type DataTableColumn } from "naive-ui";
+import { ExternalLinkIcon } from "lucide-vue-next";
+import { NButton, NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
 import { useProjectV1Store, useUserStore } from "@/store";
-import { projectNamePrefix } from "@/store/modules/v1/common";
+import {
+  projectNamePrefix,
+  rolloutNamePrefix,
+  getProjectIdRolloutUidStageUid,
+} from "@/store/modules/v1/common";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import { StatusSchema } from "@/types/proto-es/google/rpc/status_pb";
 import type { AuditLog } from "@/types/proto-es/v1/audit_log_service_pb";
@@ -26,8 +31,18 @@ import {
   AuditDataSchema,
   AuditLog_Severity,
 } from "@/types/proto-es/v1/audit_log_service_pb";
+import { IssueService, type Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { file_v1_plan_service } from "@/types/proto-es/v1/plan_service_pb";
+import { PlanService, type Plan } from "@/types/proto-es/v1/plan_service_pb";
+import {
+  RolloutService,
+  type Rollout,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { SettingSchema } from "@/types/proto-es/v1/setting_service_pb";
+import {
+  SQLService,
+  type ExportRequest,
+} from "@/types/proto-es/v1/sql_service_pb";
 import { humanizeDurationV1 } from "@/utils";
 import { extractProjectResourceName } from "@/utils";
 import JSONStringView from "./JSONStringView.vue";
@@ -196,11 +211,32 @@ const columnList = computed((): AuditDataTableColumn[] => {
           );
         },
       },
+      {
+        key: "view",
+        width: 60,
+        title: t("common.view"),
+        render: (auditLog) => {
+          let link = getViewLink(auditLog);
+          if (!link) {
+            return null;
+          }
+          if (!link.startsWith("/")) {
+            link = `/${link}`;
+          }
+          return (
+            <a href={link} target="_blank">
+              <NButton size="small" text type="primary">
+                <ExternalLinkIcon class={"w-4"} />
+              </NButton>
+            </a>
+          );
+        },
+      },
     ] as AuditDataTableColumn[]
   ).filter((column) => !column.hide);
 });
 
-function getServiceDataValue(typeUrl: string, value: Uint8Array): any {
+const getServiceDataValue = (typeUrl: string, value: Uint8Array): any => {
   switch (typeUrl) {
     case "type.googleapis.com/bytebase.v1.AuditData":
       return fromBinary(AuditDataSchema, value);
@@ -209,5 +245,43 @@ function getServiceDataValue(typeUrl: string, value: Uint8Array): any {
     default:
       return null;
   }
-}
+};
+
+const getViewLink = (auditLog: AuditLog): string | null => {
+  let parsedRequest: any;
+  let parsedResponse: any;
+  try {
+    parsedRequest = JSON.parse(auditLog.request || "{}");
+    parsedResponse = JSON.parse(auditLog.response || "{}");
+  } catch {
+    return null;
+  }
+  if (Boolean(parsedRequest["validateOnly"])) {
+    return null;
+  }
+
+  const sections = auditLog.method.split("/").filter((i) => i);
+  switch (sections[0]) {
+    case RolloutService.typeName:
+      return (parsedResponse as Rollout).name;
+    case PlanService.typeName:
+      return (parsedResponse as Plan).name;
+    case IssueService.typeName:
+      return (parsedResponse as Issue).name;
+    case SQLService.typeName:
+      if (sections[1] !== "Export") {
+        return null;
+      }
+      const name = (parsedRequest as ExportRequest).name;
+      if (!name) {
+        return null;
+      }
+      const [projectId, rolloutId, _] = getProjectIdRolloutUidStageUid(name);
+      if (!projectId || !rolloutId) {
+        return null;
+      }
+      return `${projectNamePrefix}${projectId}/${rolloutNamePrefix}${rolloutId}`;
+  }
+  return null;
+};
 </script>
