@@ -8,9 +8,10 @@ import (
 	pgparser "github.com/bytebase/parser/postgresql"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
-	"github.com/pkg/errors"
 )
 
 // Add this field to querySpanExtractor struct (defined in query_span_extractor.go):
@@ -995,10 +996,7 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef pgparser.IT
 			if join.Join_qual() != nil && join.Join_qual().USING() != nil {
 				usingColumns = normalizePostgreSQLNameList(join.Join_qual().Name_list())
 			}
-			anchor, err = q.joinTableSources(anchor, tableSource, naturalJoin, usingColumns)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to join tables")
-			}
+			anchor = q.joinTableSources(anchor, tableSource, naturalJoin, usingColumns)
 			if i == 0 && tableRef.Opt_alias_clause() != nil && tableRef.Table_ref() != nil {
 				anchor, err = applyOptAliasClauseToTableSource(anchor, tableRef.Opt_alias_clause())
 				if err != nil {
@@ -1011,7 +1009,7 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef pgparser.IT
 	return anchor, nil
 }
 
-func (q *querySpanExtractor) joinTableSources(left, right base.TableSource, naturalJoin bool, usingColumn []string) (base.TableSource, error) {
+func (q *querySpanExtractor) joinTableSources(left, right base.TableSource, naturalJoin bool, usingColumn []string) base.TableSource {
 	leftSpanResult, rightSpanResult := left.GetQuerySpanResult(), right.GetQuerySpanResult()
 
 	result := new(base.PseudoTable)
@@ -1057,7 +1055,7 @@ func (q *querySpanExtractor) joinTableSources(left, right base.TableSource, natu
 		}
 	}
 
-	return result, nil
+	return result
 }
 
 // extractTableSourceFromRelationExpr extracts table source from a relation expression (simple table)
@@ -1363,10 +1361,7 @@ func (q *querySpanExtractor) extractColumnsFromTargetList(targetList pgparser.IT
 		// Check if this is a star expansion
 		if _, ok := targetEl.(*pgparser.Target_starContext); ok {
 			// Handle SELECT * or SELECT table.*
-			starColumns, err := q.handleStarExpansion(fromFieldList)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to expand star")
-			}
+			starColumns := q.handleStarExpansion(fromFieldList)
 			result = append(result, starColumns...)
 			continue
 		}
@@ -1395,13 +1390,13 @@ func (q *querySpanExtractor) extractColumnsFromTargetList(targetList pgparser.IT
 }
 
 // handleStarExpansion handles SELECT * expansion
-func (q *querySpanExtractor) handleStarExpansion(fromFieldList []base.TableSource) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) handleStarExpansion(fromFieldList []base.TableSource) []base.QuerySpanResult {
 	// Simple * - expand all columns from all tables in FROM clause
 	var result []base.QuerySpanResult
 	for _, tableSource := range fromFieldList {
 		result = append(result, tableSource.GetQuerySpanResult()...)
 	}
-	return result, nil
+	return result
 }
 
 // handleTargetLabel handles a labeled target element (expression with optional alias)
@@ -1430,8 +1425,8 @@ func (q *querySpanExtractor) handleTargetLabel(labelCtx *pgparser.Target_labelCo
 
 	if columnName == "" {
 		// No alias, try to extract name from expression
-		columnName, err = q.getFieldNameFromAExpr(expr)
-		if err != nil || columnName == "" {
+		columnName = q.getFieldNameFromAExpr(expr)
+		if columnName == "" {
 			// Use default unknown column name
 			columnName = pgUnknownFieldName
 		}
@@ -1445,19 +1440,19 @@ func (q *querySpanExtractor) handleTargetLabel(labelCtx *pgparser.Target_labelCo
 
 // getFieldNameFromAExpr attempts to extract a meaningful column name from an expression.
 // Returns "?column?" if no meaningful name can be derived.
-func (q *querySpanExtractor) getFieldNameFromAExpr(expr pgparser.IA_exprContext) (string, error) {
+func (q *querySpanExtractor) getFieldNameFromAExpr(expr pgparser.IA_exprContext) string {
 	if expr == nil {
-		return pgUnknownFieldName, nil
+		return pgUnknownFieldName
 	}
 
 	// Try to find a column reference in the expression
 	columnName := q.findColumnNameInExpression(expr)
 	if columnName != "" {
-		return columnName, nil
+		return columnName
 	}
 
 	// Default to unknown column name for other expression types
-	return pgUnknownFieldName, nil
+	return pgUnknownFieldName
 }
 
 // findColumnNameInExpression recursively searches for a column name in an expression
@@ -1696,9 +1691,7 @@ func (q *querySpanExtractor) getColumnsFromColumnRef(ctx pgparser.IColumnrefCont
 			}
 			querySpanResult := tableSource.GetQuerySpanResult()
 			var result []base.QuerySpanResult
-			for _, span := range querySpanResult {
-				result = append(result, span)
-			}
+			result = append(result, querySpanResult...)
 			return result, nil
 		}
 		return []base.QuerySpanResult{}, &parsererror.ResourceNotFoundError{
@@ -1851,180 +1844,6 @@ func getSelectNoParensFromSelectWithParens(selectWithParens pgparser.ISelect_wit
 	return nil
 }
 
-// extractTableSourceFromSelectNoParensNew handles SELECT without parentheses.
-func (q *querySpanExtractor) extractTableSourceFromSelectNoParensNew(ctx pgparser.ISelect_no_parensContext) (base.TableSource, error) {
-	if ctx == nil {
-		return nil, errors.New("select_no_parens context is nil")
-	}
-
-	// Handle WITH clause if present
-	if ctx.With_clause() != nil {
-		if err := q.handleWithClause(ctx.With_clause()); err != nil {
-			return nil, errors.Wrapf(err, "failed to handle WITH clause")
-		}
-	}
-
-	// Handle SELECT clause
-	if ctx.Select_clause() != nil {
-		return q.extractTableSourceFromSelectClause(ctx.Select_clause())
-	}
-
-	return nil, errors.New("no select clause found")
-}
-
-// extractTableSourceFromSelectClause handles the main SELECT clause.
-func (q *querySpanExtractor) extractTableSourceFromSelectClause(ctx pgparser.ISelect_clauseContext) (base.TableSource, error) {
-	if ctx == nil {
-		return nil, errors.New("select_clause context is nil")
-	}
-
-	// Create result table
-	result := &base.PseudoTable{
-		Name:    "",
-		Columns: []base.QuerySpanResult{},
-	}
-
-	// Handle simple SELECT
-	for _, simpleSelect := range ctx.AllSimple_select_intersect() {
-		for _, primary := range simpleSelect.AllSimple_select_pramary() {
-			// Handle FROM clause
-			if primary.From_clause() != nil && primary.From_clause().From_list() != nil {
-				for _, fromItem := range primary.From_clause().From_list().AllTable_ref() {
-					tableSource, err := q.extractTableSourceFromTableRef(fromItem)
-					if err != nil {
-						return nil, err
-					}
-					q.tableSourcesFrom = append(q.tableSourcesFrom, tableSource)
-				}
-			}
-
-			// Handle target list
-			if primary.Opt_target_list() != nil && primary.Opt_target_list().Target_list() != nil {
-				for _, target := range primary.Opt_target_list().Target_list().AllTarget_el() {
-					if err := q.handleTargetElement(target, result); err != nil {
-						return nil, err
-					}
-				}
-			}
-		}
-	}
-
-	return result, nil
-}
-
-// handleTargetElement processes a single target element in SELECT list
-func (q *querySpanExtractor) handleTargetElement(target pgparser.ITarget_elContext, result *base.PseudoTable) error {
-	// Check if this is a star expansion
-	if _, ok := target.(*pgparser.Target_starContext); ok {
-		// Handle SELECT * or SELECT table.*
-		starColumns, err := q.handleStarExpansion(q.tableSourcesFrom)
-		if err != nil {
-			return errors.Wrapf(err, "failed to expand star")
-		}
-		result.Columns = append(result.Columns, starColumns...)
-		return nil
-	}
-
-	// Check if this is a labeled target (expression with optional alias)
-	if labelCtx, ok := target.(*pgparser.Target_labelContext); ok {
-		column, err := q.handleTargetLabel(labelCtx)
-		if err != nil {
-			return errors.Wrapf(err, "failed to process target element")
-		}
-		result.Columns = append(result.Columns, column)
-		return nil
-	}
-
-	return nil
-}
-
-// handleWithClause processes WITH clause (CTEs)
-func (q *querySpanExtractor) handleWithClause(withClause pgparser.IWith_clauseContext) error {
-	if withClause == nil || withClause.Cte_list() == nil {
-		return nil
-	}
-
-	for _, cte := range withClause.Cte_list().AllCommon_table_expr() {
-		if err := q.handleCommonTableExpr(cte); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// handleCommonTableExpr processes a single CTE
-func (q *querySpanExtractor) handleCommonTableExpr(cte pgparser.ICommon_table_exprContext) error {
-	if cte == nil {
-		return nil
-	}
-
-	// Extract CTE name
-	cteName := ""
-	if cte.Name() != nil {
-		cteName = normalizePostgreSQLName(cte.Name())
-	}
-
-	// Extract table source from CTE query
-	var tableSource base.TableSource
-	var err error
-
-	// CTEs contain preparablestmt which can be SELECT, INSERT, UPDATE, DELETE
-	// For now, we only handle SELECT
-	if cte.Preparablestmt() != nil {
-		// TODO: Check for RECURSIVE keyword - for now treat all as non-recursive
-		tableSource, err = q.extractTableSourceFromNonRecursiveCTENew(cte)
-	}
-
-	if err != nil {
-		return errors.Wrapf(err, "failed to extract CTE %s", cteName)
-	}
-
-	// Apply column aliases if present
-	if cte.Opt_name_list() != nil && cte.Opt_name_list().Name_list() != nil {
-		columnAliases := normalizePostgreSQLNameList(cte.Opt_name_list().Name_list())
-		querySpanResults := tableSource.GetQuerySpanResult()
-
-		if len(columnAliases) > 0 && len(columnAliases) != len(querySpanResults) {
-			return errors.Errorf("CTE %s has %d columns but alias has %d columns",
-				cteName, len(querySpanResults), len(columnAliases))
-		}
-
-		for i, alias := range columnAliases {
-			querySpanResults[i].Name = alias
-		}
-	}
-
-	// Add CTE to the list
-	pseudoTable := &base.PseudoTable{
-		Name:    cteName,
-		Columns: tableSource.GetQuerySpanResult(),
-	}
-	q.ctes = append(q.ctes, pseudoTable)
-
-	return nil
-}
-
-// extractTableSourceFromNonRecursiveCTENew handles non-recursive CTEs
-func (q *querySpanExtractor) extractTableSourceFromNonRecursiveCTENew(cte pgparser.ICommon_table_exprContext) (base.TableSource, error) {
-	if cte.Preparablestmt() == nil {
-		return nil, errors.New("CTE without preparable statement")
-	}
-
-	// Try to get the SELECT statement from preparablestmt
-	preparable := cte.Preparablestmt()
-	if preparable.Selectstmt() != nil {
-		selectNoParens := getSelectNoParensFromSelectStmt(preparable.Selectstmt())
-		if selectNoParens != nil {
-			return q.extractTableSourceFromSelectNoParensNew(selectNoParens)
-		}
-	}
-
-	// TODO: Handle INSERT, UPDATE, DELETE in CTEs if needed
-
-	return nil, errors.New("failed to extract select from CTE")
-}
-
 func (q *querySpanExtractor) extractSourceColumnSetFromUDF2(funcExpr pgparser.IFunc_exprContext) (base.SourceColumnSet, error) {
 	schemaName, funcName, err := q.extractFunctionNameFromFuncExpr(funcExpr)
 	if err != nil {
@@ -2033,10 +1852,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromUDF2(funcExpr pgparser.IF
 	if schemaName == "" && IsSystemFunction(funcName, "") {
 		return base.SourceColumnSet{}, nil
 	}
-	nArgs, err := q.extractNFunctionArgsFromFuncExpr(funcExpr)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract function args")
-	}
+	nArgs := q.extractNFunctionArgsFromFuncExpr(funcExpr)
 
 	result := make(base.SourceColumnSet)
 	tableSource, err := q.findFunctionDefine(schemaName, funcName, nArgs)
@@ -2147,70 +1963,70 @@ func (q *querySpanExtractor) extractFunctionNameFromFuncExpr(funcExpr pgparser.I
 	return "", "", errors.New("unable to extract function name")
 }
 
-func (q *querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr pgparser.IFunc_exprContext) (int, error) {
+func (q *querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr pgparser.IFunc_exprContext) int {
 	if funcExpr == nil {
-		return 0, nil
+		return 0
 	}
 
 	// This handles generic function calls like my_func(a, b).
 	if fa := funcExpr.Func_application(); fa != nil {
 		if fa.Func_arg_list() != nil {
-			return len(fa.Func_arg_list().AllFunc_arg_expr()), nil
+			return len(fa.Func_arg_list().AllFunc_arg_expr())
 		}
 		// This handles cases like my_func(a) without a list rule.
 		if fa.Func_arg_expr() != nil {
-			return 1, nil
+			return 1
 		}
-		return 0, nil
+		return 0
 	}
 
 	// This handles JSON aggregate functions like JSON_AGG(expr).
 	if f := funcExpr.Json_aggregate_func(); f != nil {
 		// Based on Postgres grammar, these functions (JSON_AGG, JSONB_AGG, JSON_OBJECT_AGG, JSONB_OBJECT_AGG)
 		// typically take one or two main arguments. Returning 1 is a reasonable assumption for the primary expression argument.
-		return 1, nil
+		return 1
 	}
 
 	// This handles a large set of built-in functions with special syntax.
 	if f := funcExpr.Func_expr_common_subexpr(); f != nil {
 		// Functions with no parentheses have zero arguments (e.g., CURRENT_DATE, CURRENT_USER).
 		if f.OPEN_PAREN() == nil {
-			return 0, nil
+			return 0
 		}
 
 		// --- List-based Functions ---
 		// These functions take a variable number of arguments in a simple list.
 		if f.COALESCE() != nil || f.GREATEST() != nil || f.LEAST() != nil || f.XMLCONCAT() != nil {
 			if list := f.Expr_list(); list != nil {
-				return len(list.AllA_expr()), nil
+				return len(list.AllA_expr())
 			}
-			return 0, nil
+			return 0
 		}
 
 		// --- Functions with Specific Keyword-based Syntax ---
 
 		if f.COLLATION() != nil { // COLLATION FOR (a_expr)
-			return 1, nil
+			return 1
 		}
 
 		if f.CURRENT_TIME() != nil || f.CURRENT_TIMESTAMP() != nil || f.LOCALTIME() != nil || f.LOCALTIMESTAMP() != nil {
 			// e.g., CURRENT_TIME(precision)
 			if f.Iconst() != nil {
-				return 1, nil
+				return 1
 			}
-			return 0, nil
+			return 0
 		}
 
 		if f.CAST() != nil || f.TREAT() != nil { // CAST(expr AS type), TREAT(expr AS type)
-			return 2, nil
+			return 2
 		}
 
 		if f.EXTRACT() != nil { // EXTRACT(field FROM source)
 			if f.Extract_list() != nil {
 				// extract_list contains 'extract_arg' and 'a_expr'.
-				return 2, nil
+				return 2
 			}
-			return 0, nil
+			return 0
 		}
 
 		if f.NORMALIZE() != nil { // NORMALIZE(string [, form])
@@ -2218,28 +2034,28 @@ func (q *querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr pgparser.
 			if f.Unicode_normal_form() != nil {
 				count++
 			}
-			return count, nil
+			return count
 		}
 
 		if f.OVERLAY() != nil { // OVERLAY(string PLACING new_substring FROM start [FOR count])
 			if list := f.Overlay_list(); list != nil {
-				return len(list.AllA_expr()), nil // Counts all expressions
+				return len(list.AllA_expr()) // Counts all expressions
 			}
-			return 0, nil
+			return 0
 		}
 
 		if f.POSITION() != nil { // POSITION(substring IN string)
 			if f.Position_list() != nil {
-				return 2, nil
+				return 2
 			}
-			return 0, nil
+			return 0
 		}
 
 		if f.SUBSTRING() != nil { // SUBSTRING(string [FROM start] [FOR count])
 			if list := f.Substr_list(); list != nil {
-				return len(list.AllA_expr()), nil
+				return len(list.AllA_expr())
 			}
-			return 0, nil
+			return 0
 		}
 
 		if f.TRIM() != nil { // TRIM([LEADING|TRAILING|BOTH] [characters] FROM string)
@@ -2251,13 +2067,13 @@ func (q *querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr pgparser.
 				if list.Expr_list() != nil { // The mandatory 'string' argument
 					count += len(list.Expr_list().AllA_expr())
 				}
-				return count, nil
+				return count
 			}
-			return 0, nil
+			return 0
 		}
 
 		if f.NULLIF() != nil { // NULLIF(value1, value2)
-			return len(f.AllA_expr()), nil // Expects 2
+			return len(f.AllA_expr()) // Expects 2
 		}
 
 		// --- XML Functions ---
@@ -2272,74 +2088,74 @@ func (q *querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr pgparser.
 			if f.Expr_list() != nil {
 				count += len(f.Expr_list().AllA_expr())
 			}
-			return count, nil
+			return count
 		}
 		if f.XMLEXISTS() != nil {
-			return 2, nil
+			return 2
 		} // XMLEXISTS(xpath PASSING xml)
 		if f.XMLFOREST() != nil {
 			if list := f.Xml_attribute_list(); list != nil {
-				return len(list.AllXml_attribute_el()), nil
+				return len(list.AllXml_attribute_el())
 			}
-			return 0, nil
+			return 0
 		}
 		if f.XMLPARSE() != nil { // XMLPARSE(DOCUMENT|CONTENT string_value [WHITESPACE option])
 			count := 1 // string_value
 			if f.Xml_whitespace_option() != nil {
 				count++
 			}
-			return count, nil
+			return count
 		}
 		if f.XMLPI() != nil { // XMLPI(NAME target [, content])
 			count := 1 // target
 			if len(f.AllA_expr()) > 0 {
 				count++
 			}
-			return count, nil
+			return count
 		}
 		if f.XMLROOT() != nil {
 			count := 2 // xml and version
 			if f.Opt_xml_root_standalone() != nil {
 				count++
 			}
-			return count, nil
+			return count
 		}
 		if f.XMLSERIALIZE() != nil {
-			return 2, nil
+			return 2
 		} // XMLSERIALIZE(CONTENT value AS type)
 
 		// --- JSON Functions ---
 		if f.JSON_OBJECT() != nil {
 			if list := f.Func_arg_list(); list != nil {
-				return len(list.AllFunc_arg_expr()), nil
+				return len(list.AllFunc_arg_expr())
 			}
 			if list := f.Json_name_and_value_list(); list != nil {
-				return len(list.AllJson_name_and_value()), nil
+				return len(list.AllJson_name_and_value())
 			}
-			return 0, nil
+			return 0
 		}
 		if f.JSON_ARRAY() != nil {
 			if list := f.Json_value_expr_list(); list != nil {
-				return len(list.AllJson_value_expr()), nil
+				return len(list.AllJson_value_expr())
 			}
 			if f.Select_no_parens() != nil {
-				return 1, nil
+				return 1
 			} // subquery
-			return 0, nil
+			return 0
 		}
 		if f.JSON() != nil || f.JSON_SCALAR() != nil || f.JSON_SERIALIZE() != nil {
-			return 1, nil
+			return 1
 		}
 		if f.MERGE_ACTION() != nil {
-			return 0, nil
+			return 0
 		}
 		if f.JSON_QUERY() != nil || f.JSON_EXISTS() != nil || f.JSON_VALUE() != nil {
 			count := 2 // json_value_expr, a_expr
-			return count, nil
+			return count
 		}
 	}
 
-	return 0, nil
+	return 0
 }
 
 func getArgumentsFromFunctionExpr(funcExpr pgparser.IFunc_exprContext) []antlr.ParseTree {
@@ -2448,14 +2264,14 @@ func getArgumentsFromFunctionExpr(funcExpr pgparser.IFunc_exprContext) []antlr.P
 				result = append(result, getArgumentsFromFuncArgList(list)...)
 			}
 			if list := f.Json_name_and_value_list(); list != nil {
-				result = append(result, getArgumentsFromJsonNameAndValueList(list)...)
+				result = append(result, getArgumentsFromJSONNameAndValueList(list)...)
 			}
 			if list := f.Json_value_expr_list(); list != nil {
-				result = append(result, getArgumentsFromJsonValueExprList(list)...)
+				result = append(result, getArgumentsFromJSONValueExprList(list)...)
 			}
 		} else if f.JSON_ARRAY() != nil {
 			if list := f.Json_value_expr_list(); list != nil {
-				result = append(result, getArgumentsFromJsonValueExprList(list)...)
+				result = append(result, getArgumentsFromJSONValueExprList(list)...)
 			}
 			if list := f.Select_no_parens(); list != nil {
 				result = append(result, list)
@@ -2586,14 +2402,14 @@ func getArgumentsFromFunctionExprWindowless(funcExprWindowless pgparser.IFunc_ex
 				result = append(result, getArgumentsFromFuncArgList(list)...)
 			}
 			if list := f.Json_name_and_value_list(); list != nil {
-				result = append(result, getArgumentsFromJsonNameAndValueList(list)...)
+				result = append(result, getArgumentsFromJSONNameAndValueList(list)...)
 			}
 			if list := f.Json_value_expr_list(); list != nil {
-				result = append(result, getArgumentsFromJsonValueExprList(list)...)
+				result = append(result, getArgumentsFromJSONValueExprList(list)...)
 			}
 		} else if f.JSON_ARRAY() != nil {
 			if list := f.Json_value_expr_list(); list != nil {
-				result = append(result, getArgumentsFromJsonValueExprList(list)...)
+				result = append(result, getArgumentsFromJSONValueExprList(list)...)
 			}
 			if list := f.Select_no_parens(); list != nil {
 				result = append(result, list)
@@ -2629,7 +2445,7 @@ func getArgumentsFromFuncArgList(funcArgList pgparser.IFunc_arg_listContext) []a
 	return result
 }
 
-func getArgumentsFromJsonNameAndValueList(jsonNameAndValueList pgparser.IJson_name_and_value_listContext) []antlr.ParseTree {
+func getArgumentsFromJSONNameAndValueList(jsonNameAndValueList pgparser.IJson_name_and_value_listContext) []antlr.ParseTree {
 	var result []antlr.ParseTree
 	if jsonNameAndValueList == nil {
 		return result
@@ -2640,7 +2456,7 @@ func getArgumentsFromJsonNameAndValueList(jsonNameAndValueList pgparser.IJson_na
 	return result
 }
 
-func getArgumentsFromJsonValueExprList(jsonValueExprList pgparser.IJson_value_expr_listContext) []antlr.ParseTree {
+func getArgumentsFromJSONValueExprList(jsonValueExprList pgparser.IJson_value_expr_listContext) []antlr.ParseTree {
 	var result []antlr.ParseTree
 	if jsonValueExprList == nil {
 		return result

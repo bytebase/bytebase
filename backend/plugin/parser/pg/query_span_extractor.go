@@ -18,7 +18,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg/legacy/ast"
 
 	"github.com/bytebase/parser/postgresql"
-	pgparser "github.com/bytebase/parser/postgresql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -832,7 +831,7 @@ func (q *querySpanExtractor) extractTableSourceFromComplexPLPGSQL(name string, c
 }
 
 type plpgSQLListener struct {
-	*pgparser.BasePostgreSQLParserListener
+	*postgresql.BasePostgreSQLParserListener
 	q *querySpanExtractor
 
 	variables map[string]*base.QuerySpanResult
@@ -841,18 +840,18 @@ type plpgSQLListener struct {
 	err  error
 }
 
-func (l *plpgSQLListener) EnterFunc_as(ctx *pgparser.Func_asContext) {
+func (l *plpgSQLListener) EnterFunc_as(ctx *postgresql.Func_asContext) {
 	antlr.ParseTreeWalkerDefault.Walk(l, ctx.Definition)
 }
 
-func (l *plpgSQLListener) EnterDecl_statement(ctx *pgparser.Decl_statementContext) {
+func (l *plpgSQLListener) EnterDecl_statement(ctx *postgresql.Decl_statementContext) {
 	vName := normalizePostgreSQLAnyIdentifier(ctx.Decl_varname().Any_identifier())
 	l.variables[vName] = &base.QuerySpanResult{
 		SourceColumns: base.SourceColumnSet{},
 	}
 }
 
-func (l *plpgSQLListener) EnterStmt_assign(ctx *pgparser.Stmt_assignContext) {
+func (l *plpgSQLListener) EnterStmt_assign(ctx *postgresql.Stmt_assignContext) {
 	names := NormalizePostgreSQLAnyName(ctx.Assign_var().Any_name())
 	if len(names) != 1 {
 		return
@@ -887,7 +886,7 @@ func (l *plpgSQLListener) EnterStmt_assign(ctx *pgparser.Stmt_assignContext) {
 	}
 }
 
-func (l *plpgSQLListener) EnterStmt_return(ctx *pgparser.Stmt_returnContext) {
+func (l *plpgSQLListener) EnterStmt_return(ctx *postgresql.Stmt_returnContext) {
 	if ctx.QUERY() == nil {
 		return
 	}

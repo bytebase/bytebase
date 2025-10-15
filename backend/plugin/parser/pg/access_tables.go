@@ -3,9 +3,10 @@ package pg
 import (
 	"context"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/parser/postgresql"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 type accessTableExtractor struct {
