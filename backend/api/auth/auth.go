@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -228,28 +227,6 @@ func GetUserIDFromMFATempToken(token string, mode common.ReleaseMode, secret str
 	return userID, nil
 }
 
-func GetTokenFromMetadata(md metadata.MD) (string, error) {
-	authorizationHeaders := md.Get("Authorization")
-	if len(md.Get("Authorization")) > 0 {
-		authHeaderParts := strings.Fields(authorizationHeaders[0])
-		if len(authHeaderParts) != 2 || strings.ToLower(authHeaderParts[0]) != "bearer" {
-			return "", errs.Errorf("authorization header format must be Bearer {token}")
-		}
-		return authHeaderParts[1], nil
-	}
-	// check the HTTP cookie
-	var accessToken string
-	for _, t := range append(md.Get("grpcgateway-cookie"), md.Get("cookie")...) {
-		header := http.Header{}
-		header.Add("Cookie", t)
-		request := http.Request{Header: header}
-		if v, _ := request.Cookie(AccessTokenCookieName); v != nil {
-			accessToken = v.Value
-		}
-	}
-	return accessToken, nil
-}
-
 // GetTokenFromHeaders extracts the access token from HTTP headers for ConnectRPC.
 func GetTokenFromHeaders(headers http.Header) (string, error) {
 	// Check Authorization header first
@@ -264,8 +241,7 @@ func GetTokenFromHeaders(headers http.Header) (string, error) {
 
 	// Check HTTP cookies
 	var accessToken string
-	cookieHeaders := headers.Values("Cookie")
-	for _, cookieHeader := range cookieHeaders {
+	for _, cookieHeader := range append(headers.Values("cookie"), headers.Values("grpcgateway-cookie")...) {
 		header := http.Header{}
 		header.Add("Cookie", cookieHeader)
 		request := http.Request{Header: header}
