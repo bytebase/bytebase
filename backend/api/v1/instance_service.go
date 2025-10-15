@@ -471,6 +471,11 @@ func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataS
 		return missingFeatureError
 	}
 
+	// Validate extra connection parameters for MySQL-based engines
+	if err := validateExtraConnectionParameters(instance.Metadata.GetEngine(), dataSource.GetExtraConnectionParameters()); err != nil {
+		return connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
 	return nil
 }
 
@@ -1666,5 +1671,23 @@ func (s *InstanceService) instanceCountGuard(ctx context.Context) error {
 		return connect.NewError(connect.CodeResourceExhausted, errors.Errorf("reached the maximum instance count %d", instanceLimit))
 	}
 
+	return nil
+}
+
+// validateExtraConnectionParameters validates extra connection parameters for security risks.
+func validateExtraConnectionParameters(engine storepb.Engine, params map[string]string) error {
+	// Validate MySQL-based engines
+	switch engine {
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+		for key := range params {
+			normalizedKey := strings.ToLower(strings.TrimSpace(key))
+			if normalizedKey == "allowallfiles" {
+				// Disables file allowlist for LOAD DATA LOCAL INFILE and allows all files (might be insecure)
+				return errors.Errorf("connection parameter %q is not allowed for security reasons. This parameter can allow a malicious database server to read arbitrary files from the client", key)
+			}
+		}
+	default:
+		// No validation needed for other engines
+	}
 	return nil
 }
