@@ -2,6 +2,7 @@ package doris
 
 import (
 	"context"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/doris-parser"
@@ -10,19 +11,25 @@ import (
 )
 
 type querySpanExtractor struct {
+	ctx             context.Context
 	defaultDatabase string
+	gCtx            base.GetQuerySpanContext
 	// ctes tracks Common Table Expressions in the current scope
-	ctes map[string]bool
+	ctes                map[string]bool
+	ignoreCaseSensitive bool
 }
 
-func newQuerySpanExtractor(database string, _ base.GetQuerySpanContext, _ bool) *querySpanExtractor {
+func newQuerySpanExtractor(database string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
 	return &querySpanExtractor{
-		defaultDatabase: database,
-		ctes:            make(map[string]bool),
+		defaultDatabase:     database,
+		gCtx:                gCtx,
+		ctes:                make(map[string]bool),
+		ignoreCaseSensitive: ignoreCaseSensitive,
 	}
 }
 
-func (q *querySpanExtractor) getQuerySpan(_ context.Context, statement string) (*base.QuerySpan, error) {
+func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
+	q.ctx = ctx
 	parseResult, err := ParseDorisSQL(statement)
 	if err != nil {
 		return nil, err
@@ -35,10 +42,20 @@ func (q *querySpanExtractor) getQuerySpan(_ context.Context, statement string) (
 		}, nil
 	}
 
-	accessTables := getAccessTables(q.defaultDatabase, parseResult, q.ctes)
+	accessTables := getAccessTables(q.defaultDatabase, parseResult, q.ctes, q.gCtx, q.ignoreCaseSensitive)
+
+	// We do not support simultaneous access to the system table and the user table
+	// because we do not synchronize the schema of the system table.
+	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
+	// As a result, we exclude getting query span results for accessing only the system table.
+	allSystems, mixed := isMixedQuery(accessTables, q.ignoreCaseSensitive)
+	if mixed {
+		return nil, base.MixUserSystemTablesError
+	}
 
 	queryTypeListener := &queryTypeListener{
-		result: base.QueryTypeUnknown,
+		allSystems: allSystems,
+		result:     base.QueryTypeUnknown,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(queryTypeListener, parseResult.Tree)
 
@@ -49,7 +66,7 @@ func (q *querySpanExtractor) getQuerySpan(_ context.Context, statement string) (
 	}, nil
 }
 
-func getAccessTables(database string, parseResult *ParseResult, ctes map[string]bool) base.SourceColumnSet {
+func getAccessTables(database string, parseResult *ParseResult, ctes map[string]bool, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) base.SourceColumnSet {
 	// First, extract CTEs from the query
 	cteListener := newCTEListener()
 	antlr.ParseTreeWalkerDefault.Walk(cteListener, parseResult.Tree)
@@ -59,7 +76,7 @@ func getAccessTables(database string, parseResult *ParseResult, ctes map[string]
 		ctes[cte] = true
 	}
 
-	accessTableListener := newAccessTableListener(database, ctes)
+	accessTableListener := newAccessTableListener(database, ctes, gCtx, ignoreCaseSensitive)
 	antlr.ParseTreeWalkerDefault.Walk(accessTableListener, parseResult.Tree)
 
 	return accessTableListener.sourceColumnSet
@@ -68,16 +85,20 @@ func getAccessTables(database string, parseResult *ParseResult, ctes map[string]
 type accessTableListener struct {
 	*parser.BaseDorisSQLListener
 
-	defaultDatabase string
-	sourceColumnSet base.SourceColumnSet
-	ctes            map[string]bool
+	defaultDatabase     string
+	sourceColumnSet     base.SourceColumnSet
+	ctes                map[string]bool
+	gCtx                base.GetQuerySpanContext
+	ignoreCaseSensitive bool
 }
 
-func newAccessTableListener(database string, ctes map[string]bool) *accessTableListener {
+func newAccessTableListener(database string, ctes map[string]bool, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *accessTableListener {
 	return &accessTableListener{
-		defaultDatabase: database,
-		sourceColumnSet: base.SourceColumnSet{},
-		ctes:            ctes,
+		defaultDatabase:     database,
+		sourceColumnSet:     base.SourceColumnSet{},
+		ctes:                ctes,
+		gCtx:                gCtx,
+		ignoreCaseSensitive: ignoreCaseSensitive,
 	}
 }
 
@@ -148,4 +169,40 @@ func (l *cteListener) extractCTEName(ctx *parser.CommonTableExpressionContext) {
 		cteName := NormalizeIdentifier(ctx.Identifier())
 		l.ctes[cteName] = true
 	}
+}
+
+// isMixedQuery checks whether the query accesses the user table and system table at the same time.
+// It returns whether all tables are system tables and whether there is a mixture.
+func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (bool, bool) {
+	hasSystem, hasUser := false, false
+	for table := range m {
+		if isSystemResource(table, ignoreCaseSensitive) {
+			hasSystem = true
+		} else {
+			hasUser = true
+		}
+	}
+
+	if hasSystem && hasUser {
+		return false, true
+	}
+
+	return !hasUser && hasSystem, false
+}
+
+// systemDatabases contains Doris system databases
+// Reference: https://doris.apache.org/docs/3.x/admin-manual/system-tables/overview
+var systemDatabases = map[string]bool{
+	"information_schema": true,
+	"mysql":              true,
+	"__internal_schema":  true,
+	"_statistics_":       true,
+}
+
+func isSystemResource(resource base.ColumnResource, ignoreCaseSensitive bool) bool {
+	database := resource.Database
+	if ignoreCaseSensitive {
+		database = strings.ToLower(database)
+	}
+	return systemDatabases[database]
 }

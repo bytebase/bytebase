@@ -1,3 +1,5 @@
+// Must be first - initializes global compatibility shims
+import "./init";
 import "regenerator-runtime/runtime";
 import { createApp } from "vue";
 import App from "./App.vue";

@@ -200,6 +200,9 @@ export function getHighlightHTMLByRegExp(
   caseSensitive = false,
   className = "text-accent"
 ) {
+  if (!pattern || (Array.isArray(pattern) && pattern.length === 0)) {
+    return s;
+  }
   pattern = Array.isArray(pattern)
     ? pattern.map((kw) => escapeRegExp(kw)).join("|")
     : escapeRegExp(pattern);

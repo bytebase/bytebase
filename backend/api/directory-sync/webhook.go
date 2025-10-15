@@ -2,6 +2,7 @@ package directorysync
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -602,7 +603,7 @@ func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
 		return errors.Wrapf(err, "failed to unmarshal scim setting")
 	}
 
-	if payload.Token != authorization {
+	if subtle.ConstantTimeCompare([]byte(payload.Token), []byte(authorization)) != 1 {
 		return errors.Errorf("invalid authorization token")
 	}
 
