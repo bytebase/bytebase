@@ -2,7 +2,7 @@
   <CommonDrawer
     :show="show"
     :title="title"
-    :loading="state.loading"
+    :loading="loading"
     @show="resetState"
     @close="$emit('close')"
   >
@@ -250,10 +250,7 @@
       <div class="w-full flex flex-row justify-between items-center gap-x-2">
         <!-- Bypass stage requirements checkbox -->
         <div v-if="shouldShowBypassOption" class="flex items-center">
-          <NCheckbox
-            v-model:checked="bypassPolicyChecks"
-            :disabled="state.loading"
-          >
+          <NCheckbox v-model:checked="bypassPolicyChecks" :disabled="loading">
             {{ $t("rollout.bypass-stage-requirements") }}
           </NCheckbox>
         </div>
@@ -274,15 +271,7 @@
                 type="primary"
                 @click="handleConfirm"
               >
-                <template v-if="action === 'RUN'">{{
-                  $t("common.run")
-                }}</template>
-                <template v-else-if="action === 'SKIP'">{{
-                  $t("common.skip")
-                }}</template>
-                <template v-else-if="action === 'CANCEL'">{{
-                  $t("common.cancel")
-                }}</template>
+                {{ title }}
               </NButton>
             </template>
             <template #default>
@@ -313,7 +302,7 @@ import {
   NRadio,
   NRadioGroup,
 } from "naive-ui";
-import { computed, reactive, ref } from "vue";
+import { computed, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { semanticTaskType } from "@/components/IssueV1";
 import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue";
@@ -356,10 +345,6 @@ import { canRolloutTasks } from "./taskPermissions";
 // 1 hour in milliseconds
 const DEFAULT_RUN_DELAY_MS = 60 * 60 * 1000;
 
-type LocalState = {
-  loading: boolean;
-};
-
 export type TargetType = { type: "tasks"; tasks?: Task[]; stage: Stage };
 
 const props = defineProps<{
@@ -375,9 +360,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { issue, rollout, plan, taskRuns } = usePlanContextWithRollout();
-const state = reactive<LocalState>({
-  loading: false,
-});
+
+const loading = ref(false);
 const environmentStore = useEnvironmentV1Store();
 const comment = ref("");
 const runTimeInMS = ref<number | undefined>(undefined);
@@ -666,11 +650,11 @@ const targetTasks = computed(() => {
 const title = computed(() => {
   switch (props.action) {
     case "RUN":
-      return t("common.run");
+      return t("task.run-task", { n: eligibleTasks.value.length });
     case "SKIP":
-      return t("common.skip");
+      return t("task.skip-task", { n: eligibleTasks.value.length });
     case "CANCEL":
-      return t("common.cancel");
+      return t("task.cancel-task", { n: eligibleTasks.value.length });
     default:
       return "";
   }
@@ -809,11 +793,12 @@ const addRunTimeToRequest = (request: BatchRunTasksRequest) => {
 };
 
 const handleConfirm = async () => {
-  if (state.loading) return;
+  if (loading.value) return;
 
-  state.loading = true;
+  loading.value = true;
   try {
     if (props.action === "RUN") {
+      await cancelTasks();
       // For export tasks, group by stage/environment and make separate batch calls
       if (isDatabaseExportTask.value) {
         const tasksByStage = groupTasksByStage(eligibleTasks.value);
@@ -862,65 +847,7 @@ const handleConfirm = async () => {
         await rolloutServiceClientConnect.batchSkipTasks(request);
       }
     } else if (props.action === "CANCEL") {
-      // Fetch task runs for the tasks to be canceled.
-      const taskRuns = (
-        await Promise.all(
-          eligibleTasks.value.map(async (task) => {
-            const request = create(ListTaskRunsRequestSchema, {
-              parent: task.name,
-              pageSize: 10,
-            });
-            return rolloutServiceClientConnect
-              .listTaskRuns(request)
-              .then((response) => response.taskRuns || []);
-          })
-        )
-      ).flat();
-      const cancelableTaskRuns = taskRuns.filter(
-        (taskRun) =>
-          taskRun.status === TaskRun_Status.PENDING ||
-          taskRun.status === TaskRun_Status.RUNNING
-      );
-
-      if (isDatabaseCreationOrExportTask.value) {
-        // For database creation/export tasks, group task runs by stage and cancel them per stage
-        const taskRunsByStage = new Map<string, typeof cancelableTaskRuns>();
-
-        for (const taskRun of cancelableTaskRuns) {
-          // Extract stage name from task run path: projects/.../rollouts/.../stages/{stage}/tasks/.../taskRuns/...
-          const pathParts = taskRun.name.split("/");
-          const stageIndex = pathParts.findIndex((part) => part === "stages");
-          if (stageIndex >= 0 && stageIndex + 1 < pathParts.length) {
-            const stageName = pathParts.slice(0, stageIndex + 2).join("/"); // projects/.../rollouts/.../stages/{stage}
-            if (!taskRunsByStage.has(stageName)) {
-              taskRunsByStage.set(stageName, []);
-            }
-            taskRunsByStage.get(stageName)!.push(taskRun);
-          }
-        }
-
-        // Cancel task runs for each stage separately
-        await Promise.all(
-          Array.from(taskRunsByStage.entries()).map(
-            ([stageName, stageTaskRuns]) => {
-              const request = create(BatchCancelTaskRunsRequestSchema, {
-                parent: `${stageName}/tasks/-`,
-                taskRuns: stageTaskRuns.map((taskRun) => taskRun.name),
-                reason: comment.value,
-              });
-              return rolloutServiceClientConnect.batchCancelTaskRuns(request);
-            }
-          )
-        );
-      } else {
-        // For regular stage-level tasks
-        const request = create(BatchCancelTaskRunsRequestSchema, {
-          parent: `${targetStage.value.name}/tasks/-`,
-          taskRuns: cancelableTaskRuns.map((taskRun) => taskRun.name),
-          reason: comment.value,
-        });
-        await rolloutServiceClientConnect.batchCancelTaskRuns(request);
-      }
+      await cancelTasks();
     }
 
     emit("confirm");
@@ -937,7 +864,7 @@ const handleConfirm = async () => {
       description: String(error),
     });
   } finally {
-    state.loading = false;
+    loading.value = false;
     emit("close");
   }
 };
@@ -946,5 +873,84 @@ const resetState = () => {
   comment.value = "";
   runTimeInMS.value = undefined;
   bypassPolicyChecks.value = false;
+};
+
+// initial the selected task run time.
+watchEffect(() => {
+  const runTimes = new Set(eligibleTasks.value.map((task) => task.runTime));
+  if (runTimes.size != 1) {
+    return;
+  }
+  const runTime = [...runTimes][0];
+  if (!runTime) {
+    return;
+  }
+  runTimeInMS.value = Number(runTime.seconds) * 1000 + runTime.nanos / 1000000;
+});
+
+const cancelTasks = async () => {
+  // Fetch task runs for the tasks to be canceled.
+  const taskRuns = (
+    await Promise.all(
+      eligibleTasks.value.map(async (task) => {
+        const request = create(ListTaskRunsRequestSchema, {
+          parent: task.name,
+          pageSize: 10,
+        });
+        return rolloutServiceClientConnect
+          .listTaskRuns(request)
+          .then((response) => response.taskRuns || []);
+      })
+    )
+  ).flat();
+  const cancelableTaskRuns = taskRuns.filter(
+    (taskRun) =>
+      taskRun.status === TaskRun_Status.PENDING ||
+      taskRun.status === TaskRun_Status.RUNNING
+  );
+
+  if (isDatabaseCreationOrExportTask.value) {
+    // For database creation/export tasks, group task runs by stage and cancel them per stage
+    const taskRunsByStage = new Map<string, typeof cancelableTaskRuns>();
+
+    for (const taskRun of cancelableTaskRuns) {
+      // Extract stage name from task run path: projects/.../rollouts/.../stages/{stage}/tasks/.../taskRuns/...
+      const pathParts = taskRun.name.split("/");
+      const stageIndex = pathParts.findIndex((part) => part === "stages");
+      if (stageIndex >= 0 && stageIndex + 1 < pathParts.length) {
+        const stageName = pathParts.slice(0, stageIndex + 2).join("/"); // projects/.../rollouts/.../stages/{stage}
+        if (!taskRunsByStage.has(stageName)) {
+          taskRunsByStage.set(stageName, []);
+        }
+        taskRunsByStage.get(stageName)!.push(taskRun);
+      }
+    }
+
+    // Cancel task runs for each stage separately
+    await Promise.all(
+      Array.from(taskRunsByStage.entries()).map(
+        ([stageName, stageTaskRuns]) => {
+          const request = create(BatchCancelTaskRunsRequestSchema, {
+            parent: `${stageName}/tasks/-`,
+            taskRuns: stageTaskRuns.map((taskRun) => taskRun.name),
+            reason: comment.value,
+          });
+          if (request.taskRuns.length > 0) {
+            return rolloutServiceClientConnect.batchCancelTaskRuns(request);
+          }
+        }
+      )
+    );
+  } else {
+    // For regular stage-level tasks
+    const request = create(BatchCancelTaskRunsRequestSchema, {
+      parent: `${targetStage.value.name}/tasks/-`,
+      taskRuns: cancelableTaskRuns.map((taskRun) => taskRun.name),
+      reason: comment.value,
+    });
+    if (request.taskRuns.length > 0) {
+      await rolloutServiceClientConnect.batchCancelTaskRuns(request);
+    }
+  }
 };
 </script>

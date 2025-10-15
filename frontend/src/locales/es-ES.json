@@ -294,6 +294,8 @@
     "run-checks": "Ejecutar comprobaciones",
     "action-all-tasks-in-current-stage": "{action} todas las tareas en la etapa actual",
     "cancel-task": "Cancelar tarea | Cancelar tareas",
+    "skip-task": "Saltar tarea | Saltar tareas",
+    "run-task": "Ejecutar tarea | Ejecutar tareas",
     "created": "Creado",
     "run-immediately": {
       "self": "Corre inmediatamente",

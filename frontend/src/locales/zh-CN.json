@@ -294,6 +294,8 @@
     "run-checks": "运行检查",
     "action-all-tasks-in-current-stage": "{action}当前阶段的所有任务",
     "cancel-task": "取消任务",
+    "skip-task": "跳过任务 | 跳过任务",
+    "run-task": "运行任务 | 运行任务",
     "created": "创建于",
     "run-immediately": {
       "self": "立即运行",
