@@ -87,7 +87,10 @@ func (q *querySpanExtractor) getQuerySpanNew(ctx context.Context, stmt string) (
 	// The resultTableSource should have been populated by EnterStmtmulti
 	if q.resultTableSource == nil {
 		// If not populated, try to extract it now
-		root := parseResult.Tree.(*pgparser.RootContext)
+		root, ok := parseResult.Tree.(*pgparser.RootContext)
+		if !ok {
+			return nil, errors.Errorf("failed to assert parse tree to RootContext")
+		}
 		if root.Stmtblock() != nil && root.Stmtblock().Stmtmulti() != nil {
 			stmtmulti := root.Stmtblock().Stmtmulti()
 			if len(stmtmulti.AllStmt()) == 1 {
@@ -401,7 +404,7 @@ func (q *querySpanExtractor) extractTableSourceFromNonRecursiveCTE(cte pgparser.
 }
 
 // extractOperatorsFromSelectClause extracts set operators from a select_clause
-func (q *querySpanExtractor) extractOperatorsFromSelectClause(selectClause pgparser.ISelect_clauseContext) ([]SetOperator, error) {
+func (*querySpanExtractor) extractOperatorsFromSelectClause(selectClause pgparser.ISelect_clauseContext) ([]SetOperator, error) {
 	if selectClause == nil {
 		return nil, errors.New("nil select_clause")
 	}
@@ -471,6 +474,9 @@ func (q *querySpanExtractor) extractOperatorsFromSelectClause(selectClause pgpar
 					}
 				}
 				operators = append(operators, op)
+			default:
+				// Ignore other tokens
+				continue
 			}
 		}
 	}
@@ -543,6 +549,7 @@ func splitRecursiveCTEParts(selectNoParens pgparser.ISelect_no_parensContext) (
 						case pgparser.PostgreSQLParserDISTINCT:
 							op.IsDistinct = true
 							i++
+						default:
 						}
 					}
 				}
@@ -564,6 +571,7 @@ func splitRecursiveCTEParts(selectNoParens pgparser.ISelect_no_parensContext) (
 						case pgparser.PostgreSQLParserDISTINCT:
 							op.IsDistinct = true
 							i++
+						default:
 						}
 					}
 				}
@@ -584,11 +592,14 @@ func splitRecursiveCTEParts(selectNoParens pgparser.ISelect_no_parensContext) (
 						case pgparser.PostgreSQLParserDISTINCT:
 							op.IsDistinct = true
 							i++
+						default:
 						}
 					}
 				}
 				allOperators = append(allOperators, op)
 				partIndex++
+			default:
+				// Ignore other tokens
 			}
 		}
 		i++
@@ -834,7 +845,7 @@ func (q *querySpanExtractor) mergeSimpleSelectIntersectsWithOperators(parts []pg
 }
 
 // applySetOperator applies a set operation (UNION, EXCEPT, INTERSECT) between two table sources
-func (q *querySpanExtractor) applySetOperator(left, right base.TableSource, op SetOperator) (base.TableSource, error) {
+func (*querySpanExtractor) applySetOperator(left, right base.TableSource, op SetOperator) (base.TableSource, error) {
 	leftQuerySpanResult := left.GetQuerySpanResult()
 	rightQuerySpanResult := right.GetQuerySpanResult()
 
@@ -1009,7 +1020,7 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef pgparser.IT
 	return anchor, nil
 }
 
-func (q *querySpanExtractor) joinTableSources(left, right base.TableSource, naturalJoin bool, usingColumn []string) base.TableSource {
+func (*querySpanExtractor) joinTableSources(left, right base.TableSource, naturalJoin bool, usingColumn []string) base.TableSource {
 	leftSpanResult, rightSpanResult := left.GetQuerySpanResult(), right.GetQuerySpanResult()
 
 	result := new(base.PseudoTable)
@@ -1390,7 +1401,7 @@ func (q *querySpanExtractor) extractColumnsFromTargetList(targetList pgparser.IT
 }
 
 // handleStarExpansion handles SELECT * expansion
-func (q *querySpanExtractor) handleStarExpansion(fromFieldList []base.TableSource) []base.QuerySpanResult {
+func (*querySpanExtractor) handleStarExpansion(fromFieldList []base.TableSource) []base.QuerySpanResult {
 	// Simple * - expand all columns from all tables in FROM clause
 	var result []base.QuerySpanResult
 	for _, tableSource := range fromFieldList {
