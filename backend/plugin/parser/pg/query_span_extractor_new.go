@@ -899,7 +899,6 @@ func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause pgparse
 	return fromFieldList, nil
 }
 
-
 // extractTableSourceFromTableRef extracts table source from a table reference in FROM clause
 func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef pgparser.ITable_refContext) (base.TableSource, error) {
 	if tableRef == nil {
@@ -1364,6 +1363,15 @@ func (q *querySpanExtractor) extractColumnsFromTargetList(targetList pgparser.IT
 			continue
 		}
 
+		if _, ok := targetEl.(*pgparser.Target_columnrefContext); ok {
+			columns, err := q.getColumnsFromColumnRef(targetEl.(*pgparser.Target_columnrefContext).Columnref())
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to process column reference in target element")
+			}
+			result = append(result, columns...)
+			continue
+		}
+
 		// Check if this is a labeled target (expression with optional alias)
 		if labelCtx, ok := targetEl.(*pgparser.Target_labelContext); ok {
 			column, err := q.handleTargetLabel(labelCtx)
@@ -1414,7 +1422,7 @@ func (q *querySpanExtractor) handleTargetLabel(labelCtx *pgparser.Target_labelCo
 
 	if columnName == "" {
 		// No alias, try to extract name from expression
-		columnName, err = q.extractFieldNameFromAExpr(expr)
+		columnName, err = q.getFieldNameFromAExpr(expr)
 		if err != nil || columnName == "" {
 			// Use default unknown column name
 			columnName = pgUnknownFieldName
@@ -1427,9 +1435,9 @@ func (q *querySpanExtractor) handleTargetLabel(labelCtx *pgparser.Target_labelCo
 	}, nil
 }
 
-// extractFieldNameFromAExpr attempts to extract a meaningful column name from an expression.
+// getFieldNameFromAExpr attempts to extract a meaningful column name from an expression.
 // Returns "?column?" if no meaningful name can be derived.
-func (q *querySpanExtractor) extractFieldNameFromAExpr(expr pgparser.IA_exprContext) (string, error) {
+func (q *querySpanExtractor) getFieldNameFromAExpr(expr pgparser.IA_exprContext) (string, error) {
 	if expr == nil {
 		return pgUnknownFieldName, nil
 	}
@@ -1441,7 +1449,7 @@ func (q *querySpanExtractor) extractFieldNameFromAExpr(expr pgparser.IA_exprCont
 	}
 
 	// Default to unknown column name for other expression types
-	return "?column?pgUnknownFieldName", nil
+	return pgUnknownFieldName, nil
 }
 
 // findColumnNameInExpression recursively searches for a column name in an expression
@@ -1528,7 +1536,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromNode(node antlr.ParseTree
 	switch ctx := node.(type) {
 	case pgparser.IColumnrefContext:
 		// Handle column reference directly
-		return q.processColumnRef(ctx)
+		return q.getSourceColumnSetFromColumnRef(ctx)
 	case pgparser.IFunc_exprContext:
 		// Handle function calls
 		// Process function arguments recursively
@@ -1588,10 +1596,9 @@ func (q *querySpanExtractor) extractSourceColumnSetFromNode(node antlr.ParseTree
 	return result, nil
 }
 
-// processColumnRef extracts source columns from a column reference.
-func (q *querySpanExtractor) processColumnRef(ctx pgparser.IColumnrefContext) (base.SourceColumnSet, error) {
+func (q *querySpanExtractor) getColumnsFromColumnRef(ctx pgparser.IColumnrefContext) ([]base.QuerySpanResult, error) {
 	if ctx == nil {
-		return base.SourceColumnSet{}, nil
+		return nil, nil
 	}
 
 	// Extract schema, table, column from the columnref
@@ -1610,7 +1617,31 @@ func (q *querySpanExtractor) processColumnRef(ctx pgparser.IColumnrefContext) (b
 		if len(parts) > 0 && parts[len(parts)-1] == "*" {
 			// This is table.* or schema.table.* - should not happen in regular column refs
 			// Return empty set as this should be handled by star expansion logic
-			return base.SourceColumnSet{}, nil
+			switch len(parts) {
+			case 1:
+				// table.* case
+				columnName = ""
+				tableName = columnName
+				schemaName = ""
+			case 2:
+				// schema.table.* case
+				columnName = ""
+				schemaName = columnName
+				tableName = parts[0]
+			default:
+				// More complex indirection with star, ignore
+				return []base.QuerySpanResult{}, nil
+			}
+			sources, ok := q.getAllTableColumnSources(schemaName, tableName)
+			if !ok {
+				return []base.QuerySpanResult{}, &parsererror.ResourceNotFoundError{
+					Err:      errors.New("cannot find the table for star expansion"),
+					Database: &q.defaultDatabase,
+					Schema:   &schemaName,
+					Table:    &tableName,
+				}
+			}
+			return sources, nil
 		}
 
 		switch len(parts) {
@@ -1637,13 +1668,7 @@ func (q *querySpanExtractor) processColumnRef(ctx pgparser.IColumnrefContext) (b
 		// This is a whole-row reference like "table" in row_to_json(table)
 		// We need to return all columns from that table
 		tableSource := q.findTableInFromNew(tableName)
-		if tableSource != nil {
-			result := make(base.SourceColumnSet)
-			for _, column := range tableSource.GetQuerySpanResult() {
-				result, _ = base.MergeSourceColumnSet(result, column.SourceColumns)
-			}
-			return result, nil
-		}
+		return tableSource.GetQuerySpanResult(), nil
 	}
 
 	// Look up the column source
@@ -1653,7 +1678,7 @@ func (q *querySpanExtractor) processColumnRef(ctx pgparser.IColumnrefContext) (b
 		if schemaName == "" {
 			tableSource := q.findTableInFrom(tableName, columnName)
 			if tableSource == nil {
-				return base.SourceColumnSet{}, &parsererror.ResourceNotFoundError{
+				return []base.QuerySpanResult{}, &parsererror.ResourceNotFoundError{
 					Err:      errors.New("cannot find the column ref"),
 					Database: &q.defaultDatabase,
 					Schema:   &schemaName,
@@ -1662,13 +1687,13 @@ func (q *querySpanExtractor) processColumnRef(ctx pgparser.IColumnrefContext) (b
 				}
 			}
 			querySpanResult := tableSource.GetQuerySpanResult()
-			result := make(base.SourceColumnSet)
+			var result []base.QuerySpanResult
 			for _, span := range querySpanResult {
-				result, _ = base.MergeSourceColumnSet(result, span.SourceColumns)
+				result = append(result, span)
 			}
 			return result, nil
 		}
-		return base.SourceColumnSet{}, &parsererror.ResourceNotFoundError{
+		return []base.QuerySpanResult{}, &parsererror.ResourceNotFoundError{
 			Err:      errors.New("cannot find the column ref"),
 			Database: &q.defaultDatabase,
 			Schema:   &schemaName,
@@ -1676,7 +1701,30 @@ func (q *querySpanExtractor) processColumnRef(ctx pgparser.IColumnrefContext) (b
 			Column:   &columnName,
 		}
 	}
-	return sources, nil
+	return []base.QuerySpanResult{
+		{
+			Name:          columnName,
+			SourceColumns: sources,
+		},
+	}, nil
+}
+
+// getSourceColumnSetFromColumnRef extracts source columns from a column reference.
+func (q *querySpanExtractor) getSourceColumnSetFromColumnRef(ctx pgparser.IColumnrefContext) (base.SourceColumnSet, error) {
+	if ctx == nil {
+		return base.SourceColumnSet{}, nil
+	}
+
+	columns, err := q.getColumnsFromColumnRef(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(base.SourceColumnSet)
+	for _, col := range columns {
+		result, _ = base.MergeSourceColumnSet(result, col.SourceColumns)
+	}
+	return result, nil
 }
 
 // findTableInFromNew finds a table source by name in the FROM clause or CTEs.
