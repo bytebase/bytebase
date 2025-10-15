@@ -52,6 +52,7 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { NButton } from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import DatabaseAndGroupSelector, {
@@ -144,7 +145,7 @@ const handleCreate = async () => {
     description: `Apply release "${release.value.title}" to selected databases.`,
     specs: [
       {
-        id: crypto.randomUUID(),
+        id: uuidv4(),
         config: {
           case: "changeDatabaseConfig",
           value: create(Plan_ChangeDatabaseConfigSchema, {
