@@ -843,6 +843,80 @@ CREATE TABLE "public"."products" (
 
 `,
 		},
+		{
+			name: "Table with indexes using custom opclass",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "documents",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "SERIAL",
+										Nullable: false,
+									},
+									{
+										Name:     "title",
+										Type:     "TEXT",
+										Nullable: false,
+									},
+									{
+										Name:     "content",
+										Type:     "TEXT",
+										Nullable: false,
+									},
+								},
+								Indexes: []*storepb.IndexMetadata{
+									{
+										Name:        "documents_pkey",
+										Expressions: []string{"id"},
+										Primary:     true,
+									},
+									{
+										Name:            "idx_documents_title_pattern",
+										Expressions:     []string{"title"},
+										Type:            "btree",
+										OpclassNames:    []string{"text_pattern_ops"},
+										OpclassDefaults: []bool{false},
+									},
+									{
+										Name:            "idx_documents_title_content",
+										Expressions:     []string{"title", "content"},
+										Type:            "btree",
+										OpclassNames:    []string{"text_pattern_ops", "text_pattern_ops"},
+										OpclassDefaults: []bool{false, false},
+									},
+									{
+										Name:            "idx_documents_default_opclass",
+										Expressions:     []string{"title"},
+										Type:            "btree",
+										OpclassNames:    []string{"text_ops"},
+										OpclassDefaults: []bool{true}, // Default opclass should not be printed
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE TABLE "public"."documents" (
+    "id" SERIAL NOT NULL,
+    "title" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    CONSTRAINT "documents_pkey" PRIMARY KEY (id)
+);
+
+CREATE INDEX "idx_documents_title_pattern" ON ONLY "public"."documents" (title text_pattern_ops);
+
+CREATE INDEX "idx_documents_title_content" ON ONLY "public"."documents" (title text_pattern_ops, content text_pattern_ops);
+
+CREATE INDEX "idx_documents_default_opclass" ON ONLY "public"."documents" (title);
+
+`,
+		},
 	}
 
 	for _, tt := range tests {

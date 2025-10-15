@@ -1719,6 +1719,18 @@ func writeIndexKeyList(out io.Writer, index *storepb.IndexMetadata) error {
 			return err
 		}
 
+		// Add opclass if it's not the default
+		if i < len(index.OpclassNames) && i < len(index.OpclassDefaults) {
+			if !index.OpclassDefaults[i] && index.OpclassNames[i] != "" {
+				if _, err := io.WriteString(out, " "); err != nil {
+					return err
+				}
+				if _, err := io.WriteString(out, index.OpclassNames[i]); err != nil {
+					return err
+				}
+			}
+		}
+
 		// Add DESC if this column is marked as descending
 		if i < len(index.Descending) && index.Descending[i] {
 			if _, err := io.WriteString(out, " DESC"); err != nil {
