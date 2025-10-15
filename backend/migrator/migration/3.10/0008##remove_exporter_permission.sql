@@ -3,6 +3,6 @@ UPDATE role
 SET permissions = jsonb_set(
     permissions,
     '{permissions}',
-    (SELECT jsonb_agg(p) FROM jsonb_array_elements(permissions->'permissions') p WHERE p::text != '"bb.sql.export"')
+    COALESCE((SELECT jsonb_agg(p) FROM jsonb_array_elements(permissions->'permissions') p WHERE p::text != '"bb.sql.export"'), '[]'::jsonb)
 )
 WHERE permissions->'permissions' ? 'bb.sql.export';
