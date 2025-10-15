@@ -975,12 +975,12 @@ func DoExport(
 		pendingEncryptContents = append(
 			pendingEncryptContents,
 			&encryptContent{
-				Name:    fmt.Sprintf("%s.result.%s", filename, strings.ToLower(request.Format.String())),
-				Content: content,
-			},
-			&encryptContent{
 				Name:    fmt.Sprintf("%s.sql", filename),
 				Content: []byte(result.Statement),
+			},
+			&encryptContent{
+				Name:    fmt.Sprintf("%s.result.%s", filename, strings.ToLower(request.Format.String())),
+				Content: content,
 			},
 		)
 	}

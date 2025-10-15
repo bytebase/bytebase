@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -746,7 +747,20 @@ func exportJSON(result *v1pb.QueryResult) ([]byte, error) {
 	if _, err := buf.WriteString("]"); err != nil {
 		return nil, err
 	}
-	return buf.Bytes(), nil
+
+	var data interface{}
+	err := json.Unmarshal(buf.Bytes(), &data)
+	if err != nil {
+		return nil, errors.Errorf("failed to unmarshalling JSON with error: %v", err)
+	}
+
+	// Marshal the data back into a pretty-printed JSON string
+	// The second argument "" is the prefix for each line, and "  " is the indentation string.
+	formattedJSONBytes, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return nil, errors.Errorf("failed to marshalling JSON with error: %v", err)
+	}
+	return formattedJSONBytes, nil
 }
 
 func convertValueToStringInJSON(value *v1pb.RowValue) string {
