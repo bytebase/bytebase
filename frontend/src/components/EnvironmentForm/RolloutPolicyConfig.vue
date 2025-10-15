@@ -9,20 +9,22 @@
           @update:value="updateRoles(rolloutPolicy.roles)"
         />
       </div>
-      <NCheckbox
-        :checked="isAutomaticRolloutChecked"
-        :disabled="disabled"
-        @update:checked="toggleAutomaticRollout($event)"
-      >
-        <div class="flex flex-col gap-y-1">
-          <div>
+      <div class="w-full inline-flex items-start gap-x-2">
+        <Switch
+          :value="isAutomaticRolloutChecked"
+          :text="true"
+          :disabled="disabled"
+          @update:value="toggleAutomaticRollout($event)"
+        />
+        <div class="flex flex-col">
+          <span class="textlabel">
             {{ $t("policy.rollout.auto") }}
-          </div>
+          </span>
           <div class="textinfolabel">
             {{ $t("policy.rollout.auto-info") }}
           </div>
         </div>
-      </NCheckbox>
+      </div>
     </div>
 
     <!-- Requirements Section -->
@@ -32,45 +34,49 @@
       </div>
 
       <!-- Required Issue Approval -->
-      <NCheckbox
-        :checked="isRequiredIssueApprovalChecked"
-        :disabled="disabled"
-        @update:checked="toggleRequiredIssueApproval($event)"
-      >
-        <div class="flex flex-col gap-y-1">
-          <div>
+      <div class="w-full inline-flex items-start gap-x-2">
+        <Switch
+          :value="isRequiredIssueApprovalChecked"
+          :text="true"
+          :disabled="disabled"
+          @update:value="toggleRequiredIssueApproval($event)"
+        />
+        <div class="flex flex-col">
+          <span class="textlabel">
             {{ $t("policy.rollout.checkers.required-issue-approval.self") }}
-          </div>
+          </span>
           <div class="textinfolabel">
             {{
               $t("policy.rollout.checkers.required-issue-approval.description")
             }}
           </div>
         </div>
-      </NCheckbox>
+      </div>
 
       <!-- Plan Check Enforcement -->
-      <NCheckbox
-        :checked="isPlanCheckEnforcementEnabled"
-        :disabled="disabled"
-        @update:checked="togglePlanCheckEnforcement($event)"
-      >
-        <div class="flex flex-col gap-y-1">
-          <div>
+      <div class="w-full inline-flex items-start gap-x-2">
+        <Switch
+          :value="isPlanCheckEnforcementEnabled"
+          :text="true"
+          :disabled="disabled"
+          @update:value="togglePlanCheckEnforcement($event)"
+        />
+        <div class="flex flex-col">
+          <span class="textlabel">
             {{ $t("policy.rollout.checkers.plan-check-enforcement.self") }}
-          </div>
+          </span>
           <div class="textinfolabel">
             {{
               $t("policy.rollout.checkers.plan-check-enforcement.description")
             }}
           </div>
         </div>
-      </NCheckbox>
+      </div>
 
       <!-- Plan Check Enforcement Options (shown when enabled) -->
       <div
         v-if="isPlanCheckEnforcementEnabled"
-        class="flex flex-col gap-y-2 ml-6"
+        class="flex flex-col gap-y-2 ml-12"
       >
         <NRadioGroup
           :value="planCheckEnforcementLevel"
@@ -126,7 +132,7 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
-import { NCheckbox, NRadioGroup, NRadio } from "naive-ui";
+import { NRadioGroup, NRadio } from "naive-ui";
 import { ref, watch, computed } from "vue";
 import type {
   Policy,
@@ -138,7 +144,7 @@ import {
   RolloutPolicy_Checkers_RequiredStatusChecksSchema,
   RolloutPolicy_Checkers_PlanCheckEnforcement,
 } from "@/types/proto-es/v1/org_policy_service_pb";
-import { RoleSelect } from "../v2";
+import { RoleSelect, Switch } from "../v2";
 
 const props = defineProps<{
   policy: Policy;
