@@ -75,8 +75,6 @@ type querySpanExtractor struct {
 
 	err error
 
-	accessTables []base.ColumnResource
-
 	// resultTableSource is used to store the extracted table source from ANTLR parsing
 	resultTableSource base.TableSource
 }
@@ -95,7 +93,6 @@ func newQuerySpanExtractor(defaultDatabase string, searchPath []string, gCtx bas
 	}
 }
 
-// nolint: unused
 func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.DatabaseMetadata, error) {
 	if meta, ok := q.metaCache[database]; ok {
 		return meta, nil
@@ -116,14 +113,23 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	if err != nil {
 		return nil, err
 	}
-	antlr.ParseTreeWalkerDefault.Walk(q, root.Tree)
-	if q.err != nil {
-		return nil, errors.Wrapf(q.err, "failed to extract query span from statement: %s", stmt)
+
+	accessTableExtractor := &accessTableExtractor{
+		defaultDatabase:     q.defaultDatabase,
+		searchPath:          q.searchPath,
+		getDatabaseMetadata: q.gCtx.GetDatabaseMetadataFunc,
+		ctx:                 ctx,
+		instanceID:          q.gCtx.InstanceID,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(accessTableExtractor, root.Tree)
+	if accessTableExtractor.err != nil {
+		return nil, errors.Wrapf(accessTableExtractor.err, "failed to extract query span from statement: %s", stmt)
 	}
 	accessesMap := make(base.SourceColumnSet)
-	for _, resource := range q.accessTables {
+	for _, resource := range accessTableExtractor.accessTables {
 		accessesMap[resource] = true
 	}
+
 	// We do not support simultaneous access to the system table and the user table
 	// because we do not synchronize the schema of the system table.
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.

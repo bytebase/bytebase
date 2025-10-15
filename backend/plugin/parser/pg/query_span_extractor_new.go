@@ -27,14 +27,22 @@ func (q *querySpanExtractor) getQuerySpanNew(ctx context.Context, stmt string) (
 	}
 
 	// Walk the tree to extract access tables
-	antlr.ParseTreeWalkerDefault.Walk(q, parseResult.Tree)
-	if q.err != nil {
-		return nil, errors.Wrapf(q.err, "failed to extract query span from statement: %s", stmt)
+
+	accessTableExtractor := &accessTableExtractor{
+		defaultDatabase:     q.defaultDatabase,
+		searchPath:          q.searchPath,
+		getDatabaseMetadata: q.gCtx.GetDatabaseMetadataFunc,
+		ctx:                 ctx,
+		instanceID:          q.gCtx.InstanceID,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(accessTableExtractor, parseResult.Tree)
+	if accessTableExtractor.err != nil {
+		return nil, errors.Wrapf(accessTableExtractor.err, "failed to extract query span from statement: %s", stmt)
 	}
 
 	// Build access map
 	accessesMap := make(base.SourceColumnSet)
-	for _, resource := range q.accessTables {
+	for _, resource := range accessTableExtractor.accessTables {
 		accessesMap[resource] = true
 	}
 

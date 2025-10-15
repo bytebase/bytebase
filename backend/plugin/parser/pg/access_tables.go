@@ -1,17 +1,30 @@
 package pg
 
 import (
+	"context"
+
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/parser/postgresql"
 	"github.com/pkg/errors"
 )
 
-func (l *querySpanExtractor) EnterQualified_name(qn *postgresql.Qualified_nameContext) {
-	if l.err != nil {
+type accessTableExtractor struct {
+	*postgresql.BasePostgreSQLParserListener
+	err                 error
+	defaultDatabase     string
+	searchPath          []string
+	accessTables        []base.ColumnResource
+	getDatabaseMetadata base.GetDatabaseMetadataFunc
+	ctx                 context.Context
+	instanceID          string
+}
+
+func (a *accessTableExtractor) EnterQualified_name(qn *postgresql.Qualified_nameContext) {
+	if a.err != nil {
 		return
 	}
 	resource := base.ColumnResource{
-		Database: l.defaultDatabase,
+		Database: a.defaultDatabase,
 	}
 	var directions []string
 	qnLength := 1
@@ -39,19 +52,19 @@ func (l *querySpanExtractor) EnterQualified_name(qn *postgresql.Qualified_nameCo
 		resource.Schema = directions[1]
 		resource.Table = directions[2]
 	default:
-		l.err = errors.Errorf("improper qualified name (too many dotted names): %s", qn.GetParser().GetTokenStream().GetTextFromInterval(qn.GetSourceInterval()))
+		a.err = errors.Errorf("improper qualified name (too many dotted names): %s", qn.GetParser().GetTokenStream().GetTextFromInterval(qn.GetSourceInterval()))
 		return
 	}
 
 	if !isSystemResource(resource) {
-		searchPath := l.searchPath
+		searchPath := a.searchPath
 		if resource.Schema != "" {
 			searchPath = []string{resource.Schema}
 		}
 
-		databaseMetadata, err := l.getDatabaseMetadata(l.defaultDatabase)
+		_, databaseMetadata, err := a.getDatabaseMetadata(a.ctx, a.instanceID, a.defaultDatabase)
 		if err != nil {
-			l.err = errors.Wrapf(err, "failed to get database metadata for database: %s", l.defaultDatabase)
+			a.err = errors.Wrapf(err, "failed to get database metadata for database: %s", a.defaultDatabase)
 		}
 		// Access pseudo table or table/view we do not sync, return directly.
 		if databaseMetadata == nil {
@@ -64,7 +77,7 @@ func (l *querySpanExtractor) EnterQualified_name(qn *postgresql.Qualified_nameCo
 		resource.Schema = schemaName
 	}
 
-	l.accessTables = append(l.accessTables, resource)
+	a.accessTables = append(a.accessTables, resource)
 }
 
 // isMixedQuery checks whether the query accesses the user table and system table at the same time.
