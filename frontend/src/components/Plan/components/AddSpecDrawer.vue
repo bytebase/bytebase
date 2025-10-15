@@ -105,7 +105,7 @@
             "
           >
             <div
-              class="relative h-[600px] w-full md:w-[90vw] lg:w-[calc(100vw-20rem)] lg:min-w-[70vw]"
+              class="relative h-[600px] w-full md:w-[90vw] lg:w-[calc(100vw-20rem)] lg:min-w-[80vw]"
             >
               <MaskSpinner v-if="isPreparingMetadata" />
               <SchemaEditorLite
