@@ -1069,7 +1069,8 @@
     "approval": {
       "rejected-error": "問題の承認が拒否されました。",
       "pending-error": "問題の承認が保留中です。",
-      "approved-and-waiting-for-rollout": "この問題は承認されており、展開する準備ができています。"
+      "approved-and-waiting-for-rollout": "この問題は承認されており、展開する準備ができています。",
+      "ready-for-rollout": "展開可能"
     },
     "new-layout": "新しいCI/CDレイアウト"
   },

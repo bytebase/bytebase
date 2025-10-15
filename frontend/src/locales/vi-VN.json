@@ -1069,7 +1069,8 @@
     "approval": {
       "rejected-error": "Đã từ chối phê duyệt vấn đề.",
       "pending-error": "Đang chờ phê duyệt vấn đề.",
-      "approved-and-waiting-for-rollout": "Phiên bản này đã được chấp thuận và sẵn sàng triển khai."
+      "approved-and-waiting-for-rollout": "Phiên bản này đã được chấp thuận và sẵn sàng triển khai.",
+      "ready-for-rollout": "Sẵn sàng triển khai"
     },
     "new-layout": "Bố cục CI/CD mới"
   },

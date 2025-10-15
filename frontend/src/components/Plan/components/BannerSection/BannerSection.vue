@@ -22,7 +22,7 @@
         :icon-placement="'right'"
         @click="handleGoToRollout"
       >
-        {{ $t("issue.approval.approved-and-waiting-for-rollout") }}
+        {{ t("issue.approval.ready-for-rollout") }}
         <template #icon>
           <ArrowRightIcon class="w-4 h-4" />
         </template>
@@ -35,6 +35,7 @@
 import { ArrowRightIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { usePlanContext } from "@/components/Plan";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL } from "@/router/dashboard/projectV1";
@@ -55,6 +56,7 @@ const props = defineProps<{
   currentTab: string;
 }>();
 
+const { t } = useI18n();
 const router = useRouter();
 const { plan, issue, rollout } = usePlanContext();
 

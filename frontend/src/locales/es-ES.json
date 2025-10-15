@@ -1069,7 +1069,8 @@
     "approval": {
       "rejected-error": "Se ha rechazado la aprobación del problema.",
       "pending-error": "La aprobación del problema está pendiente.",
-      "approved-and-waiting-for-rollout": "Este problema ha sido aprobado y está listo para implementarse."
+      "approved-and-waiting-for-rollout": "Este problema ha sido aprobado y está listo para implementarse.",
+      "ready-for-rollout": "Listo para implementar"
     },
     "new-layout": "Nuevo diseño de CI/CD"
   },
