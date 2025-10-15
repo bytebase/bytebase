@@ -316,3 +316,260 @@ func TestFunctionIdentifierParsing(t *testing.T) {
 		})
 	}
 }
+
+// TestSameNameFunctionsWithDifferentSignatures tests BYT-7994
+// PostgreSQL supports function overloading - same name with different arguments
+// The SDL diff should recognize functions by (name + signature), not just name
+func TestSameNameFunctionsWithDifferentSignatures(t *testing.T) {
+	tests := []struct {
+		name                    string
+		previousSDL             string
+		currentSDL              string
+		expectedFunctionChanges int
+		expectedCreateCount     int
+		expectedDropCount       int
+		expectedAlterCount      int
+		description             string
+	}{
+		{
+			name: "Add second function with same name but different signature - BYT-7994",
+			previousSDL: `
+CREATE FUNCTION "public"."my_procedure"(p_id integer) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RAISE NOTICE 'Function with one parameter: %', p_id;
+END;
+$$;
+`,
+			currentSDL: `
+CREATE FUNCTION "public"."my_procedure"(p_id integer) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RAISE NOTICE 'Function with one parameter: %', p_id;
+END;
+$$;
+
+CREATE FUNCTION "public"."my_procedure"(p_id integer, p_name text) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RAISE NOTICE 'Function with two parameters: % - %', p_id, p_name;
+END;
+$$;
+`,
+			expectedFunctionChanges: 1,
+			expectedCreateCount:     1,
+			expectedDropCount:       0,
+			expectedAlterCount:      0,
+			description:             "Should add the new function without dropping the old one",
+		},
+		{
+			name: "Three overloaded functions with same name",
+			previousSDL: `
+CREATE FUNCTION "public"."calculate"(x integer) RETURNS integer
+    LANGUAGE sql
+    AS $$
+    SELECT x * 2;
+$$;
+`,
+			currentSDL: `
+CREATE FUNCTION "public"."calculate"(x integer) RETURNS integer
+    LANGUAGE sql
+    AS $$
+    SELECT x * 2;
+$$;
+
+CREATE FUNCTION "public"."calculate"(x integer, y integer) RETURNS integer
+    LANGUAGE sql
+    AS $$
+    SELECT x + y;
+$$;
+
+CREATE FUNCTION "public"."calculate"(x numeric, y numeric, z numeric) RETURNS numeric
+    LANGUAGE sql
+    AS $$
+    SELECT x + y + z;
+$$;
+`,
+			expectedFunctionChanges: 2,
+			expectedCreateCount:     2,
+			expectedDropCount:       0,
+			expectedAlterCount:      0,
+			description:             "Should add two new overloaded functions",
+		},
+		{
+			name: "Remove one overloaded function, keep others",
+			previousSDL: `
+CREATE FUNCTION "public"."process"(p_id integer) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RAISE NOTICE 'Process one param';
+END;
+$$;
+
+CREATE FUNCTION "public"."process"(p_id integer, p_name text) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RAISE NOTICE 'Process two params';
+END;
+$$;
+
+CREATE FUNCTION "public"."process"(p_id integer, p_name text, p_email text) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RAISE NOTICE 'Process three params';
+END;
+$$;
+`,
+			currentSDL: `
+CREATE FUNCTION "public"."process"(p_id integer) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RAISE NOTICE 'Process one param';
+END;
+$$;
+
+CREATE FUNCTION "public"."process"(p_id integer, p_name text, p_email text) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RAISE NOTICE 'Process three params';
+END;
+$$;
+`,
+			expectedFunctionChanges: 1,
+			expectedCreateCount:     0,
+			expectedDropCount:       1,
+			expectedAlterCount:      0,
+			description:             "Should drop only the middle function (2 params), keep others",
+		},
+		{
+			name: "Modify one overloaded function, keep others unchanged",
+			previousSDL: `
+CREATE FUNCTION "public"."get_info"(p_id integer) RETURNS text
+    LANGUAGE sql
+    AS $$
+    SELECT 'User ID: ' || p_id::text;
+$$;
+
+CREATE FUNCTION "public"."get_info"(p_name text) RETURNS text
+    LANGUAGE sql
+    AS $$
+    SELECT 'User Name: ' || p_name;
+$$;
+`,
+			currentSDL: `
+CREATE FUNCTION "public"."get_info"(p_id integer) RETURNS text
+    LANGUAGE sql
+    AS $$
+    SELECT 'Updated User ID: ' || p_id::text;
+$$;
+
+CREATE FUNCTION "public"."get_info"(p_name text) RETURNS text
+    LANGUAGE sql
+    AS $$
+    SELECT 'User Name: ' || p_name;
+$$;
+`,
+			expectedFunctionChanges: 1,
+			expectedCreateCount:     0,
+			expectedDropCount:       0,
+			expectedAlterCount:      1,
+			description:             "Should modify only the first function, keep second unchanged",
+		},
+		{
+			name: "Procedures with same name but different signatures",
+			previousSDL: `
+CREATE PROCEDURE "public"."update_status"(p_id integer)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    UPDATE users SET status = 'active' WHERE id = p_id;
+END;
+$$;
+`,
+			currentSDL: `
+CREATE PROCEDURE "public"."update_status"(p_id integer)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    UPDATE users SET status = 'active' WHERE id = p_id;
+END;
+$$;
+
+CREATE PROCEDURE "public"."update_status"(p_id integer, p_new_status text)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    UPDATE users SET status = p_new_status WHERE id = p_id;
+END;
+$$;
+`,
+			expectedFunctionChanges: 1,
+			expectedCreateCount:     1,
+			expectedDropCount:       0,
+			expectedAlterCount:      0,
+			description:             "Should add the new procedure without dropping the old one",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			require.NoError(t, err)
+
+			// Count different action types
+			createCount := 0
+			dropCount := 0
+			alterCount := 0
+
+			for _, change := range diff.FunctionChanges {
+				signature := ""
+				if change.NewFunction != nil {
+					signature = change.NewFunction.Signature
+				} else if change.OldFunction != nil {
+					signature = change.OldFunction.Signature
+				}
+				t.Logf("Function: %s, Signature: %s, Action: %s",
+					change.FunctionName, signature, change.Action)
+
+				switch change.Action {
+				case schema.MetadataDiffActionCreate:
+					createCount++
+				case schema.MetadataDiffActionDrop:
+					dropCount++
+				case schema.MetadataDiffActionAlter:
+					alterCount++
+				default:
+					t.Errorf("Unexpected action: %v", change.Action)
+				}
+			}
+
+			t.Logf("Description: %s", tt.description)
+			t.Logf("Total changes: %d (CREATE: %d, DROP: %d, ALTER: %d)",
+				len(diff.FunctionChanges), createCount, dropCount, alterCount)
+
+			assert.Equal(t, tt.expectedFunctionChanges, len(diff.FunctionChanges),
+				"Expected %d function changes, got %d", tt.expectedFunctionChanges, len(diff.FunctionChanges))
+			assert.Equal(t, tt.expectedCreateCount, createCount,
+				"Expected %d CREATE actions, got %d", tt.expectedCreateCount, createCount)
+			assert.Equal(t, tt.expectedDropCount, dropCount,
+				"Expected %d DROP actions, got %d", tt.expectedDropCount, dropCount)
+			assert.Equal(t, tt.expectedAlterCount, alterCount,
+				"Expected %d ALTER actions, got %d", tt.expectedAlterCount, alterCount)
+
+			// If we see unexpected DROP actions for overloaded functions, that's the bug
+			if dropCount > tt.expectedDropCount {
+				t.Errorf("BUG DETECTED (BYT-7994): Found %d DROP action(s), expected %d. "+
+					"Functions with same name but different signatures should be identified separately.",
+					dropCount, tt.expectedDropCount)
+			}
+		})
+	}
+}
