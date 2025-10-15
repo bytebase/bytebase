@@ -26,7 +26,7 @@ type SheetPayload struct {
 	// The SQL dialect.
 	Engine Engine `protobuf:"varint,3,opt,name=engine,proto3,enum=bytebase.store.Engine" json:"engine,omitempty"`
 	// The start and end position of each command in the sheet statement.
-	Commands      []*SheetCommand `protobuf:"bytes,4,rep,name=commands,proto3" json:"commands,omitempty"`
+	Commands      []*Range `protobuf:"bytes,4,rep,name=commands,proto3" json:"commands,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -68,76 +68,21 @@ func (x *SheetPayload) GetEngine() Engine {
 	return Engine_ENGINE_UNSPECIFIED
 }
 
-func (x *SheetPayload) GetCommands() []*SheetCommand {
+func (x *SheetPayload) GetCommands() []*Range {
 	if x != nil {
 		return x.Commands
 	}
 	return nil
 }
 
-type SheetCommand struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Start         int32                  `protobuf:"varint,1,opt,name=start,proto3" json:"start,omitempty"`
-	End           int32                  `protobuf:"varint,2,opt,name=end,proto3" json:"end,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SheetCommand) Reset() {
-	*x = SheetCommand{}
-	mi := &file_store_sheet_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SheetCommand) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SheetCommand) ProtoMessage() {}
-
-func (x *SheetCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_store_sheet_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SheetCommand.ProtoReflect.Descriptor instead.
-func (*SheetCommand) Descriptor() ([]byte, []int) {
-	return file_store_sheet_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *SheetCommand) GetStart() int32 {
-	if x != nil {
-		return x.Start
-	}
-	return 0
-}
-
-func (x *SheetCommand) GetEnd() int32 {
-	if x != nil {
-		return x.End
-	}
-	return 0
-}
-
 var File_store_sheet_proto protoreflect.FileDescriptor
 
 const file_store_sheet_proto_rawDesc = "" +
 	"\n" +
-	"\x11store/sheet.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"x\n" +
+	"\x11store/sheet.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"q\n" +
 	"\fSheetPayload\x12.\n" +
-	"\x06engine\x18\x03 \x01(\x0e2\x16.bytebase.store.EngineR\x06engine\x128\n" +
-	"\bcommands\x18\x04 \x03(\v2\x1c.bytebase.store.SheetCommandR\bcommands\"6\n" +
-	"\fSheetCommand\x12\x14\n" +
-	"\x05start\x18\x01 \x01(\x05R\x05start\x12\x10\n" +
-	"\x03end\x18\x02 \x01(\x05R\x03endB\x14Z\x12generated-go/storeb\x06proto3"
+	"\x06engine\x18\x03 \x01(\x0e2\x16.bytebase.store.EngineR\x06engine\x121\n" +
+	"\bcommands\x18\x04 \x03(\v2\x15.bytebase.store.RangeR\bcommandsB\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
 	file_store_sheet_proto_rawDescOnce sync.Once
@@ -151,15 +96,15 @@ func file_store_sheet_proto_rawDescGZIP() []byte {
 	return file_store_sheet_proto_rawDescData
 }
 
-var file_store_sheet_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_store_sheet_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_store_sheet_proto_goTypes = []any{
 	(*SheetPayload)(nil), // 0: bytebase.store.SheetPayload
-	(*SheetCommand)(nil), // 1: bytebase.store.SheetCommand
-	(Engine)(0),          // 2: bytebase.store.Engine
+	(Engine)(0),          // 1: bytebase.store.Engine
+	(*Range)(nil),        // 2: bytebase.store.Range
 }
 var file_store_sheet_proto_depIdxs = []int32{
-	2, // 0: bytebase.store.SheetPayload.engine:type_name -> bytebase.store.Engine
-	1, // 1: bytebase.store.SheetPayload.commands:type_name -> bytebase.store.SheetCommand
+	1, // 0: bytebase.store.SheetPayload.engine:type_name -> bytebase.store.Engine
+	2, // 1: bytebase.store.SheetPayload.commands:type_name -> bytebase.store.Range
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -179,7 +124,7 @@ func file_store_sheet_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_sheet_proto_rawDesc), len(file_store_sheet_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

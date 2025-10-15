@@ -165,15 +165,15 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 						issueFind.TaskTypes = &[]storepb.Task_Type{
 							storepb.Task_DATABASE_MIGRATE,
 						}
-						issueFind.MigrateTypes = &[]storepb.Task_MigrateType{
-							storepb.Task_DDL,
+						issueFind.MigrateTypes = &[]storepb.MigrationType{
+							storepb.MigrationType_DDL,
 						}
 					case "DML":
 						issueFind.TaskTypes = &[]storepb.Task_Type{
 							storepb.Task_DATABASE_MIGRATE,
 						}
-						issueFind.MigrateTypes = &[]storepb.Task_MigrateType{
-							storepb.Task_DML,
+						issueFind.MigrateTypes = &[]storepb.MigrationType{
+							storepb.MigrationType_DML,
 						}
 					default:
 						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unknown value %q`, value))
@@ -772,7 +772,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 			Comment: req.Msg.Comment,
 			Event: &storepb.IssueCommentPayload_Approval_{
 				Approval: &storepb.IssueCommentPayload_Approval{
-					Status: storepb.IssueCommentPayload_Approval_APPROVED,
+					Status: storepb.IssuePayloadApproval_Approver_APPROVED,
 				},
 			},
 		}
@@ -955,7 +955,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 			Comment: req.Msg.Comment,
 			Event: &storepb.IssueCommentPayload_Approval_{
 				Approval: &storepb.IssueCommentPayload_Approval{
-					Status: storepb.IssueCommentPayload_Approval_REJECTED,
+					Status: storepb.IssuePayloadApproval_Approver_REJECTED,
 				},
 			},
 		}
@@ -1060,7 +1060,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 			Comment: req.Msg.Comment,
 			Event: &storepb.IssueCommentPayload_Approval_{
 				Approval: &storepb.IssueCommentPayload_Approval{
-					Status: storepb.IssueCommentPayload_Approval_PENDING,
+					Status: storepb.IssuePayloadApproval_Approver_PENDING,
 				},
 			},
 		}

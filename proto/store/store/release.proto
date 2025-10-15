@@ -24,22 +24,9 @@ message ReleasePayload {
     string sheet = 3 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
     // The SHA256 hash value of the sheet.
     string sheet_sha256 = 4;
-    Type type = 5;
+    SchemaChangeType type = 5;
     string version = 6;
     MigrationType migration_type = 7;
-
-    enum Type {
-      TYPE_UNSPECIFIED = 0;
-      VERSIONED = 1;
-      DECLARATIVE = 2;
-    }
-
-    enum MigrationType {
-      MIGRATION_TYPE_UNSPECIFIED = 0;
-      DDL = 1;
-      DDL_GHOST = 2;
-      DML = 3;
-    }
   }
 
   message VCSSource {

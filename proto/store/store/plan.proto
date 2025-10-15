@@ -66,18 +66,9 @@ message PlanConfig {
     }
     Type type = 3;
 
-    // MigrateType is the migration type for imperative schema migration.
+    // The migration type for imperative schema migration.
     // It is only set when type is MIGRATE.
-    enum MigrateType {
-      MIGRATE_TYPE_UNSPECIFIED = 0;
-      // Used for DDL changes.
-      DDL = 1;
-      // Used for DML changes.
-      DML = 2;
-      // Used for DDL changes using gh-ost.
-      GHOST = 3;
-    }
-    MigrateType migrate_type = 11;
+    MigrationType migrate_type = 11;
 
     map<string, string> ghost_flags = 7;
 

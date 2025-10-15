@@ -74,63 +74,6 @@ func (PlanConfig_ChangeDatabaseConfig_Type) EnumDescriptor() ([]byte, []int) {
 	return file_store_plan_proto_rawDescGZIP(), []int{0, 2, 0}
 }
 
-// MigrateType is the migration type for imperative schema migration.
-// It is only set when type is MIGRATE.
-type PlanConfig_ChangeDatabaseConfig_MigrateType int32
-
-const (
-	PlanConfig_ChangeDatabaseConfig_MIGRATE_TYPE_UNSPECIFIED PlanConfig_ChangeDatabaseConfig_MigrateType = 0
-	// Used for DDL changes.
-	PlanConfig_ChangeDatabaseConfig_DDL PlanConfig_ChangeDatabaseConfig_MigrateType = 1
-	// Used for DML changes.
-	PlanConfig_ChangeDatabaseConfig_DML PlanConfig_ChangeDatabaseConfig_MigrateType = 2
-	// Used for DDL changes using gh-ost.
-	PlanConfig_ChangeDatabaseConfig_GHOST PlanConfig_ChangeDatabaseConfig_MigrateType = 3
-)
-
-// Enum value maps for PlanConfig_ChangeDatabaseConfig_MigrateType.
-var (
-	PlanConfig_ChangeDatabaseConfig_MigrateType_name = map[int32]string{
-		0: "MIGRATE_TYPE_UNSPECIFIED",
-		1: "DDL",
-		2: "DML",
-		3: "GHOST",
-	}
-	PlanConfig_ChangeDatabaseConfig_MigrateType_value = map[string]int32{
-		"MIGRATE_TYPE_UNSPECIFIED": 0,
-		"DDL":                      1,
-		"DML":                      2,
-		"GHOST":                    3,
-	}
-)
-
-func (x PlanConfig_ChangeDatabaseConfig_MigrateType) Enum() *PlanConfig_ChangeDatabaseConfig_MigrateType {
-	p := new(PlanConfig_ChangeDatabaseConfig_MigrateType)
-	*p = x
-	return p
-}
-
-func (x PlanConfig_ChangeDatabaseConfig_MigrateType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (PlanConfig_ChangeDatabaseConfig_MigrateType) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_plan_proto_enumTypes[1].Descriptor()
-}
-
-func (PlanConfig_ChangeDatabaseConfig_MigrateType) Type() protoreflect.EnumType {
-	return &file_store_plan_proto_enumTypes[1]
-}
-
-func (x PlanConfig_ChangeDatabaseConfig_MigrateType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use PlanConfig_ChangeDatabaseConfig_MigrateType.Descriptor instead.
-func (PlanConfig_ChangeDatabaseConfig_MigrateType) EnumDescriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 2, 1}
-}
-
 type PlanConfig struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Specs         []*PlanConfig_Spec     `protobuf:"bytes,1,rep,name=specs,proto3" json:"specs,omitempty"`
@@ -412,10 +355,12 @@ type PlanConfig_ChangeDatabaseConfig struct {
 	Sheet string `protobuf:"bytes,2,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	// The resource name of the release.
 	// Format: projects/{project}/releases/{release}
-	Release     string                                      `protobuf:"bytes,9,opt,name=release,proto3" json:"release,omitempty"`
-	Type        PlanConfig_ChangeDatabaseConfig_Type        `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.store.PlanConfig_ChangeDatabaseConfig_Type" json:"type,omitempty"`
-	MigrateType PlanConfig_ChangeDatabaseConfig_MigrateType `protobuf:"varint,11,opt,name=migrate_type,json=migrateType,proto3,enum=bytebase.store.PlanConfig_ChangeDatabaseConfig_MigrateType" json:"migrate_type,omitempty"`
-	GhostFlags  map[string]string                           `protobuf:"bytes,7,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Release string                               `protobuf:"bytes,9,opt,name=release,proto3" json:"release,omitempty"`
+	Type    PlanConfig_ChangeDatabaseConfig_Type `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.store.PlanConfig_ChangeDatabaseConfig_Type" json:"type,omitempty"`
+	// The migration type for imperative schema migration.
+	// It is only set when type is MIGRATE.
+	MigrateType MigrationType     `protobuf:"varint,11,opt,name=migrate_type,json=migrateType,proto3,enum=bytebase.store.MigrationType" json:"migrate_type,omitempty"`
+	GhostFlags  map[string]string `protobuf:"bytes,7,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// If set, a backup of the modified data will be created automatically before any changes are applied.
 	EnablePriorBackup bool `protobuf:"varint,8,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -480,11 +425,11 @@ func (x *PlanConfig_ChangeDatabaseConfig) GetType() PlanConfig_ChangeDatabaseCon
 	return PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED
 }
 
-func (x *PlanConfig_ChangeDatabaseConfig) GetMigrateType() PlanConfig_ChangeDatabaseConfig_MigrateType {
+func (x *PlanConfig_ChangeDatabaseConfig) GetMigrateType() MigrationType {
 	if x != nil {
 		return x.MigrateType
 	}
-	return PlanConfig_ChangeDatabaseConfig_MIGRATE_TYPE_UNSPECIFIED
+	return MigrationType_MIGRATION_TYPE_UNSPECIFIED
 }
 
 func (x *PlanConfig_ChangeDatabaseConfig) GetGhostFlags() map[string]string {
@@ -689,7 +634,7 @@ var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\"\x85\x0e\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\"\x9d\r\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
 	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x12E\n" +
@@ -710,14 +655,14 @@ const file_store_plan_proto_rawDesc = "" +
 	"\tcollation\x18\x05 \x01(\tB\x03\xe0A\x01R\tcollation\x12\x1d\n" +
 	"\acluster\x18\x06 \x01(\tB\x03\xe0A\x01R\acluster\x12\x19\n" +
 	"\x05owner\x18\a \x01(\tB\x03\xe0A\x01R\x05owner\x12%\n" +
-	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x1a\xd9\x04\n" +
+	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x1a\xf1\x03\n" +
 	"\x14ChangeDatabaseConfig\x12\x18\n" +
 	"\atargets\x18\n" +
 	" \x03(\tR\atargets\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x12\x18\n" +
 	"\arelease\x18\t \x01(\tR\arelease\x12H\n" +
-	"\x04type\x18\x03 \x01(\x0e24.bytebase.store.PlanConfig.ChangeDatabaseConfig.TypeR\x04type\x12^\n" +
-	"\fmigrate_type\x18\v \x01(\x0e2;.bytebase.store.PlanConfig.ChangeDatabaseConfig.MigrateTypeR\vmigrateType\x12`\n" +
+	"\x04type\x18\x03 \x01(\x0e24.bytebase.store.PlanConfig.ChangeDatabaseConfig.TypeR\x04type\x12@\n" +
+	"\fmigrate_type\x18\v \x01(\x0e2\x1d.bytebase.store.MigrationTypeR\vmigrateType\x12`\n" +
 	"\vghost_flags\x18\a \x03(\v2?.bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntryR\n" +
 	"ghostFlags\x12.\n" +
 	"\x13enable_prior_backup\x18\b \x01(\bR\x11enablePriorBackup\x1a=\n" +
@@ -727,12 +672,7 @@ const file_store_plan_proto_rawDesc = "" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aMIGRATE\x10\x02\x12\a\n" +
-	"\x03SDL\x10\x03\"H\n" +
-	"\vMigrateType\x12\x1c\n" +
-	"\x18MIGRATE_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
-	"\x03DDL\x10\x01\x12\a\n" +
-	"\x03DML\x10\x02\x12\t\n" +
-	"\x05GHOST\x10\x03\x1a\xa6\x01\n" +
+	"\x03SDL\x10\x03\x1a\xa6\x01\n" +
 	"\x10ExportDataConfig\x12\x18\n" +
 	"\atargets\x18\x05 \x03(\tR\atargets\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x124\n" +
@@ -759,32 +699,32 @@ func file_store_plan_proto_rawDescGZIP() []byte {
 	return file_store_plan_proto_rawDescData
 }
 
-var file_store_plan_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_store_plan_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_plan_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_store_plan_proto_goTypes = []any{
 	(PlanConfig_ChangeDatabaseConfig_Type)(0),          // 0: bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
-	(PlanConfig_ChangeDatabaseConfig_MigrateType)(0),   // 1: bytebase.store.PlanConfig.ChangeDatabaseConfig.MigrateType
-	(*PlanConfig)(nil),                                 // 2: bytebase.store.PlanConfig
-	(*PlanConfig_Spec)(nil),                            // 3: bytebase.store.PlanConfig.Spec
-	(*PlanConfig_CreateDatabaseConfig)(nil),            // 4: bytebase.store.PlanConfig.CreateDatabaseConfig
-	(*PlanConfig_ChangeDatabaseConfig)(nil),            // 5: bytebase.store.PlanConfig.ChangeDatabaseConfig
-	(*PlanConfig_ExportDataConfig)(nil),                // 6: bytebase.store.PlanConfig.ExportDataConfig
-	(*PlanConfig_Deployment)(nil),                      // 7: bytebase.store.PlanConfig.Deployment
-	nil,                                                // 8: bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
-	(*PlanConfig_Deployment_DatabaseGroupMapping)(nil), // 9: bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
+	(*PlanConfig)(nil),                                 // 1: bytebase.store.PlanConfig
+	(*PlanConfig_Spec)(nil),                            // 2: bytebase.store.PlanConfig.Spec
+	(*PlanConfig_CreateDatabaseConfig)(nil),            // 3: bytebase.store.PlanConfig.CreateDatabaseConfig
+	(*PlanConfig_ChangeDatabaseConfig)(nil),            // 4: bytebase.store.PlanConfig.ChangeDatabaseConfig
+	(*PlanConfig_ExportDataConfig)(nil),                // 5: bytebase.store.PlanConfig.ExportDataConfig
+	(*PlanConfig_Deployment)(nil),                      // 6: bytebase.store.PlanConfig.Deployment
+	nil,                                                // 7: bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
+	(*PlanConfig_Deployment_DatabaseGroupMapping)(nil), // 8: bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
+	(MigrationType)(0),                                 // 9: bytebase.store.MigrationType
 	(ExportFormat)(0),                                  // 10: bytebase.store.ExportFormat
 }
 var file_store_plan_proto_depIdxs = []int32{
-	3,  // 0: bytebase.store.PlanConfig.specs:type_name -> bytebase.store.PlanConfig.Spec
-	7,  // 1: bytebase.store.PlanConfig.deployment:type_name -> bytebase.store.PlanConfig.Deployment
-	4,  // 2: bytebase.store.PlanConfig.Spec.create_database_config:type_name -> bytebase.store.PlanConfig.CreateDatabaseConfig
-	5,  // 3: bytebase.store.PlanConfig.Spec.change_database_config:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig
-	6,  // 4: bytebase.store.PlanConfig.Spec.export_data_config:type_name -> bytebase.store.PlanConfig.ExportDataConfig
+	2,  // 0: bytebase.store.PlanConfig.specs:type_name -> bytebase.store.PlanConfig.Spec
+	6,  // 1: bytebase.store.PlanConfig.deployment:type_name -> bytebase.store.PlanConfig.Deployment
+	3,  // 2: bytebase.store.PlanConfig.Spec.create_database_config:type_name -> bytebase.store.PlanConfig.CreateDatabaseConfig
+	4,  // 3: bytebase.store.PlanConfig.Spec.change_database_config:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig
+	5,  // 4: bytebase.store.PlanConfig.Spec.export_data_config:type_name -> bytebase.store.PlanConfig.ExportDataConfig
 	0,  // 5: bytebase.store.PlanConfig.ChangeDatabaseConfig.type:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
-	1,  // 6: bytebase.store.PlanConfig.ChangeDatabaseConfig.migrate_type:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.MigrateType
-	8,  // 7: bytebase.store.PlanConfig.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
+	9,  // 6: bytebase.store.PlanConfig.ChangeDatabaseConfig.migrate_type:type_name -> bytebase.store.MigrationType
+	7,  // 7: bytebase.store.PlanConfig.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
 	10, // 8: bytebase.store.PlanConfig.ExportDataConfig.format:type_name -> bytebase.store.ExportFormat
-	9,  // 9: bytebase.store.PlanConfig.Deployment.database_group_mappings:type_name -> bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
+	8,  // 9: bytebase.store.PlanConfig.Deployment.database_group_mappings:type_name -> bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
 	10, // [10:10] is the sub-list for method output_type
 	10, // [10:10] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
@@ -809,7 +749,7 @@ func file_store_plan_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_plan_proto_rawDesc), len(file_store_plan_proto_rawDesc)),
-			NumEnums:      2,
+			NumEnums:      1,
 			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,

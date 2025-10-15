@@ -23,7 +23,7 @@ func (checker *CreateAndDropDatabaseChecker) EnterQuery(ctx *mysql.QueryContext)
 // EnterCreateDatabase is called when production createDatabase is entered.
 func (checker *CreateAndDropDatabaseChecker) EnterCreateDatabase(_ *mysql.CreateDatabaseContext) {
 	checker.Results = append(checker.Results, &storepb.PlanCheckRunResult_Result{
-		Status:  storepb.PlanCheckRunResult_Result_ERROR,
+		Status:  storepb.Advice_ERROR,
 		Code:    common.TaskTypeCreateDatabase.Int32(),
 		Title:   "Cannot create database",
 		Content: fmt.Sprintf(`The statement "%s" creates database`, checker.Text),
@@ -33,7 +33,7 @@ func (checker *CreateAndDropDatabaseChecker) EnterCreateDatabase(_ *mysql.Create
 // EnterDropDatabase is called when production dropDatabase is entered.
 func (checker *CreateAndDropDatabaseChecker) EnterDropDatabase(_ *mysql.DropDatabaseContext) {
 	checker.Results = append(checker.Results, &storepb.PlanCheckRunResult_Result{
-		Status:  storepb.PlanCheckRunResult_Result_ERROR,
+		Status:  storepb.Advice_ERROR,
 		Code:    common.TaskTypeDropDatabase.Int32(),
 		Title:   "Cannot drop database",
 		Content: fmt.Sprintf(`The statement "%s" drops database`, checker.Text),
@@ -249,7 +249,7 @@ func (checker *SDLTypeChecker) EnterDropTable(ctx *mysql.DropTableContext) {
 	for _, tableRef := range ctx.TableRefList().AllTableRef() {
 		_, tableName := NormalizeMySQLTableRef(tableRef)
 		checker.Results = append(checker.Results, &storepb.PlanCheckRunResult_Result{
-			Status:  storepb.PlanCheckRunResult_Result_WARNING,
+			Status:  storepb.Advice_WARNING,
 			Code:    common.TaskTypeDropTable.Int32(),
 			Title:   "Plan to drop table",
 			Content: fmt.Sprintf("Plan to drop table `%s`", tableName),
@@ -271,7 +271,7 @@ func (checker *SDLTypeChecker) EnterDropIndex(ctx *mysql.DropIndexContext) {
 	_, _, indexName := NormalizeIndexRef(ctx.IndexRef())
 	_, tableName := NormalizeMySQLTableRef(ctx.TableRef())
 	checker.Results = append(checker.Results, &storepb.PlanCheckRunResult_Result{
-		Status:  storepb.PlanCheckRunResult_Result_WARNING,
+		Status:  storepb.Advice_WARNING,
 		Code:    common.TaskTypeDropIndex.Int32(),
 		Title:   "Plan to drop index",
 		Content: fmt.Sprintf("Plan to drop index `%s` on table `%s`", indexName, tableName),
@@ -314,7 +314,7 @@ func (checker *SDLTypeChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 			case alterListItem.ColumnInternalRef() != nil:
 				columnName := NormalizeMySQLColumnInternalRef(alterListItem.ColumnInternalRef())
 				checker.Results = append(checker.Results, &storepb.PlanCheckRunResult_Result{
-					Status:  storepb.PlanCheckRunResult_Result_WARNING,
+					Status:  storepb.Advice_WARNING,
 					Code:    common.TaskTypeDropColumn.Int32(),
 					Title:   "Plan to drop column",
 					Content: fmt.Sprintf("Plan to drop column `%s` on table `%s`", columnName, tableName),
@@ -327,7 +327,7 @@ func (checker *SDLTypeChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 			// drop primary key.
 			case alterListItem.PRIMARY_SYMBOL() != nil && alterListItem.KEY_SYMBOL() != nil:
 				checker.Results = append(checker.Results, &storepb.PlanCheckRunResult_Result{
-					Status:  storepb.PlanCheckRunResult_Result_WARNING,
+					Status:  storepb.Advice_WARNING,
 					Code:    common.TaskTypeDropPrimaryKey.Int32(),
 					Title:   "Plan to drop primary key",
 					Content: fmt.Sprintf("Plan to drop primary key on table `%s`", tableName),
@@ -341,7 +341,7 @@ func (checker *SDLTypeChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 			case alterListItem.FOREIGN_SYMBOL() != nil && alterListItem.KEY_SYMBOL() != nil && alterListItem.ColumnInternalRef() != nil:
 				name := NormalizeMySQLColumnInternalRef(alterListItem.ColumnInternalRef())
 				checker.Results = append(checker.Results, &storepb.PlanCheckRunResult_Result{
-					Status:  storepb.PlanCheckRunResult_Result_WARNING,
+					Status:  storepb.Advice_WARNING,
 					Code:    common.TaskTypeDropForeignKey.Int32(),
 					Title:   "Plan to drop foreign key",
 					Content: fmt.Sprintf("Plan to drop foreign key `%s` on table `%s`", name, tableName),
@@ -355,7 +355,7 @@ func (checker *SDLTypeChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 			case alterListItem.CHECK_SYMBOL() != nil && alterListItem.Identifier() != nil:
 				constraintName := NormalizeMySQLIdentifier(alterListItem.Identifier())
 				checker.Results = append(checker.Results, &storepb.PlanCheckRunResult_Result{
-					Status:  storepb.PlanCheckRunResult_Result_WARNING,
+					Status:  storepb.Advice_WARNING,
 					Code:    common.TaskTypeDropCheck.Int32(),
 					Title:   "Plan to drop check constraint",
 					Content: fmt.Sprintf("Plan to drop check constraint `%s` on table `%s`", constraintName, tableName),

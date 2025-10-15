@@ -21,171 +21,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type IssueCommentPayload_Approval_Status int32
-
-const (
-	IssueCommentPayload_Approval_STATUS_UNSPECIFIED IssueCommentPayload_Approval_Status = 0
-	IssueCommentPayload_Approval_PENDING            IssueCommentPayload_Approval_Status = 1
-	IssueCommentPayload_Approval_APPROVED           IssueCommentPayload_Approval_Status = 2
-	IssueCommentPayload_Approval_REJECTED           IssueCommentPayload_Approval_Status = 3
-)
-
-// Enum value maps for IssueCommentPayload_Approval_Status.
-var (
-	IssueCommentPayload_Approval_Status_name = map[int32]string{
-		0: "STATUS_UNSPECIFIED",
-		1: "PENDING",
-		2: "APPROVED",
-		3: "REJECTED",
-	}
-	IssueCommentPayload_Approval_Status_value = map[string]int32{
-		"STATUS_UNSPECIFIED": 0,
-		"PENDING":            1,
-		"APPROVED":           2,
-		"REJECTED":           3,
-	}
-)
-
-func (x IssueCommentPayload_Approval_Status) Enum() *IssueCommentPayload_Approval_Status {
-	p := new(IssueCommentPayload_Approval_Status)
-	*p = x
-	return p
-}
-
-func (x IssueCommentPayload_Approval_Status) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (IssueCommentPayload_Approval_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_issue_comment_proto_enumTypes[0].Descriptor()
-}
-
-func (IssueCommentPayload_Approval_Status) Type() protoreflect.EnumType {
-	return &file_store_issue_comment_proto_enumTypes[0]
-}
-
-func (x IssueCommentPayload_Approval_Status) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use IssueCommentPayload_Approval_Status.Descriptor instead.
-func (IssueCommentPayload_Approval_Status) EnumDescriptor() ([]byte, []int) {
-	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 0, 0}
-}
-
-type IssueCommentPayload_IssueUpdate_IssueStatus int32
-
-const (
-	IssueCommentPayload_IssueUpdate_ISSUE_STATUS_UNSPECIFIED IssueCommentPayload_IssueUpdate_IssueStatus = 0
-	IssueCommentPayload_IssueUpdate_OPEN                     IssueCommentPayload_IssueUpdate_IssueStatus = 1
-	IssueCommentPayload_IssueUpdate_DONE                     IssueCommentPayload_IssueUpdate_IssueStatus = 2
-	IssueCommentPayload_IssueUpdate_CANCELED                 IssueCommentPayload_IssueUpdate_IssueStatus = 3
-)
-
-// Enum value maps for IssueCommentPayload_IssueUpdate_IssueStatus.
-var (
-	IssueCommentPayload_IssueUpdate_IssueStatus_name = map[int32]string{
-		0: "ISSUE_STATUS_UNSPECIFIED",
-		1: "OPEN",
-		2: "DONE",
-		3: "CANCELED",
-	}
-	IssueCommentPayload_IssueUpdate_IssueStatus_value = map[string]int32{
-		"ISSUE_STATUS_UNSPECIFIED": 0,
-		"OPEN":                     1,
-		"DONE":                     2,
-		"CANCELED":                 3,
-	}
-)
-
-func (x IssueCommentPayload_IssueUpdate_IssueStatus) Enum() *IssueCommentPayload_IssueUpdate_IssueStatus {
-	p := new(IssueCommentPayload_IssueUpdate_IssueStatus)
-	*p = x
-	return p
-}
-
-func (x IssueCommentPayload_IssueUpdate_IssueStatus) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (IssueCommentPayload_IssueUpdate_IssueStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_issue_comment_proto_enumTypes[1].Descriptor()
-}
-
-func (IssueCommentPayload_IssueUpdate_IssueStatus) Type() protoreflect.EnumType {
-	return &file_store_issue_comment_proto_enumTypes[1]
-}
-
-func (x IssueCommentPayload_IssueUpdate_IssueStatus) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use IssueCommentPayload_IssueUpdate_IssueStatus.Descriptor instead.
-func (IssueCommentPayload_IssueUpdate_IssueStatus) EnumDescriptor() ([]byte, []int) {
-	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 1, 0}
-}
-
-type IssueCommentPayload_TaskUpdate_Status int32
-
-const (
-	IssueCommentPayload_TaskUpdate_STATUS_UNSPECIFIED IssueCommentPayload_TaskUpdate_Status = 0
-	IssueCommentPayload_TaskUpdate_PENDING            IssueCommentPayload_TaskUpdate_Status = 1
-	IssueCommentPayload_TaskUpdate_RUNNING            IssueCommentPayload_TaskUpdate_Status = 2
-	IssueCommentPayload_TaskUpdate_DONE               IssueCommentPayload_TaskUpdate_Status = 3
-	IssueCommentPayload_TaskUpdate_FAILED             IssueCommentPayload_TaskUpdate_Status = 4
-	IssueCommentPayload_TaskUpdate_SKIPPED            IssueCommentPayload_TaskUpdate_Status = 5
-	IssueCommentPayload_TaskUpdate_CANCELED           IssueCommentPayload_TaskUpdate_Status = 6
-)
-
-// Enum value maps for IssueCommentPayload_TaskUpdate_Status.
-var (
-	IssueCommentPayload_TaskUpdate_Status_name = map[int32]string{
-		0: "STATUS_UNSPECIFIED",
-		1: "PENDING",
-		2: "RUNNING",
-		3: "DONE",
-		4: "FAILED",
-		5: "SKIPPED",
-		6: "CANCELED",
-	}
-	IssueCommentPayload_TaskUpdate_Status_value = map[string]int32{
-		"STATUS_UNSPECIFIED": 0,
-		"PENDING":            1,
-		"RUNNING":            2,
-		"DONE":               3,
-		"FAILED":             4,
-		"SKIPPED":            5,
-		"CANCELED":           6,
-	}
-)
-
-func (x IssueCommentPayload_TaskUpdate_Status) Enum() *IssueCommentPayload_TaskUpdate_Status {
-	p := new(IssueCommentPayload_TaskUpdate_Status)
-	*p = x
-	return p
-}
-
-func (x IssueCommentPayload_TaskUpdate_Status) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (IssueCommentPayload_TaskUpdate_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_issue_comment_proto_enumTypes[2].Descriptor()
-}
-
-func (IssueCommentPayload_TaskUpdate_Status) Type() protoreflect.EnumType {
-	return &file_store_issue_comment_proto_enumTypes[2]
-}
-
-func (x IssueCommentPayload_TaskUpdate_Status) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use IssueCommentPayload_TaskUpdate_Status.Descriptor instead.
-func (IssueCommentPayload_TaskUpdate_Status) EnumDescriptor() ([]byte, []int) {
-	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 3, 0}
-}
-
 type IssueCommentPayload struct {
 	state   protoimpl.MessageState `protogen:"open.v1"`
 	Comment string                 `protobuf:"bytes,1,opt,name=comment,proto3" json:"comment,omitempty"`
@@ -325,8 +160,8 @@ func (*IssueCommentPayload_TaskUpdate_) isIssueCommentPayload_Event() {}
 func (*IssueCommentPayload_TaskPriorBackup_) isIssueCommentPayload_Event() {}
 
 type IssueCommentPayload_Approval struct {
-	state         protoimpl.MessageState              `protogen:"open.v1"`
-	Status        IssueCommentPayload_Approval_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.store.IssueCommentPayload_Approval_Status" json:"status,omitempty"`
+	state         protoimpl.MessageState               `protogen:"open.v1"`
+	Status        IssuePayloadApproval_Approver_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.store.IssuePayloadApproval_Approver_Status" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -361,23 +196,23 @@ func (*IssueCommentPayload_Approval) Descriptor() ([]byte, []int) {
 	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 0}
 }
 
-func (x *IssueCommentPayload_Approval) GetStatus() IssueCommentPayload_Approval_Status {
+func (x *IssueCommentPayload_Approval) GetStatus() IssuePayloadApproval_Approver_Status {
 	if x != nil {
 		return x.Status
 	}
-	return IssueCommentPayload_Approval_STATUS_UNSPECIFIED
+	return IssuePayloadApproval_Approver_STATUS_UNSPECIFIED
 }
 
 type IssueCommentPayload_IssueUpdate struct {
-	state           protoimpl.MessageState                       `protogen:"open.v1"`
-	FromTitle       *string                                      `protobuf:"bytes,1,opt,name=from_title,json=fromTitle,proto3,oneof" json:"from_title,omitempty"`
-	ToTitle         *string                                      `protobuf:"bytes,2,opt,name=to_title,json=toTitle,proto3,oneof" json:"to_title,omitempty"`
-	FromDescription *string                                      `protobuf:"bytes,3,opt,name=from_description,json=fromDescription,proto3,oneof" json:"from_description,omitempty"`
-	ToDescription   *string                                      `protobuf:"bytes,4,opt,name=to_description,json=toDescription,proto3,oneof" json:"to_description,omitempty"`
-	FromStatus      *IssueCommentPayload_IssueUpdate_IssueStatus `protobuf:"varint,5,opt,name=from_status,json=fromStatus,proto3,enum=bytebase.store.IssueCommentPayload_IssueUpdate_IssueStatus,oneof" json:"from_status,omitempty"`
-	ToStatus        *IssueCommentPayload_IssueUpdate_IssueStatus `protobuf:"varint,6,opt,name=to_status,json=toStatus,proto3,enum=bytebase.store.IssueCommentPayload_IssueUpdate_IssueStatus,oneof" json:"to_status,omitempty"`
-	FromLabels      []string                                     `protobuf:"bytes,7,rep,name=from_labels,json=fromLabels,proto3" json:"from_labels,omitempty"`
-	ToLabels        []string                                     `protobuf:"bytes,8,rep,name=to_labels,json=toLabels,proto3" json:"to_labels,omitempty"`
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	FromTitle       *string                `protobuf:"bytes,1,opt,name=from_title,json=fromTitle,proto3,oneof" json:"from_title,omitempty"`
+	ToTitle         *string                `protobuf:"bytes,2,opt,name=to_title,json=toTitle,proto3,oneof" json:"to_title,omitempty"`
+	FromDescription *string                `protobuf:"bytes,3,opt,name=from_description,json=fromDescription,proto3,oneof" json:"from_description,omitempty"`
+	ToDescription   *string                `protobuf:"bytes,4,opt,name=to_description,json=toDescription,proto3,oneof" json:"to_description,omitempty"`
+	FromStatus      *Issue_Status          `protobuf:"varint,5,opt,name=from_status,json=fromStatus,proto3,enum=bytebase.store.Issue_Status,oneof" json:"from_status,omitempty"`
+	ToStatus        *Issue_Status          `protobuf:"varint,6,opt,name=to_status,json=toStatus,proto3,enum=bytebase.store.Issue_Status,oneof" json:"to_status,omitempty"`
+	FromLabels      []string               `protobuf:"bytes,7,rep,name=from_labels,json=fromLabels,proto3" json:"from_labels,omitempty"`
+	ToLabels        []string               `protobuf:"bytes,8,rep,name=to_labels,json=toLabels,proto3" json:"to_labels,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -440,18 +275,18 @@ func (x *IssueCommentPayload_IssueUpdate) GetToDescription() string {
 	return ""
 }
 
-func (x *IssueCommentPayload_IssueUpdate) GetFromStatus() IssueCommentPayload_IssueUpdate_IssueStatus {
+func (x *IssueCommentPayload_IssueUpdate) GetFromStatus() Issue_Status {
 	if x != nil && x.FromStatus != nil {
 		return *x.FromStatus
 	}
-	return IssueCommentPayload_IssueUpdate_ISSUE_STATUS_UNSPECIFIED
+	return Issue_ISSUE_STATUS_UNSPECIFIED
 }
 
-func (x *IssueCommentPayload_IssueUpdate) GetToStatus() IssueCommentPayload_IssueUpdate_IssueStatus {
+func (x *IssueCommentPayload_IssueUpdate) GetToStatus() Issue_Status {
 	if x != nil && x.ToStatus != nil {
 		return *x.ToStatus
 	}
-	return IssueCommentPayload_IssueUpdate_ISSUE_STATUS_UNSPECIFIED
+	return Issue_ISSUE_STATUS_UNSPECIFIED
 }
 
 func (x *IssueCommentPayload_IssueUpdate) GetFromLabels() []string {
@@ -518,8 +353,8 @@ type IssueCommentPayload_TaskUpdate struct {
 	// Format: projects/{project}/sheets/{sheet}
 	FromSheet *string `protobuf:"bytes,2,opt,name=from_sheet,json=fromSheet,proto3,oneof" json:"from_sheet,omitempty"`
 	// Format: projects/{project}/sheets/{sheet}
-	ToSheet       *string                                `protobuf:"bytes,3,opt,name=to_sheet,json=toSheet,proto3,oneof" json:"to_sheet,omitempty"`
-	ToStatus      *IssueCommentPayload_TaskUpdate_Status `protobuf:"varint,6,opt,name=to_status,json=toStatus,proto3,enum=bytebase.store.IssueCommentPayload_TaskUpdate_Status,oneof" json:"to_status,omitempty"`
+	ToSheet       *string         `protobuf:"bytes,3,opt,name=to_sheet,json=toSheet,proto3,oneof" json:"to_sheet,omitempty"`
+	ToStatus      *TaskRun_Status `protobuf:"varint,6,opt,name=to_status,json=toStatus,proto3,enum=bytebase.store.TaskRun_Status,oneof" json:"to_status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -575,11 +410,11 @@ func (x *IssueCommentPayload_TaskUpdate) GetToSheet() string {
 	return ""
 }
 
-func (x *IssueCommentPayload_TaskUpdate) GetToStatus() IssueCommentPayload_TaskUpdate_Status {
+func (x *IssueCommentPayload_TaskUpdate) GetToStatus() TaskRun_Status {
 	if x != nil && x.ToStatus != nil {
 		return *x.ToStatus
 	}
-	return IssueCommentPayload_TaskUpdate_STATUS_UNSPECIFIED
+	return TaskRun_STATUS_UNSPECIFIED
 }
 
 type IssueCommentPayload_TaskPriorBackup struct {
@@ -714,7 +549,7 @@ var File_store_issue_comment_proto protoreflect.FileDescriptor
 
 const file_store_issue_comment_proto_rawDesc = "" +
 	"\n" +
-	"\x19store/issue_comment.proto\x12\x0ebytebase.store\"\xfe\x0e\n" +
+	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x11store/issue.proto\x1a\x14store/task_run.proto\"\xa2\f\n" +
 	"\x13IssueCommentPayload\x12\x18\n" +
 	"\acomment\x18\x01 \x01(\tR\acomment\x12J\n" +
 	"\bapproval\x18\x02 \x01(\v2,.bytebase.store.IssueCommentPayload.ApprovalH\x00R\bapproval\x12T\n" +
@@ -722,31 +557,21 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"\tstage_end\x18\x04 \x01(\v2,.bytebase.store.IssueCommentPayload.StageEndH\x00R\bstageEnd\x12Q\n" +
 	"\vtask_update\x18\x05 \x01(\v2..bytebase.store.IssueCommentPayload.TaskUpdateH\x00R\n" +
 	"taskUpdate\x12a\n" +
-	"\x11task_prior_backup\x18\x06 \x01(\v23.bytebase.store.IssueCommentPayload.TaskPriorBackupH\x00R\x0ftaskPriorBackup\x1a\xa2\x01\n" +
-	"\bApproval\x12K\n" +
-	"\x06status\x18\x01 \x01(\x0e23.bytebase.store.IssueCommentPayload.Approval.StatusR\x06status\"I\n" +
-	"\x06Status\x12\x16\n" +
-	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
-	"\aPENDING\x10\x01\x12\f\n" +
-	"\bAPPROVED\x10\x02\x12\f\n" +
-	"\bREJECTED\x10\x03\x1a\xde\x04\n" +
+	"\x11task_prior_backup\x18\x06 \x01(\v23.bytebase.store.IssueCommentPayload.TaskPriorBackupH\x00R\x0ftaskPriorBackup\x1aX\n" +
+	"\bApproval\x12L\n" +
+	"\x06status\x18\x01 \x01(\x0e24.bytebase.store.IssuePayloadApproval.Approver.StatusR\x06status\x1a\xd1\x03\n" +
 	"\vIssueUpdate\x12\"\n" +
 	"\n" +
 	"from_title\x18\x01 \x01(\tH\x00R\tfromTitle\x88\x01\x01\x12\x1e\n" +
 	"\bto_title\x18\x02 \x01(\tH\x01R\atoTitle\x88\x01\x01\x12.\n" +
 	"\x10from_description\x18\x03 \x01(\tH\x02R\x0ffromDescription\x88\x01\x01\x12*\n" +
-	"\x0eto_description\x18\x04 \x01(\tH\x03R\rtoDescription\x88\x01\x01\x12a\n" +
-	"\vfrom_status\x18\x05 \x01(\x0e2;.bytebase.store.IssueCommentPayload.IssueUpdate.IssueStatusH\x04R\n" +
-	"fromStatus\x88\x01\x01\x12]\n" +
-	"\tto_status\x18\x06 \x01(\x0e2;.bytebase.store.IssueCommentPayload.IssueUpdate.IssueStatusH\x05R\btoStatus\x88\x01\x01\x12\x1f\n" +
+	"\x0eto_description\x18\x04 \x01(\tH\x03R\rtoDescription\x88\x01\x01\x12B\n" +
+	"\vfrom_status\x18\x05 \x01(\x0e2\x1c.bytebase.store.Issue.StatusH\x04R\n" +
+	"fromStatus\x88\x01\x01\x12>\n" +
+	"\tto_status\x18\x06 \x01(\x0e2\x1c.bytebase.store.Issue.StatusH\x05R\btoStatus\x88\x01\x01\x12\x1f\n" +
 	"\vfrom_labels\x18\a \x03(\tR\n" +
 	"fromLabels\x12\x1b\n" +
-	"\tto_labels\x18\b \x03(\tR\btoLabels\"M\n" +
-	"\vIssueStatus\x12\x1c\n" +
-	"\x18ISSUE_STATUS_UNSPECIFIED\x10\x00\x12\b\n" +
-	"\x04OPEN\x10\x01\x12\b\n" +
-	"\x04DONE\x10\x02\x12\f\n" +
-	"\bCANCELED\x10\x03B\r\n" +
+	"\tto_labels\x18\b \x03(\tR\btoLabelsB\r\n" +
 	"\v_from_titleB\v\n" +
 	"\t_to_titleB\x13\n" +
 	"\x11_from_descriptionB\x11\n" +
@@ -755,23 +580,14 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"\n" +
 	"_to_status\x1a \n" +
 	"\bStageEnd\x12\x14\n" +
-	"\x05stage\x18\x01 \x01(\tR\x05stage\x1a\xd6\x02\n" +
+	"\x05stage\x18\x01 \x01(\tR\x05stage\x1a\xd2\x01\n" +
 	"\n" +
 	"TaskUpdate\x12\x14\n" +
 	"\x05tasks\x18\x01 \x03(\tR\x05tasks\x12\"\n" +
 	"\n" +
 	"from_sheet\x18\x02 \x01(\tH\x00R\tfromSheet\x88\x01\x01\x12\x1e\n" +
-	"\bto_sheet\x18\x03 \x01(\tH\x01R\atoSheet\x88\x01\x01\x12W\n" +
-	"\tto_status\x18\x06 \x01(\x0e25.bytebase.store.IssueCommentPayload.TaskUpdate.StatusH\x02R\btoStatus\x88\x01\x01\"k\n" +
-	"\x06Status\x12\x16\n" +
-	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
-	"\aPENDING\x10\x01\x12\v\n" +
-	"\aRUNNING\x10\x02\x12\b\n" +
-	"\x04DONE\x10\x03\x12\n" +
-	"\n" +
-	"\x06FAILED\x10\x04\x12\v\n" +
-	"\aSKIPPED\x10\x05\x12\f\n" +
-	"\bCANCELED\x10\x06B\r\n" +
+	"\bto_sheet\x18\x03 \x01(\tH\x01R\atoSheet\x88\x01\x01\x12@\n" +
+	"\tto_status\x18\x06 \x01(\x0e2\x1e.bytebase.store.TaskRun.StatusH\x02R\btoStatus\x88\x01\x01B\r\n" +
 	"\v_from_sheetB\v\n" +
 	"\t_to_sheetB\f\n" +
 	"\n" +
@@ -800,31 +616,30 @@ func file_store_issue_comment_proto_rawDescGZIP() []byte {
 	return file_store_issue_comment_proto_rawDescData
 }
 
-var file_store_issue_comment_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_store_issue_comment_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_store_issue_comment_proto_goTypes = []any{
-	(IssueCommentPayload_Approval_Status)(0),          // 0: bytebase.store.IssueCommentPayload.Approval.Status
-	(IssueCommentPayload_IssueUpdate_IssueStatus)(0),  // 1: bytebase.store.IssueCommentPayload.IssueUpdate.IssueStatus
-	(IssueCommentPayload_TaskUpdate_Status)(0),        // 2: bytebase.store.IssueCommentPayload.TaskUpdate.Status
-	(*IssueCommentPayload)(nil),                       // 3: bytebase.store.IssueCommentPayload
-	(*IssueCommentPayload_Approval)(nil),              // 4: bytebase.store.IssueCommentPayload.Approval
-	(*IssueCommentPayload_IssueUpdate)(nil),           // 5: bytebase.store.IssueCommentPayload.IssueUpdate
-	(*IssueCommentPayload_StageEnd)(nil),              // 6: bytebase.store.IssueCommentPayload.StageEnd
-	(*IssueCommentPayload_TaskUpdate)(nil),            // 7: bytebase.store.IssueCommentPayload.TaskUpdate
-	(*IssueCommentPayload_TaskPriorBackup)(nil),       // 8: bytebase.store.IssueCommentPayload.TaskPriorBackup
-	(*IssueCommentPayload_TaskPriorBackup_Table)(nil), // 9: bytebase.store.IssueCommentPayload.TaskPriorBackup.Table
+	(*IssueCommentPayload)(nil),                       // 0: bytebase.store.IssueCommentPayload
+	(*IssueCommentPayload_Approval)(nil),              // 1: bytebase.store.IssueCommentPayload.Approval
+	(*IssueCommentPayload_IssueUpdate)(nil),           // 2: bytebase.store.IssueCommentPayload.IssueUpdate
+	(*IssueCommentPayload_StageEnd)(nil),              // 3: bytebase.store.IssueCommentPayload.StageEnd
+	(*IssueCommentPayload_TaskUpdate)(nil),            // 4: bytebase.store.IssueCommentPayload.TaskUpdate
+	(*IssueCommentPayload_TaskPriorBackup)(nil),       // 5: bytebase.store.IssueCommentPayload.TaskPriorBackup
+	(*IssueCommentPayload_TaskPriorBackup_Table)(nil), // 6: bytebase.store.IssueCommentPayload.TaskPriorBackup.Table
+	(IssuePayloadApproval_Approver_Status)(0),         // 7: bytebase.store.IssuePayloadApproval.Approver.Status
+	(Issue_Status)(0),                                 // 8: bytebase.store.Issue.Status
+	(TaskRun_Status)(0),                               // 9: bytebase.store.TaskRun.Status
 }
 var file_store_issue_comment_proto_depIdxs = []int32{
-	4,  // 0: bytebase.store.IssueCommentPayload.approval:type_name -> bytebase.store.IssueCommentPayload.Approval
-	5,  // 1: bytebase.store.IssueCommentPayload.issue_update:type_name -> bytebase.store.IssueCommentPayload.IssueUpdate
-	6,  // 2: bytebase.store.IssueCommentPayload.stage_end:type_name -> bytebase.store.IssueCommentPayload.StageEnd
-	7,  // 3: bytebase.store.IssueCommentPayload.task_update:type_name -> bytebase.store.IssueCommentPayload.TaskUpdate
-	8,  // 4: bytebase.store.IssueCommentPayload.task_prior_backup:type_name -> bytebase.store.IssueCommentPayload.TaskPriorBackup
-	0,  // 5: bytebase.store.IssueCommentPayload.Approval.status:type_name -> bytebase.store.IssueCommentPayload.Approval.Status
-	1,  // 6: bytebase.store.IssueCommentPayload.IssueUpdate.from_status:type_name -> bytebase.store.IssueCommentPayload.IssueUpdate.IssueStatus
-	1,  // 7: bytebase.store.IssueCommentPayload.IssueUpdate.to_status:type_name -> bytebase.store.IssueCommentPayload.IssueUpdate.IssueStatus
-	2,  // 8: bytebase.store.IssueCommentPayload.TaskUpdate.to_status:type_name -> bytebase.store.IssueCommentPayload.TaskUpdate.Status
-	9,  // 9: bytebase.store.IssueCommentPayload.TaskPriorBackup.tables:type_name -> bytebase.store.IssueCommentPayload.TaskPriorBackup.Table
+	1,  // 0: bytebase.store.IssueCommentPayload.approval:type_name -> bytebase.store.IssueCommentPayload.Approval
+	2,  // 1: bytebase.store.IssueCommentPayload.issue_update:type_name -> bytebase.store.IssueCommentPayload.IssueUpdate
+	3,  // 2: bytebase.store.IssueCommentPayload.stage_end:type_name -> bytebase.store.IssueCommentPayload.StageEnd
+	4,  // 3: bytebase.store.IssueCommentPayload.task_update:type_name -> bytebase.store.IssueCommentPayload.TaskUpdate
+	5,  // 4: bytebase.store.IssueCommentPayload.task_prior_backup:type_name -> bytebase.store.IssueCommentPayload.TaskPriorBackup
+	7,  // 5: bytebase.store.IssueCommentPayload.Approval.status:type_name -> bytebase.store.IssuePayloadApproval.Approver.Status
+	8,  // 6: bytebase.store.IssueCommentPayload.IssueUpdate.from_status:type_name -> bytebase.store.Issue.Status
+	8,  // 7: bytebase.store.IssueCommentPayload.IssueUpdate.to_status:type_name -> bytebase.store.Issue.Status
+	9,  // 8: bytebase.store.IssueCommentPayload.TaskUpdate.to_status:type_name -> bytebase.store.TaskRun.Status
+	6,  // 9: bytebase.store.IssueCommentPayload.TaskPriorBackup.tables:type_name -> bytebase.store.IssueCommentPayload.TaskPriorBackup.Table
 	10, // [10:10] is the sub-list for method output_type
 	10, // [10:10] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
@@ -837,6 +652,9 @@ func file_store_issue_comment_proto_init() {
 	if File_store_issue_comment_proto != nil {
 		return
 	}
+	file_store_approval_proto_init()
+	file_store_issue_proto_init()
+	file_store_task_run_proto_init()
 	file_store_issue_comment_proto_msgTypes[0].OneofWrappers = []any{
 		(*IssueCommentPayload_Approval_)(nil),
 		(*IssueCommentPayload_IssueUpdate_)(nil),
@@ -852,14 +670,13 @@ func file_store_issue_comment_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_issue_comment_proto_rawDesc), len(file_store_issue_comment_proto_rawDesc)),
-			NumEnums:      3,
+			NumEnums:      0,
 			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_store_issue_comment_proto_goTypes,
 		DependencyIndexes: file_store_issue_comment_proto_depIdxs,
-		EnumInfos:         file_store_issue_comment_proto_enumTypes,
 		MessageInfos:      file_store_issue_comment_proto_msgTypes,
 	}.Build()
 	File_store_issue_comment_proto = out.File

@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "store/advice.proto";
 import "store/changelog.proto";
 import "store/common.proto";
 
@@ -19,6 +20,8 @@ message PlanCheckRunConfig {
   // If set, a backup of the modified data will be created automatically before any changes are applied.
   bool enable_prior_backup = 7;
 
+  // ChangeDatabaseType extends MigrationType with additional execution contexts.
+  // Note: DDL, DML, and DDL_GHOST values align with MigrationType enum values.
   enum ChangeDatabaseType {
     CHANGE_DATABASE_TYPE_UNSPECIFIED = 0;
     DDL = 1;
@@ -34,13 +37,7 @@ message PlanCheckRunResult {
   string error = 2;
 
   message Result {
-    enum Status {
-      STATUS_UNSPECIFIED = 0;
-      ERROR = 1;
-      WARNING = 2;
-      SUCCESS = 3;
-    }
-    Status status = 1;
+    Advice.Status status = 1;
     string title = 2;
     string content = 3;
     int32 code = 4;

@@ -65,7 +65,7 @@ type FindPlanCheckRunMessage struct {
 	UIDs         *[]int
 	Status       *[]PlanCheckRunStatus
 	Type         *[]PlanCheckRunType
-	ResultStatus *[]storepb.PlanCheckRunResult_Result_Status
+	ResultStatus *[]storepb.Advice_Status
 }
 
 // CreatePlanCheckRuns creates new plan check runs.

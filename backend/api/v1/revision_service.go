@@ -340,14 +340,14 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 	return r, nil
 }
 
-func convertToRevisionType(t storepb.RevisionPayload_Type) v1pb.Revision_Type {
+func convertToRevisionType(t storepb.SchemaChangeType) v1pb.Revision_Type {
 	//exhaustive:enforce
 	switch t {
-	case storepb.RevisionPayload_TYPE_UNSPECIFIED:
+	case storepb.SchemaChangeType_SCHEMA_CHANGE_TYPE_UNSPECIFIED:
 		return v1pb.Revision_TYPE_UNSPECIFIED
-	case storepb.RevisionPayload_VERSIONED:
+	case storepb.SchemaChangeType_VERSIONED:
 		return v1pb.Revision_VERSIONED
-	case storepb.RevisionPayload_DECLARATIVE:
+	case storepb.SchemaChangeType_DECLARATIVE:
 		return v1pb.Revision_DECLARATIVE
 	default:
 		return v1pb.Revision_TYPE_UNSPECIFIED
@@ -371,16 +371,16 @@ func convertRevision(revision *v1pb.Revision, database *store.DatabaseMessage, s
 	return r
 }
 
-func convertRevisionType(t v1pb.Revision_Type) storepb.RevisionPayload_Type {
+func convertRevisionType(t v1pb.Revision_Type) storepb.SchemaChangeType {
 	//exhaustive:enforce
 	switch t {
 	case v1pb.Revision_TYPE_UNSPECIFIED:
-		return storepb.RevisionPayload_TYPE_UNSPECIFIED
+		return storepb.SchemaChangeType_SCHEMA_CHANGE_TYPE_UNSPECIFIED
 	case v1pb.Revision_VERSIONED:
-		return storepb.RevisionPayload_VERSIONED
+		return storepb.SchemaChangeType_VERSIONED
 	case v1pb.Revision_DECLARATIVE:
-		return storepb.RevisionPayload_DECLARATIVE
+		return storepb.SchemaChangeType_DECLARATIVE
 	default:
-		return storepb.RevisionPayload_TYPE_UNSPECIFIED
+		return storepb.SchemaChangeType_SCHEMA_CHANGE_TYPE_UNSPECIFIED
 	}
 }

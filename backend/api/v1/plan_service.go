@@ -877,7 +877,7 @@ func (*PlanService) parsePlanCheckRunFilter(filter string, find *store.FindPlanC
 					}
 					storeResultStatus := convertToStoreResultStatus(v1pb.PlanCheckRun_Result_Status(v1ResultStatus))
 					if find.ResultStatus == nil {
-						find.ResultStatus = &[]storepb.PlanCheckRunResult_Result_Status{}
+						find.ResultStatus = &[]storepb.Advice_Status{}
 					}
 					*find.ResultStatus = append(*find.ResultStatus, storeResultStatus)
 				default:
@@ -919,7 +919,7 @@ func (*PlanService) parsePlanCheckRunFilter(filter string, find *store.FindPlanC
 						return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("empty list value for filter %v", variable))
 					}
 					if find.ResultStatus == nil {
-						find.ResultStatus = &[]storepb.PlanCheckRunResult_Result_Status{}
+						find.ResultStatus = &[]storepb.Advice_Status{}
 					}
 					for _, raw := range rawList {
 						resultStatusStr, ok := raw.(string)
@@ -965,17 +965,17 @@ func convertToStorePlanCheckRunStatus(status v1pb.PlanCheckRun_Status) store.Pla
 	}
 }
 
-// convertToStoreResultStatus converts v1pb.PlanCheckRun_Result_Status to storepb.PlanCheckRunResult_Result_Status.
-func convertToStoreResultStatus(status v1pb.PlanCheckRun_Result_Status) storepb.PlanCheckRunResult_Result_Status {
+// convertToStoreResultStatus converts v1pb.PlanCheckRun_Result_Status to storepb.Advice_Status.
+func convertToStoreResultStatus(status v1pb.PlanCheckRun_Result_Status) storepb.Advice_Status {
 	switch status {
 	case v1pb.PlanCheckRun_Result_ERROR:
-		return storepb.PlanCheckRunResult_Result_ERROR
+		return storepb.Advice_ERROR
 	case v1pb.PlanCheckRun_Result_WARNING:
-		return storepb.PlanCheckRunResult_Result_WARNING
+		return storepb.Advice_WARNING
 	case v1pb.PlanCheckRun_Result_SUCCESS:
-		return storepb.PlanCheckRunResult_Result_SUCCESS
+		return storepb.Advice_SUCCESS
 	default:
-		return storepb.PlanCheckRunResult_Result_STATUS_UNSPECIFIED
+		return storepb.Advice_STATUS_UNSPECIFIED
 	}
 }
 

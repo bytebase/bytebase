@@ -319,7 +319,7 @@ func convertToStoreSheetMessage(projectID string, creatorID int, sheet *v1pb.She
 	return sheetMessage
 }
 
-func convertToSheetCommands(commands []*storepb.SheetCommand) []*v1pb.SheetCommand {
+func convertToSheetCommands(commands []*storepb.Range) []*v1pb.SheetCommand {
 	var cs []*v1pb.SheetCommand
 	for _, command := range commands {
 		c := &v1pb.SheetCommand{

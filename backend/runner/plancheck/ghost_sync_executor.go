@@ -51,7 +51,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 
 			results = []*storepb.PlanCheckRunResult_Result{
 				{
-					Status:  storepb.PlanCheckRunResult_Result_ERROR,
+					Status:  storepb.Advice_ERROR,
 					Title:   "gh-ost dry run failed",
 					Content: panicErr.Error(),
 					Code:    common.Internal.Int32(),
@@ -113,7 +113,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 	if err != nil {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
-				Status:  storepb.PlanCheckRunResult_Result_ERROR,
+				Status:  storepb.Advice_ERROR,
 				Title:   "Failed to connect to database",
 				Content: fmt.Sprintf("Cannot establish connection: %v", err),
 				Code:    common.Internal.Int32(),
@@ -127,7 +127,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 		title, content := validationResult.GetUserFriendlyError()
 		return []*storepb.PlanCheckRunResult_Result{
 			{
-				Status:  storepb.PlanCheckRunResult_Result_ERROR,
+				Status:  storepb.Advice_ERROR,
 				Title:   title,
 				Content: content,
 				Code:    common.Internal.Int32(),
@@ -180,7 +180,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 	if err := migrator.Migrate(); err != nil {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
-				Status:  storepb.PlanCheckRunResult_Result_ERROR,
+				Status:  storepb.Advice_ERROR,
 				Title:   "gh-ost dry run failed",
 				Content: err.Error(),
 				Code:    common.Internal.Int32(),
@@ -191,7 +191,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 
 	return []*storepb.PlanCheckRunResult_Result{
 		{
-			Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+			Status:  storepb.Advice_SUCCESS,
 			Title:   "OK",
 			Content: "gh-ost dry run succeeded",
 			Code:    common.Ok.Int32(),

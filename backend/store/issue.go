@@ -81,7 +81,7 @@ type FindIssueMessage struct {
 
 	StatusList   []storepb.Issue_Status
 	TaskTypes    *[]storepb.Task_Type
-	MigrateTypes *[]storepb.Task_MigrateType
+	MigrateTypes *[]storepb.MigrationType
 	// Any of the task in the issue changes the instance with InstanceResourceID.
 	InstanceResourceID *string
 	// Any of the task in the issue changes the database with InstanceID and DatabaseName.

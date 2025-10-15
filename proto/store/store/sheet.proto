@@ -11,10 +11,5 @@ message SheetPayload {
   Engine engine = 3;
 
   // The start and end position of each command in the sheet statement.
-  repeated SheetCommand commands = 4;
-}
-
-message SheetCommand {
-  int32 start = 1;
-  int32 end = 2;
+  repeated Range commands = 4;
 }

@@ -81,62 +81,6 @@ func (Task_Type) EnumDescriptor() ([]byte, []int) {
 	return file_store_task_proto_rawDescGZIP(), []int{0, 0}
 }
 
-// MigrateType is the database migration type for imperative migrations.
-type Task_MigrateType int32
-
-const (
-	Task_MIGRATE_TYPE_UNSPECIFIED Task_MigrateType = 0
-	// DDL changes (Data Definition Language) for schema modifications.
-	Task_DDL Task_MigrateType = 1
-	// DML changes (Data Manipulation Language) for data modifications.
-	Task_DML Task_MigrateType = 2
-	// Online schema migration using gh-ost tool.
-	Task_GHOST Task_MigrateType = 3
-)
-
-// Enum value maps for Task_MigrateType.
-var (
-	Task_MigrateType_name = map[int32]string{
-		0: "MIGRATE_TYPE_UNSPECIFIED",
-		1: "DDL",
-		2: "DML",
-		3: "GHOST",
-	}
-	Task_MigrateType_value = map[string]int32{
-		"MIGRATE_TYPE_UNSPECIFIED": 0,
-		"DDL":                      1,
-		"DML":                      2,
-		"GHOST":                    3,
-	}
-)
-
-func (x Task_MigrateType) Enum() *Task_MigrateType {
-	p := new(Task_MigrateType)
-	*p = x
-	return p
-}
-
-func (x Task_MigrateType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (Task_MigrateType) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_task_proto_enumTypes[1].Descriptor()
-}
-
-func (Task_MigrateType) Type() protoreflect.EnumType {
-	return &file_store_task_proto_enumTypes[1]
-}
-
-func (x Task_MigrateType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use Task_MigrateType.Descriptor instead.
-func (Task_MigrateType) EnumDescriptor() ([]byte, []int) {
-	return file_store_task_proto_rawDescGZIP(), []int{0, 1}
-}
-
 // Task is the metadata for database operation tasks.
 type Task struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -167,7 +111,7 @@ type Task struct {
 	// Source information if task is created from a release.
 	TaskReleaseSource *TaskReleaseSource `protobuf:"bytes,13,opt,name=task_release_source,json=taskReleaseSource,proto3" json:"task_release_source,omitempty"`
 	// The type of migration (DDL, DML, or GHOST).
-	MigrateType Task_MigrateType `protobuf:"varint,16,opt,name=migrate_type,json=migrateType,proto3,enum=bytebase.store.Task_MigrateType" json:"migrate_type,omitempty"`
+	MigrateType MigrationType `protobuf:"varint,16,opt,name=migrate_type,json=migrateType,proto3,enum=bytebase.store.MigrationType" json:"migrate_type,omitempty"`
 	// Password to encrypt the exported data archive.
 	Password string `protobuf:"bytes,14,opt,name=password,proto3" json:"password,omitempty"`
 	// Format of the exported data (SQL, CSV, JSON, etc).
@@ -297,11 +241,11 @@ func (x *Task) GetTaskReleaseSource() *TaskReleaseSource {
 	return nil
 }
 
-func (x *Task) GetMigrateType() Task_MigrateType {
+func (x *Task) GetMigrateType() MigrationType {
 	if x != nil {
 		return x.MigrateType
 	}
-	return Task_MIGRATE_TYPE_UNSPECIFIED
+	return MigrationType_MIGRATION_TYPE_UNSPECIFIED
 }
 
 func (x *Task) GetPassword() string {
@@ -369,7 +313,7 @@ var File_store_task_proto protoreflect.FileDescriptor
 
 const file_store_task_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/task.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\x9a\a\n" +
+	"\x10store/task.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xcd\x06\n" +
 	"\x04Task\x12\x18\n" +
 	"\askipped\x18\x01 \x01(\bR\askipped\x12%\n" +
 	"\x0eskipped_reason\x18\x02 \x01(\tR\rskippedReason\x12\x17\n" +
@@ -385,8 +329,8 @@ const file_store_task_proto_rawDesc = "" +
 	" \x01(\tR\rschemaVersion\x12.\n" +
 	"\x13enable_prior_backup\x18\v \x01(\bR\x11enablePriorBackup\x125\n" +
 	"\x05flags\x18\f \x03(\v2\x1f.bytebase.store.Task.FlagsEntryR\x05flags\x12Q\n" +
-	"\x13task_release_source\x18\r \x01(\v2!.bytebase.store.TaskReleaseSourceR\x11taskReleaseSource\x12C\n" +
-	"\fmigrate_type\x18\x10 \x01(\x0e2 .bytebase.store.Task.MigrateTypeR\vmigrateType\x12\x1a\n" +
+	"\x13task_release_source\x18\r \x01(\v2!.bytebase.store.TaskReleaseSourceR\x11taskReleaseSource\x12@\n" +
+	"\fmigrate_type\x18\x10 \x01(\x0e2\x1d.bytebase.store.MigrationTypeR\vmigrateType\x12\x1a\n" +
 	"\bpassword\x18\x0e \x01(\tR\bpassword\x124\n" +
 	"\x06format\x18\x0f \x01(\x0e2\x1c.bytebase.store.ExportFormatR\x06format\x1a8\n" +
 	"\n" +
@@ -398,12 +342,7 @@ const file_store_task_proto_rawDesc = "" +
 	"\x0fDATABASE_CREATE\x10\x01\x12\x14\n" +
 	"\x10DATABASE_MIGRATE\x10\x02\x12\x13\n" +
 	"\x0fDATABASE_EXPORT\x10\x05\x12\x10\n" +
-	"\fDATABASE_SDL\x10\x06\"H\n" +
-	"\vMigrateType\x12\x1c\n" +
-	"\x18MIGRATE_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
-	"\x03DDL\x10\x01\x12\a\n" +
-	"\x03DML\x10\x02\x12\t\n" +
-	"\x05GHOST\x10\x03\"'\n" +
+	"\fDATABASE_SDL\x10\x06\"'\n" +
 	"\x11TaskReleaseSource\x12\x12\n" +
 	"\x04file\x18\x01 \x01(\tR\x04fileB\x14Z\x12generated-go/storeb\x06proto3"
 
@@ -419,20 +358,20 @@ func file_store_task_proto_rawDescGZIP() []byte {
 	return file_store_task_proto_rawDescData
 }
 
-var file_store_task_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_store_task_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_task_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_task_proto_goTypes = []any{
 	(Task_Type)(0),            // 0: bytebase.store.Task.Type
-	(Task_MigrateType)(0),     // 1: bytebase.store.Task.MigrateType
-	(*Task)(nil),              // 2: bytebase.store.Task
-	(*TaskReleaseSource)(nil), // 3: bytebase.store.TaskReleaseSource
-	nil,                       // 4: bytebase.store.Task.FlagsEntry
+	(*Task)(nil),              // 1: bytebase.store.Task
+	(*TaskReleaseSource)(nil), // 2: bytebase.store.TaskReleaseSource
+	nil,                       // 3: bytebase.store.Task.FlagsEntry
+	(MigrationType)(0),        // 4: bytebase.store.MigrationType
 	(ExportFormat)(0),         // 5: bytebase.store.ExportFormat
 }
 var file_store_task_proto_depIdxs = []int32{
-	4, // 0: bytebase.store.Task.flags:type_name -> bytebase.store.Task.FlagsEntry
-	3, // 1: bytebase.store.Task.task_release_source:type_name -> bytebase.store.TaskReleaseSource
-	1, // 2: bytebase.store.Task.migrate_type:type_name -> bytebase.store.Task.MigrateType
+	3, // 0: bytebase.store.Task.flags:type_name -> bytebase.store.Task.FlagsEntry
+	2, // 1: bytebase.store.Task.task_release_source:type_name -> bytebase.store.TaskReleaseSource
+	4, // 2: bytebase.store.Task.migrate_type:type_name -> bytebase.store.MigrationType
 	5, // 3: bytebase.store.Task.format:type_name -> bytebase.store.ExportFormat
 	4, // [4:4] is the sub-list for method output_type
 	4, // [4:4] is the sub-list for method input_type
@@ -452,7 +391,7 @@ func file_store_task_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_task_proto_rawDesc), len(file_store_task_proto_rawDesc)),
-			NumEnums:      2,
+			NumEnums:      1,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,

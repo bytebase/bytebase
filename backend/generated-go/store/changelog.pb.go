@@ -73,62 +73,6 @@ func (ChangelogPayload_Type) EnumDescriptor() ([]byte, []int) {
 	return file_store_changelog_proto_rawDescGZIP(), []int{0, 0}
 }
 
-// MigrationType is the type for imperative schema migration.
-type ChangelogPayload_MigrationType int32
-
-const (
-	ChangelogPayload_MIGRATION_TYPE_UNSPECIFIED ChangelogPayload_MigrationType = 0
-	// Used for DDL changes.
-	ChangelogPayload_DDL ChangelogPayload_MigrationType = 1
-	// Used for DML changes.
-	ChangelogPayload_DML ChangelogPayload_MigrationType = 2
-	// Used for DDL changes using gh-ost.
-	ChangelogPayload_GHOST ChangelogPayload_MigrationType = 3
-)
-
-// Enum value maps for ChangelogPayload_MigrationType.
-var (
-	ChangelogPayload_MigrationType_name = map[int32]string{
-		0: "MIGRATION_TYPE_UNSPECIFIED",
-		1: "DDL",
-		2: "DML",
-		3: "GHOST",
-	}
-	ChangelogPayload_MigrationType_value = map[string]int32{
-		"MIGRATION_TYPE_UNSPECIFIED": 0,
-		"DDL":                        1,
-		"DML":                        2,
-		"GHOST":                      3,
-	}
-)
-
-func (x ChangelogPayload_MigrationType) Enum() *ChangelogPayload_MigrationType {
-	p := new(ChangelogPayload_MigrationType)
-	*p = x
-	return p
-}
-
-func (x ChangelogPayload_MigrationType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ChangelogPayload_MigrationType) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_changelog_proto_enumTypes[1].Descriptor()
-}
-
-func (ChangelogPayload_MigrationType) Type() protoreflect.EnumType {
-	return &file_store_changelog_proto_enumTypes[1]
-}
-
-func (x ChangelogPayload_MigrationType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ChangelogPayload_MigrationType.Descriptor instead.
-func (ChangelogPayload_MigrationType) EnumDescriptor() ([]byte, []int) {
-	return file_store_changelog_proto_rawDescGZIP(), []int{0, 1}
-}
-
 type ChangelogPayload struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun}
@@ -141,11 +85,11 @@ type ChangelogPayload struct {
 	ChangedResources *ChangedResources `protobuf:"bytes,4,opt,name=changed_resources,json=changedResources,proto3" json:"changed_resources,omitempty"`
 	// The sheet that holds the content.
 	// Format: projects/{project}/sheets/{sheet}
-	Sheet         string                         `protobuf:"bytes,5,opt,name=sheet,proto3" json:"sheet,omitempty"`
-	Version       string                         `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
-	Type          ChangelogPayload_Type          `protobuf:"varint,7,opt,name=type,proto3,enum=bytebase.store.ChangelogPayload_Type" json:"type,omitempty"`
-	GitCommit     string                         `protobuf:"bytes,8,opt,name=git_commit,json=gitCommit,proto3" json:"git_commit,omitempty"`
-	MigrationType ChangelogPayload_MigrationType `protobuf:"varint,9,opt,name=migration_type,json=migrationType,proto3,enum=bytebase.store.ChangelogPayload_MigrationType" json:"migration_type,omitempty"`
+	Sheet         string                `protobuf:"bytes,5,opt,name=sheet,proto3" json:"sheet,omitempty"`
+	Version       string                `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
+	Type          ChangelogPayload_Type `protobuf:"varint,7,opt,name=type,proto3,enum=bytebase.store.ChangelogPayload_Type" json:"type,omitempty"`
+	GitCommit     string                `protobuf:"bytes,8,opt,name=git_commit,json=gitCommit,proto3" json:"git_commit,omitempty"`
+	MigrationType MigrationType         `protobuf:"varint,9,opt,name=migration_type,json=migrationType,proto3,enum=bytebase.store.MigrationType" json:"migration_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -236,11 +180,11 @@ func (x *ChangelogPayload) GetGitCommit() string {
 	return ""
 }
 
-func (x *ChangelogPayload) GetMigrationType() ChangelogPayload_MigrationType {
+func (x *ChangelogPayload) GetMigrationType() MigrationType {
 	if x != nil {
 		return x.MigrationType
 	}
-	return ChangelogPayload_MIGRATION_TYPE_UNSPECIFIED
+	return MigrationType_MIGRATION_TYPE_UNSPECIFIED
 }
 
 type ChangedResources struct {
@@ -640,7 +584,7 @@ var File_store_changelog_proto protoreflect.FileDescriptor
 
 const file_store_changelog_proto_rawDesc = "" +
 	"\n" +
-	"\x15store/changelog.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\x9f\x04\n" +
+	"\x15store/changelog.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xc0\x03\n" +
 	"\x10ChangelogPayload\x12\x19\n" +
 	"\btask_run\x18\x01 \x01(\tR\ataskRun\x12\x14\n" +
 	"\x05issue\x18\x02 \x01(\tR\x05issue\x12\x1a\n" +
@@ -650,18 +594,13 @@ const file_store_changelog_proto_rawDesc = "" +
 	"\aversion\x18\x06 \x01(\tR\aversion\x129\n" +
 	"\x04type\x18\a \x01(\x0e2%.bytebase.store.ChangelogPayload.TypeR\x04type\x12\x1d\n" +
 	"\n" +
-	"git_commit\x18\b \x01(\tR\tgitCommit\x12U\n" +
-	"\x0emigration_type\x18\t \x01(\x0e2..bytebase.store.ChangelogPayload.MigrationTypeR\rmigrationType\"@\n" +
+	"git_commit\x18\b \x01(\tR\tgitCommit\x12D\n" +
+	"\x0emigration_type\x18\t \x01(\x0e2\x1d.bytebase.store.MigrationTypeR\rmigrationType\"@\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bBASELINE\x10\x01\x12\v\n" +
 	"\aMIGRATE\x10\x02\x12\a\n" +
-	"\x03SDL\x10\x03\"L\n" +
-	"\rMigrationType\x12\x1e\n" +
-	"\x1aMIGRATION_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
-	"\x03DDL\x10\x01\x12\a\n" +
-	"\x03DML\x10\x02\x12\t\n" +
-	"\x05GHOST\x10\x03\"Y\n" +
+	"\x03SDL\x10\x03\"Y\n" +
 	"\x10ChangedResources\x12E\n" +
 	"\tdatabases\x18\x01 \x03(\v2'.bytebase.store.ChangedResourceDatabaseR\tdatabases\"n\n" +
 	"\x17ChangedResourceDatabase\x12\x12\n" +
@@ -702,31 +641,31 @@ func file_store_changelog_proto_rawDescGZIP() []byte {
 	return file_store_changelog_proto_rawDescData
 }
 
-var file_store_changelog_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_store_changelog_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_changelog_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_store_changelog_proto_goTypes = []any{
-	(ChangelogPayload_Type)(0),          // 0: bytebase.store.ChangelogPayload.Type
-	(ChangelogPayload_MigrationType)(0), // 1: bytebase.store.ChangelogPayload.MigrationType
-	(*ChangelogPayload)(nil),            // 2: bytebase.store.ChangelogPayload
-	(*ChangedResources)(nil),            // 3: bytebase.store.ChangedResources
-	(*ChangedResourceDatabase)(nil),     // 4: bytebase.store.ChangedResourceDatabase
-	(*ChangedResourceSchema)(nil),       // 5: bytebase.store.ChangedResourceSchema
-	(*ChangedResourceTable)(nil),        // 6: bytebase.store.ChangedResourceTable
-	(*ChangedResourceView)(nil),         // 7: bytebase.store.ChangedResourceView
-	(*ChangedResourceFunction)(nil),     // 8: bytebase.store.ChangedResourceFunction
-	(*ChangedResourceProcedure)(nil),    // 9: bytebase.store.ChangedResourceProcedure
-	(*Range)(nil),                       // 10: bytebase.store.Range
+	(ChangelogPayload_Type)(0),       // 0: bytebase.store.ChangelogPayload.Type
+	(*ChangelogPayload)(nil),         // 1: bytebase.store.ChangelogPayload
+	(*ChangedResources)(nil),         // 2: bytebase.store.ChangedResources
+	(*ChangedResourceDatabase)(nil),  // 3: bytebase.store.ChangedResourceDatabase
+	(*ChangedResourceSchema)(nil),    // 4: bytebase.store.ChangedResourceSchema
+	(*ChangedResourceTable)(nil),     // 5: bytebase.store.ChangedResourceTable
+	(*ChangedResourceView)(nil),      // 6: bytebase.store.ChangedResourceView
+	(*ChangedResourceFunction)(nil),  // 7: bytebase.store.ChangedResourceFunction
+	(*ChangedResourceProcedure)(nil), // 8: bytebase.store.ChangedResourceProcedure
+	(MigrationType)(0),               // 9: bytebase.store.MigrationType
+	(*Range)(nil),                    // 10: bytebase.store.Range
 }
 var file_store_changelog_proto_depIdxs = []int32{
-	3,  // 0: bytebase.store.ChangelogPayload.changed_resources:type_name -> bytebase.store.ChangedResources
+	2,  // 0: bytebase.store.ChangelogPayload.changed_resources:type_name -> bytebase.store.ChangedResources
 	0,  // 1: bytebase.store.ChangelogPayload.type:type_name -> bytebase.store.ChangelogPayload.Type
-	1,  // 2: bytebase.store.ChangelogPayload.migration_type:type_name -> bytebase.store.ChangelogPayload.MigrationType
-	4,  // 3: bytebase.store.ChangedResources.databases:type_name -> bytebase.store.ChangedResourceDatabase
-	5,  // 4: bytebase.store.ChangedResourceDatabase.schemas:type_name -> bytebase.store.ChangedResourceSchema
-	6,  // 5: bytebase.store.ChangedResourceSchema.tables:type_name -> bytebase.store.ChangedResourceTable
-	7,  // 6: bytebase.store.ChangedResourceSchema.views:type_name -> bytebase.store.ChangedResourceView
-	8,  // 7: bytebase.store.ChangedResourceSchema.functions:type_name -> bytebase.store.ChangedResourceFunction
-	9,  // 8: bytebase.store.ChangedResourceSchema.procedures:type_name -> bytebase.store.ChangedResourceProcedure
+	9,  // 2: bytebase.store.ChangelogPayload.migration_type:type_name -> bytebase.store.MigrationType
+	3,  // 3: bytebase.store.ChangedResources.databases:type_name -> bytebase.store.ChangedResourceDatabase
+	4,  // 4: bytebase.store.ChangedResourceDatabase.schemas:type_name -> bytebase.store.ChangedResourceSchema
+	5,  // 5: bytebase.store.ChangedResourceSchema.tables:type_name -> bytebase.store.ChangedResourceTable
+	6,  // 6: bytebase.store.ChangedResourceSchema.views:type_name -> bytebase.store.ChangedResourceView
+	7,  // 7: bytebase.store.ChangedResourceSchema.functions:type_name -> bytebase.store.ChangedResourceFunction
+	8,  // 8: bytebase.store.ChangedResourceSchema.procedures:type_name -> bytebase.store.ChangedResourceProcedure
 	10, // 9: bytebase.store.ChangedResourceTable.ranges:type_name -> bytebase.store.Range
 	10, // 10: bytebase.store.ChangedResourceView.ranges:type_name -> bytebase.store.Range
 	10, // 11: bytebase.store.ChangedResourceFunction.ranges:type_name -> bytebase.store.Range
@@ -749,7 +688,7 @@ func file_store_changelog_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_changelog_proto_rawDesc), len(file_store_changelog_proto_rawDesc)),
-			NumEnums:      2,
+			NumEnums:      1,
 			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
