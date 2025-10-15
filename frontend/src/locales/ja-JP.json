@@ -294,6 +294,8 @@
     "run-checks": "実行チェック",
     "action-all-tasks-in-current-stage": "{action}現在のステージのすべてのタスク",
     "cancel-task": "タスクをキャンセルする",
+    "skip-task": "タスクをスキップ | タスクをスキップ",
+    "run-task": "タスクを実行 | タスクを実行",
     "created": "内蔵",
     "run-immediately": {
       "self": "すぐに実行",

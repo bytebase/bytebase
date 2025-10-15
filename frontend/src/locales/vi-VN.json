@@ -294,6 +294,8 @@
     "run-checks": "Chạy kiểm tra",
     "action-all-tasks-in-current-stage": "{action} tất cả các tác vụ trong giai đoạn hiện tại",
     "cancel-task": "Hủy tác vụ | Hủy các tác vụ",
+    "skip-task": "Bỏ qua nhiệm vụ | Bỏ qua nhiệm vụ",
+    "run-task": "Chạy tác vụ | Chạy tác vụ",
     "created": "Đã tạo",
     "run-immediately": {
       "self": "Chạy ngay lập tức",

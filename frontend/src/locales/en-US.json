@@ -294,6 +294,8 @@
     "run-checks": "Run checks",
     "action-all-tasks-in-current-stage": "{action} all tasks in current stage",
     "cancel-task": "Cancel task | Cancel tasks",
+    "skip-task": "Skip task | Skip tasks",
+    "run-task": "Run task | Run tasks",
     "created": "Created",
     "run-immediately": {
       "self": "Run immediately",
