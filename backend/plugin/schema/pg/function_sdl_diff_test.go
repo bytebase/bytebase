@@ -546,6 +546,8 @@ $$;
 					dropCount++
 				case schema.MetadataDiffActionAlter:
 					alterCount++
+				default:
+					t.Errorf("Unexpected action: %v", change.Action)
 				}
 			}
 
