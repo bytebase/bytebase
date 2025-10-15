@@ -1069,7 +1069,8 @@
     "approval": {
       "rejected-error": "Issue approval has been rejected.",
       "pending-error": "Issue approval is pending.",
-      "approved-and-waiting-for-rollout": "This issue has been approved and is ready to rollout."
+      "approved-and-waiting-for-rollout": "This issue has been approved and is ready to rollout.",
+      "ready-for-rollout": "Ready to rollout"
     },
     "new-layout": "New CI/CD Layout"
   },

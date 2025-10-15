@@ -1069,7 +1069,8 @@
     "approval": {
       "rejected-error": "此工单已被退回。",
       "pending-error": "此工单正在等待审批。",
-      "approved-and-waiting-for-rollout": "该工单已批准，等待发布。"
+      "approved-and-waiting-for-rollout": "该工单已批准，等待发布。",
+      "ready-for-rollout": "等待发布"
     },
     "new-layout": "使用新版 CI/CD 页面"
   },
