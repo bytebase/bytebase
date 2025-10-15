@@ -9,7 +9,7 @@ import { file_google_protobuf_descriptor } from "@bufbuild/protobuf/wkt";
  * Describes the file v1/annotation.proto.
  */
 export const file_v1_annotation = /*@__PURE__*/
-  fileDesc("ChN2MS9hbm5vdGF0aW9uLnByb3RvEgtieXRlYmFzZS52MSo+CgpBdXRoTWV0aG9kEhsKF0FVVEhfTUVUSE9EX1VOU1BFQ0lGSUVEEAASBwoDSUFNEAESCgoGQ1VTVE9NEAI6WgoYYWxsb3dfd2l0aG91dF9jcmVkZW50aWFsEh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYoI0GIAEoCFIWYWxsb3dXaXRob3V0Q3JlZGVudGlhbDpACgpwZXJtaXNzaW9uEh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYoY0GIAEoCVIKcGVybWlzc2lvbjpaCgthdXRoX21ldGhvZBIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKKNBiABKA4yFy5ieXRlYmFzZS52MS5BdXRoTWV0aG9kUgphdXRoTWV0aG9kOjYKBWF1ZGl0Eh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYo40GIAEoCFIFYXVkaXRCNlo0Z2l0aHViLmNvbS9ieXRlYmFzZS9ieXRlYmFzZS9iYWNrZW5kL2dlbmVyYXRlZC1nby92MWIGcHJvdG8z", [file_google_protobuf_descriptor]);
+  fileDesc("ChN2MS9hbm5vdGF0aW9uLnByb3RvEgtieXRlYmFzZS52MSo+CgpBdXRoTWV0aG9kEhsKF0FVVEhfTUVUSE9EX1VOU1BFQ0lGSUVEEAASBwoDSUFNEAESCgoGQ1VTVE9NEAI6WgoYYWxsb3dfd2l0aG91dF9jcmVkZW50aWFsEh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYoI0GIAEoCFIWYWxsb3dXaXRob3V0Q3JlZGVudGlhbDpACgpwZXJtaXNzaW9uEh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYoY0GIAEoCVIKcGVybWlzc2lvbjpaCgthdXRoX21ldGhvZBIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKKNBiABKA4yFy5ieXRlYmFzZS52MS5BdXRoTWV0aG9kUgphdXRoTWV0aG9kOjYKBWF1ZGl0Eh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYo40GIAEoCFIFYXVkaXQ6VgoWYWxsb3dfbWlzc2luZ19yZXF1aXJlcxIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKSNBiABKAlSFGFsbG93TWlzc2luZ1JlcXVpcmVzQjZaNGdpdGh1Yi5jb20vYnl0ZWJhc2UvYnl0ZWJhc2UvYmFja2VuZC9nZW5lcmF0ZWQtZ28vdjFiBnByb3RvMw", [file_google_protobuf_descriptor]);
 
 /**
  * Describes the enum bytebase.v1.AuthMethod.
@@ -56,4 +56,15 @@ export const auth_method = /*@__PURE__*/
  */
 export const audit = /*@__PURE__*/
   extDesc(file_v1_annotation, 3);
+
+/**
+ * When a method supports allow_missing and may create resources,
+ * this specifies the additional permission required when allow_missing=true.
+ * Example: UpdateRole with allow_missing requires both bb.roles.update
+ * (from permission) and bb.roles.create (from allow_missing_requires).
+ *
+ * @generated from extension: string allow_missing_requires = 100004;
+ */
+export const allow_missing_requires = /*@__PURE__*/
+  extDesc(file_v1_annotation, 4);
 

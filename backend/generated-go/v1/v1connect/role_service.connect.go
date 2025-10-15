@@ -59,6 +59,7 @@ type RoleServiceClient interface {
 	CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.Role], error)
 	// Updates a role's properties.
 	// Permissions required: bb.roles.update
+	// When allow_missing=true, also requires: bb.roles.create
 	UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.Role], error)
 	// Deletes a custom role.
 	// Permissions required: bb.roles.delete
@@ -156,6 +157,7 @@ type RoleServiceHandler interface {
 	CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.Role], error)
 	// Updates a role's properties.
 	// Permissions required: bb.roles.update
+	// When allow_missing=true, also requires: bb.roles.create
 	UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.Role], error)
 	// Deletes a custom role.
 	// Permissions required: bb.roles.delete

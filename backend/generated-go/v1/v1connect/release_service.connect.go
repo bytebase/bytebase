@@ -76,6 +76,7 @@ type ReleaseServiceClient interface {
 	CreateRelease(context.Context, *connect.Request[v1.CreateReleaseRequest]) (*connect.Response[v1.Release], error)
 	// Updates an existing release.
 	// Permissions required: bb.releases.update
+	// When allow_missing=true, also requires: bb.releases.create
 	UpdateRelease(context.Context, *connect.Request[v1.UpdateReleaseRequest]) (*connect.Response[v1.Release], error)
 	// Deletes a release.
 	// Permissions required: bb.releases.delete
@@ -218,6 +219,7 @@ type ReleaseServiceHandler interface {
 	CreateRelease(context.Context, *connect.Request[v1.CreateReleaseRequest]) (*connect.Response[v1.Release], error)
 	// Updates an existing release.
 	// Permissions required: bb.releases.update
+	// When allow_missing=true, also requires: bb.releases.create
 	UpdateRelease(context.Context, *connect.Request[v1.UpdateReleaseRequest]) (*connect.Response[v1.Release], error)
 	// Deletes a release.
 	// Permissions required: bb.releases.delete

@@ -68,6 +68,7 @@ type GroupServiceClient interface {
 	CreateGroup(context.Context, *connect.Request[v1.CreateGroupRequest]) (*connect.Response[v1.Group], error)
 	// Updates a group. Group owners or users with bb.groups.update permission can update.
 	// Permissions required: bb.groups.update OR caller is group owner
+	// When allow_missing=true, also requires: bb.groups.create
 	UpdateGroup(context.Context, *connect.Request[v1.UpdateGroupRequest]) (*connect.Response[v1.Group], error)
 	// Deletes a group. Group owners or users with bb.groups.delete permission can delete.
 	// Permissions required: bb.groups.delete OR caller is group owner
@@ -180,6 +181,7 @@ type GroupServiceHandler interface {
 	CreateGroup(context.Context, *connect.Request[v1.CreateGroupRequest]) (*connect.Response[v1.Group], error)
 	// Updates a group. Group owners or users with bb.groups.update permission can update.
 	// Permissions required: bb.groups.update OR caller is group owner
+	// When allow_missing=true, also requires: bb.groups.create
 	UpdateGroup(context.Context, *connect.Request[v1.UpdateGroupRequest]) (*connect.Response[v1.Group], error)
 	// Deletes a group. Group owners or users with bb.groups.delete permission can delete.
 	// Permissions required: bb.groups.delete OR caller is group owner

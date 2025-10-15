@@ -325,6 +325,7 @@ export declare const ChangelistService: GenService<{
   /**
    * Updates a changelist.
    * Permissions required: bb.changelists.update
+   * When allow_missing=true, also requires: bb.changelists.create
    *
    * @generated from rpc bytebase.v1.ChangelistService.UpdateChangelist
    */

@@ -408,6 +408,7 @@ export declare const GroupService: GenService<{
   /**
    * Updates a group. Group owners or users with bb.groups.update permission can update.
    * Permissions required: bb.groups.update OR caller is group owner
+   * When allow_missing=true, also requires: bb.groups.create
    *
    * @generated from rpc bytebase.v1.GroupService.UpdateGroup
    */

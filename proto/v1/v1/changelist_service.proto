@@ -47,6 +47,7 @@ service ChangelistService {
 
   // Updates a changelist.
   // Permissions required: bb.changelists.update
+  // When allow_missing=true, also requires: bb.changelists.create
   rpc UpdateChangelist(UpdateChangelistRequest) returns (Changelist) {
     option (google.api.http) = {
       patch: "/v1/{changelist.name=projects/*/changelists/*}"
@@ -54,6 +55,7 @@ service ChangelistService {
     };
     option (google.api.method_signature) = "changelist,update_mask";
     option (bytebase.v1.permission) = "bb.changelists.update";
+    option (bytebase.v1.allow_missing_requires) = "bb.changelists.create";
     option (bytebase.v1.auth_method) = IAM;
   }
 

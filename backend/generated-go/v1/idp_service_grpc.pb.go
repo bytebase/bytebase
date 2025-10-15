@@ -45,6 +45,7 @@ type IdentityProviderServiceClient interface {
 	CreateIdentityProvider(ctx context.Context, in *CreateIdentityProviderRequest, opts ...grpc.CallOption) (*IdentityProvider, error)
 	// Updates an identity provider.
 	// Permissions required: bb.identityProviders.update
+	// When allow_missing=true, also requires: bb.identityProviders.create
 	UpdateIdentityProvider(ctx context.Context, in *UpdateIdentityProviderRequest, opts ...grpc.CallOption) (*IdentityProvider, error)
 	// Deletes an identity provider.
 	// Permissions required: bb.identityProviders.delete
@@ -139,6 +140,7 @@ type IdentityProviderServiceServer interface {
 	CreateIdentityProvider(context.Context, *CreateIdentityProviderRequest) (*IdentityProvider, error)
 	// Updates an identity provider.
 	// Permissions required: bb.identityProviders.update
+	// When allow_missing=true, also requires: bb.identityProviders.create
 	UpdateIdentityProvider(context.Context, *UpdateIdentityProviderRequest) (*IdentityProvider, error)
 	// Deletes an identity provider.
 	// Permissions required: bb.identityProviders.delete

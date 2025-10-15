@@ -290,6 +290,7 @@ export declare const RoleService: GenService<{
   /**
    * Updates a role's properties.
    * Permissions required: bb.roles.update
+   * When allow_missing=true, also requires: bb.roles.create
    *
    * @generated from rpc bytebase.v1.RoleService.UpdateRole
    */

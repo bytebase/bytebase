@@ -589,14 +589,14 @@ const file_v1_risk_service_proto_rawDesc = "" +
 	"\x0fCREATE_DATABASE\x10\x03\x12\x0f\n" +
 	"\vDATA_EXPORT\x10\x06\x12\x10\n" +
 	"\fREQUEST_ROLE\x10\a:$\xeaA!\n" +
-	"\x11bytebase.com/Risk\x12\frisks/{risk}J\x04\b\x02\x10\x032\x87\x05\n" +
+	"\x11bytebase.com/Risk\x12\frisks/{risk}J\x04\b\x02\x10\x032\x9a\x05\n" +
 	"\vRiskService\x12u\n" +
 	"\tListRisks\x12\x1d.bytebase.v1.ListRisksRequest\x1a\x1e.bytebase.v1.ListRisksResponse\")\xdaA\x00\x8a\xea0\rbb.risks.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\v\x12\t/v1/risks\x12z\n" +
 	"\n" +
 	"CreateRisk\x12\x1e.bytebase.v1.CreateRiskRequest\x1a\x11.bytebase.v1.Risk\"9\xdaA\x04risk\x8a\xea0\x0fbb.risks.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x11:\x04risk\"\t/v1/risks\x12q\n" +
-	"\aGetRisk\x12\x1b.bytebase.v1.GetRiskRequest\x1a\x11.bytebase.v1.Risk\"6\xdaA\x04name\x8a\xea0\rbb.risks.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/{name=risks/*}\x12\x94\x01\n" +
+	"\aGetRisk\x12\x1b.bytebase.v1.GetRiskRequest\x1a\x11.bytebase.v1.Risk\"6\xdaA\x04name\x8a\xea0\rbb.risks.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/{name=risks/*}\x12\xa7\x01\n" +
 	"\n" +
-	"UpdateRisk\x12\x1e.bytebase.v1.UpdateRiskRequest\x1a\x11.bytebase.v1.Risk\"S\xdaA\x10risk,update_mask\x8a\xea0\x0fbb.risks.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1f:\x04risk2\x17/v1/{risk.name=risks/*}\x12{\n" +
+	"UpdateRisk\x12\x1e.bytebase.v1.UpdateRiskRequest\x1a\x11.bytebase.v1.Risk\"f\xdaA\x10risk,update_mask\x8a\xea0\x0fbb.risks.update\x90\xea0\x01\x98\xea0\x01\xa2\xea0\x0fbb.risks.create\x82\xd3\xe4\x93\x02\x1f:\x04risk2\x17/v1/{risk.name=risks/*}\x12{\n" +
 	"\n" +
 	"DeleteRisk\x12\x1e.bytebase.v1.DeleteRiskRequest\x1a\x16.google.protobuf.Empty\"5\x8a\xea0\x0fbb.risks.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14*\x12/v1/{name=risks/*}B6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
 

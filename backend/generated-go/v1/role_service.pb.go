@@ -526,14 +526,14 @@ const file_v1_role_service_proto_rawDesc = "" +
 	"\bBUILT_IN\x10\x01\x12\n" +
 	"\n" +
 	"\x06CUSTOM\x10\x02:$\xeaA!\n" +
-	"\x11bytebase.com/Role\x12\froles/{role}2\x84\x05\n" +
+	"\x11bytebase.com/Role\x12\froles/{role}2\x97\x05\n" +
 	"\vRoleService\x12r\n" +
 	"\tListRoles\x12\x1d.bytebase.v1.ListRolesRequest\x1a\x1e.bytebase.v1.ListRolesResponse\"&\x8a\xea0\rbb.roles.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\v\x12\t/v1/roles\x12p\n" +
 	"\aGetRole\x12\x1b.bytebase.v1.GetRoleRequest\x1a\x11.bytebase.v1.Role\"5\xdaA\x04name\x8a\xea0\fbb.roles.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/{name=roles/*}\x12s\n" +
 	"\n" +
-	"CreateRole\x12\x1e.bytebase.v1.CreateRoleRequest\x1a\x11.bytebase.v1.Role\"2\x8a\xea0\x0fbb.roles.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x11:\x04role\"\t/v1/roles\x12\x94\x01\n" +
+	"CreateRole\x12\x1e.bytebase.v1.CreateRoleRequest\x1a\x11.bytebase.v1.Role\"2\x8a\xea0\x0fbb.roles.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x11:\x04role\"\t/v1/roles\x12\xa7\x01\n" +
 	"\n" +
-	"UpdateRole\x12\x1e.bytebase.v1.UpdateRoleRequest\x1a\x11.bytebase.v1.Role\"S\xdaA\x10role,update_mask\x8a\xea0\x0fbb.roles.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1f:\x04role2\x17/v1/{role.name=roles/*}\x12\x82\x01\n" +
+	"UpdateRole\x12\x1e.bytebase.v1.UpdateRoleRequest\x1a\x11.bytebase.v1.Role\"f\xdaA\x10role,update_mask\x8a\xea0\x0fbb.roles.update\x90\xea0\x01\x98\xea0\x01\xa2\xea0\x0fbb.roles.create\x82\xd3\xe4\x93\x02\x1f:\x04role2\x17/v1/{role.name=roles/*}\x12\x82\x01\n" +
 	"\n" +
 	"DeleteRole\x12\x1e.bytebase.v1.DeleteRoleRequest\x1a\x16.google.protobuf.Empty\"<\xdaA\x04name\x8a\xea0\x0fbb.roles.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14*\x12/v1/{name=roles/*}B6Z4github.com/bytebase/bytebase/backend/generated-go/v1b\x06proto3"
 

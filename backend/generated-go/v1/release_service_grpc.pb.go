@@ -50,6 +50,7 @@ type ReleaseServiceClient interface {
 	CreateRelease(ctx context.Context, in *CreateReleaseRequest, opts ...grpc.CallOption) (*Release, error)
 	// Updates an existing release.
 	// Permissions required: bb.releases.update
+	// When allow_missing=true, also requires: bb.releases.create
 	UpdateRelease(ctx context.Context, in *UpdateReleaseRequest, opts ...grpc.CallOption) (*Release, error)
 	// Deletes a release.
 	// Permissions required: bb.releases.delete
@@ -170,6 +171,7 @@ type ReleaseServiceServer interface {
 	CreateRelease(context.Context, *CreateReleaseRequest) (*Release, error)
 	// Updates an existing release.
 	// Permissions required: bb.releases.update
+	// When allow_missing=true, also requires: bb.releases.create
 	UpdateRelease(context.Context, *UpdateReleaseRequest) (*Release, error)
 	// Deletes a release.
 	// Permissions required: bb.releases.delete

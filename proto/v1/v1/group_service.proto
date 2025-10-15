@@ -55,6 +55,7 @@ service GroupService {
 
   // Updates a group. Group owners or users with bb.groups.update permission can update.
   // Permissions required: bb.groups.update OR caller is group owner
+  // When allow_missing=true, also requires: bb.groups.create
   rpc UpdateGroup(UpdateGroupRequest) returns (Group) {
     option (google.api.http) = {
       patch: "/v1/{group.name=groups/*}"
@@ -62,6 +63,7 @@ service GroupService {
     };
     option (google.api.method_signature) = "group,update_mask";
     option (bytebase.v1.permission) = "bb.groups.update";
+    option (bytebase.v1.allow_missing_requires) = "bb.groups.create";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
   }

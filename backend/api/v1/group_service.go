@@ -263,13 +263,8 @@ func (s *GroupService) UpdateGroup(ctx context.Context, req *connect.Request[v1p
 	}
 	if group == nil {
 		if req.Msg.AllowMissing {
-			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionGroupsCreate, user)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
-			}
-			if !ok {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionGroupsCreate))
-			}
+			// Permission check is now handled by the ACL interceptor
+			// which verifies both bb.groups.update and bb.groups.create
 			return s.CreateGroup(ctx, connect.NewRequest(&v1pb.CreateGroupRequest{
 				Group:      req.Msg.Group,
 				GroupEmail: groupEmail,

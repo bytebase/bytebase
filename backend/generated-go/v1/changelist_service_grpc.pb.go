@@ -44,6 +44,7 @@ type ChangelistServiceClient interface {
 	ListChangelists(ctx context.Context, in *ListChangelistsRequest, opts ...grpc.CallOption) (*ListChangelistsResponse, error)
 	// Updates a changelist.
 	// Permissions required: bb.changelists.update
+	// When allow_missing=true, also requires: bb.changelists.create
 	UpdateChangelist(ctx context.Context, in *UpdateChangelistRequest, opts ...grpc.CallOption) (*Changelist, error)
 	// Deletes a changelist.
 	// Permissions required: bb.changelists.delete
@@ -125,6 +126,7 @@ type ChangelistServiceServer interface {
 	ListChangelists(context.Context, *ListChangelistsRequest) (*ListChangelistsResponse, error)
 	// Updates a changelist.
 	// Permissions required: bb.changelists.update
+	// When allow_missing=true, also requires: bb.changelists.create
 	UpdateChangelist(context.Context, *UpdateChangelistRequest) (*Changelist, error)
 	// Deletes a changelist.
 	// Permissions required: bb.changelists.delete

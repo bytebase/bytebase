@@ -376,6 +376,7 @@ export declare const DatabaseGroupService: GenService<{
   /**
    * Updates a database group.
    * Permissions required: bb.projects.update
+   * When allow_missing=true, also requires: bb.projects.update
    *
    * @generated from rpc bytebase.v1.DatabaseGroupService.UpdateDatabaseGroup
    */

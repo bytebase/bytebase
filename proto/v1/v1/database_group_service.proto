@@ -48,6 +48,7 @@ service DatabaseGroupService {
 
   // Updates a database group.
   // Permissions required: bb.projects.update
+  // When allow_missing=true, also requires: bb.projects.update
   rpc UpdateDatabaseGroup(UpdateDatabaseGroupRequest) returns (DatabaseGroup) {
     option (google.api.http) = {
       patch: "/v1/{database_group.name=projects/*/databaseGroups/*}"
@@ -55,6 +56,7 @@ service DatabaseGroupService {
     };
     option (google.api.method_signature) = "database_group,update_mask";
     option (bytebase.v1.permission) = "bb.projects.update";
+    option (bytebase.v1.allow_missing_requires) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }

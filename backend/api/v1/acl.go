@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"log/slog"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -84,6 +85,42 @@ func (c *aclStreamingConn) Receive(msg any) error {
 	return c.StreamingHandlerConn.Receive(msg)
 }
 
+// hasAllowMissingEnabled checks if the request has AllowMissing field set to true.
+// Uses reflection to handle different request types generically.
+func hasAllowMissingEnabled(request any) bool {
+	if request == nil {
+		return false
+	}
+
+	v := reflect.ValueOf(request)
+
+	// Dereference pointer if needed
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return false
+		}
+		v = v.Elem()
+	}
+
+	// Must be a struct to have fields
+	if v.Kind() != reflect.Struct {
+		return false
+	}
+
+	// Look for AllowMissing field
+	field := v.FieldByName("AllowMissing")
+	if !field.IsValid() {
+		return false
+	}
+
+	// Check if it's a bool and is true
+	if field.Kind() == reflect.Bool {
+		return field.Bool()
+	}
+
+	return false
+}
+
 func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMethod string) error {
 	defer func() {
 		if r := recover(); r != nil {
@@ -123,6 +160,24 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 	}
 	if !ok {
 		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied for method %q, user does not have permission %q, extra %v", fullMethod, authContext.Permission, extra))
+	}
+
+	// Check allow_missing secondary permission if applicable
+	// This handles Update methods that can create resources via allow_missing=true
+	allowMissingPerm, err := auth.GetAllowMissingRequiredPermission(fullMethod)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get allow_missing permission requirement"))
+	}
+
+	if allowMissingPerm != "" && hasAllowMissingEnabled(request) {
+		// User is attempting create-or-update, verify create permission
+		hasCreatePerm, err := in.iamManager.CheckPermission(ctx, iam.Permission(allowMissingPerm), user)
+		if err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check %s permission", allowMissingPerm))
+		}
+		if !hasCreatePerm {
+			return connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied: allow_missing=true requires both %s and %s", authContext.Permission, allowMissingPerm))
+		}
 	}
 
 	return nil
