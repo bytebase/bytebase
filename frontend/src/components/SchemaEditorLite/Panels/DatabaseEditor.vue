@@ -9,7 +9,7 @@
           <div class="flex flex-row justify-start items-center gap-x-2">
             <div
               v-if="shouldShowSchemaSelector"
-              class="pl-1 flex flex-row justify-start items-center text-sm gap-x-2 overflow-auto"
+              class="pl-1 flex-row justify-start items-center text-sm gap-x-2 overflow-auto hidden xl:flex"
             >
               <span class="shrink-0">Schema:</span>
               <NSelect

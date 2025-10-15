@@ -3,12 +3,13 @@
     v-model:show="show"
     :mask-closable="false"
     placement="right"
-    :default-width="1024"
     :resizable="true"
-    :width="undefined"
-    class="!max-w-[90vw]"
   >
-    <DrawerContent :title="title ?? $t('plan.add-spec')" closable>
+    <DrawerContent
+      :title="title ?? $t('plan.add-spec')"
+      closable
+      class="max-w-[100vw]"
+    >
       <div class="flex flex-col gap-y-4">
         <!-- Steps indicator -->
         <NSteps :current="currentStep">
@@ -27,7 +28,7 @@
             <NRadioGroup
               v-model:value="selectedMigrationType"
               size="large"
-              class="space-y-4 w-full"
+              class="space-y-4 w-full md:w-[80vw] lg:w-[60vw]"
             >
               <div
                 class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
@@ -84,11 +85,13 @@
 
           <!-- Step 2: Select Targets -->
           <template v-else-if="currentStep === Step.SELECT_TARGETS">
-            <DatabaseAndGroupSelector
-              :project="project"
-              :value="databaseSelectState"
-              @update:value="handleUpdateSelection"
-            />
+            <div class="w-full md:w-[80vw] lg:w-[60vw]">
+              <DatabaseAndGroupSelector
+                :project="project"
+                :value="databaseSelectState"
+                @update:value="handleUpdateSelection"
+              />
+            </div>
           </template>
 
           <!-- Step 3: Schema Editor (only for MIGRATE with single database) -->
@@ -97,7 +100,9 @@
               currentStep === Step.SCHEMA_EDITOR && shouldShowSchemaEditor
             "
           >
-            <div class="relative h-[600px]">
+            <div
+              class="relative h-[600px] w-full md:w-[90vw] lg:w-[calc(100vw-20rem)] lg:min-w-[80vw]"
+            >
               <MaskSpinner v-if="isPreparingMetadata" />
               <SchemaEditorLite
                 v-if="schemaEditTargets.length > 0"
