@@ -1145,6 +1145,9 @@ func getListQueryHistoryFilter(filter string) (*store.ListResourceFilter, error)
 			historyType := store.QueryHistoryType(value.(string))
 			positionalArgs = append(positionalArgs, historyType)
 			return fmt.Sprintf("query_history.type = $%d", len(positionalArgs)), nil
+		case "statement":
+			positionalArgs = append(positionalArgs, value)
+			return fmt.Sprintf("query_history.statement LIKE $%d", len(positionalArgs)), nil
 		default:
 			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q", variable))
 		}
@@ -1176,7 +1179,7 @@ func getListQueryHistoryFilter(filter string) (*store.ListResourceFilter, error)
 				if !ok {
 					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect string, got %T, hint: filter literals should be string", value))
 				}
-				return "query_history.statement LIKE '%" + strValue + "%'", nil
+				return parseToSQL("statement", "%"+strValue+"%")
 			default:
 				return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected function %v", functionName))
 			}
