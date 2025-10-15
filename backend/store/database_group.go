@@ -16,11 +16,11 @@ import (
 
 // DatabaseGroupMessage is the message for database groups.
 type DatabaseGroupMessage struct {
-	ProjectID   string
-	ResourceID  string
-	Placeholder string
-	Expression  *expr.Expr
-	Payload     *storepb.DatabaseGroupPayload
+	ProjectID  string
+	ResourceID string
+	Title      string
+	Expression *expr.Expr
+	Payload    *storepb.DatabaseGroupPayload
 }
 
 // FindDatabaseGroupMessage is the message for finding database group.
@@ -31,9 +31,9 @@ type FindDatabaseGroupMessage struct {
 
 // UpdateDatabaseGroupMessage is the message for updating database group.
 type UpdateDatabaseGroupMessage struct {
-	Placeholder *string
-	Expression  *expr.Expr
-	Payload     *storepb.DatabaseGroupPayload
+	Title      *string
+	Expression *expr.Expr
+	Payload    *storepb.DatabaseGroupPayload
 }
 
 // DeleteDatabaseGroup deletes a database group.
@@ -124,7 +124,7 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, txn *sql.Tx, find *Find
 	fields := []string{
 		"project",
 		"resource_id",
-		"placeholder",
+		"name",
 		"expression",
 		"payload",
 	}
@@ -141,7 +141,7 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, txn *sql.Tx, find *Find
 		dest := []any{
 			&databaseGroup.ProjectID,
 			&databaseGroup.ResourceID,
-			&databaseGroup.Placeholder,
+			&databaseGroup.Title,
 			&exprBytes,
 			&payloadBytes,
 		}
@@ -169,8 +169,8 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, txn *sql.Tx, find *Find
 // UpdateDatabaseGroup updates a database group.
 func (s *Store) UpdateDatabaseGroup(ctx context.Context, projectID, resourceID string, patch *UpdateDatabaseGroupMessage) (*DatabaseGroupMessage, error) {
 	set, args := []string{}, []any{}
-	if v := patch.Placeholder; v != nil {
-		set, args = append(set, fmt.Sprintf("placeholder = $%d", len(args)+1)), append(args, *v)
+	if v := patch.Title; v != nil {
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Expression; v != nil {
 		exprBytes, err := protojson.Marshal(patch.Expression)
@@ -188,10 +188,10 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, projectID, resourceID s
 	}
 	args = append(args, projectID, resourceID)
 	query := fmt.Sprintf(`
-		UPDATE db_group SET 
+		UPDATE db_group SET
 			%s
 		WHERE project = $%d AND resource_id = $%d
-		RETURNING project, resource_id, placeholder, expression, payload;
+		RETURNING project, resource_id, name, expression, payload;
 	`, strings.Join(set, ", "), len(args)-1, len(args))
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
@@ -208,7 +208,7 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, projectID, resourceID s
 	).Scan(
 		&updatedDatabaseGroup.ProjectID,
 		&updatedDatabaseGroup.ResourceID,
-		&updatedDatabaseGroup.Placeholder,
+		&updatedDatabaseGroup.Title,
 		&exprBytes,
 		&payloadBytes,
 	); err != nil {
@@ -237,7 +237,7 @@ func (s *Store) CreateDatabaseGroup(ctx context.Context, create *DatabaseGroupMe
 	INSERT INTO db_group (
 		project,
 		resource_id,
-		placeholder,
+		name,
 		expression,
 		payload
 	) VALUES ($1, $2, $3, $4, $5);
@@ -262,7 +262,7 @@ func (s *Store) CreateDatabaseGroup(ctx context.Context, create *DatabaseGroupMe
 		query,
 		create.ProjectID,
 		create.ResourceID,
-		create.Placeholder,
+		create.Title,
 		exprBytes,
 		payloadBytes,
 	); err != nil {

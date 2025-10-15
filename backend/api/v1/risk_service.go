@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/enterprise"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
@@ -38,9 +39,35 @@ func convertToRisk(risk *store.RiskMessage) *v1pb.Risk {
 		Name:      fmt.Sprintf("%s%v", common.RiskPrefix, risk.ID),
 		Source:    ConvertToV1Source(risk.Source),
 		Title:     risk.Name,
-		Level:     risk.Level,
+		Level:     convertToV1RiskLevel(risk.Level),
 		Condition: risk.Expression,
 		Active:    risk.Active,
+	}
+}
+
+func convertToV1RiskLevel(level storepb.RiskLevel) v1pb.RiskLevel {
+	switch level {
+	case storepb.RiskLevel_LOW:
+		return v1pb.RiskLevel_LOW
+	case storepb.RiskLevel_MODERATE:
+		return v1pb.RiskLevel_MODERATE
+	case storepb.RiskLevel_HIGH:
+		return v1pb.RiskLevel_HIGH
+	default:
+		return v1pb.RiskLevel_RISK_LEVEL_UNSPECIFIED
+	}
+}
+
+func convertFromV1RiskLevel(level v1pb.RiskLevel) storepb.RiskLevel {
+	switch level {
+	case v1pb.RiskLevel_LOW:
+		return storepb.RiskLevel_LOW
+	case v1pb.RiskLevel_MODERATE:
+		return storepb.RiskLevel_MODERATE
+	case v1pb.RiskLevel_HIGH:
+		return storepb.RiskLevel_HIGH
+	default:
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED
 	}
 }
 
@@ -80,7 +107,7 @@ func (s *RiskService) CreateRisk(ctx context.Context, request *connect.Request[v
 
 	risk, err := s.store.CreateRisk(ctx, &store.RiskMessage{
 		Source:     convertToSource(request.Msg.Risk.Source),
-		Level:      request.Msg.Risk.Level,
+		Level:      convertFromV1RiskLevel(request.Msg.Risk.Level),
 		Name:       request.Msg.Risk.Title,
 		Active:     request.Msg.Risk.Active,
 		Expression: request.Msg.Risk.Condition,
@@ -139,7 +166,8 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *connect.Request[v
 		case "active":
 			patch.Active = &request.Msg.Risk.Active
 		case "level":
-			patch.Level = &request.Msg.Risk.Level
+			level := convertFromV1RiskLevel(request.Msg.Risk.Level)
+			patch.Level = &level
 		case "condition":
 			if _, err := common.ConvertUnparsedRisk(request.Msg.Risk.Condition); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to validate risk expression"))

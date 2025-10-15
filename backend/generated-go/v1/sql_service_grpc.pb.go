@@ -32,23 +32,32 @@ const (
 // SQLServiceClient is the client API for SQLService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// SQLService executes SQL queries and manages query operations.
 type SQLServiceClient interface {
+	// Executes a read-only SQL query against a database.
 	// Permissions required: bb.databases.get
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
+	// Executes SQL with admin privileges via streaming connection.
 	// Permissions required: bb.sql.admin
 	AdminExecute(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[AdminExecuteRequest, AdminExecuteResponse], error)
 	// SearchQueryHistories searches query histories for the caller.
-	// Permissions required: None
+	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(ctx context.Context, in *SearchQueryHistoriesRequest, opts ...grpc.CallOption) (*SearchQueryHistoriesResponse, error)
+	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
+	// Validates SQL statements against review rules.
 	// Permissions required: bb.databases.check
 	Check(ctx context.Context, in *CheckRequest, opts ...grpc.CallOption) (*CheckResponse, error)
+	// Formats and normalizes SQL schema definitions.
 	// Permissions required: None
 	Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error)
+	// Computes schema differences between two database metadata.
 	// Permissions required: None
 	DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error)
-	// Permissions required: None
+	// Provides AI-powered SQL completion and generation.
+	// Permissions required: None (authenticated users only, requires AI to be enabled)
 	AICompletion(ctx context.Context, in *AICompletionRequest, opts ...grpc.CallOption) (*AICompletionResponse, error)
 }
 
@@ -146,23 +155,32 @@ func (c *sQLServiceClient) AICompletion(ctx context.Context, in *AICompletionReq
 // SQLServiceServer is the server API for SQLService service.
 // All implementations must embed UnimplementedSQLServiceServer
 // for forward compatibility.
+//
+// SQLService executes SQL queries and manages query operations.
 type SQLServiceServer interface {
+	// Executes a read-only SQL query against a database.
 	// Permissions required: bb.databases.get
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
+	// Executes SQL with admin privileges via streaming connection.
 	// Permissions required: bb.sql.admin
 	AdminExecute(grpc.BidiStreamingServer[AdminExecuteRequest, AdminExecuteResponse]) error
 	// SearchQueryHistories searches query histories for the caller.
-	// Permissions required: None
+	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(context.Context, *SearchQueryHistoriesRequest) (*SearchQueryHistoriesResponse, error)
+	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
+	// Validates SQL statements against review rules.
 	// Permissions required: bb.databases.check
 	Check(context.Context, *CheckRequest) (*CheckResponse, error)
+	// Formats and normalizes SQL schema definitions.
 	// Permissions required: None
 	Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error)
+	// Computes schema differences between two database metadata.
 	// Permissions required: None
 	DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error)
-	// Permissions required: None
+	// Provides AI-powered SQL completion and generation.
+	// Permissions required: None (authenticated users only, requires AI to be enabled)
 	AICompletion(context.Context, *AICompletionRequest) (*AICompletionResponse, error)
 	mustEmbedUnimplementedSQLServiceServer()
 }

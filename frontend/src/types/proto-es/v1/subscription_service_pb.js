@@ -77,6 +77,8 @@ export const PlanFeature = /*@__PURE__*/
   tsEnum(PlanFeatureSchema);
 
 /**
+ * SubscriptionService manages enterprise subscriptions and licensing.
+ *
  * @generated from service bytebase.v1.SubscriptionService
  */
 export const SubscriptionService = /*@__PURE__*/

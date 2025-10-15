@@ -24,7 +24,7 @@ const (
 type Advice_Status int32
 
 const (
-	// Unspecified.
+	// Unspecified status.
 	Advice_STATUS_UNSPECIFIED Advice_Status = 0
 	Advice_SUCCESS            Advice_Status = 1
 	Advice_WARNING            Advice_Status = 2

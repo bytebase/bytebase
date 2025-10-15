@@ -7,7 +7,7 @@
     :striped="true"
     :bordered="true"
     :loading="loading"
-    :row-key="(f: FunctionMetadata) => `${database.name}.${schemaName}.${f.name}`"
+    :row-key="(f: FunctionMetadata) => `${database.name}.${schemaName}.${f.signature || f.name}`"
   />
 </template>
 
@@ -58,7 +58,7 @@ const columns = computed(() => {
         tooltip: true,
       },
       render: (row) => {
-        return row.name;
+        return row.signature || row.name;
       },
     },
     {

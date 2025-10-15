@@ -5,6 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { EmptySchema, FieldMask } from "@bufbuild/protobuf/wkt";
+import type { RiskLevel } from "./common_pb";
 import type { Expr } from "../google/type/expr_pb";
 
 /**
@@ -17,7 +18,7 @@ export declare const file_v1_risk_service: GenFile;
  */
 export declare type ListRisksRequest = Message<"bytebase.v1.ListRisksRequest"> & {
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * The maximum number of risks to return. The service may return fewer than
    * this value.
    * If unspecified, at most 10 risks will be returned.
@@ -28,11 +29,11 @@ export declare type ListRisksRequest = Message<"bytebase.v1.ListRisksRequest"> &
   pageSize: number;
 
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * A page token, received from a previous `ListRisks` call.
    * Provide this to retrieve the subsequent page.
    *
-   * When paginating, all other parameters provided to `LiskRisks` must match
+   * When paginating, all other parameters provided to `ListRisks` must match
    * the call that provided the page token.
    *
    * @generated from field: string page_token = 2;
@@ -174,21 +175,29 @@ export declare type Risk = Message<"bytebase.v1.Risk"> & {
   name: string;
 
   /**
+   * The source of the operation being assessed for risk.
+   *
    * @generated from field: bytebase.v1.Risk.Source source = 3;
    */
   source: Risk_Source;
 
   /**
+   * The title of the risk rule.
+   *
    * @generated from field: string title = 4;
    */
   title: string;
 
   /**
-   * @generated from field: int32 level = 5;
+   * The risk level assigned when this rule matches.
+   *
+   * @generated from field: bytebase.v1.RiskLevel level = 5;
    */
-  level: number;
+  level: RiskLevel;
 
   /**
+   * Whether the risk rule is active.
+   *
    * @generated from field: bool active = 7;
    */
   active: boolean;
@@ -198,72 +207,51 @@ export declare type Risk = Message<"bytebase.v1.Risk"> & {
    * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
    *
    * All supported variables:
-   * affected_rows: affected row count in the DDL/DML, support "==", "!=", "<", "<=", ">", ">=" operations.
-   * table_rows: table row count number, support "==", "!=", "<", "<=", ">", ">=" operations.
-   * environment_id: the environment resource id, support "==", "!=", "in [xx]", "!(in [xx])" operations.
-   * project_id: the project resource id, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
-   * db_engine: the database engine type, support "==", "!=", "in [xx]", "!(in [xx])" operations. Check the Engine enum for the values.
-   * sql_type: the SQL type, support "==", "!=", "in [xx]", "!(in [xx])" operations.
+   * statement.affected_rows: affected row count in the DDL/DML, support "==", "!=", "<", "<=", ">", ">=" operations.
+   * statement.table_rows: table row count number, support "==", "!=", "<", "<=", ">", ">=" operations.
+   * resource.environment_id: the environment resource id, support "==", "!=", "in [xx]", "!(in [xx])" operations.
+   * resource.project_id: the project resource id, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+   * resource.db_engine: the database engine type, support "==", "!=", "in [xx]", "!(in [xx])" operations. Check the Engine enum for the values.
+   * statement.sql_type: the SQL type, support "==", "!=", "in [xx]", "!(in [xx])" operations.
    *  when the risk source is DDL, check https://github.com/bytebase/bytebase/blob/main/frontend/src/plugins/cel/types/values.ts#L70 for supported values.
    *  when the risk source is DML, check https://github.com/bytebase/bytebase/blob/main/frontend/src/plugins/cel/types/values.ts#L71 for supported values.
-   * database_name: the database name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
-   * schema_name: the schema name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
-   * table_name: the table name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
-   * sql_statement: the SQL statement, support "contains()", "matches()", "startsWith()", "endsWith()" operations.
-   * export_rows: export data count, support "==", "!=", "<", "<=", ">", ">=" operations.
-   * expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.
-   * role: the request role full name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+   * resource.database_name: the database name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+   * resource.schema_name: the schema name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+   * resource.table_name: the table name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
+   * statement.text: the SQL statement, support "contains()", "matches()", "startsWith()", "endsWith()" operations.
+   * request.expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.
+   * request.role: the request role full name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
    *
    * When the risk source is DDL/DML, support following variables:
-   * affected_rows
-   * table_rows
-   * environment_id
-   * project_id
-   * db_engine
-   * sql_type
-   * database_name
-   * schema_name
-   * table_name
-   * sql_statement
+   * statement.affected_rows
+   * statement.table_rows
+   * resource.environment_id
+   * resource.project_id
+   * resource.db_engine
+   * statement.sql_type
+   * resource.database_name
+   * resource.schema_name
+   * resource.table_name
+   * statement.text
    *
    * When the risk source is CREATE_DATABASE, support following variables:
-   * environment_id
-   * project_id
-   * db_engine
-   * database_name
+   * resource.environment_id
+   * resource.project_id
+   * resource.db_engine
+   * resource.database_name
    *
    * When the risk source is DATA_EXPORT, support following variables:
-   * environment_id
-   * project_id
-   * db_engine
-   * database_name
-   * schema_name
-   * table_name
-   * export_rows
-   *
-   * When the risk source is REQUEST_QUERY, support following variables:
-   * environment_id
-   * project_id
-   * db_engine
-   * database_name
-   * schema_name
-   * table_name
-   * expiration_days
-   *
-   * When the risk source is REQUEST_EXPORT, support following variables:
-   * environment_id
-   * project_id
-   * db_engine
-   * database_name
-   * schema_name
-   * table_name
-   * expiration_days
-   * export_rows
+   * resource.environment_id
+   * resource.project_id
+   * resource.db_engine
+   * resource.database_name
+   * resource.schema_name
+   * resource.table_name
    *
    * When the risk source is REQUEST_ROLE, support following variables:
-   * project_id
-   * expiration_days
-   * role
+   * resource.project_id
+   * request.expiration_days
+   * request.role
    *
    * @generated from field: google.type.Expr condition = 8;
    */
@@ -277,6 +265,8 @@ export declare type Risk = Message<"bytebase.v1.Risk"> & {
 export declare const RiskSchema: GenMessage<Risk>;
 
 /**
+ * The source of the database change for risk assessment.
+ *
  * @generated from enum bytebase.v1.Risk.Source
  */
 export enum Risk_Source {
@@ -286,26 +276,36 @@ export enum Risk_Source {
   SOURCE_UNSPECIFIED = 0,
 
   /**
+   * Data Definition Language statements (CREATE, ALTER, DROP, etc.).
+   *
    * @generated from enum value: DDL = 1;
    */
   DDL = 1,
 
   /**
+   * Data Manipulation Language statements (INSERT, UPDATE, DELETE, etc.).
+   *
    * @generated from enum value: DML = 2;
    */
   DML = 2,
 
   /**
+   * Database creation operations.
+   *
    * @generated from enum value: CREATE_DATABASE = 3;
    */
   CREATE_DATABASE = 3,
 
   /**
+   * Data export operations.
+   *
    * @generated from enum value: DATA_EXPORT = 6;
    */
   DATA_EXPORT = 6,
 
   /**
+   * Role access requests.
+   *
    * @generated from enum value: REQUEST_ROLE = 7;
    */
   REQUEST_ROLE = 7,
@@ -317,10 +317,13 @@ export enum Risk_Source {
 export declare const Risk_SourceSchema: GenEnum<Risk_Source>;
 
 /**
+ * RiskService manages risk assessment rules for database changes.
+ *
  * @generated from service bytebase.v1.RiskService
  */
 export declare const RiskService: GenService<{
   /**
+   * Lists all risk assessment rules.
    * Permissions required: bb.risks.list
    *
    * @generated from rpc bytebase.v1.RiskService.ListRisks
@@ -331,6 +334,7 @@ export declare const RiskService: GenService<{
     output: typeof ListRisksResponseSchema;
   },
   /**
+   * Creates a new risk assessment rule.
    * Permissions required: bb.risks.create
    *
    * @generated from rpc bytebase.v1.RiskService.CreateRisk
@@ -341,6 +345,7 @@ export declare const RiskService: GenService<{
     output: typeof RiskSchema;
   },
   /**
+   * Retrieves a risk assessment rule by name.
    * Permissions required: bb.risks.list
    *
    * @generated from rpc bytebase.v1.RiskService.GetRisk
@@ -351,6 +356,7 @@ export declare const RiskService: GenService<{
     output: typeof RiskSchema;
   },
   /**
+   * Updates an existing risk assessment rule.
    * Permissions required: bb.risks.update
    *
    * @generated from rpc bytebase.v1.RiskService.UpdateRisk
@@ -361,6 +367,7 @@ export declare const RiskService: GenService<{
     output: typeof RiskSchema;
   },
   /**
+   * Deletes a risk assessment rule.
    * Permissions required: bb.risks.delete
    *
    * @generated from rpc bytebase.v1.RiskService.DeleteRisk

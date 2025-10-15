@@ -1,4 +1,25 @@
 import { uniq } from "lodash-es";
+import {
+  CEL_ATTRIBUTE_STATEMENT_AFFECTED_ROWS,
+  CEL_ATTRIBUTE_STATEMENT_TABLE_ROWS,
+  CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
+  CEL_ATTRIBUTE_STATEMENT_TEXT,
+  CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
+  CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
+  CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+  CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
+  CEL_ATTRIBUTE_RESOURCE_DB_ENGINE,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE,
+  CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
+  CEL_ATTRIBUTE_LEVEL,
+  CEL_ATTRIBUTE_SOURCE,
+  CEL_ATTRIBUTE_REQUEST_TIME,
+  CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
+  CEL_ATTRIBUTE_REQUEST_ROLE,
+} from "@/utils/cel-attributes";
 import type { Factor } from "./factor";
 
 export const NegativeOperatorList = ["!_"] as const;
@@ -54,91 +75,87 @@ export const isStringOperator = (op: Operator): op is StringOperator => {
 
 /// Define supported operators for each factor
 const OperatorList: Record<Factor, Operator[]> = {
-  affected_rows: uniq([...EqualityOperatorList, ...CompareOperatorList]),
-  table_rows: uniq([...EqualityOperatorList, ...CompareOperatorList]),
+  [CEL_ATTRIBUTE_STATEMENT_AFFECTED_ROWS]: uniq([
+    ...EqualityOperatorList,
+    ...CompareOperatorList,
+  ]),
+  [CEL_ATTRIBUTE_STATEMENT_TABLE_ROWS]: uniq([
+    ...EqualityOperatorList,
+    ...CompareOperatorList,
+  ]),
 
-  level: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
-  source: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
+  [CEL_ATTRIBUTE_LEVEL]: uniq([
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+  ]),
+  [CEL_ATTRIBUTE_SOURCE]: uniq([
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+  ]),
 
-  environment_id: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
-  instance_id: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
-  project_id: uniq([
+  [CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID]: uniq([
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+  ]),
+  [CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID]: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
-  database_name: uniq([
+  [CEL_ATTRIBUTE_RESOURCE_PROJECT_ID]: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
-  schema_name: uniq([
+  [CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME]: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
-  table_name: uniq([
+  [CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME]: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
-  column_name: uniq([
+  [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
-  db_engine: uniq([
+  [CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME]: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
-  sql_type: uniq([
+  [CEL_ATTRIBUTE_RESOURCE_DB_ENGINE]: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
-  sql_statement: uniq([...StringOperatorList]),
-  classification_level: uniq([...CollectionOperatorList]),
-
-  // Database group related fields.
-  "resource.environment_name": uniq([
-    ...EqualityOperatorList,
-    ...CollectionOperatorList,
-  ]),
-  "resource.instance_id": uniq([
+  [CEL_ATTRIBUTE_STATEMENT_SQL_TYPE]: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
-  "resource.database_name": uniq([
-    ...EqualityOperatorList,
+  [CEL_ATTRIBUTE_STATEMENT_TEXT]: uniq([...StringOperatorList]),
+  [CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL]: uniq([
     ...CollectionOperatorList,
-    ...StringOperatorList,
-  ]),
-  "resource.table_name": uniq([
-    ...EqualityOperatorList,
-    ...CollectionOperatorList,
-    ...StringOperatorList,
   ]),
 
   // Request query/export factors
-  expiration_days: uniq([...EqualityOperatorList, ...CompareOperatorList]),
-  export_rows: uniq([...EqualityOperatorList, ...CompareOperatorList]),
-  role: uniq([
+  [CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS]: uniq([
+    ...EqualityOperatorList,
+    ...CompareOperatorList,
+  ]),
+  [CEL_ATTRIBUTE_REQUEST_ROLE]: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
 
   // These factors don't have operator candidates for user selection.
-  "request.export_format": [],
-  "request.row_limit": [],
-  "resource.database": [],
-  "resource.schema": [],
-  "resource.table": [],
-  "resource.column_name": [],
-  "resource.schema_name": [],
-  "request.time": [],
+  [CEL_ATTRIBUTE_RESOURCE_DATABASE]: [],
+  [CEL_ATTRIBUTE_REQUEST_TIME]: [],
 };
 
 export const getOperatorListByFactor = (factor: Factor) => {

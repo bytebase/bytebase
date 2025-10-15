@@ -21,65 +21,17 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type IssuePayloadApproval_RiskLevel int32
-
-const (
-	IssuePayloadApproval_RISK_LEVEL_UNSPECIFIED IssuePayloadApproval_RiskLevel = 0
-	IssuePayloadApproval_LOW                    IssuePayloadApproval_RiskLevel = 1
-	IssuePayloadApproval_MODERATE               IssuePayloadApproval_RiskLevel = 2
-	IssuePayloadApproval_HIGH                   IssuePayloadApproval_RiskLevel = 3
-)
-
-// Enum value maps for IssuePayloadApproval_RiskLevel.
-var (
-	IssuePayloadApproval_RiskLevel_name = map[int32]string{
-		0: "RISK_LEVEL_UNSPECIFIED",
-		1: "LOW",
-		2: "MODERATE",
-		3: "HIGH",
-	}
-	IssuePayloadApproval_RiskLevel_value = map[string]int32{
-		"RISK_LEVEL_UNSPECIFIED": 0,
-		"LOW":                    1,
-		"MODERATE":               2,
-		"HIGH":                   3,
-	}
-)
-
-func (x IssuePayloadApproval_RiskLevel) Enum() *IssuePayloadApproval_RiskLevel {
-	p := new(IssuePayloadApproval_RiskLevel)
-	*p = x
-	return p
-}
-
-func (x IssuePayloadApproval_RiskLevel) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (IssuePayloadApproval_RiskLevel) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_approval_proto_enumTypes[0].Descriptor()
-}
-
-func (IssuePayloadApproval_RiskLevel) Type() protoreflect.EnumType {
-	return &file_store_approval_proto_enumTypes[0]
-}
-
-func (x IssuePayloadApproval_RiskLevel) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use IssuePayloadApproval_RiskLevel.Descriptor instead.
-func (IssuePayloadApproval_RiskLevel) EnumDescriptor() ([]byte, []int) {
-	return file_store_approval_proto_rawDescGZIP(), []int{0, 0}
-}
-
+// Status represents the approver's decision state.
 type IssuePayloadApproval_Approver_Status int32
 
 const (
 	IssuePayloadApproval_Approver_STATUS_UNSPECIFIED IssuePayloadApproval_Approver_Status = 0
-	IssuePayloadApproval_Approver_PENDING            IssuePayloadApproval_Approver_Status = 1
-	IssuePayloadApproval_Approver_APPROVED           IssuePayloadApproval_Approver_Status = 2
-	IssuePayloadApproval_Approver_REJECTED           IssuePayloadApproval_Approver_Status = 3
+	// Approval is pending from this approver.
+	IssuePayloadApproval_Approver_PENDING IssuePayloadApproval_Approver_Status = 1
+	// Approver has approved the issue.
+	IssuePayloadApproval_Approver_APPROVED IssuePayloadApproval_Approver_Status = 2
+	// Approver has rejected the issue.
+	IssuePayloadApproval_Approver_REJECTED IssuePayloadApproval_Approver_Status = 3
 )
 
 // Enum value maps for IssuePayloadApproval_Approver_Status.
@@ -109,11 +61,11 @@ func (x IssuePayloadApproval_Approver_Status) String() string {
 }
 
 func (IssuePayloadApproval_Approver_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_approval_proto_enumTypes[1].Descriptor()
+	return file_store_approval_proto_enumTypes[0].Descriptor()
 }
 
 func (IssuePayloadApproval_Approver_Status) Type() protoreflect.EnumType {
-	return &file_store_approval_proto_enumTypes[1]
+	return &file_store_approval_proto_enumTypes[0]
 }
 
 func (x IssuePayloadApproval_Approver_Status) Number() protoreflect.EnumNumber {
@@ -125,121 +77,22 @@ func (IssuePayloadApproval_Approver_Status) EnumDescriptor() ([]byte, []int) {
 	return file_store_approval_proto_rawDescGZIP(), []int{0, 0, 0}
 }
 
-// Type of the ApprovalStep
-// ALL means every node must be approved to proceed.
-// ANY means approving any node will proceed.
-type ApprovalStep_Type int32
-
-const (
-	ApprovalStep_TYPE_UNSPECIFIED ApprovalStep_Type = 0
-	ApprovalStep_ALL              ApprovalStep_Type = 1
-	ApprovalStep_ANY              ApprovalStep_Type = 2
-)
-
-// Enum value maps for ApprovalStep_Type.
-var (
-	ApprovalStep_Type_name = map[int32]string{
-		0: "TYPE_UNSPECIFIED",
-		1: "ALL",
-		2: "ANY",
-	}
-	ApprovalStep_Type_value = map[string]int32{
-		"TYPE_UNSPECIFIED": 0,
-		"ALL":              1,
-		"ANY":              2,
-	}
-)
-
-func (x ApprovalStep_Type) Enum() *ApprovalStep_Type {
-	p := new(ApprovalStep_Type)
-	*p = x
-	return p
-}
-
-func (x ApprovalStep_Type) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ApprovalStep_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_approval_proto_enumTypes[2].Descriptor()
-}
-
-func (ApprovalStep_Type) Type() protoreflect.EnumType {
-	return &file_store_approval_proto_enumTypes[2]
-}
-
-func (x ApprovalStep_Type) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ApprovalStep_Type.Descriptor instead.
-func (ApprovalStep_Type) EnumDescriptor() ([]byte, []int) {
-	return file_store_approval_proto_rawDescGZIP(), []int{3, 0}
-}
-
-// Type of the ApprovalNode.
-// type determines who should approve this node.
-// ANY_IN_GROUP means the ApprovalNode can be approved by an user from our predefined user group.
-// See GroupValue below for the predefined user groups.
-type ApprovalNode_Type int32
-
-const (
-	ApprovalNode_TYPE_UNSPECIFIED ApprovalNode_Type = 0
-	ApprovalNode_ANY_IN_GROUP     ApprovalNode_Type = 1
-)
-
-// Enum value maps for ApprovalNode_Type.
-var (
-	ApprovalNode_Type_name = map[int32]string{
-		0: "TYPE_UNSPECIFIED",
-		1: "ANY_IN_GROUP",
-	}
-	ApprovalNode_Type_value = map[string]int32{
-		"TYPE_UNSPECIFIED": 0,
-		"ANY_IN_GROUP":     1,
-	}
-)
-
-func (x ApprovalNode_Type) Enum() *ApprovalNode_Type {
-	p := new(ApprovalNode_Type)
-	*p = x
-	return p
-}
-
-func (x ApprovalNode_Type) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ApprovalNode_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_approval_proto_enumTypes[3].Descriptor()
-}
-
-func (ApprovalNode_Type) Type() protoreflect.EnumType {
-	return &file_store_approval_proto_enumTypes[3]
-}
-
-func (x ApprovalNode_Type) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ApprovalNode_Type.Descriptor instead.
-func (ApprovalNode_Type) EnumDescriptor() ([]byte, []int) {
-	return file_store_approval_proto_rawDescGZIP(), []int{4, 0}
-}
-
-// IssuePayloadApproval is a part of the payload of an issue.
-// IssuePayloadApproval records the approval template used and the approval history.
+// IssuePayloadApproval records the approval template used and approval history for an issue.
 type IssuePayloadApproval struct {
-	state             protoimpl.MessageState           `protogen:"open.v1"`
-	ApprovalTemplates []*ApprovalTemplate              `protobuf:"bytes,1,rep,name=approval_templates,json=approvalTemplates,proto3" json:"approval_templates,omitempty"`
-	Approvers         []*IssuePayloadApproval_Approver `protobuf:"bytes,2,rep,name=approvers,proto3" json:"approvers,omitempty"`
-	// If the value is `false`, it means that the backend is still finding matching approval templates.
-	// If `true`, other fields are available.
-	ApprovalFindingDone  bool                           `protobuf:"varint,3,opt,name=approval_finding_done,json=approvalFindingDone,proto3" json:"approval_finding_done,omitempty"`
-	ApprovalFindingError string                         `protobuf:"bytes,4,opt,name=approval_finding_error,json=approvalFindingError,proto3" json:"approval_finding_error,omitempty"`
-	RiskLevel            IssuePayloadApproval_RiskLevel `protobuf:"varint,5,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.store.IssuePayloadApproval_RiskLevel" json:"risk_level,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The approval template being used for this issue.
+	ApprovalTemplate *ApprovalTemplate `protobuf:"bytes,1,opt,name=approval_template,json=approvalTemplate,proto3" json:"approval_template,omitempty"`
+	// List of approvers and their current status.
+	Approvers []*IssuePayloadApproval_Approver `protobuf:"bytes,2,rep,name=approvers,proto3" json:"approvers,omitempty"`
+	// Whether the system has finished finding a matching approval template.
+	// False means the backend is still searching for matching templates.
+	ApprovalFindingDone bool `protobuf:"varint,3,opt,name=approval_finding_done,json=approvalFindingDone,proto3" json:"approval_finding_done,omitempty"`
+	// Error message if approval template finding failed.
+	ApprovalFindingError string `protobuf:"bytes,4,opt,name=approval_finding_error,json=approvalFindingError,proto3" json:"approval_finding_error,omitempty"`
+	// The assessed risk level for this issue.
+	RiskLevel     RiskLevel `protobuf:"varint,5,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.store.RiskLevel" json:"risk_level,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *IssuePayloadApproval) Reset() {
@@ -272,9 +125,9 @@ func (*IssuePayloadApproval) Descriptor() ([]byte, []int) {
 	return file_store_approval_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *IssuePayloadApproval) GetApprovalTemplates() []*ApprovalTemplate {
+func (x *IssuePayloadApproval) GetApprovalTemplate() *ApprovalTemplate {
 	if x != nil {
-		return x.ApprovalTemplates
+		return x.ApprovalTemplate
 	}
 	return nil
 }
@@ -300,18 +153,26 @@ func (x *IssuePayloadApproval) GetApprovalFindingError() string {
 	return ""
 }
 
-func (x *IssuePayloadApproval) GetRiskLevel() IssuePayloadApproval_RiskLevel {
+func (x *IssuePayloadApproval) GetRiskLevel() RiskLevel {
 	if x != nil {
 		return x.RiskLevel
 	}
-	return IssuePayloadApproval_RISK_LEVEL_UNSPECIFIED
+	return RiskLevel_RISK_LEVEL_UNSPECIFIED
 }
 
+// ApprovalTemplate defines the approval workflow and requirements for an issue.
 type ApprovalTemplate struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Flow          *ApprovalFlow          `protobuf:"bytes,1,opt,name=flow,proto3" json:"flow,omitempty"`
-	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The unique identifier for the approval template.
+	// Built-in templates use "bb." prefix (e.g., "bb.project-owner", "bb.workspace-dba").
+	// Custom templates use a UUID or other unique identifier.
+	Id string `protobuf:"bytes,4,opt,name=id,proto3" json:"id,omitempty"`
+	// The approval workflow specification.
+	Flow *ApprovalFlow `protobuf:"bytes,1,opt,name=flow,proto3" json:"flow,omitempty"`
+	// Human-readable title of the approval template.
+	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	// Detailed description of when this template applies.
+	Description   string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -346,6 +207,13 @@ func (*ApprovalTemplate) Descriptor() ([]byte, []int) {
 	return file_store_approval_proto_rawDescGZIP(), []int{1}
 }
 
+func (x *ApprovalTemplate) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
 func (x *ApprovalTemplate) GetFlow() *ApprovalFlow {
 	if x != nil {
 		return x.Flow
@@ -367,9 +235,11 @@ func (x *ApprovalTemplate) GetDescription() string {
 	return ""
 }
 
+// ApprovalFlow defines the sequence of approvals required.
 type ApprovalFlow struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Steps         []*ApprovalStep        `protobuf:"bytes,1,rep,name=steps,proto3" json:"steps,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// List of role names that must approve, in order.
+	Roles         []string `protobuf:"bytes,1,rep,name=roles,proto3" json:"roles,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -404,122 +274,19 @@ func (*ApprovalFlow) Descriptor() ([]byte, []int) {
 	return file_store_approval_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ApprovalFlow) GetSteps() []*ApprovalStep {
+func (x *ApprovalFlow) GetRoles() []string {
 	if x != nil {
-		return x.Steps
+		return x.Roles
 	}
 	return nil
 }
 
-type ApprovalStep struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          ApprovalStep_Type      `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.ApprovalStep_Type" json:"type,omitempty"`
-	Nodes         []*ApprovalNode        `protobuf:"bytes,2,rep,name=nodes,proto3" json:"nodes,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ApprovalStep) Reset() {
-	*x = ApprovalStep{}
-	mi := &file_store_approval_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ApprovalStep) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ApprovalStep) ProtoMessage() {}
-
-func (x *ApprovalStep) ProtoReflect() protoreflect.Message {
-	mi := &file_store_approval_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ApprovalStep.ProtoReflect.Descriptor instead.
-func (*ApprovalStep) Descriptor() ([]byte, []int) {
-	return file_store_approval_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *ApprovalStep) GetType() ApprovalStep_Type {
-	if x != nil {
-		return x.Type
-	}
-	return ApprovalStep_TYPE_UNSPECIFIED
-}
-
-func (x *ApprovalStep) GetNodes() []*ApprovalNode {
-	if x != nil {
-		return x.Nodes
-	}
-	return nil
-}
-
-type ApprovalNode struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          ApprovalNode_Type      `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.ApprovalNode_Type" json:"type,omitempty"`
-	Role          string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ApprovalNode) Reset() {
-	*x = ApprovalNode{}
-	mi := &file_store_approval_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ApprovalNode) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ApprovalNode) ProtoMessage() {}
-
-func (x *ApprovalNode) ProtoReflect() protoreflect.Message {
-	mi := &file_store_approval_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ApprovalNode.ProtoReflect.Descriptor instead.
-func (*ApprovalNode) Descriptor() ([]byte, []int) {
-	return file_store_approval_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *ApprovalNode) GetType() ApprovalNode_Type {
-	if x != nil {
-		return x.Type
-	}
-	return ApprovalNode_TYPE_UNSPECIFIED
-}
-
-func (x *ApprovalNode) GetRole() string {
-	if x != nil {
-		return x.Role
-	}
-	return ""
-}
-
+// Approver represents a user who can approve or reject an issue.
 type IssuePayloadApproval_Approver struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The new status.
+	// The current approval status.
 	Status IssuePayloadApproval_Approver_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.store.IssuePayloadApproval_Approver_Status" json:"status,omitempty"`
-	// The principal id of the approver.
+	// The ID of the principal who is the approver.
 	PrincipalId   int32 `protobuf:"varint,2,opt,name=principal_id,json=principalId,proto3" json:"principal_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -527,7 +294,7 @@ type IssuePayloadApproval_Approver struct {
 
 func (x *IssuePayloadApproval_Approver) Reset() {
 	*x = IssuePayloadApproval_Approver{}
-	mi := &file_store_approval_proto_msgTypes[5]
+	mi := &file_store_approval_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -539,7 +306,7 @@ func (x *IssuePayloadApproval_Approver) String() string {
 func (*IssuePayloadApproval_Approver) ProtoMessage() {}
 
 func (x *IssuePayloadApproval_Approver) ProtoReflect() protoreflect.Message {
-	mi := &file_store_approval_proto_msgTypes[5]
+	mi := &file_store_approval_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -573,14 +340,14 @@ var File_store_approval_proto protoreflect.FileDescriptor
 
 const file_store_approval_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/approval.proto\x12\x0ebytebase.store\"\x80\x05\n" +
-	"\x14IssuePayloadApproval\x12O\n" +
-	"\x12approval_templates\x18\x01 \x03(\v2 .bytebase.store.ApprovalTemplateR\x11approvalTemplates\x12K\n" +
+	"\x14store/approval.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\x9f\x04\n" +
+	"\x14IssuePayloadApproval\x12M\n" +
+	"\x11approval_template\x18\x01 \x01(\v2 .bytebase.store.ApprovalTemplateR\x10approvalTemplate\x12K\n" +
 	"\tapprovers\x18\x02 \x03(\v2-.bytebase.store.IssuePayloadApproval.ApproverR\tapprovers\x122\n" +
 	"\x15approval_finding_done\x18\x03 \x01(\bR\x13approvalFindingDone\x124\n" +
-	"\x16approval_finding_error\x18\x04 \x01(\tR\x14approvalFindingError\x12M\n" +
+	"\x16approval_finding_error\x18\x04 \x01(\tR\x14approvalFindingError\x128\n" +
 	"\n" +
-	"risk_level\x18\x05 \x01(\x0e2..bytebase.store.IssuePayloadApproval.RiskLevelR\triskLevel\x1a\xc6\x01\n" +
+	"risk_level\x18\x05 \x01(\x0e2\x19.bytebase.store.RiskLevelR\triskLevel\x1a\xc6\x01\n" +
 	"\bApprover\x12L\n" +
 	"\x06status\x18\x01 \x01(\x0e24.bytebase.store.IssuePayloadApproval.Approver.StatusR\x06status\x12!\n" +
 	"\fprincipal_id\x18\x02 \x01(\x05R\vprincipalId\"I\n" +
@@ -588,31 +355,14 @@ const file_store_approval_proto_rawDesc = "" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\f\n" +
 	"\bAPPROVED\x10\x02\x12\f\n" +
-	"\bREJECTED\x10\x03\"H\n" +
-	"\tRiskLevel\x12\x1a\n" +
-	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
-	"\x03LOW\x10\x01\x12\f\n" +
-	"\bMODERATE\x10\x02\x12\b\n" +
-	"\x04HIGH\x10\x03\"|\n" +
-	"\x10ApprovalTemplate\x120\n" +
+	"\bREJECTED\x10\x03\"\x8c\x01\n" +
+	"\x10ApprovalTemplate\x12\x0e\n" +
+	"\x02id\x18\x04 \x01(\tR\x02id\x120\n" +
 	"\x04flow\x18\x01 \x01(\v2\x1c.bytebase.store.ApprovalFlowR\x04flow\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\"B\n" +
-	"\fApprovalFlow\x122\n" +
-	"\x05steps\x18\x01 \x03(\v2\x1c.bytebase.store.ApprovalStepR\x05steps\"\xa9\x01\n" +
-	"\fApprovalStep\x125\n" +
-	"\x04type\x18\x01 \x01(\x0e2!.bytebase.store.ApprovalStep.TypeR\x04type\x122\n" +
-	"\x05nodes\x18\x02 \x03(\v2\x1c.bytebase.store.ApprovalNodeR\x05nodes\".\n" +
-	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
-	"\x03ALL\x10\x01\x12\a\n" +
-	"\x03ANY\x10\x02\"\x89\x01\n" +
-	"\fApprovalNode\x125\n" +
-	"\x04type\x18\x01 \x01(\x0e2!.bytebase.store.ApprovalNode.TypeR\x04type\x12\x12\n" +
-	"\x04role\x18\x02 \x01(\tR\x04role\".\n" +
-	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x10\n" +
-	"\fANY_IN_GROUP\x10\x01B\x14Z\x12generated-go/storeb\x06proto3"
+	"\vdescription\x18\x03 \x01(\tR\vdescription\"$\n" +
+	"\fApprovalFlow\x12\x14\n" +
+	"\x05roles\x18\x01 \x03(\tR\x05rolesB\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
 	file_store_approval_proto_rawDescOnce sync.Once
@@ -626,35 +376,27 @@ func file_store_approval_proto_rawDescGZIP() []byte {
 	return file_store_approval_proto_rawDescData
 }
 
-var file_store_approval_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_store_approval_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_store_approval_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_store_approval_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_store_approval_proto_goTypes = []any{
-	(IssuePayloadApproval_RiskLevel)(0),       // 0: bytebase.store.IssuePayloadApproval.RiskLevel
-	(IssuePayloadApproval_Approver_Status)(0), // 1: bytebase.store.IssuePayloadApproval.Approver.Status
-	(ApprovalStep_Type)(0),                    // 2: bytebase.store.ApprovalStep.Type
-	(ApprovalNode_Type)(0),                    // 3: bytebase.store.ApprovalNode.Type
-	(*IssuePayloadApproval)(nil),              // 4: bytebase.store.IssuePayloadApproval
-	(*ApprovalTemplate)(nil),                  // 5: bytebase.store.ApprovalTemplate
-	(*ApprovalFlow)(nil),                      // 6: bytebase.store.ApprovalFlow
-	(*ApprovalStep)(nil),                      // 7: bytebase.store.ApprovalStep
-	(*ApprovalNode)(nil),                      // 8: bytebase.store.ApprovalNode
-	(*IssuePayloadApproval_Approver)(nil),     // 9: bytebase.store.IssuePayloadApproval.Approver
+	(IssuePayloadApproval_Approver_Status)(0), // 0: bytebase.store.IssuePayloadApproval.Approver.Status
+	(*IssuePayloadApproval)(nil),              // 1: bytebase.store.IssuePayloadApproval
+	(*ApprovalTemplate)(nil),                  // 2: bytebase.store.ApprovalTemplate
+	(*ApprovalFlow)(nil),                      // 3: bytebase.store.ApprovalFlow
+	(*IssuePayloadApproval_Approver)(nil),     // 4: bytebase.store.IssuePayloadApproval.Approver
+	(RiskLevel)(0),                            // 5: bytebase.store.RiskLevel
 }
 var file_store_approval_proto_depIdxs = []int32{
-	5, // 0: bytebase.store.IssuePayloadApproval.approval_templates:type_name -> bytebase.store.ApprovalTemplate
-	9, // 1: bytebase.store.IssuePayloadApproval.approvers:type_name -> bytebase.store.IssuePayloadApproval.Approver
-	0, // 2: bytebase.store.IssuePayloadApproval.risk_level:type_name -> bytebase.store.IssuePayloadApproval.RiskLevel
-	6, // 3: bytebase.store.ApprovalTemplate.flow:type_name -> bytebase.store.ApprovalFlow
-	7, // 4: bytebase.store.ApprovalFlow.steps:type_name -> bytebase.store.ApprovalStep
-	2, // 5: bytebase.store.ApprovalStep.type:type_name -> bytebase.store.ApprovalStep.Type
-	8, // 6: bytebase.store.ApprovalStep.nodes:type_name -> bytebase.store.ApprovalNode
-	3, // 7: bytebase.store.ApprovalNode.type:type_name -> bytebase.store.ApprovalNode.Type
-	1, // 8: bytebase.store.IssuePayloadApproval.Approver.status:type_name -> bytebase.store.IssuePayloadApproval.Approver.Status
-	9, // [9:9] is the sub-list for method output_type
-	9, // [9:9] is the sub-list for method input_type
-	9, // [9:9] is the sub-list for extension type_name
-	9, // [9:9] is the sub-list for extension extendee
-	0, // [0:9] is the sub-list for field type_name
+	2, // 0: bytebase.store.IssuePayloadApproval.approval_template:type_name -> bytebase.store.ApprovalTemplate
+	4, // 1: bytebase.store.IssuePayloadApproval.approvers:type_name -> bytebase.store.IssuePayloadApproval.Approver
+	5, // 2: bytebase.store.IssuePayloadApproval.risk_level:type_name -> bytebase.store.RiskLevel
+	3, // 3: bytebase.store.ApprovalTemplate.flow:type_name -> bytebase.store.ApprovalFlow
+	0, // 4: bytebase.store.IssuePayloadApproval.Approver.status:type_name -> bytebase.store.IssuePayloadApproval.Approver.Status
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_store_approval_proto_init() }
@@ -662,13 +404,14 @@ func file_store_approval_proto_init() {
 	if File_store_approval_proto != nil {
 		return
 	}
+	file_store_common_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_approval_proto_rawDesc), len(file_store_approval_proto_rawDesc)),
-			NumEnums:      4,
-			NumMessages:   6,
+			NumEnums:      1,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

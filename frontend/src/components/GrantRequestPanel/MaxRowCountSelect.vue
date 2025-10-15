@@ -5,14 +5,10 @@
     trigger="click"
     placement="bottom-start"
     scrollable
-    @update:value="$emit('update:value', $event)"
+    @update:value="handleUpdateValue"
   >
     <NButton class="bb-overlay-stack-ignore-esc">
-      {{
-        value
-          ? $t("common.rows.n-rows", { n: value })
-          : $t("issue.grant-request.select-export-rows")
-      }}
+      {{ $t("common.rows.n-rows", { n: value }) }}
     </NButton>
     <template #action>
       <div class="flex items-center justify-between gap-1">
@@ -39,7 +35,7 @@ import { usePolicyV1Store } from "@/store";
 import { minmax } from "@/utils";
 
 defineProps<{
-  value?: number;
+  value: number;
 }>();
 
 const emit = defineEmits<{
@@ -68,6 +64,10 @@ const options = computed((): SelectOption[] => {
     value: n,
   }));
 });
+
+const handleUpdateValue = (value: number) => {
+  emit("update:value", value);
+};
 
 const handleInput = (value: number | null) => {
   const normalizedValue = minmax(

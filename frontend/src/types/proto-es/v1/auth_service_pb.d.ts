@@ -17,11 +17,15 @@ export declare const file_v1_auth_service: GenFile;
  */
 export declare type LoginRequest = Message<"bytebase.v1.LoginRequest"> & {
   /**
+   * User's email address.
+   *
    * @generated from field: string email = 1;
    */
   email: string;
 
   /**
+   * User's password for authentication.
+   *
    * @generated from field: string password = 2;
    */
   password: string;
@@ -77,6 +81,8 @@ export declare type LoginRequest = Message<"bytebase.v1.LoginRequest"> & {
 export declare const LoginRequestSchema: GenMessage<LoginRequest>;
 
 /**
+ * Context for identity provider authentication.
+ *
  * @generated from message bytebase.v1.IdentityProviderContext
  */
 export declare type IdentityProviderContext = Message<"bytebase.v1.IdentityProviderContext"> & {
@@ -85,12 +91,16 @@ export declare type IdentityProviderContext = Message<"bytebase.v1.IdentityProvi
    */
   context: {
     /**
+     * OAuth2 authentication context.
+     *
      * @generated from field: bytebase.v1.OAuth2IdentityProviderContext oauth2_context = 1;
      */
     value: OAuth2IdentityProviderContext;
     case: "oauth2Context";
   } | {
     /**
+     * OpenID Connect authentication context.
+     *
      * @generated from field: bytebase.v1.OIDCIdentityProviderContext oidc_context = 2;
      */
     value: OIDCIdentityProviderContext;
@@ -105,10 +115,14 @@ export declare type IdentityProviderContext = Message<"bytebase.v1.IdentityProvi
 export declare const IdentityProviderContextSchema: GenMessage<IdentityProviderContext>;
 
 /**
+ * OAuth2 authentication context.
+ *
  * @generated from message bytebase.v1.OAuth2IdentityProviderContext
  */
 export declare type OAuth2IdentityProviderContext = Message<"bytebase.v1.OAuth2IdentityProviderContext"> & {
   /**
+   * Authorization code from OAuth2 provider.
+   *
    * @generated from field: string code = 1;
    */
   code: string;
@@ -121,6 +135,8 @@ export declare type OAuth2IdentityProviderContext = Message<"bytebase.v1.OAuth2I
 export declare const OAuth2IdentityProviderContextSchema: GenMessage<OAuth2IdentityProviderContext>;
 
 /**
+ * OpenID Connect authentication context.
+ *
  * @generated from message bytebase.v1.OIDCIdentityProviderContext
  */
 export declare type OIDCIdentityProviderContext = Message<"bytebase.v1.OIDCIdentityProviderContext"> & {
@@ -137,22 +153,28 @@ export declare const OIDCIdentityProviderContextSchema: GenMessage<OIDCIdentityP
  */
 export declare type LoginResponse = Message<"bytebase.v1.LoginResponse"> & {
   /**
+   * Access token for authenticated requests.
+   *
    * @generated from field: string token = 1;
    */
   token: string;
 
   /**
+   * Temporary token for MFA verification.
+   *
    * @generated from field: optional string mfa_temp_token = 2;
    */
   mfaTempToken?: string;
 
   /**
+   * Whether user must reset password before continuing.
+   *
    * @generated from field: bool require_reset_password = 3;
    */
   requireResetPassword: boolean;
 
   /**
-   * The user of successful login.
+   * The user from the successful login.
    *
    * @generated from field: bytebase.v1.User user = 4;
    */
@@ -166,6 +188,8 @@ export declare type LoginResponse = Message<"bytebase.v1.LoginResponse"> & {
 export declare const LoginResponseSchema: GenMessage<LoginResponse>;
 
 /**
+ * Request to logout current user session.
+ *
  * @generated from message bytebase.v1.LogoutRequest
  */
 export declare type LogoutRequest = Message<"bytebase.v1.LogoutRequest"> & {
@@ -178,10 +202,13 @@ export declare type LogoutRequest = Message<"bytebase.v1.LogoutRequest"> & {
 export declare const LogoutRequestSchema: GenMessage<LogoutRequest>;
 
 /**
+ * AuthService handles user authentication operations.
+ *
  * @generated from service bytebase.v1.AuthService
  */
 export declare const AuthService: GenService<{
   /**
+   * Authenticates a user and returns access tokens.
    * Permissions required: None
    *
    * @generated from rpc bytebase.v1.AuthService.Login
@@ -192,6 +219,7 @@ export declare const AuthService: GenService<{
     output: typeof LoginResponseSchema;
   },
   /**
+   * Logs out the current user session.
    * Permissions required: None
    *
    * @generated from rpc bytebase.v1.AuthService.Logout

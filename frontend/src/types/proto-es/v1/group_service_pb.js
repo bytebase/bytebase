@@ -86,6 +86,8 @@ export const GroupMember_RoleSchema = /*@__PURE__*/
   enumDesc(file_v1_group_service, 8, 0);
 
 /**
+ * The role of a group member.
+ *
  * @generated from enum bytebase.v1.GroupMember.Role
  */
 export const GroupMember_Role = /*@__PURE__*/
@@ -99,6 +101,8 @@ export const GroupSchema = /*@__PURE__*/
   messageDesc(file_v1_group_service, 9);
 
 /**
+ * GroupService manages user groups for organizing users and permissions.
+ *
  * @generated from service bytebase.v1.GroupService
  */
 export const GroupService = /*@__PURE__*/

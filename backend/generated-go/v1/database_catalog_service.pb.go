@@ -22,15 +22,22 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Object schema data types.
 type ObjectSchema_Type int32
 
 const (
+	// Unspecified type.
 	ObjectSchema_TYPE_UNSPECIFIED ObjectSchema_Type = 0
-	ObjectSchema_STRING           ObjectSchema_Type = 1
-	ObjectSchema_NUMBER           ObjectSchema_Type = 2
-	ObjectSchema_BOOLEAN          ObjectSchema_Type = 3
-	ObjectSchema_OBJECT           ObjectSchema_Type = 4
-	ObjectSchema_ARRAY            ObjectSchema_Type = 5
+	// String type.
+	ObjectSchema_STRING ObjectSchema_Type = 1
+	// Number type.
+	ObjectSchema_NUMBER ObjectSchema_Type = 2
+	// Boolean type.
+	ObjectSchema_BOOLEAN ObjectSchema_Type = 3
+	// Object/struct type.
+	ObjectSchema_OBJECT ObjectSchema_Type = 4
+	// Array type.
+	ObjectSchema_ARRAY ObjectSchema_Type = 5
 )
 
 // Enum value maps for ObjectSchema_Type.
@@ -80,6 +87,7 @@ func (ObjectSchema_Type) EnumDescriptor() ([]byte, []int) {
 	return file_v1_database_catalog_service_proto_rawDescGZIP(), []int{6, 0}
 }
 
+// Request message for getting a database catalog.
 type GetDatabaseCatalogRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the database catalog to retrieve.
@@ -126,6 +134,7 @@ func (x *GetDatabaseCatalogRequest) GetName() string {
 	return ""
 }
 
+// Request message for updating a database catalog.
 type UpdateDatabaseCatalogRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The database catalog to update.
@@ -184,11 +193,13 @@ func (x *UpdateDatabaseCatalogRequest) GetAllowMissing() bool {
 	return false
 }
 
+// Catalog metadata for a database including schemas, tables, and columns.
 type DatabaseCatalog struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the database catalog.
 	// Format: instances/{instance}/databases/{database}/catalog
-	Name          string           `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The schemas in the database.
 	Schemas       []*SchemaCatalog `protobuf:"bytes,2,rep,name=schemas,proto3" json:"schemas,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -238,10 +249,13 @@ func (x *DatabaseCatalog) GetSchemas() []*SchemaCatalog {
 	return nil
 }
 
+// Schema metadata within a database.
 type SchemaCatalog struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Tables        []*TableCatalog        `protobuf:"bytes,2,rep,name=tables,proto3" json:"tables,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The schema name.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The tables in the schema.
+	Tables        []*TableCatalog `protobuf:"bytes,2,rep,name=tables,proto3" json:"tables,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -290,15 +304,18 @@ func (x *SchemaCatalog) GetTables() []*TableCatalog {
 	return nil
 }
 
+// Table metadata within a schema.
 type TableCatalog struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The table name.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Types that are valid to be assigned to Kind:
 	//
 	//	*TableCatalog_Columns_
 	//	*TableCatalog_ObjectSchema
-	Kind           isTableCatalog_Kind `protobuf_oneof:"kind"`
-	Classification string              `protobuf:"bytes,4,opt,name=classification,proto3" json:"classification,omitempty"`
+	Kind isTableCatalog_Kind `protobuf_oneof:"kind"`
+	// The data classification level for this table.
+	Classification string `protobuf:"bytes,4,opt,name=classification,proto3" json:"classification,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -377,10 +394,12 @@ type isTableCatalog_Kind interface {
 }
 
 type TableCatalog_Columns_ struct {
+	// Regular table columns.
 	Columns *TableCatalog_Columns `protobuf:"bytes,2,opt,name=columns,proto3,oneof"`
 }
 
 type TableCatalog_ObjectSchema struct {
+	// Object schema for JSON/XML columns.
 	ObjectSchema *ObjectSchema `protobuf:"bytes,3,opt,name=object_schema,json=objectSchema,proto3,oneof"`
 }
 
@@ -388,16 +407,21 @@ func (*TableCatalog_Columns_) isTableCatalog_Kind() {}
 
 func (*TableCatalog_ObjectSchema) isTableCatalog_Kind() {}
 
+// Column metadata within a table.
 type ColumnCatalog struct {
-	state        protoimpl.MessageState `protogen:"open.v1"`
-	Name         string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	SemanticType string                 `protobuf:"bytes,2,opt,name=semantic_type,json=semanticType,proto3" json:"semantic_type,omitempty"`
-	// The user labels for a column.
-	Labels         map[string]string `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Classification string            `protobuf:"bytes,4,opt,name=classification,proto3" json:"classification,omitempty"`
-	ObjectSchema   *ObjectSchema     `protobuf:"bytes,5,opt,name=object_schema,json=objectSchema,proto3,oneof" json:"object_schema,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The column name.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The semantic type describing the data purpose.
+	SemanticType string `protobuf:"bytes,2,opt,name=semantic_type,json=semanticType,proto3" json:"semantic_type,omitempty"`
+	// User-defined labels for this column.
+	Labels map[string]string `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// The data classification level for this column.
+	Classification string `protobuf:"bytes,4,opt,name=classification,proto3" json:"classification,omitempty"`
+	// Object schema for complex column types like JSON.
+	ObjectSchema  *ObjectSchema `protobuf:"bytes,5,opt,name=object_schema,json=objectSchema,proto3,oneof" json:"object_schema,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ColumnCatalog) Reset() {
@@ -465,15 +489,18 @@ func (x *ColumnCatalog) GetObjectSchema() *ObjectSchema {
 	return nil
 }
 
+// Schema definition for object-type columns.
 type ObjectSchema struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Type  ObjectSchema_Type      `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.v1.ObjectSchema_Type" json:"type,omitempty"`
+	// The data type of this object.
+	Type ObjectSchema_Type `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.v1.ObjectSchema_Type" json:"type,omitempty"`
 	// Types that are valid to be assigned to Kind:
 	//
 	//	*ObjectSchema_StructKind_
 	//	*ObjectSchema_ArrayKind_
-	Kind          isObjectSchema_Kind `protobuf_oneof:"kind"`
-	SemanticType  string              `protobuf:"bytes,4,opt,name=semantic_type,json=semanticType,proto3" json:"semantic_type,omitempty"`
+	Kind isObjectSchema_Kind `protobuf_oneof:"kind"`
+	// The semantic type of this object.
+	SemanticType  string `protobuf:"bytes,4,opt,name=semantic_type,json=semanticType,proto3" json:"semantic_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -552,10 +579,12 @@ type isObjectSchema_Kind interface {
 }
 
 type ObjectSchema_StructKind_ struct {
+	// Struct schema.
 	StructKind *ObjectSchema_StructKind `protobuf:"bytes,2,opt,name=struct_kind,json=structKind,proto3,oneof"`
 }
 
 type ObjectSchema_ArrayKind_ struct {
+	// Array schema.
 	ArrayKind *ObjectSchema_ArrayKind `protobuf:"bytes,3,opt,name=array_kind,json=arrayKind,proto3,oneof"`
 }
 
@@ -563,9 +592,11 @@ func (*ObjectSchema_StructKind_) isObjectSchema_Kind() {}
 
 func (*ObjectSchema_ArrayKind_) isObjectSchema_Kind() {}
 
+// Column list for regular tables.
 type TableCatalog_Columns struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Columns       []*ColumnCatalog       `protobuf:"bytes,1,rep,name=columns,proto3" json:"columns,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The columns in the table.
+	Columns       []*ColumnCatalog `protobuf:"bytes,1,rep,name=columns,proto3" json:"columns,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -607,8 +638,10 @@ func (x *TableCatalog_Columns) GetColumns() []*ColumnCatalog {
 	return nil
 }
 
+// Structure type with named properties.
 type ObjectSchema_StructKind struct {
-	state         protoimpl.MessageState   `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Properties of the struct.
 	Properties    map[string]*ObjectSchema `protobuf:"bytes,1,rep,name=properties,proto3" json:"properties,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -651,9 +684,11 @@ func (x *ObjectSchema_StructKind) GetProperties() map[string]*ObjectSchema {
 	return nil
 }
 
+// Array type with element schema.
 type ObjectSchema_ArrayKind struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Kind          *ObjectSchema          `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The schema of array elements.
+	Kind          *ObjectSchema `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

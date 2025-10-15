@@ -74,12 +74,11 @@ const emit = defineEmits<{
 }>();
 
 const approvalTemplate = computed(() => {
-  const templates = props.issue.approvalTemplates || [];
-  return templates.length > 0 ? templates[0] : undefined;
+  return props.issue.approvalTemplate;
 });
 
 const approvalSteps = computed(() => {
-  return approvalTemplate.value?.flow?.steps || [];
+  return approvalTemplate.value?.flow?.roles || [];
 });
 
 const retrying = ref(false);

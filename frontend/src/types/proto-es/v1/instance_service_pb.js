@@ -294,6 +294,8 @@ export const DataSourceType = /*@__PURE__*/
   tsEnum(DataSourceTypeSchema);
 
 /**
+ * InstanceService manages database instances and their connections.
+ *
  * @generated from service bytebase.v1.InstanceService
  */
 export const InstanceService = /*@__PURE__*/

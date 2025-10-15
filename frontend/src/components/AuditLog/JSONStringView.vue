@@ -44,6 +44,10 @@ const props = defineProps<{
 const showModal = ref(false);
 
 const formattedJSONString = computed(() => {
-  return JSON.stringify(JSON.parse(props.jsonString), null, 2);
+  try {
+    return JSON.stringify(JSON.parse(props.jsonString), null, 2);
+  } catch {
+    return "-";
+  }
 });
 </script>

@@ -62,6 +62,7 @@ import { BBModal } from "@/bbkit";
 import PlanCheckRunDetail from "@/components/PlanCheckRun/PlanCheckRunDetail.vue";
 import { useProjectV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
+import { RiskLevel } from "@/types/proto-es/v1/common_pb";
 import {
   PlanCheckRunSchema,
   PlanCheckRun_ResultSchema,
@@ -70,7 +71,6 @@ import {
   PlanCheckRun_Status,
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
-import { CheckReleaseResponse_RiskLevel } from "@/types/proto-es/v1/release_service_pb";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
 import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
 import type { Defer } from "@/utils";
@@ -81,7 +81,7 @@ const props = withDefaults(
     advices: Advice[];
     database?: ComposedDatabase;
     affectedRows?: bigint;
-    riskLevel?: CheckReleaseResponse_RiskLevel;
+    riskLevel?: RiskLevel;
     overrideTitle?: string;
     confirm?: Defer<boolean>;
     showCodeLocation?: boolean;
@@ -113,11 +113,11 @@ const restrictIssueCreationForSQLReview = computed((): boolean => {
 
 const riskLevelText = computed(() => {
   const { riskLevel } = props;
-  if (riskLevel === CheckReleaseResponse_RiskLevel.LOW) {
+  if (riskLevel === RiskLevel.LOW) {
     return t("issue.risk-level.low");
-  } else if (riskLevel === CheckReleaseResponse_RiskLevel.MODERATE) {
+  } else if (riskLevel === RiskLevel.MODERATE) {
     return t("issue.risk-level.moderate");
-  } else if (riskLevel === CheckReleaseResponse_RiskLevel.HIGH) {
+  } else if (riskLevel === RiskLevel.HIGH) {
     return t("issue.risk-level.high");
   }
   return "";

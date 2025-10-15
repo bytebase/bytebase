@@ -85,10 +85,8 @@ import {
 import { userNamePrefix } from "@/store/modules/v1/common";
 import { SYSTEM_BOT_EMAIL, groupBindingPrefix, PresetRoleType } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { ApprovalNode_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
 import type {
-  ApprovalStep,
   Issue,
   Issue_Approver,
 } from "@/types/proto-es/v1/issue_service_pb";
@@ -98,7 +96,7 @@ import ApprovalUserView from "./ApprovalUserView.vue";
 import PotentialApprovers from "./PotentialApprovers.vue";
 
 const props = defineProps<{
-  step: ApprovalStep;
+  step: string;
   stepIndex: number;
   stepNumber: number;
   issue: Issue;
@@ -172,9 +170,9 @@ const iconClass = computed(() => {
 });
 
 const roleName = computed((): string => {
-  // Get role name from the first node in the step
-  if (props.step.nodes?.[0]?.role) {
-    const role = props.step.nodes[0].role;
+  // Get role name from the step (which is now a role string)
+  if (props.step) {
+    const role = props.step;
     if (role === PresetRoleType.PROJECT_OWNER) {
       return t("role.project-owner.self");
     } else if (role === PresetRoleType.WORKSPACE_DBA) {
@@ -187,15 +185,7 @@ const roleName = computed((): string => {
 });
 
 const stepRoles = computed(() => {
-  const roles = [];
-  for (const node of props.step.nodes) {
-    if (node.type !== ApprovalNode_Type.ANY_IN_GROUP) continue;
-
-    const role = node.role;
-    if (!role) continue;
-    roles.push(role);
-  }
-  return roles;
+  return [props.step].filter((role) => !!role);
 });
 
 watchEffect(async () => {

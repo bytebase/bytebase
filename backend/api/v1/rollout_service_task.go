@@ -560,7 +560,7 @@ func checkCharacterSetCollationOwner(dbType storepb.Engine, characterSet, collat
 		if owner == "" {
 			return errors.Errorf("database owner is required for CockroachDB")
 		}
-	case storepb.Engine_SQLITE, storepb.Engine_MONGODB, storepb.Engine_MSSQL:
+	case storepb.Engine_SQLITE, storepb.Engine_MONGODB, storepb.Engine_MSSQL, storepb.Engine_DORIS:
 		// no-op.
 	default:
 		if characterSet == "" {
@@ -631,6 +631,8 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 		}
 		return fmt.Sprintf("%s;", stmt), nil
 	case storepb.Engine_HIVE:
+		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
+	case storepb.Engine_DORIS:
 		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
 	default:
 		return "", errors.Errorf("unsupported database type %s", dbType)

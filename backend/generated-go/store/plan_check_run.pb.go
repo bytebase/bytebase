@@ -394,7 +394,7 @@ func (*PlanCheckRunResult_Result_SqlReviewReport_) isPlanCheckRunResult_Result_R
 
 type PlanCheckRunResult_Result_SqlSummaryReport struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// statement_types are the types of statements that are found in the sql.
+	// statement_types are the types of statements found in the SQL.
 	StatementTypes   []string          `protobuf:"bytes,2,rep,name=statement_types,json=statementTypes,proto3" json:"statement_types,omitempty"`
 	AffectedRows     int64             `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
 	ChangedResources *ChangedResources `protobuf:"bytes,4,opt,name=changed_resources,json=changedResources,proto3" json:"changed_resources,omitempty"`
@@ -457,7 +457,7 @@ type PlanCheckRunResult_Result_SqlReviewReport struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Line   int32                  `protobuf:"varint,1,opt,name=line,proto3" json:"line,omitempty"`
 	Column int32                  `protobuf:"varint,2,opt,name=column,proto3" json:"column,omitempty"`
-	// 1-based Position of the SQL statement.
+	// 1-based position of the SQL statement.
 	// To supersede `line` and `column` above.
 	StartPosition *Position `protobuf:"bytes,8,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
 	EndPosition   *Position `protobuf:"bytes,9,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`

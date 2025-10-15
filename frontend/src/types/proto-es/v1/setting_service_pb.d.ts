@@ -21,7 +21,7 @@ export declare const file_v1_setting_service: GenFile;
  */
 export declare type ListSettingsRequest = Message<"bytebase.v1.ListSettingsRequest"> & {
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * The maximum number of settings to return. The service may return fewer than
    * this value.
    * If unspecified, at most 10 settings will be returned.
@@ -32,7 +32,7 @@ export declare type ListSettingsRequest = Message<"bytebase.v1.ListSettingsReque
   pageSize: number;
 
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * A page token, received from a previous `ListSettings` call.
    * Provide this to retrieve the subsequent page.
    *
@@ -169,7 +169,7 @@ export declare type Setting = Message<"bytebase.v1.Setting"> & {
   name: string;
 
   /**
-   * The value of the setting.
+   * The configuration value of the setting.
    *
    * @generated from field: bytebase.v1.Value value = 2;
    */
@@ -585,7 +585,7 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
   maximumRoleExpiration?: Duration;
 
   /**
-   * The workspace domain, e.g. bytebase.com.
+   * The workspace domain, e.g., bytebase.com.
    *
    * @generated from field: repeated string domains = 9;
    */
@@ -631,14 +631,14 @@ export declare const WorkspaceProfileSettingSchema: GenMessage<WorkspaceProfileS
  */
 export declare type Announcement = Message<"bytebase.v1.Announcement"> & {
   /**
-   * The alert level of announcemnt
+   * The alert level of announcement
    *
    * @generated from field: bytebase.v1.Announcement.AlertLevel level = 1;
    */
   level: Announcement_AlertLevel;
 
   /**
-   * The text of announcemnt
+   * The text of announcement
    *
    * @generated from field: string text = 2;
    */
@@ -711,7 +711,7 @@ export declare const WorkspaceApprovalSettingSchema: GenMessage<WorkspaceApprova
  */
 export declare type WorkspaceApprovalSetting_Rule = Message<"bytebase.v1.WorkspaceApprovalSetting.Rule"> & {
   /**
-   * @generated from field: bytebase.v1.ApprovalTemplate template = 2;
+   * @generated from field: bytebase.v1.ApprovalTemplate template = 1;
    */
   template?: ApprovalTemplate;
 
@@ -726,7 +726,7 @@ export declare type WorkspaceApprovalSetting_Rule = Message<"bytebase.v1.Workspa
    * For examples:
    * (source == "DML" && level == 200) || (source == "DDL" && level == 300)
    *
-   * @generated from field: google.type.Expr condition = 3;
+   * @generated from field: google.type.Expr condition = 2;
    */
   condition?: Expr;
 };
@@ -1473,10 +1473,13 @@ export enum DatabaseChangeMode {
 export declare const DatabaseChangeModeSchema: GenEnum<DatabaseChangeMode>;
 
 /**
+ * SettingService manages workspace-level settings and configurations.
+ *
  * @generated from service bytebase.v1.SettingService
  */
 export declare const SettingService: GenService<{
   /**
+   * Lists all workspace settings.
    * Permissions required: bb.settings.list
    *
    * @generated from rpc bytebase.v1.SettingService.ListSettings
@@ -1487,6 +1490,7 @@ export declare const SettingService: GenService<{
     output: typeof ListSettingsResponseSchema;
   },
   /**
+   * Retrieves a workspace setting by name.
    * Permissions required: bb.settings.get
    *
    * @generated from rpc bytebase.v1.SettingService.GetSetting
@@ -1497,6 +1501,7 @@ export declare const SettingService: GenService<{
     output: typeof SettingSchema;
   },
   /**
+   * Updates a workspace setting.
    * Permissions required: bb.settings.set
    *
    * @generated from rpc bytebase.v1.SettingService.UpdateSetting

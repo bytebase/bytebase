@@ -259,9 +259,9 @@ const handleExportBtnClick = async ({
 }: {
   options: ExportOption;
   reject: (reason?: any) => void;
-  resolve: (content: DownloadContent) => void;
+  resolve: (content: DownloadContent[]) => void;
 }) => {
-  const contents: DownloadContent = [];
+  const contents: DownloadContent[] = [];
   for (const databaseName of selectedDatabaseNameList.value) {
     const database = databaseStore.getDatabaseByName(databaseName);
     const context = head(tab.value?.databaseQueryContexts?.get(databaseName));
@@ -284,7 +284,8 @@ const handleExportBtnClick = async ({
 
       contents.push({
         content,
-        filename: `${database.databaseName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}`,
+        // the download file is always zip file.
+        filename: `${database.databaseName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
       });
     } catch (e) {
       pushNotification({

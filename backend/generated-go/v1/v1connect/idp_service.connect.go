@@ -56,16 +56,22 @@ const (
 
 // IdentityProviderServiceClient is a client for the bytebase.v1.IdentityProviderService service.
 type IdentityProviderServiceClient interface {
+	// Gets an identity provider by name.
 	// Permissions required: bb.identityProviders.get
 	GetIdentityProvider(context.Context, *connect.Request[v1.GetIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error)
+	// Lists all configured identity providers (public endpoint for login page).
 	// Permissions required: None
 	ListIdentityProviders(context.Context, *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error)
+	// Creates a new identity provider.
 	// Permissions required: bb.identityProviders.create
 	CreateIdentityProvider(context.Context, *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error)
+	// Updates an identity provider.
 	// Permissions required: bb.identityProviders.update
 	UpdateIdentityProvider(context.Context, *connect.Request[v1.UpdateIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error)
+	// Deletes an identity provider.
 	// Permissions required: bb.identityProviders.delete
 	DeleteIdentityProvider(context.Context, *connect.Request[v1.DeleteIdentityProviderRequest]) (*connect.Response[emptypb.Empty], error)
+	// Tests the connection and configuration of an identity provider.
 	// Permissions required: bb.identityProviders.update
 	TestIdentityProvider(context.Context, *connect.Request[v1.TestIdentityProviderRequest]) (*connect.Response[v1.TestIdentityProviderResponse], error)
 }
@@ -163,16 +169,22 @@ func (c *identityProviderServiceClient) TestIdentityProvider(ctx context.Context
 // IdentityProviderServiceHandler is an implementation of the bytebase.v1.IdentityProviderService
 // service.
 type IdentityProviderServiceHandler interface {
+	// Gets an identity provider by name.
 	// Permissions required: bb.identityProviders.get
 	GetIdentityProvider(context.Context, *connect.Request[v1.GetIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error)
+	// Lists all configured identity providers (public endpoint for login page).
 	// Permissions required: None
 	ListIdentityProviders(context.Context, *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error)
+	// Creates a new identity provider.
 	// Permissions required: bb.identityProviders.create
 	CreateIdentityProvider(context.Context, *connect.Request[v1.CreateIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error)
+	// Updates an identity provider.
 	// Permissions required: bb.identityProviders.update
 	UpdateIdentityProvider(context.Context, *connect.Request[v1.UpdateIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error)
+	// Deletes an identity provider.
 	// Permissions required: bb.identityProviders.delete
 	DeleteIdentityProvider(context.Context, *connect.Request[v1.DeleteIdentityProviderRequest]) (*connect.Response[emptypb.Empty], error)
+	// Tests the connection and configuration of an identity provider.
 	// Permissions required: bb.identityProviders.update
 	TestIdentityProvider(context.Context, *connect.Request[v1.TestIdentityProviderRequest]) (*connect.Response[v1.TestIdentityProviderResponse], error)
 }

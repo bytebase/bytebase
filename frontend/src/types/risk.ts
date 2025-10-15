@@ -1,10 +1,11 @@
 import { computed } from "vue";
+import { RiskLevel } from "./proto-es/v1/common_pb";
 import { Risk_Source } from "./proto-es/v1/risk_service_pb";
 
 export const PresetRiskLevel = {
-  HIGH: 300,
-  MODERATE: 200,
-  LOW: 100,
+  HIGH: RiskLevel.HIGH,
+  MODERATE: RiskLevel.MODERATE,
+  LOW: RiskLevel.LOW,
 };
 export const PresetRiskLevelList = [
   { name: "HIGH", level: PresetRiskLevel.HIGH },
@@ -12,7 +13,7 @@ export const PresetRiskLevelList = [
   { name: "LOW", level: PresetRiskLevel.LOW },
 ];
 
-export const DEFAULT_RISK_LEVEL = 0;
+export const DEFAULT_RISK_LEVEL = RiskLevel.RISK_LEVEL_UNSPECIFIED;
 
 export const useSupportedSourceList = () => {
   return computed(() => {

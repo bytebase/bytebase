@@ -30,15 +30,22 @@ const (
 // OrgPolicyServiceClient is the client API for OrgPolicyService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// OrgPolicyService manages organizational policies at various resource levels.
 type OrgPolicyServiceClient interface {
+	// Retrieves a policy by name.
 	// Permissions required: bb.policies.get
 	GetPolicy(ctx context.Context, in *GetPolicyRequest, opts ...grpc.CallOption) (*Policy, error)
+	// Lists policies at a specified resource level.
 	// Permissions required: bb.policies.list
 	ListPolicies(ctx context.Context, in *ListPoliciesRequest, opts ...grpc.CallOption) (*ListPoliciesResponse, error)
+	// Creates a new organizational policy.
 	// Permissions required: bb.policies.create
 	CreatePolicy(ctx context.Context, in *CreatePolicyRequest, opts ...grpc.CallOption) (*Policy, error)
+	// Updates an existing organizational policy.
 	// Permissions required: bb.policies.update
 	UpdatePolicy(ctx context.Context, in *UpdatePolicyRequest, opts ...grpc.CallOption) (*Policy, error)
+	// Deletes an organizational policy.
 	// Permissions required: bb.policies.delete
 	DeletePolicy(ctx context.Context, in *DeletePolicyRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
@@ -104,15 +111,22 @@ func (c *orgPolicyServiceClient) DeletePolicy(ctx context.Context, in *DeletePol
 // OrgPolicyServiceServer is the server API for OrgPolicyService service.
 // All implementations must embed UnimplementedOrgPolicyServiceServer
 // for forward compatibility.
+//
+// OrgPolicyService manages organizational policies at various resource levels.
 type OrgPolicyServiceServer interface {
+	// Retrieves a policy by name.
 	// Permissions required: bb.policies.get
 	GetPolicy(context.Context, *GetPolicyRequest) (*Policy, error)
+	// Lists policies at a specified resource level.
 	// Permissions required: bb.policies.list
 	ListPolicies(context.Context, *ListPoliciesRequest) (*ListPoliciesResponse, error)
+	// Creates a new organizational policy.
 	// Permissions required: bb.policies.create
 	CreatePolicy(context.Context, *CreatePolicyRequest) (*Policy, error)
+	// Updates an existing organizational policy.
 	// Permissions required: bb.policies.update
 	UpdatePolicy(context.Context, *UpdatePolicyRequest) (*Policy, error)
+	// Deletes an organizational policy.
 	// Permissions required: bb.policies.delete
 	DeletePolicy(context.Context, *DeletePolicyRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedOrgPolicyServiceServer()

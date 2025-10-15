@@ -462,7 +462,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 	issueCreateMessage.Payload = &storepb.Issue{
 		Approval: &storepb.IssuePayloadApproval{
 			ApprovalFindingDone: false,
-			ApprovalTemplates:   nil,
+			ApprovalTemplate:    nil,
 			Approvers:           nil,
 		},
 		Labels: request.Issue.Labels,
@@ -491,6 +491,13 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 }
 
 func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1pb.CreateIssueRequest) (*connect.Response[v1pb.Issue], error) {
+	// Check if grant request feature is enabled.
+	// Grant requests are only available in Enterprise plan.
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_REQUEST_ROLE_WORKFLOW); err != nil {
+		return nil, connect.NewError(connect.CodePermissionDenied,
+			errors.Errorf("role request requires approval workflow feature (available in Enterprise plan)"))
+	}
+
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
@@ -545,7 +552,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		GrantRequest: convertedGrantRequest,
 		Approval: &storepb.IssuePayloadApproval{
 			ApprovalFindingDone: false,
-			ApprovalTemplates:   nil,
+			ApprovalTemplate:    nil,
 			Approvers:           nil,
 		},
 		Labels: request.Issue.Labels,
@@ -646,7 +653,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 	issueCreateMessage.Payload = &storepb.Issue{
 		Approval: &storepb.IssuePayloadApproval{
 			ApprovalFindingDone: false,
-			ApprovalTemplates:   nil,
+			ApprovalTemplate:    nil,
 			Approvers:           nil,
 		},
 		Labels: request.Issue.Labels,
@@ -690,17 +697,17 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 	if payload.Approval.ApprovalFindingError != "" {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding failed: %v", payload.Approval.ApprovalFindingError))
 	}
-	if len(payload.Approval.ApprovalTemplates) != 1 {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("expecting one approval template but got %v", len(payload.Approval.ApprovalTemplates)))
+	if payload.Approval.ApprovalTemplate == nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.New("approval template is required"))
 	}
 
-	rejectedStep := utils.FindRejectedStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
-	if rejectedStep != nil {
+	rejectedRole := utils.FindRejectedRole(payload.Approval.ApprovalTemplate, payload.Approval.Approvers)
+	if rejectedRole != "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot approve because the issue has been rejected"))
 	}
 
-	step := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
-	if step == nil {
+	role := utils.FindNextPendingRole(payload.Approval.ApprovalTemplate, payload.Approval.Approvers)
+	if role == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the issue has been approved"))
 	}
 
@@ -719,7 +726,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get workspace policy, error: %v", err))
 	}
 
-	canApprove, err := isUserReviewer(ctx, s.store, issue, step, user, policy.Policy, workspacePolicy.Policy)
+	canApprove, err := isUserReviewer(ctx, s.store, issue, role, user, policy.Policy, workspacePolicy.Policy)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if principal can approve step, error: %v", err))
 	}
@@ -781,11 +788,11 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 	}
 
 	func() {
-		if len(payload.Approval.ApprovalTemplates) != 1 {
+		if payload.Approval.ApprovalTemplate == nil {
 			return
 		}
-		approvalStep := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
-		if approvalStep == nil {
+		role := utils.FindNextPendingRole(payload.Approval.ApprovalTemplate, payload.Approval.Approvers)
+		if role == "" {
 			return
 		}
 
@@ -796,7 +803,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(issue.Project),
 			IssueApprovalCreate: &webhook.EventIssueApprovalCreate{
-				ApprovalStep: approvalStep,
+				Role: role,
 			},
 		})
 	}()
@@ -893,17 +900,17 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 	if payload.Approval.ApprovalFindingError != "" {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding failed: %v", payload.Approval.ApprovalFindingError))
 	}
-	if len(payload.Approval.ApprovalTemplates) != 1 {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("expecting one approval template but got %v", len(payload.Approval.ApprovalTemplates)))
+	if payload.Approval.ApprovalTemplate == nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.New("approval template is required"))
 	}
 
-	rejectedStep := utils.FindRejectedStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
-	if rejectedStep != nil {
+	rejectedRole := utils.FindRejectedRole(payload.Approval.ApprovalTemplate, payload.Approval.Approvers)
+	if rejectedRole != "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot reject because the issue has been rejected"))
 	}
 
-	step := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
-	if step == nil {
+	role := utils.FindNextPendingRole(payload.Approval.ApprovalTemplate, payload.Approval.Approvers)
+	if role == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the issue has been approved"))
 	}
 
@@ -922,7 +929,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get workspace policy, error: %v", err))
 	}
 
-	canApprove, err := isUserReviewer(ctx, s.store, issue, step, user, policy.Policy, workspacePolicy.Policy)
+	canApprove, err := isUserReviewer(ctx, s.store, issue, role, user, policy.Policy, workspacePolicy.Policy)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if principal can reject step, error: %v", err))
 	}
@@ -984,12 +991,12 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 	if payload.Approval.ApprovalFindingError != "" {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding failed: %v", payload.Approval.ApprovalFindingError))
 	}
-	if len(payload.Approval.ApprovalTemplates) != 1 {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("expecting one approval template but got %v", len(payload.Approval.ApprovalTemplates)))
+	if payload.Approval.ApprovalTemplate == nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.New("approval template is required"))
 	}
 
-	rejectedStep := utils.FindRejectedStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
-	if rejectedStep == nil {
+	rejectedRole := utils.FindRejectedRole(payload.Approval.ApprovalTemplate, payload.Approval.Approvers)
+	if rejectedRole == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot request issues because the issue is not rejected"))
 	}
 
@@ -1028,11 +1035,11 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 	}
 
 	func() {
-		if len(payload.Approval.ApprovalTemplates) != 1 {
+		if payload.Approval.ApprovalTemplate == nil {
 			return
 		}
-		approvalStep := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
-		if approvalStep == nil {
+		role := utils.FindNextPendingRole(payload.Approval.ApprovalTemplate, payload.Approval.Approvers)
+		if role == "" {
 			return
 		}
 
@@ -1043,7 +1050,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(issue.Project),
 			IssueApprovalCreate: &webhook.EventIssueApprovalCreate{
-				ApprovalStep: approvalStep,
+				Role: role,
 			},
 		})
 	}()
@@ -1526,23 +1533,12 @@ func canRequestIssue(issueCreator *store.UserMessage, user *store.UserMessage) b
 	return issueCreator.ID == user.ID
 }
 
-func isUserReviewer(ctx context.Context, stores *store.Store, issue *store.IssueMessage, step *storepb.ApprovalStep, user *store.UserMessage, policies ...*storepb.IamPolicy) (bool, error) {
-	if len(step.Nodes) != 1 {
-		return false, errors.Errorf("expecting one node but got %v", len(step.Nodes))
-	}
-	if step.Type != storepb.ApprovalStep_ANY {
-		return false, errors.Errorf("expecting ANY step type but got %v", step.Type)
-	}
-	node := step.Nodes[0]
-	if node.Type != storepb.ApprovalNode_ANY_IN_GROUP {
-		return false, errors.Errorf("expecting ANY_IN_GROUP node type but got %v", node.Type)
-	}
-
+func isUserReviewer(ctx context.Context, stores *store.Store, issue *store.IssueMessage, role string, user *store.UserMessage, policies ...*storepb.IamPolicy) (bool, error) {
 	// Check project policy about self approval.
 	if !issue.Project.Setting.AllowSelfApproval && issue.Creator.ID == user.ID {
 		return false, errors.Errorf("creator cannot self approve")
 	}
 
 	roles := utils.GetUserFormattedRolesMap(ctx, stores, user, policies...)
-	return roles[node.Role], nil
+	return roles[role], nil
 }

@@ -147,7 +147,7 @@ func TestCreateDatabaseGroup(t *testing.T) {
 				DatabaseGroup: &v1pb.DatabaseGroup{
 					Title: tc.databaseGroupPlaceholder,
 					DatabaseExpr: &expr.Expr{
-						Expression: fmt.Sprintf(`(resource.environment_name == "environments/prod" && (%s))`, tc.databaseGroupExpr),
+						Expression: fmt.Sprintf(`(resource.environment_id == "prod" && (%s))`, tc.databaseGroupExpr),
 					},
 				},
 			}))

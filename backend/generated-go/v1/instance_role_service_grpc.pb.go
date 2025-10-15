@@ -26,9 +26,13 @@ const (
 // InstanceRoleServiceClient is the client API for InstanceRoleService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// InstanceRoleService manages database roles within instances.
 type InstanceRoleServiceClient interface {
+	// Gets a database role from an instance.
 	// Permissions required: bb.instanceRoles.get
 	GetInstanceRole(ctx context.Context, in *GetInstanceRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error)
+	// Lists all database roles in an instance.
 	// Permissions required: bb.instanceRoles.list
 	ListInstanceRoles(ctx context.Context, in *ListInstanceRolesRequest, opts ...grpc.CallOption) (*ListInstanceRolesResponse, error)
 }
@@ -64,9 +68,13 @@ func (c *instanceRoleServiceClient) ListInstanceRoles(ctx context.Context, in *L
 // InstanceRoleServiceServer is the server API for InstanceRoleService service.
 // All implementations must embed UnimplementedInstanceRoleServiceServer
 // for forward compatibility.
+//
+// InstanceRoleService manages database roles within instances.
 type InstanceRoleServiceServer interface {
+	// Gets a database role from an instance.
 	// Permissions required: bb.instanceRoles.get
 	GetInstanceRole(context.Context, *GetInstanceRoleRequest) (*InstanceRole, error)
+	// Lists all database roles in an instance.
 	// Permissions required: bb.instanceRoles.list
 	ListInstanceRoles(context.Context, *ListInstanceRolesRequest) (*ListInstanceRolesResponse, error)
 	mustEmbedUnimplementedInstanceRoleServiceServer()

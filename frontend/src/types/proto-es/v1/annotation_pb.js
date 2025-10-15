@@ -18,30 +18,40 @@ export const AuthMethodSchema = /*@__PURE__*/
   enumDesc(file_v1_annotation, 0);
 
 /**
+ * Authorization method for RPC calls.
+ *
  * @generated from enum bytebase.v1.AuthMethod
  */
 export const AuthMethod = /*@__PURE__*/
   tsEnum(AuthMethodSchema);
 
 /**
+ * Whether the method allows access without authentication credentials.
+ *
  * @generated from extension: bool allow_without_credential = 100000;
  */
 export const allow_without_credential = /*@__PURE__*/
   extDesc(file_v1_annotation, 0);
 
 /**
+ * The permission required to call this method.
+ *
  * @generated from extension: string permission = 100001;
  */
 export const permission = /*@__PURE__*/
   extDesc(file_v1_annotation, 1);
 
 /**
+ * The authorization method to use for this RPC.
+ *
  * @generated from extension: bytebase.v1.AuthMethod auth_method = 100002;
  */
 export const auth_method = /*@__PURE__*/
   extDesc(file_v1_annotation, 2);
 
 /**
+ * Whether to audit calls to this method.
+ *
  * @generated from extension: bool audit = 100003;
  */
 export const audit = /*@__PURE__*/

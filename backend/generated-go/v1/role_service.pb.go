@@ -28,8 +28,10 @@ type Role_Type int32
 
 const (
 	Role_TYPE_UNSPECIFIED Role_Type = 0
-	Role_BUILT_IN         Role_Type = 1
-	Role_CUSTOM           Role_Type = 2
+	// System-defined role that cannot be modified.
+	Role_BUILT_IN Role_Type = 1
+	// User-defined role that can be modified.
+	Role_CUSTOM Role_Type = 2
 )
 
 // Enum value maps for Role_Type.
@@ -75,13 +77,13 @@ func (Role_Type) EnumDescriptor() ([]byte, []int) {
 
 type ListRolesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// The maximum number of roles to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 10 reviews will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// A page token, received from a previous `ListRoles` call.
 	// Provide this to retrieve the subsequent page.
 	//
@@ -138,7 +140,8 @@ func (x *ListRolesRequest) GetPageToken() string {
 
 type ListRolesResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Roles []*Role                `protobuf:"bytes,1,rep,name=roles,proto3" json:"roles,omitempty"`
+	// The roles from the specified request.
+	Roles []*Role `protobuf:"bytes,1,rep,name=roles,proto3" json:"roles,omitempty"`
 	// A token, which can be sent as `page_token` to retrieve the next page.
 	// If this field is omitted, there are no subsequent pages.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
@@ -192,7 +195,8 @@ func (x *ListRolesResponse) GetNextPageToken() string {
 
 type CreateRoleRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Role  *Role                  `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
+	// The role to create.
+	Role *Role `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
 	// The ID to use for the role, which will become the final component
 	// of the role's resource name.
 	//
@@ -294,10 +298,13 @@ func (x *GetRoleRequest) GetName() string {
 }
 
 type UpdateRoleRequest struct {
-	state      protoimpl.MessageState `protogen:"open.v1"`
-	Role       *Role                  `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The role to update.
+	Role *Role `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
+	// The list of fields to update.
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 	// If set to true, and the role is not found, a new role will be created.
+	// In this situation, `update_mask` is ignored.
 	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -356,6 +363,7 @@ func (x *UpdateRoleRequest) GetAllowMissing() bool {
 
 type DeleteRoleRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// The name of the role to delete.
 	// Format: roles/{role}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -399,13 +407,18 @@ func (x *DeleteRoleRequest) GetName() string {
 	return ""
 }
 
+// Role defines a set of permissions that can be assigned to users.
 type Role struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Format: roles/{role}
-	Name          string    `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Title         string    `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Description   string    `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	Permissions   []string  `protobuf:"bytes,4,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	// Resource name. Format: roles/{role}
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Human-readable title.
+	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	// Optional description of the role.
+	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// List of permission identifiers granted by this role.
+	Permissions []string `protobuf:"bytes,4,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	// Role type indicating if it's built-in or custom.
 	Type          Role_Type `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.v1.Role_Type" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -493,9 +506,9 @@ const file_v1_role_service_proto_rawDesc = "" +
 	"\arole_id\x18\x02 \x01(\tB\x03\xe0A\x02R\x06roleId\"?\n" +
 	"\x0eGetRoleRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
-	"\x11bytebase.com/RoleR\x04name\"\x9c\x01\n" +
-	"\x11UpdateRoleRequest\x12%\n" +
-	"\x04role\x18\x01 \x01(\v2\x11.bytebase.v1.RoleR\x04role\x12;\n" +
+	"\x11bytebase.com/RoleR\x04name\"\xa1\x01\n" +
+	"\x11UpdateRoleRequest\x12*\n" +
+	"\x04role\x18\x01 \x01(\v2\x11.bytebase.v1.RoleB\x03\xe0A\x02R\x04role\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
 	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"B\n" +

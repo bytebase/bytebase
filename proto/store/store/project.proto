@@ -4,15 +4,21 @@ package bytebase.store;
 
 option go_package = "generated-go/store";
 
+// Label represents a categorization tag that can be applied to issues.
 message Label {
+  // The display text of the label.
   string value = 1;
+  // The color for the label in hex format (e.g., "#FF0000").
   string color = 2;
+  // Optional group name for organizing related labels.
   string group = 3;
 }
 
+// Project contains settings and configuration for a Bytebase project.
 message Project {
   reserved 1;
 
+  // Available labels that can be applied to issues in this project.
   repeated Label issue_labels = 2;
   // Force issue labels to be used when creating an issue.
   bool force_issue_labels = 3;
@@ -36,16 +42,17 @@ message Project {
   // Whether to allow the issue creator to self-approve the issue.
   bool allow_self_approval = 10;
 
-  // Execution retry policy for the task run.
+  // Configuration for automatic retry on task execution failures.
   ExecutionRetryPolicy execution_retry_policy = 11;
 
+  // ExecutionRetryPolicy defines retry behavior for failed task executions.
   message ExecutionRetryPolicy {
-    // The maximum number of retries for the lock timeout issue.
+    // The maximum number of retry attempts for lock timeout errors.
     int32 maximum_retries = 1;
   }
 
   // The maximum number of databases to sample during CI data validation.
-  // Without specification, sampling is disabled, resulting in a full validation.
+  // If not specified, sampling is disabled, resulting in a full validation.
   int32 ci_sampling_size = 12;
 
   // The maximum number of parallel tasks to run during the rollout.

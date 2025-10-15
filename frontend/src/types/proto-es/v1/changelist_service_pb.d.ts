@@ -12,6 +12,8 @@ import type { EmptySchema, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
 export declare const file_v1_changelist_service: GenFile;
 
 /**
+ * Request message for creating a changelist.
+ *
  * @generated from message bytebase.v1.CreateChangelistRequest
  */
 export declare type CreateChangelistRequest = Message<"bytebase.v1.CreateChangelistRequest"> & {
@@ -49,6 +51,8 @@ export declare type CreateChangelistRequest = Message<"bytebase.v1.CreateChangel
 export declare const CreateChangelistRequestSchema: GenMessage<CreateChangelistRequest>;
 
 /**
+ * Request message for getting a changelist.
+ *
  * @generated from message bytebase.v1.GetChangelistRequest
  */
 export declare type GetChangelistRequest = Message<"bytebase.v1.GetChangelistRequest"> & {
@@ -68,6 +72,8 @@ export declare type GetChangelistRequest = Message<"bytebase.v1.GetChangelistReq
 export declare const GetChangelistRequestSchema: GenMessage<GetChangelistRequest>;
 
 /**
+ * Request message for listing changelists.
+ *
  * @generated from message bytebase.v1.ListChangelistsRequest
  */
 export declare type ListChangelistsRequest = Message<"bytebase.v1.ListChangelistsRequest"> & {
@@ -80,10 +86,10 @@ export declare type ListChangelistsRequest = Message<"bytebase.v1.ListChangelist
   parent: string;
 
   /**
-   * Not used.
-   * The maximum number of databases to return. The service may return fewer than
+   * Pagination is not currently implemented. This field is reserved for future use.
+   * The maximum number of changelists to return. The service may return fewer than
    * this value.
-   * If unspecified, at most 50 databases will be returned.
+   * If unspecified, at most 50 changelists will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    *
    * @generated from field: int32 page_size = 2;
@@ -91,11 +97,11 @@ export declare type ListChangelistsRequest = Message<"bytebase.v1.ListChangelist
   pageSize: number;
 
   /**
-   * Not used.
-   * A page token, received from a previous `ListDatabases` call.
+   * Pagination is not currently implemented. This field is reserved for future use.
+   * A page token, received from a previous `ListChangelists` call.
    * Provide this to retrieve the subsequent page.
    *
-   * When paginating, all other parameters provided to `ListDatabases` must match
+   * When paginating, all other parameters provided to `ListChangelists` must match
    * the call that provided the page token.
    *
    * @generated from field: string page_token = 3;
@@ -110,6 +116,8 @@ export declare type ListChangelistsRequest = Message<"bytebase.v1.ListChangelist
 export declare const ListChangelistsRequestSchema: GenMessage<ListChangelistsRequest>;
 
 /**
+ * Response message for listing changelists.
+ *
  * @generated from message bytebase.v1.ListChangelistsResponse
  */
 export declare type ListChangelistsResponse = Message<"bytebase.v1.ListChangelistsResponse"> & {
@@ -136,6 +144,8 @@ export declare type ListChangelistsResponse = Message<"bytebase.v1.ListChangelis
 export declare const ListChangelistsResponseSchema: GenMessage<ListChangelistsResponse>;
 
 /**
+ * Request message for updating a changelist.
+ *
  * @generated from message bytebase.v1.UpdateChangelistRequest
  */
 export declare type UpdateChangelistRequest = Message<"bytebase.v1.UpdateChangelistRequest"> & {
@@ -172,6 +182,8 @@ export declare type UpdateChangelistRequest = Message<"bytebase.v1.UpdateChangel
 export declare const UpdateChangelistRequestSchema: GenMessage<UpdateChangelistRequest>;
 
 /**
+ * Request message for deleting a changelist.
+ *
  * @generated from message bytebase.v1.DeleteChangelistRequest
  */
 export declare type DeleteChangelistRequest = Message<"bytebase.v1.DeleteChangelistRequest"> & {
@@ -191,6 +203,8 @@ export declare type DeleteChangelistRequest = Message<"bytebase.v1.DeleteChangel
 export declare const DeleteChangelistRequestSchema: GenMessage<DeleteChangelistRequest>;
 
 /**
+ * A changelist groups multiple database changes together.
+ *
  * @generated from message bytebase.v1.Changelist
  */
 export declare type Changelist = Message<"bytebase.v1.Changelist"> & {
@@ -204,6 +218,8 @@ export declare type Changelist = Message<"bytebase.v1.Changelist"> & {
   name: string;
 
   /**
+   * The description of the changelist.
+   *
    * @generated from field: string description = 2;
    */
   description: string;
@@ -217,13 +233,15 @@ export declare type Changelist = Message<"bytebase.v1.Changelist"> & {
   creator: string;
 
   /**
-   * The last update time of the changelist.
+   * The last time the changelist was updated.
    *
    * @generated from field: google.protobuf.Timestamp update_time = 6;
    */
   updateTime?: Timestamp;
 
   /**
+   * The list of changes in this changelist.
+   *
    * @generated from field: repeated bytebase.v1.Changelist.Change changes = 7;
    */
   changes: Changelist_Change[];
@@ -236,20 +254,23 @@ export declare type Changelist = Message<"bytebase.v1.Changelist"> & {
 export declare const ChangelistSchema: GenMessage<Changelist>;
 
 /**
+ * A single change in a changelist.
+ *
  * @generated from message bytebase.v1.Changelist.Change
  */
 export declare type Changelist_Change = Message<"bytebase.v1.Changelist.Change"> & {
   /**
-   * The name of a sheet.
+   * The sheet containing the SQL statement.
+   * Format: projects/{project}/sheets/{sheet}
    *
    * @generated from field: string sheet = 1;
    */
   sheet: string;
 
   /**
-   * The source of origin.
-   * 1) changelog: instances/{instance}/databases/{database}/changelogs/{changelog}.
-   * 2) raw SQL if empty.
+   * The source of this change.
+   * Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+   * If empty, the change is from raw SQL.
    *
    * @generated from field: string source = 2;
    */
@@ -263,10 +284,13 @@ export declare type Changelist_Change = Message<"bytebase.v1.Changelist.Change">
 export declare const Changelist_ChangeSchema: GenMessage<Changelist_Change>;
 
 /**
+ * ChangelistService manages changelists for grouping and organizing database changes.
+ *
  * @generated from service bytebase.v1.ChangelistService
  */
 export declare const ChangelistService: GenService<{
   /**
+   * Creates a new changelist in a project.
    * Permissions required: bb.changelists.create
    *
    * @generated from rpc bytebase.v1.ChangelistService.CreateChangelist
@@ -277,6 +301,7 @@ export declare const ChangelistService: GenService<{
     output: typeof ChangelistSchema;
   },
   /**
+   * Gets a changelist by name.
    * Permissions required: bb.changelists.get
    *
    * @generated from rpc bytebase.v1.ChangelistService.GetChangelist
@@ -287,6 +312,7 @@ export declare const ChangelistService: GenService<{
     output: typeof ChangelistSchema;
   },
   /**
+   * Lists changelists in a project.
    * Permissions required: bb.changelists.list
    *
    * @generated from rpc bytebase.v1.ChangelistService.ListChangelists
@@ -297,6 +323,7 @@ export declare const ChangelistService: GenService<{
     output: typeof ListChangelistsResponseSchema;
   },
   /**
+   * Updates a changelist.
    * Permissions required: bb.changelists.update
    *
    * @generated from rpc bytebase.v1.ChangelistService.UpdateChangelist
@@ -307,6 +334,7 @@ export declare const ChangelistService: GenService<{
     output: typeof ChangelistSchema;
   },
   /**
+   * Deletes a changelist.
    * Permissions required: bb.changelists.delete
    *
    * @generated from rpc bytebase.v1.ChangelistService.DeleteChangelist

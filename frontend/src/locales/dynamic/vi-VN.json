@@ -1,21 +1,11 @@
 {
   "custom-approval": {
-    "approval-flow": {
-      "node": {
-        "group": {
-          "WORKSPACE_OWNER": "Quản trị viên không gian làm việc",
-          "WORKSPACE_DBA": "DBA",
-          "PROJECT_OWNER": "Chủ sở hữu dự án",
-          "PROJECT_MEMBER": "Nhà phát triển dự án"
-        }
-      },
-      "presets": {
-        "owner-dba": "Hệ thống xác định quy trình phê duyệt, đầu tiên là Chủ sở hữu dự án phê duyệt, sau đó là DBA phê duyệt.",
-        "owner": "Hệ thống xác định quy trình phê duyệt và chỉ cần Chủ sở hữu dự án phê duyệt.",
-        "dba": "Hệ thống xác định quy trình phê duyệt và chỉ cần DBA phê duyệt.",
-        "admin": "Hệ thống xác định quy trình phê duyệt và chỉ cần Quản trị viên phê duyệt.",
-        "owner-dba-admin": "Hệ thống xác định quy trình phê duyệt, đầu tiên là Chủ sở hữu dự án phê duyệt, sau đó là DBA phê duyệt, và cuối cùng là Quản trị viên phê duyệt."
-      }
+    "approval-flow-builtin": {
+      "project-owner": "Hệ thống xác định quy trình phê duyệt và chỉ cần Chủ sở hữu dự án phê duyệt.",
+      "workspace-dba": "Hệ thống xác định quy trình phê duyệt và chỉ cần DBA phê duyệt.",
+      "workspace-admin": "Hệ thống xác định quy trình phê duyệt và chỉ cần Quản trị viên phê duyệt.",
+      "project-owner-workspace-dba": "Hệ thống xác định quy trình phê duyệt, đầu tiên là Chủ sở hữu dự án phê duyệt, sau đó là DBA phê duyệt.",
+      "project-owner-workspace-dba-workspace-admin": "Hệ thống xác định quy trình phê duyệt, đầu tiên là Chủ sở hữu dự án phê duyệt, sau đó là DBA phê duyệt, và cuối cùng là Quản trị viên phê duyệt."
     },
     "risk-rule": {
       "template": {

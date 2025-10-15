@@ -13,7 +13,9 @@ import "v1/org_policy_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// ReviewConfigService manages approval flow configurations.
 service ReviewConfigService {
+  // Creates a new SQL review configuration.
   // Permissions required: bb.reviewConfigs.create
   rpc CreateReviewConfig(CreateReviewConfigRequest) returns (ReviewConfig) {
     option (google.api.http) = {
@@ -25,6 +27,7 @@ service ReviewConfigService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Lists all SQL review configurations.
   // Permissions required: bb.reviewConfigs.list
   rpc ListReviewConfigs(ListReviewConfigsRequest) returns (ListReviewConfigsResponse) {
     option (google.api.http) = {get: "/v1/reviewConfigs"};
@@ -33,6 +36,7 @@ service ReviewConfigService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Retrieves a SQL review configuration by name.
   // Permissions required: bb.reviewConfigs.get
   rpc GetReviewConfig(GetReviewConfigRequest) returns (ReviewConfig) {
     option (google.api.http) = {get: "/v1/{name=reviewConfigs/*}"};
@@ -41,6 +45,7 @@ service ReviewConfigService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Updates a SQL review configuration.
   // Permissions required: bb.reviewConfigs.update
   rpc UpdateReviewConfig(UpdateReviewConfigRequest) returns (ReviewConfig) {
     option (google.api.http) = {
@@ -52,6 +57,7 @@ service ReviewConfigService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Deletes a SQL review configuration.
   // Permissions required: bb.reviewConfigs.delete
   rpc DeleteReviewConfig(DeleteReviewConfigRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=reviewConfigs/*}"};
@@ -62,14 +68,14 @@ service ReviewConfigService {
 }
 
 message ListReviewConfigsRequest {
-  // Not used.
-  // The maximum number of sql review to return. The service may return fewer than
+  // Pagination is not currently implemented. This field is reserved for future use.
+  // The maximum number of SQL review configs to return. The service may return fewer than
   // this value.
-  // If unspecified, at most 10 sql review will be returned.
+  // If unspecified, at most 10 SQL review configs will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 1;
 
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // A page token, provide this to retrieve the subsequent page.
   //
   // When paginating, all other parameters provided to `ListReviewConfigs` must match
@@ -78,7 +84,7 @@ message ListReviewConfigsRequest {
 }
 
 message ListReviewConfigsResponse {
-  // The sql review from the specified request.
+  // The SQL review configs from the specified request.
   repeated ReviewConfig review_configs = 1;
 
   // A token, which can be sent as `page_token` to retrieve the next page.
@@ -87,14 +93,14 @@ message ListReviewConfigsResponse {
 }
 
 message CreateReviewConfigRequest {
-  // The sql review to create.
+  // The SQL review config to create.
   ReviewConfig review_config = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message UpdateReviewConfigRequest {
-  // The sql review to update.
+  // The SQL review config to update.
   //
-  // The name field is used to identify the sql review to update.
+  // The name field is used to identify the SQL review config to update.
   ReviewConfig review_config = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
@@ -106,7 +112,7 @@ message UpdateReviewConfigRequest {
 }
 
 message GetReviewConfigRequest {
-  // The name of the sql review to retrieve.
+  // The name of the SQL review config to retrieve.
   // Format: reviewConfigs/{reviewConfig}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
@@ -115,7 +121,7 @@ message GetReviewConfigRequest {
 }
 
 message DeleteReviewConfigRequest {
-  // The name of the sql review to delete.
+  // The name of the SQL review config to delete.
   // Format: reviewConfigs/{reviewConfig}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
@@ -129,17 +135,20 @@ message ReviewConfig {
     pattern: "reviewConfigs/{reviewConfig}"
   };
 
-  // The name of the sql review to retrieve.
+  // The name of the SQL review config.
   // Format: reviewConfigs/{reviewConfig}
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The title of the review configuration.
   string title = 2;
 
+  // Whether the review configuration is enabled.
   bool enabled = 3;
 
+  // The SQL review rules to enforce.
   repeated SQLReviewRule rules = 7;
 
-  // resources using the config.
-  // Format: {resurce}/{resource id}, for example, environments/test.
+  // Resources using the config.
+  // Format: {resource}/{resource id}, e.g., environments/test.
   repeated string resources = 8;
 }

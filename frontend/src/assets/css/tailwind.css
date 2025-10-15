@@ -259,6 +259,11 @@
   }
 }
 
+#capture-container {
+  right: -99999px;
+  bottom: -99999px;
+}
+
 .fade-enter-active,
 .fade-leave-active,
 .fade-fast-enter-active,

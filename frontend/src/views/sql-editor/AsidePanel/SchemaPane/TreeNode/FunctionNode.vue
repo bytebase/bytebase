@@ -27,12 +27,11 @@ const dbSchema = useDBSchemaV1Store();
 
 const target = computed(() => (props.node as TreeNode<"function">).meta.target);
 
-const functionMetadata = computed(() =>
-  dbSchema
-    .getSchemaMetadata({
+const functionMetadata = computed(
+  () =>
+    dbSchema.getSchemaMetadata({
       database: target.value.database,
       schema: target.value.schema,
-    })
-    .functions.find((f) => f.name === target.value.function)
+    }).functions[target.value.position]
 );
 </script>

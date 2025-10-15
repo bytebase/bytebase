@@ -8,7 +8,9 @@ import "v1/annotation.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// CelService manages CEL (Common Expression Language) parsing and formatting operations.
 service CelService {
+  // Parses multiple CEL expression strings into AST representations.
   // Permissions required: None
   rpc BatchParse(BatchParseRequest) returns (BatchParseResponse) {
     option (google.api.http) = {
@@ -18,6 +20,7 @@ service CelService {
     option (bytebase.v1.allow_without_credential) = true;
   }
 
+  // Converts multiple CEL AST representations back into expression strings.
   // Permissions required: None
   rpc BatchDeparse(BatchDeparseRequest) returns (BatchDeparseResponse) {
     option (google.api.http) = {
@@ -28,18 +31,26 @@ service CelService {
   }
 }
 
+// Request message for batch parsing CEL expressions.
 message BatchParseRequest {
+  // The CEL expression strings to parse.
   repeated string expressions = 1;
 }
 
+// Response message for batch parsing CEL expressions.
 message BatchParseResponse {
+  // The parsed CEL expressions as AST.
   repeated google.api.expr.v1alpha1.Expr expressions = 1;
 }
 
+// Request message for batch deparsing CEL expressions.
 message BatchDeparseRequest {
+  // The CEL expression ASTs to deparse.
   repeated google.api.expr.v1alpha1.Expr expressions = 1;
 }
 
+// Response message for batch deparsing CEL expressions.
 message BatchDeparseResponse {
+  // The deparsed CEL expressions as strings.
   repeated string expressions = 1;
 }

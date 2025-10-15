@@ -223,6 +223,8 @@ export const PlanCheckRun_Status = /*@__PURE__*/
   tsEnum(PlanCheckRun_StatusSchema);
 
 /**
+ * PlanService manages deployment plans for database changes.
+ *
  * @generated from service bytebase.v1.PlanService
  */
 export const PlanService = /*@__PURE__*/

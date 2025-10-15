@@ -31,29 +31,29 @@ func DataSourceFromInstanceWithType(instance *store.InstanceMessage, dataSourceT
 	return nil
 }
 
-// FindNextPendingStep finds the next pending step in the approval flow.
-func FindNextPendingStep(template *storepb.ApprovalTemplate, approvers []*storepb.IssuePayloadApproval_Approver) *storepb.ApprovalStep {
+// FindNextPendingRole finds the next pending role in the approval flow.
+func FindNextPendingRole(template *storepb.ApprovalTemplate, approvers []*storepb.IssuePayloadApproval_Approver) string {
 	// We can do the finding like this for now because we are presuming that
-	// one step is approved by one approver.
+	// one role is approved by one approver.
 	// and the approver status is either
 	// APPROVED or REJECTED.
-	if len(approvers) >= len(template.Flow.Steps) {
-		return nil
+	if len(approvers) >= len(template.Flow.Roles) {
+		return ""
 	}
-	return template.Flow.Steps[len(approvers)]
+	return template.Flow.Roles[len(approvers)]
 }
 
-// FindRejectedStep finds the rejected step in the approval flow.
-func FindRejectedStep(template *storepb.ApprovalTemplate, approvers []*storepb.IssuePayloadApproval_Approver) *storepb.ApprovalStep {
+// FindRejectedRole finds the rejected role in the approval flow.
+func FindRejectedRole(template *storepb.ApprovalTemplate, approvers []*storepb.IssuePayloadApproval_Approver) string {
 	for i, approver := range approvers {
-		if i >= len(template.Flow.Steps) {
-			return nil
+		if i >= len(template.Flow.Roles) {
+			return ""
 		}
 		if approver.Status == storepb.IssuePayloadApproval_Approver_REJECTED {
-			return template.Flow.Steps[i]
+			return template.Flow.Roles[i]
 		}
 	}
-	return nil
+	return ""
 }
 
 // CheckApprovalApproved checks if the approval is approved.
@@ -64,13 +64,10 @@ func CheckApprovalApproved(approval *storepb.IssuePayloadApproval) (bool, error)
 	if approval.ApprovalFindingError != "" {
 		return false, nil
 	}
-	if len(approval.ApprovalTemplates) == 0 {
+	if approval.ApprovalTemplate == nil {
 		return true, nil
 	}
-	if len(approval.ApprovalTemplates) != 1 {
-		return false, errors.Errorf("expecting one approval template but got %d", len(approval.ApprovalTemplates))
-	}
-	return FindRejectedStep(approval.ApprovalTemplates[0], approval.Approvers) == nil && FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers) == nil, nil
+	return FindRejectedRole(approval.ApprovalTemplate, approval.Approvers) == "" && FindNextPendingRole(approval.ApprovalTemplate, approval.Approvers) == "", nil
 }
 
 // CheckIssueApproved checks if the issue is approved.
@@ -81,21 +78,15 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 // HandleIncomingApprovalSteps handles incoming approval steps.
 // - Blocks approval steps if no user can approve the step.
 func HandleIncomingApprovalSteps(approval *storepb.IssuePayloadApproval) ([]*storepb.IssuePayloadApproval_Approver, error) {
-	if len(approval.ApprovalTemplates) == 0 {
+	if approval.ApprovalTemplate == nil {
 		return nil, nil
 	}
 
 	var approvers []*storepb.IssuePayloadApproval_Approver
 
-	step := FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers)
-	if step == nil {
+	role := FindNextPendingRole(approval.ApprovalTemplate, approval.Approvers)
+	if role == "" {
 		return nil, nil
-	}
-	if len(step.Nodes) != 1 {
-		return nil, errors.Errorf("expecting one node but got %v", len(step.Nodes))
-	}
-	if step.Type != storepb.ApprovalStep_ANY {
-		return nil, errors.Errorf("expecting ANY step type but got %v", step.Type)
 	}
 	return approvers, nil
 }
@@ -201,12 +192,10 @@ func CheckDatabaseGroupMatch(ctx context.Context, expression string, database *s
 		effectiveEnvironmentID = *database.EffectiveEnvironmentID
 	}
 	res, _, err := prog.ContextEval(ctx, map[string]any{
-		"resource": map[string]any{
-			"database_name":    database.DatabaseName,
-			"environment_name": common.FormatEnvironment(effectiveEnvironmentID),
-			"instance_id":      database.InstanceID,
-			"labels":           database.Metadata.Labels,
-		},
+		common.CELAttributeResourceDatabaseName:   database.DatabaseName,
+		common.CELAttributeResourceEnvironmentID:  effectiveEnvironmentID,
+		common.CELAttributeResourceInstanceID:     database.InstanceID,
+		common.CELAttributeResourceDatabaseLabels: database.Metadata.Labels,
 	})
 	if err != nil {
 		return false, connect.NewError(connect.CodeInternal, err)

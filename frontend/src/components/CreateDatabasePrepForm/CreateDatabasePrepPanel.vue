@@ -1,6 +1,9 @@
 <template>
-  <DrawerContent :title="$t('quick-action.create-db')">
-    <div class="w-72 mx-auto space-y-4">
+  <DrawerContent
+    :title="$t('quick-action.create-db')"
+    class="w-[40rem] max-w-[100vw]"
+  >
+    <div class="mx-auto space-y-4">
       <div v-if="!isValidProjectName(currentProject.name)" class="w-full">
         <label for="project" class="textlabel">
           {{ $t("common.project") }}

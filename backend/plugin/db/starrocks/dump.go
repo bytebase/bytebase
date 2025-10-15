@@ -32,6 +32,11 @@ const (
 		"-- View structure for `%s`\n" +
 		"--\n" +
 		"%s;\n"
+	materializedViewStmtFmt = "" +
+		"--\n" +
+		"-- Materialized view structure for `%s`\n" +
+		"--\n" +
+		"%s;\n"
 	sequenceStmtFmt = "" +
 		"--\n" +
 		"-- Sequence structure for `%s`\n" +
@@ -40,6 +45,11 @@ const (
 	tempViewStmtFmt = "" +
 		"--\n" +
 		"-- Temporary view structure for `%s`\n" +
+		"--\n" +
+		"%s\n"
+	tempMaterializedViewStmtFmt = "" +
+		"--\n" +
+		"-- Temporary view structure for materialized view `%s`\n" +
 		"--\n" +
 		"%s\n"
 	routineStmtFmt = "" +
@@ -91,14 +101,14 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSch
 	defer txn.Rollback()
 
 	slog.Debug("begin to dump database", slog.String("database", d.databaseName))
-	if err := dumpTxn(txn, d.databaseName, out); err != nil {
+	if err := dumpTxn(txn, d.databaseName, out, d.dbType); err != nil {
 		return err
 	}
 
 	return txn.Commit()
 }
 
-func dumpTxn(txn *sql.Tx, database string, out io.Writer) error {
+func dumpTxn(txn *sql.Tx, database string, out io.Writer, dbType storepb.Engine) error {
 	// Disable foreign key check.
 	// mysqldump uses the same mechanism. When there is any schema or data dependency, we have to disable
 	// the unique and foreign key check so that the restoring will not fail.
@@ -108,11 +118,11 @@ func dumpTxn(txn *sql.Tx, database string, out io.Writer) error {
 
 	// Table and view statement.
 	// We have to dump the table before views because of the structure dependency.
-	tables, err := getTablesTx(txn, database)
+	tables, err := getTablesTx(txn, database, dbType)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get tables of database %q", database)
 	}
-	// Construct temporal views.
+	// Construct temporal views and materialized views.
 	// Create a temporary view with the same name as the view and with columns of
 	// the same name in order to satisfy views that depend on this view.
 	// This temporary view will be removed when the actual view is created.
@@ -123,37 +133,49 @@ func dumpTxn(txn *sql.Tx, database string, out io.Writer) error {
 	// between views and can simply dump them in the appropriate order.
 	// https://sourcegraph.com/github.com/mysql/mysql-server/-/blob/client/mysqldump.cc?L2781
 	for _, tbl := range tables {
-		if tbl.TableType != viewTableType {
+		if tbl.TableType != viewTableType && tbl.TableType != materializedViewType {
 			continue
 		}
 		if tbl.InvalidView != "" {
 			// We will write the invalid view error string to schema.
-			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", fmt.Sprintf(viewStmtFmt, tbl.Name, fmt.Sprintf("-- %s", tbl.InvalidView)))); err != nil {
+			stmtFmt := viewStmtFmt
+			if tbl.TableType == materializedViewType {
+				stmtFmt = materializedViewStmtFmt
+			}
+			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", fmt.Sprintf(stmtFmt, tbl.Name, fmt.Sprintf("-- %s", tbl.InvalidView)))); err != nil {
 				return err
 			}
 		} else {
-			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", getTemporaryView(tbl.Name, tbl.ViewColumns))); err != nil {
+			tempView := getTemporaryView(tbl.Name, tbl.ViewColumns)
+			if tbl.TableType == materializedViewType {
+				tempView = getTemporaryMaterializedView(tbl.Name, tbl.ViewColumns)
+			}
+			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tempView)); err != nil {
 				return err
 			}
 		}
 	}
 	// Construct tables.
 	for _, tbl := range tables {
-		if tbl.TableType == viewTableType {
+		if tbl.TableType == viewTableType || tbl.TableType == materializedViewType {
 			continue
 		}
 		if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.Statement)); err != nil {
 			return err
 		}
 	}
-	// Construct final views.
+	// Construct final views and materialized views.
 	for _, tbl := range tables {
-		if tbl.TableType != viewTableType {
+		if tbl.TableType != viewTableType && tbl.TableType != materializedViewType {
 			continue
 		}
 		// The temporary view just created above were used to satisfy the schema dependency. See comment above.
 		// We have to drop the temporary and incorrect view here to recreate the final and correct one.
-		if _, err := io.WriteString(out, fmt.Sprintf("DROP VIEW IF EXISTS `%s`;\n", tbl.Name)); err != nil {
+		dropStmt := "DROP VIEW IF EXISTS `%s`;\n"
+		if tbl.TableType == materializedViewType {
+			dropStmt = "DROP MATERIALIZED VIEW IF EXISTS `%s`;\n"
+		}
+		if _, err := io.WriteString(out, fmt.Sprintf(dropStmt, tbl.Name)); err != nil {
 			return err
 		}
 		if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.Statement)); err != nil {
@@ -200,6 +222,17 @@ func getTemporaryView(name string, columns []string) string {
 	return fmt.Sprintf(tempViewStmtFmt, name, stmt)
 }
 
+func getTemporaryMaterializedView(name string, columns []string) string {
+	var parts []string
+	for _, col := range columns {
+		parts = append(parts, fmt.Sprintf("1 AS `%s`", col))
+	}
+	// For materialized views, we create a temporary regular view as a placeholder
+	// since the actual materialized view will be created later with the full definition.
+	stmt := fmt.Sprintf("CREATE VIEW `%s` AS SELECT\n  %s;\n", name, strings.Join(parts, ",\n  "))
+	return fmt.Sprintf(tempMaterializedViewStmtFmt, name, stmt)
+}
+
 // TableSchema describes the schema of a table or view.
 type TableSchema struct {
 	Name        string
@@ -224,7 +257,7 @@ type eventSchema struct {
 }
 
 // getTablesTx gets all tables of a database using the provided transaction.
-func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
+func getTablesTx(txn *sql.Tx, dbName string, dbType storepb.Engine) ([]*TableSchema, error) {
 	var tables []*TableSchema
 	query := fmt.Sprintf("SELECT TABLE_NAME, TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA = '%s';", dbName)
 	rows, err := txn.Query(query)
@@ -256,13 +289,44 @@ func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+
+	// For Doris, get materialized views using mv_infos() and mark them appropriately
+	materializedViewNames := make(map[string]bool)
+	if dbType == storepb.Engine_DORIS {
+		mvQuery := fmt.Sprintf(`SELECT Name FROM mv_infos("database"="%s")`, dbName)
+		mvRows, err := txn.Query(mvQuery)
+		if err != nil {
+			// mv_infos() might not be available in older versions, just log and continue
+			slog.Debug("failed to query mv_infos(), might not be supported", slog.String("error", err.Error()))
+		} else {
+			defer mvRows.Close()
+			for mvRows.Next() {
+				var mvName string
+				if err := mvRows.Scan(&mvName); err != nil {
+					return nil, err
+				}
+				materializedViewNames[mvName] = true
+			}
+			if err := mvRows.Err(); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	// Update table types for materialized views that are marked as BASE TABLE
+	for _, tbl := range tables {
+		if tbl.TableType == baseTableType && materializedViewNames[tbl.Name] {
+			tbl.TableType = materializedViewType
+		}
+	}
+
 	for _, tbl := range tables {
 		stmt, err := getTableStmt(txn, dbName, tbl.Name, tbl.TableType)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to call getTableStmt(%q, %q, %q)", dbName, tbl.Name, tbl.TableType)
 		}
 		tbl.Statement = stmt
-		if tbl.TableType == viewTableType {
+		if tbl.TableType == viewTableType || tbl.TableType == materializedViewType {
 			viewColumns, err := getViewColumns(txn, dbName, tbl.Name)
 			if err != nil {
 				tbl.InvalidView = err.Error()
@@ -286,6 +350,8 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 			}
 			return "", err
 		}
+		// Remove trailing semicolon if present, as the format string will add one
+		stmt = strings.TrimSuffix(stmt, ";")
 		return fmt.Sprintf(tableStmtFmt, tblName, stmt), nil
 	case viewTableType:
 		// This differs from mysqldump as it includes.
@@ -297,9 +363,26 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 			}
 			return "", err
 		}
+		// Remove trailing semicolon if present, as the format string will add one
+		createStmt = strings.TrimSuffix(createStmt, ";")
 		return fmt.Sprintf(viewStmtFmt, tblName, createStmt), nil
+	case materializedViewType:
+		// For Doris materialized views, we use SHOW CREATE MATERIALIZED VIEW.
+		// This command returns 2 columns: materialized view name and create statement.
+		query := fmt.Sprintf("SHOW CREATE MATERIALIZED VIEW `%s`.`%s`;", dbName, tblName)
+		var createStmt, unused string
+		if err := txn.QueryRow(query).Scan(&unused, &createStmt); err != nil {
+			if err == sql.ErrNoRows {
+				return "", common.FormatDBErrorEmptyRowWithQuery(query)
+			}
+			return "", err
+		}
+		// Remove trailing semicolon if present, as the format string will add one
+		createStmt = strings.TrimSuffix(createStmt, ";")
+		return fmt.Sprintf(materializedViewStmtFmt, tblName, createStmt), nil
 	default:
-		return "", errors.Errorf("unrecognized table type %q for database %q table %q", tblType, dbName, tblName)
+		slog.Debug("skip unsupported table type", slog.String("dbName", dbName), slog.String("tableName", tblName), slog.String("tableType", tblType))
+		return "", nil
 	}
 }
 

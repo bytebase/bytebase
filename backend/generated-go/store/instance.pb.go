@@ -182,7 +182,7 @@ func (DataSource_RedisType) EnumDescriptor() ([]byte, []int) {
 type DataSourceExternalSecret_SecretType int32
 
 const (
-	DataSourceExternalSecret_SAECRET_TYPE_UNSPECIFIED DataSourceExternalSecret_SecretType = 0
+	DataSourceExternalSecret_SECRET_TYPE_UNSPECIFIED DataSourceExternalSecret_SecretType = 0
 	// ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2
 	DataSourceExternalSecret_VAULT_KV_V2 DataSourceExternalSecret_SecretType = 1
 	// ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html
@@ -194,16 +194,16 @@ const (
 // Enum value maps for DataSourceExternalSecret_SecretType.
 var (
 	DataSourceExternalSecret_SecretType_name = map[int32]string{
-		0: "SAECRET_TYPE_UNSPECIFIED",
+		0: "SECRET_TYPE_UNSPECIFIED",
 		1: "VAULT_KV_V2",
 		2: "AWS_SECRETS_MANAGER",
 		3: "GCP_SECRET_MANAGER",
 	}
 	DataSourceExternalSecret_SecretType_value = map[string]int32{
-		"SAECRET_TYPE_UNSPECIFIED": 0,
-		"VAULT_KV_V2":              1,
-		"AWS_SECRETS_MANAGER":      2,
-		"GCP_SECRET_MANAGER":       3,
+		"SECRET_TYPE_UNSPECIFIED": 0,
+		"VAULT_KV_V2":             1,
+		"AWS_SECRETS_MANAGER":     2,
+		"GCP_SECRET_MANAGER":      3,
 	}
 )
 
@@ -343,12 +343,12 @@ type Instance struct {
 	Version      string                 `protobuf:"bytes,4,opt,name=version,proto3" json:"version,omitempty"`
 	ExternalLink string                 `protobuf:"bytes,5,opt,name=external_link,json=externalLink,proto3" json:"external_link,omitempty"`
 	DataSources  []*DataSource          `protobuf:"bytes,6,rep,name=data_sources,json=dataSources,proto3" json:"data_sources,omitempty"`
-	// How often the instance is synced.
+	// The interval between automatic instance synchronizations.
 	SyncInterval *durationpb.Duration `protobuf:"bytes,7,opt,name=sync_interval,json=syncInterval,proto3" json:"sync_interval,omitempty"`
 	// The maximum number of connections.
 	// The default is 10 if the value is unset or zero.
 	MaximumConnections int32 `protobuf:"varint,8,opt,name=maximum_connections,json=maximumConnections,proto3" json:"maximum_connections,omitempty"`
-	// Enable sync for following databases.
+	// Enable sync for the following databases.
 	// Default empty, means sync all schemas & databases.
 	SyncDatabases []string `protobuf:"bytes,9,rep,name=sync_databases,json=syncDatabases,proto3" json:"sync_databases,omitempty"`
 	// The lower_case_table_names config for MySQL instances.
@@ -494,8 +494,8 @@ type InstanceRole struct {
 	// The expiration for the role's password.
 	ValidUntil *string `protobuf:"bytes,3,opt,name=valid_until,json=validUntil,proto3,oneof" json:"valid_until,omitempty"`
 	// The role attribute.
-	// For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
-	// For MySQL, it's the global privileges as GRANT statements, which means it only contains "GRANT ... ON *.* TO ...". Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html
+	// For PostgreSQL, it contains super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
+	// For MySQL, it is the global privileges as GRANT statements, which means it only contains "GRANT ... ON *.* TO ...". Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html
 	Attribute     *string `protobuf:"bytes,4,opt,name=attribute,proto3,oneof" json:"attribute,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -566,7 +566,7 @@ type DataSource struct {
 	Username           string                 `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
 	Password           string                 `protobuf:"bytes,37,opt,name=password,proto3" json:"password,omitempty"`
 	ObfuscatedPassword string                 `protobuf:"bytes,4,opt,name=obfuscated_password,json=obfuscatedPassword,proto3" json:"obfuscated_password,omitempty"`
-	// Use SSL to connect to the data source. By default, we use system default SSL configuration.
+	// Use SSL to connect to the data source. By default, we use the system's SSL configuration.
 	UseSsl            bool   `protobuf:"varint,30,opt,name=use_ssl,json=useSsl,proto3" json:"use_ssl,omitempty"`
 	SslCa             string `protobuf:"bytes,38,opt,name=ssl_ca,json=sslCa,proto3" json:"ssl_ca,omitempty"`
 	ObfuscatedSslCa   string `protobuf:"bytes,5,opt,name=obfuscated_ssl_ca,json=obfuscatedSslCa,proto3" json:"obfuscated_ssl_ca,omitempty"`
@@ -583,7 +583,7 @@ type DataSource struct {
 	Host                 string `protobuf:"bytes,8,opt,name=host,proto3" json:"host,omitempty"`
 	Port                 string `protobuf:"bytes,9,opt,name=port,proto3" json:"port,omitempty"`
 	Database             string `protobuf:"bytes,10,opt,name=database,proto3" json:"database,omitempty"`
-	// srv, authentication_database and replica_set are used for MongoDB.
+	// srv, authentication_database, and replica_set are used for MongoDB.
 	// srv is a boolean flag that indicates whether the host is a DNS SRV record.
 	Srv bool `protobuf:"varint,11,opt,name=srv,proto3" json:"srv,omitempty"`
 	// authentication_database is the database name to authenticate against, which stores the user credentials.
@@ -623,7 +623,7 @@ type DataSource struct {
 	AdditionalAddresses []*DataSource_Address `protobuf:"bytes,26,rep,name=additional_addresses,json=additionalAddresses,proto3" json:"additional_addresses,omitempty"`
 	// direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.
 	DirectConnection bool `protobuf:"varint,27,opt,name=direct_connection,json=directConnection,proto3" json:"direct_connection,omitempty"`
-	// region is the location of where the DB is, works for AWS RDS. For example, us-east-1.
+	// Region is the location of the database, used for AWS RDS. For example, us-east-1.
 	Region string `protobuf:"bytes,28,opt,name=region,proto3" json:"region,omitempty"`
 	// warehouse_id is used by Databricks.
 	WarehouseId string `protobuf:"bytes,29,opt,name=warehouse_id,json=warehouseId,proto3" json:"warehouse_id,omitempty"`
@@ -1249,7 +1249,7 @@ func (x *DataSourceExternalSecret) GetSecretType() DataSourceExternalSecret_Secr
 	if x != nil {
 		return x.SecretType
 	}
-	return DataSourceExternalSecret_SAECRET_TYPE_UNSPECIFIED
+	return DataSourceExternalSecret_SECRET_TYPE_UNSPECIFIED
 }
 
 func (x *DataSourceExternalSecret) GetUrl() string {
@@ -1404,9 +1404,11 @@ type DataSource_AWSCredential struct {
 	ObfuscatedSecretAccessKey string                 `protobuf:"bytes,4,opt,name=obfuscated_secret_access_key,json=obfuscatedSecretAccessKey,proto3" json:"obfuscated_secret_access_key,omitempty"`
 	SessionToken              string                 `protobuf:"bytes,5,opt,name=session_token,json=sessionToken,proto3" json:"session_token,omitempty"`
 	ObfuscatedSessionToken    string                 `protobuf:"bytes,6,opt,name=obfuscated_session_token,json=obfuscatedSessionToken,proto3" json:"obfuscated_session_token,omitempty"`
-	// ARN of IAM role to assume for cross-account access
+	// ARN of IAM role to assume for cross-account access.
+	// See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html
 	RoleArn string `protobuf:"bytes,7,opt,name=role_arn,json=roleArn,proto3" json:"role_arn,omitempty"`
-	// Optional external ID for additional security when assuming role
+	// Optional external ID for additional security when assuming role.
+	// See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html
 	ExternalId    string `protobuf:"bytes,8,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1605,7 +1607,7 @@ func (x *DataSource_Address) GetPort() string {
 type DataSourceExternalSecret_AppRoleAuthOption struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	RoleId string                 `protobuf:"bytes,1,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty"`
-	// the secret id for the role without ttl.
+	// The secret ID for the role without TTL.
 	SecretId string                                                `protobuf:"bytes,2,opt,name=secret_id,json=secretId,proto3" json:"secret_id,omitempty"`
 	Type     DataSourceExternalSecret_AppRoleAuthOption_SecretType `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.store.DataSourceExternalSecret_AppRoleAuthOption_SecretType" json:"type,omitempty"`
 	// The path where the approle auth method is mounted.
@@ -1810,7 +1812,7 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x06keytab\x18\x04 \x01(\fR\x06keytab\x12\x19\n" +
 	"\bkdc_host\x18\x05 \x01(\tR\akdcHost\x12\x19\n" +
 	"\bkdc_port\x18\x06 \x01(\tR\akdcPort\x124\n" +
-	"\x16kdc_transport_protocol\x18\a \x01(\tR\x14kdcTransportProtocol\"\x81\a\n" +
+	"\x16kdc_transport_protocol\x18\a \x01(\tR\x14kdcTransportProtocol\"\x80\a\n" +
 	"\x18DataSourceExternalSecret\x12T\n" +
 	"\vsecret_type\x18\x01 \x01(\x0e23.bytebase.store.DataSourceExternalSecret.SecretTypeR\n" +
 	"secretType\x12\x10\n" +
@@ -1833,10 +1835,10 @@ const file_store_instance_proto_rawDesc = "" +
 	"SecretType\x12\x1b\n" +
 	"\x17SECRET_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05PLAIN\x10\x01\x12\x0f\n" +
-	"\vENVIRONMENT\x10\x02\"l\n" +
+	"\vENVIRONMENT\x10\x02\"k\n" +
 	"\n" +
-	"SecretType\x12\x1c\n" +
-	"\x18SAECRET_TYPE_UNSPECIFIED\x10\x00\x12\x0f\n" +
+	"SecretType\x12\x1b\n" +
+	"\x17SECRET_TYPE_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vVAULT_KV_V2\x10\x01\x12\x17\n" +
 	"\x13AWS_SECRETS_MANAGER\x10\x02\x12\x16\n" +
 	"\x12GCP_SECRET_MANAGER\x10\x03\"D\n" +

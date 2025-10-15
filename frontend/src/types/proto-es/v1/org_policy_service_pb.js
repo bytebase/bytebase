@@ -135,6 +135,8 @@ export const MaskingExceptionPolicy_MaskingException_ActionSchema = /*@__PURE__*
   enumDesc(file_v1_org_policy_service, 10, 0, 0);
 
 /**
+ * The action that the exception permits.
+ *
  * @generated from enum bytebase.v1.MaskingExceptionPolicy.MaskingException.Action
  */
 export const MaskingExceptionPolicy_MaskingException_Action = /*@__PURE__*/
@@ -175,6 +177,8 @@ export const DataSourceQueryPolicy_RestrictionSchema = /*@__PURE__*/
   enumDesc(file_v1_org_policy_service, 13, 0);
 
 /**
+ * Restriction level for admin data source access.
+ *
  * @generated from enum bytebase.v1.DataSourceQueryPolicy.Restriction
  */
 export const DataSourceQueryPolicy_Restriction = /*@__PURE__*/
@@ -187,6 +191,8 @@ export const PolicyTypeSchema = /*@__PURE__*/
   enumDesc(file_v1_org_policy_service, 0);
 
 /**
+ * The type of organizational policy.
+ *
  * @generated from enum bytebase.v1.PolicyType
  */
 export const PolicyType = /*@__PURE__*/
@@ -199,6 +205,8 @@ export const PolicyResourceTypeSchema = /*@__PURE__*/
   enumDesc(file_v1_org_policy_service, 1);
 
 /**
+ * The resource type that a policy can be attached to.
+ *
  * @generated from enum bytebase.v1.PolicyResourceType
  */
 export const PolicyResourceType = /*@__PURE__*/
@@ -211,12 +219,16 @@ export const SQLReviewRuleLevelSchema = /*@__PURE__*/
   enumDesc(file_v1_org_policy_service, 2);
 
 /**
+ * The severity level for SQL review rules.
+ *
  * @generated from enum bytebase.v1.SQLReviewRuleLevel
  */
 export const SQLReviewRuleLevel = /*@__PURE__*/
   tsEnum(SQLReviewRuleLevelSchema);
 
 /**
+ * OrgPolicyService manages organizational policies at various resource levels.
+ *
  * @generated from service bytebase.v1.OrgPolicyService
  */
 export const OrgPolicyService = /*@__PURE__*/

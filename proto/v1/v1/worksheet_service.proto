@@ -12,9 +12,10 @@ import "v1/annotation.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// WorksheetService manages SQL worksheets for query development.
 service WorksheetService {
-  // Create a personal worksheet used in SQL Editor.
-  // Permissions required: None
+  // Creates a personal worksheet used in SQL Editor. Any authenticated user can create their own worksheets.
+  // Permissions required: None (authenticated users only)
   rpc CreateWorksheet(CreateWorksheetRequest) returns (Worksheet) {
     option (google.api.http) = {
       post: "/v1/worksheets"
@@ -29,7 +30,7 @@ service WorksheetService {
   // - they are the creator of the worksheet;
   // - they have bb.worksheets.get permission on the workspace;
   // - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-  // Permissions required: None
+  // Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
   rpc GetWorksheet(GetWorksheetRequest) returns (Worksheet) {
     option (google.api.http) = {get: "/v1/{name=worksheets/*}"};
     option (google.api.method_signature) = "name";
@@ -39,7 +40,7 @@ service WorksheetService {
   // Search for worksheets.
   // This is used for finding my worksheets or worksheets shared by other people.
   // The sheet accessibility is the same as GetWorksheet().
-  // Permissions required: None
+  // Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
   rpc SearchWorksheets(SearchWorksheetsRequest) returns (SearchWorksheetsResponse) {
     option (google.api.http) = {
       post: "/v1/worksheets:search"
@@ -53,7 +54,7 @@ service WorksheetService {
   // - they are the creator of the worksheet;
   // - they have bb.worksheets.manage permission on the workspace;
   // - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
-  // Permissions required: None
+  // Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)
   rpc UpdateWorksheet(UpdateWorksheetRequest) returns (Worksheet) {
     option (google.api.http) = {
       patch: "/v1/{worksheet.name=worksheets/*}"
@@ -65,7 +66,7 @@ service WorksheetService {
 
   // Update the organizer of a worksheet.
   // The access is the same as UpdateWorksheet method.
-  // Permissions required: None
+  // Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
   rpc UpdateWorksheetOrganizer(UpdateWorksheetOrganizerRequest) returns (WorksheetOrganizer) {
     option (google.api.http) = {
       patch: "/v1/{organizer.worksheet=worksheets/*}/organizer"
@@ -77,7 +78,7 @@ service WorksheetService {
 
   // Delete a worksheet.
   // The access is the same as UpdateWorksheet method.
-  // Permissions required: None
+  // Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)
   rpc DeleteWorksheet(DeleteWorksheetRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=worksheets/*}"};
     option (google.api.method_signature) = "name";
@@ -105,7 +106,7 @@ message UpdateWorksheetRequest {
 
   // The list of fields to be updated.
   // Fields are specified relative to the worksheet.
-  // (e.g. `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`)
+  // (e.g., `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`)
   // Only support update the following fields for now:
   // - `title`
   // - `statement`
@@ -165,14 +166,14 @@ message SearchWorksheetsRequest {
   // visibility == "PRIVATE"
   string filter = 1;
 
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // The maximum number of worksheets to return. The service may return fewer than
   // this value.
   // If unspecified, at most 10 worksheets will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 2;
 
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // A page token, received from a previous `SearchWorksheets` call.
   // Provide this to retrieve the subsequent page.
   //
@@ -185,7 +186,8 @@ message SearchWorksheetsResponse {
   // The worksheets that matched the search criteria.
   repeated Worksheet worksheets = 1;
 
-  // Not used. A token, which can be sent as `page_token` to retrieve the next page.
+  // Pagination is not currently implemented. This field is reserved for future use.
+  // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }

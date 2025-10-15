@@ -512,8 +512,8 @@ type PlanConfig_ExportDataConfig struct {
 	Sheet string `protobuf:"bytes,2,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	// The format of the exported file.
 	Format ExportFormat `protobuf:"varint,3,opt,name=format,proto3,enum=bytebase.store.ExportFormat" json:"format,omitempty"`
-	// The zip password provide by users.
-	// Leave it empty if no needs to encrypt the zip file.
+	// The zip password provided by users.
+	// Leave it empty if there is no need to encrypt the zip file.
 	Password      *string `protobuf:"bytes,4,opt,name=password,proto3,oneof" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

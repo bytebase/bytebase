@@ -12,7 +12,6 @@ export type ExprEditorContext = {
   allowAdmin: Ref<boolean>;
   enableRawExpression: Ref<boolean>;
   factorList: Ref<Factor[]>;
-  factorSupportDropdown: Ref<Factor[]>;
   optionConfigMap: Ref<Map<Factor, OptionConfig>>;
   factorOperatorOverrideMap: Ref<Map<Factor, Operator[]> | undefined>;
 };

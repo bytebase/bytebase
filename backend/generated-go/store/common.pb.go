@@ -21,6 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Engine represents the type of database system.
 type Engine int32
 
 const (
@@ -139,6 +140,7 @@ func (Engine) EnumDescriptor() ([]byte, []int) {
 	return file_store_common_proto_rawDescGZIP(), []int{0}
 }
 
+// VCSType represents the type of version control system.
 type VCSType int32
 
 const (
@@ -194,13 +196,17 @@ func (VCSType) EnumDescriptor() ([]byte, []int) {
 	return file_store_common_proto_rawDescGZIP(), []int{1}
 }
 
+// MaskingLevel represents the level of data masking applied to sensitive information.
 type MaskingLevel int32
 
 const (
 	MaskingLevel_MASKING_LEVEL_UNSPECIFIED MaskingLevel = 0
-	MaskingLevel_NONE                      MaskingLevel = 1
-	MaskingLevel_PARTIAL                   MaskingLevel = 2
-	MaskingLevel_FULL                      MaskingLevel = 3
+	// No masking applied.
+	MaskingLevel_NONE MaskingLevel = 1
+	// Partial masking (e.g., showing first/last characters).
+	MaskingLevel_PARTIAL MaskingLevel = 2
+	// Full masking (all characters masked).
+	MaskingLevel_FULL MaskingLevel = 3
 )
 
 // Enum value maps for MaskingLevel.
@@ -246,6 +252,7 @@ func (MaskingLevel) EnumDescriptor() ([]byte, []int) {
 	return file_store_common_proto_rawDescGZIP(), []int{2}
 }
 
+// ExportFormat represents the file format for exported data.
 type ExportFormat int32
 
 const (
@@ -301,11 +308,66 @@ func (ExportFormat) EnumDescriptor() ([]byte, []int) {
 	return file_store_common_proto_rawDescGZIP(), []int{3}
 }
 
-// Used internally for obfuscating the page token.
+// RiskLevel represents the assessed risk level of a database operation.
+type RiskLevel int32
+
+const (
+	RiskLevel_RISK_LEVEL_UNSPECIFIED RiskLevel = 0
+	RiskLevel_LOW                    RiskLevel = 1
+	RiskLevel_MODERATE               RiskLevel = 2
+	RiskLevel_HIGH                   RiskLevel = 3
+)
+
+// Enum value maps for RiskLevel.
+var (
+	RiskLevel_name = map[int32]string{
+		0: "RISK_LEVEL_UNSPECIFIED",
+		1: "LOW",
+		2: "MODERATE",
+		3: "HIGH",
+	}
+	RiskLevel_value = map[string]int32{
+		"RISK_LEVEL_UNSPECIFIED": 0,
+		"LOW":                    1,
+		"MODERATE":               2,
+		"HIGH":                   3,
+	}
+)
+
+func (x RiskLevel) Enum() *RiskLevel {
+	p := new(RiskLevel)
+	*p = x
+	return p
+}
+
+func (x RiskLevel) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RiskLevel) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_common_proto_enumTypes[4].Descriptor()
+}
+
+func (RiskLevel) Type() protoreflect.EnumType {
+	return &file_store_common_proto_enumTypes[4]
+}
+
+func (x RiskLevel) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RiskLevel.Descriptor instead.
+func (RiskLevel) EnumDescriptor() ([]byte, []int) {
+	return file_store_common_proto_rawDescGZIP(), []int{4}
+}
+
+// PageToken is used internally for obfuscating pagination tokens.
 type PageToken struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
-	Offset        int32                  `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Maximum number of items to return.
+	Limit int32 `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
+	// Number of items to skip before starting to return results.
+	Offset        int32 `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -354,8 +416,7 @@ func (x *PageToken) GetOffset() int32 {
 	return 0
 }
 
-// Position in a text expressed as zero-based line and zero-based column byte
-// offset.
+// Position in a text expressed as zero-based line and column byte offset.
 type Position struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Line position in a text (zero-based).
@@ -410,10 +471,13 @@ func (x *Position) GetColumn() int32 {
 	return 0
 }
 
+// Range represents a span within a text or sequence.
 type Range struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Start         int32                  `protobuf:"varint,1,opt,name=start,proto3" json:"start,omitempty"`
-	End           int32                  `protobuf:"varint,2,opt,name=end,proto3" json:"end,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Start index (inclusive).
+	Start int32 `protobuf:"varint,1,opt,name=start,proto3" json:"start,omitempty"`
+	// End index (exclusive).
+	End           int32 `protobuf:"varint,2,opt,name=end,proto3" json:"end,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -526,7 +590,12 @@ const file_store_common_proto_rawDesc = "" +
 	"\x03CSV\x10\x01\x12\b\n" +
 	"\x04JSON\x10\x02\x12\a\n" +
 	"\x03SQL\x10\x03\x12\b\n" +
-	"\x04XLSX\x10\x04B\x14Z\x12generated-go/storeb\x06proto3"
+	"\x04XLSX\x10\x04*H\n" +
+	"\tRiskLevel\x12\x1a\n" +
+	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
+	"\x03LOW\x10\x01\x12\f\n" +
+	"\bMODERATE\x10\x02\x12\b\n" +
+	"\x04HIGH\x10\x03B\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
 	file_store_common_proto_rawDescOnce sync.Once
@@ -540,16 +609,17 @@ func file_store_common_proto_rawDescGZIP() []byte {
 	return file_store_common_proto_rawDescData
 }
 
-var file_store_common_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_store_common_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_store_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_common_proto_goTypes = []any{
 	(Engine)(0),       // 0: bytebase.store.Engine
 	(VCSType)(0),      // 1: bytebase.store.VCSType
 	(MaskingLevel)(0), // 2: bytebase.store.MaskingLevel
 	(ExportFormat)(0), // 3: bytebase.store.ExportFormat
-	(*PageToken)(nil), // 4: bytebase.store.PageToken
-	(*Position)(nil),  // 5: bytebase.store.Position
-	(*Range)(nil),     // 6: bytebase.store.Range
+	(RiskLevel)(0),    // 4: bytebase.store.RiskLevel
+	(*PageToken)(nil), // 5: bytebase.store.PageToken
+	(*Position)(nil),  // 6: bytebase.store.Position
+	(*Range)(nil),     // 7: bytebase.store.Range
 }
 var file_store_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -569,7 +639,7 @@ func file_store_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_common_proto_rawDesc), len(file_store_common_proto_rawDesc)),
-			NumEnums:      4,
+			NumEnums:      5,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,

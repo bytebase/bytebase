@@ -42,6 +42,8 @@ export const BatchDeparseResponseSchema = /*@__PURE__*/
   messageDesc(file_v1_cel_service, 3);
 
 /**
+ * CelService manages CEL (Common Expression Language) parsing and formatting operations.
+ *
  * @generated from service bytebase.v1.CelService
  */
 export const CelService = /*@__PURE__*/

@@ -982,8 +982,6 @@
     "waiting-for-review": "Waiting for review",
     "issue-name": "Issue name",
     "grant-request": {
-      "export-rows": "Max export rows",
-      "select-export-rows": "Select maximum export rows",
       "expired-at": "Expired at",
       "all-databases": "All",
       "all-databases-tip": "All current and future databases in this project.",
@@ -1071,7 +1069,8 @@
     "approval": {
       "rejected-error": "Issue approval has been rejected.",
       "pending-error": "Issue approval is pending.",
-      "approved-and-waiting-for-rollout": "This issue has been approved and is ready to rollout."
+      "approved-and-waiting-for-rollout": "This issue has been approved and is ready to rollout.",
+      "ready-for-rollout": "Ready to rollout"
     },
     "new-layout": "New CI/CD Layout"
   },
@@ -2612,6 +2611,9 @@
       "select": "Select approval flow",
       "create-approval-flow": "Create approval flow",
       "edit-approval-flow": "Edit approval flow",
+      "built-in": "Built-in Flows",
+      "custom": "Custom Flows",
+      "no-custom-flows": "No custom approval flows created yet. Click 'Create Flow' to add one.",
       "node": {
         "nodes": "Approval nodes",
         "description": "Only one approval is required on this node when there are multiple approvers.",
@@ -2751,10 +2753,6 @@
     "sql-editor-user": {
       "self": "SQL Editor User",
       "description": "Permissions for querying database data."
-    },
-    "project-exporter": {
-      "self": "Project Exporter",
-      "description": "Permissions for exporting database data."
     },
     "project-viewer": {
       "self": "Project Viewer",

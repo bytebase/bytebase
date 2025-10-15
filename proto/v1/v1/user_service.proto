@@ -14,6 +14,7 @@ import "v1/common.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// UserService manages user accounts and authentication.
 service UserService {
   // Get the user.
   // Any authenticated user can get the user.
@@ -52,10 +53,8 @@ service UserService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Create a user.
-  // When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
-  // Otherwise, any unauthenticated user can create a user.
-  // Permissions required: bb.users.create
+  // Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
+  // Permissions required: bb.users.create (only when Disallow Signup is enabled)
   rpc CreateUser(CreateUserRequest) returns (User) {
     option (google.api.http) = {
       post: "/v1/users"
@@ -67,8 +66,8 @@ service UserService {
     option (bytebase.v1.audit) = true;
   }
 
-  // Only the user itself and the user with bb.users.update permission on the workspace can update the user.
-  // Permissions required: bb.users.update
+  // Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+  // Permissions required: bb.users.update (or self)
   rpc UpdateUser(UpdateUserRequest) returns (User) {
     option (google.api.http) = {
       patch: "/v1/{user.name=users/*}"
@@ -79,8 +78,7 @@ service UserService {
     option (bytebase.v1.audit) = true;
   }
 
-  // Only the user with bb.users.delete permission on the workspace can delete the user.
-  // The last remaining workspace admin cannot be deleted.
+  // Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted.
   // Permissions required: bb.users.delete
   rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=users/*}"};
@@ -89,7 +87,7 @@ service UserService {
     option (bytebase.v1.audit) = true;
   }
 
-  // Only the user with bb.users.undelete permission on the workspace can undelete the user.
+  // Restores a deleted user.
   // Permissions required: bb.users.undelete
   rpc UndeleteUser(UndeleteUserRequest) returns (User) {
     option (google.api.http) = {
@@ -234,16 +232,22 @@ message User {
   // Format: users/{user}. {user} is a system-generated unique ID.
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The lifecycle state of the user account.
   State state = 2;
 
+  // The email address of the user, used for login and notifications.
   string email = 3;
 
+  // The display title or full name of the user.
   string title = 4;
 
+  // The type of user account.
   UserType user_type = 5;
 
+  // The password for authentication. Only used during user creation or password updates.
   string password = 7 [(google.api.field_behavior) = INPUT_ONLY];
 
+  // The service key for service account authentication. Only used for service accounts.
   string service_key = 8 [(google.api.field_behavior) = INPUT_ONLY];
 
   // The mfa_enabled flag means if the user has enabled MFA.
@@ -260,12 +264,15 @@ message User {
   string phone = 12;
 
   message Profile {
+    // The last time the user successfully logged in.
     google.protobuf.Timestamp last_login_time = 1;
+    // The last time the user changed their password.
     google.protobuf.Timestamp last_change_password_time = 2;
     // source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
     string source = 3;
   }
 
+  // User profile metadata.
   Profile profile = 13;
 
   // The groups for the user.
@@ -274,8 +281,12 @@ message User {
 }
 
 enum UserType {
+  // Unspecified user type.
   USER_TYPE_UNSPECIFIED = 0;
+  // Regular human user account.
   USER = 1;
+  // System-managed bot account for automated operations.
   SYSTEM_BOT = 2;
+  // Service account for API integrations.
   SERVICE_ACCOUNT = 3;
 }

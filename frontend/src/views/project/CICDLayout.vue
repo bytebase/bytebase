@@ -3,21 +3,7 @@
     <template v-if="ready">
       <PollerProvider>
         <div class="h-full flex flex-col">
-          <!-- Banner Section -->
-          <div v-if="showBanner" class="banner-section">
-            <div
-              v-if="showClosedBanner"
-              class="h-8 w-full text-base font-medium bg-gray-400 text-white flex justify-center items-center"
-            >
-              {{ $t("common.closed") }}
-            </div>
-            <div
-              v-else-if="showSuccessBanner"
-              class="h-8 w-full text-base font-medium bg-success text-white flex justify-center items-center"
-            >
-              {{ $t("common.done") }}
-            </div>
-          </div>
+          <BannerSection :current-tab="tabKey" />
 
           <HeaderSection />
 
@@ -46,7 +32,11 @@
           </NTabs>
 
           <div class="flex-1 flex">
-            <router-view />
+            <router-view v-slot="{ Component }">
+              <keep-alive>
+                <component :is="Component" />
+              </keep-alive>
+            </router-view>
           </div>
         </div>
       </PollerProvider>
@@ -59,14 +49,7 @@
 
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
-import {
-  CirclePlayIcon,
-  FileDiffIcon,
-  Layers2Icon,
-  CheckCircle2Icon,
-  XCircleIcon,
-  ClockIcon,
-} from "lucide-vue-next";
+import { CirclePlayIcon, FileDiffIcon, Layers2Icon } from "lucide-vue-next";
 import { NSpin, NTab, NTabs, NTag } from "naive-ui";
 import { computed, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -82,7 +65,7 @@ import {
   useInitializePlan,
 } from "@/components/Plan";
 import PollerProvider from "@/components/Plan/PollerProvider.vue";
-import { HeaderSection } from "@/components/Plan/components";
+import { BannerSection, HeaderSection } from "@/components/Plan/components";
 import RefreshIndicator from "@/components/Plan/components/RefreshIndicator.vue";
 import { provideSidebarContext } from "@/components/Plan/logic/sidebar";
 import { useNavigationGuard } from "@/components/Plan/logic/useNavigationGuard";
@@ -98,12 +81,6 @@ import {
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
   PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
 } from "@/router/dashboard/projectV1";
-import { State } from "@/types/proto-es/v1/common_pb";
-import {
-  IssueStatus,
-  Issue_ApprovalStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractIssueUID,
   extractPlanUID,
@@ -147,10 +124,12 @@ const planBaseContext = useBasePlanContext({
 });
 const { enabledNewLayout } = useIssueLayoutVersion();
 const isLoading = ref(true);
+const isInitialLoad = ref(true);
 const containerRef = ref<HTMLElement>();
 
 const ready = computed(() => {
-  return !isInitializing.value && !!plan.value && !isLoading.value;
+  // Only show loading spinner during initial load, not during tab navigation
+  return !isInitialLoad.value && !!plan.value && !isInitializing.value;
 });
 
 const shouldShowNavigation = computed(() => {
@@ -186,6 +165,11 @@ watch(
       return;
     }
 
+    // Mark initial load as complete once data is loaded
+    if (isInitialLoad.value) {
+      isInitialLoad.value = false;
+    }
+
     // Redirect all non-changeDatabaseConfig plans to the legacy issue page.
     // Including export data plans.
     if (
@@ -208,8 +192,7 @@ watch(
     } else {
       isLoading.value = false;
     }
-  },
-  { once: true }
+  }
 );
 
 const tabKey = computed(() => {
@@ -248,99 +231,13 @@ const availableTabs = computed<TabKey[]>(() => {
   return tabs;
 });
 
-const approvalStatusInfo = computed(() => {
-  if (!issue.value) return null;
-
-  const approvalStatus = issue.value.approvalStatus;
-
-  // Approved or skipped - ready to rollout
-  if (
-    approvalStatus === Issue_ApprovalStatus.APPROVED ||
-    approvalStatus === Issue_ApprovalStatus.SKIPPED
-  ) {
-    return {
-      icon: CheckCircle2Icon,
-      class: "text-success",
-      ariaLabel: t("issue.approval.approved-and-waiting-for-rollout"),
-    };
-  }
-
-  // Rejected
-  if (approvalStatus === Issue_ApprovalStatus.REJECTED) {
-    return {
-      icon: XCircleIcon,
-      class: "text-error",
-      ariaLabel: t("issue.approval.rejected-error"),
-    };
-  }
-
-  // Pending
-  if (approvalStatus === Issue_ApprovalStatus.PENDING) {
-    return {
-      icon: ClockIcon,
-      class: "text-warning",
-      ariaLabel: t("issue.approval.pending-error"),
-    };
-  }
-
-  // Checking state - no indicator
-  return null;
-});
-
-const rolloutStatusInfo = computed(() => {
-  if (!rollout.value || rollout.value.stages.length === 0) return null;
-
-  // Collect all tasks from all stages
-  const allTasks = rollout.value.stages.flatMap((stage) => stage.tasks);
-
-  // No tasks means no status to show
-  if (allTasks.length === 0) return null;
-
-  // Check for failed or canceled tasks
-  const anyFailed = allTasks.some(
-    (task) =>
-      task.status === Task_Status.FAILED || task.status === Task_Status.CANCELED
-  );
-  if (anyFailed) {
-    return {
-      icon: XCircleIcon,
-      class: "text-error",
-    };
-  }
-
-  // Check if all tasks are done
-  const allDone = allTasks.every((task) => task.status === Task_Status.DONE);
-  if (allDone) {
-    return {
-      icon: CheckCircle2Icon,
-      class: "text-success",
-    };
-  }
-
-  // Tasks are still in progress - no indicator
-  return null;
-});
-
 const tabRender = (tab: TabKey) => {
-  const approvalStatusIcon = approvalStatusInfo.value?.icon;
-  const approvalStatusClass = approvalStatusInfo.value?.class;
-  const approvalStatusAriaLabel = approvalStatusInfo.value?.ariaLabel;
-  const rolloutStatusIcon = rolloutStatusInfo.value?.icon;
-  const rolloutStatusClass = rolloutStatusInfo.value?.class;
-
   switch (tab) {
     case TabKey.Issue:
       return (
         <div class="flex items-center gap-2">
           <Layers2Icon size={18} />
           <span>{t("common.overview")}</span>
-          {approvalStatusIcon && (
-            <approvalStatusIcon
-              size={16}
-              class={approvalStatusClass}
-              aria-label={approvalStatusAriaLabel}
-            />
-          )}
         </div>
       );
     case TabKey.Plan:
@@ -353,13 +250,6 @@ const tabRender = (tab: TabKey) => {
               {plan.value.specs.length}
             </NTag>
           )}
-          {!isCreating.value && approvalStatusIcon && (
-            <approvalStatusIcon
-              size={16}
-              class={approvalStatusClass}
-              aria-label={approvalStatusAriaLabel}
-            />
-          )}
         </div>
       );
     case TabKey.Rollout:
@@ -367,9 +257,6 @@ const tabRender = (tab: TabKey) => {
         <div class="flex items-center gap-2">
           <CirclePlayIcon size={18} />
           <span>{t("plan.navigator.rollout")}</span>
-          {rolloutStatusIcon && (
-            <rolloutStatusIcon size={16} class={rolloutStatusClass} />
-          )}
         </div>
       );
     default:
@@ -438,22 +325,6 @@ const documentTitle = computed(() => {
     }
   }
   return t("common.loading");
-});
-
-// Banner conditions
-const showClosedBanner = computed(() => {
-  return (
-    plan.value.state === State.DELETED ||
-    (issue.value && issue.value.status === IssueStatus.CANCELED)
-  );
-});
-
-const showSuccessBanner = computed(() => {
-  return issue.value && issue.value.status === IssueStatus.DONE;
-});
-
-const showBanner = computed(() => {
-  return showClosedBanner.value || showSuccessBanner.value;
 });
 
 useTitle(documentTitle);

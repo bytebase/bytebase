@@ -1,11 +1,11 @@
 <template>
   <div class="space-y-6 pb-2">
-    <div class="divide-y divide-block-border w-[850px]">
+    <div class="divide-y divide-block-border max-w-[850px]">
       <InstanceEngineRadioGrid
         v-if="isCreating"
         :engine="basicInfo.engine"
         :engine-list="supportedEngineV1List()"
-        class="w-full mb-6 grid-cols-4 gap-2"
+        class="w-full mb-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2"
         @update:engine="(newEngine: Engine) => changeInstanceEngine(newEngine)"
       >
         <template #suffix="{ engine }: { engine: Engine }">
@@ -429,9 +429,10 @@
           </label>
           <div class="mt-1">
             <LabelListEditor
+              ref="labelListEditorRef"
               v-model:kv-list="labelKVList"
               :readonly="!allowEdit"
-              :show-errors="false"
+              :show-errors="true"
             />
           </div>
         </div>
@@ -552,8 +553,6 @@ import {
   autoSubscriptionRoute,
   urlfy,
   supportedEngineV1List,
-  convertLabelsToKVList,
-  convertKVListToLabels,
 } from "@/utils";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import BigQueryHostInput from "./BigQueryHostInput.vue";
@@ -584,6 +583,8 @@ const {
   allowCreate,
   resourceIdField,
   basicInfo,
+  labelListEditorRef,
+  labelKVList,
   adminDataSource,
   editingDataSource,
   testConnection,
@@ -619,16 +620,6 @@ const resourceId = computed({
   },
   set(id) {
     basicInfo.value.name = `instances/${id}`;
-  },
-});
-
-// Convert labels to KVList format for LabelListEditor
-const labelKVList = computed({
-  get() {
-    return convertLabelsToKVList(basicInfo.value.labels, true /* sort */);
-  },
-  set(kvList) {
-    basicInfo.value.labels = convertKVListToLabels(kvList, false);
   },
 });
 

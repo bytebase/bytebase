@@ -9,7 +9,9 @@ import "v1/user_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// AuthService handles user authentication operations.
 service AuthService {
+  // Authenticates a user and returns access tokens.
   // Permissions required: None
   rpc Login(LoginRequest) returns (LoginResponse) {
     option (google.api.http) = {
@@ -20,6 +22,7 @@ service AuthService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Logs out the current user session.
   // Permissions required: None
   rpc Logout(LogoutRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
@@ -32,8 +35,10 @@ service AuthService {
 }
 
 message LoginRequest {
+  // User's email address.
   string email = 1;
 
+  // User's password for authentication.
   string password = 2;
 
   // If web is set, we will set access token, refresh token, and user to the cookie.
@@ -56,28 +61,38 @@ message LoginRequest {
   optional string mfa_temp_token = 8;
 }
 
+// Context for identity provider authentication.
 message IdentityProviderContext {
   oneof context {
+    // OAuth2 authentication context.
     OAuth2IdentityProviderContext oauth2_context = 1;
+    // OpenID Connect authentication context.
     OIDCIdentityProviderContext oidc_context = 2;
   }
 }
 
+// OAuth2 authentication context.
 message OAuth2IdentityProviderContext {
+  // Authorization code from OAuth2 provider.
   string code = 1;
 }
 
+// OpenID Connect authentication context.
 message OIDCIdentityProviderContext {}
 
 message LoginResponse {
+  // Access token for authenticated requests.
   string token = 1;
 
+  // Temporary token for MFA verification.
   optional string mfa_temp_token = 2;
 
+  // Whether user must reset password before continuing.
   bool require_reset_password = 3;
 
-  // The user of successful login.
+  // The user from the successful login.
   User user = 4;
 }
 
+// Request to logout current user session.
 message LogoutRequest {}

@@ -40,21 +40,6 @@
               :required-feature="PlanFeature.FEATURE_IAM"
             />
           </div>
-
-          <!-- Exporter blocks -->
-          <template
-            v-if="
-              binding.role !== PresetRoleType.PROJECT_OWNER &&
-              checkRoleContainsAnyPermission(binding.role, 'bb.sql.select')
-            "
-          >
-            <div class="w-full flex flex-col justify-start items-start">
-              <p class="mb-2">
-                {{ $t("issue.grant-request.export-rows") }}
-              </p>
-              <MaxRowCountSelect v-model:value="state.maxRowCount" />
-            </div>
-          </template>
         </template>
 
         <div class="w-full">
@@ -121,7 +106,6 @@ import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
-import MaxRowCountSelect from "@/components/GrantRequestPanel/MaxRowCountSelect.vue";
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
@@ -154,8 +138,6 @@ interface LocalState {
   expirationTimestamp?: number;
   // Querier and exporter options.
   databaseResources?: DatabaseResource[];
-  // Exporter options.
-  maxRowCount?: number;
   isLoading: boolean;
 }
 
@@ -164,7 +146,6 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   title: "",
   description: "",
-  maxRowCount: undefined,
   isLoading: true,
 });
 const expirationSelectorRef = ref<InstanceType<typeof ExpirationSelector>>();
@@ -196,7 +177,6 @@ const bindingCondition = computed(() =>
     role: props.binding.role,
     description: state.description,
     expirationTimestampInMS: state.expirationTimestamp,
-    rowLimit: state.maxRowCount,
     databaseResources: state.databaseResources,
   })
 );
@@ -223,9 +203,6 @@ onMounted(() => {
     }
     if (conditionExpr.databaseResources) {
       state.databaseResources = conditionExpr.databaseResources;
-    }
-    if (conditionExpr.rowLimit) {
-      state.maxRowCount = conditionExpr.rowLimit;
     }
   }
 

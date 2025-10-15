@@ -178,7 +178,6 @@ interface SingleBinding {
   databaseResource?: DatabaseResource;
   expiration?: Date;
   description: string;
-  rowLimit?: number;
   rawBinding: Binding;
 }
 
@@ -487,7 +486,6 @@ const handleDeleteCondition = async (
               role: item.role,
               description: bindingList[0].description,
               expirationTimestampInMS: bindingList[0].expiration?.getTime(),
-              rowLimit: bindingList[0].rowLimit,
               databaseResources: databaseResources,
             }),
           })
@@ -583,7 +581,6 @@ watch(
         if (conditionExpr.expiredTime) {
           singleBinding.expiration = new Date(conditionExpr.expiredTime);
         }
-        singleBinding.rowLimit = conditionExpr.rowLimit;
         if (
           Array.isArray(conditionExpr.databaseResources) &&
           conditionExpr.databaseResources.length > 0

@@ -32,8 +32,7 @@
           :allow-admin="!readonly"
           :enable-raw-expression="true"
           :factor-list="FactorList"
-          :factor-support-dropdown="factorSupportDropdown"
-          :option-config-map="getDatabaseGroupOptionConfigMap()"
+          :option-config-map="getDatabaseGroupOptionConfigMap(project.name)"
         />
       </div>
       <div class="col-span-2">
@@ -101,11 +100,7 @@ import {
 } from "@/utils";
 import { ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
-import {
-  FactorList,
-  factorSupportDropdown,
-  getDatabaseGroupOptionConfigMap,
-} from "./utils";
+import { FactorList, getDatabaseGroupOptionConfigMap } from "./utils";
 
 const props = defineProps<{
   readonly: boolean;

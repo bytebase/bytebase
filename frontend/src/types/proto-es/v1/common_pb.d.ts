@@ -39,15 +39,21 @@ export declare type Position = Message<"bytebase.v1.Position"> & {
 export declare const PositionSchema: GenMessage<Position>;
 
 /**
+ * Range of positions in text or sequence.
+ *
  * @generated from message bytebase.v1.Range
  */
 export declare type Range = Message<"bytebase.v1.Range"> & {
   /**
+   * Start position (inclusive).
+   *
    * @generated from field: int32 start = 1;
    */
   start: number;
 
   /**
+   * End position (exclusive).
+   *
    * @generated from field: int32 end = 2;
    */
   end: number;
@@ -60,6 +66,8 @@ export declare type Range = Message<"bytebase.v1.Range"> & {
 export declare const RangeSchema: GenMessage<Range>;
 
 /**
+ * Resource lifecycle state.
+ *
  * @generated from enum bytebase.v1.State
  */
 export enum State {
@@ -69,11 +77,15 @@ export enum State {
   STATE_UNSPECIFIED = 0,
 
   /**
+   * Resource is active and operational.
+   *
    * @generated from enum value: ACTIVE = 1;
    */
   ACTIVE = 1,
 
   /**
+   * Resource is soft-deleted but may be recoverable.
+   *
    * @generated from enum value: DELETED = 2;
    */
   DELETED = 2,
@@ -85,135 +97,189 @@ export enum State {
 export declare const StateSchema: GenEnum<State>;
 
 /**
+ * Database engine type.
+ *
  * @generated from enum bytebase.v1.Engine
  */
 export enum Engine {
   /**
+   * Unspecified database engine.
+   *
    * @generated from enum value: ENGINE_UNSPECIFIED = 0;
    */
   ENGINE_UNSPECIFIED = 0,
 
   /**
+   * ClickHouse columnar database.
+   *
    * @generated from enum value: CLICKHOUSE = 1;
    */
   CLICKHOUSE = 1,
 
   /**
+   * MySQL relational database.
+   *
    * @generated from enum value: MYSQL = 2;
    */
   MYSQL = 2,
 
   /**
+   * PostgreSQL relational database.
+   *
    * @generated from enum value: POSTGRES = 3;
    */
   POSTGRES = 3,
 
   /**
+   * Snowflake cloud data warehouse.
+   *
    * @generated from enum value: SNOWFLAKE = 4;
    */
   SNOWFLAKE = 4,
 
   /**
+   * SQLite embedded database.
+   *
    * @generated from enum value: SQLITE = 5;
    */
   SQLITE = 5,
 
   /**
+   * TiDB distributed SQL database.
+   *
    * @generated from enum value: TIDB = 6;
    */
   TIDB = 6,
 
   /**
+   * MongoDB document database.
+   *
    * @generated from enum value: MONGODB = 7;
    */
   MONGODB = 7,
 
   /**
+   * Redis key-value store.
+   *
    * @generated from enum value: REDIS = 8;
    */
   REDIS = 8,
 
   /**
+   * Oracle relational database.
+   *
    * @generated from enum value: ORACLE = 9;
    */
   ORACLE = 9,
 
   /**
+   * Google Cloud Spanner distributed database.
+   *
    * @generated from enum value: SPANNER = 10;
    */
   SPANNER = 10,
 
   /**
+   * Microsoft SQL Server relational database.
+   *
    * @generated from enum value: MSSQL = 11;
    */
   MSSQL = 11,
 
   /**
+   * Amazon Redshift data warehouse.
+   *
    * @generated from enum value: REDSHIFT = 12;
    */
   REDSHIFT = 12,
 
   /**
+   * MariaDB relational database.
+   *
    * @generated from enum value: MARIADB = 13;
    */
   MARIADB = 13,
 
   /**
+   * OceanBase distributed database.
+   *
    * @generated from enum value: OCEANBASE = 14;
    */
   OCEANBASE = 14,
 
   /**
+   * StarRocks analytics database.
+   *
    * @generated from enum value: STARROCKS = 18;
    */
   STARROCKS = 18,
 
   /**
+   * Apache Doris analytics database.
+   *
    * @generated from enum value: DORIS = 19;
    */
   DORIS = 19,
 
   /**
+   * Apache Hive data warehouse.
+   *
    * @generated from enum value: HIVE = 20;
    */
   HIVE = 20,
 
   /**
+   * Elasticsearch search engine.
+   *
    * @generated from enum value: ELASTICSEARCH = 21;
    */
   ELASTICSEARCH = 21,
 
   /**
+   * Google BigQuery data warehouse.
+   *
    * @generated from enum value: BIGQUERY = 22;
    */
   BIGQUERY = 22,
 
   /**
+   * Amazon DynamoDB NoSQL database.
+   *
    * @generated from enum value: DYNAMODB = 23;
    */
   DYNAMODB = 23,
 
   /**
+   * Databricks lakehouse platform.
+   *
    * @generated from enum value: DATABRICKS = 24;
    */
   DATABRICKS = 24,
 
   /**
+   * CockroachDB distributed SQL database.
+   *
    * @generated from enum value: COCKROACHDB = 25;
    */
   COCKROACHDB = 25,
 
   /**
+   * Azure Cosmos DB multi-model database.
+   *
    * @generated from enum value: COSMOSDB = 26;
    */
   COSMOSDB = 26,
 
   /**
+   * Trino distributed SQL query engine.
+   *
    * @generated from enum value: TRINO = 27;
    */
   TRINO = 27,
 
   /**
+   * Apache Cassandra NoSQL database.
+   *
    * @generated from enum value: CASSANDRA = 28;
    */
   CASSANDRA = 28,
@@ -225,30 +291,42 @@ export enum Engine {
 export declare const EngineSchema: GenEnum<Engine>;
 
 /**
+ * Version control system type.
+ *
  * @generated from enum bytebase.v1.VCSType
  */
 export enum VCSType {
   /**
+   * Unspecified VCS type.
+   *
    * @generated from enum value: VCS_TYPE_UNSPECIFIED = 0;
    */
   VCS_TYPE_UNSPECIFIED = 0,
 
   /**
+   * GitHub version control platform.
+   *
    * @generated from enum value: GITHUB = 1;
    */
   GITHUB = 1,
 
   /**
+   * GitLab version control platform.
+   *
    * @generated from enum value: GITLAB = 2;
    */
   GITLAB = 2,
 
   /**
+   * Bitbucket version control platform.
+   *
    * @generated from enum value: BITBUCKET = 3;
    */
   BITBUCKET = 3,
 
   /**
+   * Azure DevOps version control platform.
+   *
    * @generated from enum value: AZURE_DEVOPS = 4;
    */
   AZURE_DEVOPS = 4,
@@ -260,30 +338,42 @@ export enum VCSType {
 export declare const VCSTypeSchema: GenEnum<VCSType>;
 
 /**
+ * Data export format.
+ *
  * @generated from enum bytebase.v1.ExportFormat
  */
 export enum ExportFormat {
   /**
+   * Unspecified export format.
+   *
    * @generated from enum value: FORMAT_UNSPECIFIED = 0;
    */
   FORMAT_UNSPECIFIED = 0,
 
   /**
+   * Comma-separated values format.
+   *
    * @generated from enum value: CSV = 1;
    */
   CSV = 1,
 
   /**
+   * JavaScript Object Notation format.
+   *
    * @generated from enum value: JSON = 2;
    */
   JSON = 2,
 
   /**
+   * SQL statements format.
+   *
    * @generated from enum value: SQL = 3;
    */
   SQL = 3,
 
   /**
+   * Microsoft Excel spreadsheet format.
+   *
    * @generated from enum value: XLSX = 4;
    */
   XLSX = 4,
@@ -362,4 +452,44 @@ export enum MigrationType {
  * Describes the enum bytebase.v1.MigrationType.
  */
 export declare const MigrationTypeSchema: GenEnum<MigrationType>;
+
+/**
+ * RiskLevel is the risk level.
+ *
+ * @generated from enum bytebase.v1.RiskLevel
+ */
+export enum RiskLevel {
+  /**
+   * Unspecified risk level.
+   *
+   * @generated from enum value: RISK_LEVEL_UNSPECIFIED = 0;
+   */
+  RISK_LEVEL_UNSPECIFIED = 0,
+
+  /**
+   * Low risk operation.
+   *
+   * @generated from enum value: LOW = 1;
+   */
+  LOW = 1,
+
+  /**
+   * Moderate risk operation.
+   *
+   * @generated from enum value: MODERATE = 2;
+   */
+  MODERATE = 2,
+
+  /**
+   * High risk operation.
+   *
+   * @generated from enum value: HIGH = 3;
+   */
+  HIGH = 3,
+}
+
+/**
+ * Describes the enum bytebase.v1.RiskLevel.
+ */
+export declare const RiskLevelSchema: GenEnum<RiskLevel>;
 

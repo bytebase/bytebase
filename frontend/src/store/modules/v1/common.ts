@@ -84,6 +84,15 @@ export const getProjectNamePlanIdPlanCheckRunId = (name: string): string[] => {
   return [tokens[0], tokens[1], tokens[2]];
 };
 
+export const getProjectIdRolloutUidStageUid = (name: string): string[] => {
+  const tokens = getNameParentTokens(name, [
+    projectNamePrefix,
+    rolloutNamePrefix,
+    stageNamePrefix,
+  ]);
+  return [tokens[0], tokens[1], tokens[2]];
+};
+
 export const getProjectIdRolloutUidStageUidTaskUid = (
   name: string
 ): string[] => {

@@ -26,13 +26,8 @@ func (x *IssuePayloadApproval) Equal(y *IssuePayloadApproval) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if len(x.ApprovalTemplates) != len(y.ApprovalTemplates) {
+	if !x.ApprovalTemplate.Equal(y.ApprovalTemplate) {
 		return false
-	}
-	for i := 0; i < len(x.ApprovalTemplates); i++ {
-		if !x.ApprovalTemplates[i].Equal(y.ApprovalTemplates[i]) {
-			return false
-		}
 	}
 	if len(x.Approvers) != len(y.Approvers) {
 		return false
@@ -61,6 +56,9 @@ func (x *ApprovalTemplate) Equal(y *ApprovalTemplate) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
+	if x.Id != y.Id {
+		return false
+	}
 	if !x.Flow.Equal(y.Flow) {
 		return false
 	}
@@ -80,50 +78,13 @@ func (x *ApprovalFlow) Equal(y *ApprovalFlow) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if len(x.Steps) != len(y.Steps) {
+	if len(x.Roles) != len(y.Roles) {
 		return false
 	}
-	for i := 0; i < len(x.Steps); i++ {
-		if !x.Steps[i].Equal(y.Steps[i]) {
+	for i := 0; i < len(x.Roles); i++ {
+		if x.Roles[i] != y.Roles[i] {
 			return false
 		}
-	}
-	return true
-}
-
-func (x *ApprovalStep) Equal(y *ApprovalStep) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Type != y.Type {
-		return false
-	}
-	if len(x.Nodes) != len(y.Nodes) {
-		return false
-	}
-	for i := 0; i < len(x.Nodes); i++ {
-		if !x.Nodes[i].Equal(y.Nodes[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-func (x *ApprovalNode) Equal(y *ApprovalNode) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Type != y.Type {
-		return false
-	}
-	if x.Role != y.Role {
-		return false
 	}
 	return true
 }

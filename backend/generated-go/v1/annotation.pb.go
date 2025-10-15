@@ -22,13 +22,15 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Authorization method for RPC calls.
 type AuthMethod int32
 
 const (
+	// Unspecified authorization method.
 	AuthMethod_AUTH_METHOD_UNSPECIFIED AuthMethod = 0
-	// IAM uses the standard IAM authorization check on the organizational resources.
+	// Standard IAM authorization check on organizational resources.
 	AuthMethod_IAM AuthMethod = 1
-	// Custom authorization method.
+	// Custom authorization logic.
 	AuthMethod_CUSTOM AuthMethod = 2
 )
 
@@ -110,12 +112,20 @@ var file_v1_annotation_proto_extTypes = []protoimpl.ExtensionInfo{
 
 // Extension fields to descriptorpb.MethodOptions.
 var (
+	// Whether the method allows access without authentication credentials.
+	//
 	// optional bool allow_without_credential = 100000;
 	E_AllowWithoutCredential = &file_v1_annotation_proto_extTypes[0]
+	// The permission required to call this method.
+	//
 	// optional string permission = 100001;
 	E_Permission = &file_v1_annotation_proto_extTypes[1]
+	// The authorization method to use for this RPC.
+	//
 	// optional bytebase.v1.AuthMethod auth_method = 100002;
 	E_AuthMethod = &file_v1_annotation_proto_extTypes[2]
+	// Whether to audit calls to this method.
+	//
 	// optional bool audit = 100003;
 	E_Audit = &file_v1_annotation_proto_extTypes[3]
 )

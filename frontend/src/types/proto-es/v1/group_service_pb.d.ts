@@ -12,6 +12,8 @@ import type { EmptySchema, FieldMask } from "@bufbuild/protobuf/wkt";
 export declare const file_v1_group_service: GenFile;
 
 /**
+ * Request message for getting a group.
+ *
  * @generated from message bytebase.v1.GetGroupRequest
  */
 export declare type GetGroupRequest = Message<"bytebase.v1.GetGroupRequest"> & {
@@ -31,6 +33,8 @@ export declare type GetGroupRequest = Message<"bytebase.v1.GetGroupRequest"> & {
 export declare const GetGroupRequestSchema: GenMessage<GetGroupRequest>;
 
 /**
+ * Request message for batch getting groups.
+ *
  * @generated from message bytebase.v1.BatchGetGroupsRequest
  */
 export declare type BatchGetGroupsRequest = Message<"bytebase.v1.BatchGetGroupsRequest"> & {
@@ -50,6 +54,8 @@ export declare type BatchGetGroupsRequest = Message<"bytebase.v1.BatchGetGroupsR
 export declare const BatchGetGroupsRequestSchema: GenMessage<BatchGetGroupsRequest>;
 
 /**
+ * Response message for batch getting groups.
+ *
  * @generated from message bytebase.v1.BatchGetGroupsResponse
  */
 export declare type BatchGetGroupsResponse = Message<"bytebase.v1.BatchGetGroupsResponse"> & {
@@ -68,6 +74,8 @@ export declare type BatchGetGroupsResponse = Message<"bytebase.v1.BatchGetGroups
 export declare const BatchGetGroupsResponseSchema: GenMessage<BatchGetGroupsResponse>;
 
 /**
+ * Request message for listing groups.
+ *
  * @generated from message bytebase.v1.ListGroupsRequest
  */
 export declare type ListGroupsRequest = Message<"bytebase.v1.ListGroupsRequest"> & {
@@ -122,6 +130,8 @@ export declare type ListGroupsRequest = Message<"bytebase.v1.ListGroupsRequest">
 export declare const ListGroupsRequestSchema: GenMessage<ListGroupsRequest>;
 
 /**
+ * Response message for listing groups.
+ *
  * @generated from message bytebase.v1.ListGroupsResponse
  */
 export declare type ListGroupsResponse = Message<"bytebase.v1.ListGroupsResponse"> & {
@@ -148,6 +158,8 @@ export declare type ListGroupsResponse = Message<"bytebase.v1.ListGroupsResponse
 export declare const ListGroupsResponseSchema: GenMessage<ListGroupsResponse>;
 
 /**
+ * Request message for creating a group.
+ *
  * @generated from message bytebase.v1.CreateGroupRequest
  */
 export declare type CreateGroupRequest = Message<"bytebase.v1.CreateGroupRequest"> & {
@@ -174,6 +186,8 @@ export declare type CreateGroupRequest = Message<"bytebase.v1.CreateGroupRequest
 export declare const CreateGroupRequestSchema: GenMessage<CreateGroupRequest>;
 
 /**
+ * Request message for updating a group.
+ *
  * @generated from message bytebase.v1.UpdateGroupRequest
  */
 export declare type UpdateGroupRequest = Message<"bytebase.v1.UpdateGroupRequest"> & {
@@ -210,6 +224,8 @@ export declare type UpdateGroupRequest = Message<"bytebase.v1.UpdateGroupRequest
 export declare const UpdateGroupRequestSchema: GenMessage<UpdateGroupRequest>;
 
 /**
+ * Request message for deleting a group.
+ *
  * @generated from message bytebase.v1.DeleteGroupRequest
  */
 export declare type DeleteGroupRequest = Message<"bytebase.v1.DeleteGroupRequest"> & {
@@ -229,6 +245,8 @@ export declare type DeleteGroupRequest = Message<"bytebase.v1.DeleteGroupRequest
 export declare const DeleteGroupRequestSchema: GenMessage<DeleteGroupRequest>;
 
 /**
+ * A member of a group with a role.
+ *
  * @generated from message bytebase.v1.GroupMember
  */
 export declare type GroupMember = Message<"bytebase.v1.GroupMember"> & {
@@ -242,6 +260,8 @@ export declare type GroupMember = Message<"bytebase.v1.GroupMember"> & {
   member: string;
 
   /**
+   * The member's role in the group.
+   *
    * @generated from field: bytebase.v1.GroupMember.Role role = 2;
    */
   role: GroupMember_Role;
@@ -254,20 +274,28 @@ export declare type GroupMember = Message<"bytebase.v1.GroupMember"> & {
 export declare const GroupMemberSchema: GenMessage<GroupMember>;
 
 /**
+ * The role of a group member.
+ *
  * @generated from enum bytebase.v1.GroupMember.Role
  */
 export enum GroupMember_Role {
   /**
+   * Unspecified role.
+   *
    * @generated from enum value: ROLE_UNSPECIFIED = 0;
    */
   ROLE_UNSPECIFIED = 0,
 
   /**
+   * Group owner.
+   *
    * @generated from enum value: OWNER = 1;
    */
   OWNER = 1,
 
   /**
+   * Group member.
+   *
    * @generated from enum value: MEMBER = 2;
    */
   MEMBER = 2,
@@ -279,6 +307,8 @@ export enum GroupMember_Role {
 export declare const GroupMember_RoleSchema: GenEnum<GroupMember_Role>;
 
 /**
+ * A group of users within the workspace.
+ *
  * @generated from message bytebase.v1.Group
  */
 export declare type Group = Message<"bytebase.v1.Group"> & {
@@ -291,22 +321,28 @@ export declare type Group = Message<"bytebase.v1.Group"> & {
   name: string;
 
   /**
+   * The display title of the group.
+   *
    * @generated from field: string title = 2;
    */
   title: string;
 
   /**
+   * The description of the group.
+   *
    * @generated from field: string description = 3;
    */
   description: string;
 
   /**
+   * The members of the group.
+   *
    * @generated from field: repeated bytebase.v1.GroupMember members = 5;
    */
   members: GroupMember[];
 
   /**
-   * source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
+   * The source system where the group originated (e.g., Entra ID for SCIM sync).
    *
    * @generated from field: string source = 7;
    */
@@ -320,10 +356,13 @@ export declare type Group = Message<"bytebase.v1.Group"> & {
 export declare const GroupSchema: GenMessage<Group>;
 
 /**
+ * GroupService manages user groups for organizing users and permissions.
+ *
  * @generated from service bytebase.v1.GroupService
  */
 export declare const GroupService: GenService<{
   /**
+   * Gets a group by name.
    * Permissions required: bb.groups.get
    *
    * @generated from rpc bytebase.v1.GroupService.GetGroup
@@ -334,7 +373,7 @@ export declare const GroupService: GenService<{
     output: typeof GroupSchema;
   },
   /**
-   * Get the groups in batch.
+   * Gets multiple groups in a single request.
    * Permissions required: bb.groups.get
    *
    * @generated from rpc bytebase.v1.GroupService.BatchGetGroups
@@ -345,6 +384,7 @@ export declare const GroupService: GenService<{
     output: typeof BatchGetGroupsResponseSchema;
   },
   /**
+   * Lists all groups in the workspace.
    * Permissions required: bb.groups.list
    *
    * @generated from rpc bytebase.v1.GroupService.ListGroups
@@ -355,6 +395,7 @@ export declare const GroupService: GenService<{
     output: typeof ListGroupsResponseSchema;
   },
   /**
+   * Creates a new group.
    * Permissions required: bb.groups.create
    *
    * @generated from rpc bytebase.v1.GroupService.CreateGroup
@@ -365,9 +406,8 @@ export declare const GroupService: GenService<{
     output: typeof GroupSchema;
   },
   /**
-   * UpdateGroup updates the group.
-   * Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
-   * Permissions required: bb.groups.update
+   * Updates a group. Group owners or users with bb.groups.update permission can update.
+   * Permissions required: bb.groups.update OR caller is group owner
    *
    * @generated from rpc bytebase.v1.GroupService.UpdateGroup
    */
@@ -377,7 +417,8 @@ export declare const GroupService: GenService<{
     output: typeof GroupSchema;
   },
   /**
-   * Permissions required: bb.groups.delete
+   * Deletes a group. Group owners or users with bb.groups.delete permission can delete.
+   * Permissions required: bb.groups.delete OR caller is group owner
    *
    * @generated from rpc bytebase.v1.GroupService.DeleteGroup
    */

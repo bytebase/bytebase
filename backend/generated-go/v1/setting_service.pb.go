@@ -327,13 +327,13 @@ func (AISetting_Provider) EnumDescriptor() ([]byte, []int) {
 
 type ListSettingsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// The maximum number of settings to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 10 settings will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// A page token, received from a previous `ListSettings` call.
 	// Provide this to retrieve the subsequent page.
 	//
@@ -614,7 +614,7 @@ type Setting struct {
 	// - `setting/{setting}`
 	// For example, "settings/bb.branding.logo"
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The value of the setting.
+	// The configuration value of the setting.
 	Value         *Value `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -985,7 +985,7 @@ type WorkspaceProfileSetting struct {
 	Announcement *Announcement `protobuf:"bytes,7,opt,name=announcement,proto3" json:"announcement,omitempty"`
 	// The max duration for role expired.
 	MaximumRoleExpiration *durationpb.Duration `protobuf:"bytes,8,opt,name=maximum_role_expiration,json=maximumRoleExpiration,proto3" json:"maximum_role_expiration,omitempty"`
-	// The workspace domain, e.g. bytebase.com.
+	// The workspace domain, e.g., bytebase.com.
 	Domains []string `protobuf:"bytes,9,rep,name=domains,proto3" json:"domains,omitempty"`
 	// Only user and group from the domains can be created and login.
 	EnforceIdentityDomain bool `protobuf:"varint,10,opt,name=enforce_identity_domain,json=enforceIdentityDomain,proto3" json:"enforce_identity_domain,omitempty"`
@@ -1108,9 +1108,9 @@ func (x *WorkspaceProfileSetting) GetEnableMetricCollection() bool {
 
 type Announcement struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The alert level of announcemnt
+	// The alert level of announcement
 	Level Announcement_AlertLevel `protobuf:"varint,1,opt,name=level,proto3,enum=bytebase.v1.Announcement_AlertLevel" json:"level,omitempty"`
-	// The text of announcemnt
+	// The text of announcement
 	Text string `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
 	// The optional link, user can follow the link to check extra details
 	Link          string `protobuf:"bytes,3,opt,name=link,proto3" json:"link,omitempty"`
@@ -2056,7 +2056,7 @@ func (x *AppIMSetting_DingTalk) GetRobotCode() string {
 
 type WorkspaceApprovalSetting_Rule struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
-	Template *ApprovalTemplate      `protobuf:"bytes,2,opt,name=template,proto3" json:"template,omitempty"`
+	Template *ApprovalTemplate      `protobuf:"bytes,1,opt,name=template,proto3" json:"template,omitempty"`
 	// The condition that is associated with the rule.
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 	//
@@ -2066,7 +2066,7 @@ type WorkspaceApprovalSetting_Rule struct {
 	//
 	// For examples:
 	// (source == "DML" && level == 200) || (source == "DDL" && level == 300)
-	Condition     *expr.Expr `protobuf:"bytes,3,opt,name=condition,proto3" json:"condition,omitempty"`
+	Condition     *expr.Expr `protobuf:"bytes,2,opt,name=condition,proto3" json:"condition,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3090,8 +3090,8 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x18WorkspaceApprovalSetting\x12@\n" +
 	"\x05rules\x18\x01 \x03(\v2*.bytebase.v1.WorkspaceApprovalSetting.RuleR\x05rules\x1ar\n" +
 	"\x04Rule\x129\n" +
-	"\btemplate\x18\x02 \x01(\v2\x1d.bytebase.v1.ApprovalTemplateR\btemplate\x12/\n" +
-	"\tcondition\x18\x03 \x01(\v2\x11.google.type.ExprR\tcondition\"\xb2\x06\n" +
+	"\btemplate\x18\x01 \x01(\v2\x1d.bytebase.v1.ApprovalTemplateR\btemplate\x12/\n" +
+	"\tcondition\x18\x02 \x01(\v2\x11.google.type.ExprR\tcondition\"\xb2\x06\n" +
 	"\x15SchemaTemplateSetting\x12Y\n" +
 	"\x0ffield_templates\x18\x01 \x03(\v20.bytebase.v1.SchemaTemplateSetting.FieldTemplateR\x0efieldTemplates\x12P\n" +
 	"\fcolumn_types\x18\x02 \x03(\v2-.bytebase.v1.SchemaTemplateSetting.ColumnTypeR\vcolumnTypes\x12Y\n" +

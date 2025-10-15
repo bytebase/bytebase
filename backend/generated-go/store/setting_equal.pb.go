@@ -4,7 +4,6 @@
 package store
 
 import (
-	v1alpha1 "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 	expr "google.golang.org/genproto/googleapis/type/expr"
 	proto "google.golang.org/protobuf/proto"
 )
@@ -82,11 +81,6 @@ func (x *WorkspaceApprovalSetting_Rule) Equal(y *WorkspaceApprovalSetting_Rule) 
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
-	}
-	if equal, ok := interface{}(x.Expression).(interface{ Equal(*v1alpha1.Expr) bool }); !ok || !equal.Equal(y.Expression) {
-		return false
-	} else if !proto.Equal(x.Expression, y.Expression) {
-		return false
 	}
 	if !x.Template.Equal(y.Template) {
 		return false

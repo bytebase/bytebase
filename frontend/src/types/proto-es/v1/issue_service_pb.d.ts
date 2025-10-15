@@ -5,6 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
+import type { RiskLevel } from "./common_pb";
 import type { Expr } from "../google/type/expr_pb";
 
 /**
@@ -25,6 +26,8 @@ export declare type GetIssueRequest = Message<"bytebase.v1.GetIssueRequest"> & {
   name: string;
 
   /**
+   * If set to true, bypass cache and fetch the latest data.
+   *
    * @generated from field: bool force = 2;
    */
   force: boolean;
@@ -309,6 +312,8 @@ export declare type BatchUpdateIssuesStatusRequest = Message<"bytebase.v1.BatchU
   status: IssueStatus;
 
   /**
+   * The reason for the status change.
+   *
    * @generated from field: string reason = 4;
    */
   reason: string;
@@ -345,6 +350,8 @@ export declare type ApproveIssueRequest = Message<"bytebase.v1.ApproveIssueReque
   name: string;
 
   /**
+   * The comment explaining the approval decision.
+   *
    * @generated from field: string comment = 2;
    */
   comment: string;
@@ -361,7 +368,7 @@ export declare const ApproveIssueRequestSchema: GenMessage<ApproveIssueRequest>;
  */
 export declare type RejectIssueRequest = Message<"bytebase.v1.RejectIssueRequest"> & {
   /**
-   * The name of the issue to add an rejection.
+   * The name of the issue to add a rejection.
    * Format: projects/{project}/issues/{issue}
    *
    * @generated from field: string name = 1;
@@ -369,6 +376,8 @@ export declare type RejectIssueRequest = Message<"bytebase.v1.RejectIssueRequest
   name: string;
 
   /**
+   * The comment explaining the rejection decision.
+   *
    * @generated from field: string comment = 2;
    */
   comment: string;
@@ -393,6 +402,8 @@ export declare type RequestIssueRequest = Message<"bytebase.v1.RequestIssueReque
   name: string;
 
   /**
+   * The comment explaining the request.
+   *
    * @generated from field: string comment = 2;
    */
   comment: string;
@@ -417,11 +428,15 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
   name: string;
 
   /**
+   * The title of the issue.
+   *
    * @generated from field: string title = 3;
    */
   title: string;
 
   /**
+   * The description of the issue.
+   *
    * @generated from field: string description = 4;
    */
   description: string;
@@ -432,6 +447,8 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
   type: Issue_Type;
 
   /**
+   * The status of the issue.
+   *
    * @generated from field: bytebase.v1.IssueStatus status = 6;
    */
   status: IssueStatus;
@@ -442,9 +459,11 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
   approvers: Issue_Approver[];
 
   /**
-   * @generated from field: repeated bytebase.v1.ApprovalTemplate approval_templates = 10;
+   * The approval template for the issue.
+   *
+   * @generated from field: bytebase.v1.ApprovalTemplate approval_template = 10;
    */
-  approvalTemplates: ApprovalTemplate[];
+  approvalTemplate?: ApprovalTemplate;
 
   /**
    * Format: users/hello@world.com
@@ -503,9 +522,11 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
   releasers: string[];
 
   /**
-   * @generated from field: bytebase.v1.Issue.RiskLevel risk_level = 21;
+   * The risk level of the issue.
+   *
+   * @generated from field: bytebase.v1.RiskLevel risk_level = 21;
    */
-  riskLevel: Issue_RiskLevel;
+  riskLevel: RiskLevel;
 
   /**
    * The status count of the issue.
@@ -523,6 +544,8 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
   taskStatusCount: { [key: string]: number };
 
   /**
+   * Labels attached to the issue for categorization and filtering.
+   *
    * @generated from field: repeated string labels = 23;
    */
   labels: string[];
@@ -547,6 +570,8 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
 export declare const IssueSchema: GenMessage<Issue>;
 
 /**
+ * Approvers and their approval status for the issue.
+ *
  * @generated from message bytebase.v1.Issue.Approver
  */
 export declare type Issue_Approver = Message<"bytebase.v1.Issue.Approver"> & {
@@ -572,25 +597,35 @@ export declare type Issue_Approver = Message<"bytebase.v1.Issue.Approver"> & {
 export declare const Issue_ApproverSchema: GenMessage<Issue_Approver>;
 
 /**
+ * The approval status of an approver.
+ *
  * @generated from enum bytebase.v1.Issue.Approver.Status
  */
 export enum Issue_Approver_Status {
   /**
+   * Unspecified status.
+   *
    * @generated from enum value: STATUS_UNSPECIFIED = 0;
    */
   STATUS_UNSPECIFIED = 0,
 
   /**
+   * Awaiting approval.
+   *
    * @generated from enum value: PENDING = 1;
    */
   PENDING = 1,
 
   /**
+   * Approved.
+   *
    * @generated from enum value: APPROVED = 2;
    */
   APPROVED = 2,
 
   /**
+   * Rejected.
+   *
    * @generated from enum value: REJECTED = 3;
    */
   REJECTED = 3,
@@ -602,25 +637,35 @@ export enum Issue_Approver_Status {
 export declare const Issue_Approver_StatusSchema: GenEnum<Issue_Approver_Status>;
 
 /**
+ * The type of issue.
+ *
  * @generated from enum bytebase.v1.Issue.Type
  */
 export enum Issue_Type {
   /**
+   * Unspecified issue type.
+   *
    * @generated from enum value: TYPE_UNSPECIFIED = 0;
    */
   TYPE_UNSPECIFIED = 0,
 
   /**
+   * Database schema or data change.
+   *
    * @generated from enum value: DATABASE_CHANGE = 1;
    */
   DATABASE_CHANGE = 1,
 
   /**
+   * Database access grant request.
+   *
    * @generated from enum value: GRANT_REQUEST = 2;
    */
   GRANT_REQUEST = 2,
 
   /**
+   * Database data export request.
+   *
    * @generated from enum value: DATABASE_EXPORT = 3;
    */
   DATABASE_EXPORT = 3,
@@ -632,70 +677,56 @@ export enum Issue_Type {
 export declare const Issue_TypeSchema: GenEnum<Issue_Type>;
 
 /**
- * @generated from enum bytebase.v1.Issue.RiskLevel
- */
-export enum Issue_RiskLevel {
-  /**
-   * @generated from enum value: RISK_LEVEL_UNSPECIFIED = 0;
-   */
-  RISK_LEVEL_UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: LOW = 1;
-   */
-  LOW = 1,
-
-  /**
-   * @generated from enum value: MODERATE = 2;
-   */
-  MODERATE = 2,
-
-  /**
-   * @generated from enum value: HIGH = 3;
-   */
-  HIGH = 3,
-}
-
-/**
- * Describes the enum bytebase.v1.Issue.RiskLevel.
- */
-export declare const Issue_RiskLevelSchema: GenEnum<Issue_RiskLevel>;
-
-/**
+ * The overall approval status for the issue.
+ *
  * @generated from enum bytebase.v1.Issue.ApprovalStatus
  */
 export enum Issue_ApprovalStatus {
   /**
+   * Unspecified approval status.
+   *
    * @generated from enum value: APPROVAL_STATUS_UNSPECIFIED = 0;
    */
   APPROVAL_STATUS_UNSPECIFIED = 0,
 
   /**
+   * Approval checks are being evaluated.
+   *
    * @generated from enum value: CHECKING = 1;
    */
   CHECKING = 1,
 
   /**
+   * Approval is pending.
+   *
    * @generated from enum value: PENDING = 2;
    */
   PENDING = 2,
 
   /**
+   * Issue has been approved.
+   *
    * @generated from enum value: APPROVED = 3;
    */
   APPROVED = 3,
 
   /**
+   * Issue has been rejected.
+   *
    * @generated from enum value: REJECTED = 4;
    */
   REJECTED = 4,
 
   /**
+   * Approval was skipped.
+   *
    * @generated from enum value: SKIPPED = 5;
    */
   SKIPPED = 5,
 
   /**
+   * Error occurred during approval evaluation.
+   *
    * @generated from enum value: ERROR = 6;
    */
   ERROR = 6,
@@ -727,13 +758,15 @@ export declare type GrantRequest = Message<"bytebase.v1.GrantRequest"> & {
   user: string;
 
   /**
-   * The condition for the role. Same as the condtion in IAM Binding message.
+   * The condition for the role. Same as the condition in IAM Binding message.
    *
    * @generated from field: google.type.Expr condition = 3;
    */
   condition?: Expr;
 
   /**
+   * The duration for which the grant is valid.
+   *
    * @generated from field: google.protobuf.Duration expiration = 4;
    */
   expiration?: Duration;
@@ -750,16 +783,31 @@ export declare const GrantRequestSchema: GenMessage<GrantRequest>;
  */
 export declare type ApprovalTemplate = Message<"bytebase.v1.ApprovalTemplate"> & {
   /**
+   * The unique identifier for the approval template.
+   * For built-in templates, use "bb." prefix (e.g., "bb.project-owner", "bb.workspace-dba").
+   * For custom templates, use a UUID or other unique identifier.
+   *
+   * @generated from field: string id = 4;
+   */
+  id: string;
+
+  /**
+   * The approval flow definition.
+   *
    * @generated from field: bytebase.v1.ApprovalFlow flow = 1;
    */
   flow?: ApprovalFlow;
 
   /**
+   * The title of the approval template.
+   *
    * @generated from field: string title = 2;
    */
   title: string;
 
   /**
+   * The description of the approval template.
+   *
    * @generated from field: string description = 3;
    */
   description: string;
@@ -776,9 +824,11 @@ export declare const ApprovalTemplateSchema: GenMessage<ApprovalTemplate>;
  */
 export declare type ApprovalFlow = Message<"bytebase.v1.ApprovalFlow"> & {
   /**
-   * @generated from field: repeated bytebase.v1.ApprovalStep steps = 1;
+   * The roles required for approval in order.
+   *
+   * @generated from field: repeated string roles = 1;
    */
-  steps: ApprovalStep[];
+  roles: string[];
 };
 
 /**
@@ -786,102 +836,6 @@ export declare type ApprovalFlow = Message<"bytebase.v1.ApprovalFlow"> & {
  * Use `create(ApprovalFlowSchema)` to create a new message.
  */
 export declare const ApprovalFlowSchema: GenMessage<ApprovalFlow>;
-
-/**
- * @generated from message bytebase.v1.ApprovalStep
- */
-export declare type ApprovalStep = Message<"bytebase.v1.ApprovalStep"> & {
-  /**
-   * @generated from field: bytebase.v1.ApprovalStep.Type type = 1;
-   */
-  type: ApprovalStep_Type;
-
-  /**
-   * @generated from field: repeated bytebase.v1.ApprovalNode nodes = 2;
-   */
-  nodes: ApprovalNode[];
-};
-
-/**
- * Describes the message bytebase.v1.ApprovalStep.
- * Use `create(ApprovalStepSchema)` to create a new message.
- */
-export declare const ApprovalStepSchema: GenMessage<ApprovalStep>;
-
-/**
- * Type of the ApprovalStep
- * ALL means every node must be approved to proceed.
- * ANY means approving any node will proceed.
- *
- * @generated from enum bytebase.v1.ApprovalStep.Type
- */
-export enum ApprovalStep_Type {
-  /**
-   * @generated from enum value: TYPE_UNSPECIFIED = 0;
-   */
-  TYPE_UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: ALL = 1;
-   */
-  ALL = 1,
-
-  /**
-   * @generated from enum value: ANY = 2;
-   */
-  ANY = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.ApprovalStep.Type.
- */
-export declare const ApprovalStep_TypeSchema: GenEnum<ApprovalStep_Type>;
-
-/**
- * @generated from message bytebase.v1.ApprovalNode
- */
-export declare type ApprovalNode = Message<"bytebase.v1.ApprovalNode"> & {
-  /**
-   * @generated from field: bytebase.v1.ApprovalNode.Type type = 1;
-   */
-  type: ApprovalNode_Type;
-
-  /**
-   * @generated from field: string role = 2;
-   */
-  role: string;
-};
-
-/**
- * Describes the message bytebase.v1.ApprovalNode.
- * Use `create(ApprovalNodeSchema)` to create a new message.
- */
-export declare const ApprovalNodeSchema: GenMessage<ApprovalNode>;
-
-/**
- * Type of the ApprovalNode.
- * type determines who should approve this node.
- * ANY_IN_GROUP means the ApprovalNode can be approved by an user from our predefined user group.
- * See GroupValue below for the predefined user groups.
- *
- * @generated from enum bytebase.v1.ApprovalNode.Type
- */
-export enum ApprovalNode_Type {
-  /**
-   * @generated from enum value: TYPE_UNSPECIFIED = 0;
-   */
-  TYPE_UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: ANY_IN_GROUP = 1;
-   */
-  ANY_IN_GROUP = 1,
-}
-
-/**
- * Describes the enum bytebase.v1.ApprovalNode.Type.
- */
-export declare const ApprovalNode_TypeSchema: GenEnum<ApprovalNode_Type>;
 
 /**
  * @generated from message bytebase.v1.ListIssueCommentsRequest
@@ -927,6 +881,8 @@ export declare const ListIssueCommentsRequestSchema: GenMessage<ListIssueComment
  */
 export declare type ListIssueCommentsResponse = Message<"bytebase.v1.ListIssueCommentsResponse"> & {
   /**
+   * The issue comments from the specified request.
+   *
    * @generated from field: repeated bytebase.v1.IssueComment issue_comments = 1;
    */
   issueComments: IssueComment[];
@@ -959,6 +915,8 @@ export declare type CreateIssueCommentRequest = Message<"bytebase.v1.CreateIssue
   parent: string;
 
   /**
+   * The comment to create.
+   *
    * @generated from field: bytebase.v1.IssueComment issue_comment = 2;
    */
   issueComment?: IssueComment;
@@ -983,6 +941,8 @@ export declare type UpdateIssueCommentRequest = Message<"bytebase.v1.UpdateIssue
   parent: string;
 
   /**
+   * The comment to update.
+   *
    * @generated from field: bytebase.v1.IssueComment issue_comment = 2;
    */
   issueComment?: IssueComment;
@@ -1010,6 +970,8 @@ export declare type UpdateIssueCommentRequest = Message<"bytebase.v1.UpdateIssue
 export declare const UpdateIssueCommentRequestSchema: GenMessage<UpdateIssueCommentRequest>;
 
 /**
+ * A comment on an issue.
+ *
  * @generated from message bytebase.v1.IssueComment
  */
 export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
@@ -1021,6 +983,8 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
   name: string;
 
   /**
+   * The text content of the comment.
+   *
    * @generated from field: string comment = 2;
    */
   comment: string;
@@ -1050,34 +1014,46 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
   creator: string;
 
   /**
+   * The event associated with this comment.
+   *
    * @generated from oneof bytebase.v1.IssueComment.event
    */
   event: {
     /**
+     * Approval event.
+     *
      * @generated from field: bytebase.v1.IssueComment.Approval approval = 8;
      */
     value: IssueComment_Approval;
     case: "approval";
   } | {
     /**
+     * Issue update event.
+     *
      * @generated from field: bytebase.v1.IssueComment.IssueUpdate issue_update = 9;
      */
     value: IssueComment_IssueUpdate;
     case: "issueUpdate";
   } | {
     /**
+     * Stage end event.
+     *
      * @generated from field: bytebase.v1.IssueComment.StageEnd stage_end = 10;
      */
     value: IssueComment_StageEnd;
     case: "stageEnd";
   } | {
     /**
+     * Task update event.
+     *
      * @generated from field: bytebase.v1.IssueComment.TaskUpdate task_update = 11;
      */
     value: IssueComment_TaskUpdate;
     case: "taskUpdate";
   } | {
     /**
+     * Task prior backup event.
+     *
      * @generated from field: bytebase.v1.IssueComment.TaskPriorBackup task_prior_backup = 12;
      */
     value: IssueComment_TaskPriorBackup;
@@ -1092,10 +1068,14 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
 export declare const IssueCommentSchema: GenMessage<IssueComment>;
 
 /**
+ * Approval event information.
+ *
  * @generated from message bytebase.v1.IssueComment.Approval
  */
 export declare type IssueComment_Approval = Message<"bytebase.v1.IssueComment.Approval"> & {
   /**
+   * The approval status.
+   *
    * @generated from field: bytebase.v1.IssueComment.Approval.Status status = 1;
    */
   status: IssueComment_Approval_Status;
@@ -1108,25 +1088,35 @@ export declare type IssueComment_Approval = Message<"bytebase.v1.IssueComment.Ap
 export declare const IssueComment_ApprovalSchema: GenMessage<IssueComment_Approval>;
 
 /**
+ * Approval status values.
+ *
  * @generated from enum bytebase.v1.IssueComment.Approval.Status
  */
 export enum IssueComment_Approval_Status {
   /**
+   * Unspecified status.
+   *
    * @generated from enum value: STATUS_UNSPECIFIED = 0;
    */
   STATUS_UNSPECIFIED = 0,
 
   /**
+   * Approval pending.
+   *
    * @generated from enum value: PENDING = 1;
    */
   PENDING = 1,
 
   /**
+   * Approved.
+   *
    * @generated from enum value: APPROVED = 2;
    */
   APPROVED = 2,
 
   /**
+   * Rejected.
+   *
    * @generated from enum value: REJECTED = 3;
    */
   REJECTED = 3,
@@ -1138,6 +1128,8 @@ export enum IssueComment_Approval_Status {
 export declare const IssueComment_Approval_StatusSchema: GenEnum<IssueComment_Approval_Status>;
 
 /**
+ * Issue update event information.
+ *
  * @generated from message bytebase.v1.IssueComment.IssueUpdate
  */
 export declare type IssueComment_IssueUpdate = Message<"bytebase.v1.IssueComment.IssueUpdate"> & {
@@ -1189,10 +1181,14 @@ export declare type IssueComment_IssueUpdate = Message<"bytebase.v1.IssueComment
 export declare const IssueComment_IssueUpdateSchema: GenMessage<IssueComment_IssueUpdate>;
 
 /**
+ * Stage end event information.
+ *
  * @generated from message bytebase.v1.IssueComment.StageEnd
  */
 export declare type IssueComment_StageEnd = Message<"bytebase.v1.IssueComment.StageEnd"> & {
   /**
+   * The stage that ended.
+   *
    * @generated from field: string stage = 1;
    */
   stage: string;
@@ -1205,10 +1201,14 @@ export declare type IssueComment_StageEnd = Message<"bytebase.v1.IssueComment.St
 export declare const IssueComment_StageEndSchema: GenMessage<IssueComment_StageEnd>;
 
 /**
+ * Task update event information.
+ *
  * @generated from message bytebase.v1.IssueComment.TaskUpdate
  */
 export declare type IssueComment_TaskUpdate = Message<"bytebase.v1.IssueComment.TaskUpdate"> & {
   /**
+   * The tasks that were updated.
+   *
    * @generated from field: repeated string tasks = 1;
    */
   tasks: string[];
@@ -1240,40 +1240,56 @@ export declare type IssueComment_TaskUpdate = Message<"bytebase.v1.IssueComment.
 export declare const IssueComment_TaskUpdateSchema: GenMessage<IssueComment_TaskUpdate>;
 
 /**
+ * Task status values.
+ *
  * @generated from enum bytebase.v1.IssueComment.TaskUpdate.Status
  */
 export enum IssueComment_TaskUpdate_Status {
   /**
+   * Unspecified status.
+   *
    * @generated from enum value: STATUS_UNSPECIFIED = 0;
    */
   STATUS_UNSPECIFIED = 0,
 
   /**
+   * Task is pending.
+   *
    * @generated from enum value: PENDING = 1;
    */
   PENDING = 1,
 
   /**
+   * Task is running.
+   *
    * @generated from enum value: RUNNING = 2;
    */
   RUNNING = 2,
 
   /**
+   * Task is done.
+   *
    * @generated from enum value: DONE = 3;
    */
   DONE = 3,
 
   /**
+   * Task failed.
+   *
    * @generated from enum value: FAILED = 4;
    */
   FAILED = 4,
 
   /**
+   * Task was skipped.
+   *
    * @generated from enum value: SKIPPED = 5;
    */
   SKIPPED = 5,
 
   /**
+   * Task was canceled.
+   *
    * @generated from enum value: CANCELED = 6;
    */
   CANCELED = 6,
@@ -1285,30 +1301,42 @@ export enum IssueComment_TaskUpdate_Status {
 export declare const IssueComment_TaskUpdate_StatusSchema: GenEnum<IssueComment_TaskUpdate_Status>;
 
 /**
+ * Task prior backup event information.
+ *
  * @generated from message bytebase.v1.IssueComment.TaskPriorBackup
  */
 export declare type IssueComment_TaskPriorBackup = Message<"bytebase.v1.IssueComment.TaskPriorBackup"> & {
   /**
+   * The task for which backup was performed.
+   *
    * @generated from field: string task = 1;
    */
   task: string;
 
   /**
+   * The tables that were backed up.
+   *
    * @generated from field: repeated bytebase.v1.IssueComment.TaskPriorBackup.Table tables = 2;
    */
   tables: IssueComment_TaskPriorBackup_Table[];
 
   /**
+   * The original line number in the statement.
+   *
    * @generated from field: optional int32 original_line = 3;
    */
   originalLine?: number;
 
   /**
+   * The database that was backed up.
+   *
    * @generated from field: string database = 4;
    */
   database: string;
 
   /**
+   * Error message if backup failed.
+   *
    * @generated from field: string error = 5;
    */
   error: string;
@@ -1321,15 +1349,21 @@ export declare type IssueComment_TaskPriorBackup = Message<"bytebase.v1.IssueCom
 export declare const IssueComment_TaskPriorBackupSchema: GenMessage<IssueComment_TaskPriorBackup>;
 
 /**
+ * Table identification.
+ *
  * @generated from message bytebase.v1.IssueComment.TaskPriorBackup.Table
  */
 export declare type IssueComment_TaskPriorBackup_Table = Message<"bytebase.v1.IssueComment.TaskPriorBackup.Table"> & {
   /**
+   * The schema name.
+   *
    * @generated from field: string schema = 1;
    */
   schema: string;
 
   /**
+   * The table name.
+   *
    * @generated from field: string table = 2;
    */
   table: string;
@@ -1342,25 +1376,35 @@ export declare type IssueComment_TaskPriorBackup_Table = Message<"bytebase.v1.Is
 export declare const IssueComment_TaskPriorBackup_TableSchema: GenMessage<IssueComment_TaskPriorBackup_Table>;
 
 /**
+ * The status of an issue.
+ *
  * @generated from enum bytebase.v1.IssueStatus
  */
 export enum IssueStatus {
   /**
+   * Unspecified status.
+   *
    * @generated from enum value: ISSUE_STATUS_UNSPECIFIED = 0;
    */
   ISSUE_STATUS_UNSPECIFIED = 0,
 
   /**
+   * Issue is open and active.
+   *
    * @generated from enum value: OPEN = 1;
    */
   OPEN = 1,
 
   /**
+   * Issue is completed.
+   *
    * @generated from enum value: DONE = 2;
    */
   DONE = 2,
 
   /**
+   * Issue is canceled.
+   *
    * @generated from enum value: CANCELED = 3;
    */
   CANCELED = 3,
@@ -1372,10 +1416,13 @@ export enum IssueStatus {
 export declare const IssueStatusSchema: GenEnum<IssueStatus>;
 
 /**
+ * IssueService manages issues for tracking database changes and tasks.
+ *
  * @generated from service bytebase.v1.IssueService
  */
 export declare const IssueService: GenService<{
   /**
+   * Retrieves an issue by name.
    * Permissions required: bb.issues.get
    *
    * @generated from rpc bytebase.v1.IssueService.GetIssue
@@ -1386,6 +1433,7 @@ export declare const IssueService: GenService<{
     output: typeof IssueSchema;
   },
   /**
+   * Creates a new issue for database changes or tasks.
    * Permissions required: bb.issues.create
    *
    * @generated from rpc bytebase.v1.IssueService.CreateIssue
@@ -1396,6 +1444,7 @@ export declare const IssueService: GenService<{
     output: typeof IssueSchema;
   },
   /**
+   * Lists issues in a project.
    * Permissions required: bb.issues.list
    *
    * @generated from rpc bytebase.v1.IssueService.ListIssues
@@ -1417,6 +1466,7 @@ export declare const IssueService: GenService<{
     output: typeof SearchIssuesResponseSchema;
   },
   /**
+   * Updates an issue's properties such as title, description, or labels.
    * Permissions required: bb.issues.update
    *
    * @generated from rpc bytebase.v1.IssueService.UpdateIssue
@@ -1427,6 +1477,7 @@ export declare const IssueService: GenService<{
     output: typeof IssueSchema;
   },
   /**
+   * Lists comments on an issue.
    * Permissions required: bb.issueComments.list
    *
    * @generated from rpc bytebase.v1.IssueService.ListIssueComments
@@ -1437,6 +1488,7 @@ export declare const IssueService: GenService<{
     output: typeof ListIssueCommentsResponseSchema;
   },
   /**
+   * Adds a comment to an issue.
    * Permissions required: bb.issueComments.create
    *
    * @generated from rpc bytebase.v1.IssueService.CreateIssueComment
@@ -1447,6 +1499,7 @@ export declare const IssueService: GenService<{
     output: typeof IssueCommentSchema;
   },
   /**
+   * Updates an existing issue comment.
    * Permissions required: bb.issueComments.update
    *
    * @generated from rpc bytebase.v1.IssueService.UpdateIssueComment
@@ -1457,6 +1510,7 @@ export declare const IssueService: GenService<{
     output: typeof IssueCommentSchema;
   },
   /**
+   * Updates the status of multiple issues in a single operation.
    * Permissions required: bb.issues.update
    *
    * @generated from rpc bytebase.v1.IssueService.BatchUpdateIssuesStatus
@@ -1467,9 +1521,8 @@ export declare const IssueService: GenService<{
     output: typeof BatchUpdateIssuesStatusResponseSchema;
   },
   /**
-   * ApproveIssue approves the issue.
-   * The access is based on approval flow.
-   * Permissions required: None
+   * Approves an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+   * Permissions required: None (determined by approval flow)
    *
    * @generated from rpc bytebase.v1.IssueService.ApproveIssue
    */
@@ -1479,9 +1532,8 @@ export declare const IssueService: GenService<{
     output: typeof IssueSchema;
   },
   /**
-   * RejectIssue rejects the issue.
-   * The access is based on approval flow.
-   * Permissions required: None
+   * Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+   * Permissions required: None (determined by approval flow)
    *
    * @generated from rpc bytebase.v1.IssueService.RejectIssue
    */
@@ -1491,9 +1543,8 @@ export declare const IssueService: GenService<{
     output: typeof IssueSchema;
   },
   /**
-   * RequestIssue requests the issue.
-   * The access is based on approval flow.
-   * Permissions required: None
+   * Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
+   * Permissions required: None (determined by approval flow)
    *
    * @generated from rpc bytebase.v1.IssueService.RequestIssue
    */

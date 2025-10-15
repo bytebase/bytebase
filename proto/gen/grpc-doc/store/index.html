@@ -204,6 +204,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.RiskLevel"><span class="badge">E</span>RiskLevel</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.VCSType"><span class="badge">E</span>VCSType</a>
                 </li>
               
@@ -241,14 +245,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.ApprovalNode"><span class="badge">M</span>ApprovalNode</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ApprovalStep"><span class="badge">M</span>ApprovalStep</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.ApprovalTemplate"><span class="badge">M</span>ApprovalTemplate</a>
                 </li>
               
@@ -262,19 +258,7 @@
               
               
                 <li>
-                  <a href="#bytebase.store.ApprovalNode.Type"><span class="badge">E</span>ApprovalNode.Type</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ApprovalStep.Type"><span class="badge">E</span>ApprovalStep.Type</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.IssuePayloadApproval.Approver.Status"><span class="badge">E</span>IssuePayloadApproval.Approver.Status</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.IssuePayloadApproval.RiskLevel"><span class="badge">E</span>IssuePayloadApproval.RiskLevel</a>
                 </li>
               
               
@@ -369,17 +353,6 @@
                 <li>
                   <a href="#bytebase.store.ChangelogPayload.Type"><span class="badge">E</span>ChangelogPayload.Type</a>
                 </li>
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
-            <a href="#store%2fdata_source.proto">store/data_source.proto</a>
-            <ul>
-              
               
               
               
@@ -1590,7 +1563,7 @@
 
       
         <h3 id="bytebase.store.PageToken">PageToken</h3>
-        <p>Used internally for obfuscating the page token.</p>
+        <p>PageToken is used internally for obfuscating pagination tokens.</p>
 
         
           <table class="field-table">
@@ -1603,14 +1576,14 @@
                   <td>limit</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Maximum number of items to return. </p></td>
                 </tr>
               
                 <tr>
                   <td>offset</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Number of items to skip before starting to return results. </p></td>
                 </tr>
               
             </tbody>
@@ -1621,7 +1594,7 @@
         
       
         <h3 id="bytebase.store.Position">Position</h3>
-        <p>Position in a text expressed as zero-based line and zero-based column byte</p><p>offset.</p>
+        <p>Position in a text expressed as zero-based line and column byte offset.</p>
 
         
           <table class="field-table">
@@ -1652,7 +1625,7 @@
         
       
         <h3 id="bytebase.store.Range">Range</h3>
-        <p></p>
+        <p>Range represents a span within a text or sequence.</p>
 
         
           <table class="field-table">
@@ -1665,14 +1638,14 @@
                   <td>start</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Start index (inclusive). </p></td>
                 </tr>
               
                 <tr>
                   <td>end</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>End index (exclusive). </p></td>
                 </tr>
               
             </tbody>
@@ -1685,7 +1658,7 @@
 
       
         <h3 id="bytebase.store.Engine">Engine</h3>
-        <p></p>
+        <p>Engine represents the type of database system.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -1852,7 +1825,7 @@
         </table>
       
         <h3 id="bytebase.store.ExportFormat">ExportFormat</h3>
-        <p></p>
+        <p>ExportFormat represents the file format for exported data.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -1893,7 +1866,7 @@
         </table>
       
         <h3 id="bytebase.store.MaskingLevel">MaskingLevel</h3>
-        <p></p>
+        <p>MaskingLevel represents the level of data masking applied to sensitive information.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -1909,17 +1882,52 @@
               <tr>
                 <td>NONE</td>
                 <td>1</td>
-                <td><p></p></td>
+                <td><p>No masking applied.</p></td>
               </tr>
             
               <tr>
                 <td>PARTIAL</td>
                 <td>2</td>
-                <td><p></p></td>
+                <td><p>Partial masking (e.g., showing first/last characters).</p></td>
               </tr>
             
               <tr>
                 <td>FULL</td>
+                <td>3</td>
+                <td><p>Full masking (all characters masked).</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.RiskLevel">RiskLevel</h3>
+        <p>RiskLevel represents the assessed risk level of a database operation.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>RISK_LEVEL_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>LOW</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MODERATE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>HIGH</td>
                 <td>3</td>
                 <td><p></p></td>
               </tr>
@@ -1928,7 +1936,7 @@
         </table>
       
         <h3 id="bytebase.store.VCSType">VCSType</h3>
-        <p></p>
+        <p>VCSType represents the type of version control system.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -2053,7 +2061,7 @@ TODO: use range instead. </p></td>
               <tr>
                 <td>STATUS_UNSPECIFIED</td>
                 <td>0</td>
-                <td><p>Unspecified.</p></td>
+                <td><p>Unspecified status.</p></td>
               </tr>
             
               <tr>
@@ -2090,7 +2098,7 @@ TODO: use range instead. </p></td>
 
       
         <h3 id="bytebase.store.ApprovalFlow">ApprovalFlow</h3>
-        <p></p>
+        <p>ApprovalFlow defines the sequence of approvals required.</p>
 
         
           <table class="field-table">
@@ -2100,72 +2108,10 @@ TODO: use range instead. </p></td>
             <tbody>
               
                 <tr>
-                  <td>steps</td>
-                  <td><a href="#bytebase.store.ApprovalStep">ApprovalStep</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.ApprovalNode">ApprovalNode</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.store.ApprovalNode.Type">ApprovalNode.Type</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>role</td>
+                  <td>roles</td>
                   <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.ApprovalStep">ApprovalStep</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.store.ApprovalStep.Type">ApprovalStep.Type</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>nodes</td>
-                  <td><a href="#bytebase.store.ApprovalNode">ApprovalNode</a></td>
                   <td>repeated</td>
-                  <td><p> </p></td>
+                  <td><p>List of role names that must approve, in order. </p></td>
                 </tr>
               
             </tbody>
@@ -2176,7 +2122,7 @@ TODO: use range instead. </p></td>
         
       
         <h3 id="bytebase.store.ApprovalTemplate">ApprovalTemplate</h3>
-        <p></p>
+        <p>ApprovalTemplate defines the approval workflow and requirements for an issue.</p>
 
         
           <table class="field-table">
@@ -2186,24 +2132,33 @@ TODO: use range instead. </p></td>
             <tbody>
               
                 <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The unique identifier for the approval template.
+Built-in templates use &#34;bb.&#34; prefix (e.g., &#34;bb.project-owner&#34;, &#34;bb.workspace-dba&#34;).
+Custom templates use a UUID or other unique identifier. </p></td>
+                </tr>
+              
+                <tr>
                   <td>flow</td>
                   <td><a href="#bytebase.store.ApprovalFlow">ApprovalFlow</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The approval workflow specification. </p></td>
                 </tr>
               
                 <tr>
                   <td>title</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Human-readable title of the approval template. </p></td>
                 </tr>
               
                 <tr>
                   <td>description</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Detailed description of when this template applies. </p></td>
                 </tr>
               
             </tbody>
@@ -2214,7 +2169,7 @@ TODO: use range instead. </p></td>
         
       
         <h3 id="bytebase.store.IssuePayloadApproval">IssuePayloadApproval</h3>
-        <p>IssuePayloadApproval is a part of the payload of an issue.</p><p>IssuePayloadApproval records the approval template used and the approval history.</p>
+        <p>IssuePayloadApproval records the approval template used and approval history for an issue.</p>
 
         
           <table class="field-table">
@@ -2224,39 +2179,39 @@ TODO: use range instead. </p></td>
             <tbody>
               
                 <tr>
-                  <td>approval_templates</td>
+                  <td>approval_template</td>
                   <td><a href="#bytebase.store.ApprovalTemplate">ApprovalTemplate</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
+                  <td></td>
+                  <td><p>The approval template being used for this issue. </p></td>
                 </tr>
               
                 <tr>
                   <td>approvers</td>
                   <td><a href="#bytebase.store.IssuePayloadApproval.Approver">IssuePayloadApproval.Approver</a></td>
                   <td>repeated</td>
-                  <td><p> </p></td>
+                  <td><p>List of approvers and their current status. </p></td>
                 </tr>
               
                 <tr>
                   <td>approval_finding_done</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>If the value is `false`, it means that the backend is still finding matching approval templates.
-If `true`, other fields are available. </p></td>
+                  <td><p>Whether the system has finished finding a matching approval template.
+False means the backend is still searching for matching templates. </p></td>
                 </tr>
               
                 <tr>
                   <td>approval_finding_error</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Error message if approval template finding failed. </p></td>
                 </tr>
               
                 <tr>
                   <td>risk_level</td>
-                  <td><a href="#bytebase.store.IssuePayloadApproval.RiskLevel">IssuePayloadApproval.RiskLevel</a></td>
+                  <td><a href="#bytebase.store.RiskLevel">RiskLevel</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The assessed risk level for this issue. </p></td>
                 </tr>
               
             </tbody>
@@ -2267,7 +2222,7 @@ If `true`, other fields are available. </p></td>
         
       
         <h3 id="bytebase.store.IssuePayloadApproval.Approver">IssuePayloadApproval.Approver</h3>
-        <p></p>
+        <p>Approver represents a user who can approve or reject an issue.</p>
 
         
           <table class="field-table">
@@ -2280,14 +2235,14 @@ If `true`, other fields are available. </p></td>
                   <td>status</td>
                   <td><a href="#bytebase.store.IssuePayloadApproval.Approver.Status">IssuePayloadApproval.Approver.Status</a></td>
                   <td></td>
-                  <td><p>The new status. </p></td>
+                  <td><p>The current approval status. </p></td>
                 </tr>
               
                 <tr>
                   <td>principal_id</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The principal id of the approver. </p></td>
+                  <td><p>The ID of the principal who is the approver. </p></td>
                 </tr>
               
             </tbody>
@@ -2299,60 +2254,8 @@ If `true`, other fields are available. </p></td>
       
 
       
-        <h3 id="bytebase.store.ApprovalNode.Type">ApprovalNode.Type</h3>
-        <p>Type of the ApprovalNode.</p><p>type determines who should approve this node.</p><p>ANY_IN_GROUP means the ApprovalNode can be approved by an user from our predefined user group.</p><p>See GroupValue below for the predefined user groups.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ANY_IN_GROUP</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.ApprovalStep.Type">ApprovalStep.Type</h3>
-        <p>Type of the ApprovalStep</p><p>ALL means every node must be approved to proceed.</p><p>ANY means approving any node will proceed.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ALL</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ANY</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
         <h3 id="bytebase.store.IssuePayloadApproval.Approver.Status">IssuePayloadApproval.Approver.Status</h3>
-        <p></p>
+        <p>Status represents the approver's decision state.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -2368,54 +2271,19 @@ If `true`, other fields are available. </p></td>
               <tr>
                 <td>PENDING</td>
                 <td>1</td>
-                <td><p></p></td>
+                <td><p>Approval is pending from this approver.</p></td>
               </tr>
             
               <tr>
                 <td>APPROVED</td>
                 <td>2</td>
-                <td><p></p></td>
+                <td><p>Approver has approved the issue.</p></td>
               </tr>
             
               <tr>
                 <td>REJECTED</td>
                 <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.IssuePayloadApproval.RiskLevel">IssuePayloadApproval.RiskLevel</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>RISK_LEVEL_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>LOW</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MODERATE</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>HIGH</td>
-                <td>3</td>
-                <td><p></p></td>
+                <td><p>Approver has rejected the issue.</p></td>
               </tr>
             
           </tbody>
@@ -2457,15 +2325,15 @@ Formats:
                   <td>method</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>e.g. /bytebase.v1.SQLService/Query </p></td>
+                  <td><p>Example: /bytebase.v1.SQLService/Query </p></td>
                 </tr>
               
                 <tr>
                   <td>resource</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>resource name
-projects/{project} </p></td>
+                  <td><p>The resource name.
+Example: projects/{project} </p></td>
                 </tr>
               
                 <tr>
@@ -2515,7 +2383,7 @@ Some fields are omitted because they are too large or contain sensitive informat
                   <td>service_data</td>
                   <td><a href="#google.protobuf.Any">google.protobuf.Any</a></td>
                   <td></td>
-                  <td><p>service-specific data about the request, response, and other activities. </p></td>
+                  <td><p>The service-specific data about the request, response, and other activities. </p></td>
                 </tr>
               
                 <tr>
@@ -2644,7 +2512,7 @@ This information is not authenticated and should be treated accordingly. </p></t
 
       
         <h3 id="bytebase.store.Changelist">Changelist</h3>
-        <p></p>
+        <p>Changelist represents a collection of database changes that can be applied together.</p>
 
         
           <table class="field-table">
@@ -2657,14 +2525,14 @@ This information is not authenticated and should be treated accordingly. </p></t
                   <td>description</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Human-readable description of this changelist. </p></td>
                 </tr>
               
                 <tr>
                   <td>changes</td>
                   <td><a href="#bytebase.store.Changelist.Change">Changelist.Change</a></td>
                   <td>repeated</td>
-                  <td><p> </p></td>
+                  <td><p>The list of changes in this changelist. </p></td>
                 </tr>
               
             </tbody>
@@ -2675,7 +2543,7 @@ This information is not authenticated and should be treated accordingly. </p></t
         
       
         <h3 id="bytebase.store.Changelist.Change">Changelist.Change</h3>
-        <p></p>
+        <p>Change represents a single database modification within the changelist.</p>
 
         
           <table class="field-table">
@@ -2688,16 +2556,16 @@ This information is not authenticated and should be treated accordingly. </p></t
                   <td>sheet</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of a sheet. </p></td>
+                  <td><p>Resource name of the sheet containing the SQL statements. </p></td>
                 </tr>
               
                 <tr>
                   <td>source</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The source of origin.
-1) changes: instances/{instance}/databases/{database}/changelogs/{changelog}.
-2) raw SQL if empty. </p></td>
+                  <td><p>The source where this change originated from.
+Format: instances/{instance}/databases/{database}/changelogs/{changelog} for changes from changelog.
+Empty for raw SQL changes. </p></td>
                 </tr>
               
             </tbody>
@@ -2773,7 +2641,7 @@ This information is not authenticated and should be treated accordingly. </p></t
                   <td>ranges</td>
                   <td><a href="#bytebase.store.Range">Range</a></td>
                   <td>repeated</td>
-                  <td><p>The ranges of sub-strings correspond to the statements on the sheet. </p></td>
+                  <td><p>The ranges of substrings correspond to the statements on the sheet. </p></td>
                 </tr>
               
             </tbody>
@@ -2804,7 +2672,7 @@ This information is not authenticated and should be treated accordingly. </p></t
                   <td>ranges</td>
                   <td><a href="#bytebase.store.Range">Range</a></td>
                   <td>repeated</td>
-                  <td><p>The ranges of sub-strings correspond to the statements on the sheet. </p></td>
+                  <td><p>The ranges of substrings correspond to the statements on the sheet. </p></td>
                 </tr>
               
             </tbody>
@@ -2887,14 +2755,14 @@ This information is not authenticated and should be treated accordingly. </p></t
                   <td>table_rows</td>
                   <td><a href="#int64">int64</a></td>
                   <td></td>
-                  <td><p>estimated row count of the table </p></td>
+                  <td><p>The estimated row count of the table. </p></td>
                 </tr>
               
                 <tr>
                   <td>ranges</td>
                   <td><a href="#bytebase.store.Range">Range</a></td>
                   <td>repeated</td>
-                  <td><p>The ranges of sub-strings correspond to the statements on the sheet. </p></td>
+                  <td><p>The ranges of substrings correspond to the statements on the sheet. </p></td>
                 </tr>
               
             </tbody>
@@ -2925,7 +2793,7 @@ This information is not authenticated and should be treated accordingly. </p></t
                   <td>ranges</td>
                   <td><a href="#bytebase.store.Range">Range</a></td>
                   <td>repeated</td>
-                  <td><p>The ranges of sub-strings correspond to the statements on the sheet. </p></td>
+                  <td><p>The ranges of substrings correspond to the statements on the sheet. </p></td>
                 </tr>
               
             </tbody>
@@ -3120,20 +2988,6 @@ Format: projects/{project}/sheets/{sheet} </p></td>
     
       
       <div class="file-heading">
-        <h2 id="store/data_source.proto">store/data_source.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
         <h2 id="store/database.proto">store/database.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -3198,7 +3052,7 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of a check constraint. </p></td>
+                  <td><p>The name of the check constraint. </p></td>
                 </tr>
               
                 <tr>
@@ -3229,7 +3083,7 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of a column. </p></td>
+                  <td><p>The name of the column. </p></td>
                 </tr>
               
                 <tr>
@@ -3333,7 +3187,7 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of a column. </p></td>
+                  <td><p>The name of the column. </p></td>
                 </tr>
               
                 <tr>
@@ -3347,7 +3201,7 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td>default</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The default value of column. </p></td>
+                  <td><p>The default value of the column. </p></td>
                 </tr>
               
                 <tr>
@@ -3565,7 +3419,7 @@ from SQL files), the system cannot automatically drop the constraint. </p></td>
                   <td>drifted</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>The schema is drifted from the source of truth. </p></td>
+                  <td><p>The schema has drifted from the source of truth. </p></td>
                 </tr>
               
                 <tr>
@@ -3634,28 +3488,28 @@ from SQL files), the system cannot automatically drop the constraint. </p></td>
                   <td>schemas</td>
                   <td><a href="#bytebase.store.SchemaMetadata">SchemaMetadata</a></td>
                   <td>repeated</td>
-                  <td><p>The schemas is the list of schemas in a database. </p></td>
+                  <td><p>The list of schemas in a database. </p></td>
                 </tr>
               
                 <tr>
                   <td>character_set</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The character_set is the character set of a database. </p></td>
+                  <td><p>The character set of the database. </p></td>
                 </tr>
               
                 <tr>
                   <td>collation</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The collation is the collation of a database. </p></td>
+                  <td><p>The collation of the database. </p></td>
                 </tr>
               
                 <tr>
                   <td>extensions</td>
                   <td><a href="#bytebase.store.ExtensionMetadata">ExtensionMetadata</a></td>
                   <td>repeated</td>
-                  <td><p>The extensions is the list of extensions in a database. </p></td>
+                  <td><p>The list of extensions in a database. </p></td>
                 </tr>
               
                 <tr>
@@ -3669,7 +3523,7 @@ from SQL files), the system cannot automatically drop the constraint. </p></td>
                   <td>service_name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The service name of the database. It&#39;s the Oracle specific concept. </p></td>
+                  <td><p>The service name of the database. It&#39;s an Oracle-specific concept. </p></td>
                 </tr>
               
                 <tr>
@@ -3838,14 +3692,14 @@ Examples: POINT, LINE, POLYGON, COLLECTION </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of a type. </p></td>
+                  <td><p>The name of the enum type. </p></td>
                 </tr>
               
                 <tr>
                   <td>values</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>The enum values of a type. </p></td>
+                  <td><p>The enum values of the type. </p></td>
                 </tr>
               
                 <tr>
@@ -3949,14 +3803,14 @@ Examples: POINT, LINE, POLYGON, COLLECTION </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of an extension. </p></td>
+                  <td><p>The name of the extension. </p></td>
                 </tr>
               
                 <tr>
                   <td>schema</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The schema is the extension that is installed to. But the extension usage
+                  <td><p>The schema where the extension is installed. However, the extension usage
 is not limited to the schema. </p></td>
                 </tr>
               
@@ -3995,7 +3849,7 @@ is not limited to the schema. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of a external table. </p></td>
+                  <td><p>The name of the external table. </p></td>
                 </tr>
               
                 <tr>
@@ -4040,7 +3894,7 @@ is not limited to the schema. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of a foreign key. </p></td>
+                  <td><p>The name of the foreign key. </p></td>
                 </tr>
               
                 <tr>
@@ -4116,7 +3970,7 @@ It&#39;s empty string for other databases. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of a function. </p></td>
+                  <td><p>The name of the function. </p></td>
                 </tr>
               
                 <tr>
@@ -4267,7 +4121,7 @@ For PostgreSQL, it&#39;s the list of tables that the function depends on the ret
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of an index. </p></td>
+                  <td><p>The name of the index. </p></td>
                 </tr>
               
                 <tr>
@@ -4282,15 +4136,15 @@ This could refer to a column or an expression. </p></td>
                   <td>key_length</td>
                   <td><a href="#int64">int64</a></td>
                   <td>repeated</td>
-                  <td><p>The key_lengths are the ordered key lengths of an index.
-If the key length is not specified, it&#39;s -1. </p></td>
+                  <td><p>The ordered list of key lengths for the index.
+If the key length is not specified, it is -1. </p></td>
                 </tr>
               
                 <tr>
                   <td>descending</td>
                   <td><a href="#bool">bool</a></td>
                   <td>repeated</td>
-                  <td><p>The descending is the ordered descending of an index. </p></td>
+                  <td><p>The ordered list of descending flags for the index columns. </p></td>
                 </tr>
               
                 <tr>
@@ -4477,7 +4331,7 @@ engine. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of a view. </p></td>
+                  <td><p>The name of the materialized view. </p></td>
                 </tr>
               
                 <tr>
@@ -4498,21 +4352,21 @@ engine. </p></td>
                   <td>dependency_columns</td>
                   <td><a href="#bytebase.store.DependencyColumn">DependencyColumn</a></td>
                   <td>repeated</td>
-                  <td><p>The dependency_columns is the list of dependency columns of a view. </p></td>
+                  <td><p>The list of dependency columns of the view. </p></td>
                 </tr>
               
                 <tr>
                   <td>triggers</td>
                   <td><a href="#bytebase.store.TriggerMetadata">TriggerMetadata</a></td>
                   <td>repeated</td>
-                  <td><p>The columns is the ordered list of columns in a table. </p></td>
+                  <td><p>The ordered list of columns in the materialized view. </p></td>
                 </tr>
               
                 <tr>
                   <td>indexes</td>
                   <td><a href="#bytebase.store.IndexMetadata">IndexMetadata</a></td>
                   <td>repeated</td>
-                  <td><p>The indexes is the list of indexes in a table. </p></td>
+                  <td><p>The list of indexes in the materialized view. </p></td>
                 </tr>
               
                 <tr>
@@ -4667,7 +4521,7 @@ engine. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of a package. </p></td>
+                  <td><p>The name of the package. </p></td>
                 </tr>
               
                 <tr>
@@ -4698,7 +4552,7 @@ engine. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of a procedure. </p></td>
+                  <td><p>The name of the procedure. </p></td>
                 </tr>
               
                 <tr>
@@ -4779,28 +4633,28 @@ function takes. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of the rule. </p></td>
+                  <td><p>The name of the rule. </p></td>
                 </tr>
               
                 <tr>
                   <td>event</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The event is the event type of the rule: SELECT, INSERT, UPDATE, or DELETE. </p></td>
+                  <td><p>The event type of the rule: SELECT, INSERT, UPDATE, or DELETE. </p></td>
                 </tr>
               
                 <tr>
                   <td>condition</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The condition is the WHERE condition of the rule (optional). </p></td>
+                  <td><p>The WHERE condition of the rule (optional). </p></td>
                 </tr>
               
                 <tr>
                   <td>action</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The action is the command(s) to execute when the rule fires. </p></td>
+                  <td><p>The command(s) to execute when the rule fires. </p></td>
                 </tr>
               
                 <tr>
@@ -4821,7 +4675,7 @@ function takes. </p></td>
                   <td>definition</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The definition is the full CREATE RULE statement. </p></td>
+                  <td><p>The full CREATE RULE statement. </p></td>
                 </tr>
               
             </tbody>
@@ -4845,7 +4699,7 @@ function takes. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the schema name.
+                  <td><p>The schema name.
 It is an empty string for databases without such concept such as MySQL. </p></td>
                 </tr>
               
@@ -4877,7 +4731,7 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the schema name.
+                  <td><p>The schema name.
 It is an empty string for databases without such concept such as MySQL. </p></td>
                 </tr>
               
@@ -4885,72 +4739,70 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td>tables</td>
                   <td><a href="#bytebase.store.TableMetadata">TableMetadata</a></td>
                   <td>repeated</td>
-                  <td><p>The tables is the list of tables in a schema. </p></td>
+                  <td><p>The list of tables in a schema. </p></td>
                 </tr>
               
                 <tr>
                   <td>external_tables</td>
                   <td><a href="#bytebase.store.ExternalTableMetadata">ExternalTableMetadata</a></td>
                   <td>repeated</td>
-                  <td><p>The external_tables is the list of external tables in a schema. </p></td>
+                  <td><p>The list of external tables in a schema. </p></td>
                 </tr>
               
                 <tr>
                   <td>views</td>
                   <td><a href="#bytebase.store.ViewMetadata">ViewMetadata</a></td>
                   <td>repeated</td>
-                  <td><p>The views is the list of views in a schema. </p></td>
+                  <td><p>The list of views in a schema. </p></td>
                 </tr>
               
                 <tr>
                   <td>functions</td>
                   <td><a href="#bytebase.store.FunctionMetadata">FunctionMetadata</a></td>
                   <td>repeated</td>
-                  <td><p>The functions is the list of functions in a schema. </p></td>
+                  <td><p>The list of functions in a schema. </p></td>
                 </tr>
               
                 <tr>
                   <td>procedures</td>
                   <td><a href="#bytebase.store.ProcedureMetadata">ProcedureMetadata</a></td>
                   <td>repeated</td>
-                  <td><p>The procedures is the list of procedures in a schema. </p></td>
+                  <td><p>The list of procedures in a schema. </p></td>
                 </tr>
               
                 <tr>
                   <td>streams</td>
                   <td><a href="#bytebase.store.StreamMetadata">StreamMetadata</a></td>
                   <td>repeated</td>
-                  <td><p>The streams is the list of streams in a schema, currently, only used for
-Snowflake. </p></td>
+                  <td><p>The list of streams in a schema, currently only used for Snowflake. </p></td>
                 </tr>
               
                 <tr>
                   <td>tasks</td>
                   <td><a href="#bytebase.store.TaskMetadata">TaskMetadata</a></td>
                   <td>repeated</td>
-                  <td><p>The routines is the list of routines in a schema, currently, only used for
-Snowflake. </p></td>
+                  <td><p>The list of tasks in a schema, currently only used for Snowflake. </p></td>
                 </tr>
               
                 <tr>
                   <td>materialized_views</td>
                   <td><a href="#bytebase.store.MaterializedViewMetadata">MaterializedViewMetadata</a></td>
                   <td>repeated</td>
-                  <td><p>The materialized_views is the list of materialized views in a schema. </p></td>
+                  <td><p>The list of materialized views in a schema. </p></td>
                 </tr>
               
                 <tr>
                   <td>sequences</td>
                   <td><a href="#bytebase.store.SequenceMetadata">SequenceMetadata</a></td>
                   <td>repeated</td>
-                  <td><p>The sequences is the list of sequences in a schema. </p></td>
+                  <td><p>The list of sequences in a schema. </p></td>
                 </tr>
               
                 <tr>
                   <td>packages</td>
                   <td><a href="#bytebase.store.PackageMetadata">PackageMetadata</a></td>
                   <td>repeated</td>
-                  <td><p>The packages is the list of packages in a schema. </p></td>
+                  <td><p>The list of packages in a schema. </p></td>
                 </tr>
               
                 <tr>
@@ -5044,14 +4896,14 @@ Snowflake. </p></td>
                   <td>increment</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Increment value of a sequence. </p></td>
+                  <td><p>The increment value of a sequence. </p></td>
                 </tr>
               
                 <tr>
                   <td>cycle</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>Cycle is whether the sequence cycles. </p></td>
+                  <td><p>Whether the sequence cycles. </p></td>
                 </tr>
               
                 <tr>
@@ -5065,21 +4917,21 @@ Snowflake. </p></td>
                   <td>last_value</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Last value of a sequence. </p></td>
+                  <td><p>The last value of a sequence. </p></td>
                 </tr>
               
                 <tr>
                   <td>owner_table</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The owner table of the sequence. </p></td>
+                  <td><p>The table that owns the sequence. </p></td>
                 </tr>
               
                 <tr>
                   <td>owner_column</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The owner column of the sequence. </p></td>
+                  <td><p>The column that owns the sequence. </p></td>
                 </tr>
               
                 <tr>
@@ -5318,7 +5170,7 @@ Examples: &#34;SPATIAL&#34; (MySQL/SQL Server), &#34;GIST&#34;/&#34;SPGIST&#34; 
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of a stream. </p></td>
+                  <td><p>The name of the stream. </p></td>
                 </tr>
               
                 <tr>
@@ -5391,7 +5243,7 @@ Examples: &#34;SPATIAL&#34; (MySQL/SQL Server), &#34;GIST&#34;/&#34;SPGIST&#34; 
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of a table. </p></td>
+                  <td><p>The name of the table. </p></td>
                 </tr>
               
                 <tr>
@@ -5436,7 +5288,7 @@ Examples: &#34;SPATIAL&#34; (MySQL/SQL Server), &#34;GIST&#34;/&#34;SPGIST&#34; 
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of a table. </p></td>
+                  <td><p>The name of the table. </p></td>
                 </tr>
               
                 <tr>
@@ -5471,7 +5323,7 @@ Examples: &#34;SPATIAL&#34; (MySQL/SQL Server), &#34;GIST&#34;/&#34;SPGIST&#34; 
                   <td>charset</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The character set of table. </p></td>
+                  <td><p>The character set of the table. </p></td>
                 </tr>
               
                 <tr>
@@ -5617,7 +5469,7 @@ CLUSTERED or NONCLUSTERED. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of a table partition. </p></td>
+                  <td><p>The name of the table partition. </p></td>
                 </tr>
               
                 <tr>
@@ -5709,15 +5561,15 @@ in syntax [SUB]PARTITION {number}. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of a task. </p></td>
+                  <td><p>The name of the task. </p></td>
                 </tr>
               
                 <tr>
                   <td>id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The id is the snowflake-generated id of a task.
-Example: 01ad32a0-1bb6-5e93-0000-000000000001 </p></td>
+                  <td><p>The Snowflake-generated ID of the task.
+Example: 01ad32a0-1bb6-5e93-0000-000000000001. </p></td>
                 </tr>
               
                 <tr>
@@ -5843,29 +5695,28 @@ Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of the trigger. </p></td>
+                  <td><p>The name of the trigger. </p></td>
                 </tr>
               
                 <tr>
                   <td>event</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
-TRUNCATE. </p></td>
+                  <td><p>The event that triggers this action, such as INSERT, UPDATE, DELETE, or TRUNCATE. </p></td>
                 </tr>
               
                 <tr>
                   <td>timing</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The timing is the timing of the trigger, such as BEFORE, AFTER. </p></td>
+                  <td><p>The timing of when the trigger fires, such as BEFORE or AFTER. </p></td>
                 </tr>
               
                 <tr>
                   <td>body</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The body is the body of the trigger. </p></td>
+                  <td><p>The body of the trigger. </p></td>
                 </tr>
               
                 <tr>
@@ -5924,7 +5775,7 @@ TRUNCATE. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name is the name of a view. </p></td>
+                  <td><p>The name of the view. </p></td>
                 </tr>
               
                 <tr>
@@ -5945,21 +5796,21 @@ TRUNCATE. </p></td>
                   <td>dependency_columns</td>
                   <td><a href="#bytebase.store.DependencyColumn">DependencyColumn</a></td>
                   <td>repeated</td>
-                  <td><p>The dependency_columns is the list of dependency columns of a view. </p></td>
+                  <td><p>The list of dependency columns of a view. </p></td>
                 </tr>
               
                 <tr>
                   <td>columns</td>
                   <td><a href="#bytebase.store.ColumnMetadata">ColumnMetadata</a></td>
                   <td>repeated</td>
-                  <td><p>The columns is the ordered list of columns in a table. </p></td>
+                  <td><p>The ordered list of columns in the view. </p></td>
                 </tr>
               
                 <tr>
                   <td>triggers</td>
                   <td><a href="#bytebase.store.TriggerMetadata">TriggerMetadata</a></td>
                   <td>repeated</td>
-                  <td><p>The triggers is the list of triggers in a view. </p></td>
+                  <td><p>The list of triggers in the view. </p></td>
                 </tr>
               
                 <tr>
@@ -6149,7 +6000,7 @@ TRUNCATE. </p></td>
         </table>
       
         <h3 id="bytebase.store.TablePartitionMetadata.Type">TablePartitionMetadata.Type</h3>
-        <p>Type is the type of a table partition, some database engines may not</p><p>support all types. Only avilable for the following database engines now:</p><p>MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY,</p><p>LINEAR_KEY</p><p>(https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html) TiDB:</p><p>RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY PostgreSQL: RANGE,</p><p>LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)</p>
+        <p>The type is the type of a table partition. Some database engines may not</p><p>support all types. Only available for the following database engines now:</p><p>MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY,</p><p>LINEAR_KEY</p><p>(https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html) TiDB:</p><p>RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY PostgreSQL: RANGE,</p><p>LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -6327,7 +6178,7 @@ TRUNCATE. </p></td>
                   <td>member</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Member is the principal who belong to this group.
+                  <td><p>Member is the principal who belongs to this group.
 
 Format: users/{userUID}. </p></td>
                 </tr>
@@ -6367,7 +6218,7 @@ Format: users/{userUID}. </p></td>
                   <td>source</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. </p></td>
+                  <td><p>The source indicates where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. </p></td>
                 </tr>
               
             </tbody>
@@ -6879,7 +6730,7 @@ as application/x-www-form-urlencoded parameters.</p></td>
               <tr>
                 <td>IN_HEADER</td>
                 <td>2</td>
-                <td><p>IN_HEADER sends the client_id and client_password using HTTP Basic Authorization.
+                <td><p>IN_HEADER sends the client_id and client_secret using HTTP Basic Authorization.
 This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></td>
               </tr>
             
@@ -6947,7 +6798,7 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
                   <td>use_ssl</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>Use SSL to connect to the data source. By default, we use system default SSL configuration. </p></td>
+                  <td><p>Use SSL to connect to the data source. By default, we use the system&#39;s SSL configuration. </p></td>
                 </tr>
               
                 <tr>
@@ -7028,7 +6879,7 @@ validated (e.g., self-signed certs, VPN environments). </p></td>
                   <td>srv</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>srv, authentication_database and replica_set are used for MongoDB.
+                  <td><p>srv, authentication_database, and replica_set are used for MongoDB.
 srv is a boolean flag that indicates whether the host is a DNS SRV record. </p></td>
                 </tr>
               
@@ -7185,7 +7036,7 @@ Used for authentication when connecting to the data source. </p></td>
                   <td>region</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>region is the location of where the DB is, works for AWS RDS. For example, us-east-1. </p></td>
+                  <td><p>Region is the location of the database, used for AWS RDS. For example, us-east-1. </p></td>
                 </tr>
               
                 <tr>
@@ -7308,14 +7159,16 @@ For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p><
                   <td>role_arn</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>ARN of IAM role to assume for cross-account access </p></td>
+                  <td><p>ARN of IAM role to assume for cross-account access.
+See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html </p></td>
                 </tr>
               
                 <tr>
                   <td>external_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Optional external ID for additional security when assuming role </p></td>
+                  <td><p>Optional external ID for additional security when assuming role.
+See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html </p></td>
                 </tr>
               
             </tbody>
@@ -7557,7 +7410,7 @@ For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p><
                   <td>secret_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>the secret id for the role without ttl. </p></td>
+                  <td><p>The secret ID for the role without TTL. </p></td>
                 </tr>
               
                 <tr>
@@ -7637,7 +7490,7 @@ For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p><
                   <td>sync_interval</td>
                   <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
                   <td></td>
-                  <td><p>How often the instance is synced. </p></td>
+                  <td><p>The interval between automatic instance synchronizations. </p></td>
                 </tr>
               
                 <tr>
@@ -7652,7 +7505,7 @@ The default is 10 if the value is unset or zero. </p></td>
                   <td>sync_databases</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>Enable sync for following databases.
+                  <td><p>Enable sync for the following databases.
 Default empty, means sync all schemas &amp; databases. </p></td>
                 </tr>
               
@@ -7760,8 +7613,8 @@ For example, { &#34;org_group&#34;: &#34;infrastructure&#34;, &#34;environment&#
                   <td><a href="#string">string</a></td>
                   <td>optional</td>
                   <td><p>The role attribute.
-For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
-For MySQL, it&#39;s the global privileges as GRANT statements, which means it only contains &#34;GRANT ... ON *.* TO ...&#34;. Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html </p></td>
+For PostgreSQL, it contains super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
+For MySQL, it is the global privileges as GRANT statements, which means it only contains &#34;GRANT ... ON *.* TO ...&#34;. Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html </p></td>
                 </tr>
               
             </tbody>
@@ -8006,7 +7859,7 @@ For MySQL, it&#39;s the global privileges as GRANT statements, which means it on
           <tbody>
             
               <tr>
-                <td>SAECRET_TYPE_UNSPECIFIED</td>
+                <td>SECRET_TYPE_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>
@@ -8112,7 +7965,7 @@ For MySQL, it&#39;s the global privileges as GRANT statements, which means it on
 
       
         <h3 id="bytebase.store.GrantRequest">GrantRequest</h3>
-        <p></p>
+        <p>GrantRequest contains details for requesting database access permissions.</p>
 
         
           <table class="field-table">
@@ -8125,7 +7978,7 @@ For MySQL, it&#39;s the global privileges as GRANT statements, which means it on
                   <td>role</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The requested role.
+                  <td><p>The role being requested for the user.
 Format: roles/EXPORTER. </p></td>
                 </tr>
               
@@ -8133,7 +7986,7 @@ Format: roles/EXPORTER. </p></td>
                   <td>user</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The user to be granted.
+                  <td><p>The user who will receive the role.
 Format: users/{userUID}. </p></td>
                 </tr>
               
@@ -8141,14 +7994,14 @@ Format: users/{userUID}. </p></td>
                   <td>condition</td>
                   <td><a href="#google.type.Expr">google.type.Expr</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Optional conditional expression that limits when the grant applies. </p></td>
                 </tr>
               
                 <tr>
                   <td>expiration</td>
                   <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Duration after which the grant automatically expires. </p></td>
                 </tr>
               
             </tbody>
@@ -8159,7 +8012,7 @@ Format: users/{userUID}. </p></td>
         
       
         <h3 id="bytebase.store.Issue">Issue</h3>
-        <p></p>
+        <p>Issue is the metadata for issues that track database operations and access requests.</p>
 
         
           <table class="field-table">
@@ -8172,21 +8025,21 @@ Format: users/{userUID}. </p></td>
                   <td>approval</td>
                   <td><a href="#bytebase.store.IssuePayloadApproval">IssuePayloadApproval</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Approval information for the issue workflow. </p></td>
                 </tr>
               
                 <tr>
                   <td>grant_request</td>
                   <td><a href="#bytebase.store.GrantRequest">GrantRequest</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Access grant request details if this is a grant request issue. </p></td>
                 </tr>
               
                 <tr>
                   <td>labels</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p> </p></td>
+                  <td><p>Labels attached to categorize and filter the issue. </p></td>
                 </tr>
               
             </tbody>
@@ -8199,7 +8052,7 @@ Format: users/{userUID}. </p></td>
 
       
         <h3 id="bytebase.store.Issue.Status">Issue.Status</h3>
-        <p></p>
+        <p>Status represents the current state of the issue.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -8215,26 +8068,26 @@ Format: users/{userUID}. </p></td>
               <tr>
                 <td>OPEN</td>
                 <td>1</td>
-                <td><p></p></td>
+                <td><p>Issue is open and pending action.</p></td>
               </tr>
             
               <tr>
                 <td>DONE</td>
                 <td>2</td>
-                <td><p></p></td>
+                <td><p>Issue has been completed successfully.</p></td>
               </tr>
             
               <tr>
                 <td>CANCELED</td>
                 <td>3</td>
-                <td><p></p></td>
+                <td><p>Issue was canceled and will not be completed.</p></td>
               </tr>
             
           </tbody>
         </table>
       
         <h3 id="bytebase.store.Issue.Type">Issue.Type</h3>
-        <p></p>
+        <p>Type represents the category of issue.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -8250,19 +8103,19 @@ Format: users/{userUID}. </p></td>
               <tr>
                 <td>DATABASE_CHANGE</td>
                 <td>1</td>
-                <td><p></p></td>
+                <td><p>Issue for database schema or data changes.</p></td>
               </tr>
             
               <tr>
                 <td>GRANT_REQUEST</td>
                 <td>2</td>
-                <td><p></p></td>
+                <td><p>Issue requesting database access permissions.</p></td>
               </tr>
             
               <tr>
                 <td>DATABASE_EXPORT</td>
                 <td>3</td>
-                <td><p></p></td>
+                <td><p>Issue for exporting data from databases.</p></td>
               </tr>
             
           </tbody>
@@ -9033,8 +8886,8 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td>password</td>
                   <td><a href="#string">string</a></td>
                   <td>optional</td>
-                  <td><p>The zip password provide by users.
-Leave it empty if no needs to encrypt the zip file. </p></td>
+                  <td><p>The zip password provided by users.
+Leave it empty if there is no need to encrypt the zip file. </p></td>
                 </tr>
               
             </tbody>
@@ -9403,7 +9256,7 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
                   <td>start_position</td>
                   <td><a href="#bytebase.store.Position">Position</a></td>
                   <td></td>
-                  <td><p>1-based Position of the SQL statement.
+                  <td><p>1-based position of the SQL statement.
 To supersede `line` and `column` above. </p></td>
                 </tr>
               
@@ -9435,7 +9288,7 @@ To supersede `line` and `column` above. </p></td>
                   <td>statement_types</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>statement_types are the types of statements that are found in the sql. </p></td>
+                  <td><p>statement_types are the types of statements found in the SQL. </p></td>
                 </tr>
               
                 <tr>
@@ -9730,14 +9583,14 @@ A binding binds one or more members or groups to a single role. </p></td>
                   <td>action</td>
                   <td><a href="#bytebase.store.MaskingExceptionPolicy.MaskingException.Action">MaskingExceptionPolicy.MaskingException.Action</a></td>
                   <td></td>
-                  <td><p>action is the action that the user can access sensitive data. </p></td>
+                  <td><p>action is the action by which the user can access sensitive data. </p></td>
                 </tr>
               
                 <tr>
                   <td>member</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Member is the principal who bind to this exception policy instance.
+                  <td><p>Member is the principal who binds to this exception policy instance.
 
 Format: users/{userUID} or groups/{group email} </p></td>
                 </tr>
@@ -9846,7 +9699,7 @@ Format: users/{userUID} or groups/{group email} </p></td>
                   <td>disable_export</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>Disable export data in the SQL editor </p></td>
+                  <td><p>Disable exporting data in the SQL editor. </p></td>
                 </tr>
               
                 <tr>
@@ -10039,8 +9892,8 @@ These checks are performed in UI workflows only. </p></td>
                   <td>tags</td>
                   <td><a href="#bytebase.store.TagPolicy.TagsEntry">TagPolicy.TagsEntry</a></td>
                   <td>repeated</td>
-                  <td><p>tags is the key - value map for resources.
-for example, the environment resource can have the sql review config tag, like &#34;bb.tag.review_config&#34;: &#34;reviewConfigs/{review config resource id}&#34; </p></td>
+                  <td><p>tags is the key-value map for resources.
+For example, the environment resource can have the SQL review config tag, such as &#34;bb.tag.review_config&#34;: &#34;reviewConfigs/{review config resource id}&#34;. </p></td>
                 </tr>
               
             </tbody>
@@ -10341,7 +10194,7 @@ for example, the environment resource can have the sql review config tag, like &
 
       
         <h3 id="bytebase.store.Label">Label</h3>
-        <p></p>
+        <p>Label represents a categorization tag that can be applied to issues.</p>
 
         
           <table class="field-table">
@@ -10354,21 +10207,21 @@ for example, the environment resource can have the sql review config tag, like &
                   <td>value</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The display text of the label. </p></td>
                 </tr>
               
                 <tr>
                   <td>color</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The color for the label in hex format (e.g., &#34;#FF0000&#34;). </p></td>
                 </tr>
               
                 <tr>
                   <td>group</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Optional group name for organizing related labels. </p></td>
                 </tr>
               
             </tbody>
@@ -10379,7 +10232,7 @@ for example, the environment resource can have the sql review config tag, like &
         
       
         <h3 id="bytebase.store.Project">Project</h3>
-        <p></p>
+        <p>Project contains settings and configuration for a Bytebase project.</p>
 
         
           <table class="field-table">
@@ -10392,7 +10245,7 @@ for example, the environment resource can have the sql review config tag, like &
                   <td>issue_labels</td>
                   <td><a href="#bytebase.store.Label">Label</a></td>
                   <td>repeated</td>
-                  <td><p> </p></td>
+                  <td><p>Available labels that can be applied to issues in this project. </p></td>
                 </tr>
               
                 <tr>
@@ -10456,7 +10309,7 @@ If enabled, the issue will be created with the prepend &#34;set role &lt;db_owne
                   <td>execution_retry_policy</td>
                   <td><a href="#bytebase.store.Project.ExecutionRetryPolicy">Project.ExecutionRetryPolicy</a></td>
                   <td></td>
-                  <td><p>Execution retry policy for the task run. </p></td>
+                  <td><p>Configuration for automatic retry on task execution failures. </p></td>
                 </tr>
               
                 <tr>
@@ -10464,7 +10317,7 @@ If enabled, the issue will be created with the prepend &#34;set role &lt;db_owne
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p>The maximum number of databases to sample during CI data validation.
-Without specification, sampling is disabled, resulting in a full validation. </p></td>
+If not specified, sampling is disabled, resulting in a full validation. </p></td>
                 </tr>
               
                 <tr>
@@ -10498,7 +10351,7 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
         
       
         <h3 id="bytebase.store.Project.ExecutionRetryPolicy">Project.ExecutionRetryPolicy</h3>
-        <p></p>
+        <p>ExecutionRetryPolicy defines retry behavior for failed task executions.</p>
 
         
           <table class="field-table">
@@ -10511,7 +10364,7 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                   <td>maximum_retries</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The maximum number of retries for the lock timeout issue. </p></td>
+                  <td><p>The maximum number of retry attempts for lock timeout errors. </p></td>
                 </tr>
               
             </tbody>
@@ -10580,7 +10433,7 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                   <td>direct_message</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>if direct_message is set, the notification is sent directly
+                  <td><p>If direct_message is set, the notification is sent directly
 to the persons and url will be ignored.
 IM integration setting should be set for this function to work. </p></td>
                 </tr>
@@ -10710,7 +10563,7 @@ IM integration setting should be set for this function to work. </p></td>
                   <td>path</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The path of the file. e.g. `2.2/V0001_create_table.sql`. </p></td>
+                  <td><p>The path of the file, e.g., `2.2/V0001_create_table.sql`. </p></td>
                 </tr>
               
                 <tr>
@@ -11323,14 +11176,14 @@ But frontend can be started with a single rule easily. </p></td>
                   <td>level</td>
                   <td><a href="#bytebase.store.Announcement.AlertLevel">Announcement.AlertLevel</a></td>
                   <td></td>
-                  <td><p>The alert level of announcemnt </p></td>
+                  <td><p>The alert level of the announcement. </p></td>
                 </tr>
               
                 <tr>
                   <td>text</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The text of announcemnt </p></td>
+                  <td><p>The text of the announcement. </p></td>
                 </tr>
               
                 <tr>
@@ -11907,35 +11760,35 @@ are /[a-z][0-9]-/. </p></td>
                   <td>min_length</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>min_length is the minimum length for password, should no less than 8. </p></td>
+                  <td><p>min_length is the minimum length for password, should be no less than 8. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_number</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_number requires the password must contains at least one number. </p></td>
+                  <td><p>require_number requires the password must contain at least one number. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_letter</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_letter requires the password must contains at least one letter, regardless of upper case or lower case </p></td>
+                  <td><p>require_letter requires the password must contain at least one letter, regardless of upper case or lower case </p></td>
                 </tr>
               
                 <tr>
                   <td>require_uppercase_letter</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_uppercase_letter requires the password must contains at least one upper case letter. </p></td>
+                  <td><p>require_uppercase_letter requires the password must contain at least one upper case letter. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_special_character</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_uppercase_letter requires the password must contains at least one special character. </p></td>
+                  <td><p>require_special_character requires the password must contain at least one special character. </p></td>
                 </tr>
               
                 <tr>
@@ -12274,13 +12127,6 @@ are /[a-z][0-9]-/. </p></td>
             <tbody>
               
                 <tr>
-                  <td>expression</td>
-                  <td><a href="#google.api.expr.v1alpha1.Expr">google.api.expr.v1alpha1.Expr</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>template</td>
                   <td><a href="#bytebase.store.ApprovalTemplate">ApprovalTemplate</a></td>
                   <td></td>
@@ -12357,7 +12203,7 @@ are /[a-z][0-9]-/. </p></td>
                   <td>domains</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>The workspace domain, e.g. bytebase.com. </p></td>
+                  <td><p>The workspace domain, e.g., bytebase.com. </p></td>
                 </tr>
               
                 <tr>
@@ -12734,7 +12580,7 @@ Default to this mode.</p></td>
 
       
         <h3 id="bytebase.store.Task">Task</h3>
-        <p></p>
+        <p>Task is the metadata for database operation tasks.</p>
 
         
           <table class="field-table">
@@ -12747,112 +12593,112 @@ Default to this mode.</p></td>
                   <td>skipped</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>common fields </p></td>
+                  <td><p>Whether the task was skipped during execution. </p></td>
                 </tr>
               
                 <tr>
                   <td>skipped_reason</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Reason why the task was skipped. </p></td>
                 </tr>
               
                 <tr>
                   <td>spec_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>UUID that identifies the spec this task implements. </p></td>
                 </tr>
               
                 <tr>
                   <td>sheet_id</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The sheet ID containing SQL statements for this task. </p></td>
                 </tr>
               
                 <tr>
                   <td>environment_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Create database fields. </p></td>
+                  <td><p>The environment where the database will be created. </p></td>
                 </tr>
               
                 <tr>
                   <td>database_name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Name of the database to create. </p></td>
                 </tr>
               
                 <tr>
                   <td>table_name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Optional table name to create (required for some databases like MongoDB). </p></td>
                 </tr>
               
                 <tr>
                   <td>character_set</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Character set for the new database. </p></td>
                 </tr>
               
                 <tr>
                   <td>collation</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Collation for the new database. </p></td>
                 </tr>
               
                 <tr>
                   <td>schema_version</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Update database fields. </p></td>
+                  <td><p>Schema version after migration is applied. </p></td>
                 </tr>
               
                 <tr>
                   <td>enable_prior_backup</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Whether to create an automatic backup before applying changes. </p></td>
                 </tr>
               
                 <tr>
                   <td>flags</td>
                   <td><a href="#bytebase.store.Task.FlagsEntry">Task.FlagsEntry</a></td>
                   <td>repeated</td>
-                  <td><p>ghost flags. </p></td>
+                  <td><p>Configuration flags for gh-ost migration tool. </p></td>
                 </tr>
               
                 <tr>
                   <td>task_release_source</td>
                   <td><a href="#bytebase.store.TaskReleaseSource">TaskReleaseSource</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Source information if task is created from a release. </p></td>
                 </tr>
               
                 <tr>
                   <td>migrate_type</td>
                   <td><a href="#bytebase.store.Task.MigrateType">Task.MigrateType</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The type of migration (DDL, DML, or GHOST). </p></td>
                 </tr>
               
                 <tr>
                   <td>password</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Export data fields. </p></td>
+                  <td><p>Password to encrypt the exported data archive. </p></td>
                 </tr>
               
                 <tr>
                   <td>format</td>
                   <td><a href="#bytebase.store.ExportFormat">ExportFormat</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Format of the exported data (SQL, CSV, JSON, etc). </p></td>
                 </tr>
               
             </tbody>
@@ -12894,7 +12740,7 @@ Default to this mode.</p></td>
         
       
         <h3 id="bytebase.store.TaskReleaseSource">TaskReleaseSource</h3>
-        <p></p>
+        <p>TaskReleaseSource contains information about the release file this task originated from.</p>
 
         
           <table class="field-table">
@@ -12907,7 +12753,8 @@ Default to this mode.</p></td>
                   <td>file</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/releases/{release}/files/{id} </p></td>
+                  <td><p>Resource name of the release file.
+Format: projects/{project}/releases/{release}/files/{id} </p></td>
                 </tr>
               
             </tbody>
@@ -12920,7 +12767,7 @@ Default to this mode.</p></td>
 
       
         <h3 id="bytebase.store.Task.MigrateType">Task.MigrateType</h3>
-        <p>MigrateType is the database migration type.</p>
+        <p>MigrateType is the database migration type for imperative migrations.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -12936,26 +12783,26 @@ Default to this mode.</p></td>
               <tr>
                 <td>DDL</td>
                 <td>1</td>
-                <td><p></p></td>
+                <td><p>DDL changes (Data Definition Language) for schema modifications.</p></td>
               </tr>
             
               <tr>
                 <td>DML</td>
                 <td>2</td>
-                <td><p></p></td>
+                <td><p>DML changes (Data Manipulation Language) for data modifications.</p></td>
               </tr>
             
               <tr>
                 <td>GHOST</td>
                 <td>3</td>
-                <td><p></p></td>
+                <td><p>Online schema migration using gh-ost tool.</p></td>
               </tr>
             
           </tbody>
         </table>
       
         <h3 id="bytebase.store.Task.Type">Task.Type</h3>
-        <p></p>
+        <p>Type represents the type of database operation to perform.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -12971,25 +12818,25 @@ Default to this mode.</p></td>
               <tr>
                 <td>DATABASE_CREATE</td>
                 <td>1</td>
-                <td><p></p></td>
+                <td><p>Create a new database.</p></td>
               </tr>
             
               <tr>
                 <td>DATABASE_MIGRATE</td>
                 <td>2</td>
-                <td><p></p></td>
+                <td><p>Apply schema/data migrations to an existing database.</p></td>
               </tr>
             
               <tr>
                 <td>DATABASE_EXPORT</td>
                 <td>5</td>
-                <td><p></p></td>
+                <td><p>Export data from a database.</p></td>
               </tr>
             
               <tr>
                 <td>DATABASE_SDL</td>
                 <td>6</td>
-                <td><p></p></td>
+                <td><p>Apply declarative schema changes (state-based migration).</p></td>
               </tr>
             
           </tbody>
@@ -13008,7 +12855,7 @@ Default to this mode.</p></td>
 
       
         <h3 id="bytebase.store.PriorBackupDetail">PriorBackupDetail</h3>
-        <p></p>
+        <p>PriorBackupDetail contains information about automatic backups created before migration.</p>
 
         
           <table class="field-table">
@@ -13021,7 +12868,7 @@ Default to this mode.</p></td>
                   <td>items</td>
                   <td><a href="#bytebase.store.PriorBackupDetail.Item">PriorBackupDetail.Item</a></td>
                   <td>repeated</td>
-                  <td><p> </p></td>
+                  <td><p>List of backup operations performed. </p></td>
                 </tr>
               
             </tbody>
@@ -13032,7 +12879,7 @@ Default to this mode.</p></td>
         
       
         <h3 id="bytebase.store.PriorBackupDetail.Item">PriorBackupDetail.Item</h3>
-        <p></p>
+        <p>Item represents a single backup operation for a table.</p>
 
         
           <table class="field-table">
@@ -13045,28 +12892,28 @@ Default to this mode.</p></td>
                   <td>source_table</td>
                   <td><a href="#bytebase.store.PriorBackupDetail.Item.Table">PriorBackupDetail.Item.Table</a></td>
                   <td></td>
-                  <td><p>The original table information. </p></td>
+                  <td><p>The original table that was backed up. </p></td>
                 </tr>
               
                 <tr>
                   <td>target_table</td>
                   <td><a href="#bytebase.store.PriorBackupDetail.Item.Table">PriorBackupDetail.Item.Table</a></td>
                   <td></td>
-                  <td><p>The target backup table information. </p></td>
+                  <td><p>The backup table where data was copied. </p></td>
                 </tr>
               
                 <tr>
                   <td>start_position</td>
                   <td><a href="#bytebase.store.Position">Position</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Starting position in SQL for this backup operation. </p></td>
                 </tr>
               
                 <tr>
                   <td>end_position</td>
                   <td><a href="#bytebase.store.Position">Position</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Ending position in SQL for this backup operation. </p></td>
                 </tr>
               
             </tbody>
@@ -13077,7 +12924,7 @@ Default to this mode.</p></td>
         
       
         <h3 id="bytebase.store.PriorBackupDetail.Item.Table">PriorBackupDetail.Item.Table</h3>
-        <p></p>
+        <p>Table identifies a database table.</p>
 
         
           <table class="field-table">
@@ -13090,7 +12937,7 @@ Default to this mode.</p></td>
                   <td>database</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The database information.
+                  <td><p>The database containing the table.
 Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
@@ -13098,14 +12945,14 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>schema</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Schema name (for databases that support schemas). </p></td>
                 </tr>
               
                 <tr>
                   <td>table</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Table name. </p></td>
                 </tr>
               
             </tbody>
@@ -13116,7 +12963,7 @@ Format: instances/{instance}/databases/{database} </p></td>
         
       
         <h3 id="bytebase.store.SchedulerInfo">SchedulerInfo</h3>
-        <p></p>
+        <p>SchedulerInfo contains information about task scheduling and execution delays.</p>
 
         
           <table class="field-table">
@@ -13129,14 +12976,14 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>report_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Timestamp when the scheduler reported this information. </p></td>
                 </tr>
               
                 <tr>
                   <td>waiting_cause</td>
                   <td><a href="#bytebase.store.SchedulerInfo.WaitingCause">SchedulerInfo.WaitingCause</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Reason why the task run is currently waiting. </p></td>
                 </tr>
               
             </tbody>
@@ -13147,7 +12994,7 @@ Format: instances/{instance}/databases/{database} </p></td>
         
       
         <h3 id="bytebase.store.SchedulerInfo.WaitingCause">SchedulerInfo.WaitingCause</h3>
-        <p></p>
+        <p>WaitingCause indicates why a task run is waiting to execute.</p>
 
         
           <table class="field-table">
@@ -13160,21 +13007,21 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>connection_limit</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Task is waiting due to database connection limit. </p></td>
                 </tr>
               
                 <tr>
                   <td>task_uid</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Task is waiting for another task to complete. </p></td>
                 </tr>
               
                 <tr>
                   <td>parallel_tasks_limit</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Task is waiting due to parallel execution limit. </p></td>
                 </tr>
               
             </tbody>
@@ -13185,14 +13032,14 @@ Format: instances/{instance}/databases/{database} </p></td>
         
       
         <h3 id="bytebase.store.TaskRun">TaskRun</h3>
-        <p></p>
+        <p>TaskRun represents an execution attempt of a task.</p>
 
         
 
         
       
         <h3 id="bytebase.store.TaskRunResult">TaskRunResult</h3>
-        <p></p>
+        <p>TaskRunResult contains the outcome and metadata from a task run execution.</p>
 
         
           <table class="field-table">
@@ -13205,49 +13052,50 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>detail</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Detailed execution information or error message. </p></td>
                 </tr>
               
                 <tr>
                   <td>changelog</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
+                  <td><p>Resource name of the changelog entry created by this run.
+Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
                 </tr>
               
                 <tr>
                   <td>version</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Schema version after the migration was applied. </p></td>
                 </tr>
               
                 <tr>
                   <td>start_position</td>
                   <td><a href="#bytebase.store.Position">Position</a></td>
                   <td></td>
-                  <td><p>The following fields are used for error reporting. </p></td>
+                  <td><p>Starting position in the SQL statement where an error occurred. </p></td>
                 </tr>
               
                 <tr>
                   <td>end_position</td>
                   <td><a href="#bytebase.store.Position">Position</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Ending position in the SQL statement where an error occurred. </p></td>
                 </tr>
               
                 <tr>
                   <td>export_archive_uid</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The uid of the export archive. </p></td>
+                  <td><p>UID of the export archive generated for export tasks. </p></td>
                 </tr>
               
                 <tr>
                   <td>prior_backup_detail</td>
                   <td><a href="#bytebase.store.PriorBackupDetail">PriorBackupDetail</a></td>
                   <td></td>
-                  <td><p>The prior backup detail that will be used to rollback the task run. </p></td>
+                  <td><p>Backup details that can be used to rollback changes. </p></td>
                 </tr>
               
             </tbody>
@@ -13260,7 +13108,7 @@ Format: instances/{instance}/databases/{database} </p></td>
 
       
         <h3 id="bytebase.store.TaskRun.Status">TaskRun.Status</h3>
-        <p></p>
+        <p>Status represents the current execution state of a task run.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -13276,43 +13124,43 @@ Format: instances/{instance}/databases/{database} </p></td>
               <tr>
                 <td>PENDING</td>
                 <td>1</td>
-                <td><p></p></td>
+                <td><p>Task run is queued and waiting to execute.</p></td>
               </tr>
             
               <tr>
                 <td>RUNNING</td>
                 <td>2</td>
-                <td><p></p></td>
+                <td><p>Task run is currently executing.</p></td>
               </tr>
             
               <tr>
                 <td>DONE</td>
                 <td>3</td>
-                <td><p></p></td>
+                <td><p>Task run completed successfully.</p></td>
               </tr>
             
               <tr>
                 <td>FAILED</td>
                 <td>4</td>
-                <td><p></p></td>
+                <td><p>Task run encountered an error and failed.</p></td>
               </tr>
             
               <tr>
                 <td>CANCELED</td>
                 <td>5</td>
-                <td><p></p></td>
+                <td><p>Task run was canceled by user or system.</p></td>
               </tr>
             
               <tr>
                 <td>NOT_STARTED</td>
                 <td>6</td>
-                <td><p></p></td>
+                <td><p>Task run has not started yet.</p></td>
               </tr>
             
               <tr>
                 <td>SKIPPED</td>
                 <td>7</td>
-                <td><p></p></td>
+                <td><p>Task run was skipped and will not execute.</p></td>
               </tr>
             
           </tbody>
@@ -13794,13 +13642,13 @@ The indexes of the executed commands. </p></td>
               <tr>
                 <td>RUNNING_WAITING</td>
                 <td>1</td>
-                <td><p>the task run is ready to be executed by the scheduler</p></td>
+                <td><p>The task run is ready to be executed by the scheduler.</p></td>
               </tr>
             
               <tr>
                 <td>RUNNING_RUNNING</td>
                 <td>2</td>
-                <td><p>the task run is being executed by the scheduler</p></td>
+                <td><p>The task run is being executed by the scheduler.</p></td>
               </tr>
             
           </tbody>
@@ -13969,7 +13817,7 @@ The indexes of the executed commands. </p></td>
                   <td>temp_otp_secret</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The temp_otp_secret is the temporary secret key used to validate the OTP code and will replace the otp_secret in two phase commits. </p></td>
+                  <td><p>The temp_otp_secret is the temporary secret key used to validate the OTP code and will replace the otp_secret in two-phase commits. </p></td>
                 </tr>
               
                 <tr>
@@ -13983,7 +13831,7 @@ The indexes of the executed commands. </p></td>
                   <td>temp_recovery_codes</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>The temp_recovery_codes are the temporary codes that will replace the recovery_codes in two phase commits. </p></td>
+                  <td><p>The temp_recovery_codes are the temporary codes that will replace the recovery_codes in two-phase commits. </p></td>
                 </tr>
               
             </tbody>
@@ -14021,7 +13869,7 @@ The indexes of the executed commands. </p></td>
                   <td>source</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. </p></td>
+                  <td><p>The source indicates where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. </p></td>
                 </tr>
               
             </tbody>

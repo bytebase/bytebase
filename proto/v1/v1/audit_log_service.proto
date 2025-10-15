@@ -15,8 +15,10 @@ import "v1/iam_policy.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// AuditLogService manages audit logs for system activities and API calls.
 service AuditLogService {
-  // Permissions required: None
+  // Searches audit logs with optional filtering and pagination.
+  // Permissions required: bb.auditLogs.search
   rpc SearchAuditLogs(SearchAuditLogsRequest) returns (SearchAuditLogsResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/auditLogs:search"
@@ -30,6 +32,7 @@ service AuditLogService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Exports audit logs in a specified format for external analysis.
   // Permissions required: bb.auditLogs.export
   rpc ExportAuditLogs(ExportAuditLogsRequest) returns (ExportAuditLogsResponse) {
     option (google.api.http) = {
@@ -45,6 +48,7 @@ service AuditLogService {
   }
 }
 
+// Request message for searching audit logs.
 message SearchAuditLogsRequest {
   string parent = 5 [
     (google.api.field_behavior) = REQUIRED,
@@ -85,6 +89,7 @@ message SearchAuditLogsRequest {
   string page_token = 4;
 }
 
+// Response message for searching audit logs.
 message SearchAuditLogsResponse {
   repeated AuditLog audit_logs = 1;
 
@@ -94,6 +99,7 @@ message SearchAuditLogsResponse {
   string next_page_token = 2;
 }
 
+// Request message for exporting audit logs.
 message ExportAuditLogsRequest {
   string parent = 4 [
     (google.api.field_behavior) = REQUIRED,
@@ -125,7 +131,9 @@ message ExportAuditLogsRequest {
   string page_token = 6;
 }
 
+// Response message for exporting audit logs.
 message ExportAuditLogsResponse {
+  // The exported audit log content in the requested format.
   bytes content = 1;
 
   // A token to retrieve next page of log entities.
@@ -134,6 +142,7 @@ message ExportAuditLogsResponse {
   string next_page_token = 2;
 }
 
+// Audit log entry recording system activity or API call.
 message AuditLog {
   // The name of the log.
   // Formats:
@@ -141,60 +150,77 @@ message AuditLog {
   // - workspaces/{workspace}/auditLogs/{uid}
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The timestamp when the audit log was created.
   google.protobuf.Timestamp create_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Format: users/d@d.com
+  // The user who performed the action.
+  // Format: users/{email}
   string user = 3;
 
-  // e.g. `/bytebase.v1.SQLService/Query`, `bb.project.repository.push`
+  // The method or action being audited.
+  // For example: /bytebase.v1.SQLService/Query or bb.project.repository.push
   string method = 4;
 
+  // The severity level of this audit log entry.
   Severity severity = 5;
 
-  // The associated resource.
+  // The resource associated with this audit log.
   string resource = 6;
 
-  // JSON-encoded request.
+  // The request payload in JSON format.
   string request = 7;
 
-  // JSON-encoded response.
-  // Some fields are omitted because they are too large or contain sensitive information.
+  // The response payload in JSON format.
+  // Some fields may be omitted if they are too large or contain sensitive information.
   string response = 8;
 
+  // The status of the operation.
   google.rpc.Status status = 9;
 
-  // The latency of the RPC.
+  // The duration of the operation.
   google.protobuf.Duration latency = 10;
 
-  // service-specific data about the request, response, and other activities.
+  // Service-specific metadata about the request, response, and activities.
   google.protobuf.Any service_data = 11;
 
-  // Metadata about the operation.
+  // Metadata about the request context.
   RequestMetadata request_metadata = 12;
 
+  // Severity level for audit log entries.
   enum Severity {
+    // Default severity level.
     DEFAULT = 0;
+    // Debug-level information.
     DEBUG = 1;
+    // Informational messages.
     INFO = 2;
+    // Notable events.
     NOTICE = 3;
+    // Warning conditions.
     WARNING = 4;
+    // Error conditions.
     ERROR = 5;
+    // Critical conditions.
     CRITICAL = 6;
+    // Action must be taken immediately.
     ALERT = 7;
+    // System is unusable.
     EMERGENCY = 8;
   }
 }
 
+// Additional audit data specific to certain operations.
 message AuditData {
+  // Changes to IAM policies.
   PolicyDelta policy_delta = 1;
 }
 
-// Metadata about the request.
+// Metadata about the incoming request.
 message RequestMetadata {
-  // The IP address of the caller.
+  // The IP address of the request originator.
   string caller_ip = 1;
 
-  // The user agent of the caller.
-  // This information is not authenticated and should be treated accordingly.
+  // The user agent string provided by the caller.
+  // This is supplied by the client and is not authenticated.
   string caller_supplied_user_agent = 2;
 }

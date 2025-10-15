@@ -33,21 +33,31 @@ const (
 // ReleaseServiceClient is the client API for ReleaseService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// ReleaseService manages releases for coordinating deployments.
 type ReleaseServiceClient interface {
+	// Retrieves a release by name.
 	// Permissions required: bb.releases.get
 	GetRelease(ctx context.Context, in *GetReleaseRequest, opts ...grpc.CallOption) (*Release, error)
+	// Lists releases in a project.
 	// Permissions required: bb.releases.list
 	ListReleases(ctx context.Context, in *ListReleasesRequest, opts ...grpc.CallOption) (*ListReleasesResponse, error)
+	// Searches releases by digest or other criteria.
 	// Permissions required: bb.releases.get
 	SearchReleases(ctx context.Context, in *SearchReleasesRequest, opts ...grpc.CallOption) (*SearchReleasesResponse, error)
+	// Creates a new release with SQL files.
 	// Permissions required: bb.releases.create
 	CreateRelease(ctx context.Context, in *CreateReleaseRequest, opts ...grpc.CallOption) (*Release, error)
+	// Updates an existing release.
 	// Permissions required: bb.releases.update
 	UpdateRelease(ctx context.Context, in *UpdateReleaseRequest, opts ...grpc.CallOption) (*Release, error)
+	// Deletes a release.
 	// Permissions required: bb.releases.delete
 	DeleteRelease(ctx context.Context, in *DeleteReleaseRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Restores a deleted release.
 	// Permissions required: bb.releases.undelete
 	UndeleteRelease(ctx context.Context, in *UndeleteReleaseRequest, opts ...grpc.CallOption) (*Release, error)
+	// Validates a release by dry-running checks on target databases.
 	// Permissions required: bb.releases.check
 	CheckRelease(ctx context.Context, in *CheckReleaseRequest, opts ...grpc.CallOption) (*CheckReleaseResponse, error)
 }
@@ -143,21 +153,31 @@ func (c *releaseServiceClient) CheckRelease(ctx context.Context, in *CheckReleas
 // ReleaseServiceServer is the server API for ReleaseService service.
 // All implementations must embed UnimplementedReleaseServiceServer
 // for forward compatibility.
+//
+// ReleaseService manages releases for coordinating deployments.
 type ReleaseServiceServer interface {
+	// Retrieves a release by name.
 	// Permissions required: bb.releases.get
 	GetRelease(context.Context, *GetReleaseRequest) (*Release, error)
+	// Lists releases in a project.
 	// Permissions required: bb.releases.list
 	ListReleases(context.Context, *ListReleasesRequest) (*ListReleasesResponse, error)
+	// Searches releases by digest or other criteria.
 	// Permissions required: bb.releases.get
 	SearchReleases(context.Context, *SearchReleasesRequest) (*SearchReleasesResponse, error)
+	// Creates a new release with SQL files.
 	// Permissions required: bb.releases.create
 	CreateRelease(context.Context, *CreateReleaseRequest) (*Release, error)
+	// Updates an existing release.
 	// Permissions required: bb.releases.update
 	UpdateRelease(context.Context, *UpdateReleaseRequest) (*Release, error)
+	// Deletes a release.
 	// Permissions required: bb.releases.delete
 	DeleteRelease(context.Context, *DeleteReleaseRequest) (*emptypb.Empty, error)
+	// Restores a deleted release.
 	// Permissions required: bb.releases.undelete
 	UndeleteRelease(context.Context, *UndeleteReleaseRequest) (*Release, error)
+	// Validates a release by dry-running checks on target databases.
 	// Permissions required: bb.releases.check
 	CheckRelease(context.Context, *CheckReleaseRequest) (*CheckReleaseResponse, error)
 	mustEmbedUnimplementedReleaseServiceServer()

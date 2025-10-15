@@ -1,5 +1,5 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import { cloneDeep, isNumber } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import type { EqualityExpr, LogicalExpr, SimpleExpr } from "@/plugins/cel";
 import {
@@ -9,38 +9,23 @@ import {
   isConditionGroupExpr,
   resolveCELExpr,
 } from "@/plugins/cel";
-import { t } from "@/plugins/i18n";
 import type { ParsedApprovalRule, UnrecognizedApprovalRule } from "@/types";
-import { DEFAULT_RISK_LEVEL, PresetRoleType } from "@/types";
+import { DEFAULT_RISK_LEVEL } from "@/types";
 import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
 import { PresetRiskLevelList, useSupportedSourceList } from "@/types";
+import { getBuiltinFlow, isBuiltinFlowId } from "@/types";
 import type { Expr as CELExpr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import { ExprSchema as CELExprSchema } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import type { Expr as _Expr } from "@/types/proto-es/google/type/expr_pb";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
-import type {
-  ApprovalNode as _ApprovalNode,
-  ApprovalStep as _ApprovalStep,
-} from "@/types/proto-es/v1/issue_service_pb";
-import {
-  ApprovalNode_Type as _ApprovalNode_Type,
-  ApprovalStep_Type as _ApprovalStep_Type,
-} from "@/types/proto-es/v1/issue_service_pb";
-import {
-  ApprovalNode_Type as ProtoEsApprovalNode_Type,
-  ApprovalStep_Type as ProtoEsApprovalStep_Type,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { RiskLevel } from "@/types/proto-es/v1/common_pb";
 import type {
   ApprovalTemplate as _ProtoEsApprovalTemplate,
   ApprovalFlow as _ProtoEsApprovalFlow,
-  ApprovalStep as _ProtoEsApprovalStep,
-  ApprovalNode as _ProtoEsApprovalNode,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   ApprovalTemplateSchema as _ProtoEsApprovalTemplateSchema,
   ApprovalFlowSchema as _ProtoEsApprovalFlowSchema,
-  ApprovalStepSchema as ProtoEsApprovalStepSchema,
-  ApprovalNodeSchema as ProtoEsApprovalNodeSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import type {
@@ -59,14 +44,6 @@ import { displayRoleTitle } from "./role";
 
 export const approvalNodeRoleText = (role: string) => {
   return displayRoleTitle(role);
-};
-
-export const approvalNodeText = (node: _ProtoEsApprovalNode): string => {
-  const { role } = node;
-  if (role) {
-    return approvalNodeRoleText(role);
-  }
-  return "";
 };
 
 /*
@@ -93,15 +70,21 @@ export const resolveLocalApprovalConfig = async (
 
   for (let i = 0; i < config.rules.length; i++) {
     const rule = config.rules[i];
+    const template = cloneDeep(rule.template!);
+
+    // Ensure template has an id, generate UUID if missing (for legacy data)
+    if (!template.id) {
+      template.id = uuidv4();
+    }
+
     const localRule: LocalApprovalRule = {
-      uid: uuidv4(),
       expr: resolveCELExpr(createProto(CELExprSchema, {})),
-      template: cloneDeep(rule.template!),
+      template,
     };
-    ruleMap.set(localRule.uid, localRule);
+    ruleMap.set(template.id, localRule);
     if (rule.condition?.expression) {
       expressions.push(rule.condition.expression);
-      ruleIdList.push(localRule.uid);
+      ruleIdList.push(template.id);
     }
   }
 
@@ -127,7 +110,7 @@ const resolveApprovalConfigRules = (rules: LocalApprovalRule[]) => {
   const unrecognized: UnrecognizedApprovalRule[] = [];
 
   const fail = (expr: SimpleExpr | undefined, rule: LocalApprovalRule) => {
-    unrecognized.push({ expr, rule: rule.uid });
+    unrecognized.push({ expr, rule: rule.template.id });
   };
 
   const resolveLogicAndExpr = (expr: SimpleExpr, rule: LocalApprovalRule) => {
@@ -138,13 +121,13 @@ const resolveApprovalConfigRules = (rules: LocalApprovalRule[]) => {
     const source = resolveSourceExpr(args[0]);
     if (source === Risk_Source.SOURCE_UNSPECIFIED) return fail(expr, rule);
     const level = resolveLevelExpr(args[1]);
-    if (Number.isNaN(level)) return fail(expr, rule);
+    if (level === RiskLevel.RISK_LEVEL_UNSPECIFIED) return fail(expr, rule);
 
     // Found a correct (source, level) combination
     parsed.push({
       source,
       level,
-      rule: rule.uid,
+      rule: rule.template.id,
     });
   };
 
@@ -192,32 +175,81 @@ export const buildWorkspaceApprovalSetting = async (
 
   const parsedMap = toMap(parsed);
 
-  const approvalRuleMap: Map<number, ApprovalRule> = new Map();
-  const exprList: CELExpr[] = [];
-  const ruleIndexList: number[] = [];
+  // Get unique template IDs that are actually used (have parsed rules)
+  const usedTemplateIds = new Set(parsed.map((p) => p.rule));
 
-  for (let i = 0; i < rules.length; i++) {
-    const rule = rules[i];
-    const { uid, template } = rule;
+  // Build a map of template ID -> template for quick lookup
+  const templateMap = new Map<string, _ProtoEsApprovalTemplate>();
+  for (const rule of rules) {
+    if (rule.template.id) {
+      templateMap.set(rule.template.id, rule.template);
+    }
+  }
+
+  // Determine which templates to save:
+  // 1. All custom templates (even if unused - they are user-created)
+  // 2. Only used built-in templates (just-in-time materialization)
+  const templatesToSave = new Set<string>();
+
+  // Add all custom templates
+  for (const rule of rules) {
+    if (rule.template.id && !isBuiltinFlowId(rule.template.id)) {
+      templatesToSave.add(rule.template.id);
+    }
+  }
+
+  // Add used built-in templates
+  for (const templateId of usedTemplateIds) {
+    templatesToSave.add(templateId);
+  }
+
+  const approvalRuleMap: Map<string, ApprovalRule> = new Map();
+  const exprList: CELExpr[] = [];
+  const templateIdList: string[] = [];
+
+  // Process each template to save
+  for (const templateId of templatesToSave) {
+    // Get template from cache, or materialize built-in template
+    let template = templateMap.get(templateId);
+
+    if (!template && isBuiltinFlowId(templateId)) {
+      // Built-in template not in cache - materialize it
+      const builtinFlow = getBuiltinFlow(templateId);
+      if (builtinFlow) {
+        template = createProto(_ProtoEsApprovalTemplateSchema, {
+          id: builtinFlow.id,
+          title: builtinFlow.title,
+          description: builtinFlow.description,
+          flow: createProto(_ProtoEsApprovalFlowSchema, {
+            roles: [...builtinFlow.roles],
+          }),
+        });
+      }
+    }
+
+    if (!template) {
+      console.warn(`Template ${templateId} not found, skipping`);
+      continue;
+    }
 
     const approvalRule = createProto(ApprovalRuleSchema, {
       template: template,
       condition: createProto(ExprSchema, { expression: "" }),
     });
-    approvalRuleMap.set(i, approvalRule);
+    approvalRuleMap.set(templateId, approvalRule);
 
-    const parsed = parsedMap.get(uid) ?? [];
+    const parsed = parsedMap.get(templateId) ?? [];
     const parsedExpr = await buildParsedExpression(parsed);
     if (parsedExpr) {
       exprList.push(parsedExpr);
-      ruleIndexList.push(i);
+      templateIdList.push(templateId);
     }
   }
 
   const expressionList = await batchConvertParsedExprToCELString(exprList);
   for (let i = 0; i < expressionList.length; i++) {
-    const ruleIndex = ruleIndexList[i];
-    approvalRuleMap.get(ruleIndex)!.condition = createProto(ExprSchema, {
+    const templateId = templateIdList[i];
+    approvalRuleMap.get(templateId)!.condition = createProto(ExprSchema, {
       expression: expressionList[i],
     });
   }
@@ -254,21 +286,36 @@ const resolveSourceExpr = (expr: SimpleExpr): Risk_Source => {
   return source;
 };
 
-const resolveLevelExpr = (expr: SimpleExpr): number => {
-  if (!isConditionExpr(expr)) return Number.NaN;
+const resolveLevelExpr = (expr: SimpleExpr): RiskLevel => {
+  if (!isConditionExpr(expr)) return RiskLevel.RISK_LEVEL_UNSPECIFIED;
   const { operator, args } = expr;
-  if (operator !== "_==_") return Number.NaN;
-  if (!args || args.length !== 2) return Number.NaN;
+  if (operator !== "_==_") return RiskLevel.RISK_LEVEL_UNSPECIFIED;
+  if (!args || args.length !== 2) return RiskLevel.RISK_LEVEL_UNSPECIFIED;
   const factor = args[0];
-  if (factor !== "level") return Number.NaN;
+  if (factor !== "level") return RiskLevel.RISK_LEVEL_UNSPECIFIED;
   const level = args[1];
-  if (!isNumber(level)) return Number.NaN;
-  const supportedRiskLevelList = [
-    ...PresetRiskLevelList.map((item) => item.level),
-    DEFAULT_RISK_LEVEL,
-  ];
-  if (!supportedRiskLevelList.includes(level)) return Number.NaN;
-  return level;
+
+  // Handle string values (new format: "LOW", "MODERATE", "HIGH", "RISK_LEVEL_UNSPECIFIED")
+  if (typeof level === "string") {
+    const enumValue = RiskLevel[level as keyof typeof RiskLevel];
+    if (enumValue !== undefined) {
+      return enumValue;
+    }
+    return RiskLevel.RISK_LEVEL_UNSPECIFIED;
+  }
+
+  // Handle numeric values (legacy format or enum values)
+  if (typeof level === "number") {
+    const supportedRiskLevelList = [
+      ...PresetRiskLevelList.map((item) => item.level),
+      DEFAULT_RISK_LEVEL,
+    ];
+    if (supportedRiskLevelList.includes(level)) {
+      return level;
+    }
+  }
+
+  return RiskLevel.RISK_LEVEL_UNSPECIFIED;
 };
 
 const toMap = <T extends { rule: string }>(items: T[]): Map<string, T[]> => {
@@ -291,10 +338,12 @@ const buildParsedExpression = async (parsed: ParsedApprovalRule[]) => {
       operator: "_==_",
       args: ["source", Risk_Source[source]],
     };
+    // Convert RiskLevel enum to string name for CEL expression
+    // This generates: level == "LOW", level == "MODERATE", level == "HIGH"
     const levelExpr: EqualityExpr = {
       type: ExprType.Condition,
       operator: "_==_",
-      args: ["level", level],
+      args: ["level", RiskLevel[level]],
     };
     return {
       type: ExprType.ConditionGroup,
@@ -310,72 +359,4 @@ const buildParsedExpression = async (parsed: ParsedApprovalRule[]) => {
   // expr will be unwrapped to an "&&" expr if listedOrExpr.length === 0
   const expr = await buildCELExpr(listedOrExpr);
   return expr;
-};
-
-// Create seed (SYSTEM preset) approval flows
-export const seedWorkspaceApprovalSetting = () => {
-  const generateRule = (
-    title: string,
-    description: string,
-    roles: string[]
-  ): ApprovalRule => {
-    return createProto(ApprovalRuleSchema, {
-      template: {
-        title,
-        description,
-        flow: {
-          steps: roles.map((role) =>
-            createProto(ProtoEsApprovalStepSchema, {
-              type: ProtoEsApprovalStep_Type.ANY,
-              nodes: [
-                createProto(ProtoEsApprovalNodeSchema, {
-                  type: ProtoEsApprovalNode_Type.ANY_IN_GROUP,
-                  role,
-                }),
-              ],
-            })
-          ),
-        },
-      },
-    });
-  };
-  type Preset = {
-    title?: string;
-    description: string;
-    roles: string[];
-  };
-  const presets: Preset[] = [
-    {
-      description: "owner-dba",
-      roles: [PresetRoleType.PROJECT_OWNER, PresetRoleType.WORKSPACE_DBA],
-    },
-    {
-      description: "owner",
-      roles: [PresetRoleType.PROJECT_OWNER],
-    },
-    {
-      description: "dba",
-      roles: [PresetRoleType.WORKSPACE_DBA],
-    },
-    {
-      description: "admin",
-      roles: [PresetRoleType.WORKSPACE_ADMIN],
-    },
-    {
-      description: "owner-dba-admin",
-      roles: [
-        PresetRoleType.PROJECT_OWNER,
-        PresetRoleType.WORKSPACE_DBA,
-        PresetRoleType.WORKSPACE_ADMIN,
-      ],
-    },
-  ];
-  return presets.map((preset) => {
-    const title =
-      preset.title ??
-      preset.roles.map((role) => approvalNodeRoleText(role)).join(" -> ");
-    const keypath = `dynamic.custom-approval.approval-flow.presets.${preset.description}`;
-    const description = t(keypath);
-    return generateRule(title, description, preset.roles);
-  });
 };

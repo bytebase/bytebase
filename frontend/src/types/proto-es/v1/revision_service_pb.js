@@ -79,12 +79,16 @@ export const Revision_TypeSchema = /*@__PURE__*/
   enumDesc(file_v1_revision_service, 7, 0);
 
 /**
+ * The type of schema revision.
+ *
  * @generated from enum bytebase.v1.Revision.Type
  */
 export const Revision_Type = /*@__PURE__*/
   tsEnum(Revision_TypeSchema);
 
 /**
+ * RevisionService manages schema revision history.
+ *
  * @generated from service bytebase.v1.RevisionService
  */
 export const RevisionService = /*@__PURE__*/

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -99,6 +100,13 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 }
 
 func getStatementWithResultLimit(statement string, limit int) string {
+	// SHOW statements don't need LIMIT clause wrapping as they typically return small result sets
+	// and wrapping them in SELECT * FROM (...) causes syntax errors
+	trimmedStatement := strings.TrimSpace(statement)
+	if strings.HasPrefix(strings.ToUpper(trimmedStatement), "SHOW") {
+		return statement
+	}
+
 	stmt, err := getStatementWithResultLimitForMySQL(statement, limit)
 	if err != nil {
 		slog.Error("fail to add limit clause", slog.String("statement", statement), log.BBError(err))

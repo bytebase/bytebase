@@ -21,11 +21,15 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Label represents a categorization tag that can be applied to issues.
 type Label struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Value         string                 `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
-	Color         string                 `protobuf:"bytes,2,opt,name=color,proto3" json:"color,omitempty"`
-	Group         string                 `protobuf:"bytes,3,opt,name=group,proto3" json:"group,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The display text of the label.
+	Value string `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	// The color for the label in hex format (e.g., "#FF0000").
+	Color string `protobuf:"bytes,2,opt,name=color,proto3" json:"color,omitempty"`
+	// Optional group name for organizing related labels.
+	Group         string `protobuf:"bytes,3,opt,name=group,proto3" json:"group,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -81,9 +85,11 @@ func (x *Label) GetGroup() string {
 	return ""
 }
 
+// Project contains settings and configuration for a Bytebase project.
 type Project struct {
-	state       protoimpl.MessageState `protogen:"open.v1"`
-	IssueLabels []*Label               `protobuf:"bytes,2,rep,name=issue_labels,json=issueLabels,proto3" json:"issue_labels,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Available labels that can be applied to issues in this project.
+	IssueLabels []*Label `protobuf:"bytes,2,rep,name=issue_labels,json=issueLabels,proto3" json:"issue_labels,omitempty"`
 	// Force issue labels to be used when creating an issue.
 	ForceIssueLabels bool `protobuf:"varint,3,opt,name=force_issue_labels,json=forceIssueLabels,proto3" json:"force_issue_labels,omitempty"`
 	// Allow modifying statement after issue is created.
@@ -101,10 +107,10 @@ type Project struct {
 	PostgresDatabaseTenantMode bool `protobuf:"varint,9,opt,name=postgres_database_tenant_mode,json=postgresDatabaseTenantMode,proto3" json:"postgres_database_tenant_mode,omitempty"`
 	// Whether to allow the issue creator to self-approve the issue.
 	AllowSelfApproval bool `protobuf:"varint,10,opt,name=allow_self_approval,json=allowSelfApproval,proto3" json:"allow_self_approval,omitempty"`
-	// Execution retry policy for the task run.
+	// Configuration for automatic retry on task execution failures.
 	ExecutionRetryPolicy *Project_ExecutionRetryPolicy `protobuf:"bytes,11,opt,name=execution_retry_policy,json=executionRetryPolicy,proto3" json:"execution_retry_policy,omitempty"`
 	// The maximum number of databases to sample during CI data validation.
-	// Without specification, sampling is disabled, resulting in a full validation.
+	// If not specified, sampling is disabled, resulting in a full validation.
 	CiSamplingSize int32 `protobuf:"varint,12,opt,name=ci_sampling_size,json=ciSamplingSize,proto3" json:"ci_sampling_size,omitempty"`
 	// The maximum number of parallel tasks to run during the rollout.
 	ParallelTasksPerRollout int32 `protobuf:"varint,13,opt,name=parallel_tasks_per_rollout,json=parallelTasksPerRollout,proto3" json:"parallel_tasks_per_rollout,omitempty"`
@@ -246,9 +252,10 @@ func (x *Project) GetEnforceSqlReview() bool {
 	return false
 }
 
+// ExecutionRetryPolicy defines retry behavior for failed task executions.
 type Project_ExecutionRetryPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The maximum number of retries for the lock timeout issue.
+	// The maximum number of retry attempts for lock timeout errors.
 	MaximumRetries int32 `protobuf:"varint,1,opt,name=maximum_retries,json=maximumRetries,proto3" json:"maximum_retries,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache

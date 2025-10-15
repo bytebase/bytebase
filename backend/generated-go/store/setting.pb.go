@@ -7,7 +7,6 @@
 package store
 
 import (
-	v1alpha1 "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 	expr "google.golang.org/genproto/googleapis/type/expr"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -338,7 +337,7 @@ type WorkspaceProfileSetting struct {
 	Announcement *Announcement `protobuf:"bytes,7,opt,name=announcement,proto3" json:"announcement,omitempty"`
 	// The max duration for role expired.
 	MaximumRoleExpiration *durationpb.Duration `protobuf:"bytes,8,opt,name=maximum_role_expiration,json=maximumRoleExpiration,proto3" json:"maximum_role_expiration,omitempty"`
-	// The workspace domain, e.g. bytebase.com.
+	// The workspace domain, e.g., bytebase.com.
 	Domains []string `protobuf:"bytes,9,rep,name=domains,proto3" json:"domains,omitempty"`
 	// Only user and group from the domains can be created and login.
 	EnforceIdentityDomain bool `protobuf:"varint,10,opt,name=enforce_identity_domain,json=enforceIdentityDomain,proto3" json:"enforce_identity_domain,omitempty"`
@@ -461,9 +460,9 @@ func (x *WorkspaceProfileSetting) GetEnableMetricCollection() bool {
 
 type Announcement struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The alert level of announcemnt
+	// The alert level of the announcement.
 	Level Announcement_AlertLevel `protobuf:"varint,1,opt,name=level,proto3,enum=bytebase.store.Announcement_AlertLevel" json:"level,omitempty"`
-	// The text of announcemnt
+	// The text of the announcement.
 	Text string `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
 	// The optional link, user can follow the link to check extra details
 	Link          string `protobuf:"bytes,3,opt,name=link,proto3" json:"link,omitempty"`
@@ -950,15 +949,15 @@ func (x *SCIMSetting) GetToken() string {
 
 type PasswordRestrictionSetting struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// min_length is the minimum length for password, should no less than 8.
+	// min_length is the minimum length for password, should be no less than 8.
 	MinLength int32 `protobuf:"varint,1,opt,name=min_length,json=minLength,proto3" json:"min_length,omitempty"`
-	// require_number requires the password must contains at least one number.
+	// require_number requires the password must contain at least one number.
 	RequireNumber bool `protobuf:"varint,2,opt,name=require_number,json=requireNumber,proto3" json:"require_number,omitempty"`
-	// require_letter requires the password must contains at least one letter, regardless of upper case or lower case
+	// require_letter requires the password must contain at least one letter, regardless of upper case or lower case
 	RequireLetter bool `protobuf:"varint,3,opt,name=require_letter,json=requireLetter,proto3" json:"require_letter,omitempty"`
-	// require_uppercase_letter requires the password must contains at least one upper case letter.
+	// require_uppercase_letter requires the password must contain at least one upper case letter.
 	RequireUppercaseLetter bool `protobuf:"varint,4,opt,name=require_uppercase_letter,json=requireUppercaseLetter,proto3" json:"require_uppercase_letter,omitempty"`
-	// require_uppercase_letter requires the password must contains at least one special character.
+	// require_special_character requires the password must contain at least one special character.
 	RequireSpecialCharacter bool `protobuf:"varint,5,opt,name=require_special_character,json=requireSpecialCharacter,proto3" json:"require_special_character,omitempty"`
 	// require_reset_password_for_first_login requires users to reset their password after the 1st login.
 	RequireResetPasswordForFirstLogin bool `protobuf:"varint,6,opt,name=require_reset_password_for_first_login,json=requireResetPasswordForFirstLogin,proto3" json:"require_reset_password_for_first_login,omitempty"`
@@ -1177,9 +1176,8 @@ func (x *EnvironmentSetting) GetEnvironments() []*EnvironmentSetting_Environment
 
 type WorkspaceApprovalSetting_Rule struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Expression    *v1alpha1.Expr         `protobuf:"bytes,1,opt,name=expression,proto3" json:"expression,omitempty"`
-	Template      *ApprovalTemplate      `protobuf:"bytes,2,opt,name=template,proto3" json:"template,omitempty"`
-	Condition     *expr.Expr             `protobuf:"bytes,3,opt,name=condition,proto3" json:"condition,omitempty"`
+	Template      *ApprovalTemplate      `protobuf:"bytes,1,opt,name=template,proto3" json:"template,omitempty"`
+	Condition     *expr.Expr             `protobuf:"bytes,2,opt,name=condition,proto3" json:"condition,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1212,13 +1210,6 @@ func (x *WorkspaceApprovalSetting_Rule) ProtoReflect() protoreflect.Message {
 // Deprecated: Use WorkspaceApprovalSetting_Rule.ProtoReflect.Descriptor instead.
 func (*WorkspaceApprovalSetting_Rule) Descriptor() ([]byte, []int) {
 	return file_store_setting_proto_rawDescGZIP(), []int{2, 0}
-}
-
-func (x *WorkspaceApprovalSetting_Rule) GetExpression() *v1alpha1.Expr {
-	if x != nil {
-		return x.Expression
-	}
-	return nil
 }
 
 func (x *WorkspaceApprovalSetting_Rule) GetTemplate() *ApprovalTemplate {
@@ -2393,7 +2384,7 @@ var File_store_setting_proto protoreflect.FileDescriptor
 
 const file_store_setting_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/setting.proto\x12\x0ebytebase.store\x1a%google/api/expr/v1alpha1/syntax.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x14store/database.proto\"\xf9\x04\n" +
+	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x14store/database.proto\"\xf9\x04\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2417,15 +2408,12 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x17ALERT_LEVEL_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10ALERT_LEVEL_INFO\x10\x01\x12\x17\n" +
 	"\x13ALERT_LEVEL_WARNING\x10\x02\x12\x18\n" +
-	"\x14ALERT_LEVEL_CRITICAL\x10\x03\"\x97\x02\n" +
+	"\x14ALERT_LEVEL_CRITICAL\x10\x03\"\xd6\x01\n" +
 	"\x18WorkspaceApprovalSetting\x12C\n" +
-	"\x05rules\x18\x01 \x03(\v2-.bytebase.store.WorkspaceApprovalSetting.RuleR\x05rules\x1a\xb5\x01\n" +
-	"\x04Rule\x12>\n" +
-	"\n" +
-	"expression\x18\x01 \x01(\v2\x1e.google.api.expr.v1alpha1.ExprR\n" +
-	"expression\x12<\n" +
-	"\btemplate\x18\x02 \x01(\v2 .bytebase.store.ApprovalTemplateR\btemplate\x12/\n" +
-	"\tcondition\x18\x03 \x01(\v2\x11.google.type.ExprR\tcondition\"\xd0\x06\n" +
+	"\x05rules\x18\x01 \x03(\v2-.bytebase.store.WorkspaceApprovalSetting.RuleR\x05rules\x1au\n" +
+	"\x04Rule\x12<\n" +
+	"\btemplate\x18\x01 \x01(\v2 .bytebase.store.ApprovalTemplateR\btemplate\x12/\n" +
+	"\tcondition\x18\x02 \x01(\v2\x11.google.type.ExprR\tcondition\"\xd0\x06\n" +
 	"\x15SchemaTemplateSetting\x12\\\n" +
 	"\x0ffield_templates\x18\x01 \x03(\v23.bytebase.store.SchemaTemplateSetting.FieldTemplateR\x0efieldTemplates\x12S\n" +
 	"\fcolumn_types\x18\x02 \x03(\v20.bytebase.store.SchemaTemplateSetting.ColumnTypeR\vcolumnTypes\x12\\\n" +
@@ -2650,14 +2638,13 @@ var file_store_setting_proto_goTypes = []any{
 	(*EnvironmentSetting_Environment)(nil),   // 36: bytebase.store.EnvironmentSetting.Environment
 	nil,                                      // 37: bytebase.store.EnvironmentSetting.Environment.TagsEntry
 	(*durationpb.Duration)(nil),              // 38: google.protobuf.Duration
-	(*v1alpha1.Expr)(nil),                    // 39: google.api.expr.v1alpha1.Expr
-	(*ApprovalTemplate)(nil),                 // 40: bytebase.store.ApprovalTemplate
-	(*expr.Expr)(nil),                        // 41: google.type.Expr
-	(Engine)(0),                              // 42: bytebase.store.Engine
-	(*ColumnMetadata)(nil),                   // 43: bytebase.store.ColumnMetadata
-	(*ColumnCatalog)(nil),                    // 44: bytebase.store.ColumnCatalog
-	(*TableMetadata)(nil),                    // 45: bytebase.store.TableMetadata
-	(*TableCatalog)(nil),                     // 46: bytebase.store.TableCatalog
+	(*ApprovalTemplate)(nil),                 // 39: bytebase.store.ApprovalTemplate
+	(*expr.Expr)(nil),                        // 40: google.type.Expr
+	(Engine)(0),                              // 41: bytebase.store.Engine
+	(*ColumnMetadata)(nil),                   // 42: bytebase.store.ColumnMetadata
+	(*ColumnCatalog)(nil),                    // 43: bytebase.store.ColumnCatalog
+	(*TableMetadata)(nil),                    // 44: bytebase.store.TableMetadata
+	(*TableCatalog)(nil),                     // 45: bytebase.store.TableCatalog
 }
 var file_store_setting_proto_depIdxs = []int32{
 	38, // 0: bytebase.store.WorkspaceProfileSetting.token_duration:type_name -> google.protobuf.Duration
@@ -2683,28 +2670,27 @@ var file_store_setting_proto_depIdxs = []int32{
 	38, // 20: bytebase.store.PasswordRestrictionSetting.password_rotation:type_name -> google.protobuf.Duration
 	4,  // 21: bytebase.store.AISetting.provider:type_name -> bytebase.store.AISetting.Provider
 	36, // 22: bytebase.store.EnvironmentSetting.environments:type_name -> bytebase.store.EnvironmentSetting.Environment
-	39, // 23: bytebase.store.WorkspaceApprovalSetting.Rule.expression:type_name -> google.api.expr.v1alpha1.Expr
-	40, // 24: bytebase.store.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
-	41, // 25: bytebase.store.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
-	42, // 26: bytebase.store.SchemaTemplateSetting.FieldTemplate.engine:type_name -> bytebase.store.Engine
-	43, // 27: bytebase.store.SchemaTemplateSetting.FieldTemplate.column:type_name -> bytebase.store.ColumnMetadata
-	44, // 28: bytebase.store.SchemaTemplateSetting.FieldTemplate.catalog:type_name -> bytebase.store.ColumnCatalog
-	42, // 29: bytebase.store.SchemaTemplateSetting.ColumnType.engine:type_name -> bytebase.store.Engine
-	42, // 30: bytebase.store.SchemaTemplateSetting.TableTemplate.engine:type_name -> bytebase.store.Engine
-	45, // 31: bytebase.store.SchemaTemplateSetting.TableTemplate.table:type_name -> bytebase.store.TableMetadata
-	46, // 32: bytebase.store.SchemaTemplateSetting.TableTemplate.catalog:type_name -> bytebase.store.TableCatalog
-	22, // 33: bytebase.store.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.Level
-	24, // 34: bytebase.store.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
-	23, // 35: bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassification
-	11, // 36: bytebase.store.SemanticTypeSetting.SemanticType.algorithm:type_name -> bytebase.store.Algorithm
-	30, // 37: bytebase.store.Algorithm.RangeMask.slices:type_name -> bytebase.store.Algorithm.RangeMask.Slice
-	3,  // 38: bytebase.store.Algorithm.InnerOuterMask.type:type_name -> bytebase.store.Algorithm.InnerOuterMask.MaskType
-	37, // 39: bytebase.store.EnvironmentSetting.Environment.tags:type_name -> bytebase.store.EnvironmentSetting.Environment.TagsEntry
-	40, // [40:40] is the sub-list for method output_type
-	40, // [40:40] is the sub-list for method input_type
-	40, // [40:40] is the sub-list for extension type_name
-	40, // [40:40] is the sub-list for extension extendee
-	0,  // [0:40] is the sub-list for field type_name
+	39, // 23: bytebase.store.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
+	40, // 24: bytebase.store.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
+	41, // 25: bytebase.store.SchemaTemplateSetting.FieldTemplate.engine:type_name -> bytebase.store.Engine
+	42, // 26: bytebase.store.SchemaTemplateSetting.FieldTemplate.column:type_name -> bytebase.store.ColumnMetadata
+	43, // 27: bytebase.store.SchemaTemplateSetting.FieldTemplate.catalog:type_name -> bytebase.store.ColumnCatalog
+	41, // 28: bytebase.store.SchemaTemplateSetting.ColumnType.engine:type_name -> bytebase.store.Engine
+	41, // 29: bytebase.store.SchemaTemplateSetting.TableTemplate.engine:type_name -> bytebase.store.Engine
+	44, // 30: bytebase.store.SchemaTemplateSetting.TableTemplate.table:type_name -> bytebase.store.TableMetadata
+	45, // 31: bytebase.store.SchemaTemplateSetting.TableTemplate.catalog:type_name -> bytebase.store.TableCatalog
+	22, // 32: bytebase.store.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.Level
+	24, // 33: bytebase.store.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
+	23, // 34: bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassification
+	11, // 35: bytebase.store.SemanticTypeSetting.SemanticType.algorithm:type_name -> bytebase.store.Algorithm
+	30, // 36: bytebase.store.Algorithm.RangeMask.slices:type_name -> bytebase.store.Algorithm.RangeMask.Slice
+	3,  // 37: bytebase.store.Algorithm.InnerOuterMask.type:type_name -> bytebase.store.Algorithm.InnerOuterMask.MaskType
+	37, // 38: bytebase.store.EnvironmentSetting.Environment.tags:type_name -> bytebase.store.EnvironmentSetting.Environment.TagsEntry
+	39, // [39:39] is the sub-list for method output_type
+	39, // [39:39] is the sub-list for method input_type
+	39, // [39:39] is the sub-list for extension type_name
+	39, // [39:39] is the sub-list for extension extendee
+	0,  // [0:39] is the sub-list for field type_name
 }
 
 func init() { file_store_setting_proto_init() }

@@ -44,17 +44,6 @@
               />
             </div>
           </div>
-          <div
-            v-if="condition?.rowLimit"
-            class="w-full flex flex-col justify-start items-start"
-          >
-            <span class="flex items-center textinfolabel mb-2">
-              {{ $t("issue.grant-request.export-rows") }}
-            </span>
-            <div class="flex flex-row justify-start items-start">
-              {{ condition?.rowLimit }}
-            </div>
-          </div>
           <div class="w-full flex flex-col justify-start items-start">
             <span class="flex items-center textinfolabel mb-2">
               {{ $t("issue.grant-request.expired-at") }}

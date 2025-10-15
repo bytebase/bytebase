@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/jackc/pgconn"
@@ -165,12 +166,21 @@ func start() {
 
 	profile := activeProfile(flags.dataDir)
 
+	fmt.Printf("Starting Bytebase %s(%s)...\n", profile.Version, profile.GitCommit)
+
 	// A safety measure to prevent accidentally resetting user's actual data with demo data.
-	// For emebeded mode, we control where data is stored and we put demo data in a separate directory
+	// For embedded mode, we control where data is stored and we put demo data in a separate directory
 	// from the non-demo data.
+	// For external mode, only allow localhost bbdev database for demo purposes.
 	if flags.demo && profile.PgURL != "" {
-		slog.Error("demo mode is disallowed when storing metadata in external PostgreSQL instance")
-		return
+		if !strings.Contains(profile.PgURL, "localhost") && !strings.Contains(profile.PgURL, "127.0.0.1") {
+			slog.Error("demo mode only allows localhost PostgreSQL connections")
+			return
+		}
+		if !strings.Contains(profile.PgURL, "/bbdev") || !strings.Contains(profile.PgURL, "bbdev@") {
+			slog.Error("demo mode requires database and username to be 'bbdev'")
+			return
+		}
 	}
 
 	// The ideal bootstrap order is:

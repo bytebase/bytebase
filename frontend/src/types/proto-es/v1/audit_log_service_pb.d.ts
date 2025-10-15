@@ -15,6 +15,8 @@ import type { PolicyDelta } from "./iam_policy_pb";
 export declare const file_v1_audit_log_service: GenFile;
 
 /**
+ * Request message for searching audit logs.
+ *
  * @generated from message bytebase.v1.SearchAuditLogsRequest
  */
 export declare type SearchAuditLogsRequest = Message<"bytebase.v1.SearchAuditLogsRequest"> & {
@@ -80,6 +82,8 @@ export declare type SearchAuditLogsRequest = Message<"bytebase.v1.SearchAuditLog
 export declare const SearchAuditLogsRequestSchema: GenMessage<SearchAuditLogsRequest>;
 
 /**
+ * Response message for searching audit logs.
+ *
  * @generated from message bytebase.v1.SearchAuditLogsResponse
  */
 export declare type SearchAuditLogsResponse = Message<"bytebase.v1.SearchAuditLogsResponse"> & {
@@ -105,6 +109,8 @@ export declare type SearchAuditLogsResponse = Message<"bytebase.v1.SearchAuditLo
 export declare const SearchAuditLogsResponseSchema: GenMessage<SearchAuditLogsResponse>;
 
 /**
+ * Request message for exporting audit logs.
+ *
  * @generated from message bytebase.v1.ExportAuditLogsRequest
  */
 export declare type ExportAuditLogsRequest = Message<"bytebase.v1.ExportAuditLogsRequest"> & {
@@ -165,10 +171,14 @@ export declare type ExportAuditLogsRequest = Message<"bytebase.v1.ExportAuditLog
 export declare const ExportAuditLogsRequestSchema: GenMessage<ExportAuditLogsRequest>;
 
 /**
+ * Response message for exporting audit logs.
+ *
  * @generated from message bytebase.v1.ExportAuditLogsResponse
  */
 export declare type ExportAuditLogsResponse = Message<"bytebase.v1.ExportAuditLogsResponse"> & {
   /**
+   * The exported audit log content in the requested format.
+   *
    * @generated from field: bytes content = 1;
    */
   content: Uint8Array;
@@ -190,6 +200,8 @@ export declare type ExportAuditLogsResponse = Message<"bytebase.v1.ExportAuditLo
 export declare const ExportAuditLogsResponseSchema: GenMessage<ExportAuditLogsResponse>;
 
 /**
+ * Audit log entry recording system activity or API call.
+ *
  * @generated from message bytebase.v1.AuditLog
  */
 export declare type AuditLog = Message<"bytebase.v1.AuditLog"> & {
@@ -204,72 +216,80 @@ export declare type AuditLog = Message<"bytebase.v1.AuditLog"> & {
   name: string;
 
   /**
+   * The timestamp when the audit log was created.
+   *
    * @generated from field: google.protobuf.Timestamp create_time = 2;
    */
   createTime?: Timestamp;
 
   /**
-   * Format: users/d@d.com
+   * The user who performed the action.
+   * Format: users/{email}
    *
    * @generated from field: string user = 3;
    */
   user: string;
 
   /**
-   * e.g. `/bytebase.v1.SQLService/Query`, `bb.project.repository.push`
+   * The method or action being audited.
+   * For example: /bytebase.v1.SQLService/Query or bb.project.repository.push
    *
    * @generated from field: string method = 4;
    */
   method: string;
 
   /**
+   * The severity level of this audit log entry.
+   *
    * @generated from field: bytebase.v1.AuditLog.Severity severity = 5;
    */
   severity: AuditLog_Severity;
 
   /**
-   * The associated resource.
+   * The resource associated with this audit log.
    *
    * @generated from field: string resource = 6;
    */
   resource: string;
 
   /**
-   * JSON-encoded request.
+   * The request payload in JSON format.
    *
    * @generated from field: string request = 7;
    */
   request: string;
 
   /**
-   * JSON-encoded response.
-   * Some fields are omitted because they are too large or contain sensitive information.
+   * The response payload in JSON format.
+   * Some fields may be omitted if they are too large or contain sensitive information.
    *
    * @generated from field: string response = 8;
    */
   response: string;
 
   /**
+   * The status of the operation.
+   *
    * @generated from field: google.rpc.Status status = 9;
    */
   status?: Status;
 
   /**
-   * The latency of the RPC.
+   * The duration of the operation.
    *
    * @generated from field: google.protobuf.Duration latency = 10;
    */
   latency?: Duration;
 
   /**
-   * service-specific data about the request, response, and other activities.
+   * Service-specific metadata about the request, response, and activities.
    *
    * @generated from field: google.protobuf.Any service_data = 11;
    */
   serviceData?: Any;
 
   /**
-   * Metadata about the operation.
+   * Metadata about the request context.
    *
    * @generated from field: bytebase.v1.RequestMetadata request_metadata = 12;
    */
@@ -283,50 +303,70 @@ export declare type AuditLog = Message<"bytebase.v1.AuditLog"> & {
 export declare const AuditLogSchema: GenMessage<AuditLog>;
 
 /**
+ * Severity level for audit log entries.
+ *
  * @generated from enum bytebase.v1.AuditLog.Severity
  */
 export enum AuditLog_Severity {
   /**
+   * Default severity level.
+   *
    * @generated from enum value: DEFAULT = 0;
    */
   DEFAULT = 0,
 
   /**
+   * Debug-level information.
+   *
    * @generated from enum value: DEBUG = 1;
    */
   DEBUG = 1,
 
   /**
+   * Informational messages.
+   *
    * @generated from enum value: INFO = 2;
    */
   INFO = 2,
 
   /**
+   * Notable events.
+   *
    * @generated from enum value: NOTICE = 3;
    */
   NOTICE = 3,
 
   /**
+   * Warning conditions.
+   *
    * @generated from enum value: WARNING = 4;
    */
   WARNING = 4,
 
   /**
+   * Error conditions.
+   *
    * @generated from enum value: ERROR = 5;
    */
   ERROR = 5,
 
   /**
+   * Critical conditions.
+   *
    * @generated from enum value: CRITICAL = 6;
    */
   CRITICAL = 6,
 
   /**
+   * Action must be taken immediately.
+   *
    * @generated from enum value: ALERT = 7;
    */
   ALERT = 7,
 
   /**
+   * System is unusable.
+   *
    * @generated from enum value: EMERGENCY = 8;
    */
   EMERGENCY = 8,
@@ -338,10 +378,14 @@ export enum AuditLog_Severity {
 export declare const AuditLog_SeveritySchema: GenEnum<AuditLog_Severity>;
 
 /**
+ * Additional audit data specific to certain operations.
+ *
  * @generated from message bytebase.v1.AuditData
  */
 export declare type AuditData = Message<"bytebase.v1.AuditData"> & {
   /**
+   * Changes to IAM policies.
+   *
    * @generated from field: bytebase.v1.PolicyDelta policy_delta = 1;
    */
   policyDelta?: PolicyDelta;
@@ -354,21 +398,21 @@ export declare type AuditData = Message<"bytebase.v1.AuditData"> & {
 export declare const AuditDataSchema: GenMessage<AuditData>;
 
 /**
- * Metadata about the request.
+ * Metadata about the incoming request.
  *
  * @generated from message bytebase.v1.RequestMetadata
  */
 export declare type RequestMetadata = Message<"bytebase.v1.RequestMetadata"> & {
   /**
-   * The IP address of the caller.
+   * The IP address of the request originator.
    *
    * @generated from field: string caller_ip = 1;
    */
   callerIp: string;
 
   /**
-   * The user agent of the caller.
-   * This information is not authenticated and should be treated accordingly.
+   * The user agent string provided by the caller.
+   * This is supplied by the client and is not authenticated.
    *
    * @generated from field: string caller_supplied_user_agent = 2;
    */
@@ -382,11 +426,14 @@ export declare type RequestMetadata = Message<"bytebase.v1.RequestMetadata"> & {
 export declare const RequestMetadataSchema: GenMessage<RequestMetadata>;
 
 /**
+ * AuditLogService manages audit logs for system activities and API calls.
+ *
  * @generated from service bytebase.v1.AuditLogService
  */
 export declare const AuditLogService: GenService<{
   /**
-   * Permissions required: None
+   * Searches audit logs with optional filtering and pagination.
+   * Permissions required: bb.auditLogs.search
    *
    * @generated from rpc bytebase.v1.AuditLogService.SearchAuditLogs
    */
@@ -396,6 +443,7 @@ export declare const AuditLogService: GenService<{
     output: typeof SearchAuditLogsResponseSchema;
   },
   /**
+   * Exports audit logs in a specified format for external analysis.
    * Permissions required: bb.auditLogs.export
    *
    * @generated from rpc bytebase.v1.AuditLogService.ExportAuditLogs

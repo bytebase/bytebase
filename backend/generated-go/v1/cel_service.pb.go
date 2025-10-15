@@ -23,9 +23,11 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Request message for batch parsing CEL expressions.
 type BatchParseRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Expressions   []string               `protobuf:"bytes,1,rep,name=expressions,proto3" json:"expressions,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The CEL expression strings to parse.
+	Expressions   []string `protobuf:"bytes,1,rep,name=expressions,proto3" json:"expressions,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -67,9 +69,11 @@ func (x *BatchParseRequest) GetExpressions() []string {
 	return nil
 }
 
+// Response message for batch parsing CEL expressions.
 type BatchParseResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Expressions   []*v1alpha1.Expr       `protobuf:"bytes,1,rep,name=expressions,proto3" json:"expressions,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The parsed CEL expressions as AST.
+	Expressions   []*v1alpha1.Expr `protobuf:"bytes,1,rep,name=expressions,proto3" json:"expressions,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -111,9 +115,11 @@ func (x *BatchParseResponse) GetExpressions() []*v1alpha1.Expr {
 	return nil
 }
 
+// Request message for batch deparsing CEL expressions.
 type BatchDeparseRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Expressions   []*v1alpha1.Expr       `protobuf:"bytes,1,rep,name=expressions,proto3" json:"expressions,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The CEL expression ASTs to deparse.
+	Expressions   []*v1alpha1.Expr `protobuf:"bytes,1,rep,name=expressions,proto3" json:"expressions,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -155,9 +161,11 @@ func (x *BatchDeparseRequest) GetExpressions() []*v1alpha1.Expr {
 	return nil
 }
 
+// Response message for batch deparsing CEL expressions.
 type BatchDeparseResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Expressions   []string               `protobuf:"bytes,1,rep,name=expressions,proto3" json:"expressions,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The deparsed CEL expressions as strings.
+	Expressions   []string `protobuf:"bytes,1,rep,name=expressions,proto3" json:"expressions,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

@@ -42,8 +42,10 @@ const (
 
 // AuthServiceClient is a client for the bytebase.v1.AuthService service.
 type AuthServiceClient interface {
+	// Authenticates a user and returns access tokens.
 	// Permissions required: None
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
+	// Logs out the current user session.
 	// Permissions required: None
 	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[emptypb.Empty], error)
 }
@@ -92,8 +94,10 @@ func (c *authServiceClient) Logout(ctx context.Context, req *connect.Request[v1.
 
 // AuthServiceHandler is an implementation of the bytebase.v1.AuthService service.
 type AuthServiceHandler interface {
+	// Authenticates a user and returns access tokens.
 	// Permissions required: None
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
+	// Logs out the current user session.
 	// Permissions required: None
 	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[emptypb.Empty], error)
 }

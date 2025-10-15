@@ -35,7 +35,6 @@ import {
 } from "@/store";
 import type { ComposedIssue } from "@/types";
 import {
-  ApprovalNode_Type,
   Issue_ApprovalStatus,
   Issue_Approver_Status,
   IssueStatus,
@@ -62,28 +61,26 @@ const errors = computed(() => {
     t("issue.error.you-are-not-allowed-to-perform-this-action"),
   ];
 
-  const { approvalTemplates, approvers } = issue.value;
-  if (approvalTemplates.length === 0) return errors;
+  const { approvalTemplate, approvers } = issue.value;
+  if (!approvalTemplate) return errors;
 
   const rejectedIndex = approvers.findIndex(
     (ap) => ap.status === Issue_Approver_Status.REJECTED
   );
-  const currentStepIndex =
+  const currentRoleIndex =
     rejectedIndex >= 0 ? rejectedIndex : approvers.length;
 
-  const steps = approvalTemplates[0].flow?.steps ?? [];
-  const step = steps[currentStepIndex];
-  if (!step) return errors;
+  const roles = approvalTemplate.flow?.roles ?? [];
+  const role = roles[currentRoleIndex];
+  if (!role) return errors;
 
-  for (const node of step.nodes) {
-    if (node.type === ApprovalNode_Type.ANY_IN_GROUP && node.role) {
-      const roleTitle = displayRoleTitle(node.role);
-      if (roleTitle) {
-        errors.push({
-          error: roleTitle,
-          indent: 1,
-        });
-      }
+  if (role) {
+    const roleTitle = displayRoleTitle(role);
+    if (roleTitle) {
+      errors.push({
+        error: roleTitle,
+        indent: 1,
+      });
     }
   }
 
@@ -110,20 +107,20 @@ const allowUserToApplyReviewAction = (
     return me.value.email === extractUserId(issue.creator);
   }
 
-  const { approvalTemplates, approvers } = issue;
-  if (approvalTemplates.length === 0) return false;
+  const { approvalTemplate, approvers } = issue;
+  if (!approvalTemplate) return false;
 
   const rejectedIndex = approvers.findIndex(
     (ap) => ap.status === Issue_Approver_Status.REJECTED
   );
-  const currentStepIndex =
+  const currentRoleIndex =
     rejectedIndex >= 0 ? rejectedIndex : approvers.length;
 
-  const steps = approvalTemplates[0].flow?.steps ?? [];
-  const step = steps[currentStepIndex];
-  if (!step) return false;
+  const roles = approvalTemplate.flow?.roles ?? [];
+  const role = roles[currentRoleIndex];
+  if (!role) return false;
 
-  const candidates = candidatesOfApprovalStepV1(issue, step);
+  const candidates = candidatesOfApprovalStepV1(issue, role);
   return isUserIncludedInList(me.value.email, candidates);
 };
 </script>

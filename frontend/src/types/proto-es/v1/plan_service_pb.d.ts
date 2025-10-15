@@ -292,16 +292,22 @@ export declare type Plan = Message<"bytebase.v1.Plan"> & {
   rollout: string;
 
   /**
+   * The title of the plan.
+   *
    * @generated from field: string title = 4;
    */
   title: string;
 
   /**
+   * The description of the plan.
+   *
    * @generated from field: string description = 5;
    */
   description: string;
 
   /**
+   * The deployment specs for the plan.
+   *
    * @generated from field: repeated bytebase.v1.Plan.Spec specs = 14;
    */
   specs: Plan_Spec[];
@@ -627,7 +633,7 @@ export declare type ListPlanCheckRunsRequest = Message<"bytebase.v1.ListPlanChec
   parent: string;
 
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * The maximum number of plan check runs to return. The service may return fewer than
    * this value.
    * If unspecified, at most 10 plan check runs will be returned.
@@ -638,7 +644,7 @@ export declare type ListPlanCheckRunsRequest = Message<"bytebase.v1.ListPlanChec
   pageSize: number;
 
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * A page token, received from a previous `ListPlanCheckRuns` call.
    * Provide this to retrieve the subsequent page.
    *
@@ -991,31 +997,43 @@ export declare const PlanCheckRun_Result_StatusSchema: GenEnum<PlanCheckRun_Resu
  */
 export enum PlanCheckRun_Type {
   /**
+   * Unspecified check type.
+   *
    * @generated from enum value: TYPE_UNSPECIFIED = 0;
    */
   TYPE_UNSPECIFIED = 0,
 
   /**
+   * Fake advise check for testing purposes without executing against database.
+   *
    * @generated from enum value: DATABASE_STATEMENT_FAKE_ADVISE = 1;
    */
   DATABASE_STATEMENT_FAKE_ADVISE = 1,
 
   /**
+   * SQL review check that analyzes statements against configured SQL review rules.
+   *
    * @generated from enum value: DATABASE_STATEMENT_ADVISE = 3;
    */
   DATABASE_STATEMENT_ADVISE = 3,
 
   /**
+   * Summary report check that generates impact analysis for the statements.
+   *
    * @generated from enum value: DATABASE_STATEMENT_SUMMARY_REPORT = 5;
    */
   DATABASE_STATEMENT_SUMMARY_REPORT = 5,
 
   /**
+   * Connection check that verifies database connectivity.
+   *
    * @generated from enum value: DATABASE_CONNECT = 6;
    */
   DATABASE_CONNECT = 6,
 
   /**
+   * Ghost sync check that validates gh-ost online schema change compatibility.
+   *
    * @generated from enum value: DATABASE_GHOST_SYNC = 7;
    */
   DATABASE_GHOST_SYNC = 7,
@@ -1062,10 +1080,13 @@ export enum PlanCheckRun_Status {
 export declare const PlanCheckRun_StatusSchema: GenEnum<PlanCheckRun_Status>;
 
 /**
+ * PlanService manages deployment plans for database changes.
+ *
  * @generated from service bytebase.v1.PlanService
  */
 export declare const PlanService: GenService<{
   /**
+   * Retrieves a deployment plan by name.
    * Permissions required: bb.plans.get
    *
    * @generated from rpc bytebase.v1.PlanService.GetPlan
@@ -1076,6 +1097,7 @@ export declare const PlanService: GenService<{
     output: typeof PlanSchema;
   },
   /**
+   * Lists deployment plans in a project.
    * Permissions required: bb.plans.list
    *
    * @generated from rpc bytebase.v1.PlanService.ListPlans
@@ -1097,6 +1119,7 @@ export declare const PlanService: GenService<{
     output: typeof SearchPlansResponseSchema;
   },
   /**
+   * Creates a new deployment plan.
    * Permissions required: bb.plans.create
    *
    * @generated from rpc bytebase.v1.PlanService.CreatePlan
@@ -1109,7 +1132,7 @@ export declare const PlanService: GenService<{
   /**
    * UpdatePlan updates the plan.
    * The plan creator and the user with bb.plans.update permission on the project can update the plan.
-   * Permissions required: bb.plans.update
+   * Permissions required: bb.plans.update (or creator)
    *
    * @generated from rpc bytebase.v1.PlanService.UpdatePlan
    */
@@ -1119,6 +1142,7 @@ export declare const PlanService: GenService<{
     output: typeof PlanSchema;
   },
   /**
+   * Lists plan check runs for a deployment plan.
    * Permissions required: bb.planCheckRuns.list
    *
    * @generated from rpc bytebase.v1.PlanService.ListPlanCheckRuns
@@ -1129,6 +1153,7 @@ export declare const PlanService: GenService<{
     output: typeof ListPlanCheckRunsResponseSchema;
   },
   /**
+   * Executes validation checks on a deployment plan.
    * Permissions required: bb.planCheckRuns.run
    *
    * @generated from rpc bytebase.v1.PlanService.RunPlanChecks
@@ -1139,6 +1164,7 @@ export declare const PlanService: GenService<{
     output: typeof RunPlanChecksResponseSchema;
   },
   /**
+   * Cancels multiple plan check runs.
    * Permissions required: bb.planCheckRuns.run
    *
    * @generated from rpc bytebase.v1.PlanService.BatchCancelPlanCheckRuns

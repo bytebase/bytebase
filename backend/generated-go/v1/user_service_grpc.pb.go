@@ -33,6 +33,8 @@ const (
 // UserServiceClient is the client API for UserService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// UserService manages user accounts and authentication.
 type UserServiceClient interface {
 	// Get the user.
 	// Any authenticated user can get the user.
@@ -49,19 +51,16 @@ type UserServiceClient interface {
 	// Any authenticated user can list users.
 	// Permissions required: bb.users.list
 	ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error)
-	// Create a user.
-	// When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
-	// Otherwise, any unauthenticated user can create a user.
-	// Permissions required: bb.users.create
+	// Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
+	// Permissions required: bb.users.create (only when Disallow Signup is enabled)
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*User, error)
-	// Only the user itself and the user with bb.users.update permission on the workspace can update the user.
-	// Permissions required: bb.users.update
+	// Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+	// Permissions required: bb.users.update (or self)
 	UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*User, error)
-	// Only the user with bb.users.delete permission on the workspace can delete the user.
-	// The last remaining workspace admin cannot be deleted.
+	// Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted.
 	// Permissions required: bb.users.delete
 	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// Only the user with bb.users.undelete permission on the workspace can undelete the user.
+	// Restores a deleted user.
 	// Permissions required: bb.users.undelete
 	UndeleteUser(ctx context.Context, in *UndeleteUserRequest, opts ...grpc.CallOption) (*User, error)
 }
@@ -157,6 +156,8 @@ func (c *userServiceClient) UndeleteUser(ctx context.Context, in *UndeleteUserRe
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
+//
+// UserService manages user accounts and authentication.
 type UserServiceServer interface {
 	// Get the user.
 	// Any authenticated user can get the user.
@@ -173,19 +174,16 @@ type UserServiceServer interface {
 	// Any authenticated user can list users.
 	// Permissions required: bb.users.list
 	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
-	// Create a user.
-	// When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
-	// Otherwise, any unauthenticated user can create a user.
-	// Permissions required: bb.users.create
+	// Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
+	// Permissions required: bb.users.create (only when Disallow Signup is enabled)
 	CreateUser(context.Context, *CreateUserRequest) (*User, error)
-	// Only the user itself and the user with bb.users.update permission on the workspace can update the user.
-	// Permissions required: bb.users.update
+	// Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+	// Permissions required: bb.users.update (or self)
 	UpdateUser(context.Context, *UpdateUserRequest) (*User, error)
-	// Only the user with bb.users.delete permission on the workspace can delete the user.
-	// The last remaining workspace admin cannot be deleted.
+	// Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted.
 	// Permissions required: bb.users.delete
 	DeleteUser(context.Context, *DeleteUserRequest) (*emptypb.Empty, error)
-	// Only the user with bb.users.undelete permission on the workspace can undelete the user.
+	// Restores a deleted user.
 	// Permissions required: bb.users.undelete
 	UndeleteUser(context.Context, *UndeleteUserRequest) (*User, error)
 	mustEmbedUnimplementedUserServiceServer()

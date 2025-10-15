@@ -4,11 +4,10 @@ import { h } from "vue";
 import type { VNode } from "vue";
 import { type OptionConfig } from "@/components/ExprEditor/context";
 import { getInstanceIdOptions } from "@/components/SensitiveData/components/utils";
-import { EnvironmentV1Name } from "@/components/v2";
+import { EnvironmentV1Name, RichDatabaseName } from "@/components/v2";
 import { SQLTypeList, type Factor } from "@/plugins/cel";
 import { t } from "@/plugins/i18n";
 import {
-  environmentNamePrefix,
   useEnvironmentV1Store,
   useProjectV1Store,
   useInstanceV1Store,
@@ -19,11 +18,11 @@ import {
   PRESET_WORKSPACE_ROLES,
   PresetRiskLevelList,
   useSupportedSourceList,
+  type ComposedDatabase,
 } from "@/types";
-import { Engine } from "@/types/proto-es/v1/common_pb";
+import { Engine, RiskLevel } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import type { Risk } from "@/types/proto-es/v1/risk_service_pb";
-import { Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
+import { type Risk, Risk_Source } from "@/types/proto-es/v1/risk_service_pb";
 import {
   displayRoleTitle,
   engineNameV1,
@@ -31,6 +30,23 @@ import {
   getDefaultPagination,
   supportedEngineV1List,
 } from "@/utils";
+import {
+  CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
+  CEL_ATTRIBUTE_REQUEST_ROLE,
+  CEL_ATTRIBUTE_STATEMENT_AFFECTED_ROWS,
+  CEL_ATTRIBUTE_STATEMENT_TABLE_ROWS,
+  CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
+  CEL_ATTRIBUTE_STATEMENT_TEXT,
+  CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
+  CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
+  CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+  CEL_ATTRIBUTE_RESOURCE_DB_ENGINE,
+  CEL_ATTRIBUTE_LEVEL,
+  CEL_ATTRIBUTE_SOURCE,
+} from "@/utils/cel-attributes";
 
 export const sourceText = (source: Risk_Source) => {
   switch (source) {
@@ -51,15 +67,15 @@ export const sourceText = (source: Risk_Source) => {
   }
 };
 
-export const levelText = (level: number) => {
+export const levelText = (level: RiskLevel) => {
   switch (level) {
-    case 0:
+    case RiskLevel.RISK_LEVEL_UNSPECIFIED:
       return t("custom-approval.risk-rule.risk.risk-level.default");
-    case 100:
+    case RiskLevel.LOW:
       return t("custom-approval.risk-rule.risk.risk-level.low");
-    case 200:
+    case RiskLevel.MODERATE:
       return t("custom-approval.risk-rule.risk.risk-level.moderate");
-    case 300:
+    case RiskLevel.HIGH:
       return t("custom-approval.risk-rule.risk.risk-level.high");
     default:
       return String(level);
@@ -73,23 +89,23 @@ export const orderByLevelDesc = (a: Risk, b: Risk): number => {
 };
 
 const commonFactorList: Factor[] = [
-  "environment_id", // use `environment.resource_id` instead.
-  "project_id", // use `project.resource_id` instead.
-  "instance_id", // use `instance.resource_id` instead.
-  "db_engine",
+  CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
+  CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
+  CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
+  CEL_ATTRIBUTE_RESOURCE_DB_ENGINE,
 ] as const;
 
 const schemaObjectNameFactorList: Factor[] = [
-  "database_name",
-  "schema_name",
-  "table_name",
+  CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
 ] as const;
 
 const migrationFactorList: Factor[] = [
-  "affected_rows",
-  "table_rows",
-  "sql_type",
-  "sql_statement",
+  CEL_ATTRIBUTE_STATEMENT_AFFECTED_ROWS,
+  CEL_ATTRIBUTE_STATEMENT_TABLE_ROWS,
+  CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
+  CEL_ATTRIBUTE_STATEMENT_TEXT,
 ] as const;
 
 export const RiskSourceFactorMap: Map<Risk_Source, Factor[]> = new Map([
@@ -109,19 +125,21 @@ export const RiskSourceFactorMap: Map<Risk_Source, Factor[]> = new Map([
       ...migrationFactorList,
     ],
   ],
-  [Risk_Source.CREATE_DATABASE, [...commonFactorList, "database_name"]],
+  [
+    Risk_Source.CREATE_DATABASE,
+    [...commonFactorList, CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME],
+  ],
   [
     Risk_Source.DATA_EXPORT,
-    [...commonFactorList, ...schemaObjectNameFactorList, "export_rows"],
+    [...commonFactorList, ...schemaObjectNameFactorList],
   ],
   [
     Risk_Source.REQUEST_ROLE,
     [
-      "environment_id", // use `environment.resource_id` instead.
-      "project_id", // use `project.resource_id` instead.
-      "expiration_days",
-      "export_rows",
-      "role",
+      CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
+      CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
+      CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
+      CEL_ATTRIBUTE_REQUEST_ROLE,
     ],
   ],
 ]);
@@ -163,7 +181,7 @@ export const getEnvironmentIdOptions = () => {
       label: `${env.title} (${environmentId})`,
       value: environmentId,
       render: getRenderOptionFunc({
-        name: `${environmentNamePrefix}${env.id}`,
+        name: env.name,
         title: () =>
           h(EnvironmentV1Name, {
             environment: env,
@@ -186,6 +204,26 @@ export const getProjectIdOptions = (projects: Project[]) => {
         render: getRenderOptionFunc(proj),
       };
     });
+};
+
+export const getDatabaseIdOptions = (databases: ComposedDatabase[]) => {
+  return databases.map<SelectOption>((database) => {
+    return {
+      label: database.databaseName,
+      value: database.databaseName,
+      render: getRenderOptionFunc({
+        name: database.name,
+        title: () =>
+          h(RichDatabaseName, {
+            database,
+            showEngineIcon: true,
+            showInstance: false,
+            showProject: false,
+            showArrow: false,
+          }),
+      }),
+    };
+  });
 };
 
 const getDBEndingOptions = () => {
@@ -240,10 +278,10 @@ export const getOptionConfigMap = (source: Risk_Source) => {
   return factorList.reduce((map, factor) => {
     let options: SelectOption[] = [];
     switch (factor) {
-      case "environment_id":
+      case CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID:
         options = getEnvironmentIdOptions();
         break;
-      case "project_id":
+      case CEL_ATTRIBUTE_RESOURCE_PROJECT_ID:
         const projectStore = useProjectV1Store();
         map.set(factor, {
           remote: true,
@@ -260,7 +298,7 @@ export const getOptionConfigMap = (source: Risk_Source) => {
           },
         });
         return map;
-      case "instance_id":
+      case CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID:
         const store = useInstanceV1Store();
         map.set(factor, {
           remote: true,
@@ -277,51 +315,23 @@ export const getOptionConfigMap = (source: Risk_Source) => {
           },
         });
         return map;
-      case "db_engine":
+      case CEL_ATTRIBUTE_RESOURCE_DB_ENGINE:
         options = getDBEndingOptions();
         break;
-      case "level":
+      case CEL_ATTRIBUTE_LEVEL:
         options = getLevelOptions();
         break;
-      case "source":
+      case CEL_ATTRIBUTE_SOURCE:
         options = getSourceOptions();
         break;
-      case "sql_type":
+      case CEL_ATTRIBUTE_STATEMENT_SQL_TYPE:
         options = getSQLTypeOptions(source);
         break;
-      case "role":
+      case CEL_ATTRIBUTE_REQUEST_ROLE:
         options = getRoleOptions();
         break;
-      //
-      // factors that don't need special handling
-      //
-      case "database_name":
-      case "schema_name":
-      case "table_name":
-      case "sql_statement":
-      case "resource.database":
-      case "resource.schema":
-      case "resource.table":
-      case "request.export_format":
-      case "resource.environment_name":
-      case "resource.instance_id":
-      case "resource.database_name":
-      case "resource.table_name":
-      case "resource.column_name":
-      case "resource.schema_name":
-      case "classification_level":
-      case "column_name":
-      case "affected_rows":
-      case "table_rows":
-      case "export_rows":
-      case "request.row_limit":
-      case "expiration_days":
-      case "request.time":
-        break;
       default:
-        // This should never happen if all factors are handled above
-        const _exhaustiveCheck: never = factor;
-        throw new Error(`Unhandled factor: ${_exhaustiveCheck}`);
+        break;
     }
 
     map.set(factor, { options, remote: false });
@@ -329,14 +339,3 @@ export const getOptionConfigMap = (source: Risk_Source) => {
     return map;
   }, new Map<Factor, OptionConfig>());
 };
-
-export const factorSupportDropdown: Factor[] = [
-  "environment_id",
-  "project_id",
-  "instance_id",
-  "db_engine",
-  "sql_type",
-  "level",
-  "source",
-  "role",
-];

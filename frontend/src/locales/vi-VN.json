@@ -982,8 +982,6 @@
     "waiting-for-review": "Đang chờ xem xét",
     "issue-name": "Tên vấn đề",
     "grant-request": {
-      "export-rows": "Số dòng xuất tối đa",
-      "select-export-rows": "Chọn số hàng xuất tối đa",
       "expired-at": "Hết hạn vào",
       "all-databases": "Tất cả",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
@@ -1071,7 +1069,8 @@
     "approval": {
       "rejected-error": "Đã từ chối phê duyệt vấn đề.",
       "pending-error": "Đang chờ phê duyệt vấn đề.",
-      "approved-and-waiting-for-rollout": "Phiên bản này đã được chấp thuận và sẵn sàng triển khai."
+      "approved-and-waiting-for-rollout": "Phiên bản này đã được chấp thuận và sẵn sàng triển khai.",
+      "ready-for-rollout": "Sẵn sàng triển khai"
     },
     "new-layout": "Bố cục CI/CD mới"
   },
@@ -2612,6 +2611,9 @@
       "select": "Chọn quy trình phê duyệt",
       "create-approval-flow": "Tạo quy trình phê duyệt",
       "edit-approval-flow": "Chỉnh sửa quy trình phê duyệt",
+      "built-in": "Quy trình Tích hợp sẵn",
+      "custom": "Quy trình Tùy chỉnh",
+      "no-custom-flows": "Chưa có quy trình phê duyệt tùy chỉnh nào được tạo. Nhấp vào 'Tạo Quy trình' để thêm.",
       "node": {
         "nodes": "Nút phê duyệt",
         "description": "Chỉ cần một phê duyệt trên nút này khi có nhiều người phê duyệt.",
@@ -2751,10 +2753,6 @@
     "sql-editor-user": {
       "self": "Người dùng Trình soạn thảo SQL",
       "description": "Quyền truy vấn dữ liệu cơ sở dữ liệu."
-    },
-    "project-exporter": {
-      "self": "Người xuất dự án",
-      "description": "Quyền xuất dữ liệu cơ sở dữ liệu."
     },
     "project-viewer": {
       "self": "Người xem dự án",

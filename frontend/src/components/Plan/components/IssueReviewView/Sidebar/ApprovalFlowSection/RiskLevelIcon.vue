@@ -2,15 +2,15 @@
   <NTooltip v-if="riskLevel">
     <template #trigger>
       <ShieldCheckIcon
-        v-if="riskLevel === Issue_RiskLevel.LOW"
+        v-if="riskLevel === RiskLevel.LOW"
         class="w-4 h-4 text-success"
       />
       <ShieldAlertIcon
-        v-else-if="riskLevel === Issue_RiskLevel.MODERATE"
+        v-else-if="riskLevel === RiskLevel.MODERATE"
         class="w-4 h-4 text-warning"
       />
       <ShieldAlertIcon
-        v-else-if="riskLevel === Issue_RiskLevel.HIGH"
+        v-else-if="riskLevel === RiskLevel.HIGH"
         class="w-4 h-4 text-error"
       />
     </template>
@@ -24,21 +24,21 @@ import { ShieldCheckIcon, ShieldAlertIcon } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { Issue_RiskLevel } from "@/types/proto-es/v1/issue_service_pb";
+import { RiskLevel } from "@/types/proto-es/v1/common_pb";
 
 const props = defineProps<{
-  riskLevel: Issue_RiskLevel;
+  riskLevel: RiskLevel;
 }>();
 
 const { t } = useI18n();
 
 const riskLevelText = computed(() => {
   switch (props.riskLevel) {
-    case Issue_RiskLevel.LOW:
+    case RiskLevel.LOW:
       return t("issue.risk-level.low");
-    case Issue_RiskLevel.MODERATE:
+    case RiskLevel.MODERATE:
       return t("issue.risk-level.moderate");
-    case Issue_RiskLevel.HIGH:
+    case RiskLevel.HIGH:
       return t("issue.risk-level.high");
     default:
       return "";

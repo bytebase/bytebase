@@ -4,7 +4,7 @@ import Emittery from "emittery";
 import { cloneDeep, isEqual, omit } from "lodash-es";
 import { useDialog } from "naive-ui";
 import type { InjectionKey, Ref } from "vue";
-import { computed, inject, provide, ref } from "vue";
+import { computed, inject, provide, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { instanceServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
@@ -36,8 +36,11 @@ import {
   extractInstanceResourceName,
   hasWorkspacePermissionV2,
   isValidSpannerHost,
+  convertLabelsToKVList,
+  convertKVListToLabels,
 } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
+import type { LabelListEditor } from "../Label";
 import type { ResourceIdField } from "../v2";
 import type { EditDataSource } from "./common";
 import {
@@ -86,6 +89,18 @@ export const provideInstanceFormContext = (baseContext: {
   });
   const basicInfo = ref(extractBasicInfo(instance.value));
   const dataSourceEditState = ref(extractDataSourceEditState(instance.value));
+
+  const labelListEditorRef = ref<InstanceType<typeof LabelListEditor>>();
+  const labelKVList = ref(
+    convertLabelsToKVList(basicInfo.value.labels, true /* sort */)
+  );
+
+  watch(
+    () => basicInfo.value.labels,
+    (newLabels) => {
+      labelKVList.value = convertLabelsToKVList(newLabels, true /* sort */);
+    }
+  );
 
   const adminDataSource = computed(() => {
     return dataSourceEditState.value.dataSources.find(
@@ -242,10 +257,14 @@ export const provideInstanceFormContext = (baseContext: {
       }
     }
 
+    const hasLabelErrors =
+      (labelListEditorRef.value?.flattenErrors ?? []).length > 0;
+
     return (
       !!basicInfo.value.title.trim() &&
       resourceIdField.value?.isValidated &&
-      checkDataSource([adminDataSource.value])
+      checkDataSource([adminDataSource.value]) &&
+      !hasLabelErrors
     );
   });
 
@@ -311,9 +330,10 @@ export const provideInstanceFormContext = (baseContext: {
   };
 
   const pendingCreateInstance = computed(() => {
-    // When creating new instance, use the adminDataSource.
+    const currentLabels = convertKVListToLabels(labelKVList.value, false);
     const instance: Instance = create(InstanceSchema, {
       ...basicInfo.value,
+      labels: currentLabels,
       engineVersion: "",
       dataSources: [],
     });
@@ -444,8 +464,12 @@ export const provideInstanceFormContext = (baseContext: {
       basicInfo: extractBasicInfo(instance.value),
       dataSources: extractDataSourceEditState(instance.value).dataSources,
     };
+    const currentLabels = convertKVListToLabels(labelKVList.value, false);
     const editing = {
-      basicInfo: basicInfo.value,
+      basicInfo: {
+        ...basicInfo.value,
+        labels: currentLabels,
+      },
       dataSources: dataSourceEditState.value.dataSources,
     };
     return !isEqual(editing, original);
@@ -463,6 +487,8 @@ export const provideInstanceFormContext = (baseContext: {
     resourceIdField,
     environment,
     basicInfo,
+    labelListEditorRef,
+    labelKVList,
     dataSourceEditState,
     adminDataSource,
     editingDataSource,

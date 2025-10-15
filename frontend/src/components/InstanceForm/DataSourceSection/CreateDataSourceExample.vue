@@ -27,8 +27,7 @@
         {{ $t("instance.show-how-to-create") }}
       </span>
     </p>
-    <!-- Specify the fixed width so the create instance dialog width won't shift when switching engine types-->
-    <div v-if="state.showCreateUserExample" class="text-sm text-main w-208">
+    <div v-if="state.showCreateUserExample" class="text-sm text-main">
       <template
         v-if="
           props.engine === Engine.MYSQL ||

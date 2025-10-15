@@ -24,12 +24,16 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// The role of a group member.
 type GroupMember_Role int32
 
 const (
+	// Unspecified role.
 	GroupMember_ROLE_UNSPECIFIED GroupMember_Role = 0
-	GroupMember_OWNER            GroupMember_Role = 1
-	GroupMember_MEMBER           GroupMember_Role = 2
+	// Group owner.
+	GroupMember_OWNER GroupMember_Role = 1
+	// Group member.
+	GroupMember_MEMBER GroupMember_Role = 2
 )
 
 // Enum value maps for GroupMember_Role.
@@ -73,6 +77,7 @@ func (GroupMember_Role) EnumDescriptor() ([]byte, []int) {
 	return file_v1_group_service_proto_rawDescGZIP(), []int{8, 0}
 }
 
+// Request message for getting a group.
 type GetGroupRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the group to retrieve.
@@ -119,6 +124,7 @@ func (x *GetGroupRequest) GetName() string {
 	return ""
 }
 
+// Request message for batch getting groups.
 type BatchGetGroupsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The group names to retrieve.
@@ -165,6 +171,7 @@ func (x *BatchGetGroupsRequest) GetNames() []string {
 	return nil
 }
 
+// Response message for batch getting groups.
 type BatchGetGroupsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The groups from the specified request.
@@ -210,6 +217,7 @@ func (x *BatchGetGroupsResponse) GetGroups() []*Group {
 	return nil
 }
 
+// Request message for listing groups.
 type ListGroupsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The maximum number of groups to return. The service may return fewer than
@@ -295,6 +303,7 @@ func (x *ListGroupsRequest) GetFilter() string {
 	return ""
 }
 
+// Response message for listing groups.
 type ListGroupsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The groups from the specified request.
@@ -350,6 +359,7 @@ func (x *ListGroupsResponse) GetNextPageToken() string {
 	return ""
 }
 
+// Request message for creating a group.
 type CreateGroupRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The group to create.
@@ -405,6 +415,7 @@ func (x *CreateGroupRequest) GetGroupEmail() string {
 	return ""
 }
 
+// Request message for updating a group.
 type UpdateGroupRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The group to update.
@@ -472,6 +483,7 @@ func (x *UpdateGroupRequest) GetAllowMissing() bool {
 	return false
 }
 
+// Request message for deleting a group.
 type DeleteGroupRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the group to delete.
@@ -518,12 +530,14 @@ func (x *DeleteGroupRequest) GetName() string {
 	return ""
 }
 
+// A member of a group with a role.
 type GroupMember struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Member is the principal who belong to this group.
 	//
 	// Format: users/hello@world.com
-	Member        string           `protobuf:"bytes,1,opt,name=member,proto3" json:"member,omitempty"`
+	Member string `protobuf:"bytes,1,opt,name=member,proto3" json:"member,omitempty"`
+	// The member's role in the group.
 	Role          GroupMember_Role `protobuf:"varint,2,opt,name=role,proto3,enum=bytebase.v1.GroupMember_Role" json:"role,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -573,15 +587,19 @@ func (x *GroupMember) GetRole() GroupMember_Role {
 	return GroupMember_ROLE_UNSPECIFIED
 }
 
+// A group of users within the workspace.
 type Group struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the group to retrieve.
 	// Format: groups/{group}, group is an email.
-	Name        string         `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Title       string         `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Description string         `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	Members     []*GroupMember `protobuf:"bytes,5,rep,name=members,proto3" json:"members,omitempty"`
-	// source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The display title of the group.
+	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	// The description of the group.
+	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// The members of the group.
+	Members []*GroupMember `protobuf:"bytes,5,rep,name=members,proto3" json:"members,omitempty"`
+	// The source system where the group originated (e.g., Entra ID for SCIM sync).
 	Source        string `protobuf:"bytes,7,opt,name=source,proto3" json:"source,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

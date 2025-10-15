@@ -315,7 +315,7 @@ func TestColumnRewriteOperations(t *testing.T) {
 			}
 
 			// Apply column changes
-			err = applyTableChangesToChunk(chunk, tc.currentTable, tc.previousTable)
+			err = applyTableChangesToChunk(chunk, tc.currentTable, tc.previousTable, nil)
 			if tc.expectedSDL == "" {
 				// For cases where we don't specify expected SDL, we just want to ensure no error
 				assert.NoError(t, err, "applyTableChangesToChunk should not return error")
@@ -453,7 +453,7 @@ func TestColumnRewriteWithCollation(t *testing.T) {
 		ASTNode:    createTableNode,
 	}
 
-	err = applyTableChangesToChunk(chunk, currentTable, previousTable)
+	err = applyTableChangesToChunk(chunk, currentTable, previousTable, nil)
 	assert.NoError(t, err, "Should handle collation changes without error")
 }
 
@@ -503,7 +503,7 @@ func TestGenerateColumnSDLFunction(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := generateColumnSDL(tc.column)
+			result := generateColumnSDL(tc.column, "test_table", nil)
 			assert.Equal(t, tc.expected, result)
 		})
 	}

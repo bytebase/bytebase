@@ -43,7 +43,6 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { head } from "lodash-es";
 import { useDialog } from "naive-ui";
 import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -164,52 +163,45 @@ const availableActions = computed(() => {
       return actions;
     }
 
-    // Check if user can close the plan
-    const canClosePlan =
-      plan.value.state === State.ACTIVE &&
-      (currentUserEmail === extractUserId(plan.value.creator || "") ||
-        hasProjectPermissionV2(project.value, "bb.plans.update"));
-
-    if (canClosePlan) {
-      actions.push("PLAN_CLOSE");
-    }
-
-    // Check if user can reopen the plan
-    const canReopenPlan =
-      plan.value.state === State.DELETED &&
-      currentUserEmail === extractUserId(plan.value.creator || "") &&
+    const canUpdatePlan =
+      currentUserEmail === extractUserId(plan.value.creator || "") ||
       hasProjectPermissionV2(project.value, "bb.plans.update");
 
-    if (canReopenPlan) {
-      actions.push("PLAN_REOPEN");
+    // Check if user can reopen the plan
+    if (plan.value.state === State.DELETED) {
+      if (canUpdatePlan) {
+        actions.push("PLAN_REOPEN");
+      }
       return actions; // For deleted plans, only show reopen action
     }
 
-    const canCreateIssue =
-      plan.value.state === State.ACTIVE &&
-      currentUserEmail === extractUserId(plan.value.creator || "") &&
-      hasProjectPermissionV2(project.value, "bb.issues.create");
+    // Check if user can close the plan
+    if (canUpdatePlan) {
+      actions.push("PLAN_CLOSE");
+    }
 
-    if (canCreateIssue) {
+    // Check if user can create an issue
+    if (hasProjectPermissionV2(project.value, "bb.issues.create")) {
       actions.push("ISSUE_CREATE");
     }
+
     return actions;
   }
 
   const issueValue = issue?.value;
   // Should not reach here.
   if (!issueValue) return actions;
+  const issueCreator = extractUserId(issueValue.creator);
   const isCanceled = issueValue.status === IssueStatus.CANCELED;
   const isDone = issueValue.status === IssueStatus.DONE;
+  const canUpdateIssue = hasProjectPermissionV2(
+    project.value,
+    "bb.issues.update"
+  );
 
   // If issue is canceled, check for re-open action
   if (isCanceled) {
-    const issueCreator = extractUserId(issueValue.creator);
-    const canReopen =
-      currentUserEmail === issueCreator &&
-      hasProjectPermissionV2(project.value, "bb.issues.update");
-
-    if (canReopen) {
+    if (canUpdateIssue) {
       actions.push("ISSUE_STATUS_REOPEN");
     }
     return actions;
@@ -217,27 +209,18 @@ const availableActions = computed(() => {
 
   // If issue is done, check for reopen action
   if (isDone) {
-    const issueCreator = extractUserId(issueValue.creator);
-    const canReopen =
-      currentUserEmail === issueCreator &&
-      hasProjectPermissionV2(project.value, "bb.issues.update");
-
-    if (canReopen) {
+    if (canUpdateIssue) {
       actions.push("ISSUE_STATUS_REOPEN");
     }
     return actions;
   }
 
   // Check for review actions
-  const rolloutReady =
+  const issueApproved =
     issueValue.approvalStatus === Issue_ApprovalStatus.APPROVED ||
     issueValue.approvalStatus === Issue_ApprovalStatus.SKIPPED;
-  if (
-    issueValue.approvalStatus !== Issue_ApprovalStatus.CHECKING &&
-    !rolloutReady
-  ) {
-    const issueCreator = extractUserId(issueValue.creator);
-    const { approvers, approvalTemplates } = issueValue;
+  if (!issueApproved) {
+    const { approvers, approvalTemplate } = issueValue;
 
     // Check if issue has been rejected
     const hasRejection = approvers.some(
@@ -249,36 +232,32 @@ const availableActions = computed(() => {
       actions.push("ISSUE_REVIEW_RE_REQUEST");
     } else {
       // Check if user can approve/reject
-      const steps = head(approvalTemplates)?.flow?.steps ?? [];
-      if (steps.length > 0) {
+      const roles = approvalTemplate?.flow?.roles ?? [];
+      if (roles.length > 0) {
         const rejectedIndex = approvers.findIndex(
           (ap) => ap.status === Issue_Approver_Status.REJECTED
         );
-        const currentStepIndex =
+        const currentRoleIndex =
           rejectedIndex >= 0 ? rejectedIndex : approvers.length;
-        const currentStep = steps[currentStepIndex];
+        const currentRole = roles[currentRoleIndex];
 
-        if (currentStep) {
+        if (currentRole) {
           const candidates = candidatesOfApprovalStepV1(
             issueValue,
-            currentStep
+            currentRole
           );
           if (isUserIncludedInList(currentUserEmail, candidates)) {
-            if (hasRejection) {
-              actions.push("ISSUE_REVIEW_APPROVE");
-            } else {
-              actions.push("ISSUE_REVIEW_APPROVE", "ISSUE_REVIEW_REJECT");
+            actions.push("ISSUE_REVIEW_APPROVE");
+
+            // Only show REJECT if no one has rejected yet.
+            if (!hasRejection) {
+              actions.push("ISSUE_REVIEW_REJECT");
             }
           }
         }
       }
     }
   }
-
-  // Check for resolve and close actions
-  const canUpdateIssue =
-    currentUserEmail === extractUserId(issueValue.creator) &&
-    hasProjectPermissionV2(project.value, "bb.issues.update");
 
   if (canUpdateIssue) {
     // Check if issue can be resolved (all tasks must be finished)
@@ -288,8 +267,7 @@ const availableActions = computed(() => {
         .every((task) =>
           [Task_Status.DONE, Task_Status.SKIPPED].includes(task.status)
         );
-
-      if (allTasksFinished && rolloutReady) {
+      if (allTasksFinished && issueApproved) {
         actions.push("ISSUE_STATUS_RESOLVE");
       }
     }
@@ -297,11 +275,18 @@ const availableActions = computed(() => {
     actions.push("ISSUE_STATUS_CLOSE");
   }
 
-  // Check for rollout actions when rollout exists and has database creation tasks
-  if (
-    rollout.value &&
-    issueValue.approvalStatus !== Issue_ApprovalStatus.CHECKING
-  ) {
+  // Check for rollout actions when rollout has database creation/export tasks
+  // Only allow rollout actions when approval is ready (APPROVED or SKIPPED)
+  // For database change tasks, we'll handle in other places
+  if (rollout.value && issueApproved) {
+    // Check if there are any database creation or export tasks
+    const hasDatabaseCreateOrExportTasks = rollout.value.stages.some((stage) =>
+      stage.tasks.some(
+        (task) =>
+          task.type === Task_Type.DATABASE_CREATE ||
+          task.type === Task_Type.DATABASE_EXPORT
+      )
+    );
     // Different permission checks based on issue type
     // For export data issues: only the creator can run tasks
     // For other issues: need bb.taskRuns.create permission
@@ -310,43 +295,31 @@ const availableActions = computed(() => {
         ? currentUserEmail === extractUserId(issueValue.creator)
         : hasProjectPermissionV2(project.value, "bb.taskRuns.create");
 
-    if (canRunTasks) {
-      const hasDatabaseCreateOrExportTasks = rollout.value.stages.some(
-        (stage) =>
-          stage.tasks.some(
-            (task) =>
-              task.type === Task_Type.DATABASE_CREATE ||
-              task.type === Task_Type.DATABASE_EXPORT
-          )
-      );
+    if (hasDatabaseCreateOrExportTasks && canRunTasks) {
+      // Show ROLLOUT_START if there are actionable database creation/export tasks
+      // This includes both normal rollout and force rollout scenarios
+      const hasStartableTasks = rollout.value.stages
+        .flatMap((stage) => stage.tasks)
+        .some((task) =>
+          [
+            Task_Status.NOT_STARTED,
+            Task_Status.FAILED,
+            Task_Status.CANCELED,
+          ].includes(task.status)
+        );
+      if (hasStartableTasks) {
+        actions.push("ROLLOUT_START");
+      }
 
-      if (hasDatabaseCreateOrExportTasks) {
-        // Show ROLLOUT_START if there are actionable database creation tasks
-        // This includes both normal rollout and force rollout scenarios
-        const hasStartableTasks = rollout.value.stages
-          .flatMap((stage) => stage.tasks)
-          .some((task) =>
-            [
-              Task_Status.NOT_STARTED,
-              Task_Status.FAILED,
-              Task_Status.CANCELED,
-            ].includes(task.status)
-          );
+      // Check for cancel action on running/pending tasks
+      const runningTask = rollout.value.stages
+        .flatMap((stage) => stage.tasks)
+        .find((task) =>
+          [Task_Status.PENDING, Task_Status.RUNNING].includes(task.status)
+        );
 
-        if (hasStartableTasks) {
-          actions.push("ROLLOUT_START");
-        }
-
-        // Check for cancel action on running/pending tasks
-        const runningTask = rollout.value.stages
-          .flatMap((stage) => stage.tasks)
-          .find((task) =>
-            [Task_Status.PENDING, Task_Status.RUNNING].includes(task.status)
-          );
-
-        if (runningTask) {
-          actions.push("ROLLOUT_CANCEL");
-        }
+      if (runningTask) {
+        actions.push("ROLLOUT_CANCEL");
       }
     }
   }
@@ -362,12 +335,6 @@ const primaryAction = computed((): ActionConfig | undefined => {
     // Check if all specs have valid statements (not empty)
     const hasValidSpecs = !plan.value.specs.some((spec) => isSpecEmpty(spec));
 
-    // Check permissions
-    const hasPermission = hasProjectPermissionV2(
-      project.value,
-      "bb.issues.create"
-    );
-
     // Check plan check status and policy restrictions
     const planChecksFailed =
       planCheckSummaryStatus.value === PlanCheckRun_Result_Status.ERROR;
@@ -378,9 +345,6 @@ const primaryAction = computed((): ActionConfig | undefined => {
     const errors: string[] = [];
     if (!hasValidSpecs) {
       errors.push("Missing statement");
-    }
-    if (!hasPermission) {
-      errors.push(t("common.missing-required-permission"));
     }
     if (hasRunningChecks) {
       errors.push("Plan checks are running");
@@ -393,13 +357,10 @@ const primaryAction = computed((): ActionConfig | undefined => {
       );
     }
 
-    const isDisabled = errors.length > 0;
-    const description = isDisabled ? errors.join(", ") : undefined;
-
     return {
       action: "ISSUE_CREATE",
-      disabled: isDisabled,
-      description,
+      disabled: errors.length > 0,
+      description: errors.length > 0 ? errors.join(", ") : undefined,
     };
   }
 
@@ -514,29 +475,28 @@ const getIssueTypeFromPlan = (planValue: Plan): Issue_Type => {
 };
 
 const doCreateIssue = async () => {
-  const issueType = getIssueTypeFromPlan(plan.value);
-
-  const request = create(CreateIssueRequestSchema, {
+  const createIssueRequest = create(CreateIssueRequestSchema, {
     parent: project.value.name,
     issue: create(IssueSchema, {
       creator: `users/${currentUser.value.email}`,
       labels: [], // No labels for direct creation
       plan: plan.value.name,
       status: IssueStatus.OPEN,
-      type: issueType,
+      type: getIssueTypeFromPlan(plan.value),
       rollout: "",
     }),
   });
-  const createdIssue = await issueServiceClientConnect.createIssue(request);
-
-  // Then create the rollout from the plan.
-  const rolloutRequest = create(CreateRolloutRequestSchema, {
+  const createRolloutRequest = create(CreateRolloutRequestSchema, {
     parent: project.value.name,
     rollout: {
       plan: plan.value.name,
     },
   });
-  await rolloutServiceClientConnect.createRollout(rolloutRequest);
+
+  const [createdIssue] = await Promise.all([
+    issueServiceClientConnect.createIssue(createIssueRequest),
+    rolloutServiceClientConnect.createRollout(createRolloutRequest),
+  ]);
 
   // Emit status changed to refresh the UI
   events.emit("status-changed", { eager: true });

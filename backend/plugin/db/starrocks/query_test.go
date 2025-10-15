@@ -95,6 +95,37 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			count: 10,
 			want:  "SELECT * FROM t LIMIT 123,10;",
 		},
+		// SHOW statements should not be wrapped
+		{
+			stmt:  "SHOW DATA",
+			count: 10,
+			want:  "SHOW DATA",
+		},
+		{
+			stmt:  "SHOW DATA FROM db1",
+			count: 10,
+			want:  "SHOW DATA FROM db1",
+		},
+		{
+			stmt:  "SHOW DATABASES",
+			count: 10,
+			want:  "SHOW DATABASES",
+		},
+		{
+			stmt:  "SHOW TABLES",
+			count: 10,
+			want:  "SHOW TABLES",
+		},
+		{
+			stmt:  "show data",
+			count: 10,
+			want:  "show data",
+		},
+		{
+			stmt:  "  SHOW DATA  ",
+			count: 10,
+			want:  "  SHOW DATA  ",
+		},
 	}
 
 	for _, tc := range testCases {

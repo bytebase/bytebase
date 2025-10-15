@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package bytebase.store;
 
-import "google/api/expr/v1alpha1/syntax.proto";
 import "google/protobuf/duration.proto";
 import "google/type/expr.proto";
 import "store/approval.proto";
@@ -52,7 +51,7 @@ message WorkspaceProfileSetting {
   // The max duration for role expired.
   google.protobuf.Duration maximum_role_expiration = 8;
 
-  // The workspace domain, e.g. bytebase.com.
+  // The workspace domain, e.g., bytebase.com.
   repeated string domains = 9;
 
   // Only user and group from the domains can be created and login.
@@ -77,10 +76,10 @@ message Announcement {
     ALERT_LEVEL_CRITICAL = 3;
   }
 
-  // The alert level of announcemnt
+  // The alert level of the announcement.
   AlertLevel level = 1;
 
-  // The text of announcemnt
+  // The text of the announcement.
   string text = 2;
 
   // The optional link, user can follow the link to check extra details
@@ -89,9 +88,8 @@ message Announcement {
 
 message WorkspaceApprovalSetting {
   message Rule {
-    google.api.expr.v1alpha1.Expr expression = 1;
-    ApprovalTemplate template = 2;
-    google.type.Expr condition = 3;
+    ApprovalTemplate template = 1;
+    google.type.Expr condition = 2;
   }
   repeated Rule rules = 1;
 }
@@ -289,15 +287,15 @@ message SCIMSetting {
 }
 
 message PasswordRestrictionSetting {
-  // min_length is the minimum length for password, should no less than 8.
+  // min_length is the minimum length for password, should be no less than 8.
   int32 min_length = 1;
-  // require_number requires the password must contains at least one number.
+  // require_number requires the password must contain at least one number.
   bool require_number = 2;
-  // require_letter requires the password must contains at least one letter, regardless of upper case or lower case
+  // require_letter requires the password must contain at least one letter, regardless of upper case or lower case
   bool require_letter = 3;
-  // require_uppercase_letter requires the password must contains at least one upper case letter.
+  // require_uppercase_letter requires the password must contain at least one upper case letter.
   bool require_uppercase_letter = 4;
-  // require_uppercase_letter requires the password must contains at least one special character.
+  // require_special_character requires the password must contain at least one special character.
   bool require_special_character = 5;
   // require_reset_password_for_first_login requires users to reset their password after the 1st login.
   bool require_reset_password_for_first_login = 6;

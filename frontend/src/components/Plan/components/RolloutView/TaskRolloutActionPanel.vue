@@ -7,7 +7,7 @@
     @close="$emit('close')"
   >
     <template #default>
-      <div class="flex flex-col gap-y-4 h-full overflow-y-hidden px-1">
+      <div class="flex flex-col gap-y-4 h-full px-1">
         <!-- Error Alert -->
         <NAlert
           v-if="validationErrors.length > 0"
@@ -67,10 +67,7 @@
         </div>
 
         <!-- Task information -->
-        <div
-          v-if="shouldShowTaskInfo"
-          class="flex flex-col gap-y-1 shrink overflow-y-hidden justify-start"
-        >
+        <div v-if="shouldShowTaskInfo" class="flex flex-col gap-y-1 shrink-0">
           <div class="flex items-center justify-between">
             <label class="text-control">
               <span class="font-medium">{{
@@ -88,7 +85,7 @@
               </span>
             </label>
           </div>
-          <div class="flex-1 overflow-y-auto">
+          <div>
             <template v-if="useVirtualScroll">
               <NVirtualList
                 :items="eligibleTasks"
@@ -302,7 +299,7 @@
 import { create } from "@bufbuild/protobuf";
 import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
-import { flatten, head } from "lodash-es";
+import { flatten } from "lodash-es";
 import {
   NAlert,
   NButton,
@@ -394,10 +391,10 @@ const issueApprovalStatus = computed(() => {
   }
 
   const currentIssue = issue.value;
-  const approvalTemplate = head(currentIssue.approvalTemplates);
+  const approvalTemplate = currentIssue.approvalTemplate;
 
   // Check if issue has approval template
-  if (!approvalTemplate || (approvalTemplate.flow?.steps || []).length === 0) {
+  if (!approvalTemplate || (approvalTemplate.flow?.roles || []).length === 0) {
     return { rolloutReady: true, hasIssue: true };
   }
 

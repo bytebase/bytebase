@@ -26,9 +26,13 @@ const (
 // DatabaseCatalogServiceClient is the client API for DatabaseCatalogService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// DatabaseCatalogService manages database schema metadata and classification.
 type DatabaseCatalogServiceClient interface {
+	// Gets the catalog metadata for a database.
 	// Permissions required: bb.databaseCatalogs.get
 	GetDatabaseCatalog(ctx context.Context, in *GetDatabaseCatalogRequest, opts ...grpc.CallOption) (*DatabaseCatalog, error)
+	// Updates catalog metadata such as classifications and labels.
 	// Permissions required: bb.databaseCatalogs.update
 	UpdateDatabaseCatalog(ctx context.Context, in *UpdateDatabaseCatalogRequest, opts ...grpc.CallOption) (*DatabaseCatalog, error)
 }
@@ -64,9 +68,13 @@ func (c *databaseCatalogServiceClient) UpdateDatabaseCatalog(ctx context.Context
 // DatabaseCatalogServiceServer is the server API for DatabaseCatalogService service.
 // All implementations must embed UnimplementedDatabaseCatalogServiceServer
 // for forward compatibility.
+//
+// DatabaseCatalogService manages database schema metadata and classification.
 type DatabaseCatalogServiceServer interface {
+	// Gets the catalog metadata for a database.
 	// Permissions required: bb.databaseCatalogs.get
 	GetDatabaseCatalog(context.Context, *GetDatabaseCatalogRequest) (*DatabaseCatalog, error)
+	// Updates catalog metadata such as classifications and labels.
 	// Permissions required: bb.databaseCatalogs.update
 	UpdateDatabaseCatalog(context.Context, *UpdateDatabaseCatalogRequest) (*DatabaseCatalog, error)
 	mustEmbedUnimplementedDatabaseCatalogServiceServer()

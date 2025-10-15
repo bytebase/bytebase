@@ -154,21 +154,29 @@ export declare const PlanLimitConfigSchema: GenMessage<PlanLimitConfig>;
  */
 export enum PlanType {
   /**
+   * Unspecified plan type.
+   *
    * @generated from enum value: PLAN_TYPE_UNSPECIFIED = 0;
    */
   PLAN_TYPE_UNSPECIFIED = 0,
 
   /**
+   * Free plan with basic features and no cost.
+   *
    * @generated from enum value: FREE = 1;
    */
   FREE = 1,
 
   /**
+   * Team plan with collaboration features for small to medium teams.
+   *
    * @generated from enum value: TEAM = 2;
    */
   TEAM = 2,
 
   /**
+   * Enterprise plan with advanced features and dedicated support.
+   *
    * @generated from enum value: ENTERPRISE = 3;
    */
   ENTERPRISE = 3,
@@ -565,6 +573,8 @@ export enum PlanFeature {
 export declare const PlanFeatureSchema: GenEnum<PlanFeature>;
 
 /**
+ * SubscriptionService manages enterprise subscriptions and licensing.
+ *
  * @generated from service bytebase.v1.SubscriptionService
  */
 export declare const SubscriptionService: GenService<{
@@ -582,6 +592,7 @@ export declare const SubscriptionService: GenService<{
     output: typeof SubscriptionSchema;
   },
   /**
+   * Updates the enterprise license subscription.
    * Permissions required: bb.settings.set
    *
    * @generated from rpc bytebase.v1.SubscriptionService.UpdateSubscription

@@ -132,7 +132,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 func (s *ReleaseService) checkReleaseVersioned(ctx context.Context, files []*v1pb.Release_File, databases []*store.DatabaseMessage) (*v1pb.CheckReleaseResponse, error) {
 	resp := &v1pb.CheckReleaseResponse{}
 	var errorAdviceCount, warningAdviceCount int
-	var maxRiskLevel int32
+	var maxRiskLevel storepb.RiskLevel
 
 	risks, err := s.store.ListRisks(ctx)
 	if err != nil {
@@ -241,17 +241,17 @@ loop:
 					checkResult.AffectedRows = summaryReport.AffectedRows
 					resp.AffectedRows += summaryReport.AffectedRows
 
-					commonArgs := map[string]any{
-						"environment_id": "",
-						"project_id":     database.ProjectID,
-						"instance_id":    instance.ResourceID,
-						"database_name":  database.DatabaseName,
-						// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
-						"db_engine":     engine.String(),
-						"sql_statement": statement,
-					}
+					environmentID := ""
 					if database.EffectiveEnvironmentID != nil {
-						commonArgs["environment_id"] = *database.EffectiveEnvironmentID
+						environmentID = *database.EffectiveEnvironmentID
+					}
+					commonArgs := map[string]any{
+						common.CELAttributeResourceEnvironmentID: environmentID,
+						common.CELAttributeResourceProjectID:     database.ProjectID,
+						common.CELAttributeResourceInstanceID:    instance.ResourceID,
+						common.CELAttributeResourceDatabaseName:  database.DatabaseName,
+						common.CELAttributeResourceDBEngine:      engine.String(),
+						common.CELAttributeStatementText:         statement,
 					}
 					riskLevel, err := CalculateRiskLevelWithOptionalSummaryReport(ctx, risks, commonArgs, getRiskSourceFromChangeType(changeType), summaryReport)
 					if err != nil {
@@ -534,17 +534,17 @@ func getRiskSourceFromChangeType(changeType storepb.PlanCheckRunConfig_ChangeDat
 	}
 }
 
-func convertRiskLevel(riskLevel int32) (v1pb.CheckReleaseResponse_RiskLevel, error) {
+func convertRiskLevel(riskLevel storepb.RiskLevel) (v1pb.RiskLevel, error) {
 	switch riskLevel {
-	case 0:
-		return v1pb.CheckReleaseResponse_RISK_LEVEL_UNSPECIFIED, nil
-	case 100:
-		return v1pb.CheckReleaseResponse_LOW, nil
-	case 200:
-		return v1pb.CheckReleaseResponse_MODERATE, nil
-	case 300:
-		return v1pb.CheckReleaseResponse_HIGH, nil
+	case storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED:
+		return v1pb.RiskLevel_RISK_LEVEL_UNSPECIFIED, nil
+	case storepb.RiskLevel_LOW:
+		return v1pb.RiskLevel_LOW, nil
+	case storepb.RiskLevel_MODERATE:
+		return v1pb.RiskLevel_MODERATE, nil
+	case storepb.RiskLevel_HIGH:
+		return v1pb.RiskLevel_HIGH, nil
 	default:
-		return v1pb.CheckReleaseResponse_RISK_LEVEL_UNSPECIFIED, errors.Errorf("unexpected risk level %d", riskLevel)
+		return v1pb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Errorf("unexpected risk level %v", riskLevel)
 	}
 }

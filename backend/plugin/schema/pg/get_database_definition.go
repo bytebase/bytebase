@@ -3,6 +3,7 @@ package pg
 import (
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -112,22 +113,36 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 		}
 	}
 
-	// Mapping from table ID to sequence metadata.
-	// Construct none owner column sequences first.
-	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
+	// Create non-identity sequences before tables to prevent errors when tables reference
+	// sequences owned by other tables. Identity sequences are created via writeColumnIdentityGeneration.
+	// Build identity column map once for O(m*c) instead of O(s*m*c) when checking each sequence.
+	identityColumnMap := buildIdentityColumnMap(metadata)
+
+	sequenceOwnershipMap := make(map[string][]*storepb.SequenceMetadata)
 	for _, schema := range metadata.Schemas {
 		for _, sequence := range schema.Sequences {
 			if sequence.SkipDump {
 				continue
 			}
-			if sequence.OwnerTable == "" || sequence.OwnerColumn == "" {
-				if err := writeCreateSequence(&buf, schema.Name, sequence); err != nil {
-					return "", err
-				}
+			// Check if this sequence belongs to an identity column using the prebuilt map
+			isIdentity := false
+			if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
+				key := schema.Name + "." + sequence.OwnerTable + "." + sequence.OwnerColumn
+				isIdentity = identityColumnMap[key]
+			}
+
+			if isIdentity {
+				tableID := getObjectID(schema.Name, sequence.OwnerTable)
+				sequenceOwnershipMap[tableID] = append(sequenceOwnershipMap[tableID], sequence)
 				continue
 			}
-			tableID := getObjectID(schema.Name, sequence.OwnerTable)
-			sequenceMap[tableID] = append(sequenceMap[tableID], sequence)
+			if err := writeCreateSequence(&buf, schema.Name, sequence); err != nil {
+				return "", err
+			}
+			if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
+				tableID := getObjectID(schema.Name, sequence.OwnerTable)
+				sequenceOwnershipMap[tableID] = append(sequenceOwnershipMap[tableID], sequence)
+			}
 		}
 	}
 
@@ -177,7 +192,41 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 
 	orderedList, err := graph.TopologicalSort()
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get topological sort")
+		// If topological sort fails (e.g., due to circular dependencies),
+		// fall back to a safe dependency order: tables -> views -> materialized views -> functions
+		orderedList = make([]string, 0, len(functionMap)+len(tableMap)+len(viewMap)+len(materializedViewMap))
+
+		// Add tables first (sorted alphabetically within each category)
+		var tableIDs []string
+		for id := range tableMap {
+			tableIDs = append(tableIDs, id)
+		}
+		slices.Sort(tableIDs)
+		orderedList = append(orderedList, tableIDs...)
+
+		// Add views second
+		var viewIDs []string
+		for id := range viewMap {
+			viewIDs = append(viewIDs, id)
+		}
+		slices.Sort(viewIDs)
+		orderedList = append(orderedList, viewIDs...)
+
+		// Add materialized views third
+		var materializedViewIDs []string
+		for id := range materializedViewMap {
+			materializedViewIDs = append(materializedViewIDs, id)
+		}
+		slices.Sort(materializedViewIDs)
+		orderedList = append(orderedList, materializedViewIDs...)
+
+		// Add functions last
+		var functionIDs []string
+		for id := range functionMap {
+			functionIDs = append(functionIDs, id)
+		}
+		slices.Sort(functionIDs)
+		orderedList = append(orderedList, functionIDs...)
 	}
 
 	// Construct functions, tables, views and materialized views in order.
@@ -189,7 +238,7 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 			continue
 		}
 		if table, ok := tableMap[objectID]; ok {
-			if err := writeTable(&buf, getSchemaNameFromID(objectID), table, sequenceMap[objectID]); err != nil {
+			if err := writeTable(&buf, getSchemaNameFromID(objectID), table, sequenceOwnershipMap[objectID]); err != nil {
 				return "", err
 			}
 		}
@@ -331,21 +380,35 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		}
 	}
 
-	// Mapping from table ID to sequence metadata.
-	// Construct none owner column sequences first.
-	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
+	// Create non-identity sequences before tables to prevent errors when tables reference
+	// sequences owned by other tables. Identity sequences are created via writeColumnIdentityGeneration.
+	// Build identity column map once for O(m*c) instead of O(s*m*c) when checking each sequence.
+	identityColumnMap := buildIdentityColumnMapForSchema(schema)
+
+	sequenceOwnershipMap := make(map[string][]*storepb.SequenceMetadata)
 	for _, sequence := range schema.Sequences {
 		if sequence.SkipDump {
 			continue
 		}
-		if sequence.OwnerTable == "" || sequence.OwnerColumn == "" {
-			if err := writeCreateSequence(&buf, schema.Name, sequence); err != nil {
-				return "", err
-			}
+		// Check if this sequence belongs to an identity column using the prebuilt map
+		isIdentity := false
+		if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
+			key := sequence.OwnerTable + "." + sequence.OwnerColumn
+			isIdentity = identityColumnMap[key]
+		}
+
+		if isIdentity {
+			tableID := getObjectID(schema.Name, sequence.OwnerTable)
+			sequenceOwnershipMap[tableID] = append(sequenceOwnershipMap[tableID], sequence)
 			continue
 		}
-		tableID := getObjectID(schema.Name, sequence.OwnerTable)
-		sequenceMap[tableID] = append(sequenceMap[tableID], sequence)
+		if err := writeCreateSequence(&buf, schema.Name, sequence); err != nil {
+			return "", err
+		}
+		if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
+			tableID := getObjectID(schema.Name, sequence.OwnerTable)
+			sequenceOwnershipMap[tableID] = append(sequenceOwnershipMap[tableID], sequence)
+		}
 	}
 
 	// Construct tables, views and materialized views.
@@ -386,7 +449,41 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 
 	orderedList, err := graph.TopologicalSort()
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get topological sort")
+		// If topological sort fails (e.g., due to circular dependencies),
+		// fall back to a safe dependency order: tables -> views -> materialized views -> functions
+		orderedList = make([]string, 0, len(functionMap)+len(tableMap)+len(viewMap)+len(materializedViewMap))
+
+		// Add tables first (sorted alphabetically within each category)
+		var tableIDs []string
+		for id := range tableMap {
+			tableIDs = append(tableIDs, id)
+		}
+		slices.Sort(tableIDs)
+		orderedList = append(orderedList, tableIDs...)
+
+		// Add views second
+		var viewIDs []string
+		for id := range viewMap {
+			viewIDs = append(viewIDs, id)
+		}
+		slices.Sort(viewIDs)
+		orderedList = append(orderedList, viewIDs...)
+
+		// Add materialized views third
+		var materializedViewIDs []string
+		for id := range materializedViewMap {
+			materializedViewIDs = append(materializedViewIDs, id)
+		}
+		slices.Sort(materializedViewIDs)
+		orderedList = append(orderedList, materializedViewIDs...)
+
+		// Add functions last
+		var functionIDs []string
+		for id := range functionMap {
+			functionIDs = append(functionIDs, id)
+		}
+		slices.Sort(functionIDs)
+		orderedList = append(orderedList, functionIDs...)
 	}
 
 	// Construct functions, tables, views and materialized views in order.
@@ -398,7 +495,7 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 			continue
 		}
 		if table, ok := tableMap[objectID]; ok {
-			if err := writeTable(&buf, getSchemaNameFromID(objectID), table, sequenceMap[objectID]); err != nil {
+			if err := writeTable(&buf, getSchemaNameFromID(objectID), table, sequenceOwnershipMap[objectID]); err != nil {
 				return "", err
 			}
 		}
@@ -1265,6 +1362,45 @@ func writeCreateTable(out io.Writer, schema string, tableName string, columns []
 	return err
 }
 
+// isIdentityColumn checks if a column is an identity column.
+func isIdentityColumn(column *storepb.ColumnMetadata) bool {
+	return column.IdentityGeneration == storepb.ColumnMetadata_ALWAYS ||
+		column.IdentityGeneration == storepb.ColumnMetadata_BY_DEFAULT
+}
+
+// buildIdentityColumnMap builds a map of identity columns for the entire database.
+// Key format: "schemaName.tableName.columnName" -> true
+// This is O(m*c) which is done once, vs O(s*m*c) when checking each sequence individually.
+func buildIdentityColumnMap(metadata *storepb.DatabaseSchemaMetadata) map[string]bool {
+	identityMap := make(map[string]bool)
+	for _, schema := range metadata.Schemas {
+		for _, table := range schema.Tables {
+			for _, column := range table.Columns {
+				if isIdentityColumn(column) {
+					key := schema.Name + "." + table.Name + "." + column.Name
+					identityMap[key] = true
+				}
+			}
+		}
+	}
+	return identityMap
+}
+
+// buildIdentityColumnMapForSchema builds a map of identity columns for a single schema.
+// Key format: "tableName.columnName" -> true
+func buildIdentityColumnMapForSchema(schema *storepb.SchemaMetadata) map[string]bool {
+	identityMap := make(map[string]bool)
+	for _, table := range schema.Tables {
+		for _, column := range table.Columns {
+			if isIdentityColumn(column) {
+				key := table.Name + "." + column.Name
+				identityMap[key] = true
+			}
+		}
+	}
+	return identityMap
+}
+
 func splitSequencesByIdentityOrNot(table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) ([]storepb.ColumnMetadata_IdentityGeneration, []*storepb.SequenceMetadata, []*storepb.SequenceMetadata) {
 	columnMap := make(map[string]*storepb.ColumnMetadata)
 	for _, column := range table.Columns {
@@ -1275,7 +1411,7 @@ func splitSequencesByIdentityOrNot(table *storepb.TableMetadata, sequences []*st
 	var nonIdentitySequences []*storepb.SequenceMetadata
 	for _, sequence := range sequences {
 		if column, ok := columnMap[sequence.OwnerColumn]; ok {
-			if column.IdentityGeneration == storepb.ColumnMetadata_ALWAYS || column.IdentityGeneration == storepb.ColumnMetadata_BY_DEFAULT {
+			if isIdentityColumn(column) {
 				generationType = append(generationType, column.IdentityGeneration)
 				identitySequences = append(identitySequences, sequence)
 				continue
@@ -1288,11 +1424,6 @@ func splitSequencesByIdentityOrNot(table *storepb.TableMetadata, sequences []*st
 
 func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) error {
 	generationTypes, identitySequences, nonIdentitySequences := splitSequencesByIdentityOrNot(table, sequences)
-	for _, sequence := range nonIdentitySequences {
-		if err := writeCreateSequence(out, schema, sequence); err != nil {
-			return err
-		}
-	}
 
 	if err := writeCreateTable(out, schema, table.Name, table.Columns, table.CheckConstraints); err != nil {
 		return err
@@ -2007,31 +2138,92 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 		}
 	}
 
-	// Mapping from table ID to sequence metadata for table-owned sequences
-	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
+	// Build a map of serial and identity sequences that should be skipped
+	// Serial sequences are identified by checking if their owner columns match the serial pattern
+	// Identity sequences are identified by checking if their owner columns have IdentityGeneration set
+	skipSequences := make(map[string]bool)
+	for _, schema := range metadata.Schemas {
+		if schema.SkipDump {
+			continue
+		}
+		for _, table := range schema.Tables {
+			if table.SkipDump {
+				continue
+			}
+			for _, column := range table.Columns {
+				// Check for serial columns
+				isSerial, _ := isSerialColumn(column, table.Name, schema.Sequences)
+				if isSerial {
+					// Find the sequence that belongs to this serial column
+					for _, sequence := range schema.Sequences {
+						if sequence.OwnerTable == table.Name && sequence.OwnerColumn == column.Name {
+							sequenceKey := schema.Name + "." + sequence.Name
+							skipSequences[sequenceKey] = true
+							break
+						}
+					}
+				}
+				// Check for identity columns
+				if isIdentityColumn(column) {
+					// Find the sequence that belongs to this identity column
+					for _, sequence := range schema.Sequences {
+						if sequence.OwnerTable == table.Name && sequence.OwnerColumn == column.Name {
+							sequenceKey := schema.Name + "." + sequence.Name
+							skipSequences[sequenceKey] = true
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Write all sequences before tables to ensure they exist before any table references them.
+	// Skip sequences that belong to serial or identity columns as they will be implicitly created.
+	sequenceOwnershipMap := make(map[string][]*storepb.SequenceMetadata)
 
 	for _, schema := range metadata.Schemas {
 		if schema.SkipDump {
 			continue
 		}
 
-		// Write independent sequences first (not owned by any table)
 		for _, sequence := range schema.Sequences {
 			if sequence.SkipDump {
 				continue
 			}
-			if sequence.OwnerTable == "" || sequence.OwnerColumn == "" {
-				if err := writeSequenceSDL(&buf, schema.Name, sequence); err != nil {
-					return "", err
-				}
-				if _, err := buf.WriteString(";\n\n"); err != nil {
-					return "", err
-				}
+			// Skip sequences that belong to serial or identity columns
+			sequenceKey := schema.Name + "." + sequence.Name
+			if skipSequences[sequenceKey] {
 				continue
 			}
-			// Table-owned sequences will be handled with their tables
-			tableID := getObjectID(schema.Name, sequence.OwnerTable)
-			sequenceMap[tableID] = append(sequenceMap[tableID], sequence)
+			if err := writeSequenceSDL(&buf, schema.Name, sequence); err != nil {
+				return "", err
+			}
+			if _, err := buf.WriteString(";\n\n"); err != nil {
+				return "", err
+			}
+			// Track sequences with owners for later ownership establishment
+			if sequence.OwnerTable != "" && sequence.OwnerColumn != "" {
+				tableID := getObjectID(schema.Name, sequence.OwnerTable)
+				sequenceOwnershipMap[tableID] = append(sequenceOwnershipMap[tableID], sequence)
+			}
+		}
+	}
+
+	// Build a map of sequences by table for easy lookup during table creation
+	tableSequencesMap := make(map[string][]*storepb.SequenceMetadata)
+	for _, schema := range metadata.Schemas {
+		if schema.SkipDump {
+			continue
+		}
+		for _, sequence := range schema.Sequences {
+			if sequence.SkipDump {
+				continue
+			}
+			if sequence.OwnerTable != "" {
+				tableKey := schema.Name + "." + sequence.OwnerTable
+				tableSequencesMap[tableKey] = append(tableSequencesMap[tableKey], sequence)
+			}
 		}
 	}
 
@@ -2040,32 +2232,18 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 			continue
 		}
 
-		// Write tables with their owned sequences
+		// Write tables (sequences are already written above)
 		for _, table := range schema.Tables {
 			if table.SkipDump {
 				continue
 			}
 
-			tableID := getObjectID(schema.Name, table.Name)
-			tableSequences := sequenceMap[tableID]
-
-			// Write table-owned sequences that are not identity sequences
-			if len(tableSequences) > 0 {
-				_, identitySequences, nonIdentitySequences := splitSequencesByIdentityOrNot(table, tableSequences)
-				for _, sequence := range nonIdentitySequences {
-					if err := writeSequenceSDL(&buf, schema.Name, sequence); err != nil {
-						return "", err
-					}
-					if _, err := buf.WriteString(";\n\n"); err != nil {
-						return "", err
-					}
-				}
-				// Identity sequences are handled as part of column definition
-				_ = identitySequences
-			}
+			// Get sequences for this table
+			tableKey := schema.Name + "." + table.Name
+			tableSequences := tableSequencesMap[tableKey]
 
 			// Write CREATE TABLE statement
-			if err := writeCreateTableSDL(&buf, schema.Name, table); err != nil {
+			if err := writeCreateTableSDL(&buf, schema.Name, table, tableSequences); err != nil {
 				return "", err
 			}
 
@@ -2113,9 +2291,163 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 	return buf.String(), nil
 }
 
+// isSerialColumn checks if a column is a serial/bigserial/smallserial type based on its properties
+// Serial pattern: integer/bigint/smallint + NOT NULL + nextval(sequence) default
+// extractSequenceNameFromNextval extracts the sequence name from a nextval() default value.
+// It handles various PostgreSQL formats including:
+// - nextval('sequence_name')
+// - nextval('schema.sequence_name')
+// - nextval('"Schema"."Sequence"')
+// - nextval('public."MixedCase"')
+// - nextval('sequence_name'::regclass)
+// Returns the unquoted sequence name without schema qualification.
+func extractSequenceNameFromNextval(defaultValue string) string {
+	if defaultValue == "" {
+		return ""
+	}
+
+	// Find nextval( - case insensitive
+	defaultLower := strings.ToLower(defaultValue)
+	nextvalIdx := strings.Index(defaultLower, "nextval(")
+	if nextvalIdx == -1 {
+		return ""
+	}
+
+	// Find the opening quote after nextval(
+	startIdx := nextvalIdx + len("nextval(")
+	if startIdx >= len(defaultValue) {
+		return ""
+	}
+
+	// Determine quote type (' or ")
+	quoteChar := byte(0)
+	for startIdx < len(defaultValue) && (defaultValue[startIdx] == ' ' || defaultValue[startIdx] == '\t') {
+		startIdx++
+	}
+	if startIdx >= len(defaultValue) {
+		return ""
+	}
+
+	switch defaultValue[startIdx] {
+	case '\'':
+		quoteChar = '\''
+	case '"':
+		quoteChar = '"'
+	default:
+		return ""
+	}
+
+	startIdx++ // Skip opening quote
+
+	// Find the closing quote
+	endIdx := startIdx
+	for endIdx < len(defaultValue) && defaultValue[endIdx] != quoteChar {
+		endIdx++
+	}
+	if endIdx >= len(defaultValue) {
+		return ""
+	}
+
+	// Extract the full sequence reference (may include schema and ::regclass)
+	sequenceRef := defaultValue[startIdx:endIdx]
+
+	// Remove ::regclass suffix if present
+	if idx := strings.Index(sequenceRef, "::"); idx != -1 {
+		sequenceRef = sequenceRef[:idx]
+	}
+
+	// Parse schema-qualified name: schema.sequence or "schema"."sequence"
+	// We need to extract just the sequence name, handling quoted identifiers
+	sequenceName := extractIdentifierFromQualifiedName(sequenceRef)
+
+	// Remove surrounding quotes from the sequence name if present
+	sequenceName = strings.TrimSpace(sequenceName)
+	if len(sequenceName) >= 2 && sequenceName[0] == '"' && sequenceName[len(sequenceName)-1] == '"' {
+		sequenceName = sequenceName[1 : len(sequenceName)-1]
+	}
+
+	return sequenceName
+}
+
+// extractIdentifierFromQualifiedName extracts the identifier (sequence name) from a qualified name.
+// Handles cases like:
+// - sequence_name -> sequence_name
+// - schema.sequence_name -> sequence_name
+// - "Schema"."Sequence" -> "Sequence"
+// - public."MixedCase" -> "MixedCase"
+func extractIdentifierFromQualifiedName(qualifiedName string) string {
+	if qualifiedName == "" {
+		return ""
+	}
+
+	// Look for the last dot that's not inside quotes
+	inQuotes := false
+	lastDotIdx := -1
+
+	for i := 0; i < len(qualifiedName); i++ {
+		if qualifiedName[i] == '"' {
+			inQuotes = !inQuotes
+		} else if qualifiedName[i] == '.' && !inQuotes {
+			lastDotIdx = i
+		}
+	}
+
+	// If we found a dot outside quotes, take everything after it
+	if lastDotIdx != -1 {
+		return qualifiedName[lastDotIdx+1:]
+	}
+
+	// No schema qualification found
+	return qualifiedName
+}
+
+func isSerialColumn(column *storepb.ColumnMetadata, tableName string, sequences []*storepb.SequenceMetadata) (isSerial bool, serialType string) {
+	// Serial columns must be NOT NULL
+	if column.Nullable {
+		return false, ""
+	}
+
+	// Serial columns must have a nextval() default
+	if !strings.Contains(strings.ToLower(column.Default), "nextval(") {
+		return false, ""
+	}
+
+	// Check type and map to serial type
+	var expectedSerialType string
+	switch strings.ToLower(column.Type) {
+	case "integer":
+		expectedSerialType = "serial"
+	case "bigint":
+		expectedSerialType = "bigserial"
+	case "smallint":
+		expectedSerialType = "smallserial"
+	default:
+		return false, ""
+	}
+
+	// IMPORTANT: Only treat as serial if the sequence is owned by this column
+	// This prevents converting columns that use independent sequences to serial type
+	sequenceName := extractSequenceNameFromNextval(column.Default)
+	if sequenceName == "" {
+		return false, ""
+	}
+
+	// Check if any sequence with this name is owned by this column
+	for _, seq := range sequences {
+		if seq.Name == sequenceName && seq.OwnerTable == tableName && seq.OwnerColumn == column.Name {
+			return true, expectedSerialType
+		}
+	}
+
+	// Sequence is not owned by this column, so don't convert to serial
+	return false, ""
+}
+
 // writeColumnSDL writes a single column definition to the output writer
 // This function is extracted from writeCreateTableSDL to enable code reuse
-func writeColumnSDL(out io.Writer, column *storepb.ColumnMetadata) error {
+// sequences parameter is optional and used to find identity sequences for the column
+// tableName is used to verify sequence ownership for serial column detection
+func writeColumnSDL(out io.Writer, column *storepb.ColumnMetadata, tableName string, sequences []*storepb.SequenceMetadata) error {
 	if _, err := io.WriteString(out, `"`); err != nil {
 		return err
 	}
@@ -2128,22 +2460,110 @@ func writeColumnSDL(out io.Writer, column *storepb.ColumnMetadata) error {
 		return err
 	}
 
-	if _, err := io.WriteString(out, column.Type); err != nil {
-		return err
-	}
+	// Check if this is an identity column
+	if isIdentityColumn(column) {
+		// Find the sequence for this identity column
+		var identitySequence *storepb.SequenceMetadata
+		for _, seq := range sequences {
+			if seq.OwnerColumn == column.Name {
+				identitySequence = seq
+				break
+			}
+		}
 
-	if column.Default != "" {
-		if _, err := io.WriteString(out, ` DEFAULT `); err != nil {
+		// Write type
+		if _, err := io.WriteString(out, column.Type); err != nil {
 			return err
 		}
-		if _, err := io.WriteString(out, column.Default); err != nil {
+
+		// Write GENERATED ... AS IDENTITY
+		if _, err := io.WriteString(out, " GENERATED "); err != nil {
 			return err
 		}
+		if column.IdentityGeneration == storepb.ColumnMetadata_ALWAYS {
+			if _, err := io.WriteString(out, "ALWAYS"); err != nil {
+				return err
+			}
+		} else {
+			if _, err := io.WriteString(out, "BY DEFAULT"); err != nil {
+				return err
+			}
+		}
+		if _, err := io.WriteString(out, " AS IDENTITY"); err != nil {
+			return err
+		}
+
+		// Write identity options if we have the sequence
+		if identitySequence != nil {
+			hasOptions := false
+			// Check if we need to write options (non-default values)
+			if identitySequence.Start != "" && identitySequence.Start != "1" {
+				hasOptions = true
+			}
+			if identitySequence.Increment != "" && identitySequence.Increment != "1" {
+				hasOptions = true
+			}
+
+			if hasOptions {
+				if _, err := io.WriteString(out, " ("); err != nil {
+					return err
+				}
+
+				first := true
+				if identitySequence.Start != "" && identitySequence.Start != "1" {
+					if _, err := fmt.Fprintf(out, "START WITH %s", identitySequence.Start); err != nil {
+						return err
+					}
+					first = false
+				}
+				if identitySequence.Increment != "" && identitySequence.Increment != "1" {
+					if !first {
+						if _, err := io.WriteString(out, " "); err != nil {
+							return err
+						}
+					}
+					if _, err := fmt.Fprintf(out, "INCREMENT BY %s", identitySequence.Increment); err != nil {
+						return err
+					}
+				}
+
+				if _, err := io.WriteString(out, ")"); err != nil {
+					return err
+				}
+			}
+		}
+
+		// Identity columns are implicitly NOT NULL, skip that
+		return nil
 	}
 
-	if !column.Nullable {
-		if _, err := io.WriteString(out, ` NOT NULL`); err != nil {
+	// Check if this is a serial column and convert it back to serial type
+	isSerial, serialType := isSerialColumn(column, tableName, sequences)
+	if isSerial {
+		// Use serial type instead of integer + nextval + NOT NULL
+		if _, err := io.WriteString(out, serialType); err != nil {
 			return err
+		}
+		// Skip DEFAULT and NOT NULL as they are implicit in serial
+	} else {
+		// Normal column handling
+		if _, err := io.WriteString(out, column.Type); err != nil {
+			return err
+		}
+
+		if column.Default != "" {
+			if _, err := io.WriteString(out, ` DEFAULT `); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, column.Default); err != nil {
+				return err
+			}
+		}
+
+		if !column.Nullable {
+			if _, err := io.WriteString(out, ` NOT NULL`); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -2162,7 +2582,7 @@ func writeColumnSDL(out io.Writer, column *storepb.ColumnMetadata) error {
 	return nil
 }
 
-func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableMetadata) error {
+func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) error {
 	if _, err := io.WriteString(out, `CREATE TABLE "`); err != nil {
 		return err
 	}
@@ -2196,7 +2616,7 @@ func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableM
 		}
 
 		// Use the extracted writeColumnSDL function
-		if err := writeColumnSDL(out, column); err != nil {
+		if err := writeColumnSDL(out, column, table.Name, sequences); err != nil {
 			return err
 		}
 	}

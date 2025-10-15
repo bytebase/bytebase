@@ -1,57 +1,69 @@
+import {
+  CEL_ATTRIBUTE_STATEMENT_AFFECTED_ROWS,
+  CEL_ATTRIBUTE_STATEMENT_TABLE_ROWS,
+  CEL_ATTRIBUTE_LEVEL,
+  CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
+  CEL_ATTRIBUTE_SOURCE,
+  CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
+  CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
+  CEL_ATTRIBUTE_RESOURCE_DB_ENGINE,
+  CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
+  CEL_ATTRIBUTE_STATEMENT_TEXT,
+  CEL_ATTRIBUTE_REQUEST_ROLE,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE,
+  CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
+  CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
+  CEL_ATTRIBUTE_REQUEST_TIME,
+} from "@/utils/cel-attributes";
+
 export const NumberFactorList = [
   // Risk related factors
-  "affected_rows",
-  "table_rows",
-  "level",
-
-  // Grant request issue related factors
-  "request.row_limit",
+  CEL_ATTRIBUTE_STATEMENT_AFFECTED_ROWS,
+  CEL_ATTRIBUTE_STATEMENT_TABLE_ROWS,
 
   // Request query/export factors
-  "expiration_days",
-  "export_rows",
+  CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
 ] as const;
 export type NumberFactor = (typeof NumberFactorList)[number];
 
 export const StringFactorList = [
   // Risk related factors
-  "source",
-  "environment_id", // using `environment.resource_id`
-  "project_id", // using `project.resource_id`
-  "database_name",
-  "schema_name",
-  "table_name",
-  "instance_id",
-  "db_engine",
-  "sql_type",
-  "sql_statement",
-  "role",
+  CEL_ATTRIBUTE_LEVEL,
+  CEL_ATTRIBUTE_SOURCE,
+  CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
+  CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
+  CEL_ATTRIBUTE_RESOURCE_DB_ENGINE,
+  CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
+  CEL_ATTRIBUTE_STATEMENT_TEXT,
+  CEL_ATTRIBUTE_REQUEST_ROLE,
 
   // Grant request issue related factors
-  "resource.database",
-  "resource.schema",
-  "resource.table",
-  // Deprecated
-  "request.export_format",
+  CEL_ATTRIBUTE_RESOURCE_DATABASE,
+  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
 
-  // Database/table group related factors
-  "resource.environment_name", // using `environment.name`
-  "resource.instance_id", // using `instance.resourceId`
-  "resource.database_name",
-  "resource.table_name",
   // Masking
-  "resource.column_name",
-  "resource.schema_name",
+  CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
   // Masking rule
-  "classification_level",
-  "column_name",
+  CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
 ] as const;
 export type StringFactor = (typeof StringFactorList)[number];
 
-export const TimestampFactorList = ["request.time"] as const;
+export const TimestampFactorList = [CEL_ATTRIBUTE_REQUEST_TIME] as const;
 export type TimestampFactor = (typeof TimestampFactorList)[number];
 
-export const HighLevelFactorList = ["level", "source"] as const;
+export const HighLevelFactorList = [
+  CEL_ATTRIBUTE_LEVEL,
+  CEL_ATTRIBUTE_SOURCE,
+] as const;
 export type HighLevelFactor = (typeof HighLevelFactorList)[number];
 
 export type Factor =

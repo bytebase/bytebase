@@ -12,7 +12,9 @@ import "v1/annotation.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// RevisionService manages schema revision history.
 service RevisionService {
+  // Lists schema revisions for a database.
   // Permissions required: bb.revisions.list
   rpc ListRevisions(ListRevisionsRequest) returns (ListRevisionsResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/revisions"};
@@ -21,6 +23,7 @@ service RevisionService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Retrieves a schema revision by name.
   // Permissions required: bb.revisions.get
   rpc GetRevision(GetRevisionRequest) returns (Revision) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/revisions/*}"};
@@ -29,6 +32,7 @@ service RevisionService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Creates a new schema revision.
   // Permissions required: bb.revisions.create
   rpc CreateRevision(CreateRevisionRequest) returns (Revision) {
     option (google.api.http) = {
@@ -39,6 +43,7 @@ service RevisionService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Creates multiple schema revisions in a single operation.
   // Permissions required: bb.revisions.create
   rpc BatchCreateRevisions(BatchCreateRevisionsRequest) returns (BatchCreateRevisionsResponse) {
     option (google.api.http) = {
@@ -49,6 +54,7 @@ service RevisionService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Deletes a schema revision.
   // Permissions required: bb.revisions.delete
   rpc DeleteRevision(DeleteRevisionRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/revisions/*}"};
@@ -78,10 +84,12 @@ message ListRevisionsRequest {
   // match the call that provided the page token.
   string page_token = 3;
 
+  // Whether to include deleted revisions in the results.
   bool show_deleted = 4;
 }
 
 message ListRevisionsResponse {
+  // The revisions from the specified request.
   repeated Revision revisions = 1;
 
   // A token, which can be sent as `page_token` to retrieve the next page.
@@ -162,6 +170,7 @@ message Revision {
   // Can be empty.
   string file = 7;
 
+  // The schema version string for this revision.
   string version = 8;
 
   // The sheet that holds the content.
@@ -171,6 +180,7 @@ message Revision {
   string sheet_sha256 = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
   // The statement is used for preview purpose.
   string statement = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The size of the statement in bytes.
   int64 statement_size = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The issue associated with the revision.
@@ -187,9 +197,13 @@ message Revision {
   // The type of the revision.
   Type type = 15;
 
+  // The type of schema revision.
   enum Type {
+    // Unspecified type.
     TYPE_UNSPECIFIED = 0;
+    // Versioned schema migration.
     VERSIONED = 1;
+    // Declarative schema definition.
     DECLARATIVE = 2;
   }
 }

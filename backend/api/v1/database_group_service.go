@@ -73,10 +73,10 @@ func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, req *con
 	}
 
 	storeDatabaseGroup := &store.DatabaseGroupMessage{
-		ResourceID:  req.Msg.DatabaseGroupId,
-		ProjectID:   project.ResourceID,
-		Placeholder: req.Msg.DatabaseGroup.Title,
-		Expression:  req.Msg.DatabaseGroup.DatabaseExpr,
+		ResourceID: req.Msg.DatabaseGroupId,
+		ProjectID:  project.ResourceID,
+		Title:      req.Msg.DatabaseGroup.Title,
+		Expression: req.Msg.DatabaseGroup.DatabaseExpr,
 	}
 	if req.Msg.ValidateOnly {
 		result, err := convertStoreToV1DatabaseGroup(ctx, s.store, storeDatabaseGroup, projectResourceID, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL)
@@ -168,7 +168,7 @@ func (s *DatabaseGroupService) UpdateDatabaseGroup(ctx context.Context, req *con
 			if req.Msg.DatabaseGroup.Title == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database group database placeholder is required"))
 			}
-			updateDatabaseGroup.Placeholder = &req.Msg.DatabaseGroup.Title
+			updateDatabaseGroup.Title = &req.Msg.DatabaseGroup.Title
 		case "database_expr":
 			if req.Msg.DatabaseGroup.DatabaseExpr == nil || req.Msg.DatabaseGroup.DatabaseExpr.Expression == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database group expr is required"))
@@ -304,7 +304,7 @@ func getDatabaseGroupByName(ctx context.Context, stores *store.Store, databaseGr
 func convertStoreToV1DatabaseGroup(ctx context.Context, stores *store.Store, databaseGroup *store.DatabaseGroupMessage, projectResourceID string, view v1pb.DatabaseGroupView) (*v1pb.DatabaseGroup, error) {
 	ret := &v1pb.DatabaseGroup{
 		Name:         fmt.Sprintf("%s/%s%s", common.FormatProject(projectResourceID), common.DatabaseGroupNamePrefix, databaseGroup.ResourceID),
-		Title:        databaseGroup.Placeholder,
+		Title:        databaseGroup.Title,
 		DatabaseExpr: databaseGroup.Expression,
 	}
 	if view == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_BASIC || view == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_UNSPECIFIED {

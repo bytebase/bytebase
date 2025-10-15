@@ -27,11 +27,16 @@ const (
 // SettingServiceClient is the client API for SettingService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// SettingService manages workspace-level settings and configurations.
 type SettingServiceClient interface {
+	// Lists all workspace settings.
 	// Permissions required: bb.settings.list
 	ListSettings(ctx context.Context, in *ListSettingsRequest, opts ...grpc.CallOption) (*ListSettingsResponse, error)
+	// Retrieves a workspace setting by name.
 	// Permissions required: bb.settings.get
 	GetSetting(ctx context.Context, in *GetSettingRequest, opts ...grpc.CallOption) (*Setting, error)
+	// Updates a workspace setting.
 	// Permissions required: bb.settings.set
 	UpdateSetting(ctx context.Context, in *UpdateSettingRequest, opts ...grpc.CallOption) (*Setting, error)
 }
@@ -77,11 +82,16 @@ func (c *settingServiceClient) UpdateSetting(ctx context.Context, in *UpdateSett
 // SettingServiceServer is the server API for SettingService service.
 // All implementations must embed UnimplementedSettingServiceServer
 // for forward compatibility.
+//
+// SettingService manages workspace-level settings and configurations.
 type SettingServiceServer interface {
+	// Lists all workspace settings.
 	// Permissions required: bb.settings.list
 	ListSettings(context.Context, *ListSettingsRequest) (*ListSettingsResponse, error)
+	// Retrieves a workspace setting by name.
 	// Permissions required: bb.settings.get
 	GetSetting(context.Context, *GetSettingRequest) (*Setting, error)
+	// Updates a workspace setting.
 	// Permissions required: bb.settings.set
 	UpdateSetting(context.Context, *UpdateSettingRequest) (*Setting, error)
 	mustEmbedUnimplementedSettingServiceServer()

@@ -24,12 +24,16 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// The type of schema revision.
 type Revision_Type int32
 
 const (
+	// Unspecified type.
 	Revision_TYPE_UNSPECIFIED Revision_Type = 0
-	Revision_VERSIONED        Revision_Type = 1
-	Revision_DECLARATIVE      Revision_Type = 2
+	// Versioned schema migration.
+	Revision_VERSIONED Revision_Type = 1
+	// Declarative schema definition.
+	Revision_DECLARATIVE Revision_Type = 2
 )
 
 // Enum value maps for Revision_Type.
@@ -87,8 +91,9 @@ type ListRevisionsRequest struct {
 	//
 	// When paginating, all other parameters provided to `ListRevisions` must
 	// match the call that provided the page token.
-	PageToken     string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
-	ShowDeleted   bool   `protobuf:"varint,4,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
+	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// Whether to include deleted revisions in the results.
+	ShowDeleted   bool `protobuf:"varint,4,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -152,8 +157,9 @@ func (x *ListRevisionsRequest) GetShowDeleted() bool {
 }
 
 type ListRevisionsResponse struct {
-	state     protoimpl.MessageState `protogen:"open.v1"`
-	Revisions []*Revision            `protobuf:"bytes,1,rep,name=revisions,proto3" json:"revisions,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The revisions from the specified request.
+	Revisions []*Revision `protobuf:"bytes,1,rep,name=revisions,proto3" json:"revisions,omitempty"`
 	// A token, which can be sent as `page_token` to retrieve the next page.
 	// If this field is omitted, there are no subsequent pages.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
@@ -467,7 +473,8 @@ type Revision struct {
 	DeleteTime *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=delete_time,json=deleteTime,proto3" json:"delete_time,omitempty"`
 	// Format: projects/{project}/releases/{release}/files/{id}
 	// Can be empty.
-	File    string `protobuf:"bytes,7,opt,name=file,proto3" json:"file,omitempty"`
+	File string `protobuf:"bytes,7,opt,name=file,proto3" json:"file,omitempty"`
+	// The schema version string for this revision.
 	Version string `protobuf:"bytes,8,opt,name=version,proto3" json:"version,omitempty"`
 	// The sheet that holds the content.
 	// Format: projects/{project}/sheets/{sheet}
@@ -475,8 +482,9 @@ type Revision struct {
 	// The SHA256 hash value of the sheet.
 	SheetSha256 string `protobuf:"bytes,10,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
 	// The statement is used for preview purpose.
-	Statement     string `protobuf:"bytes,11,opt,name=statement,proto3" json:"statement,omitempty"`
-	StatementSize int64  `protobuf:"varint,12,opt,name=statement_size,json=statementSize,proto3" json:"statement_size,omitempty"`
+	Statement string `protobuf:"bytes,11,opt,name=statement,proto3" json:"statement,omitempty"`
+	// The size of the statement in bytes.
+	StatementSize int64 `protobuf:"varint,12,opt,name=statement_size,json=statementSize,proto3" json:"statement_size,omitempty"`
 	// The issue associated with the revision.
 	// Can be empty.
 	// Format: projects/{project}/issues/{issue}

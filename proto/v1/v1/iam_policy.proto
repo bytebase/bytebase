@@ -9,6 +9,7 @@ import "google/type/expr.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// Request message for getting an IAM policy.
 message GetIamPolicyRequest {
   // The name of the resource to get the IAM policy.
   // Format: projects/{project}
@@ -19,6 +20,7 @@ message GetIamPolicyRequest {
   ];
 }
 
+// Request message for setting an IAM policy.
 message SetIamPolicyRequest {
   // The name of the resource to set the IAM policy.
   // Format: projects/{project}
@@ -34,17 +36,19 @@ message SetIamPolicyRequest {
   string etag = 3;
 }
 
+// IAM policy that binds members to roles.
 message IamPolicy {
   // Collection of binding.
   // A binding binds one or more project members to a single project role.
   repeated Binding bindings = 1;
 
   // The current etag of the policy.
-  // If an etag is provided and does not match the current etag of the poliy,
+  // If an etag is provided and does not match the current etag of the policy,
   // the call will be blocked and an ABORTED error will be returned.
   string etag = 2;
 }
 
+// Binding associates members with a role and optional conditions.
 message Binding {
   // The role that is assigned to the members.
   // Format: roles/{role}
@@ -62,34 +66,35 @@ message Binding {
   //
   // Support variables:
   // resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by the "roles/sqlEditorUser" role, support "==" operator.
-  // resource.schema: the schema name, used by the "roles/sqlEditorUser" role, support "==" operator.
-  // resource.table: the table name, used by the "roles/sqlEditorUser" role, support "==" operator.
+  // resource.schema_name: the schema name, used by the "roles/sqlEditorUser" role, support "==" operator.
+  // resource.table_name: the table name, used by the "roles/sqlEditorUser" role, support "==" operator.
   // request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`.
-  // request.row_limit: the maximum export rows, used by the "roles/sqlEditorUser" role. Only support "<=" operation.
   //
   // For example:
-  // resource.database == "instances/local-pg/databases/postgres" && resource.schema in ["public","another_schema"]
-  // resource.database == "instances/local-pg/databases/bytebase" && resource.schema == "public" && resource.table in ["audit_log"]
-  // request.time < timestamp("2025-04-26T11:24:48.655Z") && request.row_limit <= 1000
+  // resource.database == "instances/local-pg/databases/postgres" && resource.schema_name in ["public","another_schema"]
+  // resource.database == "instances/local-pg/databases/bytebase" && resource.schema_name == "public" && resource.table_name in ["audit_log"]
+  // request.time < timestamp("2025-04-26T11:24:48.655Z")
   google.type.Expr condition = 3;
 
   // The parsed expression of the condition.
   google.api.expr.v1alpha1.Expr parsed_expr = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// The difference delta between two policies.
+// Describes changes between two IAM policies.
 message PolicyDelta {
   // The delta for Bindings between two policies.
   repeated BindingDelta binding_deltas = 1;
 }
 
-// One delta entry for Binding. Each individual change (only one member in each
-// entry) to a binding will be a separate entry.
+// A single change to a binding.
 message BindingDelta {
-  // The type of action performed on a Binding in a policy.
+  // Type of action performed on a binding.
   enum Action {
+    // Unspecified action.
     ACTION_UNSPECIFIED = 0;
+    // Add a binding.
     ADD = 1;
+    // Remove a binding.
     REMOVE = 2;
   }
 

@@ -982,8 +982,6 @@
     "waiting-for-review": "等待审核",
     "issue-name": "工单名称",
     "grant-request": {
-      "export-rows": "最大导出行数",
-      "select-export-rows": "选择最大导出行数",
       "expired-at": "过期时间",
       "all-databases": "所有数据库",
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
@@ -1071,7 +1069,8 @@
     "approval": {
       "rejected-error": "此工单已被退回。",
       "pending-error": "此工单正在等待审批。",
-      "approved-and-waiting-for-rollout": "该工单已批准，等待发布。"
+      "approved-and-waiting-for-rollout": "该工单已批准，等待发布。",
+      "ready-for-rollout": "等待发布"
     },
     "new-layout": "使用新版 CI/CD 页面"
   },
@@ -2612,6 +2611,9 @@
       "select": "选择审批流",
       "create-approval-flow": "创建审批流",
       "edit-approval-flow": "编辑审批流",
+      "built-in": "内置审批流",
+      "custom": "自定义审批流",
+      "no-custom-flows": "尚未创建自定义审批流。点击\"创建审批流\"添加。",
       "node": {
         "nodes": "审批节点",
         "description": "当一个节点上有多个审批人时，只需要一次审批通过。",
@@ -2751,10 +2753,6 @@
     "sql-editor-user": {
       "self": "SQL 编辑器用户",
       "description": "可查询指定范围的数据。"
-    },
-    "project-exporter": {
-      "self": "项目导出者",
-      "description": "可导出指定范围的数据。"
     },
     "project-viewer": {
       "self": "项目查看者",

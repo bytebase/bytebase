@@ -24,13 +24,16 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// The type of action performed on a Binding in a policy.
+// Type of action performed on a binding.
 type BindingDelta_Action int32
 
 const (
+	// Unspecified action.
 	BindingDelta_ACTION_UNSPECIFIED BindingDelta_Action = 0
-	BindingDelta_ADD                BindingDelta_Action = 1
-	BindingDelta_REMOVE             BindingDelta_Action = 2
+	// Add a binding.
+	BindingDelta_ADD BindingDelta_Action = 1
+	// Remove a binding.
+	BindingDelta_REMOVE BindingDelta_Action = 2
 )
 
 // Enum value maps for BindingDelta_Action.
@@ -74,6 +77,7 @@ func (BindingDelta_Action) EnumDescriptor() ([]byte, []int) {
 	return file_v1_iam_policy_proto_rawDescGZIP(), []int{5, 0}
 }
 
+// Request message for getting an IAM policy.
 type GetIamPolicyRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the resource to get the IAM policy.
@@ -121,6 +125,7 @@ func (x *GetIamPolicyRequest) GetResource() string {
 	return ""
 }
 
+// Request message for setting an IAM policy.
 type SetIamPolicyRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the resource to set the IAM policy.
@@ -185,13 +190,14 @@ func (x *SetIamPolicyRequest) GetEtag() string {
 	return ""
 }
 
+// IAM policy that binds members to roles.
 type IamPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Collection of binding.
 	// A binding binds one or more project members to a single project role.
 	Bindings []*Binding `protobuf:"bytes,1,rep,name=bindings,proto3" json:"bindings,omitempty"`
 	// The current etag of the policy.
-	// If an etag is provided and does not match the current etag of the poliy,
+	// If an etag is provided and does not match the current etag of the policy,
 	// the call will be blocked and an ABORTED error will be returned.
 	Etag          string `protobuf:"bytes,2,opt,name=etag,proto3" json:"etag,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -242,6 +248,7 @@ func (x *IamPolicy) GetEtag() string {
 	return ""
 }
 
+// Binding associates members with a role and optional conditions.
 type Binding struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The role that is assigned to the members.
@@ -258,15 +265,14 @@ type Binding struct {
 	//
 	// Support variables:
 	// resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by the "roles/sqlEditorUser" role, support "==" operator.
-	// resource.schema: the schema name, used by the "roles/sqlEditorUser" role, support "==" operator.
-	// resource.table: the table name, used by the "roles/sqlEditorUser" role, support "==" operator.
+	// resource.schema_name: the schema name, used by the "roles/sqlEditorUser" role, support "==" operator.
+	// resource.table_name: the table name, used by the "roles/sqlEditorUser" role, support "==" operator.
 	// request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`.
-	// request.row_limit: the maximum export rows, used by the "roles/sqlEditorUser" role. Only support "<=" operation.
 	//
 	// For example:
-	// resource.database == "instances/local-pg/databases/postgres" && resource.schema in ["public","another_schema"]
-	// resource.database == "instances/local-pg/databases/bytebase" && resource.schema == "public" && resource.table in ["audit_log"]
-	// request.time < timestamp("2025-04-26T11:24:48.655Z") && request.row_limit <= 1000
+	// resource.database == "instances/local-pg/databases/postgres" && resource.schema_name in ["public","another_schema"]
+	// resource.database == "instances/local-pg/databases/bytebase" && resource.schema_name == "public" && resource.table_name in ["audit_log"]
+	// request.time < timestamp("2025-04-26T11:24:48.655Z")
 	Condition *expr.Expr `protobuf:"bytes,3,opt,name=condition,proto3" json:"condition,omitempty"`
 	// The parsed expression of the condition.
 	ParsedExpr    *v1alpha1.Expr `protobuf:"bytes,4,opt,name=parsed_expr,json=parsedExpr,proto3" json:"parsed_expr,omitempty"`
@@ -332,7 +338,7 @@ func (x *Binding) GetParsedExpr() *v1alpha1.Expr {
 	return nil
 }
 
-// The difference delta between two policies.
+// Describes changes between two IAM policies.
 type PolicyDelta struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The delta for Bindings between two policies.
@@ -378,8 +384,7 @@ func (x *PolicyDelta) GetBindingDeltas() []*BindingDelta {
 	return nil
 }
 
-// One delta entry for Binding. Each individual change (only one member in each
-// entry) to a binding will be a separate entry.
+// A single change to a binding.
 type BindingDelta struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The action that was performed on a Binding.

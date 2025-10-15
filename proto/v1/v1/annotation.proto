@@ -6,17 +6,24 @@ import "google/protobuf/descriptor.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// Extends MethodOptions to add Bytebase-specific RPC method annotations.
 extend google.protobuf.MethodOptions {
+  // Whether the method allows access without authentication credentials.
   bool allow_without_credential = 100000;
+  // The permission required to call this method.
   string permission = 100001;
+  // The authorization method to use for this RPC.
   AuthMethod auth_method = 100002;
+  // Whether to audit calls to this method.
   bool audit = 100003;
 }
 
+// Authorization method for RPC calls.
 enum AuthMethod {
+  // Unspecified authorization method.
   AUTH_METHOD_UNSPECIFIED = 0;
-  // IAM uses the standard IAM authorization check on the organizational resources.
+  // Standard IAM authorization check on organizational resources.
   IAM = 1;
-  // Custom authorization method.
+  // Custom authorization logic.
   CUSTOM = 2;
 }

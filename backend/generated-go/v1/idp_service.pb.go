@@ -27,10 +27,14 @@ const (
 type IdentityProviderType int32
 
 const (
+	// Unspecified identity provider type.
 	IdentityProviderType_IDENTITY_PROVIDER_TYPE_UNSPECIFIED IdentityProviderType = 0
-	IdentityProviderType_OAUTH2                             IdentityProviderType = 1
-	IdentityProviderType_OIDC                               IdentityProviderType = 2
-	IdentityProviderType_LDAP                               IdentityProviderType = 3
+	// OAuth 2.0 authentication protocol.
+	IdentityProviderType_OAUTH2 IdentityProviderType = 1
+	// OpenID Connect authentication protocol.
+	IdentityProviderType_OIDC IdentityProviderType = 2
+	// LDAP directory service authentication.
+	IdentityProviderType_LDAP IdentityProviderType = 3
 )
 
 // Enum value maps for IdentityProviderType.
@@ -179,8 +183,10 @@ func (LDAPIdentityProviderConfig_SecurityProtocol) EnumDescriptor() ([]byte, []i
 }
 
 type GetIdentityProviderRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The name of the identity provider to retrieve.
+	// Format: idps/{idp}
+	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -224,13 +230,13 @@ func (x *GetIdentityProviderRequest) GetName() string {
 
 type ListIdentityProvidersRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// The maximum number of identity providers to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 10 will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// A page token, received from a previous `ListIdentityProviders` call.
 	// Provide this to retrieve the subsequent page.
 	//
@@ -698,10 +704,14 @@ type IdentityProvider struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the identity provider.
 	// Format: idps/{idp}
-	Name          string                  `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Title         string                  `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	Domain        string                  `protobuf:"bytes,5,opt,name=domain,proto3" json:"domain,omitempty"`
-	Type          IdentityProviderType    `protobuf:"varint,6,opt,name=type,proto3,enum=bytebase.v1.IdentityProviderType" json:"type,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The display title of the identity provider.
+	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	// The domain for email matching when using this identity provider.
+	Domain string `protobuf:"bytes,5,opt,name=domain,proto3" json:"domain,omitempty"`
+	// The type of identity provider protocol.
+	Type IdentityProviderType `protobuf:"varint,6,opt,name=type,proto3,enum=bytebase.v1.IdentityProviderType" json:"type,omitempty"`
+	// The configuration details for the identity provider.
 	Config        *IdentityProviderConfig `protobuf:"bytes,7,opt,name=config,proto3" json:"config,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -853,14 +863,17 @@ type isIdentityProviderConfig_Config interface {
 }
 
 type IdentityProviderConfig_Oauth2Config struct {
+	// OAuth2 protocol configuration.
 	Oauth2Config *OAuth2IdentityProviderConfig `protobuf:"bytes,1,opt,name=oauth2_config,json=oauth2Config,proto3,oneof"`
 }
 
 type IdentityProviderConfig_OidcConfig struct {
+	// OIDC protocol configuration.
 	OidcConfig *OIDCIdentityProviderConfig `protobuf:"bytes,2,opt,name=oidc_config,json=oidcConfig,proto3,oneof"`
 }
 
 type IdentityProviderConfig_LdapConfig struct {
+	// LDAP protocol configuration.
 	LdapConfig *LDAPIdentityProviderConfig `protobuf:"bytes,3,opt,name=ldap_config,json=ldapConfig,proto3,oneof"`
 }
 
@@ -872,16 +885,25 @@ func (*IdentityProviderConfig_LdapConfig) isIdentityProviderConfig_Config() {}
 
 // OAuth2IdentityProviderConfig is the structure for OAuth2 identity provider config.
 type OAuth2IdentityProviderConfig struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AuthUrl       string                 `protobuf:"bytes,1,opt,name=auth_url,json=authUrl,proto3" json:"auth_url,omitempty"`
-	TokenUrl      string                 `protobuf:"bytes,2,opt,name=token_url,json=tokenUrl,proto3" json:"token_url,omitempty"`
-	UserInfoUrl   string                 `protobuf:"bytes,3,opt,name=user_info_url,json=userInfoUrl,proto3" json:"user_info_url,omitempty"`
-	ClientId      string                 `protobuf:"bytes,4,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	ClientSecret  string                 `protobuf:"bytes,5,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
-	Scopes        []string               `protobuf:"bytes,6,rep,name=scopes,proto3" json:"scopes,omitempty"`
-	FieldMapping  *FieldMapping          `protobuf:"bytes,7,opt,name=field_mapping,json=fieldMapping,proto3" json:"field_mapping,omitempty"`
-	SkipTlsVerify bool                   `protobuf:"varint,8,opt,name=skip_tls_verify,json=skipTlsVerify,proto3" json:"skip_tls_verify,omitempty"`
-	AuthStyle     OAuth2AuthStyle        `protobuf:"varint,9,opt,name=auth_style,json=authStyle,proto3,enum=bytebase.v1.OAuth2AuthStyle" json:"auth_style,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The authorization endpoint URL for OAuth2 flow.
+	AuthUrl string `protobuf:"bytes,1,opt,name=auth_url,json=authUrl,proto3" json:"auth_url,omitempty"`
+	// The token endpoint URL for exchanging authorization code.
+	TokenUrl string `protobuf:"bytes,2,opt,name=token_url,json=tokenUrl,proto3" json:"token_url,omitempty"`
+	// The user information endpoint URL.
+	UserInfoUrl string `protobuf:"bytes,3,opt,name=user_info_url,json=userInfoUrl,proto3" json:"user_info_url,omitempty"`
+	// The OAuth2 client identifier.
+	ClientId string `protobuf:"bytes,4,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	// The OAuth2 client secret for authentication.
+	ClientSecret string `protobuf:"bytes,5,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
+	// The list of OAuth2 scopes to request.
+	Scopes []string `protobuf:"bytes,6,rep,name=scopes,proto3" json:"scopes,omitempty"`
+	// Mapping configuration for user attributes from OAuth2 response.
+	FieldMapping *FieldMapping `protobuf:"bytes,7,opt,name=field_mapping,json=fieldMapping,proto3" json:"field_mapping,omitempty"`
+	// Whether to skip TLS certificate verification.
+	SkipTlsVerify bool `protobuf:"varint,8,opt,name=skip_tls_verify,json=skipTlsVerify,proto3" json:"skip_tls_verify,omitempty"`
+	// The authentication style for client credentials.
+	AuthStyle     OAuth2AuthStyle `protobuf:"varint,9,opt,name=auth_style,json=authStyle,proto3,enum=bytebase.v1.OAuth2AuthStyle" json:"auth_style,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -981,16 +1003,22 @@ func (x *OAuth2IdentityProviderConfig) GetAuthStyle() OAuth2AuthStyle {
 
 // OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 type OIDCIdentityProviderConfig struct {
-	state        protoimpl.MessageState `protogen:"open.v1"`
-	Issuer       string                 `protobuf:"bytes,1,opt,name=issuer,proto3" json:"issuer,omitempty"`
-	ClientId     string                 `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	ClientSecret string                 `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The OIDC issuer URL for the identity provider.
+	Issuer string `protobuf:"bytes,1,opt,name=issuer,proto3" json:"issuer,omitempty"`
+	// The OIDC client identifier.
+	ClientId string `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	// The OIDC client secret for authentication.
+	ClientSecret string `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
 	// The scopes that the OIDC provider supports.
 	// Should be fetched from the well-known configuration file of the OIDC provider.
-	Scopes        []string        `protobuf:"bytes,4,rep,name=scopes,proto3" json:"scopes,omitempty"`
-	FieldMapping  *FieldMapping   `protobuf:"bytes,5,opt,name=field_mapping,json=fieldMapping,proto3" json:"field_mapping,omitempty"`
-	SkipTlsVerify bool            `protobuf:"varint,6,opt,name=skip_tls_verify,json=skipTlsVerify,proto3" json:"skip_tls_verify,omitempty"`
-	AuthStyle     OAuth2AuthStyle `protobuf:"varint,7,opt,name=auth_style,json=authStyle,proto3,enum=bytebase.v1.OAuth2AuthStyle" json:"auth_style,omitempty"`
+	Scopes []string `protobuf:"bytes,4,rep,name=scopes,proto3" json:"scopes,omitempty"`
+	// Mapping configuration for user attributes from OIDC claims.
+	FieldMapping *FieldMapping `protobuf:"bytes,5,opt,name=field_mapping,json=fieldMapping,proto3" json:"field_mapping,omitempty"`
+	// Whether to skip TLS certificate verification.
+	SkipTlsVerify bool `protobuf:"varint,6,opt,name=skip_tls_verify,json=skipTlsVerify,proto3" json:"skip_tls_verify,omitempty"`
+	// The authentication style for client credentials.
+	AuthStyle OAuth2AuthStyle `protobuf:"varint,7,opt,name=auth_style,json=authStyle,proto3,enum=bytebase.v1.OAuth2AuthStyle" json:"auth_style,omitempty"`
 	// The authorization endpoint of the OIDC provider.
 	// Should be fetched from the well-known configuration file of the OIDC provider.
 	AuthEndpoint  string `protobuf:"bytes,8,opt,name=auth_endpoint,json=authEndpoint,proto3" json:"auth_endpoint,omitempty"`
@@ -1087,10 +1115,10 @@ func (x *OIDCIdentityProviderConfig) GetAuthEndpoint() string {
 // LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
 type LDAPIdentityProviderConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Host is the hostname or IP address of the LDAP server, e.g.
+	// Host is the hostname or IP address of the LDAP server, e.g.,
 	// "ldap.example.com".
 	Host string `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
-	// Port is the port number of the LDAP server, e.g. 389. When not set, the
+	// Port is the port number of the LDAP server, e.g., 389. When not set, the
 	// default port of the corresponding security protocol will be used, i.e. 389
 	// for StartTLS and 636 for LDAPS.
 	Port int32 `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
@@ -1101,9 +1129,9 @@ type LDAPIdentityProviderConfig struct {
 	BindDn string `protobuf:"bytes,4,opt,name=bind_dn,json=bindDn,proto3" json:"bind_dn,omitempty"`
 	// BindPassword is the password of the user to bind as a service account.
 	BindPassword string `protobuf:"bytes,5,opt,name=bind_password,json=bindPassword,proto3" json:"bind_password,omitempty"`
-	// BaseDN is the base DN to search for users, e.g. "ou=users,dc=example,dc=com".
+	// BaseDN is the base DN to search for users, e.g., "ou=users,dc=example,dc=com".
 	BaseDn string `protobuf:"bytes,6,opt,name=base_dn,json=baseDn,proto3" json:"base_dn,omitempty"`
-	// UserFilter is the filter to search for users, e.g. "(uid=%s)".
+	// UserFilter is the filter to search for users, e.g., "(uid=%s)".
 	UserFilter string `protobuf:"bytes,7,opt,name=user_filter,json=userFilter,proto3" json:"user_filter,omitempty"`
 	// SecurityProtocol is the security protocol to be used for establishing
 	// connections with the LDAP server.

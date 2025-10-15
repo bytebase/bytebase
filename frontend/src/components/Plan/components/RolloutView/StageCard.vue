@@ -42,7 +42,7 @@
               :is-created="isCreated"
               :runable-tasks="runableTasks"
               :can-run-tasks="canRunTasks"
-              :can-create-rollout="canCreateRollout"
+              :can-create-rollout="canRunTasks"
               @run-tasks="handleRunAllTasks"
               @create-rollout="createRolloutToStage"
             />
@@ -163,7 +163,7 @@
             :is-created="isCreated"
             :runable-tasks="runableTasks"
             :can-run-tasks="canRunTasks"
-            :can-create-rollout="canCreateRollout"
+            :can-create-rollout="canRunTasks"
             @run-tasks="handleRunAllTasks"
             @create-rollout="createRolloutToStage"
           />
@@ -295,10 +295,6 @@ const canRunTasks = computed(() => {
     return false;
   }
   return canRolloutTasks(filteredTasks.value);
-});
-
-const canCreateRollout = computed(() => {
-  return canRunTasks.value;
 });
 
 const stageStatus = computed(() => {

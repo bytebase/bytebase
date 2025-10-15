@@ -10,7 +10,7 @@ message Advice {
   reserved 5;
 
   enum Status {
-    // Unspecified.
+    // Unspecified status.
     STATUS_UNSPECIFIED = 0;
     SUCCESS = 1;
     WARNING = 2;

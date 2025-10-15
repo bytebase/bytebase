@@ -16,7 +16,7 @@ export declare const file_v1_role_service: GenFile;
  */
 export declare type ListRolesRequest = Message<"bytebase.v1.ListRolesRequest"> & {
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * The maximum number of roles to return. The service may return fewer than
    * this value.
    * If unspecified, at most 10 reviews will be returned.
@@ -27,7 +27,7 @@ export declare type ListRolesRequest = Message<"bytebase.v1.ListRolesRequest"> &
   pageSize: number;
 
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * A page token, received from a previous `ListRoles` call.
    * Provide this to retrieve the subsequent page.
    *
@@ -50,6 +50,8 @@ export declare const ListRolesRequestSchema: GenMessage<ListRolesRequest>;
  */
 export declare type ListRolesResponse = Message<"bytebase.v1.ListRolesResponse"> & {
   /**
+   * The roles from the specified request.
+   *
    * @generated from field: repeated bytebase.v1.Role roles = 1;
    */
   roles: Role[];
@@ -74,6 +76,8 @@ export declare const ListRolesResponseSchema: GenMessage<ListRolesResponse>;
  */
 export declare type CreateRoleRequest = Message<"bytebase.v1.CreateRoleRequest"> & {
   /**
+   * The role to create.
+   *
    * @generated from field: bytebase.v1.Role role = 1;
    */
   role?: Role;
@@ -120,17 +124,22 @@ export declare const GetRoleRequestSchema: GenMessage<GetRoleRequest>;
  */
 export declare type UpdateRoleRequest = Message<"bytebase.v1.UpdateRoleRequest"> & {
   /**
+   * The role to update.
+   *
    * @generated from field: bytebase.v1.Role role = 1;
    */
   role?: Role;
 
   /**
+   * The list of fields to update.
+   *
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */
   updateMask?: FieldMask;
 
   /**
    * If set to true, and the role is not found, a new role will be created.
+   * In this situation, `update_mask` is ignored.
    *
    * @generated from field: bool allow_missing = 3;
    */
@@ -148,6 +157,7 @@ export declare const UpdateRoleRequestSchema: GenMessage<UpdateRoleRequest>;
  */
 export declare type DeleteRoleRequest = Message<"bytebase.v1.DeleteRoleRequest"> & {
   /**
+   * The name of the role to delete.
    * Format: roles/{role}
    *
    * @generated from field: string name = 1;
@@ -162,32 +172,42 @@ export declare type DeleteRoleRequest = Message<"bytebase.v1.DeleteRoleRequest">
 export declare const DeleteRoleRequestSchema: GenMessage<DeleteRoleRequest>;
 
 /**
+ * Role defines a set of permissions that can be assigned to users.
+ *
  * @generated from message bytebase.v1.Role
  */
 export declare type Role = Message<"bytebase.v1.Role"> & {
   /**
-   * Format: roles/{role}
+   * Resource name. Format: roles/{role}
    *
    * @generated from field: string name = 1;
    */
   name: string;
 
   /**
+   * Human-readable title.
+   *
    * @generated from field: string title = 2;
    */
   title: string;
 
   /**
+   * Optional description of the role.
+   *
    * @generated from field: string description = 3;
    */
   description: string;
 
   /**
+   * List of permission identifiers granted by this role.
+   *
    * @generated from field: repeated string permissions = 4;
    */
   permissions: string[];
 
   /**
+   * Role type indicating if it's built-in or custom.
+   *
    * @generated from field: bytebase.v1.Role.Type type = 5;
    */
   type: Role_Type;
@@ -209,11 +229,15 @@ export enum Role_Type {
   TYPE_UNSPECIFIED = 0,
 
   /**
+   * System-defined role that cannot be modified.
+   *
    * @generated from enum value: BUILT_IN = 1;
    */
   BUILT_IN = 1,
 
   /**
+   * User-defined role that can be modified.
+   *
    * @generated from enum value: CUSTOM = 2;
    */
   CUSTOM = 2,
@@ -225,10 +249,13 @@ export enum Role_Type {
 export declare const Role_TypeSchema: GenEnum<Role_Type>;
 
 /**
+ * RoleService manages workspace roles and permissions.
+ *
  * @generated from service bytebase.v1.RoleService
  */
 export declare const RoleService: GenService<{
   /**
+   * Lists roles in the workspace.
    * Permissions required: bb.roles.list
    *
    * @generated from rpc bytebase.v1.RoleService.ListRoles
@@ -239,6 +266,7 @@ export declare const RoleService: GenService<{
     output: typeof ListRolesResponseSchema;
   },
   /**
+   * Retrieves a role by name.
    * Permissions required: bb.roles.get
    *
    * @generated from rpc bytebase.v1.RoleService.GetRole
@@ -249,6 +277,7 @@ export declare const RoleService: GenService<{
     output: typeof RoleSchema;
   },
   /**
+   * Creates a new custom role.
    * Permissions required: bb.roles.create
    *
    * @generated from rpc bytebase.v1.RoleService.CreateRole
@@ -259,6 +288,7 @@ export declare const RoleService: GenService<{
     output: typeof RoleSchema;
   },
   /**
+   * Updates a role's properties.
    * Permissions required: bb.roles.update
    *
    * @generated from rpc bytebase.v1.RoleService.UpdateRole
@@ -269,6 +299,7 @@ export declare const RoleService: GenService<{
     output: typeof RoleSchema;
   },
   /**
+   * Deletes a custom role.
    * Permissions required: bb.roles.delete
    *
    * @generated from rpc bytebase.v1.RoleService.DeleteRole

@@ -169,8 +169,8 @@ func (StreamMetadata_Mode) EnumDescriptor() ([]byte, []int) {
 	return file_store_database_proto_rawDescGZIP(), []int{10, 1}
 }
 
-// Type is the type of a table partition, some database engines may not
-// support all types. Only avilable for the following database engines now:
+// The type is the type of a table partition. Some database engines may not
+// support all types. Only available for the following database engines now:
 // MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY,
 // LINEAR_KEY
 // (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html) TiDB:
@@ -406,7 +406,7 @@ type DatabaseMetadata struct {
 	LastSyncTime    *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=last_sync_time,json=lastSyncTime,proto3" json:"last_sync_time,omitempty"`
 	BackupAvailable bool                   `protobuf:"varint,3,opt,name=backup_available,json=backupAvailable,proto3" json:"backup_available,omitempty"`
 	Datashare       bool                   `protobuf:"varint,4,opt,name=datashare,proto3" json:"datashare,omitempty"`
-	// The schema is drifted from the source of truth.
+	// The schema has drifted from the source of truth.
 	Drifted bool `protobuf:"varint,6,opt,name=drifted,proto3" json:"drifted,omitempty"`
 	// The version of database schema.
 	Version       string `protobuf:"bytes,7,opt,name=version,proto3" json:"version,omitempty"`
@@ -490,17 +490,17 @@ func (x *DatabaseMetadata) GetVersion() string {
 type DatabaseSchemaMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The schemas is the list of schemas in a database.
+	// The list of schemas in a database.
 	Schemas []*SchemaMetadata `protobuf:"bytes,2,rep,name=schemas,proto3" json:"schemas,omitempty"`
-	// The character_set is the character set of a database.
+	// The character set of the database.
 	CharacterSet string `protobuf:"bytes,3,opt,name=character_set,json=characterSet,proto3" json:"character_set,omitempty"`
-	// The collation is the collation of a database.
+	// The collation of the database.
 	Collation string `protobuf:"bytes,4,opt,name=collation,proto3" json:"collation,omitempty"`
-	// The extensions is the list of extensions in a database.
+	// The list of extensions in a database.
 	Extensions []*ExtensionMetadata `protobuf:"bytes,5,rep,name=extensions,proto3" json:"extensions,omitempty"`
 	// The database belongs to a datashare.
 	Datashare bool `protobuf:"varint,6,opt,name=datashare,proto3" json:"datashare,omitempty"`
-	// The service name of the database. It's the Oracle specific concept.
+	// The service name of the database. It's an Oracle-specific concept.
 	ServiceName     string                    `protobuf:"bytes,7,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
 	LinkedDatabases []*LinkedDatabaseMetadata `protobuf:"bytes,8,rep,name=linked_databases,json=linkedDatabases,proto3" json:"linked_databases,omitempty"`
 	Owner           string                    `protobuf:"bytes,9,opt,name=owner,proto3" json:"owner,omitempty"`
@@ -674,30 +674,28 @@ func (x *LinkedDatabaseMetadata) GetHost() string {
 // This is the concept of schema in Postgres, but it's a no-op for MySQL.
 type SchemaMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the schema name.
+	// The schema name.
 	// It is an empty string for databases without such concept such as MySQL.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The tables is the list of tables in a schema.
+	// The list of tables in a schema.
 	Tables []*TableMetadata `protobuf:"bytes,2,rep,name=tables,proto3" json:"tables,omitempty"`
-	// The external_tables is the list of external tables in a schema.
+	// The list of external tables in a schema.
 	ExternalTables []*ExternalTableMetadata `protobuf:"bytes,3,rep,name=external_tables,json=externalTables,proto3" json:"external_tables,omitempty"`
-	// The views is the list of views in a schema.
+	// The list of views in a schema.
 	Views []*ViewMetadata `protobuf:"bytes,4,rep,name=views,proto3" json:"views,omitempty"`
-	// The functions is the list of functions in a schema.
+	// The list of functions in a schema.
 	Functions []*FunctionMetadata `protobuf:"bytes,5,rep,name=functions,proto3" json:"functions,omitempty"`
-	// The procedures is the list of procedures in a schema.
+	// The list of procedures in a schema.
 	Procedures []*ProcedureMetadata `protobuf:"bytes,6,rep,name=procedures,proto3" json:"procedures,omitempty"`
-	// The streams is the list of streams in a schema, currently, only used for
-	// Snowflake.
+	// The list of streams in a schema, currently only used for Snowflake.
 	Streams []*StreamMetadata `protobuf:"bytes,7,rep,name=streams,proto3" json:"streams,omitempty"`
-	// The routines is the list of routines in a schema, currently, only used for
-	// Snowflake.
+	// The list of tasks in a schema, currently only used for Snowflake.
 	Tasks []*TaskMetadata `protobuf:"bytes,8,rep,name=tasks,proto3" json:"tasks,omitempty"`
-	// The materialized_views is the list of materialized views in a schema.
+	// The list of materialized views in a schema.
 	MaterializedViews []*MaterializedViewMetadata `protobuf:"bytes,9,rep,name=materialized_views,json=materializedViews,proto3" json:"materialized_views,omitempty"`
-	// The sequences is the list of sequences in a schema.
+	// The list of sequences in a schema.
 	Sequences []*SequenceMetadata `protobuf:"bytes,10,rep,name=sequences,proto3" json:"sequences,omitempty"`
-	// The packages is the list of packages in a schema.
+	// The list of packages in a schema.
 	Packages      []*PackageMetadata  `protobuf:"bytes,11,rep,name=packages,proto3" json:"packages,omitempty"`
 	Owner         string              `protobuf:"bytes,12,opt,name=owner,proto3" json:"owner,omitempty"`
 	Comment       string              `protobuf:"bytes,13,opt,name=comment,proto3" json:"comment,omitempty"`
@@ -852,9 +850,9 @@ func (x *SchemaMetadata) GetSkipDump() bool {
 
 type EnumTypeMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name of a type.
+	// The name of the enum type.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The enum values of a type.
+	// The enum values of the type.
 	Values        []string `protobuf:"bytes,2,rep,name=values,proto3" json:"values,omitempty"`
 	Comment       string   `protobuf:"bytes,3,opt,name=comment,proto3" json:"comment,omitempty"`
 	SkipDump      bool     `protobuf:"varint,4,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
@@ -1027,17 +1025,17 @@ type SequenceMetadata struct {
 	MinValue string `protobuf:"bytes,4,opt,name=min_value,json=minValue,proto3" json:"min_value,omitempty"`
 	// The maximum value of a sequence.
 	MaxValue string `protobuf:"bytes,5,opt,name=max_value,json=maxValue,proto3" json:"max_value,omitempty"`
-	// Increment value of a sequence.
+	// The increment value of a sequence.
 	Increment string `protobuf:"bytes,6,opt,name=increment,proto3" json:"increment,omitempty"`
-	// Cycle is whether the sequence cycles.
+	// Whether the sequence cycles.
 	Cycle bool `protobuf:"varint,7,opt,name=cycle,proto3" json:"cycle,omitempty"`
 	// Cache size of a sequence.
 	CacheSize string `protobuf:"bytes,8,opt,name=cache_size,json=cacheSize,proto3" json:"cache_size,omitempty"`
-	// Last value of a sequence.
+	// The last value of a sequence.
 	LastValue string `protobuf:"bytes,9,opt,name=last_value,json=lastValue,proto3" json:"last_value,omitempty"`
-	// The owner table of the sequence.
+	// The table that owns the sequence.
 	OwnerTable string `protobuf:"bytes,10,opt,name=owner_table,json=ownerTable,proto3" json:"owner_table,omitempty"`
-	// The owner column of the sequence.
+	// The column that owns the sequence.
 	OwnerColumn   string `protobuf:"bytes,11,opt,name=owner_column,json=ownerColumn,proto3" json:"owner_column,omitempty"`
 	Comment       string `protobuf:"bytes,12,opt,name=comment,proto3" json:"comment,omitempty"`
 	SkipDump      bool   `protobuf:"varint,13,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
@@ -1168,14 +1166,13 @@ func (x *SequenceMetadata) GetSkipDump() bool {
 
 type TriggerMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of the trigger.
+	// The name of the trigger.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
-	// TRUNCATE.
+	// The event that triggers this action, such as INSERT, UPDATE, DELETE, or TRUNCATE.
 	Event string `protobuf:"bytes,3,opt,name=event,proto3" json:"event,omitempty"`
-	// The timing is the timing of the trigger, such as BEFORE, AFTER.
+	// The timing of when the trigger fires, such as BEFORE or AFTER.
 	Timing string `protobuf:"bytes,4,opt,name=timing,proto3" json:"timing,omitempty"`
-	// The body is the body of the trigger.
+	// The body of the trigger.
 	Body                string `protobuf:"bytes,5,opt,name=body,proto3" json:"body,omitempty"`
 	SqlMode             string `protobuf:"bytes,6,opt,name=sql_mode,json=sqlMode,proto3" json:"sql_mode,omitempty"`
 	CharacterSetClient  string `protobuf:"bytes,7,opt,name=character_set_client,json=characterSetClient,proto3" json:"character_set_client,omitempty"`
@@ -1282,19 +1279,19 @@ func (x *TriggerMetadata) GetSkipDump() bool {
 // RuleMetadata is the metadata for PostgreSQL rules.
 type RuleMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of the rule.
+	// The name of the rule.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The event is the event type of the rule: SELECT, INSERT, UPDATE, or DELETE.
+	// The event type of the rule: SELECT, INSERT, UPDATE, or DELETE.
 	Event string `protobuf:"bytes,2,opt,name=event,proto3" json:"event,omitempty"`
-	// The condition is the WHERE condition of the rule (optional).
+	// The WHERE condition of the rule (optional).
 	Condition string `protobuf:"bytes,3,opt,name=condition,proto3" json:"condition,omitempty"`
-	// The action is the command(s) to execute when the rule fires.
+	// The command(s) to execute when the rule fires.
 	Action string `protobuf:"bytes,4,opt,name=action,proto3" json:"action,omitempty"`
 	// The is_instead indicates whether this is an INSTEAD rule.
 	IsInstead bool `protobuf:"varint,5,opt,name=is_instead,json=isInstead,proto3" json:"is_instead,omitempty"`
 	// The is_enabled indicates whether the rule is enabled.
 	IsEnabled bool `protobuf:"varint,6,opt,name=is_enabled,json=isEnabled,proto3" json:"is_enabled,omitempty"`
-	// The definition is the full CREATE RULE statement.
+	// The full CREATE RULE statement.
 	Definition    string `protobuf:"bytes,7,opt,name=definition,proto3" json:"definition,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1381,10 +1378,10 @@ func (x *RuleMetadata) GetDefinition() string {
 
 type TaskMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of a task.
+	// The name of the task.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The id is the snowflake-generated id of a task.
-	// Example: 01ad32a0-1bb6-5e93-0000-000000000001
+	// The Snowflake-generated ID of the task.
+	// Example: 01ad32a0-1bb6-5e93-0000-000000000001.
 	Id string `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
 	// The owner of the task.
 	Owner string `protobuf:"bytes,3,opt,name=owner,proto3" json:"owner,omitempty"`
@@ -1508,7 +1505,7 @@ func (x *TaskMetadata) GetDefinition() string {
 
 type StreamMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of a stream.
+	// The name of the stream.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The table_name is the name of the table/view that the stream is created on.
 	TableName string `protobuf:"bytes,2,opt,name=table_name,json=tableName,proto3" json:"table_name,omitempty"`
@@ -1617,7 +1614,7 @@ func (x *StreamMetadata) GetDefinition() string {
 // TableMetadata is the metadata for tables.
 type TableMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of a table.
+	// The name of the table.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The columns is the ordered list of columns in a table.
 	Columns []*ColumnMetadata `protobuf:"bytes,2,rep,name=columns,proto3" json:"columns,omitempty"`
@@ -1627,7 +1624,7 @@ type TableMetadata struct {
 	Engine string `protobuf:"bytes,4,opt,name=engine,proto3" json:"engine,omitempty"`
 	// The collation is the collation of a table.
 	Collation string `protobuf:"bytes,5,opt,name=collation,proto3" json:"collation,omitempty"`
-	// The character set of table.
+	// The character set of the table.
 	Charset string `protobuf:"bytes,17,opt,name=charset,proto3" json:"charset,omitempty"`
 	// The row_count is the estimated number of rows of a table.
 	RowCount int64 `protobuf:"varint,6,opt,name=row_count,json=rowCount,proto3" json:"row_count,omitempty"`
@@ -1860,7 +1857,7 @@ func (x *TableMetadata) GetPrimaryKeyType() string {
 
 type CheckConstraintMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of a check constraint.
+	// The name of the check constraint.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The expression is the expression of a check constraint.
 	Expression    string `protobuf:"bytes,2,opt,name=expression,proto3" json:"expression,omitempty"`
@@ -1914,7 +1911,7 @@ func (x *CheckConstraintMetadata) GetExpression() string {
 
 type ExternalTableMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of a external table.
+	// The name of the external table.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The external_server_name is the name of the external server.
 	ExternalServerName string `protobuf:"bytes,2,opt,name=external_server_name,json=externalServerName,proto3" json:"external_server_name,omitempty"`
@@ -1987,7 +1984,7 @@ func (x *ExternalTableMetadata) GetColumns() []*ColumnMetadata {
 // TablePartitionMetadata is the metadata for table partitions.
 type TablePartitionMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of a table partition.
+	// The name of the table partition.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The type of a table partition.
 	Type TablePartitionMetadata_Type `protobuf:"varint,2,opt,name=type,proto3,enum=bytebase.store.TablePartitionMetadata_Type" json:"type,omitempty"`
@@ -2114,11 +2111,11 @@ func (x *TablePartitionMetadata) GetCheckConstraints() []*CheckConstraintMetadat
 // ColumnMetadata is the metadata for columns.
 type ColumnMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of a column.
+	// The name of the column.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The position is the position in columns.
 	Position int32 `protobuf:"varint,2,opt,name=position,proto3" json:"position,omitempty"`
-	// The default value of column.
+	// The default value of the column.
 	Default string `protobuf:"bytes,3,opt,name=default,proto3" json:"default,omitempty"`
 	// Deprecated.
 	DefaultNull bool `protobuf:"varint,4,opt,name=default_null,json=defaultNull,proto3" json:"default_null,omitempty"`
@@ -2399,17 +2396,17 @@ func (x *GenerationMetadata) GetExpression() string {
 // ViewMetadata is the metadata for views.
 type ViewMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of a view.
+	// The name of the view.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The definition is the definition of a view.
 	Definition string `protobuf:"bytes,2,opt,name=definition,proto3" json:"definition,omitempty"`
 	// The comment is the comment of a view.
 	Comment string `protobuf:"bytes,3,opt,name=comment,proto3" json:"comment,omitempty"`
-	// The dependency_columns is the list of dependency columns of a view.
+	// The list of dependency columns of a view.
 	DependencyColumns []*DependencyColumn `protobuf:"bytes,4,rep,name=dependency_columns,json=dependencyColumns,proto3" json:"dependency_columns,omitempty"`
-	// The columns is the ordered list of columns in a table.
+	// The ordered list of columns in the view.
 	Columns []*ColumnMetadata `protobuf:"bytes,5,rep,name=columns,proto3" json:"columns,omitempty"`
-	// The triggers is the list of triggers in a view.
+	// The list of triggers in the view.
 	Triggers []*TriggerMetadata `protobuf:"bytes,6,rep,name=triggers,proto3" json:"triggers,omitempty"`
 	SkipDump bool               `protobuf:"varint,7,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
 	// The rules is the list of rules in a view (PostgreSQL specific).
@@ -2571,17 +2568,17 @@ func (x *DependencyColumn) GetColumn() string {
 // MaterializedViewMetadata is the metadata for materialized views.
 type MaterializedViewMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of a view.
+	// The name of the materialized view.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The definition is the definition of a view.
 	Definition string `protobuf:"bytes,2,opt,name=definition,proto3" json:"definition,omitempty"`
 	// The comment is the comment of a view.
 	Comment string `protobuf:"bytes,3,opt,name=comment,proto3" json:"comment,omitempty"`
-	// The dependency_columns is the list of dependency columns of a view.
+	// The list of dependency columns of the view.
 	DependencyColumns []*DependencyColumn `protobuf:"bytes,4,rep,name=dependency_columns,json=dependencyColumns,proto3" json:"dependency_columns,omitempty"`
-	// The columns is the ordered list of columns in a table.
+	// The ordered list of columns in the materialized view.
 	Triggers []*TriggerMetadata `protobuf:"bytes,5,rep,name=triggers,proto3" json:"triggers,omitempty"`
-	// The indexes is the list of indexes in a table.
+	// The list of indexes in the materialized view.
 	Indexes       []*IndexMetadata `protobuf:"bytes,6,rep,name=indexes,proto3" json:"indexes,omitempty"`
 	SkipDump      bool             `protobuf:"varint,7,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -2724,7 +2721,7 @@ func (x *DependencyTable) GetTable() string {
 // FunctionMetadata is the metadata for functions.
 type FunctionMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of a function.
+	// The name of the function.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The definition is the definition of a function.
 	Definition string `protobuf:"bytes,2,opt,name=definition,proto3" json:"definition,omitempty"`
@@ -2848,7 +2845,7 @@ func (x *FunctionMetadata) GetSkipDump() bool {
 // ProcedureMetadata is the metadata for procedures.
 type ProcedureMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of a procedure.
+	// The name of the procedure.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The definition is the definition of a procedure.
 	Definition string `protobuf:"bytes,2,opt,name=definition,proto3" json:"definition,omitempty"`
@@ -2962,7 +2959,7 @@ func (x *ProcedureMetadata) GetSkipDump() bool {
 // PackageMetadata is the metadata for packages.
 type PackageMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of a package.
+	// The name of the package.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The definition is the definition of a package.
 	Definition    string `protobuf:"bytes,2,opt,name=definition,proto3" json:"definition,omitempty"`
@@ -3017,15 +3014,15 @@ func (x *PackageMetadata) GetDefinition() string {
 // IndexMetadata is the metadata for indexes.
 type IndexMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of an index.
+	// The name of the index.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The expressions are the ordered columns or expressions of an index.
 	// This could refer to a column or an expression.
 	Expressions []string `protobuf:"bytes,2,rep,name=expressions,proto3" json:"expressions,omitempty"`
-	// The key_lengths are the ordered key lengths of an index.
-	// If the key length is not specified, it's -1.
+	// The ordered list of key lengths for the index.
+	// If the key length is not specified, it is -1.
 	KeyLength []int64 `protobuf:"varint,9,rep,packed,name=key_length,json=keyLength,proto3" json:"key_length,omitempty"`
-	// The descending is the ordered descending of an index.
+	// The ordered list of descending flags for the index columns.
 	Descending []bool `protobuf:"varint,10,rep,packed,name=descending,proto3" json:"descending,omitempty"`
 	// The type is the type of an index.
 	Type string `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
@@ -3727,9 +3724,9 @@ func (x *DimensionalConfig) GetParallelBuild() bool {
 // ExtensionMetadata is the metadata for extensions.
 type ExtensionMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of an extension.
+	// The name of the extension.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The schema is the extension that is installed to. But the extension usage
+	// The schema where the extension is installed. However, the extension usage
 	// is not limited to the schema.
 	Schema string `protobuf:"bytes,2,opt,name=schema,proto3" json:"schema,omitempty"`
 	// The version is the version of an extension.
@@ -3801,7 +3798,7 @@ func (x *ExtensionMetadata) GetDescription() string {
 // ForeignKeyMetadata is the metadata for foreign keys.
 type ForeignKeyMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of a foreign key.
+	// The name of the foreign key.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The columns are the ordered referencing columns of a foreign key.
 	Columns []string `protobuf:"bytes,2,rep,name=columns,proto3" json:"columns,omitempty"`
@@ -4021,7 +4018,7 @@ func (x *DatabaseConfig) GetSchemas() []*SchemaCatalog {
 
 type SchemaCatalog struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the schema name.
+	// The schema name.
 	// It is an empty string for databases without such concept such as MySQL.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The table_configs is the list of configs for tables in a schema.
@@ -4076,7 +4073,7 @@ func (x *SchemaCatalog) GetTables() []*TableCatalog {
 
 type TableCatalog struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of a table.
+	// The name of the table.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The column_configs is the ordered list of configs for columns in a table.
 	Columns        []*ColumnCatalog `protobuf:"bytes,2,rep,name=columns,proto3" json:"columns,omitempty"`
@@ -4146,7 +4143,7 @@ func (x *TableCatalog) GetClassification() string {
 
 type ColumnCatalog struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the name of a column.
+	// The name of the column.
 	Name         string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	SemanticType string `protobuf:"bytes,2,opt,name=semantic_type,json=semanticType,proto3" json:"semantic_type,omitempty"`
 	// The user labels for a column.

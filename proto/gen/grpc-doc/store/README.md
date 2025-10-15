@@ -11,6 +11,7 @@
     - [Engine](#bytebase-store-Engine)
     - [ExportFormat](#bytebase-store-ExportFormat)
     - [MaskingLevel](#bytebase-store-MaskingLevel)
+    - [RiskLevel](#bytebase-store-RiskLevel)
     - [VCSType](#bytebase-store-VCSType)
   
 - [store/advice.proto](#store_advice-proto)
@@ -20,16 +21,11 @@
   
 - [store/approval.proto](#store_approval-proto)
     - [ApprovalFlow](#bytebase-store-ApprovalFlow)
-    - [ApprovalNode](#bytebase-store-ApprovalNode)
-    - [ApprovalStep](#bytebase-store-ApprovalStep)
     - [ApprovalTemplate](#bytebase-store-ApprovalTemplate)
     - [IssuePayloadApproval](#bytebase-store-IssuePayloadApproval)
     - [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver)
   
-    - [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type)
-    - [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type)
     - [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status)
-    - [IssuePayloadApproval.RiskLevel](#bytebase-store-IssuePayloadApproval-RiskLevel)
   
 - [store/audit_log.proto](#store_audit_log-proto)
     - [AuditLog](#bytebase-store-AuditLog)
@@ -54,7 +50,6 @@
     - [ChangelogPayload.MigrationType](#bytebase-store-ChangelogPayload-MigrationType)
     - [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type)
   
-- [store/data_source.proto](#store_data_source-proto)
 - [store/database.proto](#store_database-proto)
     - [BoundingBox](#bytebase-store-BoundingBox)
     - [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata)
@@ -364,13 +359,13 @@
 <a name="bytebase-store-PageToken"></a>
 
 ### PageToken
-Used internally for obfuscating the page token.
+PageToken is used internally for obfuscating pagination tokens.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| limit | [int32](#int32) |  |  |
-| offset | [int32](#int32) |  |  |
+| limit | [int32](#int32) |  | Maximum number of items to return. |
+| offset | [int32](#int32) |  | Number of items to skip before starting to return results. |
 
 
 
@@ -380,8 +375,7 @@ Used internally for obfuscating the page token.
 <a name="bytebase-store-Position"></a>
 
 ### Position
-Position in a text expressed as zero-based line and zero-based column byte
-offset.
+Position in a text expressed as zero-based line and column byte offset.
 
 
 | Field | Type | Label | Description |
@@ -397,13 +391,13 @@ offset.
 <a name="bytebase-store-Range"></a>
 
 ### Range
-
+Range represents a span within a text or sequence.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| start | [int32](#int32) |  |  |
-| end | [int32](#int32) |  |  |
+| start | [int32](#int32) |  | Start index (inclusive). |
+| end | [int32](#int32) |  | End index (exclusive). |
 
 
 
@@ -415,7 +409,7 @@ offset.
 <a name="bytebase-store-Engine"></a>
 
 ### Engine
-
+Engine represents the type of database system.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -451,7 +445,7 @@ offset.
 <a name="bytebase-store-ExportFormat"></a>
 
 ### ExportFormat
-
+ExportFormat represents the file format for exported data.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -466,21 +460,35 @@ offset.
 <a name="bytebase-store-MaskingLevel"></a>
 
 ### MaskingLevel
-
+MaskingLevel represents the level of data masking applied to sensitive information.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | MASKING_LEVEL_UNSPECIFIED | 0 |  |
-| NONE | 1 |  |
-| PARTIAL | 2 |  |
-| FULL | 3 |  |
+| NONE | 1 | No masking applied. |
+| PARTIAL | 2 | Partial masking (e.g., showing first/last characters). |
+| FULL | 3 | Full masking (all characters masked). |
+
+
+
+<a name="bytebase-store-RiskLevel"></a>
+
+### RiskLevel
+RiskLevel represents the assessed risk level of a database operation.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RISK_LEVEL_UNSPECIFIED | 0 |  |
+| LOW | 1 |  |
+| MODERATE | 2 |  |
+| HIGH | 3 |  |
 
 
 
 <a name="bytebase-store-VCSType"></a>
 
 ### VCSType
-
+VCSType represents the type of version control system.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -535,7 +543,7 @@ offset.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 | Unspecified. |
+| STATUS_UNSPECIFIED | 0 | Unspecified status. |
 | SUCCESS | 1 |  |
 | WARNING | 2 |  |
 | ERROR | 3 |  |
@@ -559,44 +567,12 @@ offset.
 <a name="bytebase-store-ApprovalFlow"></a>
 
 ### ApprovalFlow
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| steps | [ApprovalStep](#bytebase-store-ApprovalStep) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-ApprovalNode"></a>
-
-### ApprovalNode
-
+ApprovalFlow defines the sequence of approvals required.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| type | [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type) |  |  |
-| role | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ApprovalStep"></a>
-
-### ApprovalStep
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type) |  |  |
-| nodes | [ApprovalNode](#bytebase-store-ApprovalNode) | repeated |  |
+| roles | [string](#string) | repeated | List of role names that must approve, in order. |
 
 
 
@@ -606,14 +582,15 @@ offset.
 <a name="bytebase-store-ApprovalTemplate"></a>
 
 ### ApprovalTemplate
-
+ApprovalTemplate defines the approval workflow and requirements for an issue.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| flow | [ApprovalFlow](#bytebase-store-ApprovalFlow) |  |  |
-| title | [string](#string) |  |  |
-| description | [string](#string) |  |  |
+| id | [string](#string) |  | The unique identifier for the approval template. Built-in templates use &#34;bb.&#34; prefix (e.g., &#34;bb.project-owner&#34;, &#34;bb.workspace-dba&#34;). Custom templates use a UUID or other unique identifier. |
+| flow | [ApprovalFlow](#bytebase-store-ApprovalFlow) |  | The approval workflow specification. |
+| title | [string](#string) |  | Human-readable title of the approval template. |
+| description | [string](#string) |  | Detailed description of when this template applies. |
 
 
 
@@ -623,17 +600,16 @@ offset.
 <a name="bytebase-store-IssuePayloadApproval"></a>
 
 ### IssuePayloadApproval
-IssuePayloadApproval is a part of the payload of an issue.
-IssuePayloadApproval records the approval template used and the approval history.
+IssuePayloadApproval records the approval template used and approval history for an issue.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| approval_templates | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) | repeated |  |
-| approvers | [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver) | repeated |  |
-| approval_finding_done | [bool](#bool) |  | If the value is `false`, it means that the backend is still finding matching approval templates. If `true`, other fields are available. |
-| approval_finding_error | [string](#string) |  |  |
-| risk_level | [IssuePayloadApproval.RiskLevel](#bytebase-store-IssuePayloadApproval-RiskLevel) |  |  |
+| approval_template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) |  | The approval template being used for this issue. |
+| approvers | [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver) | repeated | List of approvers and their current status. |
+| approval_finding_done | [bool](#bool) |  | Whether the system has finished finding a matching approval template. False means the backend is still searching for matching templates. |
+| approval_finding_error | [string](#string) |  | Error message if approval template finding failed. |
+| risk_level | [RiskLevel](#bytebase-store-RiskLevel) |  | The assessed risk level for this issue. |
 
 
 
@@ -643,13 +619,13 @@ IssuePayloadApproval records the approval template used and the approval history
 <a name="bytebase-store-IssuePayloadApproval-Approver"></a>
 
 ### IssuePayloadApproval.Approver
-
+Approver represents a user who can approve or reject an issue.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| status | [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status) |  | The new status. |
-| principal_id | [int32](#int32) |  | The principal id of the approver. |
+| status | [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status) |  | The current approval status. |
+| principal_id | [int32](#int32) |  | The ID of the principal who is the approver. |
 
 
 
@@ -658,61 +634,17 @@ IssuePayloadApproval records the approval template used and the approval history
  
 
 
-<a name="bytebase-store-ApprovalNode-Type"></a>
-
-### ApprovalNode.Type
-Type of the ApprovalNode.
-type determines who should approve this node.
-ANY_IN_GROUP means the ApprovalNode can be approved by an user from our predefined user group.
-See GroupValue below for the predefined user groups.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| ANY_IN_GROUP | 1 |  |
-
-
-
-<a name="bytebase-store-ApprovalStep-Type"></a>
-
-### ApprovalStep.Type
-Type of the ApprovalStep
-ALL means every node must be approved to proceed.
-ANY means approving any node will proceed.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| ALL | 1 |  |
-| ANY | 2 |  |
-
-
-
 <a name="bytebase-store-IssuePayloadApproval-Approver-Status"></a>
 
 ### IssuePayloadApproval.Approver.Status
-
+Status represents the approver&#39;s decision state.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | STATUS_UNSPECIFIED | 0 |  |
-| PENDING | 1 |  |
-| APPROVED | 2 |  |
-| REJECTED | 3 |  |
-
-
-
-<a name="bytebase-store-IssuePayloadApproval-RiskLevel"></a>
-
-### IssuePayloadApproval.RiskLevel
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| RISK_LEVEL_UNSPECIFIED | 0 |  |
-| LOW | 1 |  |
-| MODERATE | 2 |  |
-| HIGH | 3 |  |
+| PENDING | 1 | Approval is pending from this approver. |
+| APPROVED | 2 | Approver has approved the issue. |
+| REJECTED | 3 | Approver has rejected the issue. |
 
 
  
@@ -739,15 +671,15 @@ ANY means approving any node will proceed.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The project or workspace the audit log belongs to. Formats: - projects/{project} - workspaces/{workspace} |
-| method | [string](#string) |  | e.g. /bytebase.v1.SQLService/Query |
-| resource | [string](#string) |  | resource name projects/{project} |
+| method | [string](#string) |  | Example: /bytebase.v1.SQLService/Query |
+| resource | [string](#string) |  | The resource name. Example: projects/{project} |
 | user | [string](#string) |  | Format: users/{userUID}. |
 | severity | [AuditLog.Severity](#bytebase-store-AuditLog-Severity) |  |  |
 | request | [string](#string) |  | Marshalled request. |
 | response | [string](#string) |  | Marshalled response. Some fields are omitted because they are too large or contain sensitive information. |
 | status | [google.rpc.Status](#google-rpc-Status) |  |  |
 | latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The latency of the RPC. |
-| service_data | [google.protobuf.Any](#google-protobuf-Any) |  | service-specific data about the request, response, and other activities. |
+| service_data | [google.protobuf.Any](#google-protobuf-Any) |  | The service-specific data about the request, response, and other activities. |
 | request_metadata | [RequestMetadata](#bytebase-store-RequestMetadata) |  | Metadata about the operation. |
 
 
@@ -809,13 +741,13 @@ Metadata about the request.
 <a name="bytebase-store-Changelist"></a>
 
 ### Changelist
-
+Changelist represents a collection of database changes that can be applied together.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| description | [string](#string) |  |  |
-| changes | [Changelist.Change](#bytebase-store-Changelist-Change) | repeated |  |
+| description | [string](#string) |  | Human-readable description of this changelist. |
+| changes | [Changelist.Change](#bytebase-store-Changelist-Change) | repeated | The list of changes in this changelist. |
 
 
 
@@ -825,13 +757,13 @@ Metadata about the request.
 <a name="bytebase-store-Changelist-Change"></a>
 
 ### Changelist.Change
-
+Change represents a single database modification within the changelist.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | The name of a sheet. |
-| source | [string](#string) |  | The source of origin. 1) changes: instances/{instance}/databases/{database}/changelogs/{changelog}. 2) raw SQL if empty. |
+| sheet | [string](#string) |  | Resource name of the sheet containing the SQL statements. |
+| source | [string](#string) |  | The source where this change originated from. Format: instances/{instance}/databases/{database}/changelogs/{changelog} for changes from changelog. Empty for raw SQL changes. |
 
 
 
@@ -879,7 +811,7 @@ Metadata about the request.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
+| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of substrings correspond to the statements on the sheet. |
 
 
 
@@ -895,7 +827,7 @@ Metadata about the request.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
+| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of substrings correspond to the statements on the sheet. |
 
 
 
@@ -930,8 +862,8 @@ Metadata about the request.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
-| table_rows | [int64](#int64) |  | estimated row count of the table |
-| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
+| table_rows | [int64](#int64) |  | The estimated row count of the table. |
+| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of substrings correspond to the statements on the sheet. |
 
 
 
@@ -947,7 +879,7 @@ Metadata about the request.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
+| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of substrings correspond to the statements on the sheet. |
 
 
 
@@ -1029,22 +961,6 @@ MigrationType is the type for imperative schema migration.
 
 
 
-<a name="store_data_source-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/data_source.proto
-
-
- 
-
- 
-
- 
-
- 
-
-
-
 <a name="store_database-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -1078,7 +994,7 @@ BoundingBox defines the bounding box for spatial indexes.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a check constraint. |
+| name | [string](#string) |  | The name of the check constraint. |
 | expression | [string](#string) |  | The expression is the expression of a check constraint. |
 
 
@@ -1094,7 +1010,7 @@ BoundingBox defines the bounding box for spatial indexes.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a column. |
+| name | [string](#string) |  | The name of the column. |
 | semantic_type | [string](#string) |  |  |
 | labels | [ColumnCatalog.LabelsEntry](#bytebase-store-ColumnCatalog-LabelsEntry) | repeated | The user labels for a column. |
 | classification | [string](#string) |  |  |
@@ -1132,9 +1048,9 @@ ColumnMetadata is the metadata for columns.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a column. |
+| name | [string](#string) |  | The name of the column. |
 | position | [int32](#int32) |  | The position is the position in columns. |
-| default | [string](#string) |  | The default value of column. |
+| default | [string](#string) |  | The default value of the column. |
 | default_null | [bool](#bool) |  | Deprecated. |
 | default_expression | [string](#string) |  | Deprecated. |
 | default_on_null | [bool](#bool) |  | Oracle specific metadata. The default_on_null is the default on null of a column. |
@@ -1193,7 +1109,7 @@ DatabaseMetadata is the metadata for databases.
 | last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | backup_available | [bool](#bool) |  |  |
 | datashare | [bool](#bool) |  |  |
-| drifted | [bool](#bool) |  | The schema is drifted from the source of truth. |
+| drifted | [bool](#bool) |  | The schema has drifted from the source of truth. |
 | version | [string](#string) |  | The version of database schema. |
 
 
@@ -1226,12 +1142,12 @@ DatabaseSchemaMetadata is the schema metadata for databases.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
-| schemas | [SchemaMetadata](#bytebase-store-SchemaMetadata) | repeated | The schemas is the list of schemas in a database. |
-| character_set | [string](#string) |  | The character_set is the character set of a database. |
-| collation | [string](#string) |  | The collation is the collation of a database. |
-| extensions | [ExtensionMetadata](#bytebase-store-ExtensionMetadata) | repeated | The extensions is the list of extensions in a database. |
+| schemas | [SchemaMetadata](#bytebase-store-SchemaMetadata) | repeated | The list of schemas in a database. |
+| character_set | [string](#string) |  | The character set of the database. |
+| collation | [string](#string) |  | The collation of the database. |
+| extensions | [ExtensionMetadata](#bytebase-store-ExtensionMetadata) | repeated | The list of extensions in a database. |
 | datashare | [bool](#bool) |  | The database belongs to a datashare. |
-| service_name | [string](#string) |  | The service name of the database. It&#39;s the Oracle specific concept. |
+| service_name | [string](#string) |  | The service name of the database. It&#39;s an Oracle-specific concept. |
 | linked_databases | [LinkedDatabaseMetadata](#bytebase-store-LinkedDatabaseMetadata) | repeated |  |
 | owner | [string](#string) |  |  |
 | search_path | [string](#string) |  | The search_path is the search path of a PostgreSQL database. |
@@ -1301,8 +1217,8 @@ DimensionalConfig defines dimensional and constraint parameters for spatial inde
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of a type. |
-| values | [string](#string) | repeated | The enum values of a type. |
+| name | [string](#string) |  | The name of the enum type. |
+| values | [string](#string) | repeated | The enum values of the type. |
 | comment | [string](#string) |  |  |
 | skip_dump | [bool](#bool) |  |  |
 
@@ -1340,8 +1256,8 @@ ExtensionMetadata is the metadata for extensions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of an extension. |
-| schema | [string](#string) |  | The schema is the extension that is installed to. But the extension usage is not limited to the schema. |
+| name | [string](#string) |  | The name of the extension. |
+| schema | [string](#string) |  | The schema where the extension is installed. However, the extension usage is not limited to the schema. |
 | version | [string](#string) |  | The version is the version of an extension. |
 | description | [string](#string) |  | The description is the description of an extension. |
 
@@ -1358,7 +1274,7 @@ ExtensionMetadata is the metadata for extensions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a external table. |
+| name | [string](#string) |  | The name of the external table. |
 | external_server_name | [string](#string) |  | The external_server_name is the name of the external server. |
 | external_database_name | [string](#string) |  | The external_database_name is the name of the external database. |
 | columns | [ColumnMetadata](#bytebase-store-ColumnMetadata) | repeated | The columns is the ordered list of columns in a foreign table. |
@@ -1376,7 +1292,7 @@ ForeignKeyMetadata is the metadata for foreign keys.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a foreign key. |
+| name | [string](#string) |  | The name of the foreign key. |
 | columns | [string](#string) | repeated | The columns are the ordered referencing columns of a foreign key. |
 | referenced_schema | [string](#string) |  | The referenced_schema is the referenced schema name of a foreign key. It is an empty string for databases without such concept such as MySQL. |
 | referenced_table | [string](#string) |  | The referenced_table is the referenced table name of a foreign key. |
@@ -1398,7 +1314,7 @@ FunctionMetadata is the metadata for functions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a function. |
+| name | [string](#string) |  | The name of the function. |
 | definition | [string](#string) |  | The definition is the definition of a function. |
 | signature | [string](#string) |  | The signature is the name with the number and type of input arguments the function takes. |
 | character_set_client | [string](#string) |  | MySQL specific metadata. |
@@ -1454,10 +1370,10 @@ IndexMetadata is the metadata for indexes.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of an index. |
+| name | [string](#string) |  | The name of the index. |
 | expressions | [string](#string) | repeated | The expressions are the ordered columns or expressions of an index. This could refer to a column or an expression. |
-| key_length | [int64](#int64) | repeated | The key_lengths are the ordered key lengths of an index. If the key length is not specified, it&#39;s -1. |
-| descending | [bool](#bool) | repeated | The descending is the ordered descending of an index. |
+| key_length | [int64](#int64) | repeated | The ordered list of key lengths for the index. If the key length is not specified, it is -1. |
+| descending | [bool](#bool) | repeated | The ordered list of descending flags for the index columns. |
 | type | [string](#string) |  | The type is the type of an index. |
 | unique | [bool](#bool) |  | The unique is whether the index is unique. |
 | primary | [bool](#bool) |  | The primary is whether the index is a primary key index. |
@@ -1518,12 +1434,12 @@ MaterializedViewMetadata is the metadata for materialized views.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a view. |
+| name | [string](#string) |  | The name of the materialized view. |
 | definition | [string](#string) |  | The definition is the definition of a view. |
 | comment | [string](#string) |  | The comment is the comment of a view. |
-| dependency_columns | [DependencyColumn](#bytebase-store-DependencyColumn) | repeated | The dependency_columns is the list of dependency columns of a view. |
-| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The columns is the ordered list of columns in a table. |
-| indexes | [IndexMetadata](#bytebase-store-IndexMetadata) | repeated | The indexes is the list of indexes in a table. |
+| dependency_columns | [DependencyColumn](#bytebase-store-DependencyColumn) | repeated | The list of dependency columns of the view. |
+| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The ordered list of columns in the materialized view. |
+| indexes | [IndexMetadata](#bytebase-store-IndexMetadata) | repeated | The list of indexes in the materialized view. |
 | skip_dump | [bool](#bool) |  |  |
 
 
@@ -1603,7 +1519,7 @@ PackageMetadata is the metadata for packages.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a package. |
+| name | [string](#string) |  | The name of the package. |
 | definition | [string](#string) |  | The definition is the definition of a package. |
 
 
@@ -1619,7 +1535,7 @@ ProcedureMetadata is the metadata for procedures.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a procedure. |
+| name | [string](#string) |  | The name of the procedure. |
 | definition | [string](#string) |  | The definition is the definition of a procedure. |
 | signature | [string](#string) |  | The signature is the name with the number and type of input arguments the function takes. |
 | character_set_client | [string](#string) |  | MySQL specific metadata. |
@@ -1642,13 +1558,13 @@ RuleMetadata is the metadata for PostgreSQL rules.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of the rule. |
-| event | [string](#string) |  | The event is the event type of the rule: SELECT, INSERT, UPDATE, or DELETE. |
-| condition | [string](#string) |  | The condition is the WHERE condition of the rule (optional). |
-| action | [string](#string) |  | The action is the command(s) to execute when the rule fires. |
+| name | [string](#string) |  | The name of the rule. |
+| event | [string](#string) |  | The event type of the rule: SELECT, INSERT, UPDATE, or DELETE. |
+| condition | [string](#string) |  | The WHERE condition of the rule (optional). |
+| action | [string](#string) |  | The command(s) to execute when the rule fires. |
 | is_instead | [bool](#bool) |  | The is_instead indicates whether this is an INSTEAD rule. |
 | is_enabled | [bool](#bool) |  | The is_enabled indicates whether the rule is enabled. |
-| definition | [string](#string) |  | The definition is the full CREATE RULE statement. |
+| definition | [string](#string) |  | The full CREATE RULE statement. |
 
 
 
@@ -1663,7 +1579,7 @@ RuleMetadata is the metadata for PostgreSQL rules.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
+| name | [string](#string) |  | The schema name. It is an empty string for databases without such concept such as MySQL. |
 | tables | [TableCatalog](#bytebase-store-TableCatalog) | repeated | The table_configs is the list of configs for tables in a schema. |
 
 
@@ -1680,17 +1596,17 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
-| tables | [TableMetadata](#bytebase-store-TableMetadata) | repeated | The tables is the list of tables in a schema. |
-| external_tables | [ExternalTableMetadata](#bytebase-store-ExternalTableMetadata) | repeated | The external_tables is the list of external tables in a schema. |
-| views | [ViewMetadata](#bytebase-store-ViewMetadata) | repeated | The views is the list of views in a schema. |
-| functions | [FunctionMetadata](#bytebase-store-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
-| procedures | [ProcedureMetadata](#bytebase-store-ProcedureMetadata) | repeated | The procedures is the list of procedures in a schema. |
-| streams | [StreamMetadata](#bytebase-store-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
-| tasks | [TaskMetadata](#bytebase-store-TaskMetadata) | repeated | The routines is the list of routines in a schema, currently, only used for Snowflake. |
-| materialized_views | [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata) | repeated | The materialized_views is the list of materialized views in a schema. |
-| sequences | [SequenceMetadata](#bytebase-store-SequenceMetadata) | repeated | The sequences is the list of sequences in a schema. |
-| packages | [PackageMetadata](#bytebase-store-PackageMetadata) | repeated | The packages is the list of packages in a schema. |
+| name | [string](#string) |  | The schema name. It is an empty string for databases without such concept such as MySQL. |
+| tables | [TableMetadata](#bytebase-store-TableMetadata) | repeated | The list of tables in a schema. |
+| external_tables | [ExternalTableMetadata](#bytebase-store-ExternalTableMetadata) | repeated | The list of external tables in a schema. |
+| views | [ViewMetadata](#bytebase-store-ViewMetadata) | repeated | The list of views in a schema. |
+| functions | [FunctionMetadata](#bytebase-store-FunctionMetadata) | repeated | The list of functions in a schema. |
+| procedures | [ProcedureMetadata](#bytebase-store-ProcedureMetadata) | repeated | The list of procedures in a schema. |
+| streams | [StreamMetadata](#bytebase-store-StreamMetadata) | repeated | The list of streams in a schema, currently only used for Snowflake. |
+| tasks | [TaskMetadata](#bytebase-store-TaskMetadata) | repeated | The list of tasks in a schema, currently only used for Snowflake. |
+| materialized_views | [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata) | repeated | The list of materialized views in a schema. |
+| sequences | [SequenceMetadata](#bytebase-store-SequenceMetadata) | repeated | The list of sequences in a schema. |
+| packages | [PackageMetadata](#bytebase-store-PackageMetadata) | repeated | The list of packages in a schema. |
 | owner | [string](#string) |  |  |
 | comment | [string](#string) |  |  |
 | events | [EventMetadata](#bytebase-store-EventMetadata) | repeated |  |
@@ -1715,12 +1631,12 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | start | [string](#string) |  | The start value of a sequence. |
 | min_value | [string](#string) |  | The minimum value of a sequence. |
 | max_value | [string](#string) |  | The maximum value of a sequence. |
-| increment | [string](#string) |  | Increment value of a sequence. |
-| cycle | [bool](#bool) |  | Cycle is whether the sequence cycles. |
+| increment | [string](#string) |  | The increment value of a sequence. |
+| cycle | [bool](#bool) |  | Whether the sequence cycles. |
 | cache_size | [string](#string) |  | Cache size of a sequence. |
-| last_value | [string](#string) |  | Last value of a sequence. |
-| owner_table | [string](#string) |  | The owner table of the sequence. |
-| owner_column | [string](#string) |  | The owner column of the sequence. |
+| last_value | [string](#string) |  | The last value of a sequence. |
+| owner_table | [string](#string) |  | The table that owns the sequence. |
+| owner_column | [string](#string) |  | The column that owns the sequence. |
 | comment | [string](#string) |  |  |
 | skip_dump | [bool](#bool) |  |  |
 
@@ -1802,7 +1718,7 @@ StorageConfig defines storage and performance parameters for spatial indexes.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a stream. |
+| name | [string](#string) |  | The name of the stream. |
 | table_name | [string](#string) |  | The table_name is the name of the table/view that the stream is created on. |
 | owner | [string](#string) |  | The owner of the stream. |
 | comment | [string](#string) |  | The comment of the stream. |
@@ -1824,7 +1740,7 @@ StorageConfig defines storage and performance parameters for spatial indexes.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a table. |
+| name | [string](#string) |  | The name of the table. |
 | columns | [ColumnCatalog](#bytebase-store-ColumnCatalog) | repeated | The column_configs is the ordered list of configs for columns in a table. |
 | object_schema | [ObjectSchema](#bytebase-store-ObjectSchema) | optional |  |
 | classification | [string](#string) |  |  |
@@ -1842,12 +1758,12 @@ TableMetadata is the metadata for tables.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a table. |
+| name | [string](#string) |  | The name of the table. |
 | columns | [ColumnMetadata](#bytebase-store-ColumnMetadata) | repeated | The columns is the ordered list of columns in a table. |
 | indexes | [IndexMetadata](#bytebase-store-IndexMetadata) | repeated | The indexes is the list of indexes in a table. |
 | engine | [string](#string) |  | The engine is the engine of a table. |
 | collation | [string](#string) |  | The collation is the collation of a table. |
-| charset | [string](#string) |  | The character set of table. |
+| charset | [string](#string) |  | The character set of the table. |
 | row_count | [int64](#int64) |  | The row_count is the estimated number of rows of a table. |
 | data_size | [int64](#int64) |  | The data_size is the estimated data size of a table. |
 | index_size | [int64](#int64) |  | The index_size is the estimated index size of a table. |
@@ -1879,7 +1795,7 @@ TablePartitionMetadata is the metadata for table partitions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a table partition. |
+| name | [string](#string) |  | The name of the table partition. |
 | type | [TablePartitionMetadata.Type](#bytebase-store-TablePartitionMetadata-Type) |  | The type of a table partition. |
 | expression | [string](#string) |  | The expression is the expression of a table partition. For PostgreSQL, the expression is the text of {FOR VALUES partition_bound_spec}, see https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL, the expression is the `expr` or `column_list` of the following syntax. PARTITION BY { [LINEAR] HASH(expr) | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list) | RANGE{(expr) | COLUMNS(column_list)} | LIST{(expr) | COLUMNS(column_list)} }. |
 | value | [string](#string) |  | The value is the value of a table partition. For MySQL, the value is for RANGE and LIST partition types, - For a RANGE partition, it contains the value set in the partition&#39;s VALUES LESS THAN clause, which can be either an integer or MAXVALUE. - For a LIST partition, this column contains the values defined in the partition&#39;s VALUES IN clause, which is a list of comma-separated integer values. - For others, it&#39;s an empty string. |
@@ -1901,8 +1817,8 @@ TablePartitionMetadata is the metadata for table partitions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a task. |
-| id | [string](#string) |  | The id is the snowflake-generated id of a task. Example: 01ad32a0-1bb6-5e93-0000-000000000001 |
+| name | [string](#string) |  | The name of the task. |
+| id | [string](#string) |  | The Snowflake-generated ID of the task. Example: 01ad32a0-1bb6-5e93-0000-000000000001. |
 | owner | [string](#string) |  | The owner of the task. |
 | comment | [string](#string) |  | The comment of the task. |
 | warehouse | [string](#string) |  | The warehouse of the task. |
@@ -1943,10 +1859,10 @@ TessellationConfig defines tessellation parameters for spatial indexes.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of the trigger. |
-| event | [string](#string) |  | The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE. |
-| timing | [string](#string) |  | The timing is the timing of the trigger, such as BEFORE, AFTER. |
-| body | [string](#string) |  | The body is the body of the trigger. |
+| name | [string](#string) |  | The name of the trigger. |
+| event | [string](#string) |  | The event that triggers this action, such as INSERT, UPDATE, DELETE, or TRUNCATE. |
+| timing | [string](#string) |  | The timing of when the trigger fires, such as BEFORE or AFTER. |
+| body | [string](#string) |  | The body of the trigger. |
 | sql_mode | [string](#string) |  |  |
 | character_set_client | [string](#string) |  |  |
 | collation_connection | [string](#string) |  |  |
@@ -1966,12 +1882,12 @@ ViewMetadata is the metadata for views.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a view. |
+| name | [string](#string) |  | The name of the view. |
 | definition | [string](#string) |  | The definition is the definition of a view. |
 | comment | [string](#string) |  | The comment is the comment of a view. |
-| dependency_columns | [DependencyColumn](#bytebase-store-DependencyColumn) | repeated | The dependency_columns is the list of dependency columns of a view. |
-| columns | [ColumnMetadata](#bytebase-store-ColumnMetadata) | repeated | The columns is the ordered list of columns in a table. |
-| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The triggers is the list of triggers in a view. |
+| dependency_columns | [DependencyColumn](#bytebase-store-DependencyColumn) | repeated | The list of dependency columns of a view. |
+| columns | [ColumnMetadata](#bytebase-store-ColumnMetadata) | repeated | The ordered list of columns in the view. |
+| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The list of triggers in the view. |
 | skip_dump | [bool](#bool) |  |  |
 | rules | [RuleMetadata](#bytebase-store-RuleMetadata) | repeated | The rules is the list of rules in a view (PostgreSQL specific). |
 
@@ -2053,8 +1969,8 @@ ViewMetadata is the metadata for views.
 <a name="bytebase-store-TablePartitionMetadata-Type"></a>
 
 ### TablePartitionMetadata.Type
-Type is the type of a table partition, some database engines may not
-support all types. Only avilable for the following database engines now:
+The type is the type of a table partition. Some database engines may not
+support all types. Only available for the following database engines now:
 MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY,
 LINEAR_KEY
 (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html) TiDB:
@@ -2167,7 +2083,7 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| member | [string](#string) |  | Member is the principal who belong to this group.
+| member | [string](#string) |  | Member is the principal who belongs to this group.
 
 Format: users/{userUID}. |
 | role | [GroupMember.Role](#bytebase-store-GroupMember-Role) |  |  |
@@ -2186,7 +2102,7 @@ Format: users/{userUID}. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | members | [GroupMember](#bytebase-store-GroupMember) | repeated |  |
-| source | [string](#string) |  | source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. |
+| source | [string](#string) |  | The source indicates where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. |
 
 
 
@@ -2383,7 +2299,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | ---- | ------ | ----------- |
 | OAUTH2_AUTH_STYLE_UNSPECIFIED | 0 |  |
 | IN_PARAMS | 1 | IN_PARAMS sends the &#34;client_id&#34; and &#34;client_secret&#34; in the POST body as application/x-www-form-urlencoded parameters. |
-| IN_HEADER | 2 | IN_HEADER sends the client_id and client_password using HTTP Basic Authorization. This is an optional style described in the OAuth2 RFC 6749 section 2.3.1. |
+| IN_HEADER | 2 | IN_HEADER sends the client_id and client_secret using HTTP Basic Authorization. This is an optional style described in the OAuth2 RFC 6749 section 2.3.1. |
 
 
  
@@ -2414,7 +2330,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | username | [string](#string) |  |  |
 | password | [string](#string) |  |  |
 | obfuscated_password | [string](#string) |  |  |
-| use_ssl | [bool](#bool) |  | Use SSL to connect to the data source. By default, we use system default SSL configuration. |
+| use_ssl | [bool](#bool) |  | Use SSL to connect to the data source. By default, we use the system&#39;s SSL configuration. |
 | ssl_ca | [string](#string) |  |  |
 | obfuscated_ssl_ca | [string](#string) |  |  |
 | ssl_cert | [string](#string) |  |  |
@@ -2425,7 +2341,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | host | [string](#string) |  |  |
 | port | [string](#string) |  |  |
 | database | [string](#string) |  |  |
-| srv | [bool](#bool) |  | srv, authentication_database and replica_set are used for MongoDB. srv is a boolean flag that indicates whether the host is a DNS SRV record. |
+| srv | [bool](#bool) |  | srv, authentication_database, and replica_set are used for MongoDB. srv is a boolean flag that indicates whether the host is a DNS SRV record. |
 | authentication_database | [string](#string) |  | authentication_database is the database name to authenticate against, which stores the user credentials. |
 | replica_set | [string](#string) |  | replica_set is used for MongoDB replica set. |
 | sid | [string](#string) |  | sid and service_name are used for Oracle. |
@@ -2447,7 +2363,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | sasl_config | [SASLConfig](#bytebase-store-SASLConfig) |  |  |
 | additional_addresses | [DataSource.Address](#bytebase-store-DataSource-Address) | repeated | additional_addresses is used for MongoDB replica set. |
 | direct_connection | [bool](#bool) |  | direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. |
-| region | [string](#string) |  | region is the location of where the DB is, works for AWS RDS. For example, us-east-1. |
+| region | [string](#string) |  | Region is the location of the database, used for AWS RDS. For example, us-east-1. |
 | warehouse_id | [string](#string) |  | warehouse_id is used by Databricks. |
 | master_name | [string](#string) |  | master_name is the master name used by connecting redis-master via redis sentinel. |
 | master_username | [string](#string) |  | master_username and master_obfuscated_password are master credentials used by redis sentinel mode. |
@@ -2476,8 +2392,8 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | obfuscated_secret_access_key | [string](#string) |  |  |
 | session_token | [string](#string) |  |  |
 | obfuscated_session_token | [string](#string) |  |  |
-| role_arn | [string](#string) |  | ARN of IAM role to assume for cross-account access |
-| external_id | [string](#string) |  | Optional external ID for additional security when assuming role |
+| role_arn | [string](#string) |  | ARN of IAM role to assume for cross-account access. See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html |
+| external_id | [string](#string) |  | Optional external ID for additional security when assuming role. See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html |
 
 
 
@@ -2581,7 +2497,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | role_id | [string](#string) |  |  |
-| secret_id | [string](#string) |  | the secret id for the role without ttl. |
+| secret_id | [string](#string) |  | The secret ID for the role without TTL. |
 | type | [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType) |  |  |
 | mount_path | [string](#string) |  | The path where the approle auth method is mounted. |
 
@@ -2604,9 +2520,9 @@ Instance is the proto for instances.
 | version | [string](#string) |  |  |
 | external_link | [string](#string) |  |  |
 | data_sources | [DataSource](#bytebase-store-DataSource) | repeated |  |
-| sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | How often the instance is synced. |
+| sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | The interval between automatic instance synchronizations. |
 | maximum_connections | [int32](#int32) |  | The maximum number of connections. The default is 10 if the value is unset or zero. |
-| sync_databases | [string](#string) | repeated | Enable sync for following databases. Default empty, means sync all schemas &amp; databases. |
+| sync_databases | [string](#string) | repeated | Enable sync for the following databases. Default empty, means sync all schemas &amp; databases. |
 | mysql_lower_case_table_names | [int32](#int32) |  | The lower_case_table_names config for MySQL instances. It is used to determine whether the table names and database names are case sensitive. |
 | last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | roles | [InstanceRole](#bytebase-store-InstanceRole) | repeated |  |
@@ -2644,7 +2560,7 @@ InstanceRole is the API message for instance role.
 | name | [string](#string) |  | The role name. |
 | connection_limit | [int32](#int32) | optional | The connection count limit for this role. |
 | valid_until | [string](#string) | optional | The expiration for the role&#39;s password. |
-| attribute | [string](#string) | optional | The role attribute. For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html For MySQL, it&#39;s the global privileges as GRANT statements, which means it only contains &#34;GRANT ... ON *.* TO ...&#34;. Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html |
+| attribute | [string](#string) | optional | The role attribute. For PostgreSQL, it contains super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html For MySQL, it is the global privileges as GRANT statements, which means it only contains &#34;GRANT ... ON *.* TO ...&#34;. Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html |
 
 
 
@@ -2751,7 +2667,7 @@ InstanceRole is the API message for instance role.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| SAECRET_TYPE_UNSPECIFIED | 0 |  |
+| SECRET_TYPE_UNSPECIFIED | 0 |  |
 | VAULT_KV_V2 | 1 | ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2 |
 | AWS_SECRETS_MANAGER | 2 | ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html |
 | GCP_SECRET_MANAGER | 3 | ref: https://cloud.google.com/secret-manager/docs |
@@ -2819,15 +2735,15 @@ InstanceRole is the API message for instance role.
 <a name="bytebase-store-GrantRequest"></a>
 
 ### GrantRequest
-
+GrantRequest contains details for requesting database access permissions.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  | The requested role. Format: roles/EXPORTER. |
-| user | [string](#string) |  | The user to be granted. Format: users/{userUID}. |
-| condition | [google.type.Expr](#google-type-Expr) |  |  |
-| expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
+| role | [string](#string) |  | The role being requested for the user. Format: roles/EXPORTER. |
+| user | [string](#string) |  | The user who will receive the role. Format: users/{userUID}. |
+| condition | [google.type.Expr](#google-type-Expr) |  | Optional conditional expression that limits when the grant applies. |
+| expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | Duration after which the grant automatically expires. |
 
 
 
@@ -2837,14 +2753,14 @@ InstanceRole is the API message for instance role.
 <a name="bytebase-store-Issue"></a>
 
 ### Issue
-
+Issue is the metadata for issues that track database operations and access requests.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| approval | [IssuePayloadApproval](#bytebase-store-IssuePayloadApproval) |  |  |
-| grant_request | [GrantRequest](#bytebase-store-GrantRequest) |  |  |
-| labels | [string](#string) | repeated |  |
+| approval | [IssuePayloadApproval](#bytebase-store-IssuePayloadApproval) |  | Approval information for the issue workflow. |
+| grant_request | [GrantRequest](#bytebase-store-GrantRequest) |  | Access grant request details if this is a grant request issue. |
+| labels | [string](#string) | repeated | Labels attached to categorize and filter the issue. |
 
 
 
@@ -2856,28 +2772,28 @@ InstanceRole is the API message for instance role.
 <a name="bytebase-store-Issue-Status"></a>
 
 ### Issue.Status
-
+Status represents the current state of the issue.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | ISSUE_STATUS_UNSPECIFIED | 0 |  |
-| OPEN | 1 |  |
-| DONE | 2 |  |
-| CANCELED | 3 |  |
+| OPEN | 1 | Issue is open and pending action. |
+| DONE | 2 | Issue has been completed successfully. |
+| CANCELED | 3 | Issue was canceled and will not be completed. |
 
 
 
 <a name="bytebase-store-Issue-Type"></a>
 
 ### Issue.Type
-
+Type represents the category of issue.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | ISSUE_TYPE_UNSPECIFIED | 0 |  |
-| DATABASE_CHANGE | 1 |  |
-| GRANT_REQUEST | 2 |  |
-| DATABASE_EXPORT | 3 |  |
+| DATABASE_CHANGE | 1 | Issue for database schema or data changes. |
+| GRANT_REQUEST | 2 | Issue requesting database access permissions. |
+| DATABASE_EXPORT | 3 | Issue for exporting data from databases. |
 
 
  
@@ -3199,7 +3115,7 @@ InstanceRole is the API message for instance role.
 | targets | [string](#string) | repeated | The list of targets. Multi-database format: [instances/{instance-id}/databases/{database-name}]. Single database group format: [projects/{project}/databaseGroups/{databaseGroup}]. |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | format | [ExportFormat](#bytebase-store-ExportFormat) |  | The format of the exported file. |
-| password | [string](#string) | optional | The zip password provide by users. Leave it empty if no needs to encrypt the zip file. |
+| password | [string](#string) | optional | The zip password provided by users. Leave it empty if there is no need to encrypt the zip file. |
 
 
 
@@ -3351,7 +3267,7 @@ Type is the database change type.
 | ----- | ---- | ----- | ----------- |
 | line | [int32](#int32) |  |  |
 | column | [int32](#int32) |  |  |
-| start_position | [Position](#bytebase-store-Position) |  | 1-based Position of the SQL statement. To supersede `line` and `column` above. |
+| start_position | [Position](#bytebase-store-Position) |  | 1-based position of the SQL statement. To supersede `line` and `column` above. |
 | end_position | [Position](#bytebase-store-Position) |  |  |
 
 
@@ -3367,7 +3283,7 @@ Type is the database change type.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
+| statement_types | [string](#string) | repeated | statement_types are the types of statements found in the SQL. |
 | affected_rows | [int64](#int64) |  |  |
 | changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
 
@@ -3510,8 +3426,8 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| action | [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action) |  | action is the action that the user can access sensitive data. |
-| member | [string](#string) |  | Member is the principal who bind to this exception policy instance.
+| action | [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action) |  | action is the action by which the user can access sensitive data. |
+| member | [string](#string) |  | Member is the principal who binds to this exception policy instance.
 
 Format: users/{userUID} or groups/{group email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
@@ -3572,7 +3488,7 @@ QueryDataPolicy is the policy configuration for querying data.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query timeout duration. |
-| disable_export | [bool](#bool) |  | Disable export data in the SQL editor |
+| disable_export | [bool](#bool) |  | Disable exporting data in the SQL editor. |
 | maximum_result_size | [int64](#int64) |  | The size limit in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
 | maximum_result_rows | [int32](#int32) |  | The return rows limit. The default value is -1, means no limit. |
 | disable_copy_data | [bool](#bool) |  | Disable copying data. |
@@ -3657,7 +3573,7 @@ QueryDataPolicy is the policy configuration for querying data.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| tags | [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry) | repeated | tags is the key - value map for resources. for example, the environment resource can have the sql review config tag, like &#34;bb.tag.review_config&#34;: &#34;reviewConfigs/{review config resource id}&#34; |
+| tags | [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry) | repeated | tags is the key-value map for resources. For example, the environment resource can have the SQL review config tag, such as &#34;bb.tag.review_config&#34;: &#34;reviewConfigs/{review config resource id}&#34;. |
 
 
 
@@ -3797,14 +3713,14 @@ QueryDataPolicy is the policy configuration for querying data.
 <a name="bytebase-store-Label"></a>
 
 ### Label
-
+Label represents a categorization tag that can be applied to issues.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| value | [string](#string) |  |  |
-| color | [string](#string) |  |  |
-| group | [string](#string) |  |  |
+| value | [string](#string) |  | The display text of the label. |
+| color | [string](#string) |  | The color for the label in hex format (e.g., &#34;#FF0000&#34;). |
+| group | [string](#string) |  | Optional group name for organizing related labels. |
 
 
 
@@ -3814,12 +3730,12 @@ QueryDataPolicy is the policy configuration for querying data.
 <a name="bytebase-store-Project"></a>
 
 ### Project
-
+Project contains settings and configuration for a Bytebase project.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| issue_labels | [Label](#bytebase-store-Label) | repeated |  |
+| issue_labels | [Label](#bytebase-store-Label) | repeated | Available labels that can be applied to issues in this project. |
 | force_issue_labels | [bool](#bool) |  | Force issue labels to be used when creating an issue. |
 | allow_modify_statement | [bool](#bool) |  | Allow modifying statement after issue is created. |
 | auto_resolve_issue | [bool](#bool) |  | Enable auto resolve issue. |
@@ -3828,8 +3744,8 @@ QueryDataPolicy is the policy configuration for querying data.
 | skip_backup_errors | [bool](#bool) |  | Whether to skip backup errors and continue the data migration. |
 | postgres_database_tenant_mode | [bool](#bool) |  | Whether to enable the database tenant mode for PostgreSQL. If enabled, the issue will be created with the prepend &#34;set role &lt;db_owner&gt;&#34; statement. |
 | allow_self_approval | [bool](#bool) |  | Whether to allow the issue creator to self-approve the issue. |
-| execution_retry_policy | [Project.ExecutionRetryPolicy](#bytebase-store-Project-ExecutionRetryPolicy) |  | Execution retry policy for the task run. |
-| ci_sampling_size | [int32](#int32) |  | The maximum number of databases to sample during CI data validation. Without specification, sampling is disabled, resulting in a full validation. |
+| execution_retry_policy | [Project.ExecutionRetryPolicy](#bytebase-store-Project-ExecutionRetryPolicy) |  | Configuration for automatic retry on task execution failures. |
+| ci_sampling_size | [int32](#int32) |  | The maximum number of databases to sample during CI data validation. If not specified, sampling is disabled, resulting in a full validation. |
 | parallel_tasks_per_rollout | [int32](#int32) |  | The maximum number of parallel tasks to run during the rollout. |
 | labels | [Project.LabelsEntry](#bytebase-store-Project-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the project. For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34;backend&#34; } |
 | enforce_sql_review | [bool](#bool) |  | Whether to enforce SQL review checks to pass before issue creation. If enabled, issues cannot be created when SQL review finds errors. |
@@ -3842,12 +3758,12 @@ QueryDataPolicy is the policy configuration for querying data.
 <a name="bytebase-store-Project-ExecutionRetryPolicy"></a>
 
 ### Project.ExecutionRetryPolicy
-
+ExecutionRetryPolicy defines retry behavior for failed task executions.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| maximum_retries | [int32](#int32) |  | The maximum number of retries for the lock timeout issue. |
+| maximum_retries | [int32](#int32) |  | The maximum number of retry attempts for lock timeout errors. |
 
 
 
@@ -3894,7 +3810,7 @@ QueryDataPolicy is the policy configuration for querying data.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| direct_message | [bool](#bool) |  | if direct_message is set, the notification is sent directly to the persons and url will be ignored. IM integration setting should be set for this function to work. |
+| direct_message | [bool](#bool) |  | If direct_message is set, the notification is sent directly to the persons and url will be ignored. IM integration setting should be set for this function to work. |
 
 
 
@@ -3975,7 +3891,7 @@ QueryDataPolicy is the policy configuration for querying data.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | The unique identifier for the file. |
-| path | [string](#string) |  | The path of the file. e.g. `2.2/V0001_create_table.sql`. |
+| path | [string](#string) |  | The path of the file, e.g., `2.2/V0001_create_table.sql`. |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | type | [ReleasePayload.File.Type](#bytebase-store-ReleasePayload-File-Type) |  |  |
@@ -4283,8 +4199,8 @@ QueryDataPolicy is the policy configuration for querying data.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| level | [Announcement.AlertLevel](#bytebase-store-Announcement-AlertLevel) |  | The alert level of announcemnt |
-| text | [string](#string) |  | The text of announcemnt |
+| level | [Announcement.AlertLevel](#bytebase-store-Announcement-AlertLevel) |  | The alert level of the announcement. |
+| text | [string](#string) |  | The text of the announcement. |
 | link | [string](#string) |  | The optional link, user can follow the link to check extra details |
 
 
@@ -4539,11 +4455,11 @@ QueryDataPolicy is the policy configuration for querying data.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| min_length | [int32](#int32) |  | min_length is the minimum length for password, should no less than 8. |
-| require_number | [bool](#bool) |  | require_number requires the password must contains at least one number. |
-| require_letter | [bool](#bool) |  | require_letter requires the password must contains at least one letter, regardless of upper case or lower case |
-| require_uppercase_letter | [bool](#bool) |  | require_uppercase_letter requires the password must contains at least one upper case letter. |
-| require_special_character | [bool](#bool) |  | require_uppercase_letter requires the password must contains at least one special character. |
+| min_length | [int32](#int32) |  | min_length is the minimum length for password, should be no less than 8. |
+| require_number | [bool](#bool) |  | require_number requires the password must contain at least one number. |
+| require_letter | [bool](#bool) |  | require_letter requires the password must contain at least one letter, regardless of upper case or lower case |
+| require_uppercase_letter | [bool](#bool) |  | require_uppercase_letter requires the password must contain at least one upper case letter. |
+| require_special_character | [bool](#bool) |  | require_special_character requires the password must contain at least one special character. |
 | require_reset_password_for_first_login | [bool](#bool) |  | require_reset_password_for_first_login requires users to reset their password after the 1st login. |
 | password_rotation | [google.protobuf.Duration](#google-protobuf-Duration) |  | password_rotation requires users to reset their password after the duration. |
 
@@ -4696,7 +4612,6 @@ QueryDataPolicy is the policy configuration for querying data.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| expression | [google.api.expr.v1alpha1.Expr](#google-api-expr-v1alpha1-Expr) |  |  |
 | template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) |  |  |
 | condition | [google.type.Expr](#google-type-Expr) |  |  |
 
@@ -4719,7 +4634,7 @@ QueryDataPolicy is the policy configuration for querying data.
 | token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for token. |
 | announcement | [Announcement](#bytebase-store-Announcement) |  | The setting of custom announcement |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max duration for role expired. |
-| domains | [string](#string) | repeated | The workspace domain, e.g. bytebase.com. |
+| domains | [string](#string) | repeated | The workspace domain, e.g., bytebase.com. |
 | enforce_identity_domain | [bool](#bool) |  | Only user and group from the domains can be created and login. |
 | database_change_mode | [DatabaseChangeMode](#bytebase-store-DatabaseChangeMode) |  | The workspace database change mode. |
 | disallow_password_signin | [bool](#bool) |  | Whether to disallow password signin. (Except workspace admins) |
@@ -4879,27 +4794,27 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 <a name="bytebase-store-Task"></a>
 
 ### Task
-
+Task is the metadata for database operation tasks.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| skipped | [bool](#bool) |  | common fields |
-| skipped_reason | [string](#string) |  |  |
-| spec_id | [string](#string) |  |  |
-| sheet_id | [int32](#int32) |  |  |
-| environment_id | [string](#string) |  | Create database fields. |
-| database_name | [string](#string) |  |  |
-| table_name | [string](#string) |  |  |
-| character_set | [string](#string) |  |  |
-| collation | [string](#string) |  |  |
-| schema_version | [string](#string) |  | Update database fields. |
-| enable_prior_backup | [bool](#bool) |  |  |
-| flags | [Task.FlagsEntry](#bytebase-store-Task-FlagsEntry) | repeated | ghost flags. |
-| task_release_source | [TaskReleaseSource](#bytebase-store-TaskReleaseSource) |  |  |
-| migrate_type | [Task.MigrateType](#bytebase-store-Task-MigrateType) |  |  |
-| password | [string](#string) |  | Export data fields. |
-| format | [ExportFormat](#bytebase-store-ExportFormat) |  |  |
+| skipped | [bool](#bool) |  | Whether the task was skipped during execution. |
+| skipped_reason | [string](#string) |  | Reason why the task was skipped. |
+| spec_id | [string](#string) |  | UUID that identifies the spec this task implements. |
+| sheet_id | [int32](#int32) |  | The sheet ID containing SQL statements for this task. |
+| environment_id | [string](#string) |  | The environment where the database will be created. |
+| database_name | [string](#string) |  | Name of the database to create. |
+| table_name | [string](#string) |  | Optional table name to create (required for some databases like MongoDB). |
+| character_set | [string](#string) |  | Character set for the new database. |
+| collation | [string](#string) |  | Collation for the new database. |
+| schema_version | [string](#string) |  | Schema version after migration is applied. |
+| enable_prior_backup | [bool](#bool) |  | Whether to create an automatic backup before applying changes. |
+| flags | [Task.FlagsEntry](#bytebase-store-Task-FlagsEntry) | repeated | Configuration flags for gh-ost migration tool. |
+| task_release_source | [TaskReleaseSource](#bytebase-store-TaskReleaseSource) |  | Source information if task is created from a release. |
+| migrate_type | [Task.MigrateType](#bytebase-store-Task-MigrateType) |  | The type of migration (DDL, DML, or GHOST). |
+| password | [string](#string) |  | Password to encrypt the exported data archive. |
+| format | [ExportFormat](#bytebase-store-ExportFormat) |  | Format of the exported data (SQL, CSV, JSON, etc). |
 
 
 
@@ -4925,12 +4840,12 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 <a name="bytebase-store-TaskReleaseSource"></a>
 
 ### TaskReleaseSource
-
+TaskReleaseSource contains information about the release file this task originated from.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{id} |
+| file | [string](#string) |  | Resource name of the release file. Format: projects/{project}/releases/{release}/files/{id} |
 
 
 
@@ -4942,29 +4857,29 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 <a name="bytebase-store-Task-MigrateType"></a>
 
 ### Task.MigrateType
-MigrateType is the database migration type.
+MigrateType is the database migration type for imperative migrations.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | MIGRATE_TYPE_UNSPECIFIED | 0 |  |
-| DDL | 1 |  |
-| DML | 2 |  |
-| GHOST | 3 |  |
+| DDL | 1 | DDL changes (Data Definition Language) for schema modifications. |
+| DML | 2 | DML changes (Data Manipulation Language) for data modifications. |
+| GHOST | 3 | Online schema migration using gh-ost tool. |
 
 
 
 <a name="bytebase-store-Task-Type"></a>
 
 ### Task.Type
-
+Type represents the type of database operation to perform.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TASK_TYPE_UNSPECIFIED | 0 |  |
-| DATABASE_CREATE | 1 |  |
-| DATABASE_MIGRATE | 2 |  |
-| DATABASE_EXPORT | 5 |  |
-| DATABASE_SDL | 6 |  |
+| DATABASE_CREATE | 1 | Create a new database. |
+| DATABASE_MIGRATE | 2 | Apply schema/data migrations to an existing database. |
+| DATABASE_EXPORT | 5 | Export data from a database. |
+| DATABASE_SDL | 6 | Apply declarative schema changes (state-based migration). |
 
 
  
@@ -4985,12 +4900,12 @@ MigrateType is the database migration type.
 <a name="bytebase-store-PriorBackupDetail"></a>
 
 ### PriorBackupDetail
-
+PriorBackupDetail contains information about automatic backups created before migration.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| items | [PriorBackupDetail.Item](#bytebase-store-PriorBackupDetail-Item) | repeated |  |
+| items | [PriorBackupDetail.Item](#bytebase-store-PriorBackupDetail-Item) | repeated | List of backup operations performed. |
 
 
 
@@ -5000,15 +4915,15 @@ MigrateType is the database migration type.
 <a name="bytebase-store-PriorBackupDetail-Item"></a>
 
 ### PriorBackupDetail.Item
-
+Item represents a single backup operation for a table.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| source_table | [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table) |  | The original table information. |
-| target_table | [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table) |  | The target backup table information. |
-| start_position | [Position](#bytebase-store-Position) |  |  |
-| end_position | [Position](#bytebase-store-Position) |  |  |
+| source_table | [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table) |  | The original table that was backed up. |
+| target_table | [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table) |  | The backup table where data was copied. |
+| start_position | [Position](#bytebase-store-Position) |  | Starting position in SQL for this backup operation. |
+| end_position | [Position](#bytebase-store-Position) |  | Ending position in SQL for this backup operation. |
 
 
 
@@ -5018,14 +4933,14 @@ MigrateType is the database migration type.
 <a name="bytebase-store-PriorBackupDetail-Item-Table"></a>
 
 ### PriorBackupDetail.Item.Table
-
+Table identifies a database table.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| database | [string](#string) |  | The database information. Format: instances/{instance}/databases/{database} |
-| schema | [string](#string) |  |  |
-| table | [string](#string) |  |  |
+| database | [string](#string) |  | The database containing the table. Format: instances/{instance}/databases/{database} |
+| schema | [string](#string) |  | Schema name (for databases that support schemas). |
+| table | [string](#string) |  | Table name. |
 
 
 
@@ -5035,13 +4950,13 @@ MigrateType is the database migration type.
 <a name="bytebase-store-SchedulerInfo"></a>
 
 ### SchedulerInfo
-
+SchedulerInfo contains information about task scheduling and execution delays.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| report_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| waiting_cause | [SchedulerInfo.WaitingCause](#bytebase-store-SchedulerInfo-WaitingCause) |  |  |
+| report_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Timestamp when the scheduler reported this information. |
+| waiting_cause | [SchedulerInfo.WaitingCause](#bytebase-store-SchedulerInfo-WaitingCause) |  | Reason why the task run is currently waiting. |
 
 
 
@@ -5051,14 +4966,14 @@ MigrateType is the database migration type.
 <a name="bytebase-store-SchedulerInfo-WaitingCause"></a>
 
 ### SchedulerInfo.WaitingCause
-
+WaitingCause indicates why a task run is waiting to execute.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| connection_limit | [bool](#bool) |  |  |
-| task_uid | [int32](#int32) |  |  |
-| parallel_tasks_limit | [bool](#bool) |  |  |
+| connection_limit | [bool](#bool) |  | Task is waiting due to database connection limit. |
+| task_uid | [int32](#int32) |  | Task is waiting for another task to complete. |
+| parallel_tasks_limit | [bool](#bool) |  | Task is waiting due to parallel execution limit. |
 
 
 
@@ -5068,7 +4983,7 @@ MigrateType is the database migration type.
 <a name="bytebase-store-TaskRun"></a>
 
 ### TaskRun
-
+TaskRun represents an execution attempt of a task.
 
 
 
@@ -5078,18 +4993,18 @@ MigrateType is the database migration type.
 <a name="bytebase-store-TaskRunResult"></a>
 
 ### TaskRunResult
-
+TaskRunResult contains the outcome and metadata from a task run execution.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| detail | [string](#string) |  |  |
-| changelog | [string](#string) |  | Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
-| version | [string](#string) |  |  |
-| start_position | [Position](#bytebase-store-Position) |  | The following fields are used for error reporting. |
-| end_position | [Position](#bytebase-store-Position) |  |  |
-| export_archive_uid | [int32](#int32) |  | The uid of the export archive. |
-| prior_backup_detail | [PriorBackupDetail](#bytebase-store-PriorBackupDetail) |  | The prior backup detail that will be used to rollback the task run. |
+| detail | [string](#string) |  | Detailed execution information or error message. |
+| changelog | [string](#string) |  | Resource name of the changelog entry created by this run. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
+| version | [string](#string) |  | Schema version after the migration was applied. |
+| start_position | [Position](#bytebase-store-Position) |  | Starting position in the SQL statement where an error occurred. |
+| end_position | [Position](#bytebase-store-Position) |  | Ending position in the SQL statement where an error occurred. |
+| export_archive_uid | [int32](#int32) |  | UID of the export archive generated for export tasks. |
+| prior_backup_detail | [PriorBackupDetail](#bytebase-store-PriorBackupDetail) |  | Backup details that can be used to rollback changes. |
 
 
 
@@ -5101,18 +5016,18 @@ MigrateType is the database migration type.
 <a name="bytebase-store-TaskRun-Status"></a>
 
 ### TaskRun.Status
-
+Status represents the current execution state of a task run.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | STATUS_UNSPECIFIED | 0 |  |
-| PENDING | 1 |  |
-| RUNNING | 2 |  |
-| DONE | 3 |  |
-| FAILED | 4 |  |
-| CANCELED | 5 |  |
-| NOT_STARTED | 6 |  |
-| SKIPPED | 7 |  |
+| PENDING | 1 | Task run is queued and waiting to execute. |
+| RUNNING | 2 | Task run is currently executing. |
+| DONE | 3 | Task run completed successfully. |
+| FAILED | 4 | Task run encountered an error and failed. |
+| CANCELED | 5 | Task run was canceled by user or system. |
+| NOT_STARTED | 6 | Task run has not started yet. |
+| SKIPPED | 7 | Task run was skipped and will not execute. |
 
 
  
@@ -5352,8 +5267,8 @@ MigrateType is the database migration type.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | STATUS_UNSPECIFIED | 0 |  |
-| RUNNING_WAITING | 1 | the task run is ready to be executed by the scheduler |
-| RUNNING_RUNNING | 2 | the task run is being executed by the scheduler |
+| RUNNING_WAITING | 1 | The task run is ready to be executed by the scheduler. |
+| RUNNING_RUNNING | 2 | The task run is being executed by the scheduler. |
 
 
 
@@ -5418,9 +5333,9 @@ MFAConfig is the MFA configuration for a user.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | otp_secret | [string](#string) |  | The otp_secret is the secret key used to validate the OTP code. |
-| temp_otp_secret | [string](#string) |  | The temp_otp_secret is the temporary secret key used to validate the OTP code and will replace the otp_secret in two phase commits. |
+| temp_otp_secret | [string](#string) |  | The temp_otp_secret is the temporary secret key used to validate the OTP code and will replace the otp_secret in two-phase commits. |
 | recovery_codes | [string](#string) | repeated | The recovery_codes are the codes that can be used to recover the account. |
-| temp_recovery_codes | [string](#string) | repeated | The temp_recovery_codes are the temporary codes that will replace the recovery_codes in two phase commits. |
+| temp_recovery_codes | [string](#string) | repeated | The temp_recovery_codes are the temporary codes that will replace the recovery_codes in two-phase commits. |
 
 
 
@@ -5437,7 +5352,7 @@ MFAConfig is the MFA configuration for a user.
 | ----- | ---- | ----- | ----------- |
 | last_login_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | last_change_password_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| source | [string](#string) |  | source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. |
+| source | [string](#string) |  | The source indicates where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. |
 
 
 

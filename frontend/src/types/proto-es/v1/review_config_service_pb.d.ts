@@ -17,10 +17,10 @@ export declare const file_v1_review_config_service: GenFile;
  */
 export declare type ListReviewConfigsRequest = Message<"bytebase.v1.ListReviewConfigsRequest"> & {
   /**
-   * Not used.
-   * The maximum number of sql review to return. The service may return fewer than
+   * Pagination is not currently implemented. This field is reserved for future use.
+   * The maximum number of SQL review configs to return. The service may return fewer than
    * this value.
-   * If unspecified, at most 10 sql review will be returned.
+   * If unspecified, at most 10 SQL review configs will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    *
    * @generated from field: int32 page_size = 1;
@@ -28,7 +28,7 @@ export declare type ListReviewConfigsRequest = Message<"bytebase.v1.ListReviewCo
   pageSize: number;
 
   /**
-   * Not used.
+   * Pagination is not currently implemented. This field is reserved for future use.
    * A page token, provide this to retrieve the subsequent page.
    *
    * When paginating, all other parameters provided to `ListReviewConfigs` must match
@@ -50,7 +50,7 @@ export declare const ListReviewConfigsRequestSchema: GenMessage<ListReviewConfig
  */
 export declare type ListReviewConfigsResponse = Message<"bytebase.v1.ListReviewConfigsResponse"> & {
   /**
-   * The sql review from the specified request.
+   * The SQL review configs from the specified request.
    *
    * @generated from field: repeated bytebase.v1.ReviewConfig review_configs = 1;
    */
@@ -76,7 +76,7 @@ export declare const ListReviewConfigsResponseSchema: GenMessage<ListReviewConfi
  */
 export declare type CreateReviewConfigRequest = Message<"bytebase.v1.CreateReviewConfigRequest"> & {
   /**
-   * The sql review to create.
+   * The SQL review config to create.
    *
    * @generated from field: bytebase.v1.ReviewConfig review_config = 1;
    */
@@ -94,9 +94,9 @@ export declare const CreateReviewConfigRequestSchema: GenMessage<CreateReviewCon
  */
 export declare type UpdateReviewConfigRequest = Message<"bytebase.v1.UpdateReviewConfigRequest"> & {
   /**
-   * The sql review to update.
+   * The SQL review config to update.
    *
-   * The name field is used to identify the sql review to update.
+   * The name field is used to identify the SQL review config to update.
    *
    * @generated from field: bytebase.v1.ReviewConfig review_config = 1;
    */
@@ -129,7 +129,7 @@ export declare const UpdateReviewConfigRequestSchema: GenMessage<UpdateReviewCon
  */
 export declare type GetReviewConfigRequest = Message<"bytebase.v1.GetReviewConfigRequest"> & {
   /**
-   * The name of the sql review to retrieve.
+   * The name of the SQL review config to retrieve.
    * Format: reviewConfigs/{reviewConfig}
    *
    * @generated from field: string name = 1;
@@ -148,7 +148,7 @@ export declare const GetReviewConfigRequestSchema: GenMessage<GetReviewConfigReq
  */
 export declare type DeleteReviewConfigRequest = Message<"bytebase.v1.DeleteReviewConfigRequest"> & {
   /**
-   * The name of the sql review to delete.
+   * The name of the SQL review config to delete.
    * Format: reviewConfigs/{reviewConfig}
    *
    * @generated from field: string name = 1;
@@ -167,7 +167,7 @@ export declare const DeleteReviewConfigRequestSchema: GenMessage<DeleteReviewCon
  */
 export declare type ReviewConfig = Message<"bytebase.v1.ReviewConfig"> & {
   /**
-   * The name of the sql review to retrieve.
+   * The name of the SQL review config.
    * Format: reviewConfigs/{reviewConfig}
    *
    * @generated from field: string name = 1;
@@ -175,23 +175,29 @@ export declare type ReviewConfig = Message<"bytebase.v1.ReviewConfig"> & {
   name: string;
 
   /**
+   * The title of the review configuration.
+   *
    * @generated from field: string title = 2;
    */
   title: string;
 
   /**
+   * Whether the review configuration is enabled.
+   *
    * @generated from field: bool enabled = 3;
    */
   enabled: boolean;
 
   /**
+   * The SQL review rules to enforce.
+   *
    * @generated from field: repeated bytebase.v1.SQLReviewRule rules = 7;
    */
   rules: SQLReviewRule[];
 
   /**
-   * resources using the config.
-   * Format: {resurce}/{resource id}, for example, environments/test.
+   * Resources using the config.
+   * Format: {resource}/{resource id}, e.g., environments/test.
    *
    * @generated from field: repeated string resources = 8;
    */
@@ -205,10 +211,13 @@ export declare type ReviewConfig = Message<"bytebase.v1.ReviewConfig"> & {
 export declare const ReviewConfigSchema: GenMessage<ReviewConfig>;
 
 /**
+ * ReviewConfigService manages approval flow configurations.
+ *
  * @generated from service bytebase.v1.ReviewConfigService
  */
 export declare const ReviewConfigService: GenService<{
   /**
+   * Creates a new SQL review configuration.
    * Permissions required: bb.reviewConfigs.create
    *
    * @generated from rpc bytebase.v1.ReviewConfigService.CreateReviewConfig
@@ -219,6 +228,7 @@ export declare const ReviewConfigService: GenService<{
     output: typeof ReviewConfigSchema;
   },
   /**
+   * Lists all SQL review configurations.
    * Permissions required: bb.reviewConfigs.list
    *
    * @generated from rpc bytebase.v1.ReviewConfigService.ListReviewConfigs
@@ -229,6 +239,7 @@ export declare const ReviewConfigService: GenService<{
     output: typeof ListReviewConfigsResponseSchema;
   },
   /**
+   * Retrieves a SQL review configuration by name.
    * Permissions required: bb.reviewConfigs.get
    *
    * @generated from rpc bytebase.v1.ReviewConfigService.GetReviewConfig
@@ -239,6 +250,7 @@ export declare const ReviewConfigService: GenService<{
     output: typeof ReviewConfigSchema;
   },
   /**
+   * Updates a SQL review configuration.
    * Permissions required: bb.reviewConfigs.update
    *
    * @generated from rpc bytebase.v1.ReviewConfigService.UpdateReviewConfig
@@ -249,6 +261,7 @@ export declare const ReviewConfigService: GenService<{
     output: typeof ReviewConfigSchema;
   },
   /**
+   * Deletes a SQL review configuration.
    * Permissions required: bb.reviewConfigs.delete
    *
    * @generated from rpc bytebase.v1.ReviewConfigService.DeleteReviewConfig

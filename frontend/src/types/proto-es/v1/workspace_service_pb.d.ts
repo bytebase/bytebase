@@ -11,10 +11,13 @@ import type { GetIamPolicyRequestSchema, IamPolicySchema, SetIamPolicyRequestSch
 export declare const file_v1_workspace_service: GenFile;
 
 /**
+ * WorkspaceService manages workspace-level operations and profile.
+ *
  * @generated from service bytebase.v1.WorkspaceService
  */
 export declare const WorkspaceService: GenService<{
   /**
+   * Retrieves IAM policy for the workspace.
    * Permissions required: bb.workspaces.getIamPolicy
    *
    * @generated from rpc bytebase.v1.WorkspaceService.GetIamPolicy
@@ -25,6 +28,7 @@ export declare const WorkspaceService: GenService<{
     output: typeof IamPolicySchema;
   },
   /**
+   * Sets IAM policy for the workspace.
    * Permissions required: bb.workspaces.setIamPolicy
    *
    * @generated from rpc bytebase.v1.WorkspaceService.SetIamPolicy

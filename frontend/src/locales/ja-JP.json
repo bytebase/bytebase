@@ -982,8 +982,6 @@
     "waiting-for-review": "モデレート済み",
     "issue-name": "イシュー名",
     "grant-request": {
-      "export-rows": "エクスポート行の最大数",
-      "select-export-rows": "最大エクスポート行数を選択",
       "expired-at": "有効期限",
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
@@ -1071,7 +1069,8 @@
     "approval": {
       "rejected-error": "問題の承認が拒否されました。",
       "pending-error": "問題の承認が保留中です。",
-      "approved-and-waiting-for-rollout": "この問題は承認されており、展開する準備ができています。"
+      "approved-and-waiting-for-rollout": "この問題は承認されており、展開する準備ができています。",
+      "ready-for-rollout": "展開可能"
     },
     "new-layout": "新しいCI/CDレイアウト"
   },
@@ -2612,6 +2611,9 @@
       "select": "承認フローの選択",
       "create-approval-flow": "承認フローの作成",
       "edit-approval-flow": "承認フローの編集",
+      "built-in": "組み込み承認フロー",
+      "custom": "カスタム承認フロー",
+      "no-custom-flows": "カスタム承認フローがまだ作成されていません。「承認フローを作成」をクリックして追加してください。",
       "node": {
         "nodes": "承認ノード",
         "description": "ノードに複数の承認者がいる場合、必要な承認は 1 つだけです。",
@@ -2751,10 +2753,6 @@
     "sql-editor-user": {
       "self": "SQLエディタのユーザー",
       "description": "指定した範囲内のデータをクエリできます。"
-    },
-    "project-exporter": {
-      "self": "プロジェクトエクスポーター",
-      "description": "指定した範囲のデータをエクスポートできます。"
     },
     "project-viewer": {
       "self": "プロジェクトビューア",

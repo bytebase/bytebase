@@ -26,14 +26,22 @@ const (
 type Task_Status int32
 
 const (
+	// Unspecified status.
 	Task_STATUS_UNSPECIFIED Task_Status = 0
-	Task_NOT_STARTED        Task_Status = 1
-	Task_PENDING            Task_Status = 2
-	Task_RUNNING            Task_Status = 3
-	Task_DONE               Task_Status = 4
-	Task_FAILED             Task_Status = 5
-	Task_CANCELED           Task_Status = 6
-	Task_SKIPPED            Task_Status = 7
+	// Task has not started and is awaiting its turn in the deployment sequence.
+	Task_NOT_STARTED Task_Status = 1
+	// Task is ready to run and waiting for approval or scheduled time.
+	Task_PENDING Task_Status = 2
+	// Task is currently executing.
+	Task_RUNNING Task_Status = 3
+	// Task completed successfully.
+	Task_DONE Task_Status = 4
+	// Task execution failed with errors.
+	Task_FAILED Task_Status = 5
+	// Task execution was canceled by a user.
+	Task_CANCELED Task_Status = 6
+	// Task was skipped and will not be executed.
+	Task_SKIPPED Task_Status = 7
 )
 
 // Enum value maps for Task_Status.
@@ -90,15 +98,21 @@ func (Task_Status) EnumDescriptor() ([]byte, []int) {
 type Task_Type int32
 
 const (
+	// Unspecified task type.
 	Task_TYPE_UNSPECIFIED Task_Type = 0
-	Task_GENERAL          Task_Type = 1
-	// use payload DatabaseCreate
+	// General task for miscellaneous operations.
+	Task_GENERAL Task_Type = 1
+	// Database creation task that creates a new database.
+	// Use payload DatabaseCreate.
 	Task_DATABASE_CREATE Task_Type = 2
-	// use payload DatabaseUpdate
+	// Database migration task that applies versioned schema changes.
+	// Use payload DatabaseUpdate.
 	Task_DATABASE_MIGRATE Task_Type = 3
-	// use payload DatabaseUpdate
+	// Database SDL (Schema Definition Language) task that synchronizes declarative schema.
+	// Use payload DatabaseUpdate.
 	Task_DATABASE_SDL Task_Type = 6
-	// use payload DatabaseDataExport
+	// Database export task that exports query results or table data.
+	// Use payload DatabaseDataExport.
 	Task_DATABASE_EXPORT Task_Type = 5
 )
 
@@ -152,12 +166,18 @@ func (Task_Type) EnumDescriptor() ([]byte, []int) {
 type TaskRun_Status int32
 
 const (
+	// Unspecified status.
 	TaskRun_STATUS_UNSPECIFIED TaskRun_Status = 0
-	TaskRun_PENDING            TaskRun_Status = 1
-	TaskRun_RUNNING            TaskRun_Status = 2
-	TaskRun_DONE               TaskRun_Status = 3
-	TaskRun_FAILED             TaskRun_Status = 4
-	TaskRun_CANCELED           TaskRun_Status = 5
+	// Task run is queued and waiting to start execution.
+	TaskRun_PENDING TaskRun_Status = 1
+	// Task run is currently executing.
+	TaskRun_RUNNING TaskRun_Status = 2
+	// Task run completed successfully.
+	TaskRun_DONE TaskRun_Status = 3
+	// Task run execution failed with errors.
+	TaskRun_FAILED TaskRun_Status = 4
+	// Task run execution was canceled by a user.
+	TaskRun_CANCELED TaskRun_Status = 5
 )
 
 // Enum value maps for TaskRun_Status.
@@ -210,9 +230,12 @@ func (TaskRun_Status) EnumDescriptor() ([]byte, []int) {
 type TaskRun_ExportArchiveStatus int32
 
 const (
+	// Unspecified export archive status.
 	TaskRun_EXPORT_ARCHIVE_STATUS_UNSPECIFIED TaskRun_ExportArchiveStatus = 0
-	TaskRun_READY                             TaskRun_ExportArchiveStatus = 1
-	TaskRun_EXPORTED                          TaskRun_ExportArchiveStatus = 2
+	// Export archive is ready for download.
+	TaskRun_READY TaskRun_ExportArchiveStatus = 1
+	// Export archive has been downloaded by the user.
+	TaskRun_EXPORTED TaskRun_ExportArchiveStatus = 2
 )
 
 // Enum value maps for TaskRun_ExportArchiveStatus.
@@ -256,18 +279,28 @@ func (TaskRun_ExportArchiveStatus) EnumDescriptor() ([]byte, []int) {
 	return file_v1_rollout_service_proto_rawDescGZIP(), []int{18, 1}
 }
 
+// The type of log entry.
 type TaskRunLogEntry_Type int32
 
 const (
-	TaskRunLogEntry_TYPE_UNSPECIFIED       TaskRunLogEntry_Type = 0
-	TaskRunLogEntry_SCHEMA_DUMP            TaskRunLogEntry_Type = 1
-	TaskRunLogEntry_COMMAND_EXECUTE        TaskRunLogEntry_Type = 2
-	TaskRunLogEntry_DATABASE_SYNC          TaskRunLogEntry_Type = 3
+	// Unspecified type.
+	TaskRunLogEntry_TYPE_UNSPECIFIED TaskRunLogEntry_Type = 0
+	// Schema dump operation.
+	TaskRunLogEntry_SCHEMA_DUMP TaskRunLogEntry_Type = 1
+	// Command execution.
+	TaskRunLogEntry_COMMAND_EXECUTE TaskRunLogEntry_Type = 2
+	// Database synchronization.
+	TaskRunLogEntry_DATABASE_SYNC TaskRunLogEntry_Type = 3
+	// Task run status update.
 	TaskRunLogEntry_TASK_RUN_STATUS_UPDATE TaskRunLogEntry_Type = 4
-	TaskRunLogEntry_TRANSACTION_CONTROL    TaskRunLogEntry_Type = 5
-	TaskRunLogEntry_PRIOR_BACKUP           TaskRunLogEntry_Type = 6
-	TaskRunLogEntry_RETRY_INFO             TaskRunLogEntry_Type = 7
-	TaskRunLogEntry_COMPUTE_DIFF           TaskRunLogEntry_Type = 8
+	// Transaction control (BEGIN, COMMIT, ROLLBACK).
+	TaskRunLogEntry_TRANSACTION_CONTROL TaskRunLogEntry_Type = 5
+	// Prior backup operation.
+	TaskRunLogEntry_PRIOR_BACKUP TaskRunLogEntry_Type = 6
+	// Retry information.
+	TaskRunLogEntry_RETRY_INFO TaskRunLogEntry_Type = 7
+	// Schema diff computation.
+	TaskRunLogEntry_COMPUTE_DIFF TaskRunLogEntry_Type = 8
 )
 
 // Enum value maps for TaskRunLogEntry_Type.
@@ -323,13 +356,15 @@ func (TaskRunLogEntry_Type) EnumDescriptor() ([]byte, []int) {
 	return file_v1_rollout_service_proto_rawDescGZIP(), []int{20, 0}
 }
 
+// Internal status for task run execution.
 type TaskRunLogEntry_TaskRunStatusUpdate_Status int32
 
 const (
+	// Unspecified status.
 	TaskRunLogEntry_TaskRunStatusUpdate_STATUS_UNSPECIFIED TaskRunLogEntry_TaskRunStatusUpdate_Status = 0
-	// the task run is ready to be executed by the scheduler
+	// The task run is ready to be executed by the scheduler.
 	TaskRunLogEntry_TaskRunStatusUpdate_RUNNING_WAITING TaskRunLogEntry_TaskRunStatusUpdate_Status = 1
-	// the task run is being executed by the scheduler
+	// The task run is being executed by the scheduler.
 	TaskRunLogEntry_TaskRunStatusUpdate_RUNNING_RUNNING TaskRunLogEntry_TaskRunStatusUpdate_Status = 2
 )
 
@@ -374,13 +409,18 @@ func (TaskRunLogEntry_TaskRunStatusUpdate_Status) EnumDescriptor() ([]byte, []in
 	return file_v1_rollout_service_proto_rawDescGZIP(), []int{20, 3, 0}
 }
 
+// Transaction control type.
 type TaskRunLogEntry_TransactionControl_Type int32
 
 const (
+	// Unspecified type.
 	TaskRunLogEntry_TransactionControl_TYPE_UNSPECIFIED TaskRunLogEntry_TransactionControl_Type = 0
-	TaskRunLogEntry_TransactionControl_BEGIN            TaskRunLogEntry_TransactionControl_Type = 1
-	TaskRunLogEntry_TransactionControl_COMMIT           TaskRunLogEntry_TransactionControl_Type = 2
-	TaskRunLogEntry_TransactionControl_ROLLBACK         TaskRunLogEntry_TransactionControl_Type = 3
+	// Begin transaction.
+	TaskRunLogEntry_TransactionControl_BEGIN TaskRunLogEntry_TransactionControl_Type = 1
+	// Commit transaction.
+	TaskRunLogEntry_TransactionControl_COMMIT TaskRunLogEntry_TransactionControl_Type = 2
+	// Rollback transaction.
+	TaskRunLogEntry_TransactionControl_ROLLBACK TaskRunLogEntry_TransactionControl_Type = 3
 )
 
 // Enum value maps for TaskRunLogEntry_TransactionControl_Type.
@@ -433,8 +473,9 @@ type BatchRunTasksRequest struct {
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The tasks to run.
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-	Tasks  []string `protobuf:"bytes,2,rep,name=tasks,proto3" json:"tasks,omitempty"`
-	Reason string   `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
+	Tasks []string `protobuf:"bytes,2,rep,name=tasks,proto3" json:"tasks,omitempty"`
+	// The reason for running the tasks.
+	Reason string `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
 	// The task run should run after run_time.
 	RunTime       *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=run_time,json=runTime,proto3,oneof" json:"run_time,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -542,8 +583,9 @@ type BatchSkipTasksRequest struct {
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The tasks to skip.
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-	Tasks         []string `protobuf:"bytes,2,rep,name=tasks,proto3" json:"tasks,omitempty"`
-	Reason        string   `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
+	Tasks []string `protobuf:"bytes,2,rep,name=tasks,proto3" json:"tasks,omitempty"`
+	// The reason for skipping the tasks.
+	Reason        string `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -643,8 +685,9 @@ type BatchCancelTaskRunsRequest struct {
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The taskRuns to cancel.
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-	TaskRuns      []string `protobuf:"bytes,2,rep,name=task_runs,json=taskRuns,proto3" json:"task_runs,omitempty"`
-	Reason        string   `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
+	TaskRuns []string `protobuf:"bytes,2,rep,name=task_runs,json=taskRuns,proto3" json:"task_runs,omitempty"`
+	// The reason for canceling the task runs.
+	Reason        string `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1067,13 +1110,13 @@ type ListTaskRunsRequest struct {
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
 	// Use "projects/{project}/rollouts/{rollout}/stages/-/tasks/-" to list all taskRuns from a rollout.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// The maximum number of taskRuns to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 10 taskRuns will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// A page token, received from a previous `ListTaskRuns` call.
 	// Provide this to retrieve the subsequent page.
 	//
@@ -1292,7 +1335,7 @@ type Rollout struct {
 	// The title of the rollout, inherited from the associated plan.
 	// This field is output only and cannot be directly set.
 	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	// stages and thus tasks of the rollout.
+	// Stages and thus tasks of the rollout.
 	Stages []*Stage `protobuf:"bytes,5,rep,name=stages,proto3" json:"stages,omitempty"`
 	// Format: users/hello@world.com
 	Creator    string                 `protobuf:"bytes,6,opt,name=creator,proto3" json:"creator,omitempty"`
@@ -1397,12 +1440,13 @@ type Stage struct {
 	// Use "-" for {stage} when the stage has no environment or deleted environment.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// id is the environment id of the stage.
-	// e.g. "prod".
+	// e.g., "prod".
 	// Use "-" when the stage has no environment or deleted environment.
 	Id string `protobuf:"bytes,3,opt,name=id,proto3" json:"id,omitempty"`
 	// environment is the environment of the stage.
 	// Format: environments/{environment} for valid environments, or "environments/-" for stages without environment or with deleted environments.
-	Environment   string  `protobuf:"bytes,4,opt,name=environment,proto3" json:"environment,omitempty"`
+	Environment string `protobuf:"bytes,4,opt,name=environment,proto3" json:"environment,omitempty"`
+	// The tasks within this stage.
 	Tasks         []*Task `protobuf:"bytes,5,rep,name=tasks,proto3" json:"tasks,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1474,9 +1518,10 @@ type Task struct {
 	// Could be empty if the rollout of the task does not have an associating plan.
 	SpecId string `protobuf:"bytes,4,opt,name=spec_id,json=specId,proto3" json:"spec_id,omitempty"`
 	// Status is the status of the task.
-	Status        Task_Status `protobuf:"varint,5,opt,name=status,proto3,enum=bytebase.v1.Task_Status" json:"status,omitempty"`
-	SkippedReason string      `protobuf:"bytes,15,opt,name=skipped_reason,json=skippedReason,proto3" json:"skipped_reason,omitempty"`
-	Type          Task_Type   `protobuf:"varint,6,opt,name=type,proto3,enum=bytebase.v1.Task_Type" json:"type,omitempty"`
+	Status Task_Status `protobuf:"varint,5,opt,name=status,proto3,enum=bytebase.v1.Task_Status" json:"status,omitempty"`
+	// The reason why the task was skipped.
+	SkippedReason string    `protobuf:"bytes,15,opt,name=skipped_reason,json=skippedReason,proto3" json:"skipped_reason,omitempty"`
+	Type          Task_Type `protobuf:"varint,6,opt,name=type,proto3,enum=bytebase.v1.Task_Type" json:"type,omitempty"`
 	// Format: instances/{instance} if the task is DatabaseCreate.
 	// Format: instances/{instance}/databases/{database}
 	Target string `protobuf:"bytes,8,opt,name=target,proto3" json:"target,omitempty"`
@@ -1642,22 +1687,28 @@ type TaskRun struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// Format: user/hello@world.com
+	// Format: users/hello@world.com
 	Creator    string                 `protobuf:"bytes,3,opt,name=creator,proto3" json:"creator,omitempty"`
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
 	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
-	Status     TaskRun_Status         `protobuf:"varint,8,opt,name=status,proto3,enum=bytebase.v1.TaskRun_Status" json:"status,omitempty"`
+	// The current execution status of the task run.
+	Status TaskRun_Status `protobuf:"varint,8,opt,name=status,proto3,enum=bytebase.v1.TaskRun_Status" json:"status,omitempty"`
 	// Below are the results of a task run.
+	// Detailed information about the task run result.
 	Detail string `protobuf:"bytes,9,opt,name=detail,proto3" json:"detail,omitempty"`
 	// The resource name of the changelog.
 	// Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-	Changelog           string                      `protobuf:"bytes,20,opt,name=changelog,proto3" json:"changelog,omitempty"`
-	SchemaVersion       string                      `protobuf:"bytes,11,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
-	StartTime           *timestamppb.Timestamp      `protobuf:"bytes,14,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	Changelog string `protobuf:"bytes,20,opt,name=changelog,proto3" json:"changelog,omitempty"`
+	// The schema version after this task run completes.
+	SchemaVersion string `protobuf:"bytes,11,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
+	// The time when the task run started execution.
+	StartTime *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	// The export archive status for data export tasks.
 	ExportArchiveStatus TaskRun_ExportArchiveStatus `protobuf:"varint,16,opt,name=export_archive_status,json=exportArchiveStatus,proto3,enum=bytebase.v1.TaskRun_ExportArchiveStatus" json:"export_archive_status,omitempty"`
 	// The prior backup detail that will be used to rollback the task run.
 	PriorBackupDetail *TaskRun_PriorBackupDetail `protobuf:"bytes,17,opt,name=prior_backup_detail,json=priorBackupDetail,proto3" json:"prior_backup_detail,omitempty"`
-	SchedulerInfo     *TaskRun_SchedulerInfo     `protobuf:"bytes,18,opt,name=scheduler_info,json=schedulerInfo,proto3" json:"scheduler_info,omitempty"`
+	// Scheduling information about the task run.
+	SchedulerInfo *TaskRun_SchedulerInfo `protobuf:"bytes,18,opt,name=scheduler_info,json=schedulerInfo,proto3" json:"scheduler_info,omitempty"`
 	// Format: projects/{project}/sheets/{sheet}
 	Sheet string `protobuf:"bytes,19,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	// The task run should run after run_time.
@@ -1798,7 +1849,8 @@ func (x *TaskRun) GetRunTime() *timestamppb.Timestamp {
 type TaskRunLog struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log
-	Name          string             `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The log entries for this task run.
 	Entries       []*TaskRunLogEntry `protobuf:"bytes,2,rep,name=entries,proto3" json:"entries,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1849,20 +1901,31 @@ func (x *TaskRunLog) GetEntries() []*TaskRunLogEntry {
 }
 
 type TaskRunLogEntry struct {
-	state               protoimpl.MessageState               `protogen:"open.v1"`
-	Type                TaskRunLogEntry_Type                 `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.v1.TaskRunLogEntry_Type" json:"type,omitempty"`
-	LogTime             *timestamppb.Timestamp               `protobuf:"bytes,6,opt,name=log_time,json=logTime,proto3" json:"log_time,omitempty"`
-	DeployId            string                               `protobuf:"bytes,12,opt,name=deploy_id,json=deployId,proto3" json:"deploy_id,omitempty"`
-	SchemaDump          *TaskRunLogEntry_SchemaDump          `protobuf:"bytes,2,opt,name=schema_dump,json=schemaDump,proto3" json:"schema_dump,omitempty"`
-	CommandExecute      *TaskRunLogEntry_CommandExecute      `protobuf:"bytes,3,opt,name=command_execute,json=commandExecute,proto3" json:"command_execute,omitempty"`
-	DatabaseSync        *TaskRunLogEntry_DatabaseSync        `protobuf:"bytes,4,opt,name=database_sync,json=databaseSync,proto3" json:"database_sync,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The type of this log entry.
+	Type TaskRunLogEntry_Type `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.v1.TaskRunLogEntry_Type" json:"type,omitempty"`
+	// The time when the log was recorded.
+	LogTime *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=log_time,json=logTime,proto3" json:"log_time,omitempty"`
+	// The deployment ID for this log entry.
+	DeployId string `protobuf:"bytes,12,opt,name=deploy_id,json=deployId,proto3" json:"deploy_id,omitempty"`
+	// Schema dump details (if type is SCHEMA_DUMP).
+	SchemaDump *TaskRunLogEntry_SchemaDump `protobuf:"bytes,2,opt,name=schema_dump,json=schemaDump,proto3" json:"schema_dump,omitempty"`
+	// Command execution details (if type is COMMAND_EXECUTE).
+	CommandExecute *TaskRunLogEntry_CommandExecute `protobuf:"bytes,3,opt,name=command_execute,json=commandExecute,proto3" json:"command_execute,omitempty"`
+	// Database sync details (if type is DATABASE_SYNC).
+	DatabaseSync *TaskRunLogEntry_DatabaseSync `protobuf:"bytes,4,opt,name=database_sync,json=databaseSync,proto3" json:"database_sync,omitempty"`
+	// Task run status update details (if type is TASK_RUN_STATUS_UPDATE).
 	TaskRunStatusUpdate *TaskRunLogEntry_TaskRunStatusUpdate `protobuf:"bytes,5,opt,name=task_run_status_update,json=taskRunStatusUpdate,proto3" json:"task_run_status_update,omitempty"`
-	TransactionControl  *TaskRunLogEntry_TransactionControl  `protobuf:"bytes,7,opt,name=transaction_control,json=transactionControl,proto3" json:"transaction_control,omitempty"`
-	PriorBackup         *TaskRunLogEntry_PriorBackup         `protobuf:"bytes,8,opt,name=prior_backup,json=priorBackup,proto3" json:"prior_backup,omitempty"`
-	RetryInfo           *TaskRunLogEntry_RetryInfo           `protobuf:"bytes,9,opt,name=retry_info,json=retryInfo,proto3" json:"retry_info,omitempty"`
-	ComputeDiff         *TaskRunLogEntry_ComputeDiff         `protobuf:"bytes,10,opt,name=compute_diff,json=computeDiff,proto3" json:"compute_diff,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// Transaction control details (if type is TRANSACTION_CONTROL).
+	TransactionControl *TaskRunLogEntry_TransactionControl `protobuf:"bytes,7,opt,name=transaction_control,json=transactionControl,proto3" json:"transaction_control,omitempty"`
+	// Prior backup details (if type is PRIOR_BACKUP).
+	PriorBackup *TaskRunLogEntry_PriorBackup `protobuf:"bytes,8,opt,name=prior_backup,json=priorBackup,proto3" json:"prior_backup,omitempty"`
+	// Retry information details (if type is RETRY_INFO).
+	RetryInfo *TaskRunLogEntry_RetryInfo `protobuf:"bytes,9,opt,name=retry_info,json=retryInfo,proto3" json:"retry_info,omitempty"`
+	// Compute diff details (if type is COMPUTE_DIFF).
+	ComputeDiff   *TaskRunLogEntry_ComputeDiff `protobuf:"bytes,10,opt,name=compute_diff,json=computeDiff,proto3" json:"compute_diff,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TaskRunLogEntry) Reset() {
@@ -2021,6 +2084,8 @@ type TaskRunSession struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Database-specific session information.
+	//
 	// Types that are valid to be assigned to Session:
 	//
 	//	*TaskRunSession_Postgres_
@@ -2087,6 +2152,7 @@ type isTaskRunSession_Session interface {
 }
 
 type TaskRunSession_Postgres_ struct {
+	// PostgreSQL session information.
 	Postgres *TaskRunSession_Postgres `protobuf:"bytes,2,opt,name=postgres,proto3,oneof"`
 }
 
@@ -2138,8 +2204,9 @@ func (x *PreviewTaskRunRollbackRequest) GetName() string {
 }
 
 type PreviewTaskRunRollbackResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Statement     string                 `protobuf:"bytes,1,opt,name=statement,proto3" json:"statement,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The rollback SQL statement that would undo the task run.
+	Statement     string `protobuf:"bytes,1,opt,name=statement,proto3" json:"statement,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2181,19 +2248,23 @@ func (x *PreviewTaskRunRollbackResponse) GetStatement() string {
 	return ""
 }
 
+// Payload for creating a new database.
 type Task_DatabaseCreate struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The project owning the database.
 	// Format: projects/{project}
 	Project string `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
-	// database name
+	// Database name.
 	Database string `protobuf:"bytes,2,opt,name=database,proto3" json:"database,omitempty"`
-	// table name
+	// Table name.
 	Table string `protobuf:"bytes,3,opt,name=table,proto3" json:"table,omitempty"`
 	// Format: projects/{project}/sheets/{sheet}
-	Sheet         string `protobuf:"bytes,4,opt,name=sheet,proto3" json:"sheet,omitempty"`
-	CharacterSet  string `protobuf:"bytes,5,opt,name=character_set,json=characterSet,proto3" json:"character_set,omitempty"`
-	Collation     string `protobuf:"bytes,6,opt,name=collation,proto3" json:"collation,omitempty"`
+	Sheet string `protobuf:"bytes,4,opt,name=sheet,proto3" json:"sheet,omitempty"`
+	// The character set for the database.
+	CharacterSet string `protobuf:"bytes,5,opt,name=character_set,json=characterSet,proto3" json:"character_set,omitempty"`
+	// The collation for the database.
+	Collation string `protobuf:"bytes,6,opt,name=collation,proto3" json:"collation,omitempty"`
+	// The environment the database belongs to.
 	Environment   string `protobuf:"bytes,7,opt,name=environment,proto3" json:"environment,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2278,11 +2349,14 @@ func (x *Task_DatabaseCreate) GetEnvironment() string {
 	return ""
 }
 
+// Payload for updating a database schema.
 type Task_DatabaseUpdate struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/sheets/{sheet}
-	Sheet              string             `protobuf:"bytes,1,opt,name=sheet,proto3" json:"sheet,omitempty"`
-	SchemaVersion      string             `protobuf:"bytes,2,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
+	Sheet string `protobuf:"bytes,1,opt,name=sheet,proto3" json:"sheet,omitempty"`
+	// The target schema version after this update.
+	SchemaVersion string `protobuf:"bytes,2,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
+	// The type of database change (MIGRATE or SDL).
 	DatabaseChangeType DatabaseChangeType `protobuf:"varint,3,opt,name=database_change_type,json=databaseChangeType,proto3,enum=bytebase.v1.DatabaseChangeType" json:"database_change_type,omitempty"`
 	// migration_type is only set when database_change_type is MIGRATE.
 	MigrationType MigrationType `protobuf:"varint,4,opt,name=migration_type,json=migrationType,proto3,enum=bytebase.v1.MigrationType" json:"migration_type,omitempty"`
@@ -2348,6 +2422,7 @@ func (x *Task_DatabaseUpdate) GetMigrationType() MigrationType {
 	return MigrationType_MIGRATION_TYPE_UNSPECIFIED
 }
 
+// Payload for exporting database data.
 type Task_DatabaseDataExport struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The resource name of the target.
@@ -2358,7 +2433,7 @@ type Task_DatabaseDataExport struct {
 	Sheet string `protobuf:"bytes,2,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	// The format of the exported file.
 	Format ExportFormat `protobuf:"varint,3,opt,name=format,proto3,enum=bytebase.v1.ExportFormat" json:"format,omitempty"`
-	// The zip password provide by users.
+	// The zip password provided by users.
 	// Leave it empty if no needs to encrypt the zip file.
 	Password      *string `protobuf:"bytes,4,opt,name=password,proto3,oneof" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -2423,8 +2498,10 @@ func (x *Task_DatabaseDataExport) GetPassword() string {
 	return ""
 }
 
+// Prior backup detail for rollback purposes.
 type TaskRun_PriorBackupDetail struct {
-	state         protoimpl.MessageState            `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The list of backed up tables.
 	Items         []*TaskRun_PriorBackupDetail_Item `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2467,9 +2544,12 @@ func (x *TaskRun_PriorBackupDetail) GetItems() []*TaskRun_PriorBackupDetail_Item
 	return nil
 }
 
+// Information about task run scheduling.
 type TaskRun_SchedulerInfo struct {
-	state         protoimpl.MessageState              `protogen:"open.v1"`
-	ReportTime    *timestamppb.Timestamp              `protobuf:"bytes,1,opt,name=report_time,json=reportTime,proto3" json:"report_time,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The time when the scheduling info was reported.
+	ReportTime *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=report_time,json=reportTime,proto3" json:"report_time,omitempty"`
+	// The cause for the task run waiting.
 	WaitingCause  *TaskRun_SchedulerInfo_WaitingCause `protobuf:"bytes,2,opt,name=waiting_cause,json=waitingCause,proto3" json:"waiting_cause,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2519,14 +2599,17 @@ func (x *TaskRun_SchedulerInfo) GetWaitingCause() *TaskRun_SchedulerInfo_Waiting
 	return nil
 }
 
+// A single backup table mapping.
 type TaskRun_PriorBackupDetail_Item struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The original table information.
 	SourceTable *TaskRun_PriorBackupDetail_Item_Table `protobuf:"bytes,1,opt,name=source_table,json=sourceTable,proto3" json:"source_table,omitempty"`
 	// The target backup table information.
-	TargetTable   *TaskRun_PriorBackupDetail_Item_Table `protobuf:"bytes,2,opt,name=target_table,json=targetTable,proto3" json:"target_table,omitempty"`
-	StartPosition *Position                             `protobuf:"bytes,3,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
-	EndPosition   *Position                             `protobuf:"bytes,4,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
+	TargetTable *TaskRun_PriorBackupDetail_Item_Table `protobuf:"bytes,2,opt,name=target_table,json=targetTable,proto3" json:"target_table,omitempty"`
+	// The start position in the SQL statement.
+	StartPosition *Position `protobuf:"bytes,3,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
+	// The end position in the SQL statement.
+	EndPosition   *Position `protobuf:"bytes,4,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2589,12 +2672,15 @@ func (x *TaskRun_PriorBackupDetail_Item) GetEndPosition() *Position {
 	return nil
 }
 
+// Table information.
 type TaskRun_PriorBackupDetail_Item_Table struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The database information.
 	// Format: instances/{instance}/databases/{database}
-	Database      string `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"`
-	Schema        string `protobuf:"bytes,2,opt,name=schema,proto3" json:"schema,omitempty"`
+	Database string `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"`
+	// The schema name.
+	Schema string `protobuf:"bytes,2,opt,name=schema,proto3" json:"schema,omitempty"`
+	// The table name.
 	Table         string `protobuf:"bytes,3,opt,name=table,proto3" json:"table,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2651,8 +2737,11 @@ func (x *TaskRun_PriorBackupDetail_Item_Table) GetTable() string {
 	return ""
 }
 
+// Information about why a task run is waiting.
 type TaskRun_SchedulerInfo_WaitingCause struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// The reason the task run is waiting.
+	//
 	// Types that are valid to be assigned to Cause:
 	//
 	//	*TaskRun_SchedulerInfo_WaitingCause_ConnectionLimit
@@ -2732,14 +2821,17 @@ type isTaskRun_SchedulerInfo_WaitingCause_Cause interface {
 }
 
 type TaskRun_SchedulerInfo_WaitingCause_ConnectionLimit struct {
+	// Waiting due to connection limit reached.
 	ConnectionLimit bool `protobuf:"varint,1,opt,name=connection_limit,json=connectionLimit,proto3,oneof"`
 }
 
 type TaskRun_SchedulerInfo_WaitingCause_Task_ struct {
+	// Waiting for another task to complete.
 	Task *TaskRun_SchedulerInfo_WaitingCause_Task `protobuf:"bytes,2,opt,name=task,proto3,oneof"`
 }
 
 type TaskRun_SchedulerInfo_WaitingCause_ParallelTasksLimit struct {
+	// Waiting due to parallel tasks limit.
 	ParallelTasksLimit bool `protobuf:"varint,3,opt,name=parallel_tasks_limit,json=parallelTasksLimit,proto3,oneof"`
 }
 
@@ -2751,6 +2843,7 @@ func (*TaskRun_SchedulerInfo_WaitingCause_Task_) isTaskRun_SchedulerInfo_Waiting
 func (*TaskRun_SchedulerInfo_WaitingCause_ParallelTasksLimit) isTaskRun_SchedulerInfo_WaitingCause_Cause() {
 }
 
+// Information about a blocking task.
 type TaskRun_SchedulerInfo_WaitingCause_Task struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
@@ -2805,11 +2898,15 @@ func (x *TaskRun_SchedulerInfo_WaitingCause_Task) GetIssue() string {
 	return ""
 }
 
+// Schema dump operation details.
 type TaskRunLogEntry_SchemaDump struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	StartTime     *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
-	EndTime       *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
-	Error         string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// When the schema dump started.
+	StartTime *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	// When the schema dump ended.
+	EndTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	// Error message if the schema dump failed.
+	Error         string `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2865,14 +2962,17 @@ func (x *TaskRunLogEntry_SchemaDump) GetError() string {
 	return ""
 }
 
+// Command execution details.
 type TaskRunLogEntry_CommandExecute struct {
-	state   protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// When the command was logged.
 	LogTime *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=log_time,json=logTime,proto3" json:"log_time,omitempty"`
 	// Either `command_indexes` or `statement` is set.
 	// The indexes of the executed commands.
 	CommandIndexes []int32 `protobuf:"varint,2,rep,packed,name=command_indexes,json=commandIndexes,proto3" json:"command_indexes,omitempty"`
 	// The executed statement.
-	Statement     string                                          `protobuf:"bytes,4,opt,name=statement,proto3" json:"statement,omitempty"`
+	Statement string `protobuf:"bytes,4,opt,name=statement,proto3" json:"statement,omitempty"`
+	// The response from executing the command.
 	Response      *TaskRunLogEntry_CommandExecute_CommandResponse `protobuf:"bytes,3,opt,name=response,proto3" json:"response,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2936,11 +3036,15 @@ func (x *TaskRunLogEntry_CommandExecute) GetResponse() *TaskRunLogEntry_CommandE
 	return nil
 }
 
+// Database synchronization details.
 type TaskRunLogEntry_DatabaseSync struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	StartTime     *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
-	EndTime       *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
-	Error         string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// When the database sync started.
+	StartTime *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	// When the database sync ended.
+	EndTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	// Error message if sync failed.
+	Error         string `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2996,8 +3100,10 @@ func (x *TaskRunLogEntry_DatabaseSync) GetError() string {
 	return ""
 }
 
+// Task run status update details.
 type TaskRunLogEntry_TaskRunStatusUpdate struct {
-	state         protoimpl.MessageState                     `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The new status.
 	Status        TaskRunLogEntry_TaskRunStatusUpdate_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.v1.TaskRunLogEntry_TaskRunStatusUpdate_Status" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3040,10 +3146,13 @@ func (x *TaskRunLogEntry_TaskRunStatusUpdate) GetStatus() TaskRunLogEntry_TaskRu
 	return TaskRunLogEntry_TaskRunStatusUpdate_STATUS_UNSPECIFIED
 }
 
+// Transaction control operation details.
 type TaskRunLogEntry_TransactionControl struct {
-	state         protoimpl.MessageState                  `protogen:"open.v1"`
-	Type          TaskRunLogEntry_TransactionControl_Type `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.v1.TaskRunLogEntry_TransactionControl_Type" json:"type,omitempty"`
-	Error         string                                  `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The type of transaction control.
+	Type TaskRunLogEntry_TransactionControl_Type `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.v1.TaskRunLogEntry_TransactionControl_Type" json:"type,omitempty"`
+	// Error message if the operation failed.
+	Error         string `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3092,14 +3201,19 @@ func (x *TaskRunLogEntry_TransactionControl) GetError() string {
 	return ""
 }
 
+// Prior backup operation details.
 type TaskRunLogEntry_PriorBackup struct {
-	state             protoimpl.MessageState     `protogen:"open.v1"`
-	StartTime         *timestamppb.Timestamp     `protobuf:"bytes,1,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
-	EndTime           *timestamppb.Timestamp     `protobuf:"bytes,2,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// When the backup started.
+	StartTime *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	// When the backup ended.
+	EndTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	// The backup details.
 	PriorBackupDetail *TaskRun_PriorBackupDetail `protobuf:"bytes,3,opt,name=prior_backup_detail,json=priorBackupDetail,proto3" json:"prior_backup_detail,omitempty"`
-	Error             string                     `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// Error message if the backup failed.
+	Error         string `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TaskRunLogEntry_PriorBackup) Reset() {
@@ -3160,11 +3274,15 @@ func (x *TaskRunLogEntry_PriorBackup) GetError() string {
 	return ""
 }
 
+// Retry information for failed operations.
 type TaskRunLogEntry_RetryInfo struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	Error          string                 `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
-	RetryCount     int32                  `protobuf:"varint,2,opt,name=retry_count,json=retryCount,proto3" json:"retry_count,omitempty"`
-	MaximumRetries int32                  `protobuf:"varint,3,opt,name=maximum_retries,json=maximumRetries,proto3" json:"maximum_retries,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The error that triggered the retry.
+	Error string `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
+	// Current retry attempt number.
+	RetryCount int32 `protobuf:"varint,2,opt,name=retry_count,json=retryCount,proto3" json:"retry_count,omitempty"`
+	// Maximum number of retries allowed.
+	MaximumRetries int32 `protobuf:"varint,3,opt,name=maximum_retries,json=maximumRetries,proto3" json:"maximum_retries,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -3220,11 +3338,15 @@ func (x *TaskRunLogEntry_RetryInfo) GetMaximumRetries() int32 {
 	return 0
 }
 
+// Schema diff computation details.
 type TaskRunLogEntry_ComputeDiff struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	StartTime     *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
-	EndTime       *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
-	Error         string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// When diff computation started.
+	StartTime *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	// When diff computation ended.
+	EndTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	// Error message if computation failed.
+	Error         string `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3280,11 +3402,15 @@ func (x *TaskRunLogEntry_ComputeDiff) GetError() string {
 	return ""
 }
 
+// Command execution response.
 type TaskRunLogEntry_CommandExecute_CommandResponse struct {
-	state        protoimpl.MessageState `protogen:"open.v1"`
-	LogTime      *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=log_time,json=logTime,proto3" json:"log_time,omitempty"`
-	Error        string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
-	AffectedRows int64                  `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// When the response was logged.
+	LogTime *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=log_time,json=logTime,proto3" json:"log_time,omitempty"`
+	// Error message if command execution failed.
+	Error string `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	// Total affected rows.
+	AffectedRows int64 `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
 	// `all_affected_rows` is the affected rows of each command.
 	// `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
 	AllAffectedRows []int64 `protobuf:"varint,4,rep,packed,name=all_affected_rows,json=allAffectedRows,proto3" json:"all_affected_rows,omitempty"`
@@ -3350,6 +3476,7 @@ func (x *TaskRunLogEntry_CommandExecute_CommandResponse) GetAllAffectedRows() []
 	return nil
 }
 
+// PostgreSQL session information.
 type TaskRunSession_Postgres struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// `session` is the session of the task run executing commands.
@@ -3413,25 +3540,39 @@ func (x *TaskRunSession_Postgres) GetBlockedSessions() []*TaskRunSession_Postgre
 	return nil
 }
 
-// Read from `pg_stat_activity`
+// PostgreSQL session information read from `pg_stat_activity`.
 type TaskRunSession_Postgres_Session struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Pid             string                 `protobuf:"bytes,1,opt,name=pid,proto3" json:"pid,omitempty"`
-	BlockedByPids   []string               `protobuf:"bytes,2,rep,name=blocked_by_pids,json=blockedByPids,proto3" json:"blocked_by_pids,omitempty"`
-	Query           string                 `protobuf:"bytes,3,opt,name=query,proto3" json:"query,omitempty"`
-	State           *string                `protobuf:"bytes,4,opt,name=state,proto3,oneof" json:"state,omitempty"`
-	WaitEventType   *string                `protobuf:"bytes,5,opt,name=wait_event_type,json=waitEventType,proto3,oneof" json:"wait_event_type,omitempty"`
-	WaitEvent       *string                `protobuf:"bytes,6,opt,name=wait_event,json=waitEvent,proto3,oneof" json:"wait_event,omitempty"`
-	Datname         *string                `protobuf:"bytes,7,opt,name=datname,proto3,oneof" json:"datname,omitempty"`
-	Usename         *string                `protobuf:"bytes,8,opt,name=usename,proto3,oneof" json:"usename,omitempty"`
-	ApplicationName string                 `protobuf:"bytes,9,opt,name=application_name,json=applicationName,proto3" json:"application_name,omitempty"`
-	ClientAddr      *string                `protobuf:"bytes,10,opt,name=client_addr,json=clientAddr,proto3,oneof" json:"client_addr,omitempty"`
-	ClientPort      *string                `protobuf:"bytes,11,opt,name=client_port,json=clientPort,proto3,oneof" json:"client_port,omitempty"`
-	BackendStart    *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=backend_start,json=backendStart,proto3" json:"backend_start,omitempty"`
-	XactStart       *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=xact_start,json=xactStart,proto3,oneof" json:"xact_start,omitempty"`
-	QueryStart      *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=query_start,json=queryStart,proto3,oneof" json:"query_start,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Process ID of the session.
+	Pid string `protobuf:"bytes,1,opt,name=pid,proto3" json:"pid,omitempty"`
+	// PIDs of sessions blocking this session.
+	BlockedByPids []string `protobuf:"bytes,2,rep,name=blocked_by_pids,json=blockedByPids,proto3" json:"blocked_by_pids,omitempty"`
+	// Current query being executed.
+	Query string `protobuf:"bytes,3,opt,name=query,proto3" json:"query,omitempty"`
+	// Session state (active, idle, etc.).
+	State *string `protobuf:"bytes,4,opt,name=state,proto3,oneof" json:"state,omitempty"`
+	// Wait event type if session is waiting.
+	WaitEventType *string `protobuf:"bytes,5,opt,name=wait_event_type,json=waitEventType,proto3,oneof" json:"wait_event_type,omitempty"`
+	// Specific wait event if session is waiting.
+	WaitEvent *string `protobuf:"bytes,6,opt,name=wait_event,json=waitEvent,proto3,oneof" json:"wait_event,omitempty"`
+	// Database name.
+	Datname *string `protobuf:"bytes,7,opt,name=datname,proto3,oneof" json:"datname,omitempty"`
+	// User name.
+	Usename *string `protobuf:"bytes,8,opt,name=usename,proto3,oneof" json:"usename,omitempty"`
+	// Application name.
+	ApplicationName string `protobuf:"bytes,9,opt,name=application_name,json=applicationName,proto3" json:"application_name,omitempty"`
+	// Client IP address.
+	ClientAddr *string `protobuf:"bytes,10,opt,name=client_addr,json=clientAddr,proto3,oneof" json:"client_addr,omitempty"`
+	// Client port number.
+	ClientPort *string `protobuf:"bytes,11,opt,name=client_port,json=clientPort,proto3,oneof" json:"client_port,omitempty"`
+	// When the backend process started.
+	BackendStart *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=backend_start,json=backendStart,proto3" json:"backend_start,omitempty"`
+	// When the current transaction started.
+	XactStart *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=xact_start,json=xactStart,proto3,oneof" json:"xact_start,omitempty"`
+	// When the current query started.
+	QueryStart    *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=query_start,json=queryStart,proto3,oneof" json:"query_start,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TaskRunSession_Postgres_Session) Reset() {

@@ -10,8 +10,11 @@ importers:
 
   .:
     dependencies:
+      '@buf/googleapis_googleapis.bufbuild_es':
+        specifier: 2.9.0-20251009205305-72c8614f3bd0.1
+        version: 2.9.0-20251009205305-72c8614f3bd0.1(@bufbuild/protobuf@2.9.0)
       '@bufbuild/protobuf':
-        specifier: ^2.5.1
+        specifier: 2.9.0
         version: 2.9.0
       '@codingame/monaco-vscode-api':
         specifier: 21.3.4
@@ -944,6 +947,11 @@ packages:
   '@babel/types@7.28.4':
     resolution: {integrity: sha512-bkFqkLhh3pMBUQQkpVgWDWq/lqzc2678eUyDlTBhRqhCHFguYYGM0Efga7tYk4TogG/3x0EEl66/OQ+WGbWB/Q==}
     engines: {node: '>=6.9.0'}
+
+  '@buf/googleapis_googleapis.bufbuild_es@2.9.0-20251009205305-72c8614f3bd0.1':
+    resolution: {tarball: https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.9.0-20251009205305-72c8614f3bd0.1.tgz}
+    peerDependencies:
+      '@bufbuild/protobuf': ^2.9.0
 
   '@bufbuild/protobuf@2.9.0':
     resolution: {integrity: sha512-rnJenoStJ8nvmt9Gzye8nkYd6V22xUAnu4086ER7h1zJ508vStko4pMvDeQ446ilDTFpV5wnoc5YS7XvMwwMqA==}
@@ -5909,6 +5917,10 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.27.1
+
+  '@buf/googleapis_googleapis.bufbuild_es@2.9.0-20251009205305-72c8614f3bd0.1(@bufbuild/protobuf@2.9.0)':
+    dependencies:
+      '@bufbuild/protobuf': 2.9.0
 
   '@bufbuild/protobuf@2.9.0': {}
 

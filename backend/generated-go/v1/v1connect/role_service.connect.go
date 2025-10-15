@@ -48,14 +48,19 @@ const (
 
 // RoleServiceClient is a client for the bytebase.v1.RoleService service.
 type RoleServiceClient interface {
+	// Lists roles in the workspace.
 	// Permissions required: bb.roles.list
 	ListRoles(context.Context, *connect.Request[v1.ListRolesRequest]) (*connect.Response[v1.ListRolesResponse], error)
+	// Retrieves a role by name.
 	// Permissions required: bb.roles.get
 	GetRole(context.Context, *connect.Request[v1.GetRoleRequest]) (*connect.Response[v1.Role], error)
+	// Creates a new custom role.
 	// Permissions required: bb.roles.create
 	CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.Role], error)
+	// Updates a role's properties.
 	// Permissions required: bb.roles.update
 	UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.Role], error)
+	// Deletes a custom role.
 	// Permissions required: bb.roles.delete
 	DeleteRole(context.Context, *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[emptypb.Empty], error)
 }
@@ -140,14 +145,19 @@ func (c *roleServiceClient) DeleteRole(ctx context.Context, req *connect.Request
 
 // RoleServiceHandler is an implementation of the bytebase.v1.RoleService service.
 type RoleServiceHandler interface {
+	// Lists roles in the workspace.
 	// Permissions required: bb.roles.list
 	ListRoles(context.Context, *connect.Request[v1.ListRolesRequest]) (*connect.Response[v1.ListRolesResponse], error)
+	// Retrieves a role by name.
 	// Permissions required: bb.roles.get
 	GetRole(context.Context, *connect.Request[v1.GetRoleRequest]) (*connect.Response[v1.Role], error)
+	// Creates a new custom role.
 	// Permissions required: bb.roles.create
 	CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.Role], error)
+	// Updates a role's properties.
 	// Permissions required: bb.roles.update
 	UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.Role], error)
+	// Deletes a custom role.
 	// Permissions required: bb.roles.delete
 	DeleteRole(context.Context, *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[emptypb.Empty], error)
 }

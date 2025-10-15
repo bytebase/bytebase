@@ -12,7 +12,9 @@ import "v1/annotation.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// IdentityProviderService manages external identity providers for SSO authentication.
 service IdentityProviderService {
+  // Gets an identity provider by name.
   // Permissions required: bb.identityProviders.get
   rpc GetIdentityProvider(GetIdentityProviderRequest) returns (IdentityProvider) {
     option (google.api.http) = {get: "/v1/{name=idps/*}"};
@@ -21,6 +23,7 @@ service IdentityProviderService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Lists all configured identity providers (public endpoint for login page).
   // Permissions required: None
   rpc ListIdentityProviders(ListIdentityProvidersRequest) returns (ListIdentityProvidersResponse) {
     option (google.api.http) = {get: "/v1/idps"};
@@ -29,6 +32,7 @@ service IdentityProviderService {
     // The method requires no authentication thus no authorization.
   }
 
+  // Creates a new identity provider.
   // Permissions required: bb.identityProviders.create
   rpc CreateIdentityProvider(CreateIdentityProviderRequest) returns (IdentityProvider) {
     option (google.api.http) = {
@@ -41,6 +45,7 @@ service IdentityProviderService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Updates an identity provider.
   // Permissions required: bb.identityProviders.update
   rpc UpdateIdentityProvider(UpdateIdentityProviderRequest) returns (IdentityProvider) {
     option (google.api.http) = {
@@ -53,6 +58,7 @@ service IdentityProviderService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Deletes an identity provider.
   // Permissions required: bb.identityProviders.delete
   rpc DeleteIdentityProvider(DeleteIdentityProviderRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=idps/*}"};
@@ -62,6 +68,7 @@ service IdentityProviderService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Tests the connection and configuration of an identity provider.
   // Permissions required: bb.identityProviders.update
   rpc TestIdentityProvider(TestIdentityProviderRequest) returns (TestIdentityProviderResponse) {
     option (google.api.http) = {
@@ -74,6 +81,8 @@ service IdentityProviderService {
 }
 
 message GetIdentityProviderRequest {
+  // The name of the identity provider to retrieve.
+  // Format: idps/{idp}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/IdP"}
@@ -81,14 +90,14 @@ message GetIdentityProviderRequest {
 }
 
 message ListIdentityProvidersRequest {
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // The maximum number of identity providers to return. The service may return fewer than
   // this value.
   // If unspecified, at most 10 will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 1;
 
-  // Not used.
+  // Pagination is not currently implemented. This field is reserved for future use.
   // A page token, received from a previous `ListIdentityProviders` call.
   // Provide this to retrieve the subsequent page.
   //
@@ -178,67 +187,93 @@ message IdentityProvider {
   // Format: idps/{idp}
   string name = 1;
 
+  // The display title of the identity provider.
   string title = 4;
 
+  // The domain for email matching when using this identity provider.
   string domain = 5;
 
+  // The type of identity provider protocol.
   IdentityProviderType type = 6;
 
+  // The configuration details for the identity provider.
   IdentityProviderConfig config = 7;
 }
 
 enum IdentityProviderType {
+  // Unspecified identity provider type.
   IDENTITY_PROVIDER_TYPE_UNSPECIFIED = 0;
+  // OAuth 2.0 authentication protocol.
   OAUTH2 = 1;
+  // OpenID Connect authentication protocol.
   OIDC = 2;
+  // LDAP directory service authentication.
   LDAP = 3;
 }
 
 message IdentityProviderConfig {
   oneof config {
+    // OAuth2 protocol configuration.
     OAuth2IdentityProviderConfig oauth2_config = 1;
+    // OIDC protocol configuration.
     OIDCIdentityProviderConfig oidc_config = 2;
+    // LDAP protocol configuration.
     LDAPIdentityProviderConfig ldap_config = 3;
   }
 }
 
 // OAuth2IdentityProviderConfig is the structure for OAuth2 identity provider config.
 message OAuth2IdentityProviderConfig {
+  // The authorization endpoint URL for OAuth2 flow.
   string auth_url = 1;
 
+  // The token endpoint URL for exchanging authorization code.
   string token_url = 2;
 
+  // The user information endpoint URL.
   string user_info_url = 3;
 
+  // The OAuth2 client identifier.
   string client_id = 4;
 
+  // The OAuth2 client secret for authentication.
   string client_secret = 5;
 
+  // The list of OAuth2 scopes to request.
   repeated string scopes = 6;
 
+  // Mapping configuration for user attributes from OAuth2 response.
   FieldMapping field_mapping = 7;
 
+  // Whether to skip TLS certificate verification.
   bool skip_tls_verify = 8;
 
+  // The authentication style for client credentials.
   OAuth2AuthStyle auth_style = 9;
 }
 
 // OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 message OIDCIdentityProviderConfig {
+  // The OIDC issuer URL for the identity provider.
   string issuer = 1;
 
+  // The OIDC client identifier.
   string client_id = 2;
 
+  // The OIDC client secret for authentication.
   string client_secret = 3;
 
   // The scopes that the OIDC provider supports.
   // Should be fetched from the well-known configuration file of the OIDC provider.
   repeated string scopes = 4;
 
+  // Mapping configuration for user attributes from OIDC claims.
   FieldMapping field_mapping = 5;
 
+  // Whether to skip TLS certificate verification.
   bool skip_tls_verify = 6;
 
+  // The authentication style for client credentials.
   OAuth2AuthStyle auth_style = 7;
 
   // The authorization endpoint of the OIDC provider.
@@ -248,10 +283,10 @@ message OIDCIdentityProviderConfig {
 
 // LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
 message LDAPIdentityProviderConfig {
-  // Host is the hostname or IP address of the LDAP server, e.g.
+  // Host is the hostname or IP address of the LDAP server, e.g.,
   // "ldap.example.com".
   string host = 1;
-  // Port is the port number of the LDAP server, e.g. 389. When not set, the
+  // Port is the port number of the LDAP server, e.g., 389. When not set, the
   // default port of the corresponding security protocol will be used, i.e. 389
   // for StartTLS and 636 for LDAPS.
   int32 port = 2;
@@ -262,9 +297,9 @@ message LDAPIdentityProviderConfig {
   string bind_dn = 4;
   // BindPassword is the password of the user to bind as a service account.
   string bind_password = 5;
-  // BaseDN is the base DN to search for users, e.g. "ou=users,dc=example,dc=com".
+  // BaseDN is the base DN to search for users, e.g., "ou=users,dc=example,dc=com".
   string base_dn = 6;
-  // UserFilter is the filter to search for users, e.g. "(uid=%s)".
+  // UserFilter is the filter to search for users, e.g., "(uid=%s)".
   string user_filter = 7;
   // SecurityProtocol is the security protocol to be used for establishing
   // connections with the LDAP server.

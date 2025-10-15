@@ -16,7 +16,9 @@ import "v1/instance_role_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
+// InstanceService manages database instances and their connections.
 service InstanceService {
+  // Gets a database instance by name.
   // Permissions required: bb.instances.get
   rpc GetInstance(GetInstanceRequest) returns (Instance) {
     option (google.api.http) = {get: "/v1/{name=instances/*}"};
@@ -25,6 +27,7 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Lists all database instances.
   // Permissions required: bb.instances.list
   rpc ListInstances(ListInstancesRequest) returns (ListInstancesResponse) {
     option (google.api.http) = {get: "/v1/instances"};
@@ -33,6 +36,7 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Creates a new database instance.
   // Permissions required: bb.instances.create
   rpc CreateInstance(CreateInstanceRequest) returns (Instance) {
     option (google.api.http) = {
@@ -45,6 +49,7 @@ service InstanceService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Updates a database instance.
   // Permissions required: bb.instances.update
   rpc UpdateInstance(UpdateInstanceRequest) returns (Instance) {
     option (google.api.http) = {
@@ -57,6 +62,7 @@ service InstanceService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Deletes or soft-deletes a database instance.
   // Permissions required: bb.instances.delete
   rpc DeleteInstance(DeleteInstanceRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=instances/*}"};
@@ -66,6 +72,7 @@ service InstanceService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Restores a soft-deleted database instance.
   // Permissions required: bb.instances.undelete
   rpc UndeleteInstance(UndeleteInstanceRequest) returns (Instance) {
     option (google.api.http) = {
@@ -77,6 +84,7 @@ service InstanceService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Syncs database schemas and metadata from an instance.
   // Permissions required: bb.instances.sync
   rpc SyncInstance(SyncInstanceRequest) returns (SyncInstanceResponse) {
     option (google.api.http) = {
@@ -87,6 +95,7 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Lists all databases within an instance without creating them.
   // Permissions required: bb.instances.get
   rpc ListInstanceDatabase(ListInstanceDatabaseRequest) returns (ListInstanceDatabaseResponse) {
     option (google.api.http) = {
@@ -97,6 +106,7 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Syncs multiple instances in a single request.
   // Permissions required: bb.instances.sync
   rpc BatchSyncInstances(BatchSyncInstancesRequest) returns (BatchSyncInstancesResponse) {
     option (google.api.http) = {
@@ -107,6 +117,7 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Updates multiple instances in a single request.
   // Permissions required: bb.instances.update
   rpc BatchUpdateInstances(BatchUpdateInstancesRequest) returns (BatchUpdateInstancesResponse) {
     option (google.api.http) = {
@@ -118,6 +129,7 @@ service InstanceService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Adds a read-only data source to an instance.
   // Permissions required: bb.instances.update
   rpc AddDataSource(AddDataSourceRequest) returns (Instance) {
     option (google.api.http) = {
@@ -129,6 +141,7 @@ service InstanceService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Removes a read-only data source from an instance.
   // Permissions required: bb.instances.update
   rpc RemoveDataSource(RemoveDataSourceRequest) returns (Instance) {
     option (google.api.http) = {
@@ -140,6 +153,7 @@ service InstanceService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Updates a data source configuration.
   // Permissions required: bb.instances.update
   rpc UpdateDataSource(UpdateDataSourceRequest) returns (Instance) {
     option (google.api.http) = {
@@ -292,7 +306,7 @@ message SyncInstanceRequest {
   ];
 
   // When full sync is enabled, all databases in the instance will be synchronized. Otherwise, only
-  // the instance metadata (such as the database list) and any newly discovered instances will be synced.
+  // the instance metadata (such as the database list) and any newly discovered databases will be synced.
   bool enable_full_sync = 2;
 }
 
@@ -396,24 +410,32 @@ message Instance {
   // Format: instances/{instance}
   string name = 1;
 
+  // The lifecycle state of the instance.
   State state = 3;
 
+  // The display title of the instance.
   string title = 4;
 
+  // The database engine type.
   Engine engine = 5;
 
+  // The version of the database engine.
   string engine_version = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // External URL to the database instance console.
   string external_link = 7;
 
+  // Data source configurations for connecting to the instance.
   repeated DataSource data_sources = 8;
 
   // The environment resource.
   // Format: environments/prod where prod is the environment resource ID.
   optional string environment = 9 [(google.api.field_behavior) = OPTIONAL];
 
+  // Whether the instance is activated for use.
   bool activation = 10;
 
+  // Database roles available in this instance.
   repeated InstanceRole roles = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // How often the instance is synced.
@@ -437,6 +459,7 @@ message Instance {
 
 message DataSourceExternalSecret {
   enum SecretType {
+    // Unspecified secret type.
     SAECRET_TYPE_UNSPECIFIED = 0;
     // ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2
     VAULT_KV_V2 = 1;
@@ -445,29 +468,38 @@ message DataSourceExternalSecret {
     // ref: https://cloud.google.com/secret-manager/docs
     GCP_SECRET_MANAGER = 3;
   }
+  // The type of external secret store.
   SecretType secret_type = 1;
+  // The URL of the external secret store.
   string url = 2;
 
   enum AuthType {
+    // Unspecified authentication type.
     AUTH_TYPE_UNSPECIFIED = 0;
     // ref: https://developer.hashicorp.com/vault/docs/auth/token
     TOKEN = 1;
     // ref: https://developer.hashicorp.com/vault/docs/auth/approle
     VAULT_APP_ROLE = 2;
   }
+  // The authentication method for accessing the secret store.
   AuthType auth_type = 3;
 
   message AppRoleAuthOption {
+    // The role ID for Vault AppRole authentication.
     string role_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
     // the secret id for the role without ttl.
     string secret_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
 
     enum SecretType {
+      // Unspecified secret type.
       SECRET_TYPE_UNSPECIFIED = 0;
+      // Plain text secret.
       PLAIN = 1;
+      // Secret from environment variable.
       ENVIRONMENT = 2;
     }
 
+    // The type of secret for AppRole authentication.
     SecretType type = 3;
 
     // The path where the approle auth method is mounted.
@@ -475,7 +507,9 @@ message DataSourceExternalSecret {
   }
 
   oneof auth_option {
+    // AppRole authentication configuration.
     AppRoleAuthOption app_role = 4;
+    // Token for direct authentication.
     string token = 5 [(google.api.field_behavior) = INPUT_ONLY];
   }
 
@@ -488,14 +522,21 @@ message DataSourceExternalSecret {
 }
 
 message DataSource {
+  // The unique identifier for this data source.
   string id = 1;
+  // The type of data source (ADMIN or READ_ONLY).
   DataSourceType type = 2;
+  // The username for database authentication.
   string username = 3;
+  // The password for database authentication.
   string password = 4 [(google.api.field_behavior) = INPUT_ONLY];
   // Use SSL to connect to the data source. By default, we use system default SSL configuration.
   bool use_ssl = 30;
+  // The SSL certificate authority certificate.
   string ssl_ca = 5 [(google.api.field_behavior) = INPUT_ONLY];
+  // The SSL client certificate.
   string ssl_cert = 6 [(google.api.field_behavior) = INPUT_ONLY];
+  // The SSL client private key.
   string ssl_key = 7 [(google.api.field_behavior) = INPUT_ONLY];
   // verify_tls_certificate enables TLS certificate verification for SSL connections.
   // Default is false (no verification) for backward compatibility.
@@ -503,8 +544,11 @@ message DataSource {
   // Only set to false for development or when certificates cannot be properly
   // validated (e.g., self-signed certs, VPN environments).
   bool verify_tls_certificate = 39;
+  // The hostname or IP address of the database server.
   string host = 8;
+  // The port number of the database server.
   string port = 9;
+  // The name of the database to connect to.
   string database = 10;
   // srv, authentication_database and replica_set are used for MongoDB.
   // srv is a boolean flag that indicates whether the host is a DNS SRV record.
@@ -613,20 +657,28 @@ message DataSource {
 }
 
 enum DataSourceType {
+  // Unspecified data source type.
   DATA_SOURCE_UNSPECIFIED = 0;
+  // Admin data source with write permissions.
   ADMIN = 1;
+  // Read-only data source for query operations.
   READ_ONLY = 2;
 }
 
 message InstanceResource {
+  // The display title of the instance.
   string title = 1;
 
+  // The database engine type.
   Engine engine = 2;
 
+  // The version of the database engine.
   string engine_version = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // Data source configurations for the instance.
   repeated DataSource data_sources = 4;
 
+  // Whether the instance is activated.
   bool activation = 5;
 
   // The name of the instance.
@@ -640,16 +692,24 @@ message InstanceResource {
 
 message SASLConfig {
   oneof mechanism {
+    // Kerberos authentication configuration.
     KerberosConfig krb_config = 1;
   }
 }
 
 message KerberosConfig {
+  // The primary component of the Kerberos principal.
   string primary = 1;
+  // The instance component of the Kerberos principal.
   string instance = 2;
+  // The Kerberos realm.
   string realm = 3;
+  // The keytab file contents for authentication.
   bytes keytab = 4;
+  // The hostname of the Key Distribution Center (KDC).
   string kdc_host = 5;
+  // The port of the Key Distribution Center (KDC).
   string kdc_port = 6;
+  // The transport protocol for KDC communication (tcp or udp).
   string kdc_transport_protocol = 7;
 }

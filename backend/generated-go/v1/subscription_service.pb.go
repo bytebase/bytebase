@@ -26,10 +26,14 @@ const (
 type PlanType int32
 
 const (
+	// Unspecified plan type.
 	PlanType_PLAN_TYPE_UNSPECIFIED PlanType = 0
-	PlanType_FREE                  PlanType = 1
-	PlanType_TEAM                  PlanType = 2
-	PlanType_ENTERPRISE            PlanType = 3
+	// Free plan with basic features and no cost.
+	PlanType_FREE PlanType = 1
+	// Team plan with collaboration features for small to medium teams.
+	PlanType_TEAM PlanType = 2
+	// Enterprise plan with advanced features and dedicated support.
+	PlanType_ENTERPRISE PlanType = 3
 )
 
 // Enum value maps for PlanType.

@@ -15,7 +15,7 @@ import type { State } from "./common_pb";
 export declare const file_v1_actuator_service: GenFile;
 
 /**
- * The request message for getting the theme resource.
+ * Request message for getting branding resources.
  *
  * @generated from message bytebase.v1.GetResourcePackageRequest
  */
@@ -29,7 +29,7 @@ export declare type GetResourcePackageRequest = Message<"bytebase.v1.GetResource
 export declare const GetResourcePackageRequestSchema: GenMessage<GetResourcePackageRequest>;
 
 /**
- * The theme resources.
+ * Custom branding resources for the Bytebase instance.
  *
  * @generated from message bytebase.v1.ResourcePackage
  */
@@ -49,6 +49,8 @@ export declare type ResourcePackage = Message<"bytebase.v1.ResourcePackage"> & {
 export declare const ResourcePackageSchema: GenMessage<ResourcePackage>;
 
 /**
+ * Request message for setting up sample data.
+ *
  * @generated from message bytebase.v1.SetupSampleRequest
  */
 export declare type SetupSampleRequest = Message<"bytebase.v1.SetupSampleRequest"> & {
@@ -61,6 +63,8 @@ export declare type SetupSampleRequest = Message<"bytebase.v1.SetupSampleRequest
 export declare const SetupSampleRequestSchema: GenMessage<SetupSampleRequest>;
 
 /**
+ * Request message for getting actuator information.
+ *
  * @generated from message bytebase.v1.GetActuatorInfoRequest
  */
 export declare type GetActuatorInfoRequest = Message<"bytebase.v1.GetActuatorInfoRequest"> & {
@@ -73,6 +77,8 @@ export declare type GetActuatorInfoRequest = Message<"bytebase.v1.GetActuatorInf
 export declare const GetActuatorInfoRequestSchema: GenMessage<GetActuatorInfoRequest>;
 
 /**
+ * Request message for updating actuator information.
+ *
  * @generated from message bytebase.v1.UpdateActuatorInfoRequest
  */
 export declare type UpdateActuatorInfoRequest = Message<"bytebase.v1.UpdateActuatorInfoRequest"> & {
@@ -106,6 +112,8 @@ export declare type UpdateActuatorInfoRequest = Message<"bytebase.v1.UpdateActua
 export declare const UpdateActuatorInfoRequestSchema: GenMessage<UpdateActuatorInfoRequest>;
 
 /**
+ * Request message for deleting cache.
+ *
  * @generated from message bytebase.v1.DeleteCacheRequest
  */
 export declare type DeleteCacheRequest = Message<"bytebase.v1.DeleteCacheRequest"> & {
@@ -118,150 +126,162 @@ export declare type DeleteCacheRequest = Message<"bytebase.v1.DeleteCacheRequest
 export declare const DeleteCacheRequestSchema: GenMessage<DeleteCacheRequest>;
 
 /**
- * ServerInfo is the API message for server info.
+ * System information and configuration for the Bytebase instance.
  * Actuator concept is similar to the Spring Boot Actuator.
  *
  * @generated from message bytebase.v1.ActuatorInfo
  */
 export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
   /**
-   * version is the bytebase's server version
+   * The Bytebase server version.
    *
    * @generated from field: string version = 1;
    */
   version: string;
 
   /**
-   * git_commit is the git commit hash of the build
+   * The git commit hash of the build.
    *
    * @generated from field: string git_commit = 2;
    */
   gitCommit: string;
 
   /**
-   * readonly flag means if the Bytebase is running in readonly mode.
+   * Whether the Bytebase instance is running in read-only mode.
    *
    * @generated from field: bool readonly = 3;
    */
   readonly: boolean;
 
   /**
-   * saas flag means if the Bytebase is running in SaaS mode, some features are not allowed to edit by users.
+   * Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users.
    *
    * @generated from field: bool saas = 4;
    */
   saas: boolean;
 
   /**
-   * demo flag means if the Bytebase is running in demo mode.
+   * Whether the Bytebase instance is running in demo mode.
    *
    * @generated from field: bool demo = 5;
    */
   demo: boolean;
 
   /**
-   * host is the Bytebase instance host.
+   * The host address of the Bytebase instance.
    *
    * @generated from field: string host = 6;
    */
   host: string;
 
   /**
-   * port is the Bytebase instance port.
+   * The port number of the Bytebase instance.
    *
    * @generated from field: string port = 7;
    */
   port: string;
 
   /**
-   * external_url is the URL where user or webhook callback visits Bytebase.
+   * The external URL where users or webhook callbacks access Bytebase.
    *
    * @generated from field: string external_url = 8;
    */
   externalUrl: string;
 
   /**
-   * need_admin_setup flag means the Bytebase instance doesn't have any end users.
+   * Whether the Bytebase instance requires initial admin setup.
    *
    * @generated from field: bool need_admin_setup = 9;
    */
   needAdminSetup: boolean;
 
   /**
-   * disallow_signup is the flag to disable self-service signup.
+   * Whether self-service user signup is disabled.
    *
    * @generated from field: bool disallow_signup = 10;
    */
   disallowSignup: boolean;
 
   /**
-   * last_active_time is the service last active time in UTC Time Format, any API calls will refresh this value.
+   * The last time any API call was made, refreshed on each request.
    *
    * @generated from field: google.protobuf.Timestamp last_active_time = 11;
    */
   lastActiveTime?: Timestamp;
 
   /**
-   * require_2fa is the flag to require 2FA for all users.
+   * Whether two-factor authentication is required for all users.
    *
    * @generated from field: bool require_2fa = 12;
    */
   require2fa: boolean;
 
   /**
-   * workspace_id is the identifier for the workspace.
+   * The unique identifier for the workspace.
    *
    * @generated from field: string workspace_id = 13;
    */
   workspaceId: string;
 
   /**
-   * debug flag means if the debug mode is enabled.
+   * Whether debug mode is enabled.
    *
    * @generated from field: bool debug = 15;
    */
   debug: boolean;
 
   /**
+   * List of features that are not licensed.
+   *
    * @generated from field: repeated string unlicensed_features = 19;
    */
   unlicensedFeatures: string[];
 
   /**
-   * disallow_password_signin is the flag to disallow user signin with email&password. (except workspace admins)
+   * Whether password-based signin is disabled (except for workspace admins).
    *
    * @generated from field: bool disallow_password_signin = 20;
    */
   disallowPasswordSignin: boolean;
 
   /**
+   * Password complexity and restriction requirements.
+   *
    * @generated from field: bytebase.v1.PasswordRestrictionSetting password_restriction = 21;
    */
   passwordRestriction?: PasswordRestrictionSetting;
 
   /**
-   * docker flag means if the Bytebase instance is running in docker.
+   * Whether the Bytebase instance is running in Docker.
    *
    * @generated from field: bool docker = 22;
    */
   docker: boolean;
 
   /**
+   * Statistics about users in the system.
+   *
    * @generated from field: repeated bytebase.v1.ActuatorInfo.StatUser user_stats = 23;
    */
   userStats: ActuatorInfo_StatUser[];
 
   /**
+   * The number of activated database instances.
+   *
    * @generated from field: int32 activated_instance_count = 24;
    */
   activatedInstanceCount: number;
 
   /**
+   * The total number of database instances.
+   *
    * @generated from field: int32 total_instance_count = 25;
    */
   totalInstanceCount: number;
 
   /**
+   * Whether sample data setup is enabled.
+   *
    * @generated from field: bool enable_sample = 26;
    */
   enableSample: boolean;
@@ -274,20 +294,28 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
 export declare const ActuatorInfoSchema: GenMessage<ActuatorInfo>;
 
 /**
+ * User statistics by type and state.
+ *
  * @generated from message bytebase.v1.ActuatorInfo.StatUser
  */
 export declare type ActuatorInfo_StatUser = Message<"bytebase.v1.ActuatorInfo.StatUser"> & {
   /**
+   * The type of user.
+   *
    * @generated from field: bytebase.v1.UserType user_type = 1;
    */
   userType: UserType;
 
   /**
+   * The state of the user.
+   *
    * @generated from field: bytebase.v1.State state = 2;
    */
   state: State;
 
   /**
+   * The count of users matching this type and state.
+   *
    * @generated from field: int32 count = 3;
    */
   count: number;
@@ -300,10 +328,13 @@ export declare type ActuatorInfo_StatUser = Message<"bytebase.v1.ActuatorInfo.St
 export declare const ActuatorInfo_StatUserSchema: GenMessage<ActuatorInfo_StatUser>;
 
 /**
+ * ActuatorService manages system health and operational information.
+ *
  * @generated from service bytebase.v1.ActuatorService
  */
 export declare const ActuatorService: GenService<{
   /**
+   * Gets system information and health status of the Bytebase instance.
    * Permissions required: None
    *
    * @generated from rpc bytebase.v1.ActuatorService.GetActuatorInfo
@@ -314,6 +345,7 @@ export declare const ActuatorService: GenService<{
     output: typeof ActuatorInfoSchema;
   },
   /**
+   * Updates system configuration settings for the Bytebase instance.
    * Permissions required: bb.settings.set
    *
    * @generated from rpc bytebase.v1.ActuatorService.UpdateActuatorInfo
@@ -324,6 +356,7 @@ export declare const ActuatorService: GenService<{
     output: typeof ActuatorInfoSchema;
   },
   /**
+   * Sets up sample data for demonstration and testing purposes.
    * Permissions required: bb.projects.create
    *
    * @generated from rpc bytebase.v1.ActuatorService.SetupSample
@@ -334,6 +367,7 @@ export declare const ActuatorService: GenService<{
     output: typeof EmptySchema;
   },
   /**
+   * Clears the system cache to force data refresh.
    * Permissions required: None
    *
    * @generated from rpc bytebase.v1.ActuatorService.DeleteCache
@@ -344,6 +378,7 @@ export declare const ActuatorService: GenService<{
     output: typeof EmptySchema;
   },
   /**
+   * Gets custom branding resources such as logos.
    * Permissions required: None
    *
    * @generated from rpc bytebase.v1.ActuatorService.GetResourcePackage

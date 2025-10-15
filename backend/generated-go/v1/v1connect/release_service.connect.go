@@ -62,20 +62,28 @@ const (
 
 // ReleaseServiceClient is a client for the bytebase.v1.ReleaseService service.
 type ReleaseServiceClient interface {
+	// Retrieves a release by name.
 	// Permissions required: bb.releases.get
 	GetRelease(context.Context, *connect.Request[v1.GetReleaseRequest]) (*connect.Response[v1.Release], error)
+	// Lists releases in a project.
 	// Permissions required: bb.releases.list
 	ListReleases(context.Context, *connect.Request[v1.ListReleasesRequest]) (*connect.Response[v1.ListReleasesResponse], error)
+	// Searches releases by digest or other criteria.
 	// Permissions required: bb.releases.get
 	SearchReleases(context.Context, *connect.Request[v1.SearchReleasesRequest]) (*connect.Response[v1.SearchReleasesResponse], error)
+	// Creates a new release with SQL files.
 	// Permissions required: bb.releases.create
 	CreateRelease(context.Context, *connect.Request[v1.CreateReleaseRequest]) (*connect.Response[v1.Release], error)
+	// Updates an existing release.
 	// Permissions required: bb.releases.update
 	UpdateRelease(context.Context, *connect.Request[v1.UpdateReleaseRequest]) (*connect.Response[v1.Release], error)
+	// Deletes a release.
 	// Permissions required: bb.releases.delete
 	DeleteRelease(context.Context, *connect.Request[v1.DeleteReleaseRequest]) (*connect.Response[emptypb.Empty], error)
+	// Restores a deleted release.
 	// Permissions required: bb.releases.undelete
 	UndeleteRelease(context.Context, *connect.Request[v1.UndeleteReleaseRequest]) (*connect.Response[v1.Release], error)
+	// Validates a release by dry-running checks on target databases.
 	// Permissions required: bb.releases.check
 	CheckRelease(context.Context, *connect.Request[v1.CheckReleaseRequest]) (*connect.Response[v1.CheckReleaseResponse], error)
 }
@@ -196,20 +204,28 @@ func (c *releaseServiceClient) CheckRelease(ctx context.Context, req *connect.Re
 
 // ReleaseServiceHandler is an implementation of the bytebase.v1.ReleaseService service.
 type ReleaseServiceHandler interface {
+	// Retrieves a release by name.
 	// Permissions required: bb.releases.get
 	GetRelease(context.Context, *connect.Request[v1.GetReleaseRequest]) (*connect.Response[v1.Release], error)
+	// Lists releases in a project.
 	// Permissions required: bb.releases.list
 	ListReleases(context.Context, *connect.Request[v1.ListReleasesRequest]) (*connect.Response[v1.ListReleasesResponse], error)
+	// Searches releases by digest or other criteria.
 	// Permissions required: bb.releases.get
 	SearchReleases(context.Context, *connect.Request[v1.SearchReleasesRequest]) (*connect.Response[v1.SearchReleasesResponse], error)
+	// Creates a new release with SQL files.
 	// Permissions required: bb.releases.create
 	CreateRelease(context.Context, *connect.Request[v1.CreateReleaseRequest]) (*connect.Response[v1.Release], error)
+	// Updates an existing release.
 	// Permissions required: bb.releases.update
 	UpdateRelease(context.Context, *connect.Request[v1.UpdateReleaseRequest]) (*connect.Response[v1.Release], error)
+	// Deletes a release.
 	// Permissions required: bb.releases.delete
 	DeleteRelease(context.Context, *connect.Request[v1.DeleteReleaseRequest]) (*connect.Response[emptypb.Empty], error)
+	// Restores a deleted release.
 	// Permissions required: bb.releases.undelete
 	UndeleteRelease(context.Context, *connect.Request[v1.UndeleteReleaseRequest]) (*connect.Response[v1.Release], error)
+	// Validates a release by dry-running checks on target databases.
 	// Permissions required: bb.releases.check
 	CheckRelease(context.Context, *connect.Request[v1.CheckReleaseRequest]) (*connect.Response[v1.CheckReleaseResponse], error)
 }

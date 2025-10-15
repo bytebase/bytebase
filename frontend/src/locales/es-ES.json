@@ -982,8 +982,6 @@
     "waiting-for-review": "Esperando revisión",
     "issue-name": "Nombre de la incidencia",
     "grant-request": {
-      "export-rows": "número máximo de filas",
-      "select-export-rows": "Seleccionar el máximo de filas de exportación",
       "expired-at": "tiempo de caducidad",
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
@@ -1071,7 +1069,8 @@
     "approval": {
       "rejected-error": "Se ha rechazado la aprobación del problema.",
       "pending-error": "La aprobación del problema está pendiente.",
-      "approved-and-waiting-for-rollout": "Este problema ha sido aprobado y está listo para implementarse."
+      "approved-and-waiting-for-rollout": "Este problema ha sido aprobado y está listo para implementarse.",
+      "ready-for-rollout": "Listo para implementar"
     },
     "new-layout": "Nuevo diseño de CI/CD"
   },
@@ -2612,6 +2611,9 @@
       "select": "Seleccionar flujo de aprobación",
       "create-approval-flow": "Crear flujo de aprobación",
       "edit-approval-flow": "Editar flujo de aprobación",
+      "built-in": "Flujos Integrados",
+      "custom": "Flujos Personalizados",
+      "no-custom-flows": "Aún no se han creado flujos de aprobación personalizados. Haga clic en 'Crear Flujo' para agregar uno.",
       "node": {
         "nodes": "Nodos de aprobación",
         "description": "Solo se requiere una aprobación en este nodo cuando hay múltiples aprobadores.",
@@ -2751,10 +2753,6 @@
     "sql-editor-user": {
       "self": "Usuario del editor SQL",
       "description": "El consultor del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
-    },
-    "project-exporter": {
-      "self": "Exportador del proyecto",
-      "description": "El exportador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
     },
     "project-viewer": {
       "self": "Espectador del proyecto",

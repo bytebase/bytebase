@@ -6,6 +6,7 @@ CREATE TABLE idp (
   domain text NOT NULL,
   type text NOT NULL CONSTRAINT idp_type_check CHECK (type IN ('OAUTH2', 'OIDC', 'LDAP')),
   -- config stores the corresponding configuration of the IdP, which may vary depending on the type of the IdP.
+  -- Stored as IdentityProviderConfig (proto/store/store/idp.proto)
   config jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -23,13 +24,19 @@ CREATE TABLE principal (
     email text NOT NULL,
     password_hash text NOT NULL,
     phone text NOT NULL DEFAULT '',
+    -- Stored as MFAConfig (proto/store/store/user.proto)
     mfa_config jsonb NOT NULL DEFAULT '{}',
+    -- Stored as UserProfile (proto/store/store/user.proto)
     profile jsonb NOT NULL DEFAULT '{}'
 );
 
 -- Setting
 CREATE TABLE setting (
     id serial PRIMARY KEY,
+    -- name: AUTH_SECRET, BRANDING_LOGO, WORKSPACE_ID, WORKSPACE_PROFILE, WORKSPACE_APPROVAL,
+    -- WORKSPACE_EXTERNAL_APPROVAL, ENTERPRISE_LICENSE, APP_IM, WATERMARK, AI, SCHEMA_TEMPLATE,
+    -- DATA_CLASSIFICATION, SEMANTIC_TYPES, SCIM, PASSWORD_RESTRICTION, ENVIRONMENT
+    -- Enum: SettingName (proto/store/store/setting.proto)
     name text NOT NULL,
     value text NOT NULL
 );
@@ -44,8 +51,10 @@ CREATE TABLE role (
     resource_id text NOT NULL,
     name text NOT NULL,
     description text NOT NULL,
+    -- Stored as RolePermissions (proto/store/store/role.proto)
     permissions jsonb NOT NULL DEFAULT '{}',
-    payload jsonb NOT NULL DEFAULT '{}' -- saved for future use
+    -- saved for future use
+    payload jsonb NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_role_unique_resource_id on role (resource_id);
@@ -58,9 +67,22 @@ CREATE TABLE policy (
     id serial PRIMARY KEY,
     enforce boolean NOT NULL DEFAULT TRUE,
     updated_at timestamptz NOT NULL DEFAULT now(),
+    -- resource_type: WORKSPACE, ENVIRONMENT, PROJECT
+    -- Enum: Policy.Resource (proto/store/store/policy.proto)
     resource_type text NOT NULL,
+    -- resource: resource name in format like "environments/{environment}", "projects/{project}", etc.
     resource TEXT NOT NULL,
+    -- type: ROLLOUT, MASKING_EXCEPTION, QUERY_DATA, MASKING_RULE, IAM, TAG, DATA_SOURCE_QUERY
+    -- Enum: Policy.Type (proto/store/store/policy.proto)
     type text NOT NULL,
+    -- Stored as different types based on policy type (proto/store/store/policy.proto):
+    -- ROLLOUT: RolloutPolicy
+    -- MASKING_EXCEPTION: MaskingExceptionPolicy
+    -- QUERY_DATA: QueryDataPolicy
+    -- MASKING_RULE: MaskingRulePolicy
+    -- IAM: IamPolicy
+    -- TAG: TagPolicy
+    -- DATA_SOURCE_QUERY: DataSourceQueryPolicy
     payload jsonb NOT NULL DEFAULT '{}',
     inherit_from_parent boolean NOT NULL DEFAULT TRUE
 );
@@ -76,6 +98,7 @@ CREATE TABLE project (
     name text NOT NULL,
     resource_id text NOT NULL,
     data_classification_config_id text NOT NULL DEFAULT '',
+    -- Stored as Project (proto/store/store/project.proto)
     setting jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -89,6 +112,7 @@ CREATE TABLE project_webhook (
     name text NOT NULL,
     url text NOT NULL,
     event_list text ARRAY NOT NULL,
+    -- Stored as ProjectWebhookPayload (proto/store/store/project_webhook.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -102,6 +126,7 @@ CREATE TABLE instance (
     deleted boolean NOT NULL DEFAULT FALSE,
     environment text,
     resource_id text NOT NULL,
+    -- Stored as Instance (proto/store/store/instance.proto)
     metadata jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -118,6 +143,7 @@ CREATE TABLE db (
     instance text NOT NULL REFERENCES instance(resource_id),
     name text NOT NULL,
     environment text,
+    -- Stored as DatabaseMetadata (proto/store/store/database.proto)
     metadata jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -132,8 +158,10 @@ CREATE TABLE db_schema (
     id serial PRIMARY KEY,
     instance text NOT NULL,
     db_name text NOT NULL,
+    -- Stored as DatabaseSchemaMetadata (proto/store/store/database.proto)
     metadata json NOT NULL DEFAULT '{}',
     raw_dump text NOT NULL DEFAULT '',
+    -- Stored as DatabaseConfig (proto/store/store/database.proto)
     config jsonb NOT NULL DEFAULT '{}',
     todo boolean NOT NULL DEFAULT TRUE,
     CONSTRAINT db_schema_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
@@ -156,6 +184,7 @@ CREATE TABLE sheet (
     project text NOT NULL REFERENCES project(resource_id),
     name text NOT NULL,
     sha256 bytea NOT NULL,
+    -- Stored as SheetPayload (proto/store/store/sheet.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -183,6 +212,7 @@ CREATE TABLE task (
     environment text,
     db_name text,
     type text NOT NULL,
+    -- Stored as Task (proto/store/store/task.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -204,6 +234,7 @@ CREATE TABLE task_run (
     run_at timestamptz,
     code integer NOT NULL DEFAULT 0,
     -- result saves the task run result in json format
+    -- Stored as TaskRunResult (proto/store/store/task_run.proto)
     result jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -217,6 +248,7 @@ CREATE TABLE task_run_log (
     id bigserial PRIMARY KEY,
     task_run_id integer NOT NULL REFERENCES task_run(id),
     created_at timestamptz NOT NULL DEFAULT now(),
+    -- Stored as TaskRunLog (proto/store/store/task_run_log.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -237,6 +269,7 @@ CREATE TABLE plan (
     pipeline_id integer REFERENCES pipeline(id),
     name text NOT NULL,
     description text NOT NULL,
+    -- Stored as PlanConfig (proto/store/store/plan.proto)
     config jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -253,7 +286,9 @@ CREATE TABLE plan_check_run (
     plan_id bigint NOT NULL REFERENCES plan(id),
     status text NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     type text NOT NULL CHECK (type LIKE 'bb.plan-check.%'),
+    -- Stored as PlanCheckRunConfig (proto/store/store/plan_check_run.proto)
     config jsonb NOT NULL DEFAULT '{}',
+    -- Stored as PlanCheckRunResult (proto/store/store/plan_check_run.proto)
     result jsonb NOT NULL DEFAULT '{}',
     payload jsonb NOT NULL DEFAULT '{}'
 );
@@ -275,8 +310,11 @@ CREATE TABLE issue (
     pipeline_id integer REFERENCES pipeline(id),
     name text NOT NULL,
     status text NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
+    -- type: DATABASE_CHANGE, GRANT_REQUEST, DATABASE_EXPORT
+    -- Enum: Issue.Type (proto/store/store/issue.proto)
     type text NOT NULL,
     description text NOT NULL DEFAULT '',
+    -- Stored as Issue (proto/store/store/issue.proto)
     payload jsonb NOT NULL DEFAULT '{}',
     ts_vector tsvector
 );
@@ -306,6 +344,7 @@ ALTER SEQUENCE instance_change_history_id_seq RESTART WITH 101;
 CREATE TABLE audit_log (
     id bigserial PRIMARY KEY,
     created_at timestamptz NOT NULL DEFAULT now(),
+    -- Stored as AuditLog (proto/store/store/audit_log.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -327,6 +366,7 @@ CREATE TABLE issue_comment (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     issue_id integer NOT NULL REFERENCES issue(id),
+    -- Stored as IssueCommentPayload (proto/store/store/issue_comment.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -341,8 +381,11 @@ CREATE TABLE query_history (
     project_id text NOT NULL, -- the project resource id
     database text NOT NULL, -- the database resource name, for example, instances/{instance}/databases/{database}
     statement text NOT NULL,
-    type text NOT NULL, -- the history type, support QUERY and EXPORT.
-    payload jsonb NOT NULL DEFAULT '{}' -- saved for details, like error, duration, etc.
+    -- type: QUERY, EXPORT
+    type text NOT NULL,
+    -- saved for details, like error, duration, etc.
+    -- Stored as QueryHistoryPayload (proto/store/store/query_history.proto)
+    payload jsonb NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_query_history_creator_id_created_at_project_id ON query_history(creator_id, created_at, project_id DESC);
@@ -360,6 +403,8 @@ CREATE TABLE worksheet (
     db_name text,
     name text NOT NULL,
     statement text NOT NULL,
+    -- visibility: PROJECT_READ, PROJECT_WRITE, PRIVATE
+    -- Enum: Worksheet.Visibility (proto/v1/v1/worksheet_service.proto)
     visibility text NOT NULL,
     payload jsonb NOT NULL DEFAULT '{}'
 );
@@ -384,10 +429,11 @@ CREATE INDEX idx_worksheet_organizer_principal_id ON worksheet_organizer(princip
 CREATE TABLE risk (
     id bigserial PRIMARY KEY,
     source text NOT NULL CHECK (source LIKE 'bb.risk.%'),
-    -- how risky is the risk, the higher the riskier
-    level bigint NOT NULL,
+    -- Risk level: RISK_LEVEL_UNSPECIFIED, LOW, MODERATE, HIGH
+    level text NOT NULL,
     name text NOT NULL,
     active boolean NOT NULL,
+    -- Stored as google.type.Expr (from Google Common Expression Language)
     expression jsonb NOT NULL
 );
 
@@ -397,14 +443,14 @@ CREATE TABLE db_group (
     id bigserial PRIMARY KEY,
     project text NOT NULL REFERENCES project(resource_id),
     resource_id text NOT NULL,
-    placeholder text NOT NULL DEFAULT '',
+    name text NOT NULL DEFAULT '',
+    -- Stored as google.type.Expr (from Google Common Expression Language)
     expression jsonb NOT NULL DEFAULT '{}',
+    -- Stored as DatabaseGroupPayload (proto/store/store/db_group.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_db_group_unique_project_resource_id ON db_group(project, resource_id);
-
-CREATE UNIQUE INDEX idx_db_group_unique_project_placeholder ON db_group(project, placeholder);
 
 ALTER SEQUENCE db_group_id_seq RESTART WITH 101;
 
@@ -415,6 +461,7 @@ CREATE TABLE changelist (
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
     name text NOT NULL,
+    -- Stored as Changelist (proto/store/store/changelist.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -426,6 +473,7 @@ CREATE TABLE export_archive (
   id serial PRIMARY KEY,
   created_at timestamptz NOT NULL DEFAULT now(),
   bytes bytea,
+  -- Stored as ExportArchivePayload (proto/store/store/export_archive.proto)
   payload jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -433,6 +481,7 @@ CREATE TABLE user_group (
   email text PRIMARY KEY,
   name text NOT NULL,
   description text NOT NULL DEFAULT '',
+  -- Stored as GroupPayload (proto/store/store/group.proto)
   payload jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -441,6 +490,7 @@ CREATE TABLE review_config (
     id text NOT NULL PRIMARY KEY,
     enabled boolean NOT NULL DEFAULT TRUE,
     name text NOT NULL,
+    -- Stored as ReviewConfigPayload (proto/store/store/review_config.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -452,6 +502,7 @@ CREATE TABLE revision (
     deleter_id integer REFERENCES principal(id),
     deleted_at timestamptz,
     version text NOT NULL,
+    -- Stored as RevisionPayload (proto/store/store/revision.proto)
     payload jsonb NOT NULL DEFAULT '{}',
     CONSTRAINT revision_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
@@ -467,6 +518,7 @@ CREATE TABLE sync_history (
     created_at timestamptz NOT NULL DEFAULT now(),
     instance text NOT NULL,
     db_name text NOT NULL,
+    -- Stored as DatabaseSchemaMetadata (proto/store/store/database.proto)
     metadata json NOT NULL DEFAULT '{}',
     raw_dump text NOT NULL DEFAULT '',
     CONSTRAINT sync_history_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
@@ -484,6 +536,7 @@ CREATE TABLE changelog (
     status text NOT NULL CONSTRAINT changelog_status_check CHECK (status IN ('PENDING', 'DONE', 'FAILED')),
     prev_sync_history_id bigint REFERENCES sync_history(id),
     sync_history_id bigint REFERENCES sync_history(id),
+    -- Stored as ChangelogPayload (proto/store/store/changelog.proto)
     payload jsonb NOT NULL DEFAULT '{}',
     CONSTRAINT changelog_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
@@ -499,6 +552,7 @@ CREATE TABLE release (
     creator_id integer NOT NULL REFERENCES principal (id),
     created_at timestamptz NOT NULL DEFAULT now(),
     digest text NOT NULL DEFAULT '',
+    -- Stored as ReleasePayload (proto/store/store/release.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );
 

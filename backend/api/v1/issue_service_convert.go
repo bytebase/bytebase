@@ -62,8 +62,8 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 
 	approval := issuePayload.GetApproval()
 	issueV1.RiskLevel = convertToIssueRiskLevel(approval.GetRiskLevel())
-	for _, template := range approval.GetApprovalTemplates() {
-		issueV1.ApprovalTemplates = append(issueV1.ApprovalTemplates, convertToApprovalTemplate(template))
+	if template := approval.GetApprovalTemplate(); template != nil {
+		issueV1.ApprovalTemplate = convertToApprovalTemplate(template)
 	}
 	for _, approver := range approval.GetApprovers() {
 		convertedApprover := &v1pb.Issue_Approver{Status: v1pb.Issue_Approver_Status(approver.GetStatus())}
@@ -92,47 +92,47 @@ func computeApprovalStatus(approval *storepb.IssuePayloadApproval) v1pb.Issue_Ap
 		return v1pb.Issue_ERROR
 	}
 
-	// If no approval templates, approval is skipped (not required)
-	if len(approval.GetApprovalTemplates()) == 0 {
+	// If no approval template, approval is skipped (not required)
+	if approval.GetApprovalTemplate() == nil {
 		return v1pb.Issue_SKIPPED
 	}
 
+	approvalTemplate := approval.GetApprovalTemplate()
+	approvers := approval.GetApprovers()
+	totalSteps := len(approvalTemplate.GetFlow().GetRoles())
+
 	// If no approvers are assigned yet, it's pending
-	if len(approval.GetApprovers()) == 0 {
+	if len(approvers) == 0 {
 		return v1pb.Issue_PENDING
 	}
 
 	// Check approver statuses
-	hasPending := false
-	allApproved := true
-
-	for _, approver := range approval.GetApprovers() {
-		switch approver.GetStatus() {
-		case storepb.IssuePayloadApproval_Approver_REJECTED:
+	for _, approver := range approvers {
+		if approver.GetStatus() == storepb.IssuePayloadApproval_Approver_REJECTED {
 			// Short-circuit: if any approver rejected, overall status is rejected
 			return v1pb.Issue_REJECTED
-		case storepb.IssuePayloadApproval_Approver_PENDING:
-			hasPending = true
-			allApproved = false
-		case storepb.IssuePayloadApproval_Approver_APPROVED:
-			// Continue checking
-		default:
-			allApproved = false
 		}
 	}
 
-	// If all approvers approved, overall status is approved
-	if allApproved {
-		return v1pb.Issue_APPROVED
+	// Check if all steps are completed
+	// Each approver corresponds to one step in the approval flow
+	// All steps are approved if:
+	// 1. Number of approvers equals number of steps
+	// 2. All approvers have APPROVED status
+	if len(approvers) >= totalSteps {
+		allApproved := true
+		for _, approver := range approvers {
+			if approver.GetStatus() != storepb.IssuePayloadApproval_Approver_APPROVED {
+				allApproved = false
+				break
+			}
+		}
+		if allApproved {
+			return v1pb.Issue_APPROVED
+		}
 	}
 
-	// If there are pending approvers, overall status is pending
-	if hasPending {
-		return v1pb.Issue_PENDING
-	}
-
-	// Fallback: should not reach here in normal cases, but treat as pending
-	// This handles edge cases where approvers exist but none are in expected states
+	// Otherwise, approval is pending (more steps to complete or waiting for approvals)
 	return v1pb.Issue_PENDING
 }
 
@@ -225,23 +225,24 @@ func convertToIssueStatus(status storepb.Issue_Status) v1pb.IssueStatus {
 	}
 }
 
-func convertToIssueRiskLevel(riskLevel storepb.IssuePayloadApproval_RiskLevel) v1pb.Issue_RiskLevel {
+func convertToIssueRiskLevel(riskLevel storepb.RiskLevel) v1pb.RiskLevel {
 	switch riskLevel {
-	case storepb.IssuePayloadApproval_RISK_LEVEL_UNSPECIFIED:
-		return v1pb.Issue_RISK_LEVEL_UNSPECIFIED
-	case storepb.IssuePayloadApproval_LOW:
-		return v1pb.Issue_LOW
-	case storepb.IssuePayloadApproval_MODERATE:
-		return v1pb.Issue_MODERATE
-	case storepb.IssuePayloadApproval_HIGH:
-		return v1pb.Issue_HIGH
+	case storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED:
+		return v1pb.RiskLevel_RISK_LEVEL_UNSPECIFIED
+	case storepb.RiskLevel_LOW:
+		return v1pb.RiskLevel_LOW
+	case storepb.RiskLevel_MODERATE:
+		return v1pb.RiskLevel_MODERATE
+	case storepb.RiskLevel_HIGH:
+		return v1pb.RiskLevel_HIGH
 	default:
-		return v1pb.Issue_RISK_LEVEL_UNSPECIFIED
+		return v1pb.RiskLevel_RISK_LEVEL_UNSPECIFIED
 	}
 }
 
 func convertToApprovalTemplate(template *storepb.ApprovalTemplate) *v1pb.ApprovalTemplate {
 	return &v1pb.ApprovalTemplate{
+		Id:          template.Id,
 		Flow:        convertToApprovalFlow(template.Flow),
 		Title:       template.Title,
 		Description: template.Description,
@@ -249,28 +250,9 @@ func convertToApprovalTemplate(template *storepb.ApprovalTemplate) *v1pb.Approva
 }
 
 func convertToApprovalFlow(flow *storepb.ApprovalFlow) *v1pb.ApprovalFlow {
-	convertedFlow := &v1pb.ApprovalFlow{}
-	for _, step := range flow.Steps {
-		convertedFlow.Steps = append(convertedFlow.Steps, convertToApprovalStep(step))
+	return &v1pb.ApprovalFlow{
+		Roles: flow.Roles,
 	}
-	return convertedFlow
-}
-
-func convertToApprovalStep(step *storepb.ApprovalStep) *v1pb.ApprovalStep {
-	convertedStep := &v1pb.ApprovalStep{
-		Type: v1pb.ApprovalStep_Type(step.Type),
-	}
-	for _, node := range step.Nodes {
-		convertedStep.Nodes = append(convertedStep.Nodes, convertToApprovalNode(node))
-	}
-	return convertedStep
-}
-
-func convertToApprovalNode(node *storepb.ApprovalNode) *v1pb.ApprovalNode {
-	v1node := &v1pb.ApprovalNode{}
-	v1node.Type = v1pb.ApprovalNode_Type(node.Type)
-	v1node.Role = node.Role
-	return v1node
 }
 
 func convertToGrantRequest(ctx context.Context, s *store.Store, v *storepb.GrantRequest) (*v1pb.GrantRequest, error) {

@@ -23,13 +23,17 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Type represents the category of issue.
 type Issue_Type int32
 
 const (
 	Issue_ISSUE_TYPE_UNSPECIFIED Issue_Type = 0
-	Issue_DATABASE_CHANGE        Issue_Type = 1
-	Issue_GRANT_REQUEST          Issue_Type = 2
-	Issue_DATABASE_EXPORT        Issue_Type = 3
+	// Issue for database schema or data changes.
+	Issue_DATABASE_CHANGE Issue_Type = 1
+	// Issue requesting database access permissions.
+	Issue_GRANT_REQUEST Issue_Type = 2
+	// Issue for exporting data from databases.
+	Issue_DATABASE_EXPORT Issue_Type = 3
 )
 
 // Enum value maps for Issue_Type.
@@ -75,13 +79,17 @@ func (Issue_Type) EnumDescriptor() ([]byte, []int) {
 	return file_store_issue_proto_rawDescGZIP(), []int{0, 0}
 }
 
+// Status represents the current state of the issue.
 type Issue_Status int32
 
 const (
 	Issue_ISSUE_STATUS_UNSPECIFIED Issue_Status = 0
-	Issue_OPEN                     Issue_Status = 1
-	Issue_DONE                     Issue_Status = 2
-	Issue_CANCELED                 Issue_Status = 3
+	// Issue is open and pending action.
+	Issue_OPEN Issue_Status = 1
+	// Issue has been completed successfully.
+	Issue_DONE Issue_Status = 2
+	// Issue was canceled and will not be completed.
+	Issue_CANCELED Issue_Status = 3
 )
 
 // Enum value maps for Issue_Status.
@@ -127,11 +135,15 @@ func (Issue_Status) EnumDescriptor() ([]byte, []int) {
 	return file_store_issue_proto_rawDescGZIP(), []int{0, 1}
 }
 
+// Issue is the metadata for issues that track database operations and access requests.
 type Issue struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Approval      *IssuePayloadApproval  `protobuf:"bytes,1,opt,name=approval,proto3" json:"approval,omitempty"`
-	GrantRequest  *GrantRequest          `protobuf:"bytes,2,opt,name=grant_request,json=grantRequest,proto3" json:"grant_request,omitempty"`
-	Labels        []string               `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Approval information for the issue workflow.
+	Approval *IssuePayloadApproval `protobuf:"bytes,1,opt,name=approval,proto3" json:"approval,omitempty"`
+	// Access grant request details if this is a grant request issue.
+	GrantRequest *GrantRequest `protobuf:"bytes,2,opt,name=grant_request,json=grantRequest,proto3" json:"grant_request,omitempty"`
+	// Labels attached to categorize and filter the issue.
+	Labels        []string `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -187,15 +199,18 @@ func (x *Issue) GetLabels() []string {
 	return nil
 }
 
+// GrantRequest contains details for requesting database access permissions.
 type GrantRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The requested role.
+	// The role being requested for the user.
 	// Format: roles/EXPORTER.
 	Role string `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
-	// The user to be granted.
+	// The user who will receive the role.
 	// Format: users/{userUID}.
-	User          string               `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
-	Condition     *expr.Expr           `protobuf:"bytes,3,opt,name=condition,proto3" json:"condition,omitempty"`
+	User string `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
+	// Optional conditional expression that limits when the grant applies.
+	Condition *expr.Expr `protobuf:"bytes,3,opt,name=condition,proto3" json:"condition,omitempty"`
+	// Duration after which the grant automatically expires.
 	Expiration    *durationpb.Duration `protobuf:"bytes,4,opt,name=expiration,proto3" json:"expiration,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

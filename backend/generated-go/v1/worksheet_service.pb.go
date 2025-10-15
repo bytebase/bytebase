@@ -180,7 +180,7 @@ type UpdateWorksheetRequest struct {
 	Worksheet *Worksheet `protobuf:"bytes,1,opt,name=worksheet,proto3" json:"worksheet,omitempty"`
 	// The list of fields to be updated.
 	// Fields are specified relative to the worksheet.
-	// (e.g. `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`)
+	// (e.g., `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`)
 	// Only support update the following fields for now:
 	// - `title`
 	// - `statement`
@@ -424,13 +424,13 @@ type SearchWorksheetsRequest struct {
 	// visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
 	// visibility == "PRIVATE"
 	Filter string `protobuf:"bytes,1,opt,name=filter,proto3" json:"filter,omitempty"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// The maximum number of worksheets to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 10 worksheets will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used.
+	// Pagination is not currently implemented. This field is reserved for future use.
 	// A page token, received from a previous `SearchWorksheets` call.
 	// Provide this to retrieve the subsequent page.
 	//
@@ -496,7 +496,8 @@ type SearchWorksheetsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The worksheets that matched the search criteria.
 	Worksheets []*Worksheet `protobuf:"bytes,1,rep,name=worksheets,proto3" json:"worksheets,omitempty"`
-	// Not used. A token, which can be sent as `page_token` to retrieve the next page.
+	// Pagination is not currently implemented. This field is reserved for future use.
+	// A token, which can be sent as `page_token` to retrieve the next page.
 	// If this field is omitted, there are no subsequent pages.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields

@@ -77,30 +77,43 @@ const (
 
 // InstanceServiceClient is a client for the bytebase.v1.InstanceService service.
 type InstanceServiceClient interface {
+	// Gets a database instance by name.
 	// Permissions required: bb.instances.get
 	GetInstance(context.Context, *connect.Request[v1.GetInstanceRequest]) (*connect.Response[v1.Instance], error)
+	// Lists all database instances.
 	// Permissions required: bb.instances.list
 	ListInstances(context.Context, *connect.Request[v1.ListInstancesRequest]) (*connect.Response[v1.ListInstancesResponse], error)
+	// Creates a new database instance.
 	// Permissions required: bb.instances.create
 	CreateInstance(context.Context, *connect.Request[v1.CreateInstanceRequest]) (*connect.Response[v1.Instance], error)
+	// Updates a database instance.
 	// Permissions required: bb.instances.update
 	UpdateInstance(context.Context, *connect.Request[v1.UpdateInstanceRequest]) (*connect.Response[v1.Instance], error)
+	// Deletes or soft-deletes a database instance.
 	// Permissions required: bb.instances.delete
 	DeleteInstance(context.Context, *connect.Request[v1.DeleteInstanceRequest]) (*connect.Response[emptypb.Empty], error)
+	// Restores a soft-deleted database instance.
 	// Permissions required: bb.instances.undelete
 	UndeleteInstance(context.Context, *connect.Request[v1.UndeleteInstanceRequest]) (*connect.Response[v1.Instance], error)
+	// Syncs database schemas and metadata from an instance.
 	// Permissions required: bb.instances.sync
 	SyncInstance(context.Context, *connect.Request[v1.SyncInstanceRequest]) (*connect.Response[v1.SyncInstanceResponse], error)
+	// Lists all databases within an instance without creating them.
 	// Permissions required: bb.instances.get
 	ListInstanceDatabase(context.Context, *connect.Request[v1.ListInstanceDatabaseRequest]) (*connect.Response[v1.ListInstanceDatabaseResponse], error)
+	// Syncs multiple instances in a single request.
 	// Permissions required: bb.instances.sync
 	BatchSyncInstances(context.Context, *connect.Request[v1.BatchSyncInstancesRequest]) (*connect.Response[v1.BatchSyncInstancesResponse], error)
+	// Updates multiple instances in a single request.
 	// Permissions required: bb.instances.update
 	BatchUpdateInstances(context.Context, *connect.Request[v1.BatchUpdateInstancesRequest]) (*connect.Response[v1.BatchUpdateInstancesResponse], error)
+	// Adds a read-only data source to an instance.
 	// Permissions required: bb.instances.update
 	AddDataSource(context.Context, *connect.Request[v1.AddDataSourceRequest]) (*connect.Response[v1.Instance], error)
+	// Removes a read-only data source from an instance.
 	// Permissions required: bb.instances.update
 	RemoveDataSource(context.Context, *connect.Request[v1.RemoveDataSourceRequest]) (*connect.Response[v1.Instance], error)
+	// Updates a data source configuration.
 	// Permissions required: bb.instances.update
 	UpdateDataSource(context.Context, *connect.Request[v1.UpdateDataSourceRequest]) (*connect.Response[v1.Instance], error)
 }
@@ -281,30 +294,43 @@ func (c *instanceServiceClient) UpdateDataSource(ctx context.Context, req *conne
 
 // InstanceServiceHandler is an implementation of the bytebase.v1.InstanceService service.
 type InstanceServiceHandler interface {
+	// Gets a database instance by name.
 	// Permissions required: bb.instances.get
 	GetInstance(context.Context, *connect.Request[v1.GetInstanceRequest]) (*connect.Response[v1.Instance], error)
+	// Lists all database instances.
 	// Permissions required: bb.instances.list
 	ListInstances(context.Context, *connect.Request[v1.ListInstancesRequest]) (*connect.Response[v1.ListInstancesResponse], error)
+	// Creates a new database instance.
 	// Permissions required: bb.instances.create
 	CreateInstance(context.Context, *connect.Request[v1.CreateInstanceRequest]) (*connect.Response[v1.Instance], error)
+	// Updates a database instance.
 	// Permissions required: bb.instances.update
 	UpdateInstance(context.Context, *connect.Request[v1.UpdateInstanceRequest]) (*connect.Response[v1.Instance], error)
+	// Deletes or soft-deletes a database instance.
 	// Permissions required: bb.instances.delete
 	DeleteInstance(context.Context, *connect.Request[v1.DeleteInstanceRequest]) (*connect.Response[emptypb.Empty], error)
+	// Restores a soft-deleted database instance.
 	// Permissions required: bb.instances.undelete
 	UndeleteInstance(context.Context, *connect.Request[v1.UndeleteInstanceRequest]) (*connect.Response[v1.Instance], error)
+	// Syncs database schemas and metadata from an instance.
 	// Permissions required: bb.instances.sync
 	SyncInstance(context.Context, *connect.Request[v1.SyncInstanceRequest]) (*connect.Response[v1.SyncInstanceResponse], error)
+	// Lists all databases within an instance without creating them.
 	// Permissions required: bb.instances.get
 	ListInstanceDatabase(context.Context, *connect.Request[v1.ListInstanceDatabaseRequest]) (*connect.Response[v1.ListInstanceDatabaseResponse], error)
+	// Syncs multiple instances in a single request.
 	// Permissions required: bb.instances.sync
 	BatchSyncInstances(context.Context, *connect.Request[v1.BatchSyncInstancesRequest]) (*connect.Response[v1.BatchSyncInstancesResponse], error)
+	// Updates multiple instances in a single request.
 	// Permissions required: bb.instances.update
 	BatchUpdateInstances(context.Context, *connect.Request[v1.BatchUpdateInstancesRequest]) (*connect.Response[v1.BatchUpdateInstancesResponse], error)
+	// Adds a read-only data source to an instance.
 	// Permissions required: bb.instances.update
 	AddDataSource(context.Context, *connect.Request[v1.AddDataSourceRequest]) (*connect.Response[v1.Instance], error)
+	// Removes a read-only data source from an instance.
 	// Permissions required: bb.instances.update
 	RemoveDataSource(context.Context, *connect.Request[v1.RemoveDataSourceRequest]) (*connect.Response[v1.Instance], error)
+	// Updates a data source configuration.
 	// Permissions required: bb.instances.update
 	UpdateDataSource(context.Context, *connect.Request[v1.UpdateDataSourceRequest]) (*connect.Response[v1.Instance], error)
 }

@@ -1,21 +1,11 @@
 {
   "custom-approval": {
-    "approval-flow": {
-      "node": {
-        "group": {
-          "WORKSPACE_OWNER": "ワークスペース管理者",
-          "WORKSPACE_DBA": "DBA",
-          "PROJECT_OWNER": "プロジェクトオーナー",
-          "PROJECT_MEMBER": "プロジェクト開発者"
-        }
-      },
-      "presets": {
-        "owner-dba": "システム定義のプロセス。承認は最初にプロジェクト所有者によって行われ、次に DBA によって行われます。",
-        "owner": "システム定義のプロセス。プロジェクト所有者の承認のみが必要です。",
-        "dba": "システム定義のプロセス。 DBA の承認のみが必要です。",
-        "admin": "システム定義のプロセス。管理者の承認のみが必要です。",
-        "owner-dba-admin": "システム定義のプロセス。承認は、最初にプロジェクト所有者によって行われ、次に DBA、最後に管理者によって行われます。"
-      }
+    "approval-flow-builtin": {
+      "project-owner": "システム定義のプロセス。プロジェクト所有者の承認のみが必要です。",
+      "workspace-dba": "システム定義のプロセス。 DBA の承認のみが必要です。",
+      "workspace-admin": "システム定義のプロセス。管理者の承認のみが必要です。",
+      "project-owner-workspace-dba": "システム定義のプロセス。承認は最初にプロジェクト所有者によって行われ、次に DBA によって行われます。",
+      "project-owner-workspace-dba-workspace-admin": "システム定義のプロセス。承認は、最初にプロジェクト所有者によって行われ、次に DBA、最後に管理者によって行われます。"
     },
     "risk-rule": {
       "template": {
