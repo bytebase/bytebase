@@ -291,7 +291,14 @@ func TestExportJSON(t *testing.T) {
 					},
 				},
 			},
-			want: "[{\"id\":1,\"name\":\"Alice\",\"email\":\"a@bytebase.com\",\"age\":20}]",
+			want: `[
+  {
+    "id": 1,
+    "name": "Alice",
+    "email": "a@bytebase.com",
+    "age": 20
+  }
+]`,
 		},
 	}
 
