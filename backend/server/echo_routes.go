@@ -111,11 +111,14 @@ func securityHeadersMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// Content Security Policy
 		// Note: style-src allows 'unsafe-inline' temporarily due to inline styles in Vue components
 		// TODO: Migrate inline styles to CSS classes and remove 'unsafe-inline'
+		// Note: script-src allows 'unsafe-inline' for Vite legacy plugin feature detection
+		// Note: script-src allows 'wasm-unsafe-eval' for Monaco Editor WebAssembly modules
+		// Note: connect-src allows 'data:' for Monaco Editor language definitions
 		csp := "default-src 'self'; " +
-			"script-src 'self'; " +
+			"script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; " +
 			"style-src 'self' 'unsafe-inline'; " +
 			"img-src 'self' data: blob:; " +
-			"connect-src 'self' ws: wss:; " +
+			"connect-src 'self' data: ws: wss:; " +
 			"font-src 'self'; " +
 			"object-src 'none'; " +
 			"base-uri 'self'; " +
