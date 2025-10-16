@@ -762,14 +762,13 @@ Authorization method for RPC calls.
 <a name="bytebase-v1-Position"></a>
 
 ### Position
-Position in a text expressed as zero-based line and zero-based column byte
-offset.
+Position in a text expressed as one-based line and one-based column.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| line | [int32](#int32) |  | Line position in a text (zero-based). |
-| column | [int32](#int32) |  | Column position in a text (zero-based), equivalent to byte offset. |
+| line | [int32](#int32) |  | Line position in a text (one-based). |
+| column | [int32](#int32) |  | Column position in a text (one-based). |
 
 
 
@@ -8185,9 +8184,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| line | [int32](#int32) |  |  |
-| column | [int32](#int32) |  |  |
-| start_position | [Position](#bytebase-v1-Position) |  | 1-based Position of the SQL statement. To supersede `line` and `column` above. |
+| start_position | [Position](#bytebase-v1-Position) |  | Position of the SQL statement. |
 | end_position | [Position](#bytebase-v1-Position) |  |  |
 
 

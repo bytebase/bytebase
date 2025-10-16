@@ -1543,7 +1543,7 @@
         
       
         <h3 id="bytebase.store.Position">Position</h3>
-        <p>Position in a text expressed as zero-based line and column byte offset.</p>
+        <p>Position in a text expressed as one-based line and one-based column.</p>
 
         
           <table class="field-table">
@@ -1556,14 +1556,14 @@
                   <td>line</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>Line position in a text (zero-based). </p></td>
+                  <td><p>Line position in a text (one-based). </p></td>
                 </tr>
               
                 <tr>
                   <td>column</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>Column position in a text (zero-based), equivalent to byte offset. </p></td>
+                  <td><p>Column position in a text (one-based). </p></td>
                 </tr>
               
             </tbody>
@@ -9363,25 +9363,10 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
             <tbody>
               
                 <tr>
-                  <td>line</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>column</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>start_position</td>
                   <td><a href="#bytebase.store.Position">Position</a></td>
                   <td></td>
-                  <td><p>1-based position of the SQL statement.
-To supersede `line` and `column` above. </p></td>
+                  <td><p>Position of the SQL statement. </p></td>
                 </tr>
               
                 <tr>

@@ -298,7 +298,6 @@ const transformToFormattedCheckRuns = (
             case: "sqlReviewReport",
             value: {
               startPosition: advice.startPosition,
-              line: advice.startPosition ? advice.startPosition.line : 0,
             },
           },
         });

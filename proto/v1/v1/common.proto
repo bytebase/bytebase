@@ -97,12 +97,11 @@ enum ExportFormat {
   XLSX = 4;
 }
 
-// Position in a text expressed as zero-based line and zero-based column byte
-// offset.
+// Position in a text expressed as one-based line and one-based column.
 message Position {
-  // Line position in a text (zero-based).
+  // Line position in a text (one-based).
   int32 line = 1;
-  // Column position in a text (zero-based), equivalent to byte offset.
+  // Column position in a text (one-based).
   int32 column = 2;
 }
 

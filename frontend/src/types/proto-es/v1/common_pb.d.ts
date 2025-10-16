@@ -11,21 +11,20 @@ import type { Message } from "@bufbuild/protobuf";
 export declare const file_v1_common: GenFile;
 
 /**
- * Position in a text expressed as zero-based line and zero-based column byte
- * offset.
+ * Position in a text expressed as one-based line and one-based column.
  *
  * @generated from message bytebase.v1.Position
  */
 export declare type Position = Message<"bytebase.v1.Position"> & {
   /**
-   * Line position in a text (zero-based).
+   * Line position in a text (one-based).
    *
    * @generated from field: int32 line = 1;
    */
   line: number;
 
   /**
-   * Column position in a text (zero-based), equivalent to byte offset.
+   * Column position in a text (one-based).
    *
    * @generated from field: int32 column = 2;
    */

@@ -14,7 +14,7 @@
         {{ content }}
       </div>
       <div v-if="position" class="text-sm mt-1 text-control-light">
-        Line {{ position.line + 1 }}, Column {{ position.column + 1 }}
+        Line {{ position.line }}, Column {{ position.column }}
       </div>
       <div
         v-if="affectedRows !== undefined"

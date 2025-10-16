@@ -55,12 +55,9 @@ message PlanCheckRunResult {
       ChangedResources changed_resources = 4;
     }
     message SqlReviewReport {
-      reserved 3, 4;
+      reserved 1, 2, 3, 4;
 
-      int32 line = 1;
-      int32 column = 2;
-      // 1-based position of the SQL statement.
-      // To supersede `line` and `column` above.
+      // Position of the SQL statement.
       Position start_position = 8;
       Position end_position = 9;
     }

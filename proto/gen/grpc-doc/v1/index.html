@@ -2982,7 +2982,7 @@ Example: UpdateRole with allow_missing requires both bb.roles.update
 
       
         <h3 id="bytebase.v1.Position">Position</h3>
-        <p>Position in a text expressed as zero-based line and zero-based column byte</p><p>offset.</p>
+        <p>Position in a text expressed as one-based line and one-based column.</p>
 
         
           <table class="field-table">
@@ -2995,14 +2995,14 @@ Example: UpdateRole with allow_missing requires both bb.roles.update
                   <td>line</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>Line position in a text (zero-based). </p></td>
+                  <td><p>Line position in a text (one-based). </p></td>
                 </tr>
               
                 <tr>
                   <td>column</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>Column position in a text (zero-based), equivalent to byte offset. </p></td>
+                  <td><p>Column position in a text (one-based). </p></td>
                 </tr>
               
             </tbody>
@@ -23125,25 +23125,10 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
             <tbody>
               
                 <tr>
-                  <td>line</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>column</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>start_position</td>
                   <td><a href="#bytebase.v1.Position">Position</a></td>
                   <td></td>
-                  <td><p>1-based Position of the SQL statement.
-To supersede `line` and `column` above. </p></td>
+                  <td><p>Position of the SQL statement. </p></td>
                 </tr>
               
                 <tr>

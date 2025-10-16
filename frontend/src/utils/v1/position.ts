@@ -10,7 +10,7 @@ export function batchConvertPositionToMonacoPosition(
   const lines = text.split("\n");
   const result: monaco.IPosition[] = [];
   for (const position of positions) {
-    if (position.line < 0) {
+    if (position.line < 1) {
       result.push({
         lineNumber: 1,
         column: 1,
@@ -18,7 +18,7 @@ export function batchConvertPositionToMonacoPosition(
       continue;
     }
     // Assuming the text is in utf-8 encoding.
-    const lineNumber = position.line + 1;
+    const lineNumber = position.line;
     if (lineNumber > lines.length) {
       // Out of bounds, return the first character of the last line.
       result.push({
@@ -31,7 +31,7 @@ export function batchConvertPositionToMonacoPosition(
     const line = lines[lineNumber - 1];
     let column = 1;
     for (let i = 0; i < line.length; i++) {
-      if (position.column <= i) {
+      if (position.column <= i + 1) {
         result.push({
           lineNumber: lineNumber,
           column: column,
@@ -55,8 +55,8 @@ export function batchConvertPositionToMonacoPosition(
 }
 
 export function convertPositionLineToMonacoLine(line: number) {
-  if (line < 0) {
+  if (line < 1) {
     return 1;
   }
-  return line + 1;
+  return line;
 }

@@ -74,12 +74,6 @@ func (x *PlanCheckRunResult_Result_SqlReviewReport) Equal(y *PlanCheckRunResult_
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Line != y.Line {
-		return false
-	}
-	if x.Column != y.Column {
-		return false
-	}
 	if !x.StartPosition.Equal(y.StartPosition) {
 		return false
 	}

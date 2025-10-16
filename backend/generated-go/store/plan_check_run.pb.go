@@ -404,11 +404,8 @@ func (x *PlanCheckRunResult_Result_SqlSummaryReport) GetChangedResources() *Chan
 }
 
 type PlanCheckRunResult_Result_SqlReviewReport struct {
-	state  protoimpl.MessageState `protogen:"open.v1"`
-	Line   int32                  `protobuf:"varint,1,opt,name=line,proto3" json:"line,omitempty"`
-	Column int32                  `protobuf:"varint,2,opt,name=column,proto3" json:"column,omitempty"`
-	// 1-based position of the SQL statement.
-	// To supersede `line` and `column` above.
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Position of the SQL statement.
 	StartPosition *Position `protobuf:"bytes,8,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
 	EndPosition   *Position `protobuf:"bytes,9,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -443,20 +440,6 @@ func (x *PlanCheckRunResult_Result_SqlReviewReport) ProtoReflect() protoreflect.
 // Deprecated: Use PlanCheckRunResult_Result_SqlReviewReport.ProtoReflect.Descriptor instead.
 func (*PlanCheckRunResult_Result_SqlReviewReport) Descriptor() ([]byte, []int) {
 	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1, 0, 1}
-}
-
-func (x *PlanCheckRunResult_Result_SqlReviewReport) GetLine() int32 {
-	if x != nil {
-		return x.Line
-	}
-	return 0
-}
-
-func (x *PlanCheckRunResult_Result_SqlReviewReport) GetColumn() int32 {
-	if x != nil {
-		return x.Column
-	}
-	return 0
 }
 
 func (x *PlanCheckRunResult_Result_SqlReviewReport) GetStartPosition() *Position {
@@ -499,10 +482,10 @@ const file_store_plan_check_run_proto_rawDesc = "" +
 	"\tDDL_GHOST\x10\x04\x12\x0e\n" +
 	"\n" +
 	"SQL_EDITOR\x10\x05B\x15\n" +
-	"\x13_database_group_uid\"\xd6\x06\n" +
+	"\x13_database_group_uid\"\xb6\x06\n" +
 	"\x12PlanCheckRunResult\x12C\n" +
 	"\aresults\x18\x01 \x03(\v2).bytebase.store.PlanCheckRunResult.ResultR\aresults\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xe4\x05\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xc4\x05\n" +
 	"\x06Result\x125\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x1d.bytebase.store.Advice.StatusR\x06status\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
@@ -513,12 +496,10 @@ const file_store_plan_check_run_proto_rawDesc = "" +
 	"\x10SqlSummaryReport\x12'\n" +
 	"\x0fstatement_types\x18\x02 \x03(\tR\x0estatementTypes\x12#\n" +
 	"\raffected_rows\x18\x03 \x01(\x03R\faffectedRows\x12M\n" +
-	"\x11changed_resources\x18\x04 \x01(\v2 .bytebase.store.ChangedResourcesR\x10changedResourcesJ\x04\b\x01\x10\x02\x1a\xc7\x01\n" +
-	"\x0fSqlReviewReport\x12\x12\n" +
-	"\x04line\x18\x01 \x01(\x05R\x04line\x12\x16\n" +
-	"\x06column\x18\x02 \x01(\x05R\x06column\x12?\n" +
+	"\x11changed_resources\x18\x04 \x01(\v2 .bytebase.store.ChangedResourcesR\x10changedResourcesJ\x04\b\x01\x10\x02\x1a\xa7\x01\n" +
+	"\x0fSqlReviewReport\x12?\n" +
 	"\x0estart_position\x18\b \x01(\v2\x18.bytebase.store.PositionR\rstartPosition\x12;\n" +
-	"\fend_position\x18\t \x01(\v2\x18.bytebase.store.PositionR\vendPositionJ\x04\b\x03\x10\x04J\x04\b\x04\x10\x05B\b\n" +
+	"\fend_position\x18\t \x01(\v2\x18.bytebase.store.PositionR\vendPositionJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04J\x04\b\x04\x10\x05B\b\n" +
 	"\x06reportB\x14Z\x12generated-go/storeb\x06proto3"
 
 var (
