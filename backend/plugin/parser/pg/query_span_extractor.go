@@ -698,6 +698,47 @@ const (
 	languageTypePLPGSQL
 )
 
+func (q *querySpanExtractor) getColumnsFromFunction(name, definition string) ([]base.QuerySpanResult, error) {
+	res, err := ParsePostgreSQL(definition)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse function definition: %s", definition)
+	}
+
+	// Navigate: root -> stmtblock -> stmt -> createfunctionstmt
+	root, ok := res.Tree.(*postgresql.RootContext)
+	if !ok {
+		return nil, errors.Errorf("expecting RootContext but got %T", res.Tree)
+	}
+
+	stmtblock := root.Stmtblock()
+	if stmtblock == nil {
+		return nil, errors.Errorf("expecting stmtblock but got nil")
+	}
+
+	stmtmulti := stmtblock.Stmtmulti()
+	if stmtmulti == nil {
+		return nil, errors.Errorf("expecting stmtmulti but got nil")
+	}
+
+	stmts := stmtmulti.AllStmt()
+	if len(stmts) != 1 {
+		return nil, errors.Errorf("expecting 1 statement, but got %d", len(stmts))
+	}
+
+	stmt := stmts[0]
+	createFuncStmt := stmt.Createfunctionstmt()
+	if createFuncStmt == nil {
+		return nil, errors.Errorf("expecting Createfunctionstmt but got nil")
+	}
+
+	// TODO: Extract AS body, language, and column names from createFuncStmt
+	// For now, we just verify the AST structure is correct
+	slog.Info("Successfully navigated to Createfunctionstmt", "function", name)
+
+	// Fall back to pg_query implementation for now
+	return q.getColumnsForFunction(name, definition)
+}
+
 func (q *querySpanExtractor) getColumnsForFunction(name, definition string) ([]base.QuerySpanResult, error) {
 	res, err := pgquery.Parse(definition)
 	if err != nil {
