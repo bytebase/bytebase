@@ -47,7 +47,6 @@ type FindPlanMessage struct {
 // UpdatePlanMessage is the message to update a plan.
 type UpdatePlanMessage struct {
 	UID         int64
-	PipelineUID *int
 	Name        *string
 	Description *string
 	Specs       *[]*storepb.PlanConfig_Spec
@@ -260,9 +259,6 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error 
 		if len(payloadSets) > 0 {
 			set = append(set, fmt.Sprintf("config = config || %s", strings.Join(payloadSets, " || ")))
 		}
-	}
-	if v := patch.PipelineUID; v != nil {
-		set, args = append(set, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, v)
 	}
 
 	args = append(args, patch.UID)
