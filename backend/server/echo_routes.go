@@ -108,18 +108,20 @@ func securityHeadersMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			// max-age=31536000 (1 year), includeSubDomains for all subdomains
 			c.Response().Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 		}
-		// Content Security Policy - strict, no unsafe-inline
-		// csp := "default-src 'self'; " +
-		// 	"script-src 'self'; " +
-		// 	"style-src 'self'; " +
-		// 	"img-src 'self' data: blob:; " +
-		// 	"connect-src 'self' ws: wss:; " +
-		// 	"font-src 'self'; " +
-		// 	"object-src 'none'; " +
-		// 	"base-uri 'self'; " +
-		// 	"form-action 'self'; " +
-		// 	"frame-ancestors 'self'"
-		// c.Response().Header().Set("Content-Security-Policy", csp)
+		// Content Security Policy
+		// Note: style-src allows 'unsafe-inline' temporarily due to inline styles in Vue components
+		// TODO: Migrate inline styles to CSS classes and remove 'unsafe-inline'
+		csp := "default-src 'self'; " +
+			"script-src 'self'; " +
+			"style-src 'self' 'unsafe-inline'; " +
+			"img-src 'self' data: blob:; " +
+			"connect-src 'self' ws: wss:; " +
+			"font-src 'self'; " +
+			"object-src 'none'; " +
+			"base-uri 'self'; " +
+			"form-action 'self'; " +
+			"frame-ancestors 'self'"
+		c.Response().Header().Set("Content-Security-Policy", csp)
 		return next(c)
 	}
 }
