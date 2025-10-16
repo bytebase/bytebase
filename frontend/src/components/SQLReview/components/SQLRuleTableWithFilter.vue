@@ -24,6 +24,7 @@
         :selected-rule-keys="selectedRuleKeys"
         :size="size"
         @rule-upsert="onRuleChange"
+        @rule-remove="$emit('rule-remove', $event)"
         @update:selected-rule-keys="$emit('update:selectedRuleKeys', $event)"
       />
       <NEmpty v-else class="py-12 border rounded" />
@@ -68,6 +69,7 @@ const emit = defineEmits<{
     rule: RuleTemplateV2,
     update: Partial<RuleTemplateV2>
   ): void;
+  (event: "rule-remove", rule: RuleTemplateV2): void;
   (event: "update:selectedRuleKeys", keys: string[]): void;
 }>();
 

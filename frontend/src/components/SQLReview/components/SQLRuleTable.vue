@@ -54,12 +54,21 @@
               :checked="selectedRuleKeys.includes(getRuleKey(rule))"
               @update:checked="(_) => toggleRule(rule)"
             />
-            <div v-else class="flex items-center space-x-2">
+            <div v-else class="flex items-center gap-x-2">
               <PencilIcon
                 v-if="editable"
-                class="w-4 h-4"
+                class="w-4 h-4 cursor-pointer hover:text-accent"
                 @click="setActiveRule(rule)"
               />
+              <NButton
+                v-if="editable"
+                secondary
+                type="error"
+                size="small"
+                @click="$emit('rule-remove', rule)"
+              >
+                {{ $t("common.delete") }}
+              </NButton>
             </div>
           </div>
           <RuleLevelSwitch
@@ -130,6 +139,7 @@ const emit = defineEmits<{
     rule: RuleTemplateV2,
     update: Partial<RuleTemplateV2>
   ): void;
+  (event: "rule-remove", rule: RuleTemplateV2): void;
   (event: "update:selectedRuleKeys", keys: string[]): void;
 }>();
 
@@ -226,12 +236,23 @@ const columns = computed(() => {
       title: t("common.operations"),
       hide: props.supportSelect,
       key: "operations",
-      width: "10rem",
+      width: "12rem",
       render: (rule: RuleTemplateV2) => {
         return (
-          <NButton onClick={() => setActiveRule(rule)}>
-            {props.editable ? t("common.edit") : t("common.view")}
-          </NButton>
+          <div class="flex items-center gap-x-2">
+            <NButton onClick={() => setActiveRule(rule)}>
+              {props.editable ? t("common.edit") : t("common.view")}
+            </NButton>
+            {props.editable && (
+              <NButton
+                secondary
+                type="error"
+                onClick={() => emit("rule-remove", rule)}
+              >
+                {t("common.delete")}
+              </NButton>
+            )}
+          </div>
         );
       },
     },

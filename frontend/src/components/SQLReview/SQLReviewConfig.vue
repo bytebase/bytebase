@@ -20,6 +20,7 @@
           :rule-list="ruleListFilteredByEngine"
           :editable="true"
           @rule-upsert="onRuleChange"
+          @rule-remove="$emit('rule-remove', $event)"
         />
       </template>
     </SQLReviewTabsByEngine>

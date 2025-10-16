@@ -2359,7 +2359,6 @@
     "no-permission": "Solo el DBA o el administrador tiene permiso para crear o actualizar la política de revisión.",
     "delete": "Eliminar política de revisión SQL",
     "input-then-press-enter": "Ingrese el valor y luego presione enter para agregar",
-    "not-available-for-free": "La regla no está disponible para {plan}",
     "attach-resource": {
       "no-linked-resources": "Sin recursos adjuntos",
       "change-resources": "Cambiar recursos adjuntos",

@@ -2359,7 +2359,6 @@
     "no-permission": "管理者または DBA のみが監査ポリシーを作成または更新する権限を持っています。",
     "delete": "監査ポリシーの削除",
     "input-then-press-enter": "入力後、Enterを押して追加します",
-    "not-available-for-free": "{plan}定期購入ではこのルールを使用できません",
     "attach-resource": {
       "no-linked-resources": "リソースのバインドはありません",
       "change-resources": "バインドされたリソースを変更する",
