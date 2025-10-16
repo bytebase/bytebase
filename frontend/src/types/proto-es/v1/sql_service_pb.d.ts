@@ -738,11 +738,11 @@ export declare const RowValue_TimestampTZSchema: GenMessage<RowValue_TimestampTZ
  */
 export declare type Advice = Message<"bytebase.v1.Advice"> & {
   /**
-   * The advice status.
+   * The advice level.
    *
-   * @generated from field: bytebase.v1.Advice.Status status = 1;
+   * @generated from field: bytebase.v1.Advice.Level status = 1;
    */
-  status: Advice_Status;
+  status: Advice_Level;
 
   /**
    * The advice code.
@@ -786,36 +786,44 @@ export declare type Advice = Message<"bytebase.v1.Advice"> & {
 export declare const AdviceSchema: GenMessage<Advice>;
 
 /**
- * @generated from enum bytebase.v1.Advice.Status
+ * Level represents the severity level of the advice.
+ *
+ * @generated from enum bytebase.v1.Advice.Level
  */
-export enum Advice_Status {
+export enum Advice_Level {
   /**
-   * Unspecified.
+   * Unspecified advice level.
    *
-   * @generated from enum value: STATUS_UNSPECIFIED = 0;
+   * @generated from enum value: ADVICE_LEVEL_UNSPECIFIED = 0;
    */
-  STATUS_UNSPECIFIED = 0,
+  ADVICE_LEVEL_UNSPECIFIED = 0,
 
   /**
+   * Success status indicating the check passed without issues.
+   *
    * @generated from enum value: SUCCESS = 1;
    */
   SUCCESS = 1,
 
   /**
+   * Warning status indicating potential issues that should be reviewed.
+   *
    * @generated from enum value: WARNING = 2;
    */
   WARNING = 2,
 
   /**
+   * Error status indicating critical issues that must be addressed.
+   *
    * @generated from enum value: ERROR = 3;
    */
   ERROR = 3,
 }
 
 /**
- * Describes the enum bytebase.v1.Advice.Status.
+ * Describes the enum bytebase.v1.Advice.Level.
  */
-export declare const Advice_StatusSchema: GenEnum<Advice_Status>;
+export declare const Advice_LevelSchema: GenEnum<Advice_Level>;
 
 /**
  * @generated from message bytebase.v1.ExportRequest

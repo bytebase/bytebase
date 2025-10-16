@@ -12,16 +12,16 @@
       </template>
       <template v-else-if="status === PlanCheckRun_Status.DONE">
         <CheckIcon
-          v-if="resultStatus === PlanCheckRun_Result_Status.SUCCESS"
+          v-if="resultStatus === Advice_Level.SUCCESS"
           class="text-success"
           :size="16"
         />
         <TriangleAlertIcon
-          v-else-if="resultStatus === PlanCheckRun_Result_Status.WARNING"
+          v-else-if="resultStatus === Advice_Level.WARNING"
           :size="16"
         />
         <CircleAlertIcon
-          v-else-if="resultStatus === PlanCheckRun_Result_Status.ERROR"
+          v-else-if="resultStatus === Advice_Level.ERROR"
           :size="16"
         />
       </template>
@@ -45,10 +45,10 @@ import { useI18n } from "vue-i18n";
 import { TaskSpinner } from "@/components/IssueV1/components/common";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import {
-  PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
   PlanCheckRun_Type,
 } from "@/types/proto-es/v1/plan_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractPlanCheckRunUID } from "@/utils";
 import { planCheckRunResultStatus } from "./common";
 
@@ -92,11 +92,11 @@ const tagType = computed(() => {
   }
 
   switch (planCheckRunResultStatus(latestPlanCheckRun.value)) {
-    case PlanCheckRun_Result_Status.SUCCESS:
+    case Advice_Level.SUCCESS:
       return "default";
-    case PlanCheckRun_Result_Status.WARNING:
+    case Advice_Level.WARNING:
       return "warning";
-    case PlanCheckRun_Result_Status.ERROR:
+    case Advice_Level.ERROR:
       return "error";
   }
   // Should not reach here.

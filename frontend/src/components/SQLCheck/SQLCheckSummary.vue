@@ -17,7 +17,7 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import type { ComposedDatabase } from "@/types";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
-import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 
 type Summary = {
   successCount: number;
@@ -41,13 +41,13 @@ const summary = computed(() => {
     errorCount: 0,
   };
   props.advices.forEach((advice) => {
-    if (advice.status === Advice_Status.SUCCESS) {
+    if (advice.status === Advice_Level.SUCCESS) {
       summary.successCount++;
     }
-    if (advice.status === Advice_Status.WARNING) {
+    if (advice.status === Advice_Level.WARNING) {
       summary.warningCount++;
     }
-    if (advice.status === Advice_Status.ERROR) {
+    if (advice.status === Advice_Level.ERROR) {
       summary.errorCount++;
     }
   });

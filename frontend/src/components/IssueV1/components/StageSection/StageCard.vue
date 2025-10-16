@@ -44,8 +44,8 @@
     <NTooltip
       v-if="
         !isCreating &&
-        (planCheckStatus === PlanCheckRun_Result_Status.ERROR ||
-          planCheckStatus === PlanCheckRun_Result_Status.WARNING)
+        (planCheckStatus === Advice_Level.ERROR ||
+          planCheckStatus === Advice_Level.WARNING)
       "
       trigger="hover"
       placement="top"
@@ -54,7 +54,7 @@
         <heroicons:exclamation-circle-solid
           class="w-6 h-6 ml-2"
           :class="[
-            planCheckStatus === PlanCheckRun_Result_Status.ERROR
+            planCheckStatus === Advice_Level.ERROR
               ? 'text-error hover:text-error-hover'
               : 'text-warning hover:text-warning-hover',
           ]"
@@ -82,9 +82,9 @@ import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/co
 import { EnvironmentV1Name } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
 import { EMPTY_TASK_NAME } from "@/types";
-import { PlanCheckRun_Result_Status } from "@/types/proto-es/v1/plan_service_pb";
 import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { activeTaskInStageV1 } from "@/utils";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import StageSummary from "./StageSummary.vue";
@@ -150,20 +150,20 @@ const environment = computed(() =>
   environmentStore.getEnvironmentByName(props.stage.environment)
 );
 
-const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
-  if (isCreating.value) return PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;
+const planCheckStatus = computed((): Advice_Level => {
+  if (isCreating.value) return Advice_Level.ADVICE_LEVEL_UNSPECIFIED;
   const planCheckList = uniqBy(
     props.stage.tasks.flatMap(getPlanCheckRunsForTask),
     (checkRun) => checkRun.name
   );
   const summary = planCheckRunSummaryForCheckRunList(planCheckList);
   if (summary.errorCount > 0) {
-    return PlanCheckRun_Result_Status.ERROR;
+    return Advice_Level.ERROR;
   }
   if (summary.warnCount > 0) {
-    return PlanCheckRun_Result_Status.WARNING;
+    return Advice_Level.WARNING;
   }
-  return PlanCheckRun_Result_Status.SUCCESS;
+  return Advice_Level.SUCCESS;
 });
 
 const activeOrFirstTaskInStage = (stage: Stage) => {

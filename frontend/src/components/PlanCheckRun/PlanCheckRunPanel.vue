@@ -29,10 +29,10 @@ import type { TabFilterItem } from "@/components/v2";
 import { TabFilter } from "@/components/v2";
 import { getDateForPbTimestampProtoEs, type ComposedDatabase } from "@/types";
 import {
-  PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
   type PlanCheckRun,
 } from "@/types/proto-es/v1/plan_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractPlanCheckRunUID, humanizeDate } from "@/utils";
 import PlanCheckRunBadgeBar from "./PlanCheckRunBadgeBar.vue";
 import PlanCheckRunDetail from "./PlanCheckRunDetail.vue";
@@ -50,9 +50,8 @@ const getInitialSelectedType = () => {
 
   // Find the first plan check run with error or warning.
   const planCheck = props.planCheckRunList.find((checkRun) =>
-    [PlanCheckRun_Result_Status.ERROR, PlanCheckRun_Result_Status.WARNING].some(
-      (status) =>
-        checkRun.results.map((result) => result.status).includes(status)
+    [Advice_Level.ERROR, Advice_Level.WARNING].some((status) =>
+      checkRun.results.map((result) => result.status).includes(status)
     )
   );
   if (planCheck) {

@@ -6,6 +6,7 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import type { Message } from "@bufbuild/protobuf";
 import type { FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
 import type { DatabaseChangeType, ExportFormat, MigrationType, Position, State } from "./common_pb";
+import type { Advice_Level } from "./sql_service_pb";
 import type { ChangedResources } from "./database_service_pb";
 
 /**
@@ -857,9 +858,9 @@ export declare const PlanCheckRunSchema: GenMessage<PlanCheckRun>;
  */
 export declare type PlanCheckRun_Result = Message<"bytebase.v1.PlanCheckRun.Result"> & {
   /**
-   * @generated from field: bytebase.v1.PlanCheckRun.Result.Status status = 1;
+   * @generated from field: bytebase.v1.Advice.Level status = 1;
    */
-  status: PlanCheckRun_Result_Status;
+  status: Advice_Level;
 
   /**
    * @generated from field: string title = 2;
@@ -961,36 +962,6 @@ export declare type PlanCheckRun_Result_SqlReviewReport = Message<"bytebase.v1.P
  * Use `create(PlanCheckRun_Result_SqlReviewReportSchema)` to create a new message.
  */
 export declare const PlanCheckRun_Result_SqlReviewReportSchema: GenMessage<PlanCheckRun_Result_SqlReviewReport>;
-
-/**
- * @generated from enum bytebase.v1.PlanCheckRun.Result.Status
- */
-export enum PlanCheckRun_Result_Status {
-  /**
-   * @generated from enum value: STATUS_UNSPECIFIED = 0;
-   */
-  STATUS_UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: ERROR = 1;
-   */
-  ERROR = 1,
-
-  /**
-   * @generated from enum value: WARNING = 2;
-   */
-  WARNING = 2,
-
-  /**
-   * @generated from enum value: SUCCESS = 3;
-   */
-  SUCCESS = 3,
-}
-
-/**
- * Describes the enum bytebase.v1.PlanCheckRun.Result.Status.
- */
-export declare const PlanCheckRun_Result_StatusSchema: GenEnum<PlanCheckRun_Result_Status>;
 
 /**
  * @generated from enum bytebase.v1.PlanCheckRun.Type

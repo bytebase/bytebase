@@ -1,21 +1,21 @@
 import { maxBy } from "lodash-es";
 import {
-  PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
   PlanCheckRun_Type,
   type PlanCheckRun,
 } from "@/types/proto-es/v1/plan_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractPlanCheckRunUID } from "@/utils";
 
 export const planCheckRunResultStatus = (checkRun: PlanCheckRun) => {
-  let status = PlanCheckRun_Result_Status.SUCCESS;
+  let status = Advice_Level.SUCCESS;
 
   for (const result of checkRun.results) {
-    if (result.status === PlanCheckRun_Result_Status.ERROR) {
-      return PlanCheckRun_Result_Status.ERROR;
+    if (result.status === Advice_Level.ERROR) {
+      return Advice_Level.ERROR;
     }
-    if (result.status === PlanCheckRun_Result_Status.WARNING) {
-      status = PlanCheckRun_Result_Status.WARNING;
+    if (result.status === Advice_Level.WARNING) {
+      status = Advice_Level.WARNING;
     }
   }
   return status;
@@ -81,13 +81,13 @@ export const planCheckRunSummaryForCheckRunList = (
         break;
       case PlanCheckRun_Status.DONE:
         switch (planCheckRunResultStatus(checkRun)) {
-          case PlanCheckRun_Result_Status.SUCCESS:
+          case Advice_Level.SUCCESS:
             summary.successCount++;
             break;
-          case PlanCheckRun_Result_Status.WARNING:
+          case Advice_Level.WARNING:
             summary.warnCount++;
             break;
-          case PlanCheckRun_Result_Status.ERROR:
+          case Advice_Level.ERROR:
             summary.errorCount++;
         }
     }

@@ -66,13 +66,11 @@ import { RiskLevel } from "@/types/proto-es/v1/common_pb";
 import {
   PlanCheckRunSchema,
   PlanCheckRun_ResultSchema,
-  PlanCheckRun_Result_Status,
   PlanCheckRun_Result_SqlReviewReportSchema,
   PlanCheckRun_Status,
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
-import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
-import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Level, type Advice } from "@/types/proto-es/v1/sql_service_pb";
 import type { Defer } from "@/utils";
 
 const props = withDefaults(
@@ -107,7 +105,7 @@ const restrictIssueCreationForSQLReview = computed((): boolean => {
   const project = projectStore.getProjectByName(props.project);
   return (
     (project?.enforceSqlReview || false) &&
-    props.advices.some((advice) => advice.status === Advice_Status.ERROR)
+    props.advices.some((advice) => advice.status === Advice_Level.ERROR)
   );
 });
 
@@ -127,16 +125,16 @@ const planCheckRun = computed((): PlanCheckRun => {
   return createProto(PlanCheckRunSchema, {
     status: PlanCheckRun_Status.DONE,
     results: props.advices.map((advice) => {
-      let status = PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;
+      let status = Advice_Level.ADVICE_LEVEL_UNSPECIFIED;
       switch (advice.status) {
-        case Advice_Status.SUCCESS:
-          status = PlanCheckRun_Result_Status.SUCCESS;
+        case Advice_Level.SUCCESS:
+          status = Advice_Level.SUCCESS;
           break;
-        case Advice_Status.WARNING:
-          status = PlanCheckRun_Result_Status.WARNING;
+        case Advice_Level.WARNING:
+          status = Advice_Level.WARNING;
           break;
-        case Advice_Status.ERROR:
-          status = PlanCheckRun_Result_Status.ERROR;
+        case Advice_Level.ERROR:
+          status = Advice_Level.ERROR;
           break;
       }
       return createProto(PlanCheckRun_ResultSchema, {

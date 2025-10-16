@@ -1,7 +1,7 @@
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import type { CheckReleaseResponse_CheckResult } from "@/types/proto-es/v1/release_service_pb";
 import type { Task, Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import type { IssueContext } from "../../logic";
 
 export const filterTask = (
@@ -13,7 +13,7 @@ export const filterTask = (
     adviceStatus,
   }: {
     status?: Task_Status;
-    adviceStatus?: Advice_Status;
+    adviceStatus?: Advice_Level;
   }
 ): boolean => {
   const { isCreating, getPlanCheckRunsForTask } = issueContext;
@@ -23,10 +23,10 @@ export const filterTask = (
   if (adviceStatus !== undefined) {
     if (isCreating.value) {
       const result = sqlCheckResultMap[task.target];
-      if (adviceStatus === Advice_Status.STATUS_UNSPECIFIED) {
+      if (adviceStatus === Advice_Level.ADVICE_LEVEL_UNSPECIFIED) {
         return !Boolean(result);
       }
-      if (adviceStatus === Advice_Status.SUCCESS) {
+      if (adviceStatus === Advice_Level.SUCCESS) {
         return result && result.advices.length === 0;
       }
       return (
@@ -37,11 +37,11 @@ export const filterTask = (
       const checkRuns = getPlanCheckRunsForTask(task);
       const summary = planCheckRunSummaryForCheckRunList(checkRuns);
       if (summary.errorCount > 0) {
-        return adviceStatus === Advice_Status.ERROR;
+        return adviceStatus === Advice_Level.ERROR;
       } else if (summary.warnCount > 0) {
-        return adviceStatus === Advice_Status.WARNING;
+        return adviceStatus === Advice_Level.WARNING;
       } else {
-        return adviceStatus === Advice_Status.SUCCESS;
+        return adviceStatus === Advice_Level.SUCCESS;
       }
     }
   }

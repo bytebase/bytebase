@@ -86,7 +86,7 @@ import {
 } from "@/types/proto-es/v1/release_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
-import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { databaseForTask } from "@/utils";
 import {
   defer,
@@ -322,7 +322,7 @@ const runSQLCheckForIssue = async () => {
 
   for (const checkResult of Object.values(checkResultMap.value)) {
     const hasErrors = checkResult.advices.some((advice) => {
-      return advice.status === Advice_Status.ERROR;
+      return advice.status === Advice_Level.ERROR;
     });
     // Focus on the first task with error.
     if (hasErrors) {

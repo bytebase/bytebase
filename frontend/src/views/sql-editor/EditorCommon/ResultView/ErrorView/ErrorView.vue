@@ -35,7 +35,7 @@ import { BBAttention } from "@/bbkit";
 import { useAppFeature, useSQLEditorTabStore } from "@/store";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
-import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { useSQLResultViewContext } from "../context";
 import AdviceItem from "./AdviceItem.vue";
 import PostgresError from "./PostgresError.vue";
@@ -66,7 +66,7 @@ const showRunAnywayButton = computed(() => {
   if (resultSet.status === Code.PermissionDenied) return false;
   if (resultSet.error.includes("resource not found")) return false;
   return resultSet.advices.some(
-    (advice) => advice.status === Advice_Status.WARNING
+    (advice) => advice.status === Advice_Level.WARNING
   );
 });
 

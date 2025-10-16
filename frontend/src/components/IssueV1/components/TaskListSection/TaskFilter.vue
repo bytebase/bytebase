@@ -85,7 +85,7 @@ import AdviceStatusIcon from "@/components/Plan/components/SQLCheckSection/Advic
 import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
 import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { useIssueContext } from "../../logic";
 import TaskStatusIconV1 from "../TaskStatusIconV1.vue";
 import { filterTask } from "./filter";
@@ -93,20 +93,20 @@ import { filterTask } from "./filter";
 defineProps<{
   disabled: boolean;
   taskStatusList: Task_Status[];
-  adviceStatusList: Advice_Status[];
+  adviceStatusList: Advice_Level[];
 }>();
 
 const emit = defineEmits<{
   (event: "update:taskStatusList", taskStatusList: Task_Status[]): void;
-  (event: "update:adviceStatusList", adviceStatusList: Advice_Status[]): void;
+  (event: "update:adviceStatusList", adviceStatusList: Advice_Level[]): void;
 }>();
 
 // Using unified task status filters from constants
-const ADVICE_STATUS_FILTERS: Advice_Status[] = [
-  Advice_Status.STATUS_UNSPECIFIED,
-  Advice_Status.SUCCESS,
-  Advice_Status.WARNING,
-  Advice_Status.ERROR,
+const ADVICE_STATUS_FILTERS: Advice_Level[] = [
+  Advice_Level.ADVICE_LEVEL_UNSPECIFIED,
+  Advice_Level.SUCCESS,
+  Advice_Level.WARNING,
+  Advice_Level.ERROR,
 ];
 
 const issueContext = useIssueContext();
@@ -116,7 +116,7 @@ const { isCreating, selectedStage } = issueContext;
 
 const taskList = computed(() => selectedStage.value.tasks);
 
-const getTaskCount = (status?: Task_Status, adviceStatus?: Advice_Status) => {
+const getTaskCount = (status?: Task_Status, adviceStatus?: Advice_Level) => {
   return taskList.value.filter((task) =>
     filterTask(issueContext, resultMap.value, task, { status, adviceStatus })
   ).length;

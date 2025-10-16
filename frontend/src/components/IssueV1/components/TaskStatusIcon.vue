@@ -3,10 +3,10 @@
     class="relative flex flex-shrink-0 items-center justify-center select-none w-6 h-6 overflow-hidden"
     :class="classes"
   >
-    <template v-if="checkStatus === PlanCheckRun_Result_Status.ERROR">
+    <template v-if="checkStatus === Advice_Level.ERROR">
       <CircleAlertIcon class="text-error" />
     </template>
-    <template v-else-if="checkStatus === PlanCheckRun_Result_Status.WARNING">
+    <template v-else-if="checkStatus === Advice_Level.WARNING">
       <TriangleAlertIcon class="text-warning" />
     </template>
     <template
@@ -60,10 +60,9 @@ import { computed } from "vue";
 import { SkipIcon } from "@/components/Icon";
 import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
 import { useCurrentProjectV1 } from "@/store";
-import { PlanCheckRun_Result_Status } from "@/types/proto-es/v1/plan_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { Advice_Status } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { databaseForTask } from "@/utils";
 import { planCheckStatusForTask, useIssueContext } from "../logic";
 
@@ -86,17 +85,15 @@ const checkStatus = computed(() => {
     if (!checkResult) return undefined;
 
     if (
-      checkResult.advices.some(
-        (advice) => advice.status === Advice_Status.ERROR
-      )
+      checkResult.advices.some((advice) => advice.status === Advice_Level.ERROR)
     ) {
-      return PlanCheckRun_Result_Status.ERROR;
+      return Advice_Level.ERROR;
     } else if (
       checkResult.advices.some(
-        (advice) => advice.status === Advice_Status.WARNING
+        (advice) => advice.status === Advice_Level.WARNING
       )
     ) {
-      return PlanCheckRun_Result_Status.WARNING;
+      return Advice_Level.WARNING;
     }
     return undefined;
   }

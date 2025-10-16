@@ -7,8 +7,8 @@
           <div
             v-if="statusSummary.error > 0"
             class="flex items-center gap-1 text-error cursor-pointer"
-            :class="getItemClass(PlanCheckRun_Result_Status.ERROR)"
-            @click="toggleSelectedStatus(PlanCheckRun_Result_Status.ERROR)"
+            :class="getItemClass(Advice_Level.ERROR)"
+            @click="toggleSelectedStatus(Advice_Level.ERROR)"
           >
             <XCircleIcon class="w-5 h-5" />
             <span>{{ $t("common.error") }}</span>
@@ -17,8 +17,8 @@
           <div
             v-if="statusSummary.warning > 0"
             class="flex items-center gap-1 text-warning cursor-pointer"
-            :class="getItemClass(PlanCheckRun_Result_Status.WARNING)"
-            @click="toggleSelectedStatus(PlanCheckRun_Result_Status.WARNING)"
+            :class="getItemClass(Advice_Level.WARNING)"
+            @click="toggleSelectedStatus(Advice_Level.WARNING)"
           >
             <AlertCircleIcon class="w-5 h-5" />
             <span>{{ $t("common.warning") }}</span>
@@ -27,8 +27,8 @@
           <div
             v-if="statusSummary.success > 0"
             class="flex items-center gap-1 text-success cursor-pointer"
-            :class="getItemClass(PlanCheckRun_Result_Status.SUCCESS)"
-            @click="toggleSelectedStatus(PlanCheckRun_Result_Status.SUCCESS)"
+            :class="getItemClass(Advice_Level.SUCCESS)"
+            @click="toggleSelectedStatus(Advice_Level.SUCCESS)"
           >
             <CheckCircleIcon class="w-5 h-5" />
             <span>{{ $t("common.success") }}</span>
@@ -142,27 +142,25 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import {
-  PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
   PlanCheckRun_Type,
   type PlanCheckRun,
   PlanCheckRun_ResultSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { humanizeTs } from "@/utils";
 import CheckResultItem from "../common/CheckResultItem.vue";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
 const props = defineProps<{
-  defaultStatus?: PlanCheckRun_Result_Status;
+  defaultStatus?: Advice_Level;
   planCheckRuns: PlanCheckRun[];
   isLoading?: boolean;
 }>();
 
 const { t } = useI18n();
 
-const selectedStatus = ref<PlanCheckRun_Result_Status | undefined>(
-  props.defaultStatus
-);
+const selectedStatus = ref<Advice_Level | undefined>(props.defaultStatus);
 
 const hasFilters = computed(() => {
   return selectedStatus.value !== undefined;
@@ -179,11 +177,11 @@ const statusSummary = computed(() => {
     }
 
     for (const result of checkRun.results) {
-      if (result.status === PlanCheckRun_Result_Status.ERROR) {
+      if (result.status === Advice_Level.ERROR) {
         summary.error++;
-      } else if (result.status === PlanCheckRun_Result_Status.WARNING) {
+      } else if (result.status === Advice_Level.WARNING) {
         summary.warning++;
-      } else if (result.status === PlanCheckRun_Result_Status.SUCCESS) {
+      } else if (result.status === Advice_Level.SUCCESS) {
         summary.success++;
       }
     }
@@ -200,7 +198,7 @@ const hasAnyStatus = computed(() => {
   );
 });
 
-const toggleSelectedStatus = (status: PlanCheckRun_Result_Status) => {
+const toggleSelectedStatus = (status: Advice_Level) => {
   if (selectedStatus.value === status) {
     selectedStatus.value = undefined; // Deselect if already selected
   } else {
@@ -208,7 +206,7 @@ const toggleSelectedStatus = (status: PlanCheckRun_Result_Status) => {
   }
 };
 
-const getItemClass = (status: PlanCheckRun_Result_Status) => {
+const getItemClass = (status: Advice_Level) => {
   const classes: string[] = [];
 
   if (selectedStatus.value === status) {
@@ -227,7 +225,7 @@ const filteredCheckRuns = computed(() => {
     if (selectedStatus.value !== undefined) {
       // If filtering for errors, include failed check runs
       if (
-        selectedStatus.value === PlanCheckRun_Result_Status.ERROR &&
+        selectedStatus.value === Advice_Level.ERROR &&
         checkRun.status === PlanCheckRun_Status.FAILED
       ) {
         return true;
@@ -256,11 +254,11 @@ const getFilteredResults = (checkRun: PlanCheckRun) => {
   if (
     checkRun.status === PlanCheckRun_Status.FAILED &&
     (selectedStatus.value === undefined ||
-      selectedStatus.value === PlanCheckRun_Result_Status.ERROR)
+      selectedStatus.value === Advice_Level.ERROR)
   ) {
     // Create a synthetic error result for the failed check run
     const syntheticResult = create(PlanCheckRun_ResultSchema, {
-      status: PlanCheckRun_Result_Status.ERROR,
+      status: Advice_Level.ERROR,
       title: "Check Failed",
       content: checkRun.error || "Plan check run failed",
       code: 0,
@@ -318,14 +316,14 @@ const formatTime = (timestamp: Timestamp | undefined): string => {
 };
 
 const getCheckResultStatus = (
-  status: PlanCheckRun_Result_Status
+  status: Advice_Level
 ): "SUCCESS" | "WARNING" | "ERROR" => {
   switch (status) {
-    case PlanCheckRun_Result_Status.ERROR:
+    case Advice_Level.ERROR:
       return "ERROR";
-    case PlanCheckRun_Result_Status.WARNING:
+    case Advice_Level.WARNING:
       return "WARNING";
-    case PlanCheckRun_Result_Status.SUCCESS:
+    case Advice_Level.SUCCESS:
       return "SUCCESS";
     default:
       return "SUCCESS";

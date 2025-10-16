@@ -73,7 +73,7 @@ import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
-import { PlanCheckRun_Result_Status } from "@/types/proto-es/v1/plan_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractProjectResourceName, getStageStatus } from "@/utils";
 import { usePlanContext, usePlanCheckStatus } from "../../logic";
 import ChecksDrawer from "../ChecksView/ChecksDrawer.vue";
@@ -85,9 +85,7 @@ const router = useRouter();
 const { project } = useCurrentProjectV1();
 const { hasAnyStatus: hasAnyChecks } = usePlanCheckStatus(plan);
 
-const selectedResultStatus = ref<PlanCheckRun_Result_Status | undefined>(
-  undefined
-);
+const selectedResultStatus = ref<Advice_Level | undefined>(undefined);
 
 const getEnvironmentEntity = (environmentName: string) => {
   return environmentStore.getEnvironmentByName(environmentName);

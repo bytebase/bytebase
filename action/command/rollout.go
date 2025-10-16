@@ -177,9 +177,9 @@ func runAndWaitForPlanChecks(ctx context.Context, w *world.World, client *Client
 			case v1pb.PlanCheckRun_DONE:
 				for _, result := range run.Results {
 					switch result.Status {
-					case v1pb.PlanCheckRun_Result_ERROR:
+					case v1pb.Advice_ERROR:
 						errorCount++
-					case v1pb.PlanCheckRun_Result_WARNING:
+					case v1pb.Advice_WARNING:
 						warningCount++
 					default:
 						// Other result statuses don't affect counts

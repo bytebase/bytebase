@@ -5,11 +5,11 @@
   >
     <div class="shrink-0 flex items-center h-5">
       <CircleAlertIcon
-        v-if="advice.status === Advice_Status.ERROR"
+        v-if="advice.status === Advice_Level.ERROR"
         class="w-5 h-5 text-error"
       />
       <CircleAlertIcon
-        v-if="advice.status === Advice_Status.WARNING"
+        v-if="advice.status === Advice_Level.WARNING"
         class="w-5 h-5 text-warning"
       />
     </div>
@@ -32,7 +32,7 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { positionWithOffset } from "@/components/MonacoEditor/utils";
 import type { SQLEditorQueryParams } from "@/types";
-import { Advice_Status, type Advice } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Level, type Advice } from "@/types/proto-es/v1/sql_service_pb";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 
 const props = defineProps<{

@@ -103,7 +103,6 @@ import {
 import {
   PlanCheckRun_Type,
   PlanCheckRun_Status,
-  PlanCheckRun_Result_Status,
   type PlanCheckRun,
   type PlanCheckRun_Result,
   PlanCheckRunSchema,
@@ -117,7 +116,7 @@ import {
   Release_File_MigrationType,
   type CheckReleaseResponse_CheckResult,
 } from "@/types/proto-es/v1/release_service_pb";
-import { Advice_Status, type Advice } from "@/types/proto-es/v1/sql_service_pb";
+import { Advice_Level, type Advice } from "@/types/proto-es/v1/sql_service_pb";
 import {
   extractProjectResourceName,
   getSheetStatement,
@@ -182,11 +181,11 @@ const summary = computed(() => {
   const result = { success: 0, warning: 0, error: 0 };
 
   for (const advice of allAdvices.value) {
-    if (advice.status === Advice_Status.ERROR) {
+    if (advice.status === Advice_Level.ERROR) {
       result.error++;
-    } else if (advice.status === Advice_Status.WARNING) {
+    } else if (advice.status === Advice_Level.WARNING) {
       result.warning++;
-    } else if (advice.status === Advice_Status.SUCCESS) {
+    } else if (advice.status === Advice_Level.SUCCESS) {
       result.success++;
     }
   }
@@ -252,15 +251,15 @@ const openDrawer = (status: "ERROR" | "WARNING" | "SUCCESS") => {
   drawerVisible.value = true;
 };
 
-// Convert string status to PlanCheckRun_Result_Status
-const getDefaultStatus = (): PlanCheckRun_Result_Status | undefined => {
+// Convert string status to Advice_Level
+const getDefaultStatus = (): Advice_Level | undefined => {
   switch (selectedStatus.value) {
     case "ERROR":
-      return PlanCheckRun_Result_Status.ERROR;
+      return Advice_Level.ERROR;
     case "WARNING":
-      return PlanCheckRun_Result_Status.WARNING;
+      return Advice_Level.WARNING;
     case "SUCCESS":
-      return PlanCheckRun_Result_Status.SUCCESS;
+      return Advice_Level.SUCCESS;
     default:
       return undefined;
   }
@@ -287,11 +286,11 @@ const transformToFormattedCheckRuns = (
       (advice) => {
         return create(PlanCheckRun_ResultSchema, {
           status:
-            advice.status === Advice_Status.ERROR
-              ? PlanCheckRun_Result_Status.ERROR
-              : advice.status === Advice_Status.WARNING
-                ? PlanCheckRun_Result_Status.WARNING
-                : PlanCheckRun_Result_Status.SUCCESS,
+            advice.status === Advice_Level.ERROR
+              ? Advice_Level.ERROR
+              : advice.status === Advice_Level.WARNING
+                ? Advice_Level.WARNING
+                : Advice_Level.SUCCESS,
           title: advice.title,
           content: advice.content,
           code: advice.code,

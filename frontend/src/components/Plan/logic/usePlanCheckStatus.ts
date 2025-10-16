@@ -1,9 +1,9 @@
 import { computed, type ComputedRef, type Ref } from "vue";
 import {
-  PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
   type Plan,
 } from "@/types/proto-es/v1/plan_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 
 export interface PlanCheckStatusSummary {
   running: number;
@@ -16,27 +16,27 @@ export interface PlanCheckStatusSummary {
 export const usePlanCheckStatus = (
   plan: ComputedRef<Plan | undefined> | Ref<Plan | undefined>
 ) => {
-  const getCheckCount = (status: PlanCheckRun_Result_Status): number => {
+  const getCheckCount = (status: Advice_Level): number => {
     if (!plan.value) return 0;
-    const statusKey = PlanCheckRun_Result_Status[status];
+    const statusKey = Advice_Level[status];
     return plan.value.planCheckRunStatusCount?.[statusKey] || 0;
   };
 
   const getOverallStatus = computed(() => {
-    if (!plan.value) return PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;
+    if (!plan.value) return Advice_Level.ADVICE_LEVEL_UNSPECIFIED;
 
     const statusCount = plan.value.planCheckRunStatusCount || {};
 
     if (statusCount["ERROR"] > 0 || statusCount["FAILED"] > 0) {
-      return PlanCheckRun_Result_Status.ERROR;
+      return Advice_Level.ERROR;
     } else if (statusCount["WARNING"] > 0) {
-      return PlanCheckRun_Result_Status.WARNING;
+      return Advice_Level.WARNING;
     } else if (statusCount["SUCCESS"] > 0) {
-      return PlanCheckRun_Result_Status.SUCCESS;
+      return Advice_Level.SUCCESS;
     }
 
     // Default to SUCCESS if no errors or warnings.
-    return PlanCheckRun_Result_Status.SUCCESS;
+    return Advice_Level.SUCCESS;
   });
 
   const statusSummary = computed<PlanCheckStatusSummary>(() => {
@@ -47,18 +47,9 @@ export const usePlanCheckStatus = (
     const statusCount = plan.value.planCheckRunStatusCount || {};
     const running =
       statusCount[PlanCheckRun_Status[PlanCheckRun_Status.RUNNING]] || 0;
-    const success =
-      statusCount[
-        PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.SUCCESS]
-      ] || 0;
-    const warning =
-      statusCount[
-        PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.WARNING]
-      ] || 0;
-    const error =
-      statusCount[
-        PlanCheckRun_Result_Status[PlanCheckRun_Result_Status.ERROR]
-      ] || 0;
+    const success = statusCount[Advice_Level[Advice_Level.SUCCESS]] || 0;
+    const warning = statusCount[Advice_Level[Advice_Level.WARNING]] || 0;
+    const error = statusCount[Advice_Level[Advice_Level.ERROR]] || 0;
     // Also count FAILED plan check runs as errors
     const failed =
       statusCount[PlanCheckRun_Status[PlanCheckRun_Status.FAILED]] || 0;

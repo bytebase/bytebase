@@ -355,15 +355,19 @@ message RowValue {
 message Advice {
   reserved 7;
 
-  enum Status {
-    // Unspecified.
-    STATUS_UNSPECIFIED = 0;
+  // Level represents the severity level of the advice.
+  enum Level {
+    // Unspecified advice level.
+    ADVICE_LEVEL_UNSPECIFIED = 0;
+    // Success status indicating the check passed without issues.
     SUCCESS = 1;
+    // Warning status indicating potential issues that should be reviewed.
     WARNING = 2;
+    // Error status indicating critical issues that must be addressed.
     ERROR = 3;
   }
-  // The advice status.
-  Status status = 1;
+  // The advice level.
+  Level status = 1;
 
   // The advice code.
   int32 code = 2;

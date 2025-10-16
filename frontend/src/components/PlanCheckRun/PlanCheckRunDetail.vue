@@ -14,9 +14,9 @@
       :key="i"
       :class="[
         'py-2 px-2 space-y-2',
-        row.checkResult.status === PlanCheckRun_Result_Status.ERROR &&
+        row.checkResult.status === Advice_Level.ERROR &&
           'border-error border rounded',
-        row.checkResult.status === PlanCheckRun_Result_Status.WARNING &&
+        row.checkResult.status === Advice_Level.WARNING &&
           'border-warning border rounded',
       ]"
     >
@@ -25,21 +25,13 @@
           class="relative w-5 h-5 flex flex-shrink-0 items-center justify-center rounded-full select-none"
           :class="statusIconClass(row.checkResult.status)"
         >
-          <template
-            v-if="row.checkResult.status === PlanCheckRun_Result_Status.SUCCESS"
-          >
+          <template v-if="row.checkResult.status === Advice_Level.SUCCESS">
             <heroicons-solid:check class="w-4 h-4" />
           </template>
-          <template
-            v-if="row.checkResult.status === PlanCheckRun_Result_Status.WARNING"
-          >
+          <template v-if="row.checkResult.status === Advice_Level.WARNING">
             <heroicons-outline:exclamation class="h-4 w-4" />
           </template>
-          <template
-            v-else-if="
-              row.checkResult.status === PlanCheckRun_Result_Status.ERROR
-            "
-          >
+          <template v-else-if="row.checkResult.status === Advice_Level.ERROR">
             <span class="text-white font-medium text-base" aria-hidden="true">
               !
             </span>
@@ -136,21 +128,13 @@
           class="relative w-5 h-5 flex flex-shrink-0 items-center justify-center rounded-full select-none"
           :class="statusIconClass(row.checkResult.status)"
         >
-          <template
-            v-if="row.checkResult.status === PlanCheckRun_Result_Status.SUCCESS"
-          >
+          <template v-if="row.checkResult.status === Advice_Level.SUCCESS">
             <heroicons-solid:check class="w-4 h-4" />
           </template>
-          <template
-            v-if="row.checkResult.status === PlanCheckRun_Result_Status.WARNING"
-          >
+          <template v-if="row.checkResult.status === Advice_Level.WARNING">
             <heroicons-outline:exclamation class="h-4 w-4" />
           </template>
-          <template
-            v-else-if="
-              row.checkResult.status === PlanCheckRun_Result_Status.ERROR
-            "
-          >
+          <template v-else-if="row.checkResult.status === Advice_Level.ERROR">
             <span class="text-white font-medium text-base" aria-hidden="true">
               !
             </span>
@@ -221,7 +205,7 @@
       <div class="flex items-center space-x-3">
         <div
           class="relative w-5 h-5 flex flex-shrink-0 items-center justify-center rounded-full select-none"
-          :class="statusIconClass(PlanCheckRun_Result_Status.SUCCESS)"
+          :class="statusIconClass(Advice_Level.SUCCESS)"
         >
           <heroicons-solid:check class="w-4 h-4" />
         </div>
@@ -274,10 +258,10 @@ import type {
   PlanCheckRun_Result,
 } from "@/types/proto-es/v1/plan_service_pb";
 import {
-  PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
   PlanCheckRun_ResultSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { convertPositionLineToMonacoLine } from "@/utils/v1/position";
 import { usePlanCheckRunContext } from "./context";
 import { OnlineMigrationDetail } from "./detail";
@@ -311,13 +295,13 @@ const state = reactive<LocalState>({
   activeRule: undefined,
 });
 
-const statusIconClass = (status: PlanCheckRun_Result_Status) => {
+const statusIconClass = (status: Advice_Level) => {
   switch (status) {
-    case PlanCheckRun_Result_Status.SUCCESS:
+    case Advice_Level.SUCCESS:
       return "bg-success text-white";
-    case PlanCheckRun_Result_Status.WARNING:
+    case Advice_Level.WARNING:
       return "bg-warning text-white";
-    case PlanCheckRun_Result_Status.ERROR:
+    case Advice_Level.ERROR:
       return "bg-error text-white";
   }
 };
@@ -328,7 +312,7 @@ const checkResultList = computed((): PlanCheckRun_Result[] => {
   } else if (props.planCheckRun.status === PlanCheckRun_Status.FAILED) {
     return [
       create(PlanCheckRun_ResultSchema, {
-        status: PlanCheckRun_Result_Status.ERROR,
+        status: Advice_Level.ERROR,
         title: t("common.error"),
         content: props.planCheckRun.error,
       }),
@@ -336,7 +320,7 @@ const checkResultList = computed((): PlanCheckRun_Result[] => {
   } else if (props.planCheckRun.status === PlanCheckRun_Status.CANCELED) {
     return [
       create(PlanCheckRun_ResultSchema, {
-        status: PlanCheckRun_Result_Status.WARNING,
+        status: Advice_Level.WARNING,
         title: t("common.canceled"),
         content: props.planCheckRun.error,
       }),

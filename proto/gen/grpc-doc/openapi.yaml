@@ -12303,10 +12303,10 @@ components:
             properties:
                 status:
                     enum:
-                        - STATUS_UNSPECIFIED
-                        - ERROR
-                        - WARNING
+                        - ADVICE_LEVEL_UNSPECIFIED
                         - SUCCESS
+                        - WARNING
+                        - ERROR
                     type: string
                     format: enum
                 title:

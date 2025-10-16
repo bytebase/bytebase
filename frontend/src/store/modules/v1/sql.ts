@@ -15,7 +15,7 @@ import type {
 import {
   type Advice,
   AdviceSchema,
-  Advice_Status,
+  Advice_Level,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 
@@ -32,7 +32,7 @@ export const getSqlReviewReports = (err: unknown): Advice[] => {
           : undefined;
       advices.push(
         createProto(AdviceSchema, {
-          status: Advice_Status.ERROR,
+          status: Advice_Level.ERROR,
           code: report.code,
           title: report.title || "SQL Review Failed",
           content: report.content,
