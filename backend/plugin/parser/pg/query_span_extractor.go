@@ -731,12 +731,72 @@ func (q *querySpanExtractor) getColumnsFromFunction(name, definition string) ([]
 		return nil, errors.Errorf("expecting Createfunctionstmt but got nil")
 	}
 
-	// TODO: Extract AS body, language, and column names from createFuncStmt
-	// For now, we just verify the AST structure is correct
-	slog.Info("Successfully navigated to Createfunctionstmt", "function", name)
+	// Extract language from function options
+	language, err := q.extractLanguageFromCreateFunction(createFuncStmt, name)
+	if err != nil {
+		return nil, err
+	}
 
-	// Fall back to pg_query implementation for now
+	slog.Info("Successfully extracted language from Createfunctionstmt", "function", name, "language", language)
+
+	// TODO: Extract AS body and column names from createFuncStmt
+	// For now, fall back to pg_query implementation
 	return q.getColumnsForFunction(name, definition)
+}
+
+// extractLanguageFromCreateFunction extracts the LANGUAGE clause from a CREATE FUNCTION statement.
+// Returns languageTypeSQL (default) or languageTypePLPGSQL, or error if the language is unsupported.
+func (q *querySpanExtractor) extractLanguageFromCreateFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, funcName string) (languageType, error) {
+	// Default language is SQL if not specified
+	language := languageTypeSQL
+
+	// Parse function options to find LANGUAGE
+	createOptList := createFuncStmt.Createfunc_opt_list()
+	if createOptList == nil {
+		// No options specified, use default
+		return language, nil
+	}
+
+	for _, item := range createOptList.AllCreatefunc_opt_item() {
+		if item == nil {
+			continue
+		}
+
+		// Check if this option is LANGUAGE
+		if item.LANGUAGE() == nil {
+			continue
+		}
+
+		// Extract language value
+		langNode := item.Nonreservedword_or_sconst()
+		if langNode == nil {
+			continue
+		}
+
+		// Get the language text and normalize it
+		langText := langNode.GetText()
+		// Remove quotes if present (e.g., 'sql' -> sql)
+
+		langText = strings.ToLower(langText)
+
+		switch langText {
+		case "sql":
+			language = languageTypeSQL
+		case "plpgsql":
+			language = languageTypePLPGSQL
+		default:
+			return language, &parsererror.TypeNotSupportedError{
+				Type:  "function language",
+				Name:  langText,
+				Extra: fmt.Sprintf("function: %s", funcName),
+			}
+		}
+
+		// Found the language, no need to continue
+		break
+	}
+
+	return language, nil
 }
 
 func (q *querySpanExtractor) getColumnsForFunction(name, definition string) ([]base.QuerySpanResult, error) {
