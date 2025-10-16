@@ -2387,7 +2387,6 @@
       }
     },
     "rule": {
-      "active": "Activa"
     },
     "enabled-rules": "Reglas habilitadas",
     "rule-detail": "Detalle de la regla",
@@ -2399,8 +2398,7 @@
     "level": {
       "name": "Nivel",
       "error": "Error",
-      "warning": "Advertencia",
-      "disabled": "Deshabilitado"
+      "warning": "Advertencia"
     }
   },
   "audit-log": {

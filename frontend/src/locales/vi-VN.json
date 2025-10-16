@@ -2387,7 +2387,6 @@
       }
     },
     "rule": {
-      "active": "Đang hoạt động"
     },
     "enabled-rules": "Quy tắc được bật",
     "rule-detail": "Chi tiết quy tắc",
@@ -2399,8 +2398,7 @@
     "level": {
       "name": "Cấp độ",
       "error": "Lỗi",
-      "warning": "Cảnh báo",
-      "disabled": "Đã tắt"
+      "warning": "Cảnh báo"
     }
   },
   "audit-log": {

@@ -107,7 +107,6 @@ enum SQLReviewRuleLevel {
   LEVEL_UNSPECIFIED = 0;
   ERROR = 1;
   WARNING = 2;
-  DISABLED = 3;
 }
 
 message TagPolicy {

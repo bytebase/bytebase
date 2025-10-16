@@ -13533,7 +13533,6 @@ components:
                         - LEVEL_UNSPECIFIED
                         - ERROR
                         - WARNING
-                        - DISABLED
                     type: string
                     format: enum
                 payload:

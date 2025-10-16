@@ -169,16 +169,11 @@ import SQLRuleTableWithFilter from "@/components/SQLReview/components/SQLRuleTab
 import { rulesToTemplate } from "@/components/SQLReview/components/utils";
 import Resource from "@/components/v2/ResourceOccupiedModal/Resource.vue";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
-import {
-  pushNotification,
-  useSQLReviewStore,
-  useSubscriptionV1Store,
-} from "@/store";
+import { pushNotification, useSQLReviewStore } from "@/store";
 import type { RuleTemplateV2 } from "@/types";
 import {
   convertRuleMapToPolicyRuleList,
   getRuleMapByEngine,
-  ruleIsAvailableInSubscription,
   unknown,
   UNKNOWN_ID,
 } from "@/types";
@@ -205,7 +200,6 @@ const { t } = useI18n();
 const store = useSQLReviewStore();
 const router = useRouter();
 const route = useRoute();
-const subscriptionStore = useSubscriptionV1Store();
 
 const state = reactive<LocalState>({
   showDisableModal: false,
@@ -256,7 +250,7 @@ const ruleListOfPolicy = computed((): RuleTemplateV2[] => {
   if (reviewPolicy.value.id === `${UNKNOWN_ID}`) {
     return [];
   }
-  return rulesToTemplate(reviewPolicy.value, false).ruleList;
+  return rulesToTemplate(reviewPolicy.value).ruleList;
 });
 
 watch(
@@ -293,12 +287,6 @@ const markChange = (
   rule: RuleTemplateV2,
   overrides: Partial<RuleTemplateV2>
 ) => {
-  if (
-    !ruleIsAvailableInSubscription(rule.type, subscriptionStore.currentPlan)
-  ) {
-    return;
-  }
-
   const selectedRule = state.ruleMapByEngine.get(rule.engine)?.get(rule.type);
   if (!selectedRule) {
     return;

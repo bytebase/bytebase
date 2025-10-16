@@ -52,11 +52,7 @@ import {
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
 } from "@/router/dashboard/workspaceRoutes";
-import {
-  pushNotification,
-  useSQLReviewStore,
-  useSubscriptionV1Store,
-} from "@/store";
+import { pushNotification, useSQLReviewStore } from "@/store";
 import {
   reviewConfigNamePrefix,
   getReviewConfigId,
@@ -69,11 +65,9 @@ import type {
 import {
   getRuleMapByEngine,
   convertRuleMapToPolicyRuleList,
-  ruleIsAvailableInSubscription,
   TEMPLATE_LIST_V2 as builtInTemplateList,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 import SQLReviewConfig from "./SQLReviewConfig.vue";
 import SQLReviewInfo from "./SQLReviewInfo.vue";
@@ -111,7 +105,6 @@ const dialog = useDialog();
 const { t } = useI18n();
 const router = useRouter();
 const store = useSQLReviewStore();
-const subscriptionStore = useSubscriptionV1Store();
 
 const BASIC_INFO_STEP = 0;
 const CONFIGURE_RULE_STEP = 1;
@@ -144,17 +137,7 @@ const onTemplateApply = (template: SQLReviewPolicyTemplateV2 | undefined) => {
   state.selectedTemplateId = template.id;
   state.pendingApplyTemplate = undefined;
 
-  state.selectedRuleMapByEngine = getRuleMapByEngine(
-    template.ruleList.map((rule) => ({
-      ...rule,
-      level: ruleIsAvailableInSubscription(
-        rule.type,
-        subscriptionStore.currentPlan
-      )
-        ? rule.level
-        : SQLReviewRuleLevel.DISABLED,
-    }))
-  );
+  state.selectedRuleMapByEngine = getRuleMapByEngine(template.ruleList);
 };
 
 const onCancel = (newPolicy: SQLReviewPolicy | undefined = undefined) => {
@@ -276,12 +259,6 @@ const upsertRule = (
   rule: RuleTemplateV2,
   overrides: Partial<RuleTemplateV2>
 ) => {
-  if (
-    !ruleIsAvailableInSubscription(rule.type, subscriptionStore.currentPlan)
-  ) {
-    return;
-  }
-
   if (!state.selectedRuleMapByEngine.has(rule.engine)) {
     state.selectedRuleMapByEngine.set(
       rule.engine,
@@ -293,12 +270,15 @@ const upsertRule = (
     .get(rule.engine)
     ?.get(rule.type);
   if (!selectedRule) {
+    // Adding a new rule - use the rule's level from the template
     state.selectedRuleMapByEngine.get(rule.engine)?.set(rule.type, {
       ...rule,
-      level: SQLReviewRuleLevel.WARNING,
+      ...overrides,
     });
+    state.ruleUpdated = true;
     return;
   }
+  // Updating existing rule with overrides
   state.selectedRuleMapByEngine
     .get(rule.engine)
     ?.set(rule.type, Object.assign(selectedRule, overrides));

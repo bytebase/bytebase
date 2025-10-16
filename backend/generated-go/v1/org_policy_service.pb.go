@@ -162,8 +162,6 @@ const (
 	SQLReviewRuleLevel_ERROR SQLReviewRuleLevel = 1
 	// Rule violation is a warning.
 	SQLReviewRuleLevel_WARNING SQLReviewRuleLevel = 2
-	// Rule is disabled.
-	SQLReviewRuleLevel_DISABLED SQLReviewRuleLevel = 3
 )
 
 // Enum value maps for SQLReviewRuleLevel.
@@ -172,13 +170,11 @@ var (
 		0: "LEVEL_UNSPECIFIED",
 		1: "ERROR",
 		2: "WARNING",
-		3: "DISABLED",
 	}
 	SQLReviewRuleLevel_value = map[string]int32{
 		"LEVEL_UNSPECIFIED": 0,
 		"ERROR":             1,
 		"WARNING":           2,
-		"DISABLED":          3,
 	}
 )
 
@@ -1765,12 +1761,11 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\x19RESOURCE_TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tWORKSPACE\x10\x01\x12\x0f\n" +
 	"\vENVIRONMENT\x10\x02\x12\v\n" +
-	"\aPROJECT\x10\x03*Q\n" +
+	"\aPROJECT\x10\x03*C\n" +
 	"\x12SQLReviewRuleLevel\x12\x15\n" +
 	"\x11LEVEL_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ERROR\x10\x01\x12\v\n" +
-	"\aWARNING\x10\x02\x12\f\n" +
-	"\bDISABLED\x10\x032\xf4\f\n" +
+	"\aWARNING\x10\x022\xf4\f\n" +
 	"\x10OrgPolicyService\x12\xa0\x02\n" +
 	"\tGetPolicy\x12\x1d.bytebase.v1.GetPolicyRequest\x1a\x13.bytebase.v1.Policy\"\xde\x01\xdaA\x04name\x8a\xea0\x0fbb.policies.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\xb9\x01Z\"\x12 /v1/{name=projects/*/policies/*}Z&\x12$/v1/{name=environments/*/policies/*}Z#\x12!/v1/{name=instances/*/policies/*}Z/\x12-/v1/{name=instances/*/databases/*/policies/*}\x12\x15/v1/{name=policies/*}\x12\xa8\x02\n" +
 	"\fListPolicies\x12 .bytebase.v1.ListPoliciesRequest\x1a!.bytebase.v1.ListPoliciesResponse\"\xd2\x01\xdaA\x00\x8a\xea0\x10bb.policies.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\xb0\x01Z\"\x12 /v1/{parent=projects/*}/policiesZ&\x12$/v1/{parent=environments/*}/policiesZ#\x12!/v1/{parent=instances/*}/policiesZ/\x12-/v1/{parent=instances/*/databases/*}/policies\x12\f/v1/policies\x12\xd5\x02\n" +

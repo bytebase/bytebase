@@ -2387,7 +2387,6 @@
       }
     },
     "rule": {
-      "active": "开启"
     },
     "enabled-rules": "开启的规则数",
     "rule-detail": "规则详情",
@@ -2399,8 +2398,7 @@
     "level": {
       "name": "级别",
       "error": "错误",
-      "warning": "警告",
-      "disabled": "已禁用"
+      "warning": "警告"
     }
   },
   "audit-log": {
