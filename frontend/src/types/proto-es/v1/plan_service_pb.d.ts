@@ -934,18 +934,7 @@ export declare const PlanCheckRun_Result_SqlSummaryReportSchema: GenMessage<Plan
  */
 export declare type PlanCheckRun_Result_SqlReviewReport = Message<"bytebase.v1.PlanCheckRun.Result.SqlReviewReport"> & {
   /**
-   * @generated from field: int32 line = 1;
-   */
-  line: number;
-
-  /**
-   * @generated from field: int32 column = 2;
-   */
-  column: number;
-
-  /**
-   * 1-based Position of the SQL statement.
-   * To supersede `line` and `column` above.
+   * Position of the SQL statement.
    *
    * @generated from field: bytebase.v1.Position start_position = 5;
    */

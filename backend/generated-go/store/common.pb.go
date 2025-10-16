@@ -524,12 +524,12 @@ func (x *PageToken) GetOffset() int32 {
 	return 0
 }
 
-// Position in a text expressed as zero-based line and column byte offset.
+// Position in a text expressed as one-based line and one-based column.
 type Position struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Line position in a text (zero-based).
+	// Line position in a text (one-based).
 	Line int32 `protobuf:"varint,1,opt,name=line,proto3" json:"line,omitempty"`
-	// Column position in a text (zero-based), equivalent to byte offset.
+	// Column position in a text (one-based).
 	Column        int32 `protobuf:"varint,2,opt,name=column,proto3" json:"column,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

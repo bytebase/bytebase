@@ -94,7 +94,7 @@
             v-if="
               showCodeLocation &&
               row.checkResult.report.case === 'sqlReviewReport' &&
-              row.checkResult.report.value.line
+              row.checkResult.report.value.startPosition
             "
             class="pl-2 first:pl-0"
           >
@@ -102,14 +102,14 @@
               class="normal-link"
               @click="
                 convertPositionLineToMonacoLine(
-                  row.checkResult.report.value.line
+                  row.checkResult.report.value.startPosition.line
                 )
               "
             >
               Line
               {{
                 convertPositionLineToMonacoLine(
-                  row.checkResult.report.value.line
+                  row.checkResult.report.value.startPosition.line
                 )
               }}
             </span>
@@ -178,7 +178,7 @@
           v-if="
             showCodeLocation &&
             row.checkResult.report.case === 'sqlReviewReport' &&
-            row.checkResult.report.value.line
+            row.checkResult.report.value.startPosition
           "
         >
           <span class="border-r border-control-border ml-1"></span>
@@ -187,14 +187,16 @@
             @click="
               handleClickPlanCheckDetailLine(
                 convertPositionLineToMonacoLine(
-                  row.checkResult.report.value.line
+                  row.checkResult.report.value.startPosition.line
                 )
               )
             "
           >
             Line
             {{
-              convertPositionLineToMonacoLine(row.checkResult.report.value.line)
+              convertPositionLineToMonacoLine(
+                row.checkResult.report.value.startPosition.line
+              )
             }}
           </span>
         </template>
