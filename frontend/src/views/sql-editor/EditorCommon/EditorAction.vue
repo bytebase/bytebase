@@ -12,7 +12,7 @@
         type="default"
         :dashed="true"
         style="--n-padding: 0 8px 0 3px"
-        @click="exitAdminMode"
+        @click.stop="exitAdminMode"
       >
         <template #icon>
           <ChevronLeftIcon class="w-4 h-4 text-control" />
