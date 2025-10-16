@@ -61,7 +61,6 @@ const columns = computed((): DataTableColumn<Row>[] => {
           <RuleSelect
             class="flex-1 max-w-md min-w-[10rem]"
             value={row.rule}
-            link={true}
             onUpdate={(rule: string | undefined) => updateRow(row, rule)}
           />
           <RiskTips level={row.level} source={props.source} rule={row.rule} />
