@@ -2,12 +2,19 @@
   <div class="w-full flex-1 flex flex-row items-stretch overflow-hidden">
     <Panels>
       <template #code-panel>
-        <StandardPanel v-if="!currentTab || currentTab.mode === 'WORKSHEET'" />
+        <StandardPanel
+          v-if="!currentTab || currentTab.mode === 'WORKSHEET'"
+          :key="`standard-${currentTab?.id || 'default'}`"
+        />
 
-        <TerminalPanel v-else-if="currentTab.mode === 'ADMIN'" />
+        <TerminalPanel
+          v-else-if="currentTab.mode === 'ADMIN'"
+          :key="`terminal-${currentTab?.id || 'default'}`"
+        />
 
         <NoPermissionPlaceholder
           v-else
+          :key="`no-permission-${currentTab?.id || 'default'}`"
           :description="$t('database.access-denied')"
         />
       </template>

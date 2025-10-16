@@ -5,7 +5,7 @@
     type="warning"
     :ghost="true"
     :disabled="isDisconnected"
-    @click="enterAdminMode"
+    @click.stop="enterAdminMode"
   >
     <template #icon>
       <WrenchIcon class="w-4 h-4" />
