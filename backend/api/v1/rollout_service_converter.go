@@ -421,8 +421,6 @@ func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1p
 	case *storepb.PlanCheckRunResult_Result_SqlReviewReport_:
 		resultV1.Report = &v1pb.PlanCheckRun_Result_SqlReviewReport_{
 			SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
-				Line:          report.SqlReviewReport.Line,
-				Column:        report.SqlReviewReport.Column,
 				StartPosition: convertToPosition(report.SqlReviewReport.StartPosition),
 				EndPosition:   convertToPosition(report.SqlReviewReport.EndPosition),
 			},

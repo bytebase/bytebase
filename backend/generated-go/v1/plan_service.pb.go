@@ -1872,11 +1872,8 @@ func (x *PlanCheckRun_Result_SqlSummaryReport) GetChangedResources() *ChangedRes
 }
 
 type PlanCheckRun_Result_SqlReviewReport struct {
-	state  protoimpl.MessageState `protogen:"open.v1"`
-	Line   int32                  `protobuf:"varint,1,opt,name=line,proto3" json:"line,omitempty"`
-	Column int32                  `protobuf:"varint,2,opt,name=column,proto3" json:"column,omitempty"`
-	// 1-based Position of the SQL statement.
-	// To supersede `line` and `column` above.
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Position of the SQL statement.
 	StartPosition *Position `protobuf:"bytes,5,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
 	EndPosition   *Position `protobuf:"bytes,6,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1911,20 +1908,6 @@ func (x *PlanCheckRun_Result_SqlReviewReport) ProtoReflect() protoreflect.Messag
 // Deprecated: Use PlanCheckRun_Result_SqlReviewReport.ProtoReflect.Descriptor instead.
 func (*PlanCheckRun_Result_SqlReviewReport) Descriptor() ([]byte, []int) {
 	return file_v1_plan_service_proto_rawDescGZIP(), []int{14, 0, 1}
-}
-
-func (x *PlanCheckRun_Result_SqlReviewReport) GetLine() int32 {
-	if x != nil {
-		return x.Line
-	}
-	return 0
-}
-
-func (x *PlanCheckRun_Result_SqlReviewReport) GetColumn() int32 {
-	if x != nil {
-		return x.Column
-	}
-	return 0
 }
 
 func (x *PlanCheckRun_Result_SqlReviewReport) GetStartPosition() *Position {
@@ -2063,7 +2046,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/PlanR\x06parent\x12&\n" +
 	"\x0fplan_check_runs\x18\x02 \x03(\tR\rplanCheckRuns\"\"\n" +
-	" BatchCancelPlanCheckRunsResponse\"\xab\n" +
+	" BatchCancelPlanCheckRunsResponse\"\x8b\n" +
 	"\n" +
 	"\fPlanCheckRun\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x122\n" +
@@ -2074,7 +2057,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\aresults\x18\a \x03(\v2 .bytebase.v1.PlanCheckRun.ResultR\aresults\x12\x14\n" +
 	"\x05error\x18\b \x01(\tR\x05error\x12@\n" +
 	"\vcreate_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"createTime\x1a\xc5\x05\n" +
+	"createTime\x1a\xa5\x05\n" +
 	"\x06Result\x121\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x19.bytebase.v1.Advice.LevelR\x06status\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
@@ -2085,12 +2068,10 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x10SqlSummaryReport\x12'\n" +
 	"\x0fstatement_types\x18\x02 \x03(\tR\x0estatementTypes\x12#\n" +
 	"\raffected_rows\x18\x03 \x01(\x03R\faffectedRows\x12J\n" +
-	"\x11changed_resources\x18\x04 \x01(\v2\x1d.bytebase.v1.ChangedResourcesR\x10changedResourcesJ\x04\b\x01\x10\x02\x1a\xc1\x01\n" +
-	"\x0fSqlReviewReport\x12\x12\n" +
-	"\x04line\x18\x01 \x01(\x05R\x04line\x12\x16\n" +
-	"\x06column\x18\x02 \x01(\x05R\x06column\x12<\n" +
+	"\x11changed_resources\x18\x04 \x01(\v2\x1d.bytebase.v1.ChangedResourcesR\x10changedResourcesJ\x04\b\x01\x10\x02\x1a\xa1\x01\n" +
+	"\x0fSqlReviewReport\x12<\n" +
 	"\x0estart_position\x18\x05 \x01(\v2\x15.bytebase.v1.PositionR\rstartPosition\x128\n" +
-	"\fend_position\x18\x06 \x01(\v2\x15.bytebase.v1.PositionR\vendPositionJ\x04\b\x03\x10\x04J\x04\b\x04\x10\x05B\b\n" +
+	"\fend_position\x18\x06 \x01(\v2\x15.bytebase.v1.PositionR\vendPositionJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04J\x04\b\x04\x10\x05B\b\n" +
 	"\x06report\"\xb5\x01\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\"\n" +

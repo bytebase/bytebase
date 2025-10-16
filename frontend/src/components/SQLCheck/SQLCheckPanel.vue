@@ -145,8 +145,7 @@ const planCheckRun = computed((): PlanCheckRun => {
         report: {
           case: "sqlReviewReport",
           value: createProto(PlanCheckRun_Result_SqlReviewReportSchema, {
-            line: advice.startPosition?.line ?? 0,
-            column: advice.startPosition?.column ?? Number.MAX_SAFE_INTEGER,
+            startPosition: advice.startPosition,
           }),
         },
       });

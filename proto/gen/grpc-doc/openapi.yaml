@@ -12467,15 +12467,13 @@ components:
             properties:
                 line:
                     type: integer
-                    description: Line position in a text (zero-based).
+                    description: Line position in a text (one-based).
                     format: int32
                 column:
                     type: integer
-                    description: Column position in a text (zero-based), equivalent to byte offset.
+                    description: Column position in a text (one-based).
                     format: int32
-            description: |-
-                Position in a text expressed as zero-based line and zero-based column byte
-                 offset.
+            description: Position in a text expressed as one-based line and one-based column.
         Postgres_Session:
             type: object
             properties:
@@ -13133,18 +13131,10 @@ components:
         Result_SqlReviewReport:
             type: object
             properties:
-                line:
-                    type: integer
-                    format: int32
-                column:
-                    type: integer
-                    format: int32
                 startPosition:
                     allOf:
                         - $ref: '#/components/schemas/Position'
-                    description: |-
-                        1-based position of the SQL statement.
-                         To supersede `line` and `column` above.
+                    description: Position of the SQL statement.
                 endPosition:
                     $ref: '#/components/schemas/Position'
         Result_SqlSummaryReport:

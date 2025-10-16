@@ -257,8 +257,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 				Status:  v1pb.Advice_ERROR,
 				Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
 					SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
-						Line:   int32(syntaxErr.Position.GetLine()),
-						Column: int32(syntaxErr.Position.GetColumn()),
+						StartPosition: convertToPosition(syntaxErr.Position),
 					},
 				},
 			}); detailErr == nil {
@@ -1572,8 +1571,7 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 				Status:  v1pb.Advice_ERROR,
 				Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
 					SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
-						Line:   int32(syntaxErr.Position.GetLine()),
-						Column: int32(syntaxErr.Position.GetColumn()),
+						StartPosition: convertToPosition(syntaxErr.Position),
 					},
 				},
 			}); detailErr == nil {

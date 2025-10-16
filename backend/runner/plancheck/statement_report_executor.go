@@ -109,8 +109,6 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 				Code:    advice.Code,
 				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-						Line:          advice.GetStartPosition().GetLine(),
-						Column:        advice.GetStartPosition().GetColumn(),
 						StartPosition: advice.StartPosition,
 						EndPosition:   advice.EndPosition,
 					},

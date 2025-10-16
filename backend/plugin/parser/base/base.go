@@ -71,13 +71,18 @@ func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, co
 		errMessage = fmt.Sprintf("related text: %s", stream.GetTextFromInterval(antlr.NewInterval(start, stop)))
 	}
 	if l.Statement == "" {
+		finalLine := int32(line + l.BaseLine)
+		if finalLine < 1 {
+			finalLine = 1 // Ensure 1-based line numbering
+		}
+		finalColumn := int32(column + 1) // Convert ANTLR's 0-based column to 1-based
 		l.Err = &SyntaxError{
 			Position: &storepb.Position{
-				Line:   int32(line + l.BaseLine),
-				Column: int32(column),
+				Line:   finalLine,
+				Column: finalColumn,
 			},
 			RawMessage: message,
-			Message:    fmt.Sprintf("Syntax error at line %d:%d \n%s", line+l.BaseLine, column, errMessage),
+			Message:    fmt.Sprintf("Syntax error at line %d:%d \n%s", finalLine, finalColumn, errMessage),
 		}
 		return
 	}
@@ -87,6 +92,10 @@ func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, co
 		Column: int32(column),
 	}, l.Statement)
 	p.Line += int32(l.BaseLine)
+	if p.Line < 1 {
+		p.Line = 1 // Ensure 1-based line numbering
+	}
+	p.Column += 1 // Convert ANTLR's 0-based column to 1-based
 	l.Err = &SyntaxError{
 		Position: &storepb.Position{
 			Line:   p.Line,

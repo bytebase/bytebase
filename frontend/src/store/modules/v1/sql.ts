@@ -25,10 +25,7 @@ export const getSqlReviewReports = (err: unknown): Advice[] => {
     for (const report of err.findDetails(PlanCheckRun_ResultSchema)) {
       const startPosition =
         report.report.case === "sqlReviewReport"
-          ? {
-              line: report.report.value.line,
-              column: report.report.value.column,
-            }
+          ? report.report.value.startPosition
           : undefined;
       advices.push(
         createProto(AdviceSchema, {

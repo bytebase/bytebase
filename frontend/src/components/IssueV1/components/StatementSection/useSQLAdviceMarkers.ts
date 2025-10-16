@@ -64,13 +64,14 @@ const getLatestAdviceOptions = (planCheckRunList: PlanCheckRun[]) => {
     .filter(
       (result) =>
         result.report?.case === "sqlReviewReport" &&
-        result.report.value.line !== undefined
+        result.report.value.startPosition !== undefined
     )
     .map<AdviceOption>((result) => {
       const sqlReviewReport =
         result.report?.case === "sqlReviewReport" ? result.report.value : null;
-      const line = sqlReviewReport?.line ?? 0;
-      const column = sqlReviewReport?.column ?? Number.MAX_SAFE_INTEGER;
+      const line = sqlReviewReport?.startPosition?.line ?? 0;
+      const column =
+        sqlReviewReport?.startPosition?.column ?? Number.MAX_SAFE_INTEGER;
       const code = result.code;
       return {
         severity: result.status === Advice_Level.ERROR ? "ERROR" : "WARNING",

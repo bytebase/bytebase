@@ -72,7 +72,7 @@ func TestMySQLParser(t *testing.T) {
 		},
 		{
 			statement:    "aaa",
-			errorMessage: "Syntax error at line 1:0 \nrelated text: aaa",
+			errorMessage: "Syntax error at line 1:1 \nrelated text: aaa",
 		},
 		{
 			statement: "select * from t;\n -- comments",
