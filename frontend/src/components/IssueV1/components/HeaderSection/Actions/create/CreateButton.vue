@@ -164,31 +164,29 @@ const doCreateIssue = async () => {
     );
     if (!createdPlan) return;
 
-    issue.value.plan = createdPlan.name;
-    issue.value.planEntity = createdPlan;
-
-    const issueCreate = create(IssueSchema, {
-      ...issue.value,
-      rollout: "",
-    });
-    const request = create(CreateIssueRequestSchema, {
-      parent: issue.value.project,
-      issue: issueCreate,
-    });
-    const createdIssue = await issueServiceClientConnect.createIssue(request);
-
     const rolloutRequest = create(CreateRolloutRequestSchema, {
       parent: issue.value.project,
       rollout: {
         plan: createdPlan.name,
       },
     });
-    await rolloutServiceClientConnect.createRollout(rolloutRequest);
+    const createdRollout =
+      await rolloutServiceClientConnect.createRollout(rolloutRequest);
+
+    const request = create(CreateIssueRequestSchema, {
+      parent: issue.value.project,
+      issue: create(IssueSchema, {
+        ...issue.value,
+        plan: createdPlan.name,
+        rollout: createdRollout.name,
+      }),
+    });
+    const createdIssue = await issueServiceClientConnect.createIssue(request);
 
     router.replace({
       name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
-        projectId: extractProjectResourceName(issue.value.project),
+        projectId: extractProjectResourceName(createdIssue.name),
         issueSlug: issueV1Slug(createdIssue.name, createdIssue.title),
       },
     });
