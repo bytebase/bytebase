@@ -2,8 +2,11 @@ package elasticsearch
 
 import (
 	"context"
+	"net/url"
+	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -53,6 +56,70 @@ func TestOpenWithAWSAuth(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestURLConstructionWithQueryParams(t *testing.T) {
+	testCases := []struct {
+		name         string
+		baseAddress  string
+		route        string
+		wantURL      string
+		wantRawQuery string
+	}{
+		{
+			name:         "route with single query param",
+			baseAddress:  "https://localhost:9200",
+			route:        "/_mapping?pretty",
+			wantURL:      "https://localhost:9200/_mapping?pretty",
+			wantRawQuery: "pretty",
+		},
+		{
+			name:         "route with multiple query params",
+			baseAddress:  "https://localhost:9200",
+			route:        "/_cat/indices?format=json&v",
+			wantURL:      "https://localhost:9200/_cat/indices?format=json&v",
+			wantRawQuery: "format=json&v",
+		},
+		{
+			name:         "route without query params",
+			baseAddress:  "https://localhost:9200",
+			route:        "/_cat/indices",
+			wantURL:      "https://localhost:9200/_cat/indices",
+			wantRawQuery: "",
+		},
+		{
+			name:         "route with index name containing special chars",
+			baseAddress:  "https://localhost:9200",
+			route:        "/test-index-2024/_mapping?pretty",
+			wantURL:      "https://localhost:9200/test-index-2024/_mapping?pretty",
+			wantRawQuery: "pretty",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Parse base URL
+			baseURL, err := url.Parse(tc.baseAddress)
+			require.NoError(t, err)
+
+			// Apply the fix logic
+			routeStr := tc.route
+			pathPart, queryPart, hasQuery := strings.Cut(routeStr, "?")
+
+			fullURL := baseURL.JoinPath(pathPart)
+
+			if hasQuery {
+				fullURL.RawQuery = queryPart
+			}
+
+			// Verify results
+			assert.Equal(t, tc.wantURL, fullURL.String(), "Full URL should match")
+			assert.Equal(t, tc.wantRawQuery, fullURL.RawQuery, "Query should match")
+
+			// Critical: Verify no URL encoding of the '?' character
+			assert.NotContains(t, fullURL.String(), "%3F", "URL should not contain encoded question mark")
 		})
 	}
 }
